@@ -1,0 +1,103 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <!-- ========================================
+         PRIMARY BRAND COLORS
+         ======================================== -->
+    <color name="colorPrimary">#2E7D32</color>
+    <color name="colorPrimaryDark">#1B5E20</color>
+    <color name="colorAccent">#4CAF50</color>
+    <color name="colorPrimaryLight">#81C784</color>
+    
+    <!-- ========================================
+         APP ICON BACKGROUND COLOR
+         Used for adaptive icon on Android 8.0+
+         ======================================== -->
+    <color name="ic_launcher_background">#2E7D32</color>
+    
+    <!-- ========================================
+         AGRIMORE BRAND COLORS
+         ======================================== -->
+    <color name="primaryGreen">#2E7D32</color>
+    <color name="darkGreen">#1B5E20</color>
+    <color name="lightGreen">#4CAF50</color>
+    <color name="mintGreen">#81C784</color>
+    <color name="paleGreen">#C8E6C9</color>
+    
+    <!-- ========================================
+         STATUS COLORS
+         ======================================== -->
+    <color name="successGreen">#4CAF50</color>
+    <color name="errorRed">#F44336</color>
+    <color name="warningOrange">#FF9800</color>
+    <color name="warningAmber">#FFC107</color>
+    <color name="infoBlue">#2196F3</color>
+    <color name="infoCyan">#00BCD4</color>
+    
+    <!-- ========================================
+         BACKGROUND COLORS
+         ======================================== -->
+    <color name="backgroundColor">#FFFFFF</color>
+    <color name="backgroundLight">#F5F5F5</color>
+    <color name="backgroundGray">#EEEEEE</color>
+    <color name="backgroundDark">#212121</color>
+    <color name="backgroundCard">#FAFAFA</color>
+    
+    <!-- ========================================
+         TEXT COLORS
+         ======================================== -->
+    <color name="textPrimary">#212121</color>
+    <color name="textSecondary">#757575</color>
+    <color name="textHint">#9E9E9E</color>
+    <color name="textDisabled">#BDBDBD</color>
+    <color name="textWhite">#FFFFFF</color>
+    <color name="textBlack">#000000</color>
+    
+    <!-- ========================================
+         DIVIDER & BORDER COLORS
+         ======================================== -->
+    <color name="divider">#E0E0E0</color>
+    <color name="dividerDark">#BDBDBD</color>
+    <color name="borderLight">#F5F5F5</color>
+    <color name="borderMedium">#E0E0E0</color>
+    
+    <!-- ========================================
+         UTILITY COLORS
+         ======================================== -->
+    <color name="transparent">#00000000</color>
+    <color name="semiTransparent">#80000000</color>
+    <color name="white">#FFFFFF</color>
+    <color name="black">#000000</color>
+    
+    <!-- ========================================
+         NOTIFICATION COLORS
+         ======================================== -->
+    <color name="notificationPrimary">#2E7D32</color>
+    <color name="notificationAccent">#4CAF50</color>
+    <color name="notificationBackground">#FFFFFF</color>
+    
+    <!-- ========================================
+         PAYMENT COLORS
+         ======================================== -->
+    <color name="paymentSuccess">#4CAF50</color>
+    <color name="paymentPending">#FF9800</color>
+    <color name="paymentFailed">#F44336</color>
+    
+    <!-- ========================================
+         ORDER STATUS COLORS
+         ======================================== -->
+    <color name="orderPending">#FFC107</color>
+    <color name="orderConfirmed">#2196F3</color>
+    <color name="orderProcessing">#9C27B0</color>
+    <color name="orderShipped">#FF9800</color>
+    <color name="orderDelivered">#4CAF50</color>
+    <color name="orderCancelled">#F44336</color>
+    
+    <!-- ========================================
+         SHADOW & OVERLAY COLORS
+         ======================================== -->
+    <color name="shadowLight">#0D000000</color>
+    <color name="shadowMedium">#1A000000</color>
+    <color name="shadowDark">#33000000</color>
+    <color name="overlayLight">#40FFFFFF</color>
+    <color name="overlayDark">#80000000</color>
+</resources>

@@ -1,0 +1,13 @@
+name: agrimore_workspace
+description: Agrimore Monorepo - Agricultural E-commerce Platform
+publish_to: 'none'
+
+environment:
+  sdk: '>=3.2.0 <4.0.0'
+
+# Workspace configuration for Flutter monorepo
+# This file defines the workspace but doesn't contain app code
+# See apps/ and packages/ directories for actual code
+
+dev_dependencies:
+  melos: ^6.1.0

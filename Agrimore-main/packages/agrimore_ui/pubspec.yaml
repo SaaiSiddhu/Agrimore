@@ -1,0 +1,42 @@
+name: agrimore_ui
+description: UI package for Agrimore - Contains shared themes, widgets, and responsive utilities used across all apps.
+version: 1.0.0
+publish_to: 'none'
+
+environment:
+  sdk: '>=3.2.0 <4.0.0'
+  flutter: '>=3.16.0'
+
+dependencies:
+  flutter:
+    sdk: flutter
+  
+  # Internal package dependency
+  agrimore_core:
+    path: ../agrimore_core
+  
+  # UI Components
+  cupertino_icons: ^1.0.8
+  cached_network_image: ^3.4.1
+  shimmer: ^3.0.0
+  flutter_rating_bar: ^4.0.1
+  lottie: ^3.2.0
+  flutter_animate: ^4.5.0
+  flutter_svg: ^2.0.10+1
+  google_fonts: ^6.2.1
+  font_awesome_flutter: ^10.7.0
+  fluttertoast: ^8.2.8
+  
+  # Carousel
+  carousel_slider: ^5.0.0
+  
+  # State Management (for widgets)
+  provider: ^6.1.2
+
+dev_dependencies:
+  flutter_test:
+    sdk: flutter
+  flutter_lints: ^5.0.0
+
+flutter:
+  uses-material-design: true

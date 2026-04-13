@@ -1,0 +1,81 @@
+name: agrimore
+repository: https://github.com/your-org/agrimore
+
+packages:
+  - apps/*
+  - packages/*
+
+command:
+  bootstrap:
+    usePubspecOverrides: true
+    
+  version:
+    workspaceChangelog: true
+
+scripts:
+  # Analyze all packages
+  analyze:
+    run: melos exec -- flutter analyze
+    description: Run flutter analyze in all packages
+    
+  # Run tests in all packages  
+  test:
+    run: melos exec -- flutter test
+    description: Run flutter test in all packages
+    
+  # Get dependencies for all packages
+  get:
+    run: melos exec -- flutter pub get
+    description: Get dependencies for all packages
+    
+  # Build Android for marketplace
+  build:android:marketplace:
+    run: flutter build apk --release
+    exec:
+      workingDir: apps/marketplace
+    description: Build Android APK for Marketplace
+    
+  # Build Android for admin
+  build:android:admin:
+    run: flutter build apk --release
+    exec:
+      workingDir: apps/admin
+    description: Build Android APK for Admin
+    
+  # Build iOS for marketplace  
+  build:ios:marketplace:
+    run: flutter build ios --release --no-codesign
+    exec:
+      workingDir: apps/marketplace
+    description: Build iOS for Marketplace
+    
+  # Build iOS for admin
+  build:ios:admin:
+    run: flutter build ios --release --no-codesign
+    exec:
+      workingDir: apps/admin  
+    description: Build iOS for Admin
+    
+  # Run marketplace app
+  run:marketplace:
+    run: flutter run
+    exec:
+      workingDir: apps/marketplace
+    description: Run Marketplace app
+    
+  # Run admin app
+  run:admin:
+    run: flutter run
+    exec:
+      workingDir: apps/admin
+    description: Run Admin app
+    
+  # Clean all packages
+  clean:
+    run: melos exec -- flutter clean
+    description: Clean all packages
+    
+  # Format all packages
+  format:
+    run: melos exec -- dart format .
+    description: Format all packages

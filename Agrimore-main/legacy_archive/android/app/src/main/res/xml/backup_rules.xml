@@ -1,0 +1,87 @@
+<?xml version="1.0" encoding="utf-8"?>
+<full-backup-content>
+    <!-- ========================================
+         BACKUP RULES
+         Defines what data should be backed up
+         ======================================== -->
+    
+    <!-- ========================================
+         INCLUDE RULES
+         Data to backup to cloud
+         ======================================== -->
+    
+    <!-- Shared Preferences (User settings) -->
+    <include 
+        domain="sharedpref" 
+        path="." />
+    
+    <!-- App Database -->
+    <include 
+        domain="database" 
+        path="." />
+    
+    <!-- User Files -->
+    <include 
+        domain="file" 
+        path="." />
+    
+    <!-- ========================================
+         EXCLUDE RULES
+         Sensitive data NOT to backup
+         ======================================== -->
+    
+    <!-- Flutter Secure Storage (Contains encrypted credentials) -->
+    <exclude 
+        domain="sharedpref" 
+        path="FlutterSecureStorage" />
+    
+    <!-- FCM Tokens (Should regenerate on new device) -->
+    <exclude 
+        domain="sharedpref" 
+        path="fcm_token.xml" />
+    
+    <!-- Device-specific cache -->
+    <exclude 
+        domain="file" 
+        path="cache/" />
+    
+    <!-- Temporary files -->
+    <exclude 
+        domain="file" 
+        path="temp/" />
+    
+    <!-- Downloaded notification images -->
+    <exclude 
+        domain="file" 
+        path="notification_images/" />
+    
+    <!-- Session tokens -->
+    <exclude 
+        domain="sharedpref" 
+        path="auth_session.xml" />
+    
+    <!-- Payment credentials -->
+    <exclude 
+        domain="database" 
+        path="payment_secure.db" />
+    
+    <!-- Biometric keys -->
+    <exclude 
+        domain="sharedpref" 
+        path="biometric_keys.xml" />
+    
+    <!-- AdMob data -->
+    <exclude 
+        domain="sharedpref" 
+        path="google_ads_flags.xml" />
+    
+    <!-- Analytics data -->
+    <exclude 
+        domain="database" 
+        path="google_analytics_v4.db" />
+    
+    <!-- Firebase installations -->
+    <exclude 
+        domain="sharedpref" 
+        path="com.google.firebase.installations.xml" />
+</full-backup-content>

@@ -1,0 +1,163 @@
+<!DOCTYPE html>
+<html>
+
+<head>
+  <base href="$FLUTTER_BASE_HREF">
+
+  <meta charset="UTF-8">
+  <meta content="IE=Edge" http-equiv="X-UA-Compatible">
+  <meta name="description"
+    content="Agrimore Admin - Manage your agricultural marketplace. Handle orders, products, customers, and inventory.">
+  <meta name="keywords"
+    content="agriculture, farming, admin dashboard, order management, agrimore, marketplace management">
+  <meta name="viewport"
+    content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, interactive-widget=overlays-content">
+  <meta name="author" content="Agrimore">
+
+  <!-- Primary Meta Tags -->
+  <meta name="title" content="Agrimore Admin - Dashboard">
+  <meta name="description" content="A comprehensive agricultural e-commerce marketplace for modern farming needs">
+
+  <!-- Open Graph / Facebook -->
+  <meta property="og:type" content="website">
+  <meta property="og:url" content="https://agrimore-66a4e.web.app/">
+  <meta property="og:title" content="Agrimore Admin - Dashboard">
+  <meta property="og:description"
+    content="Your trusted agricultural marketplace for seeds, fertilizers, tools, and farming equipment">
+  <meta property="og:image" content="https://agrimore-66a4e.web.app/icons/Icon-512.png">
+
+  <!-- Twitter -->
+  <meta property="twitter:card" content="summary_large_image">
+  <meta property="twitter:url" content="https://agrimore-66a4e.web.app/">
+  <meta property="twitter:title" content="Agrimore Admin - Dashboard">
+  <meta property="twitter:description"
+    content="Your trusted agricultural marketplace for seeds, fertilizers, tools, and farming equipment">
+  <meta property="twitter:image" content="https://agrimore-66a4e.web.app/icons/Icon-512.png">
+
+  <!-- Icons -->
+  <link rel="icon" type="image/png" href="icons/Icon-192.png" />
+  <link rel="apple-touch-icon" href="icons/Icon-192.png">
+  <meta name="theme-color" content="#2E7D32">
+
+  <!-- iOS meta tags -->
+  <meta name="mobile-web-app-capable" content="yes">
+  <meta name="apple-mobile-web-app-capable" content="yes">
+  <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+  <meta name="apple-mobile-web-app-title" content="Agrimore Admin">
+
+  <!-- Favicon -->
+  <link rel="icon" type="image/png" href="favicon.png" />
+
+  <!-- Google Sign-In -->
+  <meta name="google-signin-client_id"
+    content="240895353385-5s5hh8plfvivkj1usgk3lvj8v8qdkimk.apps.googleusercontent.com">
+
+  <title>Agrimore Admin - Dashboard</title>
+  <link rel="manifest" href="manifest.json">
+
+  <!-- Google Maps API -->
+  <script
+    src="https://maps.googleapis.com/maps/api/js?key=AIzaSyAvi3F7BuYw46yJm9iLFR45h_E48pqNDlM&libraries=places,geometry"></script>
+
+  <!-- Deep Linking -->
+  <script>
+    const currentPath = window.location.pathname + window.location.search;
+    if (currentPath !== '/') {
+      sessionStorage.setItem('deepLinkPath', currentPath);
+    }
+  </script>
+
+  <style>
+    * {
+      margin: 0;
+      padding: 0;
+      box-sizing: border-box;
+    }
+
+    html,
+    body {
+      width: 100%;
+      height: 100%;
+      /* Use dvh (dynamic viewport height) for mobile browsers - accounts for keyboard */
+      height: 100dvh;
+      min-height: 100dvh;
+      max-height: 100dvh;
+      overflow: hidden;
+      background-color: #FFFFFF;
+      font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, 'Helvetica Neue', Arial, sans-serif;
+      /* Prevent iOS bounce/overscroll */
+      overscroll-behavior: none;
+      -webkit-overflow-scrolling: touch;
+      /* Fixed positioning to handle keyboard */
+      position: fixed;
+      top: 0;
+      left: 0;
+      right: 0;
+      bottom: 0;
+    }
+
+    body {
+      -webkit-user-select: none;
+      -moz-user-select: none;
+      -ms-user-select: none;
+      user-select: none;
+      -webkit-touch-callout: none;
+      /* Ensure body doesn't move when keyboard appears */
+      touch-action: manipulation;
+    }
+
+    /* Flutter canvas container fix */
+    flt-glass-pane {
+      position: fixed !important;
+      top: 0 !important;
+      left: 0 !important;
+      width: 100% !important;
+      height: 100dvh !important;
+    }
+  </style>
+</head>
+
+<body>
+  <!-- visualViewport keyboard resize handler -->
+  <script>
+    (function () {
+      var lastHeight = window.innerHeight;
+      if (window.visualViewport) {
+        window.visualViewport.addEventListener('resize', function () {
+          var currentHeight = window.visualViewport.height;
+          if (currentHeight > lastHeight + 100) {
+            if (document.activeElement &&
+              (document.activeElement.tagName === 'INPUT' ||
+                document.activeElement.tagName === 'TEXTAREA')) {
+              document.activeElement.blur();
+            }
+            setTimeout(function () {
+              window.dispatchEvent(new Event('resize'));
+            }, 50);
+          }
+          lastHeight = currentHeight;
+        });
+      }
+    })();
+  </script>
+
+  <!-- Service Worker Registration -->
+  <script>
+    if ('serviceWorker' in navigator) {
+      window.addEventListener('load', function () {
+        navigator.serviceWorker.register('/firebase-messaging-sw.js')
+          .then((registration) => {
+            console.log('✅ Service Worker registered:', registration.scope);
+          })
+          .catch((error) => {
+            console.error('❌ Service Worker registration failed:', error);
+          });
+      });
+    }
+  </script>
+
+  <!-- Flutter Bootstrap -->
+  <script src="flutter_bootstrap.js" async></script>
+</body>
+
+</html>

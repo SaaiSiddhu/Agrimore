@@ -1,0 +1,105 @@
+<!DOCTYPE html>
+<html>
+<head>
+  <base href="$FLUTTER_BASE_HREF">
+
+  <meta charset="UTF-8">
+  <meta content="IE=Edge" http-equiv="X-UA-Compatible">
+  <meta name="description" content="Agroconnect - Your trusted agricultural marketplace for seeds, fertilizers, tools, and farming equipment. Buy and sell agricultural products online.">
+  <meta name="keywords" content="agriculture, farming, seeds, fertilizers, agricultural equipment, online marketplace, agroconnect">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+  <meta name="author" content="Agroconnect">
+
+  <!-- Primary Meta Tags -->
+  <meta name="title" content="Agroconnect - Agricultural Marketplace">
+  <meta name="description" content="A comprehensive agricultural e-commerce marketplace for modern farming needs">
+
+  <!-- Open Graph / Facebook -->
+  <meta property="og:type" content="website">
+  <meta property="og:url" content="https://agrii-mate.web.app/">
+  <meta property="og:title" content="Agroconnect - Agricultural Marketplace">
+  <meta property="og:description" content="Your trusted agricultural marketplace for seeds, fertilizers, tools, and farming equipment">
+  <meta property="og:image" content="https://agrii-mate.web.app/icons/Icon-512.png">
+
+  <!-- Twitter -->
+  <meta property="twitter:card" content="summary_large_image">
+  <meta property="twitter:url" content="https://agrii-mate.web.app/">
+  <meta property="twitter:title" content="Agroconnect - Agricultural Marketplace">
+  <meta property="twitter:description" content="Your trusted agricultural marketplace for seeds, fertilizers, tools, and farming equipment">
+  <meta property="twitter:image" content="https://agrii-mate.web.app/icons/Icon-512.png">
+
+  <!-- Icons -->
+  <link rel="icon" type="image/png" href="icons/Icon-192.png"/>
+  <link rel="apple-touch-icon" href="icons/Icon-192.png">
+  <meta name="theme-color" content="#2E7D32">
+
+  <!-- iOS meta tags -->
+  <meta name="mobile-web-app-capable" content="yes">
+  <meta name="apple-mobile-web-app-capable" content="yes">
+  <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+  <meta name="apple-mobile-web-app-title" content="Agroconnect">
+
+  <!-- Favicon -->
+  <link rel="icon" type="image/png" href="favicon.png"/>
+
+  <!-- Google Sign-In -->
+  <meta name="google-signin-client_id" content="240895353385-5s5hh8plfvivkj1usgk3lvj8v8qdkimk.apps.googleusercontent.com">
+
+  <title>Agroconnect - Agricultural Marketplace</title>
+  <link rel="manifest" href="manifest.json">
+
+  <!-- Google Maps API -->
+  <script src="https://maps.googleapis.com/maps/api/js?key=AIzaSyAB-NXBRjrubWRDrp2HNgbgeG7fNzxSQlY&libraries=places,geometry"></script>
+
+  <!-- Deep Linking -->
+  <script>
+    const currentPath = window.location.pathname + window.location.search;
+    if (currentPath !== '/') {
+      sessionStorage.setItem('deepLinkPath', currentPath);
+    }
+  </script>
+
+  <style>
+    * {
+      margin: 0;
+      padding: 0;
+      box-sizing: border-box;
+    }
+
+    html, body {
+      width: 100%;
+      height: 100%;
+      overflow: hidden;
+      background-color: #0C0C0C;
+      font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, 'Helvetica Neue', Arial, sans-serif;
+    }
+
+    body {
+      -webkit-user-select: none;
+      -moz-user-select: none;
+      -ms-user-select: none;
+      user-select: none;
+      -webkit-touch-callout: none;
+    }
+  </style>
+</head>
+<body>
+  <!-- Service Worker Registration -->
+  <script>
+    if ('serviceWorker' in navigator) {
+      window.addEventListener('load', function() {
+        navigator.serviceWorker.register('/firebase-messaging-sw.js')
+          .then((registration) => {
+            console.log('✅ Service Worker registered:', registration.scope);
+          })
+          .catch((error) => {
+            console.error('❌ Service Worker registration failed:', error);
+          });
+      });
+    }
+  </script>
+
+  <!-- Flutter Bootstrap -->
+  <script src="flutter_bootstrap.js" async></script>
+</body>
+</html>

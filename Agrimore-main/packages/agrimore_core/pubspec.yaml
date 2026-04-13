@@ -1,0 +1,36 @@
+name: agrimore_core
+description: Core package for Agrimore - Contains models, constants, utilities, and error handling shared across all apps.
+version: 1.0.0
+publish_to: 'none'
+
+environment:
+  sdk: '>=3.2.0 <4.0.0'
+  flutter: '>=3.16.0'
+
+dependencies:
+  flutter:
+    sdk: flutter
+  
+  # Firebase (needed for Timestamp, DocumentSnapshot in models)
+  cloud_firestore: ^5.4.4
+  
+  # Core utilities
+  equatable: ^2.0.7
+  intl: ^0.20.2
+  uuid: ^4.5.1
+  crypto: ^3.0.5
+  flutter_dotenv: ^5.2.1
+  
+  # Local Storage (for models that serialize)
+  hive: ^2.2.3
+  hive_flutter: ^1.1.0
+
+dev_dependencies:
+  flutter_test:
+    sdk: flutter
+  flutter_lints: ^5.0.0
+  hive_generator: ^2.0.1
+  build_runner: ^2.4.13
+
+flutter:
+  # This package does not use Material Design assets

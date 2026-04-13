@@ -1,0 +1,32 @@
+rules_version = '2';
+
+service firebase.storage {
+  match /b/{bucket}/o {
+    
+    // ============================================
+    // HELPER FUNCTIONS
+    // ============================================
+    
+    // Check if user is authenticated
+    function isAuthenticated() {
+      return request.auth != null;
+    }
+    
+    // Check if file size is under limit (10MB)
+    function isValidFileSize() {
+      return request.resource.size < 10 * 1024 * 1024;
+    }
+    
+    // ============================================
+    // GLOBAL RULE: All authenticated users can upload
+    // Public can read all files
+    // ============================================
+    match /{allPaths=**} {
+      // Public read access
+      allow read: if true;
+      
+      // Authenticated users can write (with size limit)
+      allow write: if isAuthenticated() && isValidFileSize();
+    }
+  }
+}

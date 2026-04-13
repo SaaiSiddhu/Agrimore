@@ -1,0 +1,133 @@
+<?xml version="1.0" encoding="utf-8"?>
+<data-extraction-rules>
+    <!-- ========================================
+         DATA EXTRACTION RULES (Android 12+)
+         Controls data transfer and backup
+         ======================================== -->
+    
+    <!-- ========================================
+         CLOUD BACKUP RULES
+         Data synced to Google Drive backup
+         ======================================== -->
+    <cloud-backup>
+        <!-- INCLUDE: Data to backup -->
+        <include 
+            domain="sharedpref" 
+            path="." />
+        
+        <include 
+            domain="database" 
+            path="." />
+        
+        <include 
+            domain="file" 
+            path="." />
+        
+        <!-- EXCLUDE: Sensitive data -->
+        <exclude 
+            domain="sharedpref" 
+            path="FlutterSecureStorage" />
+        
+        <exclude 
+            domain="sharedpref" 
+            path="fcm_token.xml" />
+        
+        <exclude 
+            domain="sharedpref" 
+            path="auth_session.xml" />
+        
+        <exclude 
+            domain="sharedpref" 
+            path="biometric_keys.xml" />
+        
+        <exclude 
+            domain="database" 
+            path="payment_secure.db" />
+        
+        <exclude 
+            domain="file" 
+            path="cache/" />
+        
+        <exclude 
+            domain="file" 
+            path="temp/" />
+        
+        <exclude 
+            domain="file" 
+            path="notification_images/" />
+        
+        <!-- Exclude Google Services data -->
+        <exclude 
+            domain="sharedpref" 
+            path="google_ads_flags.xml" />
+        
+        <exclude 
+            domain="database" 
+            path="google_analytics_v4.db" />
+        
+        <exclude 
+            domain="sharedpref" 
+            path="com.google.firebase.installations.xml" />
+    </cloud-backup>
+    
+    <!-- ========================================
+         DEVICE TRANSFER RULES
+         Data transferred during device-to-device migration
+         ======================================== -->
+    <device-transfer>
+        <!-- INCLUDE: Data to transfer -->
+        <include 
+            domain="sharedpref" 
+            path="." />
+        
+        <include 
+            domain="database" 
+            path="." />
+        
+        <include 
+            domain="file" 
+            path="." />
+        
+        <!-- EXCLUDE: Sensitive data -->
+        <exclude 
+            domain="sharedpref" 
+            path="FlutterSecureStorage" />
+        
+        <exclude 
+            domain="sharedpref" 
+            path="fcm_token.xml" />
+        
+        <exclude 
+            domain="sharedpref" 
+            path="auth_session.xml" />
+        
+        <exclude 
+            domain="sharedpref" 
+            path="biometric_keys.xml" />
+        
+        <exclude 
+            domain="database" 
+            path="payment_secure.db" />
+        
+        <exclude 
+            domain="file" 
+            path="cache/" />
+        
+        <exclude 
+            domain="file" 
+            path="temp/" />
+        
+        <!-- Exclude Google Services data -->
+        <exclude 
+            domain="sharedpref" 
+            path="google_ads_flags.xml" />
+        
+        <exclude 
+            domain="database" 
+            path="google_analytics_v4.db" />
+        
+        <exclude 
+            domain="sharedpref" 
+            path="com.google.firebase.installations.xml" />
+    </device-transfer>
+</data-extraction-rules>

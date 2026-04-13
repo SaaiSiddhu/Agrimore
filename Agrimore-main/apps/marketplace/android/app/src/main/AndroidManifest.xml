@@ -1,0 +1,403 @@
+<?xml version="1.0" encoding="utf-8"?>
+<manifest xmlns:android="http://schemas.android.com/apk/res/android"
+    xmlns:tools="http://schemas.android.com/tools">
+    
+    <!-- ========================================
+         PERMISSIONS
+         ======================================== -->
+    
+    <!-- Internet Permission (Required) -->
+    <uses-permission android:name="android.permission.INTERNET"/>
+    <uses-permission android:name="android.permission.ACCESS_NETWORK_STATE"/>
+    <uses-permission android:name="android.permission.ACCESS_WIFI_STATE"/>
+    
+    <!-- Location Permissions (For Google Maps & Address Selection) -->
+    <uses-permission android:name="android.permission.ACCESS_FINE_LOCATION"/>
+    <uses-permission android:name="android.permission.ACCESS_COARSE_LOCATION"/>
+    <!-- Removed ACCESS_BACKGROUND_LOCATION - not needed, requires Play Store justification -->
+    
+    <!-- Camera & Storage (For Profile Pictures & Product Images) -->
+    <uses-permission android:name="android.permission.CAMERA"/>
+    <uses-permission android:name="android.permission.READ_EXTERNAL_STORAGE"
+                     android:maxSdkVersion="32"/>
+    <uses-permission android:name="android.permission.WRITE_EXTERNAL_STORAGE"
+                     android:maxSdkVersion="32"
+                     tools:ignore="ScopedStorage"/>
+    <uses-permission android:name="android.permission.READ_MEDIA_IMAGES"/>
+    <uses-permission android:name="android.permission.READ_MEDIA_VIDEO"/>
+    
+    <!-- Notification Permission (Android 13+) -->
+    <uses-permission android:name="android.permission.POST_NOTIFICATIONS"/>
+    
+    <!-- Vibration (For Haptic Feedback) -->
+    <uses-permission android:name="android.permission.VIBRATE"/>
+    
+    <!-- Wake Lock (For Firebase Messaging) -->
+    <uses-permission android:name="android.permission.WAKE_LOCK"/>
+    
+    <!-- Full Screen Intent removed - requires Play Store declaration, not needed for this app -->
+    
+    <!-- Biometric Authentication -->
+    <uses-permission android:name="android.permission.USE_BIOMETRIC"/>
+    <uses-permission android:name="android.permission.USE_FINGERPRINT"/>
+    
+    <!-- Foreground Service (For Background Tasks) -->
+    <uses-permission android:name="android.permission.FOREGROUND_SERVICE"/>
+    
+    <!-- AdMob Permissions -->
+    <uses-permission android:name="com.google.android.gms.permission.AD_ID"/>
+    
+    <!-- ========================================
+         FEATURES
+         ======================================== -->
+    
+    <uses-feature android:name="android.hardware.camera" android:required="false"/>
+    <uses-feature android:name="android.hardware.camera.autofocus" android:required="false"/>
+    <uses-feature android:name="android.hardware.location.gps" android:required="false"/>
+    <uses-feature android:name="android.hardware.location.network" android:required="false"/>
+    <uses-feature android:name="android.hardware.fingerprint" android:required="false"/>
+    
+    <!-- ========================================
+         APPLICATION
+         ======================================== -->
+    
+    <application
+        android:label="Agrimore"
+        android:name="${applicationName}"
+        android:icon="@mipmap/ic_launcher"
+        android:usesCleartextTraffic="false"
+        android:requestLegacyExternalStorage="true"
+        android:allowBackup="true"
+        android:fullBackupContent="@xml/backup_rules"
+        android:dataExtractionRules="@xml/data_extraction_rules"
+        android:supportsRtl="true"
+        android:enableOnBackInvokedCallback="true"
+        tools:targetApi="34">
+        
+        <!-- ========================================
+             FIREBASE COLD START OPTIMIZATION
+             Defer init until first use
+             ======================================== -->
+        <meta-data
+            android:name="firebase_analytics_collection_deferred"
+            android:value="true"/>
+        <meta-data
+            android:name="firebase_crashlytics_collection_enabled"
+            android:value="false"/>
+        <meta-data
+            android:name="firebase_messaging_auto_init_enabled"
+            android:value="false"/>
+        <meta-data
+            android:name="firebase_data_collection_default_enabled"
+            android:value="false"/>
+        
+        <!-- ========================================
+             ADMOB APP ID
+             TODO: Replace with your production AdMob App ID
+             Current: Commented out (remove comment when you have production ID)
+             ======================================== -->
+        <!-- <meta-data
+            android:name="com.google.android.gms.ads.APPLICATION_ID"
+            android:value="YOUR_PRODUCTION_ADMOB_APP_ID"/> -->
+        
+        <!-- ========================================
+             GOOGLE MAPS API KEY
+             ======================================== -->
+        <meta-data
+            android:name="com.google.android.geo.API_KEY"
+            android:value="AIzaSyAh0PzSlDddvDu_DMW1baFp3neRwhBl8xQ"/>
+        
+        <!-- ========================================
+             MAIN ACTIVITY
+             ======================================== -->
+        <activity
+            android:name=".MainActivity"
+            android:exported="true"
+            android:launchMode="singleTop"
+            android:taskAffinity=""
+            android:theme="@style/LaunchTheme"
+            android:configChanges="orientation|keyboardHidden|keyboard|screenSize|smallestScreenSize|locale|layoutDirection|fontScale|screenLayout|density|uiMode"
+            android:hardwareAccelerated="true"
+            android:windowSoftInputMode="adjustResize"
+            android:showWhenLocked="true"
+            android:turnScreenOn="true">
+            
+            <meta-data
+                android:name="io.flutter.embedding.android.NormalTheme"
+                android:resource="@style/NormalTheme"/>
+            
+            <!-- Main Launcher Intent -->
+            <intent-filter>
+                <action android:name="android.intent.action.MAIN"/>
+                <category android:name="android.intent.category.LAUNCHER"/>
+            </intent-filter>
+            
+            <!-- ✅ CRITICAL: Notification Click Action -->
+            <intent-filter>
+                <action android:name="FLUTTER_NOTIFICATION_CLICK"/>
+                <category android:name="android.intent.category.DEFAULT"/>
+            </intent-filter>
+            
+            <!-- Deep Linking - Firebase Hosting -->
+            <intent-filter android:autoVerify="true">
+                <action android:name="android.intent.action.VIEW"/>
+                <category android:name="android.intent.category.DEFAULT"/>
+                <category android:name="android.intent.category.BROWSABLE"/>
+                
+                <data
+                    android:scheme="https"
+                    android:host="agrimore-66a4e.web.app"/>
+                
+                <data
+                    android:scheme="https"
+                    android:host="agrimore-66a4e.firebaseapp.com"/>
+            </intent-filter>
+            
+            <!-- Deep Linking - Custom Domain -->
+            <intent-filter android:autoVerify="true">
+                <action android:name="android.intent.action.VIEW"/>
+                <category android:name="android.intent.category.DEFAULT"/>
+                <category android:name="android.intent.category.BROWSABLE"/>
+                
+                <data
+                    android:scheme="https"
+                    android:host="agrimore.in"/>
+                
+                <data
+                    android:scheme="https"
+                    android:host="www.agrimore.in"/>
+            </intent-filter>
+            
+            <!-- App Custom Scheme for Deep Linking -->
+            <intent-filter>
+                <action android:name="android.intent.action.VIEW"/>
+                <category android:name="android.intent.category.DEFAULT"/>
+                <category android:name="android.intent.category.BROWSABLE"/>
+                
+                <data android:scheme="agrimore"/>
+            </intent-filter>
+            
+            <!-- ✅ Product Deep Link Pattern -->
+            <intent-filter android:autoVerify="true">
+                <action android:name="android.intent.action.VIEW"/>
+                <category android:name="android.intent.category.DEFAULT"/>
+                <category android:name="android.intent.category.BROWSABLE"/>
+                
+                <data
+                    android:scheme="https"
+                    android:host="agrimore-66a4e.web.app"
+                    android:pathPrefix="/product"/>
+                
+                <data
+                    android:scheme="agrimore"
+                    android:pathPrefix="/product"/>
+            </intent-filter>
+            
+            <!-- ✅ Order Deep Link Pattern -->
+            <intent-filter android:autoVerify="true">
+                <action android:name="android.intent.action.VIEW"/>
+                <category android:name="android.intent.category.DEFAULT"/>
+                <category android:name="android.intent.category.BROWSABLE"/>
+                
+                <data
+                    android:scheme="https"
+                    android:host="agrimore-66a4e.web.app"
+                    android:pathPrefix="/order"/>
+                
+                <data
+                    android:scheme="https"
+                    android:host="agrimore-66a4e.web.app"
+                    android:pathPrefix="/orders"/>
+                
+                <data
+                    android:scheme="agrimore"
+                    android:pathPrefix="/order"/>
+            </intent-filter>
+            
+            <!-- ✅ Category Deep Link Pattern -->
+            <intent-filter android:autoVerify="true">
+                <action android:name="android.intent.action.VIEW"/>
+                <category android:name="android.intent.category.DEFAULT"/>
+                <category android:name="android.intent.category.BROWSABLE"/>
+                
+                <data
+                    android:scheme="https"
+                    android:host="agrimore-66a4e.web.app"
+                    android:pathPrefix="/category"/>
+                
+                <data
+                    android:scheme="agrimore"
+                    android:pathPrefix="/category"/>
+            </intent-filter>
+            
+            <!-- Flutter Deep Linking Enabled -->
+            <meta-data 
+                android:name="flutter_deeplinking_enabled" 
+                android:value="true"/>
+        </activity>
+        
+        <!-- ========================================
+             ADMOB AD ACTIVITIES
+             ======================================== -->
+        <activity
+            android:name="com.google.android.gms.ads.AdActivity"
+            android:configChanges="keyboard|keyboardHidden|orientation|screenLayout|uiMode|screenSize|smallestScreenSize"
+            android:theme="@android:style/Theme.Translucent"
+            android:exported="false"/>
+        
+        <!-- ========================================
+             RAZORPAY PAYMENT GATEWAY
+             ======================================== -->
+        <activity
+            android:name="com.razorpay.CheckoutActivity"
+            android:configChanges="keyboard|keyboardHidden|orientation|screenSize"
+            android:exported="true"
+            android:theme="@style/CheckoutTheme"
+            tools:replace="android:exported">
+            <intent-filter>
+                <action android:name="android.intent.action.MAIN"/>
+            </intent-filter>
+        </activity>
+        
+        <receiver
+            android:name="com.razorpay.RzpTokenReceiver"
+            android:exported="false">
+            <intent-filter>
+                <action android:name="rzp.device_token.share"/>
+            </intent-filter>
+        </receiver>
+        
+        <!-- ========================================
+             FIREBASE CLOUD MESSAGING
+             ======================================== -->
+        <service
+            android:name="com.google.firebase.messaging.FirebaseMessagingService"
+            android:exported="false"
+            android:directBootAware="true">
+            <intent-filter>
+                <action android:name="com.google.firebase.MESSAGING_EVENT"/>
+            </intent-filter>
+        </service>
+        
+        <!-- ✅ Default Notification Icon -->
+        <meta-data
+            android:name="com.google.firebase.messaging.default_notification_icon"
+            android:resource="@mipmap/ic_launcher"/>
+        
+        <!-- ✅ Default Notification Color -->
+        <meta-data
+            android:name="com.google.firebase.messaging.default_notification_color"
+            android:resource="@color/colorPrimary"/>
+        
+        <!-- ✅ Default Notification Channel -->
+        <meta-data
+            android:name="com.google.firebase.messaging.default_notification_channel_id"
+            android:value="default_channel"/>
+        
+        <!-- ========================================
+             FILE PROVIDER (For sharing images)
+             ======================================== -->
+        <provider
+            android:name="androidx.core.content.FileProvider"
+            android:authorities="${applicationId}.fileprovider"
+            android:exported="false"
+            android:grantUriPermissions="true">
+            <meta-data
+                android:name="android.support.FILE_PROVIDER_PATHS"
+                android:resource="@xml/file_paths"/>
+        </provider>
+        
+        <!-- ========================================
+             FLUTTER EMBEDDING
+             ======================================== -->
+        <meta-data
+            android:name="flutterEmbedding"
+            android:value="2"/>
+        
+        <!-- ========================================
+             GOOGLE PLAY SERVICES VERSION
+             ======================================== -->
+        <meta-data
+            android:name="com.google.android.gms.version"
+            android:value="@integer/google_play_services_version"/>
+    </application>
+    
+    <!-- ========================================
+         QUERIES (Package Visibility - Android 11+)
+         ======================================== -->
+    <queries>
+        <!-- Text Processing -->
+        <intent>
+            <action android:name="android.intent.action.PROCESS_TEXT"/>
+            <data android:mimeType="text/plain"/>
+        </intent>
+        
+        <!-- Web Browsing -->
+        <intent>
+            <action android:name="android.intent.action.VIEW"/>
+            <data android:scheme="https"/>
+        </intent>
+        <intent>
+            <action android:name="android.intent.action.VIEW"/>
+            <data android:scheme="http"/>
+        </intent>
+        
+        <!-- Email -->
+        <intent>
+            <action android:name="android.intent.action.SENDTO"/>
+            <data android:scheme="mailto"/>
+        </intent>
+        
+        <!-- Phone Calls -->
+        <intent>
+            <action android:name="android.intent.action.DIAL"/>
+            <data android:scheme="tel"/>
+        </intent>
+        
+        <!-- SMS -->
+        <intent>
+            <action android:name="android.intent.action.SENDTO"/>
+            <data android:scheme="smsto"/>
+        </intent>
+        
+        <!-- Sharing -->
+        <intent>
+            <action android:name="android.intent.action.SEND"/>
+            <data android:mimeType="*/*"/>
+        </intent>
+        
+        <!-- Popular Apps -->
+        <package android:name="com.google.android.apps.maps"/>
+        <package android:name="com.whatsapp"/>
+        <package android:name="com.facebook.katana"/>
+        <package android:name="com.instagram.android"/>
+        <package android:name="com.twitter.android"/>
+        
+        <!-- UPI Payment Apps -->
+        <intent>
+            <action android:name="android.intent.action.VIEW"/>
+            <data android:scheme="upi"/>
+        </intent>
+        <package android:name="com.google.android.apps.nbu.paisa.user"/>
+        <package android:name="net.one97.paytm"/>
+        <package android:name="in.org.npci.upiapp"/>
+        <package android:name="com.phonepe.app"/>
+        <package android:name="com.amazon.mShop.android.shopping"/>
+        
+        <!-- File Picking -->
+        <intent>
+            <action android:name="android.intent.action.GET_CONTENT"/>
+            <data android:mimeType="*/*"/>
+        </intent>
+        
+        <!-- Camera -->
+        <intent>
+            <action android:name="android.media.action.IMAGE_CAPTURE"/>
+        </intent>
+        
+        <!-- Video Capture -->
+        <intent>
+            <action android:name="android.media.action.VIDEO_CAPTURE"/>
+        </intent>
+    </queries>
+</manifest>

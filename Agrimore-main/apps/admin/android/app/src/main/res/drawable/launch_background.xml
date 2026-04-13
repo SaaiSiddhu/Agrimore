@@ -1,0 +1,62 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!-- ========================================
+     LAUNCH SPLASH SCREEN BACKGROUND
+     Customize this file for your app's splash screen
+     ======================================== -->
+<layer-list xmlns:android="http://schemas.android.com/apk/res/android">
+    
+    <!-- ========================================
+         BACKGROUND COLOR
+         ======================================== -->
+    <item android:drawable="@color/colorPrimary" />
+    
+    <!-- ========================================
+         CENTERED APP LOGO
+         Uncomment to use custom splash image
+         ======================================== -->
+    <item>
+        <bitmap
+            android:gravity="center"
+            android:src="@mipmap/ic_launcher" />
+    </item>
+    
+    <!-- ========================================
+         ALTERNATIVE: CUSTOM SPLASH IMAGE
+         Replace @mipmap/ic_launcher with your splash image
+         ======================================== -->
+    <!-- 
+    <item>
+        <bitmap
+            android:gravity="center"
+            android:src="@drawable/splash_logo" />
+    </item>
+    -->
+    
+    <!-- ========================================
+         BRANDED FOOTER (Optional)
+         Add company name or tagline at bottom
+         ======================================== -->
+    <!--
+    <item android:bottom="48dp">
+        <bitmap
+            android:gravity="bottom|center_horizontal"
+            android:src="@drawable/company_name" />
+    </item>
+    -->
+    
+    <!-- ========================================
+         GRADIENT OVERLAY (Optional)
+         Add gradient effect over background
+         ======================================== -->
+    <!--
+    <item>
+        <shape android:shape="rectangle">
+            <gradient
+                android:angle="90"
+                android:startColor="#80000000"
+                android:endColor="#00000000"
+                android:type="linear" />
+        </shape>
+    </item>
+    -->
+</layer-list>
