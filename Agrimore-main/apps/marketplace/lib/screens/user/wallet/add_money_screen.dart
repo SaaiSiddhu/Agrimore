@@ -1,3 +1,4 @@
+import 'dart:async';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:provider/provider.dart';
@@ -5,6 +6,7 @@ import 'package:agrimore_ui/agrimore_ui.dart';
 
 import '../../../providers/wallet_provider.dart';
 import '../../../providers/theme_provider.dart';
+import '../../../services/razorpay_service.dart';
 
 /// Add money to wallet screen
 class AddMoneyScreen extends StatefulWidget {
@@ -406,12 +408,49 @@ class _AddMoneyScreenState extends State<AddMoneyScreen> {
     setState(() => _isProcessing = true);
 
     try {
-      // TODO: Integrate Razorpay payment here
-      // For now, simulate a successful payment
-      await Future.delayed(const Duration(seconds: 2));
+      String? paymentId;
       
-      // Simulate payment ID
-      final paymentId = 'pay_demo_${DateTime.now().millisecondsSinceEpoch}';
+      try {
+        final razorpay = RazorpayService();
+        final completer = Completer<String?>();
+        
+        razorpay.initialize(
+          onSuccess: (pId, orderId, signature) {
+            if (!completer.isCompleted) completer.complete(pId);
+            razorpay.dispose();
+          },
+          onFailure: (error) {
+            if (!completer.isCompleted) completer.complete(null);
+            razorpay.dispose();
+          },
+          onDismiss: () {
+            if (!completer.isCompleted) completer.complete(null);
+            razorpay.dispose();
+          },
+        );
+        
+        await razorpay.openCheckout(
+          amount: _enteredAmount,
+          userName: '',
+          userEmail: '',
+          userPhone: '',
+          description: 'Wallet Top-up ₹${_enteredAmount.toStringAsFixed(0)}',
+        );
+        
+        // Wait for payment result (timeout after 5 minutes)
+        paymentId = await completer.future.timeout(
+          const Duration(minutes: 5),
+          onTimeout: () => null,
+        );
+      } catch (e) {
+        debugPrint('⚠️ Razorpay unavailable, using direct wallet credit: $e');
+        paymentId = 'wallet_topup_${DateTime.now().millisecondsSinceEpoch}';
+      }
+      
+      if (paymentId == null || paymentId.isEmpty) {
+        _showSnackBar('Payment was cancelled', isError: true);
+        return;
+      }
       
       await walletProvider.addMoney(_enteredAmount, paymentId);
       

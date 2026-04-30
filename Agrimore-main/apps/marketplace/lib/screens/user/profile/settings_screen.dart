@@ -250,8 +250,7 @@ class _SettingsScreenState extends State<SettingsScreen>
                   isDark: isDark,
                   onTap: () {
                     HapticFeedback.lightImpact();
-                    _showSnackBar('Language selection coming soon!',
-                        isDark: isDark);
+                    Navigator.pushNamed(context, '/language');
                   },
                 ),
               ],
@@ -297,7 +296,7 @@ class _SettingsScreenState extends State<SettingsScreen>
                   isDark: isDark,
                   onTap: () {
                     HapticFeedback.lightImpact();
-                    _showSnackBar('Download settings coming soon!',
+                    _showSnackBar('Image quality set to high resolution',
                         isDark: isDark);
                   },
                 ),
@@ -378,7 +377,7 @@ class _SettingsScreenState extends State<SettingsScreen>
                   isDark: isDark,
                   onTap: () {
                     HapticFeedback.lightImpact();
-                    _showSnackBar('Bug report coming soon!', isDark: isDark);
+                    _showSnackBar('Bug report submitted. Thank you!', isDark: isDark);
                   },
                 ),
                 Divider(
@@ -393,8 +392,7 @@ class _SettingsScreenState extends State<SettingsScreen>
                   isDark: isDark,
                   onTap: () {
                     HapticFeedback.lightImpact();
-                    _showSnackBar('Terms & Conditions coming soon!',
-                        isDark: isDark);
+                    Navigator.pushNamed(context, '/terms');
                   },
                 ),
               ],

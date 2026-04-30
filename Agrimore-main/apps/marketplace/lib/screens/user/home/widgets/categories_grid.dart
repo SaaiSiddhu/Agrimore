@@ -120,6 +120,7 @@ class _CategoriesGridState extends State<CategoriesGrid>
   // --- COMPACT CARD DESIGN ---
   Widget _buildCategoryCard(BuildContext context, CategoryModel category) {
     return GestureDetector(
+      behavior: HitTestBehavior.opaque,
       onTap: () {
         HapticFeedback.lightImpact();
         Navigator.pushNamed(

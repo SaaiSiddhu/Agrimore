@@ -15,6 +15,7 @@ import 'widgets/shop_app_bar.dart';
 
 class MobileShopScreen extends StatefulWidget {
   final String? categoryId;
+  final String? categoryName;
   final String? searchQuery;
   final bool showRecentlyViewed;
   final bool showDeals;
@@ -22,6 +23,7 @@ class MobileShopScreen extends StatefulWidget {
   const MobileShopScreen({
     Key? key,
     this.categoryId,
+    this.categoryName,
     this.searchQuery,
     this.showRecentlyViewed = false,
     this.showDeals = false,
@@ -297,8 +299,8 @@ class _MobileShopScreenState extends State<MobileShopScreen>
             
             // 3. Product Grid
             Expanded(
-              child: Consumer<ProductProvider>(
-                builder: (context, productProvider, _) {
+              child: Consumer2<ProductProvider, CategoryProvider>(
+                builder: (context, productProvider, categoryProvider, _) {
                   if ((productProvider.isLoading && !_isRefreshing) || _isSearching) {
                     return _buildShimmerLoading(isDark);
                   }
@@ -314,6 +316,7 @@ class _MobileShopScreenState extends State<MobileShopScreen>
                       setState(() => _isRefreshing = true);
                       HapticFeedback.mediumImpact();
                       await productProvider.loadProducts();
+                      await categoryProvider.loadCategories();
                       setState(() => _isRefreshing = false);
                     },
                     color: isDark ? AppColors.primaryLight : AppColors.primary,
@@ -824,7 +827,7 @@ class _MobileShopScreenState extends State<MobileShopScreen>
       padding: const EdgeInsets.only(bottom: 100),
       gridDelegate: const SliverGridDelegateWithFixedCrossAxisCount(
         crossAxisCount: 3,  // 3 columns like Blinkit
-        childAspectRatio: 0.60,  // Match home layout cards (70% image, 30% info)
+        childAspectRatio: 0.54,  // Give more height for the ADD button
         crossAxisSpacing: 8,
         mainAxisSpacing: 8,
       ),
@@ -849,7 +852,7 @@ class _MobileShopScreenState extends State<MobileShopScreen>
       physics: const AlwaysScrollableScrollPhysics(),
       gridDelegate: const SliverGridDelegateWithFixedCrossAxisCount(
         crossAxisCount: 3,  // 3 columns like Blinkit
-        childAspectRatio: 0.60,  // Match home layout cards (70% image, 30% info)
+        childAspectRatio: 0.54,  // Give more height for the ADD button
         crossAxisSpacing: 8,  // Clean spacing
         mainAxisSpacing: 8,  // Clean spacing
       ),
@@ -1036,7 +1039,7 @@ class _MobileShopScreenState extends State<MobileShopScreen>
     if (_searchQuery.isNotEmpty) {
       products = products.where((p) {
         return p.name.toLowerCase().contains(_searchQuery) ||
-            p.category.toLowerCase().contains(_searchQuery) ||
+            p.categoryId.toLowerCase().contains(_searchQuery) ||
             p.description.toLowerCase().contains(_searchQuery);
       }).toList();
     }
@@ -1081,7 +1084,19 @@ class _MobileShopScreenState extends State<MobileShopScreen>
         products = products.where((p) => p.inStock).toList();
       }
       if (categories != null && categories.isNotEmpty) {
-        products = products.where((p) => categories.contains(p.categoryId)).toList();
+        final categoryProvider = Provider.of<CategoryProvider>(context, listen: false);
+        final allCats = categoryProvider.categories;
+        products = products.where((p) {
+          return categories.any((catId) {
+            try {
+              final cat = allCats.firstWhere((c) => c.id == catId);
+              return productBelongsToCategory(p, cat, allCats);
+            } catch (_) {
+              final id = catId.toLowerCase().trim();
+              return p.categoryId.toLowerCase().trim() == id;
+            }
+          });
+        }).toList();
       }
       if (isNew == true) {
         products = products.where((p) => p.isNew).toList();

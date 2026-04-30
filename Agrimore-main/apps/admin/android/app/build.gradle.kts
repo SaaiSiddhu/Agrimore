@@ -50,10 +50,10 @@ android {
         }
         
         create("release") {
-            storeFile = file("../key.jks")
-            storePassword = System.getenv("KEYSTORE_PASSWORD") ?: "android"
-            keyAlias = System.getenv("KEY_ALIAS") ?: "agrimore"
-            keyPassword = System.getenv("KEY_PASSWORD") ?: "android"
+            storeFile = file("../upload-key.jks")
+            storePassword = "agrimore123"
+            keyAlias = "upload"
+            keyPassword = "agrimore123"
         }
     }
 
@@ -78,7 +78,7 @@ android {
                 "proguard-rules.pro"
             )
             
-            signingConfig = signingConfigs.getByName("debug")
+            signingConfig = signingConfigs.getByName("release")
             
             buildConfigField("Boolean", "ENABLE_CRASHLYTICS", "false")
             buildConfigField("Boolean", "DEBUG_MODE", "false")

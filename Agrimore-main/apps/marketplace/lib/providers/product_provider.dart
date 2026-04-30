@@ -50,14 +50,14 @@ class ProductProvider with ChangeNotifier {
   bool get isLoadingRelated => _isLoadingRelated;
 
   // ✅ FIXED: Added this alias method for backward compatibility
-  Future<void> fetchProducts({String? categoryId}) async {
-    return loadProducts(categoryId: categoryId);
+  Future<void> fetchProducts({String? categoryId, String? location}) async {
+    return loadProducts(categoryId: categoryId, location: location);
   }
 
   // ============================================
   // ENHANCED CACHE-FIRST LOADING
   // ============================================
-  Future<void> loadProducts({String? categoryId, bool forceRefresh = false}) async {
+  Future<void> loadProducts({String? categoryId, bool forceRefresh = false, String? location}) async {
     // ✅ If forceRefresh, reset cache flags to force Firebase fetch
     if (forceRefresh) {
       _isLoaded = false;
@@ -101,11 +101,13 @@ class ProductProvider with ChangeNotifier {
       _error = null;
       if (!_isCacheLoaded) _notifySafely();
 
+      final activeLocation = location ?? SharedPreferencesService.getString('selected_location');
+
       List<ProductModel> freshProducts;
       if (categoryId != null && categoryId != 'all' && categoryId != 'uncategorized') {
-        freshProducts = await _databaseService.getProductsByCategory(categoryId);
+        freshProducts = await _databaseService.getProductsByCategory(categoryId, location: activeLocation);
       } else {
-        freshProducts = await _databaseService.getAllProducts();
+        freshProducts = await _databaseService.getAllProducts(location: activeLocation);
       }
 
       // ============================================
@@ -186,11 +188,13 @@ class ProductProvider with ChangeNotifier {
     return false;
   }
 
-  Future<void> loadFeaturedProducts() async {
+  Future<void> loadFeaturedProducts({String? location}) async {
     try {
       _isLoading = true;
       _notifySafely();
-      _products = await _databaseService.getFeaturedProducts(limit: 10);
+      
+      final activeLocation = location ?? SharedPreferencesService.getString('selected_location');
+      _products = await _databaseService.getFeaturedProducts(limit: 10, location: activeLocation);
       _isLoading = false;
       _notifySafely();
     } catch (e) {
@@ -476,7 +480,18 @@ class ProductProvider with ChangeNotifier {
     try {
       _isLoading = true;
       _notifySafely();
-      _products = await _databaseService.searchProducts(query);
+      // Note: Full-text search doesn't natively support easy compound location filtering
+      // without complex indexing. But we can fetch products and filter in memory if needed.
+      // For now we will rely on the query itself, or we could filter post-fetch.
+      final results = await _databaseService.searchProducts(query);
+      
+      final activeLocation = SharedPreferencesService.getString('selected_location');
+      if (activeLocation != null && activeLocation.isNotEmpty) {
+        _products = results.where((p) => p.location == activeLocation).toList();
+      } else {
+        _products = results;
+      }
+      
       _isLoading = false;
       _notifySafely();
     } catch (e) {
@@ -514,8 +529,8 @@ class ProductProvider with ChangeNotifier {
     _notifySafely();
   }
 
-  Future<void> refreshProducts() async {
-    await loadProducts();
+  Future<void> refreshProducts({String? location}) async {
+    await loadProducts(forceRefresh: true, location: location);
   }
 
   void clearSelectedProduct() {

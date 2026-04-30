@@ -3,10 +3,11 @@ import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:provider/provider.dart';
 import 'package:flutter_animate/flutter_animate.dart';
+import 'package:go_router/go_router.dart';
 import 'package:agrimore_ui/agrimore_ui.dart';
 import '../../app/themes/admin_colors.dart';
 import '../../providers/auth_provider.dart';
-import '../../app/routes.dart';
+import '../../app/app_router.dart';
 
 // Screens
 import 'admin_dashboard.dart';
@@ -110,7 +111,7 @@ class _AdminMainScreenState extends State<AdminMainScreen> with SingleTickerProv
     // Redirect if not admin (only after auth is fully initialized)
     if (!authProvider.isLoggedIn || !authProvider.isAdmin) {
       WidgetsBinding.instance.addPostFrameCallback((_) {
-        AppRoutes.navigateAndRemoveUntil(context, AppRoutes.auth);
+        if (mounted) context.go(AdminRoutes.auth);
       });
       return const Scaffold(body: Center(child: CircularProgressIndicator()));
     }
@@ -472,7 +473,7 @@ class _AdminMainScreenState extends State<AdminMainScreen> with SingleTickerProv
                 HapticFeedback.mediumImpact();
                 await authProvider.signOut();
                 if (mounted) {
-                  AppRoutes.navigateAndRemoveUntil(context, AppRoutes.auth);
+                  context.go(AdminRoutes.auth);
                 }
               },
               borderRadius: BorderRadius.circular(12),
@@ -892,7 +893,7 @@ class _AdminMainScreenState extends State<AdminMainScreen> with SingleTickerProv
                     Navigator.pop(context);
                     await authProvider.signOut();
                     if (mounted) {
-                      AppRoutes.navigateAndRemoveUntil(context, AppRoutes.auth);
+                      context.go(AdminRoutes.auth);
                     }
                   },
                   borderRadius: BorderRadius.circular(12),

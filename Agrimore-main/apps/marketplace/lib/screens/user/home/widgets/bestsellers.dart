@@ -4,13 +4,13 @@ import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:provider/provider.dart';
 import 'package:cached_network_image/cached_network_image.dart';
-import '../../../../app/routes.dart';
 import 'package:agrimore_ui/agrimore_ui.dart';
 import 'package:agrimore_core/agrimore_core.dart';
 import '../../../../providers/product_provider.dart';
 import '../../../../providers/category_provider.dart';
 import '../../../../providers/theme_provider.dart';
 import '../../../../providers/bestseller_provider.dart';
+import '../../../../providers/shop_entry_provider.dart';
 
 class DealsForYou extends StatefulWidget {
   const DealsForYou({Key? key}) : super(key: key);
@@ -65,11 +65,15 @@ class _DealsForYouState extends State<DealsForYou> {
             // Fallback to category
             final category = categories[i];
             final categoryProducts = productProvider.products
-                .where((p) => p.categoryId == category.id && p.isActive)
+                .where((p) =>
+                    p.isActive &&
+                    productBelongsToCategory(p, category, categoryProvider.categories))
                 .take(4)
                 .toList();
             final totalProducts = productProvider.products
-                .where((p) => p.categoryId == category.id && p.isActive)
+                .where((p) =>
+                    p.isActive &&
+                    productBelongsToCategory(p, category, categoryProvider.categories))
                 .length;
             displayItems.add(_DisplayItem.fromCategory(
               category, 
@@ -110,14 +114,10 @@ class _DealsForYouState extends State<DealsForYou> {
                     isDark: isDark,
                     onTap: () {
                       HapticFeedback.lightImpact();
-                      Navigator.pushNamed(
-                        context, 
-                        AppRoutes.shop,
-                        arguments: {
-                          'categoryId': item.categoryId,
-                          'categoryName': item.categoryName,
-                        },
-                      );
+                      context.read<ShopEntryProvider>().openShopWithCategory(
+                            categoryId: item.categoryId,
+                            categoryName: item.categoryName,
+                          );
                     },
                   );
                 },

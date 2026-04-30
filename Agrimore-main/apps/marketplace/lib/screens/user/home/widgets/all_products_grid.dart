@@ -2,8 +2,8 @@ import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:provider/provider.dart';
 import 'package:agrimore_ui/agrimore_ui.dart';
-import '../../../../app/routes.dart';
 import '../../../../providers/product_provider.dart';
+import '../../../../providers/shop_entry_provider.dart';
 import '../../../../providers/theme_provider.dart';
 import '../../../../widgets/product/unified_product_card.dart';
 
@@ -92,7 +92,7 @@ class _AllProductsGridState extends State<AllProductsGrid>
                     child: OutlinedButton(
                       onPressed: () {
                          HapticFeedback.lightImpact();
-                         Navigator.pushNamed(context, AppRoutes.shop);
+                         context.read<ShopEntryProvider>().openShopWithCategory();
                       },
                       style: OutlinedButton.styleFrom(
                         foregroundColor: isDark ? AppColors.primaryLight : AppColors.primary,
@@ -227,7 +227,7 @@ class _AllProductsGridState extends State<AllProductsGrid>
         TextButton(
           onPressed: () {
             HapticFeedback.lightImpact();
-            Navigator.pushNamed(context, AppRoutes.shop);
+            context.read<ShopEntryProvider>().openShopWithCategory();
           },
           style: TextButton.styleFrom(
             foregroundColor: isDark ? AppColors.primaryLight : AppColors.primary,

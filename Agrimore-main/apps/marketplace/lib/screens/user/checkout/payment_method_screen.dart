@@ -25,11 +25,15 @@ import '../../../services/razorpay_web.dart' if (dart.library.io) '../../../serv
 class PaymentMethodScreen extends StatefulWidget {
   final AddressModel selectedAddress;
   final double total;
+  final double deliveryCharge;
+  final double tax;
 
   const PaymentMethodScreen({
     Key? key,
     required this.selectedAddress,
     required this.total,
+    this.deliveryCharge = 0.0,
+    this.tax = 0.0,
   }) : super(key: key);
 
   @override
@@ -47,10 +51,53 @@ class _PaymentMethodScreenState extends State<PaymentMethodScreen> {
   bool _useCoins = false;
   int _coinsToUse = 0;
 
+  // ✅ NEW: Order notes / special instructions
+  final TextEditingController _notesController = TextEditingController();
+
+  // Checkout Step & Subscription state
+  int _currentStep = 2; // Step 2: Slots, Step 3: Payment
+  String _orderType = 'One Time';
+  String _autoFrequency = 'Daily';
+  DeliveryTimeSlotModel? _selectedSlot;
+
+  final DeliverySlotService _deliverySlotService = DeliverySlotService();
+  List<DeliveryTimeSlotModel> _deliverySlots = [];
+  bool _slotsLoading = true;
+
   @override
   void initState() {
     super.initState();
     _initializePaymentServices();
+    _loadDeliverySlots();
+    WidgetsBinding.instance.addPostFrameCallback((_) => _applyCartSubscriptionPrefs());
+  }
+
+  Future<void> _loadDeliverySlots() async {
+    final list = await _deliverySlotService.fetchSlots();
+    if (!mounted) return;
+    setState(() {
+      _deliverySlots = list.where((s) => s.active).toList();
+      _slotsLoading = false;
+    });
+  }
+
+  void _applyCartSubscriptionPrefs() {
+    if (!mounted) return;
+    final cart = context.read<CartProvider>();
+    final ot = cart.checkoutOrderType;
+    final fr = cart.checkoutAutoFrequency;
+    if (ot != null) {
+      setState(() {
+        _orderType = ot;
+        if (fr != null) _autoFrequency = fr;
+      });
+    }
+  }
+
+  bool _selectedSlotIsValidNow() {
+    final s = _selectedSlot;
+    if (s == null) return false;
+    return s.containsClock(DateTime.now());
   }
 
   void _initializePaymentServices() {
@@ -121,6 +168,10 @@ class _PaymentMethodScreenState extends State<PaymentMethodScreen> {
       final userId = FirebaseAuth.instance.currentUser?.uid;
       if (userId == null) throw Exception('User not logged in');
 
+      if (_selectedSlot != null && !_selectedSlotIsValidNow()) {
+        throw Exception('Slot not available');
+      }
+
       final cartProvider = context.read<CartProvider>();
       final couponProvider = context.read<CouponProvider>();
 
@@ -140,9 +191,9 @@ class _PaymentMethodScreenState extends State<PaymentMethodScreen> {
         deliveryAddress: widget.selectedAddress,
         subtotal: cartProvider.subtotal,
         discount: discount,
-        deliveryCharge: 0.0,
-        tax: 0.0,
-        total: cartProvider.subtotal - discount,
+        deliveryCharge: widget.deliveryCharge,
+        tax: widget.tax,
+        total: cartProvider.subtotal - discount + widget.deliveryCharge + widget.tax,
         paymentMethod: _selectedPaymentMethod,
         paymentStatus: _selectedPaymentMethod == 'cod' ? 'pending' : 'paid',
         orderStatus: 'pending',
@@ -150,16 +201,56 @@ class _PaymentMethodScreenState extends State<PaymentMethodScreen> {
         razorpayPaymentId: razorpayPaymentId,
         razorpaySignature: razorpaySignature,
         couponCode: couponProvider.appliedCoupon?.code,
+        notes: _notesController.text.trim().isNotEmpty ? _notesController.text.trim() : null,
         createdAt: DateTime.now(),
+        orderType: _orderType,
+        autoFrequency: _orderType == 'Auto Delivery' ? _autoFrequency : null,
+        deliverySlot: _selectedSlot != null
+            ? '${_selectedSlot!.label} (${_selectedSlot!.start}–${_selectedSlot!.end})'
+            : null,
       );
 
-      await FirebaseFirestore.instance
-          .collection('orders')
-          .doc(orderId)
-          .set(order.toMap());
+      // Handle Auto Delivery custom behavior if needed
+      if (_orderType == 'Auto Delivery') {
+        final now = DateTime.now();
+        final nextRunDate = now.add(const Duration(days: 1)); // start tomorrow
+        
+        for (final item in cartProvider.items) {
+          await FirebaseFirestore.instance.collection('subscriptions').add({
+            'userId': userId,
+            'userName': widget.selectedAddress.name,
+            'userPhone': widget.selectedAddress.phone,
+            'productId': item.id,
+            'productName': item.productName,
+            'price': item.price,
+            'quantity': item.quantity,
+            'productImage': item.productImage,
+            'unit': item.variant ?? 'nos',
+            'address': widget.selectedAddress.addressLine1,
+            'location': {
+              'lat': widget.selectedAddress.latitude,
+              'lng': widget.selectedAddress.longitude,
+            },
+            'frequency': _autoFrequency.toLowerCase(),
+            'nextRunDate': nextRunDate.toIso8601String(),
+            'deliverySlot': _selectedSlot != null
+                ? '${_selectedSlot!.label} ${_selectedSlot!.start}-${_selectedSlot!.end}'
+                : '',
+            'isActive': true,
+            'createdAt': FieldValue.serverTimestamp(),
+            'paymentMethod': _selectedPaymentMethod,
+          });
+        }
+      } else {
+        await FirebaseFirestore.instance
+            .collection('orders')
+            .doc(orderId)
+            .set(order.toMap());
+      }
 
       await cartProvider.clearCart();
       couponProvider.removeCoupon();
+      cartProvider.clearCheckoutSubscriptionIntent();
 
       if (!mounted) return;
 
@@ -185,6 +276,11 @@ class _PaymentMethodScreenState extends State<PaymentMethodScreen> {
 
     HapticFeedback.mediumImpact();
 
+    if (_selectedSlot != null && !_selectedSlotIsValidNow()) {
+      _showSnackBar('Slot not available', isError: true);
+      return;
+    }
+
     if (_selectedPaymentMethod == 'cod') {
       _createOrder();
       return;
@@ -200,7 +296,7 @@ class _PaymentMethodScreenState extends State<PaymentMethodScreen> {
         orderAmount: cartProvider.subtotal,
         items: cartProvider.items,
       );
-      final finalTotal = cartProvider.subtotal - discount;
+      final finalTotal = cartProvider.subtotal - discount + widget.deliveryCharge + widget.tax;
       
       _razorpayWebService?.openCheckout(
         amount: finalTotal,
@@ -221,7 +317,7 @@ class _PaymentMethodScreenState extends State<PaymentMethodScreen> {
       orderAmount: cartProvider.subtotal,
       items: cartProvider.items,
     );
-    final finalTotal = cartProvider.subtotal - discount;
+    final finalTotal = cartProvider.subtotal - discount + widget.deliveryCharge + widget.tax;
 
     _razorpayService?.openAllPaymentMethods(
       amount: finalTotal,
@@ -304,7 +400,7 @@ class _PaymentMethodScreenState extends State<PaymentMethodScreen> {
       orderAmount: subtotal,
       items: cart.items,
     );
-    final total = subtotal - discount;
+    final total = subtotal - discount + widget.deliveryCharge + widget.tax;
     
     // Calculate wallet/coins discount
     double walletDiscount = 0;
@@ -321,7 +417,7 @@ class _PaymentMethodScreenState extends State<PaymentMethodScreen> {
       appBar: _buildAppBar(isDark, cardColor),
       body: Column(
         children: [
-          const CheckoutSteps(currentStep: 2),
+          CheckoutSteps(currentStep: _currentStep),
           Expanded(
             child: SingleChildScrollView(
               padding: const EdgeInsets.fromLTRB(16, 16, 16, 0),
@@ -330,29 +426,40 @@ class _PaymentMethodScreenState extends State<PaymentMethodScreen> {
                 children: [
                   _buildAddressCard(isDark, cardColor, accentColor),
                   const SizedBox(height: 12),
-                  _buildOrderSummaryCard(
-                    subtotal: subtotal,
-                    discount: discount,
-                    total: total,
-                    isDark: isDark,
-                    cardColor: cardColor,
-                    accentColor: accentColor,
-                    coupon: coupon,
-                    walletDiscount: walletDiscount,
-                    finalAmount: finalAmount,
-                  ),
-                  const SizedBox(height: 12),
-                  _buildWalletSection(isDark, cardColor, accentColor, total),
-                  const SizedBox(height: 12),
-                  _buildPaymentCard(isDark, cardColor, accentColor),
-                  const SizedBox(height: 12),
-                  _buildSecurityBadge(isDark, accentColor),
-                  const SizedBox(height: 16),
+                  
+                  if (_currentStep == 2) ...[
+                    _buildDeliveryPreferences(isDark, cardColor, accentColor),
+                    const SizedBox(height: 80),
+                  ] else ...[
+                    _buildOrderSummaryCard(
+                      subtotal: subtotal,
+                      discount: discount,
+                      total: total,
+                      isDark: isDark,
+                      cardColor: cardColor,
+                      accentColor: accentColor,
+                      coupon: coupon,
+                      walletDiscount: walletDiscount,
+                      finalAmount: finalAmount,
+                    ),
+                    const SizedBox(height: 12),
+                    _buildWalletSection(isDark, cardColor, accentColor, total),
+                    const SizedBox(height: 12),
+                    _buildPaymentCard(isDark, cardColor, accentColor),
+                    const SizedBox(height: 12),
+                    _buildOrderNotesCard(isDark, cardColor, accentColor),
+                    const SizedBox(height: 12),
+                    _buildSecurityBadge(isDark, accentColor),
+                    const SizedBox(height: 16),
+                  ],
                 ],
               ),
             ),
           ),
-          _buildBottomBar(finalAmount, isDark, accentColor, cardColor),
+          if (_currentStep == 2)
+            _buildSlotBottomBar(isDark, accentColor, cardColor)
+          else
+            _buildBottomBar(finalAmount, isDark, accentColor, cardColor),
         ],
       ),
     );
@@ -384,7 +491,13 @@ class _PaymentMethodScreenState extends State<PaymentMethodScreen> {
             size: 16,
           ),
         ),
-        onPressed: () => Navigator.pop(context),
+        onPressed: () {
+          if (_currentStep == 3) {
+            setState(() => _currentStep = 2);
+          } else {
+            Navigator.pop(context);
+          }
+        },
       ),
       centerTitle: true,
     );
@@ -601,6 +714,272 @@ class _PaymentMethodScreenState extends State<PaymentMethodScreen> {
           ),
         ),
       ],
+    );
+  }
+
+  Widget _buildDeliveryPreferences(bool isDark, Color cardColor, Color accentColor) {
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        // Purchase Type
+        _buildCardSection(
+          isDark: isDark,
+          cardColor: cardColor,
+          title: 'Purchase Type',
+          icon: FontAwesomeIcons.truck,
+          accentColor: accentColor,
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              Row(
+                children: [
+                  Expanded(
+                    child: _buildSelectionBox(
+                      isSelected: _orderType == 'One Time',
+                      label: 'One Time Delivery',
+                      isDark: isDark,
+                      accentColor: accentColor,
+                      onTap: () {
+                        setState(() {
+                          _orderType = 'One Time';
+                          _selectedPaymentMethod = 'razorpay';
+                        });
+                        HapticFeedback.selectionClick();
+                      },
+                    ),
+                  ),
+                  const SizedBox(width: 12),
+                  Expanded(
+                    child: _buildSelectionBox(
+                      isSelected: _orderType == 'Auto Delivery',
+                      label: 'Subscribe (Auto)',
+                      isDark: isDark,
+                      accentColor: accentColor,
+                      onTap: () {
+                        setState(() {
+                          _orderType = 'Auto Delivery';
+                          _selectedPaymentMethod = 'cod'; // Only COD or Weekly for Auto
+                        });
+                        HapticFeedback.selectionClick();
+                      },
+                    ),
+                  ),
+                ],
+              ),
+              if (_orderType == 'Auto Delivery') ...[
+                const SizedBox(height: 16),
+                Text(
+                  'SUBSCRIPTION FREQUENCY',
+                  style: TextStyle(
+                    fontSize: 12,
+                    fontWeight: FontWeight.bold,
+                    color: isDark ? Colors.grey[500] : Colors.grey[600],
+                  ),
+                ),
+                const SizedBox(height: 8),
+                Row(
+                  children: [
+                    Expanded(
+                      child: _buildSelectionBox(
+                        isSelected: _autoFrequency == 'Daily',
+                        label: 'Daily',
+                        isDark: isDark,
+                        accentColor: accentColor,
+                        onTap: () {
+                          setState(() => _autoFrequency = 'Daily');
+                          HapticFeedback.selectionClick();
+                        },
+                      ),
+                    ),
+                    const SizedBox(width: 12),
+                    Expanded(
+                      child: _buildSelectionBox(
+                        isSelected: _autoFrequency == 'Weekly',
+                        label: 'Weekly',
+                        isDark: isDark,
+                        accentColor: accentColor,
+                        onTap: () {
+                          setState(() => _autoFrequency = 'Weekly');
+                          HapticFeedback.selectionClick();
+                        },
+                      ),
+                    ),
+                  ],
+                ),
+              ],
+            ],
+          ),
+        ),
+        const SizedBox(height: 12),
+
+        // Time Slot (admin-managed in Firestore `settings/delivery`)
+        _buildCardSection(
+          isDark: isDark,
+          cardColor: cardColor,
+          title: 'Select Time Slot',
+          icon: FontAwesomeIcons.clock,
+          accentColor: accentColor,
+          child: _slotsLoading
+              ? const Padding(
+                  padding: EdgeInsets.symmetric(vertical: 24),
+                  child: Center(child: CircularProgressIndicator()),
+                )
+              : Column(
+                  children: _deliverySlots.map((slot) {
+                    final isSelected = _selectedSlot?.id == slot.id;
+                    return GestureDetector(
+                      onTap: () {
+                        setState(() => _selectedSlot = slot);
+                        HapticFeedback.selectionClick();
+                      },
+                      child: Container(
+                        margin: const EdgeInsets.only(bottom: 10),
+                        padding: const EdgeInsets.all(16),
+                        decoration: BoxDecoration(
+                          color: isSelected
+                              ? accentColor.withOpacity(0.08)
+                              : (isDark ? Colors.grey[850] : Colors.grey[50]!),
+                          borderRadius: BorderRadius.circular(16),
+                          border: Border.all(
+                            color: isSelected
+                                ? accentColor
+                                : (isDark ? Colors.grey[800]! : Colors.grey[200]!),
+                            width: isSelected ? 1.5 : 1,
+                          ),
+                        ),
+                        child: Row(
+                          children: [
+                            Text(slot.icon, style: const TextStyle(fontSize: 24)),
+                            const SizedBox(width: 16),
+                            Expanded(
+                              child: Column(
+                                crossAxisAlignment: CrossAxisAlignment.start,
+                                children: [
+                                  Text(
+                                    slot.label,
+                                    style: TextStyle(
+                                      fontSize: 14,
+                                      fontWeight: FontWeight.bold,
+                                      color: isSelected
+                                          ? accentColor
+                                          : (isDark ? Colors.white : Colors.black87),
+                                    ),
+                                  ),
+                                  const SizedBox(height: 2),
+                                  Text(
+                                    slot.displayTimeRange,
+                                    style: TextStyle(
+                                      fontSize: 12,
+                                      color: isDark ? Colors.grey[400] : Colors.grey[600],
+                                    ),
+                                  ),
+                                ],
+                              ),
+                            ),
+                            Container(
+                              width: 22,
+                              height: 22,
+                              decoration: BoxDecoration(
+                                shape: BoxShape.circle,
+                                border: Border.all(
+                                  color: isSelected ? accentColor : Colors.grey[400]!,
+                                  width: isSelected ? 6 : 2,
+                                ),
+                              ),
+                            ),
+                          ],
+                        ),
+                      ),
+                    );
+                  }).toList(),
+                ),
+        ),
+      ],
+    );
+  }
+
+  Widget _buildSelectionBox({
+    required bool isSelected,
+    required String label,
+    required bool isDark,
+    required Color accentColor,
+    required VoidCallback onTap,
+  }) {
+    return GestureDetector(
+      onTap: onTap,
+      child: Container(
+        padding: const EdgeInsets.symmetric(vertical: 14),
+        decoration: BoxDecoration(
+          color: isSelected 
+              ? accentColor.withOpacity(0.1) 
+              : (isDark ? Colors.grey[850] : Colors.grey[50]!),
+          border: Border.all(
+            color: isSelected 
+                ? accentColor 
+                : (isDark ? Colors.grey[800]! : Colors.grey[200]!),
+          ),
+          borderRadius: BorderRadius.circular(12),
+        ),
+        alignment: Alignment.center,
+        child: Text(
+          label,
+          style: TextStyle(
+            fontSize: 13,
+            fontWeight: FontWeight.bold,
+            color: isSelected 
+                ? accentColor 
+                : (isDark ? Colors.grey[400] : Colors.grey[600]),
+          ),
+        ),
+      ),
+    );
+  }
+
+  Widget _buildSlotBottomBar(bool isDark, Color accentColor, Color cardColor) {
+    return Container(
+      padding: EdgeInsets.only(
+        left: 20,
+        right: 20,
+        top: 20,
+        bottom: MediaQuery.of(context).padding.bottom + 20,
+      ),
+      decoration: BoxDecoration(
+        color: cardColor,
+        borderRadius: const BorderRadius.vertical(top: Radius.circular(24)),
+        boxShadow: [
+          BoxShadow(
+            color: Colors.black.withOpacity(isDark ? 0.3 : 0.05),
+            blurRadius: 10,
+            offset: const Offset(0, -5),
+          ),
+        ],
+      ),
+      child: SizedBox(
+        width: double.infinity,
+        child: ElevatedButton.icon(
+          onPressed: _selectedSlot != null
+              ? () {
+                  if (!_selectedSlotIsValidNow()) {
+                    _showSnackBar('Slot not available', isError: true);
+                    return;
+                  }
+                  setState(() => _currentStep = 3);
+                  HapticFeedback.lightImpact();
+                }
+              : null,
+          style: ElevatedButton.styleFrom(
+            backgroundColor: accentColor,
+            foregroundColor: isDark ? Colors.black : Colors.white,
+            padding: const EdgeInsets.symmetric(vertical: 16),
+            shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+          ),
+          icon: const FaIcon(FontAwesomeIcons.arrowRight, size: 16),
+          label: const Text(
+            'Continue to Payment',
+            style: TextStyle(fontWeight: FontWeight.bold, fontSize: 16),
+          ),
+        ),
+      ),
     );
   }
 
@@ -1103,7 +1482,8 @@ class _PaymentMethodScreenState extends State<PaymentMethodScreen> {
       accentColor: accentColor,
       child: Column(
         children: [
-          // Online Payment Option (Available on both Web and Mobile)
+          if (_orderType != 'Auto Delivery') ...[
+            // Online Payment Option (Available on both Web and Mobile)
             GestureDetector(
               onTap: () {
                 setState(() => _selectedPaymentMethod = 'razorpay');
@@ -1201,6 +1581,7 @@ class _PaymentMethodScreenState extends State<PaymentMethodScreen> {
                 ),
               ),
             ),
+          ],
           
           const SizedBox(height: 12),
           
@@ -1544,8 +1925,72 @@ class _PaymentMethodScreenState extends State<PaymentMethodScreen> {
     );
   }
 
+  // ✅ NEW: Order Notes / Special Instructions
+  Widget _buildOrderNotesCard(bool isDark, Color cardColor, Color accentColor) {
+    return _buildCardSection(
+      isDark: isDark,
+      cardColor: cardColor,
+      title: 'Special Instructions',
+      icon: Icons.edit_note_rounded,
+      accentColor: accentColor,
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Text(
+            'Add any special instructions for the seller or delivery partner',
+            style: TextStyle(
+              fontSize: 12,
+              color: isDark ? Colors.grey[500] : Colors.grey[600],
+            ),
+          ),
+          const SizedBox(height: 10),
+          TextField(
+            controller: _notesController,
+            maxLength: 250,
+            maxLines: 3,
+            decoration: InputDecoration(
+              hintText: 'E.g., "Leave at the gate", "Extra ripe mangoes please"',
+              hintStyle: TextStyle(
+                fontSize: 13,
+                color: isDark ? Colors.grey[600] : Colors.grey[400],
+              ),
+              filled: true,
+              fillColor: isDark ? Colors.grey[850] : Colors.grey[50],
+              border: OutlineInputBorder(
+                borderRadius: BorderRadius.circular(10),
+                borderSide: BorderSide(
+                  color: isDark ? Colors.grey[700]! : Colors.grey[300]!,
+                ),
+              ),
+              enabledBorder: OutlineInputBorder(
+                borderRadius: BorderRadius.circular(10),
+                borderSide: BorderSide(
+                  color: isDark ? Colors.grey[700]! : Colors.grey[300]!,
+                ),
+              ),
+              focusedBorder: OutlineInputBorder(
+                borderRadius: BorderRadius.circular(10),
+                borderSide: BorderSide(color: accentColor, width: 1.5),
+              ),
+              contentPadding: const EdgeInsets.all(12),
+              counterStyle: TextStyle(
+                fontSize: 11,
+                color: isDark ? Colors.grey[500] : Colors.grey[500],
+              ),
+            ),
+            style: TextStyle(
+              fontSize: 14,
+              color: isDark ? Colors.white : Colors.black87,
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+
   @override
   void dispose() {
+    _notesController.dispose();
     if (kIsWeb) {
       _razorpayWebService?.dispose();
     } else {

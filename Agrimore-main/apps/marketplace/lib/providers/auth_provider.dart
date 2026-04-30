@@ -4,8 +4,6 @@ import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 import 'package:agrimore_core/agrimore_core.dart';
 import 'package:agrimore_services/agrimore_services.dart';
-import 'package:agrimore_services/agrimore_services.dart';
-import 'package:agrimore_core/agrimore_core.dart';
 import 'package:agrimore_core/constants/storage_constants.dart';
 
 class AuthProvider with ChangeNotifier {

@@ -102,6 +102,7 @@ class OrderService {
       // Update order status
       await _firestore.collection('orders').doc(orderId).update({
         'orderStatus': newStatus,
+        'status': newStatus,
         'updatedAt': FieldValue.serverTimestamp(),
       });
 

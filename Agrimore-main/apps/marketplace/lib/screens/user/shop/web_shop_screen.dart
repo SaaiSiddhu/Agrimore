@@ -11,12 +11,14 @@ import 'widgets/product_card.dart';
 
 class WebShopScreen extends StatefulWidget {
   final String? categoryId;
+  final String? categoryName;
   final bool showRecentlyViewed;
   final bool showDeals;
 
   const WebShopScreen({
     Key? key,
     this.categoryId,
+    this.categoryName,
     this.showRecentlyViewed = false,
     this.showDeals = false,
   }) : super(key: key);
@@ -58,6 +60,8 @@ class _WebShopScreenState extends State<WebShopScreen> {
       title = 'Recently Viewed';
     } else if (widget.showDeals) {
       title = 'Deals For You';
+    } else if (widget.categoryName != null && widget.categoryName!.trim().isNotEmpty) {
+      title = widget.categoryName!.trim();
     } else if (widget.categoryId != null && widget.categoryId != 'All') {
       title = widget.categoryId!;
     }
@@ -102,8 +106,8 @@ class _WebShopScreenState extends State<WebShopScreen> {
               child: _buildSidebar(),
             ),
           Expanded(
-            child: Consumer<ProductProvider>(
-              builder: (context, productProvider, child) {
+            child: Consumer2<ProductProvider, CategoryProvider>(
+              builder: (context, productProvider, categoryProvider, child) {
                 if (productProvider.isLoading) {
                   return const Center(child: CircularProgressIndicator());
                 }
@@ -222,20 +226,35 @@ class _WebShopScreenState extends State<WebShopScreen> {
       return products;
     }
     
+    // ✅ Fix category matching logic (includes descendants + categoryName)
     if (_selectedCategory != 'All') {
-      products = products.where((p) => p.category == _selectedCategory).toList();
+      final categoryProvider = Provider.of<CategoryProvider>(context, listen: false);
+      final allCats = categoryProvider.categories;
+      try {
+        final categoryObj = allCats.firstWhere(
+          (c) => c.id == _selectedCategory || c.name == _selectedCategory,
+        );
+        products = products
+            .where((p) => productBelongsToCategory(p, categoryObj, allCats))
+            .toList();
+      } catch (_) {
+        final sel = _selectedCategory.toLowerCase();
+        products = products
+            .where((p) => p.categoryId.toLowerCase().trim() == sel)
+            .toList();
+      }
     }
     
     products = products.where((p) =>
-      p.price >= _priceRange.start && p.price <= _priceRange.end
+      p.salePrice >= _priceRange.start && p.salePrice <= _priceRange.end
     ).toList();
     
     switch (_sortBy) {
       case 'price_low':
-        products.sort((a, b) => a.price.compareTo(b.price));
+        products.sort((a, b) => a.salePrice.compareTo(b.salePrice));
         break;
       case 'price_high':
-        products.sort((a, b) => b.price.compareTo(a.price));
+        products.sort((a, b) => b.salePrice.compareTo(a.salePrice));
         break;
       case 'rating':
         products.sort((a, b) => b.rating.compareTo(a.rating));

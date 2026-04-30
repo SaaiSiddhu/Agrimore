@@ -2,7 +2,9 @@
 import 'package:flutter/material.dart';
 import 'package:go_router/go_router.dart';
 import 'package:provider/provider.dart';
+import 'package:agrimore_ui/agrimore_ui.dart';
 import '../providers/auth_provider.dart';
+import '../providers/seller_provider.dart';
 
 // Screens
 import '../screens/auth/auth_screen.dart';
@@ -22,8 +24,17 @@ import '../screens/admin/category_sections/edit_category_section_screen.dart';
 import '../screens/admin/notifications/send_notification_screen.dart';
 import '../screens/admin/analytics/analytics_screen.dart';
 import '../screens/admin/settings/admin_settings_screen.dart';
+import '../screens/admin/settings/delivery_time_slots_management_screen.dart';
+import '../screens/admin/sellers/seller_requests_management_screen.dart';
+import '../screens/admin/sellers/add_seller_screen.dart';
 import '../screens/admin/section_banners/section_banner_management_screen.dart';
-/// Route path constants for type-safe navigation
+import '../screens/admin/vendors/vendors_list_screen.dart';
+import '../screens/admin/subscriptions/subscription_management_screen.dart';
+import '../screens/admin/rewards/rewards_management_screen.dart';
+import '../screens/admin/reviews/review_management_screen.dart';
+import '../screens/seller/seller_panel_screen.dart';
+import '../screens/seller/seller_apply_screen.dart';
+
 class AdminRoutes {
   // Auth
   static const String auth = '/auth';
@@ -48,6 +59,14 @@ class AdminRoutes {
   static const String users = '/users';
   static const String userDetail = '/users/:id';
   
+  // Custom Modules
+  static const String subscriptions = '/subscriptions';
+  static const String rewards = '/rewards';
+  static const String reviews = '/reviews';
+  
+  // Vendors
+  static const String vendors = '/vendors';
+  
   // Coupons
   static const String coupons = '/coupons';
   
@@ -66,6 +85,18 @@ class AdminRoutes {
   static const String notifications = '/notifications';
   static const String analytics = '/analytics';
   static const String settings = '/settings';
+
+  /// Checkout delivery windows (Firestore `settings/delivery`)
+  static const String deliveryTimeSlots = '/delivery-time-slots';
+
+  static const String sellerRequests = '/seller-requests';
+
+  /// Admin creates an approved seller (callable `createSellerByAdmin`).
+  static const String addSeller = '/add-seller';
+
+  // Seller App Routes
+  static const String sellerPanel = '/seller/panel';
+  static const String sellerApply = '/seller/apply';
 }
 
 /// App router configuration using go_router
@@ -78,27 +109,35 @@ class AppRouter {
     
     return GoRouter(
       navigatorKey: _rootNavigatorKey,
-      initialLocation: AdminRoutes.dashboard,
+      initialLocation: '/splash',
       debugLogDiagnostics: true,
 
       
       // Redirect logic for auth
       redirect: (context, state) {
+        if (state.matchedLocation == '/splash') return null;
+
         final isLoggedIn = authProvider.isLoggedIn;
-        final isAuthRoute = state.matchedLocation == AdminRoutes.auth || 
-                           state.matchedLocation == AdminRoutes.login ||
-                           state.matchedLocation == '/';
-        
-        // If not logged in and not on auth page, go to auth
+        final isAuthRoute = state.matchedLocation == AdminRoutes.auth ||
+            state.matchedLocation == AdminRoutes.login ||
+            state.matchedLocation == '/';
+        final isSellerRoute = state.matchedLocation.startsWith('/seller');
+
         if (!isLoggedIn && !isAuthRoute) {
           return AdminRoutes.auth;
         }
-        
-        // If logged in and on auth page or root, go to dashboard
-        if (isLoggedIn && isAuthRoute) {
-          return AdminRoutes.dashboard;
+
+        if (isLoggedIn) {
+          if (authProvider.isAdmin) {
+             // Admin goes to dashboard
+             if (isAuthRoute || state.matchedLocation == '/') return AdminRoutes.dashboard;
+          } else {
+             // Non-admin (User/Seller) must be blocked (AuthProvider handles sign out)
+             // We can just keep them on auth route to see the error message
+             if (!isAuthRoute) return AdminRoutes.auth;
+          }
         }
-        
+
         return null;
       },
       
@@ -106,6 +145,34 @@ class AppRouter {
       refreshListenable: authProvider,
       
       routes: [
+        // Splash Screen
+        GoRoute(
+          path: '/splash',
+          name: 'splash',
+          builder: (context, state) => PremiumSplashScreen(
+            appName: 'Agrimore Admin',
+            tagline: 'Control Panel',
+            logoPath: 'packages/agrimore_ui/assets/icons/admin_logo.png',
+            animationType: SplashAnimationType.admin,
+            onNavigation: (ctx) async {
+              final auth = ctx.read<AuthProvider>();
+              int waitCount = 0;
+              while (auth.isInitializing && waitCount < 30) {
+                await Future.delayed(const Duration(milliseconds: 100));
+                waitCount++;
+              }
+              if (!ctx.mounted) return;
+              if (!auth.isLoggedIn) {
+                ctx.go(AdminRoutes.auth);
+              } else if (auth.isAdmin) {
+                ctx.go(AdminRoutes.dashboard);
+              } else {
+                ctx.go(AdminRoutes.auth);
+              }
+            },
+          ),
+        ),
+
         // Auth Screen
         GoRoute(
           path: AdminRoutes.auth,
@@ -122,8 +189,25 @@ class AppRouter {
           path: '/',
           redirect: (context, state) {
             final authProvider = context.read<AuthProvider>();
-            return authProvider.isLoggedIn ? AdminRoutes.dashboard : AdminRoutes.auth;
+            if (!authProvider.isLoggedIn) return AdminRoutes.auth;
+            return authProvider.isAdmin ? AdminRoutes.dashboard : AdminRoutes.auth;
           },
+        ),
+
+        // ============================================
+        // SELLER ROUTES (NO SHELL)
+        // ============================================
+        GoRoute(
+          path: AdminRoutes.sellerPanel,
+          name: 'seller-panel',
+          parentNavigatorKey: _rootNavigatorKey,
+          builder: (context, state) => const SellerPanelScreen(),
+        ),
+        GoRoute(
+          path: AdminRoutes.sellerApply,
+          name: 'seller-apply',
+          parentNavigatorKey: _rootNavigatorKey,
+          builder: (context, state) => const SellerApplyScreen(),
         ),
 
         // ============================================
@@ -210,6 +294,46 @@ class AppRouter {
               name: 'users',
               pageBuilder: (context, state) => _buildPage(
                 const UserManagementScreen(),
+                state,
+              ),
+            ),
+            
+            // Subscriptions
+            GoRoute(
+              path: AdminRoutes.subscriptions,
+              name: 'subscriptions',
+              pageBuilder: (context, state) => _buildPage(
+                const SubscriptionManagementScreen(),
+                state,
+              ),
+            ),
+            
+            // Rewards
+            GoRoute(
+              path: AdminRoutes.rewards,
+              name: 'rewards',
+              pageBuilder: (context, state) => _buildPage(
+                const RewardsManagementScreen(),
+                state,
+              ),
+            ),
+            
+            // Reviews
+            GoRoute(
+              path: AdminRoutes.reviews,
+              name: 'reviews',
+              pageBuilder: (context, state) => _buildPage(
+                const ReviewManagementScreen(),
+                state,
+              ),
+            ),
+            
+            // Vendors
+            GoRoute(
+              path: AdminRoutes.vendors,
+              name: 'vendors',
+              pageBuilder: (context, state) => _buildPage(
+                const VendorsListScreen(),
                 state,
               ),
             ),
@@ -310,6 +434,33 @@ class AppRouter {
               name: 'settings',
               pageBuilder: (context, state) => _buildPage(
                 const AdminSettingsScreen(),
+                state,
+              ),
+            ),
+
+            GoRoute(
+              path: AdminRoutes.deliveryTimeSlots,
+              name: 'delivery-time-slots',
+              pageBuilder: (context, state) => _buildPage(
+                const DeliveryTimeSlotsManagementScreen(),
+                state,
+              ),
+            ),
+
+            GoRoute(
+              path: AdminRoutes.sellerRequests,
+              name: 'seller-requests',
+              pageBuilder: (context, state) => _buildPage(
+                const SellerRequestsManagementScreen(),
+                state,
+              ),
+            ),
+
+            GoRoute(
+              path: AdminRoutes.addSeller,
+              name: 'add-seller',
+              pageBuilder: (context, state) => _buildPage(
+                const AddSellerScreen(),
                 state,
               ),
             ),

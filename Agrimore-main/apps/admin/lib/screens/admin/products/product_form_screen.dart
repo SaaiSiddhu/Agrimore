@@ -41,6 +41,7 @@ class _ProductFormScreenState extends State<ProductFormScreen> with SingleTicker
   late TextEditingController _originalPriceController;
   late TextEditingController _descriptionController;
   String? _selectedCategory;
+  String? _selectedLocation;
   bool _isFeatured = false;
   bool _isVerified = false;
   bool _isTrending = false;
@@ -131,6 +132,7 @@ class _ProductFormScreenState extends State<ProductFormScreen> with SingleTicker
     _originalPriceController.text = p.originalPrice?.toString() ?? '';
     _descriptionController.text = p.description;
     _selectedCategory = p.categoryId;
+    _selectedLocation = p.location.isNotEmpty ? p.location : null;
     _isFeatured = p.isFeatured;
     _isVerified = p.isVerified;
     _isTrending = p.isTrending;
@@ -201,6 +203,7 @@ class _ProductFormScreenState extends State<ProductFormScreen> with SingleTicker
               ? double.parse(_originalPriceController.text.trim())
               : null,
           categoryId: _selectedCategory,
+          location: _selectedLocation,
           images: _imageUrls,
           stock: int.parse(_stockController.text.trim()),
           isFeatured: _isFeatured,
@@ -249,6 +252,8 @@ class _ProductFormScreenState extends State<ProductFormScreen> with SingleTicker
               ? double.parse(_originalPriceController.text.trim())
               : null,
           categoryId: _selectedCategory!,
+          location: _selectedLocation ?? '',
+          sellerId: '', // Ideally fetched from auth
           images: _imageUrls,
           stock: int.parse(_stockController.text.trim()),
           rating: 0.0,
@@ -337,10 +342,12 @@ class _ProductFormScreenState extends State<ProductFormScreen> with SingleTicker
               originalPriceController: _originalPriceController,
               descriptionController: _descriptionController,
               selectedCategory: _selectedCategory,
+              selectedLocation: _selectedLocation,
               isFeatured: _isFeatured,
               isVerified: _isVerified,
               isTrending: _isTrending,
               onCategoryChanged: (value) => setState(() => _selectedCategory = value),
+              onLocationChanged: (value) => setState(() => _selectedLocation = value),
               onFeaturedChanged: (value) => setState(() => _isFeatured = value ?? false),
               onVerifiedChanged: (value) => setState(() => _isVerified = value ?? false),
               onTrendingChanged: (value) => setState(() => _isTrending = value ?? false),

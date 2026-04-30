@@ -27,6 +27,9 @@ import 'providers/bestseller_provider.dart';
 import 'providers/category_section_provider.dart';
 import 'providers/wallet_provider.dart';
 import 'providers/section_banner_provider.dart';
+import 'providers/seller_provider.dart';
+import 'providers/shop_entry_provider.dart';
+import 'providers/settings_provider.dart';
 
 // ============================================
 // MAIN ENTRY POINT - MARKETPLACE APP
@@ -87,6 +90,9 @@ void main() async {
         ChangeNotifierProvider(create: (_) => CategorySectionProvider()),
         ChangeNotifierProvider(create: (_) => WalletProvider()),
         ChangeNotifierProvider(create: (_) => SectionBannerProvider()),
+        ChangeNotifierProvider(create: (_) => SellerProvider()),
+        ChangeNotifierProvider(create: (_) => ShopEntryProvider()),
+        ChangeNotifierProvider(create: (_) => SettingsProvider()),
       ],
       child: const MarketplaceApp(),
     ),

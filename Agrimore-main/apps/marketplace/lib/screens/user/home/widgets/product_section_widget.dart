@@ -4,8 +4,8 @@ import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:provider/provider.dart';
 import 'package:agrimore_ui/agrimore_ui.dart';
-import '../../../../app/routes.dart';
 import '../../../../providers/theme_provider.dart';
+import '../../../../providers/shop_entry_provider.dart';
 import 'product_card_compact.dart';
 
 class ProductSectionWidget extends StatelessWidget {
@@ -30,11 +30,10 @@ class ProductSectionWidget extends StatelessWidget {
     if (onSeeAll != null) {
       onSeeAll!();
     } else if (categoryId != null) {
-      Navigator.pushNamed(
-        context,
-        AppRoutes.shop,
-        arguments: {'categoryId': categoryId, 'categoryName': sectionTitle},
-      );
+      context.read<ShopEntryProvider>().openShopWithCategory(
+            categoryId: categoryId,
+            categoryName: sectionTitle,
+          );
     }
   }
 

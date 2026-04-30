@@ -4,6 +4,7 @@ import 'package:flutter/foundation.dart' show kIsWeb;
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:provider/provider.dart';
+import '../../providers/shop_entry_provider.dart';
 import 'package:font_awesome_flutter/font_awesome_flutter.dart';
 
 import 'package:agrimore_ui/agrimore_ui.dart';
@@ -21,11 +22,15 @@ import '../chat/ai_chat_screen.dart';
 class MainScreen extends StatefulWidget {
   final int initialIndex;
   final String? searchQuery;
+  final String? categoryId;
+  final String? categoryName;
 
   const MainScreen({
     Key? key,
     this.initialIndex = 0,
     this.searchQuery,
+    this.categoryId,
+    this.categoryName,
   }) : super(key: key);
 
   @override
@@ -53,22 +58,45 @@ class _MainScreenState extends State<MainScreen>
   final Map<int, AnimationController> _iconControllers = {};
   final Map<int, AnimationController> _iconBounceControllers = {};
 
-  //
-  // --- MODIFICATION: 5 screens - Home, Shop, Category, Cart, Profile ---
-  //
-  List<Widget> get _screens => [
-    const HomeScreen(),       // 0 - Home
-    ShopScreen(searchQuery: widget.searchQuery),       // 1 - Shop (with search query)
-    const CategoriesScreen(), // 2 - Category (CENTER)
-    const CartScreen(),       // 3 - Cart
-    const ProfileScreen(),    // 4 - Profile
-  ];
-  // --- END MODIFICATION ---
+  late ShopEntryProvider _shopEntry;
+  int _lastShopTabRequest = 0;
+
+  List<Widget> _buildScreens() => [
+        const HomeScreen(),
+        Consumer<ShopEntryProvider>(
+          builder: (context, se, _) {
+            final cid = widget.categoryId ?? se.categoryId;
+            final cname = widget.categoryName ?? se.categoryName;
+            return ShopScreen(
+              categoryId: cid,
+              categoryName: cname,
+              searchQuery: widget.searchQuery,
+            );
+          },
+        ),
+        const CategoriesScreen(),
+        const CartScreen(),
+        const ProfileScreen(),
+      ];
 
   @override
   void initState() {
     super.initState();
     _currentIndex = widget.initialIndex;
+    _shopEntry = context.read<ShopEntryProvider>();
+    _lastShopTabRequest = _shopEntry.shopTabRequestCount;
+    _shopEntry.addListener(_onShopEntryChanged);
+
+    if (widget.categoryId != null || widget.categoryName != null) {
+      WidgetsBinding.instance.addPostFrameCallback((_) {
+        if (!mounted) return;
+        _shopEntry.openShopWithCategory(
+          categoryId: widget.categoryId,
+          categoryName: widget.categoryName,
+        );
+      });
+    }
+
     WidgetsBinding.instance.addObserver(this);
 
     _bottomBarAnimationController = AnimationController(
@@ -296,8 +324,18 @@ class _MainScreenState extends State<MainScreen>
     );
   }
 
+  void _onShopEntryChanged() {
+    if (!mounted) return;
+    final n = _shopEntry.shopTabRequestCount;
+    if (n > _lastShopTabRequest) {
+      _lastShopTabRequest = n;
+      setState(() => _currentIndex = 1);
+    }
+  }
+
   @override
   void dispose() {
+    _shopEntry.removeListener(_onShopEntryChanged);
     WidgetsBinding.instance.removeObserver(this);
     _bottomBarAnimationController.dispose();
     _fadeAnimationController.dispose();
@@ -334,14 +372,11 @@ class _MainScreenState extends State<MainScreen>
             opacity: _fadeAnimation,
             child: IndexedStack(
               index: _currentIndex,
-              children: _screens,
+              children: _buildScreens(),
             ),
           ),
         ),
-        // Hide bottom nav on shop screen (index 1) and cart screen (index 3)
-        bottomNavigationBar: (_currentIndex == 1 || _currentIndex == 3)
-            ? null  // No bottom nav for shop/cart screens
-            : AnimatedSlide(
+        bottomNavigationBar: AnimatedSlide(
                 duration: const Duration(milliseconds: 400),
                 curve: Curves.easeOutCubic,
                 offset: _isBottomNavVisible ? Offset.zero : const Offset(0, 1.0),

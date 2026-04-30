@@ -92,20 +92,49 @@ class PaymentService {
     // Handle external wallet payment
   }
 
-  // Verify payment signature
+  // Verify payment signature via Cloud Function (preferred) or local HMAC
+  Future<bool> verifyPaymentSignatureSecure({
+    required String orderId,
+    required String paymentId,
+    required String signature,
+  }) async {
+    try {
+      // ✅ FIXED: Use the server-side Cloud Function for verification
+      final functions = FirebaseFunctions.instance;
+      final callable = functions.httpsCallable('verifyRazorpayPayment');
+
+      final result = await callable.call<Map<String, dynamic>>({
+        'orderId': orderId,
+        'paymentId': paymentId,
+        'signature': signature,
+      });
+
+      final data = result.data;
+      final isVerified = data['verified'] == true;
+
+      debugPrint(isVerified
+          ? '✅ Payment verified by server: $paymentId'
+          : '⚠️ Payment NOT verified: $paymentId');
+
+      return isVerified;
+    } catch (e) {
+      debugPrint('❌ Server verification failed: $e');
+      // If Cloud Function is unavailable, reject the payment for safety
+      return false;
+    }
+  }
+
+  // ✅ DEPRECATED: Kept for backward compatibility — always returns false now
+  @Deprecated('Use verifyPaymentSignatureSecure() instead')
   bool verifyPaymentSignature({
     required String orderId,
     required String paymentId,
     required String signature,
     required String secret,
   }) {
-    try {
-      // Implement signature verification logic
-      // This should be done on the backend for security
-      return true;
-    } catch (e) {
-      return false;
-    }
+    debugPrint('⚠️ verifyPaymentSignature is deprecated. Use verifyPaymentSignatureSecure()');
+    // ✅ SECURITY FIX: No longer returns true blindly
+    return false;
   }
 
   // Process COD order

@@ -5,6 +5,7 @@ import 'web_shop_screen.dart';
 
 class ShopScreen extends StatelessWidget {
   final String? categoryId;
+  final String? categoryName;
   final String? searchQuery;
   final bool showRecentlyViewed;
   final bool showDeals;
@@ -12,6 +13,7 @@ class ShopScreen extends StatelessWidget {
   const ShopScreen({
     Key? key,
     this.categoryId,
+    this.categoryName,
     this.searchQuery,
     this.showRecentlyViewed = false,
     this.showDeals = false,
@@ -22,17 +24,20 @@ class ShopScreen extends StatelessWidget {
     return Responsive(
       mobile: MobileShopScreen(
         categoryId: categoryId,
+        categoryName: categoryName,
         searchQuery: searchQuery,
         showRecentlyViewed: showRecentlyViewed,
         showDeals: showDeals,
       ),
       tablet: WebShopScreen(
         categoryId: categoryId,
+        categoryName: categoryName,
         showRecentlyViewed: showRecentlyViewed,
         showDeals: showDeals,
       ),
       desktop: WebShopScreen(
         categoryId: categoryId,
+        categoryName: categoryName,
         showRecentlyViewed: showRecentlyViewed,
         showDeals: showDeals,
       ),

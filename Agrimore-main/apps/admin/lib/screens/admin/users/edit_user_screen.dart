@@ -56,12 +56,14 @@ class _EditUserScreenState extends State<EditUserScreen> {
         // Update user role
         await adminProvider.updateUserRole(widget.user.uid, _selectedRole);
         
-        // TODO: Add methods to update name, phone, and status
-        // await adminProvider.updateUserInfo(widget.user.uid, {
-        //   'name': _nameController.text.trim(),
-        //   'phone': _phoneController.text.trim(),
-        //   'isActive': _isActive,
-        // });
+        // Update name, phone, and status
+        await adminProvider.updateUserInfo(widget.user.uid, {
+          'name': _nameController.text.trim(),
+          'phone': _phoneController.text.trim(),
+        });
+        
+        // Update active status
+        await adminProvider.toggleUserStatus(widget.user.uid, _isActive);
 
         if (context.mounted) {
           setState(() => _isProcessing = false);

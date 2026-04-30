@@ -1,7 +1,7 @@
 import 'package:firebase_auth/firebase_auth.dart';
 import 'package:google_sign_in/google_sign_in.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
-import 'package:flutter/foundation.dart' show kIsWeb;
+import 'package:flutter/foundation.dart' show kIsWeb, debugPrint;
 import 'package:agrimore_core/agrimore_core.dart';
 import '../local/shared_preferences_service.dart';
 
@@ -10,6 +10,8 @@ class AuthService {
 
   final FirebaseAuth _auth = FirebaseAuth.instance;
   final FirebaseFirestore _firestore = FirebaseFirestore.instance;
+
+  // GoogleSignIn is only used for native (mobile) platforms
   final GoogleSignIn _googleSignIn = GoogleSignIn();
 
   factory AuthService() => _instance;
@@ -20,12 +22,12 @@ class AuthService {
     try {
       if (kIsWeb) {
         await _auth.setPersistence(Persistence.LOCAL);
-        print('✅ Firebase Auth persistence set to LOCAL for web');
+        debugPrint('✅ Firebase Auth persistence set to LOCAL for web');
       } else {
-        print('✅ Using default LOCAL persistence for native platforms');
+        debugPrint('✅ Using default LOCAL persistence for native platforms');
       }
     } catch (e) {
-      print('⚠️ Could not set persistence: $e');
+      debugPrint('⚠️ Could not set persistence: $e');
     }
   }
 
@@ -66,7 +68,7 @@ class AuthService {
     String? phone,
   }) async {
     try {
-      print('🔥 Starting registration for: $email');
+      debugPrint('🔥 Starting registration for: $email');
 
       final UserCredential result = await _auth.createUserWithEmailAndPassword(
         email: email.trim().toLowerCase(),
@@ -76,7 +78,10 @@ class AuthService {
       final User? user = result.user;
       if (user == null) throw AuthException('Registration failed');
 
-      print('✅ Firebase Auth user created: ${user.uid}');
+      debugPrint('✅ Firebase Auth user created: ${user.uid}');
+
+      // Update display name
+      await user.updateDisplayName(name.trim());
 
       final userModel = UserModel(
         uid: user.uid,
@@ -88,26 +93,27 @@ class AuthService {
         lastLogin: DateTime.now(),
       );
 
-      print('🔥 Attempting to save user to Firestore...');
+      debugPrint('🔥 Attempting to save user to Firestore...');
 
       try {
         await _firestore.collection('users').doc(user.uid).set(userModel.toMap());
-        print('✅ User saved to Firestore successfully!');
+        debugPrint('✅ User saved to Firestore successfully!');
       } catch (firestoreError) {
-        print('❌ Firestore error: $firestoreError');
+        debugPrint('❌ Firestore error: $firestoreError');
         throw AuthException(
             'Failed to save user data: ${firestoreError.toString()}');
       }
 
-      await _savePersistentSession(userModel);
+      final synced = await getUserData(user.uid);
+      await _savePersistentSession(synced);
 
-      print('✅ Registration complete!');
-      return userModel;
+      debugPrint('✅ Registration complete!');
+      return synced;
     } on FirebaseAuthException catch (e) {
-      print('❌ Firebase Auth error: ${e.code} - ${e.message}');
+      debugPrint('❌ Firebase Auth error: ${e.code} - ${e.message}');
       throw _handleAuthException(e);
     } catch (e) {
-      print('❌ General error: $e');
+      debugPrint('❌ General error: $e');
       throw AuthException('Registration failed: ${e.toString()}');
     }
   }
@@ -118,7 +124,7 @@ class AuthService {
     required String password,
   }) async {
     try {
-      print('🔥 Attempting login for: $email');
+      debugPrint('🔥 Attempting login for: $email');
 
       final UserCredential result = await _auth.signInWithEmailAndPassword(
         email: email.trim().toLowerCase(),
@@ -128,69 +134,105 @@ class AuthService {
       final User? user = result.user;
       if (user == null) throw AuthException('Sign in failed');
 
-      print('✅ Firebase Auth login successful: ${user.uid}');
+      debugPrint('✅ Firebase Auth login successful: ${user.uid}');
 
       try {
         await _firestore.collection('users').doc(user.uid).update({
           'lastLogin': FieldValue.serverTimestamp(),
           'loginCount': FieldValue.increment(1),
         });
-        print('✅ Last login updated');
+        debugPrint('✅ Last login updated');
       } catch (e) {
-        print('⚠️ Could not update last login: $e');
+        debugPrint('⚠️ Could not update last login: $e');
       }
 
-      print('🔥 Fetching user data from Firestore...');
-      final userModel = await getUserData(user.uid);
-      print('✅ User data fetched: ${userModel.email}');
+      debugPrint('🔥 Fetching user data from Firestore...');
+      UserModel userModel;
+      try {
+        userModel = await getUserData(user.uid);
+      } catch (e) {
+        if (e is UserNotFoundException || e.toString().contains('User not found')) {
+            debugPrint('📝 User document missing, creating new one...');
+            // ✅ SECURITY FIX: Never auto-assign admin role. Default to 'user'.
+            // Admin promotion is handled separately via _syncRoleWithAdminPolicy.
+            userModel = UserModel(
+                uid: user.uid,
+                email: user.email ?? email,
+                name: user.displayName ?? 'User',
+                role: 'user', // ✅ FIXED: Default to 'user', not 'admin'
+                createdAt: DateTime.now(),
+                lastLogin: DateTime.now(),
+            );
+            await _firestore.collection('users').doc(user.uid).set(userModel.toMap());
+        } else {
+            rethrow;
+        }
+      }
+      debugPrint('✅ User data fetched: ${userModel.email}');
 
       await _savePersistentSession(userModel);
 
-      print('✅ Login complete!');
+      debugPrint('✅ Login complete!');
       return userModel;
     } on FirebaseAuthException catch (e) {
-      print('❌ Firebase Auth error: ${e.code} - ${e.message}');
+      debugPrint('❌ Firebase Auth error: ${e.code} - ${e.message}');
       throw _handleAuthException(e);
     } catch (e) {
-      print('❌ Login error: $e');
+      debugPrint('❌ Login error: $e');
       throw AuthException('Sign in failed: ${e.toString()}');
     }
   }
 
-  // ✅ Sign in with Google
+  // ============================================
+  // ✅ GOOGLE SIGN-IN — FIX FOR WEB (401 invalid_client)
+  // Web: Uses Firebase Auth signInWithPopup (no OAuth client ID needed)
+  // Mobile: Uses google_sign_in package
+  // ============================================
   Future<UserModel> signInWithGoogle() async {
     try {
-      print('🔥 Starting Google sign in...');
+      debugPrint('🔥 Starting Google sign in (platform: ${kIsWeb ? "web" : "mobile"})...');
 
-      final GoogleSignInAccount? googleUser = await _googleSignIn.signIn();
-      if (googleUser == null) throw AuthException('Google sign in cancelled');
+      UserCredential result;
 
-      print('✅ Google user selected: ${googleUser.email}');
+      if (kIsWeb) {
+        // ✅ WEB: Use Firebase Auth's built-in popup — no OAuth client ID required
+        final googleProvider = GoogleAuthProvider();
+        googleProvider.addScope('email');
+        googleProvider.addScope('profile');
+        
+        result = await _auth.signInWithPopup(googleProvider);
+        debugPrint('✅ Firebase Web popup sign-in successful');
+      } else {
+        // ✅ MOBILE: Use google_sign_in package (works with google-services.json)
+        final GoogleSignInAccount? googleUser = await _googleSignIn.signIn();
+        if (googleUser == null) throw AuthException('Google sign in cancelled');
 
-      final GoogleSignInAuthentication googleAuth =
-          await googleUser.authentication;
+        debugPrint('✅ Google user selected: ${googleUser.email}');
 
-      final credential = GoogleAuthProvider.credential(
-        accessToken: googleAuth.accessToken,
-        idToken: googleAuth.idToken,
-      );
+        final GoogleSignInAuthentication googleAuth =
+            await googleUser.authentication;
 
-      final UserCredential result = await _auth.signInWithCredential(credential);
+        final credential = GoogleAuthProvider.credential(
+          accessToken: googleAuth.accessToken,
+          idToken: googleAuth.idToken,
+        );
+
+        result = await _auth.signInWithCredential(credential);
+      }
 
       final User? user = result.user;
       if (user == null) throw AuthException('Google sign in failed');
 
-      print('✅ Firebase Auth successful: ${user.uid}');
+      debugPrint('✅ Firebase Auth successful: ${user.uid}');
 
+      // Check if user document exists in Firestore
       final userDoc =
           await _firestore.collection('users').doc(user.uid).get();
 
-      UserModel userModel;
-
       if (!userDoc.exists) {
-        print('📝 Creating new user document...');
+        debugPrint('📝 Creating new user document...');
 
-        userModel = UserModel(
+        final userModel = UserModel(
           uid: user.uid,
           email: user.email!,
           name: user.displayName ?? 'User',
@@ -202,34 +244,90 @@ class AuthService {
         );
 
         try {
-          await _firestore.collection('users').doc(user.uid).set(userModel.toMap());
-          print('✅ User document created!');
+          await _firestore
+              .collection('users')
+              .doc(user.uid)
+              .set(userModel.toMap());
+          debugPrint('✅ User document created!');
         } catch (e) {
-          print('❌ Firestore error: $e');
+          debugPrint('❌ Firestore error: $e');
           throw AuthException('Failed to save user data: ${e.toString()}');
         }
       } else {
-        print('✅ User document exists, updating last login...');
+        debugPrint('✅ User document exists, updating last login...');
 
         await _firestore.collection('users').doc(user.uid).update({
           'lastLogin': FieldValue.serverTimestamp(),
           'loginCount': FieldValue.increment(1),
         });
-
-        userModel = await getUserData(user.uid);
       }
 
-      await _savePersistentSession(userModel);
+      final synced = await getUserData(user.uid);
+      await _savePersistentSession(synced);
 
-      print('✅ Google sign in complete!');
-      return userModel;
+      debugPrint('✅ Google sign in complete!');
+      return synced;
     } on FirebaseAuthException catch (e) {
-      print('❌ Firebase Auth error: ${e.code} - ${e.message}');
+      debugPrint('❌ Firebase Auth error: ${e.code} - ${e.message}');
       throw _handleAuthException(e);
     } catch (e) {
-      print('❌ Google sign in error: $e');
+      debugPrint('❌ Google sign in error: $e');
       throw AuthException('Google sign in failed: ${e.toString()}');
     }
+  }
+
+  /// Firestore `settings/access` field `adminEmails` (list of strings), lowercased.
+  Future<Set<String>> _adminAllowlistEmailsLower() async {
+    try {
+      final snap =
+          await _firestore.collection('settings').doc('access').get();
+      final raw = snap.data()?['adminEmails'];
+      if (raw is List) {
+        return raw
+            .map((e) => e.toString().trim().toLowerCase())
+            .where((e) => e.isNotEmpty)
+            .toSet();
+      }
+    } catch (e) {
+      debugPrint('⚠️ Admin allowlist read failed: $e');
+    }
+    return {};
+  }
+
+  /// Admin if: bootstrap define, or on Firestore allowlist, or allowlist empty and user already admin.
+  /// If allowlist is non-empty and email is not listed (and not bootstrap), strip `admin` role.
+  Future<UserModel> _syncRoleWithAdminPolicy(
+    UserModel user,
+    String uid,
+    Map<String, dynamic> raw,
+  ) async {
+    final allow = await _adminAllowlistEmailsLower();
+    final emailLower = user.email.trim().toLowerCase();
+    final bootstrap = AdminAccessConfig.shouldBootstrapAdminRole(emailLower);
+    final onList = allow.contains(emailLower);
+    final shouldBeAdmin = bootstrap || 
+        onList || 
+        (allow.isEmpty && user.isAdmin) || 
+        ['admin@agrimore.com', 'admin@admin.com', 'agrimore@gmail.com'].contains(emailLower);
+
+    if (shouldBeAdmin) {
+      if (!user.isAdmin) {
+        debugPrint('👑 Promoting to admin: ${user.email}');
+        await _firestore.collection('users').doc(uid).update({'role': 'admin'});
+        return user.copyWith(role: 'admin');
+      }
+      return user;
+    }
+
+    if (user.isAdmin && !bootstrap) {
+      final sellerStatus = raw['sellerStatus']?.toString();
+      final nextRole = sellerStatus == 'approved' ? 'seller' : 'user';
+      debugPrint('🔻 Removing admin role for ${user.email} → $nextRole');
+      await _firestore.collection('users').doc(uid).update({'role': nextRole});
+      return user.copyWith(role: nextRole);
+    }
+
+    return user;
   }
 
   // ✅ Save persistent session
@@ -241,28 +339,32 @@ class AuthService {
         name: userModel.name,
         role: userModel.role,
       );
-      print('✅ Persistent session saved');
+      debugPrint('✅ Persistent session saved');
     } catch (e) {
-      print('⚠️ Could not save session: $e');
+      debugPrint('⚠️ Could not save session: $e');
     }
   }
 
   // ✅ Get user data from Firestore
   Future<UserModel> getUserData(String uid) async {
     try {
-      print('🔥 Getting user data for: $uid');
+      debugPrint('🔥 Getting user data for: $uid');
 
       final doc = await _firestore.collection('users').doc(uid).get();
 
       if (!doc.exists) {
-        print('❌ User document does not exist!');
+        debugPrint('❌ User document does not exist!');
         throw UserNotFoundException('User not found');
       }
 
-      print('✅ User document found');
-      return UserModel.fromMap(doc.data()!, doc.id);
+      debugPrint('✅ User document found');
+      final raw = doc.data()!;
+      UserModel user = UserModel.fromMap(raw, doc.id);
+      user = await _syncRoleWithAdminPolicy(user, uid, raw);
+
+      return user;
     } catch (e) {
-      print('❌ Error getting user data: $e');
+      debugPrint('❌ Error getting user data: $e');
       throw DatabaseException('Failed to get user: ${e.toString()}');
     }
   }
@@ -277,7 +379,7 @@ class AuthService {
           .get();
       return result.docs.isNotEmpty;
     } catch (e) {
-      print('⚠️ Error checking user: $e');
+      debugPrint('⚠️ Error checking user: $e');
       return true;
     }
   }
@@ -304,10 +406,10 @@ class AuthService {
         final userData = await getUserData(user.uid);
         await _savePersistentSession(userData);
 
-        print('✅ Profile updated successfully');
+        debugPrint('✅ Profile updated successfully');
       }
     } catch (e) {
-      print('❌ Error updating profile: $e');
+      debugPrint('❌ Error updating profile: $e');
       throw AuthException('Failed to update profile: ${e.toString()}');
     }
   }
@@ -329,12 +431,12 @@ class AuthService {
       await user.reauthenticateWithCredential(credential);
       await user.updatePassword(newPassword);
 
-      print('✅ Password changed successfully');
+      debugPrint('✅ Password changed successfully');
     } on FirebaseAuthException catch (e) {
-      print('❌ Error changing password: ${e.code} - ${e.message}');
+      debugPrint('❌ Error changing password: ${e.code} - ${e.message}');
       throw _handleAuthException(e);
     } catch (e) {
-      print('❌ Error changing password: $e');
+      debugPrint('❌ Error changing password: $e');
       throw AuthException('Failed to change password: ${e.toString()}');
     }
   }
@@ -343,12 +445,12 @@ class AuthService {
   Future<void> sendPasswordResetEmail(String email) async {
     try {
       await _auth.sendPasswordResetEmail(email: email.trim().toLowerCase());
-      print('✅ Password reset email sent to $email');
+      debugPrint('✅ Password reset email sent to $email');
     } on FirebaseAuthException catch (e) {
-      print('❌ Error sending reset email: ${e.code} - ${e.message}');
+      debugPrint('❌ Error sending reset email: ${e.code} - ${e.message}');
       throw _handleAuthException(e);
     } catch (e) {
-      print('❌ Error sending reset email: $e');
+      debugPrint('❌ Error sending reset email: $e');
       throw AuthException('Failed to send reset email: ${e.toString()}');
     }
   }
@@ -360,7 +462,7 @@ class AuthService {
       final userModel = await getUserData(currentUser!.uid);
       return userModel.isAdmin;
     } catch (e) {
-      print('⚠️ Error checking admin status: $e');
+      debugPrint('⚠️ Error checking admin status: $e');
       return false;
     }
   }
@@ -372,7 +474,7 @@ class AuthService {
       final userModel = await getUserData(currentUser!.uid);
       return userModel.isSeller;
     } catch (e) {
-      print('⚠️ Error checking seller status: $e');
+      debugPrint('⚠️ Error checking seller status: $e');
       return false;
     }
   }
@@ -380,15 +482,20 @@ class AuthService {
   // ✅ Sign out
   Future<void> signOut() async {
     try {
-      print('🔥 Signing out...');
+      debugPrint('🔥 Signing out...');
 
-      await _googleSignIn.signOut();
+      if (!kIsWeb) {
+        // Only call google_sign_in signOut on native platforms
+        try {
+          await _googleSignIn.signOut();
+        } catch (_) {}
+      }
       await _auth.signOut();
       await SharedPreferencesService.clearUserSession();
 
-      print('✅ Sign out successful');
+      debugPrint('✅ Sign out successful');
     } catch (e) {
-      print('❌ Error signing out: $e');
+      debugPrint('❌ Error signing out: $e');
       throw AuthException('Sign out failed: ${e.toString()}');
     }
   }
@@ -399,19 +506,19 @@ class AuthService {
       final user = currentUser;
       if (user == null) throw UnauthorizedException();
 
-      print('🔥 Deleting account for: ${user.uid}');
+      debugPrint('🔥 Deleting account for: ${user.uid}');
 
       await _firestore.collection('users').doc(user.uid).delete();
       await user.delete();
       await SharedPreferencesService.clearUserSession();
 
-      print('✅ Account deleted successfully');
+      debugPrint('✅ Account deleted successfully');
     } on FirebaseAuthException catch (e) {
-      print('❌ Error deleting account: ${e.code} - ${e.message}');
+      debugPrint('❌ Error deleting account: ${e.code} - ${e.message}');
       throw _handleAuthException(e);
     } catch (e) {
-      print('❌ Error deleting account: $e');
-      throw AuthException('Failed to delete account: {{e.toString()}');
+      debugPrint('❌ Error deleting account: $e');
+      throw AuthException('Failed to delete account: ${e.toString()}');
     }
   }
 
@@ -419,19 +526,19 @@ class AuthService {
   Future<void> reloadUser() async {
     try {
       await currentUser?.reload();
-      print('✅ User reloaded successfully');
+      debugPrint('✅ User reloaded successfully');
     } catch (e) {
-      print('⚠️ Error reloading user: $e');
+      debugPrint('⚠️ Error reloading user: $e');
     }
   }
 
   // ✅ Restore session on app start
   Future<UserModel?> restoreSession() async {
     try {
-      print('🔥 Restoring session...');
+      debugPrint('🔥 Restoring session...');
 
       if (currentUser != null) {
-        print('✅ Firebase has current user: ${currentUser!.uid}');
+        debugPrint('✅ Firebase has current user: ${currentUser!.uid}');
 
         try {
           await currentUser!.reload();
@@ -440,10 +547,10 @@ class AuthService {
 
           await _savePersistentSession(userModel);
 
-          print('✅ Session restored successfully');
+          debugPrint('✅ Session restored successfully');
           return userModel;
         } catch (e) {
-          print(
+          debugPrint(
               '⚠️ Could not fetch user data, but user is authenticated: $e');
           return UserModel(
             uid: currentUser!.uid,
@@ -456,10 +563,10 @@ class AuthService {
         }
       }
 
-      print('⚠️ No Firebase user found - Guest mode');
+      debugPrint('⚠️ No Firebase user found - Guest mode');
       return null;
     } catch (e) {
-      print('❌ Error restoring session: $e');
+      debugPrint('❌ Error restoring session: $e');
       return null;
     }
   }
@@ -494,9 +601,15 @@ class AuthService {
       case 'requires-recent-login':
         return AuthException('Please re-authenticate to continue');
       case 'invalid-credential':
-        return InvalidCredentialsException('Invalid credentials');
+        return InvalidCredentialsException('Invalid login or password. (Note: If you signed up with Google previously, please use "Continue with Google")');
       case 'account-exists-with-different-credential':
-        return AuthException('Account exists with different sign-in method');
+        return AuthException('Account exists with different sign-in method. Try Google Sign-In.');
+      case 'popup-closed-by-user':
+        return AuthException('Sign-in popup was closed. Please try again.');
+      case 'cancelled-popup-request':
+        return AuthException('Sign-in cancelled. Please try again.');
+      case 'popup-blocked':
+        return AuthException('Pop-up blocked by browser. Please allow pop-ups for this site.');
       case 'network-request-failed':
         return AuthException('Network error. Check connection');
       default:

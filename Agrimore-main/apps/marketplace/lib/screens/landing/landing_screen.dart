@@ -92,19 +92,22 @@ class _LandingScreenState extends State<LandingScreen> with TickerProviderStateM
                   gradient: LinearGradient(colors: [AppColors.primary, const Color(0xFF6EE7B7)]),
                   shape: BoxShape.circle,
                 ),
-                child: const Icon(Icons.rocket_launch_rounded, color: Colors.white, size: 36),
+                child: const Icon(Icons.storefront_rounded, color: Colors.white, size: 36),
               ),
               const SizedBox(height: 24),
-              const Text('Coming Soon!', style: TextStyle(fontSize: 24, fontWeight: FontWeight.w800)),
+              const Text('Become a Seller', style: TextStyle(fontSize: 24, fontWeight: FontWeight.w800)),
               const SizedBox(height: 12),
-              const Text('Our seller platform is launching soon.\nJoin the waitlist!', textAlign: TextAlign.center, style: TextStyle(color: Color(0xFF6B7280), fontSize: 15, height: 1.5)),
+              const Text('Join our growing community of sellers.\nSign up and start listing your products today!', textAlign: TextAlign.center, style: TextStyle(color: Color(0xFF6B7280), fontSize: 15, height: 1.5)),
               const SizedBox(height: 28),
               SizedBox(
                 width: double.infinity,
                 child: ElevatedButton(
-                  onPressed: () => Navigator.pop(ctx),
+                  onPressed: () {
+                    Navigator.pop(ctx);
+                    Navigator.pushNamed(context, '/login');
+                  },
                   style: ElevatedButton.styleFrom(backgroundColor: AppColors.primary, foregroundColor: Colors.white, padding: const EdgeInsets.symmetric(vertical: 16), shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(14))),
-                  child: const Text('Got it!', style: TextStyle(fontWeight: FontWeight.w600, fontSize: 16)),
+                  child: const Text('Get Started', style: TextStyle(fontWeight: FontWeight.w600, fontSize: 16)),
                 ),
               ),
             ],
@@ -373,51 +376,43 @@ class _LandingScreenState extends State<LandingScreen> with TickerProviderStateM
   }
 
   Widget _primaryBtn(String text, IconData icon, VoidCallback onPressed) {
-    return Container(
-      decoration: BoxDecoration(
-        borderRadius: BorderRadius.circular(14),
-        gradient: LinearGradient(colors: [AppColors.primary, const Color(0xFF059669)]),
-        boxShadow: [BoxShadow(color: AppColors.primary.withValues(alpha: 0.4), blurRadius: 20, offset: const Offset(0, 8))],
-      ),
-      child: Material(
-        color: Colors.transparent,
-        child: InkWell(
-          onTap: onPressed,
-          borderRadius: BorderRadius.circular(14),
-          child: Padding(
-            padding: const EdgeInsets.symmetric(horizontal: 28, vertical: 16),
-            child: Row(
-              mainAxisSize: MainAxisSize.min,
-              children: [
-                Icon(icon, color: Colors.white, size: 18),
-                const SizedBox(width: 10),
-                Text(text, style: const TextStyle(color: Colors.white, fontWeight: FontWeight.w700, fontSize: 15)),
-                const SizedBox(width: 6),
-                const Icon(Icons.arrow_forward_rounded, color: Colors.white, size: 16),
-              ],
-            ),
-          ),
+    return SizedBox(
+      height: 54,
+      child: ElevatedButton.icon(
+        onPressed: onPressed,
+        style: ElevatedButton.styleFrom(
+          backgroundColor: AppColors.primary,
+          foregroundColor: Colors.white,
+          elevation: 4,
+          shadowColor: AppColors.primary.withValues(alpha: 0.4),
+          padding: const EdgeInsets.symmetric(horizontal: 28),
+          shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(14)),
+        ),
+        icon: Icon(icon, size: 20),
+        label: Row(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            Text(text, style: const TextStyle(fontWeight: FontWeight.w700, fontSize: 16)),
+            const SizedBox(width: 8),
+            const Icon(Icons.arrow_forward_rounded, size: 18),
+          ],
         ),
       ),
     );
   }
 
   Widget _secondaryBtn(String text, VoidCallback onPressed) {
-    return Container(
-      decoration: BoxDecoration(
-        borderRadius: BorderRadius.circular(14),
-        border: Border.all(color: const Color(0xFF1F2937), width: 2),
-      ),
-      child: Material(
-        color: Colors.transparent,
-        child: InkWell(
-          onTap: onPressed,
-          borderRadius: BorderRadius.circular(14),
-          child: Padding(
-            padding: const EdgeInsets.symmetric(horizontal: 28, vertical: 16),
-            child: Text(text, style: const TextStyle(color: Color(0xFF1F2937), fontWeight: FontWeight.w700, fontSize: 15)),
-          ),
+    return SizedBox(
+      height: 54,
+      child: OutlinedButton(
+        onPressed: onPressed,
+        style: OutlinedButton.styleFrom(
+          foregroundColor: const Color(0xFF1F2937),
+          side: const BorderSide(color: Color(0xFF1F2937), width: 2),
+          padding: const EdgeInsets.symmetric(horizontal: 28),
+          shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(14)),
         ),
+        child: Text(text, style: const TextStyle(fontWeight: FontWeight.w700, fontSize: 16)),
       ),
     );
   }

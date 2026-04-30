@@ -11,11 +11,17 @@ import '../../../providers/cart_provider.dart';
 import '../../../providers/coupon_provider.dart';
 import '../../../providers/theme_provider.dart';
 import '../../../app/routes.dart';
-import 'package:agrimore_ui/agrimore_ui.dart';
 import 'widgets/checkout_steps.dart';
 
 class CheckoutScreen extends StatefulWidget {
-  const CheckoutScreen({Key? key}) : super(key: key);
+  final double deliveryCharge;
+  final double tax;
+
+  const CheckoutScreen({
+    Key? key,
+    this.deliveryCharge = 0.0,
+    this.tax = 0.0,
+  }) : super(key: key);
 
   @override
   State<CheckoutScreen> createState() => _CheckoutScreenState();
@@ -70,6 +76,16 @@ class _CheckoutScreenState extends State<CheckoutScreen> {
 
           _isLoadingAddresses = false;
         });
+
+        // Auto-open Add Address screen if no addresses exist
+        if (_addresses.isEmpty) {
+          WidgetsBinding.instance.addPostFrameCallback((_) async {
+            if (mounted) {
+              final result = await Navigator.pushNamed(context, AppRoutes.addAddress);
+              _loadAddresses();
+            }
+          });
+        }
       }
     } catch (e) {
       debugPrint('Error loading addresses: $e');
@@ -145,7 +161,7 @@ class _CheckoutScreenState extends State<CheckoutScreen> {
       orderAmount: subtotal,
       items: cartProvider.items,
     );
-    final total = subtotal - discount;
+    final total = subtotal - discount + widget.deliveryCharge + widget.tax;
 
     return Scaffold(
       backgroundColor: backgroundColor,
@@ -721,6 +737,8 @@ class _CheckoutScreenState extends State<CheckoutScreen> {
                   arguments: {
                     'address': _selectedAddress!,
                     'total': total,
+                    'deliveryCharge': widget.deliveryCharge,
+                    'tax': widget.tax,
                   },
                 );
               }

@@ -169,7 +169,7 @@ class _SignupScreenState extends State<SignupScreen>
       final authService = AuthService();
       await authService.registerWithEmail(
         email: _emailController.text.trim().toLowerCase(),
-        password: _passwordController.text,
+        password: _passwordController.text.trim(),
         name: _nameController.text.trim(),
         phone: '+91${_phoneController.text.trim()}',
       );

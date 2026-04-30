@@ -4,13 +4,13 @@ import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:provider/provider.dart';
 import 'package:cached_network_image/cached_network_image.dart';
-import '../../../../app/routes.dart';
 import 'package:agrimore_ui/agrimore_ui.dart';
 import 'package:agrimore_core/agrimore_core.dart';
 import '../../../../providers/category_provider.dart';
 import '../../../../providers/product_provider.dart';
 import '../../../../providers/theme_provider.dart';
 import '../../../../providers/category_section_provider.dart';
+import '../../../../providers/shop_entry_provider.dart';
 
 /// Displays admin-configured category sections from Firestore
 class DynamicCategorySections extends StatefulWidget {
@@ -47,7 +47,12 @@ class _DynamicCategorySectionsState extends State<DynamicCategorySections> {
         
         if (activeSlots.isEmpty) {
           // Fallback to old hardcoded behavior if no admin sections configured
-          return _buildFallbackSections(isDark, allCategories, productProvider);
+          return _buildFallbackSections(
+            isDark,
+            allCategories,
+            productProvider,
+            categoryProvider.categories,
+          );
         }
 
         return Column(
@@ -63,6 +68,7 @@ class _DynamicCategorySectionsState extends State<DynamicCategorySections> {
             return _AdminCategorySection(
               slot: slot,
               categories: sectionCategories,
+              categoryTree: categoryProvider.categories,
               productProvider: productProvider,
               isDark: isDark,
             );
@@ -73,7 +79,12 @@ class _DynamicCategorySectionsState extends State<DynamicCategorySections> {
   }
 
   /// Fallback to old behavior if no admin sections configured
-  Widget _buildFallbackSections(bool isDark, List<CategoryModel> allCategories, ProductProvider productProvider) {
+  Widget _buildFallbackSections(
+    bool isDark,
+    List<CategoryModel> allCategories,
+    ProductProvider productProvider,
+    List<CategoryModel> categoryTree,
+  ) {
     final categories = allCategories.skip(widget.skipCount).toList();
     
     if (categories.isEmpty) {
@@ -107,6 +118,7 @@ class _DynamicCategorySectionsState extends State<DynamicCategorySections> {
         return _FallbackCategorySection(
           title: title,
           categories: sectionCategories,
+          categoryTree: categoryTree,
           productProvider: productProvider,
           isDark: isDark,
         );
@@ -119,12 +131,14 @@ class _DynamicCategorySectionsState extends State<DynamicCategorySections> {
 class _AdminCategorySection extends StatelessWidget {
   final CategorySectionSlotModel slot;
   final List<CategoryModel> categories;
+  final List<CategoryModel> categoryTree;
   final ProductProvider productProvider;
   final bool isDark;
 
   const _AdminCategorySection({
     required this.slot,
     required this.categories,
+    required this.categoryTree,
     required this.productProvider,
     required this.isDark,
   });
@@ -176,7 +190,9 @@ class _AdminCategorySection extends StatelessWidget {
                 String imageUrl = slotImage ?? '';
                 if (imageUrl.isEmpty) {
                   final categoryProduct = productProvider.products
-                      .where((p) => p.categoryId == category.id && p.isActive)
+                      .where((p) =>
+                          p.isActive &&
+                          productBelongsToCategory(p, category, categoryTree))
                       .take(1)
                       .toList();
                   imageUrl = categoryProduct.isNotEmpty 
@@ -191,11 +207,10 @@ class _AdminCategorySection extends StatelessWidget {
                   bgColor: slot.bgColor,
                   onTap: () {
                     HapticFeedback.lightImpact();
-                    Navigator.pushNamed(
-                      context, 
-                      AppRoutes.shop,
-                      arguments: {'categoryId': category.id, 'categoryName': category.name},
-                    );
+                    context.read<ShopEntryProvider>().openShopWithCategory(
+                          categoryId: category.id,
+                          categoryName: category.name,
+                        );
                   },
                 );
               },
@@ -211,12 +226,14 @@ class _AdminCategorySection extends StatelessWidget {
 class _FallbackCategorySection extends StatelessWidget {
   final String title;
   final List<CategoryModel> categories;
+  final List<CategoryModel> categoryTree;
   final ProductProvider productProvider;
   final bool isDark;
 
   const _FallbackCategorySection({
     required this.title,
     required this.categories,
+    required this.categoryTree,
     required this.productProvider,
     required this.isDark,
   });
@@ -262,23 +279,24 @@ class _FallbackCategorySection extends StatelessWidget {
               itemBuilder: (context, index) {
                 final category = categories[index];
                 final categoryProduct = productProvider.products
-                    .where((p) => p.categoryId == category.id && p.isActive)
+                    .where((p) =>
+                        p.isActive &&
+                        productBelongsToCategory(p, category, categoryTree))
                     .take(1)
                     .toList();
-                
+
                 return _EnhancedCategoryTile(
                   category: category,
-                  productImageUrl: categoryProduct.isNotEmpty 
+                  productImageUrl: categoryProduct.isNotEmpty
                       ? categoryProduct.first.imageUrl ?? ''
                       : category.imageUrl ?? '',
                   isDark: isDark,
                   onTap: () {
                     HapticFeedback.lightImpact();
-                    Navigator.pushNamed(
-                      context, 
-                      AppRoutes.shop,
-                      arguments: {'categoryId': category.id, 'categoryName': category.name},
-                    );
+                    context.read<ShopEntryProvider>().openShopWithCategory(
+                          categoryId: category.id,
+                          categoryName: category.name,
+                        );
                   },
                 );
               },

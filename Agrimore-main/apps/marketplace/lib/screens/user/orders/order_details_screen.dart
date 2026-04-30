@@ -758,6 +758,10 @@ class _OrderDetailsScreenState extends State<OrderDetailsScreen>
         ? timelineData
         : _generateTimelineEvents(order);
 
+    final isActiveDelivery = order.orderStatus == 'picked_up' ||
+        order.orderStatus == 'out_for_delivery' ||
+        order.orderStatus == 'outfordelivery';
+
     return Column(
       children: [
         _buildCardSection(
@@ -766,6 +770,11 @@ class _OrderDetailsScreenState extends State<OrderDetailsScreen>
           isDark: isDark,
           child: _buildDeliveryAddressContent(order, isDark),
         ),
+
+        // 🔐 Delivery Verification Code — shown ONLY to the customer
+        if (isActiveDelivery && order.deliveryVerificationCode != null)
+          _buildDeliveryVerificationCard(order.deliveryVerificationCode!, isDark),
+
         _buildCardSection(
           title: 'Order Timeline',
           icon: Icons.timeline_rounded,
@@ -779,6 +788,141 @@ class _OrderDetailsScreenState extends State<OrderDetailsScreen>
           child: _buildTrackLiveButton(order, isDark),
         ),
       ],
+    );
+  }
+
+  /// 🔐 Secure delivery verification code card — visible only to the customer
+  Widget _buildDeliveryVerificationCard(String code, bool isDark) {
+    return Container(
+      margin: const EdgeInsets.only(bottom: 8),
+      decoration: BoxDecoration(
+        gradient: LinearGradient(
+          begin: Alignment.topLeft,
+          end: Alignment.bottomRight,
+          colors: isDark
+              ? [const Color(0xFF1A3A2A), const Color(0xFF0F2A1F)]
+              : [const Color(0xFFE8F5E9), const Color(0xFFDCEFDD)],
+        ),
+        borderRadius: BorderRadius.circular(14),
+        border: Border.all(
+          color: isDark ? Colors.green.shade800 : Colors.green.shade300,
+          width: 1.5,
+        ),
+        boxShadow: [
+          BoxShadow(
+            color: Colors.green.withOpacity(isDark ? 0.2 : 0.15),
+            blurRadius: 12,
+            offset: const Offset(0, 4),
+          ),
+        ],
+      ),
+      child: Padding(
+        padding: const EdgeInsets.all(16),
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            Row(
+              children: [
+                Container(
+                  padding: const EdgeInsets.all(8),
+                  decoration: BoxDecoration(
+                    color: Colors.green.shade600,
+                    borderRadius: BorderRadius.circular(10),
+                  ),
+                  child: const Icon(Icons.verified_user_rounded, color: Colors.white, size: 18),
+                ),
+                const SizedBox(width: 12),
+                Expanded(
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      Text(
+                        'Delivery Verification Code',
+                        style: TextStyle(
+                          fontSize: 13,
+                          fontWeight: FontWeight.w800,
+                          color: isDark ? Colors.green.shade300 : Colors.green.shade800,
+                        ),
+                      ),
+                      const SizedBox(height: 2),
+                      Text(
+                        'Share this code with the delivery partner only',
+                        style: TextStyle(
+                          fontSize: 10,
+                          fontWeight: FontWeight.w500,
+                          color: isDark ? Colors.green.shade500 : Colors.green.shade700,
+                        ),
+                      ),
+                    ],
+                  ),
+                ),
+                const Icon(Icons.lock_rounded, color: Colors.green, size: 16),
+              ],
+            ),
+            const SizedBox(height: 16),
+            // The code itself — large and prominent
+            Center(
+              child: Container(
+                padding: const EdgeInsets.symmetric(horizontal: 32, vertical: 14),
+                decoration: BoxDecoration(
+                  color: isDark ? const Color(0xFF0D1F15) : Colors.white,
+                  borderRadius: BorderRadius.circular(12),
+                  border: Border.all(
+                    color: Colors.green.shade400,
+                    width: 2,
+                  ),
+                ),
+                child: Row(
+                  mainAxisSize: MainAxisSize.min,
+                  children: [
+                    ...code.split('').map((digit) => Container(
+                      margin: const EdgeInsets.symmetric(horizontal: 4),
+                      child: Text(
+                        digit,
+                        style: TextStyle(
+                          fontSize: 28,
+                          fontWeight: FontWeight.w900,
+                          letterSpacing: 4,
+                          color: isDark ? Colors.green.shade300 : Colors.green.shade800,
+                          fontFamily: 'monospace',
+                        ),
+                      ),
+                    )),
+                  ],
+                ),
+              ),
+            ),
+            const SizedBox(height: 12),
+            // Warning note
+            Container(
+              padding: const EdgeInsets.all(10),
+              decoration: BoxDecoration(
+                color: isDark ? Colors.amber.withOpacity(0.1) : Colors.amber.shade50,
+                borderRadius: BorderRadius.circular(8),
+                border: Border.all(
+                  color: isDark ? Colors.amber.shade800 : Colors.amber.shade200,
+                ),
+              ),
+              child: Row(
+                children: [
+                  Icon(Icons.warning_amber_rounded, size: 16, color: Colors.amber.shade700),
+                  const SizedBox(width: 8),
+                  Expanded(
+                    child: Text(
+                      'Do not share this code until the delivery partner arrives with your order',
+                      style: TextStyle(
+                        fontSize: 11,
+                        fontWeight: FontWeight.w600,
+                        color: isDark ? Colors.amber.shade400 : Colors.amber.shade800,
+                      ),
+                    ),
+                  ),
+                ],
+              ),
+            ),
+          ],
+        ),
+      ),
     );
   }
 

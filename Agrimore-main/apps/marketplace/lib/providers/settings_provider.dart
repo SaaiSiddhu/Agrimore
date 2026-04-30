@@ -11,6 +11,7 @@ class SettingsProvider with ChangeNotifier {
   bool _biometricEnabled = false;
   String _language = 'English';
   String _currency = 'INR';
+  String? _selectedLocation;
 
   // Getters
   bool get notificationsEnabled => _notificationsEnabled;
@@ -22,6 +23,7 @@ class SettingsProvider with ChangeNotifier {
   bool get biometricEnabled => _biometricEnabled;
   String get language => _language;
   String get currency => _currency;
+  String? get selectedLocation => _selectedLocation;
 
   SettingsProvider() {
     _loadSettings();
@@ -47,6 +49,8 @@ class SettingsProvider with ChangeNotifier {
         SharedPreferencesService.getString('language') ?? 'English';
     _currency = 
         SharedPreferencesService.getString('currency') ?? 'INR';
+    _selectedLocation = 
+        SharedPreferencesService.getString('selected_location');
     
     notifyListeners();
   }
@@ -119,6 +123,13 @@ class SettingsProvider with ChangeNotifier {
   Future<void> changeCurrency(String currency) async {
     _currency = currency;
     await SharedPreferencesService.setString('currency', currency);
+    notifyListeners();
+  }
+
+  // Change location
+  Future<void> changeLocation(String location) async {
+    _selectedLocation = location;
+    await SharedPreferencesService.setString('selected_location', location);
     notifyListeners();
   }
 

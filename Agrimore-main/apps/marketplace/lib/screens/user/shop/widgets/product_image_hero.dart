@@ -7,10 +7,13 @@ import 'package:carousel_slider/carousel_slider.dart';
 import 'package:provider/provider.dart';
 import 'package:share_plus/share_plus.dart';
 import 'package:agrimore_ui/agrimore_ui.dart';
+import 'package:flutter/foundation.dart' show kIsWeb;
 import 'package:agrimore_core/agrimore_core.dart';
 import '../../../../providers/wishlist_provider.dart';
 import '../../../../providers/theme_provider.dart';
+import '../../../../providers/product_provider.dart';
 import '../../../../app/routes.dart';
+import 'package:cached_network_image/cached_network_image.dart';
 
 class ProductImageHero extends StatefulWidget {
   final ProductModel product;
@@ -32,18 +35,20 @@ class _ProductImageHeroState extends State<ProductImageHero> {
   int _currentIndex = 0;
   final CarouselSliderController _carouselController = CarouselSliderController();
 
-  List<String> get _images {
-    if (widget.product.images.isNotEmpty) return widget.product.images;
-    if (widget.product.imageUrl != null) return [widget.product.imageUrl!];
-    return [];
-  }
-
   @override
   Widget build(BuildContext context) {
     final themeProvider = Provider.of<ThemeProvider>(context);
+    final productProvider = Provider.of<ProductProvider>(context);
     final isDark = themeProvider.isDarkMode;
     final topPadding = MediaQuery.of(context).padding.top;
     final accentColor = isDark ? AppColors.primaryLight : AppColors.primary;
+
+    final selectedVariant = productProvider.selectedVariant;
+    List<String> images = selectedVariant?.images != null && selectedVariant!.images.isNotEmpty 
+        ? selectedVariant.images 
+        : (widget.product.images.isNotEmpty 
+            ? widget.product.images 
+            : (widget.product.imageUrl != null ? [widget.product.imageUrl!] : []));
 
     return Container(
       color: isDark ? const Color(0xFF1A1A1A) : Colors.white,
@@ -55,9 +60,9 @@ class _ProductImageHeroState extends State<ProductImageHero> {
               // Space for safe area
               SizedBox(height: topPadding),
               // Image
-              _buildImageCarousel(isDark),
+              _buildImageCarousel(isDark, accentColor, images),
               // Small pagination dots - always show if multiple images
-              _buildSmallDots(isDark, accentColor),
+              _buildSmallDots(isDark, accentColor, images),
               const SizedBox(height: 8),
             ],
           ),
@@ -74,8 +79,8 @@ class _ProductImageHeroState extends State<ProductImageHero> {
     );
   }
 
-  Widget _buildImageCarousel(bool isDark) {
-    if (_images.isEmpty) {
+  Widget _buildImageCarousel(bool isDark, Color accentColor, List<String> images) {
+    if (images.isEmpty) {
       return Container(
         height: 350,
         color: isDark ? Colors.grey[900] : Colors.grey[100],
@@ -94,42 +99,56 @@ class _ProductImageHeroState extends State<ProductImageHero> {
       options: CarouselOptions(
         height: 350,
         viewportFraction: 1.0,
-        enableInfiniteScroll: _images.length > 1,
+        enableInfiniteScroll: images.length > 1,
         onPageChanged: (index, reason) {
           setState(() => _currentIndex = index);
         },
       ),
-      items: _images.map((imageUrl) {
+      items: images.map((imageUrl) {
+        final errorWidget = Icon(
+          Icons.broken_image_rounded,
+          size: 60,
+          color: Colors.grey[400],
+        );
+        final loaderWidget = Center(
+          child: CircularProgressIndicator(color: accentColor),
+        );
+      
         return Container(
           width: double.infinity,
           color: isDark ? const Color(0xFF1A1A1A) : Colors.white,
-          child: Image.network(
+          child: kIsWeb ? Image.network(
             imageUrl,
             fit: BoxFit.contain,
-            errorBuilder: (_, __, ___) => Icon(
-              Icons.broken_image_rounded,
-              size: 60,
-              color: Colors.grey[400],
-            ),
+            errorBuilder: (_, __, ___) => errorWidget,
+            loadingBuilder: (context, child, loadingProgress) {
+              if (loadingProgress == null) return child;
+              return loaderWidget;
+            },
+          ) : CachedNetworkImage(
+            imageUrl: imageUrl,
+            fit: BoxFit.contain,
+            placeholder: (context, url) => loaderWidget,
+            errorWidget: (context, url, error) => errorWidget,
           ),
         );
       }).toList(),
     );
   }
 
-  Widget _buildSmallDots(bool isDark, Color accentColor) {
+  Widget _buildSmallDots(bool isDark, Color accentColor, List<String> images) {
     // Debug: print image count
-    debugPrint('🖼️ Product images count: ${_images.length}');
-    debugPrint('🖼️ Images: $_images');
+    debugPrint('🖼️ Product images count: ${images.length}');
+    debugPrint('🖼️ Images: $images');
     
     // Hide dots only if no images at all
-    if (_images.isEmpty) return const SizedBox.shrink();
+    if (images.isEmpty) return const SizedBox.shrink();
     
     return Padding(
       padding: const EdgeInsets.only(top: 12),
       child: Row(
         mainAxisAlignment: MainAxisAlignment.center,
-        children: _images.asMap().entries.map((entry) {
+        children: images.asMap().entries.map((entry) {
           final isActive = _currentIndex == entry.key;
           return AnimatedContainer(
             duration: const Duration(milliseconds: 200),

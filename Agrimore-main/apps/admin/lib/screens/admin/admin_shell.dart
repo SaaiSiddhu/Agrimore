@@ -29,13 +29,19 @@ class _AdminShellState extends State<AdminShell> {
   bool _isCollapsed = false;
 
   // Navigation items with routes
-  static final List<_NavItem> _navItems = [
+  final List<_NavItem> _navItems = [
     _NavItem(Icons.grid_view_rounded, 'Dashboard', AdminRoutes.dashboard),
     _NavItem(Icons.inventory_2_rounded, 'Products', AdminRoutes.products),
     _NavItem(Icons.receipt_long_rounded, 'Orders', AdminRoutes.orders),
+    _NavItem(Icons.card_membership_rounded, 'Subscriptions', AdminRoutes.subscriptions),
+    _NavItem(Icons.schedule_rounded, 'Time Slots', AdminRoutes.deliveryTimeSlots),
     _NavItem(Icons.delivery_dining_rounded, 'Delivery Partners', AdminRoutes.deliveryPartners),
     _NavItem(Icons.group_rounded, 'Users', AdminRoutes.users),
+    _NavItem(Icons.storefront_rounded, 'Vendors', AdminRoutes.vendors),
+    _NavItem(Icons.how_to_reg_rounded, 'Seller requests', AdminRoutes.sellerRequests),
+    _NavItem(Icons.rate_review_rounded, 'Reviews', AdminRoutes.reviews),
     _NavItem(Icons.loyalty_rounded, 'Coupons', AdminRoutes.coupons),
+    _NavItem(Icons.card_giftcard_rounded, 'Rewards', AdminRoutes.rewards),
     _NavItem(Icons.collections_rounded, 'Banners', AdminRoutes.banners),
     _NavItem(Icons.ads_click_rounded, 'Sponsored', AdminRoutes.sponsored),
     _NavItem(Icons.view_carousel_rounded, 'Section Banners', AdminRoutes.sectionBanners),
@@ -61,8 +67,11 @@ class _AdminShellState extends State<AdminShell> {
 
     // Redirect if not admin
     if (!authProvider.isLoggedIn || !authProvider.isAdmin) {
-      WidgetsBinding.instance.addPostFrameCallback((_) {
-        context.go(AdminRoutes.auth);
+      WidgetsBinding.instance.addPostFrameCallback((_) async {
+        if (authProvider.isLoggedIn && !authProvider.isAdmin) {
+          await authProvider.signOut();
+        }
+        if (context.mounted) context.go(AdminRoutes.auth);
       });
       return const Scaffold(body: Center(child: CircularProgressIndicator()));
     }
@@ -416,16 +425,21 @@ class _AdminShellState extends State<AdminShell> {
       case 0: return 'Overview';
       case 1: return 'Catalog';
       case 2: return 'Sales';
-      case 3: return 'Customers';
-      case 4: return 'Offers';
-      case 5: return 'Media';
-      case 6: return 'Ads';
-      case 7: return 'Between Sections';
-      case 8: return 'Featured';
-      case 9: return 'Home Categories';
-      case 10: return 'Alerts';
-      case 11: return 'Reports';
-      case 12: return 'Config';
+      case 3: return 'Recurrences';
+      case 4: return 'Logistics';
+      case 5: return 'Customers';
+      case 6: return 'Stores';
+      case 7: return 'Feedback';
+      case 8: return 'Promotions';
+      case 9: return 'Gamification';
+      case 10: return 'Media';
+      case 11: return 'Ads';
+      case 12: return 'Between Sections';
+      case 13: return 'Featured';
+      case 14: return 'Home Categories';
+      case 15: return 'Alerts';
+      case 16: return 'Reports';
+      case 17: return 'Config';
       default: return '';
     }
   }
@@ -454,8 +468,8 @@ class _AdminShellState extends State<AdminShell> {
               _buildBottomNavItem(0, Icons.grid_view_rounded, 'Home'),
               _buildBottomNavItem(1, Icons.inventory_2_rounded, 'Products'),
               _buildBottomNavItem(2, Icons.receipt_long_rounded, 'Orders'),
-              _buildBottomNavItem(3, Icons.group_rounded, 'Users'),
-              _buildBottomNavItem(11, Icons.settings_rounded, 'Settings'),
+              _buildBottomNavItem(6, Icons.group_rounded, 'Users'),
+              _buildBottomNavItem(19, Icons.settings_rounded, 'Settings'),
             ],
           ),
         ),

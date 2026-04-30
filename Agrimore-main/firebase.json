@@ -98,8 +98,38 @@
       ]
     },
     {
-      "site": "admin-agrimore",
+      "site": "agrimore-66a4e-bb1da",
       "public": "apps/admin/build/web",
+      "ignore": [
+        "firebase.json",
+        "**/.*",
+        "**/node_modules/**"
+      ],
+      "rewrites": [
+        {
+          "source": "**",
+          "destination": "/index.html"
+        }
+      ]
+    },
+    {
+      "site": "agrimore-delivery-partner",
+      "public": "apps/delivery/build/web",
+      "ignore": [
+        "firebase.json",
+        "**/.*",
+        "**/node_modules/**"
+      ],
+      "rewrites": [
+        {
+          "source": "**",
+          "destination": "/index.html"
+        }
+      ]
+    },
+    {
+      "site": "agrimore-seller-app",
+      "public": "apps/seller/build/web",
       "ignore": [
         "firebase.json",
         "**/.*",

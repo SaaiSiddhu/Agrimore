@@ -7,8 +7,11 @@ import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:firebase_auth/firebase_auth.dart';
+import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:agrimore_ui/agrimore_ui.dart';
 import 'package:agrimore_services/agrimore_services.dart';
+import '../../app/routes.dart';
+
 
 class LoginScreen extends StatefulWidget {
   const LoginScreen({Key? key}) : super(key: key);
@@ -141,20 +144,68 @@ class _LoginScreenState extends State<LoginScreen>
 
     try {
       debugPrint('🔐 Attempting login for: ${_emailController.text.trim()}');
-      
+
       final authService = AuthService();
-      await authService.signInWithEmail(
+      final userProfile = await authService.signInWithEmail(
         email: _emailController.text.trim().toLowerCase(),
-        password: _passwordController.text,
+        password: _passwordController.text.trim(),
       );
-      
-      debugPrint('✅ Login successful, navigating to /home');
-      
-      if (mounted) {
-        // Use post-frame callback to ensure navigation happens after current build
+
+      debugPrint('✅ Login successful: ${userProfile.uid}');
+
+      if (!mounted) return;
+
+      // ── STEP 1: Check mobile number ──────────────────────────
+      final phone = userProfile.phone;
+      if (phone == null || phone.trim().isEmpty) {
+        debugPrint('📱 No phone → /mobile-number');
         WidgetsBinding.instance.addPostFrameCallback((_) {
           if (mounted) {
-            // ✅ Navigate to main screen and clear the entire navigation stack
+            Navigator.of(context).pushNamedAndRemoveUntil(
+              '/mobile-number',
+              (route) => false,
+            );
+          }
+        });
+        return;
+      }
+
+      // ── STEP 2: Check if address exists ─────────────────────
+      try {
+        final snapshot = await FirebaseFirestore.instance
+            .collection('users')
+            .doc(userProfile.uid)
+            .collection('addresses')
+            .limit(1)
+            .get();
+
+        if (!mounted) return;
+
+        if (snapshot.docs.isEmpty) {
+          debugPrint('📍 No address → /onboarding-address');
+          WidgetsBinding.instance.addPostFrameCallback((_) {
+            if (mounted) {
+              Navigator.of(context).pushNamedAndRemoveUntil(
+                '/onboarding-address',
+                (route) => false,
+              );
+            }
+          });
+        } else {
+          debugPrint('🏠 All good → /main');
+          WidgetsBinding.instance.addPostFrameCallback((_) {
+            if (mounted) {
+              Navigator.of(context).pushNamedAndRemoveUntil(
+                '/main',
+                (route) => false,
+              );
+            }
+          });
+        }
+      } catch (_) {
+        // Address check failed non-critically → go home anyway
+        WidgetsBinding.instance.addPostFrameCallback((_) {
+          if (mounted) {
             Navigator.of(context).pushNamedAndRemoveUntil(
               '/main',
               (route) => false,
@@ -188,61 +239,72 @@ class _LoginScreenState extends State<LoginScreen>
 
     try {
       final authService = AuthService();
-      final userExists = await authService.signInWithGoogle();
+      final userProfile = await authService.signInWithGoogle();
       
-      // Check if user profile is complete
-      if (userExists.name.isEmpty || userExists.phone == null || userExists.phone!.isEmpty) {
-        // Redirect to complete profile
-        if (mounted) {
-          Navigator.pushReplacementNamed(
-            context,
-            '/complete-profile',
-            arguments: {'email': userExists.email},
-          );
-        }
-      } else {
-        if (mounted) {
-          // ✅ Navigate to main screen and clear the entire navigation stack
-          Navigator.of(context).pushNamedAndRemoveUntil(
-            '/main',
-            (route) => false,
-          );
-        }
-      }
-    } on AuthException catch (e) {
-      // Check if it's an unregistered user
-      if (e.message.contains('not found') || e.message.contains('not registered')) {
-        // Sign out and redirect to signup
-        await FirebaseAuth.instance.signOut();
-        if (mounted) {
-          final email = FirebaseAuth.instance.currentUser?.email;
-          Navigator.pushReplacementNamed(
-            context,
-            '/signup',
-            arguments: {'email': email, 'fromGoogle': true},
-          );
-        }
-      } else {
-        setState(() {
-          _errorMessage = e.message;
+      if (!mounted) return;
+
+      // ── STEP 1: Check mobile number ──────────────────────────
+      final phone = userProfile.phone;
+      if (phone == null || phone.trim().isEmpty) {
+        debugPrint('📱 No phone → /mobile-number');
+        WidgetsBinding.instance.addPostFrameCallback((_) {
+          if (mounted) {
+            Navigator.of(context).pushNamedAndRemoveUntil(
+              '/mobile-number',
+              (route) => false,
+            );
+          }
         });
-      }
-    } catch (e) {
-      // Handle unregistered Google user
-      final currentUser = FirebaseAuth.instance.currentUser;
-      if (currentUser != null) {
-        final email = currentUser.email;
-        await FirebaseAuth.instance.signOut();
-        if (mounted) {
-          Navigator.pushReplacementNamed(
-            context,
-            '/signup',
-            arguments: {'email': email, 'fromGoogle': true},
-          );
-        }
         return;
       }
-      
+
+      // ── STEP 2: Check if address exists ─────────────────────
+      try {
+        final snapshot = await FirebaseFirestore.instance
+            .collection('users')
+            .doc(userProfile.uid)
+            .collection('addresses')
+            .limit(1)
+            .get();
+
+        if (!mounted) return;
+
+        if (snapshot.docs.isEmpty) {
+          debugPrint('📍 No address → /onboarding-address');
+          WidgetsBinding.instance.addPostFrameCallback((_) {
+            if (mounted) {
+              Navigator.of(context).pushNamedAndRemoveUntil(
+                '/onboarding-address',
+                (route) => false,
+              );
+            }
+          });
+        } else {
+          debugPrint('🏠 All good → /main');
+          WidgetsBinding.instance.addPostFrameCallback((_) {
+            if (mounted) {
+              Navigator.of(context).pushNamedAndRemoveUntil(
+                '/main',
+                (route) => false,
+              );
+            }
+          });
+        }
+      } catch (_) {
+        WidgetsBinding.instance.addPostFrameCallback((_) {
+          if (mounted) {
+            Navigator.of(context).pushNamedAndRemoveUntil(
+              '/main',
+              (route) => false,
+            );
+          }
+        });
+      }
+    } on AuthException catch (e) {
+      setState(() {
+        _errorMessage = e.message;
+      });
+    } catch (e) {
       setState(() {
         _errorMessage = e.toString().replaceAll('Exception: ', '');
       });
@@ -254,31 +316,81 @@ class _LoginScreenState extends State<LoginScreen>
   }
 
   Future<void> _handleForgotPassword() async {
-    final email = _emailController.text.trim();
-    if (email.isEmpty) {
-      setState(() {
-        _errorMessage = 'Please enter your email address first';
-      });
-      return;
-    }
-
-    try {
-      final authService = AuthService();
-      await authService.sendPasswordResetEmail(email);
-      
-      if (mounted) {
-        ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(
-            content: Text('Password reset email sent to $email'),
-            backgroundColor: AppColors.success,
+    final TextEditingController resetEmailController = TextEditingController(text: _emailController.text.trim());
+    
+    await showDialog(
+      context: context,
+      builder: (context) {
+        return AlertDialog(
+          shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
+          title: const Text('Reset Password', style: TextStyle(fontWeight: FontWeight.bold)),
+          content: Column(
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              const Text('Enter your registered email address to receive a password reset link.'),
+              const SizedBox(height: 16),
+              TextField(
+                controller: resetEmailController,
+                keyboardType: TextInputType.emailAddress,
+                decoration: InputDecoration(
+                  hintText: 'you@example.com',
+                  prefixIcon: const Icon(Icons.email_outlined),
+                  border: OutlineInputBorder(borderRadius: BorderRadius.circular(12)),
+                  contentPadding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
+                ),
+              ),
+            ],
           ),
+          actions: [
+            TextButton(
+              onPressed: () => Navigator.pop(context),
+              child: const Text('Cancel'),
+            ),
+            ElevatedButton(
+              onPressed: () async {
+                final email = resetEmailController.text.trim().toLowerCase();
+                if (email.isEmpty) return;
+                
+                Navigator.pop(context); // close dialog
+                
+                setState(() {
+                  _isLoading = true;
+                  _errorMessage = null;
+                });
+                
+                try {
+                  final authService = AuthService();
+                  await authService.sendPasswordResetEmail(email);
+                  
+                  if (mounted) {
+                    ScaffoldMessenger.of(context).showSnackBar(
+                      SnackBar(
+                        content: Text('Password reset link sent to $email'),
+                        backgroundColor: AppColors.success,
+                      ),
+                    );
+                  }
+                } catch (e) {
+                  setState(() {
+                    _errorMessage = e.toString().replaceAll('Exception: ', '');
+                  });
+                } finally {
+                  if (mounted) {
+                    setState(() => _isLoading = false);
+                  }
+                }
+              },
+              style: ElevatedButton.styleFrom(
+                backgroundColor: AppColors.primary,
+                foregroundColor: Colors.white,
+                shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(8)),
+              ),
+              child: const Text('Send Link'),
+            ),
+          ],
         );
-      }
-    } catch (e) {
-      setState(() {
-        _errorMessage = e.toString().replaceAll('Exception: ', '');
-      });
-    }
+      },
+    );
   }
 
   @override
@@ -594,7 +706,7 @@ class _LoginScreenState extends State<LoginScreen>
                 ),
               ),
               GestureDetector(
-                onTap: () => Navigator.pushNamed(context, '/signup'),
+                onTap: () => Navigator.pushNamed(context, AppRoutes.signup),
                 child: Text(
                   'Create an account',
                   style: TextStyle(
@@ -605,6 +717,23 @@ class _LoginScreenState extends State<LoginScreen>
                 ),
               ),
             ],
+          ),
+          const SizedBox(height: 10),
+          Text(
+            'Want to sell? Use Seller register after you sign in: Profile → Seller registration.',
+            style: TextStyle(
+              fontSize: 13,
+              height: 1.35,
+              color: isDark ? Colors.white60 : AppColors.textSecondary,
+            ),
+          ),
+          const SizedBox(height: 6),
+          Align(
+            alignment: Alignment.centerLeft,
+            child: TextButton(
+              onPressed: () => Navigator.pushNamed(context, AppRoutes.signup),
+              child: const Text('Seller register (create account)'),
+            ),
           ),
           
           const SizedBox(height: 36),

@@ -16,6 +16,25 @@ class CartProvider with ChangeNotifier {
   String? _error;
   bool _isListening = false; // ✅ Prevent duplicate stream subscriptions
 
+  /// In-memory checkout hint from product detail (not stored on the cart document).
+  String? _checkoutOrderType;
+  String? _checkoutAutoFrequency;
+
+  String? get checkoutOrderType => _checkoutOrderType;
+  String? get checkoutAutoFrequency => _checkoutAutoFrequency;
+
+  void setCheckoutSubscriptionIntent(String orderType, String autoFrequency) {
+    _checkoutOrderType = orderType;
+    _checkoutAutoFrequency = autoFrequency;
+    notifyListeners();
+  }
+
+  void clearCheckoutSubscriptionIntent() {
+    _checkoutOrderType = null;
+    _checkoutAutoFrequency = null;
+    notifyListeners();
+  }
+
   CartModel? get cart => _cart;
   bool get isLoading => _isLoading;
   String? get error => _error;
@@ -92,13 +111,22 @@ class CartProvider with ChangeNotifier {
       final effectivePrice = variantPrice ?? product.salePrice;
       final effectiveOriginalPrice = variantOriginalPrice ?? product.originalPrice;
 
+      // Extract variant image if variant name is provided
+      String effectiveImage = product.primaryImage;
+      if (variant != null && variant.isNotEmpty) {
+          final matchedVariant = product.variants.where((v) => v.name == variant).firstOrNull;
+          if (matchedVariant != null && matchedVariant.images.isNotEmpty) {
+              effectiveImage = matchedVariant.images.first;
+          }
+      }
+
       print('🛒 Adding to cart: ${product.name}, variant: $variant, price: $effectivePrice, qty: $quantity');
 
       final cartItem = CartItemModel(
         id: _uuid.v4(),
         productId: product.id,
         productName: product.name,
-        productImage: product.primaryImage,
+        productImage: effectiveImage,
         price: effectivePrice,
         quantity: quantity,
         userId: userId,
@@ -494,6 +522,15 @@ class CartProvider with ChangeNotifier {
 
   Future<void> refreshCart() async {
     loadCart();
+  }
+
+  void reset() {
+    _cart = null;
+    _isListening = false;
+    _error = null;
+    _checkoutOrderType = null;
+    _checkoutAutoFrequency = null;
+    notifyListeners();
   }
 
   void clearError() {

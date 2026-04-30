@@ -14,6 +14,7 @@ import 'analytics/analytics_screen.dart';
 import 'coupon/coupon_management_screen.dart';
 import 'products/product_form_screen.dart';
 import 'banners/banner_management_screen.dart';
+import 'products/seller_product_approval_screen.dart';
 
 class AdminDashboard extends StatefulWidget {
   const AdminDashboard({Key? key}) : super(key: key);
@@ -49,6 +50,21 @@ class _AdminDashboardState extends State<AdminDashboard>
   void dispose() {
     _animationController.dispose();
     super.dispose();
+  }
+  void _navigateToStatDetail(String statTitle) {
+    Widget? screen;
+    if (statTitle.contains('Order') || statTitle.contains('Pending')) {
+      screen = const OrderManagementScreen();
+    } else if (statTitle.contains('Product')) {
+      screen = const ProductManagementScreen();
+    } else if (statTitle.contains('User') || statTitle.contains('Seller')) {
+      screen = const UserManagementScreen();
+    } else if (statTitle.contains('Revenue')) {
+      screen = const AnalyticsScreen();
+    }
+    if (screen != null) {
+      Navigator.push(context, MaterialPageRoute(builder: (_) => screen!));
+    }
   }
 
   @override
@@ -446,7 +462,10 @@ class _AdminDashboardState extends State<AdminDashboard>
         color: Colors.transparent,
         borderRadius: BorderRadius.circular(16),
         child: InkWell(
-          onTap: () {},
+          onTap: () {
+            // Navigate based on stat type
+            _navigateToStatDetail(data.title);
+          },
           borderRadius: BorderRadius.circular(16),
           child: Padding(
             padding: const EdgeInsets.all(16),
@@ -546,7 +565,9 @@ class _AdminDashboardState extends State<AdminDashboard>
         color: Colors.transparent,
         borderRadius: BorderRadius.circular(20),
         child: InkWell(
-          onTap: () {},
+          onTap: () {
+            _navigateToStatDetail(data.title);
+          },
           borderRadius: BorderRadius.circular(20),
           child: Padding(
             padding: const EdgeInsets.all(20),
@@ -721,8 +742,10 @@ class _AdminDashboardState extends State<AdminDashboard>
   Widget _buildQuickActions(bool isMobile) {
     final List<Map<String, dynamic>> actions = [
       {'icon': Icons.add_circle_rounded, 'title': 'Add Product', 'color': const Color(0xFF6366F1), 'route': const ProductFormScreen()},
-      {'icon': Icons.slideshow_rounded, 'title': 'Manage Banners', 'color': const Color(0xFFEC4899), 'route': const BannerManagementScreen()},
-      {'icon': Icons.local_offer_rounded, 'title': 'Coupons', 'color': const Color(0xFFF59E0B), 'route': const CouponManagementScreen()},
+      {'icon': Icons.verified_user_rounded, 'title': 'Approve Products', 'color': const Color(0xFFEC4899), 'route': const SellerProductApprovalScreen()},
+      {'icon': Icons.map_rounded, 'title': 'God\'s Eye Map', 'color': const Color(0xFF8B5CF6), 'route': const BannerManagementScreen()},
+      {'icon': Icons.monetization_on_rounded, 'title': 'Banners', 'color': const Color(0xFFF59E0B), 'route': const BannerManagementScreen()},
+      {'icon': Icons.security_rounded, 'title': 'User Mgmt', 'color': const Color(0xFFEF4444), 'route': const UserManagementScreen()},
       {'icon': Icons.analytics_rounded, 'title': 'Analytics', 'color': const Color(0xFF10B981), 'route': const AnalyticsScreen()},
     ];
 
@@ -741,7 +764,9 @@ class _AdminDashboardState extends State<AdminDashboard>
         final Color color = action['color'] as Color;
         return InkWell(
           borderRadius: BorderRadius.circular(16),
-          onTap: () => Navigator.push(context, MaterialPageRoute(builder: (_) => action['route'] as Widget)),
+          onTap: () {
+            Navigator.push(context, MaterialPageRoute(builder: (_) => action['route'] as Widget));
+          },
           child: AnimatedContainer(
             duration: const Duration(milliseconds: 300),
             padding: const EdgeInsets.all(18),

@@ -17,6 +17,7 @@ export 'auth/auth_service.dart';
 // ============================================
 export 'database/database_service.dart';
 export 'database/firestore_data_service.dart';
+export 'settings/delivery_slot_service.dart';
 
 // ============================================
 // STORAGE
@@ -54,6 +55,7 @@ export 'ai/ai_chat_service.dart';
 // ADMIN
 // ============================================
 export 'admin/admin_service.dart';
+export 'admin/vendor_service.dart';
 
 // ============================================
 // ORDERS

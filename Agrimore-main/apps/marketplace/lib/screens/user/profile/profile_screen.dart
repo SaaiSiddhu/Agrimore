@@ -12,6 +12,8 @@ import 'package:agrimore_ui/agrimore_ui.dart';
 import '../../../app/routes.dart';
 import '../../../providers/auth_provider.dart' as app_auth;
 import '../../../providers/theme_provider.dart';
+import '../../../providers/cart_provider.dart';
+import '../../../providers/seller_provider.dart';
 
 class ProfileScreen extends StatefulWidget {
   const ProfileScreen({Key? key}) : super(key: key);
@@ -44,6 +46,9 @@ class _ProfileScreenState extends State<ProfileScreen> {
     }
     setState(() => _isCheckingAuth = false);
     _loadUserStats();
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      if (mounted) context.read<SellerProvider>().checkSellerStatus();
+    });
   }
 
   Future<void> _loadUserStats() async {
@@ -101,6 +106,9 @@ class _ProfileScreenState extends State<ProfileScreen> {
     );
 
     if (confirmed == true && mounted) {
+      try {
+        Provider.of<CartProvider>(context, listen: false).reset();
+      } catch (e) {}
       await FirebaseAuth.instance.signOut();
       Navigator.of(context).pushReplacementNamed(AppRoutes.login);
     }
@@ -121,8 +129,8 @@ class _ProfileScreenState extends State<ProfileScreen> {
     return Scaffold(
       backgroundColor: isDark ? const Color(0xFF121212) : const Color(0xFFF5F5F5),
       body: SafeArea(
-        child: Consumer<app_auth.AuthProvider>(
-          builder: (context, authProvider, child) {
+        child: Consumer2<app_auth.AuthProvider, SellerProvider>(
+          builder: (context, authProvider, sellerProvider, child) {
             final user = authProvider.currentUser;
             
             return CustomScrollView(
@@ -155,16 +163,42 @@ class _ProfileScreenState extends State<ProfileScreen> {
                     isDark: isDark,
                     items: [
                       _MenuItem(
+                        icon: Icons.shopping_bag_outlined,
+                        title: 'My Orders',
+                        count: _isLoadingStats ? null : _ordersCount,
+                        onTap: () => _navigateTo(AppRoutes.orders),
+                      ),
+                      _MenuItem(
+                        icon: Icons.card_membership,
+                        title: 'My Subscriptions',
+                        onTap: () => _navigateTo(AppRoutes.mySubscriptions),
+                      ),
+                      _MenuItem(
                         icon: Icons.location_on_outlined,
-                        title: 'Address book',
+                        title: 'Delivery Addresses',
                         count: _isLoadingStats ? null : _addressesCount,
                         onTap: () => _navigateTo(AppRoutes.savedAddresses),
                       ),
                       _MenuItem(
+                        icon: Icons.account_balance_wallet_outlined,
+                        title: 'Wallet',
+                        onTap: () => _navigateTo(AppRoutes.wallet),
+                      ),
+                      _MenuItem(
                         icon: Icons.favorite_outline,
-                        title: 'Your wishlist',
+                        title: 'Your Wishlist',
                         count: _isLoadingStats ? null : _wishlistCount,
                         onTap: () => _navigateTo(AppRoutes.wishlist),
+                      ),
+                      _MenuItem(
+                        icon: Icons.card_giftcard,
+                        title: 'Rewards & Offers',
+                        onTap: () => _navigateTo(AppRoutes.rewards),
+                      ),
+                      _MenuItem(
+                        icon: Icons.bolt,
+                        title: 'Flash Sale',
+                        onTap: () => _navigateTo(AppRoutes.flashSale),
                       ),
                     ],
                   ),
@@ -177,23 +211,49 @@ class _ProfileScreenState extends State<ProfileScreen> {
                     isDark: isDark,
                     items: [
                       _MenuItem(
+                        icon: Icons.person_add_alt_1_outlined,
+                        title: 'Refer & Earn',
+                        onTap: () => _navigateTo(AppRoutes.referral),
+                      ),
+                      if (!authProvider.isAdmin) ...[
+                        if (sellerProvider.isApproved)
+                          _MenuItem(
+                            icon: Icons.storefront_outlined,
+                            title: 'Seller dashboard',
+                            onTap: () => _navigateTo(AppRoutes.sellerPanel),
+                          )
+                        else
+                          _MenuItem(
+                            icon: Icons.app_registration_rounded,
+                            title: sellerProvider.isPending
+                                ? 'Seller application (pending)'
+                                : 'Seller registration',
+                            onTap: () => _navigateTo(AppRoutes.sellerApply),
+                          ),
+                      ],
+                      _MenuItem(
+                        icon: Icons.notifications_none,
+                        title: 'Notifications',
+                        onTap: () => _navigateTo(AppRoutes.notifications),
+                      ),
+                      _MenuItem(
                         icon: Icons.share_outlined,
-                        title: 'Share the app',
-                        onTap: () {},
+                        title: 'Share Agrimore',
+                        onTap: () => _showShareBottomSheet(isDark),
                       ),
                       _MenuItem(
-                        icon: Icons.info_outline,
-                        title: 'About us',
-                        onTap: () {},
+                        icon: Icons.language,
+                        title: 'Language',
+                        onTap: () => _navigateTo(AppRoutes.language),
                       ),
                       _MenuItem(
-                        icon: Icons.lock_outline,
-                        title: 'Account privacy',
-                        onTap: () => _navigateTo(AppRoutes.changePassword),
+                        icon: Icons.help_outline_rounded,
+                        title: 'Help & Support',
+                        onTap: () => _navigateTo(AppRoutes.support),
                       ),
                       _MenuItem(
-                        icon: Icons.notifications_outlined,
-                        title: 'Notification preferences',
+                        icon: Icons.settings_outlined,
+                        title: 'Account Settings',
                         onTap: () => _navigateTo(AppRoutes.appSettings),
                       ),
                       _MenuItem(
@@ -347,16 +407,16 @@ class _ProfileScreenState extends State<ProfileScreen> {
             icon: Icons.account_balance_wallet_outlined,
             label: 'Wallet',
             isDark: isDark,
-            onTap: () {},
+            onTap: () => _navigateTo(AppRoutes.wallet),
             color: const Color(0xFFFFF3E0),
             iconColor: const Color(0xFFE65100),
           ),
           const SizedBox(width: 12),
           _buildQuickActionCard(
-            icon: Icons.help_outline,
-            label: 'Need help?',
+            icon: Icons.card_giftcard,
+            label: 'Rewards',
             isDark: isDark,
-            onTap: () {},
+            onTap: () => _navigateTo(AppRoutes.rewards),
             color: const Color(0xFFE3F2FD),
             iconColor: const Color(0xFF1565C0),
           ),
@@ -608,6 +668,61 @@ class _ProfileScreenState extends State<ProfileScreen> {
             ],
           ),
         ),
+      ),
+    );
+  }
+
+  void _showShareBottomSheet(bool isDark) {
+    showModalBottomSheet(
+      context: context,
+      backgroundColor: Colors.transparent,
+      builder: (context) => Container(
+        padding: const EdgeInsets.all(24),
+        decoration: BoxDecoration(
+          color: isDark ? const Color(0xFF1E1E1E) : Colors.white,
+          borderRadius: const BorderRadius.vertical(top: Radius.circular(24)),
+        ),
+        child: Column(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            Container(width: 40, height: 4, decoration: BoxDecoration(color: Colors.grey[400], borderRadius: BorderRadius.circular(2))),
+            const SizedBox(height: 24),
+            Text('Invite Friends & Keep Growing', style: TextStyle(fontSize: 20, fontWeight: FontWeight.w800, color: isDark ? Colors.white : Colors.black87)),
+            const SizedBox(height: 8),
+            Text('Share Agrimore with your circle and earn rewards!', style: TextStyle(fontSize: 14, color: isDark ? Colors.grey[400] : Colors.grey[600]), textAlign: TextAlign.center),
+            const SizedBox(height: 32),
+            Row(
+              mainAxisAlignment: MainAxisAlignment.spaceEvenly,
+              children: [
+                _buildShareIcon(Icons.message, 'SMS', Colors.blue, isDark),
+                _buildShareIcon(Icons.link, 'Copy Link', Colors.grey, isDark),
+                _buildShareIcon(Icons.email, 'Email', Colors.red, isDark),
+              ],
+            ),
+            const SizedBox(height: 24),
+          ],
+        ),
+      ),
+    );
+  }
+
+  Widget _buildShareIcon(IconData icon, String label, Color color, bool isDark) {
+    return GestureDetector(
+      onTap: () {
+        Navigator.pop(context);
+        Clipboard.setData(const ClipboardData(text: 'Download Agrimore: https://agrimore.in'));
+        ScaffoldMessenger.of(context).showSnackBar(const SnackBar(content: Text('Link copied to clipboard!')));
+      },
+      child: Column(
+        children: [
+          Container(
+            padding: const EdgeInsets.all(16),
+            decoration: BoxDecoration(color: color.withOpacity(0.15), shape: BoxShape.circle),
+            child: Icon(icon, color: color, size: 28),
+          ),
+          const SizedBox(height: 8),
+          Text(label, style: TextStyle(fontSize: 12, fontWeight: FontWeight.w600, color: isDark ? Colors.grey[300] : Colors.black87)),
+        ],
       ),
     );
   }

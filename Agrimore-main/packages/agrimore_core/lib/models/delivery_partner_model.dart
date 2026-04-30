@@ -15,6 +15,29 @@ class DeliveryPartnerModel {
   final double? rating;
   final int totalDeliveries;
   final bool isOnline;
+  
+  // KYC & Registration Fields
+  final String? aadhaarNumber;
+  final String? aadhaarFrontImage;
+  final String? aadhaarBackImage;
+  final String? selfieImage;
+  final String? licenseNumber;
+  final String? licenseImage;
+  
+  // Address Fields
+  final String? address;
+  final String? city;
+  final String? pincode;
+  
+  // Bank Details
+  final String? accountHolderName;
+  final String? bankAccountNumber;
+  final String? ifscCode;
+  final String? upiId;
+  
+  // Status (pending, approved, rejected)
+  final String status;
+  final DateTime? createdAt;
 
   DeliveryPartnerModel({
     required this.id,
@@ -29,6 +52,21 @@ class DeliveryPartnerModel {
     this.rating,
     this.totalDeliveries = 0,
     this.isOnline = true,
+    this.aadhaarNumber,
+    this.aadhaarFrontImage,
+    this.aadhaarBackImage,
+    this.selfieImage,
+    this.licenseNumber,
+    this.licenseImage,
+    this.address,
+    this.city,
+    this.pincode,
+    this.accountHolderName,
+    this.bankAccountNumber,
+    this.ifscCode,
+    this.upiId,
+    this.status = 'approved', // Default approved for backward compatibility
+    this.createdAt,
   });
 
   /// Check if location is available
@@ -47,6 +85,12 @@ class DeliveryPartnerModel {
 
   /// Get formatted rating
   String get formattedRating => rating?.toStringAsFixed(1) ?? 'New';
+
+  /// Mask Aadhaar number for security
+  String get maskedAadhaar {
+    if (aadhaarNumber == null || aadhaarNumber!.length < 12) return 'XXXX-XXXX-XXXX';
+    return 'XXXX-XXXX-${aadhaarNumber!.substring(8)}';
+  }
 
   factory DeliveryPartnerModel.fromMap(Map<String, dynamic> map, [String? id]) {
     DateTime? parseDateTime(dynamic value) {
@@ -70,6 +114,21 @@ class DeliveryPartnerModel {
       rating: (map['rating'] as num?)?.toDouble(),
       totalDeliveries: (map['totalDeliveries'] as num?)?.toInt() ?? 0,
       isOnline: map['isOnline'] ?? true,
+      aadhaarNumber: map['aadhaarNumber'],
+      aadhaarFrontImage: map['aadhaarFrontImage'],
+      aadhaarBackImage: map['aadhaarBackImage'],
+      selfieImage: map['selfieImage'],
+      licenseNumber: map['licenseNumber'],
+      licenseImage: map['licenseImage'],
+      address: map['address'],
+      city: map['city'],
+      pincode: map['pincode'],
+      accountHolderName: map['accountHolderName'],
+      bankAccountNumber: map['bankAccountNumber'],
+      ifscCode: map['ifscCode'],
+      upiId: map['upiId'],
+      status: map['status'] ?? 'approved',
+      createdAt: parseDateTime(map['createdAt']),
     );
   }
 
@@ -89,6 +148,21 @@ class DeliveryPartnerModel {
       'rating': rating,
       'totalDeliveries': totalDeliveries,
       'isOnline': isOnline,
+      'aadhaarNumber': aadhaarNumber,
+      'aadhaarFrontImage': aadhaarFrontImage,
+      'aadhaarBackImage': aadhaarBackImage,
+      'selfieImage': selfieImage,
+      'licenseNumber': licenseNumber,
+      'licenseImage': licenseImage,
+      'address': address,
+      'city': city,
+      'pincode': pincode,
+      'accountHolderName': accountHolderName,
+      'bankAccountNumber': bankAccountNumber,
+      'ifscCode': ifscCode,
+      'upiId': upiId,
+      'status': status,
+      'createdAt': createdAt != null ? Timestamp.fromDate(createdAt!) : null,
     };
   }
 
@@ -105,6 +179,21 @@ class DeliveryPartnerModel {
     double? rating,
     int? totalDeliveries,
     bool? isOnline,
+    String? aadhaarNumber,
+    String? aadhaarFrontImage,
+    String? aadhaarBackImage,
+    String? selfieImage,
+    String? licenseNumber,
+    String? licenseImage,
+    String? address,
+    String? city,
+    String? pincode,
+    String? accountHolderName,
+    String? bankAccountNumber,
+    String? ifscCode,
+    String? upiId,
+    String? status,
+    DateTime? createdAt,
   }) {
     return DeliveryPartnerModel(
       id: id ?? this.id,
@@ -119,6 +208,21 @@ class DeliveryPartnerModel {
       rating: rating ?? this.rating,
       totalDeliveries: totalDeliveries ?? this.totalDeliveries,
       isOnline: isOnline ?? this.isOnline,
+      aadhaarNumber: aadhaarNumber ?? this.aadhaarNumber,
+      aadhaarFrontImage: aadhaarFrontImage ?? this.aadhaarFrontImage,
+      aadhaarBackImage: aadhaarBackImage ?? this.aadhaarBackImage,
+      selfieImage: selfieImage ?? this.selfieImage,
+      licenseNumber: licenseNumber ?? this.licenseNumber,
+      licenseImage: licenseImage ?? this.licenseImage,
+      address: address ?? this.address,
+      city: city ?? this.city,
+      pincode: pincode ?? this.pincode,
+      accountHolderName: accountHolderName ?? this.accountHolderName,
+      bankAccountNumber: bankAccountNumber ?? this.bankAccountNumber,
+      ifscCode: ifscCode ?? this.ifscCode,
+      upiId: upiId ?? this.upiId,
+      status: status ?? this.status,
+      createdAt: createdAt ?? this.createdAt,
     );
   }
 

@@ -23,6 +23,9 @@ class CategoriesScreen extends StatefulWidget {
 
 class _CategoriesScreenState extends State<CategoriesScreen> 
     with TickerProviderStateMixin {
+  static const bool _showCategoryImages = true;
+  static const bool _showProductImages = true;
+
   int _selectedIndex = 0;
   String _searchQuery = '';
   bool _isSearching = false;
@@ -58,9 +61,17 @@ class _CategoriesScreenState extends State<CategoriesScreen>
   void _loadCategories() {
     WidgetsBinding.instance.addPostFrameCallback((_) {
       final categoryProvider = Provider.of<CategoryProvider>(context, listen: false);
+      final productProvider = Provider.of<ProductProvider>(context, listen: false);
+      
       if (categoryProvider.categories.isEmpty) {
         categoryProvider.loadCategories();
       }
+      
+      // ✅ FIX: Load products too if empty, otherwise category grid shows 'No products'
+      if (productProvider.products.isEmpty) {
+        productProvider.loadProducts();
+      }
+      
       _staggerController.forward();
     });
   }
@@ -277,9 +288,13 @@ class _CategoriesScreenState extends State<CategoriesScreen>
             SliverToBoxAdapter(
               child: Padding(
                 padding: const EdgeInsets.fromLTRB(12, 8, 12, 4),
-                child: Consumer<ProductProvider>(
-                  builder: (context, productProvider, _) {
-                    final count = _getFilteredProducts(productProvider, category).length;
+                child: Consumer2<ProductProvider, CategoryProvider>(
+                  builder: (context, productProvider, categoryProvider, _) {
+                    final count = _getFilteredProducts(
+                      productProvider,
+                      category,
+                      categoryProvider.categories,
+                    ).length;
                     return Text(
                       '$count results for "$_searchQuery"',
                       style: TextStyle(
@@ -296,31 +311,70 @@ class _CategoriesScreenState extends State<CategoriesScreen>
           // Product Grid
           SliverPadding(
             padding: const EdgeInsets.fromLTRB(8, 8, 8, 100),
-            sliver: _buildProductGrid(category, isDark, accentColor),
+            sliver: _buildProductGrid(category, allCategories, isDark, accentColor),
           ),
         ],
       ),
     );
   }
 
-  List<ProductModel> _getFilteredProducts(ProductProvider productProvider, CategoryModel category) {
+  List<ProductModel> _getFilteredProducts(
+    ProductProvider productProvider,
+    CategoryModel category,
+    List<CategoryModel> allCategories,
+  ) {
     var products = productProvider.products
-        .where((p) => p.categoryId == category.id)
+        .where((p) => productBelongsToCategory(p, category, allCategories))
         .toList();
     
     if (_searchQuery.isNotEmpty) {
+      final query = _searchQuery.toLowerCase().trim();
       products = products.where((p) =>
-        p.name.toLowerCase().contains(_searchQuery.toLowerCase())
+        p.name.toLowerCase().contains(query) || 
+        p.description.toLowerCase().contains(query)
       ).toList();
     }
     
     return products;
   }
 
-  Widget _buildProductGrid(CategoryModel category, bool isDark, Color accentColor) {
+  Widget _buildProductGrid(
+    CategoryModel category,
+    List<CategoryModel> allCategories,
+    bool isDark,
+    Color accentColor,
+  ) {
     return Consumer<ProductProvider>(
       builder: (context, productProvider, child) {
-        final categoryProducts = _getFilteredProducts(productProvider, category);
+        if (productProvider.isLoading && productProvider.products.isEmpty) {
+          return SliverPadding(
+            padding: const EdgeInsets.symmetric(horizontal: 4, vertical: 12),
+            sliver: SliverGrid(
+              gridDelegate: const SliverGridDelegateWithFixedCrossAxisCount(
+                crossAxisCount: 3,
+                mainAxisExtent: 230,
+                crossAxisSpacing: 6,
+                mainAxisSpacing: 8,
+              ),
+              delegate: SliverChildBuilderDelegate(
+                (context, index) => Shimmer.fromColors(
+                  baseColor: isDark ? Colors.grey[850]! : Colors.grey[300]!,
+                  highlightColor: isDark ? Colors.grey[800]! : Colors.grey[100]!,
+                  child: Container(
+                    decoration: BoxDecoration(
+                      color: Colors.white,
+                      borderRadius: BorderRadius.circular(12),
+                    ),
+                  ),
+                ),
+                childCount: 6,
+              ),
+            ),
+          );
+        }
+
+        final categoryProducts =
+            _getFilteredProducts(productProvider, category, allCategories);
 
         if (categoryProducts.isEmpty) {
           return SliverToBoxAdapter(child: _buildNoProductsState(isDark));
@@ -329,7 +383,7 @@ class _CategoriesScreenState extends State<CategoriesScreen>
         return SliverGrid(
           gridDelegate: const SliverGridDelegateWithFixedCrossAxisCount(
             crossAxisCount: 3,
-            childAspectRatio: 0.52,
+            mainAxisExtent: 230,
             crossAxisSpacing: 6,
             mainAxisSpacing: 8,
           ),
@@ -447,7 +501,7 @@ class _CategoriesScreenState extends State<CategoriesScreen>
                       physics: const NeverScrollableScrollPhysics(),
                       gridDelegate: const SliverGridDelegateWithFixedCrossAxisCount(
                         crossAxisCount: 3,
-                        childAspectRatio: 0.55,
+                        mainAxisExtent: 230,
                         crossAxisSpacing: 6,
                         mainAxisSpacing: 8,
                       ),
@@ -744,10 +798,18 @@ class _EnhancedSidebarItemState extends State<_EnhancedSidebarItem>
   }
 
   Widget _buildCategoryIcon() {
-    if (widget.category.iconUrl != null && widget.category.iconUrl!.isNotEmpty) {
+    if (!_CategoriesScreenState._showCategoryImages) {
+      return _buildFallbackIcon();
+    }
+
+    final String targetUrl = (widget.category.iconUrl?.isNotEmpty ?? false) 
+        ? widget.category.iconUrl! 
+        : (widget.category.imageUrl ?? '');
+
+    if (targetUrl.isNotEmpty) {
       return ClipOval(
         child: CachedNetworkImage(
-          imageUrl: widget.category.iconUrl!,
+          imageUrl: targetUrl,
           fit: BoxFit.cover,
           width: 44,
           height: 44,
@@ -844,11 +906,12 @@ class _PremiumCategoryHeader extends StatelessWidget {
               ),
               borderRadius: BorderRadius.circular(10),
             ),
-            child: category.iconUrl != null && category.iconUrl!.isNotEmpty
+            child: ((category.iconUrl?.isNotEmpty ?? false) || (category.imageUrl?.isNotEmpty ?? false))
+                && _CategoriesScreenState._showCategoryImages
                 ? ClipRRect(
                     borderRadius: BorderRadius.circular(10),
                     child: CachedNetworkImage(
-                      imageUrl: category.iconUrl!,
+                      imageUrl: (category.iconUrl?.isNotEmpty ?? false) ? category.iconUrl! : category.imageUrl!,
                       fit: BoxFit.cover,
                     ),
                   )
@@ -1022,10 +1085,12 @@ class _SubcategoryChipState extends State<_SubcategoryChip> {
           child: Row(
             mainAxisSize: MainAxisSize.min,
             children: [
-              if (widget.category.iconUrl != null && widget.category.iconUrl!.isNotEmpty) ...[
+              if (_CategoriesScreenState._showCategoryImages &&
+                  ((widget.category.iconUrl?.isNotEmpty ?? false) ||
+                      (widget.category.imageUrl?.isNotEmpty ?? false))) ...[
                 ClipOval(
                   child: CachedNetworkImage(
-                    imageUrl: widget.category.iconUrl!,
+                    imageUrl: (widget.category.iconUrl?.isNotEmpty ?? false) ? widget.category.iconUrl! : widget.category.imageUrl!,
                     width: 18,
                     height: 18,
                     fit: BoxFit.cover,

@@ -1,24 +1,28 @@
-import 'dart:async'; // No longer needed for Timer
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
+import 'package:geolocator/geolocator.dart';
+import 'package:geocoding/geocoding.dart';
 import 'package:provider/provider.dart';
 import 'package:shimmer/shimmer.dart';
 import 'package:agrimore_ui/agrimore_ui.dart';
-import '../../../app/routes.dart';
+import 'package:agrimore_core/agrimore_core.dart';
 import '../../../providers/product_provider.dart';
 import '../../../providers/category_provider.dart';
 import '../../../providers/banner_provider.dart';
 import '../../../providers/category_section_provider.dart';
 import '../../../providers/section_banner_provider.dart';
 import '../../../providers/theme_provider.dart';
-import 'package:agrimore_ui/agrimore_ui.dart';
+import '../../../providers/shop_entry_provider.dart';
+import '../../../providers/settings_provider.dart';
 import 'widgets/home_app_bar.dart';
 import 'widgets/banner_slider.dart';
 import 'widgets/recently_viewed_widget.dart';
 import 'widgets/product_section_widget.dart';
 import 'widgets/bestsellers.dart';
 import 'widgets/dynamic_category_sections.dart';
+import 'widgets/grocery_kitchen_home_strip.dart';
 import 'widgets/section_banner_carousel.dart';
+import 'widgets/quick_links_widget.dart';
 
 class MobileHomeScreen extends StatefulWidget {
   const MobileHomeScreen({Key? key}) : super(key: key);
@@ -126,8 +130,11 @@ class _MobileHomeScreenState extends State<MobileHomeScreen>
     _lastRefreshTime = DateTime.now();
 
     // Load all providers in parallel - don't block UI
+    final settingsProvider = Provider.of<SettingsProvider>(context, listen: false);
+    final location = settingsProvider.selectedLocation;
+
     Future.wait([
-      Provider.of<ProductProvider>(context, listen: false).loadProducts(forceRefresh: forceRefresh),
+      Provider.of<ProductProvider>(context, listen: false).loadProducts(forceRefresh: forceRefresh, location: location),
       Provider.of<CategoryProvider>(context, listen: false).loadCategories(forceRefresh: forceRefresh),
       Provider.of<BannerProvider>(context, listen: false).loadBanners(forceRefresh: forceRefresh),
       Provider.of<CategorySectionProvider>(context, listen: false).loadSections(forceRefresh: forceRefresh),
@@ -280,6 +287,14 @@ class _MobileHomeScreenState extends State<MobileHomeScreen>
             _staggerAnimationController.forward();
           }
 
+          // ✅ Show location selector if no location is set
+            WidgetsBinding.instance.addPostFrameCallback((_) {
+              final settingsProvider = Provider.of<SettingsProvider>(context, listen: false);
+              if (settingsProvider.selectedLocation == null || settingsProvider.selectedLocation!.isEmpty) {
+                _showAutoLocationBottomSheet(context, settingsProvider);
+              }
+            });
+
           return RefreshIndicator(
             onRefresh: () async {
               HapticFeedback.lightImpact();
@@ -308,19 +323,35 @@ class _MobileHomeScreenState extends State<MobileHomeScreen>
                   ),
                 ),
 
-                // 2. Recently Viewed (Was 2 in your list)
+                // 1.5 Quick Links (Flash sale, Rewards, Wallet, Subs)
                 SliverToBoxAdapter(
                   child: _buildAnimatedBoxWrapper(
                     index: 1,
-                    child: const RecentlyViewedWidget(),
+                    child: const QuickLinksWidget(),
                   ),
                 ),
 
-                // 3. Deals For You
+                // 2. Bestsellers (admin-controlled)
                 SliverToBoxAdapter(
                   child: _buildAnimatedBoxWrapper(
                     index: 2,
                     child: const DealsForYou(),
+                  ),
+                ),
+
+                // 2b. Grocery & Kitchen strip
+                SliverToBoxAdapter(
+                  child: _buildAnimatedBoxWrapper(
+                    index: 3,
+                    child: const GroceryKitchenHomeStrip(),
+                  ),
+                ),
+
+                // 3. Recently Viewed
+                SliverToBoxAdapter(
+                  child: _buildAnimatedBoxWrapper(
+                    index: 4,
+                    child: const RecentlyViewedWidget(),
                   ),
                 ),
 
@@ -484,8 +515,16 @@ class _MobileHomeScreenState extends State<MobileHomeScreen>
     // Group products by category
     final Map<String, List<ProductModel>> productsByCategory = {};
     for (final product in allProducts) {
-      productsByCategory.putIfAbsent(product.categoryId, () => []);
-      productsByCategory[product.categoryId]!.add(product);
+      CategoryModel? hit;
+      for (final category in categories) {
+        if (productBelongsToCategory(product, category, categories)) {
+          hit = category;
+          break;
+        }
+      }
+      final key = hit?.id ?? product.categoryId;
+      productsByCategory.putIfAbsent(key, () => []);
+      productsByCategory[key]!.add(product);
     }
     
     // Build sections for categories with products (max 8 sections)
@@ -511,11 +550,10 @@ class _MobileHomeScreenState extends State<MobileHomeScreen>
           products: displayProducts,
           categoryId: category.id,
           onSeeAll: () {
-            Navigator.pushNamed(
-              context,
-              AppRoutes.shop,
-              arguments: {'categoryId': category.id, 'categoryName': category.name},
-            );
+            context.read<ShopEntryProvider>().openShopWithCategory(
+                  categoryId: category.id,
+                  categoryName: category.name,
+                );
           },
         ),
       );
@@ -582,6 +620,236 @@ class _MobileHomeScreenState extends State<MobileHomeScreen>
           child: const Icon(Icons.keyboard_arrow_up_rounded, color: Colors.white, size: 20),
         ),
       ),
+    );
+  }
+
+  // --- Blinkit Style Auto Location Detect ---
+  void _showAutoLocationBottomSheet(BuildContext context, SettingsProvider settingsProvider) {
+    if (!mounted) return;
+    
+    // Prevent multiple dialogs
+    if (ModalRoute.of(context)?.isCurrent != true) return;
+
+    showModalBottomSheet(
+      context: context,
+      isDismissible: false,
+      enableDrag: false,
+      isScrollControlled: true,
+      backgroundColor: Colors.transparent,
+      builder: (BuildContext bottomSheetContext) {
+        return _AutoLocationSheet(settingsProvider: settingsProvider, parentContext: context, onLoadData: () => _loadData(forceRefresh: true));
+      },
+    );
+  }
+}
+
+class _AutoLocationSheet extends StatefulWidget {
+  final SettingsProvider settingsProvider;
+  final BuildContext parentContext;
+  final VoidCallback onLoadData;
+
+  const _AutoLocationSheet({
+    required this.settingsProvider,
+    required this.parentContext,
+    required this.onLoadData,
+  });
+
+  @override
+  State<_AutoLocationSheet> createState() => _AutoLocationSheetState();
+}
+
+class _AutoLocationSheetState extends State<_AutoLocationSheet> {
+  bool _isDetecting = true;
+  bool _isServiceable = false;
+  String _detectedCity = '';
+  String _errorMessage = '';
+
+  @override
+  void initState() {
+    super.initState();
+    _detectLocation();
+  }
+
+  // Define serviceable cities
+  final List<String> _serviceableCities = ['chennai', 'madurai', 'theni', 'coimbatore', 'bengaluru', 'bangalore'];
+
+  Future<void> _detectLocation() async {
+    try {
+      bool serviceEnabled = await Geolocator.isLocationServiceEnabled();
+      if (!serviceEnabled) {
+        throw Exception('Location services are disabled.');
+      }
+
+      LocationPermission permission = await Geolocator.checkPermission();
+      if (permission == LocationPermission.denied) {
+        permission = await Geolocator.requestPermission();
+        if (permission == LocationPermission.denied) {
+          throw Exception('Location permissions are denied');
+        }
+      }
+      
+      if (permission == LocationPermission.deniedForever) {
+        throw Exception('Location permissions are permanently denied.');
+      }
+
+      Position position = await Geolocator.getCurrentPosition(
+        desiredAccuracy: LocationAccuracy.high,
+        timeLimit: const Duration(seconds: 10),
+      );
+
+      List<Placemark> placemarks = await placemarkFromCoordinates(position.latitude, position.longitude);
+      
+      if (placemarks.isNotEmpty) {
+        Placemark place = placemarks[0];
+        String city = place.locality ?? place.subAdministrativeArea ?? place.administrativeArea ?? 'Unknown';
+        
+        setState(() {
+          _detectedCity = city;
+          _isDetecting = false;
+          _isServiceable = _serviceableCities.any((c) => city.toLowerCase().contains(c));
+        });
+
+        // Automatically set and proceed if serviceable
+        if (_isServiceable) {
+          await widget.settingsProvider.changeLocation(city);
+          await Future.delayed(const Duration(seconds: 2));
+          if (mounted) {
+            Navigator.pop(context);
+            widget.onLoadData();
+          }
+        }
+      } else {
+        throw Exception('Could not determine city from coordinates');
+      }
+    } catch (e) {
+      if (mounted) {
+        setState(() {
+          _isDetecting = false;
+          _errorMessage = e.toString().replaceAll('Exception: ', '');
+        });
+      }
+    }
+  }
+
+  void _manualSelect(String city) async {
+    await widget.settingsProvider.changeLocation(city);
+    if (mounted) {
+      Navigator.pop(context);
+      widget.onLoadData();
+    }
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    final colorScheme = Theme.of(context).colorScheme;
+    
+    return Container(
+      padding: const EdgeInsets.all(24),
+      decoration: BoxDecoration(
+        color: Theme.of(context).scaffoldBackgroundColor,
+        borderRadius: const BorderRadius.vertical(top: Radius.circular(24)),
+      ),
+      child: SafeArea(
+        child: Column(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            Container(
+              width: 40,
+              height: 4,
+              margin: const EdgeInsets.only(bottom: 24),
+              decoration: BoxDecoration(
+                color: Colors.grey.withValues(alpha: 0.3),
+                borderRadius: BorderRadius.circular(2),
+              ),
+            ),
+            
+            if (_isDetecting) ...[
+              const CircularProgressIndicator(),
+              const SizedBox(height: 24),
+              const Text(
+                'Detecting your location...',
+                style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold),
+              ),
+              const SizedBox(height: 8),
+              Text(
+                'Please wait while we find sellers near you',
+                style: TextStyle(color: colorScheme.onSurfaceVariant),
+              ),
+            ] else if (_errorMessage.isNotEmpty) ...[
+              Icon(Icons.location_off_rounded, size: 48, color: colorScheme.error),
+              const SizedBox(height: 16),
+              const Text(
+                'Location Error',
+                style: TextStyle(fontSize: 20, fontWeight: FontWeight.bold),
+              ),
+              const SizedBox(height: 8),
+              Text(
+                _errorMessage,
+                textAlign: TextAlign.center,
+                style: TextStyle(color: colorScheme.onSurfaceVariant),
+              ),
+              const SizedBox(height: 24),
+              _buildManualSelection(colorScheme),
+            ] else if (_isServiceable) ...[
+              Icon(Icons.check_circle_rounded, size: 56, color: Colors.green.shade600),
+              const SizedBox(height: 16),
+              Text(
+                'Delivery available in $_detectedCity!',
+                style: const TextStyle(fontSize: 20, fontWeight: FontWeight.bold),
+                textAlign: TextAlign.center,
+              ),
+              const SizedBox(height: 8),
+              Text(
+                'Loading nearby products...',
+                style: TextStyle(color: colorScheme.onSurfaceVariant),
+              ),
+              const SizedBox(height: 16),
+            ] else ...[
+              Icon(Icons.error_outline_rounded, size: 56, color: Colors.orange.shade600),
+              const SizedBox(height: 16),
+              Text(
+                'Sorry, not serviceable yet in $_detectedCity',
+                style: const TextStyle(fontSize: 20, fontWeight: FontWeight.bold),
+                textAlign: TextAlign.center,
+              ),
+              const SizedBox(height: 8),
+              Text(
+                'We are expanding quickly. Meanwhile, you can explore other cities.',
+                textAlign: TextAlign.center,
+                style: TextStyle(color: colorScheme.onSurfaceVariant),
+              ),
+              const SizedBox(height: 24),
+              _buildManualSelection(colorScheme),
+            ],
+            const SizedBox(height: 16),
+          ],
+        ),
+      ),
+    );
+  }
+
+  Widget _buildManualSelection(ColorScheme colorScheme) {
+    return Column(
+      children: [
+        const Text(
+          'Select a city manually',
+          style: TextStyle(fontWeight: FontWeight.bold),
+        ),
+        const SizedBox(height: 16),
+        Wrap(
+          spacing: 8,
+          runSpacing: 8,
+          children: _serviceableCities.take(4).map((city) {
+            String capitalized = city[0].toUpperCase() + city.substring(1);
+            return ActionChip(
+              label: Text(capitalized),
+              onPressed: () => _manualSelect(capitalized),
+              backgroundColor: colorScheme.primaryContainer,
+              labelStyle: TextStyle(color: colorScheme.onPrimaryContainer),
+            );
+          }).toList(),
+        ),
+      ],
     );
   }
 }

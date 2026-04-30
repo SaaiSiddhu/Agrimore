@@ -13,6 +13,7 @@ import '../../../providers/product_provider.dart';
 import '../../../providers/theme_provider.dart';
 import '../../../providers/address_provider.dart';
 import '../../../providers/wallet_provider.dart';
+import '../../../providers/wishlist_provider.dart';
 import 'package:agrimore_core/agrimore_core.dart';
 import 'widgets/cart_item_card.dart';
 import 'widgets/empty_cart.dart';
@@ -114,6 +115,7 @@ class _MobileCartScreenState extends State<MobileCartScreen>
     WidgetsBinding.instance.addPostFrameCallback((_) {
       context.read<CartProvider>().loadCart();
       context.read<ProductProvider>().loadProducts(); // Load for "You might also like"
+      context.read<AddressProvider>().loadAddresses(); // Load addresses for selection list
       _loadProductDetails();
     });
   }
@@ -507,7 +509,7 @@ class _MobileCartScreenState extends State<MobileCartScreen>
                 
                 // Sticky Bottom Bar
                 _buildBlinkitBottomBar(
-                  pricingData['finalTotal']! + _selectedTipAmount,
+                  pricingData['total'] ?? 0.0,
                   isDark,
                   accentColor,
                   cardColor,
@@ -758,6 +760,23 @@ class _MobileCartScreenState extends State<MobileCartScreen>
                     GestureDetector(
                       onTap: () {
                         HapticFeedback.lightImpact();
+                        // Move item to wishlist
+                        final wishlistProvider = context.read<WishlistProvider>();
+                        final product = _productCache[item.productId];
+                        if (product != null) {
+                          wishlistProvider.addItem(product);
+                          final cartProvider = context.read<CartProvider>();
+                          cartProvider.removeItem(item.productId);
+                          ScaffoldMessenger.of(context).showSnackBar(
+                            SnackBar(
+                              content: const Text('Moved to wishlist'),
+                              behavior: SnackBarBehavior.floating,
+                              shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(10)),
+                              margin: const EdgeInsets.all(16),
+                              duration: const Duration(seconds: 2),
+                            ),
+                          );
+                        }
                       },
                       child: Row(
                         mainAxisSize: MainAxisSize.min,
@@ -1151,7 +1170,8 @@ class _MobileCartScreenState extends State<MobileCartScreen>
                   child: GestureDetector(
                     onTap: () {
                       HapticFeedback.lightImpact();
-                      // TODO: Toggle wishlist
+                      final wishlistProvider = context.read<WishlistProvider>();
+                      wishlistProvider.toggleItem(product);
                     },
                     child: Container(
                       padding: const EdgeInsets.all(6),
@@ -3331,6 +3351,10 @@ class _MobileCartScreenState extends State<MobileCartScreen>
 
       final orderId = FirebaseFirestore.instance.collection('orders').doc().id;
 
+      // Generate a unique delivery verification code for secure handover
+      final verificationCode = OrderModel.generateVerificationCode();
+      debugPrint('🔐 Generated delivery verification code: $verificationCode for order $orderId');
+
       final order = OrderModel(
         id: orderId,
         userId: userId,
@@ -3350,6 +3374,7 @@ class _MobileCartScreenState extends State<MobileCartScreen>
         razorpaySignature: razorpaySignature,
         couponCode: couponProvider.appliedCoupon?.code,
         createdAt: DateTime.now(),
+        deliveryVerificationCode: verificationCode,
       );
 
       await FirebaseFirestore.instance
@@ -3924,6 +3949,177 @@ class _MobileCartScreenState extends State<MobileCartScreen>
     );
   }
 
+  // --- Address Selection Bottom Sheet ---
+  void _showAddressSelectionSheet(bool isDark) {
+    final addressProvider = context.read<AddressProvider>();
+    showModalBottomSheet(
+      context: context,
+      isScrollControlled: true,
+      backgroundColor: Colors.transparent,
+      builder: (ctx) {
+        return DraggableScrollableSheet(
+          initialChildSize: 0.55,
+          minChildSize: 0.3,
+          maxChildSize: 0.85,
+          builder: (context, scrollController) {
+            return Container(
+              decoration: BoxDecoration(
+                color: isDark ? const Color(0xFF1A1A1A) : Colors.white,
+                borderRadius: const BorderRadius.vertical(top: Radius.circular(20)),
+              ),
+              child: Column(
+                children: [
+                  // Handle
+                  Container(
+                    margin: const EdgeInsets.symmetric(vertical: 12),
+                    width: 40, height: 4,
+                    decoration: BoxDecoration(
+                      color: Colors.grey[400],
+                      borderRadius: BorderRadius.circular(2),
+                    ),
+                  ),
+                  Padding(
+                    padding: const EdgeInsets.symmetric(horizontal: 20),
+                    child: Row(
+                      mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                      children: [
+                        Text(
+                          'Select Delivery Address',
+                          style: TextStyle(
+                            fontSize: 17,
+                            fontWeight: FontWeight.w800,
+                            color: isDark ? Colors.white : Colors.black87,
+                          ),
+                        ),
+                        TextButton.icon(
+                          onPressed: () {
+                            Navigator.pop(ctx);
+                            Navigator.pushNamed(context, '/profile/add-address');
+                          },
+                          icon: const Icon(Icons.add, size: 18),
+                          label: const Text('Add New'),
+                        ),
+                      ],
+                    ),
+                  ),
+                  const SizedBox(height: 8),
+                  Expanded(
+                    child: Consumer<AddressProvider>(
+                      builder: (context, addrProv, _) {
+                        if (addrProv.addresses.isEmpty) {
+                          return Center(
+                            child: Column(
+                              mainAxisAlignment: MainAxisAlignment.center,
+                              children: [
+                                Icon(Icons.location_off_rounded, size: 48, color: Colors.grey[400]),
+                                const SizedBox(height: 12),
+                                Text('No saved addresses', style: TextStyle(color: Colors.grey[600])),
+                                const SizedBox(height: 16),
+                                FilledButton.icon(
+                                  onPressed: () {
+                                    Navigator.pop(ctx);
+                                    Navigator.pushNamed(context, '/profile/add-address');
+                                  },
+                                  icon: const Icon(Icons.add),
+                                  label: const Text('Add Address'),
+                                ),
+                              ],
+                            ),
+                          );
+                        }
+                        final selected = addrProv.selectedAddress ?? addrProv.defaultAddress;
+                        return ListView.separated(
+                          controller: scrollController,
+                          padding: const EdgeInsets.symmetric(horizontal: 16),
+                          itemCount: addrProv.addresses.length,
+                          separatorBuilder: (_, __) => const SizedBox(height: 10),
+                          itemBuilder: (context, index) {
+                            final addr = addrProv.addresses[index];
+                            final isSelected = addr.id == selected?.id;
+                            return GestureDetector(
+                              onTap: () {
+                                HapticFeedback.selectionClick();
+                                addrProv.selectAddress(addr);
+                                Navigator.pop(ctx);
+                              },
+                              child: Container(
+                                padding: const EdgeInsets.all(14),
+                                decoration: BoxDecoration(
+                                  color: isSelected
+                                      ? (isDark ? const Color(0xFF1B3A1B) : Colors.green.shade50)
+                                      : (isDark ? const Color(0xFF252525) : Colors.grey.shade50),
+                                  borderRadius: BorderRadius.circular(14),
+                                  border: Border.all(
+                                    color: isSelected ? Colors.green : (isDark ? Colors.grey[700]! : Colors.grey[300]!),
+                                    width: isSelected ? 1.5 : 1,
+                                  ),
+                                ),
+                                child: Row(
+                                  children: [
+                                    Icon(
+                                      addr.addressType == 'home' ? Icons.home_rounded : 
+                                      addr.addressType == 'work' ? Icons.work_rounded : Icons.location_on_rounded,
+                                      color: isSelected ? Colors.green : Colors.grey[500],
+                                      size: 24,
+                                    ),
+                                    const SizedBox(width: 14),
+                                    Expanded(
+                                      child: Column(
+                                        crossAxisAlignment: CrossAxisAlignment.start,
+                                        children: [
+                                          Row(
+                                            children: [
+                                              Text(
+                                                addr.name.isNotEmpty ? addr.name : (addr.addressType ?? 'OTHER').toUpperCase(),
+                                                style: TextStyle(
+                                                  fontWeight: FontWeight.w700,
+                                                  fontSize: 14,
+                                                  color: isDark ? Colors.white : Colors.black87,
+                                                ),
+                                              ),
+                                              if (addr.isDefault) ...[
+                                                const SizedBox(width: 8),
+                                                Container(
+                                                  padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 2),
+                                                  decoration: BoxDecoration(
+                                                    color: Colors.green.withOpacity(0.15),
+                                                    borderRadius: BorderRadius.circular(4),
+                                                  ),
+                                                  child: const Text('Default', style: TextStyle(fontSize: 10, color: Colors.green, fontWeight: FontWeight.w600)),
+                                                ),
+                                              ],
+                                            ],
+                                          ),
+                                          const SizedBox(height: 4),
+                                          Text(
+                                            addr.fullAddress,
+                                            maxLines: 2,
+                                            overflow: TextOverflow.ellipsis,
+                                            style: TextStyle(fontSize: 12, color: Colors.grey[500]),
+                                          ),
+                                        ],
+                                      ),
+                                    ),
+                                    if (isSelected)
+                                      const Icon(Icons.check_circle_rounded, color: Colors.green, size: 22),
+                                  ],
+                                ),
+                              ),
+                            );
+                          },
+                        );
+                      },
+                    ),
+                  ),
+                ],
+              ),
+            );
+          },
+        );
+      },
+    );
+  }
+
   // --- Sticky Bottom Bar ---
   Widget _buildBlinkitBottomBar(double total, bool isDark, Color accentColor, Color cardColor) {
     return Consumer<AddressProvider>(
@@ -3954,7 +4150,7 @@ class _MobileCartScreenState extends State<MobileCartScreen>
                 GestureDetector(
                   onTap: () {
                     HapticFeedback.lightImpact();
-                    // TODO: Open address selection bottom sheet
+                    _showAddressSelectionSheet(isDark);
                   },
                   child: Container(
                     padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 8),
@@ -5130,7 +5326,7 @@ Widget _buildCartItem({
     );
   }
 
-  Widget _buildCheckoutButton(double total, bool isDark, Color accentColor, Color cardColor) {
+  Widget _buildCheckoutButton(double total, double deliveryCharge, double tax, bool isDark, Color accentColor, Color cardColor) {
     return Container(
       padding: EdgeInsets.fromLTRB(16, 16, 16, 16 + MediaQuery.of(context).padding.bottom),
       decoration: BoxDecoration(
@@ -5141,7 +5337,10 @@ Widget _buildCartItem({
       child: ElevatedButton(
         onPressed: () {
           HapticFeedback.mediumImpact();
-          Navigator.push(context, MaterialPageRoute(builder: (_) => const CheckoutScreen()));
+          Navigator.push(context, MaterialPageRoute(builder: (_) => CheckoutScreen(
+            deliveryCharge: deliveryCharge,
+            tax: tax,
+          )));
         },
         style: ElevatedButton.styleFrom(
           minimumSize: const Size(double.infinity, 54),

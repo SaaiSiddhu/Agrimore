@@ -31,6 +31,7 @@ class _EditProductScreenState extends State<EditProductScreen> with SingleTicker
   late TextEditingController _originalPriceController;
   late TextEditingController _descriptionController;
   String? _selectedCategory;
+  String? _selectedLocation;
   bool _isFeatured = false;
   bool _isVerified = false;
   bool _isTrending = false;
@@ -75,6 +76,7 @@ class _EditProductScreenState extends State<EditProductScreen> with SingleTicker
     );
     _descriptionController = TextEditingController(text: widget.product.description);
     _selectedCategory = widget.product.categoryId;
+    _selectedLocation = widget.product.location;
     _isFeatured = widget.product.isFeatured;
     _isVerified = widget.product.isVerified;
     _isTrending = widget.product.isTrending;
@@ -148,6 +150,7 @@ class _EditProductScreenState extends State<EditProductScreen> with SingleTicker
             ? double.parse(_originalPriceController.text.trim())
             : null,
         categoryId: _selectedCategory, // This is already required in the model
+        location: _selectedLocation,
         images: _imageUrls,
         stock: int.parse(_stockController.text.trim()),
         isFeatured: _isFeatured,
@@ -230,10 +233,12 @@ class _EditProductScreenState extends State<EditProductScreen> with SingleTicker
               originalPriceController: _originalPriceController,
               descriptionController: _descriptionController,
               selectedCategory: _selectedCategory,
+              selectedLocation: _selectedLocation,
               isFeatured: _isFeatured,
               isVerified: _isVerified,
               isTrending: _isTrending,
               onCategoryChanged: (value) => setState(() => _selectedCategory = value),
+              onLocationChanged: (value) => setState(() => _selectedLocation = value),
               onFeaturedChanged: (value) => setState(() => _isFeatured = value ?? false),
               onVerifiedChanged: (value) => setState(() => _isVerified = value ?? false),
               onTrendingChanged: (value) => setState(() => _isTrending = value ?? false),

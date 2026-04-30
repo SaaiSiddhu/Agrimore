@@ -63,8 +63,17 @@ class AuthProvider with ChangeNotifier {
         try {
           debugPrint('🔐 Firebase user detected: ${user.uid}');
           _currentUser = await _authService.getUserData(user.uid);
-          await _updateLastLogin(user.uid);
-          debugPrint('✅ User loaded: ${_currentUser?.email}');
+          
+          // STRICT ROLE CHECK FOR ADMIN APP
+          if (_currentUser != null && _currentUser!.role != 'admin') {
+            debugPrint('⛔ Unauthorized access attempt by non-admin: ${_currentUser!.email}');
+            await _firebaseAuth.signOut();
+            _currentUser = null;
+            _error = 'Access denied. You are not an admin.';
+          } else if (_currentUser != null) {
+            await _updateLastLogin(user.uid);
+            debugPrint('✅ User loaded: ${_currentUser?.email}');
+          }
         } catch (e) {
           debugPrint('❌ Error loading user data: $e');
           _error = e.toString();
@@ -275,6 +284,17 @@ class AuthProvider with ChangeNotifier {
         password: password,
       );
 
+      // STRICT ROLE CHECK FOR ADMIN APP
+      if (_currentUser != null && _currentUser!.role != 'admin') {
+        debugPrint('⛔ Unauthorized sign in attempt by non-admin: $email');
+        await _firebaseAuth.signOut();
+        _currentUser = null;
+        _error = 'Access denied. You are not an admin. Please use the appropriate app.';
+        _isLoading = false;
+        notifyListeners();
+        return false;
+      }
+
       await _logAuthEvent('login', true, email);
 
       if (_rememberMe) {
@@ -332,6 +352,17 @@ class AuthProvider with ChangeNotifier {
       debugPrint('🔐 Signing in with Google...');
 
       _currentUser = await _authService.signInWithGoogle();
+
+      // STRICT ROLE CHECK FOR ADMIN APP
+      if (_currentUser != null && _currentUser!.role != 'admin') {
+        debugPrint('⛔ Unauthorized Google sign in attempt by non-admin: ${_currentUser!.email}');
+        await _firebaseAuth.signOut();
+        _currentUser = null;
+        _error = 'Access denied. You are not an admin. Please use the appropriate app.';
+        _isLoading = false;
+        notifyListeners();
+        return false;
+      }
 
       await _logAuthEvent('google_login', true, _currentUser?.email ?? 'unknown');
 

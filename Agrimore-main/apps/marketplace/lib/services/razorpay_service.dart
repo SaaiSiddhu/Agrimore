@@ -159,8 +159,8 @@ class RazorpayService {
         
         // Premium Theme with app colors
         'theme': {
-          'color': '#2E7D32', // Agrimore Green
-          'backdrop_color': '#1B5E20', // Darker green backdrop
+          'color': '#145A32', // Agrimore Green
+          'backdrop_color': '#0B3B20', // Darker green backdrop
           'hide_topbar': false,
         },
         

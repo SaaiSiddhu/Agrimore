@@ -3,7 +3,6 @@ import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:agrimore_ui/agrimore_ui.dart';
-import 'package:agrimore_ui/agrimore_ui.dart';
 
 import '../../../providers/admin_provider.dart';
 import 'edit_user_screen.dart';
@@ -137,6 +136,9 @@ class _UserManagementScreenState extends State<UserManagementScreen> {
               u.email.toLowerCase().contains(query))
           .toList();
     }
+
+    // 🚫 Exclude specific roles from the generic "Users" view
+    filtered = filtered.where((u) => u.role == 'user' || u.role == 'admin').toList();
 
     // 🔄 Filter by category
     switch (_filterIndex) {
@@ -365,7 +367,7 @@ class _UserManagementScreenState extends State<UserManagementScreen> {
               children: [
                 UserCard(
                   user: user,
-                  onTap: () {}, // ✅ added missing required parameter
+                  onTap: () => _navigateToEditUser(user), // Navigate to edit on tap
                   onEdit: () => _navigateToEditUser(user),
                   onToggleStatus: () => provider.toggleUserStatus(user.uid, !user.isActive),
                   onDelete: () async {

@@ -20,12 +20,12 @@ class ProductCard extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    // Use home layout for consistent card style with home screen
+    // Use shop layout (R2-style) for storefront consistency.
     return UnifiedProductCard(
       product: product,
-      layout: ProductCardLayout.home, // Match home screen cards
-      showWishlist: false, // Clean look without wishlist button
-      showAddToCart: false, // No add to cart in this design
+      layout: ProductCardLayout.shop,
+      showWishlist: true,
+      showAddToCart: true,
       showBadges: true,
       showDeliveryInfo: false,
       showRating: false,

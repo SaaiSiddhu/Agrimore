@@ -247,7 +247,7 @@ packages:
     source: hosted
     version: "4.4.12"
   cloud_functions:
-    dependency: transitive
+    dependency: "direct main"
     description:
       name: cloud_functions
       sha256: b9ece944fc8c97ac0937cdf45e895f4670213c722ed819581e3d517b43413753
@@ -942,7 +942,7 @@ packages:
     source: hosted
     version: "0.15.6"
   http:
-    dependency: transitive
+    dependency: "direct main"
     description:
       name: http
       sha256: "87721a4a50b19c7f1d49001e51409bddc46303966ce89a65af4f4e6004896412"
@@ -1771,7 +1771,7 @@ packages:
     source: hosted
     version: "15.0.2"
   web:
-    dependency: transitive
+    dependency: "direct main"
     description:
       name: web
       sha256: "868d88a33d8a87b18ffc05f9f030ba328ffefba92d6c127917a2ba740f9cfe4a"

@@ -1,7 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:agrimore_core/agrimore_core.dart';
 import 'package:agrimore_services/agrimore_services.dart';
-import 'package:agrimore_services/agrimore_services.dart';
 
 class AddressProvider with ChangeNotifier {
   final DatabaseService _databaseService = DatabaseService();
@@ -50,9 +49,14 @@ class AddressProvider with ChangeNotifier {
       _isLoading = true;
       notifyListeners();
 
-      // If this is the first address or set as default, make it default
-      if (_addresses.isEmpty || address.isDefault) {
-        // Remove default from other addresses
+      AddressModel toSave = address;
+
+      // ── First address ever → always default ──────────────────
+      if (_addresses.isEmpty) {
+        toSave = address.copyWith(isDefault: true);
+        debugPrint('📍 First address → setting as default automatically');
+      } else if (address.isDefault) {
+        // Remove default flag from all existing addresses
         for (var addr in _addresses) {
           if (addr.isDefault) {
             await _databaseService.updateAddress(addr.id, {'isDefault': false});
@@ -60,7 +64,7 @@ class AddressProvider with ChangeNotifier {
         }
       }
 
-      final addressId = await _databaseService.addAddress(address);
+      final addressId = await _databaseService.addAddress(toSave);
 
       _isLoading = false;
       notifyListeners();
@@ -72,6 +76,7 @@ class AddressProvider with ChangeNotifier {
       return null;
     }
   }
+
 
   // Update address
   Future<bool> updateAddress(String addressId, Map<String, dynamic> updates) async {

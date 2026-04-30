@@ -1,3 +1,4 @@
+
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:provider/provider.dart';
@@ -12,10 +13,12 @@ class ProductForm extends StatelessWidget {
   final TextEditingController originalPriceController;
   final TextEditingController descriptionController;
   final String? selectedCategory;
+  final String? selectedLocation;
   final bool isFeatured;
   final bool isVerified;
   final bool isTrending;
   final Function(String?) onCategoryChanged;
+  final Function(String?) onLocationChanged;
   final Function(bool?) onFeaturedChanged;
   final Function(bool?) onVerifiedChanged;
   final Function(bool?) onTrendingChanged;
@@ -27,10 +30,12 @@ class ProductForm extends StatelessWidget {
     required this.originalPriceController,
     required this.descriptionController,
     required this.selectedCategory,
+    required this.selectedLocation,
     required this.isFeatured,
     required this.isVerified,
     required this.isTrending,
     required this.onCategoryChanged,
+    required this.onLocationChanged,
     required this.onFeaturedChanged,
     required this.onVerifiedChanged,
     required this.onTrendingChanged,
@@ -65,18 +70,38 @@ class ProductForm extends StatelessWidget {
         Consumer<CategoryProvider>(
           builder: (context, categoryProvider, child) {
             final categories = categoryProvider.categories;
+            // ✅ Deduplicate by ID (which equals the category name in this Firestore setup)
+            final seen = <String>{};
+            final uniqueCategories = categories
+                .where((cat) => cat.id.isNotEmpty && seen.add(cat.id))
+                .toList();
             return _buildPremiumDropdown(
               value: selectedCategory,
               label: 'Category',
               hint: 'Select a category',
               icon: Icons.category_outlined,
-              items: categories.map((cat) => 
+              items: uniqueCategories.map((cat) => 
                 DropdownMenuItem(value: cat.id, child: Text(cat.name))
               ).toList(),
               onChanged: onCategoryChanged,
               validator: (v) => v == null ? 'Category is required' : null,
             );
           },
+        ),
+
+        const SizedBox(height: 16),
+
+        // Location Dropdown
+        _buildPremiumDropdown(
+          value: selectedLocation,
+          label: 'Location',
+          hint: 'Select product location',
+          icon: Icons.location_city_rounded,
+          items: ['Chennai', 'Madurai', 'Theni'].map((city) => 
+            DropdownMenuItem(value: city, child: Text(city))
+          ).toList(),
+          onChanged: onLocationChanged,
+          validator: (v) => v == null ? 'Location is required' : null,
         ),
 
         const SizedBox(height: 20),
@@ -315,8 +340,11 @@ class ProductForm extends StatelessWidget {
     required Function(String?) onChanged,
     String? Function(String?)? validator,
   }) {
+    // ✅ Guard: If value is not in the items list, reset to null to avoid Flutter assertion
+    final safeValue = items.any((item) => item.value == value) ? value : null;
+
     return DropdownButtonFormField<String>(
-      value: value,
+      value: safeValue,
       items: items,
       onChanged: onChanged,
       validator: validator,

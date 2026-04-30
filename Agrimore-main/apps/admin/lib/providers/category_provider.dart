@@ -43,7 +43,10 @@ class CategoryProvider with ChangeNotifier {
       _error = null;
       _notifySafely();
 
-      _categories = await _databaseService.getAllCategories();
+      final raw = await _databaseService.getAllCategories();
+      // ✅ Deduplicate by ID to prevent DropdownButtonFormField assertion
+      final seen = <String>{};
+      _categories = raw.where((cat) => seen.add(cat.id)).toList();
 
       _isLoading = false;
       _notifySafely();

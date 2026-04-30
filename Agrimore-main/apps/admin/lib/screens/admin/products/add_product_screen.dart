@@ -29,6 +29,7 @@ class _AddProductScreenState extends State<AddProductScreen> with SingleTickerPr
   final _originalPriceController = TextEditingController();
   final _descriptionController = TextEditingController();
   String? _selectedCategory;
+  String? _selectedLocation;
   bool _isFeatured = false;
   bool _isVerified = false; // ✅ NEW
   bool _isTrending = false; // ✅ NEW
@@ -198,10 +199,12 @@ class _AddProductScreenState extends State<AddProductScreen> with SingleTickerPr
               originalPriceController: _originalPriceController,
               descriptionController: _descriptionController,
               selectedCategory: _selectedCategory,
+              selectedLocation: _selectedLocation,
               isFeatured: _isFeatured,
               isVerified: _isVerified,
               isTrending: _isTrending,
               onCategoryChanged: (value) => setState(() => _selectedCategory = value),
+              onLocationChanged: (value) => setState(() => _selectedLocation = value),
               onFeaturedChanged: (value) => setState(() => _isFeatured = value ?? false),
               onVerifiedChanged: (value) => setState(() => _isVerified = value ?? false),
               onTrendingChanged: (value) => setState(() => _isTrending = value ?? false),

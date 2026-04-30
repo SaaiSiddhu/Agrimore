@@ -7,6 +7,7 @@ import 'package:agrimore_ui/agrimore_ui.dart';
 import 'package:agrimore_ui/agrimore_ui.dart';
 import '../../../app/routes.dart';
 import '../../../providers/product_provider.dart';
+import '../../../providers/category_provider.dart';
 import '../../../providers/cart_provider.dart';
 import '../../../providers/wishlist_provider.dart';
 import 'package:agrimore_core/agrimore_core.dart';
@@ -21,6 +22,7 @@ import 'widgets/product_share_widget.dart';
 import 'widgets/delivery_info_widget.dart';
 import '../../../providers/theme_provider.dart';
 import '../../../widgets/product/unified_product_card.dart';
+import '../../../widgets/cart_fly_animation.dart';
 
 class ProductDetailsScreen extends StatefulWidget {
   final String productId;
@@ -38,8 +40,12 @@ class _ProductDetailsScreenState extends State<ProductDetailsScreen> {
   int _quantity = 1;
   final ScrollController _scrollController = ScrollController();
   late DatabaseService _databaseService;
+  // Key for the Add-to-Cart button — used to get its screen position for fly animation
+  final GlobalKey _addToCartKey = GlobalKey();
 
   bool _isCollapsed = false;
+  /// `one_off`, `daily`, or `weekly` — forwarded to checkout (auto-delivery).
+  String _subscriptionCadence = 'one_off';
 
   @override
   void initState() {
@@ -79,6 +85,14 @@ Future<void> _addToCart(BuildContext context, {bool buyNow = false}) async {
   final product = productProvider.selectedProduct;
 
   if (product == null || !product.inStock) return;
+
+  if (_subscriptionCadence == 'daily') {
+    cartProvider.setCheckoutSubscriptionIntent('Auto Delivery', 'Daily');
+  } else if (_subscriptionCadence == 'weekly') {
+    cartProvider.setCheckoutSubscriptionIntent('Auto Delivery', 'Weekly');
+  } else {
+    cartProvider.clearCheckoutSubscriptionIntent();
+  }
 
   HapticFeedback.mediumImpact();
 
@@ -128,6 +142,27 @@ Future<void> _addToCart(BuildContext context, {bool buyNow = false}) async {
     variantPrice: variantPrice,
     variantOriginalPrice: variantOriginalPrice,
   );
+
+  // 🚀 Fly-to-cart animation
+  if (mounted && !buyNow) {
+    Offset? startPos;
+    final renderBox = _addToCartKey.currentContext?.findRenderObject() as RenderBox?;
+    if (renderBox != null) {
+      final offset = renderBox.localToGlobal(Offset.zero);
+      startPos = Offset(
+        offset.dx + renderBox.size.width / 2,
+        offset.dy + renderBox.size.height / 2,
+      );
+    }
+    final imageUrl = (variantName != null
+        ? (productProvider.selectedVariant?.images.firstOrNull ?? product.primaryImage)
+        : product.primaryImage);
+    CartFlyAnimationOverlay.triggerFly(
+      context: context,
+      imageUrl: imageUrl,
+      startPosition: startPos,
+    );
+  }
 
   // Show success message
   if (!buyNow && mounted) {
@@ -204,6 +239,7 @@ Future<void> _addToCart(BuildContext context, {bool buyNow = false}) async {
                 ),
                 // Overlapped info card
                 _buildOverlappedInfoCard(product, isDark),
+                _buildSubscriptionOptions(product, isDark),
                 // Similar Products section
                 _buildSimilarProducts(product, isDark),
                 // Bottom padding for bottom bar
@@ -1112,6 +1148,7 @@ Future<void> _addToCart(BuildContext context, {bool buyNow = false}) async {
               SizedBox(
                 width: 130,
                 child: ElevatedButton(
+                  key: _addToCartKey,
                   onPressed: !product.inStock ? null : () => _addToCart(context, buyNow: false),
                   style: ElevatedButton.styleFrom(
                     backgroundColor: product.inStock ? accentColor : Colors.grey[400],
@@ -1313,15 +1350,101 @@ Future<void> _addToCart(BuildContext context, {bool buyNow = false}) async {
     );
   }
 
+  Widget _buildSubscriptionOptions(ProductModel product, bool isDark) {
+    final accent = isDark ? AppColors.primaryLight : AppColors.primary;
+    return Padding(
+      padding: const EdgeInsets.fromLTRB(16, 16, 16, 0),
+      child: Container(
+        width: double.infinity,
+        padding: const EdgeInsets.all(14),
+        decoration: BoxDecoration(
+          color: isDark ? const Color(0xFF1E1E1E) : Colors.white,
+          borderRadius: BorderRadius.circular(14),
+          border: Border.all(color: isDark ? Colors.grey[800]! : Colors.grey[200]!),
+        ),
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            Row(
+              children: [
+                Icon(Icons.autorenew_rounded, size: 20, color: accent),
+                const SizedBox(width: 8),
+                Text(
+                  'Subscription',
+                  style: TextStyle(
+                    fontSize: 15,
+                    fontWeight: FontWeight.w800,
+                    color: isDark ? Colors.white : Colors.black87,
+                  ),
+                ),
+              ],
+            ),
+            const SizedBox(height: 4),
+            Text(
+              'Choose how often you want this on checkout (with auto-delivery).',
+              style: TextStyle(
+                fontSize: 12,
+                color: isDark ? Colors.grey[400] : Colors.grey[600],
+                height: 1.35,
+              ),
+            ),
+            const SizedBox(height: 12),
+            Wrap(
+              spacing: 8,
+              runSpacing: 8,
+              children: [
+                ChoiceChip(
+                  label: const Text('One-time'),
+                  selected: _subscriptionCadence == 'one_off',
+                  onSelected: (_) => setState(() => _subscriptionCadence = 'one_off'),
+                  selectedColor: accent.withOpacity(0.2),
+                ),
+                ChoiceChip(
+                  label: const Text('Daily'),
+                  selected: _subscriptionCadence == 'daily',
+                  onSelected: (_) => setState(() => _subscriptionCadence = 'daily'),
+                  selectedColor: accent.withOpacity(0.2),
+                ),
+                ChoiceChip(
+                  label: const Text('Weekly'),
+                  selected: _subscriptionCadence == 'weekly',
+                  onSelected: (_) => setState(() => _subscriptionCadence = 'weekly'),
+                  selectedColor: accent.withOpacity(0.2),
+                ),
+              ],
+            ),
+          ],
+        ),
+      ),
+    );
+  }
+
   // ✅ NEW: Similar Products horizontal scroll
   Widget _buildSimilarProducts(ProductModel product, bool isDark) {
-    return Consumer<ProductProvider>(
-      builder: (context, productProvider, _) {
-        // Get products from same category
-        final similarProducts = productProvider.products
-            .where((p) => p.categoryId == product.categoryId && p.id != product.id && p.isActive)
-            .take(6)  // ✅ Limit to 6 products (3 columns x 2 rows)
-            .toList();
+    return Consumer2<ProductProvider, CategoryProvider>(
+      builder: (context, productProvider, categoryProvider, _) {
+        final all = categoryProvider.categories;
+        CategoryModel? bucket;
+        try {
+          bucket = all.firstWhere((c) => c.id == product.categoryId);
+        } catch (_) {
+          try {
+            final nm = (product.categoryName ?? '').toLowerCase().trim();
+            if (nm.isNotEmpty) {
+              bucket = all.firstWhere((c) => c.name.toLowerCase().trim() == nm);
+            }
+          } catch (_) {
+            bucket = null;
+          }
+        }
+
+        final similarProducts = productProvider.products.where((p) {
+          if (p.id == product.id || !p.isActive) return false;
+          if (bucket != null) {
+            return productBelongsToCategory(p, bucket!, all);
+          }
+          return p.categoryId == product.categoryId;
+        }).take(6).toList();
 
         if (similarProducts.isEmpty) return const SizedBox.shrink();
 

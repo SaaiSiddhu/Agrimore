@@ -28,9 +28,11 @@ export 'models/sponsored_banner_model.dart';
 export 'models/upi_app_model.dart';
 export 'models/user_model.dart';
 export 'models/wishlist_model.dart';
+export 'models/vendor_model.dart';
 export 'models/bestseller_slot_model.dart';
 export 'models/category_section_slot_model.dart';
 export 'models/section_banner_model.dart';
+export 'models/delivery_time_slot_model.dart';
 
 // Wallet Models
 export 'models/wallet_model.dart';
@@ -53,6 +55,9 @@ export 'utils/validators.dart';
 export 'utils/date_formatter.dart';
 export 'utils/price_formatter.dart';
 export 'utils/ad_helper.dart';
+export 'utils/product_category_utils.dart';
+export 'utils/global_error_handler.dart';
+export 'utils/retry_helper.dart';
 
 // ============================================
 // ERROR HANDLING
@@ -64,6 +69,8 @@ export 'error/failures.dart';
 // CONFIG
 // ============================================
 export 'config/env_config.dart';
+export 'config/admin_access_config.dart';
+export 'config/app_routing_config.dart';
 export 'config/firebase_options.dart';
 export 'config/gemini_config.dart';
 export 'config/razorpay_config.dart';

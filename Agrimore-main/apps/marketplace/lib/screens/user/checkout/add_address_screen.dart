@@ -9,6 +9,8 @@ import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:provider/provider.dart';
 import 'package:font_awesome_flutter/font_awesome_flutter.dart';
 import 'dart:async';
+import 'dart:convert';
+import 'package:http/http.dart' as http;
 
 import 'package:agrimore_ui/agrimore_ui.dart';
 import 'package:agrimore_core/agrimore_core.dart';
@@ -36,6 +38,7 @@ class _AddAddressScreenState extends State<AddAddressScreen> {
   Timer? _confirmButtonTimer;  // New: timer for 2-second delay
   String? _darkMapStyle;
   String? _lightMapStyle;
+  MapType _currentMapType = MapType.normal;  // Satellite toggle support
 
   final _formKey = GlobalKey<FormState>();
   final _nameController = TextEditingController();
@@ -237,12 +240,106 @@ class _AddAddressScreenState extends State<AddAddressScreen> {
       }
     } on TimeoutException catch (e) {
       debugPrint('Timeout: $e');
-      if (mounted) _showSnackBar('Request timed out', isError: true);
+      // Fallback to HTTP Geocoding API
+      if (mounted) {
+        debugPrint('🔄 Trying HTTP Geocoding API fallback...');
+        await _getAddressFromLatLngHttp(position);
+      }
     } catch (e) {
       debugPrint('Error: $e');
-      if (mounted) _showSnackBar('Unable to fetch address', isError: true);
+      // Fallback to HTTP Geocoding API
+      if (mounted) {
+        debugPrint('🔄 Trying HTTP Geocoding API fallback...');
+        await _getAddressFromLatLngHttp(position);
+      }
     } finally {
       if (mounted) setState(() => _isFetchingAddress = false);
+    }
+  }
+
+  /// HTTP-based geocoding fallback using Google Maps Geocoding API
+  Future<void> _getAddressFromLatLngHttp(LatLng position) async {
+    try {
+      const apiKey = 'AIzaSyCKL5RYJ39x93yz1Km59KwpYybRod3IOeg';
+      final url = 'https://maps.googleapis.com/maps/api/geocode/json'
+          '?latlng=${position.latitude},${position.longitude}'
+          '&key=$apiKey&language=en';
+
+      final response = await http.get(Uri.parse(url)).timeout(
+        const Duration(seconds: 10),
+        onTimeout: () => throw TimeoutException('HTTP Geocoding timed out'),
+      );
+
+      if (response.statusCode != 200) {
+        _showSnackBar('Unable to fetch address. Please enter manually.', isError: true);
+        return;
+      }
+
+      final data = jsonDecode(response.body);
+      if (data['status'] != 'OK' || data['results'] == null || (data['results'] as List).isEmpty) {
+        _showSnackBar('No address found for this location', isError: true);
+        return;
+      }
+
+      final result = data['results'][0];
+      final components = result['address_components'] as List;
+
+      String street = '';
+      String subLocality = '';
+      String locality = '';
+      String subAdminArea = '';
+      String adminArea = '';
+      String postalCode = '';
+
+      for (final component in components) {
+        final types = (component['types'] as List).cast<String>();
+        final longName = component['long_name'] ?? '';
+
+        if (types.contains('route') || types.contains('premise')) {
+          street = longName;
+        } else if (types.contains('sublocality_level_1') || types.contains('sublocality')) {
+          subLocality = longName;
+        } else if (types.contains('locality')) {
+          locality = longName;
+        } else if (types.contains('administrative_area_level_2')) {
+          subAdminArea = longName;
+        } else if (types.contains('administrative_area_level_1')) {
+          adminArea = longName;
+        } else if (types.contains('postal_code')) {
+          postalCode = longName;
+        }
+      }
+
+      debugPrint('📍 HTTP Geocode: street=$street, sub=$subLocality, loc=$locality, dist=$subAdminArea, state=$adminArea, pin=$postalCode');
+
+      if (!mounted) return;
+
+      bool? confirmed = await _showAddressConfirmationDialog(
+        street: street,
+        subLocality: subLocality,
+        thoroughfare: '',
+        locality: locality,
+        subAdministrativeArea: subAdminArea,
+        state: adminArea,
+        pincode: postalCode,
+      );
+
+      if (confirmed == true && mounted) {
+        _fillAddressFields(
+          street: street,
+          subLocality: subLocality,
+          thoroughfare: '',
+          locality: locality,
+          subAdministrativeArea: subAdminArea,
+          administrativeArea: adminArea,
+          postalCode: postalCode,
+        );
+      }
+    } catch (e) {
+      debugPrint('❌ HTTP Geocoding also failed: $e');
+      if (mounted) {
+        _showSnackBar('Could not detect address. Please enter manually.', isError: true);
+      }
     }
   }
 
@@ -1048,6 +1145,7 @@ class _AddAddressScreenState extends State<AddAddressScreen> {
                   }
                 });
               },
+              mapType: _currentMapType,
               myLocationEnabled: true,
               myLocationButtonEnabled: false,
               zoomControlsEnabled: false,
@@ -1186,6 +1284,28 @@ class _AddAddressScreenState extends State<AddAddressScreen> {
             ),
           ),
           
+          // Map Type Toggle Button - Top Right
+          if (!_isLoadingLocation)
+            Positioned(
+              right: 12,
+              top: MediaQuery.of(context).padding.top + 12,
+              child: _buildIconButton(
+                icon: _currentMapType == MapType.normal
+                    ? Icons.satellite_alt_rounded
+                    : Icons.map_rounded,
+                onTap: () {
+                  setState(() {
+                    _currentMapType = _currentMapType == MapType.normal
+                        ? MapType.hybrid
+                        : MapType.normal;
+                  });
+                  HapticFeedback.selectionClick();
+                },
+                isDark: isDark,
+                cardColor: cardColor,
+              ),
+            ),
+
           // Current Location Button - Bottom Right (above bottom sheet)
           if (!_isLoadingLocation)
             Positioned(

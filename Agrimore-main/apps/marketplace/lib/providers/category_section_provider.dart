@@ -59,6 +59,48 @@ class CategorySectionProvider extends ChangeNotifier {
           .where((s) => s.categoryIds.isNotEmpty)
           .toList();
 
+      if (snapshot.docs.isEmpty) {
+        debugPrint('⚠️ No category sections found. Seeding default sections...');
+        final defaultSections = [
+          {
+            'title': 'Fresh Arrivals',
+            'subtitle': 'Newly added products',
+            'position': 1,
+            'isActive': true,
+            'categoryIds': ['general', 'dairy', 'bakery'],
+            'createdAt': FieldValue.serverTimestamp(),
+            'updatedAt': FieldValue.serverTimestamp(),
+            'displayStyle': 'list',
+          },
+          {
+            'title': 'Trending Now',
+            'subtitle': 'Most popular items',
+            'position': 2,
+            'isActive': true,
+            'categoryIds': ['general', 'offers'],
+            'createdAt': FieldValue.serverTimestamp(),
+            'updatedAt': FieldValue.serverTimestamp(),
+            'displayStyle': 'grid',
+          }
+        ];
+        
+        for (var section in defaultSections) {
+          try {
+            await _collection.add(section);
+          } catch (e) {
+             debugPrint('Failed to seed section: $e');
+          }
+        }
+        
+        // Reload after seeding
+        final newSnapshot = await _collection.where('isActive', isEqualTo: true).orderBy('position').get();
+        _sections = newSnapshot.docs
+            .map((doc) => CategorySectionSlotModel.fromMap(
+                doc.data() as Map<String, dynamic>, doc.id))
+            .where((s) => s.categoryIds.isNotEmpty)
+            .toList();
+      }
+
       debugPrint('✅ Loaded ${_sections.length} active category sections');
       _isLoaded = true;
       _isLoading = false;

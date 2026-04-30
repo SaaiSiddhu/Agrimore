@@ -3,6 +3,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:provider/provider.dart';
 import '../../providers/auth_provider.dart';
+import 'partner_registration_screen.dart';
 
 class LoginScreen extends StatefulWidget {
   const LoginScreen({super.key});
@@ -53,10 +54,10 @@ class _LoginScreenState extends State<LoginScreen> {
                   const SizedBox(height: 60),
                   
                   // Logo & Title
-                  Icon(
-                    Icons.delivery_dining_rounded,
-                    size: 80,
-                    color: Colors.white,
+                  Image.asset(
+                    'assets/images/logo.png',
+                    width: 80,
+                    height: 80,
                   ),
                   const SizedBox(height: 24),
                   Text(
@@ -238,13 +239,28 @@ class _LoginScreenState extends State<LoginScreen> {
                   
                   const SizedBox(height: 24),
                   
-                  // Contact admin
-                  Text(
-                    'Contact admin to register as a delivery partner',
-                    textAlign: TextAlign.center,
-                    style: TextStyle(
-                      fontSize: 13,
-                      color: Colors.white.withValues(alpha: 0.7),
+                  // Registration Button
+                  OutlinedButton(
+                    onPressed: () {
+                      Navigator.push(
+                        context,
+                        MaterialPageRoute(builder: (_) => const PartnerRegistrationScreen()),
+                      );
+                    },
+                    style: OutlinedButton.styleFrom(
+                      padding: const EdgeInsets.symmetric(vertical: 16),
+                      side: BorderSide(color: Colors.white.withValues(alpha: 0.5)),
+                      shape: RoundedRectangleBorder(
+                        borderRadius: BorderRadius.circular(12),
+                      ),
+                    ),
+                    child: const Text(
+                      'Register as Delivery Partner',
+                      style: TextStyle(
+                        fontSize: 15,
+                        fontWeight: FontWeight.w600,
+                        color: Colors.white,
+                      ),
                     ),
                   ),
                 ],

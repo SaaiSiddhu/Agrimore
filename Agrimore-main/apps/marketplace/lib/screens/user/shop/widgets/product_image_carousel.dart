@@ -2,6 +2,8 @@
 import 'package:flutter/material.dart';
 import 'package:carousel_slider/carousel_slider.dart'; // ✅ KEEP THIS
 import 'package:agrimore_ui/agrimore_ui.dart';
+import 'package:cached_network_image/cached_network_image.dart';
+import 'package:flutter/foundation.dart' show kIsWeb;
 
 class ProductImageCarousel extends StatefulWidget {
   final List<String> images;
@@ -50,14 +52,28 @@ class _ProductImageCarouselState extends State<ProductImageCarousel> {
             },
           ),
           items: widget.images.map((imageUrl) {
+            final errorWidget = const Center(
+              child: Icon(Icons.broken_image, size: 60, color: Colors.grey),
+            );
+            final loaderWidget = const Center(
+              child: CircularProgressIndicator(),
+            );
             return Container(
               width: double.infinity,
-              decoration: BoxDecoration(
-                color: Colors.grey[100],
-                image: DecorationImage(
-                  image: NetworkImage(imageUrl),
-                  fit: BoxFit.contain,
-                ),
+              color: Colors.grey[100],
+              child: kIsWeb ? Image.network(
+                imageUrl,
+                fit: BoxFit.contain,
+                errorBuilder: (_, __, ___) => errorWidget,
+                loadingBuilder: (context, child, loadingProgress) {
+                  if (loadingProgress == null) return child;
+                  return loaderWidget;
+                },
+              ) : CachedNetworkImage(
+                imageUrl: imageUrl,
+                fit: BoxFit.contain,
+                placeholder: (context, url) => loaderWidget,
+                errorWidget: (context, url, error) => errorWidget,
               ),
             );
           }).toList(),
@@ -91,9 +107,24 @@ class _ProductImageCarouselState extends State<ProductImageCarousel> {
                           width: isSelected ? 2 : 1,
                         ),
                         borderRadius: BorderRadius.circular(12),
-                        image: DecorationImage(
-                          image: NetworkImage(widget.images[index]),
+                      ),
+                      child: ClipRRect(
+                        borderRadius: BorderRadius.circular(10),
+                        child: kIsWeb ? Image.network(
+                          widget.images[index],
                           fit: BoxFit.cover,
+                          errorBuilder: (_, __, ___) => Container(
+                            color: Colors.grey[200],
+                            child: const Icon(Icons.broken_image, size: 20, color: Colors.grey),
+                          ),
+                        ) : CachedNetworkImage(
+                          imageUrl: widget.images[index],
+                          fit: BoxFit.cover,
+                          placeholder: (context, url) => Container(color: Colors.grey[200]),
+                          errorWidget: (context, url, error) => Container(
+                            color: Colors.grey[200],
+                            child: const Icon(Icons.broken_image, size: 20, color: Colors.grey),
+                          ),
                         ),
                       ),
                     ),

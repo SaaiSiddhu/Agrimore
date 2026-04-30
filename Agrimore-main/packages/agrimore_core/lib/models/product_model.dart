@@ -48,12 +48,19 @@ class ProductVariant {
   }
 
   factory ProductVariant.fromMap(Map<String, dynamic> map) {
+    // Support multiple Firestore field name conventions:
+    // name: 'name' | 'weight' | 'label' | 'title'
+    // salePrice: 'salePrice' | 'price' | 'discountedPrice'
+    // originalPrice: 'originalPrice' | 'mrp' | 'compareAtPrice'
+    final rawName = map['name'] ?? map['weight'] ?? map['label'] ?? map['title'] ?? '';
+    final rawSalePrice = (map['salePrice'] ?? map['price'] ?? map['discountedPrice']);
+    final rawOriginalPrice = (map['originalPrice'] ?? map['mrp'] ?? map['compareAtPrice']);
     return ProductVariant(
       id: map['id'] ?? '',
-      name: map['name'] ?? '',
+      name: rawName.toString(),
       sku: map['sku'],
-      salePrice: (map['salePrice'] as num?)?.toDouble() ?? 0.0,
-      originalPrice: (map['originalPrice'] as num?)?.toDouble(),
+      salePrice: (rawSalePrice as num?)?.toDouble() ?? 0.0,
+      originalPrice: (rawOriginalPrice as num?)?.toDouble(),
       stock: (map['stock'] as num?)?.toInt() ?? 0,
       images: List<String>.from(map['images'] ?? []),
       options: Map<String, String>.from(map['options'] ?? {}),
@@ -95,6 +102,8 @@ class ProductModel {
   final double salePrice; // Base price
   final double? originalPrice; // Base price
   final String categoryId;
+  /// Optional display name from legacy/RN docs (`categoryName`).
+  final String? categoryName;
   final List<String> images; // Base images
   final int stock; // Base stock
   final double rating;
@@ -119,6 +128,9 @@ class ProductModel {
   final List<VariantOption> variantOptions;
   final List<ProductVariant> variants;
   final List<String>? relatedProductIds;
+  final String location;
+  final String sellerId;
+  final int? lowStockThreshold;
 
   ProductModel({
     required this.id,
@@ -127,6 +139,7 @@ class ProductModel {
     required this.salePrice,
     this.originalPrice,
     required this.categoryId,
+    this.categoryName,
     required this.images,
     required this.stock,
     this.rating = 0.0,
@@ -151,6 +164,9 @@ class ProductModel {
     this.variantOptions = const [],
     this.variants = const [],
     this.relatedProductIds,
+    this.location = '',
+    this.sellerId = '',
+    this.lowStockThreshold,
   });
 
   // Compatibility Getters
@@ -160,6 +176,73 @@ class ProductModel {
   bool get isInStock => stock > 0;
   bool get inStock => stock > 0;
   String get category => categoryId;
+
+  /// Merge image URLs from Firestore/RN/seller field naming into one ordered list.
+  static List<String> mergeImageSources(
+    Map<String, dynamic> map,
+    List<ProductVariant> variants,
+  ) {
+    final seen = <String>{};
+    final out = <String>[];
+
+    void addOne(dynamic v) {
+      if (v == null) return;
+      if (v is String) {
+        final t = v.trim();
+        if (t.isEmpty) return;
+        if (seen.add(t)) out.add(t);
+        return;
+      }
+      if (v is List) {
+        for (final e in v) {
+          if (e is String) addOne(e);
+        }
+      }
+    }
+
+    addOne(map['images']);
+    addOne(map['imageUrls']);
+    addOne(map['imageURL']);
+    addOne(map['photoUrls']);
+    addOne(map['photos']);
+    addOne(map['pictures']);
+    addOne(map['gallery']);
+    addOne(map['thumbnail']);
+    addOne(map['coverImage']);
+
+    for (final v in variants) {
+      for (final img in v.images) {
+        addOne(img);
+      }
+    }
+    return out;
+  }
+
+  static String parseCategoryId(Map<String, dynamic> map) {
+    final raw = map['categoryId'];
+    if (raw != null && raw.toString().trim().isNotEmpty) {
+      return raw.toString().trim();
+    }
+    final cat = map['category'];
+    if (cat is Map && cat['id'] != null && cat['id'].toString().trim().isNotEmpty) {
+      return cat['id'].toString().trim();
+    }
+    if (cat is String && cat.trim().isNotEmpty) return cat.trim();
+    final name = map['categoryName']?.toString().trim();
+    if (name != null && name.isNotEmpty) return name;
+    return 'general';
+  }
+
+  static String? parseCategoryNameField(Map<String, dynamic> map) {
+    final cn = map['categoryName']?.toString().trim();
+    if (cn != null && cn.isNotEmpty) return cn;
+    final cat = map['category'];
+    if (cat is Map && cat['name'] != null) {
+      final n = cat['name'].toString().trim();
+      if (n.isNotEmpty) return n;
+    }
+    return null;
+  }
 
   int get discount {
     if (originalPrice != null && originalPrice! > salePrice) {
@@ -175,7 +258,9 @@ class ProductModel {
       'salePrice': salePrice,
       'originalPrice': originalPrice,
       'categoryId': categoryId,
+      if (categoryName != null) 'categoryName': categoryName,
       'images': images,
+      'imageUrls': images,
       'stock': stock,
       'rating': rating,
       'reviewCount': reviewCount,
@@ -199,6 +284,9 @@ class ProductModel {
       'variantOptions': variantOptions.map((v) => v.toMap()).toList(),
       'variants': variants.map((v) => v.toMap()).toList(),
       'relatedProductIds': relatedProductIds,
+      'location': location,
+      'sellerId': sellerId,
+      'lowStockThreshold': lowStockThreshold,
     };
   }
 
@@ -209,21 +297,51 @@ class ProductModel {
   }
 
   factory ProductModel.fromMap(Map<String, dynamic> map, String id) {
+    // Helper to safely parse dates that might be stored as String, Int, or Timestamp in old DBs
+    DateTime parseDateSafely(dynamic value) {
+      if (value == null) return DateTime.now();
+      if (value is Timestamp) return value.toDate();
+      if (value is int) return DateTime.fromMillisecondsSinceEpoch(value);
+      if (value is String) {
+        final parsed = DateTime.tryParse(value);
+        if (parsed != null) return parsed;
+        final parsedInt = int.tryParse(value);
+        if (parsedInt != null) return DateTime.fromMillisecondsSinceEpoch(parsedInt);
+      }
+      return DateTime.now();
+    }
+
+    final variantOptions = (map['variantOptions'] as List<dynamic>?)
+            ?.map((v) => VariantOption.fromMap(v as Map<String, dynamic>))
+            .toList() ??
+        [];
+    final variants = (map['variants'] as List<dynamic>?)
+            ?.map((v) => ProductVariant.fromMap(v as Map<String, dynamic>))
+            .toList() ??
+        [];
+
+    final mergedImages = mergeImageSources(map, variants);
+    final legacySingle = map['imageUrl'] is String ? (map['imageUrl'] as String).trim() : '';
+    final images = mergedImages.isNotEmpty
+        ? mergedImages
+        : (legacySingle.isNotEmpty ? <String>[legacySingle] : <String>[]);
+
     return ProductModel(
       id: id,
       name: map['name'] ?? '',
       description: map['description'] ?? '',
-      salePrice: (map['salePrice'] as num?)?.toDouble() ?? 0.0,
-      originalPrice: (map['originalPrice'] as num?)?.toDouble(),
-      categoryId: map['categoryId'] ?? 'general',
-      images: List<String>.from(map['images'] ?? []),
-      stock: (map['stock'] as num?)?.toInt() ?? 0,
+      salePrice: (map['salePrice'] as num?)?.toDouble() ?? (map['price'] as num?)?.toDouble() ?? 0.0,
+      originalPrice: (map['originalPrice'] as num?)?.toDouble() ?? (map['mrp'] as num?)?.toDouble(),
+      categoryId: parseCategoryId(map),
+      categoryName: parseCategoryNameField(map),
+      images: images,
+      stock: (map['stock'] as num?)?.toInt() ?? 999,
       rating: (map['rating'] as num?)?.toDouble() ?? 0.0,
       reviewCount: (map['reviewCount'] as num?)?.toInt() ?? 0,
       isFeatured: map['isFeatured'] ?? false,
       isActive: map['isActive'] ?? true,
-      createdAt: (map['createdAt'] as Timestamp? ?? Timestamp.now()).toDate(),
-      updatedAt: (map['updatedAt'] as Timestamp? ?? Timestamp.now()).toDate(),
+      createdAt: parseDateSafely(map['createdAt']),
+      updatedAt: parseDateSafely(map['updatedAt']),
       unit: map['unit'],
       minOrderQuantity: (map['minOrderQuantity'] as num?)?.toInt(),
       maxOrderQuantity: (map['maxOrderQuantity'] as num?)?.toInt(),
@@ -231,7 +349,7 @@ class ProductModel {
       isVerified: map['isVerified'] ?? false,
       isTrending: map['isTrending'] ?? false,
       specifications: map['specifications'] != null
-          ? Map<String, String>.from(map['specifications'])
+          ? Map<String, String>.from(map['specifications'] as Map)
           : null,
       shippingDays: map['shippingDays'],
       shippingPrice: (map['shippingPrice'] as num?)?.toDouble(),
@@ -239,13 +357,12 @@ class ProductModel {
       isFreeDelivery: map['isFreeDelivery'],
       expressDelivery: map['expressDelivery'],
       expressDeliveryDays: map['expressDeliveryDays'],
-      variantOptions: (map['variantOptions'] as List<dynamic>?)
-          ?.map((v) => VariantOption.fromMap(v as Map<String, dynamic>))
-          .toList() ?? [],
-      variants: (map['variants'] as List<dynamic>?)
-          ?.map((v) => ProductVariant.fromMap(v as Map<String, dynamic>))
-          .toList() ?? [],
+      variantOptions: variantOptions,
+      variants: variants,
       relatedProductIds: List<String>.from(map['relatedProductIds'] ?? []),
+      location: map['location']?.toString() ?? '',
+      sellerId: map['sellerId']?.toString() ?? '',
+      lowStockThreshold: (map['lowStockThreshold'] as num?)?.toInt(),
     );
   }
 
@@ -262,6 +379,7 @@ class ProductModel {
     double? salePrice,
     double? originalPrice,
     String? categoryId,
+    String? categoryName,
     List<String>? images,
     int? stock,
     double? rating,
@@ -286,6 +404,9 @@ class ProductModel {
     List<VariantOption>? variantOptions,
     List<ProductVariant>? variants,
     List<String>? relatedProductIds,
+    String? location,
+    String? sellerId,
+    int? lowStockThreshold,
   }) {
     return ProductModel(
       id: id ?? this.id,
@@ -294,6 +415,7 @@ class ProductModel {
       salePrice: salePrice ?? this.salePrice,
       originalPrice: originalPrice ?? this.originalPrice,
       categoryId: categoryId ?? this.categoryId,
+      categoryName: categoryName ?? this.categoryName,
       images: images ?? this.images,
       stock: stock ?? this.stock,
       rating: rating ?? this.rating,
@@ -318,6 +440,9 @@ class ProductModel {
       variantOptions: variantOptions ?? this.variantOptions,
       variants: variants ?? this.variants,
       relatedProductIds: relatedProductIds ?? this.relatedProductIds,
+      location: location ?? this.location,
+      sellerId: sellerId ?? this.sellerId,
+      lowStockThreshold: lowStockThreshold ?? this.lowStockThreshold,
     );
   }
 

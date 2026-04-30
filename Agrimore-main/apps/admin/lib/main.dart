@@ -26,6 +26,8 @@ import 'providers/bestseller_provider.dart';
 import 'providers/category_section_provider.dart';
 import 'providers/wallet_config_provider.dart';
 import 'providers/section_banner_provider.dart';
+import 'providers/vendor_provider.dart';
+import 'providers/seller_provider.dart';
 
 // ============================================
 // MAIN ENTRY POINT - ADMIN APP
@@ -115,6 +117,8 @@ void main() async {
         ChangeNotifierProvider(create: (_) => CategorySectionProvider()),
         ChangeNotifierProvider(create: (_) => WalletConfigProvider()),
         ChangeNotifierProvider(create: (_) => SectionBannerProvider()),
+        ChangeNotifierProvider(create: (_) => VendorProvider()),
+        ChangeNotifierProvider(create: (_) => SellerProvider()),
       ],
       child: const AdminApp(),
     ),

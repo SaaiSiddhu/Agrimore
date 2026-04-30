@@ -11,6 +11,8 @@ import '../screens/onboarding/onboarding_screen.dart';
 import '../screens/auth/login_screen.dart';
 import '../screens/auth/signup_screen.dart';
 import '../screens/auth/complete_profile_screen.dart';
+import '../screens/auth/mobile_number_screen.dart';
+import '../screens/auth/onboarding_address_screen.dart';
 
 // Landing
 import '../screens/landing/landing_screen.dart';
@@ -61,6 +63,31 @@ import '../screens/user/wallet/add_money_screen.dart';
 import '../screens/user/wallet/transaction_history_screen.dart';
 import '../screens/user/wallet/referral_screen.dart';
 
+// Notifications
+import '../screens/user/notifications/notifications_screen.dart';
+
+// Offers & Flash Sale
+import '../screens/user/offers/offers_screen.dart';
+import '../screens/user/flash_sale/flash_sale_screen.dart';
+
+// Rewards
+import '../screens/user/rewards/rewards_screen.dart';
+
+// Rate Order
+import '../screens/user/orders/rate_order_screen.dart';
+
+// Subscriptions
+import '../screens/user/subscriptions/my_subscriptions_screen.dart';
+import '../screens/user/subscriptions/subscription_setup_screen.dart';
+
+// Language
+import '../screens/user/settings/language_screen.dart';
+
+// Seller
+import '../screens/seller/seller_apply_screen.dart';
+import '../screens/seller/seller_dashboard_screen.dart';
+import '../screens/seller/seller_panel_screen.dart';
+
 // Models
 import 'package:agrimore_core/agrimore_core.dart';
 
@@ -83,6 +110,7 @@ class AppRoutes {
   static const String search = '/search';
   static const String searchResults = '/search/results';
   static const String wishlist = '/wishlist';
+  // AI Chat
   static const String aiChat = '/ai-chat';
   static const String chatHistory = '/chat-history';
   static const String profile = '/profile';
@@ -94,6 +122,12 @@ class AppRoutes {
   static const String signup = '/signup';  // ✅ New user registration
   static const String completeProfile = '/complete-profile';  // ✅ After Google login for profile completion
   static const String forgotPassword = '/forgot-password';
+
+  // ── NEW USER ONBOARDING ──
+  static const String mobileNumber = '/mobile-number';         // Step 2: collect phone
+  static const String onboardingAddress = '/onboarding-address'; // Step 3: set default address
+  static const String profileAddAddress = '/profile/add-address';  // From profile: add new address
+  static const String profileEditAddress = '/profile/edit-address'; // From profile: edit existing
 
   // Legal Routes
   static const String terms = '/terms';  // ✅ Terms and Conditions
@@ -133,6 +167,29 @@ class AppRoutes {
   static const String couponSelection = '/cart/coupons';
 
   static const String notifications = '/notifications';
+  static const String support = '/support';
+
+  // Offers & Flash Sale
+  static const String offers = '/offers';
+  static const String flashSale = '/flash-sale';
+
+  // Rewards
+  static const String rewards = '/rewards';
+
+  // Rate Order
+  static const String rateOrder = '/rate-order';
+
+  // Subscriptions
+  static const String mySubscriptions = '/my-subscriptions';
+  static const String subscriptionSetup = '/subscription-setup';
+
+  // Language
+  static const String language = '/language';
+
+  // Seller Routes
+  static const String sellerApply = '/seller/apply';
+  static const String sellerPanel = '/seller/panel';
+  static const String sellerDashboard = '/seller/dashboard';
 
   // Wallet Routes
   static const String wallet = '/wallet';
@@ -187,8 +244,25 @@ class AppRoutes {
           return _buildRoute(const AuthGuard(child: MainScreen(initialIndex: 0)), settings);
         case home:
           return _buildRoute(const AuthGuard(child: MainScreen(initialIndex: 0)), settings);
-        case shop:
-          return _buildRoute(const AuthGuard(child: MainScreen(initialIndex: 1)), settings);
+        case shop: {
+          String? cid;
+          String? cname;
+          final args = settings.arguments;
+          if (args is Map<String, dynamic>) {
+            cid = args['categoryId'] as String?;
+            cname = args['categoryName'] as String?;
+          }
+          return _buildRoute(
+            AuthGuard(
+              child: MainScreen(
+                initialIndex: 1,
+                categoryId: cid,
+                categoryName: cname,
+              ),
+            ),
+            settings,
+          );
+        }
         case shopWithSearch:
           final searchQuery = settings.arguments as String?;
           return _buildRoute(
@@ -196,9 +270,9 @@ class AppRoutes {
             settings,
           );
         case cart:
-          return _buildRoute(const AuthGuard(child: MainScreen(initialIndex: 2)), settings);
-        case wishlist:
           return _buildRoute(const AuthGuard(child: MainScreen(initialIndex: 3)), settings);
+        case wishlist:
+          return _buildRoute(const AuthGuard(child: WishlistScreen()), settings);
         case profile:
           return _buildRoute(const AuthGuard(child: MainScreen(initialIndex: 4)), settings);
 
@@ -234,6 +308,31 @@ class AppRoutes {
         case forgotPassword:
           return _buildRoute(const LoginScreen(), settings);
 
+        // ── New-user onboarding ──
+        case mobileNumber:
+          return _buildRoute(const MobileNumberScreen(), settings);
+        case onboardingAddress:
+          return _buildRoute(
+            const OnboardingAddressScreen(isOnboarding: true),
+            settings,
+          );
+
+        // ── Add / Edit address (from profile) ──
+        case profileAddAddress:
+          return _buildRoute(
+            const OnboardingAddressScreen(isOnboarding: false),
+            settings,
+          );
+        case profileEditAddress:
+          final existingAddr = settings.arguments as AddressModel?;
+          return _buildRoute(
+            OnboardingAddressScreen(
+              isOnboarding: false,
+              existingAddress: existingAddr,
+            ),
+            settings,
+          );
+
         // Legal
         case terms:
           return _buildRoute(const TermsScreen(), settings);
@@ -262,9 +361,17 @@ class AppRoutes {
           if (categoryId == null || categoryId.isEmpty) {
             return _buildErrorRoute('Category ID is required', settings);
           }
-          return _buildRoute(ShopScreen(categoryId: categoryId), settings);
+          return _buildRoute(
+            AuthGuard(
+              child: MainScreen(
+                initialIndex: 1,
+                categoryId: categoryId,
+              ),
+            ),
+            settings,
+          );
         case categories:
-          return _buildRoute(const ShopScreen(), settings);
+          return _buildRoute(const AuthGuard(child: MainScreen(initialIndex: 2)), settings);
         case recentlyViewed:
           return _buildRoute(const ShopScreen(showRecentlyViewed: true), settings);
         case deals:
@@ -336,12 +443,59 @@ class AppRoutes {
           return _buildRoute(const AuthGuard(child: CouponSelectionScreen()), settings);
 
         case notifications:
+          return _buildRoute(const AuthGuard(child: NotificationsScreen()), settings);
+        // AI Chat
+        case support:
+          return _buildRoute(const AuthGuard(child: AIChatScreen()), settings);
+
+        // Offers & Flash Sale
+        case offers:
+          return _buildRoute(const AuthGuard(child: OffersScreen()), settings);
+        case flashSale:
+          return _buildRoute(const AuthGuard(child: FlashSaleScreen()), settings);
+
+        // Rewards
+        case rewards:
+          return _buildRoute(const AuthGuard(child: RewardsScreen()), settings);
+
+        // Rate Order
+        case rateOrder:
+          final rateOrderId = settings.arguments as String?;
+          if (rateOrderId == null || rateOrderId.isEmpty) {
+            return _buildErrorRoute('Order ID is required for rating', settings);
+          }
+          return _buildRoute(AuthGuard(child: RateOrderScreen(orderId: rateOrderId)), settings);
+
+        // Subscriptions
+        case mySubscriptions:
+          return _buildRoute(const AuthGuard(child: MySubscriptionsScreen()), settings);
+        case subscriptionSetup:
+          final subArgs = settings.arguments as Map<String, dynamic>?;
+          if (subArgs == null) {
+            return _buildErrorRoute('Product data is required', settings);
+          }
           return _buildRoute(
-            const Scaffold(
-              body: Center(child: Text('Notifications', style: TextStyle(fontSize: 24))),
+            AuthGuard(
+              child: SubscriptionSetupScreen(
+                product: subArgs['product'] as Map<String, dynamic>,
+                qty: subArgs['qty'] as int? ?? 1,
+                variant: subArgs['variant'] as Map<String, dynamic>?,
+              ),
             ),
             settings,
           );
+
+        // Language
+        case language:
+          return _buildRoute(const LanguageScreen(), settings);
+
+        // Seller Routes
+        case sellerApply:
+          return _buildRoute(const AuthGuard(child: SellerApplyScreen()), settings);
+        case sellerPanel:
+          return _buildRoute(const AuthGuard(child: SellerPanelScreen()), settings);
+        case sellerDashboard:
+          return _buildRoute(const AuthGuard(child: SellerDashboardScreen()), settings);
 
         // Wallet Routes
         case wallet:

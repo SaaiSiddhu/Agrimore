@@ -35,24 +35,14 @@ service cloud.firestore {
         get(/databases/$(database)/documents/users/$(request.auth.uid)).data.role == 'delivery_partner';
     }
     
-    // Check if seller owns the product
-    function isSellerOwner(sellerId) {
-      return isAuthenticated() && 
-        get(/databases/$(database)/documents/users/$(request.auth.uid)).data.sellerId == sellerId;
-    }
-    
-    // Validate that required fields exist
-    function hasRequiredFields(fields) {
-      return request.resource.data.keys().hasAll(fields);
-    }
-    
+
     // ============================================
     // USER COLLECTION
     // ============================================
     match /users/{userId} {
-      // Allow public read for user existence check (login flow)
-      // Users can read their own full profile, others can check existence
-      allow read: if true;
+      // ✅ SECURITY FIX: Only authenticated users can read user data
+      // Users can read their own full profile, admins can read any
+      allow read: if isAuthenticated();
       
       // Users can create their own profile, admins can create for delivery partners
       allow create: if isOwner(userId) || isAdmin();
@@ -107,10 +97,9 @@ service cloud.firestore {
       allow read: if true;
       
       // Only admins or product owner (seller) can create/update/delete
-      allow create: if isAdmin() || isSeller();
-      allow update: if isAdmin() || 
-        (isSeller() && resource.data.sellerId == get(/databases/$(database)/documents/users/$(request.auth.uid)).data.sellerId);
-      allow delete: if isAdmin();
+      allow create: if isAdmin() || (isSeller() && request.resource.data.sellerId == request.auth.uid);
+      allow update: if isAdmin() || (isSeller() && resource.data.sellerId == request.auth.uid && request.resource.data.sellerId == request.auth.uid);
+      allow delete: if isAdmin() || (isSeller() && resource.data.sellerId == request.auth.uid);
       
       // Reviews subcollection under products
       match /reviews/{reviewId} {
@@ -145,7 +134,7 @@ service cloud.firestore {
       // Order owner can read, seller/delivery partner/admin can read all
       allow read: if isAuthenticated() && 
         (resource.data.userId == request.auth.uid || 
-         resource.data.sellerId == get(/databases/$(database)/documents/users/$(request.auth.uid)).data.sellerId ||
+         resource.data.sellerId == request.auth.uid ||
          (isDeliveryPartner() && resource.data.deliveryPartnerId == request.auth.uid) ||
          isDeliveryPartner() ||  // Partners can see available orders
          isAdmin());
@@ -156,7 +145,7 @@ service cloud.firestore {
       // Owner can update (for cancellation), seller/admin/delivery partner can update status
       allow update: if isAuthenticated() && 
         (resource.data.userId == request.auth.uid ||
-         resource.data.sellerId == get(/databases/$(database)/documents/users/$(request.auth.uid)).data.sellerId ||
+         resource.data.sellerId == request.auth.uid ||
          (isDeliveryPartner() && resource.data.deliveryPartnerId == request.auth.uid) ||
          isAdmin());
       
@@ -425,8 +414,9 @@ service cloud.firestore {
     // AUTH LOGS (Login/Logout Tracking)
     // ============================================
     match /auth_logs/{logId} {
-      // Allow creation - needed for logout events when user is already signed out
-      allow create: if true;
+      // ✅ SECURITY FIX: Only authenticated users can create auth logs
+      // Logout events should be logged before signOut() completes
+      allow create: if isAuthenticated();
       
       // Only admins can read auth logs
       allow read: if isAdmin();
@@ -456,9 +446,10 @@ service cloud.firestore {
       // User can create transactions for themselves
       allow create: if isAuthenticated() && request.resource.data.userId == request.auth.uid;
       
-      // Admin can read all, user can create for referral crediting
+      // Admin can read all wallet transactions
       allow read: if isAdmin();
-      allow create: if isAuthenticated();
+      // ✅ SECURITY FIX: Removed overly-broad 'allow create: if isAuthenticated()'
+      // Only the user-scoped rule above (line 446) should control create access
     }
     
     // ============================================
@@ -491,6 +482,105 @@ service cloud.firestore {
       
       // Only admin can delete partners
       allow delete: if isAdmin();
+    }
+    // ============================================
+    // VENDORS / SUPPLIERS COLLECTION
+    // ============================================
+    match /vendors/{vendorId} {
+      // Vendors/Suppliers are public to read
+      allow read: if true;
+      // Admins manage vendors
+      allow write: if isAdmin();
+    }
+
+    // ============================================
+    // CUSTOMER ↔ SELLER CHAT THREADS
+    // ============================================
+    match /threads/{threadId} {
+      // A thread can only be read if the user is the customer or the seller in the thread
+      allow read: if isAuthenticated() && 
+        (resource.data.customerId == request.auth.uid || 
+         resource.data.sellerId == request.auth.uid || 
+         isAdmin());
+         
+      // Any authenticated user can create a thread
+      allow create: if isAuthenticated();
+      
+      // Updates allowed if they are participants
+      allow update: if isAuthenticated() && 
+        (resource.data.customerId == request.auth.uid || 
+         resource.data.sellerId == request.auth.uid || 
+         isAdmin());
+         
+      match /messages/{messageId} {
+        allow read: if isAuthenticated() && 
+          (get(/databases/$(database)/documents/threads/$(threadId)).data.customerId == request.auth.uid || 
+           get(/databases/$(database)/documents/threads/$(threadId)).data.sellerId == request.auth.uid || 
+           isAdmin());
+           
+        allow create: if isAuthenticated() && 
+          (get(/databases/$(database)/documents/threads/$(threadId)).data.customerId == request.auth.uid || 
+           get(/databases/$(database)/documents/threads/$(threadId)).data.sellerId == request.auth.uid || 
+           isAdmin());
+      }
+    }
+
+    // ============================================
+    // SELLER PAYOUTS COLLECTION
+    // ============================================
+    match /seller_payouts/{payoutId} {
+      // Sellers can read their own payouts, admins can read all
+      allow read: if isAuthenticated() && 
+        (resource.data.sellerId == request.auth.uid || isAdmin());
+      
+      // Only Cloud Functions (admin SDK) create payouts — no client writes
+      allow create: if false;
+      
+      // Admins can update payout status (mark as paid)
+      allow update: if isAdmin();
+      
+      allow delete: if false;
+    }
+
+    // ============================================
+    // INVENTORY ALERTS COLLECTION
+    // ============================================
+    match /inventory_alerts/{alertId} {
+      // Sellers can read their own alerts, admins can read all
+      allow read: if isAuthenticated() && 
+        (resource.data.sellerId == request.auth.uid || isAdmin());
+      
+      // Only Cloud Functions create alerts
+      allow create: if false;
+      allow update, delete: if false;
+    }
+
+    // ============================================
+    // RAZORPAY ORDERS COLLECTION
+    // ============================================
+    match /razorpay_orders/{orderId} {
+      // Only Cloud Functions create; user can read their own
+      allow read: if isAuthenticated() && 
+        (resource.data.userId == request.auth.uid || isAdmin());
+      allow write: if false;
+    }
+
+    // ============================================
+    // VERIFIED PAYMENTS COLLECTION
+    // ============================================
+    match /verified_payments/{paymentId} {
+      // Only Cloud Functions write; admins can read
+      allow read: if isAdmin();
+      allow write: if false;
+    }
+
+    // ============================================
+    // PAYMENT SECURITY LOGS COLLECTION
+    // ============================================
+    match /payment_security_logs/{logId} {
+      // Only Cloud Functions write; admins can read
+      allow read: if isAdmin();
+      allow write: if false;
     }
   }
 }

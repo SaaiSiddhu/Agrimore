@@ -454,8 +454,7 @@ class _WebCartScreenState extends State<WebCartScreen>
       child: ElevatedButton(
         onPressed: () {
           HapticFeedback.heavyImpact();
-          // AppRoutes.navigateTo(context, AppRoutes.checkout);
-          SnackbarHelper.showInfo(context, 'Checkout coming soon!');
+          AppRoutes.navigateTo(context, AppRoutes.checkout);
         },
         style: ElevatedButton.styleFrom(
           padding: const EdgeInsets.symmetric(vertical: 20),

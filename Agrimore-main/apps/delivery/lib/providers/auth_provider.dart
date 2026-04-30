@@ -2,6 +2,7 @@
 import 'package:flutter/material.dart';
 import 'package:firebase_auth/firebase_auth.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
+import 'package:firebase_messaging/firebase_messaging.dart';
 import 'package:agrimore_core/agrimore_core.dart';
 
 class DeliveryAuthProvider extends ChangeNotifier {
@@ -40,6 +41,29 @@ class DeliveryAuthProvider extends ChangeNotifier {
       final doc = await _firestore.collection('users').doc(uid).get();
       if (doc.exists) {
         _user = UserModel.fromFirestore(doc);
+        
+        // STRICT ROLE CHECK FOR DELIVERY APP
+        if (!_user!.isDeliveryPartner) {
+          debugPrint('⛔ Unauthorized access attempt by non-delivery: ${_user!.email}');
+          await _auth.signOut();
+          _user = null;
+          _error = 'Access denied. You are not a delivery partner.';
+        } else {
+          // Check if approved
+          final partnerDoc = await _firestore.collection('delivery_partners').doc(uid).get();
+          if (partnerDoc.exists) {
+            final status = partnerDoc.data()?['status'] ?? 'pending';
+            if (status != 'approved') {
+              await _auth.signOut();
+              _user = null;
+              _error = 'Your account is pending approval by an administrator.';
+            }
+          } else {
+             await _auth.signOut();
+             _user = null;
+             _error = 'Could not find delivery partner details.';
+          }
+        }
       }
     } catch (e) {
       _error = 'Failed to load user data';
@@ -60,14 +84,13 @@ class DeliveryAuthProvider extends ChangeNotifier {
       
       if (credential.user != null) {
         await _loadUserData(credential.user!.uid);
+        // The role checks and approval checks are now handled in _loadUserData
         
-        // Verify user is a delivery partner
-        if (!isDeliveryPartner) {
-          await signOut();
-          _error = 'This account is not registered as a delivery partner';
-          _isLoading = false;
-          notifyListeners();
-          return false;
+        // If _user is null after _loadUserData, it means they were rejected and signed out
+        if (_user == null) {
+           _isLoading = false;
+           notifyListeners();
+           return false;
         }
         
         // Update FCM token
@@ -86,7 +109,36 @@ class DeliveryAuthProvider extends ChangeNotifier {
   }
   
   Future<void> _updateFCMToken(String uid) async {
-    // TODO: Get FCM token and update in Firestore
+    try {
+      // Dynamically import to avoid issues on unsupported platforms
+      final messaging = await _getMessagingInstance();
+      if (messaging == null) return;
+      
+      final token = await messaging.getToken();
+      if (token != null) {
+        await _firestore.collection('users').doc(uid).update({
+          'fcmTokens': FieldValue.arrayUnion([token]),
+          'fcmToken': token,
+          'lastTokenUpdate': FieldValue.serverTimestamp(),
+        });
+        debugPrint('✅ FCM token updated for driver: $uid');
+      }
+    } catch (e) {
+      debugPrint('⚠️ FCM token update skipped: $e');
+    }
+  }
+  
+  /// Safe accessor for FirebaseMessaging (returns null if unavailable)
+  Future<dynamic> _getMessagingInstance() async {
+    try {
+      // ignore: depend_on_referenced_packages
+      final firebaseMessaging = await Future(() {
+        return FirebaseMessaging.instance;
+      });
+      return firebaseMessaging;
+    } catch (e) {
+      return null;
+    }
   }
   
   Future<void> signOut() async {

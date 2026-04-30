@@ -50,9 +50,9 @@ android {
         }
         
         create("release") {
-            storeFile = file("../key.jks")
+            storeFile = file("../upload-key.jks")
             storePassword = "agrimore123"
-            keyAlias = "agrimore"
+            keyAlias = "upload"
             keyPassword = "agrimore123"
         }
     }

@@ -704,11 +704,24 @@ class _LiveTrackingScreenState extends State<LiveTrackingScreen>
     }
   }
 
-  void _chatWithPartner() {
-    // TODO: Implement in-app chat or SMS
+  void _chatWithPartner() async {
     if (_partner?.phone != null) {
-      final url = Uri.parse('sms:${_partner!.phone}');
-      launchUrl(url);
+      final orderNum = _order?.orderNumber ?? '';
+      final body = Uri.encodeComponent('Hi, regarding my Agrimore order #$orderNum');
+      final url = Uri.parse('sms:${_partner!.phone}?body=$body');
+      try {
+        await launchUrl(url);
+      } catch (e) {
+        // Fallback to plain SMS if body param not supported
+        final fallbackUrl = Uri.parse('sms:${_partner!.phone}');
+        await launchUrl(fallbackUrl);
+      }
+    } else {
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(content: Text('Delivery partner contact not available yet')),
+        );
+      }
     }
   }
 

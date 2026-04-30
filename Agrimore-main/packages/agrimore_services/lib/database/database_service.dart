@@ -40,15 +40,20 @@ class DatabaseService {
   // PRODUCTS
   // ============================================
 
-  // Get all products (NO INDEX REQUIRED)
-  Future<List<ProductModel>> getAllProducts() async {
+  // Get all products (NO INDEX REQUIRED unless using location)
+  Future<List<ProductModel>> getAllProducts({String? location}) async {
     try {
       debugPrint('🔍 Loading all products...');
 
-      final snapshot = await _firestore
-          .collection('products')
-          .where('isActive', isEqualTo: true)
-          .get();
+      Query query = _firestore.collection('products');
+      // Temporary fix: Do not filter by location at the DB level yet, 
+      // as many existing products may not have the location field set, 
+      // causing the home screen to appear empty.
+      // if (location != null && location.isNotEmpty) {
+      //   query = query.where('location', isEqualTo: location);
+      // }
+
+      final snapshot = await query.get();
 
       debugPrint('📦 Found ${snapshot.docs.length} products');
 
@@ -58,12 +63,12 @@ class DatabaseService {
 
       final products = snapshot.docs.map((doc) {
         try {
-          return ProductModel.fromMap(doc.data(), doc.id);
+          return ProductModel.fromMap(doc.data() as Map<String, dynamic>, doc.id);
         } catch (e) {
           debugPrint('❌ Error parsing product ${doc.id}: $e');
           return null;
         }
-      }).whereType<ProductModel>().toList();
+      }).whereType<ProductModel>().where((p) => p.isActive).toList();
 
       // Sort in memory
       products.sort((a, b) => b.createdAt.compareTo(a.createdAt));
@@ -89,7 +94,7 @@ class DatabaseService {
 
       final products = snapshot.docs.map((doc) {
         try {
-          return ProductModel.fromMap(doc.data(), doc.id);
+          return ProductModel.fromMap(doc.data() as Map<String, dynamic>, doc.id);
         } catch (e) {
           return null;
         }
@@ -105,25 +110,56 @@ class DatabaseService {
   }
 
   // Get products by category (NO INDEX REQUIRED)
-  Future<List<ProductModel>> getProductsByCategory(String categoryId) async {
+  /// [categoryName] optional — merged with id query so RN/docs that only set `categoryName` still match.
+  Future<List<ProductModel>> getProductsByCategory(
+    String categoryId, {
+    String? categoryName,
+    String? location,
+  }) async {
     try {
       debugPrint('🔍 Loading products for category: $categoryId');
 
-      final snapshot = await _firestore
+      Query byIdQuery = _firestore
           .collection('products')
-          .where('categoryId', isEqualTo: categoryId)
-          .where('isActive', isEqualTo: true)
-          .get();
+          .where('categoryId', isEqualTo: categoryId);
+      
+      // if (location != null && location.isNotEmpty) {
+      //   byIdQuery = byIdQuery.where('location', isEqualTo: location);
+      // }
 
-      final products = snapshot.docs.map((doc) {
-        try {
-          return ProductModel.fromMap(doc.data(), doc.id);
-        } catch (e) {
-          return null;
+      final byId = await byIdQuery.get();
+
+      final Map<String, ProductModel> merged = {};
+      void ingest(QuerySnapshot snap) {
+        for (final doc in snap.docs) {
+          try {
+            final p = ProductModel.fromMap(doc.data() as Map<String, dynamic>, doc.id);
+            if (p.isActive) merged[p.id] = p;
+          } catch (_) {}
         }
-      }).whereType<ProductModel>().toList();
+      }
 
-      // Sort in memory
+      ingest(byId);
+
+      final name = categoryName?.trim();
+      if (name != null && name.isNotEmpty) {
+        try {
+          Query byNameQuery = _firestore
+              .collection('products')
+              .where('categoryName', isEqualTo: name);
+              
+          // if (location != null && location.isNotEmpty) {
+          //   byNameQuery = byNameQuery.where('location', isEqualTo: location);
+          // }
+          
+          final byName = await byNameQuery.get();
+          ingest(byName);
+        } catch (e) {
+          debugPrint('⚠️ categoryName query skipped: $e');
+        }
+      }
+
+      final products = merged.values.toList();
       products.sort((a, b) => b.createdAt.compareTo(a.createdAt));
 
       debugPrint('✅ Loaded ${products.length} products in category');
@@ -136,12 +172,15 @@ class DatabaseService {
   }
 
   // Get featured products
-  Future<List<ProductModel>> getFeaturedProducts({int? limit}) async {
+  Future<List<ProductModel>> getFeaturedProducts({int? limit, String? location}) async {
     try {
       Query query = _firestore
           .collection('products')
-          .where('isActive', isEqualTo: true)
           .where('isFeatured', isEqualTo: true);
+
+      // if (location != null && location.isNotEmpty) {
+      //   query = query.where('location', isEqualTo: location);
+      // }
 
       if (limit != null) {
         query = query.limit(limit);
@@ -156,7 +195,7 @@ class DatabaseService {
         } catch (e) {
           return null;
         }
-      }).whereType<ProductModel>().toList();
+      }).whereType<ProductModel>().where((p) => p.isActive).toList();
 
       products.sort((a, b) => b.createdAt.compareTo(a.createdAt));
       return products;
@@ -179,7 +218,7 @@ class DatabaseService {
         return null;
       }
 
-      final product = ProductModel.fromMap(doc.data()!, doc.id);
+      final product = ProductModel.fromMap(doc.data() as Map<String, dynamic>, doc.id);
       debugPrint('✅ Product loaded: ${product.name}');
       return product;
     } catch (e) {
@@ -202,7 +241,6 @@ class DatabaseService {
       // It also requires a composite index: [isActive: Ascending, name_search: Ascending]
       final snapshot = await _firestore
           .collection('products')
-          .where('isActive', isEqualTo: true)
           .where('name_search', isGreaterThanOrEqualTo: lowerQuery)
           .where('name_search', isLessThanOrEqualTo: '$lowerQuery\uf8ff')
           .limit(20) // Limit to 20 results for performance
@@ -210,12 +248,12 @@ class DatabaseService {
 
       final products = snapshot.docs.map((doc) {
         try {
-          return ProductModel.fromMap(doc.data(), doc.id);
+          return ProductModel.fromMap(doc.data() as Map<String, dynamic>, doc.id);
         } catch (e) {
           debugPrint('❌ Error parsing product ${doc.id}: $e');
           return null;
         }
-      }).whereType<ProductModel>().toList();
+      }).whereType<ProductModel>().where((p) => p.isActive).toList();
 
       debugPrint('✅ Found ${products.length} products for query "$query"');
       return products;
@@ -232,16 +270,15 @@ class DatabaseService {
     try {
       final snapshot = await _firestore
           .collection('products')
-          .where('isActive', isEqualTo: true)
           .get();
 
       final products = snapshot.docs.map((doc) {
         try {
-          return ProductModel.fromMap(doc.data(), doc.id);
+          return ProductModel.fromMap(doc.data() as Map<String, dynamic>, doc.id);
         } catch (e) {
           return null;
         }
-      }).whereType<ProductModel>().toList();
+      }).whereType<ProductModel>().where((p) => p.isActive).toList();
 
       // Filter by search query
       final filtered = products.where((product) {
@@ -382,7 +419,7 @@ class DatabaseService {
           .snapshots()
           .map((doc) {
         if (!doc.exists) return null;
-        return CartModel.fromMap(doc.data()!, doc.id);
+        return CartModel.fromMap(doc.data() as Map<String, dynamic>, doc.id);
       });
     } catch (e) {
       throw DatabaseException('Failed to get cart: ${e.toString()}');
@@ -420,7 +457,7 @@ class DatabaseService {
           .snapshots()
           .map((doc) {
         if (!doc.exists) return null;
-        return WishlistModel.fromMap(doc.data()!, doc.id);
+        return WishlistModel.fromMap(doc.data() as Map<String, dynamic>, doc.id);
       });
     } catch (e) {
       throw DatabaseException('Failed to get wishlist: ${e.toString()}');
@@ -463,7 +500,7 @@ class DatabaseService {
           .snapshots()
           .map((snapshot) {
         return snapshot.docs
-            .map((doc) => OrderModel.fromMap(doc.data(), doc.id))
+            .map((doc) => OrderModel.fromMap(doc.data() as Map<String, dynamic>, doc.id))
             .toList();
       });
     } catch (e) {
@@ -480,7 +517,7 @@ class DatabaseService {
         throw DataNotFoundException('Order not found');
       }
 
-      return OrderModel.fromMap(doc.data()!, doc.id);
+      return OrderModel.fromMap(doc.data() as Map<String, dynamic>, doc.id);
     } catch (e) {
       throw DatabaseException('Failed to get order: ${e.toString()}');
     }
@@ -491,6 +528,7 @@ class DatabaseService {
     try {
       await _firestore.collection('orders').doc(orderId).update({
         'orderStatus': status,
+        'status': status,
         'updatedAt': FieldValue.serverTimestamp(),
       });
     } catch (e) {
@@ -616,7 +654,7 @@ class DatabaseService {
           .snapshots()
           .map((snapshot) {
         return snapshot.docs
-            .map((doc) => CouponModel.fromMap(doc.data(), doc.id))
+            .map((doc) => CouponModel.fromMap(doc.data() as Map<String, dynamic>, doc.id))
             .where((coupon) => coupon.isValid)
             .toList();
       });

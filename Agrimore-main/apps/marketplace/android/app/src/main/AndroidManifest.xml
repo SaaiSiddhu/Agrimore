@@ -105,7 +105,7 @@
              ======================================== -->
         <meta-data
             android:name="com.google.android.geo.API_KEY"
-            android:value="AIzaSyAh0PzSlDddvDu_DMW1baFp3neRwhBl8xQ"/>
+            android:value="AIzaSyCKL5RYJ39x93yz1Km59KwpYybRod3IOeg"/>
         
         <!-- ========================================
              MAIN ACTIVITY

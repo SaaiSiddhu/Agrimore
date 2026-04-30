@@ -163,38 +163,32 @@ class _AuthScreenState extends State<AuthScreen>
     });
 
     final auth = context.read<AuthProvider>();
-    final email = _emailController.text.trim();
-
+    final email = _emailController.text.trim().toLowerCase();
+    final password = _passwordController.text.trim();
+    
     try {
-      // First check if user exists
-      final exists = await auth.checkUserExists(email);
-      if (!exists) {
-        setState(() {
-          _errorMessage = '⚠️ Admin account not found. Contact system administrator.';
-          _isLoading = false;
-        });
-        return;
-      }
+      bool userExists = await auth.checkUserExists(email);
+      bool ok = false;
+      bool isNewUser = false;
 
-      final ok = await auth.signInWithEmail(
-        email: email,
-        password: _passwordController.text,
-      );
+      if (!userExists) {
+        // Register user if they don't exist
+        ok = await auth.registerWithEmail(
+          email: email, 
+          password: password, 
+          name: 'New Seller'
+        );
+        isNewUser = true;
+      } else {
+        ok = await auth.signInWithEmail(
+          email: email,
+          password: password,
+        );
+      }
 
       if (!mounted) return;
 
       if (ok) {
-        // ✅ ADMIN ROLE VERIFICATION
-        if (!auth.isAdmin) {
-          HapticFeedback.vibrate();
-          setState(() {
-            _errorMessage = '🚫 Access Denied: Admin privileges required';
-          });
-          await auth.signOut();
-          setState(() => _isLoading = false);
-          return;
-        }
-
         // Save remember me
         if (_rememberMe && _prefs != null) {
           await _prefs!.setBool(StorageConstants.keyRememberMe, true);
@@ -202,10 +196,21 @@ class _AuthScreenState extends State<AuthScreen>
         }
 
         HapticFeedback.heavyImpact();
-        SnackbarHelper.showSuccess(context, '✅ Welcome back, Admin!');
-
-        await Future.delayed(const Duration(milliseconds: 600));
-        if (mounted) context.go(AdminRoutes.dashboard);
+        
+        if (auth.isAdmin) {
+          SnackbarHelper.showSuccess(context, '✅ Welcome back, Admin!');
+          await Future.delayed(const Duration(milliseconds: 600));
+          if (mounted) context.go(AdminRoutes.dashboard);
+        } else {
+          SnackbarHelper.showSuccess(context, '✅ Welcome!');
+          await Future.delayed(const Duration(milliseconds: 600));
+          if (!mounted) return;
+          if (isNewUser || !auth.isSeller) {
+             context.go(AdminRoutes.sellerApply);
+          } else {
+             context.go(AdminRoutes.sellerPanel);
+          }
+        }
       } else {
         HapticFeedback.vibrate();
         setState(() {
@@ -631,6 +636,19 @@ class _AuthScreenState extends State<AuthScreen>
               textAlign: TextAlign.center,
             ),
           ),
+          if (AdminAccessConfig.bootstrapAdminEmailsLower.isNotEmpty) ...[
+            const SizedBox(height: 10),
+            Center(
+              child: Text(
+                'Bootstrap admin emails (build-time): ${AdminAccessConfig.bootstrapAdminEmailsLower.join(", ")}',
+                textAlign: TextAlign.center,
+                style: TextStyle(
+                  fontSize: 11,
+                  color: isDark ? Colors.white38 : AppColors.textSecondary,
+                ),
+              ),
+            ),
+          ],
           
           const SizedBox(height: 36),
           
@@ -787,6 +805,112 @@ class _AuthScreenState extends State<AuthScreen>
                         ),
                         SizedBox(width: 8),
                         Icon(Icons.arrow_forward, size: 18),
+                      ],
+                    ),
+            ),
+          ),
+          
+          const SizedBox(height: 20),
+          
+          // Or Divider
+          Row(
+            children: [
+              Expanded(child: Divider(color: isDark ? Colors.white24 : AppColors.divider)),
+              Padding(
+                padding: const EdgeInsets.symmetric(horizontal: 16),
+                child: Text(
+                  'OR',
+                  style: TextStyle(
+                    fontSize: 12,
+                    fontWeight: FontWeight.w600,
+                    color: isDark ? Colors.white54 : AppColors.textSecondary,
+                  ),
+                ),
+              ),
+              Expanded(child: Divider(color: isDark ? Colors.white24 : AppColors.divider)),
+            ],
+          ),
+          
+          const SizedBox(height: 20),
+          
+          // Google Sign In Button
+          SizedBox(
+            width: double.infinity,
+            height: 52,
+            child: OutlinedButton(
+              onPressed: _isLoading ? null : () async {
+                setState(() => _isLoading = true);
+                final auth = context.read<AuthProvider>();
+                final success = await auth.signInWithGoogle();
+                
+                if (!mounted) return;
+                
+                if (success) {
+                  HapticFeedback.heavyImpact();
+                  if (auth.isAdmin) {
+                    SnackbarHelper.showSuccess(context, '✅ Welcome back, Admin!');
+                    await Future.delayed(const Duration(milliseconds: 600));
+                    if (mounted) context.go(AdminRoutes.dashboard);
+                  } else {
+                    SnackbarHelper.showSuccess(context, '✅ Welcome!');
+                    await Future.delayed(const Duration(milliseconds: 600));
+                    if (!mounted) return;
+                    if (!auth.isSeller) {
+                       context.go(AdminRoutes.sellerApply);
+                    } else {
+                       context.go(AdminRoutes.sellerPanel);
+                    }
+                  }
+                } else {
+                  setState(() {
+                    _errorMessage = auth.error ?? 'Google Sign-In failed';
+                    _isLoading = false;
+                  });
+                }
+              },
+              style: OutlinedButton.styleFrom(
+                side: BorderSide(color: isDark ? Colors.white24 : AppColors.divider),
+                shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+                backgroundColor: isDark ? Colors.white.withOpacity(0.05) : Colors.white,
+              ),
+              child: _isLoading
+                  ? const SizedBox(
+                      width: 22,
+                      height: 22,
+                      child: CircularProgressIndicator(strokeWidth: 2.5),
+                    )
+                  : Row(
+                      mainAxisAlignment: MainAxisAlignment.center,
+                      children: [
+                        // Google G logo (simple version since we don't have SVG handy, or we can use Image.asset if available)
+                        // Using a simple styled text for G if no asset
+                        Container(
+                          width: 24,
+                          height: 24,
+                          decoration: const BoxDecoration(
+                            color: Colors.white,
+                            shape: BoxShape.circle,
+                          ),
+                          child: const Center(
+                            child: Text(
+                              'G',
+                              style: TextStyle(
+                                color: Colors.blue,
+                                fontWeight: FontWeight.bold,
+                                fontSize: 16,
+                              ),
+                            ),
+                          ),
+                        ),
+                        const SizedBox(width: 12),
+                        Text(
+                          'Continue with Google',
+                          style: TextStyle(
+                            fontSize: 15,
+                            fontWeight: FontWeight.w600,
+                            color: isDark ? Colors.white : AppColors.textPrimary,
+                          ),
+                        ),
                       ],
                     ),
             ),

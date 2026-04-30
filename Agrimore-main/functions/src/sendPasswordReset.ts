@@ -1,4 +1,4 @@
-import * as functions from "firebase-functions";
+import * as functions from "firebase-functions/v1";
 import * as nodemailer from "nodemailer";
 
 const transporter = nodemailer.createTransport({
@@ -9,7 +9,9 @@ const transporter = nodemailer.createTransport({
   },
 });
 
-export const sendPasswordResetEmail = functions.https.onCall(async (data, context) => {
+export const sendPasswordResetEmail = functions.https.onCall(async (request) => {
+  const data = request.data;
+  // const context = request;
   const { email, resetLink } = data;
 
   if (!email || !resetLink) {

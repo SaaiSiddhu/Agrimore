@@ -17,16 +17,84 @@ service firebase.storage {
       return request.resource.size < 10 * 1024 * 1024;
     }
     
+    // Check if the file is an image
+    function isImage() {
+      return request.resource.contentType.matches('image/.*');
+    }
+    
     // ============================================
-    // GLOBAL RULE: All authenticated users can upload
-    // Public can read all files
+    // PUBLIC READ ACCESS FOR ALL FILES
     // ============================================
     match /{allPaths=**} {
-      // Public read access
       allow read: if true;
-      
-      // Authenticated users can write (with size limit)
+    }
+
+    // ============================================
+    // PRODUCT IMAGES — Authenticated users with size/type check
+    // ============================================
+    match /products/{fileName} {
+      allow write: if isAuthenticated() && isValidFileSize() && isImage();
+    }
+    match /product_images/{fileName} {
+      allow write: if isAuthenticated() && isValidFileSize() && isImage();
+    }
+
+    // ============================================
+    // USER PROFILE IMAGES — Only owner can upload
+    // ============================================
+    match /profiles/{userId}/{fileName} {
+      allow write: if isAuthenticated() 
+                   && request.auth.uid == userId
+                   && isValidFileSize() 
+                   && isImage();
+    }
+    match /users/{userId}/{fileName} {
+      allow write: if isAuthenticated() 
+                   && request.auth.uid == userId
+                   && isValidFileSize() 
+                   && isImage();
+    }
+
+    // ============================================
+    // BANNER IMAGES — Any authenticated user (admin enforced at app level)
+    // ============================================
+    match /banners/{fileName} {
+      allow write: if isAuthenticated() && isValidFileSize() && isImage();
+    }
+    match /sponsored/{fileName} {
+      allow write: if isAuthenticated() && isValidFileSize() && isImage();
+    }
+
+    // ============================================
+    // CATEGORY IMAGES
+    // ============================================
+    match /categories/{fileName} {
+      allow write: if isAuthenticated() && isValidFileSize() && isImage();
+    }
+
+    // ============================================
+    // CHAT ATTACHMENTS — Authenticated with size limit
+    // ============================================
+    match /chat/{threadId}/{fileName} {
       allow write: if isAuthenticated() && isValidFileSize();
+    }
+
+    // ============================================
+    // SELLER DOCUMENTS — Only the seller can upload
+    // ============================================
+    match /seller_documents/{userId}/{fileName} {
+      allow write: if isAuthenticated() 
+                   && request.auth.uid == userId
+                   && isValidFileSize();
+    }
+
+    // ============================================
+    // DELIVERY PARTNER DOCUMENTS
+    // ============================================
+    match /delivery_documents/{userId}/{fileName} {
+      allow write: if isAuthenticated() 
+                   && request.auth.uid == userId
+                   && isValidFileSize();
     }
   }
 }

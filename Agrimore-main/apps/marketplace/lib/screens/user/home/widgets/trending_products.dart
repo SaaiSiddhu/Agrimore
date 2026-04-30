@@ -8,6 +8,7 @@ import '../../../../app/routes.dart';
 import 'package:agrimore_ui/agrimore_ui.dart';
 import 'package:agrimore_core/agrimore_core.dart';
 import '../../../../providers/category_provider.dart';
+import '../../../../providers/shop_entry_provider.dart';
 import '../../../../providers/product_provider.dart';
 import '../../../../providers/theme_provider.dart';
 
@@ -66,7 +67,13 @@ class TrendingProducts extends StatelessWidget {
                   final category = categories[index];
                   // Get featured product from this category for the image
                   final categoryProduct = productProvider.products
-                      .where((p) => p.categoryId == category.id && p.isActive)
+                      .where((p) =>
+                          p.isActive &&
+                          productBelongsToCategory(
+                            p,
+                            category,
+                            categoryProvider.categories,
+                          ))
                       .take(1)
                       .toList();
                   
@@ -78,11 +85,10 @@ class TrendingProducts extends StatelessWidget {
                     isDark: isDark,
                     onTap: () {
                       HapticFeedback.lightImpact();
-                      Navigator.pushNamed(
-                        context, 
-                        AppRoutes.shop,
-                        arguments: {'categoryId': category.id, 'categoryName': category.name},
-                      );
+                      context.read<ShopEntryProvider>().openShopWithCategory(
+                            categoryId: category.id,
+                            categoryName: category.name,
+                          );
                     },
                   );
                 },

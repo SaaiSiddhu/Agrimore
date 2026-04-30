@@ -136,7 +136,7 @@ class ReviewCard extends StatelessWidget {
               if (value == 'delete') {
                 _showDeleteDialog(context, review.productId, review.reviewId);
               } else if (value == 'edit') {
-                // TODO: Implement edit functionality
+                _showEditDialog(context, review);
               }
             },
           ),
@@ -305,6 +305,121 @@ class ReviewCard extends StatelessWidget {
           ),
         ],
       ),
+    );
+  }
+
+  void _showEditDialog(BuildContext context, ReviewModel review) {
+    final titleController = TextEditingController(text: review.title);
+    final commentController = TextEditingController(text: review.comment);
+    int selectedRating = review.rating;
+
+    showDialog(
+      context: context,
+      builder: (ctx) {
+        return StatefulBuilder(
+          builder: (context, setDialogState) {
+            return AlertDialog(
+              backgroundColor: isDark ? const Color(0xFF2C2C2C) : Colors.white,
+              shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
+              title: Row(
+                children: [
+                  Icon(Icons.edit_rounded, color: isDark ? AppColors.primaryLight : AppColors.primary, size: 22),
+                  const SizedBox(width: 10),
+                  const Text('Edit Review'),
+                ],
+              ),
+              content: SingleChildScrollView(
+                child: Column(
+                  mainAxisSize: MainAxisSize.min,
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    // Rating selector
+                    Text(
+                      'Rating',
+                      style: TextStyle(
+                        fontWeight: FontWeight.w600,
+                        fontSize: 13,
+                        color: isDark ? Colors.grey[300] : Colors.grey[700],
+                      ),
+                    ),
+                    const SizedBox(height: 8),
+                    Row(
+                      mainAxisAlignment: MainAxisAlignment.center,
+                      children: List.generate(5, (index) {
+                        return GestureDetector(
+                          onTap: () => setDialogState(() => selectedRating = index + 1),
+                          child: Padding(
+                            padding: const EdgeInsets.symmetric(horizontal: 4),
+                            child: Icon(
+                              index < selectedRating ? Icons.star_rounded : Icons.star_border_rounded,
+                              color: Colors.amber[700],
+                              size: 32,
+                            ),
+                          ),
+                        );
+                      }),
+                    ),
+                    const SizedBox(height: 20),
+                    // Title
+                    TextField(
+                      controller: titleController,
+                      decoration: InputDecoration(
+                        labelText: 'Title',
+                        border: OutlineInputBorder(borderRadius: BorderRadius.circular(10)),
+                        filled: true,
+                        fillColor: isDark ? const Color(0xFF383838) : Colors.grey[50],
+                      ),
+                      style: TextStyle(color: isDark ? Colors.white : Colors.black87),
+                    ),
+                    const SizedBox(height: 16),
+                    // Comment
+                    TextField(
+                      controller: commentController,
+                      maxLines: 4,
+                      decoration: InputDecoration(
+                        labelText: 'Your Review',
+                        border: OutlineInputBorder(borderRadius: BorderRadius.circular(10)),
+                        filled: true,
+                        fillColor: isDark ? const Color(0xFF383838) : Colors.grey[50],
+                      ),
+                      style: TextStyle(color: isDark ? Colors.white : Colors.black87),
+                    ),
+                  ],
+                ),
+              ),
+              actions: [
+                TextButton(
+                  onPressed: () {
+                    titleController.dispose();
+                    commentController.dispose();
+                    Navigator.pop(ctx);
+                  },
+                  child: const Text('Cancel'),
+                ),
+                ElevatedButton(
+                  onPressed: () {
+                    final reviewProvider = Provider.of<ReviewProvider>(context, listen: false);
+                    reviewProvider.updateReview(
+                      productId: review.productId,
+                      reviewId: review.reviewId,
+                      rating: selectedRating,
+                      title: titleController.text.trim(),
+                      comment: commentController.text.trim(),
+                    );
+                    titleController.dispose();
+                    commentController.dispose();
+                    Navigator.pop(ctx);
+                  },
+                  style: ElevatedButton.styleFrom(
+                    backgroundColor: isDark ? AppColors.primaryLight : AppColors.primary,
+                  ),
+                  child: const Text('Update', style: TextStyle(color: Colors.white)),
+                ),
+              ],
+            );
+          },
+        );
+      },
     );
   }
 }

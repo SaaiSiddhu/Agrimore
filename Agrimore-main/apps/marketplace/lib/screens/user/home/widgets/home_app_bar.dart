@@ -7,6 +7,7 @@ import 'package:geocoding/geocoding.dart';
 import '../../../../app/routes.dart';
 import '../../../../providers/theme_provider.dart';
 import '../../../../providers/category_provider.dart';
+import '../../../../providers/shop_entry_provider.dart';
 import '../../../../providers/address_provider.dart';
 import '../../../../providers/cart_provider.dart';
 import '../../../../providers/wallet_provider.dart';
@@ -435,8 +436,13 @@ class _HomeAppBarState extends State<HomeAppBar> {
   Widget _buildCategoryChips(bool isDark) {
     return Consumer<CategoryProvider>(
       builder: (context, categoryProvider, _) {
-        final categories = categoryProvider.categories;
-        
+        final categories = categoryProvider.categories
+            .where((c) =>
+                c.isActive &&
+                (c.parentId == null || c.parentId!.trim().isEmpty))
+            .toList()
+          ..sort((a, b) => a.displayOrder.compareTo(b.displayOrder));
+
         final allItems = [
           {'name': 'All', 'icon': Icons.apps},
           ...categories.map((c) => {'name': c.name, 'icon': _getIcon(c.name)}),
@@ -456,11 +462,16 @@ class _HomeAppBarState extends State<HomeAppBar> {
                 onTap: () {
                   HapticFeedback.lightImpact();
                   setState(() => _selectedCategoryIndex = index);
+                  final shopEntry = Provider.of<ShopEntryProvider>(context, listen: false);
                   if (index == 0) {
-                    Navigator.pushNamed(context, AppRoutes.shop);
+                    shopEntry.clearCategoryFilter();
+                    shopEntry.openShopWithCategory();
                   } else {
-                    Navigator.pushNamed(context, AppRoutes.shop,
-                        arguments: {'categoryId': categories[index - 1].id});
+                    final cat = categories[index - 1];
+                    shopEntry.openShopWithCategory(
+                      categoryId: cat.id,
+                      categoryName: cat.name,
+                    );
                   }
                 },
                 child: Container(

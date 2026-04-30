@@ -26,6 +26,9 @@ class OrderModel {
   final DateTime createdAt;
   final DateTime? updatedAt;
   final DateTime? deliveryDate;
+  final String? orderType; // 'One Time' or 'Auto Delivery'
+  final String? autoFrequency; // 'Daily' or 'Weekly'
+  final String? deliverySlot;
   
   // ✅ NEW: Live tracking fields
   final String? deliveryPartnerId;
@@ -34,6 +37,9 @@ class OrderModel {
   final double? pickupLat;
   final double? pickupLng;
   final String? liveTrackingId;
+
+  // ✅ Delivery verification code (shown to customer only)
+  final String? deliveryVerificationCode;
 
   OrderModel({
     required this.id,
@@ -57,6 +63,9 @@ class OrderModel {
     DateTime? createdAt,
     this.updatedAt,
     this.deliveryDate,
+    this.orderType,
+    this.autoFrequency,
+    this.deliverySlot,
     // ✅ NEW: Live tracking
     this.deliveryPartnerId,
     this.deliveryPartner,
@@ -64,6 +73,7 @@ class OrderModel {
     this.pickupLat,
     this.pickupLng,
     this.liveTrackingId,
+    this.deliveryVerificationCode,
   }) : createdAt = createdAt ?? DateTime.now();
 
   // ============================================
@@ -110,6 +120,18 @@ class OrderModel {
     }
   }
 
+  static String _normalizeOrderStatus(dynamic value) {
+    final raw = (value ?? 'pending').toString().trim().toLowerCase();
+    switch (raw) {
+      case 'placed':
+        return 'pending';
+      case 'out_for_delivery':
+        return 'outfordelivery';
+      default:
+        return raw.isEmpty ? 'pending' : raw;
+    }
+  }
+
   // ============================================
   // FROM JSON/MAP FACTORY
   // ============================================
@@ -148,6 +170,10 @@ class OrderModel {
             map['deliveryAddress'] is Map<String, dynamic>) {
           deliveryAddress =
               AddressModel.fromMap(map['deliveryAddress'] as Map<String, dynamic>);
+        } else if (map['address'] is String) {
+          deliveryAddress = AddressModel.fromMap({
+            'fullAddress': map['address'],
+          });
         }
       } catch (e) {
         debugPrint('⚠️ Error parsing delivery address: $e');
@@ -165,6 +191,8 @@ class OrderModel {
         debugPrint('⚠️ Error parsing delivery partner: $e');
       }
 
+      final rawStatus = map['orderStatus'] ?? map['status'] ?? 'pending';
+
       final order = OrderModel(
         id: id,
         userId: map['userId'] ?? '',
@@ -173,12 +201,14 @@ class OrderModel {
         deliveryAddress: deliveryAddress,
         subtotal: (map['subtotal'] as num?)?.toDouble() ?? 0.0,
         discount: (map['discount'] as num?)?.toDouble() ?? 0.0,
-        deliveryCharge: (map['deliveryCharge'] as num?)?.toDouble() ?? 0.0,
+        deliveryCharge: ((map['deliveryCharge'] ?? map['deliveryFee']) as num?)
+                ?.toDouble() ??
+            0.0,
         tax: (map['tax'] as num?)?.toDouble() ?? 0.0,
-        total: (map['total'] as num?)?.toDouble() ?? 0.0,
+        total: ((map['total'] ?? map['totalAmount']) as num?)?.toDouble() ?? 0.0,
         paymentMethod: map['paymentMethod'] ?? 'cod',
         paymentStatus: map['paymentStatus'] ?? 'pending',
-        orderStatus: map['orderStatus'] ?? 'pending',
+        orderStatus: _normalizeOrderStatus(rawStatus),
         razorpayOrderId: map['razorpayOrderId'] as String?,
         razorpayPaymentId: map['razorpayPaymentId'] as String?,
         razorpaySignature: map['razorpaySignature'] as String?,
@@ -187,6 +217,9 @@ class OrderModel {
         createdAt: _parseDateTime(map['createdAt']),
         updatedAt: map['updatedAt'] != null ? _parseDateTime(map['updatedAt']) : null,
         deliveryDate: map['deliveryDate'] != null ? _parseDateTime(map['deliveryDate']) : null,
+        orderType: map['orderType'] as String?,
+        autoFrequency: map['autoFrequency'] as String?,
+        deliverySlot: map['deliverySlot'] as String?,
         // ✅ NEW: Live tracking fields
         deliveryPartnerId: map['deliveryPartnerId'] as String?,
         deliveryPartner: deliveryPartner,
@@ -196,6 +229,7 @@ class OrderModel {
         pickupLat: (map['pickupLat'] as num?)?.toDouble(),
         pickupLng: (map['pickupLng'] as num?)?.toDouble(),
         liveTrackingId: map['liveTrackingId'] as String?,
+        deliveryVerificationCode: map['deliveryVerificationCode'] as String?,
       );
 
       debugPrint('✅ OrderModel parsed: ${order.orderNumber}, items: ${order.items.length}');
@@ -223,6 +257,7 @@ class OrderModel {
       'paymentMethod': paymentMethod,
       'paymentStatus': paymentStatus,
       'orderStatus': orderStatus,
+      'status': orderStatus,
       'razorpayOrderId': razorpayOrderId,
       'razorpayPaymentId': razorpayPaymentId,
       'razorpaySignature': razorpaySignature,
@@ -231,6 +266,9 @@ class OrderModel {
       'createdAt': FieldValue.serverTimestamp(),
       'updatedAt': FieldValue.serverTimestamp(),
       'deliveryDate': deliveryDate?.millisecondsSinceEpoch,
+      'orderType': orderType,
+      'autoFrequency': autoFrequency,
+      'deliverySlot': deliverySlot,
       // ✅ NEW: Live tracking fields
       'deliveryPartnerId': deliveryPartnerId,
       'deliveryPartner': deliveryPartner?.toMap(),
@@ -240,6 +278,7 @@ class OrderModel {
       'pickupLat': pickupLat,
       'pickupLng': pickupLng,
       'liveTrackingId': liveTrackingId,
+      'deliveryVerificationCode': deliveryVerificationCode,
     };
   }
 
@@ -294,6 +333,13 @@ class OrderModel {
     return 'ORD${timestamp.toString().substring(5)}';
   }
 
+  /// Generate a 6-digit delivery verification code
+  static String generateVerificationCode() {
+    final timestamp = DateTime.now().microsecondsSinceEpoch;
+    final code = (timestamp % 900000 + 100000); // Always 6 digits
+    return code.toString();
+  }
+
   OrderModel copyWith({
     String? id,
     String? userId,
@@ -316,6 +362,9 @@ class OrderModel {
     DateTime? createdAt,
     DateTime? updatedAt,
     DateTime? deliveryDate,
+    String? orderType,
+    String? autoFrequency,
+    String? deliverySlot,
     // ✅ NEW: Live tracking
     String? deliveryPartnerId,
     DeliveryPartnerModel? deliveryPartner,
@@ -323,6 +372,7 @@ class OrderModel {
     double? pickupLat,
     double? pickupLng,
     String? liveTrackingId,
+    String? deliveryVerificationCode,
   }) {
     return OrderModel(
       id: id ?? this.id,
@@ -346,6 +396,9 @@ class OrderModel {
       createdAt: createdAt ?? this.createdAt,
       updatedAt: updatedAt ?? this.updatedAt,
       deliveryDate: deliveryDate ?? this.deliveryDate,
+      orderType: orderType ?? this.orderType,
+      autoFrequency: autoFrequency ?? this.autoFrequency,
+      deliverySlot: deliverySlot ?? this.deliverySlot,
       // ✅ NEW: Live tracking
       deliveryPartnerId: deliveryPartnerId ?? this.deliveryPartnerId,
       deliveryPartner: deliveryPartner ?? this.deliveryPartner,
@@ -353,6 +406,7 @@ class OrderModel {
       pickupLat: pickupLat ?? this.pickupLat,
       pickupLng: pickupLng ?? this.pickupLng,
       liveTrackingId: liveTrackingId ?? this.liveTrackingId,
+      deliveryVerificationCode: deliveryVerificationCode ?? this.deliveryVerificationCode,
     );
   }
 

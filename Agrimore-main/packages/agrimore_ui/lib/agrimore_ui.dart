@@ -41,6 +41,7 @@ export 'widgets/common/badge_widget.dart';
 export 'widgets/common/search_bar_widget.dart';
 export 'widgets/common/network_image_widget.dart';
 export 'widgets/common/confirmation_dialog.dart';
+export 'widgets/premium_splash_screen.dart';
 
 // ============================================
 // HELPERS
