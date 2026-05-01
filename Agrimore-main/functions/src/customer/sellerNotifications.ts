@@ -16,6 +16,10 @@ export const notifySellerNewOrder = functions.firestore
     const orderId = context.params.orderId;
 
     if (!order) return null;
+    if (order.sellerId) {
+      console.log("Seller notification handled by onOrderCreatedNotifications");
+      return null;
+    }
 
     const items = order.items as Array<any> || [];
     const orderTotal = order.total || 0;

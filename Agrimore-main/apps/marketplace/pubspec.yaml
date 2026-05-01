@@ -100,9 +100,9 @@ flutter:
 flutter_launcher_icons:
   android: true
   ios: true
-  image_path: "assets/icons/app_icon.png"
+  image_path: "assets/icons/customer_logo.png"
   adaptive_icon_background: "#2E7D32"
-  adaptive_icon_foreground: "assets/icons/app_icon.png"
+  adaptive_icon_foreground: "assets/icons/customer_logo.png"
   remove_alpha_ios: true
 
   geolocator: ^13.0.2

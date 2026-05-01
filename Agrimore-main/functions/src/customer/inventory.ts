@@ -99,10 +99,7 @@ export const onProductStockChanged = functions.firestore
 /**
  * Callable: Admin/Seller can set low-stock threshold per product
  */
-export const setLowStockThreshold = functions.https.onCall(async (request) => {
-  const data = request.data;
-  const context = request;
-
+export const setLowStockThreshold = functions.https.onCall(async (data, context) => {
   if (!context.auth) {
     throw new functions.https.HttpsError(
       "unauthenticated",
@@ -119,7 +116,26 @@ export const setLowStockThreshold = functions.https.onCall(async (request) => {
     );
   }
 
-  await admin.firestore().collection("products").doc(productId).update({
+  const productRef = admin.firestore().collection("products").doc(productId);
+  const [productDoc, userDoc] = await Promise.all([
+    productRef.get(),
+    admin.firestore().collection("users").doc(context.auth.uid).get(),
+  ]);
+
+  if (!productDoc.exists) {
+    throw new functions.https.HttpsError("not-found", "Product not found");
+  }
+
+  const isAdmin = userDoc.data()?.role === "admin";
+  const isSellerOwner = productDoc.data()?.sellerId === context.auth.uid;
+  if (!isAdmin && !isSellerOwner) {
+    throw new functions.https.HttpsError(
+      "permission-denied",
+      "Only an admin or the product owner can update stock alerts"
+    );
+  }
+
+  await productRef.update({
     lowStockThreshold: threshold,
   });
 

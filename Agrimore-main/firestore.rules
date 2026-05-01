@@ -11,6 +11,15 @@ service cloud.firestore {
     function isAuthenticated() {
       return request.auth != null;
     }
+
+    function isBootstrapAdminEmail() {
+      return isAuthenticated() &&
+        request.auth.token.email in [
+          'admin@agrimore.com',
+          'admin@admin.com',
+          'agrimore@gmail.com'
+        ];
+    }
     
     // Check if user is the owner of the document
     function isOwner(userId) {
@@ -20,19 +29,28 @@ service cloud.firestore {
     // Check if user is an admin
     function isAdmin() {
       return isAuthenticated() && 
-        get(/databases/$(database)/documents/users/$(request.auth.uid)).data.role == 'admin';
+        (
+          request.auth.token.admin == true ||
+          isBootstrapAdminEmail() ||
+          get(/databases/$(database)/documents/users/$(request.auth.uid)).data.role == 'admin'
+        );
     }
     
     // Check if user is a seller
     function isSeller() {
       return isAuthenticated() && 
-        get(/databases/$(database)/documents/users/$(request.auth.uid)).data.role == 'seller';
+        get(/databases/$(database)/documents/users/$(request.auth.uid)).data.role == 'seller' &&
+        (
+          get(/databases/$(database)/documents/users/$(request.auth.uid)).data.sellerStatus == 'approved' ||
+          get(/databases/$(database)/documents/sellers/$(request.auth.uid)).data.status == 'approved'
+        );
     }
     
     // Check if user is a delivery partner
     function isDeliveryPartner() {
       return isAuthenticated() && 
-        get(/databases/$(database)/documents/users/$(request.auth.uid)).data.role == 'delivery_partner';
+        get(/databases/$(database)/documents/users/$(request.auth.uid)).data.role == 'delivery_partner' &&
+        get(/databases/$(database)/documents/delivery_partners/$(request.auth.uid)).data.status == 'approved';
     }
     
 
@@ -147,6 +165,11 @@ service cloud.firestore {
         (resource.data.userId == request.auth.uid ||
          resource.data.sellerId == request.auth.uid ||
          (isDeliveryPartner() && resource.data.deliveryPartnerId == request.auth.uid) ||
+         (isDeliveryPartner() &&
+          (!('deliveryPartnerId' in resource.data) ||
+           resource.data.deliveryPartnerId == null ||
+           resource.data.deliveryPartnerId == '') &&
+          request.resource.data.deliveryPartnerId == request.auth.uid) ||
          isAdmin());
       
       // Only admin can delete orders
@@ -156,9 +179,17 @@ service cloud.firestore {
       match /timeline/{eventId} {
         allow read: if isAuthenticated() && 
           (get(/databases/$(database)/documents/orders/$(orderId)).data.userId == request.auth.uid ||
+           get(/databases/$(database)/documents/orders/$(orderId)).data.sellerId == request.auth.uid ||
            isDeliveryPartner() ||
            isAdmin());
-        allow write: if isAdmin() || isSeller() || isDeliveryPartner();
+        allow write: if isAdmin() ||
+          (isAuthenticated() &&
+           (get(/databases/$(database)/documents/orders/$(orderId)).data.userId == request.auth.uid ||
+            getAfter(/databases/$(database)/documents/orders/$(orderId)).data.userId == request.auth.uid)) ||
+          (isSeller() &&
+           get(/databases/$(database)/documents/orders/$(orderId)).data.sellerId == request.auth.uid) ||
+          (isDeliveryPartner() &&
+           get(/databases/$(database)/documents/orders/$(orderId)).data.deliveryPartnerId == request.auth.uid);
       }
     }
     
@@ -311,6 +342,10 @@ service cloud.firestore {
     match /notifications/{notificationId} {
       allow read: if isAuthenticated();
       allow write: if isAdmin();
+    }
+
+    match /notification_history/{notificationId} {
+      allow read, write: if isAdmin();
     }
     
     // ============================================

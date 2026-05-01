@@ -9,9 +9,7 @@ const transporter = nodemailer.createTransport({
   },
 });
 
-export const sendPasswordResetEmail = functions.https.onCall(async (request) => {
-  const data = request.data;
-  // const context = request;
+export const sendPasswordResetEmail = functions.https.onCall(async (data) => {
   const { email, resetLink } = data;
 
   if (!email || !resetLink) {

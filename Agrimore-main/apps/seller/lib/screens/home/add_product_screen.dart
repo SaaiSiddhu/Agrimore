@@ -1,7 +1,11 @@
+import 'dart:typed_data';
+
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 import 'package:agrimore_ui/agrimore_ui.dart';
 import 'package:agrimore_core/agrimore_core.dart';
+import 'package:firebase_storage/firebase_storage.dart';
+import 'package:image_picker/image_picker.dart';
 import '../../providers/seller_auth_provider.dart';
 import '../../providers/seller_product_provider.dart';
 
@@ -24,6 +28,9 @@ class _AddProductScreenState extends State<AddProductScreen> {
   final _categoryController = TextEditingController();
   final _lowStockThresholdController = TextEditingController(text: '10');
 
+  final ImagePicker _imagePicker = ImagePicker();
+  XFile? _selectedImage;
+  Uint8List? _selectedImageBytes;
   bool _isGeneratingAI = false;
   bool _isSaving = false;
 
@@ -37,10 +44,12 @@ class _AddProductScreenState extends State<AddProductScreen> {
       _nameController.text = p.name;
       _descriptionController.text = p.description;
       _priceController.text = p.salePrice.toStringAsFixed(0);
-      _originalPriceController.text = (p.originalPrice ?? p.salePrice).toStringAsFixed(0);
+      _originalPriceController.text =
+          (p.originalPrice ?? p.salePrice).toStringAsFixed(0);
       _stockController.text = p.stock.toString();
       _categoryController.text = p.categoryId;
-      _lowStockThresholdController.text = (p.lowStockThreshold ?? 10).toString();
+      _lowStockThresholdController.text =
+          (p.lowStockThreshold ?? 10).toString();
     }
   }
 
@@ -68,7 +77,8 @@ class _AddProductScreenState extends State<AddProductScreen> {
     // Simulate AI Generation Delay
     await Future.delayed(const Duration(seconds: 2));
 
-    final aiDescription = 'Premium quality $name sourced directly from trusted farms. '
+    final aiDescription =
+        'Premium quality $name sourced directly from trusted farms. '
         'Rich in flavor and naturally grown to ensure the best health benefits for you and your family. '
         'Perfect for everyday use.\n\n'
         '✨ 100% Organic\n'
@@ -81,8 +91,51 @@ class _AddProductScreenState extends State<AddProductScreen> {
     });
 
     if (mounted) {
-      SnackbarHelper.showSuccess(context, 'AI Description Generated Successfully!');
+      SnackbarHelper.showSuccess(
+          context, 'AI Description Generated Successfully!');
     }
+  }
+
+  Future<void> _pickProductImage() async {
+    try {
+      final image = await _imagePicker.pickImage(
+        source: ImageSource.gallery,
+        imageQuality: 82,
+        maxWidth: 1600,
+      );
+      if (image == null) return;
+
+      final bytes = await image.readAsBytes();
+      if (!mounted) return;
+      setState(() {
+        _selectedImage = image;
+        _selectedImageBytes = bytes;
+      });
+    } catch (e) {
+      if (mounted) {
+        SnackbarHelper.showError(context, 'Unable to pick product image.');
+      }
+    }
+  }
+
+  Future<String?> _uploadSelectedImage(String sellerId) async {
+    if (_selectedImage == null) return null;
+
+    final bytes = _selectedImageBytes ?? await _selectedImage!.readAsBytes();
+    final ext = _selectedImage!.name.split('.').last.toLowerCase();
+    final normalizedExt =
+        ['jpg', 'jpeg', 'png', 'webp'].contains(ext) ? ext : 'jpg';
+    final contentType = normalizedExt == 'jpg'
+        ? 'image/jpeg'
+        : normalizedExt == 'webp'
+            ? 'image/webp'
+            : 'image/$normalizedExt';
+
+    final ref = FirebaseStorage.instance.ref().child(
+          'product_images/${sellerId}_${DateTime.now().millisecondsSinceEpoch}.$normalizedExt',
+        );
+    await ref.putData(bytes, SettableMetadata(contentType: contentType));
+    return ref.getDownloadURL();
   }
 
   Future<void> _saveProduct() async {
@@ -97,8 +150,28 @@ class _AddProductScreenState extends State<AddProductScreen> {
     final originalPrice = double.tryParse(_originalPriceController.text);
     final stock = int.tryParse(_stockController.text) ?? 0;
     final lowThreshold = int.tryParse(_lowStockThresholdController.text) ?? 10;
+    String? uploadedImageUrl;
+
+    try {
+      uploadedImageUrl = await _uploadSelectedImage(auth.currentUser!.uid);
+    } catch (e) {
+      if (mounted) {
+        setState(() => _isSaving = false);
+        SnackbarHelper.showError(
+            context, 'Image upload failed. Please try again.');
+      }
+      return;
+    }
 
     if (isEditing) {
+      final updatedImages = uploadedImageUrl == null
+          ? widget.existingProduct!.images
+          : [
+              uploadedImageUrl,
+              ...widget.existingProduct!.images
+                  .where((url) => url != uploadedImageUrl),
+            ];
+
       // Update existing product
       final updated = widget.existingProduct!.copyWith(
         name: _nameController.text.trim(),
@@ -106,12 +179,16 @@ class _AddProductScreenState extends State<AddProductScreen> {
         salePrice: salePrice,
         originalPrice: originalPrice,
         stock: stock,
-        categoryId: _categoryController.text.trim().isEmpty ? 'general' : _categoryController.text.trim(),
+        categoryId: _categoryController.text.trim().isEmpty
+            ? 'general'
+            : _categoryController.text.trim(),
+        images: updatedImages,
         lowStockThreshold: lowThreshold,
         updatedAt: DateTime.now(),
       );
 
-      final success = await context.read<SellerProductProvider>().updateProduct(updated);
+      final success =
+          await context.read<SellerProductProvider>().updateProduct(updated);
 
       setState(() => _isSaving = false);
 
@@ -128,32 +205,108 @@ class _AddProductScreenState extends State<AddProductScreen> {
         salePrice: salePrice,
         originalPrice: originalPrice,
         stock: stock,
-        categoryId: _categoryController.text.trim().isEmpty ? 'general' : _categoryController.text.trim(),
+        categoryId: _categoryController.text.trim().isEmpty
+            ? 'general'
+            : _categoryController.text.trim(),
         sellerId: auth.currentUser!.uid,
         location: 'Default Location',
         isVerified: false,
         isActive: true,
-        images: [],
+        images: uploadedImageUrl == null ? [] : [uploadedImageUrl],
         lowStockThreshold: lowThreshold,
         createdAt: DateTime.now(),
         updatedAt: DateTime.now(),
       );
 
-      final success = await context.read<SellerProductProvider>().addProduct(product);
+      final success =
+          await context.read<SellerProductProvider>().addProduct(product);
 
       setState(() => _isSaving = false);
 
       if (success && mounted) {
-        SnackbarHelper.showSuccess(context, 'Product added successfully! Waiting for admin approval.');
+        SnackbarHelper.showSuccess(
+            context, 'Product added successfully! Waiting for admin approval.');
         Navigator.pop(context);
       }
     }
   }
 
+  Widget _buildImagePicker() {
+    final existingImage = isEditing ? widget.existingProduct!.primaryImage : '';
+    final hasSelectedImage = _selectedImageBytes != null;
+    final hasExistingImage = existingImage.isNotEmpty;
+
+    return InkWell(
+      onTap: _isSaving ? null : _pickProductImage,
+      borderRadius: BorderRadius.circular(16),
+      child: Container(
+        width: double.infinity,
+        height: 170,
+        decoration: BoxDecoration(
+          color: Colors.grey.withOpacity(0.1),
+          borderRadius: BorderRadius.circular(16),
+          border: Border.all(color: Colors.grey.withOpacity(0.3)),
+        ),
+        clipBehavior: Clip.antiAlias,
+        child: Stack(
+          fit: StackFit.expand,
+          children: [
+            if (hasSelectedImage)
+              Image.memory(_selectedImageBytes!, fit: BoxFit.cover)
+            else if (hasExistingImage)
+              Image.network(existingImage, fit: BoxFit.cover)
+            else
+              const Column(
+                mainAxisAlignment: MainAxisAlignment.center,
+                children: [
+                  Icon(Icons.add_a_photo, size: 40, color: Colors.grey),
+                  SizedBox(height: 8),
+                  Text(
+                    'Upload Product Image',
+                    style: TextStyle(color: Colors.grey),
+                  ),
+                ],
+              ),
+            Positioned(
+              right: 12,
+              bottom: 12,
+              child: Container(
+                padding:
+                    const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
+                decoration: BoxDecoration(
+                  color: Colors.black.withOpacity(0.62),
+                  borderRadius: BorderRadius.circular(20),
+                ),
+                child: Row(
+                  mainAxisSize: MainAxisSize.min,
+                  children: [
+                    const Icon(Icons.photo_library_outlined,
+                        color: Colors.white, size: 16),
+                    const SizedBox(width: 6),
+                    Text(
+                      hasSelectedImage || hasExistingImage
+                          ? 'Change'
+                          : 'Choose',
+                      style: const TextStyle(
+                        color: Colors.white,
+                        fontWeight: FontWeight.w700,
+                        fontSize: 12,
+                      ),
+                    ),
+                  ],
+                ),
+              ),
+            ),
+          ],
+        ),
+      ),
+    );
+  }
+
   @override
   Widget build(BuildContext context) {
     final theme = Theme.of(context);
-    
+
     return Scaffold(
       appBar: AppBar(
         title: Text(isEditing ? 'Edit Product' : 'Add New Product'),
@@ -167,32 +320,7 @@ class _AddProductScreenState extends State<AddProductScreen> {
           child: Column(
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
-              // Image Placeholder
-              Container(
-                width: double.infinity,
-                height: 150,
-                decoration: BoxDecoration(
-                  color: Colors.grey.withOpacity(0.1),
-                  borderRadius: BorderRadius.circular(16),
-                  border: Border.all(color: Colors.grey.withOpacity(0.3), style: BorderStyle.solid),
-                  image: isEditing && widget.existingProduct!.primaryImage.isNotEmpty
-                      ? DecorationImage(
-                          image: NetworkImage(widget.existingProduct!.primaryImage),
-                          fit: BoxFit.cover,
-                        )
-                      : null,
-                ),
-                child: (isEditing && widget.existingProduct!.primaryImage.isNotEmpty)
-                    ? null
-                    : const Column(
-                        mainAxisAlignment: MainAxisAlignment.center,
-                        children: [
-                          Icon(Icons.add_a_photo, size: 40, color: Colors.grey),
-                          SizedBox(height: 8),
-                          Text('Upload Product Images', style: TextStyle(color: Colors.grey)),
-                        ],
-                      ),
-              ),
+              _buildImagePicker(),
               const SizedBox(height: 24),
 
               TextFormField(
@@ -210,31 +338,42 @@ class _AddProductScreenState extends State<AddProductScreen> {
               Container(
                 decoration: BoxDecoration(
                   borderRadius: BorderRadius.circular(12),
-                  border: Border.all(color: Colors.purple.withOpacity(0.3), width: 2),
+                  border: Border.all(
+                      color: Colors.purple.withOpacity(0.3), width: 2),
                 ),
                 child: Column(
                   children: [
                     Padding(
-                      padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
+                      padding: const EdgeInsets.symmetric(
+                          horizontal: 16, vertical: 8),
                       child: Row(
                         mainAxisAlignment: MainAxisAlignment.spaceBetween,
                         children: [
                           const Row(
                             children: [
-                              Icon(Icons.auto_awesome, color: Colors.purple, size: 18),
+                              Icon(Icons.auto_awesome,
+                                  color: Colors.purple, size: 18),
                               SizedBox(width: 8),
                               Text(
                                 'AI Description',
-                                style: TextStyle(color: Colors.purple, fontWeight: FontWeight.bold),
+                                style: TextStyle(
+                                    color: Colors.purple,
+                                    fontWeight: FontWeight.bold),
                               ),
                             ],
                           ),
                           TextButton.icon(
-                            onPressed: _isGeneratingAI ? null : _generateAIDescription,
-                            icon: _isGeneratingAI 
-                                ? const SizedBox(width: 16, height: 16, child: CircularProgressIndicator(strokeWidth: 2))
+                            onPressed:
+                                _isGeneratingAI ? null : _generateAIDescription,
+                            icon: _isGeneratingAI
+                                ? const SizedBox(
+                                    width: 16,
+                                    height: 16,
+                                    child: CircularProgressIndicator(
+                                        strokeWidth: 2))
                                 : const Icon(Icons.flash_on, size: 16),
-                            label: Text(_isGeneratingAI ? 'Generating...' : 'Generate'),
+                            label: Text(
+                                _isGeneratingAI ? 'Generating...' : 'Generate'),
                             style: TextButton.styleFrom(
                               foregroundColor: Colors.purple,
                             ),
@@ -246,7 +385,8 @@ class _AddProductScreenState extends State<AddProductScreen> {
                       controller: _descriptionController,
                       maxLines: 4,
                       decoration: const InputDecoration(
-                        hintText: 'Enter product description or use AI to generate an SEO-friendly description.',
+                        hintText:
+                            'Enter product description or use AI to generate an SEO-friendly description.',
                         border: InputBorder.none,
                         contentPadding: EdgeInsets.all(16),
                       ),
@@ -319,7 +459,7 @@ class _AddProductScreenState extends State<AddProductScreen> {
                 ],
               ),
               const SizedBox(height: 16),
-              
+
               TextFormField(
                 controller: _categoryController,
                 decoration: const InputDecoration(
@@ -336,15 +476,23 @@ class _AddProductScreenState extends State<AddProductScreen> {
                 child: FilledButton.icon(
                   onPressed: _isSaving ? null : _saveProduct,
                   icon: _isSaving
-                      ? const SizedBox(width: 20, height: 20, child: CircularProgressIndicator(color: Colors.white, strokeWidth: 2))
+                      ? const SizedBox(
+                          width: 20,
+                          height: 20,
+                          child: CircularProgressIndicator(
+                              color: Colors.white, strokeWidth: 2))
                       : Icon(isEditing ? Icons.save : Icons.check),
                   label: Text(
-                    _isSaving ? 'Saving...' : (isEditing ? 'Update Product' : 'Save Product'),
-                    style: const TextStyle(fontSize: 16, fontWeight: FontWeight.bold),
+                    _isSaving
+                        ? 'Saving...'
+                        : (isEditing ? 'Update Product' : 'Save Product'),
+                    style: const TextStyle(
+                        fontSize: 16, fontWeight: FontWeight.bold),
                   ),
                   style: FilledButton.styleFrom(
                     backgroundColor: const Color(0xFF2D7D3C),
-                    shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+                    shape: RoundedRectangleBorder(
+                        borderRadius: BorderRadius.circular(12)),
                   ),
                 ),
               ),

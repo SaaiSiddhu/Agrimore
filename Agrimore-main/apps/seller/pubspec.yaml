@@ -52,11 +52,11 @@ dev_dependencies:
 flutter_launcher_icons:
   android: "launcher_icon"
   ios: false
-  image_path: "assets/images/logo.png"
+  image_path: "assets/images/seller_logo.png"
 
 flutter:
   uses-material-design: true
 
   assets:
     - .env
-    - assets/images/logo.png
+    - assets/images/

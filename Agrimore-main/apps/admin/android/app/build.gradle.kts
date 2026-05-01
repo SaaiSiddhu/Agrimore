@@ -26,7 +26,7 @@ android {
         applicationId = "com.agrimore.admin"
         
         minSdk = 24  // Android 7.0
-        targetSdk = 34  // Android 14
+        targetSdk = 35  // Android 15 (required by Google Play)
         
         versionCode = 1
         versionName = "1.0.0"

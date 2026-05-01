@@ -117,7 +117,6 @@ class SellerProvider extends ChangeNotifier {
       final snapshot = await _firestore
           .collection('products')
           .where('sellerId', isEqualTo: userId)
-          .orderBy('createdAt', descending: true)
           .get();
 
       _sellerProducts = snapshot.docs.map((doc) {
@@ -125,6 +124,7 @@ class SellerProvider extends ChangeNotifier {
         data['id'] = doc.id;
         return data;
       }).toList();
+      _sellerProducts.sort((a, b) => _compareCreatedAtDesc(a['createdAt'], b['createdAt']));
 
       debugPrint('✅ Loaded ${_sellerProducts.length} seller products');
     } catch (e) {
@@ -147,7 +147,6 @@ class SellerProvider extends ChangeNotifier {
       final snapshot = await _firestore
           .collection('orders')
           .where('sellerId', isEqualTo: userId)
-          .orderBy('createdAt', descending: true)
           .get();
 
       _sellerOrders = snapshot.docs.map((doc) {
@@ -155,6 +154,7 @@ class SellerProvider extends ChangeNotifier {
         data['id'] = doc.id;
         return data;
       }).toList();
+      _sellerOrders.sort((a, b) => _compareCreatedAtDesc(a['createdAt'], b['createdAt']));
 
       debugPrint('✅ Loaded ${_sellerOrders.length} seller orders');
     } catch (e) {
@@ -192,6 +192,18 @@ class SellerProvider extends ChangeNotifier {
       _isLoading = false;
       notifyListeners();
     }
+  }
+
+  int _compareCreatedAtDesc(dynamic a, dynamic b) {
+    DateTime asDate(dynamic value) {
+      if (value is Timestamp) return value.toDate();
+      if (value is DateTime) return value;
+      if (value is int) return DateTime.fromMillisecondsSinceEpoch(value);
+      if (value is String) return DateTime.tryParse(value) ?? DateTime.fromMillisecondsSinceEpoch(0);
+      return DateTime.fromMillisecondsSinceEpoch(0);
+    }
+
+    return asDate(b).compareTo(asDate(a));
   }
 
   /// Update seller profile

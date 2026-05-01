@@ -4,7 +4,6 @@ import 'package:go_router/go_router.dart';
 import 'package:provider/provider.dart';
 import 'package:agrimore_ui/agrimore_ui.dart';
 import '../providers/auth_provider.dart';
-import '../providers/seller_provider.dart';
 
 // Screens
 import '../screens/auth/auth_screen.dart';
@@ -32,8 +31,6 @@ import '../screens/admin/vendors/vendors_list_screen.dart';
 import '../screens/admin/subscriptions/subscription_management_screen.dart';
 import '../screens/admin/rewards/rewards_management_screen.dart';
 import '../screens/admin/reviews/review_management_screen.dart';
-import '../screens/seller/seller_panel_screen.dart';
-import '../screens/seller/seller_apply_screen.dart';
 
 class AdminRoutes {
   // Auth
@@ -94,9 +91,11 @@ class AdminRoutes {
   /// Admin creates an approved seller (callable `createSellerByAdmin`).
   static const String addSeller = '/add-seller';
 
-  // Seller App Routes
+  // Legacy seller paths kept so archived screens compile, but they are not
+  // registered in the admin router.
   static const String sellerPanel = '/seller/panel';
   static const String sellerApply = '/seller/apply';
+
 }
 
 /// App router configuration using go_router
@@ -121,8 +120,6 @@ class AppRouter {
         final isAuthRoute = state.matchedLocation == AdminRoutes.auth ||
             state.matchedLocation == AdminRoutes.login ||
             state.matchedLocation == '/';
-        final isSellerRoute = state.matchedLocation.startsWith('/seller');
-
         if (!isLoggedIn && !isAuthRoute) {
           return AdminRoutes.auth;
         }
@@ -192,22 +189,6 @@ class AppRouter {
             if (!authProvider.isLoggedIn) return AdminRoutes.auth;
             return authProvider.isAdmin ? AdminRoutes.dashboard : AdminRoutes.auth;
           },
-        ),
-
-        // ============================================
-        // SELLER ROUTES (NO SHELL)
-        // ============================================
-        GoRoute(
-          path: AdminRoutes.sellerPanel,
-          name: 'seller-panel',
-          parentNavigatorKey: _rootNavigatorKey,
-          builder: (context, state) => const SellerPanelScreen(),
-        ),
-        GoRoute(
-          path: AdminRoutes.sellerApply,
-          name: 'seller-apply',
-          parentNavigatorKey: _rootNavigatorKey,
-          builder: (context, state) => const SellerApplyScreen(),
         ),
 
         // ============================================

@@ -8,7 +8,6 @@ class SellerOrderProvider extends ChangeNotifier {
   final FirebaseFirestore _firestore = FirebaseFirestore.instance;
 
   List<OrderModel> _orders = [];
-  Set<String> _sellerProductIds = {};
   bool _isLoading = false;
   String? _error;
   String _selectedFilter = 'all';
@@ -22,20 +21,22 @@ class SellerOrderProvider extends ChangeNotifier {
 
   // Order stats
   int get totalOrders => _orders.length;
-  int get pendingOrders => _orders.where((o) =>
-      o.orderStatus == 'pending' || o.orderStatus == 'confirmed').length;
+  int get pendingOrders => _orders
+      .where((o) => o.orderStatus == 'pending' || o.orderStatus == 'confirmed')
+      .length;
   int get processingOrders =>
       _orders.where((o) => o.orderStatus == 'processing').length;
-  int get shippedOrders => _orders.where((o) =>
-      o.orderStatus == 'shipped' ||
-      o.orderStatus == 'out_for_delivery' ||
-      o.orderStatus == 'outfordelivery').length;
+  int get shippedOrders => _orders
+      .where((o) =>
+          o.orderStatus == 'shipped' ||
+          o.orderStatus == 'out_for_delivery' ||
+          o.orderStatus == 'outfordelivery')
+      .length;
   int get deliveredOrders => _orders.where((o) => o.isDelivered).length;
   int get cancelledOrders => _orders.where((o) => o.isCancelled).length;
 
-  double get totalRevenue => _orders
-      .where((o) => o.isDelivered)
-      .fold(0.0, (sum, o) => sum + o.total);
+  double get totalRevenue =>
+      _orders.where((o) => o.isDelivered).fold(0.0, (sum, o) => sum + o.total);
 
   double get todayRevenue {
     final today = DateTime.now();
@@ -75,33 +76,20 @@ class SellerOrderProvider extends ChangeNotifier {
     notifyListeners();
   }
 
-  /// Load orders containing products that belong to this seller.
-  /// Step 1: Fetch all product IDs owned by this seller.
-  /// Step 2: Stream all orders and filter those containing seller's products.
+  /// Load only orders assigned to this seller. Checkout writes one order per
+  /// seller, so this query matches Firestore security rules.
   Future<void> loadSellerOrders(String sellerId) async {
     _isLoading = true;
     _error = null;
     notifyListeners();
 
-    debugPrint('📦 Loading orders for seller: $sellerId');
+    debugPrint('ðŸ“¦ Loading orders for seller: $sellerId');
 
     try {
-      // Step 1: Get all product IDs for this seller
-      final productSnap = await _firestore
-          .collection('products')
-          .where('sellerId', isEqualTo: sellerId)
-          .get();
-
-      _sellerProductIds =
-          productSnap.docs.map((d) => d.id).toSet();
-      debugPrint('📦 Seller has ${_sellerProductIds.length} products');
-
-      // Step 2: Stream orders and filter by product match
       _ordersSubscription?.cancel();
       _ordersSubscription = _firestore
           .collection('orders')
-          .orderBy('createdAt', descending: true)
-          .limit(500)
+          .where('sellerId', isEqualTo: sellerId)
           .snapshots()
           .listen((snapshot) {
         _orders = snapshot.docs
@@ -109,30 +97,26 @@ class SellerOrderProvider extends ChangeNotifier {
               try {
                 return OrderModel.fromMap(doc.data(), doc.id);
               } catch (e) {
-                debugPrint('⚠️ Error parsing order ${doc.id}: $e');
+                debugPrint('âš ï¸ Error parsing order ${doc.id}: $e');
                 return null;
               }
             })
             .whereType<OrderModel>()
-            .where((order) {
-              // Match: order contains at least one of this seller's products
-              return order.items.any((item) =>
-                  _sellerProductIds.contains(item.productId));
-            })
             .toList();
+        _orders.sort((a, b) => b.createdAt.compareTo(a.createdAt));
 
         _isLoading = false;
-        debugPrint('✅ Loaded ${_orders.length} seller orders');
+        debugPrint('âœ… Loaded ${_orders.length} seller orders');
         notifyListeners();
       }, onError: (e) {
-        debugPrint('❌ Error loading seller orders: $e');
+        debugPrint('âŒ Error loading seller orders: $e');
         _error = 'Failed to load orders';
         _isLoading = false;
         notifyListeners();
       });
     } catch (e) {
-      debugPrint('❌ Error loading seller products: $e');
-      _error = 'Failed to load seller data';
+      debugPrint('âŒ Error loading seller orders: $e');
+      _error = 'Failed to load seller orders';
       _isLoading = false;
       notifyListeners();
     }
@@ -158,10 +142,10 @@ class SellerOrderProvider extends ChangeNotifier {
         'timestamp': FieldValue.serverTimestamp(),
       });
 
-      debugPrint('✅ Order $orderId updated to: $newStatus');
+      debugPrint('âœ… Order $orderId updated to: $newStatus');
       return true;
     } catch (e) {
-      debugPrint('❌ Error updating order: $e');
+      debugPrint('âŒ Error updating order: $e');
       _error = 'Failed to update order status';
       notifyListeners();
       return false;

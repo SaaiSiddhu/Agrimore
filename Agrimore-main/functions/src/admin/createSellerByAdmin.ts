@@ -32,9 +32,7 @@ async function callerIsAdmin(uid: string): Promise<boolean> {
  * Creates (or updates) a seller account with email/password login.
  * Caller must be an admin (Firestore `role: admin` + optional `settings/access.adminEmails`).
  */
-export const createSellerByAdmin = functions.https.onCall(async (request) => {
-    const data = request.data;
-    const context = request;
+export const createSellerByAdmin = functions.https.onCall(async (data, context) => {
     if (!context.auth) {
         throw new functions.https.HttpsError("unauthenticated", "Sign in required");
     }

@@ -62,7 +62,6 @@ class OrderProvider with ChangeNotifier {
       _ordersSubscription = _firestore
           .collection('orders')
           .where('userId', isEqualTo: userId)
-          .orderBy('createdAt', descending: true)
           .snapshots()
           .listen(
         (snapshot) {
@@ -70,6 +69,7 @@ class OrderProvider with ChangeNotifier {
             _orders = snapshot.docs
                 .map((doc) => OrderModel.fromMap(doc.data(), doc.id))
                 .toList();
+            _orders.sort((a, b) => b.createdAt.compareTo(a.createdAt));
             
             _error = null;
             debugPrint('✅ Loaded ${_orders.length} orders');

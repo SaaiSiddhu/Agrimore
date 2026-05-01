@@ -20,7 +20,8 @@ import 'widgets/checkout_steps.dart';
 import 'order_success_screen.dart';
 
 // Web-specific Razorpay import
-import '../../../services/razorpay_web.dart' if (dart.library.io) '../../../services/razorpay_stub.dart';
+import '../../../services/razorpay_web.dart'
+    if (dart.library.io) '../../../services/razorpay_stub.dart';
 
 class PaymentMethodScreen extends StatefulWidget {
   final AddressModel selectedAddress;
@@ -51,7 +52,7 @@ class _PaymentMethodScreenState extends State<PaymentMethodScreen> {
   bool _useCoins = false;
   int _coinsToUse = 0;
 
-  // ✅ NEW: Order notes / special instructions
+  // âœ… NEW: Order notes / special instructions
   final TextEditingController _notesController = TextEditingController();
 
   // Checkout Step & Subscription state
@@ -69,7 +70,8 @@ class _PaymentMethodScreenState extends State<PaymentMethodScreen> {
     super.initState();
     _initializePaymentServices();
     _loadDeliverySlots();
-    WidgetsBinding.instance.addPostFrameCallback((_) => _applyCartSubscriptionPrefs());
+    WidgetsBinding.instance
+        .addPostFrameCallback((_) => _applyCartSubscriptionPrefs());
   }
 
   Future<void> _loadDeliverySlots() async {
@@ -139,7 +141,7 @@ class _PaymentMethodScreenState extends State<PaymentMethodScreen> {
   }
 
   void _handlePaymentSuccess(PaymentSuccessResponse response) {
-    debugPrint('✅ Payment successful: ${response.paymentId}');
+    debugPrint('âœ… Payment successful: ${response.paymentId}');
     _createOrder(
       razorpayPaymentId: response.paymentId,
       razorpayOrderId: response.orderId,
@@ -181,72 +183,17 @@ class _PaymentMethodScreenState extends State<PaymentMethodScreen> {
         items: cartProvider.items,
       );
 
-      final orderId = FirebaseFirestore.instance.collection('orders').doc().id;
-
-      final order = OrderModel(
-        id: orderId,
+      final createdOrders = await _createSellerScopedOrders(
         userId: userId,
-        orderNumber: OrderModel.generateOrderNumber(),
-        items: cartProvider.items,
-        deliveryAddress: widget.selectedAddress,
-        subtotal: cartProvider.subtotal,
+        cartProvider: cartProvider,
+        couponCode: couponProvider.appliedCoupon?.code,
         discount: discount,
-        deliveryCharge: widget.deliveryCharge,
-        tax: widget.tax,
-        total: cartProvider.subtotal - discount + widget.deliveryCharge + widget.tax,
-        paymentMethod: _selectedPaymentMethod,
-        paymentStatus: _selectedPaymentMethod == 'cod' ? 'pending' : 'paid',
-        orderStatus: 'pending',
         razorpayOrderId: razorpayOrderId,
         razorpayPaymentId: razorpayPaymentId,
         razorpaySignature: razorpaySignature,
-        couponCode: couponProvider.appliedCoupon?.code,
-        notes: _notesController.text.trim().isNotEmpty ? _notesController.text.trim() : null,
-        createdAt: DateTime.now(),
-        orderType: _orderType,
-        autoFrequency: _orderType == 'Auto Delivery' ? _autoFrequency : null,
-        deliverySlot: _selectedSlot != null
-            ? '${_selectedSlot!.label} (${_selectedSlot!.start}–${_selectedSlot!.end})'
-            : null,
       );
 
-      // Handle Auto Delivery custom behavior if needed
-      if (_orderType == 'Auto Delivery') {
-        final now = DateTime.now();
-        final nextRunDate = now.add(const Duration(days: 1)); // start tomorrow
-        
-        for (final item in cartProvider.items) {
-          await FirebaseFirestore.instance.collection('subscriptions').add({
-            'userId': userId,
-            'userName': widget.selectedAddress.name,
-            'userPhone': widget.selectedAddress.phone,
-            'productId': item.id,
-            'productName': item.productName,
-            'price': item.price,
-            'quantity': item.quantity,
-            'productImage': item.productImage,
-            'unit': item.variant ?? 'nos',
-            'address': widget.selectedAddress.addressLine1,
-            'location': {
-              'lat': widget.selectedAddress.latitude,
-              'lng': widget.selectedAddress.longitude,
-            },
-            'frequency': _autoFrequency.toLowerCase(),
-            'nextRunDate': nextRunDate.toIso8601String(),
-            'deliverySlot': _selectedSlot != null
-                ? '${_selectedSlot!.label} ${_selectedSlot!.start}-${_selectedSlot!.end}'
-                : '',
-            'isActive': true,
-            'createdAt': FieldValue.serverTimestamp(),
-            'paymentMethod': _selectedPaymentMethod,
-          });
-        }
-      } else {
-        await FirebaseFirestore.instance
-            .collection('orders')
-            .doc(orderId)
-            .set(order.toMap());
-      }
+      final order = createdOrders.first;
 
       await cartProvider.clearCart();
       couponProvider.removeCoupon();
@@ -261,12 +208,157 @@ class _PaymentMethodScreenState extends State<PaymentMethodScreen> {
         (route) => route.isFirst,
       );
     } catch (e) {
-      debugPrint('❌ Order creation error: $e');
+      debugPrint('âŒ Order creation error: $e');
       _showSnackBar('Error: ${e.toString()}', isError: true);
     } finally {
       if (mounted) setState(() => _isProcessing = false);
     }
   }
+
+  Future<List<OrderModel>> _createSellerScopedOrders({
+    required String userId,
+    required CartProvider cartProvider,
+    required double discount,
+    required String? couponCode,
+    String? razorpayPaymentId,
+    String? razorpayOrderId,
+    String? razorpaySignature,
+  }) async {
+    if (cartProvider.items.isEmpty) {
+      throw Exception('Cart is empty');
+    }
+
+    final db = FirebaseFirestore.instance;
+    final sellerGroups = <String, List<CartItemModel>>{};
+
+    for (final item in cartProvider.items) {
+      final sellerId = await _resolveSellerIdForItem(item);
+      final key = sellerId ?? '';
+      sellerGroups.putIfAbsent(key, () => <CartItemModel>[]).add(item);
+    }
+
+    final batch = db.batch();
+    final orders = <OrderModel>[];
+    final baseOrderNumber = OrderModel.generateOrderNumber();
+    final totalSubtotal = cartProvider.subtotal;
+    final deliverySlotLabel = _selectedSlot != null
+        ? '${_selectedSlot!.label} (${_selectedSlot!.start}-${_selectedSlot!.end})'
+        : null;
+
+    var index = 0;
+    for (final entry in sellerGroups.entries) {
+      index++;
+      final sellerId = entry.key.isEmpty ? null : entry.key;
+      final groupItems = entry.value;
+      final groupSubtotal = groupItems.fold<double>(
+        0,
+        (sum, item) => sum + item.subtotal,
+      );
+      final ratio = totalSubtotal > 0
+          ? groupSubtotal / totalSubtotal
+          : 1 / sellerGroups.length;
+      final groupDiscount = _roundMoney(discount * ratio);
+      final groupDeliveryCharge = _roundMoney(widget.deliveryCharge * ratio);
+      final groupTax = _roundMoney(widget.tax * ratio);
+      final groupTotal = _roundMoney(
+        groupSubtotal - groupDiscount + groupDeliveryCharge + groupTax,
+      );
+
+      final orderRef = db.collection('orders').doc();
+      final orderNumber = sellerGroups.length == 1
+          ? baseOrderNumber
+          : '$baseOrderNumber-$index';
+
+      final order = OrderModel(
+        id: orderRef.id,
+        userId: userId,
+        sellerId: sellerId,
+        orderNumber: orderNumber,
+        items: groupItems,
+        deliveryAddress: widget.selectedAddress,
+        subtotal: groupSubtotal,
+        discount: groupDiscount,
+        deliveryCharge: groupDeliveryCharge,
+        tax: groupTax,
+        total: groupTotal,
+        paymentMethod: _selectedPaymentMethod,
+        paymentStatus: _selectedPaymentMethod == 'cod' ? 'pending' : 'paid',
+        orderStatus: 'pending',
+        razorpayOrderId: razorpayOrderId,
+        razorpayPaymentId: razorpayPaymentId,
+        razorpaySignature: razorpaySignature,
+        couponCode: couponCode,
+        notes: _notesController.text.trim().isNotEmpty
+            ? _notesController.text.trim()
+            : null,
+        createdAt: DateTime.now(),
+        orderType: _orderType,
+        autoFrequency: _orderType == 'Auto Delivery' ? _autoFrequency : null,
+        deliverySlot: deliverySlotLabel,
+        deliveryVerificationCode: OrderModel.generateVerificationCode(),
+      );
+
+      batch.set(orderRef, order.toMap());
+      batch.set(orderRef.collection('timeline').doc(), {
+        'status': 'pending',
+        'title': 'Order Placed',
+        'description': 'Your order has been placed successfully',
+        'timestamp': FieldValue.serverTimestamp(),
+      });
+      orders.add(order);
+    }
+
+    if (_orderType == 'Auto Delivery') {
+      final nextRunDate = DateTime.now().add(const Duration(days: 1));
+      for (final item in cartProvider.items) {
+        final subscriptionRef = db.collection('subscriptions').doc();
+        batch.set(subscriptionRef, {
+          'userId': userId,
+          'userName': widget.selectedAddress.name,
+          'userPhone': widget.selectedAddress.phone,
+          'productId': item.productId,
+          'productName': item.productName,
+          'price': item.price,
+          'quantity': item.quantity,
+          'productImage': item.productImage,
+          'unit': item.variant ?? 'nos',
+          'address': widget.selectedAddress.addressLine1,
+          'location': {
+            'lat': widget.selectedAddress.latitude,
+            'lng': widget.selectedAddress.longitude,
+          },
+          'frequency': _autoFrequency.toLowerCase(),
+          'nextRunDate': Timestamp.fromDate(nextRunDate),
+          'deliverySlot': deliverySlotLabel ?? '',
+          'isActive': true,
+          'createdAt': FieldValue.serverTimestamp(),
+          'paymentMethod': _selectedPaymentMethod,
+        });
+      }
+    }
+
+    await batch.commit();
+    return orders;
+  }
+
+  Future<String?> _resolveSellerIdForItem(CartItemModel item) async {
+    try {
+      final productId = item.productId.trim();
+      if (productId.isEmpty) return null;
+
+      final productDoc = await FirebaseFirestore.instance
+          .collection('products')
+          .doc(productId)
+          .get();
+      final sellerId = productDoc.data()?['sellerId']?.toString().trim();
+      return sellerId != null && sellerId.isNotEmpty ? sellerId : null;
+    } catch (e) {
+      debugPrint('Could not resolve seller for ${item.productId}: $e');
+      return null;
+    }
+  }
+
+  double _roundMoney(double value) => double.parse(value.toStringAsFixed(2));
 
   Future<void> _proceedToConfirm() async {
     if (_isProcessing) return;
@@ -289,15 +381,16 @@ class _PaymentMethodScreenState extends State<PaymentMethodScreen> {
     // Web payment using RazorpayWebService
     if (kIsWeb) {
       setState(() => _isProcessing = true);
-      
+
       final cartProvider = context.read<CartProvider>();
       final couponProvider = context.read<CouponProvider>();
       final discount = couponProvider.calculateDiscount(
         orderAmount: cartProvider.subtotal,
         items: cartProvider.items,
       );
-      final finalTotal = cartProvider.subtotal - discount + widget.deliveryCharge + widget.tax;
-      
+      final finalTotal =
+          cartProvider.subtotal - discount + widget.deliveryCharge + widget.tax;
+
       _razorpayWebService?.openCheckout(
         amount: finalTotal,
         userName: widget.selectedAddress.name,
@@ -317,7 +410,8 @@ class _PaymentMethodScreenState extends State<PaymentMethodScreen> {
       orderAmount: cartProvider.subtotal,
       items: cartProvider.items,
     );
-    final finalTotal = cartProvider.subtotal - discount + widget.deliveryCharge + widget.tax;
+    final finalTotal =
+        cartProvider.subtotal - discount + widget.deliveryCharge + widget.tax;
 
     _razorpayService?.openAllPaymentMethods(
       amount: finalTotal,
@@ -329,13 +423,13 @@ class _PaymentMethodScreenState extends State<PaymentMethodScreen> {
 
   Future<void> _openInMaps() async {
     final addr = widget.selectedAddress;
-    
+
     if (addr.latitude != null && addr.longitude != null) {
-      final String googleMapsUrl = 
+      final String googleMapsUrl =
           'https://www.google.com/maps/search/?api=1&query=${addr.latitude},${addr.longitude}';
-      
+
       final Uri uri = Uri.parse(googleMapsUrl);
-      
+
       try {
         if (await canLaunchUrl(uri)) {
           await launchUrl(uri, mode: LaunchMode.externalApplication);
@@ -357,7 +451,9 @@ class _PaymentMethodScreenState extends State<PaymentMethodScreen> {
         content: Row(
           children: [
             Icon(
-              isError ? Icons.error_outline_rounded : Icons.check_circle_outline_rounded,
+              isError
+                  ? Icons.error_outline_rounded
+                  : Icons.check_circle_outline_rounded,
               color: Colors.white,
               size: 20,
             ),
@@ -393,7 +489,7 @@ class _PaymentMethodScreenState extends State<PaymentMethodScreen> {
     final cart = context.watch<CartProvider>();
     final coupon = context.watch<CouponProvider>();
     final walletProvider = context.watch<WalletProvider>();
-    
+
     // Calculate discount with proper parameters
     final subtotal = cart.subtotal;
     final discount = coupon.calculateDiscount(
@@ -401,7 +497,7 @@ class _PaymentMethodScreenState extends State<PaymentMethodScreen> {
       items: cart.items,
     );
     final total = subtotal - discount + widget.deliveryCharge + widget.tax;
-    
+
     // Calculate wallet/coins discount
     double walletDiscount = 0;
     if (_useWalletBalance && walletProvider.balance > 0) {
@@ -426,7 +522,6 @@ class _PaymentMethodScreenState extends State<PaymentMethodScreen> {
                 children: [
                   _buildAddressCard(isDark, cardColor, accentColor),
                   const SizedBox(height: 12),
-                  
                   if (_currentStep == 2) ...[
                     _buildDeliveryPreferences(isDark, cardColor, accentColor),
                     const SizedBox(height: 80),
@@ -482,7 +577,8 @@ class _PaymentMethodScreenState extends State<PaymentMethodScreen> {
         icon: Container(
           padding: const EdgeInsets.all(6),
           decoration: BoxDecoration(
-            color: isDark ? Colors.white.withOpacity(0.1) : Colors.grey.shade100,
+            color:
+                isDark ? Colors.white.withOpacity(0.1) : Colors.grey.shade100,
             borderRadius: BorderRadius.circular(8),
           ),
           child: Icon(
@@ -555,7 +651,7 @@ class _PaymentMethodScreenState extends State<PaymentMethodScreen> {
             ],
           ),
           const SizedBox(height: 12),
-          
+
           // Phone
           Row(
             children: [
@@ -575,7 +671,7 @@ class _PaymentMethodScreenState extends State<PaymentMethodScreen> {
               ),
             ],
           ),
-          
+
           Padding(
             padding: const EdgeInsets.symmetric(vertical: 12),
             child: Divider(
@@ -583,14 +679,14 @@ class _PaymentMethodScreenState extends State<PaymentMethodScreen> {
               height: 1,
             ),
           ),
-          
+
           // Address Line 1
           _buildAddressRow(
             icon: Icons.home_outlined,
             value: addr.addressLine1,
             isDark: isDark,
           ),
-          
+
           // Address Line 2 (if exists)
           if (addr.addressLine2.isNotEmpty) ...[
             const SizedBox(height: 8),
@@ -601,7 +697,7 @@ class _PaymentMethodScreenState extends State<PaymentMethodScreen> {
               isSecondary: true,
             ),
           ],
-          
+
           // Landmark (if exists)
           if (addr.landmark != null && addr.landmark!.isNotEmpty) ...[
             const SizedBox(height: 8),
@@ -611,9 +707,9 @@ class _PaymentMethodScreenState extends State<PaymentMethodScreen> {
               isDark: isDark,
             ),
           ],
-          
+
           const SizedBox(height: 12),
-          
+
           // City, State, Zipcode
           Wrap(
             spacing: 8,
@@ -636,7 +732,7 @@ class _PaymentMethodScreenState extends State<PaymentMethodScreen> {
               ),
             ],
           ),
-          
+
           // Country (if not India)
           if (addr.country.isNotEmpty && addr.country != 'India') ...[
             const SizedBox(height: 8),
@@ -646,16 +742,18 @@ class _PaymentMethodScreenState extends State<PaymentMethodScreen> {
               isDark: isDark,
             ),
           ],
-          
+
           // Address Type Badge (if exists)
           if (addr.addressType != null && addr.addressType!.isNotEmpty) ...[
             const SizedBox(height: 12),
             Container(
               padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 6),
               decoration: BoxDecoration(
-                color: _getAddressTypeColor(addr.addressType!).withOpacity(0.15),
+                color:
+                    _getAddressTypeColor(addr.addressType!).withOpacity(0.15),
                 border: Border.all(
-                  color: _getAddressTypeColor(addr.addressType!).withOpacity(0.3),
+                  color:
+                      _getAddressTypeColor(addr.addressType!).withOpacity(0.3),
                 ),
                 borderRadius: BorderRadius.circular(6),
               ),
@@ -717,7 +815,8 @@ class _PaymentMethodScreenState extends State<PaymentMethodScreen> {
     );
   }
 
-  Widget _buildDeliveryPreferences(bool isDark, Color cardColor, Color accentColor) {
+  Widget _buildDeliveryPreferences(
+      bool isDark, Color cardColor, Color accentColor) {
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
@@ -758,7 +857,8 @@ class _PaymentMethodScreenState extends State<PaymentMethodScreen> {
                       onTap: () {
                         setState(() {
                           _orderType = 'Auto Delivery';
-                          _selectedPaymentMethod = 'cod'; // Only COD or Weekly for Auto
+                          _selectedPaymentMethod =
+                              'cod'; // Only COD or Weekly for Auto
                         });
                         HapticFeedback.selectionClick();
                       },
@@ -843,13 +943,16 @@ class _PaymentMethodScreenState extends State<PaymentMethodScreen> {
                           border: Border.all(
                             color: isSelected
                                 ? accentColor
-                                : (isDark ? Colors.grey[800]! : Colors.grey[200]!),
+                                : (isDark
+                                    ? Colors.grey[800]!
+                                    : Colors.grey[200]!),
                             width: isSelected ? 1.5 : 1,
                           ),
                         ),
                         child: Row(
                           children: [
-                            Text(slot.icon, style: const TextStyle(fontSize: 24)),
+                            Text(slot.icon,
+                                style: const TextStyle(fontSize: 24)),
                             const SizedBox(width: 16),
                             Expanded(
                               child: Column(
@@ -862,7 +965,9 @@ class _PaymentMethodScreenState extends State<PaymentMethodScreen> {
                                       fontWeight: FontWeight.bold,
                                       color: isSelected
                                           ? accentColor
-                                          : (isDark ? Colors.white : Colors.black87),
+                                          : (isDark
+                                              ? Colors.white
+                                              : Colors.black87),
                                     ),
                                   ),
                                   const SizedBox(height: 2),
@@ -870,7 +975,9 @@ class _PaymentMethodScreenState extends State<PaymentMethodScreen> {
                                     slot.displayTimeRange,
                                     style: TextStyle(
                                       fontSize: 12,
-                                      color: isDark ? Colors.grey[400] : Colors.grey[600],
+                                      color: isDark
+                                          ? Colors.grey[400]
+                                          : Colors.grey[600],
                                     ),
                                   ),
                                 ],
@@ -882,7 +989,9 @@ class _PaymentMethodScreenState extends State<PaymentMethodScreen> {
                               decoration: BoxDecoration(
                                 shape: BoxShape.circle,
                                 border: Border.all(
-                                  color: isSelected ? accentColor : Colors.grey[400]!,
+                                  color: isSelected
+                                      ? accentColor
+                                      : Colors.grey[400]!,
                                   width: isSelected ? 6 : 2,
                                 ),
                               ),
@@ -910,12 +1019,12 @@ class _PaymentMethodScreenState extends State<PaymentMethodScreen> {
       child: Container(
         padding: const EdgeInsets.symmetric(vertical: 14),
         decoration: BoxDecoration(
-          color: isSelected 
-              ? accentColor.withOpacity(0.1) 
+          color: isSelected
+              ? accentColor.withOpacity(0.1)
               : (isDark ? Colors.grey[850] : Colors.grey[50]!),
           border: Border.all(
-            color: isSelected 
-                ? accentColor 
+            color: isSelected
+                ? accentColor
                 : (isDark ? Colors.grey[800]! : Colors.grey[200]!),
           ),
           borderRadius: BorderRadius.circular(12),
@@ -926,8 +1035,8 @@ class _PaymentMethodScreenState extends State<PaymentMethodScreen> {
           style: TextStyle(
             fontSize: 13,
             fontWeight: FontWeight.bold,
-            color: isSelected 
-                ? accentColor 
+            color: isSelected
+                ? accentColor
                 : (isDark ? Colors.grey[400] : Colors.grey[600]),
           ),
         ),
@@ -971,7 +1080,8 @@ class _PaymentMethodScreenState extends State<PaymentMethodScreen> {
             backgroundColor: accentColor,
             foregroundColor: isDark ? Colors.black : Colors.white,
             padding: const EdgeInsets.symmetric(vertical: 16),
-            shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+            shape:
+                RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
           ),
           icon: const FaIcon(FontAwesomeIcons.arrowRight, size: 16),
           label: const Text(
@@ -1065,11 +1175,13 @@ class _PaymentMethodScreenState extends State<PaymentMethodScreen> {
           _priceRow("Subtotal", subtotal, isDark),
           if (discount > 0) ...[
             const SizedBox(height: 10),
-            _priceRow("Coupon Discount", -discount, isDark, color: Colors.green.shade600),
+            _priceRow("Coupon Discount", -discount, isDark,
+                color: Colors.green.shade600),
           ],
           if (walletDiscount > 0) ...[
             const SizedBox(height: 10),
-            _priceRow("Wallet/Coins", -walletDiscount, isDark, color: Colors.amber.shade700),
+            _priceRow("Wallet/Coins", -walletDiscount, isDark,
+                color: Colors.amber.shade700),
           ],
           Padding(
             padding: const EdgeInsets.symmetric(vertical: 14),
@@ -1078,8 +1190,10 @@ class _PaymentMethodScreenState extends State<PaymentMethodScreen> {
               height: 1,
             ),
           ),
-          _priceRow("Total Amount", finalAmount > 0 ? finalAmount : total, isDark, isTotal: true, color: accentColor),
-          
+          _priceRow(
+              "Total Amount", finalAmount > 0 ? finalAmount : total, isDark,
+              isTotal: true, color: accentColor),
+
           // Coupon Applied Badge
           if (coupon.appliedCoupon != null) ...[
             const SizedBox(height: 12),
@@ -1110,7 +1224,7 @@ class _PaymentMethodScreenState extends State<PaymentMethodScreen> {
               ),
             ),
           ],
-          
+
           // Savings Badge
           if (discount > 0 || walletDiscount > 0) ...[
             const SizedBox(height: 8),
@@ -1130,7 +1244,7 @@ class _PaymentMethodScreenState extends State<PaymentMethodScreen> {
                   ),
                   const SizedBox(width: 6),
                   Text(
-                    'You saved ₹${(discount + walletDiscount).toStringAsFixed(2)}!',
+                    'You saved â‚¹${(discount + walletDiscount).toStringAsFixed(2)}!',
                     style: TextStyle(
                       fontSize: 12,
                       fontWeight: FontWeight.w700,
@@ -1146,9 +1260,10 @@ class _PaymentMethodScreenState extends State<PaymentMethodScreen> {
     );
   }
 
-  Widget _buildWalletSection(bool isDark, Color cardColor, Color accentColor, double orderTotal) {
+  Widget _buildWalletSection(
+      bool isDark, Color cardColor, Color accentColor, double orderTotal) {
     final walletProvider = context.watch<WalletProvider>();
-    
+
     final balance = walletProvider.balance;
     final coins = walletProvider.coins;
     final maxCoins = walletProvider.maxCoinsUsableForOrder(orderTotal);
@@ -1214,11 +1329,12 @@ class _PaymentMethodScreenState extends State<PaymentMethodScreen> {
                           ),
                           const SizedBox(height: 3),
                           Text(
-                            '₹${balance.toStringAsFixed(2)} available',
+                            'â‚¹${balance.toStringAsFixed(2)} available',
                             style: TextStyle(
                               fontSize: 12,
                               fontWeight: FontWeight.w600,
-                              color: isDark ? Colors.grey[400] : Colors.grey[600],
+                              color:
+                                  isDark ? Colors.grey[400] : Colors.grey[600],
                             ),
                           ),
                         ],
@@ -1295,7 +1411,8 @@ class _PaymentMethodScreenState extends State<PaymentMethodScreen> {
                                   style: TextStyle(
                                     fontSize: 15,
                                     fontWeight: FontWeight.w800,
-                                    color: isDark ? Colors.white : Colors.black87,
+                                    color:
+                                        isDark ? Colors.white : Colors.black87,
                                   ),
                                 ),
                                 const SizedBox(height: 3),
@@ -1304,7 +1421,9 @@ class _PaymentMethodScreenState extends State<PaymentMethodScreen> {
                                   style: TextStyle(
                                     fontSize: 12,
                                     fontWeight: FontWeight.w600,
-                                    color: isDark ? Colors.grey[400] : Colors.grey[600],
+                                    color: isDark
+                                        ? Colors.grey[400]
+                                        : Colors.grey[600],
                                   ),
                                 ),
                               ],
@@ -1337,7 +1456,9 @@ class _PaymentMethodScreenState extends State<PaymentMethodScreen> {
                               '1',
                               style: TextStyle(
                                 fontSize: 12,
-                                color: isDark ? Colors.grey[500] : Colors.grey[600],
+                                color: isDark
+                                    ? Colors.grey[500]
+                                    : Colors.grey[600],
                               ),
                             ),
                             Expanded(
@@ -1357,19 +1478,22 @@ class _PaymentMethodScreenState extends State<PaymentMethodScreen> {
                               '$maxCoins',
                               style: TextStyle(
                                 fontSize: 12,
-                                color: isDark ? Colors.grey[500] : Colors.grey[600],
+                                color: isDark
+                                    ? Colors.grey[500]
+                                    : Colors.grey[600],
                               ),
                             ),
                           ],
                         ),
                         Container(
-                          padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
+                          padding: const EdgeInsets.symmetric(
+                              horizontal: 12, vertical: 6),
                           decoration: BoxDecoration(
                             color: Colors.amber.withOpacity(0.15),
                             borderRadius: BorderRadius.circular(8),
                           ),
                           child: Text(
-                            'Using $_coinsToUse coins = ₹$_coinsToUse discount',
+                            'Using $_coinsToUse coins = â‚¹$_coinsToUse discount',
                             style: TextStyle(
                               fontSize: 13,
                               fontWeight: FontWeight.w700,
@@ -1422,7 +1546,7 @@ class _PaymentMethodScreenState extends State<PaymentMethodScreen> {
                           ),
                           const SizedBox(height: 3),
                           Text(
-                            'Add ₹${(minOrderForCoins - orderTotal).toStringAsFixed(0)} more to use coins (min order: ₹${minOrderForCoins.toStringAsFixed(0)})',
+                            'Add â‚¹${(minOrderForCoins - orderTotal).toStringAsFixed(0)} more to use coins (min order: â‚¹${minOrderForCoins.toStringAsFixed(0)})',
                             style: TextStyle(
                               fontSize: 12,
                               color: Colors.orange[700],
@@ -1539,7 +1663,9 @@ class _PaymentMethodScreenState extends State<PaymentMethodScreen> {
                                 style: TextStyle(
                                   fontSize: 12,
                                   fontWeight: FontWeight.w600,
-                                  color: isDark ? Colors.grey[400] : Colors.grey[600],
+                                  color: isDark
+                                      ? Colors.grey[400]
+                                      : Colors.grey[600],
                                 ),
                               ),
                             ],
@@ -1553,7 +1679,9 @@ class _PaymentMethodScreenState extends State<PaymentMethodScreen> {
                             border: Border.all(
                               color: _selectedPaymentMethod == 'razorpay'
                                   ? accentColor
-                                  : (isDark ? Colors.grey[600]! : Colors.grey[400]!),
+                                  : (isDark
+                                      ? Colors.grey[600]!
+                                      : Colors.grey[400]!),
                               width: 2,
                             ),
                             color: _selectedPaymentMethod == 'razorpay'
@@ -1561,7 +1689,8 @@ class _PaymentMethodScreenState extends State<PaymentMethodScreen> {
                                 : Colors.transparent,
                           ),
                           child: _selectedPaymentMethod == 'razorpay'
-                              ? const Icon(Icons.check, color: Colors.white, size: 16)
+                              ? const Icon(Icons.check,
+                                  color: Colors.white, size: 16)
                               : null,
                         ),
                       ],
@@ -1571,10 +1700,14 @@ class _PaymentMethodScreenState extends State<PaymentMethodScreen> {
                       spacing: 8,
                       runSpacing: 8,
                       children: [
-                        _buildPaymentBadge(FontAwesomeIcons.solidCreditCard, 'Card', isDark),
-                        _buildPaymentBadge(FontAwesomeIcons.mobileScreenButton, 'UPI', isDark),
-                        _buildPaymentBadge(FontAwesomeIcons.wallet, 'Wallet', isDark),
-                        _buildPaymentBadge(FontAwesomeIcons.buildingColumns, 'Bank', isDark),
+                        _buildPaymentBadge(
+                            FontAwesomeIcons.solidCreditCard, 'Card', isDark),
+                        _buildPaymentBadge(
+                            FontAwesomeIcons.mobileScreenButton, 'UPI', isDark),
+                        _buildPaymentBadge(
+                            FontAwesomeIcons.wallet, 'Wallet', isDark),
+                        _buildPaymentBadge(
+                            FontAwesomeIcons.buildingColumns, 'Bank', isDark),
                       ],
                     ),
                   ],
@@ -1582,9 +1715,9 @@ class _PaymentMethodScreenState extends State<PaymentMethodScreen> {
               ),
             ),
           ],
-          
+
           const SizedBox(height: 12),
-          
+
           // Cash on Delivery Option
           GestureDetector(
             onTap: () {
@@ -1667,7 +1800,7 @@ class _PaymentMethodScreenState extends State<PaymentMethodScreen> {
               ),
             ),
           ),
-          
+
           // Removed: Web-only COD notice (now supports online payments on web too)
         ],
       ),
@@ -1680,12 +1813,14 @@ class _PaymentMethodScreenState extends State<PaymentMethodScreen> {
       decoration: BoxDecoration(
         color: isDark ? const Color(0xFF2C2C2C) : Colors.white,
         borderRadius: BorderRadius.circular(6),
-        border: Border.all(color: isDark ? Colors.grey[700]! : Colors.grey[300]!),
+        border:
+            Border.all(color: isDark ? Colors.grey[700]! : Colors.grey[300]!),
       ),
       child: Row(
         mainAxisSize: MainAxisSize.min,
         children: [
-          FaIcon(icon, size: 11, color: isDark ? Colors.grey[400] : Colors.grey[600]),
+          FaIcon(icon,
+              size: 11, color: isDark ? Colors.grey[400] : Colors.grey[600]),
           const SizedBox(width: 5),
           Text(
             label,
@@ -1832,11 +1967,13 @@ class _PaymentMethodScreenState extends State<PaymentMethodScreen> {
           style: TextStyle(
             fontWeight: isTotal ? FontWeight.w800 : FontWeight.w600,
             fontSize: isTotal ? 15 : 14,
-            color: isDark ? (isTotal ? Colors.white : Colors.grey[300]) : (isTotal ? Colors.black87 : Colors.grey[700]),
+            color: isDark
+                ? (isTotal ? Colors.white : Colors.grey[300])
+                : (isTotal ? Colors.black87 : Colors.grey[700]),
           ),
         ),
         Text(
-          "₹${value.abs().toStringAsFixed(2)}",
+          "â‚¹${value.abs().toStringAsFixed(2)}",
           style: TextStyle(
             fontWeight: isTotal ? FontWeight.w800 : FontWeight.w700,
             fontSize: isTotal ? 18 : 14,
@@ -1847,9 +1984,11 @@ class _PaymentMethodScreenState extends State<PaymentMethodScreen> {
     );
   }
 
-  Widget _buildBottomBar(double total, bool isDark, Color accentColor, Color cardColor) {
+  Widget _buildBottomBar(
+      double total, bool isDark, Color accentColor, Color cardColor) {
     return Container(
-      padding: EdgeInsets.fromLTRB(16, 16, 16, 16 + MediaQuery.of(context).padding.bottom),
+      padding: EdgeInsets.fromLTRB(
+          16, 16, 16, 16 + MediaQuery.of(context).padding.bottom),
       decoration: BoxDecoration(
         color: cardColor,
         boxShadow: [
@@ -1860,7 +1999,8 @@ class _PaymentMethodScreenState extends State<PaymentMethodScreen> {
           ),
         ],
         border: Border(
-          top: BorderSide(color: isDark ? Colors.grey[800]! : Colors.grey[200]!),
+          top:
+              BorderSide(color: isDark ? Colors.grey[800]! : Colors.grey[200]!),
         ),
       ),
       child: ElevatedButton(
@@ -1911,8 +2051,8 @@ class _PaymentMethodScreenState extends State<PaymentMethodScreen> {
                   const SizedBox(width: 10),
                   Text(
                     _selectedPaymentMethod == "cod"
-                        ? "Place Order • ₹${total.toStringAsFixed(2)}"
-                        : "Pay ₹${total.toStringAsFixed(2)}",
+                        ? "Place Order â€¢ â‚¹${total.toStringAsFixed(2)}"
+                        : "Pay â‚¹${total.toStringAsFixed(2)}",
                     style: const TextStyle(
                       fontSize: 17,
                       fontWeight: FontWeight.w800,
@@ -1925,7 +2065,7 @@ class _PaymentMethodScreenState extends State<PaymentMethodScreen> {
     );
   }
 
-  // ✅ NEW: Order Notes / Special Instructions
+  // âœ… NEW: Order Notes / Special Instructions
   Widget _buildOrderNotesCard(bool isDark, Color cardColor, Color accentColor) {
     return _buildCardSection(
       isDark: isDark,
@@ -1949,7 +2089,8 @@ class _PaymentMethodScreenState extends State<PaymentMethodScreen> {
             maxLength: 250,
             maxLines: 3,
             decoration: InputDecoration(
-              hintText: 'E.g., "Leave at the gate", "Extra ripe mangoes please"',
+              hintText:
+                  'E.g., "Leave at the gate", "Extra ripe mangoes please"',
               hintStyle: TextStyle(
                 fontSize: 13,
                 color: isDark ? Colors.grey[600] : Colors.grey[400],

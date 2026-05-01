@@ -7,12 +7,17 @@ import '../local/shared_preferences_service.dart';
 
 class AuthService {
   static final AuthService _instance = AuthService._internal();
+  static const String _googleWebClientId =
+      '1082819024270-0rmfnpcfjbmd12mq3h4qbffp67jri89a.apps.googleusercontent.com';
 
   final FirebaseAuth _auth = FirebaseAuth.instance;
   final FirebaseFirestore _firestore = FirebaseFirestore.instance;
 
   // GoogleSignIn is only used for native (mobile) platforms
-  final GoogleSignIn _googleSignIn = GoogleSignIn();
+  final GoogleSignIn _googleSignIn = GoogleSignIn(
+    scopes: ['email', 'profile'],
+    serverClientId: _googleWebClientId,
+  );
 
   factory AuthService() => _instance;
   AuthService._internal();
@@ -96,7 +101,10 @@ class AuthService {
       debugPrint('🔥 Attempting to save user to Firestore...');
 
       try {
-        await _firestore.collection('users').doc(user.uid).set(userModel.toMap());
+        await _firestore
+            .collection('users')
+            .doc(user.uid)
+            .set(userModel.toMap());
         debugPrint('✅ User saved to Firestore successfully!');
       } catch (firestoreError) {
         debugPrint('❌ Firestore error: $firestoreError');
@@ -151,21 +159,25 @@ class AuthService {
       try {
         userModel = await getUserData(user.uid);
       } catch (e) {
-        if (e is UserNotFoundException || e.toString().contains('User not found')) {
-            debugPrint('📝 User document missing, creating new one...');
-            // ✅ SECURITY FIX: Never auto-assign admin role. Default to 'user'.
-            // Admin promotion is handled separately via _syncRoleWithAdminPolicy.
-            userModel = UserModel(
-                uid: user.uid,
-                email: user.email ?? email,
-                name: user.displayName ?? 'User',
-                role: 'user', // ✅ FIXED: Default to 'user', not 'admin'
-                createdAt: DateTime.now(),
-                lastLogin: DateTime.now(),
-            );
-            await _firestore.collection('users').doc(user.uid).set(userModel.toMap());
+        if (e is UserNotFoundException ||
+            e.toString().contains('User not found')) {
+          debugPrint('📝 User document missing, creating new one...');
+          // ✅ SECURITY FIX: Never auto-assign admin role. Default to 'user'.
+          // Admin promotion is handled separately via _syncRoleWithAdminPolicy.
+          userModel = UserModel(
+            uid: user.uid,
+            email: user.email ?? email,
+            name: user.displayName ?? 'User',
+            role: 'user', // ✅ FIXED: Default to 'user', not 'admin'
+            createdAt: DateTime.now(),
+            lastLogin: DateTime.now(),
+          );
+          await _firestore
+              .collection('users')
+              .doc(user.uid)
+              .set(userModel.toMap());
         } else {
-            rethrow;
+          rethrow;
         }
       }
       debugPrint('✅ User data fetched: ${userModel.email}');
@@ -190,7 +202,8 @@ class AuthService {
   // ============================================
   Future<UserModel> signInWithGoogle() async {
     try {
-      debugPrint('🔥 Starting Google sign in (platform: ${kIsWeb ? "web" : "mobile"})...');
+      debugPrint(
+          '🔥 Starting Google sign in (platform: ${kIsWeb ? "web" : "mobile"})...');
 
       UserCredential result;
 
@@ -199,7 +212,8 @@ class AuthService {
         final googleProvider = GoogleAuthProvider();
         googleProvider.addScope('email');
         googleProvider.addScope('profile');
-        
+        googleProvider.setCustomParameters({'prompt': 'select_account'});
+
         result = await _auth.signInWithPopup(googleProvider);
         debugPrint('✅ Firebase Web popup sign-in successful');
       } else {
@@ -211,6 +225,12 @@ class AuthService {
 
         final GoogleSignInAuthentication googleAuth =
             await googleUser.authentication;
+
+        if (googleAuth.idToken == null || googleAuth.idToken!.isEmpty) {
+          throw AuthException(
+            'Google sign in failed: missing ID token. Check Firebase SHA keys.',
+          );
+        }
 
         final credential = GoogleAuthProvider.credential(
           accessToken: googleAuth.accessToken,
@@ -226,8 +246,7 @@ class AuthService {
       debugPrint('✅ Firebase Auth successful: ${user.uid}');
 
       // Check if user document exists in Firestore
-      final userDoc =
-          await _firestore.collection('users').doc(user.uid).get();
+      final userDoc = await _firestore.collection('users').doc(user.uid).get();
 
       if (!userDoc.exists) {
         debugPrint('📝 Creating new user document...');
@@ -279,8 +298,7 @@ class AuthService {
   /// Firestore `settings/access` field `adminEmails` (list of strings), lowercased.
   Future<Set<String>> _adminAllowlistEmailsLower() async {
     try {
-      final snap =
-          await _firestore.collection('settings').doc('access').get();
+      final snap = await _firestore.collection('settings').doc('access').get();
       final raw = snap.data()?['adminEmails'];
       if (raw is List) {
         return raw
@@ -305,10 +323,11 @@ class AuthService {
     final emailLower = user.email.trim().toLowerCase();
     final bootstrap = AdminAccessConfig.shouldBootstrapAdminRole(emailLower);
     final onList = allow.contains(emailLower);
-    final shouldBeAdmin = bootstrap || 
-        onList || 
-        (allow.isEmpty && user.isAdmin) || 
-        ['admin@agrimore.com', 'admin@admin.com', 'agrimore@gmail.com'].contains(emailLower);
+    final shouldBeAdmin = bootstrap ||
+        onList ||
+        (allow.isEmpty && user.isAdmin) ||
+        ['admin@agrimore.com', 'admin@admin.com', 'agrimore@gmail.com']
+            .contains(emailLower);
 
     if (shouldBeAdmin) {
       if (!user.isAdmin) {
@@ -601,15 +620,18 @@ class AuthService {
       case 'requires-recent-login':
         return AuthException('Please re-authenticate to continue');
       case 'invalid-credential':
-        return InvalidCredentialsException('Invalid login or password. (Note: If you signed up with Google previously, please use "Continue with Google")');
+        return InvalidCredentialsException(
+            'Invalid login or password. (Note: If you signed up with Google previously, please use "Continue with Google")');
       case 'account-exists-with-different-credential':
-        return AuthException('Account exists with different sign-in method. Try Google Sign-In.');
+        return AuthException(
+            'Account exists with different sign-in method. Try Google Sign-In.');
       case 'popup-closed-by-user':
         return AuthException('Sign-in popup was closed. Please try again.');
       case 'cancelled-popup-request':
         return AuthException('Sign-in cancelled. Please try again.');
       case 'popup-blocked':
-        return AuthException('Pop-up blocked by browser. Please allow pop-ups for this site.');
+        return AuthException(
+            'Pop-up blocked by browser. Please allow pop-ups for this site.');
       case 'network-request-failed':
         return AuthException('Network error. Check connection');
       default:

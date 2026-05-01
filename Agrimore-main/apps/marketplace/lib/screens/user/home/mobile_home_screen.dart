@@ -53,8 +53,6 @@ class _MobileHomeScreenState extends State<MobileHomeScreen>
     });
   }
 
-
-
   void _initAnimations() {
     _fabAnimationController = AnimationController(
       vsync: this,
@@ -85,14 +83,14 @@ class _MobileHomeScreenState extends State<MobileHomeScreen>
 
   void _onScroll() {
     final offset = _scrollController.offset;
-    
+
     // Collapse app bar when scrolled past 50 pixels
     if (offset > 50 && !_isAppBarCollapsed) {
       setState(() => _isAppBarCollapsed = true);
     } else if (offset <= 50 && _isAppBarCollapsed) {
       setState(() => _isAppBarCollapsed = false);
     }
-    
+
     // FAB visibility
     if (offset > 800 && !_showBackToTop) {
       setState(() => _showBackToTop = true);
@@ -104,18 +102,23 @@ class _MobileHomeScreenState extends State<MobileHomeScreen>
     }
   }
 
-  Future<void> _loadData({bool showIndicator = true, bool forceRefresh = false}) async {
+  Future<void> _loadData(
+      {bool showIndicator = true, bool forceRefresh = false}) async {
     if (!mounted) return;
     if (_isRefreshing && showIndicator) return;
 
     // ✅ OPTIMIZATION: Skip if data already loaded (unless force refresh)
     if (!forceRefresh) {
-      final productProvider = Provider.of<ProductProvider>(context, listen: false);
-      final categoryProvider = Provider.of<CategoryProvider>(context, listen: false);
-      final bannerProvider = Provider.of<BannerProvider>(context, listen: false);
-      
-      if (productProvider.hasProducts && 
-          (categoryProvider.hasCategories || categoryProvider.categories.isNotEmpty) && 
+      final productProvider =
+          Provider.of<ProductProvider>(context, listen: false);
+      final categoryProvider =
+          Provider.of<CategoryProvider>(context, listen: false);
+      final bannerProvider =
+          Provider.of<BannerProvider>(context, listen: false);
+
+      if (productProvider.hasProducts &&
+          (categoryProvider.hasCategories ||
+              categoryProvider.categories.isNotEmpty) &&
           bannerProvider.banners.isNotEmpty) {
         debugPrint('📦 Home data already cached, skipping reload...');
         // Still trigger animations if first time showing
@@ -130,15 +133,21 @@ class _MobileHomeScreenState extends State<MobileHomeScreen>
     _lastRefreshTime = DateTime.now();
 
     // Load all providers in parallel - don't block UI
-    final settingsProvider = Provider.of<SettingsProvider>(context, listen: false);
+    final settingsProvider =
+        Provider.of<SettingsProvider>(context, listen: false);
     final location = settingsProvider.selectedLocation;
 
     Future.wait([
-      Provider.of<ProductProvider>(context, listen: false).loadProducts(forceRefresh: forceRefresh, location: location),
-      Provider.of<CategoryProvider>(context, listen: false).loadCategories(forceRefresh: forceRefresh),
-      Provider.of<BannerProvider>(context, listen: false).loadBanners(forceRefresh: forceRefresh),
-      Provider.of<CategorySectionProvider>(context, listen: false).loadSections(forceRefresh: forceRefresh),
-      Provider.of<SectionBannerProvider>(context, listen: false).loadBanners(forceRefresh: forceRefresh),
+      Provider.of<ProductProvider>(context, listen: false)
+          .loadProducts(forceRefresh: forceRefresh, location: location),
+      Provider.of<CategoryProvider>(context, listen: false)
+          .loadCategories(forceRefresh: forceRefresh),
+      Provider.of<BannerProvider>(context, listen: false)
+          .loadBanners(forceRefresh: forceRefresh),
+      Provider.of<CategorySectionProvider>(context, listen: false)
+          .loadSections(forceRefresh: forceRefresh),
+      Provider.of<SectionBannerProvider>(context, listen: false)
+          .loadBanners(forceRefresh: forceRefresh),
     ]).then((_) {
       if (mounted) {
         setState(() => _isRefreshing = false);
@@ -267,8 +276,9 @@ class _MobileHomeScreenState extends State<MobileHomeScreen>
     final isDark = themeProvider.isDarkMode;
 
     return Scaffold(
-      backgroundColor:
-          isDark ? const Color(0xFF121212) : AppColors.primary.withValues(alpha: 0.05),
+      backgroundColor: isDark
+          ? const Color(0xFF121212)
+          : AppColors.primary.withValues(alpha: 0.05),
       appBar: PreferredSize(
         preferredSize: Size.fromHeight(_isAppBarCollapsed ? 100 : 170),
         child: HomeAppBar(isCollapsed: _isAppBarCollapsed),
@@ -277,28 +287,32 @@ class _MobileHomeScreenState extends State<MobileHomeScreen>
         builder: (context, productProvider, categoryProvider, child) {
           // ✅ ENHANCED: Skip shimmer if we have cached products
           // Only show shimmer on first load with NO data
-          final hasContent = productProvider.hasProducts || categoryProvider.hasCategories;
+          final hasContent =
+              productProvider.hasProducts || categoryProvider.hasCategories;
           if (productProvider.isLoading && !_isRefreshing && !hasContent) {
             return _buildShimmerLoading(isDark);
           }
-          
+
           // ✅ Start animations immediately if we have cached content
-          if (hasContent && _staggerAnimationController.status == AnimationStatus.dismissed) {
+          if (hasContent &&
+              _staggerAnimationController.status == AnimationStatus.dismissed) {
             _staggerAnimationController.forward();
           }
 
           // ✅ Show location selector if no location is set
-            WidgetsBinding.instance.addPostFrameCallback((_) {
-              final settingsProvider = Provider.of<SettingsProvider>(context, listen: false);
-              if (settingsProvider.selectedLocation == null || settingsProvider.selectedLocation!.isEmpty) {
-                _showAutoLocationBottomSheet(context, settingsProvider);
-              }
-            });
+          WidgetsBinding.instance.addPostFrameCallback((_) {
+            final settingsProvider =
+                Provider.of<SettingsProvider>(context, listen: false);
+            if (settingsProvider.selectedLocation == null ||
+                settingsProvider.selectedLocation!.isEmpty) {
+              _showAutoLocationBottomSheet(context, settingsProvider);
+            }
+          });
 
           return RefreshIndicator(
             onRefresh: () async {
               HapticFeedback.lightImpact();
-              await _loadData(forceRefresh: true);  // ✅ Force Firebase fetch
+              await _loadData(forceRefresh: true); // ✅ Force Firebase fetch
             },
             color: isDark ? AppColors.primaryLight : AppColors.primary,
             backgroundColor: isDark ? const Color(0xFF1E1E1E) : Colors.white,
@@ -367,7 +381,8 @@ class _MobileHomeScreenState extends State<MobileHomeScreen>
                 SliverToBoxAdapter(
                   child: _buildAnimatedBoxWrapper(
                     index: 8,
-                    child: _buildProductSections(productProvider, categoryProvider),
+                    child: _buildProductSections(
+                        productProvider, categoryProvider),
                   ),
                 ),
 
@@ -505,13 +520,14 @@ class _MobileHomeScreenState extends State<MobileHomeScreen>
     );
   }
 
-
-
   // --- Product Sections by Category (Blinkit-style) ---
-  Widget _buildProductSections(ProductProvider productProvider, CategoryProvider categoryProvider) {
-    final categories = categoryProvider.categories.where((c) => c.isActive).toList();
-    final allProducts = productProvider.products.where((p) => p.isActive).toList();
-    
+  Widget _buildProductSections(
+      ProductProvider productProvider, CategoryProvider categoryProvider) {
+    final categories =
+        categoryProvider.categories.where((c) => c.isActive).toList();
+    final allProducts =
+        productProvider.products.where((p) => p.isActive).toList();
+
     // Group products by category
     final Map<String, List<ProductModel>> productsByCategory = {};
     for (final product in allProducts) {
@@ -526,24 +542,25 @@ class _MobileHomeScreenState extends State<MobileHomeScreen>
       productsByCategory.putIfAbsent(key, () => []);
       productsByCategory[key]!.add(product);
     }
-    
+
     // Build sections for categories with products (max 8 sections)
     List<Widget> sections = [];
     int sectionCount = 0;
     const int maxSections = 8;
     const int productsPerSection = 10;
-    
+
     for (final category in categories) {
       if (sectionCount >= maxSections) break;
-      
+
       final categoryProducts = productsByCategory[category.id] ?? [];
       if (categoryProducts.isEmpty) continue;
-      
+
       sectionCount++;
-      
+
       // Limit products per section
-      final displayProducts = categoryProducts.take(productsPerSection).toList();
-      
+      final displayProducts =
+          categoryProducts.take(productsPerSection).toList();
+
       sections.add(
         ProductSectionWidget(
           sectionTitle: category.name,
@@ -557,13 +574,13 @@ class _MobileHomeScreenState extends State<MobileHomeScreen>
           },
         ),
       );
-      
+
       // Add section banner carousel only after 5th section
       if (sectionCount == 5) {
         sections.add(const SectionBannerCarousel(afterSection: 5));
       }
     }
-    
+
     return Column(children: sections);
   }
 
@@ -617,16 +634,18 @@ class _MobileHomeScreenState extends State<MobileHomeScreen>
           onPressed: _scrollToTop,
           backgroundColor: isDark ? AppColors.primaryLight : AppColors.primary,
           elevation: 4,
-          child: const Icon(Icons.keyboard_arrow_up_rounded, color: Colors.white, size: 20),
+          child: const Icon(Icons.keyboard_arrow_up_rounded,
+              color: Colors.white, size: 20),
         ),
       ),
     );
   }
 
   // --- Blinkit Style Auto Location Detect ---
-  void _showAutoLocationBottomSheet(BuildContext context, SettingsProvider settingsProvider) {
+  void _showAutoLocationBottomSheet(
+      BuildContext context, SettingsProvider settingsProvider) {
     if (!mounted) return;
-    
+
     // Prevent multiple dialogs
     if (ModalRoute.of(context)?.isCurrent != true) return;
 
@@ -637,7 +656,10 @@ class _MobileHomeScreenState extends State<MobileHomeScreen>
       isScrollControlled: true,
       backgroundColor: Colors.transparent,
       builder: (BuildContext bottomSheetContext) {
-        return _AutoLocationSheet(settingsProvider: settingsProvider, parentContext: context, onLoadData: () => _loadData(forceRefresh: true));
+        return _AutoLocationSheet(
+            settingsProvider: settingsProvider,
+            parentContext: context,
+            onLoadData: () => _loadData(forceRefresh: true));
       },
     );
   }
@@ -671,7 +693,14 @@ class _AutoLocationSheetState extends State<_AutoLocationSheet> {
   }
 
   // Define serviceable cities
-  final List<String> _serviceableCities = ['chennai', 'madurai', 'theni', 'coimbatore', 'bengaluru', 'bangalore'];
+  final List<String> _serviceableCities = [
+    'chennai',
+    'madurai',
+    'theni',
+    'coimbatore',
+    'bengaluru',
+    'bangalore'
+  ];
 
   Future<void> _detectLocation() async {
     try {
@@ -687,7 +716,7 @@ class _AutoLocationSheetState extends State<_AutoLocationSheet> {
           throw Exception('Location permissions are denied');
         }
       }
-      
+
       if (permission == LocationPermission.deniedForever) {
         throw Exception('Location permissions are permanently denied.');
       }
@@ -697,21 +726,33 @@ class _AutoLocationSheetState extends State<_AutoLocationSheet> {
         timeLimit: const Duration(seconds: 10),
       );
 
-      List<Placemark> placemarks = await placemarkFromCoordinates(position.latitude, position.longitude);
-      
+      List<Placemark> placemarks =
+          await placemarkFromCoordinates(position.latitude, position.longitude);
+
       if (placemarks.isNotEmpty) {
         Placemark place = placemarks[0];
-        String city = place.locality ?? place.subAdministrativeArea ?? place.administrativeArea ?? 'Unknown';
-        
+        final city = place.locality ??
+            place.subAdministrativeArea ??
+            place.administrativeArea ??
+            'Unknown';
+        final exactLocation = [
+          place.subLocality,
+          place.locality,
+          place.subAdministrativeArea,
+          place.administrativeArea,
+        ].where((part) => part != null && part.trim().isNotEmpty).join(', ');
+        final displayLocation = exactLocation.isNotEmpty ? exactLocation : city;
+
         setState(() {
-          _detectedCity = city;
+          _detectedCity = displayLocation;
           _isDetecting = false;
-          _isServiceable = _serviceableCities.any((c) => city.toLowerCase().contains(c));
+          _isServiceable =
+              _serviceableCities.any((c) => city.toLowerCase().contains(c));
         });
 
         // Automatically set and proceed if serviceable
         if (_isServiceable) {
-          await widget.settingsProvider.changeLocation(city);
+          await widget.settingsProvider.changeLocation(displayLocation);
           await Future.delayed(const Duration(seconds: 2));
           if (mounted) {
             Navigator.pop(context);
@@ -742,7 +783,7 @@ class _AutoLocationSheetState extends State<_AutoLocationSheet> {
   @override
   Widget build(BuildContext context) {
     final colorScheme = Theme.of(context).colorScheme;
-    
+
     return Container(
       padding: const EdgeInsets.all(24),
       decoration: BoxDecoration(
@@ -762,7 +803,6 @@ class _AutoLocationSheetState extends State<_AutoLocationSheet> {
                 borderRadius: BorderRadius.circular(2),
               ),
             ),
-            
             if (_isDetecting) ...[
               const CircularProgressIndicator(),
               const SizedBox(height: 24),
@@ -776,7 +816,8 @@ class _AutoLocationSheetState extends State<_AutoLocationSheet> {
                 style: TextStyle(color: colorScheme.onSurfaceVariant),
               ),
             ] else if (_errorMessage.isNotEmpty) ...[
-              Icon(Icons.location_off_rounded, size: 48, color: colorScheme.error),
+              Icon(Icons.location_off_rounded,
+                  size: 48, color: colorScheme.error),
               const SizedBox(height: 16),
               const Text(
                 'Location Error',
@@ -791,11 +832,13 @@ class _AutoLocationSheetState extends State<_AutoLocationSheet> {
               const SizedBox(height: 24),
               _buildManualSelection(colorScheme),
             ] else if (_isServiceable) ...[
-              Icon(Icons.check_circle_rounded, size: 56, color: Colors.green.shade600),
+              Icon(Icons.check_circle_rounded,
+                  size: 56, color: Colors.green.shade600),
               const SizedBox(height: 16),
               Text(
                 'Delivery available in $_detectedCity!',
-                style: const TextStyle(fontSize: 20, fontWeight: FontWeight.bold),
+                style:
+                    const TextStyle(fontSize: 20, fontWeight: FontWeight.bold),
                 textAlign: TextAlign.center,
               ),
               const SizedBox(height: 8),
@@ -805,11 +848,13 @@ class _AutoLocationSheetState extends State<_AutoLocationSheet> {
               ),
               const SizedBox(height: 16),
             ] else ...[
-              Icon(Icons.error_outline_rounded, size: 56, color: Colors.orange.shade600),
+              Icon(Icons.error_outline_rounded,
+                  size: 56, color: Colors.orange.shade600),
               const SizedBox(height: 16),
               Text(
                 'Sorry, not serviceable yet in $_detectedCity',
-                style: const TextStyle(fontSize: 20, fontWeight: FontWeight.bold),
+                style:
+                    const TextStyle(fontSize: 20, fontWeight: FontWeight.bold),
                 textAlign: TextAlign.center,
               ),
               const SizedBox(height: 8),

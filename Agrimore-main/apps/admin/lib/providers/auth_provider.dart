@@ -108,8 +108,15 @@ class AuthProvider with ChangeNotifier {
       final userModel = await _authService.restoreSession();
 
       if (userModel != null) {
-        _currentUser = userModel;
-        debugPrint('✅ Session restored: ${userModel.email}');
+        if (userModel.role != 'admin') {
+          debugPrint('⛔ Restored non-admin session blocked: ${userModel.email}');
+          await _firebaseAuth.signOut();
+          _currentUser = null;
+          _error = 'Access denied. You are not an admin.';
+        } else {
+          _currentUser = userModel;
+          debugPrint('✅ Session restored: ${userModel.email}');
+        }
       } else {
         debugPrint('⚠️ No session to restore');
         _currentUser = null;

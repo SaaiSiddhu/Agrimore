@@ -61,6 +61,7 @@ dependencies:
 
   # Utilities
   package_info_plus: ^8.1.2
+  uuid: ^4.5.1
 
   # UI Components
   flutter_typeahead: ^5.2.0
@@ -98,7 +99,7 @@ flutter:
 flutter_launcher_icons:
   android: true
   ios: true
-  image_path: "assets/icons/admin_icon.png"
+  image_path: "assets/icons/admin_logo.png"
   adaptive_icon_background: "#1565C0"
-  adaptive_icon_foreground: "assets/icons/admin_icon.png"
+  adaptive_icon_foreground: "assets/icons/admin_logo.png"
   remove_alpha_ios: true

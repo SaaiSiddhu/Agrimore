@@ -4,6 +4,18 @@ import axios from "axios";
 import Razorpay from "razorpay";
 import { log } from "../common/helpers";
 
+function getRazorpayCredentials(): { keyId: string; keySecret: string } {
+  const config =
+    typeof (functions as any).config === "function"
+      ? (functions as any).config()
+      : {};
+  return {
+    keyId: process.env.RAZORPAY_KEY_ID || config.razorpay?.key_id || "",
+    keySecret:
+      process.env.RAZORPAY_KEY_SECRET || config.razorpay?.key_secret || "",
+  };
+}
+
 interface CreateOrderData {
   amount: number;
   currency?: string;
@@ -12,9 +24,7 @@ interface CreateOrderData {
 }
 
 export const createRazorpayOrder = functions.https.onCall(
-  async (request) => {
-    const data = request.data as CreateOrderData;
-    const context = request;
+  async (data: CreateOrderData, context) => {
     try {
       if (!context.auth) {
         throw new functions.https.HttpsError(
@@ -32,8 +42,8 @@ export const createRazorpayOrder = functions.https.onCall(
         );
       }
 
-      const RAZORPAY_KEY_ID = "rzp_live_ST1fL8IpN0e24U";
-      const RAZORPAY_KEY_SECRET = "i0bLdO15k6K8iK5B989DKc0y";
+      const { keyId: RAZORPAY_KEY_ID, keySecret: RAZORPAY_KEY_SECRET } =
+        getRazorpayCredentials();
 
       if (!RAZORPAY_KEY_ID || !RAZORPAY_KEY_SECRET) {
         throw new functions.https.HttpsError(
@@ -102,15 +112,20 @@ interface RazorpayPayment {
   [key: string]: any;
 }
 
-export const verifyRazorpayPayment = functions.https.onCall(async (request) => {
-  const data = request.data;
+export const verifyRazorpayPayment = functions.https.onCall(async (data, context) => {
   try {
+    if (!context.auth) {
+      throw new functions.https.HttpsError(
+        "unauthenticated",
+        "User must be authenticated to verify a payment"
+      );
+    }
     const { paymentId, orderId, signature, upiId } = data;
     if (!paymentId || !orderId || !signature)
       throw new functions.https.HttpsError("invalid-argument", "Missing Razorpay verification parameters");
 
-    const RAZORPAY_KEY_ID = "rzp_live_ST1fL8IpN0e24U";
-    const RAZORPAY_KEY_SECRET = "i0bLdO15k6K8iK5B989DKc0y";
+    const { keyId: RAZORPAY_KEY_ID, keySecret: RAZORPAY_KEY_SECRET } =
+      getRazorpayCredentials();
     if (!RAZORPAY_KEY_ID || !RAZORPAY_KEY_SECRET)
       throw new functions.https.HttpsError("failed-precondition", "Razorpay credentials not configured");
 

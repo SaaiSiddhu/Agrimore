@@ -1,17 +1,16 @@
 import * as functions from "firebase-functions/v1";
 import * as admin from "firebase-admin";
 
-export const splitCartIntoOrders = functions.https.onCall(async (request) => {
-  const data = request.data;
+export const splitCartIntoOrders = functions.https.onCall(async (data, context) => {
   // Ensure the user is authenticated
-  if (!request.auth) {
+  if (!context.auth) {
     throw new functions.https.HttpsError(
       "unauthenticated",
       "User must be authenticated to place an order."
     );
   }
 
-  const userId = request.auth.uid;
+  const userId = context.auth.uid;
   const { cartItems, shippingAddress, paymentMethod, paymentDetails } = data;
 
   if (!cartItems || !Array.isArray(cartItems) || cartItems.length === 0) {

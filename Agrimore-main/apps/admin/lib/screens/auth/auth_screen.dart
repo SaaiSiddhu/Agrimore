@@ -202,14 +202,10 @@ class _AuthScreenState extends State<AuthScreen>
           await Future.delayed(const Duration(milliseconds: 600));
           if (mounted) context.go(AdminRoutes.dashboard);
         } else {
-          SnackbarHelper.showSuccess(context, '✅ Welcome!');
-          await Future.delayed(const Duration(milliseconds: 600));
-          if (!mounted) return;
-          if (isNewUser || !auth.isSeller) {
-             context.go(AdminRoutes.sellerApply);
-          } else {
-             context.go(AdminRoutes.sellerPanel);
-          }
+          setState(() {
+            _errorMessage = auth.error ??
+                'Access denied. Please use the Seller, Delivery, or Customer app.';
+          });
         }
       } else {
         HapticFeedback.vibrate();
@@ -852,14 +848,11 @@ class _AuthScreenState extends State<AuthScreen>
                     await Future.delayed(const Duration(milliseconds: 600));
                     if (mounted) context.go(AdminRoutes.dashboard);
                   } else {
-                    SnackbarHelper.showSuccess(context, '✅ Welcome!');
-                    await Future.delayed(const Duration(milliseconds: 600));
-                    if (!mounted) return;
-                    if (!auth.isSeller) {
-                       context.go(AdminRoutes.sellerApply);
-                    } else {
-                       context.go(AdminRoutes.sellerPanel);
-                    }
+                    setState(() {
+                      _errorMessage = auth.error ??
+                          'Access denied. Please use the Seller, Delivery, or Customer app.';
+                      _isLoading = false;
+                    });
                   }
                 } else {
                   setState(() {

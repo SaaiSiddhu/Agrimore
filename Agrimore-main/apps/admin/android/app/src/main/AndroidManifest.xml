@@ -14,7 +14,6 @@
     <!-- Location Permissions (For Google Maps & Address Selection) -->
     <uses-permission android:name="android.permission.ACCESS_FINE_LOCATION"/>
     <uses-permission android:name="android.permission.ACCESS_COARSE_LOCATION"/>
-    <uses-permission android:name="android.permission.ACCESS_BACKGROUND_LOCATION"/>
     
     <!-- Camera & Storage (For Profile Pictures & Product Images) -->
     <uses-permission android:name="android.permission.CAMERA"/>
@@ -35,8 +34,6 @@
     <!-- Wake Lock (For Firebase Messaging) -->
     <uses-permission android:name="android.permission.WAKE_LOCK"/>
     
-    <!-- ✅ Full Screen Intent for Notifications -->
-    <uses-permission android:name="android.permission.USE_FULL_SCREEN_INTENT"/>
     
     <!-- Biometric Authentication -->
     <uses-permission android:name="android.permission.USE_BIOMETRIC"/>
@@ -115,7 +112,7 @@
                 <category android:name="android.intent.category.LAUNCHER"/>
             </intent-filter>
             
-            <!-- ✅ CRITICAL: Notification Click Action -->
+            <!-- âœ… CRITICAL: Notification Click Action -->
             <intent-filter>
                 <action android:name="FLUTTER_NOTIFICATION_CLICK"/>
                 <category android:name="android.intent.category.DEFAULT"/>
@@ -160,7 +157,7 @@
                 <data android:scheme="agrimore"/>
             </intent-filter>
             
-            <!-- ✅ Product Deep Link Pattern -->
+            <!-- âœ… Product Deep Link Pattern -->
             <intent-filter android:autoVerify="true">
                 <action android:name="android.intent.action.VIEW"/>
                 <category android:name="android.intent.category.DEFAULT"/>
@@ -176,7 +173,7 @@
                     android:pathPrefix="/product"/>
             </intent-filter>
             
-            <!-- ✅ Order Deep Link Pattern -->
+            <!-- âœ… Order Deep Link Pattern -->
             <intent-filter android:autoVerify="true">
                 <action android:name="android.intent.action.VIEW"/>
                 <category android:name="android.intent.category.DEFAULT"/>
@@ -197,7 +194,7 @@
                     android:pathPrefix="/order"/>
             </intent-filter>
             
-            <!-- ✅ Category Deep Link Pattern -->
+            <!-- âœ… Category Deep Link Pattern -->
             <intent-filter android:autoVerify="true">
                 <action android:name="android.intent.action.VIEW"/>
                 <category android:name="android.intent.category.DEFAULT"/>
@@ -262,17 +259,17 @@
             </intent-filter>
         </service>
         
-        <!-- ✅ Default Notification Icon -->
+        <!-- âœ… Default Notification Icon -->
         <meta-data
             android:name="com.google.firebase.messaging.default_notification_icon"
             android:resource="@mipmap/ic_launcher"/>
         
-        <!-- ✅ Default Notification Color -->
+        <!-- âœ… Default Notification Color -->
         <meta-data
             android:name="com.google.firebase.messaging.default_notification_color"
             android:resource="@color/colorPrimary"/>
         
-        <!-- ✅ Default Notification Channel -->
+        <!-- âœ… Default Notification Channel -->
         <meta-data
             android:name="com.google.firebase.messaging.default_notification_channel_id"
             android:value="default_channel"/>

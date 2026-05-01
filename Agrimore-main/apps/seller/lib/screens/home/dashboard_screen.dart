@@ -7,6 +7,7 @@ import '../../providers/seller_order_provider.dart';
 import 'package:intl/intl.dart';
 import 'add_product_screen.dart';
 import '../orders/seller_orders_screen.dart';
+import '../products/seller_products_screen.dart';
 
 class DashboardScreen extends StatefulWidget {
   const DashboardScreen({super.key});
@@ -65,8 +66,9 @@ class _DashboardScreenState extends State<DashboardScreen> {
                       ),
                       TextButton(
                         onPressed: () {
-                          ScaffoldMessenger.of(context).showSnackBar(
-                            const SnackBar(content: Text('All products view coming soon!')),
+                          Navigator.push(
+                            context,
+                            MaterialPageRoute(builder: (_) => const SellerProductsScreen()),
                           );
                         },
                         child: const Text('View All', style: TextStyle(color: Color(0xFF2D7D3C))),
@@ -135,11 +137,10 @@ class _DashboardScreenState extends State<DashboardScreen> {
       actions: [
         IconButton(
           icon: const Icon(Icons.notifications_outlined, color: Colors.black87),
-          onPressed: () {
-            ScaffoldMessenger.of(context).showSnackBar(
-              const SnackBar(content: Text('Notifications coming soon!')),
-            );
-          },
+          onPressed: () => _showInfoSheet(
+            'Notifications',
+            'Order alerts, low-stock reminders, and account updates are available from your Orders and Products sections.',
+          ),
         ),
         IconButton(
           icon: const Icon(Icons.logout, color: Colors.black87),
@@ -283,16 +284,16 @@ class _DashboardScreenState extends State<DashboardScreen> {
             Navigator.push(context, MaterialPageRoute(builder: (_) => const SellerOrdersScreen()));
           }),
           _buildActionItem('Flash Sale', Icons.flash_on, Colors.orange, () {
-            ScaffoldMessenger.of(context).showSnackBar(const SnackBar(content: Text('Flash Sales feature coming soon!')));
+            _showInfoSheet('Flash Sale', 'Create a discounted product by editing the MRP and sale price from Products.');
           }),
           _buildActionItem('Reviews', Icons.star_rate_rounded, Colors.amber, () {
-            ScaffoldMessenger.of(context).showSnackBar(const SnackBar(content: Text('Reviews feature coming soon!')));
+            _showInfoSheet('Reviews', 'Customer review summaries appear on delivered order details and product cards.');
           }),
           _buildActionItem('Pricing Insights', Icons.insights, Colors.indigo, () {
-            ScaffoldMessenger.of(context).showSnackBar(const SnackBar(content: Text('Pricing Insights coming soon!')));
+            _showInfoSheet('Pricing Insights', 'Use stock, MRP, and sale price from Products to tune your selling price.');
           }),
           _buildActionItem('AI Assistant', Icons.auto_awesome, Colors.purple, () {
-            ScaffoldMessenger.of(context).showSnackBar(const SnackBar(content: Text('AI Assistant coming soon!')));
+            Navigator.push(context, MaterialPageRoute(builder: (_) => const AddProductScreen()));
           }),
         ],
       ),
@@ -319,6 +320,35 @@ class _DashboardScreenState extends State<DashboardScreen> {
             ),
             const SizedBox(height: 8),
             Text(label, style: const TextStyle(fontSize: 12, fontWeight: FontWeight.w500)),
+          ],
+        ),
+      ),
+    );
+  }
+
+  void _showInfoSheet(String title, String message) {
+    showModalBottomSheet(
+      context: context,
+      shape: const RoundedRectangleBorder(
+        borderRadius: BorderRadius.vertical(top: Radius.circular(18)),
+      ),
+      builder: (_) => Padding(
+        padding: const EdgeInsets.all(24),
+        child: Column(
+          mainAxisSize: MainAxisSize.min,
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            Text(title, style: const TextStyle(fontSize: 20, fontWeight: FontWeight.bold)),
+            const SizedBox(height: 12),
+            Text(message, style: const TextStyle(height: 1.4)),
+            const SizedBox(height: 20),
+            SizedBox(
+              width: double.infinity,
+              child: FilledButton(
+                onPressed: () => Navigator.pop(context),
+                child: const Text('Done'),
+              ),
+            ),
           ],
         ),
       ),

@@ -15,21 +15,43 @@ class _ReviewManagementScreenState extends State<ReviewManagementScreen> {
   int _filterStars = 0; // 0 = all
   String _sortBy = 'newest';
 
-  Query _buildQuery() {
-    Query q = _firestore.collectionGroup('reviews');
-    if (_filterStars > 0) {
-      q = q.where('rating', isEqualTo: _filterStars);
+  Query _buildQuery() => _firestore.collectionGroup('reviews').limit(200);
+
+  List<QueryDocumentSnapshot> _filterAndSortReviews(List<QueryDocumentSnapshot> docs) {
+    final filtered = docs.where((doc) {
+      if (_filterStars == 0) return true;
+      final data = doc.data() as Map<String, dynamic>;
+      return (data['rating'] as num?)?.toInt() == _filterStars;
+    }).toList();
+
+    DateTime createdAt(QueryDocumentSnapshot doc) {
+      final data = doc.data() as Map<String, dynamic>;
+      final raw = data['createdAt'];
+      if (raw is Timestamp) return raw.toDate();
+      if (raw is DateTime) return raw;
+      if (raw is String) return DateTime.tryParse(raw) ?? DateTime.fromMillisecondsSinceEpoch(0);
+      return DateTime.fromMillisecondsSinceEpoch(0);
     }
-    if (_sortBy == 'newest') {
-      q = q.orderBy('createdAt', descending: true);
-    } else if (_sortBy == 'oldest') {
-      q = q.orderBy('createdAt', descending: false);
-    } else if (_sortBy == 'highest') {
-      q = q.orderBy('rating', descending: true);
-    } else {
-      q = q.orderBy('rating', descending: false);
+
+    int rating(QueryDocumentSnapshot doc) {
+      final data = doc.data() as Map<String, dynamic>;
+      return (data['rating'] as num?)?.toInt() ?? 0;
     }
-    return q.limit(50);
+
+    filtered.sort((a, b) {
+      switch (_sortBy) {
+        case 'oldest':
+          return createdAt(a).compareTo(createdAt(b));
+        case 'highest':
+          return rating(b).compareTo(rating(a));
+        case 'lowest':
+          return rating(a).compareTo(rating(b));
+        case 'newest':
+        default:
+          return createdAt(b).compareTo(createdAt(a));
+      }
+    });
+    return filtered.take(50).toList();
   }
 
   void _showFilterSheet() {
@@ -132,7 +154,8 @@ class _ReviewManagementScreenState extends State<ReviewManagementScreen> {
           if (snapshot.connectionState == ConnectionState.waiting) {
             return const Center(child: CircularProgressIndicator());
           }
-          if (!snapshot.hasData || snapshot.data!.docs.isEmpty) {
+          final docs = snapshot.hasData ? _filterAndSortReviews(snapshot.data!.docs) : <QueryDocumentSnapshot>[];
+          if (docs.isEmpty) {
             return Center(
               child: Column(
                 mainAxisAlignment: MainAxisAlignment.center,
@@ -150,10 +173,10 @@ class _ReviewManagementScreenState extends State<ReviewManagementScreen> {
 
           return ListView.separated(
             padding: const EdgeInsets.all(16),
-            itemCount: snapshot.data!.docs.length,
+            itemCount: docs.length,
             separatorBuilder: (_, __) => const SizedBox(height: 12),
             itemBuilder: (context, index) {
-              final doc = snapshot.data!.docs[index];
+              final doc = docs[index];
               final data = doc.data() as Map<String, dynamic>;
               final rating = (data['rating'] as num?)?.toInt() ?? 0;
               final comment = data['comment'] ?? '';

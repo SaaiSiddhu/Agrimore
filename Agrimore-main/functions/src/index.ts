@@ -36,6 +36,7 @@ export {
   verifyRazorpayPayment
 } from "./customer/payment";
 export { splitCartIntoOrders } from "./customer/cartSplitting";
+export { onOrderCreatedNotifications } from "./customer/orderNotifications";
 
 // ============================================
 // INVENTORY & STOCK ALERTS

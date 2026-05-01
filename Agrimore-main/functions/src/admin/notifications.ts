@@ -2,12 +2,48 @@ import * as functions from "firebase-functions/v1";
 import * as admin from "firebase-admin";
 import { log, NotificationData, validateNotificationData, createNotificationMessage } from "../common/helpers";
 
+const BOOTSTRAP_ADMIN_EMAILS = new Set([
+  "admin@agrimore.com",
+  "admin@admin.com",
+  "agrimore@gmail.com",
+]);
+
+async function requireAdmin(context: functions.https.CallableContext) {
+  if (!context.auth) {
+    throw new functions.https.HttpsError("unauthenticated", "User must be authenticated");
+  }
+
+  if (context.auth.token.admin === true) return;
+
+  const email = String(context.auth.token.email || "").trim().toLowerCase();
+  if (BOOTSTRAP_ADMIN_EMAILS.has(email)) {
+    await admin.firestore().collection("users").doc(context.auth.uid).set({
+      email,
+      role: "admin",
+      updatedAt: admin.firestore.FieldValue.serverTimestamp(),
+    }, { merge: true });
+    return;
+  }
+
+  const uid = context.auth.uid;
+  const userDoc = await admin.firestore().collection("users").doc(uid).get();
+  if (userDoc.data()?.role !== "admin") {
+    throw new functions.https.HttpsError("permission-denied", "Admin only");
+  }
+}
+
+function rethrowHttpsError(error: any): never {
+  if (error instanceof functions.https.HttpsError) {
+    throw error;
+  }
+  throw new functions.https.HttpsError("internal", error?.message || String(error));
+}
+
 export const sendBroadcastNotification = functions.https.onCall(
-  async (request) => {
-    const data = request.data as NotificationData;
-    const context = request;
+  async (data: NotificationData, context) => {
     try {
-      if (!context.auth) throw new functions.https.HttpsError("unauthenticated", "User must be authenticated");
+      await requireAdmin(context);
+      const senderUid = context.auth!.uid;
 
       const { title, body, imageUrl, actionUrl, type, productId } = data;
       const errors = validateNotificationData(title, body, imageUrl, actionUrl);
@@ -69,7 +105,8 @@ export const sendBroadcastNotification = functions.https.onCall(
         totalTokens: allTokens.length,
         successCount: totalSuccess,
         failureCount: totalFailure,
-        sentBy: context.auth.uid,
+        sentBy: senderUid,
+        timestamp: admin.firestore.FieldValue.serverTimestamp(),
         sentAt: admin.firestore.FieldValue.serverTimestamp(),
       });
 
@@ -77,17 +114,16 @@ export const sendBroadcastNotification = functions.https.onCall(
       return { success: true, successCount: totalSuccess, failureCount: totalFailure, totalUsers: usersSnapshot.size, totalTokens: allTokens.length };
     } catch (error: any) {
       log.error(`Broadcast error: ${error.message}`);
-      throw new functions.https.HttpsError("internal", error.message);
+      rethrowHttpsError(error);
     }
   }
 );
 
 export const sendNotificationToUser = functions.https.onCall(
-  async (request) => {
-    const data = request.data as NotificationData;
-    const context = request;
+  async (data: NotificationData, context) => {
     try {
-      if (!context.auth) throw new functions.https.HttpsError("unauthenticated", "User must be authenticated");
+      await requireAdmin(context);
+      const senderUid = context.auth!.uid;
 
       const { userId, title, body, imageUrl, actionUrl, type, orderId, orderNumber, orderStatus, productId } = data;
 
@@ -129,24 +165,25 @@ export const sendNotificationToUser = functions.https.onCall(
         notificationType: type || "general", orderId: orderId || null,
         orderNumber: orderNumber || null, orderStatus: orderStatus || null,
         productId: productId || null, successCount, failureCount,
-        sentBy: context.auth.uid, sentAt: admin.firestore.FieldValue.serverTimestamp(),
+        sentBy: senderUid,
+        timestamp: admin.firestore.FieldValue.serverTimestamp(),
+        sentAt: admin.firestore.FieldValue.serverTimestamp(),
       });
 
       log.success(`User ${userId}: ${successCount} sent, ${failureCount} failed`);
       return { success: true, successCount, failureCount };
     } catch (error: any) {
       log.error(`Single user error: ${error.message}`);
-      throw new functions.https.HttpsError("internal", error.message);
+      rethrowHttpsError(error);
     }
   }
 );
 
 export const sendOrderUpdateNotification = functions.https.onCall(
-  async (request) => {
-    const data = request.data as NotificationData;
-    const context = request;
+  async (data: NotificationData, context) => {
     try {
-      if (!context.auth) throw new functions.https.HttpsError("unauthenticated", "User must be authenticated");
+      await requireAdmin(context);
+      const senderUid = context.auth!.uid;
 
       const { orderId, orderNumber, orderStatus } = data;
       if (!orderId || !orderNumber || !orderStatus)
@@ -203,14 +240,16 @@ export const sendOrderUpdateNotification = functions.https.onCall(
       await admin.firestore().collection("notification_history").add({
         type: "order_update", orderId, orderNumber, userId, title, body: finalBody,
         orderStatus, notificationType: "order_update", successCount, failureCount,
-        sentBy: context.auth.uid, sentAt: admin.firestore.FieldValue.serverTimestamp(),
+        sentBy: senderUid,
+        timestamp: admin.firestore.FieldValue.serverTimestamp(),
+        sentAt: admin.firestore.FieldValue.serverTimestamp(),
       });
 
       log.success(`Order ${orderNumber}: ${successCount} ok, ${failureCount} fail`);
       return { success: true, successCount, failureCount };
     } catch (error: any) {
       log.error(`Order update error: ${error.message}`);
-      throw new functions.https.HttpsError("internal", error.message);
+      rethrowHttpsError(error);
     }
   }
 );
@@ -222,11 +261,9 @@ interface NotificationStats {
   byType: Record<string, { count: number; successful: number; failed: number }>;
 }
 
-export const getNotificationStats = functions.https.onCall(async (request) => {
-  // const data = request.data;
-  const context = request;
+export const getNotificationStats = functions.https.onCall(async (_data, context) => {
   try {
-    if (!context.auth) throw new functions.https.HttpsError("unauthenticated", "User must be authenticated");
+    await requireAdmin(context);
 
     const snapshot = await admin.firestore().collection("notification_history").get();
     const stats: NotificationStats = { totalNotifications: snapshot.size, totalSuccessful: 0, totalFailed: 0, byType: {} };
@@ -245,7 +282,7 @@ export const getNotificationStats = functions.https.onCall(async (request) => {
     return { success: true, stats };
   } catch (error: any) {
     log.error(`Stats error: ${error.message}`);
-    throw new functions.https.HttpsError("internal", error.message);
+    rethrowHttpsError(error);
   }
 });
 
@@ -311,7 +348,9 @@ export const onOrderStatusChanged = functions.firestore
       await admin.firestore().collection("notification_history").add({
         type: "order_update_auto", orderId, orderNumber, userId, title, body: finalBody,
         orderStatus, notificationType: "order_update", successCount, failureCount,
-        sentBy: "system", sentAt: admin.firestore.FieldValue.serverTimestamp(),
+        sentBy: "system",
+        timestamp: admin.firestore.FieldValue.serverTimestamp(),
+        sentAt: admin.firestore.FieldValue.serverTimestamp(),
       });
     }
   });

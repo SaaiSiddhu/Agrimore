@@ -40,7 +40,6 @@ class _SellerProductApprovalScreenState extends State<SellerProductApprovalScree
       body: StreamBuilder<QuerySnapshot>(
         stream: FirebaseFirestore.instance
             .collection('products')
-            .where('sellerId', isNotEqualTo: '') // Only fetch products that have a sellerId
             .snapshots(),
         builder: (context, snapshot) {
           if (snapshot.hasError) {

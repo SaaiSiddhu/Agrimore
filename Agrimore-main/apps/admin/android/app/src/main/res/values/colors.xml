@@ -12,7 +12,7 @@
          APP ICON BACKGROUND COLOR
          Used for adaptive icon on Android 8.0+
          ======================================== -->
-    <color name="ic_launcher_background">#2E7D32</color>
+    <color name="ic_launcher_background">#1565C0</color>
     
     <!-- ========================================
          AGRIMORE BRAND COLORS

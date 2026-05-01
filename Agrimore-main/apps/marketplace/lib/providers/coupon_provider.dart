@@ -32,14 +32,13 @@ class CouponProvider with ChangeNotifier {
       // ✅ FIXED: Simplified query - filter in-memory to avoid compound index requirement
       final querySnapshot = await _firestore
           .collection('coupons')
-          .where('isActive', isEqualTo: true)
           .get();
 
-      final now = DateTime.now();
       _availableCoupons = querySnapshot.docs
           .map((doc) => CouponModel.fromMap(doc.data(), doc.id))
-          .where((coupon) => coupon.isValid && coupon.validTo.isAfter(now))
+          .where((coupon) => coupon.isValid)
           .toList();
+      _availableCoupons.sort((a, b) => a.validTo.compareTo(b.validTo));
 
       debugPrint('✅ Fetched ${_availableCoupons.length} available coupons');
 
@@ -61,7 +60,6 @@ class CouponProvider with ChangeNotifier {
       final querySnapshot = await _firestore
           .collection('coupons')
           .where('code', isEqualTo: code.toUpperCase())
-          .where('isActive', isEqualTo: true)
           .limit(1)
           .get();
 

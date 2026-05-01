@@ -1,3 +1,5 @@
+import 'dart:math';
+
 import 'package:flutter/material.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'cart_item_model.dart';
@@ -7,6 +9,7 @@ import 'delivery_partner_model.dart';
 class OrderModel {
   final String id;
   final String userId;
+  final String? sellerId;
   final String orderNumber;
   final List<CartItemModel> items;
   final AddressModel deliveryAddress;
@@ -29,7 +32,7 @@ class OrderModel {
   final String? orderType; // 'One Time' or 'Auto Delivery'
   final String? autoFrequency; // 'Daily' or 'Weekly'
   final String? deliverySlot;
-  
+
   // ✅ NEW: Live tracking fields
   final String? deliveryPartnerId;
   final DeliveryPartnerModel? deliveryPartner;
@@ -44,6 +47,7 @@ class OrderModel {
   OrderModel({
     required this.id,
     required this.userId,
+    this.sellerId,
     required this.orderNumber,
     required this.items,
     required this.deliveryAddress,
@@ -168,8 +172,8 @@ class OrderModel {
       try {
         if (map['deliveryAddress'] != null &&
             map['deliveryAddress'] is Map<String, dynamic>) {
-          deliveryAddress =
-              AddressModel.fromMap(map['deliveryAddress'] as Map<String, dynamic>);
+          deliveryAddress = AddressModel.fromMap(
+              map['deliveryAddress'] as Map<String, dynamic>);
         } else if (map['address'] is String) {
           deliveryAddress = AddressModel.fromMap({
             'fullAddress': map['address'],
@@ -196,7 +200,9 @@ class OrderModel {
       final order = OrderModel(
         id: id,
         userId: map['userId'] ?? '',
-        orderNumber: map['orderNumber'] ?? 'ORD${DateTime.now().millisecondsSinceEpoch}',
+        sellerId: map['sellerId'] as String?,
+        orderNumber:
+            map['orderNumber'] ?? 'ORD${DateTime.now().millisecondsSinceEpoch}',
         items: parsedItems,
         deliveryAddress: deliveryAddress,
         subtotal: (map['subtotal'] as num?)?.toDouble() ?? 0.0,
@@ -205,7 +211,8 @@ class OrderModel {
                 ?.toDouble() ??
             0.0,
         tax: (map['tax'] as num?)?.toDouble() ?? 0.0,
-        total: ((map['total'] ?? map['totalAmount']) as num?)?.toDouble() ?? 0.0,
+        total:
+            ((map['total'] ?? map['totalAmount']) as num?)?.toDouble() ?? 0.0,
         paymentMethod: map['paymentMethod'] ?? 'cod',
         paymentStatus: map['paymentStatus'] ?? 'pending',
         orderStatus: _normalizeOrderStatus(rawStatus),
@@ -215,16 +222,19 @@ class OrderModel {
         couponCode: map['couponCode'] as String?,
         notes: map['notes'] as String?,
         createdAt: _parseDateTime(map['createdAt']),
-        updatedAt: map['updatedAt'] != null ? _parseDateTime(map['updatedAt']) : null,
-        deliveryDate: map['deliveryDate'] != null ? _parseDateTime(map['deliveryDate']) : null,
+        updatedAt:
+            map['updatedAt'] != null ? _parseDateTime(map['updatedAt']) : null,
+        deliveryDate: map['deliveryDate'] != null
+            ? _parseDateTime(map['deliveryDate'])
+            : null,
         orderType: map['orderType'] as String?,
         autoFrequency: map['autoFrequency'] as String?,
         deliverySlot: map['deliverySlot'] as String?,
         // ✅ NEW: Live tracking fields
         deliveryPartnerId: map['deliveryPartnerId'] as String?,
         deliveryPartner: deliveryPartner,
-        estimatedDeliveryTime: map['estimatedDeliveryTime'] != null 
-            ? _parseDateTime(map['estimatedDeliveryTime']) 
+        estimatedDeliveryTime: map['estimatedDeliveryTime'] != null
+            ? _parseDateTime(map['estimatedDeliveryTime'])
             : null,
         pickupLat: (map['pickupLat'] as num?)?.toDouble(),
         pickupLng: (map['pickupLng'] as num?)?.toDouble(),
@@ -232,7 +242,8 @@ class OrderModel {
         deliveryVerificationCode: map['deliveryVerificationCode'] as String?,
       );
 
-      debugPrint('✅ OrderModel parsed: ${order.orderNumber}, items: ${order.items.length}');
+      debugPrint(
+          '✅ OrderModel parsed: ${order.orderNumber}, items: ${order.items.length}');
       return order;
     } catch (e) {
       debugPrint('❌ Error parsing OrderModel: $e');
@@ -246,6 +257,7 @@ class OrderModel {
   Map<String, dynamic> toMap() {
     return {
       'userId': userId,
+      'sellerId': sellerId,
       'orderNumber': orderNumber,
       'items': items.map((item) => item.toMap()).toList(),
       'deliveryAddress': deliveryAddress.toMap(),
@@ -272,8 +284,8 @@ class OrderModel {
       // ✅ NEW: Live tracking fields
       'deliveryPartnerId': deliveryPartnerId,
       'deliveryPartner': deliveryPartner?.toMap(),
-      'estimatedDeliveryTime': estimatedDeliveryTime != null 
-          ? Timestamp.fromDate(estimatedDeliveryTime!) 
+      'estimatedDeliveryTime': estimatedDeliveryTime != null
+          ? Timestamp.fromDate(estimatedDeliveryTime!)
           : null,
       'pickupLat': pickupLat,
       'pickupLng': pickupLng,
@@ -329,20 +341,21 @@ class OrderModel {
   }
 
   static String generateOrderNumber() {
-    final timestamp = DateTime.now().millisecondsSinceEpoch;
-    return 'ORD${timestamp.toString().substring(5)}';
+    final now = DateTime.now().toUtc();
+    final random = Random.secure().nextInt(9000) + 1000;
+    return 'ORD${now.millisecondsSinceEpoch}$random';
   }
 
   /// Generate a 6-digit delivery verification code
   static String generateVerificationCode() {
-    final timestamp = DateTime.now().microsecondsSinceEpoch;
-    final code = (timestamp % 900000 + 100000); // Always 6 digits
+    final code = Random.secure().nextInt(900000) + 100000;
     return code.toString();
   }
 
   OrderModel copyWith({
     String? id,
     String? userId,
+    String? sellerId,
     String? orderNumber,
     List<CartItemModel>? items,
     AddressModel? deliveryAddress,
@@ -377,6 +390,7 @@ class OrderModel {
     return OrderModel(
       id: id ?? this.id,
       userId: userId ?? this.userId,
+      sellerId: sellerId ?? this.sellerId,
       orderNumber: orderNumber ?? this.orderNumber,
       items: items ?? this.items,
       deliveryAddress: deliveryAddress ?? this.deliveryAddress,
@@ -402,11 +416,13 @@ class OrderModel {
       // ✅ NEW: Live tracking
       deliveryPartnerId: deliveryPartnerId ?? this.deliveryPartnerId,
       deliveryPartner: deliveryPartner ?? this.deliveryPartner,
-      estimatedDeliveryTime: estimatedDeliveryTime ?? this.estimatedDeliveryTime,
+      estimatedDeliveryTime:
+          estimatedDeliveryTime ?? this.estimatedDeliveryTime,
       pickupLat: pickupLat ?? this.pickupLat,
       pickupLng: pickupLng ?? this.pickupLng,
       liveTrackingId: liveTrackingId ?? this.liveTrackingId,
-      deliveryVerificationCode: deliveryVerificationCode ?? this.deliveryVerificationCode,
+      deliveryVerificationCode:
+          deliveryVerificationCode ?? this.deliveryVerificationCode,
     );
   }
 

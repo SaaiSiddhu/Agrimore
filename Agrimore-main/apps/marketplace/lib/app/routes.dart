@@ -104,8 +104,8 @@ class AppRoutes {
   // ============================================
   // ROUTE CONSTANTS - ✅ SPLASH MUST BE ROOT '/'
   // ============================================
-  static const String splash = '/';  // ✅ Splash is the root route
-  static const String main = '/main';  // ✅ Main screen after splash
+  static const String splash = '/'; // ✅ Splash is the root route
+  static const String main = '/main'; // ✅ Main screen after splash
   static const String home = '/home';
   static const String search = '/search';
   static const String searchResults = '/search/results';
@@ -117,21 +117,25 @@ class AppRoutes {
 
   // Auth Routes
   static const String onboarding = '/onboarding';
-  static const String landing = '/landing';  // ✅ Web landing page
-  static const String login = '/login';  // ✅ Email/Password login
-  static const String signup = '/signup';  // ✅ New user registration
-  static const String completeProfile = '/complete-profile';  // ✅ After Google login for profile completion
+  static const String landing = '/landing'; // ✅ Web landing page
+  static const String login = '/login'; // ✅ Email/Password login
+  static const String signup = '/signup'; // ✅ New user registration
+  static const String completeProfile =
+      '/complete-profile'; // ✅ After Google login for profile completion
   static const String forgotPassword = '/forgot-password';
 
   // ── NEW USER ONBOARDING ──
-  static const String mobileNumber = '/mobile-number';         // Step 2: collect phone
-  static const String onboardingAddress = '/onboarding-address'; // Step 3: set default address
-  static const String profileAddAddress = '/profile/add-address';  // From profile: add new address
-  static const String profileEditAddress = '/profile/edit-address'; // From profile: edit existing
+  static const String mobileNumber = '/mobile-number'; // Step 2: collect phone
+  static const String onboardingAddress =
+      '/onboarding-address'; // Step 3: set default address
+  static const String profileAddAddress =
+      '/profile/add-address'; // From profile: add new address
+  static const String profileEditAddress =
+      '/profile/edit-address'; // From profile: edit existing
 
   // Legal Routes
-  static const String terms = '/terms';  // ✅ Terms and Conditions
-  static const String privacyPolicy = '/privacy-policy';  // ✅ Privacy Policy
+  static const String terms = '/terms'; // ✅ Terms and Conditions
+  static const String privacyPolicy = '/privacy-policy'; // ✅ Privacy Policy
 
   // Shop Routes
   static const String shop = '/shop';
@@ -206,26 +210,36 @@ class AppRoutes {
 
       // ✅ DYNAMIC ROUTES FIRST
       if (settings.name?.startsWith('/product/') == true) {
-        final productId = settings.name!.replaceFirst('/product/', '').split('?')[0].split('#')[0];
+        final productId = settings.name!
+            .replaceFirst('/product/', '')
+            .split('?')[0]
+            .split('#')[0];
         if (productId.isNotEmpty && productId != ':id') {
-          return _buildRoute(ProductDetailsScreen(productId: productId), settings);
+          return _buildRoute(
+              ProductDetailsScreen(productId: productId), settings);
         }
       }
-      
+
       // ✅ FIXED: Handle /product without ID - redirect to main
       if (settings.name == '/product' || settings.name == '/product/') {
         return _buildRoute(const MainScreen(initialIndex: 0), settings);
       }
 
       if (settings.name?.startsWith('/category/') == true) {
-        final categoryId = settings.name!.replaceFirst('/category/', '').split('?')[0].split('#')[0];
+        final categoryId = settings.name!
+            .replaceFirst('/category/', '')
+            .split('?')[0]
+            .split('#')[0];
         if (categoryId.isNotEmpty && categoryId != ':id') {
           return _buildRoute(ShopScreen(categoryId: categoryId), settings);
         }
       }
 
       if (settings.name?.startsWith('/order/') == true) {
-        final orderId = settings.name!.replaceFirst('/order/', '').split('?')[0].split('#')[0];
+        final orderId = settings.name!
+            .replaceFirst('/order/', '')
+            .split('?')[0]
+            .split('#')[0];
         if (orderId.isNotEmpty && orderId != ':id') {
           return _buildRoute(OrderDetailsScreen(orderId: orderId), settings);
         }
@@ -241,40 +255,47 @@ class AppRoutes {
 
         // Main Navigation - Protected Routes
         case main:
-          return _buildRoute(const AuthGuard(child: MainScreen(initialIndex: 0)), settings);
-        case home:
-          return _buildRoute(const AuthGuard(child: MainScreen(initialIndex: 0)), settings);
-        case shop: {
-          String? cid;
-          String? cname;
-          final args = settings.arguments;
-          if (args is Map<String, dynamic>) {
-            cid = args['categoryId'] as String?;
-            cname = args['categoryName'] as String?;
-          }
           return _buildRoute(
-            AuthGuard(
-              child: MainScreen(
-                initialIndex: 1,
-                categoryId: cid,
-                categoryName: cname,
+              const AuthGuard(child: MainScreen(initialIndex: 0)), settings);
+        case home:
+          return _buildRoute(
+              const AuthGuard(child: MainScreen(initialIndex: 0)), settings);
+        case shop:
+          {
+            String? cid;
+            String? cname;
+            final args = settings.arguments;
+            if (args is Map<String, dynamic>) {
+              cid = args['categoryId'] as String?;
+              cname = args['categoryName'] as String?;
+            }
+            return _buildRoute(
+              AuthGuard(
+                child: MainScreen(
+                  initialIndex: 1,
+                  categoryId: cid,
+                  categoryName: cname,
+                ),
               ),
-            ),
-            settings,
-          );
-        }
+              settings,
+            );
+          }
         case shopWithSearch:
           final searchQuery = settings.arguments as String?;
           return _buildRoute(
-            AuthGuard(child: MainScreen(initialIndex: 1, searchQuery: searchQuery)),
+            AuthGuard(
+                child: MainScreen(initialIndex: 1, searchQuery: searchQuery)),
             settings,
           );
         case cart:
-          return _buildRoute(const AuthGuard(child: MainScreen(initialIndex: 3)), settings);
+          return _buildRoute(
+              const AuthGuard(child: MainScreen(initialIndex: 3)), settings);
         case wishlist:
-          return _buildRoute(const AuthGuard(child: WishlistScreen()), settings);
+          return _buildRoute(
+              const AuthGuard(child: WishlistScreen()), settings);
         case profile:
-          return _buildRoute(const AuthGuard(child: MainScreen(initialIndex: 4)), settings);
+          return _buildRoute(
+              const AuthGuard(child: MainScreen(initialIndex: 4)), settings);
 
         // Onboarding
         case onboarding:
@@ -355,7 +376,8 @@ class AppRoutes {
           if (productId == null || productId.isEmpty) {
             return _buildErrorRoute('Product ID is required', settings);
           }
-          return _buildRoute(ProductDetailsScreen(productId: productId), settings);
+          return _buildRoute(
+              ProductDetailsScreen(productId: productId), settings);
         case categoryProducts:
           final categoryId = settings.arguments as String?;
           if (categoryId == null || categoryId.isEmpty) {
@@ -371,9 +393,11 @@ class AppRoutes {
             settings,
           );
         case categories:
-          return _buildRoute(const AuthGuard(child: MainScreen(initialIndex: 2)), settings);
+          return _buildRoute(
+              const AuthGuard(child: MainScreen(initialIndex: 2)), settings);
         case recentlyViewed:
-          return _buildRoute(const ShopScreen(showRecentlyViewed: true), settings);
+          return _buildRoute(
+              const ShopScreen(showRecentlyViewed: true), settings);
         case deals:
           return _buildRoute(const ShopScreen(showDeals: true), settings);
 
@@ -417,33 +441,45 @@ class AppRoutes {
 
         // Profile Routes
         case editProfile:
-          return _buildRoute(const AuthGuard(child: EditProfileScreen()), settings);
+          return _buildRoute(
+              const AuthGuard(child: EditProfileScreen()), settings);
         case changePassword:
-          return _buildRoute(const AuthGuard(child: ChangePasswordScreen()), settings);
+          return _buildRoute(
+              const AuthGuard(child: ChangePasswordScreen()), settings);
         case savedAddresses:
-          return _buildRoute(const AuthGuard(child: SavedAddressesScreen()), settings);
+          return _buildRoute(
+              const AuthGuard(child: SavedAddressesScreen()), settings);
         case appSettings:
-          return _buildRoute(const AuthGuard(child: SettingsScreen()), settings);
+          return _buildRoute(
+              const AuthGuard(child: SettingsScreen()), settings);
 
         // Checkout Flow Routes
         case addAddress:
-          return _buildRoute(const AuthGuard(child: AddAddressScreen()), settings);
+          return _buildRoute(
+              const AuthGuard(
+                  child: OnboardingAddressScreen(isOnboarding: false)),
+              settings);
         case paymentMethod:
           final paymentArgs = settings.arguments as Map<String, dynamic>?;
           final address = paymentArgs?['address'] as AddressModel?;
           final total = paymentArgs?['total'] as double? ?? 0.0;
           if (address == null) {
-            return _buildErrorRoute('Address is required for payment', settings);
+            return _buildErrorRoute(
+                'Address is required for payment', settings);
           }
           return _buildRoute(
-            AuthGuard(child: PaymentMethodScreen(selectedAddress: address, total: total)),
+            AuthGuard(
+                child: PaymentMethodScreen(
+                    selectedAddress: address, total: total)),
             settings,
           );
         case couponSelection:
-          return _buildRoute(const AuthGuard(child: CouponSelectionScreen()), settings);
+          return _buildRoute(
+              const AuthGuard(child: CouponSelectionScreen()), settings);
 
         case notifications:
-          return _buildRoute(const AuthGuard(child: NotificationsScreen()), settings);
+          return _buildRoute(
+              const AuthGuard(child: NotificationsScreen()), settings);
         // AI Chat
         case support:
           return _buildRoute(const AuthGuard(child: AIChatScreen()), settings);
@@ -452,7 +488,8 @@ class AppRoutes {
         case offers:
           return _buildRoute(const AuthGuard(child: OffersScreen()), settings);
         case flashSale:
-          return _buildRoute(const AuthGuard(child: FlashSaleScreen()), settings);
+          return _buildRoute(
+              const AuthGuard(child: FlashSaleScreen()), settings);
 
         // Rewards
         case rewards:
@@ -462,13 +499,17 @@ class AppRoutes {
         case rateOrder:
           final rateOrderId = settings.arguments as String?;
           if (rateOrderId == null || rateOrderId.isEmpty) {
-            return _buildErrorRoute('Order ID is required for rating', settings);
+            return _buildErrorRoute(
+                'Order ID is required for rating', settings);
           }
-          return _buildRoute(AuthGuard(child: RateOrderScreen(orderId: rateOrderId)), settings);
+          return _buildRoute(
+              AuthGuard(child: RateOrderScreen(orderId: rateOrderId)),
+              settings);
 
         // Subscriptions
         case mySubscriptions:
-          return _buildRoute(const AuthGuard(child: MySubscriptionsScreen()), settings);
+          return _buildRoute(
+              const AuthGuard(child: MySubscriptionsScreen()), settings);
         case subscriptionSetup:
           final subArgs = settings.arguments as Map<String, dynamic>?;
           if (subArgs == null) {
@@ -491,21 +532,27 @@ class AppRoutes {
 
         // Seller Routes
         case sellerApply:
-          return _buildRoute(const AuthGuard(child: SellerApplyScreen()), settings);
+          return _buildRoute(
+              const AuthGuard(child: SellerApplyScreen()), settings);
         case sellerPanel:
-          return _buildRoute(const AuthGuard(child: SellerPanelScreen()), settings);
+          return _buildRoute(
+              const AuthGuard(child: SellerPanelScreen()), settings);
         case sellerDashboard:
-          return _buildRoute(const AuthGuard(child: SellerDashboardScreen()), settings);
+          return _buildRoute(
+              const AuthGuard(child: SellerDashboardScreen()), settings);
 
         // Wallet Routes
         case wallet:
           return _buildRoute(const AuthGuard(child: WalletScreen()), settings);
         case addMoney:
-          return _buildRoute(const AuthGuard(child: AddMoneyScreen()), settings);
+          return _buildRoute(
+              const AuthGuard(child: AddMoneyScreen()), settings);
         case transactionHistory:
-          return _buildRoute(const AuthGuard(child: TransactionHistoryScreen()), settings);
+          return _buildRoute(
+              const AuthGuard(child: TransactionHistoryScreen()), settings);
         case referral:
-          return _buildRoute(const AuthGuard(child: ReferralScreen()), settings);
+          return _buildRoute(
+              const AuthGuard(child: ReferralScreen()), settings);
 
         // Default
         default:
@@ -516,7 +563,8 @@ class AppRoutes {
               return _buildRoute(SearchResultsScreen(query: query), settings);
             }
           }
-          return _buildErrorRoute('No route defined for ${settings.name}', settings);
+          return _buildErrorRoute(
+              'No route defined for ${settings.name}', settings);
       }
     } catch (e) {
       debugPrint('❌ Route generation error: $e');
@@ -534,7 +582,8 @@ class AppRoutes {
     );
   }
 
-  static MaterialPageRoute _buildErrorRoute(String message, RouteSettings settings) {
+  static MaterialPageRoute _buildErrorRoute(
+      String message, RouteSettings settings) {
     debugPrint('❌ Route error: $message');
     return MaterialPageRoute(
       settings: settings,
@@ -558,7 +607,8 @@ class AppRoutes {
   // ============================================
   // NAVIGATION HELPERS
   // ============================================
-  static Future<dynamic> navigateTo(BuildContext context, String routeName, {dynamic arguments}) {
+  static Future<dynamic> navigateTo(BuildContext context, String routeName,
+      {dynamic arguments}) {
     try {
       debugPrint('➡️ Navigating to: $routeName');
       return Navigator.pushNamed(context, routeName, arguments: arguments);
@@ -568,20 +618,27 @@ class AppRoutes {
     }
   }
 
-  static Future<dynamic> navigateAndReplace(BuildContext context, String routeName, {dynamic arguments}) {
+  static Future<dynamic> navigateAndReplace(
+      BuildContext context, String routeName,
+      {dynamic arguments}) {
     try {
       debugPrint('🔄 Replacing with: $routeName');
-      return Navigator.pushReplacementNamed(context, routeName, arguments: arguments);
+      return Navigator.pushReplacementNamed(context, routeName,
+          arguments: arguments);
     } catch (e) {
       debugPrint('❌ Replace error: $e');
       return Future.value();
     }
   }
 
-  static Future<dynamic> navigateAndRemoveUntil(BuildContext context, String routeName, {dynamic arguments}) {
+  static Future<dynamic> navigateAndRemoveUntil(
+      BuildContext context, String routeName,
+      {dynamic arguments}) {
     try {
       debugPrint('🔄 Clearing stack to: $routeName');
-      return Navigator.pushNamedAndRemoveUntil(context, routeName, (route) => false, arguments: arguments);
+      return Navigator.pushNamedAndRemoveUntil(
+          context, routeName, (route) => false,
+          arguments: arguments);
     } catch (e) {
       debugPrint('❌ RemoveUntil error: $e');
       return Future.value();
@@ -614,40 +671,61 @@ class AppRoutes {
   // ============================================
   // QUICK NAVIGATION SHORTCUTS
   // ============================================
-  static Future<dynamic> navigateToSearch(BuildContext context, {String? initialQuery}) {
+  static Future<dynamic> navigateToSearch(BuildContext context,
+      {String? initialQuery}) {
     return navigateTo(context, search, arguments: initialQuery);
   }
 
-  static Future<dynamic> navigateToSearchResults(BuildContext context, String query) {
+  static Future<dynamic> navigateToSearchResults(
+      BuildContext context, String query) {
     return navigateTo(context, searchResults, arguments: query);
   }
 
-  static Future<dynamic> navigateToProductDetails(BuildContext context, String productId) {
+  static Future<dynamic> navigateToProductDetails(
+      BuildContext context, String productId) {
     return navigateTo(context, '/product/$productId');
   }
 
-  static Future<dynamic> navigateToCategoryProducts(BuildContext context, String categoryId) {
-    return navigateTo(context, '/category/$categoryId');
+  static Future<dynamic> navigateToCategoryProducts(
+    BuildContext context,
+    String categoryId, {
+    String? categoryName,
+  }) {
+    final cleanName = categoryName?.trim();
+    return navigateTo(
+      context,
+      shop,
+      arguments: {
+        'categoryId': categoryId,
+        if (cleanName != null && cleanName.isNotEmpty)
+          'categoryName': cleanName,
+      },
+    );
   }
 
   static Future<dynamic> navigateToOrders(BuildContext context) {
     return navigateTo(context, orders);
   }
 
-  static Future<dynamic> navigateToOrderDetails(BuildContext context, String orderId) {
+  static Future<dynamic> navigateToOrderDetails(
+      BuildContext context, String orderId) {
     return navigateTo(context, orderDetails, arguments: orderId);
   }
 
-  static Future<dynamic> navigateToOrderTracking(BuildContext context, OrderModel order) {
+  static Future<dynamic> navigateToOrderTracking(
+      BuildContext context, OrderModel order) {
     return navigateTo(context, orderTracking, arguments: order);
   }
 
   // ============================================
   // URL GENERATION & DEEP LINKING
   // ============================================
-  static String generateProductUrl(String productId) => '$baseUrl/product/$productId';
-  static String generateCategoryUrl(String categoryId) => '$baseUrl/category/$categoryId';
-  static String generateSearchUrl(String query) => '$baseUrl/search?q=${Uri.encodeComponent(query)}';
+  static String generateProductUrl(String productId) =>
+      '$baseUrl/product/$productId';
+  static String generateCategoryUrl(String categoryId) =>
+      '$baseUrl/category/$categoryId';
+  static String generateSearchUrl(String query) =>
+      '$baseUrl/search?q=${Uri.encodeComponent(query)}';
   static String generateOrderUrl(String orderId) => '$baseUrl/order/$orderId';
   static String generateOrdersUrl() => '$baseUrl/orders';
 
@@ -680,14 +758,14 @@ class AppRoutes {
         if (segments.length >= 3) {
           final productId = segments[2];
           debugPrint('📦 Product deep link detected: $productId');
-          return navigateFromUrl(context, uri.toString());
+          return navigateTo(context, '/product/$productId');
         }
       } else if (path.contains('/category/')) {
         final segments = path.split('/');
         if (segments.length >= 3) {
           final categoryId = segments[2];
           debugPrint('📂 Category deep link detected: $categoryId');
-          return navigateFromUrl(context, uri.toString());
+          return navigateTo(context, '/category/$categoryId');
         }
       }
 

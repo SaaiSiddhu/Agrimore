@@ -3,10 +3,10 @@ import 'package:flutter/material.dart';
 import 'package:flutter/foundation.dart' show kIsWeb;
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:cloud_functions/cloud_functions.dart';
+import 'package:firebase_auth/firebase_auth.dart';
 import 'package:firebase_storage/firebase_storage.dart';
 import 'package:image_picker/image_picker.dart';
 import 'package:intl/intl.dart';
-import 'package:agrimore_ui/agrimore_ui.dart';
 import 'package:agrimore_ui/agrimore_ui.dart';
 
 class SendNotificationScreen extends StatefulWidget {
@@ -89,24 +89,20 @@ class _SendNotificationScreenState extends State<SendNotificationScreen>
 
   Future<void> loadUsers() async {
     try {
-      final snapshot = await FirebaseFirestore.instance
-          .collection('users')
-          .limit(100)
-          .get();
+      final snapshot =
+          await FirebaseFirestore.instance.collection('users').limit(100).get();
 
       if (mounted) {
         setState(() {
-          users = snapshot.docs
-              .map((doc) {
-                final data = doc.data();
-                return {
-                  'id': doc.id,
-                  'name': data['name'] ?? 'Unknown',
-                  'email': data['email'] ?? '',
-                  'phone': data['phone'] ?? '',
-                };
-              })
-              .toList();
+          users = snapshot.docs.map((doc) {
+            final data = doc.data();
+            return {
+              'id': doc.id,
+              'name': data['name'] ?? 'Unknown',
+              'email': data['email'] ?? '',
+              'phone': data['phone'] ?? '',
+            };
+          }).toList();
         });
         debugPrint('✅ Loaded ${users.length} users');
       }
@@ -124,22 +120,20 @@ class _SendNotificationScreenState extends State<SendNotificationScreen>
 
       if (mounted) {
         setState(() {
-          products = snapshot.docs
-              .map((doc) {
-                final data = doc.data();
-                return {
-                  'id': doc.id,
-                  'name': data['name'] ?? 'Unknown Product',
-                  'price': data['price'] ?? 0,
-                  'imageUrl': data['imageUrl'] ??
-                      (data['images'] != null && data['images'].isNotEmpty
-                          ? data['images'][0]
-                          : ''),
-                };
-              })
-              .toList();
-          products.sort((a, b) =>
-              (a['name'] as String).compareTo(b['name'] as String));
+          products = snapshot.docs.map((doc) {
+            final data = doc.data();
+            return {
+              'id': doc.id,
+              'name': data['name'] ?? 'Unknown Product',
+              'price': data['price'] ?? 0,
+              'imageUrl': data['imageUrl'] ??
+                  (data['images'] != null && data['images'].isNotEmpty
+                      ? data['images'][0]
+                      : ''),
+            };
+          }).toList();
+          products.sort(
+              (a, b) => (a['name'] as String).compareTo(b['name'] as String));
         });
         debugPrint('✅ Loaded ${products.length} products');
       }
@@ -158,23 +152,21 @@ class _SendNotificationScreenState extends State<SendNotificationScreen>
 
       if (mounted) {
         setState(() {
-          orders = snapshot.docs
-              .map((doc) {
-                final data = doc.data();
-                final createdAt = data['createdAt'] is Timestamp
-                    ? (data['createdAt'] as Timestamp).toDate()
-                    : DateTime.now();
-                return {
-                  'id': doc.id,
-                  'orderNumber': data['orderNumber'] ?? 'Unknown',
-                  'status': data['orderStatus'] ?? 'pending',
-                  'total': data['total'] ?? 0,
-                  'userId': data['userId'] ?? '',
-                  'createdAt': createdAt,
-                  'items': (data['items'] as List?)?.length ?? 0,
-                };
-              })
-              .toList();
+          orders = snapshot.docs.map((doc) {
+            final data = doc.data();
+            final createdAt = data['createdAt'] is Timestamp
+                ? (data['createdAt'] as Timestamp).toDate()
+                : DateTime.now();
+            return {
+              'id': doc.id,
+              'orderNumber': data['orderNumber'] ?? 'Unknown',
+              'status': data['orderStatus'] ?? 'pending',
+              'total': data['total'] ?? 0,
+              'userId': data['userId'] ?? '',
+              'createdAt': createdAt,
+              'items': (data['items'] as List?)?.length ?? 0,
+            };
+          }).toList();
         });
         debugPrint('✅ Loaded ${orders.length} orders');
       }
@@ -266,19 +258,20 @@ class _SendNotificationScreenState extends State<SendNotificationScreen>
 
       // ✅ FIXED: Properly format actionUrl
       String? actionUrl = actionUrlController.text.trim();
-      
+
       // If actionUrl is not empty, format it correctly
       if (actionUrl != null && actionUrl.isNotEmpty) {
         // Remove leading/trailing slashes
         actionUrl = actionUrl.replaceAll(RegExp(r'^/+|/+$'), '');
-        
+
         // If it's a full URL (starts with http/https), keep it as is
         // Otherwise, treat it as an internal route
-        if (!actionUrl.startsWith('http://') && !actionUrl.startsWith('https://')) {
+        if (!actionUrl.startsWith('http://') &&
+            !actionUrl.startsWith('https://')) {
           // Internal route - ensure it starts with /
           actionUrl = '/$actionUrl';
         }
-        
+
         debugPrint('📍 Formatted actionUrl: $actionUrl');
       } else {
         actionUrl = null;
@@ -287,7 +280,8 @@ class _SendNotificationScreenState extends State<SendNotificationScreen>
       final Map<String, dynamic> functionData = {
         'title': titleController.text.trim(),
         'body': bodyController.text.trim(),
-        'imageUrl': uploadedImageUrl?.trim() ?? imageUrlController.text.trim() ?? '',
+        'imageUrl':
+            uploadedImageUrl?.trim() ?? imageUrlController.text.trim() ?? '',
         'actionUrl': actionUrl,
         'type': notificationType,
       };
@@ -298,18 +292,27 @@ class _SendNotificationScreenState extends State<SendNotificationScreen>
         // Auto-set actionUrl if not manually entered
         if (actionUrl == null || actionUrl.isEmpty) {
           functionData['actionUrl'] = '/product/$selectedProductId';
-          debugPrint('📍 Auto-set product actionUrl: /product/$selectedProductId');
+          debugPrint(
+              '📍 Auto-set product actionUrl: /product/$selectedProductId');
         }
       }
 
       debugPrint('📝 Function data prepared: $functionData');
 
+      final currentUser = FirebaseAuth.instance.currentUser;
+      if (currentUser == null) {
+        throw FirebaseFunctionsException(
+          code: 'unauthenticated',
+          message: 'Please sign in again before sending notifications.',
+        );
+      }
+      await currentUser.getIdToken(true);
+      final functions = FirebaseFunctions.instanceFor(region: 'us-central1');
       HttpsCallableResult result;
 
       if (sendType == 'all') {
         debugPrint('📢 Calling sendBroadcastNotification...');
-        final callable = FirebaseFunctions.instance
-            .httpsCallable('sendBroadcastNotification');
+        final callable = functions.httpsCallable('sendBroadcastNotification');
         result = await callable.call(functionData);
         debugPrint('✅ Broadcast result: ${result.data}');
       } else if (sendType == 'single') {
@@ -322,8 +325,7 @@ class _SendNotificationScreenState extends State<SendNotificationScreen>
         }
         functionData['userId'] = selectedUserId;
         debugPrint('📬 Calling sendNotificationToUser for: $selectedUserId');
-        final callable =
-            FirebaseFunctions.instance.httpsCallable('sendNotificationToUser');
+        final callable = functions.httpsCallable('sendNotificationToUser');
         result = await callable.call(functionData);
         debugPrint('✅ Single user result: ${result.data}');
       } else {
@@ -334,7 +336,8 @@ class _SendNotificationScreenState extends State<SendNotificationScreen>
       final historyData = {
         'title': titleController.text.trim(),
         'body': bodyController.text.trim(),
-        'imageUrl': uploadedImageUrl?.trim() ?? imageUrlController.text.trim() ?? '',
+        'imageUrl':
+            uploadedImageUrl?.trim() ?? imageUrlController.text.trim() ?? '',
         'actionUrl': actionUrl,
         'type': notificationType,
         'sendType': sendType,
@@ -743,7 +746,8 @@ class _SendNotificationScreenState extends State<SendNotificationScreen>
               ),
               child: Row(
                 children: [
-                  Icon(Icons.info_outline, color: Colors.blue.shade700, size: 20),
+                  Icon(Icons.info_outline,
+                      color: Colors.blue.shade700, size: 20),
                   const SizedBox(width: 8),
                   Expanded(
                     child: Text(
@@ -921,8 +925,7 @@ class _SendNotificationScreenState extends State<SendNotificationScreen>
                           ),
                           Text(
                             user['email'] as String,
-                            style:
-                                TextStyle(fontSize: 12, color: Colors.grey),
+                            style: TextStyle(fontSize: 12, color: Colors.grey),
                           ),
                         ],
                       ),
@@ -1221,9 +1224,9 @@ class _SendNotificationScreenState extends State<SendNotificationScreen>
           padding: const EdgeInsets.all(16),
           itemCount: notifications.length,
           itemBuilder: (context, index) {
-            final notif =
-                notifications[index].data() as Map<String, dynamic>;
-            final timestamp = notif['timestamp'] as Timestamp?;
+            final notif = notifications[index].data() as Map<String, dynamic>;
+            final timestamp =
+                (notif['timestamp'] ?? notif['sentAt']) as Timestamp?;
 
             return Card(
               margin: const EdgeInsets.only(bottom: 12),
@@ -1254,8 +1257,7 @@ class _SendNotificationScreenState extends State<SendNotificationScreen>
                       const SizedBox(height: 4),
                       Text(
                         _formatTimestamp(timestamp),
-                        style:
-                            TextStyle(fontSize: 12, color: Colors.grey[600]),
+                        style: TextStyle(fontSize: 12, color: Colors.grey[600]),
                       ),
                     ],
                   ],
@@ -1279,6 +1281,15 @@ class _SendNotificationScreenState extends State<SendNotificationScreen>
       future:
           FirebaseFirestore.instance.collection('notification_history').get(),
       builder: (context, snapshot) {
+        if (snapshot.hasError) {
+          return Center(
+            child: Text(
+              'Error: ${snapshot.error}',
+              style: const TextStyle(color: Colors.red),
+            ),
+          );
+        }
+
         if (!snapshot.hasData) {
           return const Center(child: CircularProgressIndicator());
         }
@@ -1339,82 +1350,79 @@ class _SendNotificationScreenState extends State<SendNotificationScreen>
                 style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold),
               ),
               const SizedBox(height: 16),
-              ...typeCount.entries
-                  .map(
-                    (entry) {
-                      final percentage = total > 0
-                          ? ((entry.value / total) * 100).toStringAsFixed(1)
-                          : '0.0';
-                      return Container(
-                        margin: const EdgeInsets.only(bottom: 12),
-                        padding: const EdgeInsets.all(16),
-                        decoration: BoxDecoration(
-                          color: Colors.white,
-                          borderRadius: BorderRadius.circular(12),
+              ...typeCount.entries.map(
+                (entry) {
+                  final percentage = total > 0
+                      ? ((entry.value / total) * 100).toStringAsFixed(1)
+                      : '0.0';
+                  return Container(
+                    margin: const EdgeInsets.only(bottom: 12),
+                    padding: const EdgeInsets.all(16),
+                    decoration: BoxDecoration(
+                      color: Colors.white,
+                      borderRadius: BorderRadius.circular(12),
+                    ),
+                    child: Row(
+                      children: [
+                        Container(
+                          padding: const EdgeInsets.all(8),
+                          decoration: BoxDecoration(
+                            color: _getTypeColor(entry.key),
+                            borderRadius: BorderRadius.circular(8),
+                          ),
+                          child: Icon(
+                            _getTypeIcon(entry.key),
+                            color: Colors.white,
+                            size: 20,
+                          ),
                         ),
-                        child: Row(
+                        const SizedBox(width: 16),
+                        Expanded(
+                          child: Column(
+                            crossAxisAlignment: CrossAxisAlignment.start,
+                            children: [
+                              Text(
+                                entry.key.toUpperCase(),
+                                style: const TextStyle(
+                                  fontWeight: FontWeight.bold,
+                                ),
+                              ),
+                              const SizedBox(height: 4),
+                              LinearProgressIndicator(
+                                value: total > 0 ? entry.value / total : 0,
+                                backgroundColor: Colors.grey.shade200,
+                                valueColor: AlwaysStoppedAnimation<Color>(
+                                  _getTypeColor(entry.key),
+                                ),
+                              ),
+                            ],
+                          ),
+                        ),
+                        const SizedBox(width: 16),
+                        Column(
+                          crossAxisAlignment: CrossAxisAlignment.end,
                           children: [
-                            Container(
-                              padding: const EdgeInsets.all(8),
-                              decoration: BoxDecoration(
-                                color: _getTypeColor(entry.key),
-                                borderRadius: BorderRadius.circular(8),
-                              ),
-                              child: Icon(
-                                _getTypeIcon(entry.key),
-                                color: Colors.white,
-                                size: 20,
+                            Text(
+                              entry.value.toString(),
+                              style: const TextStyle(
+                                fontSize: 20,
+                                fontWeight: FontWeight.bold,
                               ),
                             ),
-                            const SizedBox(width: 16),
-                            Expanded(
-                              child: Column(
-                                crossAxisAlignment: CrossAxisAlignment.start,
-                                children: [
-                                  Text(
-                                    entry.key.toUpperCase(),
-                                    style: const TextStyle(
-                                      fontWeight: FontWeight.bold,
-                                    ),
-                                  ),
-                                  const SizedBox(height: 4),
-                                  LinearProgressIndicator(
-                                    value:
-                                        total > 0 ? entry.value / total : 0,
-                                    backgroundColor: Colors.grey.shade200,
-                                    valueColor: AlwaysStoppedAnimation<Color>(
-                                      _getTypeColor(entry.key),
-                                    ),
-                                  ),
-                                ],
+                            Text(
+                              '$percentage%',
+                              style: TextStyle(
+                                fontSize: 12,
+                                color: Colors.grey[600],
                               ),
-                            ),
-                            const SizedBox(width: 16),
-                            Column(
-                              crossAxisAlignment: CrossAxisAlignment.end,
-                              children: [
-                                Text(
-                                  entry.value.toString(),
-                                  style: const TextStyle(
-                                    fontSize: 20,
-                                    fontWeight: FontWeight.bold,
-                                  ),
-                                ),
-                                Text(
-                                  '$percentage%',
-                                  style: TextStyle(
-                                    fontSize: 12,
-                                    color: Colors.grey[600],
-                                  ),
-                                ),
-                              ],
                             ),
                           ],
                         ),
-                      );
-                    },
-                  )
-                  .toList(),
+                      ],
+                    ),
+                  );
+                },
+              ).toList(),
             ],
           ),
         );

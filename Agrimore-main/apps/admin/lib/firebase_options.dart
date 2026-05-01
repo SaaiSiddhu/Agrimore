@@ -2,7 +2,8 @@
 // Project: agrimore-66a4e
 
 import 'package:firebase_core/firebase_core.dart' show FirebaseOptions;
-import 'package:flutter/foundation.dart' show defaultTargetPlatform, kIsWeb, TargetPlatform;
+import 'package:flutter/foundation.dart'
+    show defaultTargetPlatform, kIsWeb, TargetPlatform;
 
 class DefaultFirebaseOptions {
   static FirebaseOptions get currentPlatform {
@@ -38,7 +39,7 @@ class DefaultFirebaseOptions {
 
   static const FirebaseOptions android = FirebaseOptions(
     apiKey: 'AIzaSyDlbhaEl3Hz60iYVL7qtSBPx3Clx6SV7gg',
-    appId: '1:1082819024270:android:fee25001e34206e9e640df',
+    appId: '1:1082819024270:android:dca6d1f5e4ba62ffe640df',
     messagingSenderId: '1082819024270',
     projectId: 'agrimore-66a4e',
     databaseURL: 'https://agrimore-66a4e-default-rtdb.firebaseio.com',

@@ -28,20 +28,13 @@ class CouponProvider with ChangeNotifier {
       _error = null;
       notifyListeners();
 
-      final now = DateTime.now();
-
-      final querySnapshot = await _firestore
-          .collection('coupons')
-          .where('isActive', isEqualTo: true)
-          .where('validTo', isGreaterThan: now)
-          .orderBy('validTo')
-          .orderBy('createdAt', descending: true)
-          .get();
+      final querySnapshot = await _firestore.collection('coupons').get();
 
       _availableCoupons = querySnapshot.docs
           .map((doc) => CouponModel.fromMap(doc.data(), doc.id))
           .where((coupon) => coupon.isValid)
           .toList();
+      _availableCoupons.sort((a, b) => a.validTo.compareTo(b.validTo));
 
       _isLoading = false;
       notifyListeners();
@@ -61,7 +54,6 @@ class CouponProvider with ChangeNotifier {
       final querySnapshot = await _firestore
           .collection('coupons')
           .where('code', isEqualTo: code.toUpperCase())
-          .where('isActive', isEqualTo: true)
           .limit(1)
           .get();
 

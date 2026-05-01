@@ -43,10 +43,10 @@ class SellerProductProvider with ChangeNotifier {
       final snapshot = await _firestore
           .collection('products')
           .where('sellerId', isEqualTo: sellerId)
-          .orderBy('createdAt', descending: true)
           .get();
 
       _products = snapshot.docs.map((doc) => ProductModel.fromMap(doc.data(), doc.id)).toList();
+      _products.sort((a, b) => b.createdAt.compareTo(a.createdAt));
     } catch (e) {
       _error = 'Failed to load products: $e';
     } finally {

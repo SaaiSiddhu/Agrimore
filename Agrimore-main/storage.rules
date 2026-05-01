@@ -61,6 +61,9 @@ service firebase.storage {
     match /banners/{fileName} {
       allow write: if isAuthenticated() && isValidFileSize() && isImage();
     }
+    match /notifications/{fileName} {
+      allow write: if isAuthenticated() && isValidFileSize() && isImage();
+    }
     match /sponsored/{fileName} {
       allow write: if isAuthenticated() && isValidFileSize() && isImage();
     }
@@ -95,6 +98,13 @@ service firebase.storage {
       allow write: if isAuthenticated() 
                    && request.auth.uid == userId
                    && isValidFileSize();
+    }
+
+    // ============================================
+    // DELIVERY PROOF PHOTOS
+    // ============================================
+    match /delivery_proofs/{fileName} {
+      allow write: if isAuthenticated() && isValidFileSize() && isImage();
     }
   }
 }

@@ -9,6 +9,7 @@ import 'package:agrimore_core/agrimore_core.dart';
 import '../../providers/cart_provider.dart';
 import '../../providers/wishlist_provider.dart';
 import '../../providers/theme_provider.dart';
+import '../cart_fly_animation.dart';
 
 /// Layout variants for the unified product card
 enum ProductCardLayout {
@@ -32,7 +33,7 @@ enum ProductCardLayout {
 }
 
 /// Unified product card widget that replaces all scattered product card implementations.
-/// 
+///
 /// Features:
 /// - Multiple layout variants (grid, list, compact, horizontal)
 /// - All product badges (discount, new, trending, featured, verified, variants)
@@ -67,7 +68,7 @@ class UnifiedProductCard extends StatefulWidget {
 }
 
 class _UnifiedProductCardState extends State<UnifiedProductCard>
-    with SingleTickerProviderStateMixin {
+    with TickerProviderStateMixin {
   late bool _isInWishlist;
   late bool _isInCart;
   bool _isProcessing = false;
@@ -75,6 +76,9 @@ class _UnifiedProductCardState extends State<UnifiedProductCard>
 
   late AnimationController _scaleController;
   late Animation<double> _scaleAnimation;
+  late AnimationController _cartJumpController;
+  late Animation<double> _cartJumpAnimation;
+  final GlobalKey _cartButtonKey = GlobalKey();
 
   @override
   void initState() {
@@ -91,11 +95,20 @@ class _UnifiedProductCardState extends State<UnifiedProductCard>
     _scaleAnimation = Tween<double>(begin: 1.0, end: 0.95).animate(
       CurvedAnimation(parent: _scaleController, curve: Curves.easeInOut),
     );
+    _cartJumpController = AnimationController(
+      duration: const Duration(milliseconds: 520),
+      vsync: this,
+    );
+    _cartJumpAnimation = CurvedAnimation(
+      parent: _cartJumpController,
+      curve: Curves.elasticOut,
+    );
   }
 
   @override
   void dispose() {
     _scaleController.dispose();
+    _cartJumpController.dispose();
     super.dispose();
   }
 
@@ -123,7 +136,8 @@ class _UnifiedProductCardState extends State<UnifiedProductCard>
   Future<void> _handleAddToCart() async {
     if (_isProcessing) return;
 
-    if (widget.product.stock == 0 && (_selectedVariant == null || !_selectedVariant!.inStock)) {
+    if (widget.product.stock == 0 &&
+        (_selectedVariant == null || !_selectedVariant!.inStock)) {
       _showSnackbar('This product is out of stock', isError: true);
       return;
     }
@@ -144,12 +158,13 @@ class _UnifiedProductCardState extends State<UnifiedProductCard>
 
     try {
       await cartProvider.addItem(
-        widget.product, 
+        widget.product,
         quantity: 1,
         variant: _selectedVariant?.name,
         variantPrice: _selectedVariant?.salePrice,
         variantOriginalPrice: _selectedVariant?.originalPrice,
       );
+      _playCartJumpAnimation();
       if (mounted) _showSnackbar('Added to cart successfully');
     } catch (e) {
       debugPrint('❌ Cart error: $e');
@@ -159,7 +174,26 @@ class _UnifiedProductCardState extends State<UnifiedProductCard>
     }
   }
 
-  void _showSnackbar(String message, {bool isError = false, bool isWarning = false}) {
+  void _playCartJumpAnimation() {
+    _cartJumpController.forward(from: 0);
+    final imageUrl = widget.product.primaryImage;
+    if (imageUrl.isEmpty || !mounted) return;
+
+    final renderBox =
+        _cartButtonKey.currentContext?.findRenderObject() as RenderBox?;
+    final startPosition = renderBox == null
+        ? null
+        : renderBox.localToGlobal(renderBox.size.center(Offset.zero));
+
+    CartFlyAnimationOverlay.triggerFly(
+      context: context,
+      imageUrl: imageUrl,
+      startPosition: startPosition,
+    );
+  }
+
+  void _showSnackbar(String message,
+      {bool isError = false, bool isWarning = false}) {
     final color = isError
         ? Colors.red.shade600
         : isWarning
@@ -178,7 +212,8 @@ class _UnifiedProductCardState extends State<UnifiedProductCard>
             FaIcon(icon, color: Colors.white, size: 20),
             const SizedBox(width: 12),
             Expanded(
-              child: Text(message, style: const TextStyle(fontWeight: FontWeight.w600)),
+              child: Text(message,
+                  style: const TextStyle(fontWeight: FontWeight.w600)),
             ),
           ],
         ),
@@ -199,7 +234,8 @@ class _UnifiedProductCardState extends State<UnifiedProductCard>
       builder: (context, cartProvider, wishlistProvider, child) {
         try {
           _isInWishlist = wishlistProvider.isInWishlist(widget.product.id);
-          _isInCart = cartProvider.isInCart(widget.product.id, variant: _selectedVariant?.name);
+          _isInCart = cartProvider.isInCart(widget.product.id,
+              variant: _selectedVariant?.name);
         } catch (e) {
           _isInWishlist = false;
           _isInCart = false;
@@ -221,7 +257,8 @@ class _UnifiedProductCardState extends State<UnifiedProductCard>
     );
   }
 
-  Widget _buildLayout(bool isDark, WishlistProvider wishlistProvider, CartProvider cartProvider) {
+  Widget _buildLayout(bool isDark, WishlistProvider wishlistProvider,
+      CartProvider cartProvider) {
     switch (widget.layout) {
       case ProductCardLayout.grid:
         return _buildGridLayout(isDark, wishlistProvider, cartProvider);
@@ -241,7 +278,8 @@ class _UnifiedProductCardState extends State<UnifiedProductCard>
   // ============================================
   // GRID LAYOUT (for home sections)
   // ============================================
-  Widget _buildGridLayout(bool isDark, WishlistProvider wishlistProvider, CartProvider cartProvider) {
+  Widget _buildGridLayout(bool isDark, WishlistProvider wishlistProvider,
+      CartProvider cartProvider) {
     final discount = widget.product.discount;
     final hasDiscount = discount > 0;
     final hasVariants = widget.product.variants.isNotEmpty;
@@ -307,15 +345,18 @@ class _UnifiedProductCardState extends State<UnifiedProductCard>
                           if (hasVariants) _buildVariantBadge(isDark),
                           if (isTrending) ...[
                             const SizedBox(height: 4),
-                            _buildIconBadge(FontAwesomeIcons.arrowTrendUp, Colors.purple),
+                            _buildIconBadge(
+                                FontAwesomeIcons.arrowTrendUp, Colors.purple),
                           ],
                           if (isFeatured) ...[
                             const SizedBox(height: 4),
-                            _buildIconBadge(FontAwesomeIcons.solidStar, Colors.orange.shade700),
+                            _buildIconBadge(FontAwesomeIcons.solidStar,
+                                Colors.orange.shade700),
                           ],
                           if (isVerified) ...[
                             const SizedBox(height: 4),
-                            _buildIconBadge(FontAwesomeIcons.check, Colors.blue.shade600),
+                            _buildIconBadge(
+                                FontAwesomeIcons.check, Colors.blue.shade600),
                           ],
                         ],
                       ),
@@ -358,7 +399,8 @@ class _UnifiedProductCardState extends State<UnifiedProductCard>
                     const SizedBox(height: 4),
 
                     // Rating
-                    if (widget.showRating) _buildRatingRow(isDark, isCompact: true),
+                    if (widget.showRating)
+                      _buildRatingRow(isDark, isCompact: true),
                     const SizedBox(height: 4),
 
                     // Price
@@ -401,7 +443,8 @@ class _UnifiedProductCardState extends State<UnifiedProductCard>
   // ============================================
   // LIST LAYOUT (for shop list view)
   // ============================================
-  Widget _buildListLayout(bool isDark, WishlistProvider wishlistProvider, CartProvider cartProvider) {
+  Widget _buildListLayout(bool isDark, WishlistProvider wishlistProvider,
+      CartProvider cartProvider) {
     return Container(
       margin: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
       padding: const EdgeInsets.all(12),
@@ -442,7 +485,8 @@ class _UnifiedProductCardState extends State<UnifiedProductCard>
                 Positioned(
                   top: 4,
                   right: 4,
-                  child: _buildWishlistButton(wishlistProvider, isDark, size: 28),
+                  child:
+                      _buildWishlistButton(wishlistProvider, isDark, size: 28),
                 ),
             ],
           ),
@@ -481,7 +525,8 @@ class _UnifiedProductCardState extends State<UnifiedProductCard>
                   SizedBox(
                     height: 36,
                     width: double.infinity,
-                    child: _buildAddToCartButton(cartProvider, isDark, isExpanded: true),
+                    child: _buildAddToCartButton(cartProvider, isDark,
+                        isExpanded: true),
                   ),
               ],
             ),
@@ -494,7 +539,8 @@ class _UnifiedProductCardState extends State<UnifiedProductCard>
   // ============================================
   // COMPACT LAYOUT (for recently viewed)
   // ============================================
-  Widget _buildCompactLayout(bool isDark, WishlistProvider wishlistProvider, CartProvider cartProvider) {
+  Widget _buildCompactLayout(bool isDark, WishlistProvider wishlistProvider,
+      CartProvider cartProvider) {
     return Container(
       width: 150,
       decoration: BoxDecoration(
@@ -545,7 +591,8 @@ class _UnifiedProductCardState extends State<UnifiedProductCard>
                     style: TextStyle(
                       fontSize: 14,
                       fontWeight: FontWeight.bold,
-                      color: isDark ? AppColors.primaryLight : AppColors.primary,
+                      color:
+                          isDark ? AppColors.primaryLight : AppColors.primary,
                     ),
                   ),
                 ],
@@ -560,7 +607,8 @@ class _UnifiedProductCardState extends State<UnifiedProductCard>
   // ============================================
   // HORIZONTAL LAYOUT (for chat/carousels)
   // ============================================
-  Widget _buildHorizontalLayout(bool isDark, WishlistProvider wishlistProvider, CartProvider cartProvider) {
+  Widget _buildHorizontalLayout(bool isDark, WishlistProvider wishlistProvider,
+      CartProvider cartProvider) {
     final discount = widget.product.discount;
     final hasDiscount = discount > 0;
 
@@ -585,7 +633,8 @@ class _UnifiedProductCardState extends State<UnifiedProductCard>
           Stack(
             children: [
               ClipRRect(
-                borderRadius: const BorderRadius.vertical(top: Radius.circular(20)),
+                borderRadius:
+                    const BorderRadius.vertical(top: Radius.circular(20)),
                 child: Container(
                   height: 140,
                   width: double.infinity,
@@ -611,7 +660,8 @@ class _UnifiedProductCardState extends State<UnifiedProductCard>
                 Positioned(
                   top: 8,
                   right: 8,
-                  child: _buildWishlistButton(wishlistProvider, isDark, size: 32),
+                  child:
+                      _buildWishlistButton(wishlistProvider, isDark, size: 32),
                 ),
 
               // Out of stock overlay
@@ -620,7 +670,8 @@ class _UnifiedProductCardState extends State<UnifiedProductCard>
                   child: Container(
                     decoration: BoxDecoration(
                       color: Colors.black.withOpacity(0.5),
-                      borderRadius: const BorderRadius.vertical(top: Radius.circular(20)),
+                      borderRadius:
+                          const BorderRadius.vertical(top: Radius.circular(20)),
                     ),
                     child: const Center(
                       child: Text(
@@ -659,16 +710,19 @@ class _UnifiedProductCardState extends State<UnifiedProductCard>
                   if (widget.showRating && widget.product.rating > 0)
                     Row(
                       children: [
-                        Icon(Icons.star_rounded, size: 14, color: Colors.amber[700]),
+                        Icon(Icons.star_rounded,
+                            size: 14, color: Colors.amber[700]),
                         const SizedBox(width: 3),
                         Text(
                           widget.product.rating.toStringAsFixed(1),
-                          style: const TextStyle(fontSize: 12, fontWeight: FontWeight.w600),
+                          style: const TextStyle(
+                              fontSize: 12, fontWeight: FontWeight.w600),
                         ),
                         const SizedBox(width: 4),
                         Text(
                           '(${widget.product.reviewCount})',
-                          style: TextStyle(fontSize: 10, color: Colors.grey[600]),
+                          style:
+                              TextStyle(fontSize: 10, color: Colors.grey[600]),
                         ),
                       ],
                     ),
@@ -711,7 +765,8 @@ class _UnifiedProductCardState extends State<UnifiedProductCard>
                         Expanded(
                           child: SizedBox(
                             height: 32,
-                            child: _buildAddToCartButton(cartProvider, isDark, isCompact: true),
+                            child: _buildAddToCartButton(cartProvider, isDark,
+                                isCompact: true),
                           ),
                         ),
                         const SizedBox(width: 6),
@@ -722,9 +777,13 @@ class _UnifiedProductCardState extends State<UnifiedProductCard>
                               onPressed: widget.product.stock > 0
                                   ? () async {
                                       HapticFeedback.mediumImpact();
-                                      final cartProvider = Provider.of<CartProvider>(context, listen: false);
+                                      final cartProvider =
+                                          Provider.of<CartProvider>(context,
+                                              listen: false);
                                       if (!_isInCart) {
-                                        await cartProvider.addItem(widget.product, quantity: 1);
+                                        await cartProvider.addItem(
+                                            widget.product,
+                                            quantity: 1);
                                       }
                                       if (mounted) {
                                         Navigator.pushNamed(context, '/cart');
@@ -759,7 +818,8 @@ class _UnifiedProductCardState extends State<UnifiedProductCard>
   // ============================================
   // SHOP LAYOUT (Meesho/LetBuyy style - compact, professional)
   // ============================================
-  Widget _buildShopLayout(bool isDark, WishlistProvider wishlistProvider, CartProvider cartProvider) {
+  Widget _buildShopLayout(bool isDark, WishlistProvider wishlistProvider,
+      CartProvider cartProvider) {
     final discount = widget.product.discount;
     final hasDiscount = discount > 0;
     final isVerified = widget.product.isVerified;
@@ -793,7 +853,8 @@ class _UnifiedProductCardState extends State<UnifiedProductCard>
                     color: Colors.black.withOpacity(0.55),
                     child: Center(
                       child: Container(
-                        padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 4),
+                        padding: const EdgeInsets.symmetric(
+                            horizontal: 10, vertical: 4),
                         decoration: BoxDecoration(
                           color: Colors.black.withOpacity(0.7),
                           borderRadius: BorderRadius.circular(4),
@@ -817,7 +878,8 @@ class _UnifiedProductCardState extends State<UnifiedProductCard>
                     top: 6,
                     left: 0,
                     child: Container(
-                      padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 3),
+                      padding: const EdgeInsets.symmetric(
+                          horizontal: 6, vertical: 3),
                       decoration: const BoxDecoration(
                         color: Color(0xFF00C853),
                         borderRadius: BorderRadius.only(
@@ -846,7 +908,8 @@ class _UnifiedProductCardState extends State<UnifiedProductCard>
                       onTap: () async {
                         HapticFeedback.lightImpact();
                         if (_isInWishlist) {
-                          await wishlistProvider.removeFromWishlist(widget.product.id);
+                          await wishlistProvider
+                              .removeFromWishlist(widget.product.id);
                         } else {
                           await wishlistProvider.addToWishlist(widget.product);
                         }
@@ -867,7 +930,9 @@ class _UnifiedProductCardState extends State<UnifiedProductCard>
                           ],
                         ),
                         child: Icon(
-                          _isInWishlist ? Icons.favorite : Icons.favorite_border,
+                          _isInWishlist
+                              ? Icons.favorite
+                              : Icons.favorite_border,
                           size: 15,
                           color: _isInWishlist ? Colors.red : Colors.grey[600],
                         ),
@@ -914,8 +979,13 @@ class _UnifiedProductCardState extends State<UnifiedProductCard>
                           color: isDark ? Colors.white : Colors.black,
                         ),
                       ),
-                      if ((_selectedVariant?.originalPrice ?? widget.product.originalPrice) != null &&
-                          (_selectedVariant?.originalPrice ?? widget.product.originalPrice)! > (_selectedVariant?.salePrice ?? widget.product.price)) ...[
+                      if ((_selectedVariant?.originalPrice ??
+                                  widget.product.originalPrice) !=
+                              null &&
+                          (_selectedVariant?.originalPrice ??
+                                  widget.product.originalPrice)! >
+                              (_selectedVariant?.salePrice ??
+                                  widget.product.price)) ...[
                         const SizedBox(width: 5),
                         Text(
                           '₹${(_selectedVariant?.originalPrice ?? widget.product.originalPrice)!.toStringAsFixed(0)}',
@@ -931,7 +1001,8 @@ class _UnifiedProductCardState extends State<UnifiedProductCard>
                       // Rating - compact pill
                       if (widget.showRating && widget.product.rating > 0)
                         Container(
-                          padding: const EdgeInsets.symmetric(horizontal: 5, vertical: 2),
+                          padding: const EdgeInsets.symmetric(
+                              horizontal: 5, vertical: 2),
                           decoration: BoxDecoration(
                             color: isDark ? Colors.grey[800] : Colors.grey[100],
                             borderRadius: BorderRadius.circular(4),
@@ -939,14 +1010,16 @@ class _UnifiedProductCardState extends State<UnifiedProductCard>
                           child: Row(
                             mainAxisSize: MainAxisSize.min,
                             children: [
-                              Icon(Icons.star_rounded, size: 11, color: Colors.amber[700]),
+                              Icon(Icons.star_rounded,
+                                  size: 11, color: Colors.amber[700]),
                               const SizedBox(width: 2),
                               Text(
                                 widget.product.rating.toStringAsFixed(1),
                                 style: TextStyle(
                                   fontSize: 10,
                                   fontWeight: FontWeight.w700,
-                                  color: isDark ? Colors.white70 : Colors.black87,
+                                  color:
+                                      isDark ? Colors.white70 : Colors.black87,
                                 ),
                               ),
                             ],
@@ -964,9 +1037,13 @@ class _UnifiedProductCardState extends State<UnifiedProductCard>
                     children: [
                       if (isVerified)
                         Container(
-                          padding: const EdgeInsets.symmetric(horizontal: 4, vertical: 1),
+                          padding: const EdgeInsets.symmetric(
+                              horizontal: 4, vertical: 1),
                           decoration: BoxDecoration(
-                            color: (isDark ? AppColors.primaryLight : AppColors.primary).withOpacity(0.1),
+                            color: (isDark
+                                    ? AppColors.primaryLight
+                                    : AppColors.primary)
+                                .withOpacity(0.1),
                             borderRadius: BorderRadius.circular(3),
                           ),
                           child: Row(
@@ -975,7 +1052,9 @@ class _UnifiedProductCardState extends State<UnifiedProductCard>
                               Icon(
                                 Icons.verified,
                                 size: 10,
-                                color: isDark ? AppColors.primaryLight : AppColors.primary,
+                                color: isDark
+                                    ? AppColors.primaryLight
+                                    : AppColors.primary,
                               ),
                               const SizedBox(width: 2),
                               Text(
@@ -983,13 +1062,16 @@ class _UnifiedProductCardState extends State<UnifiedProductCard>
                                 style: TextStyle(
                                   fontSize: 8,
                                   fontWeight: FontWeight.w700,
-                                  color: isDark ? AppColors.primaryLight : AppColors.primary,
+                                  color: isDark
+                                      ? AppColors.primaryLight
+                                      : AppColors.primary,
                                 ),
                               ),
                             ],
                           ),
                         ),
-                      if (isVerified && hasFreeDelivery) const SizedBox(width: 4),
+                      if (isVerified && hasFreeDelivery)
+                        const SizedBox(width: 4),
                       if (hasFreeDelivery)
                         Text(
                           'Free Delivery',
@@ -1003,24 +1085,62 @@ class _UnifiedProductCardState extends State<UnifiedProductCard>
                   ),
                   if (widget.showAddToCart) ...[
                     const SizedBox(height: 6),
-                    SizedBox(
-                      width: double.infinity,
-                      height: 28,
-                      child: FilledButton(
-                        onPressed: isOutOfStock || _isProcessing
-                            ? null
-                            : () => _handleAddToCart(),
-                        style: FilledButton.styleFrom(
-                          padding: EdgeInsets.zero,
-                          backgroundColor: isDark ? AppColors.primaryLight : AppColors.primary,
-                          foregroundColor: isDark ? Colors.black87 : Colors.white,
-                          shape: RoundedRectangleBorder(
-                            borderRadius: BorderRadius.circular(6),
+                    Align(
+                      alignment: Alignment.centerLeft,
+                      child: AnimatedBuilder(
+                        animation: _cartJumpAnimation,
+                        builder: (context, child) {
+                          final jump = _cartJumpAnimation.value;
+                          return Transform.translate(
+                            offset: Offset(0, -7 * jump),
+                            child: Transform.scale(
+                              scale: 1 + (0.07 * jump),
+                              child: child,
+                            ),
+                          );
+                        },
+                        child: ConstrainedBox(
+                          constraints: const BoxConstraints(
+                            minWidth: 74,
+                            maxWidth: 116,
                           ),
-                        ),
-                        child: Text(
-                          _isInCart ? 'In cart' : 'Add to cart',
-                          style: const TextStyle(fontSize: 10, fontWeight: FontWeight.w800),
+                          child: SizedBox(
+                            key: _cartButtonKey,
+                            height: 28,
+                            child: FilledButton.icon(
+                              onPressed: isOutOfStock || _isProcessing
+                                  ? null
+                                  : _handleAddToCart,
+                              icon: Icon(
+                                _isInCart
+                                    ? Icons.check_rounded
+                                    : Icons.add_shopping_cart_rounded,
+                                size: 13,
+                              ),
+                              label: FittedBox(
+                                fit: BoxFit.scaleDown,
+                                child: Text(_isInCart ? 'In cart' : 'Add'),
+                              ),
+                              style: FilledButton.styleFrom(
+                                padding: const EdgeInsets.symmetric(
+                                  horizontal: 8,
+                                  vertical: 0,
+                                ),
+                                backgroundColor: isDark
+                                    ? AppColors.primaryLight
+                                    : AppColors.primary,
+                                foregroundColor:
+                                    isDark ? Colors.black87 : Colors.white,
+                                textStyle: const TextStyle(
+                                  fontSize: 10,
+                                  fontWeight: FontWeight.w800,
+                                ),
+                                shape: RoundedRectangleBorder(
+                                  borderRadius: BorderRadius.circular(7),
+                                ),
+                              ),
+                            ),
+                          ),
                         ),
                       ),
                     ),
@@ -1037,7 +1157,8 @@ class _UnifiedProductCardState extends State<UnifiedProductCard>
   // ============================================
   // HOME LAYOUT (Compact cards for home sections)
   // ============================================
-  Widget _buildHomeLayout(bool isDark, WishlistProvider wishlistProvider, CartProvider cartProvider) {
+  Widget _buildHomeLayout(bool isDark, WishlistProvider wishlistProvider,
+      CartProvider cartProvider) {
     final discount = widget.product.discount;
     final hasDiscount = discount > 0;
     final isOutOfStock = widget.product.stock == 0;
@@ -1091,7 +1212,8 @@ class _UnifiedProductCardState extends State<UnifiedProductCard>
                       top: 6,
                       left: 6,
                       child: Container(
-                        padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 3),
+                        padding: const EdgeInsets.symmetric(
+                            horizontal: 6, vertical: 3),
                         decoration: BoxDecoration(
                           color: Colors.red,
                           borderRadius: BorderRadius.circular(4),
@@ -1141,7 +1263,9 @@ class _UnifiedProductCardState extends State<UnifiedProductCard>
                           style: TextStyle(
                             fontSize: 14,
                             fontWeight: FontWeight.w800,
-                            color: isDark ? AppColors.primaryLight : AppColors.primary,
+                            color: isDark
+                                ? AppColors.primaryLight
+                                : AppColors.primary,
                           ),
                         ),
                         // Original price (strikethrough)
@@ -1306,7 +1430,8 @@ class _UnifiedProductCardState extends State<UnifiedProductCard>
     return Container(
       padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 3),
       decoration: BoxDecoration(
-        color: (isDark ? AppColors.primaryLight : AppColors.primary).withOpacity(0.9),
+        color: (isDark ? AppColors.primaryLight : AppColors.primary)
+            .withOpacity(0.9),
         borderRadius: BorderRadius.circular(4),
         boxShadow: [
           BoxShadow(
@@ -1319,7 +1444,8 @@ class _UnifiedProductCardState extends State<UnifiedProductCard>
       child: Row(
         mainAxisSize: MainAxisSize.min,
         children: [
-          const FaIcon(FontAwesomeIcons.layerGroup, size: 8, color: Colors.white),
+          const FaIcon(FontAwesomeIcons.layerGroup,
+              size: 8, color: Colors.white),
           const SizedBox(width: 3),
           Text(
             '${widget.product.variants.length}',
@@ -1371,11 +1497,14 @@ class _UnifiedProductCardState extends State<UnifiedProductCard>
       children: [
         ...List.generate(5, (index) {
           if (index < fullStars) {
-            return FaIcon(FontAwesomeIcons.solidStar, color: Colors.amber, size: 14);
+            return FaIcon(FontAwesomeIcons.solidStar,
+                color: Colors.amber, size: 14);
           } else if (index == fullStars && hasHalfStar) {
-            return FaIcon(FontAwesomeIcons.solidStarHalfStroke, color: Colors.amber, size: 14);
+            return FaIcon(FontAwesomeIcons.solidStarHalfStroke,
+                color: Colors.amber, size: 14);
           } else {
-            return FaIcon(FontAwesomeIcons.star, color: Colors.grey[400], size: 14);
+            return FaIcon(FontAwesomeIcons.star,
+                color: Colors.grey[400], size: 14);
           }
         }),
         const SizedBox(width: 6),
@@ -1403,7 +1532,8 @@ class _UnifiedProductCardState extends State<UnifiedProductCard>
 
   Widget _buildPriceRow(bool isDark) {
     final currentPrice = _selectedVariant?.salePrice ?? widget.product.price;
-    final currentOriginalPrice = _selectedVariant?.originalPrice ?? widget.product.originalPrice;
+    final currentOriginalPrice =
+        _selectedVariant?.originalPrice ?? widget.product.originalPrice;
     final discount = _selectedVariant?.discount ?? widget.product.discount;
 
     return Row(
@@ -1435,7 +1565,8 @@ class _UnifiedProductCardState extends State<UnifiedProductCard>
             color: isDark ? AppColors.primaryLight : AppColors.primary,
           ),
         ),
-        if (currentOriginalPrice != null && currentOriginalPrice > currentPrice) ...[
+        if (currentOriginalPrice != null &&
+            currentOriginalPrice > currentPrice) ...[
           const SizedBox(width: 8),
           Text(
             '₹${currentOriginalPrice.toStringAsFixed(2)}',
@@ -1468,7 +1599,8 @@ class _UnifiedProductCardState extends State<UnifiedProductCard>
         child: DropdownButton<ProductVariant>(
           value: _selectedVariant,
           isExpanded: true,
-          icon: Icon(Icons.keyboard_arrow_down, size: 16, color: isDark ? Colors.grey[400] : Colors.grey[600]),
+          icon: Icon(Icons.keyboard_arrow_down,
+              size: 16, color: isDark ? Colors.grey[400] : Colors.grey[600]),
           dropdownColor: isDark ? Colors.grey[850] : Colors.white,
           style: TextStyle(
             fontSize: 11,
@@ -1518,7 +1650,8 @@ class _UnifiedProductCardState extends State<UnifiedProductCard>
             child: Row(
               mainAxisSize: MainAxisSize.min,
               children: [
-                FaIcon(FontAwesomeIcons.arrowTrendUp, size: 12, color: Colors.orange.shade700),
+                FaIcon(FontAwesomeIcons.arrowTrendUp,
+                    size: 12, color: Colors.orange.shade700),
                 const SizedBox(width: 4),
                 Text(
                   'Trending',
@@ -1542,7 +1675,8 @@ class _UnifiedProductCardState extends State<UnifiedProductCard>
             child: Row(
               mainAxisSize: MainAxisSize.min,
               children: [
-                FaIcon(FontAwesomeIcons.solidStar, size: 12, color: Colors.blue.shade700),
+                FaIcon(FontAwesomeIcons.solidStar,
+                    size: 12, color: Colors.blue.shade700),
                 const SizedBox(width: 4),
                 Text(
                   'Featured',
@@ -1566,7 +1700,8 @@ class _UnifiedProductCardState extends State<UnifiedProductCard>
     final expressDays = widget.product.expressDeliveryDays;
 
     final hasStandard = standardDays != null && standardDays.isNotEmpty;
-    final hasExpress = isExpressEnabled && expressDays != null && expressDays.isNotEmpty;
+    final hasExpress =
+        isExpressEnabled && expressDays != null && expressDays.isNotEmpty;
 
     if (!hasStandard && !hasExpress) return const SizedBox.shrink();
 
@@ -1634,7 +1769,8 @@ class _UnifiedProductCardState extends State<UnifiedProductCard>
               if (isFree) ...[
                 const SizedBox(width: 6),
                 Container(
-                  padding: const EdgeInsets.symmetric(horizontal: 5, vertical: 1),
+                  padding:
+                      const EdgeInsets.symmetric(horizontal: 5, vertical: 1),
                   decoration: BoxDecoration(
                     color: isDark ? Colors.green[800] : Colors.green[100],
                     borderRadius: BorderRadius.circular(4),
@@ -1660,7 +1796,8 @@ class _UnifiedProductCardState extends State<UnifiedProductCard>
     );
   }
 
-  Widget _buildWishlistButton(WishlistProvider wishlistProvider, bool isDark, {double size = 32}) {
+  Widget _buildWishlistButton(WishlistProvider wishlistProvider, bool isDark,
+      {double size = 32}) {
     return GestureDetector(
       onTap: () async {
         HapticFeedback.mediumImpact();
@@ -1681,7 +1818,9 @@ class _UnifiedProductCardState extends State<UnifiedProductCard>
         decoration: BoxDecoration(
           color: _isInWishlist
               ? Colors.red[50]
-              : (isDark ? Colors.grey[850]!.withOpacity(0.96) : Colors.white.withOpacity(0.96)),
+              : (isDark
+                  ? Colors.grey[850]!.withOpacity(0.96)
+                  : Colors.white.withOpacity(0.96)),
           shape: BoxShape.circle,
           border: Border.all(
             color: _isInWishlist
@@ -1700,7 +1839,9 @@ class _UnifiedProductCardState extends State<UnifiedProductCard>
         child: AnimatedSwitcher(
           duration: const Duration(milliseconds: 300),
           child: FaIcon(
-            _isInWishlist ? FontAwesomeIcons.solidHeart : FontAwesomeIcons.heart,
+            _isInWishlist
+                ? FontAwesomeIcons.solidHeart
+                : FontAwesomeIcons.heart,
             key: ValueKey<bool>(_isInWishlist),
             color: _isInWishlist
                 ? Colors.red[600]
@@ -1770,7 +1911,9 @@ class _UnifiedProductCardState extends State<UnifiedProductCard>
                               : _isInCart
                                   ? 'In Cart'
                                   : (hasVariants
-                                      ? (isExpanded ? 'Select Options' : 'Select')
+                                      ? (isExpanded
+                                          ? 'Select Options'
+                                          : 'Select')
                                       : (isExpanded ? 'Add to Cart' : 'Add')),
                           style: TextStyle(
                             color: Colors.white,

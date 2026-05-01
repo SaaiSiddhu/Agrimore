@@ -15,6 +15,8 @@ dependencies:
     path: ../../packages/agrimore_core
   agrimore_ui:
     path: ../../packages/agrimore_ui
+  agrimore_services:
+    path: ../../packages/agrimore_services
   
   # Firebase
   firebase_core: ^3.8.1
@@ -50,11 +52,11 @@ dev_dependencies:
 flutter_launcher_icons:
   android: "launcher_icon"
   ios: false
-  image_path: "assets/images/logo.png"
+  image_path: "assets/images/delivery_logo.png"
 
 flutter:
   uses-material-design: true
 
   assets:
     - .env
-    - assets/images/logo.png
+    - assets/images/

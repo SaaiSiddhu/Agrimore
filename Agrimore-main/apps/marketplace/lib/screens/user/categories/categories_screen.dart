@@ -21,7 +21,7 @@ class CategoriesScreen extends StatefulWidget {
   State<CategoriesScreen> createState() => _CategoriesScreenState();
 }
 
-class _CategoriesScreenState extends State<CategoriesScreen> 
+class _CategoriesScreenState extends State<CategoriesScreen>
     with TickerProviderStateMixin {
   static const bool _showCategoryImages = true;
   static const bool _showProductImages = true;
@@ -31,7 +31,7 @@ class _CategoriesScreenState extends State<CategoriesScreen>
   bool _isSearching = false;
   final TextEditingController _searchController = TextEditingController();
   final FocusNode _searchFocusNode = FocusNode();
-  
+
   late AnimationController _staggerController;
   late AnimationController _searchAnimController;
 
@@ -60,18 +60,20 @@ class _CategoriesScreenState extends State<CategoriesScreen>
 
   void _loadCategories() {
     WidgetsBinding.instance.addPostFrameCallback((_) {
-      final categoryProvider = Provider.of<CategoryProvider>(context, listen: false);
-      final productProvider = Provider.of<ProductProvider>(context, listen: false);
-      
+      final categoryProvider =
+          Provider.of<CategoryProvider>(context, listen: false);
+      final productProvider =
+          Provider.of<ProductProvider>(context, listen: false);
+
       if (categoryProvider.categories.isEmpty) {
         categoryProvider.loadCategories();
       }
-      
+
       // ✅ FIX: Load products too if empty, otherwise category grid shows 'No products'
       if (productProvider.products.isEmpty) {
         productProvider.loadProducts();
       }
-      
+
       _staggerController.forward();
     });
   }
@@ -112,7 +114,8 @@ class _CategoriesScreenState extends State<CategoriesScreen>
     final accentColor = isDark ? AppColors.primaryLight : AppColors.primary;
 
     return Scaffold(
-      backgroundColor: isDark ? const Color(0xFF0D0D0D) : const Color(0xFFF7F7F7),
+      backgroundColor:
+          isDark ? const Color(0xFF0D0D0D) : const Color(0xFFF7F7F7),
       appBar: _buildAppBar(isDark, accentColor),
       body: Consumer<CategoryProvider>(
         builder: (context, categoryProvider, child) {
@@ -125,7 +128,8 @@ class _CategoriesScreenState extends State<CategoriesScreen>
           }
 
           final allCategories = categoryProvider.categories;
-          final mainCategories = allCategories.where((c) => c.isMainCategory).toList();
+          final mainCategories =
+              allCategories.where((c) => c.isMainCategory).toList();
 
           return Row(
             children: [
@@ -137,10 +141,11 @@ class _CategoriesScreenState extends State<CategoriesScreen>
                 isDark: isDark,
                 accentColor: accentColor,
               ),
-              
+
               // Right Content Area
               Expanded(
-                child: mainCategories.isNotEmpty && _selectedIndex < mainCategories.length
+                child: mainCategories.isNotEmpty &&
+                        _selectedIndex < mainCategories.length
                     ? _buildCategoryContent(
                         mainCategories[_selectedIndex],
                         allCategories,
@@ -190,7 +195,8 @@ class _CategoriesScreenState extends State<CategoriesScreen>
             builder: (context, cart, _) => Stack(
               children: [
                 IconButton(
-                  icon: const Icon(Icons.shopping_bag_outlined, color: Colors.white, size: 22),
+                  icon: const Icon(Icons.shopping_bag_outlined,
+                      color: Colors.white, size: 22),
                   onPressed: () => Navigator.pushNamed(context, AppRoutes.cart),
                 ),
                 if (cart.itemCount > 0)
@@ -205,7 +211,10 @@ class _CategoriesScreenState extends State<CategoriesScreen>
                       ),
                       child: Text(
                         '${cart.itemCount}',
-                        style: const TextStyle(color: Colors.white, fontSize: 9, fontWeight: FontWeight.w700),
+                        style: const TextStyle(
+                            color: Colors.white,
+                            fontSize: 9,
+                            fontWeight: FontWeight.w700),
                       ),
                     ),
                   ),
@@ -230,8 +239,10 @@ class _CategoriesScreenState extends State<CategoriesScreen>
         style: const TextStyle(color: Colors.white, fontSize: 14),
         decoration: InputDecoration(
           hintText: 'Search in category...',
-          hintStyle: TextStyle(color: Colors.white.withOpacity(0.6), fontSize: 14),
-          prefixIcon: Icon(Icons.search, color: Colors.white.withOpacity(0.6), size: 20),
+          hintStyle:
+              TextStyle(color: Colors.white.withOpacity(0.6), fontSize: 14),
+          prefixIcon: Icon(Icons.search,
+              color: Colors.white.withOpacity(0.6), size: 20),
           border: InputBorder.none,
           contentPadding: const EdgeInsets.symmetric(vertical: 10),
         ),
@@ -245,12 +256,14 @@ class _CategoriesScreenState extends State<CategoriesScreen>
     bool isDark,
     Color accentColor,
   ) {
-    final subcategories = allCategories.where((c) => c.parentId == category.id).toList();
+    final subcategories =
+        allCategories.where((c) => c.parentId == category.id).toList();
 
     return RefreshIndicator(
       onRefresh: () async {
         HapticFeedback.lightImpact();
-        await Provider.of<ProductProvider>(context, listen: false).loadProducts();
+        await Provider.of<ProductProvider>(context, listen: false)
+            .loadProducts();
       },
       color: accentColor,
       backgroundColor: isDark ? const Color(0xFF1E1E1E) : Colors.white,
@@ -265,17 +278,21 @@ class _CategoriesScreenState extends State<CategoriesScreen>
                 category: category,
                 isDark: isDark,
                 accentColor: accentColor,
-                onViewAll: () => AppRoutes.navigateToCategoryProducts(context, category.id),
+                onViewAll: () => AppRoutes.navigateToCategoryProducts(
+                  context,
+                  category.id,
+                  categoryName: category.name,
+                ),
               ),
             ),
           ),
 
-          // Subcategory Chips
+          // Subcategory image grid
           if (subcategories.isNotEmpty)
             SliverToBoxAdapter(
               child: Padding(
-                padding: const EdgeInsets.fromLTRB(10, 10, 0, 6),
-                child: _PremiumSubcategoryChips(
+                padding: const EdgeInsets.fromLTRB(10, 12, 10, 6),
+                child: _PremiumSubcategoryGrid(
                   subcategories: subcategories,
                   isDark: isDark,
                   accentColor: accentColor,
@@ -311,7 +328,8 @@ class _CategoriesScreenState extends State<CategoriesScreen>
           // Product Grid
           SliverPadding(
             padding: const EdgeInsets.fromLTRB(8, 8, 8, 100),
-            sliver: _buildProductGrid(category, allCategories, isDark, accentColor),
+            sliver:
+                _buildProductGrid(category, allCategories, isDark, accentColor),
           ),
         ],
       ),
@@ -326,15 +344,16 @@ class _CategoriesScreenState extends State<CategoriesScreen>
     var products = productProvider.products
         .where((p) => productBelongsToCategory(p, category, allCategories))
         .toList();
-    
+
     if (_searchQuery.isNotEmpty) {
       final query = _searchQuery.toLowerCase().trim();
-      products = products.where((p) =>
-        p.name.toLowerCase().contains(query) || 
-        p.description.toLowerCase().contains(query)
-      ).toList();
+      products = products
+          .where((p) =>
+              p.name.toLowerCase().contains(query) ||
+              p.description.toLowerCase().contains(query))
+          .toList();
     }
-    
+
     return products;
   }
 
@@ -359,7 +378,8 @@ class _CategoriesScreenState extends State<CategoriesScreen>
               delegate: SliverChildBuilderDelegate(
                 (context, index) => Shimmer.fromColors(
                   baseColor: isDark ? Colors.grey[850]! : Colors.grey[300]!,
-                  highlightColor: isDark ? Colors.grey[800]! : Colors.grey[100]!,
+                  highlightColor:
+                      isDark ? Colors.grey[800]! : Colors.grey[100]!,
                   child: Container(
                     decoration: BoxDecoration(
                       color: Colors.white,
@@ -403,7 +423,8 @@ class _CategoriesScreenState extends State<CategoriesScreen>
     );
   }
 
-  Widget _buildAnimatedProductCard(ProductModel product, bool isDark, Color accentColor, int index) {
+  Widget _buildAnimatedProductCard(
+      ProductModel product, bool isDark, Color accentColor, int index) {
     final interval = Interval(
       (index * 0.05).clamp(0.0, 0.5),
       ((index * 0.05) + 0.5).clamp(0.0, 1.0),
@@ -413,7 +434,8 @@ class _CategoriesScreenState extends State<CategoriesScreen>
     return AnimatedBuilder(
       animation: _staggerController,
       builder: (context, child) {
-        final animation = CurvedAnimation(parent: _staggerController, curve: interval);
+        final animation =
+            CurvedAnimation(parent: _staggerController, curve: interval);
         return Transform.translate(
           offset: Offset(0, 20 * (1 - animation.value)),
           child: Opacity(
@@ -444,7 +466,8 @@ class _CategoriesScreenState extends State<CategoriesScreen>
               itemCount: 8,
               padding: const EdgeInsets.symmetric(vertical: 12),
               itemBuilder: (_, __) => Padding(
-                padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 6),
+                padding:
+                    const EdgeInsets.symmetric(horizontal: 10, vertical: 6),
                 child: Column(
                   children: [
                     Container(
@@ -499,7 +522,8 @@ class _CategoriesScreenState extends State<CategoriesScreen>
                   Expanded(
                     child: GridView.builder(
                       physics: const NeverScrollableScrollPhysics(),
-                      gridDelegate: const SliverGridDelegateWithFixedCrossAxisCount(
+                      gridDelegate:
+                          const SliverGridDelegateWithFixedCrossAxisCount(
                         crossAxisCount: 3,
                         mainAxisExtent: 230,
                         crossAxisSpacing: 6,
@@ -665,7 +689,7 @@ class _EnhancedSidebarItem extends StatefulWidget {
   State<_EnhancedSidebarItem> createState() => _EnhancedSidebarItemState();
 }
 
-class _EnhancedSidebarItemState extends State<_EnhancedSidebarItem> 
+class _EnhancedSidebarItemState extends State<_EnhancedSidebarItem>
     with SingleTickerProviderStateMixin {
   late AnimationController _controller;
   bool _isPressed = false;
@@ -734,10 +758,11 @@ class _EnhancedSidebarItemState extends State<_EnhancedSidebarItem>
                   ),
                   // Main content
                   Container(
-                    padding: const EdgeInsets.symmetric(vertical: 8, horizontal: 4),
+                    padding:
+                        const EdgeInsets.symmetric(vertical: 8, horizontal: 4),
                     decoration: BoxDecoration(
                       color: widget.isSelected
-                          ? (widget.isDark 
+                          ? (widget.isDark
                               ? widget.accentColor.withOpacity(0.12)
                               : widget.accentColor.withOpacity(0.08))
                           : Colors.transparent,
@@ -752,17 +777,22 @@ class _EnhancedSidebarItemState extends State<_EnhancedSidebarItem>
                           width: 44,
                           height: 44,
                           decoration: BoxDecoration(
-                            color: widget.isDark 
-                                ? Colors.grey[850] 
-                                : (widget.isSelected ? widget.accentColor.withOpacity(0.1) : const Color(0xFFF5F5F5)),
+                            color: widget.isDark
+                                ? Colors.grey[850]
+                                : (widget.isSelected
+                                    ? widget.accentColor.withOpacity(0.1)
+                                    : const Color(0xFFF5F5F5)),
                             shape: BoxShape.circle,
-                            boxShadow: widget.isSelected ? [
-                              BoxShadow(
-                                color: widget.accentColor.withOpacity(0.25),
-                                blurRadius: 8,
-                                spreadRadius: 1,
-                              ),
-                            ] : null,
+                            boxShadow: widget.isSelected
+                                ? [
+                                    BoxShadow(
+                                      color:
+                                          widget.accentColor.withOpacity(0.25),
+                                      blurRadius: 8,
+                                      spreadRadius: 1,
+                                    ),
+                                  ]
+                                : null,
                           ),
                           child: _buildCategoryIcon(),
                         ),
@@ -777,10 +807,14 @@ class _EnhancedSidebarItemState extends State<_EnhancedSidebarItem>
                             overflow: TextOverflow.ellipsis,
                             style: TextStyle(
                               fontSize: 9,
-                              fontWeight: widget.isSelected ? FontWeight.w700 : FontWeight.w500,
+                              fontWeight: widget.isSelected
+                                  ? FontWeight.w700
+                                  : FontWeight.w500,
                               color: widget.isSelected
                                   ? widget.accentColor
-                                  : (widget.isDark ? Colors.grey[400] : Colors.grey[700]),
+                                  : (widget.isDark
+                                      ? Colors.grey[400]
+                                      : Colors.grey[700]),
                               height: 1.15,
                             ),
                           ),
@@ -802,8 +836,8 @@ class _EnhancedSidebarItemState extends State<_EnhancedSidebarItem>
       return _buildFallbackIcon();
     }
 
-    final String targetUrl = (widget.category.iconUrl?.isNotEmpty ?? false) 
-        ? widget.category.iconUrl! 
+    final String targetUrl = (widget.category.iconUrl?.isNotEmpty ?? false)
+        ? widget.category.iconUrl!
         : (widget.category.imageUrl ?? '');
 
     if (targetUrl.isNotEmpty) {
@@ -824,8 +858,8 @@ class _EnhancedSidebarItemState extends State<_EnhancedSidebarItem>
   Widget _buildFallbackIcon() {
     return Icon(
       _getCategoryIcon(widget.category.name),
-      color: widget.isSelected 
-          ? widget.accentColor 
+      color: widget.isSelected
+          ? widget.accentColor
           : (widget.isDark ? Colors.grey[500] : Colors.grey[600]),
       size: 20,
     );
@@ -833,7 +867,8 @@ class _EnhancedSidebarItemState extends State<_EnhancedSidebarItem>
 
   IconData _getCategoryIcon(String name) {
     final n = name.toLowerCase();
-    if (n.contains('grocery') || n.contains('food')) return Icons.local_grocery_store;
+    if (n.contains('grocery') || n.contains('food'))
+      return Icons.local_grocery_store;
     if (n.contains('fashion') || n.contains('cloth')) return Icons.checkroom;
     if (n.contains('mobile') || n.contains('phone')) return Icons.phone_android;
     if (n.contains('electronic')) return Icons.devices;
@@ -906,12 +941,15 @@ class _PremiumCategoryHeader extends StatelessWidget {
               ),
               borderRadius: BorderRadius.circular(10),
             ),
-            child: ((category.iconUrl?.isNotEmpty ?? false) || (category.imageUrl?.isNotEmpty ?? false))
-                && _CategoriesScreenState._showCategoryImages
+            child: ((category.iconUrl?.isNotEmpty ?? false) ||
+                        (category.imageUrl?.isNotEmpty ?? false)) &&
+                    _CategoriesScreenState._showCategoryImages
                 ? ClipRRect(
                     borderRadius: BorderRadius.circular(10),
                     child: CachedNetworkImage(
-                      imageUrl: (category.iconUrl?.isNotEmpty ?? false) ? category.iconUrl! : category.imageUrl!,
+                      imageUrl: (category.iconUrl?.isNotEmpty ?? false)
+                          ? category.iconUrl!
+                          : category.imageUrl!,
                       fit: BoxFit.cover,
                     ),
                   )
@@ -936,7 +974,8 @@ class _PremiumCategoryHeader extends StatelessWidget {
                     letterSpacing: -0.3,
                   ),
                 ),
-                if (category.description != null && category.description!.isNotEmpty) ...[
+                if (category.description != null &&
+                    category.description!.isNotEmpty) ...[
                   const SizedBox(height: 2),
                   Text(
                     category.description!,
@@ -996,15 +1035,15 @@ class _PremiumCategoryHeader extends StatelessWidget {
 }
 
 // ============================================================================
-// PREMIUM SUBCATEGORY CHIPS
+// PREMIUM SUBCATEGORY GRID
 // ============================================================================
 
-class _PremiumSubcategoryChips extends StatelessWidget {
+class _PremiumSubcategoryGrid extends StatelessWidget {
   final List<CategoryModel> subcategories;
   final bool isDark;
   final Color accentColor;
 
-  const _PremiumSubcategoryChips({
+  const _PremiumSubcategoryGrid({
     required this.subcategories,
     required this.isDark,
     required this.accentColor,
@@ -1012,108 +1051,173 @@ class _PremiumSubcategoryChips extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    return SizedBox(
-      height: 36,
-      child: ListView.builder(
-        scrollDirection: Axis.horizontal,
-        itemCount: subcategories.length,
-        itemBuilder: (context, index) {
-          final subcat = subcategories[index];
-          return _SubcategoryChip(
-            category: subcat,
-            isDark: isDark,
-            accentColor: accentColor,
-            isFirst: index == 0,
-          );
-        },
-      ),
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        Row(
+          children: [
+            Text(
+              'Subcategories',
+              style: TextStyle(
+                color: isDark ? Colors.white : Colors.black87,
+                fontSize: 13,
+                fontWeight: FontWeight.w800,
+              ),
+            ),
+            const SizedBox(width: 6),
+            Container(
+              padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 2),
+              decoration: BoxDecoration(
+                color: accentColor.withOpacity(isDark ? 0.18 : 0.1),
+                borderRadius: BorderRadius.circular(8),
+              ),
+              child: Text(
+                '${subcategories.length}',
+                style: TextStyle(
+                  color: accentColor,
+                  fontSize: 10,
+                  fontWeight: FontWeight.w700,
+                ),
+              ),
+            ),
+          ],
+        ),
+        const SizedBox(height: 8),
+        GridView.builder(
+          itemCount: subcategories.length,
+          shrinkWrap: true,
+          physics: const NeverScrollableScrollPhysics(),
+          gridDelegate: const SliverGridDelegateWithFixedCrossAxisCount(
+            crossAxisCount: 3,
+            mainAxisExtent: 118,
+            crossAxisSpacing: 8,
+            mainAxisSpacing: 8,
+          ),
+          itemBuilder: (context, index) {
+            return _SubcategoryImageCard(
+              category: subcategories[index],
+              isDark: isDark,
+              accentColor: accentColor,
+            );
+          },
+        ),
+      ],
     );
   }
 }
 
-class _SubcategoryChip extends StatefulWidget {
+class _SubcategoryImageCard extends StatefulWidget {
   final CategoryModel category;
   final bool isDark;
   final Color accentColor;
-  final bool isFirst;
 
-  const _SubcategoryChip({
+  const _SubcategoryImageCard({
     required this.category,
     required this.isDark,
     required this.accentColor,
-    required this.isFirst,
   });
 
   @override
-  State<_SubcategoryChip> createState() => _SubcategoryChipState();
+  State<_SubcategoryImageCard> createState() => _SubcategoryImageCardState();
 }
 
-class _SubcategoryChipState extends State<_SubcategoryChip> {
+class _SubcategoryImageCardState extends State<_SubcategoryImageCard> {
   bool _isPressed = false;
 
   @override
   Widget build(BuildContext context) {
-    return GestureDetector(
-      onTapDown: (_) => setState(() => _isPressed = true),
-      onTapUp: (_) => setState(() => _isPressed = false),
-      onTapCancel: () => setState(() => _isPressed = false),
-      onTap: () {
-        HapticFeedback.lightImpact();
-        AppRoutes.navigateToCategoryProducts(context, widget.category.id);
-      },
-      child: AnimatedScale(
-        scale: _isPressed ? 0.95 : 1.0,
-        duration: const Duration(milliseconds: 100),
-        child: Container(
-          margin: EdgeInsets.only(right: 8, left: widget.isFirst ? 0 : 0),
-          padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 8),
-          decoration: BoxDecoration(
-            color: widget.isDark ? const Color(0xFF252525) : Colors.white,
-            borderRadius: BorderRadius.circular(18),
-            border: Border.all(
-              color: widget.isDark ? Colors.grey[700]! : const Color(0xFFE0E0E0),
-              width: 0.8,
-            ),
-            boxShadow: [
-              BoxShadow(
-                color: Colors.black.withOpacity(widget.isDark ? 0.15 : 0.04),
-                blurRadius: 4,
-                offset: const Offset(0, 1),
+    final imageUrl = (widget.category.iconUrl?.trim().isNotEmpty ?? false)
+        ? widget.category.iconUrl!.trim()
+        : (widget.category.imageUrl ?? '').trim();
+
+    return Semantics(
+      button: true,
+      label: widget.category.name,
+      child: GestureDetector(
+        onTapDown: (_) => setState(() => _isPressed = true),
+        onTapUp: (_) => setState(() => _isPressed = false),
+        onTapCancel: () => setState(() => _isPressed = false),
+        onTap: () {
+          HapticFeedback.lightImpact();
+          AppRoutes.navigateToCategoryProducts(
+            context,
+            widget.category.id,
+            categoryName: widget.category.name,
+          );
+        },
+        child: AnimatedScale(
+          scale: _isPressed ? 0.96 : 1.0,
+          duration: const Duration(milliseconds: 120),
+          curve: Curves.easeOut,
+          child: Container(
+            padding: const EdgeInsets.fromLTRB(8, 8, 8, 7),
+            decoration: BoxDecoration(
+              color: widget.isDark ? const Color(0xFF252525) : Colors.white,
+              borderRadius: BorderRadius.circular(8),
+              border: Border.all(
+                color:
+                    widget.isDark ? Colors.grey[800]! : const Color(0xFFE7E7E7),
+                width: 0.8,
               ),
-            ],
-          ),
-          child: Row(
-            mainAxisSize: MainAxisSize.min,
-            children: [
-              if (_CategoriesScreenState._showCategoryImages &&
-                  ((widget.category.iconUrl?.isNotEmpty ?? false) ||
-                      (widget.category.imageUrl?.isNotEmpty ?? false))) ...[
-                ClipOval(
-                  child: CachedNetworkImage(
-                    imageUrl: (widget.category.iconUrl?.isNotEmpty ?? false) ? widget.category.iconUrl! : widget.category.imageUrl!,
-                    width: 18,
-                    height: 18,
-                    fit: BoxFit.cover,
-                    placeholder: (_, __) => Container(
-                      width: 18,
-                      height: 18,
-                      color: Colors.grey[300],
+              boxShadow: [
+                BoxShadow(
+                  color: Colors.black.withOpacity(widget.isDark ? 0.16 : 0.04),
+                  blurRadius: 8,
+                  offset: const Offset(0, 2),
+                ),
+              ],
+            ),
+            child: Column(
+              children: [
+                Expanded(
+                  child: ClipRRect(
+                    borderRadius: BorderRadius.circular(7),
+                    child: imageUrl.isNotEmpty &&
+                            _CategoriesScreenState._showCategoryImages
+                        ? CachedNetworkImage(
+                            imageUrl: imageUrl,
+                            width: double.infinity,
+                            fit: BoxFit.cover,
+                            placeholder: (_, __) => _buildFallbackImage(),
+                            errorWidget: (_, __, ___) => _buildFallbackImage(),
+                          )
+                        : _buildFallbackImage(),
+                  ),
+                ),
+                const SizedBox(height: 7),
+                SizedBox(
+                  height: 30,
+                  child: Center(
+                    child: Text(
+                      widget.category.name,
+                      textAlign: TextAlign.center,
+                      maxLines: 2,
+                      overflow: TextOverflow.ellipsis,
+                      style: TextStyle(
+                        color: widget.isDark ? Colors.white : Colors.black87,
+                        fontSize: 11,
+                        fontWeight: FontWeight.w700,
+                        height: 1.15,
+                      ),
                     ),
                   ),
                 ),
-                const SizedBox(width: 6),
               ],
-              Text(
-                widget.category.name,
-                style: TextStyle(
-                  fontSize: 12,
-                  fontWeight: FontWeight.w600,
-                  color: widget.isDark ? Colors.white : Colors.black87,
-                ),
-              ),
-            ],
+            ),
           ),
         ),
+      ),
+    );
+  }
+
+  Widget _buildFallbackImage() {
+    return Container(
+      color: widget.accentColor.withOpacity(widget.isDark ? 0.14 : 0.08),
+      alignment: Alignment.center,
+      child: Icon(
+        Icons.category_rounded,
+        color: widget.accentColor,
+        size: 26,
       ),
     );
   }
@@ -1147,11 +1251,13 @@ class _AdvancedProductCardState extends State<_AdvancedProductCard> {
       builder: (context, cartProvider, child) {
         final isInCart = cartProvider.isInCart(widget.product.id);
         final quantity = cartProvider.getItemQuantity(widget.product.id);
-        final hasDiscount = widget.product.originalPrice != null && 
+        final hasDiscount = widget.product.originalPrice != null &&
             widget.product.originalPrice! > widget.product.price;
         final discountPercent = hasDiscount
-            ? ((widget.product.originalPrice! - widget.product.price) / 
-               widget.product.originalPrice! * 100).round()
+            ? ((widget.product.originalPrice! - widget.product.price) /
+                    widget.product.originalPrice! *
+                    100)
+                .round()
             : 0;
 
         return GestureDetector(
@@ -1170,7 +1276,9 @@ class _AdvancedProductCardState extends State<_AdvancedProductCard> {
                 color: widget.isDark ? const Color(0xFF1A1A1A) : Colors.white,
                 borderRadius: BorderRadius.circular(12),
                 border: Border.all(
-                  color: widget.isDark ? Colors.grey[800]! : const Color(0xFFE8E8E8),
+                  color: widget.isDark
+                      ? Colors.grey[800]!
+                      : const Color(0xFFE8E8E8),
                   width: 0.5,
                 ),
                 boxShadow: [
@@ -1194,8 +1302,8 @@ class _AdvancedProductCardState extends State<_AdvancedProductCard> {
                           width: double.infinity,
                           padding: const EdgeInsets.all(8),
                           decoration: BoxDecoration(
-                            color: widget.isDark 
-                                ? const Color(0xFF222222) 
+                            color: widget.isDark
+                                ? const Color(0xFF222222)
                                 : const Color(0xFFFAFAFA),
                             borderRadius: const BorderRadius.vertical(
                               top: Radius.circular(12),
@@ -1206,11 +1314,11 @@ class _AdvancedProductCardState extends State<_AdvancedProductCard> {
                                   imageUrl: widget.product.images.first,
                                   fit: BoxFit.contain,
                                   placeholder: (_, __) => Shimmer.fromColors(
-                                    baseColor: widget.isDark 
-                                        ? Colors.grey[800]! 
+                                    baseColor: widget.isDark
+                                        ? Colors.grey[800]!
                                         : Colors.grey[300]!,
-                                    highlightColor: widget.isDark 
-                                        ? Colors.grey[700]! 
+                                    highlightColor: widget.isDark
+                                        ? Colors.grey[700]!
                                         : Colors.grey[100]!,
                                     child: Container(color: Colors.grey),
                                   ),
@@ -1239,7 +1347,10 @@ class _AdvancedProductCardState extends State<_AdvancedProductCard> {
                               ),
                               decoration: BoxDecoration(
                                 gradient: const LinearGradient(
-                                  colors: [Color(0xFFE53935), Color(0xFFFF5252)],
+                                  colors: [
+                                    Color(0xFFE53935),
+                                    Color(0xFFFF5252)
+                                  ],
                                 ),
                                 borderRadius: BorderRadius.circular(6),
                                 boxShadow: [
@@ -1281,7 +1392,8 @@ class _AdvancedProductCardState extends State<_AdvancedProductCard> {
                             style: TextStyle(
                               fontSize: 10,
                               fontWeight: FontWeight.w600,
-                              color: widget.isDark ? Colors.white : Colors.black87,
+                              color:
+                                  widget.isDark ? Colors.white : Colors.black87,
                               height: 1.2,
                             ),
                           ),
@@ -1289,17 +1401,17 @@ class _AdvancedProductCardState extends State<_AdvancedProductCard> {
                           const SizedBox(height: 2),
 
                           // Unit/Variant
-                          if (widget.product.unit != null || 
+                          if (widget.product.unit != null ||
                               (widget.product.variants.isNotEmpty))
                             Text(
-                              widget.product.unit ?? 
+                              widget.product.unit ??
                                   widget.product.variants.first.name,
                               maxLines: 1,
                               overflow: TextOverflow.ellipsis,
                               style: TextStyle(
                                 fontSize: 9,
-                                color: widget.isDark 
-                                    ? Colors.grey[500] 
+                                color: widget.isDark
+                                    ? Colors.grey[500]
                                     : Colors.grey[600],
                               ),
                             ),
@@ -1314,7 +1426,9 @@ class _AdvancedProductCardState extends State<_AdvancedProductCard> {
                                 style: TextStyle(
                                   fontSize: 12,
                                   fontWeight: FontWeight.w800,
-                                  color: widget.isDark ? Colors.white : Colors.black87,
+                                  color: widget.isDark
+                                      ? Colors.white
+                                      : Colors.black87,
                                 ),
                               ),
                               if (hasDiscount) ...[
@@ -1349,7 +1463,8 @@ class _AdvancedProductCardState extends State<_AdvancedProductCard> {
     );
   }
 
-  Widget _buildCartButton(CartProvider cartProvider, bool isInCart, int quantity) {
+  Widget _buildCartButton(
+      CartProvider cartProvider, bool isInCart, int quantity) {
     if (isInCart && quantity > 0) {
       // Quantity Controls
       return Container(
@@ -1427,8 +1542,8 @@ class _AdvancedProductCardState extends State<_AdvancedProductCard> {
       child: Container(
         height: 28,
         decoration: BoxDecoration(
-          color: widget.isDark 
-              ? widget.accentColor.withOpacity(0.15) 
+          color: widget.isDark
+              ? widget.accentColor.withOpacity(0.15)
               : widget.accentColor.withOpacity(0.1),
           borderRadius: BorderRadius.circular(6),
           border: Border.all(

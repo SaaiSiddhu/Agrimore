@@ -48,16 +48,14 @@ class CategorySectionProvider extends ChangeNotifier {
     notifyListeners();
 
     try {
-      final snapshot = await _collection
-          .where('isActive', isEqualTo: true)
-          .orderBy('position')
-          .get();
+      final snapshot = await _collection.get();
 
       _sections = snapshot.docs
           .map((doc) => CategorySectionSlotModel.fromMap(
               doc.data() as Map<String, dynamic>, doc.id))
-          .where((s) => s.categoryIds.isNotEmpty)
+          .where((s) => s.isActive && s.categoryIds.isNotEmpty)
           .toList();
+      _sections.sort((a, b) => a.position.compareTo(b.position));
 
       if (snapshot.docs.isEmpty) {
         debugPrint('⚠️ No category sections found. Seeding default sections...');
@@ -93,12 +91,13 @@ class CategorySectionProvider extends ChangeNotifier {
         }
         
         // Reload after seeding
-        final newSnapshot = await _collection.where('isActive', isEqualTo: true).orderBy('position').get();
+        final newSnapshot = await _collection.get();
         _sections = newSnapshot.docs
             .map((doc) => CategorySectionSlotModel.fromMap(
                 doc.data() as Map<String, dynamic>, doc.id))
-            .where((s) => s.categoryIds.isNotEmpty)
+            .where((s) => s.isActive && s.categoryIds.isNotEmpty)
             .toList();
+        _sections.sort((a, b) => a.position.compareTo(b.position));
       }
 
       debugPrint('✅ Loaded ${_sections.length} active category sections');

@@ -215,23 +215,41 @@ class _SellerProfileScreenState extends State<SellerProfileScreen> {
             _buildMenuItem(Icons.store_outlined, 'Business Details', 'Name, GST, location', isDark, () => _showEditDialog()),
             _buildDivider(isDark),
             _buildMenuItem(Icons.account_balance_outlined, 'Bank Details', 'Payout account settings', isDark, () {
-              ScaffoldMessenger.of(context).showSnackBar(const SnackBar(content: Text('Bank details management coming soon')));
+              _showDetailsDialog('Bank Details', [
+                'Bank: ${_sellerData?['bankName'] ?? 'Not added'}',
+                'Account: ${_sellerData?['accountNumber'] ?? 'Not added'}',
+                'IFSC: ${_sellerData?['ifsc'] ?? 'Not added'}',
+              ]);
             }),
             _buildDivider(isDark),
             _buildMenuItem(Icons.access_time, 'Business Hours', 'Operating schedule', isDark, () {
-              ScaffoldMessenger.of(context).showSnackBar(const SnackBar(content: Text('Business hours coming soon')));
+              _showDetailsDialog('Business Hours', [
+                'Default: 9:00 AM - 9:00 PM',
+                'Update your shop availability from Business Details when needed.',
+              ]);
             }),
             _buildDivider(isDark),
             _buildMenuItem(Icons.notifications_outlined, 'Notifications', 'Manage alerts', isDark, () {
-              ScaffoldMessenger.of(context).showSnackBar(const SnackBar(content: Text('Notification settings coming soon')));
+              _showDetailsDialog('Notifications', [
+                'Order updates: Enabled',
+                'Low stock alerts: Enabled',
+                'Payout updates: Enabled',
+              ]);
             }),
             _buildDivider(isDark),
             _buildMenuItem(Icons.help_outline, 'Help & Support', 'FAQs, contact support', isDark, () {
-              ScaffoldMessenger.of(context).showSnackBar(const SnackBar(content: Text('Support coming soon')));
+              _showDetailsDialog('Help & Support', [
+                'Email: support@agrimore.in',
+                'For urgent order issues, contact the admin team from your registered mobile number.',
+              ]);
             }),
             _buildDivider(isDark),
             _buildMenuItem(Icons.privacy_tip_outlined, 'Privacy & Terms', 'Legal documents', isDark, () {
-              ScaffoldMessenger.of(context).showSnackBar(const SnackBar(content: Text('Legal documents coming soon')));
+              _showDetailsDialog('Privacy & Terms', [
+                'Keep product details accurate.',
+                'Orders must be packed on time.',
+                'Payouts are processed against delivered orders.',
+              ]);
             }),
           ],
         ),
@@ -267,6 +285,31 @@ class _SellerProfileScreenState extends State<SellerProfileScreen> {
             Icon(Icons.chevron_right, color: Colors.grey[400], size: 20),
           ],
         ),
+      ),
+    );
+  }
+
+  void _showDetailsDialog(String title, List<String> lines) {
+    showDialog(
+      context: context,
+      builder: (_) => AlertDialog(
+        title: Text(title),
+        content: Column(
+          mainAxisSize: MainAxisSize.min,
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: lines
+              .map((line) => Padding(
+                    padding: const EdgeInsets.only(bottom: 8),
+                    child: Text(line),
+                  ))
+              .toList(),
+        ),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.pop(context),
+            child: const Text('Close'),
+          ),
+        ],
       ),
     );
   }

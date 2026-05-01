@@ -157,14 +157,16 @@ class DeliveryOrderProvider extends ChangeNotifier {
     _activeOrderSubscription = _firestore
         .collection('orders')
         .where('deliveryPartnerId', isEqualTo: partnerId)
-        .where('orderStatus', whereIn: ['picked_up', 'reached_pickup', 'parcel_picked', 'out_for_delivery'])
-        .limit(1)
         .snapshots()
         .listen((snapshot) {
-      if (snapshot.docs.isNotEmpty) {
+      final activeDocs = snapshot.docs.where((doc) {
+        final status = doc.data()['orderStatus']?.toString();
+        return ['picked_up', 'reached_pickup', 'parcel_picked', 'out_for_delivery'].contains(status);
+      }).toList();
+      if (activeDocs.isNotEmpty) {
         _activeOrder = OrderModel.fromMap(
-          snapshot.docs.first.data(),
-          snapshot.docs.first.id,
+          activeDocs.first.data(),
+          activeDocs.first.id,
         );
       } else {
         _activeOrder = null;
