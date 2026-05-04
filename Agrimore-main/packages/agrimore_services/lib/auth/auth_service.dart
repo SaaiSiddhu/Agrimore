@@ -13,11 +13,19 @@ class AuthService {
   final FirebaseAuth _auth = FirebaseAuth.instance;
   final FirebaseFirestore _firestore = FirebaseFirestore.instance;
 
-  // GoogleSignIn is only used for native (mobile) platforms
-  final GoogleSignIn _googleSignIn = GoogleSignIn(
-    scopes: ['email', 'profile'],
-    serverClientId: _googleWebClientId,
-  );
+  // Lazily create GoogleSignIn only on native platforms. Constructing it with
+  // serverClientId on web crashes google_sign_in_web during app startup.
+  GoogleSignIn? _googleSignIn;
+
+  GoogleSignIn get _mobileGoogleSignIn {
+    if (kIsWeb) {
+      throw AuthException('GoogleSignIn plugin is native-only in this app.');
+    }
+    return _googleSignIn ??= GoogleSignIn(
+      scopes: ['email', 'profile'],
+      serverClientId: _googleWebClientId,
+    );
+  }
 
   factory AuthService() => _instance;
   AuthService._internal();
@@ -218,7 +226,8 @@ class AuthService {
         debugPrint('✅ Firebase Web popup sign-in successful');
       } else {
         // ✅ MOBILE: Use google_sign_in package (works with google-services.json)
-        final GoogleSignInAccount? googleUser = await _googleSignIn.signIn();
+        final GoogleSignInAccount? googleUser =
+            await _mobileGoogleSignIn.signIn();
         if (googleUser == null) throw AuthException('Google sign in cancelled');
 
         debugPrint('✅ Google user selected: ${googleUser.email}');
@@ -506,7 +515,7 @@ class AuthService {
       if (!kIsWeb) {
         // Only call google_sign_in signOut on native platforms
         try {
-          await _googleSignIn.signOut();
+          await _mobileGoogleSignIn.signOut();
         } catch (_) {}
       }
       await _auth.signOut();

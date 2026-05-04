@@ -816,7 +816,7 @@ class _UnifiedProductCardState extends State<UnifiedProductCard>
   }
 
   // ============================================
-  // SHOP LAYOUT (Meesho/LetBuyy style - compact, professional)
+  // SHOP LAYOUT (Modern card with prominent Add to Cart)
   // ============================================
   Widget _buildShopLayout(bool isDark, WishlistProvider wishlistProvider,
       CartProvider cartProvider) {
@@ -826,330 +826,364 @@ class _UnifiedProductCardState extends State<UnifiedProductCard>
     final hasFreeDelivery = (widget.product.shippingPrice ?? 0) == 0;
     final isOutOfStock = widget.product.stock == 0;
 
+    // Contrasting button colors for visibility
+    final addToCartColor = isOutOfStock
+        ? Colors.grey[400]!
+        : _isInCart
+            ? const Color(0xFF1B5E20) // dark green for "In Cart"
+            : const Color(0xFF2E7D32); // vivid green for "Add to Cart"
+    final addToCartColorDark = isOutOfStock
+        ? Colors.grey[700]!
+        : _isInCart
+            ? const Color(0xFF66BB6A)
+            : const Color(0xFF4CAF50);
+
     return Container(
-      // Subtle border for separation
+      // Modern card with rounded corners and shadow
       decoration: BoxDecoration(
         color: isDark ? AppColors.cardBackgroundDark : Colors.white,
+        borderRadius: BorderRadius.circular(12),
         border: Border.all(
-          color: isDark ? Colors.grey[850]! : Colors.grey[200]!,
+          color: isDark ? const Color(0xFF303030) : Colors.grey[200]!,
           width: 0.5,
         ),
-      ),
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
-          // Image section - Compact 72% ratio
-          Expanded(
-            flex: widget.product.variants.isNotEmpty ? 62 : 72,
-            child: Stack(
-              fit: StackFit.expand,
-              children: [
-                // Product Image - edge to edge
-                _buildProductImage(isDark, isGrid: false),
-
-                // Out of stock overlay
-                if (isOutOfStock)
-                  Container(
-                    color: Colors.black.withOpacity(0.55),
-                    child: Center(
-                      child: Container(
-                        padding: const EdgeInsets.symmetric(
-                            horizontal: 10, vertical: 4),
-                        decoration: BoxDecoration(
-                          color: Colors.black.withOpacity(0.7),
-                          borderRadius: BorderRadius.circular(4),
-                        ),
-                        child: const Text(
-                          'OUT OF STOCK',
-                          style: TextStyle(
-                            color: Colors.white,
-                            fontWeight: FontWeight.w700,
-                            fontSize: 10,
-                            letterSpacing: 0.5,
-                          ),
-                        ),
-                      ),
-                    ),
-                  ),
-
-                // Discount badge - top left (compact green pill)
-                if (hasDiscount && widget.showBadges)
-                  Positioned(
-                    top: 6,
-                    left: 0,
-                    child: Container(
-                      padding: const EdgeInsets.symmetric(
-                          horizontal: 6, vertical: 3),
-                      decoration: const BoxDecoration(
-                        color: Color(0xFF00C853),
-                        borderRadius: BorderRadius.only(
-                          topRight: Radius.circular(4),
-                          bottomRight: Radius.circular(4),
-                        ),
-                      ),
-                      child: Text(
-                        '$discount% OFF',
-                        style: const TextStyle(
-                          color: Colors.white,
-                          fontSize: 9,
-                          fontWeight: FontWeight.w700,
-                          letterSpacing: 0.3,
-                        ),
-                      ),
-                    ),
-                  ),
-
-                // Wishlist button - compact circular
-                if (widget.showWishlist)
-                  Positioned(
-                    bottom: 6,
-                    right: 6,
-                    child: GestureDetector(
-                      onTap: () async {
-                        HapticFeedback.lightImpact();
-                        if (_isInWishlist) {
-                          await wishlistProvider
-                              .removeFromWishlist(widget.product.id);
-                        } else {
-                          await wishlistProvider.addToWishlist(widget.product);
-                        }
-                        if (mounted) setState(() {});
-                      },
-                      child: Container(
-                        width: 30,
-                        height: 30,
-                        decoration: BoxDecoration(
-                          color: Colors.white.withOpacity(0.95),
-                          shape: BoxShape.circle,
-                          boxShadow: [
-                            BoxShadow(
-                              color: Colors.black.withOpacity(0.12),
-                              blurRadius: 6,
-                              offset: const Offset(0, 2),
-                            ),
-                          ],
-                        ),
-                        child: Icon(
-                          _isInWishlist
-                              ? Icons.favorite
-                              : Icons.favorite_border,
-                          size: 15,
-                          color: _isInWishlist ? Colors.red : Colors.grey[600],
-                        ),
-                      ),
-                    ),
-                  ),
-              ],
-            ),
+        boxShadow: [
+          BoxShadow(
+            color: isDark
+                ? Colors.black.withOpacity(0.25)
+                : Colors.black.withOpacity(0.07),
+            blurRadius: 10,
+            offset: const Offset(0, 3),
           ),
-
-          // Info section - Compact 28% with tight spacing
-          Expanded(
-            flex: widget.product.variants.isNotEmpty ? 38 : 28,
-            child: Padding(
-              padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 6),
-              child: Column(
-                crossAxisAlignment: CrossAxisAlignment.start,
-                mainAxisAlignment: MainAxisAlignment.spaceBetween,
+        ],
+      ),
+      child: ClipRRect(
+        borderRadius: BorderRadius.circular(12),
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            // Image section - 56% (reduced to give more room for info+button)
+            Expanded(
+              flex: widget.product.variants.isNotEmpty ? 50 : 56,
+              child: Stack(
+                fit: StackFit.expand,
                 children: [
-                  // Product name - single line, compact
-                  Text(
-                    widget.product.name,
-                    maxLines: 1,
-                    overflow: TextOverflow.ellipsis,
-                    style: TextStyle(
-                      fontSize: 12,
-                      fontWeight: FontWeight.w600,
-                      height: 1.15,
-                      color: isDark ? Colors.white : Colors.black87,
-                      letterSpacing: -0.2,
-                    ),
-                  ),
+                  // Product Image - edge to edge, rounded top
+                  _buildProductImage(isDark, isGrid: false),
 
-                  // Price row with rating
-                  Row(
-                    crossAxisAlignment: CrossAxisAlignment.center,
-                    children: [
-                      // Price section - compact
-                      Text(
-                        '₹${(_selectedVariant?.salePrice ?? widget.product.price).toStringAsFixed(0)}',
-                        style: TextStyle(
-                          fontSize: 14,
-                          fontWeight: FontWeight.w800,
-                          color: isDark ? Colors.white : Colors.black,
-                        ),
-                      ),
-                      if ((_selectedVariant?.originalPrice ??
-                                  widget.product.originalPrice) !=
-                              null &&
-                          (_selectedVariant?.originalPrice ??
-                                  widget.product.originalPrice)! >
-                              (_selectedVariant?.salePrice ??
-                                  widget.product.price)) ...[
-                        const SizedBox(width: 5),
-                        Text(
-                          '₹${(_selectedVariant?.originalPrice ?? widget.product.originalPrice)!.toStringAsFixed(0)}',
-                          style: TextStyle(
-                            fontSize: 10,
-                            color: Colors.grey[500],
-                            decoration: TextDecoration.lineThrough,
-                            decorationColor: Colors.grey[500],
-                          ),
-                        ),
-                      ],
-                      const Spacer(),
-                      // Rating - compact pill
-                      if (widget.showRating && widget.product.rating > 0)
-                        Container(
+                  // Out of stock overlay
+                  if (isOutOfStock)
+                    Container(
+                      color: Colors.black.withOpacity(0.55),
+                      child: Center(
+                        child: Container(
                           padding: const EdgeInsets.symmetric(
-                              horizontal: 5, vertical: 2),
+                              horizontal: 10, vertical: 4),
                           decoration: BoxDecoration(
-                            color: isDark ? Colors.grey[800] : Colors.grey[100],
+                            color: Colors.black.withOpacity(0.7),
                             borderRadius: BorderRadius.circular(4),
                           ),
-                          child: Row(
-                            mainAxisSize: MainAxisSize.min,
-                            children: [
-                              Icon(Icons.star_rounded,
-                                  size: 11, color: Colors.amber[700]),
-                              const SizedBox(width: 2),
-                              Text(
-                                widget.product.rating.toStringAsFixed(1),
-                                style: TextStyle(
-                                  fontSize: 10,
-                                  fontWeight: FontWeight.w700,
-                                  color:
-                                      isDark ? Colors.white70 : Colors.black87,
-                                ),
+                          child: const Text(
+                            'OUT OF STOCK',
+                            style: TextStyle(
+                              color: Colors.white,
+                              fontWeight: FontWeight.w700,
+                              fontSize: 10,
+                              letterSpacing: 0.5,
+                            ),
+                          ),
+                        ),
+                      ),
+                    ),
+
+                  // Discount badge - top left (compact green pill)
+                  if (hasDiscount && widget.showBadges)
+                    Positioned(
+                      top: 6,
+                      left: 0,
+                      child: Container(
+                        padding: const EdgeInsets.symmetric(
+                            horizontal: 6, vertical: 3),
+                        decoration: const BoxDecoration(
+                          color: Color(0xFF00C853),
+                          borderRadius: BorderRadius.only(
+                            topRight: Radius.circular(4),
+                            bottomRight: Radius.circular(4),
+                          ),
+                        ),
+                        child: Text(
+                          '$discount% OFF',
+                          style: const TextStyle(
+                            color: Colors.white,
+                            fontSize: 9,
+                            fontWeight: FontWeight.w700,
+                            letterSpacing: 0.3,
+                          ),
+                        ),
+                      ),
+                    ),
+
+                  // Wishlist button - compact circular
+                  if (widget.showWishlist)
+                    Positioned(
+                      top: 6,
+                      right: 6,
+                      child: GestureDetector(
+                        onTap: () async {
+                          HapticFeedback.lightImpact();
+                          if (_isInWishlist) {
+                            await wishlistProvider
+                                .removeFromWishlist(widget.product.id);
+                          } else {
+                            await wishlistProvider.addToWishlist(widget.product);
+                          }
+                          if (mounted) setState(() {});
+                        },
+                        child: Container(
+                          width: 30,
+                          height: 30,
+                          decoration: BoxDecoration(
+                            color: Colors.white.withOpacity(0.95),
+                            shape: BoxShape.circle,
+                            boxShadow: [
+                              BoxShadow(
+                                color: Colors.black.withOpacity(0.12),
+                                blurRadius: 6,
+                                offset: const Offset(0, 2),
                               ),
                             ],
                           ),
-                        ),
-                    ],
-                  ),
-
-                  if (widget.product.variants.isNotEmpty) ...[
-                    _buildVariantDropdown(isDark),
-                  ],
-
-                  // Bottom row: Verified badge + Free Delivery - compact
-                  Row(
-                    children: [
-                      if (isVerified)
-                        Container(
-                          padding: const EdgeInsets.symmetric(
-                              horizontal: 4, vertical: 1),
-                          decoration: BoxDecoration(
-                            color: (isDark
-                                    ? AppColors.primaryLight
-                                    : AppColors.primary)
-                                .withOpacity(0.1),
-                            borderRadius: BorderRadius.circular(3),
+                          child: Icon(
+                            _isInWishlist
+                                ? Icons.favorite
+                                : Icons.favorite_border,
+                            size: 15,
+                            color: _isInWishlist ? Colors.red : Colors.grey[600],
                           ),
-                          child: Row(
-                            mainAxisSize: MainAxisSize.min,
-                            children: [
-                              Icon(
-                                Icons.verified,
-                                size: 10,
-                                color: isDark
-                                    ? AppColors.primaryLight
-                                    : AppColors.primary,
-                              ),
-                              const SizedBox(width: 2),
-                              Text(
-                                'Verified',
-                                style: TextStyle(
-                                  fontSize: 8,
-                                  fontWeight: FontWeight.w700,
+                        ),
+                      ),
+                    ),
+                ],
+              ),
+            ),
+
+            // Info section - 44/50% with clear visual hierarchy
+            Expanded(
+              flex: widget.product.variants.isNotEmpty ? 50 : 44,
+              child: Padding(
+                padding: const EdgeInsets.fromLTRB(6, 6, 6, 4),
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    // Product name - 2 lines for readability
+                    Text(
+                      widget.product.name,
+                      maxLines: 2,
+                      overflow: TextOverflow.ellipsis,
+                      style: TextStyle(
+                        fontSize: 12,
+                        fontWeight: FontWeight.w600,
+                        height: 1.2,
+                        color: isDark ? Colors.white : Colors.black87,
+                        letterSpacing: -0.2,
+                      ),
+                    ),
+                    const SizedBox(height: 4),
+
+                    // Price row
+                    Row(
+                      crossAxisAlignment: CrossAxisAlignment.center,
+                      children: [
+                        // Current price - prominent
+                        Text(
+                          '₹${(_selectedVariant?.salePrice ?? widget.product.price).toStringAsFixed(0)}',
+                          style: TextStyle(
+                            fontSize: 13,
+                            fontWeight: FontWeight.w900,
+                            color: isDark ? Colors.white : Colors.black,
+                          ),
+                        ),
+                        if ((_selectedVariant?.originalPrice ??
+                                    widget.product.originalPrice) !=
+                                null &&
+                            (_selectedVariant?.originalPrice ??
+                                    widget.product.originalPrice)! >
+                                (_selectedVariant?.salePrice ??
+                                    widget.product.price)) ...[
+                          const SizedBox(width: 4),
+                          Text(
+                            '₹${(_selectedVariant?.originalPrice ?? widget.product.originalPrice)!.toStringAsFixed(0)}',
+                            style: TextStyle(
+                              fontSize: 10,
+                              color: Colors.grey[500],
+                              decoration: TextDecoration.lineThrough,
+                              decorationColor: Colors.grey[500],
+                            ),
+                          ),
+                        ],
+                        const Spacer(),
+                        // Rating pill
+                        if (widget.showRating && widget.product.rating > 0)
+                          Container(
+                            padding: const EdgeInsets.symmetric(
+                                horizontal: 5, vertical: 2),
+                            decoration: BoxDecoration(
+                              color: isDark ? Colors.grey[800] : Colors.grey[100],
+                              borderRadius: BorderRadius.circular(4),
+                            ),
+                            child: Row(
+                              mainAxisSize: MainAxisSize.min,
+                              children: [
+                                Icon(Icons.star_rounded,
+                                    size: 11, color: Colors.amber[700]),
+                                const SizedBox(width: 2),
+                                Text(
+                                  widget.product.rating.toStringAsFixed(1),
+                                  style: TextStyle(
+                                    fontSize: 10,
+                                    fontWeight: FontWeight.w700,
+                                    color:
+                                        isDark ? Colors.white70 : Colors.black87,
+                                  ),
+                                ),
+                              ],
+                            ),
+                          ),
+                      ],
+                    ),
+
+                    // Variant dropdown
+                    if (widget.product.variants.isNotEmpty) ...[
+                      const SizedBox(height: 4),
+                      _buildVariantDropdown(isDark),
+                    ],
+
+                    // Verified + Free Delivery row
+                    if (isVerified || hasFreeDelivery) ...[
+                      const SizedBox(height: 3),
+                      Row(
+                        children: [
+                          if (isVerified)
+                            Row(
+                              mainAxisSize: MainAxisSize.min,
+                              children: [
+                                Icon(
+                                  Icons.verified,
+                                  size: 10,
                                   color: isDark
                                       ? AppColors.primaryLight
                                       : AppColors.primary,
                                 ),
+                                const SizedBox(width: 2),
+                                Text(
+                                  'Verified',
+                                  style: TextStyle(
+                                    fontSize: 8,
+                                    fontWeight: FontWeight.w700,
+                                    color: isDark
+                                        ? AppColors.primaryLight
+                                        : AppColors.primary,
+                                  ),
+                                ),
+                              ],
+                            ),
+                          if (isVerified && hasFreeDelivery)
+                            const SizedBox(width: 6),
+                          if (hasFreeDelivery)
+                            Text(
+                              'Free Delivery',
+                              style: TextStyle(
+                                fontSize: 9,
+                                fontWeight: FontWeight.w600,
+                                color: const Color(0xFF00C853),
                               ),
-                            ],
-                          ),
-                        ),
-                      if (isVerified && hasFreeDelivery)
-                        const SizedBox(width: 4),
-                      if (hasFreeDelivery)
-                        Text(
-                          'Free Delivery',
-                          style: TextStyle(
-                            fontSize: 9,
-                            fontWeight: FontWeight.w600,
-                            color: const Color(0xFF00C853),
-                          ),
-                        ),
+                            ),
+                        ],
+                      ),
                     ],
-                  ),
-                  if (widget.showAddToCart) ...[
-                    const SizedBox(height: 6),
-                    Align(
-                      alignment: Alignment.centerLeft,
-                      child: AnimatedBuilder(
+
+                    // Spacer pushes the button to the bottom
+                    const Spacer(),
+
+                    // ✅ PROMINENT "Add to Cart" button — full width, at bottom
+                    if (widget.showAddToCart)
+                      AnimatedBuilder(
                         animation: _cartJumpAnimation,
                         builder: (context, child) {
                           final jump = _cartJumpAnimation.value;
                           return Transform.translate(
-                            offset: Offset(0, -7 * jump),
+                            offset: Offset(0, -4 * jump),
                             child: Transform.scale(
-                              scale: 1 + (0.07 * jump),
+                              scale: 1 + (0.04 * jump),
                               child: child,
                             ),
                           );
                         },
-                        child: ConstrainedBox(
-                          constraints: const BoxConstraints(
-                            minWidth: 74,
-                            maxWidth: 116,
-                          ),
-                          child: SizedBox(
-                            key: _cartButtonKey,
-                            height: 28,
-                            child: FilledButton.icon(
-                              onPressed: isOutOfStock || _isProcessing
+                        child: SizedBox(
+                          key: _cartButtonKey,
+                          width: double.infinity,
+                          height: 30,
+                          child: Material(
+                            color: isDark ? addToCartColorDark : addToCartColor,
+                            borderRadius: BorderRadius.circular(8),
+                            elevation: isOutOfStock ? 0 : 2,
+                            shadowColor: (isDark ? addToCartColorDark : addToCartColor)
+                                .withOpacity(0.4),
+                            child: InkWell(
+                              onTap: isOutOfStock || _isProcessing || (_isInCart && widget.product.variants.isEmpty)
                                   ? null
                                   : _handleAddToCart,
-                              icon: Icon(
-                                _isInCart
-                                    ? Icons.check_rounded
-                                    : Icons.add_shopping_cart_rounded,
-                                size: 13,
-                              ),
-                              label: FittedBox(
-                                fit: BoxFit.scaleDown,
-                                child: Text(_isInCart ? 'In cart' : 'Add'),
-                              ),
-                              style: FilledButton.styleFrom(
-                                padding: const EdgeInsets.symmetric(
-                                  horizontal: 8,
-                                  vertical: 0,
-                                ),
-                                backgroundColor: isDark
-                                    ? AppColors.primaryLight
-                                    : AppColors.primary,
-                                foregroundColor:
-                                    isDark ? Colors.black87 : Colors.white,
-                                textStyle: const TextStyle(
-                                  fontSize: 10,
-                                  fontWeight: FontWeight.w800,
-                                ),
-                                shape: RoundedRectangleBorder(
-                                  borderRadius: BorderRadius.circular(7),
-                                ),
+                              borderRadius: BorderRadius.circular(8),
+                              child: Center(
+                                child: _isProcessing
+                                    ? const SizedBox(
+                                        width: 16,
+                                        height: 16,
+                                        child: CircularProgressIndicator(
+                                          strokeWidth: 2,
+                                          valueColor: AlwaysStoppedAnimation<Color>(Colors.white),
+                                        ),
+                                      )
+                                    : Row(
+                                        mainAxisAlignment: MainAxisAlignment.center,
+                                        mainAxisSize: MainAxisSize.min,
+                                        children: [
+                                          Icon(
+                                            isOutOfStock
+                                                ? Icons.block_rounded
+                                                : _isInCart
+                                                    ? Icons.check_circle_rounded
+                                                    : Icons.add_shopping_cart_rounded,
+                                            color: Colors.white,
+                                            size: 15,
+                                          ),
+                                          const SizedBox(width: 4),
+                                          Text(
+                                            isOutOfStock
+                                                ? 'Sold Out'
+                                                : _isInCart
+                                                    ? 'In Cart ✓'
+                                                    : 'Add to Cart',
+                                            style: const TextStyle(
+                                              color: Colors.white,
+                                              fontSize: 11,
+                                              fontWeight: FontWeight.w800,
+                                              letterSpacing: 0.3,
+                                            ),
+                                          ),
+                                        ],
+                                      ),
                               ),
                             ),
                           ),
                         ),
                       ),
-                    ),
                   ],
-                ],
+                ),
               ),
             ),
-          ),
-        ],
+          ],
+        ),
       ),
     );
   }
@@ -1601,7 +1635,7 @@ class _UnifiedProductCardState extends State<UnifiedProductCard>
           isExpanded: true,
           icon: Icon(Icons.keyboard_arrow_down,
               size: 16, color: isDark ? Colors.grey[400] : Colors.grey[600]),
-          dropdownColor: isDark ? Colors.grey[850] : Colors.white,
+          dropdownColor: isDark ? const Color(0xFF303030) : Colors.white,
           style: TextStyle(
             fontSize: 11,
             fontWeight: FontWeight.w600,
@@ -1819,7 +1853,7 @@ class _UnifiedProductCardState extends State<UnifiedProductCard>
           color: _isInWishlist
               ? Colors.red[50]
               : (isDark
-                  ? Colors.grey[850]!.withOpacity(0.96)
+                  ? const Color(0xFF303030).withOpacity(0.96)
                   : Colors.white.withOpacity(0.96)),
           shape: BoxShape.circle,
           border: Border.all(

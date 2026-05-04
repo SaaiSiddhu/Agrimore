@@ -17,7 +17,6 @@ import 'categories/categories_screen.dart';  // ✅ NEW
 import 'shop/shop_screen.dart';
 import 'cart/cart_screen.dart';
 import 'profile/profile_screen.dart';
-import '../chat/ai_chat_screen.dart';
 
 class MainScreen extends StatefulWidget {
   final int initialIndex;
@@ -42,9 +41,7 @@ class _MainScreenState extends State<MainScreen>
   late int _currentIndex;
   late AnimationController _bottomBarAnimationController;
   late AnimationController _fadeAnimationController;
-  // --- NEW ---
-  late AnimationController _fabPulseController;
-  // --- END NEW ---
+
   late Animation<Offset> _bottomBarSlideAnimation;
   late Animation<double> _fadeAnimation;
   bool _isNavigating = false;
@@ -109,12 +106,7 @@ class _MainScreenState extends State<MainScreen>
       duration: const Duration(milliseconds: 250),
     );
 
-    // --- NEW: Initialize FAB Pulse Controller ---
-    _fabPulseController = AnimationController(
-      vsync: this,
-      duration: const Duration(milliseconds: 1200),
-    );
-    // --- END NEW ---
+
 
     _bottomBarSlideAnimation = Tween<Offset>(
       begin: const Offset(0, 1),
@@ -154,11 +146,7 @@ class _MainScreenState extends State<MainScreen>
 
     _initializeData();
 
-    // --- NEW: Start FAB pulse if on home screen ---
-    if (_currentIndex == 0) {
-      _fabPulseController.repeat(reverse: true);
-    }
-    // --- END NEW ---
+
 
     // ✅ Ensure URL is correct on load (e.g. if redirected from login)
     if (kIsWeb) {
@@ -250,16 +238,7 @@ class _MainScreenState extends State<MainScreen>
       _updateWebUrl(index);
     }
 
-    //
-    // --- MODIFICATION: Start/Stop FAB Pulse ---
-    //
-    if (_currentIndex == 0) {
-      _fabPulseController.repeat(reverse: true);
-    } else {
-      _fabPulseController.stop();
-      _fabPulseController.value = 0.0; // Reset animation
-    }
-    // --- END MODIFICATION ---
+
 
     // Fade in
     await _fadeAnimationController.forward();
@@ -339,9 +318,7 @@ class _MainScreenState extends State<MainScreen>
     WidgetsBinding.instance.removeObserver(this);
     _bottomBarAnimationController.dispose();
     _fadeAnimationController.dispose();
-    // --- NEW ---
-    _fabPulseController.dispose();
-    // --- END NEW ---
+
     for (var controller in _iconControllers.values) {
       controller.dispose();
     }
@@ -425,92 +402,7 @@ class _MainScreenState extends State<MainScreen>
     return false; // Don't absorb the notification
   }
 
-  //
-  // --- NEW WIDGET: Advanced, Rectangular, Pulsing AI FAB ---
-  //
-  Widget _buildAIFab(bool isDark) {
-    final color = isDark ? AppColors.primaryLight : AppColors.primary;
 
-    return AnimatedSwitcher(
-      duration: const Duration(milliseconds: 400),
-      transitionBuilder: (Widget child, Animation<double> animation) {
-        // Slide and fade animation
-        final offsetAnimation = Tween<Offset>(
-          begin: const Offset(1.5, 1.5), // From off-screen bottom-right
-          end: Offset.zero,
-        ).animate(CurvedAnimation(parent: animation, curve: Curves.easeOutCubic));
-
-        return SlideTransition(
-          position: offsetAnimation,
-          child: FadeTransition(
-            opacity: animation,
-            child: child,
-          ),
-        );
-      },
-      child: _currentIndex == 0
-          // Show FAB only on Home Screen (index 0)
-          ? AnimatedBuilder(
-              key: const ValueKey('fab'),
-              animation: _fabPulseController,
-              builder: (context, child) {
-                final pulseValue = _fabPulseController.value; // 0.0 to 1.0
-                final glow = (pulseValue * 8.0); // 0 to 8 blur
-                final scale = 1.0 - (pulseValue * 0.05); // Subtle "breathing" in
-                
-                // Container wrapper for the pulsing shadow
-                return Container(
-                  decoration: BoxDecoration(
-                    borderRadius: BorderRadius.circular(16),
-                    boxShadow: [
-                      BoxShadow(
-                        color: color.withOpacity(0.3 + (pulseValue * 0.15)), // Pulsing opacity
-                        blurRadius: 12 + glow, // Pulsing glow
-                        spreadRadius: pulseValue * 2, // Pulsing spread
-                        offset: const Offset(0, 8),
-                      ),
-                    ],
-                  ),
-                  child: Transform.scale(
-                    scale: scale, // Breathing scale
-                    child: FloatingActionButton.extended(
-                      heroTag: 'ai-fab',
-                      onPressed: () {
-                        HapticFeedback.mediumImpact();
-                        // Navigate to AIChatScreen as a new page
-                        Navigator.push(
-                          context,
-                          MaterialPageRoute(
-                              builder: (context) => const AIChatScreen()),
-                        );
-                      },
-                      elevation: 0, // Shadow is handled by the container
-                      shape: RoundedRectangleBorder(
-                          borderRadius: BorderRadius.circular(16)), // Rectangular
-                      backgroundColor: color, // Matching green theme
-                      icon: const FaIcon(
-                        FontAwesomeIcons.robot,
-                        color: Colors.white,
-                        size: 18,
-                      ),
-                      label: const Text(
-                        'Chat Bot',
-                        style: TextStyle(
-                          color: Colors.white,
-                          fontWeight: FontWeight.bold,
-                          letterSpacing: 0.5,
-                        ),
-                      ),
-                    ),
-                  ),
-                );
-              },
-            )
-          // Use an empty SizedBox (with a key) for the "off" state
-          : const SizedBox(key: ValueKey('empty-fab')),
-    );
-  }
-  // --- END NEW WIDGET ---
 
   Widget _buildBottomNavigationBar(bool isDark) {
     final primaryColor = isDark ? AppColors.primaryLight : AppColors.primary;
@@ -530,7 +422,7 @@ class _MainScreenState extends State<MainScreen>
           ],
           border: Border(
             top: BorderSide(
-              color: isDark ? Colors.grey[850]! : Colors.grey[200]!,
+              color: isDark ? const Color(0xFF303030) : Colors.grey[200]!,
               width: 0.5,
             ),
           ),

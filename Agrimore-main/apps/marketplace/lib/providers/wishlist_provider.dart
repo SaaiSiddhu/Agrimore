@@ -1,12 +1,12 @@
+import 'dart:async';
 import 'package:flutter/material.dart';
 import 'package:agrimore_core/agrimore_core.dart';
-import 'package:agrimore_core/agrimore_core.dart';
-import 'package:agrimore_services/agrimore_services.dart';
 import 'package:agrimore_services/agrimore_services.dart';
 
 class WishlistProvider with ChangeNotifier {
   final DatabaseService _databaseService = DatabaseService();
   final AuthService _authService = AuthService();
+  StreamSubscription? _wishlistSubscription;
 
   WishlistModel? _wishlist;
   bool _isLoading = false;
@@ -25,7 +25,9 @@ class WishlistProvider with ChangeNotifier {
     final userId = _authService.currentUserId;
     if (userId == null) return;
 
-    _databaseService.getUserWishlist(userId).listen(
+    // Cancel previous subscription to prevent memory leaks
+    _wishlistSubscription?.cancel();
+    _wishlistSubscription = _databaseService.getUserWishlist(userId).listen(
       (wishlist) {
         _wishlist = wishlist;
         notifyListeners();
@@ -50,7 +52,7 @@ class WishlistProvider with ChangeNotifier {
       _isLoading = true;
       notifyListeners();
 
-      List<String> updatedIds = _wishlist?.productIds ?? [];
+      List<String> updatedIds = List<String>.from(_wishlist?.productIds ?? []);
       
       if (!updatedIds.contains(product.id)) {
         updatedIds.add(product.id);
@@ -90,7 +92,7 @@ class WishlistProvider with ChangeNotifier {
       _isLoading = true;
       notifyListeners();
 
-      List<String> updatedIds = _wishlist?.productIds ?? [];
+      List<String> updatedIds = List<String>.from(_wishlist?.productIds ?? []);
       updatedIds.remove(productId);
 
       final updatedWishlist = WishlistModel(
@@ -179,6 +181,7 @@ class WishlistProvider with ChangeNotifier {
 
   @override
   void dispose() {
+    _wishlistSubscription?.cancel();
     super.dispose();
   }
 }

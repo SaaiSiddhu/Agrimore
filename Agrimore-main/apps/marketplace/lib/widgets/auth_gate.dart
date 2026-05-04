@@ -55,7 +55,13 @@ class AuthGate extends StatelessWidget {
                 child: Row(
                   children: [
                     IconButton(
-                      onPressed: () => Navigator.pop(context),
+                      onPressed: () {
+                      if (Navigator.canPop(context)) {
+                        Navigator.pop(context);
+                      } else {
+                        Navigator.pushReplacementNamed(context, '/');
+                      }
+                    },
                       icon: Icon(
                         Icons.arrow_back_ios_rounded,
                         color: isDark ? Colors.white : Colors.black87,
@@ -204,7 +210,13 @@ class AuthGate extends StatelessWidget {
                         
                         // Continue Browsing
                         TextButton.icon(
-                          onPressed: () => Navigator.pop(context),
+                          onPressed: () {
+                            if (Navigator.canPop(context)) {
+                              Navigator.pop(context);
+                            } else {
+                              Navigator.pushReplacementNamed(context, '/');
+                            }
+                          },
                           icon: Icon(
                             Icons.arrow_back_rounded,
                             color: isDark ? Colors.grey[400] : Colors.grey[600],

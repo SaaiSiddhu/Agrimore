@@ -1,3 +1,4 @@
+import 'dart:async';
 import 'package:flutter/material.dart';
 import 'package:agrimore_core/agrimore_core.dart';
 import 'package:agrimore_services/agrimore_services.dart';
@@ -5,6 +6,7 @@ import 'package:agrimore_services/agrimore_services.dart';
 class AddressProvider with ChangeNotifier {
   final DatabaseService _databaseService = DatabaseService();
   final AuthService _authService = AuthService();
+  StreamSubscription? _addressSubscription;
 
   List<AddressModel> _addresses = [];
   AddressModel? _selectedAddress;
@@ -31,7 +33,9 @@ class AddressProvider with ChangeNotifier {
     final userId = _authService.currentUserId;
     if (userId == null) return;
 
-    _databaseService.getUserAddresses(userId).listen(
+    // Cancel previous subscription to prevent memory leaks
+    _addressSubscription?.cancel();
+    _addressSubscription = _databaseService.getUserAddresses(userId).listen(
       (addresses) {
         _addresses = addresses;
         notifyListeners();
@@ -159,5 +163,11 @@ class AddressProvider with ChangeNotifier {
   void clearError() {
     _error = null;
     notifyListeners();
+  }
+
+  @override
+  void dispose() {
+    _addressSubscription?.cancel();
+    super.dispose();
   }
 }

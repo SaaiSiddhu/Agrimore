@@ -4,13 +4,11 @@ import 'package:provider/provider.dart';
 import 'dart:ui';
 
 import 'package:agrimore_ui/agrimore_ui.dart';
-import 'package:agrimore_ui/agrimore_ui.dart';
 import '../../../app/routes.dart';
 import '../../../providers/product_provider.dart';
 import '../../../providers/category_provider.dart';
 import '../../../providers/cart_provider.dart';
 import '../../../providers/wishlist_provider.dart';
-import 'package:agrimore_core/agrimore_core.dart';
 import 'package:agrimore_core/agrimore_core.dart';
 import 'package:agrimore_services/agrimore_services.dart';
 import 'widgets/product_image_carousel.dart';
@@ -215,9 +213,17 @@ Future<void> _addToCart(BuildContext context, {bool buyNow = false}) async {
         builder: (context, productProvider, child) {
           final product = productProvider.selectedProduct;
 
-          if (product == null || (productProvider.isLoading && product.name.isEmpty)) {
+          if (productProvider.isLoading && (product == null || product.name.isEmpty)) {
             return _buildLoadingState(isDark);
           }
+
+          // ✅ Product not found (e.g. deleted product accessed via deep link)
+          if (!productProvider.isLoading && product == null) {
+            return _buildNotFoundState(isDark);
+          }
+
+          // At this point product is guaranteed non-null
+          final loadedProduct = product!;
 
           // ✅ REDESIGNED: Blinkit-style full-bleed image + floating controls
           return SingleChildScrollView(
@@ -227,7 +233,7 @@ Future<void> _addToCart(BuildContext context, {bool buyNow = false}) async {
               children: [
                 // Full-bleed image hero with floating action buttons
                 ProductImageHero(
-                  product: product,
+                  product: loadedProduct,
                   onBack: () {
                     if (Navigator.canPop(context)) {
                       Navigator.pop(context);
@@ -235,13 +241,13 @@ Future<void> _addToCart(BuildContext context, {bool buyNow = false}) async {
                       Navigator.pushReplacementNamed(context, '/');
                     }
                   },
-                  onShare: () => _showShareWidget(product),
+                  onShare: () => _showShareWidget(loadedProduct),
                 ),
                 // Overlapped info card
-                _buildOverlappedInfoCard(product, isDark),
-                _buildSubscriptionOptions(product, isDark),
+                _buildOverlappedInfoCard(loadedProduct, isDark),
+                _buildSubscriptionOptions(loadedProduct, isDark),
                 // Similar Products section
-                _buildSimilarProducts(product, isDark),
+                _buildSimilarProducts(loadedProduct, isDark),
                 // Bottom padding for bottom bar
                 const SizedBox(height: 120),
               ],
@@ -1594,6 +1600,62 @@ Future<void> _addToCart(BuildContext context, {bool buyNow = false}) async {
                 color: isDark ? Colors.grey[400] : Colors.grey[600],
                 fontSize: 14,
                 fontWeight: FontWeight.w500
+              ),
+            ),
+          ],
+        ),
+      ),
+    );
+  }
+
+  Widget _buildNotFoundState(bool isDark) {
+    final accentColor = isDark ? AppColors.primaryLight : AppColors.primary;
+    return Center(
+      child: Padding(
+        padding: const EdgeInsets.all(32),
+        child: Column(
+          mainAxisAlignment: MainAxisAlignment.center,
+          children: [
+            Icon(
+              Icons.search_off_rounded,
+              size: 80,
+              color: isDark ? Colors.grey[600] : Colors.grey[400],
+            ),
+            const SizedBox(height: 24),
+            Text(
+              'Product Not Found',
+              style: TextStyle(
+                fontSize: 22,
+                fontWeight: FontWeight.bold,
+                color: isDark ? Colors.white : Colors.black87,
+              ),
+            ),
+            const SizedBox(height: 12),
+            Text(
+              'This product may have been removed or is no longer available.',
+              textAlign: TextAlign.center,
+              style: TextStyle(
+                fontSize: 14,
+                color: isDark ? Colors.grey[400] : Colors.grey[600],
+                height: 1.5,
+              ),
+            ),
+            const SizedBox(height: 32),
+            ElevatedButton.icon(
+              onPressed: () {
+                if (Navigator.canPop(context)) {
+                  Navigator.pop(context);
+                } else {
+                  Navigator.pushReplacementNamed(context, '/');
+                }
+              },
+              icon: const Icon(Icons.arrow_back_rounded, size: 18),
+              label: const Text('Go Back', style: TextStyle(fontWeight: FontWeight.w600)),
+              style: ElevatedButton.styleFrom(
+                backgroundColor: accentColor,
+                foregroundColor: isDark ? Colors.black : Colors.white,
+                padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 14),
+                shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
               ),
             ),
           ],

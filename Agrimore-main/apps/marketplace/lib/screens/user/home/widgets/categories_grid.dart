@@ -123,10 +123,10 @@ class _CategoriesGridState extends State<CategoriesGrid>
       behavior: HitTestBehavior.opaque,
       onTap: () {
         HapticFeedback.lightImpact();
-        Navigator.pushNamed(
+        AppRoutes.navigateToCategoryProducts(
           context,
-          AppRoutes.categoryProducts,
-          arguments: category.id,
+          category.id,
+          categoryName: category.name,
         );
       },
       child: Container(

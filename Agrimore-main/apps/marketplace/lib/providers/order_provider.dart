@@ -3,9 +3,6 @@ import 'package:flutter/material.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:firebase_auth/firebase_auth.dart';
 import 'package:agrimore_core/agrimore_core.dart';
-import 'package:agrimore_core/agrimore_core.dart';
-import 'package:agrimore_core/agrimore_core.dart';
-import 'package:agrimore_services/agrimore_services.dart';
 import 'package:agrimore_services/agrimore_services.dart';
 
 class OrderProvider with ChangeNotifier {
@@ -107,8 +104,8 @@ class OrderProvider with ChangeNotifier {
       final orderId = await _databaseService.createOrder(order);
 
       if (orderId != null) {
-        // Add to local list
-        _orders.insert(0, order);
+        // Add to local list with the correct Firestore-generated ID
+        _orders.insert(0, order.copyWith(id: orderId));
         debugPrint('✅ Order created: $orderId');
       }
 

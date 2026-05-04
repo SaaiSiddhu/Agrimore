@@ -29,12 +29,12 @@ class _WebCartScreenState extends State<WebCartScreen>
   @override
   void initState() {
     super.initState();
-    
+
     _fadeController = AnimationController(
       duration: const Duration(milliseconds: 600),
       vsync: this,
     );
-    
+
     _fadeAnimation = Tween<double>(begin: 0.0, end: 1.0).animate(
       CurvedAnimation(parent: _fadeController, curve: Curves.easeIn),
     );
@@ -64,7 +64,7 @@ class _WebCartScreenState extends State<WebCartScreen>
 
   Future<void> _showClearCartDialog(CartProvider cartProvider) async {
     HapticFeedback.mediumImpact();
-    
+
     final confirmed = await showDialog<bool>(
       context: context,
       builder: (context) => AlertDialog(
@@ -101,7 +101,8 @@ class _WebCartScreenState extends State<WebCartScreen>
                   SizedBox(height: 4),
                   Text(
                     'This action cannot be undone',
-                    style: TextStyle(fontSize: 14, fontWeight: FontWeight.normal),
+                    style:
+                        TextStyle(fontSize: 14, fontWeight: FontWeight.normal),
                   ),
                 ],
               ),
@@ -128,7 +129,8 @@ class _WebCartScreenState extends State<WebCartScreen>
                 borderRadius: BorderRadius.circular(12),
               ),
             ),
-            child: const Text('Clear All', style: TextStyle(color: Colors.white)),
+            child:
+                const Text('Clear All', style: TextStyle(color: Colors.white)),
           ),
         ],
       ),
@@ -162,9 +164,18 @@ class _WebCartScreenState extends State<WebCartScreen>
 
           final deliveryCharge = 40.0;
           final tax = cartProvider.subtotal * 0.05;
-          // UPDATED: call calculateDiscount() without passing subtotal
-          final discount = couponProvider.calculateDiscount();
-          final total = cartProvider.subtotal + deliveryCharge + tax - discount;
+          final discount = couponProvider.calculateDiscount(
+            orderAmount: cartProvider.subtotal,
+            items: cartProvider.items,
+          );
+          final total = cartProvider
+              .calculateTotal(
+                discount: discount,
+                deliveryCharge: deliveryCharge,
+                tax: tax,
+              )
+              .clamp(0.0, double.infinity)
+              .toDouble();
 
           return FadeTransition(
             opacity: _fadeAnimation,
@@ -213,7 +224,8 @@ class _WebCartScreenState extends State<WebCartScreen>
               ),
               borderRadius: BorderRadius.circular(12),
             ),
-            child: const Icon(Icons.shopping_cart, color: Colors.white, size: 22),
+            child:
+                const Icon(Icons.shopping_cart, color: Colors.white, size: 22),
           ),
           const SizedBox(width: 16),
           const Text('Shopping Cart'),
@@ -246,15 +258,17 @@ class _WebCartScreenState extends State<WebCartScreen>
             return Row(
               children: [
                 Container(
-                  padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
+                  padding:
+                      const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
                   decoration: BoxDecoration(
                     color: AppColors.primary.withOpacity(0.1),
                     borderRadius: BorderRadius.circular(12),
                   ),
                   child: Row(
                     children: [
-                      Icon(Icons.inventory_2_outlined, 
-                        color: AppColors.primary, 
+                      Icon(
+                        Icons.inventory_2_outlined,
+                        color: AppColors.primary,
                         size: 20,
                       ),
                       const SizedBox(width: 8),
@@ -271,10 +285,13 @@ class _WebCartScreenState extends State<WebCartScreen>
                 const SizedBox(width: 16),
                 OutlinedButton.icon(
                   onPressed: () => _showClearCartDialog(cartProvider),
-                  icon: const Icon(Icons.delete_outline, color: AppColors.error, size: 20),
-                  label: const Text('Clear All', style: TextStyle(color: AppColors.error)),
+                  icon: const Icon(Icons.delete_outline,
+                      color: AppColors.error, size: 20),
+                  label: const Text('Clear All',
+                      style: TextStyle(color: AppColors.error)),
                   style: OutlinedButton.styleFrom(
-                    padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 12),
+                    padding: const EdgeInsets.symmetric(
+                        horizontal: 20, vertical: 12),
                     side: BorderSide(color: AppColors.error.withOpacity(0.3)),
                     shape: RoundedRectangleBorder(
                       borderRadius: BorderRadius.circular(12),
@@ -317,7 +334,8 @@ class _WebCartScreenState extends State<WebCartScreen>
                   Colors.white,
                 ],
               ),
-              borderRadius: const BorderRadius.vertical(top: Radius.circular(20)),
+              borderRadius:
+                  const BorderRadius.vertical(top: Radius.circular(20)),
             ),
             child: Row(
               children: [
@@ -344,10 +362,14 @@ class _WebCartScreenState extends State<WebCartScreen>
                 ),
                 if (discount > 0)
                   Container(
-                    padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 10),
+                    padding: const EdgeInsets.symmetric(
+                        horizontal: 16, vertical: 10),
                     decoration: BoxDecoration(
                       gradient: LinearGradient(
-                        colors: [AppColors.success, AppColors.success.withOpacity(0.8)],
+                        colors: [
+                          AppColors.success,
+                          AppColors.success.withOpacity(0.8)
+                        ],
                       ),
                       borderRadius: BorderRadius.circular(12),
                       boxShadow: [
@@ -360,7 +382,8 @@ class _WebCartScreenState extends State<WebCartScreen>
                     child: Row(
                       mainAxisSize: MainAxisSize.min,
                       children: [
-                        const Icon(Icons.local_offer, color: Colors.white, size: 18),
+                        const Icon(Icons.local_offer,
+                            color: Colors.white, size: 18),
                         const SizedBox(width: 8),
                         Text(
                           'Saving ₹${discount.toStringAsFixed(2)}',
@@ -387,9 +410,11 @@ class _WebCartScreenState extends State<WebCartScreen>
                 return CartItemCard(
                   item: item,
                   onRemove: () async {
-                    final success = await cartProvider.removeItem(item.productId);
+                    final success =
+                        await cartProvider.removeItem(item.productId);
                     if (success && mounted) {
-                      SnackbarHelper.showSuccess(context, 'Item removed from cart');
+                      SnackbarHelper.showSuccess(
+                          context, 'Item removed from cart');
                     }
                   },
                   onQuantityChanged: (quantity) async {

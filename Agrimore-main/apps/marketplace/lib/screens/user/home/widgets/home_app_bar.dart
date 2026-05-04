@@ -4,6 +4,8 @@ import 'package:provider/provider.dart';
 import 'package:agrimore_ui/agrimore_ui.dart';
 import 'package:geolocator/geolocator.dart';
 import 'package:geocoding/geocoding.dart';
+import 'package:http/http.dart' as http;
+import 'dart:convert';
 import '../../../../app/routes.dart';
 import '../../../../providers/theme_provider.dart';
 import '../../../../providers/category_provider.dart';
@@ -82,34 +84,100 @@ class _HomeAppBarState extends State<HomeAppBar> {
       
       if (!_isMounted) return;
       
-      final pos = await Geolocator.getCurrentPosition(
-        desiredAccuracy: LocationAccuracy.medium,
-        timeLimit: const Duration(seconds: 5),
-      );
+      Position? pos;
+      try {
+        pos = await Geolocator.getLastKnownPosition();
+      } catch (_) {}
+      
+      if (pos == null) {
+        pos = await Geolocator.getCurrentPosition(
+          desiredAccuracy: LocationAccuracy.low,
+          timeLimit: const Duration(seconds: 10),
+        );
+      }
 
       if (!_isMounted) return;
 
-      final placemarks = await placemarkFromCoordinates(pos.latitude, pos.longitude);
-      if (placemarks.isNotEmpty && _isMounted) {
-        final locality = placemarks.first.locality ?? '';
-        final subLocality = placemarks.first.subLocality ?? '';
-        final adminArea = placemarks.first.administrativeArea ?? '';
-        
-        String locationText;
-        if (subLocality.isNotEmpty) {
-          locationText = '$subLocality, $locality';
-        } else if (locality.isNotEmpty) {
-          locationText = locality;
-        } else {
-          locationText = adminArea;
+      try {
+        final placemarks = await placemarkFromCoordinates(pos.latitude, pos.longitude);
+        if (placemarks.isNotEmpty && _isMounted) {
+          final locality = placemarks.first.locality ?? '';
+          final subLocality = placemarks.first.subLocality ?? '';
+          final adminArea = placemarks.first.administrativeArea ?? '';
+          
+          String locationText;
+          if (subLocality.isNotEmpty && locality.isNotEmpty) {
+            locationText = '$subLocality, $locality';
+          } else if (subLocality.isNotEmpty) {
+            locationText = subLocality;
+          } else if (locality.isNotEmpty) {
+            locationText = locality;
+          } else if (adminArea.isNotEmpty) {
+            locationText = adminArea;
+          } else {
+            locationText = 'Current Location';
+          }
+          
+          _safeSyncState(() {
+            _autoLocationText = locationText;
+            _isLoadingAutoLocation = false;
+          });
+          return;
+        }
+      } catch (e) {
+        debugPrint('⚠️ Native Geocoding error: $e');
+      }
+
+      // Fallback to HTTP Geocoding (especially for Web)
+      if (_isMounted) {
+        try {
+          const apiKey = 'AIzaSyCKL5RYJ39x93yz1Km59KwpYybRod3IOeg';
+          final url = 'https://maps.googleapis.com/maps/api/geocode/json?latlng=${pos.latitude},${pos.longitude}&key=$apiKey&language=en';
+          final response = await http.get(Uri.parse(url)).timeout(const Duration(seconds: 10));
+          
+          if (response.statusCode == 200) {
+            final data = jsonDecode(response.body);
+            if (data['status'] == 'OK' && data['results'] != null && (data['results'] as List).isNotEmpty) {
+              final components = data['results'][0]['address_components'] as List;
+              String locality = '';
+              String subLocality = '';
+              String adminArea = '';
+              
+              for (final c in components) {
+                final types = (c['types'] as List).cast<String>();
+                if (types.contains('locality')) locality = c['long_name'];
+                else if (types.contains('sublocality')) subLocality = c['long_name'];
+                else if (types.contains('administrative_area_level_1')) adminArea = c['long_name'];
+              }
+              
+              String locationText;
+              if (subLocality.isNotEmpty && locality.isNotEmpty) {
+                locationText = '$subLocality, $locality';
+              } else if (subLocality.isNotEmpty) {
+                locationText = subLocality;
+              } else if (locality.isNotEmpty) {
+                locationText = locality;
+              } else if (adminArea.isNotEmpty) {
+                locationText = adminArea;
+              } else {
+                locationText = 'Current Location';
+              }
+              
+              _safeSyncState(() {
+                _autoLocationText = locationText;
+                _isLoadingAutoLocation = false;
+              });
+              return;
+            }
+          }
+        } catch (e) {
+          debugPrint('⚠️ HTTP Geocoding error: $e');
         }
         
         _safeSyncState(() {
-          _autoLocationText = locationText;
+          _autoLocationText = 'Current Location';
           _isLoadingAutoLocation = false;
         });
-      } else {
-        _safeSyncState(() => _isLoadingAutoLocation = false);
       }
     } catch (e) {
       debugPrint('⚠️ Location error: $e');

@@ -1,7 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:agrimore_core/agrimore_core.dart';
 import 'package:agrimore_services/agrimore_services.dart';
-import 'package:agrimore_services/agrimore_services.dart';
 
 class SearchProvider with ChangeNotifier {
   final DatabaseService _databaseService = DatabaseService();

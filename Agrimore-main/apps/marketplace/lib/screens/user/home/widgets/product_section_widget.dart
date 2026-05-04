@@ -37,14 +37,26 @@ class ProductSectionWidget extends StatelessWidget {
     }
   }
 
+  List<ProductModel> _uniqueProducts(List<ProductModel> source) {
+    final seen = <String>{};
+    return source.where((product) {
+      final key = product.id.trim().isNotEmpty
+          ? product.id.trim()
+          : '${product.name.trim().toLowerCase()}-${product.categoryId.trim().toLowerCase()}';
+      return seen.add(key);
+    }).toList();
+  }
+
   @override
   Widget build(BuildContext context) {
     final isDark = Provider.of<ThemeProvider>(context).isDarkMode;
-    
+
     if (products.isEmpty) return const SizedBox.shrink();
 
-    // Limit products to maxProducts (default 6)
-    final displayProducts = products.take(maxProducts).toList();
+    // Limit unique products to maxProducts (default 6)
+    final displayProducts =
+        _uniqueProducts(products).take(maxProducts).toList();
+    if (displayProducts.isEmpty) return const SizedBox.shrink();
 
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
@@ -80,14 +92,15 @@ class ProductSectionWidget extends StatelessWidget {
                       ),
                     ),
                     const SizedBox(width: 2),
-                    Icon(Icons.chevron_right_rounded, size: 18, color: AppColors.primary),
+                    Icon(Icons.chevron_right_rounded,
+                        size: 18, color: AppColors.primary),
                   ],
                 ),
               ),
             ],
           ),
         ),
-        
+
         // 3-Column Grid
         MediaQuery.removePadding(
           context: context,
@@ -116,7 +129,7 @@ class ProductSectionWidget extends StatelessWidget {
             ),
           ),
         ),
-        
+
         // See All Footer - always visible with light background
         Padding(
           padding: const EdgeInsets.fromLTRB(12, 6, 12, 0),
@@ -128,8 +141,8 @@ class ProductSectionWidget extends StatelessWidget {
             child: Container(
               padding: const EdgeInsets.symmetric(vertical: 8),
               decoration: BoxDecoration(
-                color: isDark 
-                    ? Colors.grey[850] 
+                color: isDark
+                    ? const Color(0xFF303030)
                     : const Color(0xFFF0F4F0), // Light green-tinted background
                 borderRadius: BorderRadius.circular(10),
                 border: Border.all(
@@ -140,29 +153,34 @@ class ProductSectionWidget extends StatelessWidget {
                 mainAxisAlignment: MainAxisAlignment.center,
                 children: [
                   // Preview images
-                  if (products.length >= 3)
+                  if (displayProducts.length >= 3)
                     SizedBox(
                       width: 60,
                       height: 24,
                       child: Stack(
-                        children: List.generate(3, (i) => Positioned(
-                          left: i * 16.0,
-                          child: Container(
-                            width: 24,
-                            height: 24,
-                            decoration: BoxDecoration(
-                              shape: BoxShape.circle,
-                              border: Border.all(color: Colors.white, width: 1.5),
-                              color: Colors.grey[300],
-                              image: products[i].imageUrl != null
-                                  ? DecorationImage(
-                                      image: NetworkImage(products[i].imageUrl!),
-                                      fit: BoxFit.cover,
-                                    )
-                                  : null,
+                        children: List.generate(
+                          3,
+                          (i) => Positioned(
+                            left: i * 16.0,
+                            child: Container(
+                              width: 24,
+                              height: 24,
+                              decoration: BoxDecoration(
+                                shape: BoxShape.circle,
+                                border:
+                                    Border.all(color: Colors.white, width: 1.5),
+                                color: Colors.grey[300],
+                                image: displayProducts[i].imageUrl != null
+                                    ? DecorationImage(
+                                        image: NetworkImage(
+                                            displayProducts[i].imageUrl!),
+                                        fit: BoxFit.cover,
+                                      )
+                                    : null,
+                              ),
                             ),
                           ),
-                        )),
+                        ),
                       ),
                     ),
                   const SizedBox(width: 8),

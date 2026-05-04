@@ -1,4 +1,4 @@
-// ============================================================
+    // ============================================================
 //  MOBILE NUMBER SCREEN
 //  Shown to NEW USERS after successful email/password login
 //  Collects 10-digit Indian phone number, saves to Firestore

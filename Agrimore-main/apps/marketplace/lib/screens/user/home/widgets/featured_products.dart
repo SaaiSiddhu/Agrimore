@@ -126,7 +126,7 @@ class _CategoryTile extends StatelessWidget {
             child: Container(
               width: double.infinity,
               decoration: BoxDecoration(
-                color: isDark ? Colors.grey[850] : const Color(0xFFFCE4EC),
+                color: isDark ? const Color(0xFF303030) : const Color(0xFFFCE4EC),
                 borderRadius: BorderRadius.circular(12),
                 border: Border.all(
                   color: isDark 

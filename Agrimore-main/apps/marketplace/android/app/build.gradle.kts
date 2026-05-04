@@ -8,7 +8,7 @@ plugins {
 }
 
 android {
-    namespace = "com.agrimore.app"
+    namespace = "com.customer.agrimore"
     compileSdk = 36
     ndkVersion = "28.2.13676358"
 
@@ -23,7 +23,7 @@ android {
     }
 
     defaultConfig {
-        applicationId = "com.agrimore.app"
+        applicationId = "com.customer.agrimore"
         
         minSdk = 24  // Android 7.0
         targetSdk = 35  // Android 15 (required by Play Store)

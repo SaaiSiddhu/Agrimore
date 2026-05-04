@@ -122,7 +122,7 @@ class _WebShopScreenState extends State<WebShopScreen> {
                   padding: const EdgeInsets.all(40),
                   gridDelegate: const SliverGridDelegateWithFixedCrossAxisCount(
                     crossAxisCount: 4,
-                    childAspectRatio: 0.6,
+                    childAspectRatio: 0.58,
                     crossAxisSpacing: 20,
                     mainAxisSpacing: 20,
                   ),

@@ -3,6 +3,7 @@ import 'package:flutter_local_notifications/flutter_local_notifications.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:firebase_auth/firebase_auth.dart';
 import 'package:flutter/foundation.dart' show kIsWeb;
+import 'package:flutter/material.dart' show Color;
 
 // Background message handler
 @pragma('vm:entry-point')
@@ -22,7 +23,7 @@ class FCMService {
   // ✅ Your VAPID key
   static const String _vapidKey = 'BOe57aGDa_k374ps-OOGLibtGfUpFdYEpCbD-gfzOvXmSHkDIzm63T9N8u7bRxinGM8XpbwcE_dMbWyPd8J_QKY';
 
-  Future<void> initialize() async {
+  Future<void> initialize({void Function(RemoteMessage message)? onNotificationTap}) async {
     print('🔔 Initializing FCM...');
 
     // Request permission (iOS & Android 13+)
@@ -64,6 +65,16 @@ class FCMService {
       await _saveTokenToFirestore(token);
     }
 
+    // Subscribe to all_users topic
+    if (!kIsWeb) {
+      try {
+        await _messaging.subscribeToTopic('all_users');
+        print('✅ Subscribed to all_users topic');
+      } catch (e) {
+        print('❌ Topic subscription failed: $e');
+      }
+    }
+
     // Listen for token refresh
     _messaging.onTokenRefresh.listen(_saveTokenToFirestore);
 
@@ -83,7 +94,26 @@ class FCMService {
     // Handle notification tap (app opened)
     FirebaseMessaging.onMessageOpenedApp.listen((RemoteMessage message) {
       print('📱 Notification tapped: ${message.data}');
+      if (onNotificationTap != null) {
+        onNotificationTap(message);
+      } else {
+        _handleNotificationClick(message);
+      }
     });
+  }
+
+  void _handleNotificationClick(RemoteMessage message) {
+    // Note: To navigate, we use a global navigatorKey or routing setup.
+    // Ensure you have a global navigatorKey defined in your app.dart
+    // and use it here.
+    final type = message.data['type'];
+    final actionUrl = message.data['actionUrl'];
+    final orderId = message.data['orderId'];
+    final productId = message.data['productId'];
+
+    // In a real implementation, you would use a global NavigatorKey to navigate
+    // e.g. navigatorKey.currentState?.pushNamed(...)
+    print('🔀 Notification routing type: $type, orderId: $orderId');
   }
 
   Future<void> _saveTokenToFirestore(String token) async {
@@ -95,7 +125,8 @@ class FCMService {
           .collection('users')
           .doc(user.uid)
           .set({
-        'fcmTokens': FieldValue.arrayUnion([token]),
+        'fcmToken': token, // Store exactly as requested by user
+        'fcmTokens': FieldValue.arrayUnion([token]), // Keep array for multi-device support
         'lastTokenUpdate': FieldValue.serverTimestamp(),
       }, SetOptions(merge: true));
 
@@ -107,12 +138,18 @@ class FCMService {
 
   Future<void> _showLocalNotification(RemoteMessage message) async {
     const androidDetails = AndroidNotificationDetails(
-      'default_channel',
-      'Default Notifications',
-      channelDescription: 'Default notification channel',
-      importance: Importance.high,
+      'agrimore_customer_channel',
+      'Agrimore Customer Alerts',
+      channelDescription: 'Order updates, product reveals, and important alerts.',
+      importance: Importance.max,
       priority: Priority.high,
       showWhen: true,
+      color: Color(0xFF0D9B5C), // Agrimore Green
+      enableLights: true,
+      ledColor: Color(0xFF0D9B5C),
+      ledOnMs: 1000,
+      ledOffMs: 500,
+      styleInformation: BigTextStyleInformation(''),
     );
 
     const iosDetails = DarwinNotificationDetails();

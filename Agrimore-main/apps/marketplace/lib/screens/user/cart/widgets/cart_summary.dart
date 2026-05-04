@@ -30,7 +30,8 @@ class CartSummary extends StatefulWidget {
   State<CartSummary> createState() => _CartSummaryState();
 }
 
-class _CartSummaryState extends State<CartSummary> with TickerProviderStateMixin {
+class _CartSummaryState extends State<CartSummary>
+    with TickerProviderStateMixin {
   final TextEditingController _couponController = TextEditingController();
   bool _isApplying = false;
   bool _showCouponSection = false;
@@ -214,7 +215,8 @@ class _CartSummaryState extends State<CartSummary> with TickerProviderStateMixin
   }
 
   Widget _buildCouponToggle() {
-    final hasCoupon = widget.couponCode != null && widget.couponCode!.isNotEmpty;
+    final hasCoupon =
+        widget.couponCode != null && widget.couponCode!.isNotEmpty;
     if (hasCoupon) return _buildAppliedCouponBadge();
 
     return ListTile(
@@ -222,7 +224,9 @@ class _CartSummaryState extends State<CartSummary> with TickerProviderStateMixin
       title: const Text('Apply Coupon'),
       subtitle: const Text('Get extra discounts'),
       trailing: Icon(
-        _showCouponSection ? Icons.keyboard_arrow_up : Icons.keyboard_arrow_down,
+        _showCouponSection
+            ? Icons.keyboard_arrow_up
+            : Icons.keyboard_arrow_down,
         color: AppColors.primary,
       ),
       onTap: _toggleCouponSection,
@@ -259,7 +263,8 @@ class _CartSummaryState extends State<CartSummary> with TickerProviderStateMixin
                     onPressed: _isApplying ? null : _applyManualCoupon,
                     style: ElevatedButton.styleFrom(
                       backgroundColor: AppColors.primary,
-                      padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 16),
+                      padding: const EdgeInsets.symmetric(
+                          horizontal: 24, vertical: 16),
                       shape: RoundedRectangleBorder(
                         borderRadius: BorderRadius.circular(12),
                       ),
@@ -268,7 +273,8 @@ class _CartSummaryState extends State<CartSummary> with TickerProviderStateMixin
                         ? const SizedBox(
                             height: 20,
                             width: 20,
-                            child: CircularProgressIndicator(color: Colors.white, strokeWidth: 2),
+                            child: CircularProgressIndicator(
+                                color: Colors.white, strokeWidth: 2),
                           )
                         : const Text('APPLY'),
                   ),
@@ -277,8 +283,10 @@ class _CartSummaryState extends State<CartSummary> with TickerProviderStateMixin
               const SizedBox(height: 12),
               TextButton.icon(
                 onPressed: _showAvailableCoupons,
-                icon: const Icon(Icons.local_activity_outlined, color: AppColors.primary),
-                label: const Text('View Available Coupons', style: TextStyle(color: AppColors.primary)),
+                icon: const Icon(Icons.local_activity_outlined,
+                    color: AppColors.primary),
+                label: const Text('View Available Coupons',
+                    style: TextStyle(color: AppColors.primary)),
               ),
             ],
           ),
@@ -330,16 +338,18 @@ class _CartSummaryState extends State<CartSummary> with TickerProviderStateMixin
           _buildRow('Subtotal', widget.subtotal),
           if (widget.discount > 0)
             _buildRow('Discount', -widget.discount, color: AppColors.success),
-          _buildRow('Delivery', 0.0),
-          _buildRow('Tax', 0.0),
+          _buildRow('Delivery', widget.deliveryCharge),
+          _buildRow('Tax', widget.tax),
           const Divider(thickness: 1),
-          _buildRow('Total', widget.total, bold: true, color: AppColors.primary),
+          _buildRow('Total', widget.total,
+              bold: true, color: AppColors.primary),
         ],
       ),
     );
   }
 
-  Widget _buildRow(String label, double value, {bool bold = false, Color? color}) {
+  Widget _buildRow(String label, double value,
+      {bool bold = false, Color? color}) {
     return Padding(
       padding: const EdgeInsets.symmetric(vertical: 4),
       child: Row(
@@ -347,7 +357,8 @@ class _CartSummaryState extends State<CartSummary> with TickerProviderStateMixin
         children: [
           Text(label,
               style: bold
-                  ? AppTextStyles.titleMedium.copyWith(fontWeight: FontWeight.bold)
+                  ? AppTextStyles.titleMedium
+                      .copyWith(fontWeight: FontWeight.bold)
                   : AppTextStyles.bodyMedium),
           Text(
             '₹${value.toStringAsFixed(2)}',

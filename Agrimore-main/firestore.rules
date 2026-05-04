@@ -478,8 +478,8 @@ service cloud.firestore {
       // User can read their own transactions
       allow read: if isAuthenticated() && resource.data.userId == request.auth.uid;
       
-      // User can create transactions for themselves
-      allow create: if isAuthenticated() && request.resource.data.userId == request.auth.uid;
+      // Only Cloud Functions can create wallet transactions securely
+      allow create: if false;
       
       // Admin can read all wallet transactions
       allow read: if isAdmin();

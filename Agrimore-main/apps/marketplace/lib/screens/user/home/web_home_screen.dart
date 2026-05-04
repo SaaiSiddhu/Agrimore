@@ -2,7 +2,6 @@ import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:provider/provider.dart';
 import 'package:agrimore_ui/agrimore_ui.dart';
-import 'package:agrimore_ui/agrimore_ui.dart';
 import '../../../app/routes.dart';
 import '../../../providers/product_provider.dart';
 import '../../../providers/category_provider.dart';
@@ -80,8 +79,7 @@ class _WebHomeScreenState extends State<WebHomeScreen>
 
       // Refresh all data including banners for admin changes
       bannerProvider.loadBanners();
-      productProvider.loadFeaturedProducts();
-      productProvider.loadProducts();
+      productProvider.loadProducts(limit: 60);
       categoryProvider.loadCategories();
       cartProvider.loadCart();
       wishlistProvider.loadWishlist();
@@ -207,7 +205,7 @@ class _WebHomeScreenState extends State<WebHomeScreen>
               child: Padding(
                 padding: const EdgeInsets.symmetric(horizontal: 40),
                 child: _buildSectionWrapper(
-                  child: const DynamicCategorySections(skipCount: 6),
+                  child: const DynamicCategorySections(skipCount: 12),
                 ),
               ),
             ),
@@ -643,7 +641,8 @@ class _WebHomeScreenState extends State<WebHomeScreen>
                                         borderRadius: BorderRadius.circular(14),
                                       ),
                                     ),
-                                    icon: const Icon(Icons.check_circle, size: 20),
+                                    icon: const Icon(Icons.check_circle,
+                                        size: 20),
                                     label: const Text(
                                       'In Cart',
                                       style: TextStyle(

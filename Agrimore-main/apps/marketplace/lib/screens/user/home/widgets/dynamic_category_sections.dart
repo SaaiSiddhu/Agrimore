@@ -15,11 +15,13 @@ import '../../../../providers/shop_entry_provider.dart';
 /// Displays admin-configured category sections from Firestore
 class DynamicCategorySections extends StatefulWidget {
   final int skipCount;
-  
-  const DynamicCategorySections({Key? key, this.skipCount = 6}) : super(key: key);
+
+  const DynamicCategorySections({Key? key, this.skipCount = 6})
+      : super(key: key);
 
   @override
-  State<DynamicCategorySections> createState() => _DynamicCategorySectionsState();
+  State<DynamicCategorySections> createState() =>
+      _DynamicCategorySectionsState();
 }
 
 class _DynamicCategorySectionsState extends State<DynamicCategorySections> {
@@ -34,17 +36,20 @@ class _DynamicCategorySectionsState extends State<DynamicCategorySections> {
   @override
   Widget build(BuildContext context) {
     final isDark = Provider.of<ThemeProvider>(context).isDarkMode;
-    
-    return Consumer3<CategorySectionProvider, CategoryProvider, ProductProvider>(
-      builder: (context, sectionProvider, categoryProvider, productProvider, _) {
+
+    return Consumer3<CategorySectionProvider, CategoryProvider,
+        ProductProvider>(
+      builder:
+          (context, sectionProvider, categoryProvider, productProvider, _) {
         // If loading, show nothing
         if (sectionProvider.isLoading) {
           return const SizedBox.shrink();
         }
 
         final activeSlots = sectionProvider.activeSlots;
-        final allCategories = categoryProvider.categories.where((c) => c.isActive).toList();
-        
+        final allCategories =
+            categoryProvider.categories.where((c) => c.isActive).toList();
+
         if (activeSlots.isEmpty) {
           // Fallback to old hardcoded behavior if no admin sections configured
           return _buildFallbackSections(
@@ -55,14 +60,18 @@ class _DynamicCategorySectionsState extends State<DynamicCategorySections> {
           );
         }
 
+        final shownCategoryIds = <String>{};
+
         return Column(
           mainAxisSize: MainAxisSize.min,
           children: activeSlots.map((slot) {
             // Get categories for this section
             final sectionCategories = allCategories
-                .where((c) => slot.categoryIds.contains(c.id))
+                .where((c) =>
+                    slot.categoryIds.contains(c.id) &&
+                    shownCategoryIds.add(c.id))
                 .toList();
-            
+
             if (sectionCategories.isEmpty) return const SizedBox.shrink();
 
             return _AdminCategorySection(
@@ -85,8 +94,12 @@ class _DynamicCategorySectionsState extends State<DynamicCategorySections> {
     ProductProvider productProvider,
     List<CategoryModel> categoryTree,
   ) {
-    final categories = allCategories.skip(widget.skipCount).toList();
-    
+    final seenCategoryIds = <String>{};
+    final categories = allCategories
+        .where((category) => seenCategoryIds.add(category.id))
+        .skip(widget.skipCount)
+        .toList();
+
     if (categories.isEmpty) {
       return const SizedBox.shrink();
     }
@@ -111,7 +124,7 @@ class _DynamicCategorySectionsState extends State<DynamicCategorySections> {
       children: sections.asMap().entries.map((entry) {
         final sectionIndex = entry.key;
         final sectionCategories = entry.value;
-        final title = sectionIndex < fallbackTitles.length 
+        final title = sectionIndex < fallbackTitles.length
             ? fallbackTitles[sectionIndex]
             : 'More Categories';
 
@@ -182,10 +195,10 @@ class _AdminCategorySection extends StatelessWidget {
               itemCount: categories.length,
               itemBuilder: (context, index) {
                 final category = categories[index];
-                
+
                 // Use admin-uploaded image for this slot position (1-indexed)
                 final slotImage = slot.getImageForSlot(index + 1);
-                
+
                 // Fallback to product image if no slot image
                 String imageUrl = slotImage ?? '';
                 if (imageUrl.isEmpty) {
@@ -195,11 +208,11 @@ class _AdminCategorySection extends StatelessWidget {
                           productBelongsToCategory(p, category, categoryTree))
                       .take(1)
                       .toList();
-                  imageUrl = categoryProduct.isNotEmpty 
+                  imageUrl = categoryProduct.isNotEmpty
                       ? categoryProduct.first.imageUrl ?? ''
                       : category.imageUrl ?? '';
                 }
-                
+
                 return _EnhancedCategoryTile(
                   category: category,
                   productImageUrl: imageUrl,
@@ -257,7 +270,7 @@ class _FallbackCategorySection extends StatelessWidget {
             ),
           ),
         ),
-        
+
         // Category Grid
         MediaQuery.removePadding(
           context: context,
@@ -332,8 +345,8 @@ class _EnhancedCategoryTileState extends State<_EnhancedCategoryTile> {
 
   @override
   Widget build(BuildContext context) {
-    final tileBgColor = widget.bgColor ?? 
-        (widget.isDark ? Colors.grey[850]! : const Color(0xFFFFF9E6));
+    final tileBgColor = widget.bgColor ??
+        (widget.isDark ? const Color(0xFF303030) : const Color(0xFFFFF9E6));
 
     return GestureDetector(
       onTapDown: (_) => setState(() => _isPressed = true),
@@ -353,8 +366,8 @@ class _EnhancedCategoryTileState extends State<_EnhancedCategoryTile> {
                   color: tileBgColor,
                   borderRadius: BorderRadius.circular(10),
                   border: Border.all(
-                    color: widget.isDark 
-                        ? Colors.grey[700]! 
+                    color: widget.isDark
+                        ? Colors.grey[700]!
                         : const Color(0xFFE8E0D0),
                     width: 0.5,
                   ),
@@ -368,15 +381,16 @@ class _EnhancedCategoryTileState extends State<_EnhancedCategoryTile> {
                           width: double.infinity,
                           height: double.infinity,
                           placeholder: (context, url) => _buildLargeIcon(),
-                          errorWidget: (context, url, error) => _buildLargeIcon(),
+                          errorWidget: (context, url, error) =>
+                              _buildLargeIcon(),
                         )
                       : _buildLargeIcon(),
                 ),
               ),
             ),
-            
+
             const SizedBox(height: 2),
-            
+
             // Category Name - ultra compact
             SizedBox(
               height: 18,
@@ -404,9 +418,7 @@ class _EnhancedCategoryTileState extends State<_EnhancedCategoryTile> {
       child: Icon(
         Icons.widgets_rounded,
         size: 36,
-        color: widget.isDark 
-            ? Colors.grey[600] 
-            : Colors.grey[400],
+        color: widget.isDark ? Colors.grey[600] : Colors.grey[400],
       ),
     );
   }

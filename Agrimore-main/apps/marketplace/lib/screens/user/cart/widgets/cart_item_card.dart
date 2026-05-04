@@ -203,7 +203,7 @@ class _CartItemCardState extends State<CartItemCard> with SingleTickerProviderSt
             height: 90,
             fit: BoxFit.cover,
             placeholder: (context, url) => Container(
-              color: isDark ? Colors.grey[850] : Colors.grey[100],
+              color: isDark ? const Color(0xFF303030) : Colors.grey[100],
               child: Center(
                 child: CircularProgressIndicator(
                   strokeWidth: 2,
@@ -212,7 +212,7 @@ class _CartItemCardState extends State<CartItemCard> with SingleTickerProviderSt
               ),
             ),
             errorWidget: (context, url, error) => Container(
-              color: isDark ? Colors.grey[850] : Colors.grey[100],
+              color: isDark ? const Color(0xFF303030) : Colors.grey[100],
               child: Column(
                 mainAxisAlignment: MainAxisAlignment.center,
                 children: [
@@ -458,7 +458,7 @@ class _CartItemCardState extends State<CartItemCard> with SingleTickerProviderSt
 
     return Container(
       decoration: BoxDecoration(
-        color: isDark ? Colors.grey[850] : Colors.white,
+        color: isDark ? const Color(0xFF303030) : Colors.white,
         borderRadius: BorderRadius.circular(8),
         border: Border.all(
           color: accentColor.withOpacity(0.3),

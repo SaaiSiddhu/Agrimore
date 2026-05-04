@@ -369,7 +369,7 @@ class _ReferralScreenState extends State<ReferralScreen> {
                           letterSpacing: 2,
                         ),
                         filled: true,
-                        fillColor: isDark ? Colors.grey[850] : Colors.grey[100],
+                        fillColor: isDark ? const Color(0xFF303030) : Colors.grey[100],
                         border: OutlineInputBorder(
                           borderRadius: BorderRadius.circular(12),
                           borderSide: BorderSide.none,

@@ -382,21 +382,28 @@ class _SavedAddressesScreenState extends State<SavedAddressesScreen>
                               final address = addressProvider.addresses[index];
                               return Padding(
                                 padding: const EdgeInsets.only(bottom: 12.0),
-                                child: _buildAddressCard(
-                                  address: address,
-                                  isDark: isDark,
-                                  onDelete: () => _deleteAddress(address.id, isDark),
-                                  onSetDefault: () async {
+                                child: GestureDetector(
+                                  onTap: () {
                                     HapticFeedback.selectionClick();
-                                    final success = await addressProvider
-                                        .setDefaultAddress(address.id);
-                                    if (mounted) {
-                                      _showToastMessage(
-                                        success ? '✅ Default address updated' : '❌ Failed to update',
-                                        isSuccess: success
-                                      );
-                                    }
+                                    context.read<AddressProvider>().selectAddress(address);
+                                    Navigator.pop(context);
                                   },
+                                  child: _buildAddressCard(
+                                    address: address,
+                                    isDark: isDark,
+                                    onDelete: () => _deleteAddress(address.id, isDark),
+                                    onSetDefault: () async {
+                                      HapticFeedback.selectionClick();
+                                      final success = await addressProvider
+                                          .setDefaultAddress(address.id);
+                                      if (mounted) {
+                                        _showToastMessage(
+                                          success ? '✅ Default address updated' : '❌ Failed to update',
+                                          isSuccess: success
+                                        );
+                                      }
+                                    },
+                                  ),
                                 ),
                               );
                             },
@@ -482,9 +489,15 @@ class _SavedAddressesScreenState extends State<SavedAddressesScreen>
               builder: (context) => const AddAddressScreen(),
             ),
           ).then((result) {
-            if (result == true && mounted) {
+            if (result != null && result is AddressModel && mounted) {
               context.read<AddressProvider>().loadAddresses();
+              context.read<AddressProvider>().selectAddress(result);
               _showToastMessage('✅ Address added successfully');
+              
+              // Auto return to cart (or previous screen) with the selected address
+              Future.delayed(const Duration(milliseconds: 600), () {
+                if (mounted) Navigator.pop(context);
+              });
             }
           });
         },

@@ -298,7 +298,7 @@ class _CouponSelectionScreenState extends State<CouponSelectionScreen>
                     border: Border.all(
                       color: isDark ? Colors.grey[700]! : Colors.grey[300]!,
                     ),
-                    color: isDark ? Colors.grey[850] : Colors.grey[50],
+                    color: isDark ? const Color(0xFF303030) : Colors.grey[50],
                   ),
                   child: TextField(
                     controller: _couponCodeController,
@@ -669,7 +669,7 @@ class _CouponSelectionScreenState extends State<CouponSelectionScreen>
                     Container(
                       padding: const EdgeInsets.all(10),
                       decoration: BoxDecoration(
-                        color: isDark ? Colors.grey[850] : Colors.grey[50],
+                        color: isDark ? const Color(0xFF303030) : Colors.grey[50],
                         borderRadius: BorderRadius.circular(8),
                       ),
                       child: Row(

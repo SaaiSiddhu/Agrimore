@@ -5,14 +5,9 @@ import Razorpay from "razorpay";
 import { log } from "../common/helpers";
 
 function getRazorpayCredentials(): { keyId: string; keySecret: string } {
-  const config =
-    typeof (functions as any).config === "function"
-      ? (functions as any).config()
-      : {};
   return {
-    keyId: process.env.RAZORPAY_KEY_ID || config.razorpay?.key_id || "",
-    keySecret:
-      process.env.RAZORPAY_KEY_SECRET || config.razorpay?.key_secret || "",
+    keyId: process.env.RAZORPAY_KEY_ID || "",
+    keySecret: process.env.RAZORPAY_KEY_SECRET || "",
   };
 }
 
@@ -21,6 +16,7 @@ interface CreateOrderData {
   currency?: string;
   receipt?: string;
   notes?: Record<string, string>;
+  transfers?: { account: string; amount: number; currency: string }[];
 }
 
 export const createRazorpayOrder = functions.https.onCall(
@@ -33,7 +29,7 @@ export const createRazorpayOrder = functions.https.onCall(
         );
       }
 
-      const { amount, currency = "INR", receipt, notes } = data;
+      const { amount, currency = "INR", receipt, notes, transfers } = data;
 
       if (!amount || amount <= 0) {
         throw new functions.https.HttpsError(

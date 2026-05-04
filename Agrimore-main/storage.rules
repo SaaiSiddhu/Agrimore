@@ -56,23 +56,23 @@ service firebase.storage {
     }
 
     // ============================================
-    // BANNER IMAGES — Any authenticated user (admin enforced at app level)
+    // BANNER IMAGES — Admin Only
     // ============================================
     match /banners/{fileName} {
-      allow write: if isAuthenticated() && isValidFileSize() && isImage();
+      allow write: if isAuthenticated() && request.auth.token.admin == true && isValidFileSize() && isImage();
     }
     match /notifications/{fileName} {
-      allow write: if isAuthenticated() && isValidFileSize() && isImage();
+      allow write: if isAuthenticated() && request.auth.token.admin == true && isValidFileSize() && isImage();
     }
     match /sponsored/{fileName} {
-      allow write: if isAuthenticated() && isValidFileSize() && isImage();
+      allow write: if isAuthenticated() && isValidFileSize() && isImage(); // Handled by sellers
     }
 
     // ============================================
     // CATEGORY IMAGES
     // ============================================
     match /categories/{fileName} {
-      allow write: if isAuthenticated() && isValidFileSize() && isImage();
+      allow write: if isAuthenticated() && request.auth.token.admin == true && isValidFileSize() && isImage();
     }
 
     // ============================================

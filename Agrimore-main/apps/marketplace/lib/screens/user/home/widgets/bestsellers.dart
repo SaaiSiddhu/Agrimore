@@ -31,59 +31,74 @@ class _DealsForYouState extends State<DealsForYou> {
 
   // Card background colors
   static const List<Color> _cardColors = [
-    Color(0xFFFFF8E1), Color(0xFFE8F5E9), Color(0xFFFCE4EC),
-    Color(0xFFE3F2FD), Color(0xFFFFF3E0), Color(0xFFF3E5F5),
-    Color(0xFFE0F2F1), Color(0xFFFBE9E7), Color(0xFFEDE7F6),
+    Color(0xFFFFF8E1),
+    Color(0xFFE8F5E9),
+    Color(0xFFFCE4EC),
+    Color(0xFFE3F2FD),
+    Color(0xFFFFF3E0),
+    Color(0xFFF3E5F5),
+    Color(0xFFE0F2F1),
+    Color(0xFFFBE9E7),
+    Color(0xFFEDE7F6),
   ];
+
+  List<ProductModel> _uniqueProducts(Iterable<ProductModel> source) {
+    final seen = <String>{};
+    return source.where((product) {
+      final key = product.id.trim().isNotEmpty
+          ? product.id.trim()
+          : '${product.name.trim().toLowerCase()}-${product.categoryId.trim().toLowerCase()}';
+      return seen.add(key);
+    }).toList();
+  }
 
   @override
   Widget build(BuildContext context) {
     final isDark = Provider.of<ThemeProvider>(context).isDarkMode;
-    
+
     return Consumer3<BestsellerProvider, CategoryProvider, ProductProvider>(
-      builder: (context, bestsellerProvider, categoryProvider, productProvider, _) {
-        
+      builder:
+          (context, bestsellerProvider, categoryProvider, productProvider, _) {
         // If still loading, show nothing
         if (bestsellerProvider.isLoading) {
           return const SizedBox.shrink();
         }
-        
+
         final adminSlots = bestsellerProvider.activeSlots;
-        final categories = categoryProvider.categories.where((c) => c.isActive).toList();
-        
+        final categories =
+            categoryProvider.categories.where((c) => c.isActive).toList();
+
         // Build display items - 9 slots
         final displayItems = <_DisplayItem>[];
-        
+
         for (int i = 0; i < 9; i++) {
           // Check if admin configured this position
-          final adminSlot = adminSlots.where((s) => s.position == i + 1).firstOrNull;
-          
+          final adminSlot =
+              adminSlots.where((s) => s.position == i + 1).firstOrNull;
+
           if (adminSlot != null) {
             // Use admin slot
             displayItems.add(_DisplayItem.fromSlot(adminSlot));
           } else if (i < categories.length) {
             // Fallback to category
             final category = categories[i];
-            final categoryProducts = productProvider.products
-                .where((p) =>
-                    p.isActive &&
-                    productBelongsToCategory(p, category, categoryProvider.categories))
-                .take(4)
-                .toList();
-            final totalProducts = productProvider.products
-                .where((p) =>
-                    p.isActive &&
-                    productBelongsToCategory(p, category, categoryProvider.categories))
-                .length;
+            final matchingProducts = _uniqueProducts(
+              productProvider.products.where((p) =>
+                  p.isActive &&
+                  productBelongsToCategory(
+                      p, category, categoryProvider.categories)),
+            );
+            final categoryProducts = matchingProducts.take(4).toList();
+            final totalProducts = matchingProducts.length;
             displayItems.add(_DisplayItem.fromCategory(
-              category, 
-              categoryProducts, 
+              category,
+              categoryProducts,
               totalProducts,
               _cardColors[i % _cardColors.length],
             ));
           }
         }
-        
+
         if (displayItems.isEmpty) {
           return const SizedBox.shrink();
         }
@@ -175,7 +190,7 @@ class _DisplayItem {
   }
 
   factory _DisplayItem.fromCategory(
-    CategoryModel category, 
+    CategoryModel category,
     List<ProductModel> products,
     int totalProducts,
     Color defaultColor,
@@ -183,7 +198,10 @@ class _DisplayItem {
     return _DisplayItem(
       categoryId: category.id,
       categoryName: category.name,
-      images: products.map((p) => p.imageUrl ?? '').where((url) => url.isNotEmpty).toList(),
+      images: products
+          .map((p) => p.imageUrl ?? '')
+          .where((url) => url.isNotEmpty)
+          .toList(),
       moreCount: totalProducts > 4 ? totalProducts - 4 : 0,
       bgColor: defaultColor,
       isAdminSlot: false,
@@ -214,7 +232,7 @@ class _BestsellerCardState extends State<_BestsellerCard> {
   Widget build(BuildContext context) {
     final images = widget.item.images;
     final moreCount = widget.item.moreCount;
-    
+
     return GestureDetector(
       onTapDown: (_) => setState(() => _isPressed = true),
       onTapUp: (_) => setState(() => _isPressed = false),
@@ -225,7 +243,7 @@ class _BestsellerCardState extends State<_BestsellerCard> {
         duration: const Duration(milliseconds: 100),
         child: Container(
           decoration: BoxDecoration(
-            color: widget.isDark ? Colors.grey[850] : widget.item.bgColor,
+            color: widget.isDark ? const Color(0xFF303030) : widget.item.bgColor,
             borderRadius: BorderRadius.circular(10),
             border: Border.all(
               color: widget.isDark ? Colors.grey[700]! : Colors.grey.shade200,
@@ -246,7 +264,8 @@ class _BestsellerCardState extends State<_BestsellerCard> {
               AspectRatio(
                 aspectRatio: 1,
                 child: ClipRRect(
-                  borderRadius: const BorderRadius.vertical(top: Radius.circular(9)),
+                  borderRadius:
+                      const BorderRadius.vertical(top: Radius.circular(9)),
                   child: Padding(
                     padding: const EdgeInsets.all(3),
                     child: images.isEmpty
@@ -254,12 +273,15 @@ class _BestsellerCardState extends State<_BestsellerCard> {
                             child: Icon(
                               Icons.widgets_rounded,
                               size: 32,
-                              color: widget.isDark ? Colors.grey[600] : Colors.grey[400],
+                              color: widget.isDark
+                                  ? Colors.grey[600]
+                                  : Colors.grey[400],
                             ),
                           )
                         : GridView.builder(
                             physics: const NeverScrollableScrollPhysics(),
-                            gridDelegate: const SliverGridDelegateWithFixedCrossAxisCount(
+                            gridDelegate:
+                                const SliverGridDelegateWithFixedCrossAxisCount(
                               crossAxisCount: 2,
                               mainAxisSpacing: 2,
                               crossAxisSpacing: 2,
@@ -267,9 +289,10 @@ class _BestsellerCardState extends State<_BestsellerCard> {
                             ),
                             itemCount: 4,
                             itemBuilder: (context, index) {
-                              final hasImage = index < images.length && images[index].isNotEmpty;
+                              final hasImage = index < images.length &&
+                                  images[index].isNotEmpty;
                               final is4thTile = index == 3;
-                              
+
                               Widget tile;
                               if (hasImage) {
                                 tile = _ImageTile(
@@ -279,14 +302,14 @@ class _BestsellerCardState extends State<_BestsellerCard> {
                               } else {
                                 tile = Container(
                                   decoration: BoxDecoration(
-                                    color: widget.isDark 
+                                    color: widget.isDark
                                         ? Colors.grey[800]!.withOpacity(0.3)
                                         : Colors.white.withOpacity(0.4),
                                     borderRadius: BorderRadius.circular(4),
                                   ),
                                 );
                               }
-                              
+
                               // Add badge to 4th tile
                               if (is4thTile && moreCount > 0) {
                                 return Stack(
@@ -296,13 +319,16 @@ class _BestsellerCardState extends State<_BestsellerCard> {
                                       right: 2,
                                       bottom: 2,
                                       child: Container(
-                                        padding: const EdgeInsets.symmetric(horizontal: 4, vertical: 2),
+                                        padding: const EdgeInsets.symmetric(
+                                            horizontal: 4, vertical: 2),
                                         decoration: BoxDecoration(
                                           color: const Color(0xFF3949AB),
-                                          borderRadius: BorderRadius.circular(5),
+                                          borderRadius:
+                                              BorderRadius.circular(5),
                                           boxShadow: [
                                             BoxShadow(
-                                              color: Colors.black.withOpacity(0.3),
+                                              color:
+                                                  Colors.black.withOpacity(0.3),
                                               blurRadius: 2,
                                               offset: const Offset(0, 1),
                                             ),
@@ -321,23 +347,24 @@ class _BestsellerCardState extends State<_BestsellerCard> {
                                   ],
                                 );
                               }
-                              
+
                               return tile;
                             },
                           ),
                   ),
                 ),
               ),
-              
+
               // Category Name - No gap
               Container(
                 width: double.infinity,
                 padding: const EdgeInsets.symmetric(horizontal: 4, vertical: 3),
                 decoration: BoxDecoration(
-                  color: widget.isDark 
+                  color: widget.isDark
                       ? Colors.grey[800]!.withOpacity(0.4)
                       : Colors.white.withOpacity(0.65),
-                  borderRadius: const BorderRadius.vertical(bottom: Radius.circular(9)),
+                  borderRadius:
+                      const BorderRadius.vertical(bottom: Radius.circular(9)),
                 ),
                 child: Text(
                   widget.item.categoryName,
@@ -347,8 +374,8 @@ class _BestsellerCardState extends State<_BestsellerCard> {
                   style: TextStyle(
                     fontSize: 10,
                     fontWeight: FontWeight.w700,
-                    color: widget.isDark 
-                        ? AppColors.primaryLight 
+                    color: widget.isDark
+                        ? AppColors.primaryLight
                         : const Color(0xFF3949AB),
                     letterSpacing: -0.2,
                   ),

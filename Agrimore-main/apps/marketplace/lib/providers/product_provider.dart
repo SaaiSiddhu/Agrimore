@@ -24,6 +24,7 @@ class ProductProvider with ChangeNotifier {
   ProductModel? _selectedProduct;
   bool _isLoading = false;
   String? _error;
+  int? _loadedProductLimit;
   bool _isLoaded = false; // ✅ Caching flag
   Completer<void>? _loadCompleter; // ✅ Race condition fix
   bool _isCacheLoaded = false; // ✅ NEW: Track if we showed cached data
@@ -50,46 +51,79 @@ class ProductProvider with ChangeNotifier {
   bool get isLoadingRelated => _isLoadingRelated;
 
   // ✅ FIXED: Added this alias method for backward compatibility
-  Future<void> fetchProducts({String? categoryId, String? location}) async {
-    return loadProducts(categoryId: categoryId, location: location);
+  Future<void> fetchProducts({
+    String? categoryId,
+    String? location,
+    int? limit,
+  }) async {
+    return loadProducts(
+      categoryId: categoryId,
+      location: location,
+      limit: limit,
+    );
   }
 
   // ============================================
   // ENHANCED CACHE-FIRST LOADING
   // ============================================
-  Future<void> loadProducts({String? categoryId, bool forceRefresh = false, String? location}) async {
+  Future<void> loadProducts({
+    String? categoryId,
+    bool forceRefresh = false,
+    String? location,
+    int? limit,
+  }) async {
     // ✅ If forceRefresh, reset cache flags to force Firebase fetch
     if (forceRefresh) {
       _isLoaded = false;
       _isCacheLoaded = false;
+      _loadedProductLimit = null;
       debugPrint('🔄 Force refreshing products from Firebase...');
     }
-    
+
     // ✅ Skip if already loaded for "all" products (in-memory cache)
-    if (_isLoaded && !forceRefresh && categoryId == null) {
+    final hasEnoughInMemoryProducts = _isLoaded &&
+        !forceRefresh &&
+        categoryId == null &&
+        (_loadedProductLimit == null ||
+            (limit != null && _loadedProductLimit! >= limit));
+    if (hasEnoughInMemoryProducts) {
       debugPrint('📦 Products in-memory cached, skipping...');
       return;
     }
-    
+
     // ✅ Race condition fix: If already loading, wait for that operation
     if (_loadCompleter != null && categoryId == null) {
       debugPrint('📦 Products loading in progress, waiting...');
-      return _loadCompleter!.future;
+      await _loadCompleter!.future;
+      if (limit == null && _loadedProductLimit != null) {
+        return loadProducts(
+          categoryId: categoryId,
+          forceRefresh: forceRefresh,
+          location: location,
+          limit: limit,
+        );
+      }
+      if (limit != null &&
+          (_loadedProductLimit == null || _loadedProductLimit! >= limit)) {
+        return;
+      }
     }
-    
+
     _loadCompleter = Completer<void>();
-    
+
     try {
       // ============================================
       // STEP 1: INSTANT - Load from local cache first
       // ============================================
-      if (categoryId == null && !_isCacheLoaded) {
+      if (categoryId == null && limit == null && !_isCacheLoaded) {
         final cachedProducts = await _loadFromCache();
         if (cachedProducts.isNotEmpty) {
-          _products = cachedProducts;
+          _products = _dedupeProducts(cachedProducts);
           _isCacheLoaded = true;
           _isLoaded = true;
-          debugPrint('⚡ INSTANT: Loaded ${_products.length} products from cache');
+          _loadedProductLimit = null;
+          debugPrint(
+              '⚡ INSTANT: Loaded ${_products.length} products from cache');
           _notifySafely(); // Show cached data immediately!
         }
       }
@@ -101,14 +135,22 @@ class ProductProvider with ChangeNotifier {
       _error = null;
       if (!_isCacheLoaded) _notifySafely();
 
-      final activeLocation = location ?? SharedPreferencesService.getString('selected_location');
+      final activeLocation =
+          location ?? SharedPreferencesService.getString('selected_location');
 
       List<ProductModel> freshProducts;
-      if (categoryId != null && categoryId != 'all' && categoryId != 'uncategorized') {
-        freshProducts = await _databaseService.getProductsByCategory(categoryId, location: activeLocation);
+      if (categoryId != null &&
+          categoryId != 'all' &&
+          categoryId != 'uncategorized') {
+        freshProducts = await _databaseService.getProductsByCategory(categoryId,
+            location: activeLocation);
       } else {
-        freshProducts = await _databaseService.getAllProducts(location: activeLocation);
+        freshProducts = await _databaseService.getAllProducts(
+          location: activeLocation,
+          limit: limit,
+        );
       }
+      freshProducts = _dedupeProducts(freshProducts);
 
       // ============================================
       // STEP 3: UPDATE - Only refresh UI if data changed
@@ -116,12 +158,14 @@ class ProductProvider with ChangeNotifier {
       final hasChanges = _hasDataChanged(freshProducts);
       _products = freshProducts;
       _isLoaded = true;
+      _loadedProductLimit = categoryId == null ? limit : null;
 
-      if (categoryId == null) {
+      if (categoryId == null && limit == null) {
         await _saveToCache(freshProducts); // Save fresh data to cache
       }
 
-      debugPrint('✅ NETWORK: Loaded ${_products.length} products${hasChanges ? " (updated)" : " (unchanged)"}');
+      debugPrint(
+          '✅ NETWORK: Loaded ${_products.length} products${hasChanges ? " (updated)" : " (unchanged)"}');
       _isLoading = false;
       _loadCompleter?.complete();
       _loadCompleter = null;
@@ -143,7 +187,7 @@ class ProductProvider with ChangeNotifier {
     try {
       final prefs = await SharedPreferences.getInstance();
       final cacheTimeStr = prefs.getString(_kProductsCacheTimeKey);
-      
+
       // Check if cache is expired
       if (cacheTimeStr != null) {
         final cacheTime = DateTime.tryParse(cacheTimeStr);
@@ -172,7 +216,8 @@ class ProductProvider with ChangeNotifier {
       final prefs = await SharedPreferences.getInstance();
       final jsonList = products.map((p) => p.toJson()).toList();
       await prefs.setString(_kProductsCacheKey, jsonEncode(jsonList));
-      await prefs.setString(_kProductsCacheTimeKey, DateTime.now().toIso8601String());
+      await prefs.setString(
+          _kProductsCacheTimeKey, DateTime.now().toIso8601String());
       debugPrint('💾 Saved ${products.length} products to cache');
     } catch (e) {
       debugPrint('⚠️ Cache save error: $e');
@@ -188,13 +233,30 @@ class ProductProvider with ChangeNotifier {
     return false;
   }
 
+  List<ProductModel> _dedupeProducts(List<ProductModel> products) {
+    final seen = <String>{};
+    return products.where((product) {
+      final key = product.id.trim().isNotEmpty
+          ? product.id.trim()
+          : '${product.name.trim().toLowerCase()}-${product.categoryId.trim().toLowerCase()}';
+      return seen.add(key);
+    }).toList();
+  }
+
   Future<void> loadFeaturedProducts({String? location}) async {
     try {
       _isLoading = true;
       _notifySafely();
-      
-      final activeLocation = location ?? SharedPreferencesService.getString('selected_location');
-      _products = await _databaseService.getFeaturedProducts(limit: 10, location: activeLocation);
+
+      final activeLocation =
+          location ?? SharedPreferencesService.getString('selected_location');
+      _products = _dedupeProducts(
+        await _databaseService.getFeaturedProducts(
+          limit: 10,
+          location: activeLocation,
+        ),
+      );
+      _loadedProductLimit = 10;
       _isLoading = false;
       _notifySafely();
     } catch (e) {
@@ -210,9 +272,9 @@ class ProductProvider with ChangeNotifier {
       _notifySafely();
 
       clearSelectedProduct();
-      
+
       _selectedProduct = await _databaseService.getProductById(productId);
-      
+
       if (_selectedProduct != null) {
         if (_selectedProduct!.variants.isNotEmpty) {
           _selectedVariant = _selectedProduct!.variants.first;
@@ -223,7 +285,7 @@ class ProductProvider with ChangeNotifier {
         }
 
         await addToRecentlyViewed(_selectedProduct!);
-        
+
         _loadRelatedProducts(_selectedProduct!.relatedProductIds);
       }
 
@@ -242,13 +304,13 @@ class ProductProvider with ChangeNotifier {
       _notifySafely();
       return;
     }
-    
+
     try {
       _isLoadingRelated = true;
       _notifySafely();
 
       _relatedProducts = await _databaseService.getProductsByIds(productIds);
-      
+
       _isLoadingRelated = false;
       _notifySafely();
     } catch (e) {
@@ -257,7 +319,7 @@ class ProductProvider with ChangeNotifier {
       _notifySafely();
     }
   }
-  
+
   void selectVariantOption(String optionName, String optionValue) {
     if (_selectedProduct == null) return;
 
@@ -265,13 +327,14 @@ class ProductProvider with ChangeNotifier {
     debugPrint('🔄 Variant option selected: $optionName = $optionValue');
 
     _selectedVariant = _findVariantForSelectedOptions();
-    
+
     if (_selectedVariant != null) {
-      debugPrint('✅ Found variant: ${_selectedVariant!.name}, price: ₹${_selectedVariant!.salePrice}');
+      debugPrint(
+          '✅ Found variant: ${_selectedVariant!.name}, price: ₹${_selectedVariant!.salePrice}');
     } else {
       debugPrint('⚠️ No matching variant found');
     }
-    
+
     // ✅ FIX: Use direct notifyListeners() for immediate UI update
     notifyListeners();
   }
@@ -287,8 +350,9 @@ class ProductProvider with ChangeNotifier {
 
     _selectedVariant = variant;
     _selectedOptions = Map.from(variant.options);
-    debugPrint('✅ Selected variant by name: ${variant.name}, price: ₹${variant.salePrice}');
-    
+    debugPrint(
+        '✅ Selected variant by name: ${variant.name}, price: ₹${variant.salePrice}');
+
     notifyListeners();
   }
 
@@ -309,13 +373,13 @@ class ProductProvider with ChangeNotifier {
         return variant;
       }
     }
-    
+
     for (final variant in _selectedProduct!.variants) {
-       for (final key in _selectedOptions.keys) {
-         if (variant.options[key] == _selectedOptions[key]) {
-           return variant;
-         }
-       }
+      for (final key in _selectedOptions.keys) {
+        if (variant.options[key] == _selectedOptions[key]) {
+          return variant;
+        }
+      }
     }
 
     return _selectedProduct!.variants.first;
@@ -354,8 +418,9 @@ class ProductProvider with ChangeNotifier {
           debugPrint('Error loading recently viewed product: $e');
         }
       }
-      
-      debugPrint('✅ Loaded ${_recentlyViewedProducts.length} recently viewed from Firestore');
+
+      debugPrint(
+          '✅ Loaded ${_recentlyViewedProducts.length} recently viewed from Firestore');
       _notifySafely();
     } catch (e) {
       debugPrint('❌ Error loading recently viewed from Firestore: $e');
@@ -369,7 +434,7 @@ class ProductProvider with ChangeNotifier {
     try {
       final prefs = await SharedPreferences.getInstance();
       final recentlyViewedIds = prefs.getStringList('recently_viewed') ?? [];
-      
+
       _recentlyViewedProducts = [];
       for (final productId in recentlyViewedIds.take(20)) {
         try {
@@ -381,7 +446,7 @@ class ProductProvider with ChangeNotifier {
           debugPrint('Error loading recently viewed product $productId: $e');
         }
       }
-      
+
       _notifySafely();
     } catch (e) {
       debugPrint('❌ Error loading recently viewed from prefs: $e');
@@ -392,7 +457,7 @@ class ProductProvider with ChangeNotifier {
   Future<void> addToRecentlyViewed(ProductModel product) async {
     try {
       final user = _auth.currentUser;
-      
+
       if (user != null) {
         // Save to Firestore for authenticated users
         await _firestore
@@ -419,28 +484,28 @@ class ProductProvider with ChangeNotifier {
           }
         }
       }
-      
+
       // Also save to SharedPreferences as backup
       final prefs = await SharedPreferences.getInstance();
       final recentlyViewedIds = prefs.getStringList('recently_viewed') ?? [];
-      
+
       recentlyViewedIds.remove(product.id);
       recentlyViewedIds.insert(0, product.id);
-      
+
       if (recentlyViewedIds.length > 20) {
         recentlyViewedIds.removeRange(20, recentlyViewedIds.length);
       }
-      
+
       await prefs.setStringList('recently_viewed', recentlyViewedIds);
-      
+
       // Update local list
       _recentlyViewedProducts.removeWhere((p) => p.id == product.id);
       _recentlyViewedProducts.insert(0, product);
-      
+
       if (_recentlyViewedProducts.length > 20) {
         _recentlyViewedProducts.removeRange(20, _recentlyViewedProducts.length);
       }
-      
+
       _notifySafely();
     } catch (e) {
       debugPrint('❌ Error adding to recently viewed: $e');
@@ -451,7 +516,7 @@ class ProductProvider with ChangeNotifier {
   Future<void> clearRecentlyViewed() async {
     try {
       final user = _auth.currentUser;
-      
+
       if (user != null) {
         // Clear from Firestore
         final docs = await _firestore
@@ -459,16 +524,16 @@ class ProductProvider with ChangeNotifier {
             .doc(user.uid)
             .collection('recently_viewed')
             .get();
-        
+
         for (final doc in docs.docs) {
           await doc.reference.delete();
         }
       }
-      
+
       // Clear from SharedPreferences
       final prefs = await SharedPreferences.getInstance();
       await prefs.remove('recently_viewed');
-      
+
       _recentlyViewedProducts.clear();
       _notifySafely();
     } catch (e) {
@@ -484,14 +549,17 @@ class ProductProvider with ChangeNotifier {
       // without complex indexing. But we can fetch products and filter in memory if needed.
       // For now we will rely on the query itself, or we could filter post-fetch.
       final results = await _databaseService.searchProducts(query);
-      
-      final activeLocation = SharedPreferencesService.getString('selected_location');
+
+      final activeLocation =
+          SharedPreferencesService.getString('selected_location');
       if (activeLocation != null && activeLocation.isNotEmpty) {
-        _products = results.where((p) => p.location == activeLocation).toList();
+        _products = _dedupeProducts(
+          results.where((p) => p.location == activeLocation).toList(),
+        );
       } else {
-        _products = results;
+        _products = _dedupeProducts(results);
       }
-      
+
       _isLoading = false;
       _notifySafely();
     } catch (e) {
@@ -555,6 +623,7 @@ class ProductProvider with ChangeNotifier {
     _relatedProducts.clear();
     _error = null;
     _isLoading = false;
+    _loadedProductLimit = null;
     _notifySafely();
   }
 
@@ -570,7 +639,7 @@ class ProductProvider with ChangeNotifier {
       });
     }
   }
-  
+
   @override
   void dispose() {
     _disposed = true;

@@ -214,7 +214,7 @@ class _BlinkitCouponScreenState extends State<BlinkitCouponScreen>
             child: Container(
               padding: const EdgeInsets.symmetric(horizontal: 16),
               decoration: BoxDecoration(
-                color: isDark ? Colors.grey[850] : Colors.grey[100],
+                color: isDark ? const Color(0xFF303030) : Colors.grey[100],
                 borderRadius: BorderRadius.circular(8),
               ),
               child: TextField(

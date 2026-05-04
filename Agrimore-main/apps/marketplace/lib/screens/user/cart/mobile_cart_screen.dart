@@ -35,7 +35,7 @@ class ShippingFeeInfo {
   final double? expressDeliveryFee;
   final List<String> expressAvailableProducts;
   final Map<String, String> productDeliveryDays;
-  
+
   ShippingFeeInfo({
     required this.standardFee,
     required this.standardProducts,
@@ -45,14 +45,15 @@ class ShippingFeeInfo {
     required this.expressAvailableProducts,
     required this.productDeliveryDays,
   });
-  
+
   double get totalShippingFee {
     double total = standardProducts.isNotEmpty ? standardFee : 0;
     total += specialFees.values.fold(0.0, (sum, fee) => sum + fee);
     return total;
   }
-  
-  bool get hasMixedDelivery => freeDeliveryProducts.isNotEmpty && 
+
+  bool get hasMixedDelivery =>
+      freeDeliveryProducts.isNotEmpty &&
       (standardProducts.isNotEmpty || specialFees.isNotEmpty);
 }
 
@@ -72,7 +73,7 @@ class _MobileCartScreenState extends State<MobileCartScreen>
   bool _isProcessingBogo = false;
   bool _expressDeliverySelected = false;
   double _selectedTipAmount = 0;
-  
+
   // Audio recording
   final AudioRecorder _audioRecorder = AudioRecorder();
   final AudioPlayer _audioPlayer = AudioPlayer();
@@ -81,15 +82,15 @@ class _MobileCartScreenState extends State<MobileCartScreen>
   String? _recordedFilePath;
   Duration _recordDuration = Duration.zero;
   Timer? _recordTimer;
-  
+
   // Delivery instructions
   bool _avoidCalling = false;
   bool _dontRing = false;
   String _deliveryNote = '';
-  
+
   // Payment method
-  String _selectedPaymentMethod = 'Razorpay';  // Default to Razorpay
-  
+  String _selectedPaymentMethod = 'Razorpay'; // Default to Razorpay
+
   // Wallet & Checkout
   bool _useWalletBalance = false;
   bool _isPlacingOrder = false;
@@ -114,8 +115,12 @@ class _MobileCartScreenState extends State<MobileCartScreen>
 
     WidgetsBinding.instance.addPostFrameCallback((_) {
       context.read<CartProvider>().loadCart();
-      context.read<ProductProvider>().loadProducts(); // Load for "You might also like"
-      context.read<AddressProvider>().loadAddresses(); // Load addresses for selection list
+      context
+          .read<ProductProvider>()
+          .loadProducts(); // Load for "You might also like"
+      context
+          .read<AddressProvider>()
+          .loadAddresses(); // Load addresses for selection list
       _loadProductDetails();
     });
   }
@@ -142,7 +147,7 @@ class _MobileCartScreenState extends State<MobileCartScreen>
 
   Future<void> _loadProductDetails() async {
     final cartProvider = context.read<CartProvider>();
-    
+
     for (final item in cartProvider.items) {
       if (!_productCache.containsKey(item.productId)) {
         try {
@@ -150,16 +155,17 @@ class _MobileCartScreenState extends State<MobileCartScreen>
               .collection('products')
               .doc(item.productId)
               .get();
-          
+
           if (doc.exists && doc.data() != null) {
-            _productCache[item.productId] = ProductModel.fromMap(doc.data()!, doc.id);
+            _productCache[item.productId] =
+                ProductModel.fromMap(doc.data()!, doc.id);
           }
         } catch (e) {
           debugPrint('❌ Error loading product ${item.productId}: $e');
         }
       }
     }
-    
+
     if (mounted) setState(() {});
   }
 
@@ -169,13 +175,13 @@ class _MobileCartScreenState extends State<MobileCartScreen>
     final freeDeliveryProducts = <String>[];
     final expressAvailableProducts = <String>[];
     final productDeliveryDays = <String, String>{};
-    
+
     double? commonStandardFee;
     double? expressDeliveryFee;
 
     for (final item in items) {
       if (item.isFreeItem) continue;
-      
+
       final product = _productCache[item.productId];
       if (product == null) continue;
 
@@ -192,7 +198,8 @@ class _MobileCartScreenState extends State<MobileCartScreen>
       if (hasExpressDelivery) {
         expressAvailableProducts.add(item.productName);
         if (expressDeliveryFee == null) {
-          expressDeliveryFee = (product.shippingPrice?.toDouble() ?? 40.0) + 9.0;
+          expressDeliveryFee =
+              (product.shippingPrice?.toDouble() ?? 40.0) + 9.0;
         }
       }
 
@@ -226,7 +233,7 @@ class _MobileCartScreenState extends State<MobileCartScreen>
     CartProvider cartProvider,
   ) async {
     if (_isProcessingBogo) return;
-    
+
     setState(() => _isProcessingBogo = true);
 
     try {
@@ -248,7 +255,8 @@ class _MobileCartScreenState extends State<MobileCartScreen>
 
       CartItemModel? buyItem;
       try {
-        buyItem = cartProvider.items.firstWhere((item) => item.productId == buyId);
+        buyItem =
+            cartProvider.items.firstWhere((item) => item.productId == buyId);
       } catch (_) {
         buyItem = null;
       }
@@ -311,7 +319,8 @@ class _MobileCartScreenState extends State<MobileCartScreen>
               SnackBar(
                 content: Row(
                   children: [
-                    const Icon(Icons.check_circle, color: Colors.white, size: 20),
+                    const Icon(Icons.check_circle,
+                        color: Colors.white, size: 20),
                     const SizedBox(width: 12),
                     const Expanded(
                       child: Text(
@@ -323,7 +332,8 @@ class _MobileCartScreenState extends State<MobileCartScreen>
                 ),
                 backgroundColor: Colors.green.shade600,
                 behavior: SnackBarBehavior.floating,
-                shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(10)),
+                shape: RoundedRectangleBorder(
+                    borderRadius: BorderRadius.circular(10)),
                 duration: const Duration(seconds: 2),
               ),
             );
@@ -377,7 +387,8 @@ class _MobileCartScreenState extends State<MobileCartScreen>
                 borderRadius: BorderRadius.circular(10),
               ),
             ),
-            child: const Text('Clear All', style: TextStyle(color: Colors.white)),
+            child:
+                const Text('Clear All', style: TextStyle(color: Colors.white)),
           ),
         ],
       ),
@@ -426,9 +437,9 @@ class _MobileCartScreenState extends State<MobileCartScreen>
             }
 
             final currentCoupon = couponProvider.appliedCoupon;
-            if (currentCoupon != null && 
+            if (currentCoupon != null &&
                 currentCoupon.type == CouponType.buyOneGetOne &&
-                _bogoFreeItems.isEmpty && 
+                _bogoFreeItems.isEmpty &&
                 !_isProcessingBogo) {
               WidgetsBinding.instance.addPostFrameCallback((_) {
                 _processBogoCoupon(currentCoupon, cartProvider);
@@ -444,7 +455,7 @@ class _MobileCartScreenState extends State<MobileCartScreen>
               children: [
                 // Blinkit-style App Bar
                 _buildBlinkitAppBar(isDark, cardColor),
-                
+
                 // Main scrollable content
                 Expanded(
                   child: RefreshIndicator(
@@ -463,13 +474,15 @@ class _MobileCartScreenState extends State<MobileCartScreen>
                         crossAxisAlignment: CrossAxisAlignment.start,
                         children: [
                           // Delivery Time Header
-                          _buildDeliveryTimeHeader(cartProvider.items.length, isDark, cardColor),
-                          
+                          _buildDeliveryTimeHeader(
+                              cartProvider.items.length, isDark, cardColor),
+
                           // Cart Items
-                          _buildBlinkitCartItems(cartProvider, isDark, cardColor, accentColor),
-                          
+                          _buildBlinkitCartItems(
+                              cartProvider, isDark, cardColor, accentColor),
+
                           const SizedBox(height: 8),
-                          
+
                           // Free Delivery Progress + See all coupons (moved above)
                           _buildFreeDeliveryProgress(
                             pricingData['subtotal']!,
@@ -477,10 +490,11 @@ class _MobileCartScreenState extends State<MobileCartScreen>
                             cardColor,
                             accentColor,
                           ),
-                          
+
                           // You might also like section
-                          _buildYouMightAlsoLike(cartProvider, isDark, cardColor, accentColor),
-                          
+                          _buildYouMightAlsoLike(
+                              cartProvider, isDark, cardColor, accentColor),
+
                           // Bill Details
                           _buildBillDetails(
                             pricingData,
@@ -489,16 +503,17 @@ class _MobileCartScreenState extends State<MobileCartScreen>
                             cardColor,
                             accentColor,
                           ),
-                          
+
                           // Delivery Instructions
-                          _buildDeliveryInstructions(isDark, cardColor, accentColor),
-                          
+                          _buildDeliveryInstructions(
+                              isDark, cardColor, accentColor),
+
                           // Tip Section
                           _buildTipSection(isDark, cardColor, accentColor),
-                          
+
                           // Wallet Section
                           _buildWalletSection(isDark, cardColor, accentColor),
-                          
+
                           // Bottom spacing for sticky bar
                           const SizedBox(height: 120),
                         ],
@@ -506,10 +521,10 @@ class _MobileCartScreenState extends State<MobileCartScreen>
                     ),
                   ),
                 ),
-                
+
                 // Sticky Bottom Bar
                 _buildBlinkitBottomBar(
-                  pricingData['total'] ?? 0.0,
+                  pricingData['finalTotal'] ?? 0.0,
                   isDark,
                   accentColor,
                   cardColor,
@@ -644,7 +659,8 @@ class _MobileCartScreenState extends State<MobileCartScreen>
   }
 
   // --- Blinkit-style Cart Items ---
-  Widget _buildBlinkitCartItems(CartProvider cartProvider, bool isDark, Color cardColor, Color accentColor) {
+  Widget _buildBlinkitCartItems(CartProvider cartProvider, bool isDark,
+      Color cardColor, Color accentColor) {
     return Container(
       color: cardColor,
       child: Column(
@@ -655,8 +671,10 @@ class _MobileCartScreenState extends State<MobileCartScreen>
             product: product,
             isDark: isDark,
             accentColor: accentColor,
-            onRemove: () => cartProvider.removeItem(item.productId, variant: item.variant),
-            onQuantityChanged: (qty) => cartProvider.updateQuantity(item.productId, qty, variant: item.variant),
+            onRemove: () =>
+                cartProvider.removeItem(item.productId, variant: item.variant),
+            onQuantityChanged: (qty) => cartProvider
+                .updateQuantity(item.productId, qty, variant: item.variant),
           );
         }).toList(),
       ),
@@ -687,7 +705,7 @@ class _MobileCartScreenState extends State<MobileCartScreen>
                   gradient: LinearGradient(
                     begin: Alignment.topLeft,
                     end: Alignment.bottomRight,
-                    colors: isDark 
+                    colors: isDark
                         ? [const Color(0xFF2A2A2A), const Color(0xFF1F1F1F)]
                         : [const Color(0xFFF8F8F8), const Color(0xFFEEEEEE)],
                   ),
@@ -698,7 +716,7 @@ class _MobileCartScreenState extends State<MobileCartScreen>
                   ),
                   boxShadow: [
                     BoxShadow(
-                      color: isDark 
+                      color: isDark
                           ? Colors.black.withValues(alpha: 0.3)
                           : Colors.black.withValues(alpha: 0.05),
                       blurRadius: 8,
@@ -714,14 +732,15 @@ class _MobileCartScreenState extends State<MobileCartScreen>
                       item.productImage,
                       fit: BoxFit.contain,
                       errorBuilder: (_, __, ___) => Center(
-                        child: Icon(Icons.shopping_bag_outlined, size: 24, color: Colors.grey[400]),
+                        child: Icon(Icons.shopping_bag_outlined,
+                            size: 24, color: Colors.grey[400]),
                       ),
                     ),
                   ),
                 ),
               ),
               const SizedBox(width: 12),
-              
+
               // Product Info
               Expanded(
                 child: Column(
@@ -742,7 +761,8 @@ class _MobileCartScreenState extends State<MobileCartScreen>
                     const SizedBox(height: 3),
                     if (item.variant != null && item.variant!.isNotEmpty)
                       Container(
-                        padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 2),
+                        padding: const EdgeInsets.symmetric(
+                            horizontal: 6, vertical: 2),
                         decoration: BoxDecoration(
                           color: isDark ? Colors.grey[800] : Colors.grey[100],
                           borderRadius: BorderRadius.circular(4),
@@ -761,7 +781,8 @@ class _MobileCartScreenState extends State<MobileCartScreen>
                       onTap: () {
                         HapticFeedback.lightImpact();
                         // Move item to wishlist
-                        final wishlistProvider = context.read<WishlistProvider>();
+                        final wishlistProvider =
+                            context.read<WishlistProvider>();
                         final product = _productCache[item.productId];
                         if (product != null) {
                           wishlistProvider.addItem(product);
@@ -771,7 +792,8 @@ class _MobileCartScreenState extends State<MobileCartScreen>
                             SnackBar(
                               content: const Text('Moved to wishlist'),
                               behavior: SnackBarBehavior.floating,
-                              shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(10)),
+                              shape: RoundedRectangleBorder(
+                                  borderRadius: BorderRadius.circular(10)),
                               margin: const EdgeInsets.all(16),
                               duration: const Duration(seconds: 2),
                             ),
@@ -781,13 +803,15 @@ class _MobileCartScreenState extends State<MobileCartScreen>
                       child: Row(
                         mainAxisSize: MainAxisSize.min,
                         children: [
-                          Icon(Icons.favorite_border_rounded, size: 12, color: Colors.grey[500]),
+                          Icon(Icons.favorite_border_rounded,
+                              size: 12, color: Colors.grey[500]),
                           const SizedBox(width: 4),
                           Text(
                             'Move to wishlist',
                             style: TextStyle(
                               fontSize: 11,
-                              color: isDark ? Colors.grey[500] : Colors.grey[500],
+                              color:
+                                  isDark ? Colors.grey[500] : Colors.grey[500],
                               decoration: TextDecoration.underline,
                               decorationStyle: TextDecorationStyle.dotted,
                             ),
@@ -799,7 +823,7 @@ class _MobileCartScreenState extends State<MobileCartScreen>
                 ),
               ),
               const SizedBox(width: 10),
-              
+
               // Quantity + Price Column
               Column(
                 crossAxisAlignment: CrossAxisAlignment.end,
@@ -833,8 +857,13 @@ class _MobileCartScreenState extends State<MobileCartScreen>
                             }
                           },
                           child: const Padding(
-                            padding: EdgeInsets.symmetric(horizontal: 12, vertical: 7),
-                            child: Text('–', style: TextStyle(fontSize: 16, fontWeight: FontWeight.w600, color: Colors.white)),
+                            padding: EdgeInsets.symmetric(
+                                horizontal: 12, vertical: 7),
+                            child: Text('–',
+                                style: TextStyle(
+                                    fontSize: 16,
+                                    fontWeight: FontWeight.w600,
+                                    color: Colors.white)),
                           ),
                         ),
                         Container(
@@ -842,7 +871,10 @@ class _MobileCartScreenState extends State<MobileCartScreen>
                           alignment: Alignment.center,
                           child: Text(
                             '${item.quantity}',
-                            style: const TextStyle(fontSize: 14, fontWeight: FontWeight.w700, color: Colors.white),
+                            style: const TextStyle(
+                                fontSize: 14,
+                                fontWeight: FontWeight.w700,
+                                color: Colors.white),
                           ),
                         ),
                         GestureDetector(
@@ -851,8 +883,13 @@ class _MobileCartScreenState extends State<MobileCartScreen>
                             onQuantityChanged?.call(item.quantity + 1);
                           },
                           child: const Padding(
-                            padding: EdgeInsets.symmetric(horizontal: 12, vertical: 7),
-                            child: Text('+', style: TextStyle(fontSize: 16, fontWeight: FontWeight.w600, color: Colors.white)),
+                            padding: EdgeInsets.symmetric(
+                                horizontal: 12, vertical: 7),
+                            child: Text('+',
+                                style: TextStyle(
+                                    fontSize: 16,
+                                    fontWeight: FontWeight.w600,
+                                    color: Colors.white)),
                           ),
                         ),
                       ],
@@ -882,7 +919,7 @@ class _MobileCartScreenState extends State<MobileCartScreen>
               (index) => Expanded(
                 child: Container(
                   height: 1,
-                  color: index.isEven 
+                  color: index.isEven
                       ? (isDark ? Colors.grey[700] : Colors.grey[300])
                       : Colors.transparent,
                 ),
@@ -894,32 +931,32 @@ class _MobileCartScreenState extends State<MobileCartScreen>
     );
   }
 
-
-
-
   // --- You Might Also Like Section (Blinkit Style) ---
-  Widget _buildYouMightAlsoLike(CartProvider cartProvider, bool isDark, Color cardColor, Color accentColor) {
+  Widget _buildYouMightAlsoLike(CartProvider cartProvider, bool isDark,
+      Color cardColor, Color accentColor) {
     final productProvider = context.read<ProductProvider>();
     final cartCategoryIds = cartProvider.items
         .map((item) => _productCache[item.productId]?.categoryId)
         .where((id) => id != null)
         .cast<String>()
         .toSet();
-    
+
     // Get similar products from cart categories, excluding items already in cart
     final cartProductIds = cartProvider.items.map((i) => i.productId).toSet();
     final allSuggestedProducts = productProvider.products
-        .where((p) => 
-            p.isActive && 
+        .where((p) =>
+            p.isActive &&
             !cartProductIds.contains(p.id) &&
             (cartCategoryIds.isEmpty || cartCategoryIds.contains(p.categoryId)))
         .toList();
-    
-    final suggestedProducts = allSuggestedProducts.take(6).toList(); // 3 columns x 2 rows
-    final previewProducts = allSuggestedProducts.skip(6).take(3).toList(); // For circular images
-    
+
+    final suggestedProducts =
+        allSuggestedProducts.take(6).toList(); // 3 columns x 2 rows
+    final previewProducts =
+        allSuggestedProducts.skip(6).take(3).toList(); // For circular images
+
     if (suggestedProducts.isEmpty) return const SizedBox.shrink();
-    
+
     return Container(
       margin: const EdgeInsets.only(top: 16),
       color: cardColor,
@@ -939,7 +976,7 @@ class _MobileCartScreenState extends State<MobileCartScreen>
               ),
             ),
           ),
-          
+
           // 3x2 Product Grid - Compact
           Padding(
             padding: const EdgeInsets.symmetric(horizontal: 10),
@@ -955,13 +992,14 @@ class _MobileCartScreenState extends State<MobileCartScreen>
               itemCount: suggestedProducts.length,
               itemBuilder: (context, index) {
                 final product = suggestedProducts[index];
-                return _buildBlinkitProductCard(product, isDark, accentColor, cartProvider);
+                return _buildBlinkitProductCard(
+                    product, isDark, accentColor, cartProvider);
               },
             ),
           ),
-          
+
           const SizedBox(height: 10),
-          
+
           // See all products card - Compact
           Padding(
             padding: const EdgeInsets.fromLTRB(12, 0, 12, 12),
@@ -971,9 +1009,10 @@ class _MobileCartScreenState extends State<MobileCartScreen>
                 Navigator.pushNamed(context, '/shop');
               },
               child: Container(
-                padding: const EdgeInsets.symmetric(vertical: 10, horizontal: 12),
+                padding:
+                    const EdgeInsets.symmetric(vertical: 10, horizontal: 12),
                 decoration: BoxDecoration(
-                  color: isDark ? Colors.grey[850] : const Color(0xFFF8F8F8),
+                  color: isDark ? const Color(0xFF303030) : const Color(0xFFF8F8F8),
                   borderRadius: BorderRadius.circular(10),
                   border: Border.all(
                     color: isDark ? Colors.grey[750]! : Colors.grey[200]!,
@@ -1002,7 +1041,8 @@ class _MobileCartScreenState extends State<MobileCartScreen>
                                   ),
                                   boxShadow: [
                                     BoxShadow(
-                                      color: Colors.black.withValues(alpha: 0.08),
+                                      color:
+                                          Colors.black.withValues(alpha: 0.08),
                                       blurRadius: 3,
                                       offset: const Offset(0, 1),
                                     ),
@@ -1010,14 +1050,20 @@ class _MobileCartScreenState extends State<MobileCartScreen>
                                 ),
                                 child: ClipOval(
                                   child: CachedNetworkImage(
-                                    imageUrl: previewProducts[index].primaryImage,
+                                    imageUrl:
+                                        previewProducts[index].primaryImage,
                                     fit: BoxFit.cover,
                                     placeholder: (_, __) => Container(
-                                      color: isDark ? Colors.grey[700] : Colors.grey[200],
+                                      color: isDark
+                                          ? Colors.grey[700]
+                                          : Colors.grey[200],
                                     ),
                                     errorWidget: (_, __, ___) => Container(
-                                      color: isDark ? Colors.grey[700] : Colors.grey[200],
-                                      child: Icon(Icons.image, size: 12, color: Colors.grey[400]),
+                                      color: isDark
+                                          ? Colors.grey[700]
+                                          : Colors.grey[200],
+                                      child: Icon(Icons.image,
+                                          size: 12, color: Colors.grey[400]),
                                     ),
                                   ),
                                 ),
@@ -1028,7 +1074,7 @@ class _MobileCartScreenState extends State<MobileCartScreen>
                       ),
                     ),
                     const SizedBox(width: 10),
-                    
+
                     // Text
                     Expanded(
                       child: Text(
@@ -1040,7 +1086,7 @@ class _MobileCartScreenState extends State<MobileCartScreen>
                         ),
                       ),
                     ),
-                    
+
                     // Arrow
                     Icon(
                       Icons.arrow_forward_ios,
@@ -1058,13 +1104,15 @@ class _MobileCartScreenState extends State<MobileCartScreen>
   }
 
   // Enhanced Blinkit-style Product Card (Matching Home Screen ProductCardCompact)
-  Widget _buildBlinkitProductCard(ProductModel product, bool isDark, Color accentColor, CartProvider cartProvider) {
-    final hasDiscount = product.originalPrice != null && product.originalPrice! > product.salePrice;
+  Widget _buildBlinkitProductCard(ProductModel product, bool isDark,
+      Color accentColor, CartProvider cartProvider) {
+    final hasDiscount = product.originalPrice != null &&
+        product.originalPrice! > product.salePrice;
     final isInCart = cartProvider.isInCart(product.id);
     final quantity = cartProvider.getItemQuantity(product.id);
     final hasVariants = product.variants.isNotEmpty;
     final variantCount = product.variants.length;
-    
+
     return GestureDetector(
       onTap: () {
         HapticFeedback.lightImpact();
@@ -1076,7 +1124,7 @@ class _MobileCartScreenState extends State<MobileCartScreen>
           borderRadius: BorderRadius.circular(16),
           boxShadow: [
             BoxShadow(
-              color: isDark 
+              color: isDark
                   ? Colors.black.withValues(alpha: 0.3)
                   : Colors.black.withValues(alpha: 0.06),
               blurRadius: 12,
@@ -1101,7 +1149,8 @@ class _MobileCartScreenState extends State<MobileCartScreen>
               children: [
                 // Product Image with Gradient Overlay
                 ClipRRect(
-                  borderRadius: const BorderRadius.vertical(top: Radius.circular(16)),
+                  borderRadius:
+                      const BorderRadius.vertical(top: Radius.circular(16)),
                   child: AspectRatio(
                     aspectRatio: 1.0,
                     child: Stack(
@@ -1113,9 +1162,15 @@ class _MobileCartScreenState extends State<MobileCartScreen>
                             gradient: LinearGradient(
                               begin: Alignment.topCenter,
                               end: Alignment.bottomCenter,
-                              colors: isDark 
-                                  ? [const Color(0xFF2A2A2A), const Color(0xFF1A1A1A)]
-                                  : [const Color(0xFFFAFAFA), const Color(0xFFF0F0F0)],
+                              colors: isDark
+                                  ? [
+                                      const Color(0xFF2A2A2A),
+                                      const Color(0xFF1A1A1A)
+                                    ]
+                                  : [
+                                      const Color(0xFFFAFAFA),
+                                      const Color(0xFFF0F0F0)
+                                    ],
                             ),
                           ),
                           child: product.primaryImage.isNotEmpty
@@ -1124,10 +1179,12 @@ class _MobileCartScreenState extends State<MobileCartScreen>
                                   fit: BoxFit.cover,
                                   placeholder: (_, __) => Center(
                                     child: SizedBox(
-                                      width: 24, height: 24,
+                                      width: 24,
+                                      height: 24,
                                       child: CircularProgressIndicator(
                                         strokeWidth: 2,
-                                        color: accentColor.withValues(alpha: 0.5),
+                                        color:
+                                            accentColor.withValues(alpha: 0.5),
                                       ),
                                     ),
                                   ),
@@ -1137,7 +1194,8 @@ class _MobileCartScreenState extends State<MobileCartScreen>
                                     size: 36,
                                   ),
                                 )
-                              : Icon(Icons.image_outlined, color: Colors.grey[400], size: 36),
+                              : Icon(Icons.image_outlined,
+                                  color: Colors.grey[400], size: 36),
                         ),
                         // Subtle bottom gradient for text readability
                         Positioned(
@@ -1162,7 +1220,7 @@ class _MobileCartScreenState extends State<MobileCartScreen>
                     ),
                   ),
                 ),
-                
+
                 // Wishlist Heart - Frosted Glass Effect
                 Positioned(
                   top: 8,
@@ -1176,7 +1234,7 @@ class _MobileCartScreenState extends State<MobileCartScreen>
                     child: Container(
                       padding: const EdgeInsets.all(6),
                       decoration: BoxDecoration(
-                        color: isDark 
+                        color: isDark
                             ? Colors.black.withValues(alpha: 0.5)
                             : Colors.white.withValues(alpha: 0.9),
                         shape: BoxShape.circle,
@@ -1200,19 +1258,21 @@ class _MobileCartScreenState extends State<MobileCartScreen>
                     ),
                   ),
                 ),
-                
+
                 // Premium ADD Button - Floating Style
                 Positioned(
                   bottom: -16,
                   left: 12,
                   right: 12,
                   child: isInCart && quantity > 0
-                      ? _buildPremiumQuantityControl(product, quantity, accentColor, cartProvider)
-                      : _buildPremiumAddButton(product, accentColor, cartProvider, hasVariants, variantCount),
+                      ? _buildPremiumQuantityControl(
+                          product, quantity, accentColor, cartProvider)
+                      : _buildPremiumAddButton(product, accentColor,
+                          cartProvider, hasVariants, variantCount),
                 ),
               ],
             ),
-            
+
             // Product Info - Premium Typography
             Padding(
               padding: const EdgeInsets.fromLTRB(8, 20, 8, 4),
@@ -1223,7 +1283,8 @@ class _MobileCartScreenState extends State<MobileCartScreen>
                   // Unit badge with accent dot
                   if (product.unit != null && product.unit!.isNotEmpty)
                     Container(
-                      padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 2),
+                      padding: const EdgeInsets.symmetric(
+                          horizontal: 6, vertical: 2),
                       decoration: BoxDecoration(
                         color: accentColor.withValues(alpha: 0.08),
                         borderRadius: BorderRadius.circular(4),
@@ -1232,7 +1293,8 @@ class _MobileCartScreenState extends State<MobileCartScreen>
                         mainAxisSize: MainAxisSize.min,
                         children: [
                           Container(
-                            width: 4, height: 4,
+                            width: 4,
+                            height: 4,
                             decoration: BoxDecoration(
                               color: accentColor,
                               shape: BoxShape.circle,
@@ -1250,9 +1312,9 @@ class _MobileCartScreenState extends State<MobileCartScreen>
                         ],
                       ),
                     ),
-                  
+
                   const SizedBox(height: 4),
-                  
+
                   // Product Name - Better Typography
                   Text(
                     product.name,
@@ -1266,15 +1328,16 @@ class _MobileCartScreenState extends State<MobileCartScreen>
                       letterSpacing: -0.2,
                     ),
                   ),
-                  
+
                   const SizedBox(height: 4),
-                  
+
                   // Rating & Delivery - Same Row (Like Blinkit Reference)
                   Row(
                     children: [
                       // Rating badge
                       Container(
-                        padding: const EdgeInsets.symmetric(horizontal: 5, vertical: 2),
+                        padding: const EdgeInsets.symmetric(
+                            horizontal: 5, vertical: 2),
                         decoration: BoxDecoration(
                           color: Colors.amber.withValues(alpha: 0.15),
                           borderRadius: BorderRadius.circular(4),
@@ -1282,7 +1345,8 @@ class _MobileCartScreenState extends State<MobileCartScreen>
                         child: Row(
                           mainAxisSize: MainAxisSize.min,
                           children: [
-                            Icon(Icons.star_rounded, size: 10, color: Colors.amber[700]),
+                            Icon(Icons.star_rounded,
+                                size: 10, color: Colors.amber[700]),
                             const SizedBox(width: 2),
                             Text(
                               product.rating?.toStringAsFixed(1) ?? '0.0',
@@ -1298,7 +1362,8 @@ class _MobileCartScreenState extends State<MobileCartScreen>
                       const SizedBox(width: 6),
                       // Delivery badge
                       Container(
-                        padding: const EdgeInsets.symmetric(horizontal: 5, vertical: 2),
+                        padding: const EdgeInsets.symmetric(
+                            horizontal: 5, vertical: 2),
                         decoration: BoxDecoration(
                           color: accentColor.withValues(alpha: 0.1),
                           borderRadius: BorderRadius.circular(4),
@@ -1306,7 +1371,8 @@ class _MobileCartScreenState extends State<MobileCartScreen>
                         child: Row(
                           mainAxisSize: MainAxisSize.min,
                           children: [
-                            Icon(Icons.bolt_rounded, size: 10, color: accentColor),
+                            Icon(Icons.bolt_rounded,
+                                size: 10, color: accentColor),
                             const SizedBox(width: 2),
                             Text(
                               '30 MIN',
@@ -1321,9 +1387,9 @@ class _MobileCartScreenState extends State<MobileCartScreen>
                       ),
                     ],
                   ),
-                  
+
                   const SizedBox(height: 5),
-                  
+
                   // Price - Premium Look
                   Row(
                     crossAxisAlignment: CrossAxisAlignment.center,
@@ -1333,7 +1399,8 @@ class _MobileCartScreenState extends State<MobileCartScreen>
                         style: TextStyle(
                           fontSize: 14,
                           fontWeight: FontWeight.w900,
-                          color: isDark ? Colors.white : const Color(0xFF1A1A1A),
+                          color:
+                              isDark ? Colors.white : const Color(0xFF1A1A1A),
                           letterSpacing: -0.5,
                         ),
                       ),
@@ -1360,7 +1427,8 @@ class _MobileCartScreenState extends State<MobileCartScreen>
     );
   }
 
-  Widget _buildPremiumAddButton(ProductModel product, Color accentColor, CartProvider cartProvider, bool hasVariants, int variantCount) {
+  Widget _buildPremiumAddButton(ProductModel product, Color accentColor,
+      CartProvider cartProvider, bool hasVariants, int variantCount) {
     return GestureDetector(
       onTap: () {
         HapticFeedback.mediumImpact();
@@ -1427,7 +1495,8 @@ class _MobileCartScreenState extends State<MobileCartScreen>
     );
   }
 
-  Widget _buildPremiumQuantityControl(ProductModel product, int quantity, Color accentColor, CartProvider cartProvider) {
+  Widget _buildPremiumQuantityControl(ProductModel product, int quantity,
+      Color accentColor, CartProvider cartProvider) {
     return Container(
       padding: const EdgeInsets.symmetric(vertical: 4),
       decoration: BoxDecoration(
@@ -1465,7 +1534,9 @@ class _MobileCartScreenState extends State<MobileCartScreen>
             child: Padding(
               padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
               child: Icon(
-                quantity > 1 ? Icons.remove_rounded : Icons.delete_outline_rounded,
+                quantity > 1
+                    ? Icons.remove_rounded
+                    : Icons.delete_outline_rounded,
                 size: 16,
                 color: Colors.white,
               ),
@@ -1498,7 +1569,6 @@ class _MobileCartScreenState extends State<MobileCartScreen>
     );
   }
 
-
   String _formatCount(int count) {
     if (count >= 100000) {
       return '${(count / 100000).toStringAsFixed(2)} lac';
@@ -1508,7 +1578,8 @@ class _MobileCartScreenState extends State<MobileCartScreen>
     return count.toString();
   }
 
-  Widget _buildBlinkitAddButton(ProductModel product, Color accentColor, CartProvider cartProvider) {
+  Widget _buildBlinkitAddButton(
+      ProductModel product, Color accentColor, CartProvider cartProvider) {
     return GestureDetector(
       onTap: () {
         HapticFeedback.mediumImpact();
@@ -1543,7 +1614,8 @@ class _MobileCartScreenState extends State<MobileCartScreen>
     );
   }
 
-  Widget _buildBlinkitQuantityControl(ProductModel product, int quantity, Color accentColor, CartProvider cartProvider) {
+  Widget _buildBlinkitQuantityControl(ProductModel product, int quantity,
+      Color accentColor, CartProvider cartProvider) {
     return Container(
       padding: const EdgeInsets.symmetric(vertical: 4),
       decoration: BoxDecoration(
@@ -1605,14 +1677,19 @@ class _MobileCartScreenState extends State<MobileCartScreen>
     );
   }
 
-  Widget _buildGridProductCard(ProductModel product, bool isDark, Color accentColor, CartProvider cartProvider) {
-    final hasDiscount = product.originalPrice != null && product.originalPrice! > product.salePrice;
-    final discountPercent = hasDiscount 
-        ? ((product.originalPrice! - product.salePrice) / product.originalPrice! * 100).round()
+  Widget _buildGridProductCard(ProductModel product, bool isDark,
+      Color accentColor, CartProvider cartProvider) {
+    final hasDiscount = product.originalPrice != null &&
+        product.originalPrice! > product.salePrice;
+    final discountPercent = hasDiscount
+        ? ((product.originalPrice! - product.salePrice) /
+                product.originalPrice! *
+                100)
+            .round()
         : 0;
     final isInCart = cartProvider.isInCart(product.id);
     final quantity = cartProvider.getItemQuantity(product.id);
-    
+
     return GestureDetector(
       onTap: () {
         HapticFeedback.lightImpact();
@@ -1635,29 +1712,33 @@ class _MobileCartScreenState extends State<MobileCartScreen>
               child: Stack(
                 children: [
                   ClipRRect(
-                    borderRadius: const BorderRadius.vertical(top: Radius.circular(10)),
+                    borderRadius:
+                        const BorderRadius.vertical(top: Radius.circular(10)),
                     child: CachedNetworkImage(
                       imageUrl: product.primaryImage,
                       width: double.infinity,
                       fit: BoxFit.cover,
                       placeholder: (_, __) => Container(
                         color: isDark ? Colors.grey[800] : Colors.grey[100],
-                        child: const Center(child: CircularProgressIndicator(strokeWidth: 2)),
+                        child: const Center(
+                            child: CircularProgressIndicator(strokeWidth: 2)),
                       ),
                       errorWidget: (_, __, ___) => Container(
                         color: isDark ? Colors.grey[800] : Colors.grey[100],
-                        child: Icon(Icons.image_not_supported, color: Colors.grey[400], size: 24),
+                        child: Icon(Icons.image_not_supported,
+                            color: Colors.grey[400], size: 24),
                       ),
                     ),
                   ),
-                  
+
                   // Discount badge
                   if (hasDiscount)
                     Positioned(
                       top: 4,
                       left: 4,
                       child: Container(
-                        padding: const EdgeInsets.symmetric(horizontal: 4, vertical: 2),
+                        padding: const EdgeInsets.symmetric(
+                            horizontal: 4, vertical: 2),
                         decoration: BoxDecoration(
                           color: Colors.green.shade600,
                           borderRadius: BorderRadius.circular(3),
@@ -1672,20 +1753,22 @@ class _MobileCartScreenState extends State<MobileCartScreen>
                         ),
                       ),
                     ),
-                  
+
                   // ADD Button
                   Positioned(
                     bottom: 4,
                     right: 4,
                     left: 4,
                     child: isInCart && quantity > 0
-                        ? _buildCompactQuantityControl(product, quantity, accentColor, cartProvider)
-                        : _buildCompactAddButton(product, accentColor, cartProvider),
+                        ? _buildCompactQuantityControl(
+                            product, quantity, accentColor, cartProvider)
+                        : _buildCompactAddButton(
+                            product, accentColor, cartProvider),
                   ),
                 ],
               ),
             ),
-            
+
             // Product Info
             Expanded(
               flex: 4,
@@ -1706,7 +1789,7 @@ class _MobileCartScreenState extends State<MobileCartScreen>
                         maxLines: 1,
                         overflow: TextOverflow.ellipsis,
                       ),
-                    
+
                     // Product Name
                     Text(
                       product.name,
@@ -1719,9 +1802,9 @@ class _MobileCartScreenState extends State<MobileCartScreen>
                       maxLines: 2,
                       overflow: TextOverflow.ellipsis,
                     ),
-                    
+
                     const Spacer(),
-                    
+
                     // Price
                     Row(
                       children: [
@@ -1756,8 +1839,8 @@ class _MobileCartScreenState extends State<MobileCartScreen>
     );
   }
 
-
-  Widget _buildCompactAddButton(ProductModel product, Color accentColor, CartProvider cartProvider) {
+  Widget _buildCompactAddButton(
+      ProductModel product, Color accentColor, CartProvider cartProvider) {
     return GestureDetector(
       onTap: () {
         HapticFeedback.mediumImpact();
@@ -1791,7 +1874,8 @@ class _MobileCartScreenState extends State<MobileCartScreen>
     );
   }
 
-  Widget _buildCompactQuantityControl(ProductModel product, int quantity, Color accentColor, CartProvider cartProvider) {
+  Widget _buildCompactQuantityControl(ProductModel product, int quantity,
+      Color accentColor, CartProvider cartProvider) {
     return Container(
       padding: const EdgeInsets.symmetric(vertical: 2),
       decoration: BoxDecoration(
@@ -1853,15 +1937,19 @@ class _MobileCartScreenState extends State<MobileCartScreen>
     );
   }
 
-
-  Widget _buildSuggestedProductCard(ProductModel product, bool isDark, Color accentColor, CartProvider cartProvider) {
-    final hasDiscount = product.originalPrice != null && product.originalPrice! > product.salePrice;
-    final discountPercent = hasDiscount 
-        ? ((product.originalPrice! - product.salePrice) / product.originalPrice! * 100).round()
+  Widget _buildSuggestedProductCard(ProductModel product, bool isDark,
+      Color accentColor, CartProvider cartProvider) {
+    final hasDiscount = product.originalPrice != null &&
+        product.originalPrice! > product.salePrice;
+    final discountPercent = hasDiscount
+        ? ((product.originalPrice! - product.salePrice) /
+                product.originalPrice! *
+                100)
+            .round()
         : 0;
     final isInCart = cartProvider.isInCart(product.id);
     final quantity = cartProvider.getItemQuantity(product.id);
-    
+
     return Container(
       width: 130,
       margin: const EdgeInsets.symmetric(horizontal: 4),
@@ -1884,7 +1972,8 @@ class _MobileCartScreenState extends State<MobileCartScreen>
                   Navigator.pushNamed(context, '/product/${product.id}');
                 },
                 child: ClipRRect(
-                  borderRadius: const BorderRadius.vertical(top: Radius.circular(12)),
+                  borderRadius:
+                      const BorderRadius.vertical(top: Radius.circular(12)),
                   child: CachedNetworkImage(
                     imageUrl: product.primaryImage,
                     height: 100,
@@ -1893,24 +1982,27 @@ class _MobileCartScreenState extends State<MobileCartScreen>
                     placeholder: (_, __) => Container(
                       height: 100,
                       color: isDark ? Colors.grey[800] : Colors.grey[100],
-                      child: const Center(child: CircularProgressIndicator(strokeWidth: 2)),
+                      child: const Center(
+                          child: CircularProgressIndicator(strokeWidth: 2)),
                     ),
                     errorWidget: (_, __, ___) => Container(
                       height: 100,
                       color: isDark ? Colors.grey[800] : Colors.grey[100],
-                      child: Icon(Icons.image_not_supported, color: Colors.grey[400]),
+                      child: Icon(Icons.image_not_supported,
+                          color: Colors.grey[400]),
                     ),
                   ),
                 ),
               ),
-              
+
               // Discount badge
               if (hasDiscount)
                 Positioned(
                   top: 6,
                   left: 6,
                   child: Container(
-                    padding: const EdgeInsets.symmetric(horizontal: 5, vertical: 2),
+                    padding:
+                        const EdgeInsets.symmetric(horizontal: 5, vertical: 2),
                     decoration: BoxDecoration(
                       color: Colors.green.shade600,
                       borderRadius: BorderRadius.circular(4),
@@ -1925,18 +2017,19 @@ class _MobileCartScreenState extends State<MobileCartScreen>
                     ),
                   ),
                 ),
-              
+
               // ADD Button
               Positioned(
                 bottom: 6,
                 right: 6,
                 child: isInCart && quantity > 0
-                    ? _buildQuantityControl(product, quantity, accentColor, cartProvider)
+                    ? _buildQuantityControl(
+                        product, quantity, accentColor, cartProvider)
                     : _buildAddButton(product, accentColor, cartProvider),
               ),
             ],
           ),
-          
+
           // Product Info
           Expanded(
             child: Padding(
@@ -1957,7 +2050,7 @@ class _MobileCartScreenState extends State<MobileCartScreen>
                       overflow: TextOverflow.ellipsis,
                     ),
                   const SizedBox(height: 2),
-                  
+
                   // Product Name
                   Text(
                     product.name,
@@ -1970,9 +2063,9 @@ class _MobileCartScreenState extends State<MobileCartScreen>
                     maxLines: 2,
                     overflow: TextOverflow.ellipsis,
                   ),
-                  
+
                   const Spacer(),
-                  
+
                   // Price Row
                   Row(
                     children: [
@@ -2006,7 +2099,8 @@ class _MobileCartScreenState extends State<MobileCartScreen>
     );
   }
 
-  Widget _buildAddButton(ProductModel product, Color accentColor, CartProvider cartProvider) {
+  Widget _buildAddButton(
+      ProductModel product, Color accentColor, CartProvider cartProvider) {
     return GestureDetector(
       onTap: () {
         HapticFeedback.mediumImpact();
@@ -2038,7 +2132,8 @@ class _MobileCartScreenState extends State<MobileCartScreen>
     );
   }
 
-  Widget _buildQuantityControl(ProductModel product, int quantity, Color accentColor, CartProvider cartProvider) {
+  Widget _buildQuantityControl(ProductModel product, int quantity,
+      Color accentColor, CartProvider cartProvider) {
     return Container(
       decoration: BoxDecoration(
         color: accentColor,
@@ -2103,13 +2198,14 @@ class _MobileCartScreenState extends State<MobileCartScreen>
     );
   }
 
-
-  Widget _buildFreeDeliveryProgress(double subtotal, bool isDark, Color cardColor, Color accentColor) {
+  Widget _buildFreeDeliveryProgress(
+      double subtotal, bool isDark, Color cardColor, Color accentColor) {
     const freeDeliveryThreshold = 499.0;
-    final remaining = (freeDeliveryThreshold - subtotal).clamp(0.0, freeDeliveryThreshold);
+    final remaining =
+        (freeDeliveryThreshold - subtotal).clamp(0.0, freeDeliveryThreshold);
     final progress = (subtotal / freeDeliveryThreshold).clamp(0.0, 1.0);
     final hasFreeDelivery = remaining <= 0;
-    
+
     return Container(
       margin: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
       decoration: BoxDecoration(
@@ -2128,9 +2224,8 @@ class _MobileCartScreenState extends State<MobileCartScreen>
         ),
         borderRadius: BorderRadius.circular(16),
         border: Border.all(
-          color: hasFreeDelivery 
-              ? Colors.green.shade200 
-              : Colors.amber.shade200,
+          color:
+              hasFreeDelivery ? Colors.green.shade200 : Colors.amber.shade200,
           width: 1.5,
         ),
         boxShadow: [
@@ -2181,7 +2276,7 @@ class _MobileCartScreenState extends State<MobileCartScreen>
                   ),
                 ),
                 const SizedBox(width: 14),
-                
+
                 // Content
                 Expanded(
                   child: Column(
@@ -2192,7 +2287,8 @@ class _MobileCartScreenState extends State<MobileCartScreen>
                         Row(
                           children: [
                             Container(
-                              padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 3),
+                              padding: const EdgeInsets.symmetric(
+                                  horizontal: 8, vertical: 3),
                               decoration: BoxDecoration(
                                 color: Colors.green.shade600,
                                 borderRadius: BorderRadius.circular(6),
@@ -2200,7 +2296,8 @@ class _MobileCartScreenState extends State<MobileCartScreen>
                               child: const Row(
                                 mainAxisSize: MainAxisSize.min,
                                 children: [
-                                  Icon(Icons.check_circle, size: 12, color: Colors.white),
+                                  Icon(Icons.check_circle,
+                                      size: 12, color: Colors.white),
                                   SizedBox(width: 4),
                                   Text(
                                     'FREE DELIVERY',
@@ -2236,7 +2333,7 @@ class _MobileCartScreenState extends State<MobileCartScreen>
                           ),
                         ),
                         const SizedBox(height: 6),
-                        
+
                         // Premium progress bar
                         Stack(
                           children: [
@@ -2253,7 +2350,9 @@ class _MobileCartScreenState extends State<MobileCartScreen>
                               duration: const Duration(milliseconds: 500),
                               curve: Curves.easeOutCubic,
                               height: 8,
-                              width: MediaQuery.of(context).size.width * 0.55 * progress,
+                              width: MediaQuery.of(context).size.width *
+                                  0.55 *
+                                  progress,
                               decoration: BoxDecoration(
                                 gradient: LinearGradient(
                                   colors: [
@@ -2273,7 +2372,10 @@ class _MobileCartScreenState extends State<MobileCartScreen>
                             ),
                             // Progress indicator dot
                             Positioned(
-                              left: (MediaQuery.of(context).size.width * 0.55 * progress) - 4,
+                              left: (MediaQuery.of(context).size.width *
+                                      0.55 *
+                                      progress) -
+                                  4,
                               top: 0,
                               child: Container(
                                 width: 8,
@@ -2281,7 +2383,8 @@ class _MobileCartScreenState extends State<MobileCartScreen>
                                 decoration: BoxDecoration(
                                   color: Colors.white,
                                   shape: BoxShape.circle,
-                                  border: Border.all(color: Colors.orange.shade600, width: 2),
+                                  border: Border.all(
+                                      color: Colors.orange.shade600, width: 2),
                                 ),
                               ),
                             ),
@@ -2300,7 +2403,7 @@ class _MobileCartScreenState extends State<MobileCartScreen>
                     ],
                   ),
                 ),
-                
+
                 // Arrow or Achievement badge
                 if (!hasFreeDelivery)
                   Container(
@@ -2321,14 +2424,15 @@ class _MobileCartScreenState extends State<MobileCartScreen>
               ],
             ),
           ),
-          
+
           // Divider
           Container(
             height: 1,
             margin: const EdgeInsets.symmetric(horizontal: 14),
-            color: hasFreeDelivery ? Colors.green.shade200 : Colors.amber.shade200,
+            color:
+                hasFreeDelivery ? Colors.green.shade200 : Colors.amber.shade200,
           ),
-          
+
           // See all coupons link
           GestureDetector(
             onTap: () {
@@ -2346,7 +2450,8 @@ class _MobileCartScreenState extends State<MobileCartScreen>
                       color: accentColor.withValues(alpha: 0.1),
                       borderRadius: BorderRadius.circular(6),
                     ),
-                    child: Icon(Icons.local_offer_outlined, size: 14, color: accentColor),
+                    child: Icon(Icons.local_offer_outlined,
+                        size: 14, color: accentColor),
                   ),
                   const SizedBox(width: 8),
                   Text(
@@ -2372,7 +2477,6 @@ class _MobileCartScreenState extends State<MobileCartScreen>
     );
   }
 
-
   void _openBlinkitCouponScreen() {
     showModalBottomSheet(
       context: context,
@@ -2381,7 +2485,6 @@ class _MobileCartScreenState extends State<MobileCartScreen>
       builder: (context) => const BlinkitCouponScreen(),
     );
   }
-
 
   // --- Bill Details (Blinkit style) ---
   Widget _buildBillDetails(
@@ -2396,7 +2499,7 @@ class _MobileCartScreenState extends State<MobileCartScreen>
     final shipping = pricing['shippingFee'] ?? 0;
     final total = pricing['finalTotal'] ?? 0;
     final hasCoupon = couponProvider.appliedCoupon != null;
-    
+
     return Container(
       margin: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
       decoration: BoxDecoration(
@@ -2421,11 +2524,12 @@ class _MobileCartScreenState extends State<MobileCartScreen>
             padding: const EdgeInsets.all(14),
             decoration: BoxDecoration(
               gradient: LinearGradient(
-                colors: isDark 
+                colors: isDark
                     ? [const Color(0xFF252525), const Color(0xFF1E1E1E)]
                     : [const Color(0xFFF8F8F8), cardColor],
               ),
-              borderRadius: const BorderRadius.vertical(top: Radius.circular(14)),
+              borderRadius:
+                  const BorderRadius.vertical(top: Radius.circular(14)),
             ),
             child: Row(
               children: [
@@ -2461,7 +2565,8 @@ class _MobileCartScreenState extends State<MobileCartScreen>
                 const Spacer(),
                 if (hasCoupon && discount > 0)
                   Container(
-                    padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
+                    padding:
+                        const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
                     decoration: BoxDecoration(
                       gradient: LinearGradient(
                         colors: [Colors.green.shade400, Colors.green.shade600],
@@ -2487,7 +2592,7 @@ class _MobileCartScreenState extends State<MobileCartScreen>
               ],
             ),
           ),
-          
+
           // Bill items
           Padding(
             padding: const EdgeInsets.fromLTRB(14, 12, 14, 4),
@@ -2501,7 +2606,7 @@ class _MobileCartScreenState extends State<MobileCartScreen>
                   isDark: isDark,
                 ),
                 const SizedBox(height: 10),
-                
+
                 // Handling charge (waived)
                 _buildBillRow(
                   emoji: '📦',
@@ -2513,16 +2618,17 @@ class _MobileCartScreenState extends State<MobileCartScreen>
                   badgeColor: Colors.blue,
                 ),
                 const SizedBox(height: 10),
-                
+
                 // Delivery charge
                 _buildBillRow(
                   emoji: '🚚',
                   label: 'Delivery charge',
-                  value: shipping > 0 ? '₹${shipping.toStringAsFixed(0)}' : 'FREE',
+                  value:
+                      shipping > 0 ? '₹${shipping.toStringAsFixed(0)}' : 'FREE',
                   isDark: isDark,
                   valueColor: shipping > 0 ? null : Colors.green.shade600,
                 ),
-                
+
                 // Coupon discount row - Same format as other items
                 if (hasCoupon && discount > 0) ...[
                   const SizedBox(height: 10),
@@ -2534,7 +2640,7 @@ class _MobileCartScreenState extends State<MobileCartScreen>
                     valueColor: Colors.green.shade600,
                   ),
                 ],
-                
+
                 // Tip if added
                 if (_selectedTipAmount > 0) ...[
                   const SizedBox(height: 10),
@@ -2545,9 +2651,11 @@ class _MobileCartScreenState extends State<MobileCartScreen>
                     isDark: isDark,
                   ),
                 ],
-                
+
                 // Wallet discount
-                if (_useWalletBalance && pricing['walletDiscount'] != null && pricing['walletDiscount']! > 0) ...[
+                if (_useWalletBalance &&
+                    pricing['walletDiscount'] != null &&
+                    pricing['walletDiscount']! > 0) ...[
                   const SizedBox(height: 10),
                   _buildBillRow(
                     emoji: '👛',
@@ -2560,14 +2668,14 @@ class _MobileCartScreenState extends State<MobileCartScreen>
               ],
             ),
           ),
-          
+
           // Divider
           Container(
             height: 1,
             margin: const EdgeInsets.fromLTRB(14, 8, 14, 0),
             color: isDark ? Colors.grey[800] : Colors.grey[200],
           ),
-          
+
           // Grand total
           Container(
             padding: const EdgeInsets.all(14),
@@ -2609,10 +2717,14 @@ class _MobileCartScreenState extends State<MobileCartScreen>
                       const SizedBox(width: 6),
                     ],
                     Container(
-                      padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 6),
+                      padding: const EdgeInsets.symmetric(
+                          horizontal: 10, vertical: 6),
                       decoration: BoxDecoration(
                         gradient: LinearGradient(
-                          colors: [accentColor.withValues(alpha: 0.9), accentColor],
+                          colors: [
+                            accentColor.withValues(alpha: 0.9),
+                            accentColor
+                          ],
                         ),
                         borderRadius: BorderRadius.circular(8),
                       ),
@@ -2690,7 +2802,8 @@ class _MobileCartScreenState extends State<MobileCartScreen>
   }
 
   // --- Delivery Instructions ---
-  Widget _buildDeliveryInstructions(bool isDark, Color cardColor, Color accentColor) {
+  Widget _buildDeliveryInstructions(
+      bool isDark, Color cardColor, Color accentColor) {
     return Container(
       margin: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
       decoration: BoxDecoration(
@@ -2715,11 +2828,12 @@ class _MobileCartScreenState extends State<MobileCartScreen>
             padding: const EdgeInsets.all(14),
             decoration: BoxDecoration(
               gradient: LinearGradient(
-                colors: isDark 
+                colors: isDark
                     ? [const Color(0xFF252525), const Color(0xFF1E1E1E)]
                     : [const Color(0xFFF8F8F8), cardColor],
               ),
-              borderRadius: const BorderRadius.vertical(top: Radius.circular(14)),
+              borderRadius:
+                  const BorderRadius.vertical(top: Radius.circular(14)),
             ),
             child: Row(
               children: [
@@ -2755,7 +2869,7 @@ class _MobileCartScreenState extends State<MobileCartScreen>
               ],
             ),
           ),
-          
+
           Padding(
             padding: const EdgeInsets.fromLTRB(14, 12, 14, 14),
             child: Column(
@@ -2790,16 +2904,18 @@ class _MobileCartScreenState extends State<MobileCartScreen>
                   ],
                 ),
                 const SizedBox(height: 14),
-                
+
                 // Voice note section
                 Container(
                   padding: const EdgeInsets.all(12),
                   decoration: BoxDecoration(
-                    color: isDark ? const Color(0xFF252525) : const Color(0xFFF5F5F5),
+                    color: isDark
+                        ? const Color(0xFF252525)
+                        : const Color(0xFFF5F5F5),
                     borderRadius: BorderRadius.circular(12),
                     border: Border.all(
-                      color: _isRecording 
-                          ? Colors.red.shade400 
+                      color: _isRecording
+                          ? Colors.red.shade400
                           : (isDark ? Colors.grey[700]! : Colors.grey[300]!),
                       width: _isRecording ? 2 : 1,
                     ),
@@ -2812,17 +2928,21 @@ class _MobileCartScreenState extends State<MobileCartScreen>
                             width: 32,
                             height: 32,
                             decoration: BoxDecoration(
-                              color: _isRecording 
-                                  ? Colors.red.shade500 
-                                  : (isDark ? Colors.grey[700] : Colors.grey[200]),
+                              color: _isRecording
+                                  ? Colors.red.shade500
+                                  : (isDark
+                                      ? Colors.grey[700]
+                                      : Colors.grey[200]),
                               borderRadius: BorderRadius.circular(8),
                             ),
                             child: Icon(
                               Icons.mic_rounded,
                               size: 18,
-                              color: _isRecording 
-                                  ? Colors.white 
-                                  : (isDark ? Colors.grey[400] : Colors.grey[600]),
+                              color: _isRecording
+                                  ? Colors.white
+                                  : (isDark
+                                      ? Colors.grey[400]
+                                      : Colors.grey[600]),
                             ),
                           ),
                           const SizedBox(width: 10),
@@ -2831,26 +2951,32 @@ class _MobileCartScreenState extends State<MobileCartScreen>
                               crossAxisAlignment: CrossAxisAlignment.start,
                               children: [
                                 Text(
-                                  _recordedFilePath != null 
+                                  _recordedFilePath != null
                                       ? 'Voice note recorded'
-                                      : (_isRecording ? 'Recording...' : 'Add voice note'),
+                                      : (_isRecording
+                                          ? 'Recording...'
+                                          : 'Add voice note'),
                                   style: TextStyle(
                                     fontSize: 12,
                                     fontWeight: FontWeight.w600,
-                                    color: _isRecording 
-                                        ? Colors.red.shade500 
-                                        : (isDark ? Colors.white : Colors.black87),
+                                    color: _isRecording
+                                        ? Colors.red.shade500
+                                        : (isDark
+                                            ? Colors.white
+                                            : Colors.black87),
                                   ),
                                 ),
                                 Text(
-                                  _isRecording 
+                                  _isRecording
                                       ? _formatDuration(_recordDuration)
-                                      : (_recordedFilePath != null 
-                                          ? 'Tap play to listen' 
+                                      : (_recordedFilePath != null
+                                          ? 'Tap play to listen'
                                           : 'Tap mic to start'),
                                   style: TextStyle(
                                     fontSize: 10,
-                                    color: isDark ? Colors.grey[500] : Colors.grey[600],
+                                    color: isDark
+                                        ? Colors.grey[500]
+                                        : Colors.grey[600],
                                   ),
                                 ),
                               ],
@@ -2866,7 +2992,10 @@ class _MobileCartScreenState extends State<MobileCartScreen>
                                 height: 36,
                                 decoration: BoxDecoration(
                                   gradient: LinearGradient(
-                                    colors: [accentColor.withValues(alpha: 0.9), accentColor],
+                                    colors: [
+                                      accentColor.withValues(alpha: 0.9),
+                                      accentColor
+                                    ],
                                   ),
                                   borderRadius: BorderRadius.circular(18),
                                   boxShadow: [
@@ -2878,7 +3007,9 @@ class _MobileCartScreenState extends State<MobileCartScreen>
                                   ],
                                 ),
                                 child: Icon(
-                                  _isPlaying ? Icons.pause_rounded : Icons.play_arrow_rounded,
+                                  _isPlaying
+                                      ? Icons.pause_rounded
+                                      : Icons.play_arrow_rounded,
                                   size: 20,
                                   color: Colors.white,
                                 ),
@@ -2905,7 +3036,9 @@ class _MobileCartScreenState extends State<MobileCartScreen>
                           ] else ...[
                             // Record/Stop button
                             GestureDetector(
-                              onTap: _isRecording ? _stopRecording : _startRecording,
+                              onTap: _isRecording
+                                  ? _stopRecording
+                                  : _startRecording,
                               child: Container(
                                 width: 44,
                                 height: 44,
@@ -2913,22 +3046,32 @@ class _MobileCartScreenState extends State<MobileCartScreen>
                                   gradient: _isRecording
                                       ? null
                                       : LinearGradient(
-                                          colors: [Colors.red.shade400, Colors.red.shade600],
+                                          colors: [
+                                            Colors.red.shade400,
+                                            Colors.red.shade600
+                                          ],
                                         ),
                                   color: _isRecording ? Colors.grey[300] : null,
                                   borderRadius: BorderRadius.circular(22),
-                                  boxShadow: _isRecording ? null : [
-                                    BoxShadow(
-                                      color: Colors.red.withValues(alpha: 0.3),
-                                      blurRadius: 6,
-                                      offset: const Offset(0, 2),
-                                    ),
-                                  ],
+                                  boxShadow: _isRecording
+                                      ? null
+                                      : [
+                                          BoxShadow(
+                                            color: Colors.red
+                                                .withValues(alpha: 0.3),
+                                            blurRadius: 6,
+                                            offset: const Offset(0, 2),
+                                          ),
+                                        ],
                                 ),
                                 child: Icon(
-                                  _isRecording ? Icons.stop_rounded : Icons.mic_rounded,
+                                  _isRecording
+                                      ? Icons.stop_rounded
+                                      : Icons.mic_rounded,
                                   size: 22,
-                                  color: _isRecording ? Colors.red.shade600 : Colors.white,
+                                  color: _isRecording
+                                      ? Colors.red.shade600
+                                      : Colors.white,
                                 ),
                               ),
                             ),
@@ -2939,7 +3082,7 @@ class _MobileCartScreenState extends State<MobileCartScreen>
                   ),
                 ),
                 const SizedBox(height: 12),
-                
+
                 // Text note input
                 TextField(
                   onChanged: (val) => _deliveryNote = val,
@@ -2955,12 +3098,15 @@ class _MobileCartScreenState extends State<MobileCartScreen>
                       color: isDark ? Colors.grey[600] : Colors.grey[500],
                     ),
                     filled: true,
-                    fillColor: isDark ? const Color(0xFF252525) : const Color(0xFFF5F5F5),
+                    fillColor: isDark
+                        ? const Color(0xFF252525)
+                        : const Color(0xFFF5F5F5),
                     border: OutlineInputBorder(
                       borderRadius: BorderRadius.circular(10),
                       borderSide: BorderSide.none,
                     ),
-                    contentPadding: const EdgeInsets.symmetric(horizontal: 14, vertical: 12),
+                    contentPadding: const EdgeInsets.symmetric(
+                        horizontal: 14, vertical: 12),
                     suffixIcon: Icon(
                       Icons.edit_note_rounded,
                       size: 20,
@@ -2991,13 +3137,20 @@ class _MobileCartScreenState extends State<MobileCartScreen>
           duration: const Duration(milliseconds: 200),
           padding: const EdgeInsets.symmetric(vertical: 10, horizontal: 8),
           decoration: BoxDecoration(
-            gradient: isSelected 
-                ? LinearGradient(colors: [accentColor.withValues(alpha: 0.15), accentColor.withValues(alpha: 0.08)])
+            gradient: isSelected
+                ? LinearGradient(colors: [
+                    accentColor.withValues(alpha: 0.15),
+                    accentColor.withValues(alpha: 0.08)
+                  ])
                 : null,
-            color: isSelected ? null : (isDark ? const Color(0xFF252525) : Colors.white),
+            color: isSelected
+                ? null
+                : (isDark ? const Color(0xFF252525) : Colors.white),
             borderRadius: BorderRadius.circular(10),
             border: Border.all(
-              color: isSelected ? accentColor : (isDark ? Colors.grey[700]! : Colors.grey[300]!),
+              color: isSelected
+                  ? accentColor
+                  : (isDark ? Colors.grey[700]! : Colors.grey[300]!),
               width: isSelected ? 1.5 : 1,
             ),
           ),
@@ -3012,7 +3165,9 @@ class _MobileCartScreenState extends State<MobileCartScreen>
                   style: TextStyle(
                     fontSize: 11,
                     fontWeight: isSelected ? FontWeight.w700 : FontWeight.w500,
-                    color: isSelected ? accentColor : (isDark ? Colors.grey[400] : Colors.grey[700]),
+                    color: isSelected
+                        ? accentColor
+                        : (isDark ? Colors.grey[400] : Colors.grey[700]),
                   ),
                   overflow: TextOverflow.ellipsis,
                 ),
@@ -3033,21 +3188,22 @@ class _MobileCartScreenState extends State<MobileCartScreen>
     try {
       if (await _audioRecorder.hasPermission()) {
         final dir = await getTemporaryDirectory();
-        final path = '${dir.path}/delivery_note_${DateTime.now().millisecondsSinceEpoch}.m4a';
-        
+        final path =
+            '${dir.path}/delivery_note_${DateTime.now().millisecondsSinceEpoch}.m4a';
+
         await _audioRecorder.start(const RecordConfig(), path: path);
-        
+
         setState(() {
           _isRecording = true;
           _recordDuration = Duration.zero;
         });
-        
+
         _recordTimer = Timer.periodic(const Duration(seconds: 1), (timer) {
           setState(() {
             _recordDuration += const Duration(seconds: 1);
           });
         });
-        
+
         HapticFeedback.mediumImpact();
       }
     } catch (e) {
@@ -3059,12 +3215,12 @@ class _MobileCartScreenState extends State<MobileCartScreen>
     try {
       _recordTimer?.cancel();
       final path = await _audioRecorder.stop();
-      
+
       setState(() {
         _isRecording = false;
         _recordedFilePath = path;
       });
-      
+
       HapticFeedback.mediumImpact();
     } catch (e) {
       debugPrint('Stop recording error: $e');
@@ -3079,7 +3235,7 @@ class _MobileCartScreenState extends State<MobileCartScreen>
       if (_recordedFilePath != null) {
         await _audioPlayer.play(DeviceFileSource(_recordedFilePath!));
         setState(() => _isPlaying = true);
-        
+
         _audioPlayer.onPlayerComplete.listen((_) {
           if (mounted) setState(() => _isPlaying = false);
         });
@@ -3117,8 +3273,16 @@ class _MobileCartScreenState extends State<MobileCartScreen>
 
   void _showPaymentMethodSheet(bool isDark, Color accentColor) {
     final methods = [
-      {'name': 'Razorpay', 'icon': Icons.payment_rounded, 'subtitle': 'UPI, Cards, Wallets & More'},
-      {'name': 'COD', 'icon': Icons.local_shipping_rounded, 'subtitle': 'Cash on Delivery'},
+      {
+        'name': 'Razorpay',
+        'icon': Icons.payment_rounded,
+        'subtitle': 'UPI, Cards, Wallets & More'
+      },
+      {
+        'name': 'COD',
+        'icon': Icons.local_shipping_rounded,
+        'subtitle': 'Cash on Delivery'
+      },
     ];
 
     showModalBottomSheet(
@@ -3159,7 +3323,8 @@ class _MobileCartScreenState extends State<MobileCartScreen>
                     ),
                     borderRadius: BorderRadius.circular(10),
                   ),
-                  child: const Icon(Icons.payment_rounded, color: Colors.white, size: 20),
+                  child: const Icon(Icons.payment_rounded,
+                      color: Colors.white, size: 20),
                 ),
                 const SizedBox(width: 12),
                 Text(
@@ -3175,80 +3340,85 @@ class _MobileCartScreenState extends State<MobileCartScreen>
             const SizedBox(height: 20),
             // Payment options
             ...methods.map((method) => GestureDetector(
-              onTap: () {
-                HapticFeedback.mediumImpact();
-                setState(() {
-                  _selectedPaymentMethod = method['name'] as String;
-                });
-                Navigator.pop(context);
-              },
-              child: Container(
-                margin: const EdgeInsets.only(bottom: 10),
-                padding: const EdgeInsets.all(14),
-                decoration: BoxDecoration(
-                  color: _selectedPaymentMethod == method['name']
-                      ? accentColor.withValues(alpha: 0.1)
-                      : (isDark ? const Color(0xFF252525) : const Color(0xFFF8F8F8)),
-                  borderRadius: BorderRadius.circular(12),
-                  border: Border.all(
-                    color: _selectedPaymentMethod == method['name']
-                        ? accentColor
-                        : (isDark ? Colors.grey[700]! : Colors.grey[300]!),
-                    width: _selectedPaymentMethod == method['name'] ? 2 : 1,
-                  ),
-                ),
-                child: Row(
-                  children: [
-                    Container(
-                      width: 44,
-                      height: 44,
-                      decoration: BoxDecoration(
-                        color: isDark ? Colors.grey[800] : Colors.white,
-                        borderRadius: BorderRadius.circular(10),
-                      ),
-                      child: Icon(
-                        method['icon'] as IconData,
-                        color: accentColor,
-                        size: 22,
+                  onTap: () {
+                    HapticFeedback.mediumImpact();
+                    setState(() {
+                      _selectedPaymentMethod = method['name'] as String;
+                    });
+                    Navigator.pop(context);
+                  },
+                  child: Container(
+                    margin: const EdgeInsets.only(bottom: 10),
+                    padding: const EdgeInsets.all(14),
+                    decoration: BoxDecoration(
+                      color: _selectedPaymentMethod == method['name']
+                          ? accentColor.withValues(alpha: 0.1)
+                          : (isDark
+                              ? const Color(0xFF252525)
+                              : const Color(0xFFF8F8F8)),
+                      borderRadius: BorderRadius.circular(12),
+                      border: Border.all(
+                        color: _selectedPaymentMethod == method['name']
+                            ? accentColor
+                            : (isDark ? Colors.grey[700]! : Colors.grey[300]!),
+                        width: _selectedPaymentMethod == method['name'] ? 2 : 1,
                       ),
                     ),
-                    const SizedBox(width: 14),
-                    Expanded(
-                      child: Column(
-                        crossAxisAlignment: CrossAxisAlignment.start,
-                        children: [
-                          Text(
-                            method['name'] as String,
-                            style: TextStyle(
-                              fontSize: 14,
-                              fontWeight: FontWeight.w700,
-                              color: isDark ? Colors.white : Colors.black87,
-                            ),
+                    child: Row(
+                      children: [
+                        Container(
+                          width: 44,
+                          height: 44,
+                          decoration: BoxDecoration(
+                            color: isDark ? Colors.grey[800] : Colors.white,
+                            borderRadius: BorderRadius.circular(10),
                           ),
-                          Text(
-                            method['subtitle'] as String,
-                            style: TextStyle(
-                              fontSize: 11,
-                              color: isDark ? Colors.grey[500] : Colors.grey[600],
-                            ),
+                          child: Icon(
+                            method['icon'] as IconData,
+                            color: accentColor,
+                            size: 22,
                           ),
-                        ],
-                      ),
-                    ),
-                    if (_selectedPaymentMethod == method['name'])
-                      Container(
-                        width: 24,
-                        height: 24,
-                        decoration: BoxDecoration(
-                          color: accentColor,
-                          shape: BoxShape.circle,
                         ),
-                        child: const Icon(Icons.check, color: Colors.white, size: 14),
-                      ),
-                  ],
-                ),
-              ),
-            )),
+                        const SizedBox(width: 14),
+                        Expanded(
+                          child: Column(
+                            crossAxisAlignment: CrossAxisAlignment.start,
+                            children: [
+                              Text(
+                                method['name'] as String,
+                                style: TextStyle(
+                                  fontSize: 14,
+                                  fontWeight: FontWeight.w700,
+                                  color: isDark ? Colors.white : Colors.black87,
+                                ),
+                              ),
+                              Text(
+                                method['subtitle'] as String,
+                                style: TextStyle(
+                                  fontSize: 11,
+                                  color: isDark
+                                      ? Colors.grey[500]
+                                      : Colors.grey[600],
+                                ),
+                              ),
+                            ],
+                          ),
+                        ),
+                        if (_selectedPaymentMethod == method['name'])
+                          Container(
+                            width: 24,
+                            height: 24,
+                            decoration: BoxDecoration(
+                              color: accentColor,
+                              shape: BoxShape.circle,
+                            ),
+                            child: const Icon(Icons.check,
+                                color: Colors.white, size: 14),
+                          ),
+                      ],
+                    ),
+                  ),
+                )),
             const SizedBox(height: 10),
           ],
         ),
@@ -3259,21 +3429,20 @@ class _MobileCartScreenState extends State<MobileCartScreen>
   // --- Order Placement ---
   Future<void> _placeOrder(double finalTotal, AddressModel address) async {
     if (_isPlacingOrder) return;
-    
+
     final user = FirebaseAuth.instance.currentUser;
     if (user == null) {
       _showSnackBar('Please login to place order', isError: true);
       return;
     }
-    
 
-    
     setState(() => _isPlacingOrder = true);
     HapticFeedback.heavyImpact();
-    
+
     try {
       if (_selectedPaymentMethod == 'COD') {
-        await _createOrderInFirestore(address: address, paymentStatus: 'pending');
+        await _createOrderInFirestore(
+            address: address, paymentStatus: 'pending');
       } else {
         // Online payment - use unified RazorpayService (works on web + mobile)
         _razorpayService = RazorpayService();
@@ -3303,7 +3472,23 @@ class _MobileCartScreenState extends State<MobileCartScreen>
     }
   }
 
-  void _handlePaymentSuccess(String paymentId, String? orderId, String? signature, AddressModel address) async {
+  Future<void> _handlePaymentSuccess(
+    String paymentId,
+    String? orderId,
+    String? signature,
+    AddressModel address,
+  ) async {
+    final verified = await _razorpayService?.verifyPayment(
+          paymentId: paymentId,
+          orderId: orderId ?? '',
+          signature: signature ?? '',
+        ) ??
+        false;
+    if (!verified) {
+      _handlePaymentError('Payment verification failed');
+      return;
+    }
+
     await _createOrderInFirestore(
       address: address,
       paymentStatus: 'paid',
@@ -3334,26 +3519,23 @@ class _MobileCartScreenState extends State<MobileCartScreen>
       final couponProvider = context.read<CouponProvider>();
       final walletProvider = context.read<WalletProvider>();
 
-      final subtotal = cartProvider.subtotal;
-      final couponDiscount = couponProvider.calculateDiscount(
-        orderAmount: subtotal,
-        items: cartProvider.items,
-      );
-      
-      double walletDiscount = 0;
-      if (_useWalletBalance) {
-        final available = walletProvider.balance;
-        final remaining = subtotal - couponDiscount;
-        walletDiscount = available > remaining ? remaining : available;
-      }
-      
-      final total = subtotal - couponDiscount - walletDiscount;
+      final pricing = _calculateAdvancedPricing(cartProvider, couponProvider);
+      final subtotal = pricing['subtotal'] ?? cartProvider.subtotal;
+      final couponDiscount = pricing['couponDiscount'] ?? 0.0;
+      final shippingFee = pricing['shippingFee'] ?? 0.0;
+      final expressDeliveryFee = pricing['expressDeliveryFee'] ?? 0.0;
+      final walletDiscount = pricing['walletDiscount'] ?? 0.0;
+      final deliveryCharge = shippingFee + expressDeliveryFee;
+      final total = ((pricing['finalTotal'] ?? 0.0) + _selectedTipAmount)
+          .clamp(0.0, double.infinity)
+          .toDouble();
 
       final orderId = FirebaseFirestore.instance.collection('orders').doc().id;
 
       // Generate a unique delivery verification code for secure handover
       final verificationCode = OrderModel.generateVerificationCode();
-      debugPrint('🔐 Generated delivery verification code: $verificationCode for order $orderId');
+      debugPrint(
+          '🔐 Generated delivery verification code: $verificationCode for order $orderId');
 
       final order = OrderModel(
         id: orderId,
@@ -3363,7 +3545,7 @@ class _MobileCartScreenState extends State<MobileCartScreen>
         deliveryAddress: address,
         subtotal: subtotal,
         discount: couponDiscount,
-        deliveryCharge: 0.0,
+        deliveryCharge: deliveryCharge,
         tax: 0.0,
         total: total,
         paymentMethod: _selectedPaymentMethod ?? 'cod',
@@ -3398,7 +3580,7 @@ class _MobileCartScreenState extends State<MobileCartScreen>
 
       setState(() => _isPlacingOrder = false);
       HapticFeedback.heavyImpact();
-      
+
       Navigator.pushAndRemoveUntil(
         context,
         MaterialPageRoute(builder: (_) => OrderSuccessScreen(order: order)),
@@ -3417,13 +3599,16 @@ class _MobileCartScreenState extends State<MobileCartScreen>
         content: Row(
           children: [
             Icon(
-              isError ? Icons.error_outline_rounded : Icons.check_circle_outline_rounded,
+              isError
+                  ? Icons.error_outline_rounded
+                  : Icons.check_circle_outline_rounded,
               color: Colors.white,
               size: 20,
             ),
             const SizedBox(width: 12),
             Expanded(
-              child: Text(message, style: const TextStyle(fontWeight: FontWeight.w600)),
+              child: Text(message,
+                  style: const TextStyle(fontWeight: FontWeight.w600)),
             ),
           ],
         ),
@@ -3440,16 +3625,16 @@ class _MobileCartScreenState extends State<MobileCartScreen>
     return Consumer<WalletProvider>(
       builder: (context, walletProvider, _) {
         final walletBalance = walletProvider.balance;
-        
+
         if (walletBalance <= 0) return const SizedBox.shrink();
-        
+
         return Container(
           margin: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
           decoration: BoxDecoration(
             gradient: LinearGradient(
               begin: Alignment.topLeft,
               end: Alignment.bottomRight,
-              colors: isDark 
+              colors: isDark
                   ? [const Color(0xFF1E3A2F), const Color(0xFF152A22)]
                   : [const Color(0xFFE8F5E9), const Color(0xFFC8E6C9)],
             ),
@@ -3533,7 +3718,8 @@ class _MobileCartScreenState extends State<MobileCartScreen>
                   padding: const EdgeInsets.all(12),
                   child: Row(
                     children: [
-                      Icon(Icons.check_circle, color: Colors.green.shade600, size: 16),
+                      Icon(Icons.check_circle,
+                          color: Colors.green.shade600, size: 16),
                       const SizedBox(width: 8),
                       Expanded(
                         child: Text(
@@ -3541,7 +3727,9 @@ class _MobileCartScreenState extends State<MobileCartScreen>
                           style: TextStyle(
                             fontSize: 12,
                             fontWeight: FontWeight.w600,
-                            color: isDark ? Colors.green.shade300 : Colors.green.shade700,
+                            color: isDark
+                                ? Colors.green.shade300
+                                : Colors.green.shade700,
                           ),
                         ),
                       ),
@@ -3558,7 +3746,7 @@ class _MobileCartScreenState extends State<MobileCartScreen>
   // --- Tip Section ---
   Widget _buildTipSection(bool isDark, Color cardColor, Color accentColor) {
     final tipOptions = [20.0, 30.0, 50.0, 0.0]; // 0.0 represents custom
-    
+
     return Container(
       margin: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
       padding: const EdgeInsets.all(14),
@@ -3566,7 +3754,7 @@ class _MobileCartScreenState extends State<MobileCartScreen>
         gradient: LinearGradient(
           begin: Alignment.topLeft,
           end: Alignment.bottomRight,
-          colors: isDark 
+          colors: isDark
               ? [const Color(0xFF3D2E1E), const Color(0xFF2A2117)]
               : [const Color(0xFFFFF8E1), const Color(0xFFFFECB3)],
         ),
@@ -3618,14 +3806,18 @@ class _MobileCartScreenState extends State<MobileCartScreen>
                       style: TextStyle(
                         fontSize: 13,
                         fontWeight: FontWeight.w700,
-                        color: isDark ? Colors.amber.shade200 : Colors.amber.shade900,
+                        color: isDark
+                            ? Colors.amber.shade200
+                            : Colors.amber.shade900,
                       ),
                     ),
                     Text(
                       '100% goes to your partner 💛',
                       style: TextStyle(
                         fontSize: 10,
-                        color: isDark ? Colors.amber.shade300 : Colors.amber.shade700,
+                        color: isDark
+                            ? Colors.amber.shade300
+                            : Colors.amber.shade700,
                       ),
                     ),
                   ],
@@ -3633,7 +3825,8 @@ class _MobileCartScreenState extends State<MobileCartScreen>
               ),
               if (_selectedTipAmount > 0)
                 Container(
-                  padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
+                  padding:
+                      const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
                   decoration: BoxDecoration(
                     color: Colors.green.shade500,
                     borderRadius: BorderRadius.circular(12),
@@ -3669,7 +3862,7 @@ class _MobileCartScreenState extends State<MobileCartScreen>
 
   Widget _buildTipButton(String emoji, double amount, bool isDark) {
     final isSelected = _selectedTipAmount == amount;
-    
+
     return Expanded(
       child: GestureDetector(
         onTap: () {
@@ -3682,24 +3875,28 @@ class _MobileCartScreenState extends State<MobileCartScreen>
           duration: const Duration(milliseconds: 200),
           padding: const EdgeInsets.symmetric(vertical: 10),
           decoration: BoxDecoration(
-            gradient: isSelected 
-                ? LinearGradient(colors: [Colors.green.shade400, Colors.green.shade600])
+            gradient: isSelected
+                ? LinearGradient(
+                    colors: [Colors.green.shade400, Colors.green.shade600])
                 : null,
-            color: isSelected ? null : (isDark ? Colors.grey[800] : Colors.white),
+            color:
+                isSelected ? null : (isDark ? Colors.grey[800] : Colors.white),
             borderRadius: BorderRadius.circular(10),
             border: Border.all(
-              color: isSelected 
-                  ? Colors.green.shade400 
+              color: isSelected
+                  ? Colors.green.shade400
                   : (isDark ? Colors.grey[600]! : Colors.grey.shade300),
               width: isSelected ? 2 : 1,
             ),
-            boxShadow: isSelected ? [
-              BoxShadow(
-                color: Colors.green.withValues(alpha: 0.3),
-                blurRadius: 4,
-                offset: const Offset(0, 2),
-              ),
-            ] : null,
+            boxShadow: isSelected
+                ? [
+                    BoxShadow(
+                      color: Colors.green.withValues(alpha: 0.3),
+                      blurRadius: 4,
+                      offset: const Offset(0, 2),
+                    ),
+                  ]
+                : null,
           ),
           child: Column(
             mainAxisSize: MainAxisSize.min,
@@ -3711,7 +3908,9 @@ class _MobileCartScreenState extends State<MobileCartScreen>
                 style: TextStyle(
                   fontSize: 11,
                   fontWeight: FontWeight.w700,
-                  color: isSelected ? Colors.white : (isDark ? Colors.grey[300] : Colors.grey.shade800),
+                  color: isSelected
+                      ? Colors.white
+                      : (isDark ? Colors.grey[300] : Colors.grey.shade800),
                 ),
               ),
             ],
@@ -3722,11 +3921,11 @@ class _MobileCartScreenState extends State<MobileCartScreen>
   }
 
   Widget _buildCustomTipButton(bool isDark) {
-    final isCustomSelected = _selectedTipAmount > 0 && 
-        _selectedTipAmount != 20 && 
-        _selectedTipAmount != 30 && 
+    final isCustomSelected = _selectedTipAmount > 0 &&
+        _selectedTipAmount != 20 &&
+        _selectedTipAmount != 30 &&
         _selectedTipAmount != 50;
-    
+
     return Expanded(
       child: GestureDetector(
         onTap: () {
@@ -3737,24 +3936,29 @@ class _MobileCartScreenState extends State<MobileCartScreen>
           duration: const Duration(milliseconds: 200),
           padding: const EdgeInsets.symmetric(vertical: 10),
           decoration: BoxDecoration(
-            gradient: isCustomSelected 
-                ? LinearGradient(colors: [Colors.green.shade400, Colors.green.shade600])
+            gradient: isCustomSelected
+                ? LinearGradient(
+                    colors: [Colors.green.shade400, Colors.green.shade600])
                 : null,
-            color: isCustomSelected ? null : (isDark ? Colors.grey[800] : Colors.white),
+            color: isCustomSelected
+                ? null
+                : (isDark ? Colors.grey[800] : Colors.white),
             borderRadius: BorderRadius.circular(10),
             border: Border.all(
-              color: isCustomSelected 
-                  ? Colors.green.shade400 
+              color: isCustomSelected
+                  ? Colors.green.shade400
                   : (isDark ? Colors.grey[600]! : Colors.grey.shade300),
               width: isCustomSelected ? 2 : 1,
             ),
-            boxShadow: isCustomSelected ? [
-              BoxShadow(
-                color: Colors.green.withValues(alpha: 0.3),
-                blurRadius: 4,
-                offset: const Offset(0, 2),
-              ),
-            ] : null,
+            boxShadow: isCustomSelected
+                ? [
+                    BoxShadow(
+                      color: Colors.green.withValues(alpha: 0.3),
+                      blurRadius: 4,
+                      offset: const Offset(0, 2),
+                    ),
+                  ]
+                : null,
           ),
           child: Column(
             mainAxisSize: MainAxisSize.min,
@@ -3766,7 +3970,9 @@ class _MobileCartScreenState extends State<MobileCartScreen>
                 style: TextStyle(
                   fontSize: 11,
                   fontWeight: FontWeight.w700,
-                  color: isCustomSelected ? Colors.white : (isDark ? Colors.grey[300] : Colors.grey.shade800),
+                  color: isCustomSelected
+                      ? Colors.white
+                      : (isDark ? Colors.grey[300] : Colors.grey.shade800),
                 ),
               ),
             ],
@@ -3779,7 +3985,7 @@ class _MobileCartScreenState extends State<MobileCartScreen>
   void _showCustomTipDialog(bool isDark) {
     final controller = TextEditingController();
     final accentColor = isDark ? AppColors.primaryLight : AppColors.primary;
-    
+
     showModalBottomSheet(
       context: context,
       isScrollControlled: true,
@@ -3810,7 +4016,7 @@ class _MobileCartScreenState extends State<MobileCartScreen>
                 ),
               ),
               const SizedBox(height: 16),
-              
+
               // Title
               Row(
                 children: [
@@ -3839,7 +4045,7 @@ class _MobileCartScreenState extends State<MobileCartScreen>
                 ],
               ),
               const SizedBox(height: 16),
-              
+
               // Input field
               TextField(
                 controller: controller,
@@ -3869,11 +4075,12 @@ class _MobileCartScreenState extends State<MobileCartScreen>
                     borderRadius: BorderRadius.circular(12),
                     borderSide: BorderSide.none,
                   ),
-                  contentPadding: const EdgeInsets.symmetric(horizontal: 16, vertical: 16),
+                  contentPadding:
+                      const EdgeInsets.symmetric(horizontal: 16, vertical: 16),
                 ),
               ),
               const SizedBox(height: 12),
-              
+
               // Quick amounts
               Row(
                 children: [
@@ -3885,7 +4092,7 @@ class _MobileCartScreenState extends State<MobileCartScreen>
                 ],
               ),
               const SizedBox(height: 20),
-              
+
               // Confirm button
               SizedBox(
                 width: double.infinity,
@@ -3925,7 +4132,8 @@ class _MobileCartScreenState extends State<MobileCartScreen>
     );
   }
 
-  Widget _buildQuickTipChip(String label, double amount, TextEditingController controller, bool isDark) {
+  Widget _buildQuickTipChip(String label, double amount,
+      TextEditingController controller, bool isDark) {
     return GestureDetector(
       onTap: () {
         HapticFeedback.selectionClick();
@@ -3949,186 +4157,19 @@ class _MobileCartScreenState extends State<MobileCartScreen>
     );
   }
 
-  // --- Address Selection Bottom Sheet ---
-  void _showAddressSelectionSheet(bool isDark) {
-    final addressProvider = context.read<AddressProvider>();
-    showModalBottomSheet(
-      context: context,
-      isScrollControlled: true,
-      backgroundColor: Colors.transparent,
-      builder: (ctx) {
-        return DraggableScrollableSheet(
-          initialChildSize: 0.55,
-          minChildSize: 0.3,
-          maxChildSize: 0.85,
-          builder: (context, scrollController) {
-            return Container(
-              decoration: BoxDecoration(
-                color: isDark ? const Color(0xFF1A1A1A) : Colors.white,
-                borderRadius: const BorderRadius.vertical(top: Radius.circular(20)),
-              ),
-              child: Column(
-                children: [
-                  // Handle
-                  Container(
-                    margin: const EdgeInsets.symmetric(vertical: 12),
-                    width: 40, height: 4,
-                    decoration: BoxDecoration(
-                      color: Colors.grey[400],
-                      borderRadius: BorderRadius.circular(2),
-                    ),
-                  ),
-                  Padding(
-                    padding: const EdgeInsets.symmetric(horizontal: 20),
-                    child: Row(
-                      mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                      children: [
-                        Text(
-                          'Select Delivery Address',
-                          style: TextStyle(
-                            fontSize: 17,
-                            fontWeight: FontWeight.w800,
-                            color: isDark ? Colors.white : Colors.black87,
-                          ),
-                        ),
-                        TextButton.icon(
-                          onPressed: () {
-                            Navigator.pop(ctx);
-                            Navigator.pushNamed(context, '/profile/add-address');
-                          },
-                          icon: const Icon(Icons.add, size: 18),
-                          label: const Text('Add New'),
-                        ),
-                      ],
-                    ),
-                  ),
-                  const SizedBox(height: 8),
-                  Expanded(
-                    child: Consumer<AddressProvider>(
-                      builder: (context, addrProv, _) {
-                        if (addrProv.addresses.isEmpty) {
-                          return Center(
-                            child: Column(
-                              mainAxisAlignment: MainAxisAlignment.center,
-                              children: [
-                                Icon(Icons.location_off_rounded, size: 48, color: Colors.grey[400]),
-                                const SizedBox(height: 12),
-                                Text('No saved addresses', style: TextStyle(color: Colors.grey[600])),
-                                const SizedBox(height: 16),
-                                FilledButton.icon(
-                                  onPressed: () {
-                                    Navigator.pop(ctx);
-                                    Navigator.pushNamed(context, '/profile/add-address');
-                                  },
-                                  icon: const Icon(Icons.add),
-                                  label: const Text('Add Address'),
-                                ),
-                              ],
-                            ),
-                          );
-                        }
-                        final selected = addrProv.selectedAddress ?? addrProv.defaultAddress;
-                        return ListView.separated(
-                          controller: scrollController,
-                          padding: const EdgeInsets.symmetric(horizontal: 16),
-                          itemCount: addrProv.addresses.length,
-                          separatorBuilder: (_, __) => const SizedBox(height: 10),
-                          itemBuilder: (context, index) {
-                            final addr = addrProv.addresses[index];
-                            final isSelected = addr.id == selected?.id;
-                            return GestureDetector(
-                              onTap: () {
-                                HapticFeedback.selectionClick();
-                                addrProv.selectAddress(addr);
-                                Navigator.pop(ctx);
-                              },
-                              child: Container(
-                                padding: const EdgeInsets.all(14),
-                                decoration: BoxDecoration(
-                                  color: isSelected
-                                      ? (isDark ? const Color(0xFF1B3A1B) : Colors.green.shade50)
-                                      : (isDark ? const Color(0xFF252525) : Colors.grey.shade50),
-                                  borderRadius: BorderRadius.circular(14),
-                                  border: Border.all(
-                                    color: isSelected ? Colors.green : (isDark ? Colors.grey[700]! : Colors.grey[300]!),
-                                    width: isSelected ? 1.5 : 1,
-                                  ),
-                                ),
-                                child: Row(
-                                  children: [
-                                    Icon(
-                                      addr.addressType == 'home' ? Icons.home_rounded : 
-                                      addr.addressType == 'work' ? Icons.work_rounded : Icons.location_on_rounded,
-                                      color: isSelected ? Colors.green : Colors.grey[500],
-                                      size: 24,
-                                    ),
-                                    const SizedBox(width: 14),
-                                    Expanded(
-                                      child: Column(
-                                        crossAxisAlignment: CrossAxisAlignment.start,
-                                        children: [
-                                          Row(
-                                            children: [
-                                              Text(
-                                                addr.name.isNotEmpty ? addr.name : (addr.addressType ?? 'OTHER').toUpperCase(),
-                                                style: TextStyle(
-                                                  fontWeight: FontWeight.w700,
-                                                  fontSize: 14,
-                                                  color: isDark ? Colors.white : Colors.black87,
-                                                ),
-                                              ),
-                                              if (addr.isDefault) ...[
-                                                const SizedBox(width: 8),
-                                                Container(
-                                                  padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 2),
-                                                  decoration: BoxDecoration(
-                                                    color: Colors.green.withOpacity(0.15),
-                                                    borderRadius: BorderRadius.circular(4),
-                                                  ),
-                                                  child: const Text('Default', style: TextStyle(fontSize: 10, color: Colors.green, fontWeight: FontWeight.w600)),
-                                                ),
-                                              ],
-                                            ],
-                                          ),
-                                          const SizedBox(height: 4),
-                                          Text(
-                                            addr.fullAddress,
-                                            maxLines: 2,
-                                            overflow: TextOverflow.ellipsis,
-                                            style: TextStyle(fontSize: 12, color: Colors.grey[500]),
-                                          ),
-                                        ],
-                                      ),
-                                    ),
-                                    if (isSelected)
-                                      const Icon(Icons.check_circle_rounded, color: Colors.green, size: 22),
-                                  ],
-                                ),
-                              ),
-                            );
-                          },
-                        );
-                      },
-                    ),
-                  ),
-                ],
-              ),
-            );
-          },
-        );
-      },
-    );
-  }
+
 
   // --- Sticky Bottom Bar ---
-  Widget _buildBlinkitBottomBar(double total, bool isDark, Color accentColor, Color cardColor) {
+  Widget _buildBlinkitBottomBar(
+      double total, bool isDark, Color accentColor, Color cardColor) {
     return Consumer<AddressProvider>(
       builder: (context, addressProvider, _) {
-        final address = addressProvider.hasAddresses 
-            ? (addressProvider.selectedAddress ?? addressProvider.defaultAddress)
+        final address = addressProvider.hasAddresses
+            ? (addressProvider.selectedAddress ??
+                addressProvider.defaultAddress)
             : null;
         final hasAddress = address != null;
-        
+
         return Container(
           padding: const EdgeInsets.fromLTRB(12, 10, 12, 12),
           decoration: BoxDecoration(
@@ -4150,12 +4191,15 @@ class _MobileCartScreenState extends State<MobileCartScreen>
                 GestureDetector(
                   onTap: () {
                     HapticFeedback.lightImpact();
-                    _showAddressSelectionSheet(isDark);
+                    Navigator.pushNamed(context, '/profile/addresses');
                   },
                   child: Container(
-                    padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 8),
+                    padding:
+                        const EdgeInsets.symmetric(horizontal: 10, vertical: 8),
                     decoration: BoxDecoration(
-                      color: isDark ? const Color(0xFF252525) : const Color(0xFFF8F8F8),
+                      color: isDark
+                          ? const Color(0xFF252525)
+                          : const Color(0xFFF8F8F8),
                       borderRadius: BorderRadius.circular(10),
                       border: Border.all(
                         color: isDark ? Colors.grey[700]! : Colors.grey[200]!,
@@ -4171,7 +4215,10 @@ class _MobileCartScreenState extends State<MobileCartScreen>
                             gradient: LinearGradient(
                               begin: Alignment.topLeft,
                               end: Alignment.bottomRight,
-                              colors: [accentColor.withValues(alpha: 0.9), accentColor],
+                              colors: [
+                                accentColor.withValues(alpha: 0.9),
+                                accentColor
+                              ],
                             ),
                             borderRadius: BorderRadius.circular(8),
                             boxShadow: [
@@ -4196,18 +4243,24 @@ class _MobileCartScreenState extends State<MobileCartScreen>
                               Row(
                                 children: [
                                   Text(
-                                    hasAddress ? 'Delivering to ${address.addressType ?? 'Home'}' : 'Add delivery address',
+                                    hasAddress
+                                        ? 'Delivering to ${address.addressType ?? 'Home'}'
+                                        : 'Add delivery address',
                                     style: TextStyle(
                                       fontSize: 12,
                                       fontWeight: FontWeight.w700,
-                                      color: isDark ? Colors.white : Colors.black87,
+                                      color: isDark
+                                          ? Colors.white
+                                          : Colors.black87,
                                     ),
                                   ),
                                   const SizedBox(width: 4),
                                   Icon(
                                     Icons.keyboard_arrow_down_rounded,
                                     size: 16,
-                                    color: isDark ? Colors.grey[400] : Colors.grey[600],
+                                    color: isDark
+                                        ? Colors.grey[400]
+                                        : Colors.grey[600],
                                   ),
                                 ],
                               ),
@@ -4216,7 +4269,9 @@ class _MobileCartScreenState extends State<MobileCartScreen>
                                   '${address.addressLine1}${address.landmark != null ? ', ${address.landmark}' : ''}',
                                   style: TextStyle(
                                     fontSize: 10,
-                                    color: isDark ? Colors.grey[500] : Colors.grey[600],
+                                    color: isDark
+                                        ? Colors.grey[500]
+                                        : Colors.grey[600],
                                   ),
                                   maxLines: 1,
                                   overflow: TextOverflow.ellipsis,
@@ -4234,7 +4289,8 @@ class _MobileCartScreenState extends State<MobileCartScreen>
                         ),
                         // Change button
                         Container(
-                          padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
+                          padding: const EdgeInsets.symmetric(
+                              horizontal: 8, vertical: 4),
                           decoration: BoxDecoration(
                             color: accentColor.withValues(alpha: 0.1),
                             borderRadius: BorderRadius.circular(6),
@@ -4253,7 +4309,7 @@ class _MobileCartScreenState extends State<MobileCartScreen>
                   ),
                 ),
                 const SizedBox(height: 10),
-                
+
                 // Payment Buttons Row
                 Row(
                   children: [
@@ -4268,7 +4324,8 @@ class _MobileCartScreenState extends State<MobileCartScreen>
                         child: Container(
                           padding: const EdgeInsets.symmetric(vertical: 14),
                           decoration: BoxDecoration(
-                            color: isDark ? const Color(0xFF252525) : Colors.white,
+                            color:
+                                isDark ? const Color(0xFF252525) : Colors.white,
                             borderRadius: BorderRadius.circular(10),
                             border: Border.all(
                               color: accentColor,
@@ -4314,12 +4371,14 @@ class _MobileCartScreenState extends State<MobileCartScreen>
                         onPressed: _isPlacingOrder || !hasAddress
                             ? null
                             : () {
-                                _placeOrder(total, address!);
+                                _placeOrder(
+                                    total + _selectedTipAmount, address!);
                               },
                         style: ElevatedButton.styleFrom(
                           backgroundColor: accentColor,
                           foregroundColor: Colors.white,
-                          disabledBackgroundColor: accentColor.withValues(alpha: 0.5),
+                          disabledBackgroundColor:
+                              accentColor.withValues(alpha: 0.5),
                           padding: const EdgeInsets.symmetric(vertical: 14),
                           shape: RoundedRectangleBorder(
                             borderRadius: BorderRadius.circular(10),
@@ -4332,14 +4391,17 @@ class _MobileCartScreenState extends State<MobileCartScreen>
                                 height: 20,
                                 child: CircularProgressIndicator(
                                   strokeWidth: 2,
-                                  valueColor: AlwaysStoppedAnimation<Color>(Colors.white),
+                                  valueColor: AlwaysStoppedAnimation<Color>(
+                                      Colors.white),
                                 ),
                               )
                             : Row(
                                 mainAxisAlignment: MainAxisAlignment.center,
                                 children: [
                                   Text(
-                                    _selectedPaymentMethod == 'COD' ? 'Place Order' : 'Pay',
+                                    _selectedPaymentMethod == 'COD'
+                                        ? 'Place Order'
+                                        : 'Pay',
                                     style: const TextStyle(
                                       fontSize: 14,
                                       fontWeight: FontWeight.w700,
@@ -4347,9 +4409,11 @@ class _MobileCartScreenState extends State<MobileCartScreen>
                                   ),
                                   const SizedBox(width: 6),
                                   Container(
-                                    padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 3),
+                                    padding: const EdgeInsets.symmetric(
+                                        horizontal: 8, vertical: 3),
                                     decoration: BoxDecoration(
-                                      color: Colors.white.withValues(alpha: 0.2),
+                                      color:
+                                          Colors.white.withValues(alpha: 0.2),
                                       borderRadius: BorderRadius.circular(6),
                                     ),
                                     child: Text(
@@ -4380,7 +4444,7 @@ class _MobileCartScreenState extends State<MobileCartScreen>
   ) {
     final subtotal = cartProvider.subtotal;
     final coupon = couponProvider.appliedCoupon;
-    
+
     double couponDiscount = 0;
     double bogoValue = 0;
     double flatDiscount = 0;
@@ -4406,28 +4470,38 @@ class _MobileCartScreenState extends State<MobileCartScreen>
     }
 
     final shippingInfo = _calculateShippingFees(cartProvider.items);
-    
+
     // ✅ Delivery fee logic: FREE for orders ₹499+, otherwise ₹40
     const double freeDeliveryThreshold = 499.0;
     const double standardDeliveryFee = 40.0;
-    final shippingFee = subtotal >= freeDeliveryThreshold ? 0.0 : standardDeliveryFee;
-    
-    final expressDeliveryFee = _expressDeliverySelected ? (shippingInfo.expressDeliveryFee ?? 0.0) : 0.0;
-    
+    final shippingFee =
+        subtotal >= freeDeliveryThreshold ? 0.0 : standardDeliveryFee;
+
+    final expressDeliveryFee = _expressDeliverySelected
+        ? (shippingInfo.expressDeliveryFee ?? 0.0)
+        : 0.0;
+
     // Calculate wallet discount
     double walletDiscount = 0;
     if (_useWalletBalance) {
       try {
         final walletProvider = context.read<WalletProvider>();
         final availableBalance = walletProvider.balance;
-        final remainingAmount = subtotal - couponDiscount + shippingFee + expressDeliveryFee;
-        walletDiscount = availableBalance > remainingAmount ? remainingAmount : availableBalance;
+        final remainingAmount =
+            subtotal - couponDiscount + shippingFee + expressDeliveryFee;
+        walletDiscount = availableBalance > remainingAmount
+            ? remainingAmount
+            : availableBalance;
       } catch (e) {
         debugPrint('Wallet provider not available: $e');
       }
     }
-    
-    final finalTotal = subtotal - couponDiscount + shippingFee + expressDeliveryFee - walletDiscount;
+
+    final finalTotal = subtotal -
+        couponDiscount +
+        shippingFee +
+        expressDeliveryFee -
+        walletDiscount;
 
     return {
       'subtotal': subtotal,
@@ -4459,7 +4533,8 @@ class _MobileCartScreenState extends State<MobileCartScreen>
         icon: Container(
           padding: const EdgeInsets.all(6),
           decoration: BoxDecoration(
-            color: isDark ? Colors.white.withOpacity(0.1) : Colors.grey.shade100,
+            color:
+                isDark ? Colors.white.withOpacity(0.1) : Colors.grey.shade100,
             borderRadius: BorderRadius.circular(8),
           ),
           child: Icon(
@@ -4509,7 +4584,8 @@ class _MobileCartScreenState extends State<MobileCartScreen>
           Row(
             children: [
               Container(
-                padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 6),
+                padding:
+                    const EdgeInsets.symmetric(horizontal: 10, vertical: 6),
                 decoration: BoxDecoration(
                   color: accentColor.withOpacity(0.15),
                   borderRadius: BorderRadius.circular(6),
@@ -4517,11 +4593,15 @@ class _MobileCartScreenState extends State<MobileCartScreen>
                 child: Row(
                   mainAxisSize: MainAxisSize.min,
                   children: [
-                    FaIcon(FontAwesomeIcons.cartShopping, size: 12, color: accentColor),
+                    FaIcon(FontAwesomeIcons.cartShopping,
+                        size: 12, color: accentColor),
                     const SizedBox(width: 6),
                     Text(
                       '$totalItemCount ${totalItemCount == 1 ? 'Item' : 'Items'}',
-                      style: TextStyle(fontSize: 12, fontWeight: FontWeight.w700, color: accentColor),
+                      style: TextStyle(
+                          fontSize: 12,
+                          fontWeight: FontWeight.w700,
+                          color: accentColor),
                     ),
                   ],
                 ),
@@ -4529,7 +4609,8 @@ class _MobileCartScreenState extends State<MobileCartScreen>
               if (freeItems.isNotEmpty) ...[
                 const SizedBox(width: 8),
                 Container(
-                  padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 5),
+                  padding:
+                      const EdgeInsets.symmetric(horizontal: 8, vertical: 5),
                   decoration: BoxDecoration(
                     color: Colors.green.withOpacity(isDark ? 0.2 : 0.1),
                     borderRadius: BorderRadius.circular(6),
@@ -4538,11 +4619,15 @@ class _MobileCartScreenState extends State<MobileCartScreen>
                   child: Row(
                     mainAxisSize: MainAxisSize.min,
                     children: [
-                      FaIcon(FontAwesomeIcons.gift, size: 10, color: Colors.green.shade700),
+                      FaIcon(FontAwesomeIcons.gift,
+                          size: 10, color: Colors.green.shade700),
                       const SizedBox(width: 5),
                       Text(
                         '${freeItems.length} Free',
-                        style: TextStyle(fontSize: 11, fontWeight: FontWeight.w800, color: Colors.green.shade700),
+                        style: TextStyle(
+                            fontSize: 11,
+                            fontWeight: FontWeight.w800,
+                            color: Colors.green.shade700),
                       ),
                     ],
                   ),
@@ -4551,45 +4636,55 @@ class _MobileCartScreenState extends State<MobileCartScreen>
               const Spacer(),
               Text(
                 '₹${cartProvider.subtotal.toStringAsFixed(2)}',
-                style: TextStyle(fontSize: 16, fontWeight: FontWeight.w800, color: isDark ? Colors.white : Colors.black87),
+                style: TextStyle(
+                    fontSize: 16,
+                    fontWeight: FontWeight.w800,
+                    color: isDark ? Colors.white : Colors.black87),
               ),
             ],
           ),
-          
           Padding(
             padding: const EdgeInsets.symmetric(vertical: 12),
-            child: Divider(color: isDark ? Colors.grey[800] : Colors.grey[200], height: 1),
+            child: Divider(
+                color: isDark ? Colors.grey[800] : Colors.grey[200], height: 1),
           ),
-          
           ListView.separated(
             shrinkWrap: true,
             physics: const NeverScrollableScrollPhysics(),
             itemCount: allItems.length,
             separatorBuilder: (context, index) => Padding(
               padding: const EdgeInsets.symmetric(vertical: 10),
-              child: Divider(color: isDark ? Colors.grey[800] : Colors.grey[200], height: 1),
+              child: Divider(
+                  color: isDark ? Colors.grey[800] : Colors.grey[200],
+                  height: 1),
             ),
             itemBuilder: (context, index) {
               final item = allItems[index];
               final isFree = item.isFreeItem;
               final product = _productCache[item.productId];
-              
+
               return _buildCartItem(
                 item: item,
                 product: product,
                 isFree: isFree,
                 isDark: isDark,
                 accentColor: accentColor,
-                onRemove: isFree ? null : () async {
-                  final success = await cartProvider.removeItem(item.productId);
-                  if (success && mounted) {
-                    SnackbarHelper.showSuccess(context, 'Item removed');
-                    await _loadProductDetails();
-                  }
-                },
-                onQuantityChanged: isFree ? null : (quantity) async {
-                  await cartProvider.updateQuantity(item.productId, quantity);
-                },
+                onRemove: isFree
+                    ? null
+                    : () async {
+                        final success =
+                            await cartProvider.removeItem(item.productId);
+                        if (success && mounted) {
+                          SnackbarHelper.showSuccess(context, 'Item removed');
+                          await _loadProductDetails();
+                        }
+                      },
+                onQuantityChanged: isFree
+                    ? null
+                    : (quantity) async {
+                        await cartProvider.updateQuantity(
+                            item.productId, quantity);
+                      },
               );
             },
           ),
@@ -4598,71 +4693,85 @@ class _MobileCartScreenState extends State<MobileCartScreen>
     );
   }
 
-Widget _buildCartItem({
-  required CartItemModel item,
-  ProductModel? product,
-  required bool isFree,
-  required bool isDark,
-  required Color accentColor,
-  void Function()? onRemove,
-  void Function(int)? onQuantityChanged,
-}) {
-  return Container(
-    decoration: BoxDecoration(
-      color: isFree ? Colors.green.withOpacity(isDark ? 0.08 : 0.03) : Colors.transparent,
-      borderRadius: BorderRadius.circular(8),
-      border: isFree ? Border.all(color: Colors.green.withOpacity(0.2)) : null,
-    ),
-    padding: isFree ? const EdgeInsets.all(8) : EdgeInsets.zero,
-    child: Column(
-      crossAxisAlignment: CrossAxisAlignment.start,
-      children: [
-        if (isFree)
-          Padding(
-            padding: const EdgeInsets.only(bottom: 8),
-            child: Row(
-              children: [
-                Container(
-                  padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
-                  decoration: BoxDecoration(
-                    gradient: LinearGradient(colors: [Colors.green.shade600, Colors.green.shade500]),
-                    borderRadius: BorderRadius.circular(6),
+  Widget _buildCartItem({
+    required CartItemModel item,
+    ProductModel? product,
+    required bool isFree,
+    required bool isDark,
+    required Color accentColor,
+    void Function()? onRemove,
+    void Function(int)? onQuantityChanged,
+  }) {
+    return Container(
+      decoration: BoxDecoration(
+        color: isFree
+            ? Colors.green.withOpacity(isDark ? 0.08 : 0.03)
+            : Colors.transparent,
+        borderRadius: BorderRadius.circular(8),
+        border:
+            isFree ? Border.all(color: Colors.green.withOpacity(0.2)) : null,
+      ),
+      padding: isFree ? const EdgeInsets.all(8) : EdgeInsets.zero,
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          if (isFree)
+            Padding(
+              padding: const EdgeInsets.only(bottom: 8),
+              child: Row(
+                children: [
+                  Container(
+                    padding:
+                        const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
+                    decoration: BoxDecoration(
+                      gradient: LinearGradient(colors: [
+                        Colors.green.shade600,
+                        Colors.green.shade500
+                      ]),
+                      borderRadius: BorderRadius.circular(6),
+                    ),
+                    child: Row(
+                      mainAxisSize: MainAxisSize.min,
+                      children: [
+                        const FaIcon(FontAwesomeIcons.gift,
+                            size: 10, color: Colors.white),
+                        const SizedBox(width: 5),
+                        Text(
+                          item.freeItemLabel ?? 'FREE',
+                          style: const TextStyle(
+                              fontSize: 10,
+                              fontWeight: FontWeight.w800,
+                              color: Colors.white,
+                              letterSpacing: 0.5),
+                        ),
+                      ],
+                    ),
                   ),
-                  child: Row(
-                    mainAxisSize: MainAxisSize.min,
-                    children: [
-                      const FaIcon(FontAwesomeIcons.gift, size: 10, color: Colors.white),
-                      const SizedBox(width: 5),
-                      Text(
-                        item.freeItemLabel ?? 'FREE',
-                        style: const TextStyle(fontSize: 10, fontWeight: FontWeight.w800, color: Colors.white, letterSpacing: 0.5),
-                      ),
-                    ],
+                  const SizedBox(width: 8),
+                  Expanded(
+                    child: Text(
+                      'Added via BOGO offer',
+                      style: TextStyle(
+                          fontSize: 11,
+                          fontWeight: FontWeight.w600,
+                          color: Colors.green.shade700),
+                    ),
                   ),
-                ),
-                const SizedBox(width: 8),
-                Expanded(
-                  child: Text(
-                    'Added via BOGO offer',
-                    style: TextStyle(fontSize: 11, fontWeight: FontWeight.w600, color: Colors.green.shade700),
-                  ),
-                ),
-              ],
+                ],
+              ),
             ),
-          ),
-        
-        // ✅ REMOVED: Separate variant display - CartItemCard handles it internally
-        
-        CartItemCard(
-          item: item,
-          onRemove: onRemove ?? () {},
-          onQuantityChanged: onQuantityChanged ?? (int qty) {},
-        ),
-      ],
-    ),
-  );
-}
 
+          // ✅ REMOVED: Separate variant display - CartItemCard handles it internally
+
+          CartItemCard(
+            item: item,
+            onRemove: onRemove ?? () {},
+            onQuantityChanged: onQuantityChanged ?? (int qty) {},
+          ),
+        ],
+      ),
+    );
+  }
 
   Widget _buildCouponSection(
     CouponProvider couponProvider,
@@ -4671,7 +4780,8 @@ Widget _buildCartItem({
     Color accentColor,
   ) {
     final hasAppliedCoupon = couponProvider.appliedCoupon != null;
-    final isBogo = hasAppliedCoupon && couponProvider.appliedCoupon!.type == CouponType.buyOneGetOne;
+    final isBogo = hasAppliedCoupon &&
+        couponProvider.appliedCoupon!.type == CouponType.buyOneGetOne;
 
     return _buildCardSection(
       isDark: isDark,
@@ -4693,12 +4803,16 @@ Widget _buildCartItem({
           padding: const EdgeInsets.all(12),
           decoration: BoxDecoration(
             color: hasAppliedCoupon
-                ? (isBogo ? Colors.purple.withOpacity(isDark ? 0.15 : 0.08) : Colors.green.withOpacity(isDark ? 0.15 : 0.08))
-                : (isDark ? Colors.grey[850] : Colors.grey[50]),
+                ? (isBogo
+                    ? Colors.purple.withOpacity(isDark ? 0.15 : 0.08)
+                    : Colors.green.withOpacity(isDark ? 0.15 : 0.08))
+                : (isDark ? const Color(0xFF303030) : Colors.grey[50]),
             borderRadius: BorderRadius.circular(8),
             border: Border.all(
               color: hasAppliedCoupon
-                  ? (isBogo ? Colors.purple.withOpacity(0.3) : Colors.green.withOpacity(0.3))
+                  ? (isBogo
+                      ? Colors.purple.withOpacity(0.3)
+                      : Colors.green.withOpacity(0.3))
                   : (isDark ? Colors.grey[700]! : Colors.grey[300]!),
             ),
           ),
@@ -4710,13 +4824,23 @@ Widget _buildCartItem({
                     padding: const EdgeInsets.all(8),
                     decoration: BoxDecoration(
                       color: hasAppliedCoupon
-                          ? (isBogo ? Colors.purple.withOpacity(0.2) : Colors.green.withOpacity(0.2))
+                          ? (isBogo
+                              ? Colors.purple.withOpacity(0.2)
+                              : Colors.green.withOpacity(0.2))
                           : accentColor.withOpacity(0.15),
                       borderRadius: BorderRadius.circular(6),
                     ),
                     child: FaIcon(
-                      hasAppliedCoupon ? (isBogo ? FontAwesomeIcons.gift : FontAwesomeIcons.circleCheck) : FontAwesomeIcons.ticket,
-                      color: hasAppliedCoupon ? (isBogo ? Colors.purple.shade700 : Colors.green.shade700) : accentColor,
+                      hasAppliedCoupon
+                          ? (isBogo
+                              ? FontAwesomeIcons.gift
+                              : FontAwesomeIcons.circleCheck)
+                          : FontAwesomeIcons.ticket,
+                      color: hasAppliedCoupon
+                          ? (isBogo
+                              ? Colors.purple.shade700
+                              : Colors.green.shade700)
+                          : accentColor,
                       size: 16,
                     ),
                   ),
@@ -4726,20 +4850,31 @@ Widget _buildCartItem({
                       crossAxisAlignment: CrossAxisAlignment.start,
                       children: [
                         Text(
-                          hasAppliedCoupon ? couponProvider.appliedCoupon!.code : 'Select or enter coupon code',
+                          hasAppliedCoupon
+                              ? couponProvider.appliedCoupon!.code
+                              : 'Select or enter coupon code',
                           style: TextStyle(
                             fontSize: 14,
                             fontWeight: FontWeight.w800,
                             color: hasAppliedCoupon
-                                ? (isBogo ? Colors.purple.shade700 : Colors.green.shade700)
+                                ? (isBogo
+                                    ? Colors.purple.shade700
+                                    : Colors.green.shade700)
                                 : (isDark ? Colors.white : Colors.black87),
                           ),
                         ),
                         if (hasAppliedCoupon) ...[
                           const SizedBox(height: 3),
                           Text(
-                            isBogo ? '🎁 Buy 1 Get 1 Free Applied' : 'Coupon applied successfully',
-                            style: TextStyle(fontSize: 11, fontWeight: FontWeight.w600, color: isDark ? Colors.grey[400] : Colors.grey[600]),
+                            isBogo
+                                ? '🎁 Buy 1 Get 1 Free Applied'
+                                : 'Coupon applied successfully',
+                            style: TextStyle(
+                                fontSize: 11,
+                                fontWeight: FontWeight.w600,
+                                color: isDark
+                                    ? Colors.grey[400]
+                                    : Colors.grey[600]),
                           ),
                         ],
                       ],
@@ -4747,7 +4882,9 @@ Widget _buildCartItem({
                   ),
                   if (hasAppliedCoupon)
                     IconButton(
-                      icon: Icon(Icons.close_rounded, size: 18, color: isDark ? Colors.grey[500] : Colors.grey[600]),
+                      icon: Icon(Icons.close_rounded,
+                          size: 18,
+                          color: isDark ? Colors.grey[500] : Colors.grey[600]),
                       onPressed: () {
                         HapticFeedback.selectionClick();
                         couponProvider.removeCoupon();
@@ -4759,26 +4896,35 @@ Widget _buildCartItem({
                       constraints: const BoxConstraints(),
                     )
                   else
-                    Icon(Icons.arrow_forward_ios_rounded, size: 14, color: isDark ? Colors.grey[500] : Colors.grey[600]),
+                    Icon(Icons.arrow_forward_ios_rounded,
+                        size: 14,
+                        color: isDark ? Colors.grey[500] : Colors.grey[600]),
                 ],
               ),
-              
               if (isBogo && _bogoFreeItems.isNotEmpty) ...[
                 const SizedBox(height: 12),
                 Container(
                   padding: const EdgeInsets.all(10),
                   decoration: BoxDecoration(
-                    color: isDark ? Colors.purple[900]?.withOpacity(0.2) : Colors.purple[50],
+                    color: isDark
+                        ? Colors.purple[900]?.withOpacity(0.2)
+                        : Colors.purple[50],
                     borderRadius: BorderRadius.circular(6),
                   ),
                   child: Row(
                     children: [
-                      const FaIcon(FontAwesomeIcons.wandMagicSparkles, size: 12, color: Colors.purple),
+                      const FaIcon(FontAwesomeIcons.wandMagicSparkles,
+                          size: 12, color: Colors.purple),
                       const SizedBox(width: 8),
                       Expanded(
                         child: Text(
                           'Free item automatically added to your cart',
-                          style: TextStyle(fontSize: 11, fontWeight: FontWeight.w700, color: isDark ? Colors.purple[200] : Colors.purple[900]),
+                          style: TextStyle(
+                              fontSize: 11,
+                              fontWeight: FontWeight.w700,
+                              color: isDark
+                                  ? Colors.purple[200]
+                                  : Colors.purple[900]),
                         ),
                       ),
                     ],
@@ -4814,7 +4960,8 @@ Widget _buildCartItem({
           if (shippingInfo.freeDeliveryProducts.isNotEmpty) ...[
             _buildDeliveryOption(
               title: 'Free Standard Delivery',
-              subtitle: 'Delivery in ${_getDeliveryDaysRange(shippingInfo.productDeliveryDays)} business days',
+              subtitle:
+                  'Delivery in ${_getDeliveryDaysRange(shippingInfo.productDeliveryDays)} business days',
               fee: null,
               products: shippingInfo.freeDeliveryProducts,
               icon: FontAwesomeIcons.truck,
@@ -4822,7 +4969,8 @@ Widget _buildCartItem({
               isDark: isDark,
               isFree: true,
             ),
-            if (shippingInfo.standardProducts.isNotEmpty || shippingInfo.specialFees.isNotEmpty)
+            if (shippingInfo.standardProducts.isNotEmpty ||
+                shippingInfo.specialFees.isNotEmpty)
               const SizedBox(height: 12),
           ],
 
@@ -4830,7 +4978,8 @@ Widget _buildCartItem({
           if (shippingInfo.standardProducts.isNotEmpty) ...[
             _buildDeliveryOption(
               title: 'Standard Delivery',
-              subtitle: 'Delivery in ${_getDeliveryDaysRange(shippingInfo.productDeliveryDays)} business days',
+              subtitle:
+                  'Delivery in ${_getDeliveryDaysRange(shippingInfo.productDeliveryDays)} business days',
               fee: shippingInfo.standardFee,
               products: shippingInfo.standardProducts,
               icon: FontAwesomeIcons.truck,
@@ -4843,17 +4992,17 @@ Widget _buildCartItem({
           // Special Delivery Fees
           if (shippingInfo.specialFees.isNotEmpty) ...[
             ...shippingInfo.specialFees.entries.map((entry) => Padding(
-              padding: const EdgeInsets.only(bottom: 12),
-              child: _buildDeliveryOption(
-                title: 'Special Delivery',
-                subtitle: 'Higher shipping for: ${entry.key}',
-                fee: entry.value,
-                products: [entry.key],
-                icon: FontAwesomeIcons.truckFast,
-                color: Colors.orange,
-                isDark: isDark,
-              ),
-            )),
+                  padding: const EdgeInsets.only(bottom: 12),
+                  child: _buildDeliveryOption(
+                    title: 'Special Delivery',
+                    subtitle: 'Higher shipping for: ${entry.key}',
+                    fee: entry.value,
+                    products: [entry.key],
+                    icon: FontAwesomeIcons.truckFast,
+                    color: Colors.orange,
+                    isDark: isDark,
+                  ),
+                )),
           ],
 
           // Mixed Delivery Notice
@@ -4873,7 +5022,8 @@ Widget _buildCartItem({
                       color: Colors.blue.withOpacity(0.2),
                       borderRadius: BorderRadius.circular(6),
                     ),
-                    child: FaIcon(FontAwesomeIcons.circleInfo, size: 14, color: Colors.blue.shade700),
+                    child: FaIcon(FontAwesomeIcons.circleInfo,
+                        size: 14, color: Colors.blue.shade700),
                   ),
                   const SizedBox(width: 12),
                   Expanded(
@@ -4882,12 +5032,19 @@ Widget _buildCartItem({
                       children: [
                         Text(
                           'Mixed Delivery Fees',
-                          style: TextStyle(fontSize: 12, fontWeight: FontWeight.w800, color: isDark ? Colors.white : Colors.black87),
+                          style: TextStyle(
+                              fontSize: 12,
+                              fontWeight: FontWeight.w800,
+                              color: isDark ? Colors.white : Colors.black87),
                         ),
                         const SizedBox(height: 3),
                         Text(
                           'Some items have free delivery, others have shipping charges',
-                          style: TextStyle(fontSize: 10, fontWeight: FontWeight.w600, color: isDark ? Colors.grey[400] : Colors.grey[600]),
+                          style: TextStyle(
+                              fontSize: 10,
+                              fontWeight: FontWeight.w600,
+                              color:
+                                  isDark ? Colors.grey[400] : Colors.grey[600]),
                         ),
                       ],
                     ),
@@ -4902,7 +5059,8 @@ Widget _buildCartItem({
           if (hasExpressOption) ...[
             GestureDetector(
               onTap: () {
-                setState(() => _expressDeliverySelected = !_expressDeliverySelected);
+                setState(
+                    () => _expressDeliverySelected = !_expressDeliverySelected);
                 HapticFeedback.selectionClick();
               },
               child: Container(
@@ -4910,7 +5068,7 @@ Widget _buildCartItem({
                 decoration: BoxDecoration(
                   color: _expressDeliverySelected
                       ? Colors.purple.withOpacity(isDark ? 0.15 : 0.08)
-                      : (isDark ? Colors.grey[850] : Colors.grey[50]),
+                      : (isDark ? const Color(0xFF303030) : Colors.grey[50]),
                   borderRadius: BorderRadius.circular(8),
                   border: Border.all(
                     color: _expressDeliverySelected
@@ -4927,7 +5085,8 @@ Widget _buildCartItem({
                         color: Colors.purple.withOpacity(0.2),
                         borderRadius: BorderRadius.circular(6),
                       ),
-                      child: FaIcon(FontAwesomeIcons.boltLightning, size: 16, color: Colors.purple.shade700),
+                      child: FaIcon(FontAwesomeIcons.boltLightning,
+                          size: 16, color: Colors.purple.shade700),
                     ),
                     const SizedBox(width: 12),
                     Expanded(
@@ -4936,18 +5095,32 @@ Widget _buildCartItem({
                         children: [
                           Text(
                             'Express Delivery',
-                            style: TextStyle(fontSize: 13, fontWeight: FontWeight.w800, color: isDark ? Colors.white : Colors.black87),
+                            style: TextStyle(
+                                fontSize: 13,
+                                fontWeight: FontWeight.w800,
+                                color: isDark ? Colors.white : Colors.black87),
                           ),
                           const SizedBox(height: 3),
                           Text(
                             'Delivery in 1-2 business days',
-                            style: TextStyle(fontSize: 11, fontWeight: FontWeight.w600, color: isDark ? Colors.grey[400] : Colors.grey[600]),
+                            style: TextStyle(
+                                fontSize: 11,
+                                fontWeight: FontWeight.w600,
+                                color: isDark
+                                    ? Colors.grey[400]
+                                    : Colors.grey[600]),
                           ),
-                          if (shippingInfo.expressAvailableProducts.isNotEmpty) ...[
+                          if (shippingInfo
+                              .expressAvailableProducts.isNotEmpty) ...[
                             const SizedBox(height: 4),
                             Text(
                               'For: ${shippingInfo.expressAvailableProducts.take(2).join(', ')}${shippingInfo.expressAvailableProducts.length > 2 ? '...' : ''}',
-                              style: TextStyle(fontSize: 10, fontWeight: FontWeight.w600, color: isDark ? Colors.grey[500] : Colors.grey[500]),
+                              style: TextStyle(
+                                  fontSize: 10,
+                                  fontWeight: FontWeight.w600,
+                                  color: isDark
+                                      ? Colors.grey[500]
+                                      : Colors.grey[500]),
                               maxLines: 1,
                               overflow: TextOverflow.ellipsis,
                             ),
@@ -4960,7 +5133,10 @@ Widget _buildCartItem({
                       children: [
                         Text(
                           '+₹${shippingInfo.expressDeliveryFee?.toStringAsFixed(2) ?? '0.00'}',
-                          style: TextStyle(fontSize: 14, fontWeight: FontWeight.w800, color: Colors.purple.shade700),
+                          style: TextStyle(
+                              fontSize: 14,
+                              fontWeight: FontWeight.w800,
+                              color: Colors.purple.shade700),
                         ),
                         Container(
                           width: 20,
@@ -4969,12 +5145,21 @@ Widget _buildCartItem({
                           decoration: BoxDecoration(
                             shape: BoxShape.circle,
                             border: Border.all(
-                              color: _expressDeliverySelected ? Colors.purple : (isDark ? Colors.grey[600]! : Colors.grey[400]!),
+                              color: _expressDeliverySelected
+                                  ? Colors.purple
+                                  : (isDark
+                                      ? Colors.grey[600]!
+                                      : Colors.grey[400]!),
                               width: 2,
                             ),
-                            color: _expressDeliverySelected ? Colors.purple : Colors.transparent,
+                            color: _expressDeliverySelected
+                                ? Colors.purple
+                                : Colors.transparent,
                           ),
-                          child: _expressDeliverySelected ? const Icon(Icons.check, color: Colors.white, size: 14) : null,
+                          child: _expressDeliverySelected
+                              ? const Icon(Icons.check,
+                                  color: Colors.white, size: 14)
+                              : null,
                         ),
                       ],
                     ),
@@ -5008,7 +5193,7 @@ Widget _buildCartItem({
       decoration: BoxDecoration(
         color: isFree
             ? (isDark ? Colors.green[900]?.withOpacity(0.2) : Colors.green[50])
-            : (isDark ? Colors.grey[850] : Colors.grey[50]),
+            : (isDark ? const Color(0xFF303030) : Colors.grey[50]),
         borderRadius: BorderRadius.circular(8),
         border: Border.all(
           color: isFree
@@ -5035,32 +5220,47 @@ Widget _buildCartItem({
                   children: [
                     Text(
                       title,
-                      style: TextStyle(fontSize: 13, fontWeight: FontWeight.w800, color: isDark ? Colors.white : Colors.black87),
+                      style: TextStyle(
+                          fontSize: 13,
+                          fontWeight: FontWeight.w800,
+                          color: isDark ? Colors.white : Colors.black87),
                     ),
                     const SizedBox(height: 3),
                     Text(
                       subtitle,
-                      style: TextStyle(fontSize: 11, fontWeight: FontWeight.w600, color: isDark ? Colors.grey[400] : Colors.grey[600]),
+                      style: TextStyle(
+                          fontSize: 11,
+                          fontWeight: FontWeight.w600,
+                          color: isDark ? Colors.grey[400] : Colors.grey[600]),
                     ),
                   ],
                 ),
               ),
               if (isFree)
                 Container(
-                  padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 6),
+                  padding:
+                      const EdgeInsets.symmetric(horizontal: 10, vertical: 6),
                   decoration: BoxDecoration(
-                    gradient: LinearGradient(colors: [Colors.green.shade600, Colors.green.shade500]),
+                    gradient: LinearGradient(
+                        colors: [Colors.green.shade600, Colors.green.shade500]),
                     borderRadius: BorderRadius.circular(6),
                   ),
                   child: const Text(
                     'FREE',
-                    style: TextStyle(fontSize: 12, fontWeight: FontWeight.w800, color: Colors.white, letterSpacing: 0.5),
+                    style: TextStyle(
+                        fontSize: 12,
+                        fontWeight: FontWeight.w800,
+                        color: Colors.white,
+                        letterSpacing: 0.5),
                   ),
                 )
               else
                 Text(
                   '₹${fee?.toStringAsFixed(2) ?? '0.00'}',
-                  style: TextStyle(fontSize: 14, fontWeight: FontWeight.w800, color: isDark ? Colors.white : Colors.black87),
+                  style: TextStyle(
+                      fontSize: 14,
+                      fontWeight: FontWeight.w800,
+                      color: isDark ? Colors.white : Colors.black87),
                 ),
             ],
           ),
@@ -5074,12 +5274,17 @@ Widget _buildCartItem({
               ),
               child: Row(
                 children: [
-                  FaIcon(FontAwesomeIcons.boxOpen, size: 12, color: isDark ? Colors.grey[400] : Colors.grey[600]),
+                  FaIcon(FontAwesomeIcons.boxOpen,
+                      size: 12,
+                      color: isDark ? Colors.grey[400] : Colors.grey[600]),
                   const SizedBox(width: 8),
                   Expanded(
                     child: Text(
                       '${products.length} products: ${products.take(2).join(', ')}${products.length > 2 ? '...' : ''}',
-                      style: TextStyle(fontSize: 10, fontWeight: FontWeight.w600, color: isDark ? Colors.grey[400] : Colors.grey[600]),
+                      style: TextStyle(
+                          fontSize: 10,
+                          fontWeight: FontWeight.w600,
+                          color: isDark ? Colors.grey[400] : Colors.grey[600]),
                       maxLines: 1,
                       overflow: TextOverflow.ellipsis,
                     ),
@@ -5119,39 +5324,39 @@ Widget _buildCartItem({
       child: Column(
         children: [
           _priceRow('Subtotal', subtotal, isDark),
-          
           if (flatDiscount > 0) ...[
             const SizedBox(height: 10),
-            _priceRow('Flat Discount', -flatDiscount, isDark, color: Colors.green.shade600, icon: FontAwesomeIcons.tag),
+            _priceRow('Flat Discount', -flatDiscount, isDark,
+                color: Colors.green.shade600, icon: FontAwesomeIcons.tag),
           ],
-          
           if (percentageDiscount > 0) ...[
             const SizedBox(height: 10),
-            _priceRow('Percentage Discount', -percentageDiscount, isDark, color: Colors.green.shade600, icon: FontAwesomeIcons.percent),
+            _priceRow('Percentage Discount', -percentageDiscount, isDark,
+                color: Colors.green.shade600, icon: FontAwesomeIcons.percent),
           ],
-          
           if (bogoValue > 0) ...[
             const SizedBox(height: 10),
-            _priceRow('BOGO Free Item Value', -bogoValue, isDark, color: Colors.purple.shade600, icon: FontAwesomeIcons.gift),
+            _priceRow('BOGO Free Item Value', -bogoValue, isDark,
+                color: Colors.purple.shade600, icon: FontAwesomeIcons.gift),
           ],
-
           if (shippingFee > 0) ...[
             const SizedBox(height: 10),
-            _priceRow('Shipping Fee', shippingFee, isDark, color: Colors.blue.shade600, icon: FontAwesomeIcons.truck),
+            _priceRow('Shipping Fee', shippingFee, isDark,
+                color: Colors.blue.shade600, icon: FontAwesomeIcons.truck),
           ],
-
           if (expressDeliveryFee > 0) ...[
             const SizedBox(height: 10),
-            _priceRow('Express Delivery', expressDeliveryFee, isDark, color: Colors.purple.shade600, icon: FontAwesomeIcons.boltLightning),
+            _priceRow('Express Delivery', expressDeliveryFee, isDark,
+                color: Colors.purple.shade600,
+                icon: FontAwesomeIcons.boltLightning),
           ],
-          
           Padding(
             padding: const EdgeInsets.symmetric(vertical: 14),
-            child: Divider(color: isDark ? Colors.grey[800] : Colors.grey[200], height: 1),
+            child: Divider(
+                color: isDark ? Colors.grey[800] : Colors.grey[200], height: 1),
           ),
-          
-          _priceRow('Total Amount', total, isDark, isTotal: true, color: accentColor),
-          
+          _priceRow('Total Amount', total, isDark,
+              isTotal: true, color: accentColor),
           if (couponDiscount > 0) ...[
             const SizedBox(height: 14),
             Container(
@@ -5159,24 +5364,39 @@ Widget _buildCartItem({
               decoration: BoxDecoration(
                 gradient: LinearGradient(
                   colors: bogoValue > 0
-                      ? [Colors.purple.withOpacity(isDark ? 0.2 : 0.1), Colors.green.withOpacity(isDark ? 0.2 : 0.1)]
-                      : [Colors.green.withOpacity(isDark ? 0.2 : 0.1), Colors.green.withOpacity(isDark ? 0.15 : 0.05)],
+                      ? [
+                          Colors.purple.withOpacity(isDark ? 0.2 : 0.1),
+                          Colors.green.withOpacity(isDark ? 0.2 : 0.1)
+                        ]
+                      : [
+                          Colors.green.withOpacity(isDark ? 0.2 : 0.1),
+                          Colors.green.withOpacity(isDark ? 0.15 : 0.05)
+                        ],
                 ),
                 borderRadius: BorderRadius.circular(8),
-                border: Border.all(color: bogoValue > 0 ? Colors.purple.withOpacity(0.3) : Colors.green.withOpacity(0.3)),
+                border: Border.all(
+                    color: bogoValue > 0
+                        ? Colors.purple.withOpacity(0.3)
+                        : Colors.green.withOpacity(0.3)),
               ),
               child: Row(
                 children: [
                   Container(
                     padding: const EdgeInsets.all(8),
                     decoration: BoxDecoration(
-                      color: bogoValue > 0 ? Colors.purple.withOpacity(0.2) : Colors.green.withOpacity(0.2),
+                      color: bogoValue > 0
+                          ? Colors.purple.withOpacity(0.2)
+                          : Colors.green.withOpacity(0.2),
                       borderRadius: BorderRadius.circular(8),
                     ),
                     child: FaIcon(
-                      bogoValue > 0 ? FontAwesomeIcons.gift : FontAwesomeIcons.piggyBank,
+                      bogoValue > 0
+                          ? FontAwesomeIcons.gift
+                          : FontAwesomeIcons.piggyBank,
                       size: 16,
-                      color: bogoValue > 0 ? Colors.purple.shade700 : Colors.green.shade700,
+                      color: bogoValue > 0
+                          ? Colors.purple.shade700
+                          : Colors.green.shade700,
                     ),
                   ),
                   const SizedBox(width: 12),
@@ -5185,20 +5405,34 @@ Widget _buildCartItem({
                       crossAxisAlignment: CrossAxisAlignment.start,
                       children: [
                         Text(
-                          bogoValue > 0 ? '🎉 Total Savings (BOGO + Discount)' : '🎉 Total Savings',
-                          style: TextStyle(fontSize: 13, fontWeight: FontWeight.w800, color: isDark ? Colors.white : Colors.black87),
+                          bogoValue > 0
+                              ? '🎉 Total Savings (BOGO + Discount)'
+                              : '🎉 Total Savings',
+                          style: TextStyle(
+                              fontSize: 13,
+                              fontWeight: FontWeight.w800,
+                              color: isDark ? Colors.white : Colors.black87),
                         ),
                         const SizedBox(height: 2),
                         Text(
                           coupon != null ? coupon.displayText : '',
-                          style: TextStyle(fontSize: 11, fontWeight: FontWeight.w600, color: isDark ? Colors.grey[400] : Colors.grey[600]),
+                          style: TextStyle(
+                              fontSize: 11,
+                              fontWeight: FontWeight.w600,
+                              color:
+                                  isDark ? Colors.grey[400] : Colors.grey[600]),
                         ),
                       ],
                     ),
                   ),
                   Text(
                     '₹${couponDiscount.toStringAsFixed(2)}',
-                    style: TextStyle(fontSize: 18, fontWeight: FontWeight.w800, color: bogoValue > 0 ? Colors.purple.shade700 : Colors.green.shade700),
+                    style: TextStyle(
+                        fontSize: 18,
+                        fontWeight: FontWeight.w800,
+                        color: bogoValue > 0
+                            ? Colors.purple.shade700
+                            : Colors.green.shade700),
                   ),
                 ],
               ),
@@ -5225,16 +5459,25 @@ Widget _buildCartItem({
               color: Colors.green.withOpacity(0.2),
               borderRadius: BorderRadius.circular(8),
             ),
-            child: FaIcon(FontAwesomeIcons.shieldHalved, color: Colors.green.shade700, size: 18),
+            child: FaIcon(FontAwesomeIcons.shieldHalved,
+                color: Colors.green.shade700, size: 18),
           ),
           const SizedBox(width: 12),
           Expanded(
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
-                Text('100% Safe & Secure', style: TextStyle(fontWeight: FontWeight.w800, fontSize: 13, color: isDark ? Colors.white : Colors.black87)),
+                Text('100% Safe & Secure',
+                    style: TextStyle(
+                        fontWeight: FontWeight.w800,
+                        fontSize: 13,
+                        color: isDark ? Colors.white : Colors.black87)),
                 const SizedBox(height: 3),
-                Text('Your data is encrypted & protected', style: TextStyle(fontSize: 11, fontWeight: FontWeight.w600, color: isDark ? Colors.grey[400] : Colors.grey[600])),
+                Text('Your data is encrypted & protected',
+                    style: TextStyle(
+                        fontSize: 11,
+                        fontWeight: FontWeight.w600,
+                        color: isDark ? Colors.grey[400] : Colors.grey[600])),
               ],
             ),
           ),
@@ -5255,8 +5498,14 @@ Widget _buildCartItem({
       decoration: BoxDecoration(
         color: cardColor,
         borderRadius: BorderRadius.circular(12),
-        border: Border.all(color: isDark ? Colors.grey[800]! : Colors.grey[200]!, width: 1),
-        boxShadow: [BoxShadow(color: Colors.black.withOpacity(isDark ? 0.3 : 0.05), blurRadius: 8, offset: const Offset(0, 2))],
+        border: Border.all(
+            color: isDark ? Colors.grey[800]! : Colors.grey[200]!, width: 1),
+        boxShadow: [
+          BoxShadow(
+              color: Colors.black.withOpacity(isDark ? 0.3 : 0.05),
+              blurRadius: 8,
+              offset: const Offset(0, 2))
+        ],
       ),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
@@ -5265,13 +5514,21 @@ Widget _buildCartItem({
             Container(
               padding: const EdgeInsets.fromLTRB(16, 14, 16, 14),
               decoration: BoxDecoration(
-                border: Border(bottom: BorderSide(color: isDark ? Colors.grey[800]! : Colors.grey[200]!, width: 1)),
+                border: Border(
+                    bottom: BorderSide(
+                        color: isDark ? Colors.grey[800]! : Colors.grey[200]!,
+                        width: 1)),
               ),
               child: Row(
                 children: [
                   Icon(icon, color: accentColor, size: 18),
                   const SizedBox(width: 10),
-                  Text(title, style: TextStyle(fontSize: 14, fontWeight: FontWeight.w800, letterSpacing: -0.2, color: isDark ? Colors.white : Colors.black87)),
+                  Text(title,
+                      style: TextStyle(
+                          fontSize: 14,
+                          fontWeight: FontWeight.w800,
+                          letterSpacing: -0.2,
+                          color: isDark ? Colors.white : Colors.black87)),
                 ],
               ),
             ),
@@ -5281,14 +5538,18 @@ Widget _buildCartItem({
     );
   }
 
-  Widget _priceRow(String title, double value, bool isDark, {Color? color, bool isTotal = false, IconData? icon}) {
+  Widget _priceRow(String title, double value, bool isDark,
+      {Color? color, bool isTotal = false, IconData? icon}) {
     return Row(
       mainAxisAlignment: MainAxisAlignment.spaceBetween,
       children: [
         Row(
           children: [
             if (icon != null) ...[
-              FaIcon(icon, size: 12, color: color ?? (isDark ? Colors.grey[400] : Colors.grey[600])),
+              FaIcon(icon,
+                  size: 12,
+                  color:
+                      color ?? (isDark ? Colors.grey[400] : Colors.grey[600])),
               const SizedBox(width: 8),
             ],
             Text(
@@ -5296,7 +5557,9 @@ Widget _buildCartItem({
               style: TextStyle(
                 fontWeight: isTotal ? FontWeight.w800 : FontWeight.w600,
                 fontSize: isTotal ? 15 : 14,
-                color: isDark ? (isTotal ? Colors.white : Colors.grey[300]) : (isTotal ? Colors.black87 : Colors.grey[700]),
+                color: isDark
+                    ? (isTotal ? Colors.white : Colors.grey[300])
+                    : (isTotal ? Colors.black87 : Colors.grey[700]),
               ),
             ),
           ],
@@ -5318,36 +5581,55 @@ Widget _buildCartItem({
       child: Column(
         mainAxisAlignment: MainAxisAlignment.center,
         children: [
-          CircularProgressIndicator(strokeWidth: 2.5, valueColor: AlwaysStoppedAnimation<Color>(accentColor)),
+          CircularProgressIndicator(
+              strokeWidth: 2.5,
+              valueColor: AlwaysStoppedAnimation<Color>(accentColor)),
           const SizedBox(height: 16),
-          Text('Loading your cart...', style: TextStyle(fontSize: 15, fontWeight: FontWeight.w600, color: isDark ? Colors.grey[400] : Colors.grey[600])),
+          Text('Loading your cart...',
+              style: TextStyle(
+                  fontSize: 15,
+                  fontWeight: FontWeight.w600,
+                  color: isDark ? Colors.grey[400] : Colors.grey[600])),
         ],
       ),
     );
   }
 
-  Widget _buildCheckoutButton(double total, double deliveryCharge, double tax, bool isDark, Color accentColor, Color cardColor) {
+  Widget _buildCheckoutButton(double total, double deliveryCharge, double tax,
+      bool isDark, Color accentColor, Color cardColor) {
     return Container(
-      padding: EdgeInsets.fromLTRB(16, 16, 16, 16 + MediaQuery.of(context).padding.bottom),
+      padding: EdgeInsets.fromLTRB(
+          16, 16, 16, 16 + MediaQuery.of(context).padding.bottom),
       decoration: BoxDecoration(
         color: cardColor,
-        boxShadow: [BoxShadow(color: Colors.black.withOpacity(isDark ? 0.3 : 0.1), blurRadius: 10, offset: const Offset(0, -2))],
-        border: Border(top: BorderSide(color: isDark ? Colors.grey[800]! : Colors.grey[200]!)),
+        boxShadow: [
+          BoxShadow(
+              color: Colors.black.withOpacity(isDark ? 0.3 : 0.1),
+              blurRadius: 10,
+              offset: const Offset(0, -2))
+        ],
+        border: Border(
+            top: BorderSide(
+                color: isDark ? Colors.grey[800]! : Colors.grey[200]!)),
       ),
       child: ElevatedButton(
         onPressed: () {
           HapticFeedback.mediumImpact();
-          Navigator.push(context, MaterialPageRoute(builder: (_) => CheckoutScreen(
-            deliveryCharge: deliveryCharge,
-            tax: tax,
-          )));
+          Navigator.push(
+              context,
+              MaterialPageRoute(
+                  builder: (_) => CheckoutScreen(
+                        deliveryCharge: deliveryCharge,
+                        tax: tax,
+                      )));
         },
         style: ElevatedButton.styleFrom(
           minimumSize: const Size(double.infinity, 54),
           backgroundColor: accentColor,
           foregroundColor: isDark ? Colors.black : Colors.white,
           elevation: 0,
-          shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(10)),
+          shape:
+              RoundedRectangleBorder(borderRadius: BorderRadius.circular(10)),
           padding: const EdgeInsets.symmetric(vertical: 14),
         ),
         child: Row(
@@ -5355,7 +5637,11 @@ Widget _buildCartItem({
           children: [
             FaIcon(FontAwesomeIcons.arrowRight, size: 20),
             const SizedBox(width: 10),
-            Text('Continue to Checkout • ₹${total.toStringAsFixed(2)}', style: const TextStyle(fontSize: 17, fontWeight: FontWeight.w800, letterSpacing: -0.3)),
+            Text('Continue to Checkout • ₹${total.toStringAsFixed(2)}',
+                style: const TextStyle(
+                    fontSize: 17,
+                    fontWeight: FontWeight.w800,
+                    letterSpacing: -0.3)),
           ],
         ),
       ),
@@ -5371,7 +5657,9 @@ Widget _buildCartItem({
         child: FloatingActionButton(
           onPressed: () {
             HapticFeedback.selectionClick();
-            _scrollController.animateTo(0, duration: const Duration(milliseconds: 500), curve: Curves.easeOut);
+            _scrollController.animateTo(0,
+                duration: const Duration(milliseconds: 500),
+                curve: Curves.easeOut);
           },
           backgroundColor: accentColor,
           child: const Icon(Icons.arrow_upward, color: Colors.white),

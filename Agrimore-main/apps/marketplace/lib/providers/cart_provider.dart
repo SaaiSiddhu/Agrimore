@@ -1,9 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:uuid/uuid.dart';
 import 'package:agrimore_core/agrimore_core.dart';
-import 'package:agrimore_core/agrimore_core.dart';
-import 'package:agrimore_core/agrimore_core.dart';
-import 'package:agrimore_services/agrimore_services.dart';
 import 'package:agrimore_services/agrimore_services.dart';
 
 class CartProvider with ChangeNotifier {
@@ -38,7 +35,7 @@ class CartProvider with ChangeNotifier {
   CartModel? get cart => _cart;
   bool get isLoading => _isLoading;
   String? get error => _error;
-  
+
   int get itemCount => _cart?.totalItems ?? 0;
   double get subtotal => _cart?.subtotal ?? 0.0;
   bool get isEmpty => _cart?.isEmpty ?? true;
@@ -50,7 +47,7 @@ class CartProvider with ChangeNotifier {
       debugPrint('📦 Cart already listening, skipping...');
       return;
     }
-    
+
     final userId = _authService.currentUserId;
     if (userId == null) {
       debugPrint('❌ CartProvider.loadCart: No user logged in');
@@ -61,14 +58,16 @@ class CartProvider with ChangeNotifier {
 
     debugPrint('📦 CartProvider.loadCart: Loading for user $userId');
     _isListening = true; // ✅ Mark as listening
-    
+
     _databaseService.getUserCart(userId).listen(
       (cart) {
         if (cart != null) {
-          debugPrint('✅ CartProvider.loadCart: Cart loaded with ${cart.items.length} items');
+          debugPrint(
+              '✅ CartProvider.loadCart: Cart loaded with ${cart.items.length} items');
           _cart = cart;
         } else {
-          debugPrint('✅ CartProvider.loadCart: Cart is empty, initializing new cart');
+          debugPrint(
+              '✅ CartProvider.loadCart: Cart is empty, initializing new cart');
           _cart = CartModel(
             id: userId,
             userId: userId,
@@ -93,7 +92,7 @@ class CartProvider with ChangeNotifier {
     ProductModel product, {
     int quantity = 1,
     String? variant,
-    double? variantPrice,         // ✅ NEW: Variant-specific price
+    double? variantPrice, // ✅ NEW: Variant-specific price
     double? variantOriginalPrice, // ✅ NEW: Variant-specific original price
   }) async {
     try {
@@ -109,18 +108,21 @@ class CartProvider with ChangeNotifier {
 
       // ✅ Use variant price if provided, otherwise fall back to base product price
       final effectivePrice = variantPrice ?? product.salePrice;
-      final effectiveOriginalPrice = variantOriginalPrice ?? product.originalPrice;
+      final effectiveOriginalPrice =
+          variantOriginalPrice ?? product.originalPrice;
 
       // Extract variant image if variant name is provided
       String effectiveImage = product.primaryImage;
       if (variant != null && variant.isNotEmpty) {
-          final matchedVariant = product.variants.where((v) => v.name == variant).firstOrNull;
-          if (matchedVariant != null && matchedVariant.images.isNotEmpty) {
-              effectiveImage = matchedVariant.images.first;
-          }
+        final matchedVariant =
+            product.variants.where((v) => v.name == variant).firstOrNull;
+        if (matchedVariant != null && matchedVariant.images.isNotEmpty) {
+          effectiveImage = matchedVariant.images.first;
+        }
       }
 
-      print('🛒 Adding to cart: ${product.name}, variant: $variant, price: $effectivePrice, qty: $quantity');
+      debugPrint(
+          '🛒 Adding to cart: ${product.name}, variant: $variant, price: $effectivePrice, qty: $quantity');
 
       final cartItem = CartItemModel(
         id: _uuid.v4(),
@@ -133,13 +135,16 @@ class CartProvider with ChangeNotifier {
         addedAt: DateTime.now(),
         variant: variant,
         originalPrice: effectiveOriginalPrice,
-        discountPercentage: effectiveOriginalPrice != null && effectiveOriginalPrice > effectivePrice
-            ? ((effectiveOriginalPrice - effectivePrice) / effectiveOriginalPrice * 100)
+        discountPercentage: effectiveOriginalPrice != null &&
+                effectiveOriginalPrice > effectivePrice
+            ? ((effectiveOriginalPrice - effectivePrice) /
+                effectiveOriginalPrice *
+                100)
             : 0.0,
       );
 
-      List<CartItemModel> updatedItems = _cart?.items ?? [];
-      
+      List<CartItemModel> updatedItems = List<CartItemModel>.from(_cart?.items ?? []);
+
       // ✅ UPDATED: Check both productId AND variant
       final existingIndex = updatedItems.indexWhere(
         (item) => item.productId == product.id && item.variant == variant,
@@ -150,11 +155,12 @@ class CartProvider with ChangeNotifier {
         updatedItems[existingIndex] = updatedItems[existingIndex].copyWith(
           quantity: updatedItems[existingIndex].quantity + quantity,
         );
-        print('✅ Updated existing item quantity: ${updatedItems[existingIndex].quantity}');
+        debugPrint(
+            '✅ Updated existing item quantity: ${updatedItems[existingIndex].quantity}');
       } else {
         // New product or different variant - add as new item
         updatedItems.add(cartItem);
-        print('✅ Added new item to cart');
+        debugPrint('✅ Added new item to cart');
       }
 
       final updatedCart = CartModel(
@@ -171,7 +177,7 @@ class CartProvider with ChangeNotifier {
       notifyListeners();
       return true;
     } catch (e) {
-      print('❌ addItem error: $e');
+      debugPrint('❌ addItem error: $e');
       _error = e.toString();
       _isLoading = false;
       notifyListeners();
@@ -183,8 +189,9 @@ class CartProvider with ChangeNotifier {
   Future<bool> addOrderItems(List<CartItemModel> orderItems) async {
     try {
       final userId = _authService.currentUserId;
-      print('📦 [addOrderItems] Starting - userId: $userId, items: ${orderItems.length}');
-      
+      print(
+          '📦 [addOrderItems] Starting - userId: $userId, items: ${orderItems.length}');
+
       if (userId == null) {
         _error = 'Please login to add items to cart';
         print('❌ [addOrderItems] Error: User not logged in');
@@ -204,21 +211,23 @@ class CartProvider with ChangeNotifier {
 
       print('📦 [addOrderItems] Fetching current cart from database...');
       List<CartItemModel> updatedItems = [];
-      
+
       try {
         final currentCart = await _databaseService.getUserCart(userId).first;
         if (currentCart != null) {
           updatedItems = List.from(currentCart.items);
-          print('✅ [addOrderItems] Retrieved ${updatedItems.length} existing items');
+          print(
+              '✅ [addOrderItems] Retrieved ${updatedItems.length} existing items');
         } else {
           print('📦 [addOrderItems] No existing cart, starting fresh');
           updatedItems = [];
         }
       } catch (e) {
-        print('⚠️  [addOrderItems] Could not fetch current cart, starting fresh: $e');
+        print(
+            '⚠️  [addOrderItems] Could not fetch current cart, starting fresh: $e');
         updatedItems = [];
       }
-      
+
       int addedCount = 0;
       List<String> addedProductNames = [];
 
@@ -238,11 +247,14 @@ class CartProvider with ChangeNotifier {
             discountPercentage: orderItem.discountPercentage,
           );
 
-          print('📦 [addOrderItems] Processing: ${cartItem.productName} (variant: ${cartItem.variant}, Qty: ${cartItem.quantity})');
+          print(
+              '📦 [addOrderItems] Processing: ${cartItem.productName} (variant: ${cartItem.variant}, Qty: ${cartItem.quantity})');
 
           // ✅ UPDATED: Check both productId AND variant
           final existingIndex = updatedItems.indexWhere(
-            (item) => item.productId == cartItem.productId && item.variant == cartItem.variant,
+            (item) =>
+                item.productId == cartItem.productId &&
+                item.variant == cartItem.variant,
           );
 
           if (existingIndex != -1) {
@@ -250,7 +262,8 @@ class CartProvider with ChangeNotifier {
             updatedItems[existingIndex] = updatedItems[existingIndex].copyWith(
               quantity: oldQty + cartItem.quantity,
             );
-            print('✅ [addOrderItems] Updated existing item: +${cartItem.quantity} qty (was $oldQty)');
+            print(
+                '✅ [addOrderItems] Updated existing item: +${cartItem.quantity} qty (was $oldQty)');
           } else {
             updatedItems.add(cartItem);
             print('✅ [addOrderItems] Added new item to cart');
@@ -284,14 +297,15 @@ class CartProvider with ChangeNotifier {
 
       print('📦 [addOrderItems] Saving to database...');
       await _databaseService.updateCart(userId, updatedCart);
-      
-      print('✅ [addOrderItems] Successfully saved ${addedProductNames.length} items: $addedProductNames');
+
+      print(
+          '✅ [addOrderItems] Successfully saved ${addedProductNames.length} items: $addedProductNames');
 
       _cart = updatedCart;
       _isLoading = false;
       _error = null;
       notifyListeners();
-      
+
       return true;
     } catch (e) {
       print('❌ [addOrderItems] FATAL ERROR: $e');
@@ -327,7 +341,7 @@ class CartProvider with ChangeNotifier {
 
       // ✅ Immediate local update (no shimmer)
       List<CartItemModel> updatedItems = List.from(_cart?.items ?? []);
-      
+
       // ✅ UPDATED: Remove based on productId AND variant
       if (variant != null && variant.isNotEmpty) {
         updatedItems.removeWhere(
@@ -335,7 +349,9 @@ class CartProvider with ChangeNotifier {
         );
       } else {
         updatedItems.removeWhere(
-          (item) => item.productId == productId && (item.variant == null || item.variant!.isEmpty),
+          (item) =>
+              item.productId == productId &&
+              (item.variant == null || item.variant!.isEmpty),
         );
       }
 
@@ -356,7 +372,7 @@ class CartProvider with ChangeNotifier {
 
       return true;
     } catch (e) {
-      print('❌ removeItem error: $e');
+      debugPrint('❌ removeItem error: $e');
       _error = e.toString();
       notifyListeners();
       return false;
@@ -364,7 +380,8 @@ class CartProvider with ChangeNotifier {
   }
 
   // ✅ UPDATED: updateQuantity now supports variant - NO LOADING STATE for instant update
-  Future<bool> updateQuantity(String productId, int quantity, {String? variant}) async {
+  Future<bool> updateQuantity(String productId, int quantity,
+      {String? variant}) async {
     try {
       final userId = _authService.currentUserId;
       if (userId == null) return false;
@@ -375,7 +392,7 @@ class CartProvider with ChangeNotifier {
 
       // ✅ Immediate local update (no shimmer)
       List<CartItemModel> updatedItems = List.from(_cart?.items ?? []);
-      
+
       // ✅ UPDATED: Find item by productId AND variant
       int index = -1;
       if (variant != null && variant.isNotEmpty) {
@@ -384,7 +401,9 @@ class CartProvider with ChangeNotifier {
         );
       } else {
         index = updatedItems.indexWhere(
-          (item) => item.productId == productId && (item.variant == null || item.variant!.isEmpty),
+          (item) =>
+              item.productId == productId &&
+              (item.variant == null || item.variant!.isEmpty),
         );
       }
 
@@ -419,7 +438,8 @@ class CartProvider with ChangeNotifier {
   // ✅ UPDATED: incrementQuantity now supports variant
   Future<bool> incrementQuantity(String productId, {String? variant}) async {
     final currentQuantity = getItemQuantity(productId, variant: variant);
-    return await updateQuantity(productId, currentQuantity + 1, variant: variant);
+    return await updateQuantity(productId, currentQuantity + 1,
+        variant: variant);
   }
 
   // ✅ UPDATED: decrementQuantity now supports variant
@@ -428,7 +448,8 @@ class CartProvider with ChangeNotifier {
     if (currentQuantity <= 1) {
       return await removeItem(productId, variant: variant);
     }
-    return await updateQuantity(productId, currentQuantity - 1, variant: variant);
+    return await updateQuantity(productId, currentQuantity - 1,
+        variant: variant);
   }
 
   Future<bool> clearCart() async {
@@ -447,7 +468,7 @@ class CartProvider with ChangeNotifier {
       notifyListeners();
       return true;
     } catch (e) {
-      print('❌ clearCart error: $e');
+      debugPrint('❌ clearCart error: $e');
       _error = e.toString();
       _isLoading = false;
       notifyListeners();
@@ -460,7 +481,13 @@ class CartProvider with ChangeNotifier {
     double deliveryCharge = 0.0,
     double tax = 0.0,
   }) {
-    return subtotal - discount + deliveryCharge + tax;
+    final safeSubtotal = items.fold<double>(
+      0.0,
+      (sum, item) => sum + (item.price * item.quantity),
+    );
+    final safeDiscount = discount.clamp(0.0, safeSubtotal).toDouble();
+    final total = safeSubtotal - safeDiscount + deliveryCharge + tax;
+    return total.clamp(0.0, double.infinity).toDouble();
   }
 
   double getTotalSavings() {
@@ -477,12 +504,16 @@ class CartProvider with ChangeNotifier {
   bool isInCart(String productId, {String? variant}) {
     if (variant != null && variant.isNotEmpty) {
       return _cart?.items.any(
-        (item) => item.productId == productId && item.variant == variant,
-      ) ?? false;
+            (item) => item.productId == productId && item.variant == variant,
+          ) ??
+          false;
     }
     return _cart?.items.any(
-      (item) => item.productId == productId && (item.variant == null || item.variant!.isEmpty),
-    ) ?? false;
+          (item) =>
+              item.productId == productId &&
+              (item.variant == null || item.variant!.isEmpty),
+        ) ??
+        false;
   }
 
   // ✅ UPDATED: getItemQuantity now checks variant
@@ -495,7 +526,9 @@ class CartProvider with ChangeNotifier {
         );
       } else {
         item = _cart?.items.firstWhere(
-          (item) => item.productId == productId && (item.variant == null || item.variant!.isEmpty),
+          (item) =>
+              item.productId == productId &&
+              (item.variant == null || item.variant!.isEmpty),
         );
       }
       return item?.quantity ?? 0;
@@ -513,7 +546,9 @@ class CartProvider with ChangeNotifier {
         );
       }
       return _cart?.items.firstWhere(
-        (item) => item.productId == productId && (item.variant == null || item.variant!.isEmpty),
+        (item) =>
+            item.productId == productId &&
+            (item.variant == null || item.variant!.isEmpty),
       );
     } catch (e) {
       return null;

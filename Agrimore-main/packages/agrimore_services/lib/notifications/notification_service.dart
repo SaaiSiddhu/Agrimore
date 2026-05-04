@@ -29,7 +29,9 @@ Future<void> firebaseMessagingBackgroundHandler(RemoteMessage message) async {
 
 class NotificationService {
   static String? _pendingFCMToken;
-  static final GlobalKey<NavigatorState> navigatorKey = GlobalKey<NavigatorState>();
+  /// Set this from the app's global navigatorKey (e.g., from app.dart)
+  /// so notification taps can navigate correctly.
+  static GlobalKey<NavigatorState> navigatorKey = GlobalKey<NavigatorState>();
 
   static Future<void> initialize() async {
     if (kIsWeb) {
@@ -168,6 +170,7 @@ class NotificationService {
     if (_pendingFCMToken == null) return;
     try {
       await FirebaseFirestore.instance.collection('users').doc(userId).set({
+        'fcmToken': _pendingFCMToken!,
         'fcmTokens': FieldValue.arrayUnion([_pendingFCMToken!]),
         'lastTokenUpdate': FieldValue.serverTimestamp()
       }, SetOptions(merge: true));
@@ -411,6 +414,17 @@ class NotificationService {
         case 'wishlist':
           debugPrint('❤️ Navigating to wishlist');
           Navigator.of(context).pushNamed('/wishlist');
+          break;
+
+        case 'offer':
+        case 'offers':
+          debugPrint('🎁 Navigating to offers');
+          Navigator.of(context).pushNamed('/offers');
+          break;
+
+        case 'notifications':
+          debugPrint('🔔 Navigating to notifications');
+          Navigator.of(context).pushNamed('/notifications');
           break;
 
         default:

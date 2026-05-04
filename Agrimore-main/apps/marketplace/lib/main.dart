@@ -9,8 +9,10 @@ import 'package:flutter_web_plugins/url_strategy.dart';
 import 'firebase_options.dart';
 import 'app/app.dart';
 
+import 'package:firebase_messaging/firebase_messaging.dart';
 import 'package:agrimore_services/agrimore_services.dart' hide DefaultFirebaseOptions;
 
+import 'app/routes.dart';
 import 'providers/theme_provider.dart';
 import 'providers/auth_provider.dart' as app_auth;
 import 'providers/product_provider.dart';
@@ -50,6 +52,10 @@ void main() async {
   } catch (e) {
     debugPrint('❌ Firebase error: $e');
   }
+
+  // Share the app's global navigatorKey with NotificationService
+  // so notification taps route to the correct pages
+  NotificationService.navigatorKey = navigatorKey;
 
   // Set system UI immediately (no await needed)
   if (!kIsWeb) {
@@ -126,7 +132,7 @@ void _initializeDeferredWebServices() {
     }
     
     // FCM (fire-and-forget - don't block on network errors)
-    FCMService().initialize().catchError((e) {
+    FCMService().initialize(onNotificationTap: _handleNotificationTap).catchError((e) {
       debugPrint('⚠️ FCM error: $e');
       return null;
     });
@@ -161,11 +167,66 @@ void _initializeDeferredMobileServices() {
     }
     
     // FCM (fire-and-forget)
-    FCMService().initialize().catchError((e) {
+    FCMService().initialize(onNotificationTap: _handleNotificationTap).catchError((e) {
       debugPrint('⚠️ FCM error: $e');
       return null;
     });
+
+    // Handle notification that launched the app from terminated state
+    if (!kIsWeb) {
+      try {
+        final initialMessage = await FirebaseMessaging.instance.getInitialMessage();
+        if (initialMessage != null) {
+          debugPrint('📱 App launched from notification (terminated state)');
+          // Delay to allow navigator to be ready
+          Future.delayed(const Duration(seconds: 2), () {
+            _handleNotificationTap(initialMessage);
+          });
+        }
+      } catch (e) {
+        debugPrint('⚠️ getInitialMessage error: $e');
+      }
+    }
   });
+}
+
+// ============================================
+// HANDLE NOTIFICATION TAP
+// ============================================
+void _handleNotificationTap(RemoteMessage message) {
+  debugPrint('📱 Handling Notification Tap: ${message.data}');
+  
+  if (navigatorKey.currentState == null) {
+    debugPrint('⚠️ Navigator is not ready to route notification');
+    return;
+  }
+  
+  final type = message.data['type'];
+  final orderId = message.data['orderId'];
+  final productId = message.data['productId'];
+  
+  if (type == 'order' || type == 'order_update') {
+    if (orderId != null) {
+      navigatorKey.currentState!.pushNamed(
+        AppRoutes.orderDetails, 
+        arguments: {'orderId': orderId}
+      );
+    } else {
+      navigatorKey.currentState!.pushNamed(AppRoutes.orders);
+    }
+  } else if (type == 'product') {
+    if (productId != null) {
+      navigatorKey.currentState!.pushNamed(
+        AppRoutes.productDetails,
+        arguments: {'productId': productId}
+      );
+    }
+  } else if (type == 'offer') {
+    navigatorKey.currentState!.pushNamed(AppRoutes.offers); 
+  } else {
+    // general or fallback
+    navigatorKey.currentState!.pushNamed(AppRoutes.main);
+  }
 }
 
 // ============================================

@@ -301,7 +301,7 @@ class _FilterDrawerState extends State<FilterDrawer>
                   decoration: BoxDecoration(
                     color: isSelected
                         ? accentColor
-                        : (isDark ? Colors.grey[850] : Colors.grey[50]),
+                        : (isDark ? const Color(0xFF303030) : Colors.grey[50]),
                     borderRadius: BorderRadius.circular(10),
                     border: Border.all(
                       color: isSelected
@@ -414,7 +414,7 @@ class _FilterDrawerState extends State<FilterDrawer>
           decoration: BoxDecoration(
             color: isSelected
                 ? accentColor.withOpacity(0.1)
-                : (isDark ? Colors.grey[850] : Colors.grey[50]),
+                : (isDark ? const Color(0xFF303030) : Colors.grey[50]),
             borderRadius: BorderRadius.circular(10),
             border: Border.all(
               color: isSelected

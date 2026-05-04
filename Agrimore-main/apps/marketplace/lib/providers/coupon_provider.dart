@@ -1,7 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:agrimore_core/agrimore_core.dart';
-import 'package:agrimore_core/agrimore_core.dart';
 
 class CouponProvider with ChangeNotifier {
   final FirebaseFirestore _firestore = FirebaseFirestore.instance;
@@ -121,6 +120,8 @@ class CouponProvider with ChangeNotifier {
       return _appliedCoupon!.calculateDiscount(orderAmount, cartItems: items);
     } catch (e) {
       debugPrint('❌ calculateDiscount error: $e');
+      _error = 'Coupon calculation failed. Please try removing and re-applying.';
+      notifyListeners();
       return 0;
     }
   }

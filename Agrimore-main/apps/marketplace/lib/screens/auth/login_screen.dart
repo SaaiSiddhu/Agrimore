@@ -6,12 +6,13 @@ import 'dart:ui';
 import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
-import 'package:firebase_auth/firebase_auth.dart';
+import 'package:firebase_auth/firebase_auth.dart' hide AuthProvider;
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:agrimore_ui/agrimore_ui.dart';
 import 'package:agrimore_services/agrimore_services.dart';
 import '../../app/routes.dart';
-
+import 'package:provider/provider.dart';
+import '../../providers/auth_provider.dart';
 
 class LoginScreen extends StatefulWidget {
   const LoginScreen({Key? key}) : super(key: key);
@@ -145,11 +146,21 @@ class _LoginScreenState extends State<LoginScreen>
     try {
       debugPrint('🔐 Attempting login for: ${_emailController.text.trim()}');
 
-      final authService = AuthService();
-      final userProfile = await authService.signInWithEmail(
+      final authProvider = Provider.of<AuthProvider>(context, listen: false);
+      final success = await authProvider.signInWithEmail(
         email: _emailController.text.trim().toLowerCase(),
         password: _passwordController.text.trim(),
       );
+
+      if (!success) {
+        setState(() {
+          _errorMessage = authProvider.error;
+        });
+        return;
+      }
+
+      final userProfile = authProvider.currentUser;
+      if (userProfile == null) return;
 
       debugPrint('✅ Login successful: ${userProfile.uid}');
 
@@ -170,53 +181,15 @@ class _LoginScreenState extends State<LoginScreen>
         return;
       }
 
-      // ── STEP 2: Check if address exists ─────────────────────
-      try {
-        final snapshot = await FirebaseFirestore.instance
-            .collection('users')
-            .doc(userProfile.uid)
-            .collection('addresses')
-            .limit(1)
-            .get();
-
-        if (!mounted) return;
-
-        if (snapshot.docs.isEmpty) {
-          debugPrint('📍 No address → /onboarding-address');
-          WidgetsBinding.instance.addPostFrameCallback((_) {
-            if (mounted) {
-              Navigator.of(context).pushNamedAndRemoveUntil(
-                '/onboarding-address',
-                (route) => false,
-              );
-            }
-          });
-        } else {
-          debugPrint('🏠 All good → /main');
-          WidgetsBinding.instance.addPostFrameCallback((_) {
-            if (mounted) {
-              Navigator.of(context).pushNamedAndRemoveUntil(
-                '/main',
-                (route) => false,
-              );
-            }
-          });
+      // ── STEP 2: Go directly to main screen ─────────────────────
+      debugPrint('🏠 Proceeding to → /main');
+      WidgetsBinding.instance.addPostFrameCallback((_) {
+        if (mounted) {
+          Navigator.of(context).pushNamedAndRemoveUntil(
+            '/main',
+            (route) => false,
+          );
         }
-      } catch (_) {
-        // Address check failed non-critically → go home anyway
-        WidgetsBinding.instance.addPostFrameCallback((_) {
-          if (mounted) {
-            Navigator.of(context).pushNamedAndRemoveUntil(
-              '/main',
-              (route) => false,
-            );
-          }
-        });
-      }
-    } on FirebaseAuthException catch (e) {
-      debugPrint('❌ FirebaseAuthException: ${e.message}');
-      setState(() {
-        _errorMessage = e.message;
       });
     } catch (e) {
       debugPrint('❌ Login error: $e');
@@ -238,8 +211,18 @@ class _LoginScreenState extends State<LoginScreen>
     });
 
     try {
-      final authService = AuthService();
-      final userProfile = await authService.signInWithGoogle();
+      final authProvider = Provider.of<AuthProvider>(context, listen: false);
+      final success = await authProvider.signInWithGoogle();
+      
+      if (!success) {
+        setState(() {
+          _errorMessage = authProvider.error;
+        });
+        return;
+      }
+
+      final userProfile = authProvider.currentUser;
+      if (userProfile == null) return;
       
       if (!mounted) return;
 
@@ -258,51 +241,15 @@ class _LoginScreenState extends State<LoginScreen>
         return;
       }
 
-      // ── STEP 2: Check if address exists ─────────────────────
-      try {
-        final snapshot = await FirebaseFirestore.instance
-            .collection('users')
-            .doc(userProfile.uid)
-            .collection('addresses')
-            .limit(1)
-            .get();
-
-        if (!mounted) return;
-
-        if (snapshot.docs.isEmpty) {
-          debugPrint('📍 No address → /onboarding-address');
-          WidgetsBinding.instance.addPostFrameCallback((_) {
-            if (mounted) {
-              Navigator.of(context).pushNamedAndRemoveUntil(
-                '/onboarding-address',
-                (route) => false,
-              );
-            }
-          });
-        } else {
-          debugPrint('🏠 All good → /main');
-          WidgetsBinding.instance.addPostFrameCallback((_) {
-            if (mounted) {
-              Navigator.of(context).pushNamedAndRemoveUntil(
-                '/main',
-                (route) => false,
-              );
-            }
-          });
+      // ── STEP 2: Go directly to main screen ─────────────────────
+      debugPrint('🏠 Proceeding to → /main');
+      WidgetsBinding.instance.addPostFrameCallback((_) {
+        if (mounted) {
+          Navigator.of(context).pushNamedAndRemoveUntil(
+            '/main',
+            (route) => false,
+          );
         }
-      } catch (_) {
-        WidgetsBinding.instance.addPostFrameCallback((_) {
-          if (mounted) {
-            Navigator.of(context).pushNamedAndRemoveUntil(
-              '/main',
-              (route) => false,
-            );
-          }
-        });
-      }
-    } on AuthException catch (e) {
-      setState(() {
-        _errorMessage = e.message;
       });
     } catch (e) {
       setState(() {
@@ -359,10 +306,10 @@ class _LoginScreenState extends State<LoginScreen>
                 });
                 
                 try {
-                  final authService = AuthService();
-                  await authService.sendPasswordResetEmail(email);
+                  final authProvider = Provider.of<AuthProvider>(context, listen: false);
+                  final success = await authProvider.sendPasswordResetEmail(email);
                   
-                  if (mounted) {
+                  if (success && mounted) {
                     ScaffoldMessenger.of(context).showSnackBar(
                       SnackBar(
                         content: Text('Password reset link sent to $email'),

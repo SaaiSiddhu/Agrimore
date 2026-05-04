@@ -377,7 +377,7 @@ class _CategoriesScreenState extends State<CategoriesScreen>
               ),
               delegate: SliverChildBuilderDelegate(
                 (context, index) => Shimmer.fromColors(
-                  baseColor: isDark ? Colors.grey[850]! : Colors.grey[300]!,
+                  baseColor: isDark ? const Color(0xFF303030) : Colors.grey[300]!,
                   highlightColor:
                       isDark ? Colors.grey[800]! : Colors.grey[100]!,
                   child: Container(
@@ -454,7 +454,7 @@ class _CategoriesScreenState extends State<CategoriesScreen>
 
   Widget _buildShimmerLoading(bool isDark) {
     return Shimmer.fromColors(
-      baseColor: isDark ? Colors.grey[850]! : Colors.grey[300]!,
+      baseColor: isDark ? const Color(0xFF303030) : Colors.grey[300]!,
       highlightColor: isDark ? Colors.grey[800]! : Colors.grey[100]!,
       child: Row(
         children: [
@@ -778,7 +778,7 @@ class _EnhancedSidebarItemState extends State<_EnhancedSidebarItem>
                           height: 44,
                           decoration: BoxDecoration(
                             color: widget.isDark
-                                ? Colors.grey[850]
+                                ? const Color(0xFF303030)
                                 : (widget.isSelected
                                     ? widget.accentColor.withOpacity(0.1)
                                     : const Color(0xFFF5F5F5)),

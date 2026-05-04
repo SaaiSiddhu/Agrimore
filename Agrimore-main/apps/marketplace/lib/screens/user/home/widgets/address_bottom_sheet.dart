@@ -3,7 +3,11 @@ import 'package:flutter/services.dart';
 import 'package:provider/provider.dart';
 import 'package:geolocator/geolocator.dart';
 import 'package:geocoding/geocoding.dart';
+import 'package:http/http.dart' as http;
+import 'dart:convert';
 import 'package:agrimore_ui/agrimore_ui.dart';
+import 'package:agrimore_core/agrimore_core.dart';
+import 'package:agrimore_services/agrimore_services.dart';
 import '../../../../providers/address_provider.dart';
 import '../../../../providers/theme_provider.dart';
 import '../../../../app/routes.dart';
@@ -71,47 +75,137 @@ class _AddressBottomSheetState extends State<AddressBottomSheet> {
         return;
       }
 
-      final pos = await Geolocator.getCurrentPosition(
-        desiredAccuracy: LocationAccuracy.high,
-        timeLimit: const Duration(seconds: 10),
-      );
+      Position? pos;
+      try {
+        pos = await Geolocator.getLastKnownPosition();
+      } catch (_) {}
 
-      final placemarks = await placemarkFromCoordinates(pos.latitude, pos.longitude);
+      if (pos == null) {
+        pos = await Geolocator.getCurrentPosition(
+          desiredAccuracy: LocationAccuracy.low,
+          timeLimit: const Duration(seconds: 10),
+        );
+      }
+
+      List<Placemark> placemarks = [];
+      try {
+        placemarks = await placemarkFromCoordinates(pos.latitude, pos.longitude);
+      } catch (_) {
+        // Geocoding might fail on web or without internet
+      }
       
-      if (mounted && placemarks.isNotEmpty) {
+      String locationText = 'Current Location';
+      String city = '';
+      String state = '';
+      String pincode = '';
+      String addressLine1 = '';
+
+      if (placemarks.isNotEmpty) {
         final place = placemarks.first;
-        final locationText = [
+        locationText = [
           place.subLocality,
           place.locality,
           place.administrativeArea,
         ].where((e) => e != null && e.isNotEmpty).join(', ');
         
+        addressLine1 = [
+          place.street,
+          place.subLocality,
+        ].where((e) => e != null && e.isNotEmpty).join(', ');
+        city = place.locality ?? '';
+        state = place.administrativeArea ?? '';
+        pincode = place.postalCode ?? '';
+      } else {
+        // Fallback to HTTP Geocoding
+        try {
+          const apiKey = 'AIzaSyCKL5RYJ39x93yz1Km59KwpYybRod3IOeg';
+          final url = 'https://maps.googleapis.com/maps/api/geocode/json?latlng=${pos.latitude},${pos.longitude}&key=$apiKey&language=en';
+          final response = await http.get(Uri.parse(url)).timeout(const Duration(seconds: 10));
+          
+          if (response.statusCode == 200) {
+            final data = jsonDecode(response.body);
+            if (data['status'] == 'OK' && data['results'] != null && (data['results'] as List).isNotEmpty) {
+              final components = data['results'][0]['address_components'] as List;
+              
+              for (final c in components) {
+                final types = (c['types'] as List).cast<String>();
+                if (types.contains('locality')) city = c['long_name'];
+                else if (types.contains('administrative_area_level_1')) state = c['long_name'];
+                else if (types.contains('postal_code')) pincode = c['long_name'];
+                else if (types.contains('sublocality_level_1')) addressLine1 = c['long_name'];
+              }
+              
+              final formattedAddress = data['results'][0]['formatted_address'] as String;
+              if (formattedAddress.isNotEmpty) {
+                final parts = formattedAddress.split(',');
+                locationText = parts.take(2).join(',').trim();
+                if (addressLine1.isEmpty) addressLine1 = locationText;
+              }
+            }
+          }
+        } catch (_) {}
+      }
+      
+      if (mounted) {
+        // ✅ Stay on the same page — show detected location
         setState(() {
           _currentLocationText = locationText;
           _isLoadingCurrentLocation = false;
         });
 
-        // Update app bar location by navigating to add address
-        if (mounted) {
-          Navigator.pop(context);
-          Navigator.pushNamed(
-            context, 
-            AppRoutes.addAddress,
-            arguments: {
-              'latitude': pos.latitude,
-              'longitude': pos.longitude,
-              'address': locationText,
-              'city': place.locality ?? '',
-              'state': place.administrativeArea ?? '',
-              'pincode': place.postalCode ?? '',
-            },
-          );
+        // Check if a saved address is near this location
+        final addressProvider = Provider.of<AddressProvider>(context, listen: false);
+        final savedAddresses = addressProvider.addresses;
+        
+        AddressModel? nearbyAddress;
+        for (final addr in savedAddresses) {
+          if (addr.latitude != null && addr.longitude != null) {
+            final distance = Geolocator.distanceBetween(
+              pos.latitude, pos.longitude,
+              addr.latitude!, addr.longitude!,
+            );
+            if (distance < 500) { // Within 500 meters
+              nearbyAddress = addr;
+              break;
+            }
+          }
+        }
+
+        if (nearbyAddress != null) {
+          // ✅ Found a nearby saved address — set it as default
+          debugPrint('📍 Found nearby saved address: ${nearbyAddress.addressLine1}');
+          addressProvider.setDefaultAddress(nearbyAddress.id);
+          if (mounted) Navigator.pop(context);
+        } else {
+          // ✅ No saved address nearby — auto-add this as a new address
+          debugPrint('📍 No nearby address found, creating new one from GPS');
+          final userId = AuthService().currentUserId;
+          if (userId != null) {
+            final newAddress = AddressModel(
+              id: '',
+              userId: userId,
+              name: 'Current Location',
+              phone: '',
+              addressLine1: addressLine1.isNotEmpty ? addressLine1 : locationText,
+              addressLine2: '',
+              city: city,
+              state: state,
+              zipcode: pincode,
+              country: 'India',
+              latitude: pos.latitude,
+              longitude: pos.longitude,
+              isDefault: true,
+              addressType: 'other',
+            );
+            await addressProvider.addAddress(newAddress);
+          }
+          if (mounted) Navigator.pop(context);
         }
       }
     } catch (e) {
       if (mounted) {
         setState(() {
-          _currentLocationError = 'Failed to get location';
+          _currentLocationError = 'Failed to get GPS location';
           _isLoadingCurrentLocation = false;
         });
       }
@@ -198,14 +292,15 @@ class _AddressBottomSheetState extends State<AddressBottomSheet> {
                   
                   const SizedBox(height: 6),
                   
-                  // Add New Address
+                  // Add New Address → Profile → Saved Addresses page
                   _buildCompactTile(
                     icon: Icons.add_location_alt_rounded,
                     iconColor: accentColor,
                     title: 'Add new address',
+                    subtitle: 'Go to Profile → Delivery Address',
                     onTap: () {
                       Navigator.pop(context);
-                      Navigator.pushNamed(context, AppRoutes.addAddress);
+                      Navigator.pushNamed(context, AppRoutes.savedAddresses);
                     },
                     isDark: isDark,
                   ),
@@ -284,7 +379,7 @@ class _AddressBottomSheetState extends State<AddressBottomSheet> {
         child: Container(
           padding: const EdgeInsets.symmetric(vertical: 10, horizontal: 10),
           decoration: BoxDecoration(
-            color: isDark ? Colors.grey[850] : Colors.grey[50],
+            color: isDark ? const Color(0xFF303030) : Colors.grey[50],
             borderRadius: BorderRadius.circular(10),
             border: Border.all(color: isDark ? Colors.grey[800]! : Colors.grey[200]!),
           ),
@@ -344,7 +439,7 @@ class _AddressBottomSheetState extends State<AddressBottomSheet> {
         margin: const EdgeInsets.only(bottom: 8),
         padding: const EdgeInsets.all(10),
         decoration: BoxDecoration(
-          color: address.isDefault ? accentColor.withOpacity(0.08) : (isDark ? Colors.grey[850] : Colors.white),
+          color: address.isDefault ? accentColor.withOpacity(0.08) : (isDark ? const Color(0xFF303030) : Colors.white),
           borderRadius: BorderRadius.circular(10),
           border: Border.all(
             color: address.isDefault ? accentColor.withOpacity(0.3) : (isDark ? Colors.grey[800]! : Colors.grey[200]!),

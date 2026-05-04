@@ -41,7 +41,8 @@ class DatabaseService {
   // ============================================
 
   // Get all products (NO INDEX REQUIRED unless using location)
-  Future<List<ProductModel>> getAllProducts({String? location}) async {
+  Future<List<ProductModel>> getAllProducts(
+      {String? location, int? limit}) async {
     try {
       debugPrint('🔍 Loading all products...');
 
@@ -52,6 +53,10 @@ class DatabaseService {
       // if (location != null && location.isNotEmpty) {
       //   query = query.where('location', isEqualTo: location);
       // }
+
+      if (limit != null && limit > 0) {
+        query = query.limit(limit);
+      }
 
       final snapshot = await query.get();
 

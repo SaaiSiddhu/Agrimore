@@ -1,27 +1,21 @@
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
-import 'package:flutter/foundation.dart' show kIsWeb;
 import 'package:provider/provider.dart';
 import 'package:firebase_auth/firebase_auth.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:font_awesome_flutter/font_awesome_flutter.dart';
-import 'package:razorpay_flutter/razorpay_flutter.dart';
 import 'package:url_launcher/url_launcher.dart';
 
 import 'package:agrimore_ui/agrimore_ui.dart';
-import 'package:agrimore_core/agrimore_core.dart';
 import 'package:agrimore_core/agrimore_core.dart';
 import '../../../providers/cart_provider.dart';
 import '../../../providers/coupon_provider.dart';
 import '../../../providers/theme_provider.dart';
 import '../../../providers/wallet_provider.dart';
-import 'package:agrimore_services/agrimore_services.dart';
+import 'package:agrimore_services/settings/delivery_slot_service.dart';
+import '../../../services/razorpay_service.dart';
 import 'widgets/checkout_steps.dart';
 import 'order_success_screen.dart';
-
-// Web-specific Razorpay import
-import '../../../services/razorpay_web.dart'
-    if (dart.library.io) '../../../services/razorpay_stub.dart';
 
 class PaymentMethodScreen extends StatefulWidget {
   final AddressModel selectedAddress;
@@ -42,8 +36,7 @@ class PaymentMethodScreen extends StatefulWidget {
 }
 
 class _PaymentMethodScreenState extends State<PaymentMethodScreen> {
-  RazorpayCustomService? _razorpayService;
-  RazorpayWebService? _razorpayWebService;
+  RazorpayService? _razorpayService;
   bool _isProcessing = false;
   String _selectedPaymentMethod = 'razorpay';
 
@@ -103,30 +96,9 @@ class _PaymentMethodScreenState extends State<PaymentMethodScreen> {
   }
 
   void _initializePaymentServices() {
-    if (kIsWeb) {
-      // Initialize web Razorpay
-      _razorpayWebService = RazorpayWebService();
-      _razorpayWebService!.initialize(
-        onSuccess: (paymentId, orderId, signature) {
-          _createOrder(
-            razorpayPaymentId: paymentId,
-            razorpayOrderId: orderId,
-            razorpaySignature: signature,
-          );
-        },
-        onFailure: (error) {
-          setState(() => _isProcessing = false);
-          _showSnackBar('Payment Failed: $error', isError: true);
-        },
-      );
-      return;
-    }
-
-    _razorpayService = RazorpayCustomService();
-
+    _razorpayService = RazorpayService();
     _razorpayService!.initialize(
       onSuccess: (paymentId, orderId, signature) {
-        // Create order with the payment details directly
         _createOrder(
           razorpayPaymentId: paymentId,
           razorpayOrderId: orderId,
@@ -137,25 +109,9 @@ class _PaymentMethodScreenState extends State<PaymentMethodScreen> {
         setState(() => _isProcessing = false);
         _showSnackBar('Payment Failed: $error', isError: true);
       },
-    );
-  }
-
-  void _handlePaymentSuccess(PaymentSuccessResponse response) {
-    debugPrint('âœ… Payment successful: ${response.paymentId}');
-    _createOrder(
-      razorpayPaymentId: response.paymentId,
-      razorpayOrderId: response.orderId,
-      razorpaySignature: response.signature,
-    );
-  }
-
-  void _handlePaymentFailure(PaymentFailureResponse response) {
-    if (!mounted) return;
-
-    setState(() => _isProcessing = false);
-    _showSnackBar(
-      'Payment Failed: ${response.message ?? "Unknown error"}',
-      isError: true,
+      onDismiss: () {
+        setState(() => _isProcessing = false);
+      },
     );
   }
 
@@ -182,6 +138,18 @@ class _PaymentMethodScreenState extends State<PaymentMethodScreen> {
         orderAmount: cartProvider.subtotal,
         items: cartProvider.items,
       );
+
+      if (_selectedPaymentMethod != 'cod') {
+        final verified = await _razorpayService?.verifyPayment(
+              paymentId: razorpayPaymentId ?? '',
+              orderId: razorpayOrderId ?? '',
+              signature: razorpaySignature ?? '',
+            ) ??
+            false;
+        if (!verified) {
+          throw Exception('Payment verification failed');
+        }
+      }
 
       final createdOrders = await _createSellerScopedOrders(
         userId: userId,
@@ -261,7 +229,8 @@ class _PaymentMethodScreenState extends State<PaymentMethodScreen> {
       final groupDeliveryCharge = _roundMoney(widget.deliveryCharge * ratio);
       final groupTax = _roundMoney(widget.tax * ratio);
       final groupTotal = _roundMoney(
-        groupSubtotal - groupDiscount + groupDeliveryCharge + groupTax,
+        (groupSubtotal - groupDiscount + groupDeliveryCharge + groupTax)
+            .clamp(0.0, double.infinity),
       );
 
       final orderRef = db.collection('orders').doc();
@@ -378,46 +347,26 @@ class _PaymentMethodScreenState extends State<PaymentMethodScreen> {
       return;
     }
 
-    // Web payment using RazorpayWebService
-    if (kIsWeb) {
-      setState(() => _isProcessing = true);
-
-      final cartProvider = context.read<CartProvider>();
-      final couponProvider = context.read<CouponProvider>();
-      final discount = couponProvider.calculateDiscount(
-        orderAmount: cartProvider.subtotal,
-        items: cartProvider.items,
-      );
-      final finalTotal =
-          cartProvider.subtotal - discount + widget.deliveryCharge + widget.tax;
-
-      _razorpayWebService?.openCheckout(
-        amount: finalTotal,
-        userName: widget.selectedAddress.name,
-        userEmail: user.email ?? 'user@example.com',
-        userPhone: widget.selectedAddress.phone,
-        description: 'Order Payment',
-      );
-      return;
-    }
-
     setState(() => _isProcessing = true);
 
-    // Calculate final total with discount
     final cartProvider = context.read<CartProvider>();
     final couponProvider = context.read<CouponProvider>();
     final discount = couponProvider.calculateDiscount(
       orderAmount: cartProvider.subtotal,
       items: cartProvider.items,
     );
-    final finalTotal =
-        cartProvider.subtotal - discount + widget.deliveryCharge + widget.tax;
+    final finalTotal = cartProvider.calculateTotal(
+      discount: discount,
+      deliveryCharge: widget.deliveryCharge,
+      tax: widget.tax,
+    );
 
-    _razorpayService?.openAllPaymentMethods(
+    await _razorpayService?.openCheckout(
       amount: finalTotal,
       userName: widget.selectedAddress.name,
-      userEmail: user.email ?? "user@example.com",
+      userEmail: user.email ?? 'user@example.com',
       userPhone: widget.selectedAddress.phone,
+      description: 'Order Payment',
     );
   }
 
@@ -496,7 +445,11 @@ class _PaymentMethodScreenState extends State<PaymentMethodScreen> {
       orderAmount: subtotal,
       items: cart.items,
     );
-    final total = subtotal - discount + widget.deliveryCharge + widget.tax;
+    final total = cart.calculateTotal(
+      discount: discount,
+      deliveryCharge: widget.deliveryCharge,
+      tax: widget.tax,
+    );
 
     // Calculate wallet/coins discount
     double walletDiscount = 0;
@@ -924,84 +877,112 @@ class _PaymentMethodScreenState extends State<PaymentMethodScreen> {
                   padding: EdgeInsets.symmetric(vertical: 24),
                   child: Center(child: CircularProgressIndicator()),
                 )
-              : Column(
-                  children: _deliverySlots.map((slot) {
-                    final isSelected = _selectedSlot?.id == slot.id;
-                    return GestureDetector(
-                      onTap: () {
-                        setState(() => _selectedSlot = slot);
-                        HapticFeedback.selectionClick();
-                      },
-                      child: Container(
-                        margin: const EdgeInsets.only(bottom: 10),
-                        padding: const EdgeInsets.all(16),
-                        decoration: BoxDecoration(
-                          color: isSelected
-                              ? accentColor.withOpacity(0.08)
-                              : (isDark ? Colors.grey[850] : Colors.grey[50]!),
-                          borderRadius: BorderRadius.circular(16),
-                          border: Border.all(
-                            color: isSelected
-                                ? accentColor
-                                : (isDark
-                                    ? Colors.grey[800]!
-                                    : Colors.grey[200]!),
-                            width: isSelected ? 1.5 : 1,
-                          ),
-                        ),
-                        child: Row(
+              : _deliverySlots.isEmpty
+                  ? Padding(
+                      padding: const EdgeInsets.symmetric(vertical: 16),
+                      child: Center(
+                        child: Column(
                           children: [
-                            Text(slot.icon,
-                                style: const TextStyle(fontSize: 24)),
-                            const SizedBox(width: 16),
-                            Expanded(
-                              child: Column(
-                                crossAxisAlignment: CrossAxisAlignment.start,
-                                children: [
-                                  Text(
-                                    slot.label,
-                                    style: TextStyle(
-                                      fontSize: 14,
-                                      fontWeight: FontWeight.bold,
-                                      color: isSelected
-                                          ? accentColor
-                                          : (isDark
-                                              ? Colors.white
-                                              : Colors.black87),
-                                    ),
-                                  ),
-                                  const SizedBox(height: 2),
-                                  Text(
-                                    slot.displayTimeRange,
-                                    style: TextStyle(
-                                      fontSize: 12,
-                                      color: isDark
-                                          ? Colors.grey[400]
-                                          : Colors.grey[600],
-                                    ),
-                                  ),
-                                ],
+                            Icon(FontAwesomeIcons.clock, size: 28, color: isDark ? Colors.grey[600] : Colors.grey[400]),
+                            const SizedBox(height: 8),
+                            Text(
+                              'No delivery slots configured',
+                              style: TextStyle(
+                                fontSize: 13,
+                                fontWeight: FontWeight.w600,
+                                color: isDark ? Colors.grey[500] : Colors.grey[500],
                               ),
                             ),
-                            Container(
-                              width: 22,
-                              height: 22,
-                              decoration: BoxDecoration(
-                                shape: BoxShape.circle,
-                                border: Border.all(
-                                  color: isSelected
-                                      ? accentColor
-                                      : Colors.grey[400]!,
-                                  width: isSelected ? 6 : 2,
-                                ),
+                            const SizedBox(height: 4),
+                            Text(
+                              'You can proceed without selecting a slot',
+                              style: TextStyle(
+                                fontSize: 12,
+                                color: isDark ? Colors.grey[600] : Colors.grey[400],
                               ),
                             ),
                           ],
                         ),
                       ),
-                    );
-                  }).toList(),
-                ),
+                    )
+                  : Column(
+                      children: _deliverySlots.map((slot) {
+                        final isSelected = _selectedSlot?.id == slot.id;
+                        return GestureDetector(
+                          onTap: () {
+                            setState(() => _selectedSlot = slot);
+                            HapticFeedback.selectionClick();
+                          },
+                          child: Container(
+                            margin: const EdgeInsets.only(bottom: 10),
+                            padding: const EdgeInsets.all(16),
+                            decoration: BoxDecoration(
+                              color: isSelected
+                                  ? accentColor.withOpacity(0.08)
+                                  : (isDark ? const Color(0xFF303030) : Colors.grey[50]!),
+                              borderRadius: BorderRadius.circular(16),
+                              border: Border.all(
+                                color: isSelected
+                                    ? accentColor
+                                    : (isDark
+                                        ? Colors.grey[800]!
+                                        : Colors.grey[200]!),
+                                width: isSelected ? 1.5 : 1,
+                              ),
+                            ),
+                            child: Row(
+                              children: [
+                                Text(slot.icon,
+                                    style: const TextStyle(fontSize: 24)),
+                                const SizedBox(width: 16),
+                                Expanded(
+                                  child: Column(
+                                    crossAxisAlignment: CrossAxisAlignment.start,
+                                    children: [
+                                      Text(
+                                        slot.label,
+                                        style: TextStyle(
+                                          fontSize: 14,
+                                          fontWeight: FontWeight.bold,
+                                          color: isSelected
+                                              ? accentColor
+                                              : (isDark
+                                                  ? Colors.white
+                                                  : Colors.black87),
+                                        ),
+                                      ),
+                                      const SizedBox(height: 2),
+                                      Text(
+                                        slot.displayTimeRange,
+                                        style: TextStyle(
+                                          fontSize: 12,
+                                          color: isDark
+                                              ? Colors.grey[400]
+                                              : Colors.grey[600],
+                                        ),
+                                      ),
+                                    ],
+                                  ),
+                                ),
+                                Container(
+                                  width: 22,
+                                  height: 22,
+                                  decoration: BoxDecoration(
+                                    shape: BoxShape.circle,
+                                    border: Border.all(
+                                      color: isSelected
+                                          ? accentColor
+                                          : Colors.grey[400]!,
+                                      width: isSelected ? 6 : 2,
+                                    ),
+                                  ),
+                                ),
+                              ],
+                            ),
+                          ),
+                        );
+                      }).toList(),
+                    ),
         ),
       ],
     );
@@ -1021,7 +1002,7 @@ class _PaymentMethodScreenState extends State<PaymentMethodScreen> {
         decoration: BoxDecoration(
           color: isSelected
               ? accentColor.withOpacity(0.1)
-              : (isDark ? Colors.grey[850] : Colors.grey[50]!),
+              : (isDark ? const Color(0xFF303030) : Colors.grey[50]!),
           border: Border.all(
             color: isSelected
                 ? accentColor
@@ -1066,9 +1047,9 @@ class _PaymentMethodScreenState extends State<PaymentMethodScreen> {
       child: SizedBox(
         width: double.infinity,
         child: ElevatedButton.icon(
-          onPressed: _selectedSlot != null
+          onPressed: (_selectedSlot != null || _deliverySlots.isEmpty)
               ? () {
-                  if (!_selectedSlotIsValidNow()) {
+                  if (_selectedSlot != null && !_selectedSlotIsValidNow()) {
                     _showSnackBar('Slot not available', isError: true);
                     return;
                   }
@@ -1101,7 +1082,7 @@ class _PaymentMethodScreenState extends State<PaymentMethodScreen> {
     return Container(
       padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 6),
       decoration: BoxDecoration(
-        color: isDark ? Colors.grey[850] : Colors.grey[100],
+        color: isDark ? const Color(0xFF303030) : Colors.grey[100],
         borderRadius: BorderRadius.circular(6),
         border: Border.all(
           color: isDark ? Colors.grey[700]! : Colors.grey[300]!,
@@ -1291,7 +1272,7 @@ class _PaymentMethodScreenState extends State<PaymentMethodScreen> {
                 decoration: BoxDecoration(
                   color: _useWalletBalance
                       ? accentColor.withOpacity(0.1)
-                      : (isDark ? Colors.grey[850] : Colors.grey[50]),
+                      : (isDark ? const Color(0xFF303030) : Colors.grey[50]),
                   borderRadius: BorderRadius.circular(10),
                   border: Border.all(
                     color: _useWalletBalance
@@ -1376,7 +1357,7 @@ class _PaymentMethodScreenState extends State<PaymentMethodScreen> {
                   decoration: BoxDecoration(
                     color: _useCoins
                         ? Colors.amber.withOpacity(0.1)
-                        : (isDark ? Colors.grey[850] : Colors.grey[50]),
+                        : (isDark ? const Color(0xFF303030) : Colors.grey[50]),
                     borderRadius: BorderRadius.circular(10),
                     border: Border.all(
                       color: _useCoins
@@ -1618,7 +1599,7 @@ class _PaymentMethodScreenState extends State<PaymentMethodScreen> {
                 decoration: BoxDecoration(
                   color: _selectedPaymentMethod == 'razorpay'
                       ? accentColor.withOpacity(0.1)
-                      : (isDark ? Colors.grey[850] : Colors.grey[50]),
+                      : (isDark ? const Color(0xFF303030) : Colors.grey[50]),
                   borderRadius: BorderRadius.circular(10),
                   border: Border.all(
                     color: _selectedPaymentMethod == 'razorpay'
@@ -1729,7 +1710,7 @@ class _PaymentMethodScreenState extends State<PaymentMethodScreen> {
               decoration: BoxDecoration(
                 color: _selectedPaymentMethod == 'cod'
                     ? accentColor.withOpacity(0.1)
-                    : (isDark ? Colors.grey[850] : Colors.grey[50]),
+                    : (isDark ? const Color(0xFF303030) : Colors.grey[50]),
                 borderRadius: BorderRadius.circular(10),
                 border: Border.all(
                   color: _selectedPaymentMethod == 'cod'
@@ -2096,7 +2077,7 @@ class _PaymentMethodScreenState extends State<PaymentMethodScreen> {
                 color: isDark ? Colors.grey[600] : Colors.grey[400],
               ),
               filled: true,
-              fillColor: isDark ? Colors.grey[850] : Colors.grey[50],
+              fillColor: isDark ? const Color(0xFF303030) : Colors.grey[50],
               border: OutlineInputBorder(
                 borderRadius: BorderRadius.circular(10),
                 borderSide: BorderSide(
@@ -2132,11 +2113,7 @@ class _PaymentMethodScreenState extends State<PaymentMethodScreen> {
   @override
   void dispose() {
     _notesController.dispose();
-    if (kIsWeb) {
-      _razorpayWebService?.dispose();
-    } else {
-      _razorpayService?.dispose();
-    }
+    _razorpayService?.dispose();
     super.dispose();
   }
 }

@@ -615,7 +615,7 @@ class _AddAddressScreenState extends State<AddAddressScreen> {
                 child: Container(
                   padding: const EdgeInsets.all(12),
                   decoration: BoxDecoration(
-                    color: isDark ? Colors.grey[850] : Colors.grey[50],
+                    color: isDark ? const Color(0xFF303030) : Colors.grey[50],
                     borderRadius: BorderRadius.circular(12),
                     border: Border.all(color: isDark ? Colors.grey[700]! : Colors.grey[200]!),
                   ),
@@ -1541,7 +1541,7 @@ class _AddAddressScreenState extends State<AddAddressScreen> {
       child: Container(
         padding: const EdgeInsets.all(14),
         decoration: BoxDecoration(
-          color: isDark ? Colors.grey[850] : Colors.grey[50],
+          color: isDark ? const Color(0xFF303030) : Colors.grey[50],
           borderRadius: BorderRadius.circular(10),
           border: Border.all(
             color: value != null
@@ -1616,7 +1616,7 @@ class _AddAddressScreenState extends State<AddAddressScreen> {
         height: 52,
         padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 6),
         decoration: BoxDecoration(
-          color: isDark ? Colors.grey[850] : Colors.grey[50],
+          color: isDark ? const Color(0xFF303030) : Colors.grey[50],
           borderRadius: BorderRadius.circular(10),
           border: Border.all(
             color: value != null
@@ -1708,7 +1708,7 @@ class _AddAddressScreenState extends State<AddAddressScreen> {
                 )
               : null,
           filled: true,
-          fillColor: isDark ? Colors.grey[850] : Colors.grey[50],
+          fillColor: isDark ? const Color(0xFF303030) : Colors.grey[50],
           contentPadding: const EdgeInsets.symmetric(horizontal: 8, vertical: 8),
           border: OutlineInputBorder(
             borderRadius: BorderRadius.circular(10),
@@ -1761,7 +1761,7 @@ class _AddAddressScreenState extends State<AddAddressScreen> {
           ),
           prefixIcon: Icon(Icons.pin_drop_outlined, color: accentColor, size: 16),
           filled: true,
-          fillColor: isDark ? Colors.grey[850] : Colors.grey[50],
+          fillColor: isDark ? const Color(0xFF303030) : Colors.grey[50],
           contentPadding: const EdgeInsets.symmetric(horizontal: 8, vertical: 8),
           border: OutlineInputBorder(
             borderRadius: BorderRadius.circular(10),
@@ -2316,7 +2316,7 @@ class _AddAddressScreenState extends State<AddAddressScreen> {
         decoration: BoxDecoration(
           color: isSelected
               ? accentColor
-              : (isDark ? Colors.grey[850] : Colors.grey[100]),
+              : (isDark ? const Color(0xFF303030) : Colors.grey[100]),
           borderRadius: BorderRadius.circular(10),
           border: Border.all(
             color: isSelected
@@ -2387,7 +2387,7 @@ class _AddAddressScreenState extends State<AddAddressScreen> {
         ),
         suffixIcon: suffix,
         filled: true,
-        fillColor: isDark ? Colors.grey[850] : Colors.grey[50],
+        fillColor: isDark ? const Color(0xFF303030) : Colors.grey[50],
         border: OutlineInputBorder(
           borderRadius: BorderRadius.circular(10),
           borderSide: BorderSide(
@@ -2546,7 +2546,7 @@ class _LocationSelectorState extends State<_LocationSelector> {
                       color: isDark ? Colors.grey[500] : Colors.grey[400],
                     ),
                     filled: true,
-                    fillColor: isDark ? Colors.grey[850] : Colors.grey[100],
+                    fillColor: isDark ? const Color(0xFF303030) : Colors.grey[100],
                     border: OutlineInputBorder(
                       borderRadius: BorderRadius.circular(10),
                       borderSide: BorderSide.none,

@@ -8,6 +8,7 @@ import 'package:agrimore_ui/agrimore_ui.dart';
 import 'package:agrimore_core/agrimore_core.dart';
 import '../../../providers/product_provider.dart';
 import '../../../providers/category_provider.dart';
+import '../../../providers/cart_provider.dart';
 import '../../../providers/theme_provider.dart';
 import 'widgets/filter_drawer.dart';
 import 'widgets/product_card.dart';
@@ -289,45 +290,51 @@ class _MobileShopScreenState extends State<MobileShopScreen>
         },
       ),
       body: SafeArea(
-        child: Column(
+        child: Stack(
           children: [
-            // 1. Search Bar (Blinkit style)
-            _buildBlinkitSearchBar(isDark),
-            
-            // 2. Filter Chips Row
-            _buildFilterChipsRow(isDark),
-            
-            // 3. Product Grid
-            Expanded(
-              child: Consumer2<ProductProvider, CategoryProvider>(
-                builder: (context, productProvider, categoryProvider, _) {
-                  if ((productProvider.isLoading && !_isRefreshing) || _isSearching) {
-                    return _buildShimmerLoading(isDark);
-                  }
+            Column(
+              children: [
+                // 1. Search Bar (Blinkit style)
+                _buildBlinkitSearchBar(isDark),
+                
+                // 2. Filter Chips Row
+                _buildFilterChipsRow(isDark),
+                
+                // 3. Product Grid
+                Expanded(
+                  child: Consumer2<ProductProvider, CategoryProvider>(
+                    builder: (context, productProvider, categoryProvider, _) {
+                      if ((productProvider.isLoading && !_isRefreshing) || _isSearching) {
+                        return _buildShimmerLoading(isDark);
+                      }
 
-                  final products = _getFilteredProducts(productProvider);
-                  
-                  if (products.isEmpty) {
-                    return _buildAdvancedEmptyState(isDark);
-                  }
+                      final products = _getFilteredProducts(productProvider);
+                      
+                      if (products.isEmpty) {
+                        return _buildAdvancedEmptyState(isDark);
+                      }
 
-                  return RefreshIndicator(
-                    onRefresh: () async {
-                      setState(() => _isRefreshing = true);
-                      HapticFeedback.mediumImpact();
-                      await productProvider.loadProducts();
-                      await categoryProvider.loadCategories();
-                      setState(() => _isRefreshing = false);
+                      return RefreshIndicator(
+                        onRefresh: () async {
+                          setState(() => _isRefreshing = true);
+                          HapticFeedback.mediumImpact();
+                          await productProvider.loadProducts();
+                          await categoryProvider.loadCategories();
+                          setState(() => _isRefreshing = false);
+                        },
+                        color: isDark ? AppColors.primaryLight : AppColors.primary,
+                        backgroundColor: isDark ? const Color(0xFF1E1E1E) : Colors.white,
+                        strokeWidth: 3,
+                        displacement: 50,
+                        child: _buildAdvancedProductGrid(products, isDark),
+                      );
                     },
-                    color: isDark ? AppColors.primaryLight : AppColors.primary,
-                    backgroundColor: isDark ? const Color(0xFF1E1E1E) : Colors.white,
-                    strokeWidth: 3,
-                    displacement: 50,
-                    child: _buildAdvancedProductGrid(products, isDark),
-                  );
-                },
-              ),
+                  ),
+                ),
+              ],
             ),
+            // Floating sticky cart button for small screens
+            _buildFloatingCartButton(isDark),
           ],
         ),
       ),
@@ -826,19 +833,22 @@ class _MobileShopScreenState extends State<MobileShopScreen>
     return GridView.builder(
       padding: const EdgeInsets.only(bottom: 100),
       gridDelegate: const SliverGridDelegateWithFixedCrossAxisCount(
-        crossAxisCount: 3,  // 3 columns like Blinkit
-        childAspectRatio: 0.54,  // Give more height for the ADD button
+        crossAxisCount: 3,  // 3 columns for clear product visibility
+        childAspectRatio: 0.54,  // Compact cards with image + info + button
         crossAxisSpacing: 8,
         mainAxisSpacing: 8,
       ),
       itemCount: 12,
       itemBuilder: (context, index) {
         return Shimmer.fromColors(
-          baseColor: isDark ? Colors.grey[850]! : Colors.grey[300]!,
+          baseColor: isDark ? const Color(0xFF303030) : Colors.grey[300]!,
           highlightColor: isDark ? Colors.grey[800]! : Colors.grey[100]!,
           period: const Duration(milliseconds: 1200),
           child: Container(
-            color: Colors.white,
+            decoration: BoxDecoration(
+              color: Colors.white,
+              borderRadius: BorderRadius.circular(12),
+            ),
           ),
         );
       },
@@ -851,10 +861,10 @@ class _MobileShopScreenState extends State<MobileShopScreen>
       padding: EdgeInsets.fromLTRB(12, 12, 12, 100 + MediaQuery.of(context).viewInsets.bottom),
       physics: const AlwaysScrollableScrollPhysics(),
       gridDelegate: const SliverGridDelegateWithFixedCrossAxisCount(
-        crossAxisCount: 3,  // 3 columns like Blinkit
-        childAspectRatio: 0.54,  // Give more height for the ADD button
-        crossAxisSpacing: 8,  // Clean spacing
-        mainAxisSpacing: 8,  // Clean spacing
+        crossAxisCount: 3,  // 3 columns for clear product visibility
+        childAspectRatio: 0.54,  // Compact cards with image + info + button
+        crossAxisSpacing: 8,  // Clean spacing between cards
+        mainAxisSpacing: 8,  // Clean spacing between rows
       ),
       itemCount: products.length,
       itemBuilder: (context, idx) {
@@ -895,6 +905,103 @@ class _MobileShopScreenState extends State<MobileShopScreen>
   }
 
 
+
+  // --- Floating Sticky Cart Button (small screen accessibility) ---
+  Widget _buildFloatingCartButton(bool isDark) {
+    return Consumer<CartProvider>(
+      builder: (context, cartProvider, _) {
+        final itemCount = cartProvider.itemCount;
+        if (itemCount == 0) return const SizedBox.shrink();
+
+        final totalPrice = cartProvider.subtotal;
+        final accentGreen = isDark ? const Color(0xFF4CAF50) : const Color(0xFF2E7D32);
+
+        return Positioned(
+          bottom: 16,
+          left: 16,
+          right: 16,
+          child: TweenAnimationBuilder<double>(
+            tween: Tween(begin: 0.0, end: 1.0),
+            duration: const Duration(milliseconds: 400),
+            curve: Curves.easeOutBack,
+            builder: (context, value, child) {
+              return Transform.translate(
+                offset: Offset(0, 40 * (1 - value)),
+                child: Opacity(opacity: value, child: child),
+              );
+            },
+            child: Material(
+              elevation: 8,
+              shadowColor: accentGreen.withOpacity(0.4),
+              borderRadius: BorderRadius.circular(16),
+              child: InkWell(
+                onTap: () {
+                  HapticFeedback.mediumImpact();
+                  Navigator.pushNamed(context, '/cart');
+                },
+                borderRadius: BorderRadius.circular(16),
+                child: Container(
+                  height: 56,
+                  decoration: BoxDecoration(
+                    gradient: LinearGradient(
+                      colors: isDark
+                          ? [const Color(0xFF388E3C), const Color(0xFF2E7D32)]
+                          : [const Color(0xFF43A047), const Color(0xFF2E7D32)],
+                    ),
+                    borderRadius: BorderRadius.circular(16),
+                  ),
+                  padding: const EdgeInsets.symmetric(horizontal: 20),
+                  child: Row(
+                    children: [
+                      // Item count badge
+                      Container(
+                        padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 4),
+                        decoration: BoxDecoration(
+                          color: Colors.white.withOpacity(0.25),
+                          borderRadius: BorderRadius.circular(10),
+                        ),
+                        child: Text(
+                          '$itemCount ${itemCount == 1 ? 'item' : 'items'}',
+                          style: const TextStyle(
+                            color: Colors.white,
+                            fontSize: 13,
+                            fontWeight: FontWeight.w700,
+                          ),
+                        ),
+                      ),
+                      const Spacer(),
+                      // View Cart label
+                      const Text(
+                        'View Cart',
+                        style: TextStyle(
+                          color: Colors.white,
+                          fontSize: 16,
+                          fontWeight: FontWeight.w800,
+                          letterSpacing: 0.3,
+                        ),
+                      ),
+                      const SizedBox(width: 6),
+                      const Icon(Icons.arrow_forward_rounded, color: Colors.white, size: 20),
+                      const Spacer(),
+                      // Total price
+                      Text(
+                        '₹${totalPrice.toStringAsFixed(0)}',
+                        style: const TextStyle(
+                          color: Colors.white,
+                          fontSize: 16,
+                          fontWeight: FontWeight.w900,
+                        ),
+                      ),
+                    ],
+                  ),
+                ),
+              ),
+            ),
+          ),
+        );
+      },
+    );
+  }
 
   Widget _buildAdvancedEmptyState(bool isDark) {
     return Center(

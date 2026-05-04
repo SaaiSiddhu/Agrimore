@@ -352,10 +352,10 @@ class _MobileSearchScreenState extends State<MobileSearchScreen> {
     return GestureDetector(
       onTap: () {
         HapticFeedback.lightImpact();
-        Navigator.pushNamed(
+        AppRoutes.navigateToCategoryProducts(
           context,
-          AppRoutes.categoryProducts,
-          arguments: {'categoryId': category.id, 'categoryName': category.name},
+          category.id,
+          categoryName: category.name,
         );
       },
       child: Container(

@@ -755,7 +755,7 @@ class _OrderSuccessScreenState extends State<OrderSuccessScreen>
     return Container(
       padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 6),
       decoration: BoxDecoration(
-        color: isDark ? Colors.grey[850] : Colors.grey[100],
+        color: isDark ? const Color(0xFF303030) : Colors.grey[100],
         borderRadius: BorderRadius.circular(6),
         border: Border.all(
           color: isDark ? Colors.grey[700]! : Colors.grey[300]!,

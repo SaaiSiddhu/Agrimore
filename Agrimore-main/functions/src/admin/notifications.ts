@@ -204,15 +204,15 @@ export const sendOrderUpdateNotification = functions.https.onCall(
       if (!tokens.length) return { success: true, successCount: 0, failureCount: 0, message: "No tokens" };
 
       const statusMessages: Record<string, string> = {
-        pending: "Your order has been placed successfully!",
-        confirmed: "Your order has been confirmed!",
-        processing: "We're preparing your order...",
-        shipped: "Your order is on its way! 🚚",
-        outForDelivery: "Your order is out for delivery!",
-        delivered: "Your order has been delivered! ✅",
-        cancelled: "Your order has been cancelled.",
-        returned: "Your order has been returned.",
-        refunded: "Your refund has been processed.",
+        pending: "Order Received! We've successfully received your order and it's awaiting confirmation.",
+        confirmed: "Order Confirmed! Your order is being processed and will be shipped soon.",
+        processing: "Preparing Your Order! We are carefully packing your items.",
+        shipped: "Order Dispatched! Your items are on the way. Track your shipment. 🚚",
+        outForDelivery: "Out for Delivery! Your order will reach you today. Keep an eye out! 📦",
+        delivered: "Order Delivered! Your package has arrived safely. Thank you for shopping with Agrimore! ✅",
+        cancelled: "Order Cancelled. If you have any questions, please contact support.",
+        returned: "Return Processed. Your returned items have been received.",
+        refunded: "Refund Initiated. Your refund has been successfully processed to your original payment method.",
       };
 
       const title = `Order ${orderNumber} Update`;
@@ -311,15 +311,15 @@ export const onOrderStatusChanged = functions.firestore
       if (!tokens.length) return;
 
       const statusMessages: Record<string, string> = {
-        pending: "Your order has been placed successfully!",
-        confirmed: "Your order has been confirmed!",
-        processing: "We're preparing your order...",
-        shipped: "Your order is on its way! 🚚",
-        outForDelivery: "Your order is out for delivery!",
-        delivered: "Your order has been delivered! ✅",
-        cancelled: "Your order has been cancelled.",
-        returned: "Your order has been returned.",
-        refunded: "Your refund has been processed.",
+        pending: "Order Received! We've successfully received your order and it's awaiting confirmation.",
+        confirmed: "Order Confirmed! Your order is being processed and will be shipped soon.",
+        processing: "Preparing Your Order! We are carefully packing your items.",
+        shipped: "Order Dispatched! Your items are on the way. Track your shipment. 🚚",
+        outForDelivery: "Out for Delivery! Your order will reach you today. Keep an eye out! 📦",
+        delivered: "Order Delivered! Your package has arrived safely. Thank you for shopping with Agrimore! ✅",
+        cancelled: "Order Cancelled. If you have any questions, please contact support.",
+        returned: "Return Processed. Your returned items have been received.",
+        refunded: "Refund Initiated. Your refund has been successfully processed to your original payment method.",
       };
 
       const title = `Order ${orderNumber} Update`;

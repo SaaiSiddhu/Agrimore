@@ -23,14 +23,7 @@ class _AuthWrapperState extends State<AuthWrapper> {
   @override
   void initState() {
     super.initState();
-    // After first frame, trigger address load if user is already logged in
-    WidgetsBinding.instance.addPostFrameCallback((_) {
-      final auth = context.read<AuthProvider>();
-      if (auth.isLoggedIn && !auth.isInitializing) {
-        // Load addresses so defaultAddress is ready for home screen
-        context.read<AddressProvider>().loadAddresses();
-      }
-    });
+    // Address loading is handled in build() when auth state is determined
   }
 
   @override

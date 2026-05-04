@@ -81,7 +81,7 @@ class _CheckoutScreenState extends State<CheckoutScreen> {
         if (_addresses.isEmpty) {
           WidgetsBinding.instance.addPostFrameCallback((_) async {
             if (mounted) {
-              final result = await Navigator.pushNamed(context, AppRoutes.addAddress);
+              final result = await Navigator.pushNamed(context, AppRoutes.savedAddresses);
               _loadAddresses();
             }
           });
@@ -290,7 +290,7 @@ class _CheckoutScreenState extends State<CheckoutScreen> {
           const SizedBox(height: 4),
           OutlinedButton.icon(
             onPressed: () async {
-              await Navigator.pushNamed(context, AppRoutes.addAddress);
+              await Navigator.pushNamed(context, AppRoutes.savedAddresses);
               _loadAddresses();
             },
             icon: Icon(
@@ -336,7 +336,7 @@ class _CheckoutScreenState extends State<CheckoutScreen> {
         decoration: BoxDecoration(
           color: isSelected
               ? accentColor.withOpacity(0.1)
-              : (isDark ? Colors.grey[850] : Colors.grey[50]),
+              : (isDark ? const Color(0xFF303030) : Colors.grey[50]),
           borderRadius: BorderRadius.circular(10),
           border: Border.all(
             color: isSelected
@@ -594,7 +594,7 @@ class _CheckoutScreenState extends State<CheckoutScreen> {
     return Container(
       padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 6),
       decoration: BoxDecoration(
-        color: isDark ? Colors.grey[850] : Colors.grey[100],
+        color: isDark ? const Color(0xFF303030) : Colors.grey[100],
         borderRadius: BorderRadius.circular(6),
         border: Border.all(
           color: isDark ? Colors.grey[700]! : Colors.grey[300]!,

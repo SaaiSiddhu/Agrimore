@@ -138,8 +138,11 @@ class _MobileHomeScreenState extends State<MobileHomeScreen>
     final location = settingsProvider.selectedLocation;
 
     Future.wait([
-      Provider.of<ProductProvider>(context, listen: false)
-          .loadProducts(forceRefresh: forceRefresh, location: location),
+      Provider.of<ProductProvider>(context, listen: false).loadProducts(
+        forceRefresh: forceRefresh,
+        location: location,
+        limit: 60,
+      ),
       Provider.of<CategoryProvider>(context, listen: false)
           .loadCategories(forceRefresh: forceRefresh),
       Provider.of<BannerProvider>(context, listen: false)
@@ -249,6 +252,47 @@ class _MobileHomeScreenState extends State<MobileHomeScreen>
       debugPrint('Error showing error snackbar: $e');
     }
   }
+
+  Future<void> _autoDetectLocationSilently(SettingsProvider settingsProvider) async {
+    try {
+      bool serviceEnabled = await Geolocator.isLocationServiceEnabled();
+      if (!serviceEnabled) return;
+
+      LocationPermission permission = await Geolocator.checkPermission();
+      if (permission == LocationPermission.denied) {
+        permission = await Geolocator.requestPermission();
+        if (permission == LocationPermission.denied) return;
+      }
+      if (permission == LocationPermission.deniedForever) return;
+
+      Position position = await Geolocator.getCurrentPosition(
+        desiredAccuracy: LocationAccuracy.high,
+        timeLimit: const Duration(seconds: 10),
+      );
+
+      List<Placemark> placemarks = await placemarkFromCoordinates(position.latitude, position.longitude);
+
+      if (placemarks.isNotEmpty) {
+        Placemark place = placemarks[0];
+        final exactLocation = [
+          place.subLocality,
+          place.locality,
+          place.subAdministrativeArea,
+          place.administrativeArea,
+        ].where((part) => part != null && part.trim().isNotEmpty).join(', ');
+        
+        final city = place.locality ?? place.subAdministrativeArea ?? place.administrativeArea ?? 'Unknown';
+        final displayLocation = exactLocation.isNotEmpty ? exactLocation : city;
+
+        await settingsProvider.changeLocation(displayLocation);
+        if (mounted) {
+          _loadData(forceRefresh: true);
+        }
+      }
+    } catch (e) {
+      debugPrint('Silent location detection failed: $e');
+    }
+  }
   // --- ⬆️ END OF MODIFICATIONS ⬆️ ---
 
   void _scrollToTop() {
@@ -305,7 +349,7 @@ class _MobileHomeScreenState extends State<MobileHomeScreen>
                 Provider.of<SettingsProvider>(context, listen: false);
             if (settingsProvider.selectedLocation == null ||
                 settingsProvider.selectedLocation!.isEmpty) {
-              _showAutoLocationBottomSheet(context, settingsProvider);
+              _autoDetectLocationSilently(settingsProvider);
             }
           });
 
@@ -373,7 +417,7 @@ class _MobileHomeScreenState extends State<MobileHomeScreen>
                 SliverToBoxAdapter(
                   child: _buildAnimatedBoxWrapper(
                     index: 5,
-                    child: const DynamicCategorySections(skipCount: 6),
+                    child: const DynamicCategorySections(skipCount: 9),
                   ),
                 ),
 
@@ -451,7 +495,7 @@ class _MobileHomeScreenState extends State<MobileHomeScreen>
   // --- Shimmer Loading Placeholder ---
   Widget _buildShimmerLoading(bool isDark) {
     return Shimmer.fromColors(
-      baseColor: isDark ? Colors.grey[850]! : Colors.grey[300]!,
+      baseColor: isDark ? const Color(0xFF303030) : Colors.grey[300]!,
       highlightColor: isDark ? Colors.grey[800]! : Colors.grey[100]!,
       child: ListView(
         physics: const NeverScrollableScrollPhysics(),
