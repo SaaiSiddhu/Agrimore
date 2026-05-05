@@ -1,5 +1,4 @@
 import 'package:cloud_firestore/cloud_firestore.dart';
-import 'package:flutter/material.dart'; // Import for debugPrint
 
 // ============================================
 // NEW: Product Variant Class
@@ -12,7 +11,8 @@ class ProductVariant {
   final double? originalPrice;
   final int stock;
   final List<String> images;
-  final Map<String, String> options; // e.g., {"Color": "Blue", "Storage": "128GB"}
+  final Map<String, String>
+      options; // e.g., {"Color": "Blue", "Storage": "128GB"}
 
   ProductVariant({
     required this.id,
@@ -52,9 +52,12 @@ class ProductVariant {
     // name: 'name' | 'weight' | 'label' | 'title'
     // salePrice: 'salePrice' | 'price' | 'discountedPrice'
     // originalPrice: 'originalPrice' | 'mrp' | 'compareAtPrice'
-    final rawName = map['name'] ?? map['weight'] ?? map['label'] ?? map['title'] ?? '';
-    final rawSalePrice = (map['salePrice'] ?? map['price'] ?? map['discountedPrice']);
-    final rawOriginalPrice = (map['originalPrice'] ?? map['mrp'] ?? map['compareAtPrice']);
+    final rawName =
+        map['name'] ?? map['weight'] ?? map['label'] ?? map['title'] ?? '';
+    final rawSalePrice =
+        (map['salePrice'] ?? map['price'] ?? map['discountedPrice']);
+    final rawOriginalPrice =
+        (map['originalPrice'] ?? map['mrp'] ?? map['compareAtPrice']);
     return ProductVariant(
       id: map['id'] ?? '',
       name: rawName.toString(),
@@ -102,6 +105,7 @@ class ProductModel {
   final double salePrice; // Base price
   final double? originalPrice; // Base price
   final String categoryId;
+
   /// Optional display name from legacy/RN docs (`categoryName`).
   final String? categoryName;
   final List<String> images; // Base images
@@ -131,6 +135,19 @@ class ProductModel {
   final String location;
   final String sellerId;
   final int? lowStockThreshold;
+  final String locationType;
+  final String? state;
+  final String? district;
+  final double? lat;
+  final double? lng;
+  final double? radiusKm;
+  final String? masterProductRef;
+  final String? centerId;
+  final String? centerName;
+  final double? basePrice;
+  final double? areaPrice;
+  final bool manualPriceOverride;
+  final String priceSource;
 
   ProductModel({
     required this.id,
@@ -167,6 +184,19 @@ class ProductModel {
     this.location = '',
     this.sellerId = '',
     this.lowStockThreshold,
+    this.locationType = 'state',
+    this.state = 'Tamil Nadu',
+    this.district,
+    this.lat,
+    this.lng,
+    this.radiusKm,
+    this.masterProductRef,
+    this.centerId,
+    this.centerName,
+    this.basePrice,
+    this.areaPrice,
+    this.manualPriceOverride = false,
+    this.priceSource = 'default',
   });
 
   // Compatibility Getters
@@ -224,7 +254,9 @@ class ProductModel {
       return raw.toString().trim();
     }
     final cat = map['category'];
-    if (cat is Map && cat['id'] != null && cat['id'].toString().trim().isNotEmpty) {
+    if (cat is Map &&
+        cat['id'] != null &&
+        cat['id'].toString().trim().isNotEmpty) {
       return cat['id'].toString().trim();
     }
     if (cat is String && cat.trim().isNotEmpty) return cat.trim();
@@ -287,6 +319,19 @@ class ProductModel {
       'location': location,
       'sellerId': sellerId,
       'lowStockThreshold': lowStockThreshold,
+      'locationType': locationType,
+      'state': state,
+      'district': district,
+      'lat': lat,
+      'lng': lng,
+      'radiusKm': radiusKm,
+      'masterProductRef': masterProductRef,
+      'centerId': centerId,
+      'centerName': centerName,
+      'basePrice': basePrice,
+      'areaPrice': areaPrice,
+      'manualPriceOverride': manualPriceOverride,
+      'priceSource': priceSource,
     };
   }
 
@@ -306,7 +351,9 @@ class ProductModel {
         final parsed = DateTime.tryParse(value);
         if (parsed != null) return parsed;
         final parsedInt = int.tryParse(value);
-        if (parsedInt != null) return DateTime.fromMillisecondsSinceEpoch(parsedInt);
+        if (parsedInt != null) {
+          return DateTime.fromMillisecondsSinceEpoch(parsedInt);
+        }
       }
       return DateTime.now();
     }
@@ -321,7 +368,8 @@ class ProductModel {
         [];
 
     final mergedImages = mergeImageSources(map, variants);
-    final legacySingle = map['imageUrl'] is String ? (map['imageUrl'] as String).trim() : '';
+    final legacySingle =
+        map['imageUrl'] is String ? (map['imageUrl'] as String).trim() : '';
     final images = mergedImages.isNotEmpty
         ? mergedImages
         : (legacySingle.isNotEmpty ? <String>[legacySingle] : <String>[]);
@@ -330,8 +378,11 @@ class ProductModel {
       id: id,
       name: map['name'] ?? '',
       description: map['description'] ?? '',
-      salePrice: (map['salePrice'] as num?)?.toDouble() ?? (map['price'] as num?)?.toDouble() ?? 0.0,
-      originalPrice: (map['originalPrice'] as num?)?.toDouble() ?? (map['mrp'] as num?)?.toDouble(),
+      salePrice: (map['salePrice'] as num?)?.toDouble() ??
+          (map['price'] as num?)?.toDouble() ??
+          0.0,
+      originalPrice: (map['originalPrice'] as num?)?.toDouble() ??
+          (map['mrp'] as num?)?.toDouble(),
       categoryId: parseCategoryId(map),
       categoryName: parseCategoryNameField(map),
       images: images,
@@ -363,6 +414,21 @@ class ProductModel {
       location: map['location']?.toString() ?? '',
       sellerId: map['sellerId']?.toString() ?? '',
       lowStockThreshold: (map['lowStockThreshold'] as num?)?.toInt(),
+      locationType: (map['locationType'] ?? 'state').toString(),
+      state: (map['state']?.toString().trim().isNotEmpty ?? false)
+          ? map['state'].toString()
+          : 'Tamil Nadu',
+      district: map['district']?.toString(),
+      lat: (map['lat'] as num?)?.toDouble(),
+      lng: (map['lng'] as num?)?.toDouble(),
+      radiusKm: (map['radiusKm'] as num?)?.toDouble(),
+      masterProductRef: map['masterProductRef']?.toString(),
+      centerId: map['centerId']?.toString(),
+      centerName: map['centerName']?.toString(),
+      basePrice: (map['basePrice'] as num?)?.toDouble(),
+      areaPrice: (map['areaPrice'] as num?)?.toDouble(),
+      manualPriceOverride: map['manualPriceOverride'] == true,
+      priceSource: map['priceSource']?.toString() ?? 'default',
     );
   }
 
@@ -407,6 +473,23 @@ class ProductModel {
     String? location,
     String? sellerId,
     int? lowStockThreshold,
+    String? locationType,
+    String? state,
+    String? district,
+    double? lat,
+    double? lng,
+    double? radiusKm,
+    String? masterProductRef,
+    String? centerId,
+    String? centerName,
+    double? basePrice,
+    double? areaPrice,
+    bool? manualPriceOverride,
+    String? priceSource,
+    bool clearDistrict = false,
+    bool clearCoordinates = false,
+    bool clearRadius = false,
+    bool clearCenterPricing = false,
   }) {
     return ProductModel(
       id: id ?? this.id,
@@ -443,6 +526,22 @@ class ProductModel {
       location: location ?? this.location,
       sellerId: sellerId ?? this.sellerId,
       lowStockThreshold: lowStockThreshold ?? this.lowStockThreshold,
+      locationType: locationType ?? this.locationType,
+      state: state ?? this.state,
+      district: clearDistrict ? null : district ?? this.district,
+      lat: clearCoordinates ? null : lat ?? this.lat,
+      lng: clearCoordinates ? null : lng ?? this.lng,
+      radiusKm: clearRadius ? null : radiusKm ?? this.radiusKm,
+      masterProductRef:
+          clearCenterPricing ? null : masterProductRef ?? this.masterProductRef,
+      centerId: clearCenterPricing ? null : centerId ?? this.centerId,
+      centerName: clearCenterPricing ? null : centerName ?? this.centerName,
+      basePrice: clearCenterPricing ? null : basePrice ?? this.basePrice,
+      areaPrice: clearCenterPricing ? null : areaPrice ?? this.areaPrice,
+      manualPriceOverride: manualPriceOverride ??
+          (clearCenterPricing ? false : this.manualPriceOverride),
+      priceSource:
+          priceSource ?? (clearCenterPricing ? 'default' : this.priceSource),
     );
   }
 

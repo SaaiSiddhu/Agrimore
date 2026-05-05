@@ -107,7 +107,8 @@ class _MobileShopScreenState extends State<MobileShopScreen>
     ));
 
     _headerFadeAnimation = Tween<double>(begin: 1.0, end: 0.0).animate(
-      CurvedAnimation(parent: _headerAnimationController, curve: Curves.easeOut),
+      CurvedAnimation(
+          parent: _headerAnimationController, curve: Curves.easeOut),
     );
 
     _scrollController.addListener(_onScroll);
@@ -127,6 +128,26 @@ class _MobileShopScreenState extends State<MobileShopScreen>
     _loadData();
     _setupRealTimeUpdates();
     _filterChipAnimationController.forward();
+    _updateActiveFiltersCount();
+  }
+
+  @override
+  void didUpdateWidget(covariant MobileShopScreen oldWidget) {
+    super.didUpdateWidget(oldWidget);
+    if (oldWidget.categoryId != widget.categoryId ||
+        oldWidget.categoryName != widget.categoryName) {
+      _syncCategoryFilterFromWidget();
+    }
+  }
+
+  void _syncCategoryFilterFromWidget() {
+    setState(() {
+      if (widget.categoryId == null || widget.categoryId!.trim().isEmpty) {
+        _appliedFilters.remove('categories');
+      } else {
+        _appliedFilters['categories'] = [widget.categoryId!.trim()];
+      }
+    });
     _updateActiveFiltersCount();
   }
 
@@ -172,7 +193,8 @@ class _MobileShopScreenState extends State<MobileShopScreen>
   void _checkInventoryUpdates() {
     if (!mounted) return;
     final random = Random();
-    final productProvider = Provider.of<ProductProvider>(context, listen: false);
+    final productProvider =
+        Provider.of<ProductProvider>(context, listen: false);
 
     for (var product in productProvider.products.take(5)) {
       if (random.nextBool()) {
@@ -180,8 +202,6 @@ class _MobileShopScreenState extends State<MobileShopScreen>
       }
     }
   }
-
-
 
   void _loadData() {
     WidgetsBinding.instance.addPostFrameCallback((_) {
@@ -222,17 +242,17 @@ class _MobileShopScreenState extends State<MobileShopScreen>
 
   void _onSearchChanged(String query) {
     _debounceTimer?.cancel();
-    
+
     if (query.isEmpty) {
       setState(() {
         _searchQuery = '';
-        _isSearching = false; 
+        _isSearching = false;
       });
       return;
     }
-    
-    setState(() => _isSearching = true); 
-    
+
+    setState(() => _isSearching = true);
+
     _debounceTimer = Timer(const Duration(milliseconds: 400), () {
       setState(() {
         _searchQuery = query.toLowerCase().trim();
@@ -251,8 +271,6 @@ class _MobileShopScreenState extends State<MobileShopScreen>
     });
     HapticFeedback.mediumImpact();
   }
-
-
 
   @override
   void dispose() {
@@ -296,20 +314,21 @@ class _MobileShopScreenState extends State<MobileShopScreen>
               children: [
                 // 1. Search Bar (Blinkit style)
                 _buildBlinkitSearchBar(isDark),
-                
+
                 // 2. Filter Chips Row
                 _buildFilterChipsRow(isDark),
-                
+
                 // 3. Product Grid
                 Expanded(
                   child: Consumer2<ProductProvider, CategoryProvider>(
                     builder: (context, productProvider, categoryProvider, _) {
-                      if ((productProvider.isLoading && !_isRefreshing) || _isSearching) {
+                      if ((productProvider.isLoading && !_isRefreshing) ||
+                          _isSearching) {
                         return _buildShimmerLoading(isDark);
                       }
 
                       final products = _getFilteredProducts(productProvider);
-                      
+
                       if (products.isEmpty) {
                         return _buildAdvancedEmptyState(isDark);
                       }
@@ -322,11 +341,24 @@ class _MobileShopScreenState extends State<MobileShopScreen>
                           await categoryProvider.loadCategories();
                           setState(() => _isRefreshing = false);
                         },
-                        color: isDark ? AppColors.primaryLight : AppColors.primary,
-                        backgroundColor: isDark ? const Color(0xFF1E1E1E) : Colors.white,
+                        color:
+                            isDark ? AppColors.primaryLight : AppColors.primary,
+                        backgroundColor:
+                            isDark ? const Color(0xFF1E1E1E) : Colors.white,
                         strokeWidth: 3,
                         displacement: 50,
-                        child: _buildAdvancedProductGrid(products, isDark),
+                        child: AnimatedSwitcher(
+                          duration: const Duration(milliseconds: 240),
+                          switchInCurve: Curves.easeOutCubic,
+                          switchOutCurve: Curves.easeInCubic,
+                          child: _buildAdvancedProductGrid(
+                            products,
+                            isDark,
+                            key: ValueKey(
+                              '${_selectedCategoryIds.join('|')}|$_searchQuery|$_sortBy|${products.length}',
+                            ),
+                          ),
+                        ),
                       );
                     },
                   ),
@@ -391,8 +423,8 @@ class _MobileShopScreenState extends State<MobileShopScreen>
                     const SizedBox(width: 8),
                     Expanded(
                       child: Text(
-                        _searchQuery.isNotEmpty 
-                            ? _searchQuery 
+                        _searchQuery.isNotEmpty
+                            ? _searchQuery
                             : 'Search for products...',
                         style: TextStyle(
                           color: _searchQuery.isNotEmpty
@@ -436,7 +468,7 @@ class _MobileShopScreenState extends State<MobileShopScreen>
   // --- Filter Chips Row (Blinkit style) ---
   Widget _buildFilterChipsRow(bool isDark) {
     final accentColor = isDark ? AppColors.primaryLight : AppColors.primary;
-    
+
     return Container(
       height: 50,
       decoration: BoxDecoration(
@@ -459,7 +491,9 @@ class _MobileShopScreenState extends State<MobileShopScreen>
               label: 'Filters',
               hasDropdown: true,
               isActive: _activeFiltersCount > 0,
-              badge: _activeFiltersCount > 0 ? _activeFiltersCount.toString() : null,
+              badge: _activeFiltersCount > 0
+                  ? _activeFiltersCount.toString()
+                  : null,
               onTap: () {
                 HapticFeedback.mediumImpact();
                 _scaffoldKey.currentState?.openEndDrawer();
@@ -468,7 +502,7 @@ class _MobileShopScreenState extends State<MobileShopScreen>
               accentColor: accentColor,
             ),
             const SizedBox(width: 8),
-            
+
             // Sort chip
             _buildFilterChip(
               icon: Icons.swap_vert,
@@ -480,7 +514,37 @@ class _MobileShopScreenState extends State<MobileShopScreen>
               accentColor: accentColor,
             ),
             const SizedBox(width: 8),
-            
+
+            Consumer<CategoryProvider>(
+              builder: (context, categoryProvider, _) {
+                final categories = categoryProvider.categories;
+                return Row(
+                  children: [
+                    _buildCategoryChip(
+                      label: 'All',
+                      icon: Icons.apps_rounded,
+                      isActive: _selectedCategoryIds.isEmpty,
+                      onTap: () => _selectCategory(null),
+                      isDark: isDark,
+                      accentColor: accentColor,
+                    ),
+                    for (final category in categories) ...[
+                      const SizedBox(width: 8),
+                      _buildCategoryChip(
+                        label: category.name,
+                        icon: _iconForCategory(category.name),
+                        isActive: _selectedCategoryIds.contains(category.id),
+                        onTap: () => _selectCategory(category),
+                        isDark: isDark,
+                        accentColor: accentColor,
+                      ),
+                    ],
+                    const SizedBox(width: 8),
+                  ],
+                );
+              },
+            ),
+
             // Price chip
             _buildFilterChip(
               label: 'Price',
@@ -493,7 +557,7 @@ class _MobileShopScreenState extends State<MobileShopScreen>
               accentColor: accentColor,
             ),
             const SizedBox(width: 8),
-            
+
             // Brand chip
             _buildFilterChip(
               label: 'Brand',
@@ -506,7 +570,7 @@ class _MobileShopScreenState extends State<MobileShopScreen>
               accentColor: accentColor,
             ),
             const SizedBox(width: 8),
-            
+
             // In Stock chip
             _buildFilterChip(
               label: 'In Stock',
@@ -514,7 +578,8 @@ class _MobileShopScreenState extends State<MobileShopScreen>
               onTap: () {
                 HapticFeedback.selectionClick();
                 setState(() {
-                  _appliedFilters['inStock'] = !(_appliedFilters['inStock'] ?? false);
+                  _appliedFilters['inStock'] =
+                      !(_appliedFilters['inStock'] ?? false);
                 });
                 _updateActiveFiltersCount();
               },
@@ -522,7 +587,7 @@ class _MobileShopScreenState extends State<MobileShopScreen>
               accentColor: accentColor,
             ),
             const SizedBox(width: 8),
-            
+
             // New Arrivals chip
             _buildFilterChip(
               label: 'New',
@@ -530,7 +595,8 @@ class _MobileShopScreenState extends State<MobileShopScreen>
               onTap: () {
                 HapticFeedback.selectionClick();
                 setState(() {
-                  _appliedFilters['isNew'] = !(_appliedFilters['isNew'] ?? false);
+                  _appliedFilters['isNew'] =
+                      !(_appliedFilters['isNew'] ?? false);
                 });
                 _updateActiveFiltersCount();
               },
@@ -541,6 +607,109 @@ class _MobileShopScreenState extends State<MobileShopScreen>
         ),
       ),
     );
+  }
+
+  List<String> get _selectedCategoryIds {
+    final raw = _appliedFilters['categories'];
+    if (raw is List) {
+      return raw
+          .map((item) => item.toString())
+          .where((id) => id.isNotEmpty)
+          .toList();
+    }
+    return const [];
+  }
+
+  void _selectCategory(CategoryModel? category) {
+    HapticFeedback.selectionClick();
+    setState(() {
+      if (category == null) {
+        _appliedFilters.remove('categories');
+      } else {
+        _appliedFilters['categories'] = [category.id];
+      }
+    });
+    _updateActiveFiltersCount();
+    if (_scrollController.hasClients) {
+      _scrollController.animateTo(
+        0,
+        duration: const Duration(milliseconds: 220),
+        curve: Curves.easeOutCubic,
+      );
+    }
+  }
+
+  Widget _buildCategoryChip({
+    required String label,
+    required IconData icon,
+    required bool isActive,
+    required VoidCallback onTap,
+    required bool isDark,
+    required Color accentColor,
+  }) {
+    final backgroundColor = isActive
+        ? accentColor
+        : (isDark ? const Color(0xFF2A2A2A) : Colors.white);
+    final foregroundColor = isActive
+        ? Colors.white
+        : (isDark ? Colors.white : const Color(0xFF263238));
+
+    return AnimatedContainer(
+      duration: const Duration(milliseconds: 180),
+      curve: Curves.easeOutCubic,
+      child: Material(
+        color: backgroundColor,
+        borderRadius: BorderRadius.circular(20),
+        elevation: isActive ? 3 : 0,
+        shadowColor: accentColor.withOpacity(0.25),
+        child: InkWell(
+          onTap: onTap,
+          borderRadius: BorderRadius.circular(20),
+          child: Container(
+            padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
+            decoration: BoxDecoration(
+              borderRadius: BorderRadius.circular(20),
+              border: Border.all(
+                color: isActive
+                    ? accentColor
+                    : (isDark ? Colors.grey[700]! : Colors.grey[300]!),
+              ),
+            ),
+            child: Row(
+              mainAxisSize: MainAxisSize.min,
+              children: [
+                Icon(icon, size: 15, color: foregroundColor),
+                const SizedBox(width: 5),
+                Text(
+                  label,
+                  style: TextStyle(
+                    fontSize: 12,
+                    fontWeight: isActive ? FontWeight.w800 : FontWeight.w600,
+                    color: foregroundColor,
+                  ),
+                ),
+              ],
+            ),
+          ),
+        ),
+      ),
+    );
+  }
+
+  IconData _iconForCategory(String name) {
+    final value = name.toLowerCase();
+    if (value.contains('dairy') || value.contains('milk')) {
+      return Icons.local_drink_rounded;
+    }
+    if (value.contains('fruit')) return Icons.apple_rounded;
+    if (value.contains('flower')) return Icons.local_florist_rounded;
+    if (value.contains('vegetable') || value.contains('fresh')) {
+      return Icons.eco_rounded;
+    }
+    if (value.contains('grain') || value.contains('rice')) {
+      return Icons.grass_rounded;
+    }
+    return Icons.category_rounded;
   }
 
   Widget _buildFilterChip({
@@ -561,13 +730,13 @@ class _MobileShopScreenState extends State<MobileShopScreen>
           vertical: 6,
         ),
         decoration: BoxDecoration(
-          color: isActive 
+          color: isActive
               ? accentColor.withOpacity(0.1)
               : (isDark ? const Color(0xFF2A2A2A) : Colors.white),
           borderRadius: BorderRadius.circular(20),
           border: Border.all(
-            color: isActive 
-                ? accentColor 
+            color: isActive
+                ? accentColor
                 : (isDark ? Colors.grey[700]! : Colors.grey[300]!),
             width: isActive ? 1.5 : 1,
           ),
@@ -576,7 +745,11 @@ class _MobileShopScreenState extends State<MobileShopScreen>
           mainAxisSize: MainAxisSize.min,
           children: [
             if (icon != null) ...[
-              Icon(icon, size: 16, color: isActive ? accentColor : (isDark ? Colors.grey[400] : Colors.grey[600])),
+              Icon(icon,
+                  size: 16,
+                  color: isActive
+                      ? accentColor
+                      : (isDark ? Colors.grey[400] : Colors.grey[600])),
               const SizedBox(width: 4),
             ],
             Text(
@@ -584,7 +757,9 @@ class _MobileShopScreenState extends State<MobileShopScreen>
               style: TextStyle(
                 fontSize: 12,
                 fontWeight: isActive ? FontWeight.w700 : FontWeight.w500,
-                color: isActive ? accentColor : (isDark ? Colors.white : Colors.black87),
+                color: isActive
+                    ? accentColor
+                    : (isDark ? Colors.white : Colors.black87),
               ),
             ),
             if (badge != null) ...[
@@ -610,7 +785,9 @@ class _MobileShopScreenState extends State<MobileShopScreen>
               Icon(
                 Icons.keyboard_arrow_down,
                 size: 16,
-                color: isActive ? accentColor : (isDark ? Colors.grey[400] : Colors.grey[600]),
+                color: isActive
+                    ? accentColor
+                    : (isDark ? Colors.grey[400] : Colors.grey[600]),
               ),
             ],
           ],
@@ -673,22 +850,25 @@ class _MobileShopScreenState extends State<MobileShopScreen>
     return options.map((option) {
       final isSelected = _sortBy == option.$1;
       final accentColor = isDark ? AppColors.primaryLight : AppColors.primary;
-      
+
       return ListTile(
         leading: Icon(
           option.$3,
-          color: isSelected ? accentColor : (isDark ? Colors.grey[400] : Colors.grey[600]),
+          color: isSelected
+              ? accentColor
+              : (isDark ? Colors.grey[400] : Colors.grey[600]),
         ),
         title: Text(
           option.$2,
           style: TextStyle(
             fontWeight: isSelected ? FontWeight.w700 : FontWeight.w500,
-            color: isSelected ? accentColor : (isDark ? Colors.white : Colors.black87),
+            color: isSelected
+                ? accentColor
+                : (isDark ? Colors.white : Colors.black87),
           ),
         ),
-        trailing: isSelected
-            ? Icon(Icons.check_circle, color: accentColor)
-            : null,
+        trailing:
+            isSelected ? Icon(Icons.check_circle, color: accentColor) : null,
         onTap: () {
           setState(() => _sortBy = option.$1);
           Navigator.pop(context);
@@ -717,12 +897,16 @@ class _MobileShopScreenState extends State<MobileShopScreen>
             decoration: BoxDecoration(
               gradient: LinearGradient(
                 colors: isDark
-                    ? [AppColors.primaryLight, AppColors.primaryLight.withOpacity(0.5)]
+                    ? [
+                        AppColors.primaryLight,
+                        AppColors.primaryLight.withOpacity(0.5)
+                      ]
                     : [AppColors.primary, AppColors.primary.withOpacity(0.5)],
               ),
               boxShadow: [
                 BoxShadow(
-                  color: (isDark ? AppColors.primaryLight : AppColors.primary).withOpacity(0.3),
+                  color: (isDark ? AppColors.primaryLight : AppColors.primary)
+                      .withOpacity(0.3),
                   blurRadius: 8,
                 ),
               ],
@@ -744,7 +928,8 @@ class _MobileShopScreenState extends State<MobileShopScreen>
             borderRadius: BorderRadius.circular(16),
             boxShadow: [
               BoxShadow(
-                color: (isDark ? AppColors.primaryLight : AppColors.primary).withOpacity(0.4),
+                color: (isDark ? AppColors.primaryLight : AppColors.primary)
+                    .withOpacity(0.4),
                 blurRadius: 20,
                 offset: const Offset(0, 8),
               ),
@@ -759,9 +944,11 @@ class _MobileShopScreenState extends State<MobileShopScreen>
               );
               HapticFeedback.mediumImpact();
             },
-            backgroundColor: isDark ? AppColors.primaryLight : AppColors.primary,
+            backgroundColor:
+                isDark ? AppColors.primaryLight : AppColors.primary,
             elevation: 8,
-            icon: const Icon(Icons.arrow_upward_rounded, color: Colors.white, size: 20),
+            icon: const Icon(Icons.arrow_upward_rounded,
+                color: Colors.white, size: 20),
             label: const Text(
               'Top',
               style: TextStyle(
@@ -833,8 +1020,8 @@ class _MobileShopScreenState extends State<MobileShopScreen>
     return GridView.builder(
       padding: const EdgeInsets.only(bottom: 100),
       gridDelegate: const SliverGridDelegateWithFixedCrossAxisCount(
-        crossAxisCount: 3,  // 3 columns for clear product visibility
-        childAspectRatio: 0.54,  // Compact cards with image + info + button
+        crossAxisCount: 3, // 3 columns for clear product visibility
+        childAspectRatio: 0.54, // Compact cards with image + info + button
         crossAxisSpacing: 8,
         mainAxisSpacing: 8,
       ),
@@ -855,16 +1042,22 @@ class _MobileShopScreenState extends State<MobileShopScreen>
     );
   }
 
-  Widget _buildAdvancedProductGrid(List<ProductModel> products, bool isDark) {
+  Widget _buildAdvancedProductGrid(
+    List<ProductModel> products,
+    bool isDark, {
+    Key? key,
+  }) {
     return GridView.builder(
+      key: key,
       controller: _scrollController,
-      padding: EdgeInsets.fromLTRB(12, 12, 12, 100 + MediaQuery.of(context).viewInsets.bottom),
+      padding: EdgeInsets.fromLTRB(
+          12, 12, 12, 100 + MediaQuery.of(context).viewInsets.bottom),
       physics: const AlwaysScrollableScrollPhysics(),
       gridDelegate: const SliverGridDelegateWithFixedCrossAxisCount(
-        crossAxisCount: 3,  // 3 columns for clear product visibility
-        childAspectRatio: 0.54,  // Compact cards with image + info + button
-        crossAxisSpacing: 8,  // Clean spacing between cards
-        mainAxisSpacing: 8,  // Clean spacing between rows
+        crossAxisCount: 3, // 3 columns for clear product visibility
+        childAspectRatio: 0.54, // Compact cards with image + info + button
+        crossAxisSpacing: 8, // Clean spacing between cards
+        mainAxisSpacing: 8, // Clean spacing between rows
       ),
       itemCount: products.length,
       itemBuilder: (context, idx) {
@@ -877,7 +1070,8 @@ class _MobileShopScreenState extends State<MobileShopScreen>
   Widget _buildAdvancedProductList(List<ProductModel> products, bool isDark) {
     return ListView.builder(
       controller: _scrollController,
-      padding: EdgeInsets.fromLTRB(0, 8, 0, 100 + MediaQuery.of(context).viewInsets.bottom),
+      padding: EdgeInsets.fromLTRB(
+          0, 8, 0, 100 + MediaQuery.of(context).viewInsets.bottom),
       physics: const AlwaysScrollableScrollPhysics(),
       itemCount: products.length,
       itemBuilder: (context, idx) {
@@ -887,7 +1081,8 @@ class _MobileShopScreenState extends State<MobileShopScreen>
     );
   }
 
-  Widget _buildAnimatedProductCard(ProductModel product, int index, bool isDark) {
+  Widget _buildAnimatedProductCard(
+      ProductModel product, int index, bool isDark) {
     return TweenAnimationBuilder<double>(
       tween: Tween(begin: 0.0, end: 1.0),
       duration: Duration(milliseconds: 300 + (index % 10 * 50)),
@@ -897,14 +1092,13 @@ class _MobileShopScreenState extends State<MobileShopScreen>
           offset: Offset(0, 20 * (1 - value)),
           child: Opacity(
             opacity: value,
-            child: ProductCard(product: product, isGridView: true), // Always grid
+            child:
+                ProductCard(product: product, isGridView: true), // Always grid
           ),
         );
       },
     );
   }
-
-
 
   // --- Floating Sticky Cart Button (small screen accessibility) ---
   Widget _buildFloatingCartButton(bool isDark) {
@@ -914,7 +1108,8 @@ class _MobileShopScreenState extends State<MobileShopScreen>
         if (itemCount == 0) return const SizedBox.shrink();
 
         final totalPrice = cartProvider.subtotal;
-        final accentGreen = isDark ? const Color(0xFF4CAF50) : const Color(0xFF2E7D32);
+        final accentGreen =
+            isDark ? const Color(0xFF4CAF50) : const Color(0xFF2E7D32);
 
         return Positioned(
           bottom: 16,
@@ -955,7 +1150,8 @@ class _MobileShopScreenState extends State<MobileShopScreen>
                     children: [
                       // Item count badge
                       Container(
-                        padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 4),
+                        padding: const EdgeInsets.symmetric(
+                            horizontal: 10, vertical: 4),
                         decoration: BoxDecoration(
                           color: Colors.white.withOpacity(0.25),
                           borderRadius: BorderRadius.circular(10),
@@ -981,7 +1177,8 @@ class _MobileShopScreenState extends State<MobileShopScreen>
                         ),
                       ),
                       const SizedBox(width: 6),
-                      const Icon(Icons.arrow_forward_rounded, color: Colors.white, size: 20),
+                      const Icon(Icons.arrow_forward_rounded,
+                          color: Colors.white, size: 20),
                       const Spacer(),
                       // Total price
                       Text(
@@ -1047,7 +1244,9 @@ class _MobileShopScreenState extends State<MobileShopScreen>
               ),
               const SizedBox(height: 32),
               Text(
-                _searchQuery.isNotEmpty ? 'No results for "$_searchQuery"' : 'No products found',
+                _searchQuery.isNotEmpty
+                    ? 'No results for "$_searchQuery"'
+                    : 'No products found',
                 style: TextStyle(
                   fontSize: 24,
                   fontWeight: FontWeight.w900,
@@ -1086,14 +1285,18 @@ class _MobileShopScreenState extends State<MobileShopScreen>
                   ),
                 ),
                 style: ElevatedButton.styleFrom(
-                  backgroundColor: isDark ? AppColors.primaryLight : AppColors.primary,
+                  backgroundColor:
+                      isDark ? AppColors.primaryLight : AppColors.primary,
                   foregroundColor: Colors.white,
-                  padding: const EdgeInsets.symmetric(horizontal: 32, vertical: 16),
+                  padding:
+                      const EdgeInsets.symmetric(horizontal: 32, vertical: 16),
                   shape: RoundedRectangleBorder(
                     borderRadius: BorderRadius.circular(16),
                   ),
                   elevation: 8,
-                  shadowColor: (isDark ? AppColors.primaryLight : AppColors.primary).withOpacity(0.4),
+                  shadowColor:
+                      (isDark ? AppColors.primaryLight : AppColors.primary)
+                          .withOpacity(0.4),
                 ),
               ),
             ],
@@ -1115,7 +1318,8 @@ class _MobileShopScreenState extends State<MobileShopScreen>
                   color: Colors.white.withOpacity(0.2),
                   borderRadius: BorderRadius.circular(8),
                 ),
-                child: const Icon(Icons.check_circle_rounded, color: Colors.white, size: 22),
+                child: const Icon(Icons.check_circle_rounded,
+                    color: Colors.white, size: 22),
               ),
               const SizedBox(width: 14),
               const Text(
@@ -1130,7 +1334,8 @@ class _MobileShopScreenState extends State<MobileShopScreen>
           backgroundColor: Colors.green[600],
           duration: const Duration(milliseconds: 2000),
           behavior: SnackBarBehavior.floating,
-          shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(14)),
+          shape:
+              RoundedRectangleBorder(borderRadius: BorderRadius.circular(14)),
           margin: const EdgeInsets.all(16),
         ),
       );
@@ -1166,20 +1371,22 @@ class _MobileShopScreenState extends State<MobileShopScreen>
       final priceRange = _appliedFilters['priceRange'] as RangeValues?;
       final minRating = _appliedFilters['minRating'] as double?;
       final inStock = _appliedFilters['inStock'] as bool?;
-      
+
       final categories = _appliedFilters['categories'] != null
           ? List<String>.from(_appliedFilters['categories'])
           : null;
-      
+
       final isNew = _appliedFilters['isNew'] as bool?;
       final isVerified = _appliedFilters['isVerified'] as bool?;
       final isTrending = _appliedFilters['isTrending'] as bool?;
 
       // ⬇️ --- FIX 3: Price Filter Typo --- ⬇️
-      if (priceRange != null && (priceRange.start != 0 || priceRange.end != 10000)) {
+      if (priceRange != null &&
+          (priceRange.start != 0 || priceRange.end != 10000)) {
         products = products
             .where((p) =>
-                p.salePrice >= priceRange.start && p.salePrice <= priceRange.end)
+                p.salePrice >= priceRange.start &&
+                p.salePrice <= priceRange.end)
             .toList();
       }
       // ⬆️ --- END OF FIX 3 --- ⬆️
@@ -1191,7 +1398,8 @@ class _MobileShopScreenState extends State<MobileShopScreen>
         products = products.where((p) => p.inStock).toList();
       }
       if (categories != null && categories.isNotEmpty) {
-        final categoryProvider = Provider.of<CategoryProvider>(context, listen: false);
+        final categoryProvider =
+            Provider.of<CategoryProvider>(context, listen: false);
         final allCats = categoryProvider.categories;
         products = products.where((p) {
           return categories.any((catId) {
@@ -1200,7 +1408,10 @@ class _MobileShopScreenState extends State<MobileShopScreen>
               return productBelongsToCategory(p, cat, allCats);
             } catch (_) {
               final id = catId.toLowerCase().trim();
-              return p.categoryId.toLowerCase().trim() == id;
+              final categoryName = p.categoryName?.toLowerCase().trim();
+              return p.categoryId.toLowerCase().trim() == id ||
+                  categoryName == id ||
+                  categoryName?.contains(id) == true;
             }
           });
         }).toList();

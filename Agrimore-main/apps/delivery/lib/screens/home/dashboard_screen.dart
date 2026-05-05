@@ -20,23 +20,24 @@ class DashboardScreen extends StatefulWidget {
 
 class _DashboardScreenState extends State<DashboardScreen> {
   bool _isOnline = false;
-  
+
   @override
   void initState() {
     super.initState();
     _initializeProviders();
   }
-  
+
   void _initializeProviders() {
     WidgetsBinding.instance.addPostFrameCallback((_) {
       final auth = context.read<DeliveryAuthProvider>();
       final orderProvider = context.read<DeliveryOrderProvider>();
       final locationProvider = context.read<LocationProvider>();
-      
+
       if (auth.user != null) {
         orderProvider.onNewOrder = _handleNewOrder;
         orderProvider.loadAvailableOrders();
         orderProvider.watchActiveOrder(auth.user!.uid);
+        orderProvider.watchMyDeliveries(auth.user!.uid);
         locationProvider.checkPermissions();
       }
     });
@@ -52,19 +53,30 @@ class _DashboardScreenState extends State<DashboardScreen> {
       showDialog(
         context: context,
         builder: (context) => AlertDialog(
-          shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(20)),
+          shape: RoundedRectangleBorder(
+            borderRadius: BorderRadius.circular(20),
+          ),
           title: Row(
             children: [
-              Icon(Icons.directions_bike_rounded, color: Colors.green, size: 28),
+              Icon(
+                Icons.directions_bike_rounded,
+                color: Colors.green,
+                size: 28,
+              ),
               SizedBox(width: 10),
               Text('New Order!'),
             ],
           ),
-          content: Text('A new delivery order is available. Please check pending orders.'),
+          content: Text(
+            'A new delivery order is available. Please check pending orders.',
+          ),
           actions: [
             TextButton(
               onPressed: () => Navigator.pop(context),
-              child: Text('Close', style: TextStyle(fontWeight: FontWeight.bold)),
+              child: Text(
+                'Close',
+                style: TextStyle(fontWeight: FontWeight.bold),
+              ),
             ),
           ],
         ),
@@ -76,23 +88,26 @@ class _DashboardScreenState extends State<DashboardScreen> {
   Widget build(BuildContext context) {
     final theme = Theme.of(context);
     final colorScheme = theme.colorScheme;
-    
+
     return Scaffold(
       body: SafeArea(
         child: Column(
           children: [
             // Header
             _buildHeader(colorScheme),
-            
+
             // Online Toggle
             _buildOnlineToggle(colorScheme),
-            
+
             // Active Order or Dashboard
             Expanded(
               child: Consumer<DeliveryOrderProvider>(
                 builder: (context, orderProvider, _) {
                   if (orderProvider.hasActiveOrder) {
-                    return _buildActiveOrderCard(orderProvider.activeOrder!, colorScheme);
+                    return _buildActiveOrderCard(
+                      orderProvider.activeOrder!,
+                      colorScheme,
+                    );
                   }
                   return _buildDashboardContent(colorScheme);
                 },
@@ -103,7 +118,7 @@ class _DashboardScreenState extends State<DashboardScreen> {
       ),
     );
   }
-  
+
   Widget _buildHeader(ColorScheme colorScheme) {
     return Consumer<DeliveryAuthProvider>(
       builder: (context, auth, _) {
@@ -147,7 +162,10 @@ class _DashboardScreenState extends State<DashboardScreen> {
               ),
               IconButton(
                 onPressed: () {
-                  SnackbarHelper.showError(context, 'SOS Alert Sent! Live location shared with authorities and admin.');
+                  SnackbarHelper.showError(
+                    context,
+                    'SOS Alert Sent! Live location shared with authorities and admin.',
+                  );
                 },
                 icon: const Icon(Icons.sos_rounded, color: Colors.red),
                 tooltip: 'Emergency SOS',
@@ -163,13 +181,15 @@ class _DashboardScreenState extends State<DashboardScreen> {
       },
     );
   }
-  
+
   Widget _buildOnlineToggle(ColorScheme colorScheme) {
     return Container(
       margin: const EdgeInsets.symmetric(horizontal: 20),
       padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 16),
       decoration: BoxDecoration(
-        color: _isOnline ? colorScheme.primary : colorScheme.surfaceContainerHighest,
+        color: _isOnline
+            ? colorScheme.primary
+            : colorScheme.surfaceContainerHighest,
         borderRadius: BorderRadius.circular(16),
       ),
       child: Row(
@@ -200,7 +220,7 @@ class _DashboardScreenState extends State<DashboardScreen> {
       ),
     );
   }
-  
+
   Widget _buildDashboardContent(ColorScheme colorScheme) {
     return SingleChildScrollView(
       padding: const EdgeInsets.all(20),
@@ -212,10 +232,7 @@ class _DashboardScreenState extends State<DashboardScreen> {
             padding: const EdgeInsets.all(16),
             decoration: BoxDecoration(
               gradient: LinearGradient(
-                colors: [
-                  Colors.green.shade400,
-                  Colors.green.shade600,
-                ],
+                colors: [Colors.green.shade400, Colors.green.shade600],
                 begin: Alignment.topLeft,
                 end: Alignment.bottomRight,
               ),
@@ -236,7 +253,11 @@ class _DashboardScreenState extends State<DashboardScreen> {
                     color: Colors.white.withOpacity(0.2),
                     borderRadius: BorderRadius.circular(12),
                   ),
-                  child: const Icon(Icons.currency_rupee_rounded, color: Colors.white, size: 28),
+                  child: const Icon(
+                    Icons.currency_rupee_rounded,
+                    color: Colors.white,
+                    size: 28,
+                  ),
                 ),
                 const SizedBox(width: 16),
                 Expanded(
@@ -264,7 +285,10 @@ class _DashboardScreenState extends State<DashboardScreen> {
                   ),
                 ),
                 Container(
-                  padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
+                  padding: const EdgeInsets.symmetric(
+                    horizontal: 12,
+                    vertical: 6,
+                  ),
                   decoration: BoxDecoration(
                     color: Colors.white.withOpacity(0.2),
                     borderRadius: BorderRadius.circular(20),
@@ -281,9 +305,9 @@ class _DashboardScreenState extends State<DashboardScreen> {
               ],
             ),
           ),
-          
+
           const SizedBox(height: 16),
-          
+
           // Daily Challenge
           Container(
             padding: const EdgeInsets.all(16),
@@ -296,45 +320,112 @@ class _DashboardScreenState extends State<DashboardScreen> {
               children: [
                 Container(
                   padding: const EdgeInsets.all(8),
-                  decoration: BoxDecoration(color: Colors.orange.shade100, shape: BoxShape.circle),
-                  child: Icon(Icons.emoji_events_rounded, color: Colors.orange.shade700),
+                  decoration: BoxDecoration(
+                    color: Colors.orange.shade100,
+                    shape: BoxShape.circle,
+                  ),
+                  child: Icon(
+                    Icons.emoji_events_rounded,
+                    color: Colors.orange.shade700,
+                  ),
                 ),
                 const SizedBox(width: 12),
                 Expanded(
                   child: Column(
                     crossAxisAlignment: CrossAxisAlignment.start,
                     children: [
-                      Text('Daily Challenge', style: TextStyle(fontWeight: FontWeight.bold, color: Colors.orange.shade900)),
+                      Text(
+                        'Daily Challenge',
+                        style: TextStyle(
+                          fontWeight: FontWeight.bold,
+                          color: Colors.orange.shade900,
+                        ),
+                      ),
                       const SizedBox(height: 2),
-                      Text('Complete 3 more deliveries before 8 PM to earn a ₹150 bonus!', style: TextStyle(fontSize: 12, color: Colors.orange.shade800)),
+                      Text(
+                        'Complete 3 more deliveries before 8 PM to earn a ₹150 bonus!',
+                        style: TextStyle(
+                          fontSize: 12,
+                          color: Colors.orange.shade800,
+                        ),
+                      ),
                     ],
                   ),
                 ),
               ],
             ),
           ),
-          
+
           const SizedBox(height: 20),
-          
+
           // Stats Row
-          Row(
-            children: [
-              Expanded(child: _buildStatCard('Today', '0', Icons.receipt_long_rounded, colorScheme)),
-              const SizedBox(width: 12),
-              Expanded(child: _buildStatCard('Distance', '0 km', Icons.route_rounded, colorScheme)),
-            ],
+          Consumer<DeliveryOrderProvider>(
+            builder: (context, orderProvider, _) => Column(
+              children: [
+                Row(
+                  children: [
+                    Expanded(
+                      child: _buildStatCard(
+                        'Today',
+                        orderProvider.todayDeliveries.toString(),
+                        Icons.receipt_long_rounded,
+                        colorScheme,
+                      ),
+                    ),
+                    const SizedBox(width: 12),
+                    Expanded(
+                      child: _buildStatCard(
+                        'Weekly',
+                        'Rs ${orderProvider.weeklyEarnings.toStringAsFixed(0)}',
+                        Icons.date_range_rounded,
+                        colorScheme,
+                      ),
+                    ),
+                  ],
+                ),
+                const SizedBox(height: 12),
+                Row(
+                  children: [
+                    Expanded(
+                      child: _buildStatCard(
+                        'Earnings',
+                        'Rs ${orderProvider.todayEarnings.toStringAsFixed(0)}',
+                        Icons.account_balance_wallet_rounded,
+                        colorScheme,
+                        isHighlight: true,
+                      ),
+                    ),
+                    const SizedBox(width: 12),
+                    Expanded(
+                      child: _buildStatCard(
+                        'COD Cash',
+                        'Rs ${orderProvider.codCollected.toStringAsFixed(0)}',
+                        Icons.payments_rounded,
+                        colorScheme,
+                      ),
+                    ),
+                  ],
+                ),
+              ],
+            ),
           ),
+
           const SizedBox(height: 12),
-          Row(
-            children: [
-              Expanded(child: _buildStatCard('Earnings', '₹0', Icons.account_balance_wallet_rounded, colorScheme, isHighlight: true)),
-              const SizedBox(width: 12),
-              Expanded(child: _buildStatCard('Rating', '5.0 ⭐', Icons.star_rounded, colorScheme)),
-            ],
+          Consumer<DeliveryOrderProvider>(
+            builder: (context, orderProvider, _) => _buildActionCard(
+              'COD Settlement',
+              'Cash collected: Rs ${orderProvider.codCollected.toStringAsFixed(0)}',
+              Icons.payments_rounded,
+              colorScheme,
+              onTap: () => SnackbarHelper.showInfo(
+                context,
+                'COD settlement is tracked as pending after delivery.',
+              ),
+            ),
           ),
-          
+
           const SizedBox(height: 24),
-          
+
           // Quick Actions
           Text(
             'Quick Actions',
@@ -345,13 +436,14 @@ class _DashboardScreenState extends State<DashboardScreen> {
             ),
           ),
           const SizedBox(height: 12),
-          
+
           _buildActionCard(
             'Available Orders',
             'View and accept delivery orders',
             Icons.inbox_rounded,
             colorScheme,
-            badgeCount: context.watch<DeliveryOrderProvider>().availableOrders.length,
+            badgeCount:
+                context.watch<DeliveryOrderProvider>().availableOrders.length,
             onTap: () => Navigator.push(
               context,
               MaterialPageRoute(builder: (_) => const PendingOrdersScreen()),
@@ -391,19 +483,37 @@ class _DashboardScreenState extends State<DashboardScreen> {
       ),
     );
   }
-  
-  Widget _buildStatCard(String label, String value, IconData icon, ColorScheme colorScheme, {bool isHighlight = false}) {
+
+  Widget _buildStatCard(
+    String label,
+    String value,
+    IconData icon,
+    ColorScheme colorScheme, {
+    bool isHighlight = false,
+  }) {
     return Container(
       padding: const EdgeInsets.all(20),
       decoration: BoxDecoration(
-        color: isHighlight ? colorScheme.primaryContainer : colorScheme.surfaceContainerLowest,
+        color: isHighlight
+            ? colorScheme.primaryContainer
+            : colorScheme.surfaceContainerLowest,
         borderRadius: BorderRadius.circular(16),
-        border: Border.all(color: isHighlight ? colorScheme.primary.withOpacity(0.3) : colorScheme.outline.withOpacity(0.1)),
+        border: Border.all(
+          color: isHighlight
+              ? colorScheme.primary.withOpacity(0.3)
+              : colorScheme.outline.withOpacity(0.1),
+        ),
       ),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          Icon(icon, color: isHighlight ? colorScheme.primary : colorScheme.onSurfaceVariant, size: 28),
+          Icon(
+            icon,
+            color: isHighlight
+                ? colorScheme.primary
+                : colorScheme.onSurfaceVariant,
+            size: 28,
+          ),
           const SizedBox(height: 12),
           Text(
             value,
@@ -415,17 +525,21 @@ class _DashboardScreenState extends State<DashboardScreen> {
           ),
           Text(
             label,
-            style: TextStyle(
-              fontSize: 13,
-              color: colorScheme.onSurfaceVariant,
-            ),
+            style: TextStyle(fontSize: 13, color: colorScheme.onSurfaceVariant),
           ),
         ],
       ),
     );
   }
-  
-  Widget _buildActionCard(String title, String subtitle, IconData icon, ColorScheme colorScheme, {VoidCallback? onTap, int badgeCount = 0}) {
+
+  Widget _buildActionCard(
+    String title,
+    String subtitle,
+    IconData icon,
+    ColorScheme colorScheme, {
+    VoidCallback? onTap,
+    int badgeCount = 0,
+  }) {
     return InkWell(
       onTap: onTap,
       borderRadius: BorderRadius.circular(16),
@@ -476,18 +590,30 @@ class _DashboardScreenState extends State<DashboardScreen> {
               child: Column(
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
-                  Text(title, style: TextStyle(fontWeight: FontWeight.w700, fontSize: 15)),
-                  Text(subtitle, style: TextStyle(fontSize: 12, color: colorScheme.onSurfaceVariant)),
+                  Text(
+                    title,
+                    style: TextStyle(fontWeight: FontWeight.w700, fontSize: 15),
+                  ),
+                  Text(
+                    subtitle,
+                    style: TextStyle(
+                      fontSize: 12,
+                      color: colorScheme.onSurfaceVariant,
+                    ),
+                  ),
                 ],
               ),
             ),
-            Icon(Icons.chevron_right_rounded, color: colorScheme.onSurfaceVariant),
+            Icon(
+              Icons.chevron_right_rounded,
+              color: colorScheme.onSurfaceVariant,
+            ),
           ],
         ),
       ),
     );
   }
-  
+
   Widget _buildActiveOrderCard(OrderModel order, ColorScheme colorScheme) {
     return Container(
       margin: const EdgeInsets.all(20),
@@ -501,7 +627,11 @@ class _DashboardScreenState extends State<DashboardScreen> {
         children: [
           Row(
             children: [
-              Icon(Icons.delivery_dining_rounded, color: colorScheme.primary, size: 32),
+              Icon(
+                Icons.delivery_dining_rounded,
+                color: colorScheme.primary,
+                size: 32,
+              ),
               const SizedBox(width: 12),
               Expanded(
                 child: Column(
@@ -519,7 +649,9 @@ class _DashboardScreenState extends State<DashboardScreen> {
                       'Order #${order.orderNumber}',
                       style: TextStyle(
                         fontSize: 13,
-                        color: colorScheme.onPrimaryContainer.withValues(alpha: 0.7),
+                        color: colorScheme.onPrimaryContainer.withValues(
+                          alpha: 0.7,
+                        ),
                       ),
                     ),
                   ],
@@ -531,7 +663,9 @@ class _DashboardScreenState extends State<DashboardScreen> {
           FilledButton(
             onPressed: () => Navigator.push(
               context,
-              MaterialPageRoute(builder: (_) => ActiveOrderScreen(order: order)),
+              MaterialPageRoute(
+                builder: (_) => ActiveOrderScreen(order: order),
+              ),
             ),
             style: FilledButton.styleFrom(
               minimumSize: const Size.fromHeight(48),
@@ -542,11 +676,11 @@ class _DashboardScreenState extends State<DashboardScreen> {
       ),
     );
   }
-  
+
   void _showDeliveryHistory() {
     final auth = context.read<DeliveryAuthProvider>();
     if (auth.user == null) return;
-    
+
     showModalBottomSheet(
       context: context,
       isScrollControlled: true,
@@ -560,14 +694,17 @@ class _DashboardScreenState extends State<DashboardScreen> {
             return Container(
               decoration: BoxDecoration(
                 color: Theme.of(context).scaffoldBackgroundColor,
-                borderRadius: const BorderRadius.vertical(top: Radius.circular(20)),
+                borderRadius: const BorderRadius.vertical(
+                  top: Radius.circular(20),
+                ),
               ),
               child: Column(
                 children: [
                   // Drag handle
                   Container(
                     margin: const EdgeInsets.symmetric(vertical: 12),
-                    width: 40, height: 4,
+                    width: 40,
+                    height: 4,
                     decoration: BoxDecoration(
                       color: Colors.grey[400],
                       borderRadius: BorderRadius.circular(2),
@@ -601,19 +738,30 @@ class _DashboardScreenState extends State<DashboardScreen> {
                           .limit(50)
                           .snapshots(),
                       builder: (context, snapshot) {
-                        if (snapshot.connectionState == ConnectionState.waiting) {
-                          return const Center(child: CircularProgressIndicator());
+                        if (snapshot.connectionState ==
+                            ConnectionState.waiting) {
+                          return const Center(
+                            child: CircularProgressIndicator(),
+                          );
                         }
                         if (!snapshot.hasData || snapshot.data!.docs.isEmpty) {
                           return Center(
                             child: Column(
                               mainAxisAlignment: MainAxisAlignment.center,
                               children: [
-                                Icon(Icons.inbox_rounded, size: 64, color: Colors.grey[400]),
+                                Icon(
+                                  Icons.inbox_rounded,
+                                  size: 64,
+                                  color: Colors.grey[400],
+                                ),
                                 const SizedBox(height: 16),
                                 Text(
                                   'No deliveries yet',
-                                  style: TextStyle(fontSize: 16, color: Colors.grey[600], fontWeight: FontWeight.w600),
+                                  style: TextStyle(
+                                    fontSize: 16,
+                                    color: Colors.grey[600],
+                                    fontWeight: FontWeight.w600,
+                                  ),
                                 ),
                               ],
                             ),
@@ -626,33 +774,50 @@ class _DashboardScreenState extends State<DashboardScreen> {
                           itemCount: orders.length,
                           separatorBuilder: (_, __) => const Divider(height: 1),
                           itemBuilder: (context, index) {
-                            final data = orders[index].data() as Map<String, dynamic>;
-                            final orderNumber = data['orderNumber'] ?? orders[index].id.substring(0, 8);
-                            final total = (data['totalAmount'] as num?)?.toDouble() ?? 0;
-                            final updatedAt = (data['updatedAt'] as Timestamp?)?.toDate();
+                            final data =
+                                orders[index].data() as Map<String, dynamic>;
+                            final orderNumber = data['orderNumber'] ??
+                                orders[index].id.substring(0, 8);
+                            final total =
+                                (data['totalAmount'] as num?)?.toDouble() ?? 0;
+                            final updatedAt =
+                                (data['updatedAt'] as Timestamp?)?.toDate();
                             return ListTile(
-                              contentPadding: const EdgeInsets.symmetric(vertical: 8),
+                              contentPadding: const EdgeInsets.symmetric(
+                                vertical: 8,
+                              ),
                               leading: Container(
                                 padding: const EdgeInsets.all(10),
                                 decoration: BoxDecoration(
                                   color: Colors.green.withOpacity(0.1),
                                   borderRadius: BorderRadius.circular(12),
                                 ),
-                                child: const Icon(Icons.check_circle_rounded, color: Colors.green),
+                                child: const Icon(
+                                  Icons.check_circle_rounded,
+                                  color: Colors.green,
+                                ),
                               ),
                               title: Text(
                                 'Order #$orderNumber',
-                                style: const TextStyle(fontWeight: FontWeight.w700),
+                                style: const TextStyle(
+                                  fontWeight: FontWeight.w700,
+                                ),
                               ),
                               subtitle: Text(
                                 updatedAt != null
                                     ? '${updatedAt.day}/${updatedAt.month}/${updatedAt.year} ${updatedAt.hour}:${updatedAt.minute.toString().padLeft(2, '0')}'
                                     : 'Delivered',
-                                style: TextStyle(fontSize: 12, color: Colors.grey[600]),
+                                style: TextStyle(
+                                  fontSize: 12,
+                                  color: Colors.grey[600],
+                                ),
                               ),
                               trailing: Text(
                                 '₹${total.toStringAsFixed(0)}',
-                                style: const TextStyle(fontWeight: FontWeight.w800, fontSize: 15),
+                                style: const TextStyle(
+                                  fontWeight: FontWeight.w800,
+                                  fontSize: 15,
+                                ),
                               ),
                             );
                           },
@@ -668,14 +833,14 @@ class _DashboardScreenState extends State<DashboardScreen> {
       },
     );
   }
-  
+
   void _toggleOnline(bool value) async {
     HapticFeedback.lightImpact();
     setState(() => _isOnline = value);
-    
+
     final auth = context.read<DeliveryAuthProvider>();
     final location = context.read<LocationProvider>();
-    
+
     if (value && auth.user != null) {
       await location.startTracking(auth.user!.uid);
       await location.setOnlineStatus(auth.user!.uid, true);
@@ -684,7 +849,7 @@ class _DashboardScreenState extends State<DashboardScreen> {
       await location.setOnlineStatus(auth.user!.uid, false);
     }
   }
-  
+
   void _showLogoutDialog() {
     showDialog(
       context: context,

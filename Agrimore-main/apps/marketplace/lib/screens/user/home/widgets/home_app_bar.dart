@@ -5,6 +5,7 @@ import 'package:agrimore_ui/agrimore_ui.dart';
 import 'package:geolocator/geolocator.dart';
 import 'package:geocoding/geocoding.dart';
 import 'package:http/http.dart' as http;
+import 'package:shared_preferences/shared_preferences.dart';
 import 'dart:convert';
 import '../../../../app/routes.dart';
 import '../../../../providers/theme_provider.dart';
@@ -17,7 +18,7 @@ import 'address_bottom_sheet.dart';
 
 class HomeAppBar extends StatefulWidget {
   final bool isCollapsed;
-  
+
   const HomeAppBar({Key? key, this.isCollapsed = false}) : super(key: key);
 
   @override
@@ -26,7 +27,7 @@ class HomeAppBar extends StatefulWidget {
 
 class _HomeAppBarState extends State<HomeAppBar> {
   int _selectedCategoryIndex = 0;
-  
+
   // Auto-location state (fallback only if no saved addresses)
   String _autoLocationText = '';
   bool _isLoadingAutoLocation = true;
@@ -70,25 +71,25 @@ class _HomeAppBarState extends State<HomeAppBar> {
         _safeSyncState(() => _isLoadingAutoLocation = false);
         return;
       }
-      
+
       var permission = await Geolocator.checkPermission();
       if (permission == LocationPermission.denied) {
         permission = await Geolocator.requestPermission();
       }
-      
-      if (permission == LocationPermission.deniedForever || 
+
+      if (permission == LocationPermission.deniedForever ||
           permission == LocationPermission.denied) {
         _safeSyncState(() => _isLoadingAutoLocation = false);
         return;
       }
-      
+
       if (!_isMounted) return;
-      
+
       Position? pos;
       try {
         pos = await Geolocator.getLastKnownPosition();
       } catch (_) {}
-      
+
       if (pos == null) {
         pos = await Geolocator.getCurrentPosition(
           desiredAccuracy: LocationAccuracy.low,
@@ -99,12 +100,14 @@ class _HomeAppBarState extends State<HomeAppBar> {
       if (!_isMounted) return;
 
       try {
-        final placemarks = await placemarkFromCoordinates(pos.latitude, pos.longitude);
+        final placemarks =
+            await placemarkFromCoordinates(pos.latitude, pos.longitude);
         if (placemarks.isNotEmpty && _isMounted) {
           final locality = placemarks.first.locality ?? '';
           final subLocality = placemarks.first.subLocality ?? '';
           final adminArea = placemarks.first.administrativeArea ?? '';
-          
+          final district = placemarks.first.subAdministrativeArea ?? locality;
+
           String locationText;
           if (subLocality.isNotEmpty && locality.isNotEmpty) {
             locationText = '$subLocality, $locality';
@@ -117,11 +120,18 @@ class _HomeAppBarState extends State<HomeAppBar> {
           } else {
             locationText = 'Current Location';
           }
-          
+
           _safeSyncState(() {
             _autoLocationText = locationText;
             _isLoadingAutoLocation = false;
           });
+          await _saveLocationTargeting(
+            lat: pos.latitude,
+            lng: pos.longitude,
+            state: adminArea,
+            district: district,
+            displayLocation: locationText,
+          );
           return;
         }
       } catch (e) {
@@ -132,24 +142,33 @@ class _HomeAppBarState extends State<HomeAppBar> {
       if (_isMounted) {
         try {
           const apiKey = 'AIzaSyCKL5RYJ39x93yz1Km59KwpYybRod3IOeg';
-          final url = 'https://maps.googleapis.com/maps/api/geocode/json?latlng=${pos.latitude},${pos.longitude}&key=$apiKey&language=en';
-          final response = await http.get(Uri.parse(url)).timeout(const Duration(seconds: 10));
-          
+          final url =
+              'https://maps.googleapis.com/maps/api/geocode/json?latlng=${pos.latitude},${pos.longitude}&key=$apiKey&language=en';
+          final response = await http
+              .get(Uri.parse(url))
+              .timeout(const Duration(seconds: 10));
+
           if (response.statusCode == 200) {
             final data = jsonDecode(response.body);
-            if (data['status'] == 'OK' && data['results'] != null && (data['results'] as List).isNotEmpty) {
-              final components = data['results'][0]['address_components'] as List;
+            if (data['status'] == 'OK' &&
+                data['results'] != null &&
+                (data['results'] as List).isNotEmpty) {
+              final components =
+                  data['results'][0]['address_components'] as List;
               String locality = '';
               String subLocality = '';
               String adminArea = '';
-              
+
               for (final c in components) {
                 final types = (c['types'] as List).cast<String>();
-                if (types.contains('locality')) locality = c['long_name'];
-                else if (types.contains('sublocality')) subLocality = c['long_name'];
-                else if (types.contains('administrative_area_level_1')) adminArea = c['long_name'];
+                if (types.contains('locality'))
+                  locality = c['long_name'];
+                else if (types.contains('sublocality'))
+                  subLocality = c['long_name'];
+                else if (types.contains('administrative_area_level_1'))
+                  adminArea = c['long_name'];
               }
-              
+
               String locationText;
               if (subLocality.isNotEmpty && locality.isNotEmpty) {
                 locationText = '$subLocality, $locality';
@@ -162,18 +181,25 @@ class _HomeAppBarState extends State<HomeAppBar> {
               } else {
                 locationText = 'Current Location';
               }
-              
+
               _safeSyncState(() {
                 _autoLocationText = locationText;
                 _isLoadingAutoLocation = false;
               });
+              await _saveLocationTargeting(
+                lat: pos.latitude,
+                lng: pos.longitude,
+                state: adminArea,
+                district: locality,
+                displayLocation: locationText,
+              );
               return;
             }
           }
         } catch (e) {
           debugPrint('⚠️ HTTP Geocoding error: $e');
         }
-        
+
         _safeSyncState(() {
           _autoLocationText = 'Current Location';
           _isLoadingAutoLocation = false;
@@ -187,6 +213,25 @@ class _HomeAppBarState extends State<HomeAppBar> {
     }
   }
 
+  Future<void> _saveLocationTargeting({
+    required double lat,
+    required double lng,
+    required String state,
+    required String district,
+    required String displayLocation,
+  }) async {
+    final prefs = await SharedPreferences.getInstance();
+    await prefs.setDouble('selected_latitude', lat);
+    await prefs.setDouble('selected_longitude', lng);
+    if (state.trim().isNotEmpty) {
+      await prefs.setString('selected_state', state.trim());
+    }
+    if (district.trim().isNotEmpty) {
+      await prefs.setString('selected_district', district.trim());
+    }
+    await prefs.setString('selected_location', displayLocation);
+  }
+
   @override
   Widget build(BuildContext context) {
     final themeProvider = Provider.of<ThemeProvider>(context);
@@ -197,7 +242,10 @@ class _HomeAppBarState extends State<HomeAppBar> {
         gradient: LinearGradient(
           colors: isDark
               ? [const Color(0xFF0D3D2B), const Color(0xFF0A2F22)]
-              : [const Color(0xFF0D9B5C), const Color(0xFF06804A)], // Unique emerald-jade green
+              : [
+                  const Color(0xFF0D9B5C),
+                  const Color(0xFF06804A)
+                ], // Unique emerald-jade green
           begin: Alignment.topLeft,
           end: Alignment.bottomRight,
         ),
@@ -248,11 +296,13 @@ class _HomeAppBarState extends State<HomeAppBar> {
                     ),
                     const SizedBox(width: 8),
                     Container(
-                      padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 3),
+                      padding: const EdgeInsets.symmetric(
+                          horizontal: 8, vertical: 3),
                       decoration: BoxDecoration(
                         color: Colors.amber.withOpacity(0.2),
                         borderRadius: BorderRadius.circular(6),
-                        border: Border.all(color: Colors.amber.withOpacity(0.3), width: 0.5),
+                        border: Border.all(
+                            color: Colors.amber.withOpacity(0.3), width: 0.5),
                       ),
                       child: Row(
                         mainAxisSize: MainAxisSize.min,
@@ -277,29 +327,37 @@ class _HomeAppBarState extends State<HomeAppBar> {
                 Consumer<AddressProvider>(
                   builder: (context, addressProvider, _) {
                     // Determine what to display
-                    final hasSavedAddress = addressProvider.addresses.isNotEmpty;
-                    final defaultAddress = hasSavedAddress 
+                    final hasSavedAddress =
+                        addressProvider.addresses.isNotEmpty;
+                    final defaultAddress = hasSavedAddress
                         ? addressProvider.addresses.firstWhere(
                             (a) => a.isDefault,
                             orElse: () => addressProvider.addresses.first,
                           )
                         : null;
-                    
+
                     // Priority: 1. Saved/Selected address, 2. Auto-detected, 3. Fallback
                     String displayLocation;
                     IconData locationIcon;
                     Color iconColor;
                     String? addressLabel;
-                    
+
                     if (hasSavedAddress && defaultAddress != null) {
                       // Show saved address - House, Road, City, State, Pincode
                       final parts = <String>[];
-                      if (defaultAddress.addressLine1.isNotEmpty) parts.add(defaultAddress.addressLine1);
-                      if (defaultAddress.addressLine2.isNotEmpty) parts.add(defaultAddress.addressLine2);
-                      if (defaultAddress.city.isNotEmpty) parts.add(defaultAddress.city);
-                      if (defaultAddress.state.isNotEmpty) parts.add(defaultAddress.state);
-                      if (defaultAddress.zipcode.isNotEmpty) parts.add(defaultAddress.zipcode);
-                      displayLocation = parts.isNotEmpty ? parts.join(', ') : defaultAddress.fullAddress;
+                      if (defaultAddress.addressLine1.isNotEmpty)
+                        parts.add(defaultAddress.addressLine1);
+                      if (defaultAddress.addressLine2.isNotEmpty)
+                        parts.add(defaultAddress.addressLine2);
+                      if (defaultAddress.city.isNotEmpty)
+                        parts.add(defaultAddress.city);
+                      if (defaultAddress.state.isNotEmpty)
+                        parts.add(defaultAddress.state);
+                      if (defaultAddress.zipcode.isNotEmpty)
+                        parts.add(defaultAddress.zipcode);
+                      displayLocation = parts.isNotEmpty
+                          ? parts.join(', ')
+                          : defaultAddress.fullAddress;
                       locationIcon = Icons.home_rounded;
                       iconColor = Colors.greenAccent;
                       addressLabel = defaultAddress.addressType?.toUpperCase();
@@ -330,7 +388,8 @@ class _HomeAppBarState extends State<HomeAppBar> {
                           // Address Type Badge or Icon
                           if (hasSavedAddress && addressLabel != null) ...[
                             Container(
-                              padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 3),
+                              padding: const EdgeInsets.symmetric(
+                                  horizontal: 6, vertical: 3),
                               decoration: BoxDecoration(
                                 color: Colors.white.withOpacity(0.2),
                                 borderRadius: BorderRadius.circular(6),
@@ -338,7 +397,8 @@ class _HomeAppBarState extends State<HomeAppBar> {
                               child: Row(
                                 mainAxisSize: MainAxisSize.min,
                                 children: [
-                                  Icon(locationIcon, size: 12, color: iconColor),
+                                  Icon(locationIcon,
+                                      size: 12, color: iconColor),
                                   const SizedBox(width: 4),
                                   Text(
                                     addressLabel,
@@ -360,7 +420,8 @@ class _HomeAppBarState extends State<HomeAppBar> {
                                 height: 10,
                                 child: CircularProgressIndicator(
                                   strokeWidth: 1.5,
-                                  valueColor: AlwaysStoppedAnimation(Colors.white70),
+                                  valueColor:
+                                      AlwaysStoppedAnimation(Colors.white70),
                                 ),
                               )
                             else
@@ -373,15 +434,20 @@ class _HomeAppBarState extends State<HomeAppBar> {
                               displayLocation,
                               style: TextStyle(
                                 fontSize: 11,
-                                color: hasSavedAddress ? Colors.white : Colors.white70,
-                                fontWeight: hasSavedAddress ? FontWeight.w500 : FontWeight.normal,
+                                color: hasSavedAddress
+                                    ? Colors.white
+                                    : Colors.white70,
+                                fontWeight: hasSavedAddress
+                                    ? FontWeight.w500
+                                    : FontWeight.normal,
                               ),
                               maxLines: 1,
                               overflow: TextOverflow.ellipsis,
                             ),
                           ),
                           const SizedBox(width: 2),
-                          Icon(Icons.keyboard_arrow_down, size: 14, color: Colors.white70),
+                          Icon(Icons.keyboard_arrow_down,
+                              size: 14, color: Colors.white70),
                         ],
                       ),
                     );
@@ -394,12 +460,12 @@ class _HomeAppBarState extends State<HomeAppBar> {
           Consumer<WalletProvider>(
             builder: (context, walletProvider, _) {
               final balance = walletProvider.balance;
-              final displayBalance = balance >= 1000 
-                  ? '₹${(balance/1000).toStringAsFixed(1)}k' 
+              final displayBalance = balance >= 1000
+                  ? '₹${(balance / 1000).toStringAsFixed(1)}k'
                   : '₹${balance.toStringAsFixed(0)}';
               return _buildIconBtn(
-                Icons.account_balance_wallet_outlined, 
-                displayBalance, 
+                Icons.account_balance_wallet_outlined,
+                displayBalance,
                 isDark,
                 onTap: () => Navigator.pushNamed(context, AppRoutes.wallet),
               );
@@ -410,7 +476,8 @@ class _HomeAppBarState extends State<HomeAppBar> {
     );
   }
 
-  Widget _buildIconBtn(IconData icon, String? badge, bool isDark, {VoidCallback? onTap}) {
+  Widget _buildIconBtn(IconData icon, String? badge, bool isDark,
+      {VoidCallback? onTap}) {
     return GestureDetector(
       onTap: () {
         HapticFeedback.lightImpact();
@@ -428,7 +495,11 @@ class _HomeAppBarState extends State<HomeAppBar> {
             Icon(icon, size: 18, color: Colors.white),
             if (badge != null) ...[
               const SizedBox(width: 4),
-              Text(badge, style: TextStyle(fontSize: 11, fontWeight: FontWeight.w600, color: Colors.white)),
+              Text(badge,
+                  style: TextStyle(
+                      fontSize: 11,
+                      fontWeight: FontWeight.w600,
+                      color: Colors.white)),
             ],
           ],
         ),
@@ -447,7 +518,7 @@ class _HomeAppBarState extends State<HomeAppBar> {
             // Navigate to shop tab with search query
             if (context.mounted) {
               Navigator.pushNamed(
-                context, 
+                context,
                 AppRoutes.shopWithSearch,
                 arguments: result,
               );
@@ -470,7 +541,9 @@ class _HomeAppBarState extends State<HomeAppBar> {
           child: Row(
             children: [
               const SizedBox(width: 14),
-              Icon(Icons.search, size: 22, color: isDark ? Colors.grey[400] : const Color(0xFF2E7D32)),
+              Icon(Icons.search,
+                  size: 22,
+                  color: isDark ? Colors.grey[400] : const Color(0xFF2E7D32)),
               const SizedBox(width: 10),
               Expanded(
                 child: Text(
@@ -485,7 +558,8 @@ class _HomeAppBarState extends State<HomeAppBar> {
                 margin: const EdgeInsets.only(right: 8),
                 padding: const EdgeInsets.all(10),
                 decoration: BoxDecoration(
-                  color: (isDark ? AppColors.primaryLight : AppColors.primary).withOpacity(0.12),
+                  color: (isDark ? AppColors.primaryLight : AppColors.primary)
+                      .withOpacity(0.12),
                   borderRadius: BorderRadius.circular(10),
                 ),
                 child: Icon(
@@ -525,12 +599,13 @@ class _HomeAppBarState extends State<HomeAppBar> {
             itemBuilder: (context, index) {
               final item = allItems[index];
               final isSelected = _selectedCategoryIndex == index;
-              
+
               return GestureDetector(
                 onTap: () {
                   HapticFeedback.lightImpact();
                   setState(() => _selectedCategoryIndex = index);
-                  final shopEntry = Provider.of<ShopEntryProvider>(context, listen: false);
+                  final shopEntry =
+                      Provider.of<ShopEntryProvider>(context, listen: false);
                   if (index == 0) {
                     shopEntry.clearCategoryFilter();
                     shopEntry.openShopWithCategory();
@@ -544,10 +619,11 @@ class _HomeAppBarState extends State<HomeAppBar> {
                 },
                 child: Container(
                   margin: const EdgeInsets.symmetric(horizontal: 4),
-                  padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
+                  padding:
+                      const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
                   decoration: BoxDecoration(
-                    color: isSelected 
-                        ? Colors.white 
+                    color: isSelected
+                        ? Colors.white
                         : Colors.white.withOpacity(0.15),
                     borderRadius: BorderRadius.circular(20),
                   ),
@@ -557,8 +633,10 @@ class _HomeAppBarState extends State<HomeAppBar> {
                       Icon(
                         item['icon'] as IconData,
                         size: 14,
-                        color: isSelected 
-                            ? (isDark ? AppColors.primaryLight : AppColors.primary)
+                        color: isSelected
+                            ? (isDark
+                                ? AppColors.primaryLight
+                                : AppColors.primary)
                             : Colors.white,
                       ),
                       const SizedBox(width: 4),
@@ -566,9 +644,12 @@ class _HomeAppBarState extends State<HomeAppBar> {
                         item['name'] as String,
                         style: TextStyle(
                           fontSize: 11,
-                          fontWeight: isSelected ? FontWeight.w600 : FontWeight.w500,
-                          color: isSelected 
-                              ? (isDark ? AppColors.primaryLight : AppColors.primary)
+                          fontWeight:
+                              isSelected ? FontWeight.w600 : FontWeight.w500,
+                          color: isSelected
+                              ? (isDark
+                                  ? AppColors.primaryLight
+                                  : AppColors.primary)
                               : Colors.white,
                         ),
                       ),
@@ -589,11 +670,13 @@ class _HomeAppBarState extends State<HomeAppBar> {
     if (n.contains('biscuit') || n.contains('cookie')) return Icons.cookie;
     if (n.contains('chip') || n.contains('namkeen')) return Icons.fastfood;
     if (n.contains('chocolate') || n.contains('candy')) return Icons.cake;
-    if (n.contains('detergent') || n.contains('clean')) return Icons.cleaning_services;
+    if (n.contains('detergent') || n.contains('clean'))
+      return Icons.cleaning_services;
     if (n.contains('oil')) return Icons.water_drop;
     if (n.contains('hair')) return Icons.face;
     if (n.contains('sweet')) return Icons.icecream;
-    if (n.contains('masala') || n.contains('spice')) return Icons.local_fire_department;
+    if (n.contains('masala') || n.contains('spice'))
+      return Icons.local_fire_department;
     if (n.contains('milk') || n.contains('dairy')) return Icons.egg;
     if (n.contains('noodle') || n.contains('pasta')) return Icons.ramen_dining;
     if (n.contains('oral') || n.contains('tooth')) return Icons.auto_fix_high;

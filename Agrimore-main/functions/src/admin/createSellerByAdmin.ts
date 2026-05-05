@@ -123,5 +123,14 @@ export const createSellerByAdmin = functions.https.onCall(async (data, context) 
     batch.set(db.collection("sellerRequests").doc(uid), reqPayload, { merge: true });
     await batch.commit();
 
+    await auth.setCustomUserClaims(uid, {
+        role: "seller",
+        admin: false,
+        seller: true,
+        sellerApproved: true,
+        delivery_partner: false,
+        deliveryApproved: false,
+    });
+
     return { uid, email, createdAuth };
 });

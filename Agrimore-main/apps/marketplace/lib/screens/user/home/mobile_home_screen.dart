@@ -4,6 +4,7 @@ import 'package:geolocator/geolocator.dart';
 import 'package:geocoding/geocoding.dart';
 import 'package:provider/provider.dart';
 import 'package:shimmer/shimmer.dart';
+import 'package:shared_preferences/shared_preferences.dart';
 import 'package:agrimore_ui/agrimore_ui.dart';
 import 'package:agrimore_core/agrimore_core.dart';
 import '../../../providers/product_provider.dart';
@@ -253,7 +254,8 @@ class _MobileHomeScreenState extends State<MobileHomeScreen>
     }
   }
 
-  Future<void> _autoDetectLocationSilently(SettingsProvider settingsProvider) async {
+  Future<void> _autoDetectLocationSilently(
+      SettingsProvider settingsProvider) async {
     try {
       bool serviceEnabled = await Geolocator.isLocationServiceEnabled();
       if (!serviceEnabled) return;
@@ -270,7 +272,8 @@ class _MobileHomeScreenState extends State<MobileHomeScreen>
         timeLimit: const Duration(seconds: 10),
       );
 
-      List<Placemark> placemarks = await placemarkFromCoordinates(position.latitude, position.longitude);
+      List<Placemark> placemarks =
+          await placemarkFromCoordinates(position.latitude, position.longitude);
 
       if (placemarks.isNotEmpty) {
         Placemark place = placemarks[0];
@@ -280,8 +283,11 @@ class _MobileHomeScreenState extends State<MobileHomeScreen>
           place.subAdministrativeArea,
           place.administrativeArea,
         ].where((part) => part != null && part.trim().isNotEmpty).join(', ');
-        
-        final city = place.locality ?? place.subAdministrativeArea ?? place.administrativeArea ?? 'Unknown';
+
+        final city = place.locality ??
+            place.subAdministrativeArea ??
+            place.administrativeArea ??
+            'Unknown';
         final displayLocation = exactLocation.isNotEmpty ? exactLocation : city;
 
         await settingsProvider.changeLocation(displayLocation);
@@ -793,6 +799,13 @@ class _AutoLocationSheetState extends State<_AutoLocationSheet> {
           _isServiceable =
               _serviceableCities.any((c) => city.toLowerCase().contains(c));
         });
+        await _saveLocationTargeting(
+          lat: position.latitude,
+          lng: position.longitude,
+          state: place.administrativeArea ?? '',
+          district: place.subAdministrativeArea ?? city,
+          displayLocation: displayLocation,
+        );
 
         // Automatically set and proceed if serviceable
         if (_isServiceable) {
@@ -814,6 +827,25 @@ class _AutoLocationSheetState extends State<_AutoLocationSheet> {
         });
       }
     }
+  }
+
+  Future<void> _saveLocationTargeting({
+    required double lat,
+    required double lng,
+    required String state,
+    required String district,
+    required String displayLocation,
+  }) async {
+    final prefs = await SharedPreferences.getInstance();
+    await prefs.setDouble('selected_latitude', lat);
+    await prefs.setDouble('selected_longitude', lng);
+    if (state.trim().isNotEmpty) {
+      await prefs.setString('selected_state', state.trim());
+    }
+    if (district.trim().isNotEmpty) {
+      await prefs.setString('selected_district', district.trim());
+    }
+    await prefs.setString('selected_location', displayLocation);
   }
 
   void _manualSelect(String city) async {

@@ -3,6 +3,7 @@ import 'package:flutter/services.dart';
 import 'package:provider/provider.dart';
 import 'package:geolocator/geolocator.dart';
 import 'package:geocoding/geocoding.dart';
+import 'package:shared_preferences/shared_preferences.dart';
 import 'dart:ui' as ui;
 
 import 'package:agrimore_ui/agrimore_ui.dart';
@@ -74,10 +75,10 @@ class _ShopAppBarState extends State<ShopAppBar>
       CurvedAnimation(parent: _animationController, curve: Curves.easeInOut),
     );
 
-    _slideAnimation = Tween<Offset>(
-            begin: const Offset(0, 0.15), end: Offset.zero)
-        .animate(
-            CurvedAnimation(parent: _animationController, curve: Curves.easeOut));
+    _slideAnimation =
+        Tween<Offset>(begin: const Offset(0, 0.15), end: Offset.zero).animate(
+            CurvedAnimation(
+                parent: _animationController, curve: Curves.easeOut));
   }
 
   void _safeSyncState(VoidCallback callback) {
@@ -115,7 +116,7 @@ class _ShopAppBarState extends State<ShopAppBar>
         return;
       }
       if (!_isMounted) return;
-      
+
       final pos = await Geolocator.getCurrentPosition(
         desiredAccuracy: LocationAccuracy.medium,
         timeLimit: const Duration(seconds: 4),
@@ -130,8 +131,18 @@ class _ShopAppBarState extends State<ShopAppBar>
             placemarks.first.administrativeArea ??
             '';
         final pin = placemarks.first.postalCode ?? '';
+        final state = placemarks.first.administrativeArea ?? '';
+        final district = placemarks.first.subAdministrativeArea ?? city;
+        final displayLocation = pin.isEmpty ? city : '$city, $pin';
+        await _saveLocationTargeting(
+          lat: pos.latitude,
+          lng: pos.longitude,
+          state: state,
+          district: district,
+          displayLocation: displayLocation,
+        );
         _safeSyncState(() {
-          _currentLocationText = pin.isEmpty ? city : '$city, $pin';
+          _currentLocationText = displayLocation;
           _isLoadingLocation = false;
         });
       }
@@ -143,6 +154,25 @@ class _ShopAppBarState extends State<ShopAppBar>
         });
       }
     }
+  }
+
+  Future<void> _saveLocationTargeting({
+    required double lat,
+    required double lng,
+    required String state,
+    required String district,
+    required String displayLocation,
+  }) async {
+    final prefs = await SharedPreferences.getInstance();
+    await prefs.setDouble('selected_latitude', lat);
+    await prefs.setDouble('selected_longitude', lng);
+    if (state.trim().isNotEmpty) {
+      await prefs.setString('selected_state', state.trim());
+    }
+    if (district.trim().isNotEmpty) {
+      await prefs.setString('selected_district', district.trim());
+    }
+    await prefs.setString('selected_location', displayLocation);
   }
 
   @override
@@ -227,7 +257,8 @@ class _ShopAppBarState extends State<ShopAppBar>
                                 mainAxisSize: MainAxisSize.min,
                                 children: [
                                   // Only show view toggle if enabled
-                                  if (widget.showViewToggle && widget.onViewToggle != null)
+                                  if (widget.showViewToggle &&
+                                      widget.onViewToggle != null)
                                     _buildIconButton(
                                       context,
                                       icon: widget.isGridView
@@ -240,7 +271,8 @@ class _ShopAppBarState extends State<ShopAppBar>
                                         widget.onViewToggle!();
                                       },
                                     ),
-                                  if (widget.showViewToggle && widget.onViewToggle != null)
+                                  if (widget.showViewToggle &&
+                                      widget.onViewToggle != null)
                                     const SizedBox(width: 6),
                                   _buildIconButton(
                                     context,

@@ -173,7 +173,8 @@ class OrderModel {
         if (map['deliveryAddress'] != null &&
             map['deliveryAddress'] is Map<String, dynamic>) {
           deliveryAddress = AddressModel.fromMap(
-              map['deliveryAddress'] as Map<String, dynamic>);
+            map['deliveryAddress'] as Map<String, dynamic>,
+          );
         } else if (map['address'] is String) {
           deliveryAddress = AddressModel.fromMap({
             'fullAddress': map['address'],
@@ -189,7 +190,8 @@ class OrderModel {
         if (map['deliveryPartner'] != null &&
             map['deliveryPartner'] is Map<String, dynamic>) {
           deliveryPartner = DeliveryPartnerModel.fromMap(
-              map['deliveryPartner'] as Map<String, dynamic>);
+            map['deliveryPartner'] as Map<String, dynamic>,
+          );
         }
       } catch (e) {
         debugPrint('⚠️ Error parsing delivery partner: $e');
@@ -243,7 +245,8 @@ class OrderModel {
       );
 
       debugPrint(
-          '✅ OrderModel parsed: ${order.orderNumber}, items: ${order.items.length}');
+        '✅ OrderModel parsed: ${order.orderNumber}, items: ${order.items.length}',
+      );
       return order;
     } catch (e) {
       debugPrint('❌ Error parsing OrderModel: $e');
@@ -324,9 +327,22 @@ class OrderModel {
       case 'confirmed':
         return 'Confirmed';
       case 'processing':
-        return 'Processing';
+        return 'Packing';
+      case 'ready_for_pickup':
+        return 'Ready for Pickup';
+      case 'delivery_accepted':
+        return 'Delivery Accepted';
+      case 'arrived_at_store':
+      case 'reached_pickup':
+        return 'Arrived at Store';
+      case 'picked_up':
+      case 'parcel_picked':
+        return 'Picked Up';
       case 'shipped':
         return 'Shipped';
+      case 'outfordelivery':
+      case 'out_for_delivery':
+        return 'Out for Delivery';
       case 'delivered':
         return 'Delivered';
       case 'cancelled':

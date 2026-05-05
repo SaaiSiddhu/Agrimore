@@ -27,6 +27,12 @@ export {
   onOrderStatusChanged
 } from "./admin/notifications";
 export { createSellerByAdmin } from "./admin/createSellerByAdmin";
+export {
+  refreshUserRoleClaims,
+  syncDeliveryRoleClaims,
+  syncSellerRoleClaims,
+  syncUserRoleClaims
+} from "./admin/roleClaims";
 
 // ============================================
 // CUSTOMER MODULE

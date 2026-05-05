@@ -225,6 +225,8 @@ class WalletProvider with ChangeNotifier {
         coinsAfter: newCoins,
         description: 'Added ₹${amount.toStringAsFixed(0)} to wallet',
         referenceId: paymentId,
+        sourceKey: 'wallet_topup',
+        status: 'success',
       );
 
       // Record transaction for bonus coins if any
@@ -475,6 +477,8 @@ class WalletProvider with ChangeNotifier {
     required String description,
     String? orderId,
     String? referenceId,
+    String? sourceKey,
+    String? status,
   }) async {
     if (_wallet == null) return;
 
@@ -490,6 +494,8 @@ class WalletProvider with ChangeNotifier {
       'orderId': orderId,
       'description': description,
       'referenceId': referenceId,
+      'sourceKey': sourceKey,
+      'status': status ?? 'success',
       'createdAt': FieldValue.serverTimestamp(),
     });
   }

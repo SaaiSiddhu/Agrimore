@@ -11,6 +11,19 @@ service firebase.storage {
     function isAuthenticated() {
       return request.auth != null;
     }
+
+    function isAdmin() {
+      return isAuthenticated() &&
+        (request.auth.token.admin == true || request.auth.token.role == 'admin');
+    }
+
+    function isSeller() {
+      return isAuthenticated() && request.auth.token.seller == true;
+    }
+
+    function isDeliveryPartner() {
+      return isAuthenticated() && request.auth.token.delivery_partner == true;
+    }
     
     // Check if file size is under limit (10MB)
     function isValidFileSize() {
@@ -25,30 +38,30 @@ service firebase.storage {
     // ============================================
     // PUBLIC READ ACCESS FOR ALL FILES
     // ============================================
-    match /{allPaths=**} {
-      allow read: if true;
-    }
-
     // ============================================
     // PRODUCT IMAGES — Authenticated users with size/type check
     // ============================================
     match /products/{fileName} {
-      allow write: if isAuthenticated() && isValidFileSize() && isImage();
+      allow read: if true;
+      allow write: if (isSeller() || isAdmin()) && isValidFileSize() && isImage();
     }
     match /product_images/{fileName} {
-      allow write: if isAuthenticated() && isValidFileSize() && isImage();
+      allow read: if true;
+      allow write: if (isSeller() || isAdmin()) && isValidFileSize() && isImage();
     }
 
     // ============================================
     // USER PROFILE IMAGES — Only owner can upload
     // ============================================
     match /profiles/{userId}/{fileName} {
+      allow read: if isAuthenticated() && request.auth.uid == userId;
       allow write: if isAuthenticated() 
                    && request.auth.uid == userId
                    && isValidFileSize() 
                    && isImage();
     }
     match /users/{userId}/{fileName} {
+      allow read: if isAuthenticated() && request.auth.uid == userId;
       allow write: if isAuthenticated() 
                    && request.auth.uid == userId
                    && isValidFileSize() 
@@ -59,26 +72,31 @@ service firebase.storage {
     // BANNER IMAGES — Admin Only
     // ============================================
     match /banners/{fileName} {
-      allow write: if isAuthenticated() && request.auth.token.admin == true && isValidFileSize() && isImage();
+      allow read: if true;
+      allow write: if isAdmin() && isValidFileSize() && isImage();
     }
     match /notifications/{fileName} {
-      allow write: if isAuthenticated() && request.auth.token.admin == true && isValidFileSize() && isImage();
+      allow read: if isAuthenticated();
+      allow write: if isAdmin() && isValidFileSize() && isImage();
     }
     match /sponsored/{fileName} {
-      allow write: if isAuthenticated() && isValidFileSize() && isImage(); // Handled by sellers
+      allow read: if true;
+      allow write: if (isSeller() || isAdmin()) && isValidFileSize() && isImage();
     }
 
     // ============================================
     // CATEGORY IMAGES
     // ============================================
     match /categories/{fileName} {
-      allow write: if isAuthenticated() && request.auth.token.admin == true && isValidFileSize() && isImage();
+      allow read: if true;
+      allow write: if isAdmin() && isValidFileSize() && isImage();
     }
 
     // ============================================
     // CHAT ATTACHMENTS — Authenticated with size limit
     // ============================================
     match /chat/{threadId}/{fileName} {
+      allow read: if isAuthenticated();
       allow write: if isAuthenticated() && isValidFileSize();
     }
 
@@ -86,6 +104,7 @@ service firebase.storage {
     // SELLER DOCUMENTS — Only the seller can upload
     // ============================================
     match /seller_documents/{userId}/{fileName} {
+      allow read: if isAuthenticated() && (request.auth.uid == userId || isAdmin());
       allow write: if isAuthenticated() 
                    && request.auth.uid == userId
                    && isValidFileSize();
@@ -95,6 +114,7 @@ service firebase.storage {
     // DELIVERY PARTNER DOCUMENTS
     // ============================================
     match /delivery_documents/{userId}/{fileName} {
+      allow read: if isAuthenticated() && (request.auth.uid == userId || isAdmin());
       allow write: if isAuthenticated() 
                    && request.auth.uid == userId
                    && isValidFileSize();
@@ -104,7 +124,12 @@ service firebase.storage {
     // DELIVERY PROOF PHOTOS
     // ============================================
     match /delivery_proofs/{fileName} {
-      allow write: if isAuthenticated() && isValidFileSize() && isImage();
+      allow read: if isAuthenticated();
+      allow write: if (isDeliveryPartner() || isAdmin()) && isValidFileSize() && isImage();
+    }
+
+    match /{allPaths=**} {
+      allow read, write: if false;
     }
   }
 }

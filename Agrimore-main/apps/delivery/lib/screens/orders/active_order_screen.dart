@@ -12,16 +12,16 @@ import '../../providers/order_provider.dart';
 
 /// Delivery workflow states — each maps to a Firestore orderStatus
 enum DeliveryStep {
-  accepted,        // "picked_up" (order accepted by partner)
-  reachedPickup,   // "reached_pickup"
-  parcelPicked,    // "parcel_picked"
-  outForDelivery,  // "out_for_delivery"
-  delivered,       // "delivered" (requires verification code)
+  accepted, // "delivery_accepted"
+  arrivedAtStore, // "arrived_at_store"
+  pickedUp, // "picked_up"
+  outForDelivery, // "out_for_delivery"
+  delivered, // "delivered" (requires verification code)
 }
 
 class ActiveOrderScreen extends StatefulWidget {
   final OrderModel order;
-  
+
   const ActiveOrderScreen({super.key, required this.order});
 
   @override
@@ -33,7 +33,7 @@ class _ActiveOrderScreenState extends State<ActiveOrderScreen> {
   bool _isUpdating = false;
   File? _proofPhoto;
   final ImagePicker _picker = ImagePicker();
-  
+
   @override
   void initState() {
     super.initState();
@@ -42,12 +42,14 @@ class _ActiveOrderScreenState extends State<ActiveOrderScreen> {
 
   DeliveryStep _mapStatusToStep(String status) {
     switch (status) {
-      case 'picked_up':
+      case 'delivery_accepted':
         return DeliveryStep.accepted;
+      case 'arrived_at_store':
       case 'reached_pickup':
-        return DeliveryStep.reachedPickup;
+        return DeliveryStep.arrivedAtStore;
+      case 'picked_up':
       case 'parcel_picked':
-        return DeliveryStep.parcelPicked;
+        return DeliveryStep.pickedUp;
       case 'out_for_delivery':
       case 'outfordelivery':
         return DeliveryStep.outForDelivery;
@@ -61,11 +63,11 @@ class _ActiveOrderScreenState extends State<ActiveOrderScreen> {
   String _stepToStatus(DeliveryStep step) {
     switch (step) {
       case DeliveryStep.accepted:
+        return 'delivery_accepted';
+      case DeliveryStep.arrivedAtStore:
+        return 'arrived_at_store';
+      case DeliveryStep.pickedUp:
         return 'picked_up';
-      case DeliveryStep.reachedPickup:
-        return 'reached_pickup';
-      case DeliveryStep.parcelPicked:
-        return 'parcel_picked';
       case DeliveryStep.outForDelivery:
         return 'out_for_delivery';
       case DeliveryStep.delivered:
@@ -77,11 +79,23 @@ class _ActiveOrderScreenState extends State<ActiveOrderScreen> {
   Widget build(BuildContext context) {
     final theme = Theme.of(context);
     final colorScheme = theme.colorScheme;
-    
+
     return Scaffold(
       appBar: AppBar(
         title: Text('Order #${widget.order.orderNumber}'),
         centerTitle: true,
+        actions: [
+          IconButton(
+            tooltip: 'Call customer',
+            onPressed: _callCustomer,
+            icon: const Icon(Icons.call_rounded),
+          ),
+          IconButton(
+            tooltip: 'Chat',
+            onPressed: _openCommunicationSheet,
+            icon: const Icon(Icons.chat_bubble_outline_rounded),
+          ),
+        ],
       ),
       body: SingleChildScrollView(
         padding: const EdgeInsets.all(20),
@@ -91,7 +105,7 @@ class _ActiveOrderScreenState extends State<ActiveOrderScreen> {
             // ── Delivery Progress Stepper ──
             _buildDeliveryStepper(colorScheme),
             const SizedBox(height: 24),
-            
+
             // ── Customer Info ──
             _buildSection(
               'Customer',
@@ -108,7 +122,7 @@ class _ActiveOrderScreenState extends State<ActiveOrderScreen> {
                       color: colorScheme.onSurface,
                     ),
                   ),
-                  if (widget.order.deliveryAddress.phone != null) ...[
+                  if (widget.order.deliveryAddress.phone.isNotEmpty) ...[
                     const SizedBox(height: 8),
                     Row(
                       children: [
@@ -130,7 +144,7 @@ class _ActiveOrderScreenState extends State<ActiveOrderScreen> {
               ),
             ),
             const SizedBox(height: 16),
-            
+
             // ── Delivery Address ──
             _buildSection(
               'Delivery Address',
@@ -146,39 +160,43 @@ class _ActiveOrderScreenState extends State<ActiveOrderScreen> {
               ),
             ),
             const SizedBox(height: 16),
-            
+
             // ── Order Items ──
             _buildSection(
               'Items (${widget.order.items.length})',
               Icons.shopping_bag_outlined,
               colorScheme,
               child: Column(
-                children: widget.order.items.map((item) => Padding(
-                  padding: const EdgeInsets.only(bottom: 8),
-                  child: Row(
-                    children: [
-                      Expanded(
-                        child: Text(
-                          item.productName,
-                          style: const TextStyle(fontSize: 14),
-                          maxLines: 1,
-                          overflow: TextOverflow.ellipsis,
+                children: widget.order.items
+                    .map(
+                      (item) => Padding(
+                        padding: const EdgeInsets.only(bottom: 8),
+                        child: Row(
+                          children: [
+                            Expanded(
+                              child: Text(
+                                item.productName,
+                                style: const TextStyle(fontSize: 14),
+                                maxLines: 1,
+                                overflow: TextOverflow.ellipsis,
+                              ),
+                            ),
+                            Text(
+                              'x${item.quantity}',
+                              style: TextStyle(
+                                fontWeight: FontWeight.w600,
+                                color: colorScheme.primary,
+                              ),
+                            ),
+                          ],
                         ),
                       ),
-                      Text(
-                        'x${item.quantity}',
-                        style: TextStyle(
-                          fontWeight: FontWeight.w600,
-                          color: colorScheme.primary,
-                        ),
-                      ),
-                    ],
-                  ),
-                )).toList(),
+                    )
+                    .toList(),
               ),
             ),
             const SizedBox(height: 16),
-            
+
             // ── Payment Info ──
             _buildSection(
               'Payment',
@@ -212,9 +230,13 @@ class _ActiveOrderScreenState extends State<ActiveOrderScreen> {
               _buildProofOfDeliverySection(colorScheme),
 
             const SizedBox(height: 24),
-            
+
             // ── Action Button ──
             _buildNextStepButton(context, colorScheme),
+            if (_canReleaseForSellerNotReady()) ...[
+              const SizedBox(height: 10),
+              _buildSellerNotReadyButton(context, colorScheme),
+            ],
           ],
         ),
       ),
@@ -227,14 +249,14 @@ class _ActiveOrderScreenState extends State<ActiveOrderScreen> {
   Widget _buildDeliveryStepper(ColorScheme colorScheme) {
     final steps = [
       _StepInfo('Accepted', Icons.check_circle_rounded),
-      _StepInfo('Reached\nPickup', Icons.store_rounded),
-      _StepInfo('Parcel\nPicked', Icons.inventory_2_rounded),
+      _StepInfo('Arrived\nStore', Icons.store_rounded),
+      _StepInfo('Picked\nUp', Icons.inventory_2_rounded),
       _StepInfo('Out for\nDelivery', Icons.delivery_dining_rounded),
       _StepInfo('Delivered', Icons.done_all_rounded),
     ];
-    
+
     final currentIndex = _currentStep.index;
-    
+
     return Container(
       padding: const EdgeInsets.all(16),
       decoration: BoxDecoration(
@@ -272,13 +294,13 @@ class _ActiveOrderScreenState extends State<ActiveOrderScreen> {
                   ),
                 );
               }
-              
+
               // Step circle
               final stepIndex = index ~/ 2;
               final step = steps[stepIndex];
               final isCompleted = stepIndex < currentIndex;
               final isCurrent = stepIndex == currentIndex;
-              
+
               return Column(
                 children: [
                   Container(
@@ -295,11 +317,15 @@ class _ActiveOrderScreenState extends State<ActiveOrderScreen> {
                           ? Border.all(color: colorScheme.primary, width: 3)
                           : null,
                       boxShadow: isCurrent
-                          ? [BoxShadow(
-                              color: colorScheme.primary.withValues(alpha: 0.3),
-                              blurRadius: 8,
-                              spreadRadius: 2,
-                            )]
+                          ? [
+                              BoxShadow(
+                                color: colorScheme.primary.withValues(
+                                  alpha: 0.3,
+                                ),
+                                blurRadius: 8,
+                                spreadRadius: 2,
+                              ),
+                            ]
                           : null,
                     ),
                     child: Icon(
@@ -369,7 +395,9 @@ class _ActiveOrderScreenState extends State<ActiveOrderScreen> {
                     onPressed: () => setState(() => _proofPhoto = null),
                     icon: const Icon(Icons.delete_outline, size: 16),
                     label: const Text('Remove'),
-                    style: OutlinedButton.styleFrom(foregroundColor: Colors.red),
+                    style: OutlinedButton.styleFrom(
+                      foregroundColor: Colors.red,
+                    ),
                   ),
                 ),
               ],
@@ -381,7 +409,9 @@ class _ActiveOrderScreenState extends State<ActiveOrderScreen> {
                 height: 120,
                 width: double.infinity,
                 decoration: BoxDecoration(
-                  color: colorScheme.surfaceContainerHighest.withValues(alpha: 0.5),
+                  color: colorScheme.surfaceContainerHighest.withValues(
+                    alpha: 0.5,
+                  ),
                   borderRadius: BorderRadius.circular(12),
                   border: Border.all(
                     color: colorScheme.outline.withValues(alpha: 0.3),
@@ -391,7 +421,11 @@ class _ActiveOrderScreenState extends State<ActiveOrderScreen> {
                 child: Column(
                   mainAxisAlignment: MainAxisAlignment.center,
                   children: [
-                    Icon(Icons.add_a_photo_rounded, size: 36, color: colorScheme.outline),
+                    Icon(
+                      Icons.add_a_photo_rounded,
+                      size: 36,
+                      color: colorScheme.outline,
+                    ),
                     const SizedBox(height: 8),
                     Text(
                       'Tap to take delivery photo',
@@ -421,12 +455,11 @@ class _ActiveOrderScreenState extends State<ActiveOrderScreen> {
 
     final nextStep = DeliveryStep.values[_currentStep.index + 1];
     final buttonLabel = _getButtonLabel(nextStep);
-    final buttonColor = nextStep == DeliveryStep.delivered
-        ? Colors.green
-        : colorScheme.primary;
+    final buttonColor =
+        nextStep == DeliveryStep.delivered ? Colors.green : colorScheme.primary;
 
     return FilledButton(
-      onPressed: _isUpdating ? null : () => _handleNextStep(context, nextStep),
+      onPressed: _isUpdating ? null : () => _handleNextStep(nextStep),
       style: FilledButton.styleFrom(
         minimumSize: const Size.fromHeight(52),
         backgroundColor: buttonColor,
@@ -436,7 +469,10 @@ class _ActiveOrderScreenState extends State<ActiveOrderScreen> {
           ? const SizedBox(
               height: 24,
               width: 24,
-              child: CircularProgressIndicator(color: Colors.white, strokeWidth: 2.5),
+              child: CircularProgressIndicator(
+                color: Colors.white,
+                strokeWidth: 2.5,
+              ),
             )
           : Row(
               mainAxisAlignment: MainAxisAlignment.center,
@@ -445,10 +481,43 @@ class _ActiveOrderScreenState extends State<ActiveOrderScreen> {
                 const SizedBox(width: 8),
                 Text(
                   buttonLabel,
-                  style: const TextStyle(fontSize: 16, fontWeight: FontWeight.w700),
+                  style: const TextStyle(
+                    fontSize: 16,
+                    fontWeight: FontWeight.w700,
+                  ),
                 ),
               ],
             ),
+    );
+  }
+
+  bool _canReleaseForSellerNotReady() {
+    return _currentStep == DeliveryStep.accepted ||
+        _currentStep == DeliveryStep.arrivedAtStore;
+  }
+
+  Widget _buildSellerNotReadyButton(
+    BuildContext context,
+    ColorScheme colorScheme,
+  ) {
+    return SizedBox(
+      width: double.infinity,
+      height: 50,
+      child: OutlinedButton.icon(
+        onPressed: _isUpdating ? null : _confirmSellerNotReady,
+        style: OutlinedButton.styleFrom(
+          foregroundColor: Colors.orange.shade800,
+          side: BorderSide(color: Colors.orange.shade700),
+          shape: RoundedRectangleBorder(
+            borderRadius: BorderRadius.circular(12),
+          ),
+        ),
+        icon: const Icon(Icons.schedule_rounded),
+        label: const Text(
+          'Seller Not Ready',
+          style: TextStyle(fontWeight: FontWeight.w800),
+        ),
+      ),
     );
   }
 
@@ -456,10 +525,10 @@ class _ActiveOrderScreenState extends State<ActiveOrderScreen> {
     switch (step) {
       case DeliveryStep.accepted:
         return 'Accept Order';
-      case DeliveryStep.reachedPickup:
-        return 'Reached Pickup Location';
-      case DeliveryStep.parcelPicked:
-        return 'Parcel Picked Up';
+      case DeliveryStep.arrivedAtStore:
+        return 'Arrived at Store';
+      case DeliveryStep.pickedUp:
+        return 'Picked Up';
       case DeliveryStep.outForDelivery:
         return 'Start Delivery';
       case DeliveryStep.delivered:
@@ -471,9 +540,9 @@ class _ActiveOrderScreenState extends State<ActiveOrderScreen> {
     switch (step) {
       case DeliveryStep.accepted:
         return Icons.check_circle;
-      case DeliveryStep.reachedPickup:
+      case DeliveryStep.arrivedAtStore:
         return Icons.store;
-      case DeliveryStep.parcelPicked:
+      case DeliveryStep.pickedUp:
         return Icons.inventory_2;
       case DeliveryStep.outForDelivery:
         return Icons.delivery_dining;
@@ -485,17 +554,17 @@ class _ActiveOrderScreenState extends State<ActiveOrderScreen> {
   // ════════════════════════════════════════════
   // HANDLE NEXT STEP
   // ════════════════════════════════════════════
-  Future<void> _handleNextStep(BuildContext context, DeliveryStep nextStep) async {
+  Future<void> _handleNextStep(DeliveryStep nextStep) async {
     if (nextStep == DeliveryStep.delivered) {
       // Final step — show verification code dialog
       _showVerificationDialog(context);
     } else {
       // All other steps — simple status update
-      await _updateToStep(context, nextStep);
+      await _updateToStep(nextStep);
     }
   }
 
-  Future<void> _updateToStep(BuildContext context, DeliveryStep step) async {
+  Future<void> _updateToStep(DeliveryStep step) async {
     setState(() => _isUpdating = true);
     HapticFeedback.mediumImpact();
 
@@ -521,21 +590,70 @@ class _ActiveOrderScreenState extends State<ActiveOrderScreen> {
             content: Text('✅ ${_getButtonLabel(step)}'),
             backgroundColor: Colors.green,
             behavior: SnackBarBehavior.floating,
-            shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(10)),
+            shape: RoundedRectangleBorder(
+              borderRadius: BorderRadius.circular(10),
+            ),
           ),
         );
       }
     }
   }
 
+  Future<void> _confirmSellerNotReady() async {
+    final confirmed = await showDialog<bool>(
+      context: context,
+      builder: (ctx) => AlertDialog(
+        title: const Text('Seller not ready?'),
+        content: const Text(
+          'This will release the order back to pickup-ready queue and notify the team.',
+        ),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.pop(ctx, false),
+            child: const Text('Wait'),
+          ),
+          FilledButton(
+            onPressed: () => Navigator.pop(ctx, true),
+            child: const Text('Release Order'),
+          ),
+        ],
+      ),
+    );
+
+    if (confirmed != true || !mounted) return;
+
+    setState(() => _isUpdating = true);
+    final provider = context.read<DeliveryOrderProvider>();
+    final partnerId = widget.order.deliveryPartnerId ?? '';
+    final success = await provider.releaseOrder(
+      widget.order.id,
+      partnerId,
+      reason: 'Delivery partner reported seller is not ready for pickup',
+    );
+    if (!mounted) return;
+
+    setState(() => _isUpdating = false);
+    ScaffoldMessenger.of(context).showSnackBar(
+      SnackBar(
+        content: Text(
+          success
+              ? 'Order released for reassignment'
+              : provider.error ?? 'Could not release order',
+        ),
+        backgroundColor: success ? Colors.orange.shade700 : Colors.red,
+      ),
+    );
+    if (success) Navigator.pop(context);
+  }
+
   String _getStepDescription(DeliveryStep step) {
     switch (step) {
       case DeliveryStep.accepted:
         return 'Delivery partner accepted the order';
-      case DeliveryStep.reachedPickup:
-        return 'Delivery partner reached the pickup location';
-      case DeliveryStep.parcelPicked:
-        return 'Parcel has been picked up from seller';
+      case DeliveryStep.arrivedAtStore:
+        return 'Delivery partner arrived at the seller store';
+      case DeliveryStep.pickedUp:
+        return 'Order has been picked up from seller';
       case DeliveryStep.outForDelivery:
         return 'Order is now out for delivery';
       case DeliveryStep.delivered:
@@ -559,7 +677,9 @@ class _ActiveOrderScreenState extends State<ActiveOrderScreen> {
       builder: (ctx) => StatefulBuilder(
         builder: (context, setDialogState) {
           return AlertDialog(
-            shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(20)),
+            shape: RoundedRectangleBorder(
+              borderRadius: BorderRadius.circular(20),
+            ),
             title: Row(
               children: [
                 Container(
@@ -568,7 +688,11 @@ class _ActiveOrderScreenState extends State<ActiveOrderScreen> {
                     color: Colors.green.shade100,
                     borderRadius: BorderRadius.circular(10),
                   ),
-                  child: Icon(Icons.verified_user, color: Colors.green.shade700, size: 20),
+                  child: Icon(
+                    Icons.verified_user,
+                    color: Colors.green.shade700,
+                    size: 20,
+                  ),
                 ),
                 const SizedBox(width: 12),
                 const Expanded(
@@ -592,7 +716,11 @@ class _ActiveOrderScreenState extends State<ActiveOrderScreen> {
                   ),
                   child: Row(
                     children: [
-                      Icon(Icons.info_outline, size: 18, color: Colors.blue.shade700),
+                      Icon(
+                        Icons.info_outline,
+                        size: 18,
+                        color: Colors.blue.shade700,
+                      ),
                       const SizedBox(width: 8),
                       Expanded(
                         child: Text(
@@ -632,7 +760,10 @@ class _ActiveOrderScreenState extends State<ActiveOrderScreen> {
                     ),
                     focusedBorder: OutlineInputBorder(
                       borderRadius: BorderRadius.circular(12),
-                      borderSide: BorderSide(color: Colors.green.shade600, width: 2),
+                      borderSide: BorderSide(
+                        color: Colors.green.shade600,
+                        width: 2,
+                      ),
                     ),
                   ),
                   onChanged: (val) {
@@ -653,7 +784,9 @@ class _ActiveOrderScreenState extends State<ActiveOrderScreen> {
                   final inputCode = codeController.text.trim();
 
                   if (inputCode.isEmpty || inputCode.length < 6) {
-                    setDialogState(() => errorText = 'Enter the full 6-digit code');
+                    setDialogState(
+                      () => errorText = 'Enter the full 6-digit code',
+                    );
                     return;
                   }
 
@@ -664,24 +797,34 @@ class _ActiveOrderScreenState extends State<ActiveOrderScreen> {
                         .doc(widget.order.id)
                         .get();
 
-                    final realCode = orderDoc.data()?['deliveryVerificationCode'] as String?;
+                    final realCode =
+                        orderDoc.data()?['deliveryVerificationCode'] as String?;
+
+                    if (!ctx.mounted) return;
 
                     if (realCode == null) {
-                      setDialogState(() => errorText = 'Verification not available for this order');
+                      setDialogState(
+                        () => errorText =
+                            'Verification not available for this order',
+                      );
                       return;
                     }
 
                     if (inputCode == realCode) {
                       // ✅ Code matches — complete delivery
                       Navigator.pop(ctx);
-                      await _completeDelivery(context);
+                      await _completeDelivery();
                     } else {
                       HapticFeedback.heavyImpact();
-                      setDialogState(() => errorText = 'Incorrect code. Please try again.');
+                      setDialogState(
+                        () => errorText = 'Incorrect code. Please try again.',
+                      );
                     }
                   } catch (e) {
                     debugPrint('❌ Verification error: $e');
-                    setDialogState(() => errorText = 'Verification failed. Try again.');
+                    setDialogState(
+                      () => errorText = 'Verification failed. Try again.',
+                    );
                   }
                 },
                 icon: const Icon(Icons.check, size: 18),
@@ -698,19 +841,20 @@ class _ActiveOrderScreenState extends State<ActiveOrderScreen> {
   // ════════════════════════════════════════════
   // COMPLETE THE DELIVERY
   // ════════════════════════════════════════════
-  Future<void> _completeDelivery(BuildContext context) async {
+  Future<void> _completeDelivery() async {
     setState(() => _isUpdating = true);
     HapticFeedback.heavyImpact();
 
     String? proofPhotoUrl;
+    final orderProvider = context.read<DeliveryOrderProvider>();
 
     // Upload proof photo if available
     if (_proofPhoto != null) {
       try {
-        final ref = FirebaseStorage.instance
-            .ref()
-            .child('delivery_proofs')
-            .child('${widget.order.id}_${DateTime.now().millisecondsSinceEpoch}.jpg');
+        final ref =
+            FirebaseStorage.instance.ref().child('delivery_proofs').child(
+                  '${widget.order.id}_${DateTime.now().millisecondsSinceEpoch}.jpg',
+                );
 
         await ref.putFile(_proofPhoto!);
         proofPhotoUrl = await ref.getDownloadURL();
@@ -721,7 +865,6 @@ class _ActiveOrderScreenState extends State<ActiveOrderScreen> {
     }
 
     // Update order status to delivered
-    final orderProvider = context.read<DeliveryOrderProvider>();
     final success = await orderProvider.updateOrderStatus(
       widget.order.id,
       'delivered',
@@ -748,7 +891,9 @@ class _ActiveOrderScreenState extends State<ActiveOrderScreen> {
           context: context,
           barrierDismissible: false,
           builder: (ctx) => AlertDialog(
-            shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(20)),
+            shape: RoundedRectangleBorder(
+              borderRadius: BorderRadius.circular(20),
+            ),
             content: Column(
               mainAxisSize: MainAxisSize.min,
               children: [
@@ -758,7 +903,11 @@ class _ActiveOrderScreenState extends State<ActiveOrderScreen> {
                     color: Colors.green.shade50,
                     shape: BoxShape.circle,
                   ),
-                  child: Icon(Icons.done_all_rounded, size: 48, color: Colors.green.shade600),
+                  child: Icon(
+                    Icons.done_all_rounded,
+                    size: 48,
+                    color: Colors.green.shade600,
+                  ),
                 ),
                 const SizedBox(height: 20),
                 const Text(
@@ -814,7 +963,12 @@ class _ActiveOrderScreenState extends State<ActiveOrderScreen> {
   // ════════════════════════════════════════════
   // UI HELPERS
   // ════════════════════════════════════════════
-  Widget _buildSection(String title, IconData icon, ColorScheme colorScheme, {required Widget child}) {
+  Widget _buildSection(
+    String title,
+    IconData icon,
+    ColorScheme colorScheme, {
+    required Widget child,
+  }) {
     return Container(
       padding: const EdgeInsets.all(16),
       decoration: BoxDecoration(
@@ -845,21 +999,85 @@ class _ActiveOrderScreenState extends State<ActiveOrderScreen> {
       ),
     );
   }
-  
+
   void _callCustomer() async {
     final phone = widget.order.deliveryAddress.phone;
-    if (phone != null) {
+    if (phone.isNotEmpty) {
       final url = Uri.parse('tel:$phone');
-      if (await canLaunchUrl(url)) launchUrl(url);
+      if (await canLaunchUrl(url)) await launchUrl(url);
     }
   }
-  
+
   void _navigateToAddress() async {
     final address = widget.order.deliveryAddress;
     if (address.latitude != null && address.longitude != null) {
-      final url = Uri.parse('https://www.google.com/maps/dir/?api=1&destination=${address.latitude},${address.longitude}');
-      if (await canLaunchUrl(url)) launchUrl(url);
+      final url = Uri.parse(
+        'https://www.google.com/maps/dir/?api=1&destination=${address.latitude},${address.longitude}',
+      );
+      if (await canLaunchUrl(url)) await launchUrl(url);
     }
+  }
+
+  void _openCommunicationSheet() {
+    showModalBottomSheet<void>(
+      context: context,
+      showDragHandle: true,
+      builder: (ctx) => SafeArea(
+        child: Column(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            ListTile(
+              leading: const Icon(Icons.person_outline_rounded),
+              title: const Text('Chat with Customer'),
+              trailing: const Icon(Icons.chevron_right_rounded),
+              onTap: () {
+                Navigator.pop(ctx);
+                _createChatThread('customer');
+              },
+            ),
+            if ((widget.order.sellerId ?? '').isNotEmpty)
+              ListTile(
+                leading: const Icon(Icons.storefront_rounded),
+                title: const Text('Chat with Seller'),
+                trailing: const Icon(Icons.chevron_right_rounded),
+                onTap: () {
+                  Navigator.pop(ctx);
+                  _createChatThread('seller');
+                },
+              ),
+          ],
+        ),
+      ),
+    );
+  }
+
+  Future<void> _createChatThread(String target) async {
+    final order = widget.order;
+    final partnerId = order.deliveryPartnerId ?? '';
+    final sellerId = order.sellerId ?? '';
+    final threadId = target == 'seller'
+        ? '${order.id}_seller_delivery'
+        : '${order.id}_customer_delivery';
+    final participantIds = target == 'seller'
+        ? [sellerId, partnerId].where((id) => id.isNotEmpty).toList()
+        : [order.userId, partnerId].where((id) => id.isNotEmpty).toList();
+
+    await FirebaseFirestore.instance.collection('threads').doc(threadId).set({
+      'orderId': order.id,
+      'orderNumber': order.orderNumber,
+      'customerId': order.userId,
+      'sellerId': sellerId,
+      'deliveryPartnerId': partnerId,
+      'participantIds': participantIds,
+      'type': target == 'seller' ? 'seller_delivery' : 'customer_delivery',
+      'updatedAt': FieldValue.serverTimestamp(),
+      'createdAt': FieldValue.serverTimestamp(),
+    }, SetOptions(merge: true));
+
+    if (!mounted) return;
+    ScaffoldMessenger.of(context).showSnackBar(
+      const SnackBar(content: Text('Chat thread is ready')),
+    );
   }
 }
 

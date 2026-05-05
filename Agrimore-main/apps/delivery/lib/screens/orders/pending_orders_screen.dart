@@ -19,7 +19,7 @@ class PendingOrdersScreen extends StatefulWidget {
 
 class _PendingOrdersScreenState extends State<PendingOrdersScreen> {
   bool _isAccepting = false;
-  
+
   // Cache for distance calculations
   final Map<String, Map<String, dynamic>> _distanceCache = {};
 
@@ -27,7 +27,7 @@ class _PendingOrdersScreenState extends State<PendingOrdersScreen> {
   Widget build(BuildContext context) {
     final theme = Theme.of(context);
     final colorScheme = theme.colorScheme;
-    
+
     return Scaffold(
       appBar: AppBar(
         title: const Text('Available Orders'),
@@ -48,11 +48,11 @@ class _PendingOrdersScreenState extends State<PendingOrdersScreen> {
           if (orderProvider.isLoading) {
             return const Center(child: CircularProgressIndicator());
           }
-          
+
           if (orderProvider.availableOrders.isEmpty) {
             return _buildEmptyState(colorScheme);
           }
-          
+
           return RefreshIndicator(
             onRefresh: () async {
               _distanceCache.clear();
@@ -82,11 +82,15 @@ class _PendingOrdersScreenState extends State<PendingOrdersScreen> {
         onTap: () => _showOrderDetailPopup(order, cached),
       );
     }
-    
+
     // Log partner location status
-    debugPrint('📍 Partner location: lat=${locationProvider.latitude}, lng=${locationProvider.longitude}');
-    debugPrint('📍 Order ${order.orderNumber} address: lat=${order.deliveryAddress.latitude}, lng=${order.deliveryAddress.longitude}');
-    
+    debugPrint(
+      '📍 Partner location: lat=${locationProvider.latitude}, lng=${locationProvider.longitude}',
+    );
+    debugPrint(
+      '📍 Order ${order.orderNumber} address: lat=${order.deliveryAddress.latitude}, lng=${order.deliveryAddress.longitude}',
+    );
+
     // Try sync calculation if coords available
     if (locationProvider.currentPosition != null) {
       final syncResult = DistanceService.calculateIfCoordsAvailable(
@@ -94,9 +98,11 @@ class _PendingOrdersScreenState extends State<PendingOrdersScreen> {
         partnerLng: locationProvider.longitude!,
         customerAddress: order.deliveryAddress,
       );
-      
+
       if (syncResult != null) {
-        debugPrint('✅ Sync calculation succeeded for order ${order.orderNumber}');
+        debugPrint(
+          '✅ Sync calculation succeeded for order ${order.orderNumber}',
+        );
         _distanceCache[order.id] = syncResult;
         return OrderPreviewCard(
           order: order,
@@ -104,15 +110,17 @@ class _PendingOrdersScreenState extends State<PendingOrdersScreen> {
           onTap: () => _showOrderDetailPopup(order, syncResult),
         );
       } else {
-        debugPrint('⚠️ Sync failed, coordinates missing - falling back to async geocoding');
+        debugPrint(
+          '⚠️ Sync failed, coordinates missing - falling back to async geocoding',
+        );
       }
     } else {
       debugPrint('⚠️ Partner position is null - cannot calculate distance');
     }
-    
+
     // Need async geocoding - return card with loading, calculate in background
     _calculateDistanceAsync(order, locationProvider);
-    
+
     return OrderPreviewCard(
       order: order,
       distanceKm: null, // Shows loading
@@ -120,30 +128,34 @@ class _PendingOrdersScreenState extends State<PendingOrdersScreen> {
     );
   }
 
-  Future<void> _calculateDistanceAsync(OrderModel order, LocationProvider locationProvider) async {
+  Future<void> _calculateDistanceAsync(
+    OrderModel order,
+    LocationProvider locationProvider,
+  ) async {
     if (locationProvider.currentPosition == null) {
       debugPrint('⚠️ Cannot geocode - partner position null');
       return;
     }
     if (_distanceCache.containsKey(order.id)) return; // Already cached
-    
+
     debugPrint('🔄 Starting async geocoding for order ${order.orderNumber}');
-    
+
     final result = await DistanceService.calculateDeliveryDetailsAsync(
       partnerLat: locationProvider.latitude!,
       partnerLng: locationProvider.longitude!,
       customerAddress: order.deliveryAddress,
     );
-    
-    debugPrint('📊 Async result for ${order.orderNumber}: distance=${result['distanceKm']}km, earnings=₹${result['earnings']}');
-    
+
+    debugPrint(
+      '📊 Async result for ${order.orderNumber}: distance=${result['distanceKm']}km, earnings=₹${result['earnings']}',
+    );
+
     if (mounted) {
       setState(() {
         _distanceCache[order.id] = result;
       });
     }
   }
-
 
   Widget _buildEmptyState(ColorScheme colorScheme) {
     return Center(
@@ -178,7 +190,8 @@ class _PendingOrdersScreenState extends State<PendingOrdersScreen> {
           ),
           const SizedBox(height: 24),
           OutlinedButton.icon(
-            onPressed: () => context.read<DeliveryOrderProvider>().loadAvailableOrders(),
+            onPressed: () =>
+                context.read<DeliveryOrderProvider>().loadAvailableOrders(),
             icon: const Icon(Icons.refresh_rounded),
             label: const Text('Refresh'),
           ),
@@ -187,9 +200,12 @@ class _PendingOrdersScreenState extends State<PendingOrdersScreen> {
     );
   }
 
-  void _showOrderDetailPopup(OrderModel order, Map<String, dynamic>? deliveryDetails) {
+  void _showOrderDetailPopup(
+    OrderModel order,
+    Map<String, dynamic>? deliveryDetails,
+  ) {
     final locationProvider = context.read<LocationProvider>();
-    
+
     showModalBottomSheet(
       context: context,
       isScrollControlled: true,
@@ -213,22 +229,22 @@ class _PendingOrdersScreenState extends State<PendingOrdersScreen> {
 
   Future<void> _acceptOrder(OrderModel order) async {
     if (_isAccepting) return;
-    
+
     setState(() => _isAccepting = true);
     HapticFeedback.heavyImpact();
-    
+
     final auth = context.read<DeliveryAuthProvider>();
     final orderProvider = context.read<DeliveryOrderProvider>();
-    
+
     if (auth.user == null) {
       setState(() => _isAccepting = false);
       return;
     }
-    
+
     final success = await orderProvider.acceptOrder(order.id, auth.user!.uid);
-    
+
     setState(() => _isAccepting = false);
-    
+
     if (success && mounted) {
       Navigator.pop(context); // Close popup
       Navigator.pop(context); // Go back to dashboard
@@ -243,27 +259,38 @@ class _PendingOrdersScreenState extends State<PendingOrdersScreen> {
           ),
           backgroundColor: Colors.green.shade600,
           behavior: SnackBarBehavior.floating,
-          shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+          shape: RoundedRectangleBorder(
+            borderRadius: BorderRadius.circular(12),
+          ),
         ),
       );
     }
   }
 
-  void _denyOrder(OrderModel order) {
+  Future<void> _denyOrder(OrderModel order) async {
     HapticFeedback.mediumImpact();
-    
+    final auth = context.read<DeliveryAuthProvider>();
+
     // Hide from list using provider
-    context.read<DeliveryOrderProvider>().denyOrder(order.id);
-    
+    await context.read<DeliveryOrderProvider>().denyOrder(
+          order.id,
+          partnerId: auth.user?.uid,
+        );
+
+    if (!mounted) return;
     Navigator.pop(context); // Close the popup
     debugPrint('📦 Order denied: ${order.orderNumber}');
-    
+
     // Show snackbar feedback
     ScaffoldMessenger.of(context).showSnackBar(
       SnackBar(
         content: Row(
           children: [
-            const Icon(Icons.visibility_off_rounded, color: Colors.white, size: 18),
+            const Icon(
+              Icons.visibility_off_rounded,
+              color: Colors.white,
+              size: 18,
+            ),
             const SizedBox(width: 8),
             const Text('Order hidden from list'),
           ],
@@ -295,10 +322,12 @@ class _OrderDetailPopupWithLoading extends StatefulWidget {
   });
 
   @override
-  State<_OrderDetailPopupWithLoading> createState() => _OrderDetailPopupWithLoadingState();
+  State<_OrderDetailPopupWithLoading> createState() =>
+      _OrderDetailPopupWithLoadingState();
 }
 
-class _OrderDetailPopupWithLoadingState extends State<_OrderDetailPopupWithLoading> {
+class _OrderDetailPopupWithLoadingState
+    extends State<_OrderDetailPopupWithLoading> {
   Map<String, dynamic>? _details;
   bool _isLoading = false;
 
@@ -306,7 +335,7 @@ class _OrderDetailPopupWithLoadingState extends State<_OrderDetailPopupWithLoadi
   void initState() {
     super.initState();
     _details = widget.initialDetails;
-    
+
     // If no details, fetch async
     if (_details == null && widget.locationProvider.currentPosition != null) {
       _loadDistance();
@@ -315,13 +344,13 @@ class _OrderDetailPopupWithLoadingState extends State<_OrderDetailPopupWithLoadi
 
   Future<void> _loadDistance() async {
     setState(() => _isLoading = true);
-    
+
     final result = await DistanceService.calculateDeliveryDetailsAsync(
       partnerLat: widget.locationProvider.latitude!,
       partnerLng: widget.locationProvider.longitude!,
       customerAddress: widget.order.deliveryAddress,
     );
-    
+
     if (mounted) {
       setState(() {
         _details = result;

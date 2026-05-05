@@ -199,17 +199,8 @@ export const onOrderCreatedNotifications = functions.firestore
       );
     });
 
-    const orderAddress = (order.deliveryAddress || {}) as admin.firestore.DocumentData;
-    const partners = await admin
-      .firestore()
-      .collection("delivery_partners")
-      .where("status", "==", "approved")
-      .get();
-
-    const nearbyPartners = partners.docs.filter((doc) =>
-      matchesDeliveryArea(doc.data(), orderAddress)
-    );
-    const targetPartners = nearbyPartners.length ? nearbyPartners : partners.docs;
+    const targetPartners: admin.firestore.QueryDocumentSnapshot[] = [];
+    const deliveryPartnerTargets = 0;
 
     targetPartners.forEach((doc) => {
       notificationPromises.push(
@@ -232,7 +223,7 @@ export const onOrderCreatedNotifications = functions.firestore
       orderNumber,
       sellerId: order.sellerId || null,
       userId: order.userId || null,
-      deliveryPartnerTargets: targetPartners.length,
+      deliveryPartnerTargets,
       adminTargets: admins.size,
       sentAt: admin.firestore.FieldValue.serverTimestamp(),
     });

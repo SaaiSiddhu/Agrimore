@@ -1,5 +1,4 @@
 import 'package:flutter/material.dart';
-import 'package:flutter/services.dart';
 import 'package:go_router/go_router.dart';
 import 'package:provider/provider.dart';
 import 'package:agrimore_ui/agrimore_ui.dart';
@@ -21,20 +20,21 @@ class ProductFormScreen extends StatefulWidget {
   final ProductModel? product;
   final String? productId;
 
-  const ProductFormScreen({Key? key, this.product, this.productId}) : super(key: key);
+  const ProductFormScreen({super.key, this.product, this.productId});
 
   @override
   State<ProductFormScreen> createState() => _ProductFormScreenState();
 }
 
-class _ProductFormScreenState extends State<ProductFormScreen> with SingleTickerProviderStateMixin {
+class _ProductFormScreenState extends State<ProductFormScreen>
+    with SingleTickerProviderStateMixin {
   final _formKey = GlobalKey<FormState>();
-  
+
   ProductModel? _product;
   bool _isLoadingProduct = false;
-  
+
   bool get isEditMode => _product != null;
-  
+
   // Tab 1: Basic Info
   late TextEditingController _nameController;
   late TextEditingController _priceController;
@@ -42,19 +42,21 @@ class _ProductFormScreenState extends State<ProductFormScreen> with SingleTicker
   late TextEditingController _descriptionController;
   String? _selectedCategory;
   String? _selectedLocation;
+  String _locationType = 'state';
+  String _selectedState = 'Tamil Nadu';
   bool _isFeatured = false;
   bool _isVerified = false;
   bool _isTrending = false;
 
   // Tab 2: Images
   List<String> _imageUrls = [];
-  
+
   // Tab 3: Stock
   late TextEditingController _stockController;
   late TextEditingController _unitController;
   late TextEditingController _minOrderController;
   late TextEditingController _maxOrderController;
-  
+
   // Tab 4: Specifications
   Map<String, String> _specifications = {};
 
@@ -66,10 +68,14 @@ class _ProductFormScreenState extends State<ProductFormScreen> with SingleTicker
   late TextEditingController _shippingDaysController;
   late TextEditingController _shippingPriceController;
   late TextEditingController _freeShippingAboveController;
+  late TextEditingController _districtController;
+  late TextEditingController _latController;
+  late TextEditingController _lngController;
   bool _isFreeDelivery = true;
   bool _expressDelivery = false;
+  double _radiusKm = 10;
   late TextEditingController _expressDeliveryDaysController;
-  
+
   late TabController _tabController;
   bool _isLoading = false;
 
@@ -77,7 +83,7 @@ class _ProductFormScreenState extends State<ProductFormScreen> with SingleTicker
   void initState() {
     super.initState();
     _tabController = TabController(length: 6, vsync: this);
-    
+
     // Initialize empty controllers first
     _nameController = TextEditingController();
     _priceController = TextEditingController();
@@ -90,21 +96,24 @@ class _ProductFormScreenState extends State<ProductFormScreen> with SingleTicker
     _shippingDaysController = TextEditingController(text: '2-3');
     _shippingPriceController = TextEditingController(text: '0');
     _freeShippingAboveController = TextEditingController(text: '500');
+    _districtController = TextEditingController();
+    _latController = TextEditingController();
+    _lngController = TextEditingController();
     _expressDeliveryDaysController = TextEditingController(text: '1');
-    
+
     // If product passed directly, use it
     if (widget.product != null) {
       _product = widget.product;
       _initializeFromProduct(_product!);
-    } 
+    }
     // If productId passed, fetch the product
     else if (widget.productId != null) {
       _fetchProduct(widget.productId!);
     }
-    
+
     Provider.of<CategoryProvider>(context, listen: false).loadCategories();
   }
-  
+
   Future<void> _fetchProduct(String productId) async {
     setState(() => _isLoadingProduct = true);
     try {
@@ -125,7 +134,7 @@ class _ProductFormScreenState extends State<ProductFormScreen> with SingleTicker
       if (mounted) setState(() => _isLoadingProduct = false);
     }
   }
-  
+
   void _initializeFromProduct(ProductModel p) {
     _nameController.text = p.name;
     _priceController.text = p.salePrice.toString();
@@ -133,29 +142,36 @@ class _ProductFormScreenState extends State<ProductFormScreen> with SingleTicker
     _descriptionController.text = p.description;
     _selectedCategory = p.categoryId;
     _selectedLocation = p.location.isNotEmpty ? p.location : null;
+    _locationType = p.locationType.isEmpty ? 'state' : p.locationType;
+    _selectedState = p.state ?? 'Tamil Nadu';
+    _districtController.text = p.district ?? '';
+    _latController.text = p.lat?.toString() ?? '';
+    _lngController.text = p.lng?.toString() ?? '';
+    _radiusKm = p.radiusKm ?? 10;
     _isFeatured = p.isFeatured;
     _isVerified = p.isVerified;
     _isTrending = p.isTrending;
-    
+
     _imageUrls = List.from(p.images);
-    
+
     _stockController.text = p.stock.toString();
     _unitController.text = p.unit ?? '';
     _minOrderController.text = p.minOrderQuantity?.toString() ?? '1';
     _maxOrderController.text = p.maxOrderQuantity?.toString() ?? '';
-    
+
     _specifications = Map.from(p.specifications ?? {});
-    
-    _variantOptions = List.from(p.variantOptions ?? []);
-    _variants = List.from(p.variants ?? []);
-    
+
+    _variantOptions = List.from(p.variantOptions);
+    _variants = List.from(p.variants);
+
     _shippingDaysController.text = p.shippingDays ?? '2-3';
     _shippingPriceController.text = p.shippingPrice?.toString() ?? '0';
-    _freeShippingAboveController.text = p.freeShippingAbove?.toString() ?? '500';
+    _freeShippingAboveController.text =
+        p.freeShippingAbove?.toString() ?? '500';
     _isFreeDelivery = p.isFreeDelivery ?? true;
     _expressDelivery = p.expressDelivery ?? false;
     _expressDeliveryDaysController.text = p.expressDeliveryDays ?? '1';
-    
+
     if (mounted) setState(() {});
   }
 
@@ -173,14 +189,46 @@ class _ProductFormScreenState extends State<ProductFormScreen> with SingleTicker
     _shippingDaysController.dispose();
     _shippingPriceController.dispose();
     _freeShippingAboveController.dispose();
+    _districtController.dispose();
+    _latController.dispose();
+    _lngController.dispose();
     _expressDeliveryDaysController.dispose();
     super.dispose();
+  }
+
+  bool _validateCoverage() {
+    if (_locationType == 'district' &&
+        _districtController.text.trim().isEmpty) {
+      _tabController.animateTo(5);
+      SnackbarHelper.showError(context, 'Please select a delivery district');
+      return false;
+    }
+    if (_locationType == 'radius' &&
+        (double.tryParse(_latController.text.trim()) == null ||
+            double.tryParse(_lngController.text.trim()) == null)) {
+      _tabController.animateTo(5);
+      SnackbarHelper.showError(
+          context, 'Please enter valid latitude and longitude');
+      return false;
+    }
+    return true;
+  }
+
+  String _coverageLabel() {
+    if (_locationType == 'district') {
+      return '${_districtController.text.trim()}, $_selectedState';
+    }
+    if (_locationType == 'radius') {
+      return '${_radiusKm.round()} km radius, $_selectedState';
+    }
+    return _selectedState;
   }
 
   Future<void> _saveProduct() async {
     if (!_formKey.currentState!.validate()) {
       _tabController.animateTo(0);
-      SnackbarHelper.showError(context, 'Please fix errors in the Basic Info tab');
+      SnackbarHelper.showError(
+          context, 'Please fix errors in the Basic Info tab');
       return;
     }
 
@@ -190,9 +238,21 @@ class _ProductFormScreenState extends State<ProductFormScreen> with SingleTicker
       return;
     }
 
+    if (!_validateCoverage()) return;
+
     setState(() => _isLoading = true);
 
     try {
+      final coverageDistrict =
+          _locationType == 'district' ? _districtController.text.trim() : null;
+      final coverageLat = _locationType == 'radius'
+          ? double.tryParse(_latController.text.trim())
+          : null;
+      final coverageLng = _locationType == 'radius'
+          ? double.tryParse(_lngController.text.trim())
+          : null;
+      final coverageRadius = _locationType == 'radius' ? _radiusKm : null;
+
       if (isEditMode) {
         // ✅ UPDATE: Use copyWith to preserve existing fields
         final updatedProduct = _product!.copyWith(
@@ -203,12 +263,23 @@ class _ProductFormScreenState extends State<ProductFormScreen> with SingleTicker
               ? double.parse(_originalPriceController.text.trim())
               : null,
           categoryId: _selectedCategory,
-          location: _selectedLocation,
+          location: _coverageLabel(),
+          locationType: _locationType,
+          state: _selectedState,
+          district: coverageDistrict,
+          lat: coverageLat,
+          lng: coverageLng,
+          radiusKm: coverageRadius,
+          clearDistrict: _locationType != 'district',
+          clearCoordinates: _locationType != 'radius',
+          clearRadius: _locationType != 'radius',
           images: _imageUrls,
           stock: int.parse(_stockController.text.trim()),
           isFeatured: _isFeatured,
           updatedAt: DateTime.now(),
-          unit: _unitController.text.trim().isNotEmpty ? _unitController.text.trim() : null,
+          unit: _unitController.text.trim().isNotEmpty
+              ? _unitController.text.trim()
+              : null,
           minOrderQuantity: _minOrderController.text.trim().isNotEmpty
               ? int.parse(_minOrderController.text.trim())
               : null,
@@ -221,8 +292,10 @@ class _ProductFormScreenState extends State<ProductFormScreen> with SingleTicker
           variantOptions: _variantOptions,
           variants: _variants,
           shippingDays: _shippingDaysController.text.trim(),
-          shippingPrice: double.tryParse(_shippingPriceController.text.trim()) ?? 0,
-          freeShippingAbove: double.tryParse(_freeShippingAboveController.text.trim()) ?? 500,
+          shippingPrice:
+              double.tryParse(_shippingPriceController.text.trim()) ?? 0,
+          freeShippingAbove:
+              double.tryParse(_freeShippingAboveController.text.trim()) ?? 500,
           isFreeDelivery: _isFreeDelivery,
           expressDelivery: _expressDelivery,
           expressDeliveryDays: _expressDeliveryDaysController.text.trim(),
@@ -238,7 +311,8 @@ class _ProductFormScreenState extends State<ProductFormScreen> with SingleTicker
             .updateProduct(_product!.id, updatedProduct);
 
         if (mounted) {
-          SnackbarHelper.showSuccess(context, 'Product updated successfully! ✅');
+          SnackbarHelper.showSuccess(
+              context, 'Product updated successfully! ✅');
           context.go(AdminRoutes.products);
         }
       } else {
@@ -252,7 +326,13 @@ class _ProductFormScreenState extends State<ProductFormScreen> with SingleTicker
               ? double.parse(_originalPriceController.text.trim())
               : null,
           categoryId: _selectedCategory!,
-          location: _selectedLocation ?? '',
+          location: _coverageLabel(),
+          locationType: _locationType,
+          state: _selectedState,
+          district: coverageDistrict,
+          lat: coverageLat,
+          lng: coverageLng,
+          radiusKm: coverageRadius,
           sellerId: '', // Ideally fetched from auth
           images: _imageUrls,
           stock: int.parse(_stockController.text.trim()),
@@ -262,7 +342,9 @@ class _ProductFormScreenState extends State<ProductFormScreen> with SingleTicker
           isActive: true,
           createdAt: DateTime.now(),
           updatedAt: DateTime.now(),
-          unit: _unitController.text.trim().isNotEmpty ? _unitController.text.trim() : null,
+          unit: _unitController.text.trim().isNotEmpty
+              ? _unitController.text.trim()
+              : null,
           minOrderQuantity: _minOrderController.text.trim().isNotEmpty
               ? int.parse(_minOrderController.text.trim())
               : null,
@@ -276,8 +358,10 @@ class _ProductFormScreenState extends State<ProductFormScreen> with SingleTicker
           variantOptions: _variantOptions,
           variants: _variants,
           shippingDays: _shippingDaysController.text.trim(),
-          shippingPrice: double.tryParse(_shippingPriceController.text.trim()) ?? 0,
-          freeShippingAbove: double.tryParse(_freeShippingAboveController.text.trim()) ?? 500,
+          shippingPrice:
+              double.tryParse(_shippingPriceController.text.trim()) ?? 0,
+          freeShippingAbove:
+              double.tryParse(_freeShippingAboveController.text.trim()) ?? 500,
           isFreeDelivery: _isFreeDelivery,
           expressDelivery: _expressDelivery,
           expressDeliveryDays: _expressDeliveryDaysController.text.trim(),
@@ -289,7 +373,8 @@ class _ProductFormScreenState extends State<ProductFormScreen> with SingleTicker
           debugPrint('   - ${v.name}: ₹${v.salePrice}, stock: ${v.stock}');
         }
 
-        await Provider.of<AdminProvider>(context, listen: false).addProduct(product);
+        await Provider.of<AdminProvider>(context, listen: false)
+            .addProduct(product);
 
         if (mounted) {
           SnackbarHelper.showSuccess(context, 'Product added successfully! 🎉');
@@ -327,7 +412,7 @@ class _ProductFormScreenState extends State<ProductFormScreen> with SingleTicker
         ),
       );
     }
-    
+
     return Scaffold(
       backgroundColor: const Color(0xFFF8FAFC),
       appBar: _buildAppBar(),
@@ -346,30 +431,32 @@ class _ProductFormScreenState extends State<ProductFormScreen> with SingleTicker
               isFeatured: _isFeatured,
               isVerified: _isVerified,
               isTrending: _isTrending,
-              onCategoryChanged: (value) => setState(() => _selectedCategory = value),
-              onLocationChanged: (value) => setState(() => _selectedLocation = value),
-              onFeaturedChanged: (value) => setState(() => _isFeatured = value ?? false),
-              onVerifiedChanged: (value) => setState(() => _isVerified = value ?? false),
-              onTrendingChanged: (value) => setState(() => _isTrending = value ?? false),
+              onCategoryChanged: (value) =>
+                  setState(() => _selectedCategory = value),
+              onLocationChanged: (value) =>
+                  setState(() => _selectedLocation = value),
+              onFeaturedChanged: (value) =>
+                  setState(() => _isFeatured = value ?? false),
+              onVerifiedChanged: (value) =>
+                  setState(() => _isVerified = value ?? false),
+              onTrendingChanged: (value) =>
+                  setState(() => _isTrending = value ?? false),
             ),
-
             ImageUploader(
               imageUrls: _imageUrls,
               onImagesChanged: (urls) => setState(() => _imageUrls = urls),
             ),
-
             StockManager(
               stockController: _stockController,
               unitController: _unitController,
               minOrderController: _minOrderController,
               maxOrderController: _maxOrderController,
             ),
-
             SpecificationForm(
               specifications: _specifications,
-              onSpecificationsChanged: (specs) => setState(() => _specifications = specs),
+              onSpecificationsChanged: (specs) =>
+                  setState(() => _specifications = specs),
             ),
-
             VariantForm(
               variantOptions: _variantOptions,
               variants: _variants,
@@ -378,7 +465,6 @@ class _ProductFormScreenState extends State<ProductFormScreen> with SingleTicker
                 _variants = variants;
               }),
             ),
-
             DeliveryInfoForm(
               shippingDaysController: _shippingDaysController,
               shippingPriceController: _shippingPriceController,
@@ -386,8 +472,20 @@ class _ProductFormScreenState extends State<ProductFormScreen> with SingleTicker
               isFreeDelivery: _isFreeDelivery,
               expressDelivery: _expressDelivery,
               expressDeliveryDaysController: _expressDeliveryDaysController,
-              onFreeDeliveryChanged: (value) => setState(() => _isFreeDelivery = value),
-              onExpressDeliveryChanged: (value) => setState(() => _expressDelivery = value),
+              locationType: _locationType,
+              selectedState: _selectedState,
+              districtController: _districtController,
+              latController: _latController,
+              lngController: _lngController,
+              radiusKm: _radiusKm,
+              onFreeDeliveryChanged: (value) =>
+                  setState(() => _isFreeDelivery = value),
+              onExpressDeliveryChanged: (value) =>
+                  setState(() => _expressDelivery = value),
+              onLocationTypeChanged: (value) =>
+                  setState(() => _locationType = value),
+              onStateChanged: (value) => setState(() => _selectedState = value),
+              onRadiusChanged: (value) => setState(() => _radiusKm = value),
             ),
           ],
         ),
@@ -395,7 +493,7 @@ class _ProductFormScreenState extends State<ProductFormScreen> with SingleTicker
       bottomNavigationBar: _buildBottomBar(),
     );
   }
-  
+
   PreferredSizeWidget _buildAppBar() {
     return AppBar(
       backgroundColor: Colors.white,
@@ -450,32 +548,41 @@ class _ProductFormScreenState extends State<ProductFormScreen> with SingleTicker
             indicatorWeight: 3,
             labelColor: AdminColors.primary,
             unselectedLabelColor: AdminColors.textSecondary,
-            labelStyle: const TextStyle(fontSize: 12, fontWeight: FontWeight.w600),
-            unselectedLabelStyle: const TextStyle(fontSize: 12, fontWeight: FontWeight.w500),
+            labelStyle:
+                const TextStyle(fontSize: 12, fontWeight: FontWeight.w600),
+            unselectedLabelStyle:
+                const TextStyle(fontSize: 12, fontWeight: FontWeight.w500),
             isScrollable: true,
             tabAlignment: TabAlignment.start,
             padding: const EdgeInsets.symmetric(horizontal: 12),
             tabs: const [
-              Tab(icon: Icon(Icons.info_outline_rounded, size: 20), text: 'Basic'),
+              Tab(
+                  icon: Icon(Icons.info_outline_rounded, size: 20),
+                  text: 'Basic'),
               Tab(icon: Icon(Icons.image_rounded, size: 20), text: 'Images'),
-              Tab(icon: Icon(Icons.inventory_2_rounded, size: 20), text: 'Stock'),
+              Tab(
+                  icon: Icon(Icons.inventory_2_rounded, size: 20),
+                  text: 'Stock'),
               Tab(icon: Icon(Icons.list_alt_rounded, size: 20), text: 'Specs'),
               Tab(icon: Icon(Icons.layers_rounded, size: 20), text: 'Variants'),
-              Tab(icon: Icon(Icons.local_shipping_rounded, size: 20), text: 'Delivery'),
+              Tab(
+                  icon: Icon(Icons.local_shipping_rounded, size: 20),
+                  text: 'Delivery'),
             ],
           ),
         ),
       ),
     );
   }
-  
+
   void _showDeleteDialog() {
     showDialog(
       context: context,
       builder: (ctx) => AlertDialog(
         shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
         title: const Text('Delete Product'),
-        content: Text('Are you sure you want to delete "${_product!.name}"? This action cannot be undone.'),
+        content: Text(
+            'Are you sure you want to delete "${_product!.name}"? This action cannot be undone.'),
         actions: [
           TextButton(
             onPressed: () => Navigator.pop(ctx),
@@ -499,7 +606,7 @@ class _ProductFormScreenState extends State<ProductFormScreen> with SingleTicker
 
   Future<void> _deleteProduct() async {
     if (_product == null) return;
-    
+
     setState(() => _isLoading = true);
     try {
       final provider = context.read<AdminProvider>();
@@ -526,7 +633,7 @@ class _ProductFormScreenState extends State<ProductFormScreen> with SingleTicker
       if (mounted) setState(() => _isLoading = false);
     }
   }
-  
+
   Widget _buildBottomBar() {
     return Container(
       padding: const EdgeInsets.all(16),
@@ -534,7 +641,7 @@ class _ProductFormScreenState extends State<ProductFormScreen> with SingleTicker
         color: Colors.white,
         boxShadow: [
           BoxShadow(
-            color: Colors.black.withOpacity(0.05),
+            color: Colors.black.withValues(alpha: 0.05),
             blurRadius: 8,
             offset: const Offset(0, -2),
           ),
@@ -545,7 +652,8 @@ class _ProductFormScreenState extends State<ProductFormScreen> with SingleTicker
           children: [
             Expanded(
               child: OutlinedButton(
-                onPressed: _isLoading ? null : () => context.go(AdminRoutes.products),
+                onPressed:
+                    _isLoading ? null : () => context.go(AdminRoutes.products),
                 style: OutlinedButton.styleFrom(
                   padding: const EdgeInsets.symmetric(vertical: 14),
                   side: BorderSide(color: Colors.grey[300]!),
@@ -572,9 +680,10 @@ class _ProductFormScreenState extends State<ProductFormScreen> with SingleTicker
                 ),
                 child: _isLoading
                     ? const SizedBox(
-                        width: 22, height: 22,
+                        width: 22,
+                        height: 22,
                         child: CircularProgressIndicator(
-                          strokeWidth: 2, color: Colors.white),
+                            strokeWidth: 2, color: Colors.white),
                       )
                     : Text(
                         isEditMode ? 'Save Changes' : 'Add Product',

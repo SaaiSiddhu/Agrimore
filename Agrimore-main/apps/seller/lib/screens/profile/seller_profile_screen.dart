@@ -1,6 +1,5 @@
 // lib/screens/profile/seller_profile_screen.dart
 import 'package:flutter/material.dart';
-import 'package:flutter/services.dart';
 import 'package:provider/provider.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:firebase_auth/firebase_auth.dart';
@@ -30,8 +29,10 @@ class _SellerProfileScreenState extends State<SellerProfileScreen> {
     if (uid == null) return;
 
     try {
-      final doc = await FirebaseFirestore.instance.collection('sellers').doc(uid).get();
-      final userDoc = await FirebaseFirestore.instance.collection('users').doc(uid).get();
+      final doc =
+          await FirebaseFirestore.instance.collection('sellers').doc(uid).get();
+      final userDoc =
+          await FirebaseFirestore.instance.collection('users').doc(uid).get();
 
       if (mounted) {
         setState(() {
@@ -54,9 +55,11 @@ class _SellerProfileScreenState extends State<SellerProfileScreen> {
     final auth = context.watch<SellerAuthProvider>();
 
     return Scaffold(
-      backgroundColor: isDark ? const Color(0xFF121212) : const Color(0xFFF5F7FA),
+      backgroundColor:
+          isDark ? const Color(0xFF121212) : const Color(0xFFF5F7FA),
       body: _isLoading
-          ? const Center(child: CircularProgressIndicator(color: Color(0xFF2D7D3C)))
+          ? const Center(
+              child: CircularProgressIndicator(color: Color(0xFF2D7D3C)))
           : CustomScrollView(
               slivers: [
                 // Seller profile header
@@ -75,7 +78,10 @@ class _SellerProfileScreenState extends State<SellerProfileScreen> {
 
   Widget _buildProfileHeader(SellerAuthProvider auth, bool isDark) {
     final user = auth.currentUser;
-    final name = _sellerData?['businessName'] ?? _sellerData?['name'] ?? user?.displayName ?? 'Seller';
+    final name = _sellerData?['businessName'] ??
+        _sellerData?['name'] ??
+        user?.displayName ??
+        'Seller';
     final email = user?.email ?? '';
     final phone = _sellerData?['phone'] ?? '';
     final photoUrl = _sellerData?['photoUrl'] ?? user?.photoUrl;
@@ -92,7 +98,10 @@ class _SellerProfileScreenState extends State<SellerProfileScreen> {
         ),
         borderRadius: const BorderRadius.vertical(bottom: Radius.circular(24)),
         boxShadow: [
-          BoxShadow(color: const Color(0xFF1A365D).withOpacity(0.3), blurRadius: 16, offset: const Offset(0, 4)),
+          BoxShadow(
+              color: const Color(0xFF1A365D).withOpacity(0.3),
+              blurRadius: 16,
+              offset: const Offset(0, 4)),
         ],
       ),
       child: Column(
@@ -101,7 +110,11 @@ class _SellerProfileScreenState extends State<SellerProfileScreen> {
           Row(
             mainAxisAlignment: MainAxisAlignment.spaceBetween,
             children: [
-              const Text('My Profile', style: TextStyle(color: Colors.white, fontSize: 20, fontWeight: FontWeight.bold)),
+              const Text('My Profile',
+                  style: TextStyle(
+                      color: Colors.white,
+                      fontSize: 20,
+                      fontWeight: FontWeight.bold)),
               IconButton(
                 onPressed: () => _showEditDialog(),
                 icon: Container(
@@ -123,16 +136,25 @@ class _SellerProfileScreenState extends State<SellerProfileScreen> {
             backgroundImage: photoUrl != null ? NetworkImage(photoUrl) : null,
             child: photoUrl == null
                 ? Text(name.isNotEmpty ? name[0].toUpperCase() : 'S',
-                    style: const TextStyle(color: Colors.white, fontSize: 28, fontWeight: FontWeight.bold))
+                    style: const TextStyle(
+                        color: Colors.white,
+                        fontSize: 28,
+                        fontWeight: FontWeight.bold))
                 : null,
           ),
           const SizedBox(height: 14),
-          Text(name, style: const TextStyle(color: Colors.white, fontSize: 20, fontWeight: FontWeight.bold)),
+          Text(name,
+              style: const TextStyle(
+                  color: Colors.white,
+                  fontSize: 20,
+                  fontWeight: FontWeight.bold)),
           const SizedBox(height: 4),
-          Text(email, style: const TextStyle(color: Colors.white70, fontSize: 13)),
+          Text(email,
+              style: const TextStyle(color: Colors.white70, fontSize: 13)),
           if (phone.isNotEmpty) ...[
             const SizedBox(height: 2),
-            Text(phone, style: const TextStyle(color: Colors.white70, fontSize: 13)),
+            Text(phone,
+                style: const TextStyle(color: Colors.white70, fontSize: 13)),
           ],
           const SizedBox(height: 12),
           // Rating
@@ -148,8 +170,14 @@ class _SellerProfileScreenState extends State<SellerProfileScreen> {
                 children: [
                   const Icon(Icons.star, color: Colors.amber, size: 16),
                   const SizedBox(width: 4),
-                  Text(rating.toStringAsFixed(1), style: const TextStyle(color: Colors.white, fontWeight: FontWeight.bold, fontSize: 14)),
-                  Text(' ($reviewCount reviews)', style: const TextStyle(color: Colors.white70, fontSize: 12)),
+                  Text(rating.toStringAsFixed(1),
+                      style: const TextStyle(
+                          color: Colors.white,
+                          fontWeight: FontWeight.bold,
+                          fontSize: 14)),
+                  Text(' ($reviewCount reviews)',
+                      style:
+                          const TextStyle(color: Colors.white70, fontSize: 12)),
                 ],
               ),
             ),
@@ -166,17 +194,25 @@ class _SellerProfileScreenState extends State<SellerProfileScreen> {
       padding: const EdgeInsets.fromLTRB(16, 20, 16, 0),
       child: Row(
         children: [
-          _buildStatCard('Products', products.totalProducts.toString(), Icons.inventory_2, Colors.blue, isDark),
+          _buildStatCard('Products', products.totalProducts.toString(),
+              Icons.inventory_2, Colors.blue, isDark),
           const SizedBox(width: 10),
-          _buildStatCard('Orders', orders.totalOrders.toString(), Icons.receipt_long, Colors.green, isDark),
+          _buildStatCard('Orders', orders.totalOrders.toString(),
+              Icons.receipt_long, Colors.green, isDark),
           const SizedBox(width: 10),
-          _buildStatCard('Revenue', '₹${orders.totalRevenue.toStringAsFixed(0)}', Icons.currency_rupee, Colors.orange, isDark),
+          _buildStatCard(
+              'Revenue',
+              '₹${orders.totalRevenue.toStringAsFixed(0)}',
+              Icons.currency_rupee,
+              Colors.orange,
+              isDark),
         ],
       ),
     );
   }
 
-  Widget _buildStatCard(String label, String value, IconData icon, Color color, bool isDark) {
+  Widget _buildStatCard(
+      String label, String value, IconData icon, Color color, bool isDark) {
     return Expanded(
       child: Container(
         padding: const EdgeInsets.all(14),
@@ -184,15 +220,23 @@ class _SellerProfileScreenState extends State<SellerProfileScreen> {
           color: isDark ? Colors.grey[900] : Colors.white,
           borderRadius: BorderRadius.circular(14),
           boxShadow: [
-            BoxShadow(color: Colors.black.withOpacity(0.04), blurRadius: 10, offset: const Offset(0, 2)),
+            BoxShadow(
+                color: Colors.black.withOpacity(0.04),
+                blurRadius: 10,
+                offset: const Offset(0, 2)),
           ],
         ),
         child: Column(
           children: [
             Icon(icon, color: color, size: 22),
             const SizedBox(height: 6),
-            Text(value, style: TextStyle(fontWeight: FontWeight.bold, fontSize: 14, color: isDark ? Colors.white : Colors.black87)),
-            Text(label, style: TextStyle(fontSize: 11, color: Colors.grey[500])),
+            Text(value,
+                style: TextStyle(
+                    fontWeight: FontWeight.bold,
+                    fontSize: 14,
+                    color: isDark ? Colors.white : Colors.black87)),
+            Text(label,
+                style: TextStyle(fontSize: 11, color: Colors.grey[500])),
           ],
         ),
       ),
@@ -207,14 +251,19 @@ class _SellerProfileScreenState extends State<SellerProfileScreen> {
           color: isDark ? Colors.grey[900] : Colors.white,
           borderRadius: BorderRadius.circular(14),
           boxShadow: [
-            BoxShadow(color: Colors.black.withOpacity(0.04), blurRadius: 10, offset: const Offset(0, 2)),
+            BoxShadow(
+                color: Colors.black.withOpacity(0.04),
+                blurRadius: 10,
+                offset: const Offset(0, 2)),
           ],
         ),
         child: Column(
           children: [
-            _buildMenuItem(Icons.store_outlined, 'Business Details', 'Name, GST, location', isDark, () => _showEditDialog()),
+            _buildMenuItem(Icons.store_outlined, 'Business Details',
+                'Name, GST, location', isDark, () => _showEditDialog()),
             _buildDivider(isDark),
-            _buildMenuItem(Icons.account_balance_outlined, 'Bank Details', 'Payout account settings', isDark, () {
+            _buildMenuItem(Icons.account_balance_outlined, 'Bank Details',
+                'Payout account settings', isDark, () {
               _showDetailsDialog('Bank Details', [
                 'Bank: ${_sellerData?['bankName'] ?? 'Not added'}',
                 'Account: ${_sellerData?['accountNumber'] ?? 'Not added'}',
@@ -222,14 +271,17 @@ class _SellerProfileScreenState extends State<SellerProfileScreen> {
               ]);
             }),
             _buildDivider(isDark),
-            _buildMenuItem(Icons.access_time, 'Business Hours', 'Operating schedule', isDark, () {
+            _buildMenuItem(Icons.access_time, 'Business Hours',
+                'Operating schedule', isDark, () {
               _showDetailsDialog('Business Hours', [
-                'Default: 9:00 AM - 9:00 PM',
-                'Update your shop availability from Business Details when needed.',
+                'Open: ${_sellerData?['openingTime'] ?? '9:00 AM'}',
+                'Close: ${_sellerData?['closingTime'] ?? '9:00 PM'}',
+                'Delivery radius: ${_sellerData?['deliveryRadiusKm'] ?? 10} km',
               ]);
             }),
             _buildDivider(isDark),
-            _buildMenuItem(Icons.notifications_outlined, 'Notifications', 'Manage alerts', isDark, () {
+            _buildMenuItem(Icons.notifications_outlined, 'Notifications',
+                'Manage alerts', isDark, () {
               _showDetailsDialog('Notifications', [
                 'Order updates: Enabled',
                 'Low stock alerts: Enabled',
@@ -237,14 +289,16 @@ class _SellerProfileScreenState extends State<SellerProfileScreen> {
               ]);
             }),
             _buildDivider(isDark),
-            _buildMenuItem(Icons.help_outline, 'Help & Support', 'FAQs, contact support', isDark, () {
+            _buildMenuItem(Icons.help_outline, 'Help & Support',
+                'FAQs, contact support', isDark, () {
               _showDetailsDialog('Help & Support', [
                 'Email: support@agrimore.in',
                 'For urgent order issues, contact the admin team from your registered mobile number.',
               ]);
             }),
             _buildDivider(isDark),
-            _buildMenuItem(Icons.privacy_tip_outlined, 'Privacy & Terms', 'Legal documents', isDark, () {
+            _buildMenuItem(Icons.privacy_tip_outlined, 'Privacy & Terms',
+                'Legal documents', isDark, () {
               _showDetailsDialog('Privacy & Terms', [
                 'Keep product details accurate.',
                 'Orders must be packed on time.',
@@ -257,7 +311,8 @@ class _SellerProfileScreenState extends State<SellerProfileScreen> {
     );
   }
 
-  Widget _buildMenuItem(IconData icon, String title, String subtitle, bool isDark, VoidCallback onTap) {
+  Widget _buildMenuItem(IconData icon, String title, String subtitle,
+      bool isDark, VoidCallback onTap) {
     return InkWell(
       onTap: onTap,
       child: Padding(
@@ -277,8 +332,11 @@ class _SellerProfileScreenState extends State<SellerProfileScreen> {
               child: Column(
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
-                  Text(title, style: const TextStyle(fontWeight: FontWeight.w600, fontSize: 14)),
-                  Text(subtitle, style: TextStyle(fontSize: 12, color: Colors.grey[500])),
+                  Text(title,
+                      style: const TextStyle(
+                          fontWeight: FontWeight.w600, fontSize: 14)),
+                  Text(subtitle,
+                      style: TextStyle(fontSize: 12, color: Colors.grey[500])),
                 ],
               ),
             ),
@@ -315,7 +373,10 @@ class _SellerProfileScreenState extends State<SellerProfileScreen> {
   }
 
   Widget _buildDivider(bool isDark) {
-    return Divider(height: 1, indent: 58, color: isDark ? Colors.grey[800] : Colors.grey[200]);
+    return Divider(
+        height: 1,
+        indent: 58,
+        color: isDark ? Colors.grey[800] : Colors.grey[200]);
   }
 
   Widget _buildLogoutButton(SellerAuthProvider auth, bool isDark) {
@@ -327,10 +388,12 @@ class _SellerProfileScreenState extends State<SellerProfileScreen> {
         child: OutlinedButton.icon(
           onPressed: () => _confirmLogout(auth),
           icon: const Icon(Icons.logout_rounded, color: Colors.red),
-          label: const Text('Logout', style: TextStyle(color: Colors.red, fontWeight: FontWeight.bold)),
+          label: const Text('Logout',
+              style: TextStyle(color: Colors.red, fontWeight: FontWeight.bold)),
           style: OutlinedButton.styleFrom(
             side: const BorderSide(color: Colors.red),
-            shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(14)),
+            shape:
+                RoundedRectangleBorder(borderRadius: BorderRadius.circular(14)),
           ),
         ),
       ),
@@ -343,9 +406,11 @@ class _SellerProfileScreenState extends State<SellerProfileScreen> {
       builder: (ctx) => AlertDialog(
         shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
         title: const Text('Logout?'),
-        content: const Text('Are you sure you want to logout from your seller account?'),
+        content: const Text(
+            'Are you sure you want to logout from your seller account?'),
         actions: [
-          TextButton(onPressed: () => Navigator.pop(ctx), child: const Text('Cancel')),
+          TextButton(
+              onPressed: () => Navigator.pop(ctx), child: const Text('Cancel')),
           TextButton(
             onPressed: () async {
               Navigator.pop(ctx);
@@ -361,37 +426,98 @@ class _SellerProfileScreenState extends State<SellerProfileScreen> {
   }
 
   void _showEditDialog() {
-    final nameController = TextEditingController(text: _sellerData?['businessName'] ?? _sellerData?['name'] ?? '');
-    final phoneController = TextEditingController(text: _sellerData?['phone'] ?? '');
-    final gstController = TextEditingController(text: _sellerData?['gstNumber'] ?? '');
-    final cityController = TextEditingController(text: _sellerData?['city'] ?? '');
-    final stateController = TextEditingController(text: _sellerData?['state'] ?? '');
+    final nameController = TextEditingController(
+        text: _sellerData?['businessName'] ?? _sellerData?['name'] ?? '');
+    final phoneController =
+        TextEditingController(text: _sellerData?['phone'] ?? '');
+    final gstController =
+        TextEditingController(text: _sellerData?['gstNumber'] ?? '');
+    final cityController =
+        TextEditingController(text: _sellerData?['city'] ?? '');
+    final stateController =
+        TextEditingController(text: _sellerData?['state'] ?? '');
+    final openingTimeController =
+        TextEditingController(text: _sellerData?['openingTime'] ?? '9:00 AM');
+    final closingTimeController =
+        TextEditingController(text: _sellerData?['closingTime'] ?? '9:00 PM');
+    final radiusController = TextEditingController(
+        text: (_sellerData?['deliveryRadiusKm'] ?? 10).toString());
 
     showModalBottomSheet(
       context: context,
       isScrollControlled: true,
-      shape: const RoundedRectangleBorder(borderRadius: BorderRadius.vertical(top: Radius.circular(20))),
+      shape: const RoundedRectangleBorder(
+          borderRadius: BorderRadius.vertical(top: Radius.circular(20))),
       builder: (ctx) => Padding(
-        padding: EdgeInsets.fromLTRB(24, 24, 24, MediaQuery.of(ctx).viewInsets.bottom + 24),
+        padding: EdgeInsets.fromLTRB(
+            24, 24, 24, MediaQuery.of(ctx).viewInsets.bottom + 24),
         child: SingleChildScrollView(
           child: Column(
             mainAxisSize: MainAxisSize.min,
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
-              const Text('Edit Profile', style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold)),
+              const Text('Edit Profile',
+                  style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold)),
               const SizedBox(height: 20),
-              TextField(controller: nameController, decoration: const InputDecoration(labelText: 'Business Name', border: OutlineInputBorder())),
+              TextField(
+                  controller: nameController,
+                  decoration: const InputDecoration(
+                      labelText: 'Business Name',
+                      border: OutlineInputBorder())),
               const SizedBox(height: 12),
-              TextField(controller: phoneController, decoration: const InputDecoration(labelText: 'Phone', border: OutlineInputBorder())),
+              TextField(
+                  controller: phoneController,
+                  decoration: const InputDecoration(
+                      labelText: 'Phone', border: OutlineInputBorder())),
               const SizedBox(height: 12),
-              TextField(controller: gstController, decoration: const InputDecoration(labelText: 'GST Number', border: OutlineInputBorder())),
+              TextField(
+                  controller: gstController,
+                  decoration: const InputDecoration(
+                      labelText: 'GST Number', border: OutlineInputBorder())),
               const SizedBox(height: 12),
               Row(
                 children: [
-                  Expanded(child: TextField(controller: cityController, decoration: const InputDecoration(labelText: 'City', border: OutlineInputBorder()))),
+                  Expanded(
+                      child: TextField(
+                          controller: cityController,
+                          decoration: const InputDecoration(
+                              labelText: 'City',
+                              border: OutlineInputBorder()))),
                   const SizedBox(width: 12),
-                  Expanded(child: TextField(controller: stateController, decoration: const InputDecoration(labelText: 'State', border: OutlineInputBorder()))),
+                  Expanded(
+                      child: TextField(
+                          controller: stateController,
+                          decoration: const InputDecoration(
+                              labelText: 'State',
+                              border: OutlineInputBorder()))),
                 ],
+              ),
+              const SizedBox(height: 12),
+              Row(
+                children: [
+                  Expanded(
+                      child: TextField(
+                          controller: openingTimeController,
+                          decoration: const InputDecoration(
+                              labelText: 'Opening Time',
+                              border: OutlineInputBorder()))),
+                  const SizedBox(width: 12),
+                  Expanded(
+                      child: TextField(
+                          controller: closingTimeController,
+                          decoration: const InputDecoration(
+                              labelText: 'Closing Time',
+                              border: OutlineInputBorder()))),
+                ],
+              ),
+              const SizedBox(height: 12),
+              TextField(
+                controller: radiusController,
+                keyboardType: TextInputType.number,
+                decoration: const InputDecoration(
+                  labelText: 'Delivery Radius (km)',
+                  border: OutlineInputBorder(),
+                ),
               ),
               const SizedBox(height: 24),
               SizedBox(
@@ -399,20 +525,31 @@ class _SellerProfileScreenState extends State<SellerProfileScreen> {
                 height: 50,
                 child: FilledButton(
                   onPressed: () async {
-                    final uid = context.read<SellerAuthProvider>().currentUser?.uid;
+                    final uid =
+                        context.read<SellerAuthProvider>().currentUser?.uid;
                     if (uid == null) return;
 
-                    await FirebaseFirestore.instance.collection('sellers').doc(uid).set({
+                    await FirebaseFirestore.instance
+                        .collection('sellers')
+                        .doc(uid)
+                        .set({
                       'businessName': nameController.text.trim(),
                       'phone': phoneController.text.trim(),
                       'gstNumber': gstController.text.trim(),
                       'city': cityController.text.trim(),
                       'state': stateController.text.trim(),
+                      'openingTime': openingTimeController.text.trim(),
+                      'closingTime': closingTimeController.text.trim(),
+                      'deliveryRadiusKm':
+                          int.tryParse(radiusController.text.trim()) ?? 10,
                       'updatedAt': FieldValue.serverTimestamp(),
                     }, SetOptions(merge: true));
 
                     // Sync name to users collection
-                    await FirebaseFirestore.instance.collection('users').doc(uid).update({
+                    await FirebaseFirestore.instance
+                        .collection('users')
+                        .doc(uid)
+                        .update({
                       'name': nameController.text.trim(),
                     });
 
@@ -420,15 +557,19 @@ class _SellerProfileScreenState extends State<SellerProfileScreen> {
                       Navigator.pop(ctx);
                       _loadSellerProfile();
                       ScaffoldMessenger.of(context).showSnackBar(
-                        const SnackBar(content: Text('Profile updated!'), backgroundColor: Colors.green),
+                        const SnackBar(
+                            content: Text('Profile updated!'),
+                            backgroundColor: Colors.green),
                       );
                     }
                   },
                   style: FilledButton.styleFrom(
                     backgroundColor: const Color(0xFF2D7D3C),
-                    shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+                    shape: RoundedRectangleBorder(
+                        borderRadius: BorderRadius.circular(12)),
                   ),
-                  child: const Text('Save Changes', style: TextStyle(fontWeight: FontWeight.bold)),
+                  child: const Text('Save Changes',
+                      style: TextStyle(fontWeight: FontWeight.bold)),
                 ),
               ),
             ],

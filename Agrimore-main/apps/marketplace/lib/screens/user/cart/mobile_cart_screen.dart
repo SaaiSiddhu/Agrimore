@@ -1012,7 +1012,9 @@ class _MobileCartScreenState extends State<MobileCartScreen>
                 padding:
                     const EdgeInsets.symmetric(vertical: 10, horizontal: 12),
                 decoration: BoxDecoration(
-                  color: isDark ? const Color(0xFF303030) : const Color(0xFFF8F8F8),
+                  color: isDark
+                      ? const Color(0xFF303030)
+                      : const Color(0xFFF8F8F8),
                   borderRadius: BorderRadius.circular(10),
                   border: Border.all(
                     color: isDark ? Colors.grey[750]! : Colors.grey[200]!,
@@ -3530,6 +3532,50 @@ class _MobileCartScreenState extends State<MobileCartScreen>
           .clamp(0.0, double.infinity)
           .toDouble();
 
+      if (cartProvider.items.isNotEmpty) {
+        final createdOrders = await _createSellerSplitOrders(
+          userId: userId,
+          address: address,
+          items: cartProvider.items,
+          subtotal: subtotal,
+          couponDiscount: couponDiscount,
+          deliveryCharge: deliveryCharge,
+          total: total,
+          walletDiscount: walletDiscount,
+          paymentStatus: paymentStatus,
+          razorpayOrderId: razorpayOrderId,
+          razorpayPaymentId: razorpayPaymentId,
+          razorpaySignature: razorpaySignature,
+          couponCode: couponProvider.appliedCoupon?.code,
+        );
+
+        if (_useWalletBalance && walletDiscount > 0) {
+          await walletProvider.useWalletForOrder(
+            orderId: createdOrders.checkoutGroupId,
+            amount: walletDiscount,
+            coinsUsed: 0,
+          );
+        }
+
+        await cartProvider.clearCart();
+        couponProvider.removeCoupon();
+
+        if (!mounted) return;
+
+        setState(() => _isPlacingOrder = false);
+        HapticFeedback.heavyImpact();
+
+        Navigator.pushAndRemoveUntil(
+          context,
+          MaterialPageRoute(
+            builder: (_) =>
+                OrderSuccessScreen(order: createdOrders.orders.first),
+          ),
+          (route) => route.isFirst,
+        );
+        return;
+      }
+
       final orderId = FirebaseFirestore.instance.collection('orders').doc().id;
 
       // Generate a unique delivery verification code for secure handover
@@ -3548,7 +3594,7 @@ class _MobileCartScreenState extends State<MobileCartScreen>
         deliveryCharge: deliveryCharge,
         tax: 0.0,
         total: total,
-        paymentMethod: _selectedPaymentMethod ?? 'cod',
+        paymentMethod: _selectedPaymentMethod,
         paymentStatus: paymentStatus,
         orderStatus: 'pending',
         razorpayOrderId: razorpayOrderId,
@@ -3591,6 +3637,134 @@ class _MobileCartScreenState extends State<MobileCartScreen>
       _showSnackBar('Error creating order: ${e.toString()}', isError: true);
       setState(() => _isPlacingOrder = false);
     }
+  }
+
+  Future<_SplitOrderResult> _createSellerSplitOrders({
+    required String userId,
+    required AddressModel address,
+    required List<CartItemModel> items,
+    required double subtotal,
+    required double couponDiscount,
+    required double deliveryCharge,
+    required double total,
+    required double walletDiscount,
+    required String paymentStatus,
+    String? razorpayOrderId,
+    String? razorpayPaymentId,
+    String? razorpaySignature,
+    String? couponCode,
+  }) async {
+    final itemsBySeller = await _groupCartItemsBySeller(items);
+    if (itemsBySeller.isEmpty) {
+      throw Exception('No seller found for cart items');
+    }
+
+    final checkoutGroupId =
+        FirebaseFirestore.instance.collection('orders').doc().id;
+    final totalItemSubtotal = items.fold<double>(
+      0,
+      (sum, item) => sum + _cartItemSubtotal(item),
+    );
+    final batch = FirebaseFirestore.instance.batch();
+    final createdOrders = <OrderModel>[];
+    var sellerOrderIndex = 0;
+
+    for (final entry in itemsBySeller.entries) {
+      sellerOrderIndex++;
+      final sellerId = entry.key;
+      final sellerItems = entry.value;
+      final sellerSubtotal = sellerItems.fold<double>(
+        0,
+        (sum, item) => sum + _cartItemSubtotal(item),
+      );
+      final ratio = totalItemSubtotal > 0
+          ? sellerSubtotal / totalItemSubtotal
+          : 1 / itemsBySeller.length;
+      final sellerDiscount = couponDiscount * ratio;
+      final sellerDeliveryCharge = deliveryCharge * ratio;
+      final sellerTotal =
+          (sellerSubtotal - sellerDiscount + sellerDeliveryCharge)
+              .clamp(0.0, double.infinity)
+              .toDouble();
+
+      final orderRef = FirebaseFirestore.instance.collection('orders').doc();
+      final order = OrderModel(
+        id: orderRef.id,
+        userId: userId,
+        sellerId: sellerId,
+        orderNumber: OrderModel.generateOrderNumber(),
+        items: sellerItems,
+        deliveryAddress: address,
+        subtotal: sellerSubtotal,
+        discount: sellerDiscount,
+        deliveryCharge: sellerDeliveryCharge,
+        tax: 0.0,
+        total: sellerTotal,
+        paymentMethod: _selectedPaymentMethod,
+        paymentStatus: paymentStatus,
+        orderStatus: 'pending',
+        razorpayOrderId: razorpayOrderId,
+        razorpayPaymentId: razorpayPaymentId,
+        razorpaySignature: razorpaySignature,
+        couponCode: couponCode,
+        createdAt: DateTime.now(),
+        deliveryVerificationCode: OrderModel.generateVerificationCode(),
+      );
+
+      batch.set(orderRef, {
+        ...order.toMap(),
+        'checkoutGroupId': checkoutGroupId,
+        'sellerOrderIndex': sellerOrderIndex,
+        'sellerOrderCount': itemsBySeller.length,
+        'parentOrderSubtotal': subtotal,
+        'parentOrderTotal': total,
+        'walletDiscount': walletDiscount * ratio,
+      });
+      batch.set(orderRef.collection('timeline').doc(), {
+        'status': 'pending',
+        'title': 'Order Placed',
+        'description': 'Order placed successfully',
+        'timestamp': FieldValue.serverTimestamp(),
+      });
+      createdOrders.add(order);
+    }
+
+    await batch.commit();
+    return _SplitOrderResult(
+      checkoutGroupId: checkoutGroupId,
+      orders: createdOrders,
+    );
+  }
+
+  double _cartItemSubtotal(CartItemModel item) => item.price * item.quantity;
+
+  Future<Map<String, List<CartItemModel>>> _groupCartItemsBySeller(
+    List<CartItemModel> items,
+  ) async {
+    final grouped = <String, List<CartItemModel>>{};
+    for (final item in items) {
+      final sellerId = await _resolveSellerIdForItem(item);
+      grouped.putIfAbsent(sellerId, () => <CartItemModel>[]).add(
+            item.sellerId == sellerId
+                ? item
+                : item.copyWith(sellerId: sellerId),
+          );
+    }
+    return grouped;
+  }
+
+  Future<String> _resolveSellerIdForItem(CartItemModel item) async {
+    if (item.sellerId.trim().isNotEmpty) return item.sellerId.trim();
+
+    final productDoc = await FirebaseFirestore.instance
+        .collection('products')
+        .doc(item.productId)
+        .get();
+    final sellerId = productDoc.data()?['sellerId']?.toString().trim() ?? '';
+    if (sellerId.isEmpty) {
+      throw Exception('Seller not found for ${item.productName}');
+    }
+    return sellerId;
   }
 
   void _showSnackBar(String message, {bool isError = false}) {
@@ -4156,8 +4330,6 @@ class _MobileCartScreenState extends State<MobileCartScreen>
       ),
     );
   }
-
-
 
   // --- Sticky Bottom Bar ---
   Widget _buildBlinkitBottomBar(
@@ -5667,4 +5839,14 @@ class _MobileCartScreenState extends State<MobileCartScreen>
       ),
     );
   }
+}
+
+class _SplitOrderResult {
+  final String checkoutGroupId;
+  final List<OrderModel> orders;
+
+  const _SplitOrderResult({
+    required this.checkoutGroupId,
+    required this.orders,
+  });
 }

@@ -4,7 +4,6 @@ import 'package:flutter/services.dart';
 import 'package:go_router/go_router.dart';
 import 'package:provider/provider.dart';
 import 'package:flutter_animate/flutter_animate.dart';
-import 'package:agrimore_ui/agrimore_ui.dart';
 import '../../app/themes/admin_colors.dart';
 import '../../app/app_router.dart';
 import '../../providers/auth_provider.dart';
@@ -14,11 +13,8 @@ class AdminShell extends StatefulWidget {
   final String currentPath;
   final Widget child;
 
-  const AdminShell({
-    Key? key,
-    required this.currentPath,
-    required this.child,
-  }) : super(key: key);
+  const AdminShell({Key? key, required this.currentPath, required this.child})
+    : super(key: key);
 
   @override
   State<AdminShell> createState() => _AdminShellState();
@@ -33,21 +29,50 @@ class _AdminShellState extends State<AdminShell> {
     _NavItem(Icons.grid_view_rounded, 'Dashboard', AdminRoutes.dashboard),
     _NavItem(Icons.inventory_2_rounded, 'Products', AdminRoutes.products),
     _NavItem(Icons.receipt_long_rounded, 'Orders', AdminRoutes.orders),
-    _NavItem(Icons.card_membership_rounded, 'Subscriptions', AdminRoutes.subscriptions),
-    _NavItem(Icons.schedule_rounded, 'Time Slots', AdminRoutes.deliveryTimeSlots),
-    _NavItem(Icons.delivery_dining_rounded, 'Delivery Partners', AdminRoutes.deliveryPartners),
+    _NavItem(
+      Icons.card_membership_rounded,
+      'Subscriptions',
+      AdminRoutes.subscriptions,
+    ),
+    _NavItem(
+      Icons.schedule_rounded,
+      'Time Slots',
+      AdminRoutes.deliveryTimeSlots,
+    ),
+    _NavItem(
+      Icons.delivery_dining_rounded,
+      'Delivery Partners',
+      AdminRoutes.deliveryPartners,
+    ),
     _NavItem(Icons.group_rounded, 'Users', AdminRoutes.users),
     _NavItem(Icons.storefront_rounded, 'Vendors', AdminRoutes.vendors),
-    _NavItem(Icons.how_to_reg_rounded, 'Seller requests', AdminRoutes.sellerRequests),
+    _NavItem(
+      Icons.how_to_reg_rounded,
+      'Seller requests',
+      AdminRoutes.sellerRequests,
+    ),
     _NavItem(Icons.rate_review_rounded, 'Reviews', AdminRoutes.reviews),
+    _NavItem(
+      Icons.account_balance_wallet_rounded,
+      'Wallet Top-ups',
+      AdminRoutes.walletTopups,
+    ),
     _NavItem(Icons.loyalty_rounded, 'Coupons', AdminRoutes.coupons),
     _NavItem(Icons.card_giftcard_rounded, 'Rewards', AdminRoutes.rewards),
     _NavItem(Icons.collections_rounded, 'Banners', AdminRoutes.banners),
     _NavItem(Icons.ads_click_rounded, 'Sponsored', AdminRoutes.sponsored),
-    _NavItem(Icons.view_carousel_rounded, 'Section Banners', AdminRoutes.sectionBanners),
+    _NavItem(
+      Icons.view_carousel_rounded,
+      'Section Banners',
+      AdminRoutes.sectionBanners,
+    ),
     _NavItem(Icons.star_rounded, 'Bestsellers', AdminRoutes.bestsellers),
     _NavItem(Icons.category_rounded, 'Sections', AdminRoutes.sections),
-    _NavItem(Icons.notifications_active_rounded, 'Notifications', AdminRoutes.notifications),
+    _NavItem(
+      Icons.notifications_active_rounded,
+      'Notifications',
+      AdminRoutes.notifications,
+    ),
     _NavItem(Icons.insights_rounded, 'Analytics', AdminRoutes.analytics),
     _NavItem(Icons.settings_rounded, 'Settings', AdminRoutes.settings),
   ];
@@ -126,7 +151,10 @@ class _AdminShellState extends State<AdminShell> {
           const SizedBox(height: 8),
           Expanded(
             child: ListView.builder(
-              padding: EdgeInsets.symmetric(horizontal: _isCollapsed ? 8 : 12, vertical: 8),
+              padding: EdgeInsets.symmetric(
+                horizontal: _isCollapsed ? 8 : 12,
+                vertical: 8,
+              ),
               itemCount: _navItems.length,
               itemBuilder: (context, index) => _buildSidebarItem(index),
             ),
@@ -148,7 +176,9 @@ class _AdminShellState extends State<AdminShell> {
       child: Column(
         children: [
           Row(
-            mainAxisAlignment: _isCollapsed ? MainAxisAlignment.center : MainAxisAlignment.start,
+            mainAxisAlignment: _isCollapsed
+                ? MainAxisAlignment.center
+                : MainAxisAlignment.start,
             children: [
               Container(
                 width: _isCollapsed ? 48 : 52,
@@ -171,11 +201,18 @@ class _AdminShellState extends State<AdminShell> {
                     errorBuilder: (_, __, ___) => Container(
                       decoration: BoxDecoration(
                         gradient: LinearGradient(
-                          colors: [AdminColors.primary, AdminColors.primaryLight],
+                          colors: [
+                            AdminColors.primary,
+                            AdminColors.primaryLight,
+                          ],
                         ),
                         borderRadius: BorderRadius.circular(14),
                       ),
-                      child: const Icon(Icons.shield_rounded, color: Colors.white, size: 28),
+                      child: const Icon(
+                        Icons.shield_rounded,
+                        color: Colors.white,
+                        size: 28,
+                      ),
                     ),
                   ),
                 ),
@@ -224,17 +261,26 @@ class _AdminShellState extends State<AdminShell> {
                 borderRadius: BorderRadius.circular(8),
               ),
               child: Row(
-                mainAxisAlignment: _isCollapsed ? MainAxisAlignment.center : MainAxisAlignment.spaceBetween,
+                mainAxisAlignment: _isCollapsed
+                    ? MainAxisAlignment.center
+                    : MainAxisAlignment.spaceBetween,
                 children: [
                   if (!_isCollapsed)
                     Text(
                       'Collapse Menu',
-                      style: TextStyle(fontSize: 12, color: Colors.white.withOpacity(0.6)),
+                      style: TextStyle(
+                        fontSize: 12,
+                        color: Colors.white.withOpacity(0.6),
+                      ),
                     ),
                   AnimatedRotation(
                     turns: _isCollapsed ? 0.5 : 0,
                     duration: const Duration(milliseconds: 300),
-                    child: Icon(Icons.chevron_left_rounded, color: Colors.white.withOpacity(0.6), size: 20),
+                    child: Icon(
+                      Icons.chevron_left_rounded,
+                      color: Colors.white.withOpacity(0.6),
+                      size: 20,
+                    ),
                   ),
                 ],
               ),
@@ -278,11 +324,15 @@ class _AdminShellState extends State<AdminShell> {
               borderRadius: BorderRadius.circular(12),
             ),
             child: Row(
-              mainAxisAlignment: _isCollapsed ? MainAxisAlignment.center : MainAxisAlignment.start,
+              mainAxisAlignment: _isCollapsed
+                  ? MainAxisAlignment.center
+                  : MainAxisAlignment.start,
               children: [
                 Icon(
                   item.icon,
-                  color: isSelected ? Colors.white : Colors.white.withOpacity(0.6),
+                  color: isSelected
+                      ? Colors.white
+                      : Colors.white.withOpacity(0.6),
                   size: 22,
                 ),
                 if (!_isCollapsed) ...[
@@ -291,8 +341,12 @@ class _AdminShellState extends State<AdminShell> {
                     child: Text(
                       item.label,
                       style: TextStyle(
-                        color: isSelected ? Colors.white : Colors.white.withOpacity(0.75),
-                        fontWeight: isSelected ? FontWeight.w600 : FontWeight.w500,
+                        color: isSelected
+                            ? Colors.white
+                            : Colors.white.withOpacity(0.75),
+                        fontWeight: isSelected
+                            ? FontWeight.w600
+                            : FontWeight.w500,
                         fontSize: 14,
                       ),
                     ),
@@ -322,9 +376,15 @@ class _AdminShellState extends State<AdminShell> {
             borderRadius: BorderRadius.circular(12),
           ),
           child: Row(
-            mainAxisAlignment: _isCollapsed ? MainAxisAlignment.center : MainAxisAlignment.start,
+            mainAxisAlignment: _isCollapsed
+                ? MainAxisAlignment.center
+                : MainAxisAlignment.start,
             children: [
-              const Icon(Icons.logout_rounded, color: Colors.redAccent, size: 20),
+              const Icon(
+                Icons.logout_rounded,
+                color: Colors.redAccent,
+                size: 20,
+              ),
               if (!_isCollapsed) ...[
                 const SizedBox(width: 12),
                 const Text(
@@ -378,10 +438,16 @@ class _AdminShellState extends State<AdminShell> {
                   width: 36,
                   height: 36,
                   decoration: BoxDecoration(
-                    gradient: LinearGradient(colors: [AdminColors.primary, AdminColors.primaryLight]),
+                    gradient: LinearGradient(
+                      colors: [AdminColors.primary, AdminColors.primaryLight],
+                    ),
                     borderRadius: BorderRadius.circular(10),
                   ),
-                  child: const Icon(Icons.shield_rounded, color: Colors.white, size: 20),
+                  child: const Icon(
+                    Icons.shield_rounded,
+                    color: Colors.white,
+                    size: 20,
+                  ),
                 ),
               ),
             ),
@@ -391,7 +457,10 @@ class _AdminShellState extends State<AdminShell> {
               children: [
                 Text(
                   _navItems[_currentIndex].label,
-                  style: const TextStyle(fontWeight: FontWeight.w700, fontSize: 16),
+                  style: const TextStyle(
+                    fontWeight: FontWeight.w700,
+                    fontSize: 16,
+                  ),
                 ),
                 Text(
                   _getSubtitle(),
@@ -409,8 +478,14 @@ class _AdminShellState extends State<AdminShell> {
               ),
               child: Center(
                 child: Text(
-                  authProvider.currentUser?.email?.substring(0, 1).toUpperCase() ?? 'A',
-                  style: const TextStyle(color: Colors.white, fontWeight: FontWeight.bold),
+                  authProvider.currentUser?.email
+                          ?.substring(0, 1)
+                          .toUpperCase() ??
+                      'A',
+                  style: const TextStyle(
+                    color: Colors.white,
+                    fontWeight: FontWeight.bold,
+                  ),
                 ),
               ),
             ),
@@ -422,25 +497,44 @@ class _AdminShellState extends State<AdminShell> {
 
   String _getSubtitle() {
     switch (_currentIndex) {
-      case 0: return 'Overview';
-      case 1: return 'Catalog';
-      case 2: return 'Sales';
-      case 3: return 'Recurrences';
-      case 4: return 'Logistics';
-      case 5: return 'Customers';
-      case 6: return 'Stores';
-      case 7: return 'Feedback';
-      case 8: return 'Promotions';
-      case 9: return 'Gamification';
-      case 10: return 'Media';
-      case 11: return 'Ads';
-      case 12: return 'Between Sections';
-      case 13: return 'Featured';
-      case 14: return 'Home Categories';
-      case 15: return 'Alerts';
-      case 16: return 'Reports';
-      case 17: return 'Config';
-      default: return '';
+      case 0:
+        return 'Overview';
+      case 1:
+        return 'Catalog';
+      case 2:
+        return 'Sales';
+      case 3:
+        return 'Recurrences';
+      case 4:
+        return 'Logistics';
+      case 5:
+        return 'Customers';
+      case 6:
+        return 'Stores';
+      case 7:
+        return 'Feedback';
+      case 8:
+        return 'Promotions';
+      case 9:
+        return 'Gamification';
+      case 10:
+        return 'Media';
+      case 11:
+        return 'Ads';
+      case 12:
+        return 'Between Sections';
+      case 13:
+        return 'Featured';
+      case 14:
+        return 'Home Categories';
+      case 15:
+        return 'Alerts';
+      case 16:
+        return 'Reports';
+      case 17:
+        return 'Config';
+      default:
+        return '';
     }
   }
 
@@ -469,7 +563,7 @@ class _AdminShellState extends State<AdminShell> {
               _buildBottomNavItem(1, Icons.inventory_2_rounded, 'Products'),
               _buildBottomNavItem(2, Icons.receipt_long_rounded, 'Orders'),
               _buildBottomNavItem(6, Icons.group_rounded, 'Users'),
-              _buildBottomNavItem(19, Icons.settings_rounded, 'Settings'),
+              _buildBottomNavItem(20, Icons.settings_rounded, 'Settings'),
             ],
           ),
         ),
@@ -489,7 +583,9 @@ class _AdminShellState extends State<AdminShell> {
         duration: const Duration(milliseconds: 200),
         padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
         decoration: BoxDecoration(
-          color: isSelected ? AdminColors.primary.withOpacity(0.1) : Colors.transparent,
+          color: isSelected
+              ? AdminColors.primary.withOpacity(0.1)
+              : Colors.transparent,
           borderRadius: BorderRadius.circular(12),
         ),
         child: Column(
@@ -530,14 +626,26 @@ class _AdminShellState extends State<AdminShell> {
                 children: [
                   ClipRRect(
                     borderRadius: BorderRadius.circular(14),
-                    child: Image.asset('assets/icons/app_icon.png', width: 50, height: 50,
+                    child: Image.asset(
+                      'assets/icons/app_icon.png',
+                      width: 50,
+                      height: 50,
                       errorBuilder: (_, __, ___) => Container(
-                        width: 50, height: 50,
+                        width: 50,
+                        height: 50,
                         decoration: BoxDecoration(
-                          gradient: LinearGradient(colors: [AdminColors.primary, AdminColors.primaryLight]),
+                          gradient: LinearGradient(
+                            colors: [
+                              AdminColors.primary,
+                              AdminColors.primaryLight,
+                            ],
+                          ),
                           borderRadius: BorderRadius.circular(14),
                         ),
-                        child: const Icon(Icons.shield_rounded, color: Colors.white),
+                        child: const Icon(
+                          Icons.shield_rounded,
+                          color: Colors.white,
+                        ),
                       ),
                     ),
                   ),
@@ -545,10 +653,21 @@ class _AdminShellState extends State<AdminShell> {
                   Column(
                     crossAxisAlignment: CrossAxisAlignment.start,
                     children: [
-                      const Text('Admin Panel',
-                        style: TextStyle(color: Colors.white, fontWeight: FontWeight.w700, fontSize: 18)),
-                      Text(authProvider.currentUser?.email ?? '',
-                        style: TextStyle(color: Colors.white.withOpacity(0.6), fontSize: 12)),
+                      const Text(
+                        'Admin Panel',
+                        style: TextStyle(
+                          color: Colors.white,
+                          fontWeight: FontWeight.w700,
+                          fontSize: 18,
+                        ),
+                      ),
+                      Text(
+                        authProvider.currentUser?.email ?? '',
+                        style: TextStyle(
+                          color: Colors.white.withOpacity(0.6),
+                          fontSize: 12,
+                        ),
+                      ),
                     ],
                   ),
                 ],
@@ -557,20 +676,37 @@ class _AdminShellState extends State<AdminShell> {
             Divider(color: Colors.white.withOpacity(0.1)),
             Expanded(
               child: ListView.builder(
-                padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
+                padding: const EdgeInsets.symmetric(
+                  horizontal: 12,
+                  vertical: 8,
+                ),
                 itemCount: _navItems.length,
                 itemBuilder: (context, index) {
                   final item = _navItems[index];
                   final isSelected = _currentIndex == index;
                   return ListTile(
-                    leading: Icon(item.icon, color: isSelected ? Colors.white : Colors.white.withOpacity(0.6)),
-                    title: Text(item.label, style: TextStyle(
-                      color: isSelected ? Colors.white : Colors.white.withOpacity(0.75),
-                      fontWeight: isSelected ? FontWeight.w600 : FontWeight.w500,
-                    )),
+                    leading: Icon(
+                      item.icon,
+                      color: isSelected
+                          ? Colors.white
+                          : Colors.white.withOpacity(0.6),
+                    ),
+                    title: Text(
+                      item.label,
+                      style: TextStyle(
+                        color: isSelected
+                            ? Colors.white
+                            : Colors.white.withOpacity(0.75),
+                        fontWeight: isSelected
+                            ? FontWeight.w600
+                            : FontWeight.w500,
+                      ),
+                    ),
                     selected: isSelected,
                     selectedTileColor: AdminColors.primary,
-                    shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+                    shape: RoundedRectangleBorder(
+                      borderRadius: BorderRadius.circular(12),
+                    ),
                     onTap: () {
                       Navigator.pop(context);
                       context.go(item.route);
@@ -581,8 +717,17 @@ class _AdminShellState extends State<AdminShell> {
             ),
             Divider(color: Colors.white.withOpacity(0.1)),
             ListTile(
-              leading: const Icon(Icons.logout_rounded, color: Colors.redAccent),
-              title: const Text('Logout', style: TextStyle(color: Colors.redAccent, fontWeight: FontWeight.w600)),
+              leading: const Icon(
+                Icons.logout_rounded,
+                color: Colors.redAccent,
+              ),
+              title: const Text(
+                'Logout',
+                style: TextStyle(
+                  color: Colors.redAccent,
+                  fontWeight: FontWeight.w600,
+                ),
+              ),
               onTap: _logout,
             ),
             const SizedBox(height: 8),
@@ -599,7 +744,10 @@ class _AdminShellState extends State<AdminShell> {
         title: const Text('Logout'),
         content: const Text('Are you sure you want to logout?'),
         actions: [
-          TextButton(onPressed: () => Navigator.pop(ctx, false), child: const Text('Cancel')),
+          TextButton(
+            onPressed: () => Navigator.pop(ctx, false),
+            child: const Text('Cancel'),
+          ),
           ElevatedButton(
             onPressed: () => Navigator.pop(ctx, true),
             style: ElevatedButton.styleFrom(backgroundColor: Colors.red),

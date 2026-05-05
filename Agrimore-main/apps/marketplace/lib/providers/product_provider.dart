@@ -1,10 +1,10 @@
 import 'dart:async';
 import 'dart:convert';
+import 'dart:math' as math;
 import 'package:flutter/material.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:firebase_auth/firebase_auth.dart';
-import 'package:agrimore_core/agrimore_core.dart';
 import 'package:agrimore_services/agrimore_services.dart';
 
 // ============================================
@@ -150,7 +150,9 @@ class ProductProvider with ChangeNotifier {
           limit: limit,
         );
       }
-      freshProducts = _dedupeProducts(freshProducts);
+      freshProducts = await _filterProductsForUserLocation(
+        _dedupeProducts(freshProducts),
+      );
 
       // ============================================
       // STEP 3: UPDATE - Only refresh UI if data changed
@@ -250,11 +252,11 @@ class ProductProvider with ChangeNotifier {
 
       final activeLocation =
           location ?? SharedPreferencesService.getString('selected_location');
-      _products = _dedupeProducts(
-        await _databaseService.getFeaturedProducts(
+      _products = await _filterProductsForUserLocation(
+        _dedupeProducts(await _databaseService.getFeaturedProducts(
           limit: 10,
           location: activeLocation,
-        ),
+        )),
       );
       _loadedProductLimit = 10;
       _isLoading = false;
@@ -550,15 +552,8 @@ class ProductProvider with ChangeNotifier {
       // For now we will rely on the query itself, or we could filter post-fetch.
       final results = await _databaseService.searchProducts(query);
 
-      final activeLocation =
-          SharedPreferencesService.getString('selected_location');
-      if (activeLocation != null && activeLocation.isNotEmpty) {
-        _products = _dedupeProducts(
-          results.where((p) => p.location == activeLocation).toList(),
-        );
-      } else {
-        _products = _dedupeProducts(results);
-      }
+      _products =
+          await _filterProductsForUserLocation(_dedupeProducts(results));
 
       _isLoading = false;
       _notifySafely();
@@ -600,6 +595,88 @@ class ProductProvider with ChangeNotifier {
   Future<void> refreshProducts({String? location}) async {
     await loadProducts(forceRefresh: true, location: location);
   }
+
+  Future<List<ProductModel>> _filterProductsForUserLocation(
+    List<ProductModel> products,
+  ) async {
+    final prefs = await SharedPreferences.getInstance();
+    final selectedLocation =
+        (prefs.getString('selected_location') ?? '').toLowerCase();
+    final selectedState =
+        (prefs.getString('selected_state') ?? _extractState(selectedLocation))
+            .trim();
+    final userState =
+        selectedState.isNotEmpty ? selectedState.toLowerCase() : 'tamil nadu';
+    final userDistrict = (prefs.getString('selected_district') ??
+            _extractDistrict(selectedLocation))
+        .toLowerCase();
+    final userLat = prefs.getDouble('selected_latitude');
+    final userLng = prefs.getDouble('selected_longitude');
+
+    return products.where((product) {
+      final type = product.locationType.toLowerCase().trim();
+      if (type.isEmpty || type == 'state') {
+        final state = (product.state ?? 'Tamil Nadu').toLowerCase();
+        return state.isEmpty ||
+            state == userState ||
+            selectedLocation.contains(state);
+      }
+
+      if (type == 'district') {
+        final state = (product.state ?? 'Tamil Nadu').toLowerCase();
+        final district = (product.district ?? '').toLowerCase();
+        final stateMatches = state.isEmpty || state == userState;
+        final districtMatches = district.isEmpty ||
+            userDistrict.isEmpty ||
+            district == userDistrict ||
+            selectedLocation.contains(district);
+        return stateMatches && districtMatches;
+      }
+
+      if (type == 'radius') {
+        if (userLat == null ||
+            userLng == null ||
+            product.lat == null ||
+            product.lng == null ||
+            product.radiusKm == null) {
+          return false;
+        }
+        return _distanceKm(userLat, userLng, product.lat!, product.lng!) <=
+            product.radiusKm!;
+      }
+
+      return true;
+    }).toList();
+  }
+
+  String _extractState(String selectedLocation) {
+    if (selectedLocation.contains('tamil nadu')) return 'Tamil Nadu';
+    return '';
+  }
+
+  String _extractDistrict(String selectedLocation) {
+    final parts = selectedLocation
+        .split(',')
+        .map((part) => part.trim())
+        .where((part) => part.isNotEmpty)
+        .toList();
+    return parts.isNotEmpty ? parts.first : '';
+  }
+
+  double _distanceKm(
+      double startLat, double startLng, double endLat, double endLng) {
+    const earthRadiusKm = 6371.0;
+    final dLat = _degToRad(endLat - startLat);
+    final dLng = _degToRad(endLng - startLng);
+    final a = math.sin(dLat / 2) * math.sin(dLat / 2) +
+        math.cos(_degToRad(startLat)) *
+            math.cos(_degToRad(endLat)) *
+            math.sin(dLng / 2) *
+            math.sin(dLng / 2);
+    return earthRadiusKm * 2 * math.atan2(math.sqrt(a), math.sqrt(1 - a));
+  }
+
+  double _degToRad(double degrees) => degrees * math.pi / 180;
 
   void clearSelectedProduct() {
     _selectedProduct = null;

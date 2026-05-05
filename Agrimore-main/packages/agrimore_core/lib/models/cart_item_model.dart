@@ -8,17 +8,20 @@ class CartItemModel {
   final double price;
   final int quantity;
   final String userId;
+  final String sellerId;
   final DateTime addedAt;
-  
+
   // Additional fields for enhanced cart
-  final String? variant;           // Product variant (size, color, etc)
-  final double? originalPrice;     // Original price before discount
+  final String? variant; // Product variant (size, color, etc)
+  final double? originalPrice; // Original price before discount
   final double discountPercentage; // Discount percentage
-  
+
   // BOGO fields
-  final bool isFreeItem;           // Is this a BOGO free item?
-  final String? freeItemLabel;     // Label for free item (e.g., "BOGO Free", "Free Gift")
-  final String? linkedBuyItemId;   // ID of the buy item this free item is linked to
+  final bool isFreeItem; // Is this a BOGO free item?
+  final String?
+      freeItemLabel; // Label for free item (e.g., "BOGO Free", "Free Gift")
+  final String?
+      linkedBuyItemId; // ID of the buy item this free item is linked to
 
   CartItemModel({
     required this.id,
@@ -28,6 +31,7 @@ class CartItemModel {
     required this.price,
     required this.quantity,
     required this.userId,
+    this.sellerId = '',
     required this.addedAt,
     this.variant,
     this.originalPrice,
@@ -48,13 +52,13 @@ class CartItemModel {
 
   // Check if item has discount
   bool get hasDiscount => originalPrice != null && originalPrice! > price;
-  
+
   // Get the image URL (alias for backward compatibility)
   String get imageUrl => productImage;
-  
+
   // ✅ NEW: Generate unique key for cart item (productId + variant)
-  String get uniqueKey => variant != null && variant!.isNotEmpty 
-      ? '${productId}_$variant' 
+  String get uniqueKey => variant != null && variant!.isNotEmpty
+      ? '${productId}_$variant'
       : productId;
 
   // Factory constructor from Firestore DocumentSnapshot
@@ -68,6 +72,7 @@ class CartItemModel {
       price: (data['price'] ?? 0).toDouble(),
       quantity: data['quantity'] ?? 1,
       userId: data['userId'] ?? '',
+      sellerId: data['sellerId'] ?? '',
       addedAt: (data['addedAt'] as Timestamp?)?.toDate() ?? DateTime.now(),
       variant: data['variant'],
       originalPrice: data['originalPrice']?.toDouble(),
@@ -88,6 +93,7 @@ class CartItemModel {
       price: (map['price'] ?? 0).toDouble(),
       quantity: map['quantity'] ?? 1,
       userId: map['userId'] ?? '',
+      sellerId: map['sellerId'] ?? '',
       addedAt: map['addedAt'] is Timestamp
           ? (map['addedAt'] as Timestamp).toDate()
           : (map['addedAt'] is DateTime ? map['addedAt'] : DateTime.now()),
@@ -110,6 +116,7 @@ class CartItemModel {
       'price': price,
       'quantity': quantity,
       'userId': userId,
+      'sellerId': sellerId,
       'addedAt': Timestamp.fromDate(addedAt),
       'variant': variant,
       'originalPrice': originalPrice,
@@ -129,6 +136,7 @@ class CartItemModel {
     double? price,
     int? quantity,
     String? userId,
+    String? sellerId,
     DateTime? addedAt,
     String? variant,
     double? originalPrice,
@@ -145,6 +153,7 @@ class CartItemModel {
       price: price ?? this.price,
       quantity: quantity ?? this.quantity,
       userId: userId ?? this.userId,
+      sellerId: sellerId ?? this.sellerId,
       addedAt: addedAt ?? this.addedAt,
       variant: variant ?? this.variant,
       originalPrice: originalPrice ?? this.originalPrice,

@@ -31,53 +31,55 @@ import '../screens/admin/vendors/vendors_list_screen.dart';
 import '../screens/admin/subscriptions/subscription_management_screen.dart';
 import '../screens/admin/rewards/rewards_management_screen.dart';
 import '../screens/admin/reviews/review_management_screen.dart';
+import '../screens/admin/wallet/wallet_tracking_screen.dart';
 
 class AdminRoutes {
   // Auth
   static const String auth = '/auth';
   static const String login = '/login';
-  
+
   // Dashboard
   static const String dashboard = '/dashboard';
-  
+
   // Products
   static const String products = '/products';
   static const String productNew = '/products/new';
   static const String productEdit = '/products/:id/edit';
-  
+
   // Orders
   static const String orders = '/orders';
   static const String orderDetail = '/orders/:id';
-  
+
   // Delivery Partners
   static const String deliveryPartners = '/delivery-partners';
-  
+
   // Users
   static const String users = '/users';
   static const String userDetail = '/users/:id';
-  
+
   // Custom Modules
   static const String subscriptions = '/subscriptions';
   static const String rewards = '/rewards';
   static const String reviews = '/reviews';
-  
+  static const String walletTopups = '/wallet-topups';
+
   // Vendors
   static const String vendors = '/vendors';
-  
+
   // Coupons
   static const String coupons = '/coupons';
-  
+
   // Media
   static const String banners = '/banners';
   static const String sponsored = '/sponsored';
   static const String sectionBanners = '/section-banners';
-  
+
   // Featured
   static const String bestsellers = '/bestsellers';
   static const String sections = '/sections';
   static const String sectionNew = '/sections/new';
   static const String sectionEdit = '/sections/:id';
-  
+
   // System
   static const String notifications = '/notifications';
   static const String analytics = '/analytics';
@@ -95,29 +97,30 @@ class AdminRoutes {
   // registered in the admin router.
   static const String sellerPanel = '/seller/panel';
   static const String sellerApply = '/seller/apply';
-
 }
 
 /// App router configuration using go_router
 class AppRouter {
-  static final GlobalKey<NavigatorState> _rootNavigatorKey = GlobalKey<NavigatorState>();
-  static final GlobalKey<NavigatorState> _shellNavigatorKey = GlobalKey<NavigatorState>();
+  static final GlobalKey<NavigatorState> _rootNavigatorKey =
+      GlobalKey<NavigatorState>();
+  static final GlobalKey<NavigatorState> _shellNavigatorKey =
+      GlobalKey<NavigatorState>();
 
   static GoRouter router(BuildContext context) {
     final authProvider = context.read<AuthProvider>();
-    
+
     return GoRouter(
       navigatorKey: _rootNavigatorKey,
       initialLocation: '/splash',
       debugLogDiagnostics: true,
 
-      
       // Redirect logic for auth
       redirect: (context, state) {
         if (state.matchedLocation == '/splash') return null;
 
         final isLoggedIn = authProvider.isLoggedIn;
-        final isAuthRoute = state.matchedLocation == AdminRoutes.auth ||
+        final isAuthRoute =
+            state.matchedLocation == AdminRoutes.auth ||
             state.matchedLocation == AdminRoutes.login ||
             state.matchedLocation == '/';
         if (!isLoggedIn && !isAuthRoute) {
@@ -126,21 +129,23 @@ class AppRouter {
 
         if (isLoggedIn) {
           if (authProvider.isAdmin) {
-             // Admin goes to dashboard
-             if (isAuthRoute || state.matchedLocation == '/') return AdminRoutes.dashboard;
+            // Admin goes to dashboard
+            if (isAuthRoute || state.matchedLocation == '/') {
+              return AdminRoutes.dashboard;
+            }
           } else {
-             // Non-admin (User/Seller) must be blocked (AuthProvider handles sign out)
-             // We can just keep them on auth route to see the error message
-             if (!isAuthRoute) return AdminRoutes.auth;
+            // Non-admin (User/Seller) must be blocked (AuthProvider handles sign out)
+            // We can just keep them on auth route to see the error message
+            if (!isAuthRoute) return AdminRoutes.auth;
           }
         }
 
         return null;
       },
-      
+
       // Refresh when auth state changes
       refreshListenable: authProvider,
-      
+
       routes: [
         // Splash Screen
         GoRoute(
@@ -187,7 +192,9 @@ class AppRouter {
           redirect: (context, state) {
             final authProvider = context.read<AuthProvider>();
             if (!authProvider.isLoggedIn) return AdminRoutes.auth;
-            return authProvider.isAdmin ? AdminRoutes.dashboard : AdminRoutes.auth;
+            return authProvider.isAdmin
+                ? AdminRoutes.dashboard
+                : AdminRoutes.auth;
           },
         ),
 
@@ -195,7 +202,7 @@ class AppRouter {
         // FULL-SCREEN ROUTES (NO SHELL)
         // These screens don't show the sidebar/header
         // ============================================
-        
+
         // Product Add/Edit (full screen)
         GoRoute(
           path: AdminRoutes.productNew,
@@ -212,12 +219,13 @@ class AppRouter {
             return ProductFormScreen(productId: productId);
           },
         ),
-        
+
         // Section Add/Edit (full screen)
         GoRoute(
           path: AdminRoutes.sectionNew,
           name: 'section-new',
-          builder: (context, state) => const EditCategorySectionScreen(section: null),
+          builder: (context, state) =>
+              const EditCategorySectionScreen(section: null),
         ),
         GoRoute(
           path: '/sections/:id/edit',
@@ -227,228 +235,190 @@ class AppRouter {
             return const EditCategorySectionScreen(section: null);
           },
         ),
-        
+
         // ============================================
         // SHELL ROUTES (WITH SIDEBAR)
         // ============================================
         ShellRoute(
           navigatorKey: _shellNavigatorKey,
-          builder: (context, state, child) => AdminShell(
-            currentPath: state.matchedLocation,
-            child: child,
-          ),
+          builder: (context, state, child) =>
+              AdminShell(currentPath: state.matchedLocation, child: child),
           routes: [
             // Dashboard
             GoRoute(
               path: AdminRoutes.dashboard,
               name: 'dashboard',
-              pageBuilder: (context, state) => _buildPage(
-                const AdminDashboard(),
-                state,
-              ),
+              pageBuilder: (context, state) =>
+                  _buildPage(const AdminDashboard(), state),
             ),
-            
+
             // Products List
             GoRoute(
               path: AdminRoutes.products,
               name: 'products',
-              pageBuilder: (context, state) => _buildPage(
-                const ProductManagementScreen(),
-                state,
-              ),
+              pageBuilder: (context, state) =>
+                  _buildPage(const ProductManagementScreen(), state),
             ),
 
-            
             // Orders
             GoRoute(
               path: AdminRoutes.orders,
               name: 'orders',
-              pageBuilder: (context, state) => _buildPage(
-                const OrderManagementScreen(),
-                state,
-              ),
+              pageBuilder: (context, state) =>
+                  _buildPage(const OrderManagementScreen(), state),
             ),
-            
+
             // Users
             GoRoute(
               path: AdminRoutes.users,
               name: 'users',
-              pageBuilder: (context, state) => _buildPage(
-                const UserManagementScreen(),
-                state,
-              ),
+              pageBuilder: (context, state) =>
+                  _buildPage(const UserManagementScreen(), state),
             ),
-            
+
             // Subscriptions
             GoRoute(
               path: AdminRoutes.subscriptions,
               name: 'subscriptions',
-              pageBuilder: (context, state) => _buildPage(
-                const SubscriptionManagementScreen(),
-                state,
-              ),
+              pageBuilder: (context, state) =>
+                  _buildPage(const SubscriptionManagementScreen(), state),
             ),
-            
+
             // Rewards
             GoRoute(
               path: AdminRoutes.rewards,
               name: 'rewards',
-              pageBuilder: (context, state) => _buildPage(
-                const RewardsManagementScreen(),
-                state,
-              ),
+              pageBuilder: (context, state) =>
+                  _buildPage(const RewardsManagementScreen(), state),
             ),
-            
+
             // Reviews
             GoRoute(
               path: AdminRoutes.reviews,
               name: 'reviews',
-              pageBuilder: (context, state) => _buildPage(
-                const ReviewManagementScreen(),
-                state,
-              ),
+              pageBuilder: (context, state) =>
+                  _buildPage(const ReviewManagementScreen(), state),
             ),
-            
+
+            GoRoute(
+              path: AdminRoutes.walletTopups,
+              name: 'wallet-topups',
+              pageBuilder: (context, state) =>
+                  _buildPage(const WalletTrackingScreen(), state),
+            ),
+
             // Vendors
             GoRoute(
               path: AdminRoutes.vendors,
               name: 'vendors',
-              pageBuilder: (context, state) => _buildPage(
-                const VendorsListScreen(),
-                state,
-              ),
+              pageBuilder: (context, state) =>
+                  _buildPage(const VendorsListScreen(), state),
             ),
-            
+
             // Delivery Partners
             GoRoute(
               path: AdminRoutes.deliveryPartners,
               name: 'delivery-partners',
-              pageBuilder: (context, state) => _buildPage(
-                const DeliveryPartnerManagementScreen(),
-                state,
-              ),
+              pageBuilder: (context, state) =>
+                  _buildPage(const DeliveryPartnerManagementScreen(), state),
             ),
-            
+
             // Coupons
             GoRoute(
               path: AdminRoutes.coupons,
               name: 'coupons',
-              pageBuilder: (context, state) => _buildPage(
-                const CouponManagementScreen(),
-                state,
-              ),
+              pageBuilder: (context, state) =>
+                  _buildPage(const CouponManagementScreen(), state),
             ),
-            
+
             // Banners
             GoRoute(
               path: AdminRoutes.banners,
               name: 'banners',
-              pageBuilder: (context, state) => _buildPage(
-                const BannerManagementScreen(),
-                state,
-              ),
+              pageBuilder: (context, state) =>
+                  _buildPage(const BannerManagementScreen(), state),
             ),
-            
+
             // Sponsored
             GoRoute(
               path: AdminRoutes.sponsored,
               name: 'sponsored',
-              pageBuilder: (context, state) => _buildPage(
-                const SponsoredBannerManagementScreen(),
-                state,
-              ),
+              pageBuilder: (context, state) =>
+                  _buildPage(const SponsoredBannerManagementScreen(), state),
             ),
-            
+
             // Section Banners
             GoRoute(
               path: AdminRoutes.sectionBanners,
               name: 'section-banners',
-              pageBuilder: (context, state) => _buildPage(
-                const SectionBannerManagementScreen(),
-                state,
-              ),
+              pageBuilder: (context, state) =>
+                  _buildPage(const SectionBannerManagementScreen(), state),
             ),
-            
+
             // Bestsellers
             GoRoute(
               path: AdminRoutes.bestsellers,
               name: 'bestsellers',
-              pageBuilder: (context, state) => _buildPage(
-                const BestsellerManagementScreen(),
-                state,
-              ),
+              pageBuilder: (context, state) =>
+                  _buildPage(const BestsellerManagementScreen(), state),
             ),
-            
+
             // Category Sections List
             GoRoute(
               path: AdminRoutes.sections,
               name: 'sections',
-              pageBuilder: (context, state) => _buildPage(
-                const CategorySectionManagementScreen(),
-                state,
-              ),
+              pageBuilder: (context, state) =>
+                  _buildPage(const CategorySectionManagementScreen(), state),
             ),
-            
+
             // Notifications
             GoRoute(
               path: AdminRoutes.notifications,
               name: 'notifications',
-              pageBuilder: (context, state) => _buildPage(
-                const SendNotificationScreen(),
-                state,
-              ),
+              pageBuilder: (context, state) =>
+                  _buildPage(const SendNotificationScreen(), state),
             ),
-            
+
             // Analytics
             GoRoute(
               path: AdminRoutes.analytics,
               name: 'analytics',
-              pageBuilder: (context, state) => _buildPage(
-                const AnalyticsScreen(),
-                state,
-              ),
+              pageBuilder: (context, state) =>
+                  _buildPage(const AnalyticsScreen(), state),
             ),
-            
+
             // Settings
             GoRoute(
               path: AdminRoutes.settings,
               name: 'settings',
-              pageBuilder: (context, state) => _buildPage(
-                const AdminSettingsScreen(),
-                state,
-              ),
+              pageBuilder: (context, state) =>
+                  _buildPage(const AdminSettingsScreen(), state),
             ),
 
             GoRoute(
               path: AdminRoutes.deliveryTimeSlots,
               name: 'delivery-time-slots',
-              pageBuilder: (context, state) => _buildPage(
-                const DeliveryTimeSlotsManagementScreen(),
-                state,
-              ),
+              pageBuilder: (context, state) =>
+                  _buildPage(const DeliveryTimeSlotsManagementScreen(), state),
             ),
 
             GoRoute(
               path: AdminRoutes.sellerRequests,
               name: 'seller-requests',
-              pageBuilder: (context, state) => _buildPage(
-                const SellerRequestsManagementScreen(),
-                state,
-              ),
+              pageBuilder: (context, state) =>
+                  _buildPage(const SellerRequestsManagementScreen(), state),
             ),
 
             GoRoute(
               path: AdminRoutes.addSeller,
               name: 'add-seller',
-              pageBuilder: (context, state) => _buildPage(
-                const AddSellerScreen(),
-                state,
-              ),
+              pageBuilder: (context, state) =>
+                  _buildPage(const AddSellerScreen(), state),
             ),
           ],
         ),
       ],
-      
+
       // Error handling
       errorBuilder: (context, state) => Scaffold(
         body: Center(
@@ -472,7 +442,7 @@ class AppRouter {
       ),
     );
   }
-  
+
   /// Build a page with custom transition
   static CustomTransitionPage _buildPage(Widget child, GoRouterState state) {
     return CustomTransitionPage(
@@ -492,10 +462,10 @@ class AppRouter {
 extension GoRouterExtension on BuildContext {
   /// Navigate to a route
   void navigateTo(String path) => go(path);
-  
+
   /// Push a route on stack
   void pushTo(String path) => push(path);
-  
+
   /// Replace current route
   void replaceTo(String path) => pushReplacement(path);
 }

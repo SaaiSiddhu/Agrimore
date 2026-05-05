@@ -1,0 +1,275 @@
+{
+  "project_info": {
+    "project_number": "1082819024270",
+    "firebase_url": "https://agrimore-66a4e-default-rtdb.firebaseio.com",
+    "project_id": "agrimore-66a4e",
+    "storage_bucket": "agrimore-66a4e.firebasestorage.app"
+  },
+  "client": [
+    {
+      "client_info": {
+        "mobilesdk_app_id": "1:1082819024270:android:dca6d1f5e4ba62ffe640df",
+        "android_client_info": {
+          "package_name": "com.agrimore.admin"
+        }
+      },
+      "oauth_client": [
+        {
+          "client_id": "1082819024270-bi1ocevn1jmcs55bq37go05e2n3hriem.apps.googleusercontent.com",
+          "client_type": 1,
+          "android_info": {
+            "package_name": "com.agrimore.admin",
+            "certificate_hash": "08e1bb33a6210ce5e2435ccfc8fcf2a469c3add5"
+          }
+        },
+        {
+          "client_id": "1082819024270-0rmfnpcfjbmd12mq3h4qbffp67jri89a.apps.googleusercontent.com",
+          "client_type": 3
+        }
+      ],
+      "api_key": [
+        {
+          "current_key": "AIzaSyDlbhaEl3Hz60iYVL7qtSBPx3Clx6SV7gg"
+        }
+      ],
+      "services": {
+        "appinvite_service": {
+          "other_platform_oauth_client": [
+            {
+              "client_id": "1082819024270-0rmfnpcfjbmd12mq3h4qbffp67jri89a.apps.googleusercontent.com",
+              "client_type": 3
+            },
+            {
+              "client_id": "1082819024270-cvqkdm8b6olss06q8qfphv1jiqidjti7.apps.googleusercontent.com",
+              "client_type": 2,
+              "ios_info": {
+                "bundle_id": "com.customer.agrimore"
+              }
+            }
+          ]
+        }
+      }
+    },
+    {
+      "client_info": {
+        "mobilesdk_app_id": "1:1082819024270:android:fee25001e34206e9e640df",
+        "android_client_info": {
+          "package_name": "com.agrimore.app"
+        }
+      },
+      "oauth_client": [
+        {
+          "client_id": "1082819024270-2snp0030s9um8135stp0rrivppq4omj3.apps.googleusercontent.com",
+          "client_type": 1,
+          "android_info": {
+            "package_name": "com.agrimore.app",
+            "certificate_hash": "881e360132c580d1f3caee059c404f909490ca63"
+          }
+        },
+        {
+          "client_id": "1082819024270-6gfcicp14ot5lhno3eeknf1l57reobd9.apps.googleusercontent.com",
+          "client_type": 1,
+          "android_info": {
+            "package_name": "com.agrimore.app",
+            "certificate_hash": "95b21c5bf289da156a20508da0d7f6c863d1b789"
+          }
+        },
+        {
+          "client_id": "1082819024270-colj7ah5rot71f3b3tb6u26tbgr7oloq.apps.googleusercontent.com",
+          "client_type": 1,
+          "android_info": {
+            "package_name": "com.agrimore.app",
+            "certificate_hash": "08e1bb33a6210ce5e2435ccfc8fcf2a469c3add5"
+          }
+        },
+        {
+          "client_id": "1082819024270-0rmfnpcfjbmd12mq3h4qbffp67jri89a.apps.googleusercontent.com",
+          "client_type": 3
+        }
+      ],
+      "api_key": [
+        {
+          "current_key": "AIzaSyDlbhaEl3Hz60iYVL7qtSBPx3Clx6SV7gg"
+        }
+      ],
+      "services": {
+        "appinvite_service": {
+          "other_platform_oauth_client": [
+            {
+              "client_id": "1082819024270-0rmfnpcfjbmd12mq3h4qbffp67jri89a.apps.googleusercontent.com",
+              "client_type": 3
+            },
+            {
+              "client_id": "1082819024270-cvqkdm8b6olss06q8qfphv1jiqidjti7.apps.googleusercontent.com",
+              "client_type": 2,
+              "ios_info": {
+                "bundle_id": "com.customer.agrimore"
+              }
+            }
+          ]
+        }
+      }
+    },
+    {
+      "client_info": {
+        "mobilesdk_app_id": "1:1082819024270:android:b0d8a138e04eb520e640df",
+        "android_client_info": {
+          "package_name": "com.agrimore.delivery"
+        }
+      },
+      "oauth_client": [
+        {
+          "client_id": "1082819024270-o4hkhh2tn73c9edid7t90nl88jea47t8.apps.googleusercontent.com",
+          "client_type": 1,
+          "android_info": {
+            "package_name": "com.agrimore.delivery",
+            "certificate_hash": "08e1bb33a6210ce5e2435ccfc8fcf2a469c3add5"
+          }
+        },
+        {
+          "client_id": "1082819024270-0rmfnpcfjbmd12mq3h4qbffp67jri89a.apps.googleusercontent.com",
+          "client_type": 3
+        }
+      ],
+      "api_key": [
+        {
+          "current_key": "AIzaSyDlbhaEl3Hz60iYVL7qtSBPx3Clx6SV7gg"
+        }
+      ],
+      "services": {
+        "appinvite_service": {
+          "other_platform_oauth_client": [
+            {
+              "client_id": "1082819024270-0rmfnpcfjbmd12mq3h4qbffp67jri89a.apps.googleusercontent.com",
+              "client_type": 3
+            },
+            {
+              "client_id": "1082819024270-cvqkdm8b6olss06q8qfphv1jiqidjti7.apps.googleusercontent.com",
+              "client_type": 2,
+              "ios_info": {
+                "bundle_id": "com.customer.agrimore"
+              }
+            }
+          ]
+        }
+      }
+    },
+    {
+      "client_info": {
+        "mobilesdk_app_id": "1:1082819024270:android:8521a8a8b9e975a9e640df",
+        "android_client_info": {
+          "package_name": "com.agrimore.mobile"
+        }
+      },
+      "oauth_client": [
+        {
+          "client_id": "1082819024270-0rmfnpcfjbmd12mq3h4qbffp67jri89a.apps.googleusercontent.com",
+          "client_type": 3
+        }
+      ],
+      "api_key": [
+        {
+          "current_key": "AIzaSyDlbhaEl3Hz60iYVL7qtSBPx3Clx6SV7gg"
+        }
+      ],
+      "services": {
+        "appinvite_service": {
+          "other_platform_oauth_client": [
+            {
+              "client_id": "1082819024270-0rmfnpcfjbmd12mq3h4qbffp67jri89a.apps.googleusercontent.com",
+              "client_type": 3
+            },
+            {
+              "client_id": "1082819024270-cvqkdm8b6olss06q8qfphv1jiqidjti7.apps.googleusercontent.com",
+              "client_type": 2,
+              "ios_info": {
+                "bundle_id": "com.customer.agrimore"
+              }
+            }
+          ]
+        }
+      }
+    },
+    {
+      "client_info": {
+        "mobilesdk_app_id": "1:1082819024270:android:c7de8d28458924b5e640df",
+        "android_client_info": {
+          "package_name": "com.agrimore.seller"
+        }
+      },
+      "oauth_client": [
+        {
+          "client_id": "1082819024270-vl2e0lvju1ujsot48p9a2g0k3e8scfol.apps.googleusercontent.com",
+          "client_type": 1,
+          "android_info": {
+            "package_name": "com.agrimore.seller",
+            "certificate_hash": "08e1bb33a6210ce5e2435ccfc8fcf2a469c3add5"
+          }
+        },
+        {
+          "client_id": "1082819024270-0rmfnpcfjbmd12mq3h4qbffp67jri89a.apps.googleusercontent.com",
+          "client_type": 3
+        }
+      ],
+      "api_key": [
+        {
+          "current_key": "AIzaSyDlbhaEl3Hz60iYVL7qtSBPx3Clx6SV7gg"
+        }
+      ],
+      "services": {
+        "appinvite_service": {
+          "other_platform_oauth_client": [
+            {
+              "client_id": "1082819024270-0rmfnpcfjbmd12mq3h4qbffp67jri89a.apps.googleusercontent.com",
+              "client_type": 3
+            },
+            {
+              "client_id": "1082819024270-cvqkdm8b6olss06q8qfphv1jiqidjti7.apps.googleusercontent.com",
+              "client_type": 2,
+              "ios_info": {
+                "bundle_id": "com.customer.agrimore"
+              }
+            }
+          ]
+        }
+      }
+    },
+    {
+      "client_info": {
+        "mobilesdk_app_id": "1:1082819024270:android:5d471e0e9d336cb2e640df",
+        "android_client_info": {
+          "package_name": "com.customer.agrimore"
+        }
+      },
+      "oauth_client": [
+        {
+          "client_id": "1082819024270-0rmfnpcfjbmd12mq3h4qbffp67jri89a.apps.googleusercontent.com",
+          "client_type": 3
+        }
+      ],
+      "api_key": [
+        {
+          "current_key": "AIzaSyDlbhaEl3Hz60iYVL7qtSBPx3Clx6SV7gg"
+        }
+      ],
+      "services": {
+        "appinvite_service": {
+          "other_platform_oauth_client": [
+            {
+              "client_id": "1082819024270-0rmfnpcfjbmd12mq3h4qbffp67jri89a.apps.googleusercontent.com",
+              "client_type": 3
+            },
+            {
+              "client_id": "1082819024270-cvqkdm8b6olss06q8qfphv1jiqidjti7.apps.googleusercontent.com",
+              "client_type": 2,
+              "ios_info": {
+                "bundle_id": "com.customer.agrimore"
+              }
+            }
+          ]
+        }
+      }
+    }
+  ],
+  "configuration_version": "1"
+}

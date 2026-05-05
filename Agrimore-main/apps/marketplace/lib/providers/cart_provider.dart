@@ -132,6 +132,7 @@ class CartProvider with ChangeNotifier {
         price: effectivePrice,
         quantity: quantity,
         userId: userId,
+        sellerId: product.sellerId,
         addedAt: DateTime.now(),
         variant: variant,
         originalPrice: effectiveOriginalPrice,
@@ -143,7 +144,8 @@ class CartProvider with ChangeNotifier {
             : 0.0,
       );
 
-      List<CartItemModel> updatedItems = List<CartItemModel>.from(_cart?.items ?? []);
+      List<CartItemModel> updatedItems =
+          List<CartItemModel>.from(_cart?.items ?? []);
 
       // ✅ UPDATED: Check both productId AND variant
       final existingIndex = updatedItems.indexWhere(
@@ -241,6 +243,7 @@ class CartProvider with ChangeNotifier {
             price: orderItem.price,
             quantity: orderItem.quantity,
             userId: userId,
+            sellerId: orderItem.sellerId,
             addedAt: DateTime.now(),
             variant: orderItem.variant, // ✅ PRESERVE VARIANT
             originalPrice: orderItem.originalPrice,

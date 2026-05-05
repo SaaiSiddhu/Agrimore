@@ -3,8 +3,8 @@ import 'dart:typed_data';
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 import 'package:agrimore_ui/agrimore_ui.dart';
-import 'package:agrimore_core/agrimore_core.dart';
 import 'package:firebase_storage/firebase_storage.dart';
+import 'package:geolocator/geolocator.dart';
 import 'package:image_picker/image_picker.dart';
 import '../../providers/seller_auth_provider.dart';
 import '../../providers/seller_product_provider.dart';
@@ -27,12 +27,73 @@ class _AddProductScreenState extends State<AddProductScreen> {
   final _stockController = TextEditingController();
   final _categoryController = TextEditingController();
   final _lowStockThresholdController = TextEditingController(text: '10');
+  final _districtController = TextEditingController();
+  final _latController = TextEditingController();
+  final _lngController = TextEditingController();
 
   final ImagePicker _imagePicker = ImagePicker();
   XFile? _selectedImage;
   Uint8List? _selectedImageBytes;
+  List<String> _masterImages = [];
+  List<Map<String, dynamic>> _masterSuggestions = [];
+  List<Map<String, dynamic>> _centers = [];
+  Map<String, dynamic>? _selectedMasterProduct;
+  Map<String, dynamic>? _selectedCenter;
   bool _isGeneratingAI = false;
   bool _isSaving = false;
+  bool _isSearchingMasterProducts = false;
+  bool _isLoadingCenters = false;
+  bool _isDetectingCoverageLocation = false;
+  bool _isApplyingProgrammaticPrice = false;
+  bool _manualPriceEdited = false;
+  String _locationType = 'state';
+  String _selectedState = 'Tamil Nadu';
+  String _priceSource = 'default';
+  double _radiusKm = 10;
+  double? _basePrice;
+  double? _areaPrice;
+
+  static const List<String> _states = ['Tamil Nadu'];
+  static const List<String> _tamilNaduDistricts = [
+    'Ariyalur',
+    'Chengalpattu',
+    'Chennai',
+    'Coimbatore',
+    'Cuddalore',
+    'Dharmapuri',
+    'Dindigul',
+    'Erode',
+    'Kallakurichi',
+    'Kanchipuram',
+    'Kanniyakumari',
+    'Karur',
+    'Krishnagiri',
+    'Madurai',
+    'Mayiladuthurai',
+    'Nagapattinam',
+    'Namakkal',
+    'Nilgiris',
+    'Perambalur',
+    'Pudukkottai',
+    'Ramanathapuram',
+    'Ranipet',
+    'Salem',
+    'Sivaganga',
+    'Tenkasi',
+    'Thanjavur',
+    'Theni',
+    'Thoothukudi',
+    'Tiruchirappalli',
+    'Tirunelveli',
+    'Tirupathur',
+    'Tiruppur',
+    'Tiruvallur',
+    'Tiruvannamalai',
+    'Tiruvarur',
+    'Vellore',
+    'Viluppuram',
+    'Virudhunagar',
+  ];
 
   bool get isEditing => widget.existingProduct != null;
 
@@ -50,7 +111,28 @@ class _AddProductScreenState extends State<AddProductScreen> {
       _categoryController.text = p.categoryId;
       _lowStockThresholdController.text =
           (p.lowStockThreshold ?? 10).toString();
+      _locationType = p.locationType.isEmpty ? 'state' : p.locationType;
+      _selectedState = p.state ?? 'Tamil Nadu';
+      _districtController.text = p.district ?? '';
+      _latController.text = p.lat?.toString() ?? '';
+      _lngController.text = p.lng?.toString() ?? '';
+      _radiusKm = p.radiusKm ?? 10;
+      _basePrice = p.basePrice ?? p.salePrice;
+      _areaPrice = p.areaPrice;
+      _manualPriceEdited = p.manualPriceOverride;
+      _priceSource = p.priceSource;
+      if (p.masterProductRef != null && p.masterProductRef!.isNotEmpty) {
+        _selectedMasterProduct = {'id': p.masterProductRef, 'name': p.name};
+      }
+      if (p.centerId != null && p.centerId!.isNotEmpty) {
+        _selectedCenter = {
+          'id': p.centerId,
+          'name': p.centerName ?? p.centerId
+        };
+      }
     }
+    _priceController.addListener(_handleManualPriceEdit);
+    WidgetsBinding.instance.addPostFrameCallback((_) => _loadCenters());
   }
 
   @override
@@ -62,7 +144,197 @@ class _AddProductScreenState extends State<AddProductScreen> {
     _stockController.dispose();
     _categoryController.dispose();
     _lowStockThresholdController.dispose();
+    _districtController.dispose();
+    _latController.dispose();
+    _lngController.dispose();
     super.dispose();
+  }
+
+  void _handleManualPriceEdit() {
+    if (_isApplyingProgrammaticPrice || _priceController.text.trim().isEmpty) {
+      return;
+    }
+    _manualPriceEdited = true;
+    _priceSource = 'manual';
+  }
+
+  Future<void> _loadCenters() async {
+    if (!mounted) return;
+    setState(() => _isLoadingCenters = true);
+    try {
+      final centers = await context.read<SellerProductProvider>().loadCenters();
+      if (!mounted) return;
+      setState(() {
+        _centers = centers;
+        if (_selectedCenter != null) {
+          _selectedCenter = centers.cast<Map<String, dynamic>?>().firstWhere(
+                (center) => center?['id'] == _selectedCenter?['id'],
+                orElse: () => _selectedCenter,
+              );
+        }
+      });
+    } finally {
+      if (mounted) setState(() => _isLoadingCenters = false);
+    }
+  }
+
+  Future<void> _searchMasterProducts(String value) async {
+    if (value.trim().length < 2) {
+      setState(() => _masterSuggestions = []);
+      return;
+    }
+    setState(() => _isSearchingMasterProducts = true);
+    final results =
+        await context.read<SellerProductProvider>().searchMasterProducts(value);
+    if (!mounted) return;
+    setState(() {
+      _masterSuggestions = results;
+      _isSearchingMasterProducts = false;
+    });
+  }
+
+  Future<void> _selectMasterProduct(Map<String, dynamic> product) async {
+    final basePrice = ((product['basePrice'] ??
+            product['salePrice'] ??
+            product['price'] ??
+            product['mrp']) as num?)
+        ?.toDouble();
+    setState(() {
+      _selectedMasterProduct = product;
+      _masterSuggestions = [];
+      _nameController.text = (product['name'] ?? '').toString();
+      _descriptionController.text = (product['description'] ?? '').toString();
+      _categoryController.text =
+          (product['categoryId'] ?? product['category'] ?? 'general')
+              .toString();
+      _originalPriceController.text =
+          ((product['mrp'] ?? product['originalPrice'] ?? basePrice) ?? '')
+              .toString();
+      _masterImages = List<String>.from(
+        product['images'] ?? product['imageUrls'] ?? const [],
+      );
+      _basePrice = basePrice;
+      _areaPrice = null;
+      _manualPriceEdited = false;
+      _priceSource = 'default';
+    });
+    if (basePrice != null) _setEffectivePrice(basePrice, 'default');
+    await _applyCenterPrice();
+  }
+
+  Future<void> _selectCenter(Map<String, dynamic>? center) async {
+    setState(() => _selectedCenter = center);
+    await _applyCenterPrice();
+  }
+
+  Future<void> _applyCenterPrice() async {
+    final masterId = _selectedMasterProduct?['id']?.toString();
+    final centerId = _selectedCenter?['id']?.toString();
+    if (masterId == null || centerId == null) return;
+
+    final sellerId = context.read<SellerAuthProvider>().currentUser?.uid;
+    final centerPrice =
+        await context.read<SellerProductProvider>().getCenterPrice(
+              masterProductId: masterId,
+              centerId: centerId,
+              sellerId: sellerId,
+            );
+    if (!mounted) return;
+    setState(() => _areaPrice = centerPrice);
+
+    if (_manualPriceEdited) return;
+    if (centerPrice != null) {
+      _setEffectivePrice(centerPrice, 'area');
+    } else if (_basePrice != null) {
+      _setEffectivePrice(_basePrice!, 'default');
+    }
+  }
+
+  void _setEffectivePrice(double price, String source) {
+    _isApplyingProgrammaticPrice = true;
+    _priceController.text = price.toStringAsFixed(0);
+    _isApplyingProgrammaticPrice = false;
+    setState(() {
+      _priceSource = source;
+      _manualPriceEdited = source == 'manual';
+    });
+  }
+
+  void _resetToMappedPrice() {
+    final price = _areaPrice ?? _basePrice;
+    if (price == null) return;
+    _setEffectivePrice(price, _areaPrice == null ? 'default' : 'area');
+  }
+
+  bool _validateCoverage() {
+    if (_locationType == 'district' &&
+        _districtController.text.trim().isEmpty) {
+      SnackbarHelper.showError(context, 'Please select a delivery district.');
+      return false;
+    }
+    if (_locationType == 'radius') {
+      final lat = double.tryParse(_latController.text.trim());
+      final lng = double.tryParse(_lngController.text.trim());
+      if (lat == null || lng == null) {
+        SnackbarHelper.showError(
+            context, 'Please set latitude and longitude for radius delivery.');
+        return false;
+      }
+    }
+    return true;
+  }
+
+  String _coverageLabel() {
+    if (_locationType == 'district') {
+      return '${_districtController.text.trim()}, $_selectedState';
+    }
+    if (_locationType == 'radius') {
+      return '${_radiusKm.round()} km radius, $_selectedState';
+    }
+    return _selectedState;
+  }
+
+  Future<void> _useCurrentCoverageLocation() async {
+    setState(() => _isDetectingCoverageLocation = true);
+    try {
+      final serviceEnabled = await Geolocator.isLocationServiceEnabled();
+      if (!serviceEnabled) {
+        if (mounted) {
+          SnackbarHelper.showError(context, 'Please enable location service.');
+        }
+        return;
+      }
+
+      var permission = await Geolocator.checkPermission();
+      if (permission == LocationPermission.denied) {
+        permission = await Geolocator.requestPermission();
+      }
+      if (permission == LocationPermission.denied ||
+          permission == LocationPermission.deniedForever) {
+        if (mounted) {
+          SnackbarHelper.showError(context, 'Location permission denied.');
+        }
+        return;
+      }
+
+      final position = await Geolocator.getCurrentPosition(
+        locationSettings: const LocationSettings(
+          accuracy: LocationAccuracy.high,
+        ),
+      );
+      if (!mounted) return;
+      setState(() {
+        _locationType = 'radius';
+        _latController.text = position.latitude.toStringAsFixed(6);
+        _lngController.text = position.longitude.toStringAsFixed(6);
+      });
+    } catch (_) {
+      if (mounted) {
+        SnackbarHelper.showError(context, 'Unable to detect current location.');
+      }
+    } finally {
+      if (mounted) setState(() => _isDetectingCoverageLocation = false);
+    }
   }
 
   Future<void> _generateAIDescription() async {
@@ -140,9 +412,12 @@ class _AddProductScreenState extends State<AddProductScreen> {
 
   Future<void> _saveProduct() async {
     if (!_formKey.currentState!.validate()) return;
+    if (!_validateCoverage()) return;
 
     final auth = context.read<SellerAuthProvider>();
     if (auth.currentUser == null) return;
+    final sellerId = auth.currentUser!.uid;
+    final productProvider = context.read<SellerProductProvider>();
 
     setState(() => _isSaving = true);
 
@@ -150,10 +425,19 @@ class _AddProductScreenState extends State<AddProductScreen> {
     final originalPrice = double.tryParse(_originalPriceController.text);
     final stock = int.tryParse(_stockController.text) ?? 0;
     final lowThreshold = int.tryParse(_lowStockThresholdController.text) ?? 10;
+    final coverageDistrict =
+        _locationType == 'district' ? _districtController.text.trim() : null;
+    final coverageLat = _locationType == 'radius'
+        ? double.tryParse(_latController.text.trim())
+        : null;
+    final coverageLng = _locationType == 'radius'
+        ? double.tryParse(_lngController.text.trim())
+        : null;
+    final coverageRadius = _locationType == 'radius' ? _radiusKm : null;
     String? uploadedImageUrl;
 
     try {
-      uploadedImageUrl = await _uploadSelectedImage(auth.currentUser!.uid);
+      uploadedImageUrl = await _uploadSelectedImage(sellerId);
     } catch (e) {
       if (mounted) {
         setState(() => _isSaving = false);
@@ -164,12 +448,14 @@ class _AddProductScreenState extends State<AddProductScreen> {
     }
 
     if (isEditing) {
-      final updatedImages = uploadedImageUrl == null
+      final existingImages = widget.existingProduct!.images.isNotEmpty
           ? widget.existingProduct!.images
+          : _masterImages;
+      final updatedImages = uploadedImageUrl == null
+          ? existingImages
           : [
               uploadedImageUrl,
-              ...widget.existingProduct!.images
-                  .where((url) => url != uploadedImageUrl),
+              ...existingImages.where((url) => url != uploadedImageUrl),
             ];
 
       // Update existing product
@@ -184,15 +470,32 @@ class _AddProductScreenState extends State<AddProductScreen> {
             : _categoryController.text.trim(),
         images: updatedImages,
         lowStockThreshold: lowThreshold,
+        masterProductRef: _selectedMasterProduct?['id']?.toString(),
+        centerId: _selectedCenter?['id']?.toString(),
+        centerName: _selectedCenter?['name']?.toString(),
+        basePrice: _basePrice ?? salePrice,
+        areaPrice: _areaPrice,
+        manualPriceOverride: _manualPriceEdited,
+        priceSource: _priceSource,
+        location: _coverageLabel(),
+        locationType: _locationType,
+        state: _selectedState,
+        district: coverageDistrict,
+        lat: coverageLat,
+        lng: coverageLng,
+        radiusKm: coverageRadius,
+        clearDistrict: _locationType != 'district',
+        clearCoordinates: _locationType != 'radius',
+        clearRadius: _locationType != 'radius',
         updatedAt: DateTime.now(),
       );
 
-      final success =
-          await context.read<SellerProductProvider>().updateProduct(updated);
+      final success = await productProvider.updateProduct(updated);
 
+      if (!mounted) return;
       setState(() => _isSaving = false);
 
-      if (success && mounted) {
+      if (success) {
         SnackbarHelper.showSuccess(context, 'Product updated successfully!');
         Navigator.pop(context);
       }
@@ -208,22 +511,40 @@ class _AddProductScreenState extends State<AddProductScreen> {
         categoryId: _categoryController.text.trim().isEmpty
             ? 'general'
             : _categoryController.text.trim(),
-        sellerId: auth.currentUser!.uid,
-        location: 'Default Location',
+        sellerId: sellerId,
+        location: _coverageLabel(),
+        locationType: _locationType,
+        state: _selectedState,
+        district: coverageDistrict,
+        lat: coverageLat,
+        lng: coverageLng,
+        radiusKm: coverageRadius,
         isVerified: false,
         isActive: true,
-        images: uploadedImageUrl == null ? [] : [uploadedImageUrl],
+        images: uploadedImageUrl == null
+            ? _masterImages
+            : [
+                uploadedImageUrl,
+                ..._masterImages.where((url) => url != uploadedImageUrl),
+              ],
         lowStockThreshold: lowThreshold,
+        masterProductRef: _selectedMasterProduct?['id']?.toString(),
+        centerId: _selectedCenter?['id']?.toString(),
+        centerName: _selectedCenter?['name']?.toString(),
+        basePrice: _basePrice ?? salePrice,
+        areaPrice: _areaPrice,
+        manualPriceOverride: _manualPriceEdited,
+        priceSource: _priceSource,
         createdAt: DateTime.now(),
         updatedAt: DateTime.now(),
       );
 
-      final success =
-          await context.read<SellerProductProvider>().addProduct(product);
+      final success = await productProvider.addProduct(product);
 
+      if (!mounted) return;
       setState(() => _isSaving = false);
 
-      if (success && mounted) {
+      if (success) {
         SnackbarHelper.showSuccess(
             context, 'Product added successfully! Waiting for admin approval.');
         Navigator.pop(context);
@@ -243,9 +564,9 @@ class _AddProductScreenState extends State<AddProductScreen> {
         width: double.infinity,
         height: 170,
         decoration: BoxDecoration(
-          color: Colors.grey.withOpacity(0.1),
+          color: Colors.grey.withValues(alpha: 0.1),
           borderRadius: BorderRadius.circular(16),
-          border: Border.all(color: Colors.grey.withOpacity(0.3)),
+          border: Border.all(color: Colors.grey.withValues(alpha: 0.3)),
         ),
         clipBehavior: Clip.antiAlias,
         child: Stack(
@@ -274,7 +595,7 @@ class _AddProductScreenState extends State<AddProductScreen> {
                 padding:
                     const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
                 decoration: BoxDecoration(
-                  color: Colors.black.withOpacity(0.62),
+                  color: Colors.black.withValues(alpha: 0.62),
                   borderRadius: BorderRadius.circular(20),
                 ),
                 child: Row(
@@ -299,6 +620,343 @@ class _AddProductScreenState extends State<AddProductScreen> {
             ),
           ],
         ),
+      ),
+    );
+  }
+
+  Widget _buildMasterSuggestions() {
+    if (_isSearchingMasterProducts) {
+      return const Padding(
+        padding: EdgeInsets.only(top: 8),
+        child: LinearProgressIndicator(minHeight: 2),
+      );
+    }
+    if (_masterSuggestions.isEmpty) return const SizedBox.shrink();
+
+    return Container(
+      margin: const EdgeInsets.only(top: 8),
+      decoration: BoxDecoration(
+        color: Theme.of(context).colorScheme.surface,
+        borderRadius: BorderRadius.circular(12),
+        border: Border.all(color: Colors.grey.withValues(alpha: 0.25)),
+        boxShadow: [
+          BoxShadow(
+            color: Colors.black.withValues(alpha: 0.06),
+            blurRadius: 12,
+            offset: const Offset(0, 5),
+          ),
+        ],
+      ),
+      child: Column(
+        children: _masterSuggestions.map((product) {
+          final price =
+              product['basePrice'] ?? product['salePrice'] ?? product['price'];
+          return ListTile(
+            leading: const Icon(Icons.inventory_2_outlined),
+            title: Text(
+              (product['name'] ?? '').toString(),
+              maxLines: 1,
+              overflow: TextOverflow.ellipsis,
+            ),
+            subtitle: Text(
+              [
+                if (product['category'] != null) product['category'],
+                if (product['unit'] != null) product['unit'],
+                if (price != null) 'Rs.$price',
+              ].join(' • '),
+              maxLines: 1,
+              overflow: TextOverflow.ellipsis,
+            ),
+            onTap: () => _selectMasterProduct(product),
+          );
+        }).toList(),
+      ),
+    );
+  }
+
+  Widget _buildSelectorPricingSection(ThemeData theme) {
+    final selectedCenterId = _selectedCenter?['id']?.toString();
+    final priceLabel = switch (_priceSource) {
+      'manual' => 'Manual price',
+      'area' => 'Area / hub price',
+      _ => 'Default price',
+    };
+
+    return Container(
+      padding: const EdgeInsets.all(16),
+      decoration: BoxDecoration(
+        color: theme.colorScheme.surface,
+        borderRadius: BorderRadius.circular(16),
+        border: Border.all(color: theme.dividerColor.withValues(alpha: 0.4)),
+      ),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Row(
+            children: [
+              const Icon(Icons.hub_outlined, color: Color(0xFF2D7D3C)),
+              const SizedBox(width: 10),
+              const Expanded(
+                child: Text(
+                  'Center / Area Pricing',
+                  style: TextStyle(fontWeight: FontWeight.w800, fontSize: 16),
+                ),
+              ),
+              Chip(
+                label: Text(priceLabel),
+                visualDensity: VisualDensity.compact,
+              ),
+            ],
+          ),
+          const SizedBox(height: 14),
+          DropdownButtonFormField<String>(
+            initialValue: selectedCenterId,
+            decoration: InputDecoration(
+              labelText: _isLoadingCenters ? 'Loading centers...' : 'Selector',
+              border: const OutlineInputBorder(),
+              prefixIcon: const Icon(Icons.store_mall_directory_outlined),
+            ),
+            items: _centers
+                .map((center) => DropdownMenuItem<String>(
+                      value: center['id'].toString(),
+                      child: Text(center['name'].toString()),
+                    ))
+                .toList(),
+            onChanged: (id) {
+              final center = _centers.cast<Map<String, dynamic>?>().firstWhere(
+                    (item) => item?['id']?.toString() == id,
+                    orElse: () => null,
+                  );
+              _selectCenter(center);
+            },
+          ),
+          const SizedBox(height: 12),
+          Wrap(
+            spacing: 8,
+            runSpacing: 8,
+            children: [
+              _buildPriceInfoChip('Default', _basePrice),
+              _buildPriceInfoChip('Area', _areaPrice),
+              _buildPriceInfoChip(
+                'Current',
+                double.tryParse(_priceController.text.trim()),
+              ),
+            ],
+          ),
+          const SizedBox(height: 10),
+          Align(
+            alignment: Alignment.centerLeft,
+            child: TextButton.icon(
+              onPressed: (_basePrice == null && _areaPrice == null)
+                  ? null
+                  : _resetToMappedPrice,
+              icon: const Icon(Icons.restart_alt_outlined),
+              label: const Text('Reset mapped price'),
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+
+  Widget _buildPriceInfoChip(String label, double? price) {
+    return Chip(
+      label: Text(
+          '$label: ${price == null ? '-' : 'Rs.${price.toStringAsFixed(0)}'}'),
+      backgroundColor: const Color(0xFF2D7D3C).withValues(alpha: 0.08),
+      side: BorderSide.none,
+    );
+  }
+
+  Widget _buildCoverageSection(ThemeData theme) {
+    final districtValue =
+        _tamilNaduDistricts.contains(_districtController.text.trim())
+            ? _districtController.text.trim()
+            : null;
+
+    return Container(
+      padding: const EdgeInsets.all(16),
+      decoration: BoxDecoration(
+        color: theme.colorScheme.surface,
+        borderRadius: BorderRadius.circular(16),
+        border: Border.all(color: theme.dividerColor.withValues(alpha: 0.4)),
+        boxShadow: [
+          BoxShadow(
+            color: Colors.black.withValues(alpha: 0.04),
+            blurRadius: 12,
+            offset: const Offset(0, 4),
+          ),
+        ],
+      ),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Row(
+            children: [
+              Container(
+                padding: const EdgeInsets.all(9),
+                decoration: BoxDecoration(
+                  color: const Color(0xFF2D7D3C).withValues(alpha: 0.1),
+                  borderRadius: BorderRadius.circular(10),
+                ),
+                child: const Icon(
+                  Icons.location_on_outlined,
+                  color: Color(0xFF2D7D3C),
+                ),
+              ),
+              const SizedBox(width: 12),
+              const Expanded(
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Text(
+                      'Delivery Coverage Area',
+                      style: TextStyle(
+                        fontSize: 16,
+                        fontWeight: FontWeight.w800,
+                      ),
+                    ),
+                    SizedBox(height: 2),
+                    Text(
+                      'Default is full Tamil Nadu. Use radius for targeted delivery.',
+                      style: TextStyle(fontSize: 12, color: Colors.grey),
+                    ),
+                  ],
+                ),
+              ),
+            ],
+          ),
+          const SizedBox(height: 16),
+          Wrap(
+            spacing: 8,
+            runSpacing: 8,
+            children: [
+              ChoiceChip(
+                label: const Text('Full State'),
+                selected: _locationType == 'state',
+                onSelected: (_) => setState(() => _locationType = 'state'),
+              ),
+              ChoiceChip(
+                label: const Text('District'),
+                selected: _locationType == 'district',
+                onSelected: (_) => setState(() => _locationType = 'district'),
+              ),
+              ChoiceChip(
+                label: const Text('Radius'),
+                selected: _locationType == 'radius',
+                onSelected: (_) => setState(() => _locationType = 'radius'),
+              ),
+            ],
+          ),
+          const SizedBox(height: 16),
+          DropdownButtonFormField<String>(
+            initialValue: _selectedState,
+            decoration: const InputDecoration(
+              labelText: 'State',
+              border: OutlineInputBorder(),
+              prefixIcon: Icon(Icons.map_outlined),
+            ),
+            items: _states
+                .map((state) => DropdownMenuItem(
+                      value: state,
+                      child: Text(state),
+                    ))
+                .toList(),
+            onChanged: (value) {
+              if (value == null) return;
+              setState(() => _selectedState = value);
+            },
+          ),
+          if (_locationType == 'district') ...[
+            const SizedBox(height: 16),
+            DropdownButtonFormField<String>(
+              initialValue: districtValue,
+              decoration: const InputDecoration(
+                labelText: 'District',
+                border: OutlineInputBorder(),
+                prefixIcon: Icon(Icons.location_city_outlined),
+              ),
+              items: _tamilNaduDistricts
+                  .map((district) => DropdownMenuItem(
+                        value: district,
+                        child: Text(district),
+                      ))
+                  .toList(),
+              onChanged: (value) {
+                if (value == null) return;
+                setState(() => _districtController.text = value);
+              },
+              validator: (_) => _locationType == 'district' &&
+                      _districtController.text.trim().isEmpty
+                  ? 'Required'
+                  : null,
+            ),
+          ],
+          if (_locationType == 'radius') ...[
+            const SizedBox(height: 16),
+            Row(
+              children: [
+                Expanded(
+                  child: TextFormField(
+                    controller: _latController,
+                    keyboardType:
+                        const TextInputType.numberWithOptions(decimal: true),
+                    decoration: const InputDecoration(
+                      labelText: 'Latitude',
+                      border: OutlineInputBorder(),
+                      prefixIcon: Icon(Icons.my_location_outlined),
+                    ),
+                  ),
+                ),
+                const SizedBox(width: 12),
+                Expanded(
+                  child: TextFormField(
+                    controller: _lngController,
+                    keyboardType:
+                        const TextInputType.numberWithOptions(decimal: true),
+                    decoration: const InputDecoration(
+                      labelText: 'Longitude',
+                      border: OutlineInputBorder(),
+                      prefixIcon: Icon(Icons.explore_outlined),
+                    ),
+                  ),
+                ),
+              ],
+            ),
+            const SizedBox(height: 12),
+            OutlinedButton.icon(
+              onPressed: _isDetectingCoverageLocation
+                  ? null
+                  : _useCurrentCoverageLocation,
+              icon: _isDetectingCoverageLocation
+                  ? const SizedBox(
+                      width: 16,
+                      height: 16,
+                      child: CircularProgressIndicator(strokeWidth: 2),
+                    )
+                  : const Icon(Icons.gps_fixed_outlined),
+              label: Text(
+                _isDetectingCoverageLocation
+                    ? 'Detecting...'
+                    : 'Use Current Location',
+              ),
+            ),
+            const SizedBox(height: 12),
+            Text(
+              'Radius: ${_radiusKm.round()} km',
+              style: const TextStyle(fontWeight: FontWeight.w700),
+            ),
+            Slider(
+              min: 1,
+              max: 50,
+              divisions: 49,
+              value: _radiusKm.clamp(1, 50),
+              label: '${_radiusKm.round()} km',
+              activeColor: const Color(0xFF2D7D3C),
+              onChanged: (value) => setState(() => _radiusKm = value),
+            ),
+          ],
+        ],
       ),
     );
   }
@@ -330,8 +988,13 @@ class _AddProductScreenState extends State<AddProductScreen> {
                   border: OutlineInputBorder(),
                   prefixIcon: Icon(Icons.shopping_bag_outlined),
                 ),
+                onChanged: _searchMasterProducts,
                 validator: (v) => v!.isEmpty ? 'Required' : null,
               ),
+              _buildMasterSuggestions(),
+              const SizedBox(height: 16),
+
+              _buildSelectorPricingSection(theme),
               const SizedBox(height: 16),
 
               // AI Description Field
@@ -339,7 +1002,7 @@ class _AddProductScreenState extends State<AddProductScreen> {
                 decoration: BoxDecoration(
                   borderRadius: BorderRadius.circular(12),
                   border: Border.all(
-                      color: Colors.purple.withOpacity(0.3), width: 2),
+                      color: Colors.purple.withValues(alpha: 0.3), width: 2),
                 ),
                 child: Column(
                   children: [
@@ -468,6 +1131,9 @@ class _AddProductScreenState extends State<AddProductScreen> {
                   prefixIcon: Icon(Icons.category_outlined),
                 ),
               ),
+
+              const SizedBox(height: 16),
+              _buildCoverageSection(theme),
 
               const SizedBox(height: 40),
               SizedBox(
