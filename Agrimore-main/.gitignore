@@ -52,7 +52,10 @@ android/key.properties
 
 # Firebase
 google-services.json
+google-services*.json
 GoogleService-Info.plist
+.firebase/
+firebase-debug.log
 
 # Keystore
 *.keystore
@@ -73,3 +76,13 @@ GoogleService-Info.plist
 
 # Pub overrides
 pubspec_overrides.yaml
+
+# Build outputs / release artifacts (regenerate via build scripts, don't commit)
+apk-output/
+apks/
+release-builds/
+*.apk
+*.aab
+build_log.txt
+*_analyze_latest.txt
+flutter_0*.png

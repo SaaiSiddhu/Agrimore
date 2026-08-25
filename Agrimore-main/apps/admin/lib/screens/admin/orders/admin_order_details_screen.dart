@@ -563,7 +563,7 @@ class _AdminOrderDetailsScreenState extends State<AdminOrderDetailsScreen> {
                   children: [
                     _quickActionButton(Icons.phone_rounded, Colors.green, () => _callCustomer(a.phone)),
                     const SizedBox(width: 8),
-                    _quickActionButton(FontAwesomeIcons.whatsapp, Colors.green.shade600, () => _openWhatsApp(a.phone)),
+                    _quickActionButton(FontAwesomeIcons.whatsapp.data, Colors.green.shade600, () => _openWhatsApp(a.phone)),
                     const SizedBox(width: 8),
                     _quickActionButton(Icons.copy_rounded, Colors.grey, () {
                       Clipboard.setData(ClipboardData(text: a.phone));

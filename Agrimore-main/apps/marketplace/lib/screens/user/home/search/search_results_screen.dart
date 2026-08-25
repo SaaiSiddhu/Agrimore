@@ -2,7 +2,6 @@ import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 import 'package:flutter/services.dart';
 import 'package:agrimore_ui/agrimore_ui.dart';
-import 'package:agrimore_ui/agrimore_ui.dart';
 import '../../../../providers/product_provider.dart';
 import 'package:agrimore_core/agrimore_core.dart';
 import 'widgets/search_bar_widget.dart';

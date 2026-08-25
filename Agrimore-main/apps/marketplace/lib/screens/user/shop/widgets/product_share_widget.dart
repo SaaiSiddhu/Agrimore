@@ -250,31 +250,31 @@ class _ProductShareWidgetState extends State<ProductShareWidget>
   Widget _buildSocialOptions(bool isDark) {
     final shareOptions = [
       _ShareOption(
-        icon: FontAwesomeIcons.whatsapp,
+        icon: FontAwesomeIcons.whatsapp.data,
         label: 'WhatsApp',
         color: const Color(0xFF25D366),
         onTap: () => _shareViaWhatsApp(),
       ),
       _ShareOption(
-        icon: FontAwesomeIcons.telegram,
+        icon: FontAwesomeIcons.telegram.data,
         label: 'Telegram',
         color: const Color(0xFF0088cc),
         onTap: () => _shareViaTelegram(),
       ),
       _ShareOption(
-        icon: FontAwesomeIcons.facebook,
+        icon: FontAwesomeIcons.facebook.data,
         label: 'Facebook',
         color: const Color(0xFF1877F2),
         onTap: () => _shareViaFacebook(),
       ),
       _ShareOption(
-        icon: FontAwesomeIcons.xTwitter,
+        icon: FontAwesomeIcons.xTwitter.data,
         label: 'Twitter',
         color: isDark ? Colors.white : const Color(0xFF000000),
         onTap: () => _shareViaTwitter(),
       ),
       _ShareOption(
-        icon: FontAwesomeIcons.snapchat,
+        icon: FontAwesomeIcons.snapchat.data,
         label: 'Snapchat',
         color: const Color(0xFFFFFC00),
         onTap: () => _shareViaSnapchat(),

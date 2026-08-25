@@ -136,7 +136,7 @@ class SortBottomSheet extends StatelessWidget {
     BuildContext context,
     String title,
     String value,
-    IconData icon,
+    FaIconData icon,
     bool isDark,
     Color accentColor,
   ) {

@@ -68,6 +68,21 @@ service cloud.firestore {
         );
     }
 
+    // Check if user is an approved employee (B2B sales rep)
+    function isEmployee() {
+      return isAuthenticated() &&
+        (
+          request.auth.token.employee == true ||
+          (
+            get(/databases/$(database)/documents/users/$(request.auth.uid)).data.role == 'employee' &&
+            (
+              get(/databases/$(database)/documents/users/$(request.auth.uid)).data.employeeStatus == 'approved' ||
+              get(/databases/$(database)/documents/employees/$(request.auth.uid)).data.status == 'approved'
+            )
+          )
+        );
+    }
+
     function isAvailableDeliveryOrder() {
       return isDeliveryPartner() &&
         resource.data.orderStatus == 'ready_for_pickup' &&
@@ -171,21 +186,70 @@ service cloud.firestore {
     // ============================================
     // ORDERS COLLECTION
     // ============================================
+    // ✅ B2B Phase 5 cutover complete: apps/marketplace's checkout
+    // (payment_method_screen.dart) now calls the server-validated
+    // `createOrder` callable (functions/src/customer/createOrder.ts)
+    // exclusively — it re-derives price/MOQ/employee-code/coupon-discount
+    // server-side and requires a matching verified_payments document for
+    // any non-COD order. `allow create` below is Cloud-Functions-only
+    // (the Admin SDK bypasses these rules entirely). `allow update`'s
+    // owner branch is field-restricted so the customer can no longer alter
+    // order amounts/items/paymentStatus after creation — see
+    // ownerCannotChangeOrderFinancials() below. The seller/delivery-partner/
+    // admin update branches are unchanged; they never needed this
+    // restriction and still perform normal order-status fulfillment writes.
+    function ownerCannotChangeOrderFinancials() {
+      return !request.resource.data.diff(resource.data).affectedKeys()
+        .hasAny(['subtotal', 'discount', 'deliveryCharge', 'tax', 'total', 'items', 'paymentStatus']);
+    }
+
+    // Phase 5b fix: the financial-fields guard above did not restrict
+    // orderStatus, so an owner could self-report 'delivered' on their own
+    // order — a real exploit path once payEmployeeCommissionOnDelivery
+    // fires real wallet credit on exactly that transition. The only
+    // legitimate owner-initiated status change is order_provider.dart's
+    // cancelOrder(), which writes orderStatus: 'cancelled' (and only
+    // orderStatus — not status) on an order that isn't already cancelled or
+    // delivered. OrderModel.toMap() writes both `orderStatus` and a mirrored
+    // `status` field with the same value at creation time (see createOrder.ts),
+    // so both are guarded here — not just orderStatus alone — to close the
+    // obvious bypass of leaving orderStatus untouched while writing a
+    // conflicting `status` value in the same update.
+    function ownerOrderStatusChangeIsValid() {
+      let changedKeys = request.resource.data.diff(resource.data).affectedKeys();
+      // The status-consistency check below only applies when THIS update
+      // actually touches `status` — order_provider.dart's cancelOrder()
+      // legitimately only ever writes `orderStatus`, leaving the mirrored
+      // `status` field (written once, at creation, by createOrder.ts)
+      // permanently stale. Requiring status's *existing* value to already
+      // equal 'cancelled' would incorrectly reject every real cancellation.
+      // Emulator-verified: see functions/scripts/phase5b_rules_test.js.
+      return !changedKeys.hasAny(['orderStatus', 'status']) ||
+        (request.resource.data.orderStatus == 'cancelled' &&
+         (!changedKeys.hasAny(['status']) || request.resource.data.status == 'cancelled') &&
+         resource.data.orderStatus != 'cancelled' &&
+         resource.data.orderStatus != 'delivered');
+    }
+
     match /orders/{orderId} {
       // Order owner can read, seller/delivery partner/admin can read all
-      allow read: if isAuthenticated() && 
-        (resource.data.userId == request.auth.uid || 
+      allow read: if isAuthenticated() &&
+        (resource.data.userId == request.auth.uid ||
          resource.data.sellerId == request.auth.uid ||
          (isDeliveryPartner() && resource.data.deliveryPartnerId == request.auth.uid) ||
          isAvailableDeliveryOrder() ||
          isAdmin());
-      
-      // Authenticated users can create orders
-      allow create: if isAuthenticated() && request.resource.data.userId == request.auth.uid;
-      
-      // Owner can update (for cancellation), seller/admin/delivery partner can update status
-      allow update: if isAuthenticated() && 
-        (resource.data.userId == request.auth.uid ||
+
+      // Only the createOrder Cloud Function (Admin SDK, bypasses rules) may
+      // create orders — no client writes.
+      allow create: if false;
+
+      // Owner can update (for cancellation) but not financial fields/items;
+      // seller/admin/delivery partner can update status as before.
+      allow update: if isAuthenticated() &&
+        ((resource.data.userId == request.auth.uid &&
+          ownerCannotChangeOrderFinancials() &&
+          ownerOrderStatusChangeIsValid()) ||
          resource.data.sellerId == request.auth.uid ||
          (isDeliveryPartner() && resource.data.deliveryPartnerId == request.auth.uid) ||
          (isDeliveryPartner() &&
@@ -194,7 +258,7 @@ service cloud.firestore {
            resource.data.deliveryPartnerId == '') &&
           request.resource.data.deliveryPartnerId == request.auth.uid) ||
          isAdmin());
-      
+
       // Only admin can delete orders
       allow delete: if isAdmin();
       
@@ -329,6 +393,21 @@ service cloud.firestore {
     }
     
     // ============================================
+    // EMPLOYEES COLLECTION (B2B Sales Reps)
+    // ============================================
+    match /employees/{employeeId} {
+      // Employees are internal staff, not a public storefront — unlike sellers.
+      allow read: if isAuthenticated() && (isOwner(employeeId) || isAdmin());
+
+      // Self-apply (pending) or admin-direct-create (approved)
+      allow create: if isAdmin() || isOwner(employeeId);
+
+      allow update: if isOwner(employeeId) || isAdmin();
+
+      allow delete: if isAdmin();
+    }
+
+    // ============================================
     // LOYALTY CONFIGURATION
     // ============================================
     match /loyalty/{docId} {
@@ -418,7 +497,15 @@ service cloud.firestore {
       // Only cloud functions can access
       allow read, write: if false;
     }
-    
+
+    // ============================================
+    // OTP CODES (For Phone OTP Auth)
+    // ============================================
+    match /phone_otp_codes/{phone} {
+      // Only cloud functions can access
+      allow read, write: if false;
+    }
+
     // ============================================
     // ADDRESSES COLLECTION (Top-level)
     // ============================================
@@ -616,6 +703,23 @@ service cloud.firestore {
       // Admins can update payout status (mark as paid)
       allow update: if isAdmin();
       
+      allow delete: if false;
+    }
+
+    // ============================================
+    // EMPLOYEE PAYOUTS COLLECTION (B2B Commission)
+    // ============================================
+    match /employee_payouts/{payoutId} {
+      // Employees can read their own payouts, admins can read all
+      allow read: if isAuthenticated() &&
+        (resource.data.employeeId == request.auth.uid || isAdmin());
+
+      // Only Cloud Functions (admin SDK) create payouts — no client writes
+      allow create: if false;
+
+      // Admins can update payout status (mark as paid)
+      allow update: if isAdmin();
+
       allow delete: if false;
     }
 

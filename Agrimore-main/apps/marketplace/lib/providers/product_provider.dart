@@ -37,6 +37,14 @@ class ProductProvider with ChangeNotifier {
 
   // --- Getters ---
   List<ProductModel> get products => _products;
+
+  /// Mode-aware product list: unfiltered in B2C mode, filtered to
+  /// isB2BEnabled products in B2B mode. Screens should prefer this over
+  /// [products] directly so the catalog reflects MarketModeProvider's state.
+  List<ProductModel> displayProducts(bool isB2B) {
+    if (!isB2B) return _products;
+    return _products.where((p) => p.isB2BEnabled).toList();
+  }
   List<ProductModel> get recentlyViewedProducts => _recentlyViewedProducts;
   ProductModel? get selectedProduct => _selectedProduct;
   bool get isLoading => _isLoading;

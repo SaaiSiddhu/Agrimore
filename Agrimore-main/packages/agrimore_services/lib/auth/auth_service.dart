@@ -1,9 +1,20 @@
+import 'dart:async';
+import 'dart:convert';
 import 'package:firebase_auth/firebase_auth.dart';
 import 'package:google_sign_in/google_sign_in.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:flutter/foundation.dart' show kIsWeb, debugPrint;
+import 'package:http/http.dart' as http;
 import 'package:agrimore_core/agrimore_core.dart';
 import '../local/shared_preferences_service.dart';
+
+/// Result of a successful phone OTP verification — carries whether the
+/// account was just created so the caller can route to onboarding.
+class PhoneAuthResult {
+  final UserModel user;
+  final bool isNewUser;
+  PhoneAuthResult({required this.user, required this.isNewUser});
+}
 
 class AuthService {
   static final AuthService _instance = AuthService._internal();
@@ -301,6 +312,102 @@ class AuthService {
     } catch (e) {
       debugPrint('❌ Google sign in error: $e');
       throw AuthException('Google sign in failed: ${e.toString()}');
+    }
+  }
+
+  // ============================================
+  // PHONE OTP LOGIN / SIGNUP
+  // ============================================
+  static const String _functionsBaseUrl =
+      'https://us-central1-agrimore-66a4e.cloudfunctions.net';
+  // Without a timeout, a stalled connection leaves the caller awaiting
+  // forever — the UI would just sit on "Sending OTP" with no way out.
+  static const Duration _requestTimeout = Duration(seconds: 12);
+
+  /// Requests an OTP for [phone] (10-digit Indian number or +91-prefixed).
+  /// Returns whether an account already exists for this number.
+  Future<bool> sendPhoneOTP(String phone) async {
+    try {
+      debugPrint('🔥 Requesting phone OTP for: $phone');
+
+      final response = await http
+          .post(
+            Uri.parse('$_functionsBaseUrl/sendPhoneOTP'),
+            headers: {'Content-Type': 'application/json'},
+            body: jsonEncode({'phone': phone}),
+          )
+          .timeout(_requestTimeout);
+
+      final data = jsonDecode(response.body) as Map<String, dynamic>;
+
+      if (response.statusCode != 200 || data['success'] != true) {
+        throw AuthException(data['error']?.toString() ?? 'Failed to send OTP');
+      }
+
+      debugPrint('✅ Phone OTP requested successfully');
+      return data['userExists'] == true;
+    } on AuthException {
+      rethrow;
+    } on TimeoutException {
+      debugPrint('❌ Timed out sending phone OTP');
+      throw AuthException('Network is too slow right now. Please try again.');
+    } catch (e) {
+      debugPrint('❌ Error sending phone OTP: $e');
+      throw AuthException('Failed to send OTP: ${e.toString()}');
+    }
+  }
+
+  /// Verifies [otp] for [phone], signs the user into Firebase Auth via a
+  /// custom token minted by the cloud function, and syncs the Firestore
+  /// user document.
+  Future<PhoneAuthResult> verifyPhoneOTP({
+    required String phone,
+    required String otp,
+    String? name,
+  }) async {
+    try {
+      debugPrint('🔥 Verifying phone OTP for: $phone');
+
+      final response = await http
+          .post(
+            Uri.parse('$_functionsBaseUrl/verifyPhoneOTP'),
+            headers: {'Content-Type': 'application/json'},
+            body: jsonEncode({
+              'phone': phone,
+              'otp': otp,
+              if (name != null && name.trim().isNotEmpty) 'name': name.trim(),
+            }),
+          )
+          .timeout(_requestTimeout);
+
+      final data = jsonDecode(response.body) as Map<String, dynamic>;
+
+      if (response.statusCode != 200 || data['success'] != true) {
+        throw AuthException(data['error']?.toString() ?? 'Invalid OTP. Please try again.');
+      }
+
+      final token = data['token'] as String;
+      final isNewUser = data['isNewUser'] == true;
+
+      final result = await _auth.signInWithCustomToken(token).timeout(_requestTimeout);
+      final user = result.user;
+      if (user == null) throw AuthException('Sign in failed');
+
+      debugPrint('✅ Firebase Auth sign-in via phone successful: ${user.uid}');
+
+      final userModel = await getUserData(user.uid).timeout(_requestTimeout);
+      await _savePersistentSession(userModel);
+
+      debugPrint('✅ Phone login complete!');
+      return PhoneAuthResult(user: userModel, isNewUser: isNewUser);
+    } on AuthException {
+      rethrow;
+    } on TimeoutException {
+      debugPrint('❌ Timed out verifying phone OTP');
+      throw AuthException('Network is too slow right now. Please try again.');
+    } catch (e) {
+      debugPrint('❌ Error verifying phone OTP: $e');
+      throw AuthException('Failed to verify OTP: ${e.toString()}');
     }
   }
 

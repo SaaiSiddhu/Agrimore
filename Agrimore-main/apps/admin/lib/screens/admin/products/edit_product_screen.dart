@@ -59,7 +59,13 @@ class _EditProductScreenState extends State<EditProductScreen> with SingleTicker
   bool _isFreeDelivery = true;
   bool _expressDelivery = false;
   late TextEditingController _expressDeliveryDaysController;
-  
+  late String _locationType;
+  late String _selectedState;
+  late TextEditingController _districtController;
+  late TextEditingController _latController;
+  late TextEditingController _lngController;
+  late double _radiusKm;
+
   late TabController _tabController;
   bool _isLoading = false;
 
@@ -103,7 +109,13 @@ class _EditProductScreenState extends State<EditProductScreen> with SingleTicker
     _isFreeDelivery = widget.product.isFreeDelivery ?? true;
     _expressDelivery = widget.product.expressDelivery ?? false;
     _expressDeliveryDaysController = TextEditingController(text: widget.product.expressDeliveryDays ?? '1');
-    
+    _locationType = widget.product.locationType;
+    _selectedState = widget.product.state ?? 'Tamil Nadu';
+    _districtController = TextEditingController(text: widget.product.district ?? '');
+    _latController = TextEditingController(text: widget.product.lat?.toString() ?? '');
+    _lngController = TextEditingController(text: widget.product.lng?.toString() ?? '');
+    _radiusKm = widget.product.radiusKm ?? 10;
+
     Provider.of<CategoryProvider>(context, listen: false).loadCategories();
   }
 
@@ -122,6 +134,9 @@ class _EditProductScreenState extends State<EditProductScreen> with SingleTicker
     _shippingPriceController.dispose();
     _freeShippingAboveController.dispose();
     _expressDeliveryDaysController.dispose();
+    _districtController.dispose();
+    _latController.dispose();
+    _lngController.dispose();
     super.dispose();
   }
 
@@ -173,6 +188,17 @@ class _EditProductScreenState extends State<EditProductScreen> with SingleTicker
         isFreeDelivery: _isFreeDelivery,
         expressDelivery: _expressDelivery,
         expressDeliveryDays: _expressDeliveryDaysController.text.trim(),
+        locationType: _locationType,
+        state: _selectedState,
+        district: _locationType == 'district' && _districtController.text.trim().isNotEmpty
+            ? _districtController.text.trim()
+            : null,
+        clearDistrict: _locationType != 'district',
+        lat: double.tryParse(_latController.text.trim()),
+        lng: double.tryParse(_lngController.text.trim()),
+        clearCoordinates: _locationType != 'radius',
+        radiusKm: _radiusKm,
+        clearRadius: _locationType != 'radius',
       );
 
       await Provider.of<AdminProvider>(context, listen: false)
@@ -279,6 +305,15 @@ class _EditProductScreenState extends State<EditProductScreen> with SingleTicker
               expressDeliveryDaysController: _expressDeliveryDaysController,
               onFreeDeliveryChanged: (value) => setState(() => _isFreeDelivery = value),
               onExpressDeliveryChanged: (value) => setState(() => _expressDelivery = value),
+              locationType: _locationType,
+              selectedState: _selectedState,
+              districtController: _districtController,
+              latController: _latController,
+              lngController: _lngController,
+              radiusKm: _radiusKm,
+              onLocationTypeChanged: (value) => setState(() => _locationType = value),
+              onStateChanged: (value) => setState(() => _selectedState = value),
+              onRadiusChanged: (value) => setState(() => _radiusKm = value),
             ),
           ],
         ),

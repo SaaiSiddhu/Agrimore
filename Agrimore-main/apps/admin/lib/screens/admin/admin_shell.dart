@@ -75,6 +75,15 @@ class _AdminShellState extends State<AdminShell> {
     ),
     _NavItem(Icons.insights_rounded, 'Analytics', AdminRoutes.analytics),
     _NavItem(Icons.settings_rounded, 'Settings', AdminRoutes.settings),
+    // Appended at the end (not grouped near Seller requests/Wallet Top-ups)
+    // to avoid shifting the indices _getSubtitle() and _buildBottomNav()
+    // hardcode for the existing items above.
+    _NavItem(Icons.badge_rounded, 'Employees', AdminRoutes.employees),
+    _NavItem(
+      Icons.payments_rounded,
+      'Employee Payouts',
+      AdminRoutes.employeePayouts,
+    ),
   ];
 
   int get _currentIndex {

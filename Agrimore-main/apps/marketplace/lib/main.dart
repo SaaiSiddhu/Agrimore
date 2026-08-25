@@ -11,6 +11,8 @@ import 'app/app.dart';
 
 import 'package:firebase_messaging/firebase_messaging.dart';
 import 'package:agrimore_services/agrimore_services.dart' hide DefaultFirebaseOptions;
+import 'package:agrimore_core/agrimore_core.dart' hide DefaultFirebaseOptions;
+import 'package:shared_preferences/shared_preferences.dart';
 
 import 'app/routes.dart';
 import 'providers/theme_provider.dart';
@@ -32,6 +34,7 @@ import 'providers/section_banner_provider.dart';
 import 'providers/seller_provider.dart';
 import 'providers/shop_entry_provider.dart';
 import 'providers/settings_provider.dart';
+import 'providers/market_mode_provider.dart';
 
 // ============================================
 // MAIN ENTRY POINT - MARKETPLACE APP
@@ -99,6 +102,7 @@ void main() async {
         ChangeNotifierProvider(create: (_) => SellerProvider()),
         ChangeNotifierProvider(create: (_) => ShopEntryProvider()),
         ChangeNotifierProvider(create: (_) => SettingsProvider()),
+        ChangeNotifierProvider(create: (_) => MarketModeProvider()),
       ],
       child: const MarketplaceApp(),
     ),
@@ -112,6 +116,20 @@ void main() async {
   }
 }
 
+// Whether the user has already been shown the in-app "Enable Notifications"
+// priming screen (see EnableNotificationsScreen) on this device. Until then,
+// we must NOT trigger the OS permission dialog — it needs to be the result
+// of that screen's own "Enable Notifications" button, not something that
+// fires silently before the user has even logged in.
+Future<bool> _notificationsPrimed() async {
+  try {
+    final prefs = await SharedPreferences.getInstance();
+    return prefs.getBool(StorageConstants.keyNotificationsPrimed) ?? false;
+  } catch (_) {
+    return false;
+  }
+}
+
 // Web: Deferred non-critical services (runs after first frame)
 void _initializeDeferredWebServices() {
   Future.microtask(() async {
@@ -122,7 +140,7 @@ void _initializeDeferredWebServices() {
     } catch (e) {
       debugPrint('⚠️ Auth error: $e');
     }
-    
+
     // SharedPreferences
     try {
       await SharedPreferencesService.init();
@@ -130,12 +148,15 @@ void _initializeDeferredWebServices() {
     } catch (e) {
       debugPrint('⚠️ SharedPrefs error: $e');
     }
-    
-    // FCM (fire-and-forget - don't block on network errors)
-    FCMService().initialize(onNotificationTap: _handleNotificationTap).catchError((e) {
-      debugPrint('⚠️ FCM error: $e');
-      return null;
-    });
+
+    // FCM (fire-and-forget) — only once the user has been through the
+    // in-app notifications priming screen, so we don't steal that moment.
+    if (await _notificationsPrimed()) {
+      FCMService().initialize(onNotificationTap: _handleNotificationTap).catchError((e) {
+        debugPrint('⚠️ FCM error: $e');
+        return null;
+      });
+    }
   });
 }
 
@@ -149,15 +170,7 @@ void _initializeDeferredMobileServices() {
     } catch (e) {
       debugPrint('⚠️ Auth error: $e');
     }
-    
-    // Notifications
-    try {
-      await NotificationService.initialize();
-      debugPrint('✅ Notifications ready');
-    } catch (e) {
-      debugPrint('⚠️ Notification error: $e');
-    }
-    
+
     // SharedPreferences
     try {
       await SharedPreferencesService.init();
@@ -165,12 +178,23 @@ void _initializeDeferredMobileServices() {
     } catch (e) {
       debugPrint('⚠️ SharedPrefs error: $e');
     }
-    
-    // FCM (fire-and-forget)
-    FCMService().initialize(onNotificationTap: _handleNotificationTap).catchError((e) {
-      debugPrint('⚠️ FCM error: $e');
-      return null;
-    });
+
+    // Notifications + FCM — deferred until the in-app priming screen has
+    // run once on this device (see EnableNotificationsScreen), so the OS
+    // permission dialog never appears before the user reaches it.
+    if (await _notificationsPrimed()) {
+      try {
+        await NotificationService.initialize();
+        debugPrint('✅ Notifications ready');
+      } catch (e) {
+        debugPrint('⚠️ Notification error: $e');
+      }
+
+      FCMService().initialize(onNotificationTap: _handleNotificationTap).catchError((e) {
+        debugPrint('⚠️ FCM error: $e');
+        return null;
+      });
+    }
 
     // Handle notification that launched the app from terminated state
     if (!kIsWeb) {

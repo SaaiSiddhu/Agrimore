@@ -149,6 +149,7 @@ class UserModel {
   bool get isBuyer => role == 'user';
   bool get isModerator => role == 'moderator';
   bool get isDeliveryPartner => role == 'delivery_partner';
+  bool get isEmployee => role == 'employee';
 
   // ✅ NAME INITIALS
   String get initials {

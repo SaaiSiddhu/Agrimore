@@ -5355,7 +5355,7 @@ class _MobileCartScreenState extends State<MobileCartScreen>
     required String subtitle,
     required double? fee,
     required List<String> products,
-    required IconData icon,
+    required FaIconData icon,
     required Color color,
     required bool isDark,
     bool isFree = false,
@@ -5711,7 +5711,7 @@ class _MobileCartScreenState extends State<MobileCartScreen>
   }
 
   Widget _priceRow(String title, double value, bool isDark,
-      {Color? color, bool isTotal = false, IconData? icon}) {
+      {Color? color, bool isTotal = false, FaIconData? icon}) {
     return Row(
       mainAxisAlignment: MainAxisAlignment.spaceBetween,
       children: [

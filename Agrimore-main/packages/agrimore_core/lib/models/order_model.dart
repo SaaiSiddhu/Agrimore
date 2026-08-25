@@ -44,6 +44,12 @@ class OrderModel {
   // ✅ Delivery verification code (shown to customer only)
   final String? deliveryVerificationCode;
 
+  // ✅ B2B ordering: 'B2C' or 'B2B'. Distinct from [orderType], which tracks
+  // subscription cadence ('One Time' / 'Auto Delivery').
+  final String orderMode;
+  final String? employeeCode;
+  final String? employeeUid;
+
   OrderModel({
     required this.id,
     required this.userId,
@@ -78,6 +84,9 @@ class OrderModel {
     this.pickupLng,
     this.liveTrackingId,
     this.deliveryVerificationCode,
+    this.orderMode = 'B2C',
+    this.employeeCode,
+    this.employeeUid,
   }) : createdAt = createdAt ?? DateTime.now();
 
   // ============================================
@@ -242,6 +251,9 @@ class OrderModel {
         pickupLng: (map['pickupLng'] as num?)?.toDouble(),
         liveTrackingId: map['liveTrackingId'] as String?,
         deliveryVerificationCode: map['deliveryVerificationCode'] as String?,
+        orderMode: (map['orderMode'] as String?) ?? 'B2C',
+        employeeCode: map['employeeCode'] as String?,
+        employeeUid: map['employeeUid'] as String?,
       );
 
       debugPrint(
@@ -294,6 +306,9 @@ class OrderModel {
       'pickupLng': pickupLng,
       'liveTrackingId': liveTrackingId,
       'deliveryVerificationCode': deliveryVerificationCode,
+      'orderMode': orderMode,
+      'employeeCode': employeeCode,
+      'employeeUid': employeeUid,
     };
   }
 
@@ -402,6 +417,9 @@ class OrderModel {
     double? pickupLng,
     String? liveTrackingId,
     String? deliveryVerificationCode,
+    String? orderMode,
+    String? employeeCode,
+    String? employeeUid,
   }) {
     return OrderModel(
       id: id ?? this.id,
@@ -439,6 +457,9 @@ class OrderModel {
       liveTrackingId: liveTrackingId ?? this.liveTrackingId,
       deliveryVerificationCode:
           deliveryVerificationCode ?? this.deliveryVerificationCode,
+      orderMode: orderMode ?? this.orderMode,
+      employeeCode: employeeCode ?? this.employeeCode,
+      employeeUid: employeeUid ?? this.employeeUid,
     );
   }
 

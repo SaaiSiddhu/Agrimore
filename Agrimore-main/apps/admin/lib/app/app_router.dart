@@ -32,6 +32,9 @@ import '../screens/admin/subscriptions/subscription_management_screen.dart';
 import '../screens/admin/rewards/rewards_management_screen.dart';
 import '../screens/admin/reviews/review_management_screen.dart';
 import '../screens/admin/wallet/wallet_tracking_screen.dart';
+import '../screens/admin/employees/employee_management_screen.dart';
+import '../screens/admin/employees/add_employee_screen.dart';
+import '../screens/admin/employees/employee_payouts_screen.dart';
 
 class AdminRoutes {
   // Auth
@@ -92,6 +95,13 @@ class AdminRoutes {
 
   /// Admin creates an approved seller (callable `createSellerByAdmin`).
   static const String addSeller = '/add-seller';
+
+  static const String employees = '/employees';
+
+  /// Admin creates an approved employee (callable `createEmployeeByAdmin`).
+  static const String addEmployee = '/add-employee';
+
+  static const String employeePayouts = '/employee-payouts';
 
   // Legacy seller paths kept so archived screens compile, but they are not
   // registered in the admin router.
@@ -414,6 +424,27 @@ class AppRouter {
               name: 'add-seller',
               pageBuilder: (context, state) =>
                   _buildPage(const AddSellerScreen(), state),
+            ),
+
+            GoRoute(
+              path: AdminRoutes.employees,
+              name: 'employees',
+              pageBuilder: (context, state) =>
+                  _buildPage(const EmployeeManagementScreen(), state),
+            ),
+
+            GoRoute(
+              path: AdminRoutes.addEmployee,
+              name: 'add-employee',
+              pageBuilder: (context, state) =>
+                  _buildPage(const AddEmployeeScreen(), state),
+            ),
+
+            GoRoute(
+              path: AdminRoutes.employeePayouts,
+              name: 'employee-payouts',
+              pageBuilder: (context, state) =>
+                  _buildPage(const EmployeePayoutsScreen(), state),
             ),
           ],
         ),

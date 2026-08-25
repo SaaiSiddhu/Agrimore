@@ -695,7 +695,7 @@ class _MainScreenState extends State<MainScreen>
   }
 
   Widget _buildNavItem({
-    required IconData icon,
+    required FaIconData icon,
     required String label,
     required int index,
     required bool isDark,

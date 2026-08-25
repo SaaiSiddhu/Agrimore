@@ -13,8 +13,10 @@ class QuickLinksWidget extends StatelessWidget {
 
     return Padding(
       padding: const EdgeInsets.symmetric(vertical: 12.0),
+      // Each link is Expanded so 6 fixed-size icon+label columns always share
+      // the row's actual width instead of being sized to their natural
+      // (wider) intrinsic width, which overflowed on narrower screens.
       child: Row(
-        mainAxisAlignment: MainAxisAlignment.spaceEvenly,
         children: [
           _buildQuickLink(
             context,
@@ -70,32 +72,37 @@ class QuickLinksWidget extends StatelessWidget {
   }
 
   Widget _buildQuickLink(BuildContext context, {required IconData icon, required String label, required String route, required Color color, required bool isDark}) {
-    return GestureDetector(
-      onTap: () {
-        Navigator.pushNamed(context, route);
-      },
-      child: Column(
-        mainAxisSize: MainAxisSize.min,
-        children: [
-          Container(
-            padding: const EdgeInsets.all(16),
-            decoration: BoxDecoration(
-              color: color.withOpacity(0.15),
-              shape: BoxShape.circle,
-              border: Border.all(color: color.withOpacity(0.3), width: 1.5),
+    return Expanded(
+      child: GestureDetector(
+        onTap: () {
+          Navigator.pushNamed(context, route);
+        },
+        child: Column(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            Container(
+              padding: const EdgeInsets.all(16),
+              decoration: BoxDecoration(
+                color: color.withOpacity(0.15),
+                shape: BoxShape.circle,
+                border: Border.all(color: color.withOpacity(0.3), width: 1.5),
+              ),
+              child: Icon(icon, color: color, size: 28),
             ),
-            child: Icon(icon, color: color, size: 28),
-          ),
-          const SizedBox(height: 8),
-          Text(
-            label,
-            style: TextStyle(
-              fontSize: 12,
-              fontWeight: FontWeight.w600,
-              color: isDark ? Colors.white70 : Colors.black87,
+            const SizedBox(height: 8),
+            Text(
+              label,
+              textAlign: TextAlign.center,
+              maxLines: 1,
+              overflow: TextOverflow.ellipsis,
+              style: TextStyle(
+                fontSize: 12,
+                fontWeight: FontWeight.w600,
+                color: isDark ? Colors.white70 : Colors.black87,
+              ),
             ),
-          ),
-        ],
+          ],
+        ),
       ),
     );
   }

@@ -422,7 +422,7 @@ class _CouponSelectionScreenState extends State<CouponSelectionScreen>
   }
 
   Widget _buildStatItem({
-    required IconData icon,
+    required FaIconData icon,
     required String label,
     required String value,
     required bool isDark,

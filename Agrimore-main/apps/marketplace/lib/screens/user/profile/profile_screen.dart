@@ -14,6 +14,7 @@ import '../../../providers/auth_provider.dart' as app_auth;
 import '../../../providers/theme_provider.dart';
 import '../../../providers/cart_provider.dart';
 import '../../../providers/seller_provider.dart';
+import '../../../providers/market_mode_provider.dart';
 
 class ProfileScreen extends StatefulWidget {
   const ProfileScreen({Key? key}) : super(key: key);
@@ -204,6 +205,31 @@ class _ProfileScreenState extends State<ProfileScreen> {
                   ),
                 ),
 
+                // B2B Ordering Mode Toggle
+                SliverToBoxAdapter(
+                  child: Padding(
+                    padding: const EdgeInsets.symmetric(
+                        horizontal: 16, vertical: 8),
+                    child: Consumer<MarketModeProvider>(
+                      builder: (context, marketMode, _) => Card(
+                        margin: EdgeInsets.zero,
+                        color: isDark ? const Color(0xFF1E1E1E) : Colors.white,
+                        child: SwitchListTile(
+                          secondary: const Icon(Icons.storefront_outlined),
+                          title: const Text('B2B (Wholesale) Mode'),
+                          subtitle: Text(
+                            marketMode.isB2B
+                                ? 'Showing wholesale pricing and MOQ'
+                                : 'Showing regular retail pricing',
+                          ),
+                          value: marketMode.isB2B,
+                          onChanged: (value) => marketMode.setB2B(value),
+                        ),
+                      ),
+                    ),
+                  ),
+                ),
+
                 // Other Information Section
                 SliverToBoxAdapter(
                   child: _buildSection(
@@ -230,6 +256,11 @@ class _ProfileScreenState extends State<ProfileScreen> {
                                 : 'Seller registration',
                             onTap: () => _navigateTo(AppRoutes.sellerApply),
                           ),
+                        _MenuItem(
+                          icon: Icons.badge_outlined,
+                          title: 'Employee application',
+                          onTap: () => _navigateTo(AppRoutes.employeeApply),
+                        ),
                       ],
                       _MenuItem(
                         icon: Icons.notifications_none,

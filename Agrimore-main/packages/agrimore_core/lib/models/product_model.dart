@@ -148,6 +148,9 @@ class ProductModel {
   final double? areaPrice;
   final bool manualPriceOverride;
   final String priceSource;
+  final bool isB2BEnabled;
+  final double? b2bPrice;
+  final int? b2bMoq;
 
   ProductModel({
     required this.id,
@@ -197,6 +200,9 @@ class ProductModel {
     this.areaPrice,
     this.manualPriceOverride = false,
     this.priceSource = 'default',
+    this.isB2BEnabled = false,
+    this.b2bPrice,
+    this.b2bMoq,
   });
 
   // Compatibility Getters
@@ -332,6 +338,9 @@ class ProductModel {
       'areaPrice': areaPrice,
       'manualPriceOverride': manualPriceOverride,
       'priceSource': priceSource,
+      'isB2BEnabled': isB2BEnabled,
+      'b2bPrice': b2bPrice,
+      'b2bMoq': b2bMoq,
     };
   }
 
@@ -429,6 +438,9 @@ class ProductModel {
       areaPrice: (map['areaPrice'] as num?)?.toDouble(),
       manualPriceOverride: map['manualPriceOverride'] == true,
       priceSource: map['priceSource']?.toString() ?? 'default',
+      isB2BEnabled: (map['isB2BEnabled'] as bool?) ?? false,
+      b2bPrice: (map['b2bPrice'] as num?)?.toDouble(),
+      b2bMoq: (map['b2bMoq'] as num?)?.toInt(),
     );
   }
 
@@ -486,6 +498,9 @@ class ProductModel {
     double? areaPrice,
     bool? manualPriceOverride,
     String? priceSource,
+    bool? isB2BEnabled,
+    double? b2bPrice,
+    int? b2bMoq,
     bool clearDistrict = false,
     bool clearCoordinates = false,
     bool clearRadius = false,
@@ -542,6 +557,9 @@ class ProductModel {
           (clearCenterPricing ? false : this.manualPriceOverride),
       priceSource:
           priceSource ?? (clearCenterPricing ? 'default' : this.priceSource),
+      isB2BEnabled: isB2BEnabled ?? this.isB2BEnabled,
+      b2bPrice: b2bPrice ?? this.b2bPrice,
+      b2bMoq: b2bMoq ?? this.b2bMoq,
     );
   }
 

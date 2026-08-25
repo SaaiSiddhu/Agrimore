@@ -9,6 +9,7 @@ import 'package:agrimore_core/agrimore_core.dart';
 import '../../providers/cart_provider.dart';
 import '../../providers/wishlist_provider.dart';
 import '../../providers/theme_provider.dart';
+import '../../providers/market_mode_provider.dart';
 import '../cart_fly_animation.dart';
 
 /// Layout variants for the unified product card
@@ -142,19 +143,33 @@ class _UnifiedProductCardState extends State<UnifiedProductCard>
       return;
     }
 
-    setState(() => _isProcessing = true);
-    HapticFeedback.mediumImpact();
-
+    final marketMode = Provider.of<MarketModeProvider>(context, listen: false);
     final cartProvider = Provider.of<CartProvider>(context, listen: false);
+    final isB2B = marketMode.isB2B;
+
+    if (isB2B && !widget.product.isB2BEnabled) {
+      _showSnackbar('This product is not available for B2B ordering',
+          isError: true);
+      return;
+    }
 
     if (widget.product.variants.isNotEmpty && _selectedVariant == null) {
-      setState(() => _isProcessing = false);
       _showSnackbar(
         'Please select an option first.',
         isWarning: true,
       );
       return;
     }
+
+    final canProceed = await confirmCartModeSwitch(
+      context: context,
+      cart: cartProvider,
+      wantsB2B: isB2B,
+    );
+    if (!canProceed || !mounted) return;
+
+    setState(() => _isProcessing = true);
+    HapticFeedback.mediumImpact();
 
     try {
       await cartProvider.addItem(
@@ -163,6 +178,7 @@ class _UnifiedProductCardState extends State<UnifiedProductCard>
         variant: _selectedVariant?.name,
         variantPrice: _selectedVariant?.salePrice,
         variantOriginalPrice: _selectedVariant?.originalPrice,
+        isB2BMode: isB2B,
       );
       _playCartJumpAnimation();
       if (mounted) _showSnackbar('Added to cart successfully');
@@ -780,10 +796,27 @@ class _UnifiedProductCardState extends State<UnifiedProductCard>
                                       final cartProvider =
                                           Provider.of<CartProvider>(context,
                                               listen: false);
-                                      if (!_isInCart) {
-                                        await cartProvider.addItem(
+                                      final marketMode =
+                                          Provider.of<MarketModeProvider>(
+                                              context,
+                                              listen: false);
+                                      final isB2B = marketMode.isB2B;
+                                      if (!_isInCart &&
+                                          (!isB2B ||
+                                              widget.product.isB2BEnabled)) {
+                                        final canProceed =
+                                            await confirmCartModeSwitch(
+                                          context: context,
+                                          cart: cartProvider,
+                                          wantsB2B: isB2B,
+                                        );
+                                        if (canProceed) {
+                                          await cartProvider.addItem(
                                             widget.product,
-                                            quantity: 1);
+                                            quantity: 1,
+                                            isB2BMode: isB2B,
+                                          );
+                                        }
                                       }
                                       if (mounted) {
                                         Navigator.pushNamed(context, '/cart');
@@ -862,9 +895,11 @@ class _UnifiedProductCardState extends State<UnifiedProductCard>
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
-            // Image section - 56% (reduced to give more room for info+button)
+            // Image section (info section below needs more room than this
+            // flex previously gave it — name + price + optional variant/
+            // verified/delivery rows + button were overflowing by 9-18px)
             Expanded(
-              flex: widget.product.variants.isNotEmpty ? 50 : 56,
+              flex: widget.product.variants.isNotEmpty ? 45 : 50,
               child: Stack(
                 fit: StackFit.expand,
                 children: [
@@ -967,11 +1002,11 @@ class _UnifiedProductCardState extends State<UnifiedProductCard>
               ),
             ),
 
-            // Info section - 44/50% with clear visual hierarchy
+            // Info section - given more room than before; see note above
             Expanded(
-              flex: widget.product.variants.isNotEmpty ? 50 : 44,
+              flex: widget.product.variants.isNotEmpty ? 55 : 50,
               child: Padding(
-                padding: const EdgeInsets.fromLTRB(6, 6, 6, 4),
+                padding: const EdgeInsets.fromLTRB(6, 4, 6, 1),
                 child: Column(
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
@@ -991,37 +1026,59 @@ class _UnifiedProductCardState extends State<UnifiedProductCard>
                     const SizedBox(height: 4),
 
                     // Price row
-                    Row(
-                      crossAxisAlignment: CrossAxisAlignment.center,
-                      children: [
-                        // Current price - prominent
-                        Text(
-                          '₹${(_selectedVariant?.salePrice ?? widget.product.price).toStringAsFixed(0)}',
-                          style: TextStyle(
-                            fontSize: 13,
-                            fontWeight: FontWeight.w900,
-                            color: isDark ? Colors.white : Colors.black,
-                          ),
-                        ),
-                        if ((_selectedVariant?.originalPrice ??
-                                    widget.product.originalPrice) !=
-                                null &&
-                            (_selectedVariant?.originalPrice ??
-                                    widget.product.originalPrice)! >
-                                (_selectedVariant?.salePrice ??
-                                    widget.product.price)) ...[
-                          const SizedBox(width: 4),
+                    Builder(builder: (context) {
+                      final isB2B = context.watch<MarketModeProvider>().isB2B;
+                      final showB2B = isB2B &&
+                          widget.product.isB2BEnabled &&
+                          widget.product.b2bPrice != null;
+                      final displayPrice = showB2B
+                          ? widget.product.b2bPrice!
+                          : (_selectedVariant?.salePrice ??
+                              widget.product.price);
+                      final displayOriginalPrice = showB2B
+                          ? null
+                          : (_selectedVariant?.originalPrice ??
+                              widget.product.originalPrice);
+
+                      return Row(
+                        crossAxisAlignment: CrossAxisAlignment.center,
+                        children: [
+                          // Current price - prominent
                           Text(
-                            '₹${(_selectedVariant?.originalPrice ?? widget.product.originalPrice)!.toStringAsFixed(0)}',
+                            '₹${displayPrice.toStringAsFixed(0)}',
                             style: TextStyle(
-                              fontSize: 10,
-                              color: Colors.grey[500],
-                              decoration: TextDecoration.lineThrough,
-                              decorationColor: Colors.grey[500],
+                              fontSize: 13,
+                              fontWeight: FontWeight.w900,
+                              color: isDark ? Colors.white : Colors.black,
                             ),
                           ),
-                        ],
-                        const Spacer(),
+                          if (showB2B) ...[
+                            const SizedBox(width: 4),
+                            Text(
+                              'MOQ ${widget.product.b2bMoq ?? 1}',
+                              style: TextStyle(
+                                fontSize: 9,
+                                fontWeight: FontWeight.w700,
+                                color: isDark
+                                    ? Colors.grey[400]
+                                    : Colors.grey[600],
+                              ),
+                            ),
+                          ],
+                          if (displayOriginalPrice != null &&
+                              displayOriginalPrice > displayPrice) ...[
+                            const SizedBox(width: 4),
+                            Text(
+                              '₹${displayOriginalPrice.toStringAsFixed(0)}',
+                              style: TextStyle(
+                                fontSize: 10,
+                                color: Colors.grey[500],
+                                decoration: TextDecoration.lineThrough,
+                                decorationColor: Colors.grey[500],
+                              ),
+                            ),
+                          ],
+                          const Spacer(),
                         // Rating pill
                         if (widget.showRating && widget.product.rating > 0)
                           Container(
@@ -1049,8 +1106,9 @@ class _UnifiedProductCardState extends State<UnifiedProductCard>
                               ],
                             ),
                           ),
-                      ],
-                    ),
+                        ],
+                      );
+                    }),
 
                     // Variant dropdown
                     if (widget.product.variants.isNotEmpty) ...[
@@ -1058,12 +1116,16 @@ class _UnifiedProductCardState extends State<UnifiedProductCard>
                       _buildVariantDropdown(isDark),
                     ],
 
-                    // Verified + Free Delivery row
-                    if (isVerified || hasFreeDelivery) ...[
+                    // Verified + Free Delivery row — each half respects its own
+                    // visibility flag (previously rendered unconditionally here,
+                    // ignoring showDeliveryInfo/showBadges and overflowing the
+                    // card by up to 18px whenever both happened to be true).
+                    if ((isVerified && widget.showBadges) ||
+                        (hasFreeDelivery && widget.showDeliveryInfo)) ...[
                       const SizedBox(height: 3),
                       Row(
                         children: [
-                          if (isVerified)
+                          if (isVerified && widget.showBadges)
                             Row(
                               mainAxisSize: MainAxisSize.min,
                               children: [
@@ -1087,9 +1149,9 @@ class _UnifiedProductCardState extends State<UnifiedProductCard>
                                 ),
                               ],
                             ),
-                          if (isVerified && hasFreeDelivery)
+                          if (isVerified && widget.showBadges && hasFreeDelivery && widget.showDeliveryInfo)
                             const SizedBox(width: 6),
-                          if (hasFreeDelivery)
+                          if (hasFreeDelivery && widget.showDeliveryInfo)
                             Text(
                               'Free Delivery',
                               style: TextStyle(
@@ -1122,7 +1184,7 @@ class _UnifiedProductCardState extends State<UnifiedProductCard>
                         child: SizedBox(
                           key: _cartButtonKey,
                           width: double.infinity,
-                          height: 30,
+                          height: 27,
                           child: Material(
                             color: isDark ? addToCartColorDark : addToCartColor,
                             borderRadius: BorderRadius.circular(8),
@@ -1289,11 +1351,19 @@ class _UnifiedProductCardState extends State<UnifiedProductCard>
                     ),
 
                     // Price row
-                    Row(
+                    Builder(builder: (context) {
+                      final isB2B = context.watch<MarketModeProvider>().isB2B;
+                      final showB2B = isB2B &&
+                          widget.product.isB2BEnabled &&
+                          widget.product.b2bPrice != null;
+                      final displayPrice =
+                          showB2B ? widget.product.b2bPrice! : widget.product.salePrice;
+
+                      return Row(
                       children: [
                         // Current price
                         Text(
-                          '₹${widget.product.salePrice.toStringAsFixed(2)}',
+                          '₹${displayPrice.toStringAsFixed(2)}',
                           style: TextStyle(
                             fontSize: 14,
                             fontWeight: FontWeight.w800,
@@ -1302,8 +1372,19 @@ class _UnifiedProductCardState extends State<UnifiedProductCard>
                                 : AppColors.primary,
                           ),
                         ),
+                        if (showB2B) ...[
+                          const SizedBox(width: 4),
+                          Text(
+                            'MOQ ${widget.product.b2bMoq ?? 1}',
+                            style: TextStyle(
+                              fontSize: 10,
+                              fontWeight: FontWeight.w700,
+                              color: isDark ? Colors.grey[400] : Colors.grey[600],
+                            ),
+                          ),
+                        ],
                         // Original price (strikethrough)
-                        if (hasDiscount) ...[
+                        if (!showB2B && hasDiscount) ...[
                           const SizedBox(width: 4),
                           Text(
                             '₹${widget.product.originalPrice!.toStringAsFixed(2)}',
@@ -1316,7 +1397,8 @@ class _UnifiedProductCardState extends State<UnifiedProductCard>
                           ),
                         ],
                       ],
-                    ),
+                      );
+                    }),
                   ],
                 ),
               ),
@@ -1442,7 +1524,7 @@ class _UnifiedProductCardState extends State<UnifiedProductCard>
     );
   }
 
-  Widget _buildIconBadge(IconData icon, Color color) {
+  Widget _buildIconBadge(FaIconData icon, Color color) {
     return Container(
       padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 3),
       decoration: BoxDecoration(
@@ -1565,6 +1647,11 @@ class _UnifiedProductCardState extends State<UnifiedProductCard>
   }
 
   Widget _buildPriceRow(bool isDark) {
+    final isB2B = context.watch<MarketModeProvider>().isB2B;
+    if (isB2B && widget.product.isB2BEnabled && widget.product.b2bPrice != null) {
+      return _buildB2BPriceRow(isDark);
+    }
+
     final currentPrice = _selectedVariant?.salePrice ?? widget.product.price;
     final currentOriginalPrice =
         _selectedVariant?.originalPrice ?? widget.product.originalPrice;
@@ -1611,6 +1698,37 @@ class _UnifiedProductCardState extends State<UnifiedProductCard>
             ),
           ),
         ],
+      ],
+    );
+  }
+
+  /// B2B price/MOQ display, used in place of _buildPriceRow's salePrice/
+  /// originalPrice pair when the market mode is B2B and the product supports it.
+  Widget _buildB2BPriceRow(bool isDark) {
+    final b2bPrice = widget.product.b2bPrice!;
+    final moq = widget.product.b2bMoq ?? 1;
+
+    return Row(
+      crossAxisAlignment: CrossAxisAlignment.baseline,
+      textBaseline: TextBaseline.alphabetic,
+      children: [
+        Text(
+          '₹${b2bPrice.toStringAsFixed(2)}',
+          style: TextStyle(
+            fontSize: 18,
+            fontWeight: FontWeight.w900,
+            color: isDark ? AppColors.primaryLight : AppColors.primary,
+          ),
+        ),
+        const SizedBox(width: 8),
+        Text(
+          '/unit · MOQ $moq',
+          style: TextStyle(
+            fontSize: 12,
+            fontWeight: FontWeight.w700,
+            color: isDark ? Colors.grey[400] : Colors.grey[600],
+          ),
+        ),
       ],
     );
   }
@@ -1767,7 +1885,7 @@ class _UnifiedProductCardState extends State<UnifiedProductCard>
 
   Widget _buildDeliveryRow(
     bool isDark, {
-    required IconData icon,
+    required FaIconData icon,
     required Color iconColor,
     required String title,
     required String time,

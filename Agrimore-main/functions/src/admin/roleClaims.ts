@@ -10,12 +10,12 @@ const BOOTSTRAP_ADMIN_EMAILS = new Set([
   "agrimore@gmail.com",
 ]);
 
-type Role = "customer" | "seller" | "admin" | "delivery_partner";
+type Role = "customer" | "seller" | "admin" | "delivery_partner" | "employee";
 
 function normalizeRole(role: unknown): Role {
   const raw = String(role || "customer").trim().toLowerCase();
   if (raw === "delivery") return "delivery_partner";
-  if (raw === "seller" || raw === "admin" || raw === "delivery_partner") {
+  if (raw === "seller" || raw === "admin" || raw === "delivery_partner" || raw === "employee") {
     return raw;
   }
   return "customer";
@@ -50,9 +50,10 @@ async function buildClaims(uid: string): Promise<Record<string, unknown> | null>
   const role = normalizeRole(userData.role);
   const bootstrapAdmin = await isBootstrapAdmin(uid, userData);
 
-  const [sellerDoc, deliveryDoc] = await Promise.all([
+  const [sellerDoc, deliveryDoc, employeeDoc] = await Promise.all([
     db.collection("sellers").doc(uid).get(),
     db.collection("delivery_partners").doc(uid).get(),
+    db.collection("employees").doc(uid).get(),
   ]);
 
   const sellerApproved =
@@ -65,6 +66,11 @@ async function buildClaims(uid: string): Promise<Record<string, unknown> | null>
     (isApprovedStatus(userData.deliveryStatus) ||
       isApprovedStatus(deliveryDoc.data()?.status));
 
+  const employeeApproved =
+    role === "employee" &&
+    (isApprovedStatus(userData.employeeStatus) ||
+      isApprovedStatus(employeeDoc.data()?.status));
+
   const isAdmin = role === "admin" || bootstrapAdmin;
 
   return {
@@ -74,6 +80,8 @@ async function buildClaims(uid: string): Promise<Record<string, unknown> | null>
     sellerApproved,
     delivery_partner: deliveryApproved,
     deliveryApproved,
+    employee: employeeApproved,
+    employeeApproved,
   };
 }
 
@@ -113,6 +121,12 @@ export const syncSellerRoleClaims = functions.firestore
 
 export const syncDeliveryRoleClaims = functions.firestore
   .document("delivery_partners/{userId}")
+  .onWrite(async (_change, context) => {
+    return setClaims(context.params.userId);
+  });
+
+export const syncEmployeeRoleClaims = functions.firestore
+  .document("employees/{userId}")
   .onWrite(async (_change, context) => {
     return setClaims(context.params.userId);
   });

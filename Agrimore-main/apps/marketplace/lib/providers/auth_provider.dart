@@ -25,6 +25,7 @@ class AuthProvider with ChangeNotifier {
   bool _rememberMe = false;
   int _failedLoginAttempts = 0;
   DateTime? _lockoutUntil;
+  bool _isNewUser = false;
 
   // ============================================
   // GETTERS
@@ -45,6 +46,7 @@ class AuthProvider with ChangeNotifier {
   String? get userPhone => _currentUser?.phone;
   String? get userPhotoUrl => _currentUser?.photoUrl;
   String? get userUid => _currentUser?.uid;
+  bool get isNewUser => _isNewUser;
 
   // ============================================
   // CONSTRUCTOR
@@ -315,6 +317,102 @@ class AuthProvider with ChangeNotifier {
       _error = 'Sign in failed. Please try again.';
       _incrementFailedAttempts();
       await _logAuthEvent('login', false, email, error: e.toString());
+      _isLoading = false;
+      notifyListeners();
+      return false;
+    }
+  }
+
+  // ============================================
+  // SEND PHONE OTP
+  // ============================================
+  Future<bool> sendPhoneOTP(String phone) async {
+    try {
+      if (isLocked) {
+        _error = 'Too many attempts. Please try again later.';
+        notifyListeners();
+        return false;
+      }
+
+      _isLoading = true;
+      _error = null;
+      notifyListeners();
+
+      debugPrint('📱 Sending OTP to: $phone');
+
+      await _authService.sendPhoneOTP(phone);
+
+      debugPrint('✅ OTP sent');
+
+      _isLoading = false;
+      notifyListeners();
+      return true;
+    } on AuthException catch (e) {
+      debugPrint('❌ Send OTP error: ${e.message}');
+      _error = e.message;
+      _isLoading = false;
+      notifyListeners();
+      return false;
+    } catch (e) {
+      debugPrint('❌ Send OTP error: $e');
+      _error = e.toString().replaceAll('Exception: ', '');
+      _isLoading = false;
+      notifyListeners();
+      return false;
+    }
+  }
+
+  // ============================================
+  // VERIFY PHONE OTP (LOGIN / SIGNUP)
+  // ============================================
+  Future<bool> verifyPhoneOTP({
+    required String phone,
+    required String otp,
+    String? name,
+  }) async {
+    try {
+      if (isLocked) {
+        _error = 'Too many attempts. Please try again later.';
+        notifyListeners();
+        return false;
+      }
+
+      _isLoading = true;
+      _error = null;
+      notifyListeners();
+
+      debugPrint('🔐 Verifying OTP for: $phone');
+
+      final result = await _authService.verifyPhoneOTP(
+        phone: phone,
+        otp: otp,
+        name: name,
+      );
+
+      _currentUser = result.user;
+      _isNewUser = result.isNewUser;
+
+      await _logAuthEvent('phone_login', true, phone);
+
+      debugPrint('✅ Phone login successful: ${_currentUser?.uid} (new: $_isNewUser)');
+
+      _resetFailedAttempts();
+      _isLoading = false;
+      notifyListeners();
+      return true;
+    } on AuthException catch (e) {
+      debugPrint('❌ Verify OTP error: ${e.message}');
+      _error = e.message;
+      _incrementFailedAttempts();
+      await _logAuthEvent('phone_login', false, phone, error: e.message);
+      _isLoading = false;
+      notifyListeners();
+      return false;
+    } catch (e) {
+      debugPrint('❌ Verify OTP error: $e');
+      _error = e.toString().replaceAll('Exception: ', '');
+      _incrementFailedAttempts();
+      await _logAuthEvent('phone_login', false, phone, error: e.toString());
       _isLoading = false;
       notifyListeners();
       return false;

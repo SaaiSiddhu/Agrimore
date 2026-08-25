@@ -33,6 +33,7 @@ export 'models/bestseller_slot_model.dart';
 export 'models/category_section_slot_model.dart';
 export 'models/section_banner_model.dart';
 export 'models/delivery_time_slot_model.dart';
+export 'models/employee_model.dart';
 
 // Wallet Models
 export 'models/wallet_model.dart';

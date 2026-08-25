@@ -88,6 +88,9 @@ import '../screens/seller/seller_apply_screen.dart';
 import '../screens/seller/seller_dashboard_screen.dart';
 import '../screens/seller/seller_panel_screen.dart';
 
+// Employee
+import '../screens/employee/employee_apply_screen.dart';
+
 // Models
 import 'package:agrimore_core/agrimore_core.dart';
 
@@ -194,6 +197,9 @@ class AppRoutes {
   static const String sellerApply = '/seller/apply';
   static const String sellerPanel = '/seller/panel';
   static const String sellerDashboard = '/seller/dashboard';
+
+  // Employee Routes
+  static const String employeeApply = '/employee/apply';
 
   // Wallet Routes
   static const String wallet = '/wallet';
@@ -540,6 +546,11 @@ class AppRoutes {
         case sellerDashboard:
           return _buildRoute(
               const AuthGuard(child: SellerDashboardScreen()), settings);
+
+        // Employee Routes
+        case employeeApply:
+          return _buildRoute(
+              const AuthGuard(child: EmployeeApplyScreen()), settings);
 
         // Wallet Routes
         case wallet:

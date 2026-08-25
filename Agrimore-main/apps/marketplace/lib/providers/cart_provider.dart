@@ -17,6 +17,13 @@ class CartProvider with ChangeNotifier {
   String? _checkoutOrderType;
   String? _checkoutAutoFrequency;
 
+  /// In-memory cart mode hint ('B2C' or 'B2B'), mirroring the pattern above —
+  /// not stored on the cart document. Set on the first addItem call, cleared
+  /// on clearCart(). Used by confirmCartModeSwitch (market_mode_provider.dart)
+  /// to detect and guard against mixing B2C and B2B items in one cart.
+  String? _cartMode;
+  String? get cartMode => _cartMode;
+
   String? get checkoutOrderType => _checkoutOrderType;
   String? get checkoutAutoFrequency => _checkoutAutoFrequency;
 
@@ -94,6 +101,7 @@ class CartProvider with ChangeNotifier {
     String? variant,
     double? variantPrice, // ✅ NEW: Variant-specific price
     double? variantOriginalPrice, // ✅ NEW: Variant-specific original price
+    bool isB2BMode = false,
   }) async {
     try {
       final userId = _authService.currentUserId;
@@ -103,13 +111,28 @@ class CartProvider with ChangeNotifier {
         return false;
       }
 
+      int effectiveQuantity = quantity;
+      double effectivePrice;
+      double? effectiveOriginalPrice;
+
+      if (isB2BMode) {
+        if (!product.isB2BEnabled || product.b2bPrice == null) {
+          _error = 'This product is not available for B2B ordering';
+          notifyListeners();
+          return false;
+        }
+        effectivePrice = product.b2bPrice!;
+        effectiveOriginalPrice = null;
+        final moq = product.b2bMoq ?? 1;
+        if (effectiveQuantity < moq) effectiveQuantity = moq;
+      } else {
+        // ✅ Use variant price if provided, otherwise fall back to base product price
+        effectivePrice = variantPrice ?? product.salePrice;
+        effectiveOriginalPrice = variantOriginalPrice ?? product.originalPrice;
+      }
+
       _isLoading = true;
       notifyListeners();
-
-      // ✅ Use variant price if provided, otherwise fall back to base product price
-      final effectivePrice = variantPrice ?? product.salePrice;
-      final effectiveOriginalPrice =
-          variantOriginalPrice ?? product.originalPrice;
 
       // Extract variant image if variant name is provided
       String effectiveImage = product.primaryImage;
@@ -122,7 +145,7 @@ class CartProvider with ChangeNotifier {
       }
 
       debugPrint(
-          '🛒 Adding to cart: ${product.name}, variant: $variant, price: $effectivePrice, qty: $quantity');
+          '🛒 Adding to cart: ${product.name}, variant: $variant, price: $effectivePrice, qty: $effectiveQuantity');
 
       final cartItem = CartItemModel(
         id: _uuid.v4(),
@@ -130,7 +153,7 @@ class CartProvider with ChangeNotifier {
         productName: product.name,
         productImage: effectiveImage,
         price: effectivePrice,
-        quantity: quantity,
+        quantity: effectiveQuantity,
         userId: userId,
         sellerId: product.sellerId,
         addedAt: DateTime.now(),
@@ -155,7 +178,7 @@ class CartProvider with ChangeNotifier {
       if (existingIndex != -1) {
         // Same product with same variant - increase quantity
         updatedItems[existingIndex] = updatedItems[existingIndex].copyWith(
-          quantity: updatedItems[existingIndex].quantity + quantity,
+          quantity: updatedItems[existingIndex].quantity + effectiveQuantity,
         );
         debugPrint(
             '✅ Updated existing item quantity: ${updatedItems[existingIndex].quantity}');
@@ -164,6 +187,8 @@ class CartProvider with ChangeNotifier {
         updatedItems.add(cartItem);
         debugPrint('✅ Added new item to cart');
       }
+
+      _cartMode = isB2BMode ? 'B2B' : 'B2C';
 
       final updatedCart = CartModel(
         id: userId,
@@ -466,6 +491,7 @@ class CartProvider with ChangeNotifier {
       await _databaseService.clearCart(userId);
 
       _cart = null;
+      _cartMode = null;
       _isLoading = false;
       _error = null;
       notifyListeners();
@@ -568,6 +594,7 @@ class CartProvider with ChangeNotifier {
     _error = null;
     _checkoutOrderType = null;
     _checkoutAutoFrequency = null;
+    _cartMode = null;
     notifyListeners();
   }
 

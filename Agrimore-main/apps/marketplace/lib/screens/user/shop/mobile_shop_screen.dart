@@ -1122,7 +1122,9 @@ class _MobileShopScreenState extends State<MobileShopScreen>
             builder: (context, value, child) {
               return Transform.translate(
                 offset: Offset(0, 40 * (1 - value)),
-                child: Opacity(opacity: value, child: child),
+                // easeOutBack intentionally overshoots past 1.0 for its bounce —
+                // fine for the translate offset, but Opacity asserts [0.0, 1.0].
+                child: Opacity(opacity: value.clamp(0.0, 1.0), child: child),
               );
             },
             child: Material(

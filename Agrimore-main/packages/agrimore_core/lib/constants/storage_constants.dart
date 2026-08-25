@@ -66,7 +66,13 @@ class StorageConstants {
   // NOTIFICATIONS
   // ============================================
   static const String keyNotificationsEnabled = 'notifications_enabled';
+  static const String keyNotificationsPrimed = 'notifications_primed';
   static const String keyPushToken = 'push_token';
+
+  // ============================================
+  // PHONE LOGIN
+  // ============================================
+  static const String keyRecentPhoneNumbers = 'recent_phone_numbers';
 
   // ============================================
   // APP SETTINGS

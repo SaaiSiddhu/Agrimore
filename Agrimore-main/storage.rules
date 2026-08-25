@@ -24,6 +24,10 @@ service firebase.storage {
     function isDeliveryPartner() {
       return isAuthenticated() && request.auth.token.delivery_partner == true;
     }
+
+    function isEmployee() {
+      return isAuthenticated() && request.auth.token.employee == true;
+    }
     
     // Check if file size is under limit (10MB)
     function isValidFileSize() {
@@ -106,6 +110,16 @@ service firebase.storage {
     match /seller_documents/{userId}/{fileName} {
       allow read: if isAuthenticated() && (request.auth.uid == userId || isAdmin());
       allow write: if isAuthenticated() 
+                   && request.auth.uid == userId
+                   && isValidFileSize();
+    }
+
+    // ============================================
+    // EMPLOYEE DOCUMENTS — Only the employee can upload
+    // ============================================
+    match /employee_documents/{userId}/{fileName} {
+      allow read: if isAuthenticated() && (request.auth.uid == userId || isAdmin());
+      allow write: if isAuthenticated()
                    && request.auth.uid == userId
                    && isValidFileSize();
     }

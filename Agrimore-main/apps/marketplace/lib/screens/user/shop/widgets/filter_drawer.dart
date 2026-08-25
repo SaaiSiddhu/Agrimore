@@ -187,7 +187,7 @@ class _FilterDrawerState extends State<FilterDrawer>
 
   // --- Helper to build section titles ---
   Widget _buildSectionTitle(
-      IconData icon, String title, bool isDark, Color accentColor) {
+      FaIconData icon, String title, bool isDark, Color accentColor) {
     return Padding(
       padding: const EdgeInsets.only(top: 16, bottom: 12, left: 4),
       child: Row(
@@ -389,7 +389,7 @@ class _FilterDrawerState extends State<FilterDrawer>
     BuildContext context,
     String title,
     String categoryId,
-    IconData icon,
+    FaIconData icon,
     bool isDark,
     Color accentColor,
   ) {

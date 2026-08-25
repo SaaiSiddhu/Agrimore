@@ -14,6 +14,7 @@ enum TransactionSource {
   bonus,      // Sign-up / promo bonus
   expiry,     // Expired coins
   adjustment, // Admin manual adjustment
+  commission, // Employee commission on a delivered B2B order
 }
 
 /// Model for wallet transaction history
@@ -100,6 +101,8 @@ class WalletTransactionModel {
         return Icons.timer_off;
       case TransactionSource.adjustment:
         return Icons.tune;
+      case TransactionSource.commission:
+        return Icons.percent;
     }
   }
 
@@ -129,6 +132,8 @@ class WalletTransactionModel {
         return 'Expired';
       case TransactionSource.adjustment:
         return 'Adjustment';
+      case TransactionSource.commission:
+        return 'Commission';
     }
   }
 

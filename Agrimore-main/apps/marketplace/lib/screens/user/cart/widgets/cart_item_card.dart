@@ -522,7 +522,7 @@ class _CartItemCardState extends State<CartItemCard> with SingleTickerProviderSt
   }
 
   Widget _buildQuantityButton({
-    required IconData icon,
+    required FaIconData icon,
     required VoidCallback? onPressed,
     required bool isEnabled,
     required bool isDark,

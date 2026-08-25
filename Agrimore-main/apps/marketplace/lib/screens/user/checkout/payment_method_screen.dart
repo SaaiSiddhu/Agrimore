@@ -5,6 +5,7 @@ import 'package:firebase_auth/firebase_auth.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:font_awesome_flutter/font_awesome_flutter.dart';
 import 'package:url_launcher/url_launcher.dart';
+import 'package:cloud_functions/cloud_functions.dart';
 
 import 'package:agrimore_ui/agrimore_ui.dart';
 import 'package:agrimore_core/agrimore_core.dart';
@@ -12,6 +13,7 @@ import '../../../providers/cart_provider.dart';
 import '../../../providers/coupon_provider.dart';
 import '../../../providers/theme_provider.dart';
 import '../../../providers/wallet_provider.dart';
+import '../../../providers/market_mode_provider.dart';
 import 'package:agrimore_services/settings/delivery_slot_service.dart';
 import '../../../services/razorpay_service.dart';
 import 'widgets/checkout_steps.dart';
@@ -47,6 +49,9 @@ class _PaymentMethodScreenState extends State<PaymentMethodScreen> {
 
   // âœ… NEW: Order notes / special instructions
   final TextEditingController _notesController = TextEditingController();
+
+  // B2B checkout: employee attribution code, required when MarketModeProvider is B2B.
+  final TextEditingController _employeeCodeController = TextEditingController();
 
   // Checkout Step & Subscription state
   int _currentStep = 2; // Step 2: Slots, Step 3: Payment
@@ -183,6 +188,12 @@ class _PaymentMethodScreenState extends State<PaymentMethodScreen> {
     }
   }
 
+  /// Calls the server-validated `createOrder` callable
+  /// (functions/src/customer/createOrder.ts) instead of writing order
+  /// documents directly — the callable re-derives price/MOQ/employee-code/
+  /// coupon-discount server-side and requires a matching verified_payments
+  /// document for any non-COD order. Only product IDs + quantities are sent;
+  /// never prices or totals.
   Future<List<OrderModel>> _createSellerScopedOrders({
     required String userId,
     required CartProvider cartProvider,
@@ -196,88 +207,70 @@ class _PaymentMethodScreenState extends State<PaymentMethodScreen> {
       throw Exception('Cart is empty');
     }
 
-    final db = FirebaseFirestore.instance;
-    final sellerGroups = <String, List<CartItemModel>>{};
-
-    for (final item in cartProvider.items) {
-      final sellerId = await _resolveSellerIdForItem(item);
-      final key = sellerId ?? '';
-      sellerGroups.putIfAbsent(key, () => <CartItemModel>[]).add(item);
+    final isB2B = context.read<MarketModeProvider>().isB2B;
+    if (isB2B && _employeeCodeController.text.trim().isEmpty) {
+      throw Exception('Employee ID is required for B2B orders');
     }
 
-    final batch = db.batch();
-    final orders = <OrderModel>[];
-    final baseOrderNumber = OrderModel.generateOrderNumber();
-    final totalSubtotal = cartProvider.subtotal;
     final deliverySlotLabel = _selectedSlot != null
         ? '${_selectedSlot!.label} (${_selectedSlot!.start}-${_selectedSlot!.end})'
         : null;
+    // Auto Delivery is a B2C-only concept — gated in the UI too, defended
+    // here since orderType still travels through to the created order doc.
+    final effectiveOrderType = isB2B ? 'One Time' : _orderType;
 
-    var index = 0;
-    for (final entry in sellerGroups.entries) {
-      index++;
-      final sellerId = entry.key.isEmpty ? null : entry.key;
-      final groupItems = entry.value;
-      final groupSubtotal = groupItems.fold<double>(
-        0,
-        (sum, item) => sum + item.subtotal,
-      );
-      final ratio = totalSubtotal > 0
-          ? groupSubtotal / totalSubtotal
-          : 1 / sellerGroups.length;
-      final groupDiscount = _roundMoney(discount * ratio);
-      final groupDeliveryCharge = _roundMoney(widget.deliveryCharge * ratio);
-      final groupTax = _roundMoney(widget.tax * ratio);
-      final groupTotal = _roundMoney(
-        (groupSubtotal - groupDiscount + groupDeliveryCharge + groupTax)
-            .clamp(0.0, double.infinity),
-      );
+    final callable = FirebaseFunctions.instance.httpsCallable('createOrder');
+    final result = await callable.call<Map<String, dynamic>>({
+      'items': cartProvider.items
+          .map((item) => {
+                'productId': item.productId,
+                'quantity': item.quantity,
+              })
+          .toList(),
+      'orderMode': isB2B ? 'B2B' : 'B2C',
+      if (isB2B) 'employeeCode': _employeeCodeController.text.trim(),
+      'deliveryAddress': widget.selectedAddress.toMap(),
+      'paymentMethod': _selectedPaymentMethod,
+      if (razorpayOrderId != null) 'razorpayOrderId': razorpayOrderId,
+      if (razorpayPaymentId != null) 'razorpayPaymentId': razorpayPaymentId,
+      if (razorpaySignature != null) 'razorpaySignature': razorpaySignature,
+      if (couponCode != null) 'couponCode': couponCode,
+      'deliveryCharge': widget.deliveryCharge,
+      'tax': widget.tax,
+      if (deliverySlotLabel != null) 'deliverySlot': deliverySlotLabel,
+      if (_notesController.text.trim().isNotEmpty)
+        'notes': _notesController.text.trim(),
+      'orderType': effectiveOrderType,
+      if (effectiveOrderType == 'Auto Delivery') 'autoFrequency': _autoFrequency,
+    });
 
-      final orderRef = db.collection('orders').doc();
-      final orderNumber = sellerGroups.length == 1
-          ? baseOrderNumber
-          : '$baseOrderNumber-$index';
-
-      final order = OrderModel(
-        id: orderRef.id,
-        userId: userId,
-        sellerId: sellerId,
-        orderNumber: orderNumber,
-        items: groupItems,
-        deliveryAddress: widget.selectedAddress,
-        subtotal: groupSubtotal,
-        discount: groupDiscount,
-        deliveryCharge: groupDeliveryCharge,
-        tax: groupTax,
-        total: groupTotal,
-        paymentMethod: _selectedPaymentMethod,
-        paymentStatus: _selectedPaymentMethod == 'cod' ? 'pending' : 'paid',
-        orderStatus: 'pending',
-        razorpayOrderId: razorpayOrderId,
-        razorpayPaymentId: razorpayPaymentId,
-        razorpaySignature: razorpaySignature,
-        couponCode: couponCode,
-        notes: _notesController.text.trim().isNotEmpty
-            ? _notesController.text.trim()
-            : null,
-        createdAt: DateTime.now(),
-        orderType: _orderType,
-        autoFrequency: _orderType == 'Auto Delivery' ? _autoFrequency : null,
-        deliverySlot: deliverySlotLabel,
-        deliveryVerificationCode: OrderModel.generateVerificationCode(),
-      );
-
-      batch.set(orderRef, order.toMap());
-      batch.set(orderRef.collection('timeline').doc(), {
-        'status': 'pending',
-        'title': 'Order Placed',
-        'description': 'Your order has been placed successfully',
-        'timestamp': FieldValue.serverTimestamp(),
-      });
-      orders.add(order);
+    final data = result.data;
+    if (data['success'] != true) {
+      throw Exception('Failed to create order');
     }
 
-    if (_orderType == 'Auto Delivery') {
+    final createdRefs = (data['orders'] as List).cast<Map<dynamic, dynamic>>();
+    final db = FirebaseFirestore.instance;
+    final orders = <OrderModel>[];
+    for (final ref in createdRefs) {
+      final orderId = ref['orderId'] as String;
+      final doc = await db.collection('orders').doc(orderId).get();
+      if (doc.exists) {
+        orders.add(OrderModel.fromMap(doc.data()!, doc.id));
+      }
+    }
+
+    if (orders.isEmpty) {
+      throw Exception('Order creation failed');
+    }
+
+    // Auto Delivery subscription writing stays client-side, unchanged —
+    // orthogonal to price trust and out of createOrder's scope. Gated to
+    // B2C mode only (effectiveOrderType above already forces 'One Time' in
+    // B2B, so this branch is unreachable there, but the isB2B guard is kept
+    // explicit rather than relying solely on that).
+    if (effectiveOrderType == 'Auto Delivery' && !isB2B) {
+      final batch = db.batch();
       final nextRunDate = DateTime.now().add(const Duration(days: 1));
       for (final item in cartProvider.items) {
         final subscriptionRef = db.collection('subscriptions').doc();
@@ -304,30 +297,11 @@ class _PaymentMethodScreenState extends State<PaymentMethodScreen> {
           'paymentMethod': _selectedPaymentMethod,
         });
       }
+      await batch.commit();
     }
 
-    await batch.commit();
     return orders;
   }
-
-  Future<String?> _resolveSellerIdForItem(CartItemModel item) async {
-    try {
-      final productId = item.productId.trim();
-      if (productId.isEmpty) return null;
-
-      final productDoc = await FirebaseFirestore.instance
-          .collection('products')
-          .doc(productId)
-          .get();
-      final sellerId = productDoc.data()?['sellerId']?.toString().trim();
-      return sellerId != null && sellerId.isNotEmpty ? sellerId : null;
-    } catch (e) {
-      debugPrint('Could not resolve seller for ${item.productId}: $e');
-      return null;
-    }
-  }
-
-  double _roundMoney(double value) => double.parse(value.toStringAsFixed(2));
 
   Future<void> _proceedToConfirm() async {
     if (_isProcessing) return;
@@ -339,6 +313,12 @@ class _PaymentMethodScreenState extends State<PaymentMethodScreen> {
 
     if (_selectedSlot != null && !_selectedSlotIsValidNow()) {
       _showSnackBar('Slot not available', isError: true);
+      return;
+    }
+
+    if (context.read<MarketModeProvider>().isB2B &&
+        _employeeCodeController.text.trim().isEmpty) {
+      _showSnackBar('Employee ID is required for B2B orders', isError: true);
       return;
     }
 
@@ -770,6 +750,14 @@ class _PaymentMethodScreenState extends State<PaymentMethodScreen> {
 
   Widget _buildDeliveryPreferences(
       bool isDark, Color cardColor, Color accentColor) {
+    final isB2B = context.watch<MarketModeProvider>().isB2B;
+    // Auto Delivery (subscriptions) is a B2C-only concept — B2B orders are
+    // one-time. Force back to One Time if the mode changed after selecting it.
+    if (isB2B && _orderType == 'Auto Delivery') {
+      WidgetsBinding.instance.addPostFrameCallback((_) {
+        if (mounted) setState(() => _orderType = 'One Time');
+      });
+    }
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
@@ -778,7 +766,7 @@ class _PaymentMethodScreenState extends State<PaymentMethodScreen> {
           isDark: isDark,
           cardColor: cardColor,
           title: 'Purchase Type',
-          icon: FontAwesomeIcons.truck,
+          icon: FontAwesomeIcons.truck.data,
           accentColor: accentColor,
           child: Column(
             crossAxisAlignment: CrossAxisAlignment.start,
@@ -802,19 +790,27 @@ class _PaymentMethodScreenState extends State<PaymentMethodScreen> {
                   ),
                   const SizedBox(width: 12),
                   Expanded(
-                    child: _buildSelectionBox(
-                      isSelected: _orderType == 'Auto Delivery',
-                      label: 'Subscribe (Auto)',
-                      isDark: isDark,
-                      accentColor: accentColor,
-                      onTap: () {
-                        setState(() {
-                          _orderType = 'Auto Delivery';
-                          _selectedPaymentMethod =
-                              'cod'; // Only COD or Weekly for Auto
-                        });
-                        HapticFeedback.selectionClick();
-                      },
+                    child: Opacity(
+                      opacity: isB2B ? 0.4 : 1.0,
+                      child: _buildSelectionBox(
+                        isSelected: _orderType == 'Auto Delivery',
+                        label:
+                            isB2B ? 'Subscribe (B2C only)' : 'Subscribe (Auto)',
+                        isDark: isDark,
+                        accentColor: accentColor,
+                        onTap: isB2B
+                            ? () => _showSnackBar(
+                                'Auto Delivery is not available in B2B mode',
+                                isError: true)
+                            : () {
+                                setState(() {
+                                  _orderType = 'Auto Delivery';
+                                  _selectedPaymentMethod =
+                                      'cod'; // Only COD or Weekly for Auto
+                                });
+                                HapticFeedback.selectionClick();
+                              },
+                      ),
                     ),
                   ),
                 ],
@@ -870,7 +866,7 @@ class _PaymentMethodScreenState extends State<PaymentMethodScreen> {
           isDark: isDark,
           cardColor: cardColor,
           title: 'Select Time Slot',
-          icon: FontAwesomeIcons.clock,
+          icon: FontAwesomeIcons.clock.data,
           accentColor: accentColor,
           child: _slotsLoading
               ? const Padding(
@@ -883,7 +879,7 @@ class _PaymentMethodScreenState extends State<PaymentMethodScreen> {
                       child: Center(
                         child: Column(
                           children: [
-                            Icon(FontAwesomeIcons.clock, size: 28, color: isDark ? Colors.grey[600] : Colors.grey[400]),
+                            FaIcon(FontAwesomeIcons.clock, size: 28, color: isDark ? Colors.grey[600] : Colors.grey[400]),
                             const SizedBox(height: 8),
                             Text(
                               'No delivery slots configured',
@@ -1579,6 +1575,7 @@ class _PaymentMethodScreenState extends State<PaymentMethodScreen> {
   }
 
   Widget _buildPaymentCard(bool isDark, Color cardColor, Color accentColor) {
+    final isB2B = context.watch<MarketModeProvider>().isB2B;
     return _buildCardSection(
       isDark: isDark,
       cardColor: cardColor,
@@ -1587,6 +1584,20 @@ class _PaymentMethodScreenState extends State<PaymentMethodScreen> {
       accentColor: accentColor,
       child: Column(
         children: [
+          if (isB2B) ...[
+            TextFormField(
+              controller: _employeeCodeController,
+              decoration: InputDecoration(
+                labelText: 'Employee ID *',
+                hintText: 'Enter the sales employee code',
+                border: OutlineInputBorder(
+                  borderRadius: BorderRadius.circular(10),
+                ),
+                prefixIcon: const Icon(Icons.badge_outlined),
+              ),
+            ),
+            const SizedBox(height: 12),
+          ],
           if (_orderType != 'Auto Delivery') ...[
             // Online Payment Option (Available on both Web and Mobile)
             GestureDetector(
@@ -1788,7 +1799,7 @@ class _PaymentMethodScreenState extends State<PaymentMethodScreen> {
     );
   }
 
-  Widget _buildPaymentBadge(IconData icon, String label, bool isDark) {
+  Widget _buildPaymentBadge(FaIconData icon, String label, bool isDark) {
     return Container(
       padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 5),
       decoration: BoxDecoration(
@@ -2113,6 +2124,7 @@ class _PaymentMethodScreenState extends State<PaymentMethodScreen> {
   @override
   void dispose() {
     _notesController.dispose();
+    _employeeCodeController.dispose();
     _razorpayService?.dispose();
     super.dispose();
   }

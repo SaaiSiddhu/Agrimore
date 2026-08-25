@@ -57,7 +57,13 @@ class _AddProductScreenState extends State<AddProductScreen> with SingleTickerPr
   bool _isFreeDelivery = true;
   bool _expressDelivery = false;
   final _expressDeliveryDaysController = TextEditingController(text: '1');
-  
+  String _locationType = 'state';
+  String _selectedState = 'Tamil Nadu';
+  final _districtController = TextEditingController();
+  final _latController = TextEditingController();
+  final _lngController = TextEditingController();
+  double _radiusKm = 10;
+
   late TabController _tabController;
   bool _isLoading = false;
 
@@ -84,6 +90,9 @@ class _AddProductScreenState extends State<AddProductScreen> with SingleTickerPr
     _shippingPriceController.dispose();
     _freeShippingAboveController.dispose();
     _expressDeliveryDaysController.dispose();
+    _districtController.dispose();
+    _latController.dispose();
+    _lngController.dispose();
     super.dispose();
   }
 
@@ -139,6 +148,12 @@ class _AddProductScreenState extends State<AddProductScreen> with SingleTickerPr
         isFreeDelivery: _isFreeDelivery,
         expressDelivery: _expressDelivery,
         expressDeliveryDays: _expressDeliveryDaysController.text.trim(),
+        locationType: _locationType,
+        state: _selectedState,
+        district: _districtController.text.trim().isNotEmpty ? _districtController.text.trim() : null,
+        lat: double.tryParse(_latController.text.trim()),
+        lng: double.tryParse(_lngController.text.trim()),
+        radiusKm: _locationType == 'radius' ? _radiusKm : null,
       );
 
       await Provider.of<AdminProvider>(context, listen: false).addProduct(product);
@@ -250,6 +265,15 @@ class _AddProductScreenState extends State<AddProductScreen> with SingleTickerPr
               expressDeliveryDaysController: _expressDeliveryDaysController,
               onFreeDeliveryChanged: (value) => setState(() => _isFreeDelivery = value),
               onExpressDeliveryChanged: (value) => setState(() => _expressDelivery = value),
+              locationType: _locationType,
+              selectedState: _selectedState,
+              districtController: _districtController,
+              latController: _latController,
+              lngController: _lngController,
+              radiusKm: _radiusKm,
+              onLocationTypeChanged: (value) => setState(() => _locationType = value),
+              onStateChanged: (value) => setState(() => _selectedState = value),
+              onRadiusChanged: (value) => setState(() => _radiusKm = value),
             ),
           ],
         ),

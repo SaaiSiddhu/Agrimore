@@ -30,6 +30,8 @@ class _AddProductScreenState extends State<AddProductScreen> {
   final _districtController = TextEditingController();
   final _latController = TextEditingController();
   final _lngController = TextEditingController();
+  final _b2bPriceController = TextEditingController();
+  final _b2bMoqController = TextEditingController();
 
   final ImagePicker _imagePicker = ImagePicker();
   XFile? _selectedImage;
@@ -52,6 +54,7 @@ class _AddProductScreenState extends State<AddProductScreen> {
   double _radiusKm = 10;
   double? _basePrice;
   double? _areaPrice;
+  bool _isB2BEnabled = false;
 
   static const List<String> _states = ['Tamil Nadu'];
   static const List<String> _tamilNaduDistricts = [
@@ -121,6 +124,9 @@ class _AddProductScreenState extends State<AddProductScreen> {
       _areaPrice = p.areaPrice;
       _manualPriceEdited = p.manualPriceOverride;
       _priceSource = p.priceSource;
+      _isB2BEnabled = p.isB2BEnabled;
+      _b2bPriceController.text = p.b2bPrice?.toStringAsFixed(0) ?? '';
+      _b2bMoqController.text = p.b2bMoq?.toString() ?? '';
       if (p.masterProductRef != null && p.masterProductRef!.isNotEmpty) {
         _selectedMasterProduct = {'id': p.masterProductRef, 'name': p.name};
       }
@@ -147,6 +153,8 @@ class _AddProductScreenState extends State<AddProductScreen> {
     _districtController.dispose();
     _latController.dispose();
     _lngController.dispose();
+    _b2bPriceController.dispose();
+    _b2bMoqController.dispose();
     super.dispose();
   }
 
@@ -284,6 +292,35 @@ class _AddProductScreenState extends State<AddProductScreen> {
     return true;
   }
 
+  bool _validateB2B() {
+    if (!_isB2BEnabled) return true;
+
+    final b2bPrice = double.tryParse(_b2bPriceController.text.trim());
+    if (b2bPrice == null || b2bPrice <= 0) {
+      SnackbarHelper.showError(context, 'Please enter a valid B2B price.');
+      return false;
+    }
+
+    final salePrice = double.tryParse(_priceController.text.trim());
+    if (salePrice != null && b2bPrice >= salePrice) {
+      SnackbarHelper.showError(
+        context,
+        'B2B price (₹${b2bPrice.toStringAsFixed(0)}) must be lower than the '
+        'sale price (₹${salePrice.toStringAsFixed(0)}).',
+      );
+      return false;
+    }
+
+    final b2bMoq = int.tryParse(_b2bMoqController.text.trim());
+    if (b2bMoq == null || b2bMoq <= 0) {
+      SnackbarHelper.showError(
+          context, 'Please enter a valid minimum order quantity.');
+      return false;
+    }
+
+    return true;
+  }
+
   String _coverageLabel() {
     if (_locationType == 'district') {
       return '${_districtController.text.trim()}, $_selectedState';
@@ -413,6 +450,7 @@ class _AddProductScreenState extends State<AddProductScreen> {
   Future<void> _saveProduct() async {
     if (!_formKey.currentState!.validate()) return;
     if (!_validateCoverage()) return;
+    if (!_validateB2B()) return;
 
     final auth = context.read<SellerAuthProvider>();
     if (auth.currentUser == null) return;
@@ -487,6 +525,13 @@ class _AddProductScreenState extends State<AddProductScreen> {
         clearDistrict: _locationType != 'district',
         clearCoordinates: _locationType != 'radius',
         clearRadius: _locationType != 'radius',
+        isB2BEnabled: _isB2BEnabled,
+        b2bPrice: _isB2BEnabled
+            ? double.tryParse(_b2bPriceController.text.trim())
+            : null,
+        b2bMoq: _isB2BEnabled
+            ? int.tryParse(_b2bMoqController.text.trim())
+            : null,
         updatedAt: DateTime.now(),
       );
 
@@ -535,6 +580,13 @@ class _AddProductScreenState extends State<AddProductScreen> {
         areaPrice: _areaPrice,
         manualPriceOverride: _manualPriceEdited,
         priceSource: _priceSource,
+        isB2BEnabled: _isB2BEnabled,
+        b2bPrice: _isB2BEnabled
+            ? double.tryParse(_b2bPriceController.text.trim())
+            : null,
+        b2bMoq: _isB2BEnabled
+            ? int.tryParse(_b2bMoqController.text.trim())
+            : null,
         createdAt: DateTime.now(),
         updatedAt: DateTime.now(),
       );
@@ -961,6 +1013,105 @@ class _AddProductScreenState extends State<AddProductScreen> {
     );
   }
 
+  Widget _buildB2BSection(ThemeData theme) {
+    return Container(
+      padding: const EdgeInsets.all(16),
+      decoration: BoxDecoration(
+        color: theme.colorScheme.surface,
+        borderRadius: BorderRadius.circular(16),
+        border: Border.all(color: theme.dividerColor.withValues(alpha: 0.4)),
+        boxShadow: [
+          BoxShadow(
+            color: Colors.black.withValues(alpha: 0.04),
+            blurRadius: 12,
+            offset: const Offset(0, 4),
+          ),
+        ],
+      ),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Row(
+            children: [
+              Container(
+                padding: const EdgeInsets.all(9),
+                decoration: BoxDecoration(
+                  color: const Color(0xFF2D7D3C).withValues(alpha: 0.1),
+                  borderRadius: BorderRadius.circular(10),
+                ),
+                child: const Icon(
+                  Icons.storefront_outlined,
+                  color: Color(0xFF2D7D3C),
+                ),
+              ),
+              const SizedBox(width: 12),
+              const Expanded(
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Text(
+                      'B2B (Wholesale) Listing',
+                      style: TextStyle(
+                        fontSize: 16,
+                        fontWeight: FontWeight.w800,
+                      ),
+                    ),
+                    SizedBox(height: 2),
+                    Text(
+                      'Offer this product at a bulk price with a minimum order quantity.',
+                      style: TextStyle(fontSize: 12, color: Colors.grey),
+                    ),
+                  ],
+                ),
+              ),
+              Switch(
+                value: _isB2BEnabled,
+                activeColor: const Color(0xFF2D7D3C),
+                onChanged: (value) =>
+                    setState(() => _isB2BEnabled = value),
+              ),
+            ],
+          ),
+          if (_isB2BEnabled) ...[
+            const SizedBox(height: 16),
+            Row(
+              children: [
+                Expanded(
+                  child: TextFormField(
+                    controller: _b2bPriceController,
+                    keyboardType: TextInputType.number,
+                    decoration: const InputDecoration(
+                      labelText: 'B2B Price (₹)',
+                      border: OutlineInputBorder(),
+                      prefixIcon: Icon(Icons.currency_rupee),
+                    ),
+                  ),
+                ),
+                const SizedBox(width: 12),
+                Expanded(
+                  child: TextFormField(
+                    controller: _b2bMoqController,
+                    keyboardType: TextInputType.number,
+                    decoration: const InputDecoration(
+                      labelText: 'Minimum Order Quantity (MOQ)',
+                      border: OutlineInputBorder(),
+                      prefixIcon: Icon(Icons.format_list_numbered),
+                    ),
+                  ),
+                ),
+              ],
+            ),
+            const SizedBox(height: 8),
+            const Text(
+              'Must be lower than your normal sale price.',
+              style: TextStyle(fontSize: 12, color: Colors.grey),
+            ),
+          ],
+        ],
+      ),
+    );
+  }
+
   @override
   Widget build(BuildContext context) {
     final theme = Theme.of(context);
@@ -1088,6 +1239,8 @@ class _AddProductScreenState extends State<AddProductScreen> {
                   ),
                 ],
               ),
+              const SizedBox(height: 16),
+              _buildB2BSection(theme),
               const SizedBox(height: 16),
 
               // Stock + Low Stock Threshold

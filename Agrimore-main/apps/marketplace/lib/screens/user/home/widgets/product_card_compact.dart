@@ -275,7 +275,7 @@ class ProductCardCompact extends StatelessWidget {
             
             // Product Info - Premium Typography
             Padding(
-              padding: const EdgeInsets.fromLTRB(8, 20, 8, 0),
+              padding: const EdgeInsets.fromLTRB(8, 16, 8, 0),
               child: Column(
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
@@ -383,8 +383,8 @@ class ProductCardCompact extends StatelessWidget {
                     ],
                   ),
                   
-                  const SizedBox(height: 5),
-                  
+                  const SizedBox(height: 3),
+
                   // Price - Premium Look
                   Row(
                     crossAxisAlignment: CrossAxisAlignment.center,
