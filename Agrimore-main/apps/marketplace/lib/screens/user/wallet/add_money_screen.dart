@@ -408,52 +408,73 @@ class _AddMoneyScreenState extends State<AddMoneyScreen> {
     setState(() => _isProcessing = true);
 
     try {
+      // A wallet top-up must always be backed by a real, verifiable
+      // Razorpay payment — verifyWalletTopup (functions/src/customer/
+      // wallet.ts) independently re-checks the HMAC signature and the
+      // payment's captured status/amount before crediting anything, so
+      // paymentId/orderId/signature must all come from a genuine Razorpay
+      // success callback. There is deliberately no fallback path here: if
+      // Razorpay throws for any reason (not just user cancellation), no
+      // credit happens — a previous version of this screen silently
+      // credited the wallet with a synthetic paymentId whenever Razorpay
+      // was "unavailable" for any reason, which is exactly finding #3's
+      // self-credit exploit by another name.
       String? paymentId;
-      
-      try {
-        final razorpay = RazorpayService();
-        final completer = Completer<String?>();
-        
-        razorpay.initialize(
-          onSuccess: (pId, orderId, signature) {
-            if (!completer.isCompleted) completer.complete(pId);
-            razorpay.dispose();
-          },
-          onFailure: (error) {
-            if (!completer.isCompleted) completer.complete(null);
-            razorpay.dispose();
-          },
-          onDismiss: () {
-            if (!completer.isCompleted) completer.complete(null);
-            razorpay.dispose();
-          },
-        );
-        
-        await razorpay.openCheckout(
-          amount: _enteredAmount,
-          userName: '',
-          userEmail: '',
-          userPhone: '',
-          description: 'Wallet Top-up ₹${_enteredAmount.toStringAsFixed(0)}',
-        );
-        
-        // Wait for payment result (timeout after 5 minutes)
-        paymentId = await completer.future.timeout(
-          const Duration(minutes: 5),
-          onTimeout: () => null,
-        );
-      } catch (e) {
-        debugPrint('⚠️ Razorpay unavailable, using direct wallet credit: $e');
-        paymentId = 'wallet_topup_${DateTime.now().millisecondsSinceEpoch}';
-      }
-      
-      if (paymentId == null || paymentId.isEmpty) {
+      String? orderId;
+      String? signature;
+
+      final razorpay = RazorpayService();
+      final completer = Completer<void>();
+
+      razorpay.initialize(
+        onSuccess: (pId, oId, sig) {
+          paymentId = pId;
+          orderId = oId;
+          signature = sig;
+          if (!completer.isCompleted) completer.complete();
+          razorpay.dispose();
+        },
+        onFailure: (error) {
+          if (!completer.isCompleted) completer.complete();
+          razorpay.dispose();
+        },
+        onDismiss: () {
+          if (!completer.isCompleted) completer.complete();
+          razorpay.dispose();
+        },
+      );
+
+      await razorpay.openCheckout(
+        amount: _enteredAmount,
+        userName: '',
+        userEmail: '',
+        userPhone: '',
+        description: 'Wallet Top-up ₹${_enteredAmount.toStringAsFixed(0)}',
+      );
+
+      // Wait for payment result (timeout after 5 minutes)
+      await completer.future.timeout(
+        const Duration(minutes: 5),
+        onTimeout: () {},
+      );
+
+      if (paymentId == null ||
+          paymentId!.isEmpty ||
+          orderId == null ||
+          orderId!.isEmpty ||
+          signature == null ||
+          signature!.isEmpty) {
         _showSnackBar('Payment was cancelled', isError: true);
         return;
       }
-      
-      await walletProvider.addMoney(_enteredAmount, paymentId);
-      
+
+      await walletProvider.addMoney(
+        _enteredAmount,
+        paymentId!,
+        orderId: orderId!,
+        signature: signature!,
+      );
+
       if (mounted) {
         _showSnackBar('₹${_enteredAmount.toStringAsFixed(0)} added to wallet!', isError: false);
         Navigator.pop(context);

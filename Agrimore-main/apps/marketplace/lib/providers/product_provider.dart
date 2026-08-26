@@ -15,9 +15,20 @@ const String _kProductsCacheTimeKey = 'cached_products_time';
 const int _kCacheTTLMinutes = 10; // Cache valid for 10 minutes
 
 class ProductProvider with ChangeNotifier {
-  final DatabaseService _databaseService = DatabaseService();
-  final FirebaseFirestore _firestore = FirebaseFirestore.instance;
-  final FirebaseAuth _auth = FirebaseAuth.instance;
+  final DatabaseService _databaseService;
+  // Lazily initialized — neither is touched anywhere in the loadProducts
+  // path (grep-confirmed; both are only used by the "recently viewed"
+  // methods), so a test that only exercises loadProducts never triggers
+  // Firebase.initializeApp() being required just to construct this class.
+  late final FirebaseFirestore _firestore = FirebaseFirestore.instance;
+  late final FirebaseAuth _auth = FirebaseAuth.instance;
+
+  // Optional so the single real construction site
+  // (apps/marketplace/lib/main.dart's `ProductProvider()`) is unaffected;
+  // tests substitute a fake via a DatabaseService subclass overriding the
+  // relevant methods.
+  ProductProvider({DatabaseService? databaseService})
+      : _databaseService = databaseService ?? DatabaseService();
 
   List<ProductModel> _products = [];
   List<ProductModel> _recentlyViewedProducts = [];
@@ -123,13 +134,36 @@ class ProductProvider with ChangeNotifier {
       // ============================================
       // STEP 1: INSTANT - Load from local cache first
       // ============================================
-      if (categoryId == null && limit == null && !_isCacheLoaded) {
+      // Deliberately NOT gated on `limit == null` (it used to be, before
+      // every call site was given an explicit limit as part of the
+      // read-cost reduction pass — with no caller ever passing a null limit
+      // anymore, that guard would have made this on-disk cache permanently
+      // unreachable, both here and in _saveToCache below). Reading it
+      // regardless of the current call's limit is safe: this is only ever
+      // an instant *preview* — STEP 2 below always still runs afterward and
+      // overwrites `_products`/`_loadedProductLimit` with the real,
+      // correctly-sized network result in the same call, so a cache blob
+      // that's smaller or larger than what this specific call wants only
+      // ever causes a brief, self-correcting flash, never a stuck/wrong
+      // state.
+      if (categoryId == null && !_isCacheLoaded) {
         final cachedProducts = await _loadFromCache();
         if (cachedProducts.isNotEmpty) {
           _products = _dedupeProducts(cachedProducts);
           _isCacheLoaded = true;
-          _isLoaded = true;
-          _loadedProductLimit = null;
+          // Deliberately NOT setting _isLoaded = true here. _isLoaded's
+          // only reader is hasEnoughInMemoryProducts's early-return check
+          // above, which runs before this function even sets up
+          // _loadCompleter — so a concurrent second call arriving in this
+          // exact window (cache-preview painted, network fetch below still
+          // in flight) would otherwise see _isLoaded==true &&
+          // _loadedProductLimit==null and short-circuit out via that early
+          // return, skipping its own fetch entirely and never reaching the
+          // _loadCompleter race-handling path meant to serialize it. This
+          // cache read is a preview only; _isLoaded should mean "a real
+          // network load actually completed", which STEP 2 below still
+          // guarantees in every case (cache hit or not) by unconditionally
+          // setting it after the fetch resolves.
           debugPrint(
               '⚡ INSTANT: Loaded ${_products.length} products from cache');
           _notifySafely(); // Show cached data immediately!
@@ -170,7 +204,11 @@ class ProductProvider with ChangeNotifier {
       _isLoaded = true;
       _loadedProductLimit = categoryId == null ? limit : null;
 
-      if (categoryId == null && limit == null) {
+      // Same reasoning as the STEP 1 guard above: not gated on
+      // `limit == null` any more, or this would never fire again once every
+      // caller passes an explicit limit, silently disabling the on-disk
+      // cache entirely rather than just bounding what it holds.
+      if (categoryId == null) {
         await _saveToCache(freshProducts); // Save fresh data to cache
       }
 
@@ -224,7 +262,29 @@ class ProductProvider with ChangeNotifier {
   Future<void> _saveToCache(List<ProductModel> products) async {
     try {
       final prefs = await SharedPreferences.getInstance();
-      final jsonList = products.map((p) => p.toJson()).toList();
+      // ProductModel.toJson() is also the live Firestore write path
+      // (packages/agrimore_services' admin_service.dart) and correctly
+      // emits native Timestamp objects there — that must not change.
+      // jsonEncode, however, cannot serialize a raw Timestamp (it has no
+      // toJson() of its own) and throws JsonUnsupportedObjectError, which
+      // this function's own catch block was silently swallowing — this
+      // cache write has likely never actually succeeded. Sanitizing here,
+      // on the local-cache copy only, fixes the write without touching the
+      // Firestore-facing model. ProductModel.fromMap's parseDateSafely
+      // already accepts ISO strings, so this round-trips losslessly.
+      //
+      // A second, independent pre-existing bug found and fixed alongside
+      // the Timestamp one: toJson()/toMap() never include `id` (correct for
+      // the Firestore write path, since the document ID lives outside its
+      // own data) — but _loadFromCache reconstructs via
+      // ProductModel.fromJson, which reads `json['id']`. Without adding it
+      // here, every cached product would silently come back with id: ''
+      // regardless of the Timestamp fix. CategoryProvider's equivalent
+      // cache write already does this correctly ({...c.toMap(), 'id': c.id})
+      // — this brings the product cache to parity with it.
+      final jsonList = products
+          .map((p) => _sanitizeForJsonCache({...p.toJson(), 'id': p.id}))
+          .toList();
       await prefs.setString(_kProductsCacheKey, jsonEncode(jsonList));
       await prefs.setString(
           _kProductsCacheTimeKey, DateTime.now().toIso8601String());
@@ -232,6 +292,30 @@ class ProductProvider with ChangeNotifier {
     } catch (e) {
       debugPrint('⚠️ Cache save error: $e');
     }
+  }
+
+  /// Recursively replaces any Firestore Timestamp with an ISO8601 string so
+  /// the result is safe to pass to jsonEncode. Generic (walks every Map/List
+  /// value) rather than hardcoded to specific field names, so it keeps
+  /// working if toJson() gains more date fields later without anyone having
+  /// to remember to update this function.
+  dynamic _sanitizeForJsonCache(dynamic value) {
+    if (value is Timestamp) {
+      return value.toDate().toIso8601String();
+    }
+    if (value is Map) {
+      // Explicit generic + key.toString(): plain .map() without it infers
+      // Map<dynamic, dynamic>, which later fails an `as Map<String,
+      // dynamic>` cast at the call site (found in category_provider.dart's
+      // identical helper — fixed here defensively too, since this file's
+      // own result isn't cast today but could be by a future caller).
+      return value.map<String, dynamic>(
+          (key, val) => MapEntry(key.toString(), _sanitizeForJsonCache(val)));
+    }
+    if (value is List) {
+      return value.map(_sanitizeForJsonCache).toList();
+    }
+    return value;
   }
 
   bool _hasDataChanged(List<ProductModel> newProducts) {
@@ -601,7 +685,10 @@ class ProductProvider with ChangeNotifier {
   }
 
   Future<void> refreshProducts({String? location}) async {
-    await loadProducts(forceRefresh: true, location: location);
+    // Currently unreferenced anywhere in the app (confirmed via grep) — the
+    // limit here is a default should this ever get wired up, matching the
+    // other general-catalog-browsing screens' bound.
+    await loadProducts(forceRefresh: true, location: location, limit: 100);
   }
 
   Future<List<ProductModel>> _filterProductsForUserLocation(

@@ -22,7 +22,7 @@
 // the cart total) and its order-number suffixing convention
 // ($baseOrderNumber-$index for carts spanning more than one seller).
 
-import * as functions from "firebase-functions/v1";
+import { onCall, HttpsError } from "firebase-functions/v2/https";
 import * as admin from "firebase-admin";
 import * as crypto from "crypto";
 
@@ -106,7 +106,7 @@ async function validateAndComputeCouponDiscount(
     .get();
 
   if (snap.empty) {
-    throw new functions.https.HttpsError("failed-precondition", "Invalid coupon code");
+    throw new HttpsError("failed-precondition", "Invalid coupon code");
   }
 
   const coupon = snap.docs[0].data();
@@ -120,7 +120,7 @@ async function validateAndComputeCouponDiscount(
   const isValid =
     isActive && nowMs > validFromMs && nowMs < validToMs && (usageLimit === 0 || usedCount < usageLimit);
   if (!isValid) {
-    throw new functions.https.HttpsError(
+    throw new HttpsError(
       "failed-precondition",
       "This coupon has expired or reached its usage limit"
     );
@@ -128,7 +128,7 @@ async function validateAndComputeCouponDiscount(
 
   const minOrderAmount = typeof coupon.minOrderAmount === "number" ? coupon.minOrderAmount : 0;
   if (orderAmount < minOrderAmount) {
-    throw new functions.https.HttpsError(
+    throw new HttpsError(
       "failed-precondition",
       `Minimum order amount is ₹${minOrderAmount}`
     );
@@ -169,34 +169,36 @@ async function validateAndComputeCouponDiscount(
   };
 }
 
-export const createOrder = functions.https.onCall(async (data: CreateOrderData, context) => {
-  if (!context.auth) {
-    throw new functions.https.HttpsError("unauthenticated", "Sign in required");
+export const createOrder = onCall({ minInstances: 0, memory: "256MiB" }, async (request) => {
+  const data = request.data as CreateOrderData;
+
+  if (!request.auth) {
+    throw new HttpsError("unauthenticated", "Sign in required");
   }
 
-  const uid = context.auth.uid;
+  const uid = request.auth.uid;
   const items = Array.isArray(data?.items) ? data.items : [];
   const orderMode = data?.orderMode;
   const paymentMethod = data?.paymentMethod || "cod";
 
   if (items.length === 0) {
-    throw new functions.https.HttpsError("invalid-argument", "items cannot be empty");
+    throw new HttpsError("invalid-argument", "items cannot be empty");
   }
   if (orderMode !== "B2C" && orderMode !== "B2B") {
-    throw new functions.https.HttpsError("invalid-argument", "orderMode must be 'B2C' or 'B2B'");
+    throw new HttpsError("invalid-argument", "orderMode must be 'B2C' or 'B2B'");
   }
 
   const employeeCode = orderMode === "B2B" ? String(data?.employeeCode || "").trim() : "";
   if (orderMode === "B2B" && !employeeCode) {
-    throw new functions.https.HttpsError("invalid-argument", "employeeCode is required for B2B orders");
+    throw new HttpsError("invalid-argument", "employeeCode is required for B2B orders");
   }
 
   for (const item of items) {
     if (!item || typeof item.productId !== "string" || !item.productId.trim()) {
-      throw new functions.https.HttpsError("invalid-argument", "Each item requires a productId");
+      throw new HttpsError("invalid-argument", "Each item requires a productId");
     }
     if (!Number.isInteger(item.quantity) || item.quantity <= 0) {
-      throw new functions.https.HttpsError("invalid-argument", `Invalid quantity for product ${item.productId}`);
+      throw new HttpsError("invalid-argument", `Invalid quantity for product ${item.productId}`);
     }
   }
 
@@ -214,7 +216,7 @@ export const createOrder = functions.https.onCall(async (data: CreateOrderData, 
       .get();
 
     if (employeeQuery.empty) {
-      throw new functions.https.HttpsError(
+      throw new HttpsError(
         "failed-precondition",
         "Invalid or unapproved employee code"
       );
@@ -229,30 +231,39 @@ export const createOrder = functions.https.onCall(async (data: CreateOrderData, 
   const validatedItems: ValidatedItem[] = [];
   let cartSubtotal = 0;
 
-  for (const item of items) {
-    const productSnap = await db.collection("products").doc(item.productId).get();
+  // Batched read instead of one sequential await per cart item — db.getAll
+  // returns snapshots in the same order as the refs passed in, so
+  // productSnaps[i] always corresponds to items[i]. Same document-read count
+  // and billing as before (Firestore bills per document regardless of
+  // batching); this only removes N sequential round-trips.
+  const productRefs = items.map((item) => db.collection("products").doc(item.productId));
+  const productSnaps = await db.getAll(...productRefs);
+
+  for (let i = 0; i < items.length; i++) {
+    const item = items[i];
+    const productSnap = productSnaps[i];
     if (!productSnap.exists) {
-      throw new functions.https.HttpsError("not-found", `Product ${item.productId} not found`);
+      throw new HttpsError("not-found", `Product ${item.productId} not found`);
     }
     const product = productSnap.data()!;
 
     let price: number;
     if (orderMode === "B2B") {
       if (product.isB2BEnabled !== true) {
-        throw new functions.https.HttpsError(
+        throw new HttpsError(
           "failed-precondition",
           `Product ${item.productId} is not enabled for B2B ordering`
         );
       }
       if (typeof product.b2bPrice !== "number") {
-        throw new functions.https.HttpsError(
+        throw new HttpsError(
           "failed-precondition",
           `Product ${item.productId} has no B2B price configured`
         );
       }
       const moq = typeof product.b2bMoq === "number" ? product.b2bMoq : 1;
       if (item.quantity < moq) {
-        throw new functions.https.HttpsError(
+        throw new HttpsError(
           "failed-precondition",
           `Quantity for product ${item.productId} is below the minimum order quantity (${moq})`
         );
@@ -260,7 +271,7 @@ export const createOrder = functions.https.onCall(async (data: CreateOrderData, 
       price = product.b2bPrice;
     } else {
       if (typeof product.salePrice !== "number") {
-        throw new functions.https.HttpsError(
+        throw new HttpsError(
           "failed-precondition",
           `Product ${item.productId} has no price configured`
         );
@@ -316,13 +327,13 @@ export const createOrder = functions.https.onCall(async (data: CreateOrderData, 
   const deliveryCharge = typeof data?.deliveryCharge === "number" && data.deliveryCharge > 0 ? data.deliveryCharge : 0;
   const tax = typeof data?.tax === "number" && data.tax > 0 ? data.tax : 0;
   if (deliveryCharge > MAX_REASONABLE_DELIVERY_CHARGE) {
-    throw new functions.https.HttpsError(
+    throw new HttpsError(
       "invalid-argument",
       `deliveryCharge exceeds the maximum allowed value of ₹${MAX_REASONABLE_DELIVERY_CHARGE}`
     );
   }
   if (tax > MAX_REASONABLE_TAX) {
-    throw new functions.https.HttpsError(
+    throw new HttpsError(
       "invalid-argument",
       `tax exceeds the maximum allowed value of ₹${MAX_REASONABLE_TAX}`
     );
@@ -340,7 +351,7 @@ export const createOrder = functions.https.onCall(async (data: CreateOrderData, 
     const razorpayPaymentId = data?.razorpayPaymentId;
     const razorpayOrderId = data?.razorpayOrderId;
     if (!razorpayPaymentId || !razorpayOrderId) {
-      throw new functions.https.HttpsError(
+      throw new HttpsError(
         "invalid-argument",
         "Razorpay payment details are required for non-COD orders"
       );
@@ -348,18 +359,18 @@ export const createOrder = functions.https.onCall(async (data: CreateOrderData, 
 
     const paymentSnap = await db.collection("verified_payments").doc(razorpayPaymentId).get();
     if (!paymentSnap.exists) {
-      throw new functions.https.HttpsError("failed-precondition", "Payment could not be verified");
+      throw new HttpsError("failed-precondition", "Payment could not be verified");
     }
     const payment = paymentSnap.data()!;
     if (payment.orderId !== razorpayOrderId) {
-      throw new functions.https.HttpsError("failed-precondition", "Payment does not match this order");
+      throw new HttpsError("failed-precondition", "Payment does not match this order");
     }
     if (payment.status !== "captured") {
-      throw new functions.https.HttpsError("failed-precondition", "Payment was not captured");
+      throw new HttpsError("failed-precondition", "Payment was not captured");
     }
     const verifiedAmount = typeof payment.amount === "number" ? payment.amount : -1;
     if (Math.abs(verifiedAmount - grandTotal) > 1) {
-      throw new functions.https.HttpsError(
+      throw new HttpsError(
         "failed-precondition",
         "Verified payment amount does not match the order total"
       );

@@ -1,6 +1,7 @@
 import 'dart:async';
 import 'dart:convert';
 import 'package:flutter/material.dart';
+import 'package:cloud_firestore/cloud_firestore.dart' show Timestamp;
 import 'package:shared_preferences/shared_preferences.dart';
 import 'package:agrimore_core/agrimore_core.dart';
 import 'package:agrimore_services/agrimore_services.dart';
@@ -13,7 +14,14 @@ const String _kCategoriesCacheTimeKey = 'cached_categories_time';
 const int _kCacheTTLMinutes = 10; // Cache valid for 10 minutes
 
 class CategoryProvider with ChangeNotifier {
-  final DatabaseService _databaseService = DatabaseService();
+  final DatabaseService _databaseService;
+
+  // Optional so the single real construction site
+  // (apps/marketplace/lib/main.dart's `CategoryProvider()`) is unaffected —
+  // mirrors ProductProvider's identical seam (Phase 12), added here so
+  // Workstream 3's cache round-trip test can substitute a fake data source.
+  CategoryProvider({DatabaseService? databaseService})
+      : _databaseService = databaseService ?? DatabaseService();
 
   List<CategoryModel> _categories = [];
   CategoryModel? _selectedCategory;
@@ -140,13 +148,62 @@ class CategoryProvider with ChangeNotifier {
   Future<void> _saveToCache(List<CategoryModel> categories) async {
     try {
       final prefs = await SharedPreferences.getInstance();
-      final jsonList = categories.map((c) => {...c.toMap(), 'id': c.id}).toList();
+      // CategoryModel.toMap() is also the live Firestore write path and
+      // correctly emits a native Timestamp for createdAt there — that must
+      // not change. jsonEncode cannot serialize a raw Timestamp (it has no
+      // toJson() of its own) and throws JsonUnsupportedObjectError, which
+      // this function's own catch block was silently swallowing — this
+      // cache write has likely never actually succeeded.
+      //
+      // Unlike ProductModel.fromMap (which accepts an ISO string for its
+      // dates), CategoryModel.fromMap has no String branch for createdAt —
+      // an ISO string would silently read back as DateTime.now(), a lossy
+      // round-trip. createdAt is confirmed unused anywhere in this app
+      // (grepped: category display/sort uses displayOrder, not createdAt;
+      // zero `.createdAt` reads on a CategoryModel anywhere in
+      // apps/marketplace), so rather than cache a value we know we can't
+      // restore, createdAt is simply omitted from the cached payload —
+      // fromMap's own null-handling already defaults an absent createdAt to
+      // DateTime.now(), so this is the exact same outcome, just reached
+      // honestly instead of by accident. If a future need for a real cached
+      // createdAt appears, the correct fix is a String branch in
+      // CategoryModel.fromMap (packages/agrimore_core) — out of scope here.
+      final jsonList = categories.map((c) {
+        final map = {...c.toMap(), 'id': c.id};
+        map.remove('createdAt');
+        // Generic Timestamp sanitizer as defense-in-depth for `metadata`
+        // (a free-form Map<String, dynamic>? that could embed a Timestamp
+        // from Firestore data) and any date field added to toMap() later.
+        return _sanitizeForJsonCache(map) as Map<String, dynamic>;
+      }).toList();
       await prefs.setString(_kCategoriesCacheKey, jsonEncode(jsonList));
       await prefs.setString(_kCategoriesCacheTimeKey, DateTime.now().toIso8601String());
       debugPrint('💾 Saved ${categories.length} categories to cache');
     } catch (e) {
       debugPrint('⚠️ Category cache save error: $e');
     }
+  }
+
+  /// Recursively replaces any Firestore Timestamp with an ISO8601 string so
+  /// the result is safe to pass to jsonEncode. Mirrors ProductProvider's
+  /// identical helper (duplicated rather than shared, since it's a small,
+  /// self-contained utility and this phase's scope is confined to
+  /// apps/marketplace with no changes to packages/ or a new shared file).
+  dynamic _sanitizeForJsonCache(dynamic value) {
+    if (value is Timestamp) {
+      return value.toDate().toIso8601String();
+    }
+    if (value is Map) {
+      // Explicit generic + key.toString(): plain .map() without it infers
+      // Map<dynamic, dynamic>, which fails the `as Map<String, dynamic>`
+      // cast at this helper's call site above.
+      return value.map<String, dynamic>(
+          (key, val) => MapEntry(key.toString(), _sanitizeForJsonCache(val)));
+    }
+    if (value is List) {
+      return value.map(_sanitizeForJsonCache).toList();
+    }
+    return value;
   }
 
   // ✅ FIXED - Safe state notification

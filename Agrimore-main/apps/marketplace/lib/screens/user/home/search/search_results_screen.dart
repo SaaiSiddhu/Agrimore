@@ -41,7 +41,12 @@ class _SearchResultsScreenState extends State<SearchResultsScreen> {
 
     try {
       final productProvider = Provider.of<ProductProvider>(context, listen: false);
-      await productProvider.fetchProducts();
+      // Bounded — this screen substring-searches the in-memory catalog
+      // client-side, so it needs the same broad coverage as the shop
+      // screens (found via re-verifying loadProducts/fetchProducts call
+      // sites — not in the original unbounded-call-site list for this
+      // phase, but the exact same pattern).
+      await productProvider.fetchProducts(limit: 100);
 
       final products = productProvider.products ?? [];
       final query = _searchController.text.toLowerCase().trim();

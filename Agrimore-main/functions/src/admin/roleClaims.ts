@@ -4,12 +4,6 @@ import * as admin from "firebase-admin";
 const db = admin.firestore();
 const auth = admin.auth();
 
-const BOOTSTRAP_ADMIN_EMAILS = new Set([
-  "admin@agrimore.com",
-  "admin@admin.com",
-  "agrimore@gmail.com",
-]);
-
 type Role = "customer" | "seller" | "admin" | "delivery_partner" | "employee";
 
 function normalizeRole(role: unknown): Role {
@@ -30,25 +24,11 @@ async function getUserData(uid: string): Promise<admin.firestore.DocumentData | 
   return snap.exists ? snap.data() || null : null;
 }
 
-async function isBootstrapAdmin(uid: string, userData: admin.firestore.DocumentData | null): Promise<boolean> {
-  const email = String(userData?.email || "").trim().toLowerCase();
-  if (BOOTSTRAP_ADMIN_EMAILS.has(email)) return true;
-
-  try {
-    const user = await auth.getUser(uid);
-    return BOOTSTRAP_ADMIN_EMAILS.has(String(user.email || "").trim().toLowerCase());
-  } catch (error: any) {
-    if (error.code === "auth/user-not-found") return false;
-    throw error;
-  }
-}
-
 async function buildClaims(uid: string): Promise<Record<string, unknown> | null> {
   const userData = await getUserData(uid);
   if (!userData) return null;
 
   const role = normalizeRole(userData.role);
-  const bootstrapAdmin = await isBootstrapAdmin(uid, userData);
 
   const [sellerDoc, deliveryDoc, employeeDoc] = await Promise.all([
     db.collection("sellers").doc(uid).get(),
@@ -71,7 +51,7 @@ async function buildClaims(uid: string): Promise<Record<string, unknown> | null>
     (isApprovedStatus(userData.employeeStatus) ||
       isApprovedStatus(employeeDoc.data()?.status));
 
-  const isAdmin = role === "admin" || bootstrapAdmin;
+  const isAdmin = role === "admin";
 
   return {
     role: isAdmin ? "admin" : role,
@@ -103,7 +83,6 @@ async function setClaims(uid: string): Promise<Record<string, unknown> | null> {
 
 async function callerIsAdmin(uid: string): Promise<boolean> {
   const userData = await getUserData(uid);
-  if (await isBootstrapAdmin(uid, userData)) return true;
   return userData?.role === "admin";
 }
 

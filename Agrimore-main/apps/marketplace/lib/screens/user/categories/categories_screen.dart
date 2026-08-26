@@ -70,8 +70,11 @@ class _CategoriesScreenState extends State<CategoriesScreen>
       }
 
       // ✅ FIX: Load products too if empty, otherwise category grid shows 'No products'
+      // Bounded — this screen filters the in-memory catalog per-category
+      // client-side (see _getFilteredProducts), same reasoning as the shop
+      // screens.
       if (productProvider.products.isEmpty) {
-        productProvider.loadProducts();
+        productProvider.loadProducts(limit: 100);
       }
 
       _staggerController.forward();
@@ -263,7 +266,7 @@ class _CategoriesScreenState extends State<CategoriesScreen>
       onRefresh: () async {
         HapticFeedback.lightImpact();
         await Provider.of<ProductProvider>(context, listen: false)
-            .loadProducts();
+            .loadProducts(limit: 100);
       },
       color: accentColor,
       backgroundColor: isDark ? const Color(0xFF1E1E1E) : Colors.white,

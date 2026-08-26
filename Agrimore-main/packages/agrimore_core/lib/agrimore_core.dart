@@ -74,4 +74,3 @@ export 'config/admin_access_config.dart';
 export 'config/app_routing_config.dart';
 export 'config/firebase_options.dart';
 export 'config/gemini_config.dart';
-export 'config/razorpay_config.dart';

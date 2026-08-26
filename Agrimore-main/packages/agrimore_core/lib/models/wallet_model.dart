@@ -17,6 +17,10 @@ class WalletModel {
   final bool isActive;
   final DateTime createdAt;
   final DateTime updatedAt;
+  // Server-side idempotency guard for creditSignupBonus
+  // (functions/src/customer/wallet.ts) — prevents the welcome bonus from
+  // being credited more than once for the same wallet.
+  final bool signupBonusCredited;
 
   WalletModel({
     required this.id,
@@ -33,6 +37,7 @@ class WalletModel {
     required this.isActive,
     required this.createdAt,
     required this.updatedAt,
+    this.signupBonusCredited = false,
   });
 
   // Computed Properties
@@ -66,6 +71,7 @@ class WalletModel {
       isActive: true,
       createdAt: now,
       updatedAt: now,
+      signupBonusCredited: false,
     );
   }
 
@@ -105,6 +111,7 @@ class WalletModel {
       isActive: map['isActive'] ?? true,
       createdAt: _parseDateTime(map['createdAt']),
       updatedAt: _parseDateTime(map['updatedAt']),
+      signupBonusCredited: map['signupBonusCredited'] ?? false,
     );
   }
 
@@ -124,6 +131,7 @@ class WalletModel {
       'isActive': isActive,
       'createdAt': Timestamp.fromDate(createdAt),
       'updatedAt': Timestamp.fromDate(updatedAt),
+      'signupBonusCredited': signupBonusCredited,
     };
   }
 
@@ -152,6 +160,7 @@ class WalletModel {
     bool? isActive,
     DateTime? createdAt,
     DateTime? updatedAt,
+    bool? signupBonusCredited,
   }) {
     return WalletModel(
       id: id ?? this.id,
@@ -168,6 +177,7 @@ class WalletModel {
       isActive: isActive ?? this.isActive,
       createdAt: createdAt ?? this.createdAt,
       updatedAt: updatedAt ?? this.updatedAt,
+      signupBonusCredited: signupBonusCredited ?? this.signupBonusCredited,
     );
   }
 

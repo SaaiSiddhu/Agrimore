@@ -2,6 +2,7 @@ import 'dart:async';
 import 'package:flutter/foundation.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:firebase_auth/firebase_auth.dart';
+import 'package:cloud_functions/cloud_functions.dart';
 import 'package:agrimore_core/agrimore_core.dart';
 
 /// Provider for managing user wallet, transactions, and config
@@ -128,7 +129,14 @@ class WalletProvider with ChangeNotifier {
       if (doc.exists) {
         _wallet = WalletModel.fromFirestore(doc);
       } else {
-        // Create new wallet for user with personalized referral code
+        // Create new wallet for user with personalized referral code. This
+        // document creation itself stays client-side — firestore.rules only
+        // allows it when every balance-bearing field is at its zero starting
+        // value (WalletModel.empty()'s exact shape), so it carries no
+        // self-credit risk. The signup bonus itself is a real balance
+        // mutation (coins/lifetimeCoinsEarned), so it's credited by the
+        // creditSignupBonus callable instead of a direct client write, which
+        // firestore.rules would now reject anyway.
         final userName = _auth.currentUser?.displayName;
         _wallet = WalletModel.empty(userId, userName: userName);
         await _firestore
@@ -136,13 +144,12 @@ class WalletProvider with ChangeNotifier {
             .doc(userId)
             .set(_wallet!.toMap());
 
-        // Credit sign-up bonus if enabled
-        if (_config.signupBonus > 0 && _config.isCashbackEnabled) {
-          await _creditCoins(
-            _config.signupBonus,
-            TransactionSource.bonus,
-            'Welcome bonus',
-          );
+        try {
+          await FirebaseFunctions.instance
+              .httpsCallable('creditSignupBonus')
+              .call<Map<String, dynamic>>();
+        } catch (e) {
+          debugPrint('Error crediting signup bonus: $e');
         }
       }
 
@@ -197,156 +204,34 @@ class WalletProvider with ChangeNotifier {
     return _config.getBonusForAmount(amount);
   }
 
-  /// Add money to wallet (called after successful payment)
-  Future<void> addMoney(double amount, String paymentId) async {
-    if (_wallet == null) return;
-
-    final bonusCoins = getBonusForTopup(amount);
-    final newBalance = balance + amount;
-    final newCoins = coins + bonusCoins;
-
+  /// Add money to wallet after a Razorpay-verified payment. Calls the
+  /// verifyWalletTopup callable (functions/src/customer/wallet.ts) instead
+  /// of writing balance/coins directly — it independently re-verifies the
+  /// HMAC signature and the payment's captured status/amount via the
+  /// Razorpay API before crediting anything, exactly like
+  /// verifyRazorpayPayment already does for order payments. firestore.rules
+  /// rejects a direct client write to these fields regardless, so a direct
+  /// write here would simply fail with permission-denied.
+  Future<void> addMoney(
+    double amount,
+    String paymentId, {
+    required String orderId,
+    required String signature,
+  }) async {
     try {
-      // Update wallet
-      await _firestore.collection('wallets').doc(_wallet!.userId).update({
-        'balance': newBalance,
-        'coins': newCoins,
-        'lifetimeEarnings': FieldValue.increment(amount),
-        'lifetimeCoinsEarned': FieldValue.increment(bonusCoins),
-        'updatedAt': FieldValue.serverTimestamp(),
+      final callable = FirebaseFunctions.instance.httpsCallable('verifyWalletTopup');
+      await callable.call<Map<String, dynamic>>({
+        'amount': amount,
+        'paymentId': paymentId,
+        'orderId': orderId,
+        'signature': signature,
       });
-
-      // Record transaction for money
-      await _recordTransaction(
-        type: TransactionType.credit,
-        source: TransactionSource.topup,
-        amount: amount,
-        coins: 0,
-        balanceAfter: newBalance,
-        coinsAfter: newCoins,
-        description: 'Added ₹${amount.toStringAsFixed(0)} to wallet',
-        referenceId: paymentId,
-        sourceKey: 'wallet_topup',
-        status: 'success',
-      );
-
-      // Record transaction for bonus coins if any
-      if (bonusCoins > 0) {
-        await _recordTransaction(
-          type: TransactionType.credit,
-          source: TransactionSource.bonus,
-          amount: 0,
-          coins: bonusCoins,
-          balanceAfter: newBalance,
-          coinsAfter: newCoins,
-          description: 'Top-up bonus coins',
-        );
-      }
 
       await loadTransactions();
     } catch (e) {
       debugPrint('Error adding money: $e');
       rethrow;
     }
-  }
-
-  /// Use wallet for order payment
-  Future<void> useWalletForOrder({
-    required String orderId,
-    required double amount,
-    required int coinsUsed,
-  }) async {
-    if (_wallet == null) return;
-
-    final newBalance = balance - amount;
-    final newCoins = coins - coinsUsed;
-
-    try {
-      await _firestore.collection('wallets').doc(_wallet!.userId).update({
-        'balance': newBalance,
-        'coins': newCoins,
-        'lifetimeSpent': FieldValue.increment(amount),
-        'lifetimeCoinsUsed': FieldValue.increment(coinsUsed),
-        'updatedAt': FieldValue.serverTimestamp(),
-      });
-
-      if (amount > 0) {
-        await _recordTransaction(
-          type: TransactionType.debit,
-          source: TransactionSource.order,
-          amount: amount,
-          coins: 0,
-          balanceAfter: newBalance,
-          coinsAfter: newCoins,
-          description: 'Payment for order #$orderId',
-          orderId: orderId,
-        );
-      }
-
-      if (coinsUsed > 0) {
-        await _recordTransaction(
-          type: TransactionType.debit,
-          source: TransactionSource.order,
-          amount: 0,
-          coins: coinsUsed,
-          balanceAfter: newBalance,
-          coinsAfter: newCoins,
-          description: 'Coins used for order #$orderId',
-          orderId: orderId,
-        );
-      }
-
-      await loadTransactions();
-    } catch (e) {
-      debugPrint('Error using wallet for order: $e');
-      rethrow;
-    }
-  }
-
-  /// Process refund to wallet
-  Future<void> processRefund(String orderId, double amount) async {
-    if (_wallet == null) return;
-
-    final newBalance = balance + amount;
-
-    try {
-      await _firestore.collection('wallets').doc(_wallet!.userId).update({
-        'balance': newBalance,
-        'updatedAt': FieldValue.serverTimestamp(),
-      });
-
-      await _recordTransaction(
-        type: TransactionType.credit,
-        source: TransactionSource.refund,
-        amount: amount,
-        coins: 0,
-        balanceAfter: newBalance,
-        coinsAfter: coins,
-        description: 'Refund for order #$orderId',
-        orderId: orderId,
-      );
-
-      await loadTransactions();
-    } catch (e) {
-      debugPrint('Error processing refund: $e');
-      rethrow;
-    }
-  }
-
-  /// Credit cashback after order
-  Future<void> creditCashback(String orderId, double orderTotal) async {
-    if (!_config.isCashbackEnabled) return;
-    if (_wallet == null) return;
-
-    final cashbackAmount =
-        (orderTotal * _config.cashbackPercentage / 100).floor();
-    if (cashbackAmount <= 0) return;
-
-    await _creditCoins(
-      cashbackAmount,
-      TransactionSource.cashback,
-      'Cashback for order #$orderId',
-      orderId: orderId,
-    );
   }
 
   /// Validate referral code
@@ -367,66 +252,22 @@ class WalletProvider with ChangeNotifier {
     }
   }
 
-  /// Apply referral code for current user
+  /// Apply referral code for current user. Calls the redeemReferralCode
+  /// callable (functions/src/customer/wallet.ts) instead of writing
+  /// referredBy/coins directly — that also fixes a bug the direct-write
+  /// version had regardless of this hardening: it wrote the referrer's
+  /// bonus to `wallets/{referrerWallet.userId}`, a document the caller does
+  /// not own, which firestore.rules' isOwner()-only rule already rejected
+  /// before this phase — referrers have never actually received their
+  /// bonus. The Admin SDK write in redeemReferralCode bypasses that
+  /// entirely and credits both wallets in one transaction.
   Future<void> applyReferralCode(String code) async {
     if (_wallet == null || !_config.isReferralEnabled) return;
     if (_wallet!.referredBy != null) return; // Already referred
 
     try {
-      // Find referrer wallet
-      final query = await _firestore
-          .collection('wallets')
-          .where('referralCode', isEqualTo: code.toUpperCase())
-          .limit(1)
-          .get();
-
-      if (query.docs.isEmpty) return;
-
-      final referrerWallet = WalletModel.fromFirestore(query.docs.first);
-
-      // Update current user's wallet
-      await _firestore.collection('wallets').doc(_wallet!.userId).update({
-        'referredBy': code.toUpperCase(),
-        'updatedAt': FieldValue.serverTimestamp(),
-      });
-
-      // Credit referred user bonus
-      await _creditCoins(
-        _config.referredBonus,
-        TransactionSource.referral,
-        'Referral bonus',
-      );
-
-      // Credit referrer bonus
-      await _firestore.collection('wallets').doc(referrerWallet.userId).update({
-        'coins': FieldValue.increment(_config.referrerBonus),
-        'lifetimeCoinsEarned': FieldValue.increment(_config.referrerBonus),
-        'referralCount': FieldValue.increment(1),
-        'updatedAt': FieldValue.serverTimestamp(),
-      });
-
-      // Record referrer transaction
-      await _firestore.collection('wallet_transactions').add({
-        'walletId': referrerWallet.userId,
-        'userId': referrerWallet.userId,
-        'type': TransactionType.credit.name,
-        'source': TransactionSource.referral.name,
-        'amount': 0,
-        'coins': _config.referrerBonus,
-        'balanceAfter': referrerWallet.balance,
-        'coinsAfter': referrerWallet.coins + _config.referrerBonus,
-        'description': 'Referral bonus for inviting a friend',
-        'createdAt': FieldValue.serverTimestamp(),
-      });
-
-      // Create referral record
-      await _firestore.collection('referrals').add(ReferralModel.create(
-            referrerUserId: referrerWallet.userId,
-            referredUserId: _wallet!.userId,
-            referralCode: code.toUpperCase(),
-            referrerBonus: _config.referrerBonus,
-            referredBonus: _config.referredBonus,
-          ).toMap());
+      final callable = FirebaseFunctions.instance.httpsCallable('redeemReferralCode');
+      await callable.call<Map<String, dynamic>>({'code': code.toUpperCase()});
 
       await loadWallet();
     } catch (e) {
@@ -438,66 +279,6 @@ class WalletProvider with ChangeNotifier {
   /// Generate share text for referral
   String generateShareText() {
     return 'Hey! Use my referral code $referralCode to sign up on Agrimore and get ${_config.referredBonus} coins free! Download now: https://agrimore.app';
-  }
-
-  // Private helpers
-
-  Future<void> _creditCoins(
-      int amount, TransactionSource source, String description,
-      {String? orderId}) async {
-    if (_wallet == null) return;
-
-    final newCoins = coins + amount;
-
-    await _firestore.collection('wallets').doc(_wallet!.userId).update({
-      'coins': newCoins,
-      'lifetimeCoinsEarned': FieldValue.increment(amount),
-      'updatedAt': FieldValue.serverTimestamp(),
-    });
-
-    await _recordTransaction(
-      type: TransactionType.credit,
-      source: source,
-      amount: 0,
-      coins: amount,
-      balanceAfter: balance,
-      coinsAfter: newCoins,
-      description: description,
-      orderId: orderId,
-    );
-  }
-
-  Future<void> _recordTransaction({
-    required TransactionType type,
-    required TransactionSource source,
-    required double amount,
-    required int coins,
-    required double balanceAfter,
-    required int coinsAfter,
-    required String description,
-    String? orderId,
-    String? referenceId,
-    String? sourceKey,
-    String? status,
-  }) async {
-    if (_wallet == null) return;
-
-    await _firestore.collection('wallet_transactions').add({
-      'walletId': _wallet!.userId,
-      'userId': _wallet!.userId,
-      'type': type.name,
-      'source': source.name,
-      'amount': amount,
-      'coins': coins,
-      'balanceAfter': balanceAfter,
-      'coinsAfter': coinsAfter,
-      'orderId': orderId,
-      'description': description,
-      'referenceId': referenceId,
-      'sourceKey': sourceKey,
-      'status': status ?? 'success',
-      'createdAt': FieldValue.serverTimestamp(),
-    });
   }
 
   /// Refresh wallet data

@@ -1,10 +1,10 @@
-import * as functions from "firebase-functions/v1";
+import { onCall, HttpsError } from "firebase-functions/v2/https";
 import * as admin from "firebase-admin";
 import axios from "axios";
 import Razorpay from "razorpay";
 import { log } from "../common/helpers";
 
-function getRazorpayCredentials(): { keyId: string; keySecret: string } {
+export function getRazorpayCredentials(): { keyId: string; keySecret: string } {
   return {
     keyId: process.env.RAZORPAY_KEY_ID || "",
     keySecret: process.env.RAZORPAY_KEY_SECRET || "",
@@ -19,11 +19,13 @@ interface CreateOrderData {
   transfers?: { account: string; amount: number; currency: string }[];
 }
 
-export const createRazorpayOrder = functions.https.onCall(
-  async (data: CreateOrderData, context) => {
+export const createRazorpayOrder = onCall(
+  { minInstances: 0, memory: "256MiB" },
+  async (request) => {
+    const data = request.data as CreateOrderData;
     try {
-      if (!context.auth) {
-        throw new functions.https.HttpsError(
+      if (!request.auth) {
+        throw new HttpsError(
           "unauthenticated",
           "User must be authenticated to create an order"
         );
@@ -32,7 +34,7 @@ export const createRazorpayOrder = functions.https.onCall(
       const { amount, currency = "INR", receipt, notes, transfers } = data;
 
       if (!amount || amount <= 0) {
-        throw new functions.https.HttpsError(
+        throw new HttpsError(
           "invalid-argument",
           "Amount must be a positive number"
         );
@@ -42,7 +44,7 @@ export const createRazorpayOrder = functions.https.onCall(
         getRazorpayCredentials();
 
       if (!RAZORPAY_KEY_ID || !RAZORPAY_KEY_SECRET) {
-        throw new functions.https.HttpsError(
+        throw new HttpsError(
           "failed-precondition",
           "Razorpay credentials not configured. Run: firebase functions:config:set razorpay.key_id=YOUR_KEY razorpay.key_secret=YOUR_SECRET"
         );
@@ -58,7 +60,7 @@ export const createRazorpayOrder = functions.https.onCall(
         currency: currency,
         receipt: receipt || `order_${Date.now()}`,
         notes: {
-          userId: context.auth.uid,
+          userId: request.auth.uid,
           ...notes,
         },
       };
@@ -71,7 +73,7 @@ export const createRazorpayOrder = functions.https.onCall(
 
       await admin.firestore().collection("razorpay_orders").doc(order.id).set({
         orderId: order.id,
-        userId: context.auth.uid,
+        userId: request.auth.uid,
         amount: amount,
         amountPaise: order.amount,
         currency: order.currency,
@@ -89,8 +91,8 @@ export const createRazorpayOrder = functions.https.onCall(
       };
     } catch (error: any) {
       log.error(`❌ Create order error: ${error.message}`);
-      if (error instanceof functions.https.HttpsError) throw error;
-      throw new functions.https.HttpsError("internal", `Failed to create order: ${error.message}`);
+      if (error instanceof HttpsError) throw error;
+      throw new HttpsError("internal", `Failed to create order: ${error.message}`);
     }
   }
 );
@@ -108,22 +110,25 @@ interface RazorpayPayment {
   [key: string]: any;
 }
 
-export const verifyRazorpayPayment = functions.https.onCall(async (data, context) => {
+export const verifyRazorpayPayment = onCall(
+  { minInstances: 0, memory: "256MiB" },
+  async (request) => {
+  const data = request.data;
   try {
-    if (!context.auth) {
-      throw new functions.https.HttpsError(
+    if (!request.auth) {
+      throw new HttpsError(
         "unauthenticated",
         "User must be authenticated to verify a payment"
       );
     }
     const { paymentId, orderId, signature, upiId } = data;
     if (!paymentId || !orderId || !signature)
-      throw new functions.https.HttpsError("invalid-argument", "Missing Razorpay verification parameters");
+      throw new HttpsError("invalid-argument", "Missing Razorpay verification parameters");
 
     const { keyId: RAZORPAY_KEY_ID, keySecret: RAZORPAY_KEY_SECRET } =
       getRazorpayCredentials();
     if (!RAZORPAY_KEY_ID || !RAZORPAY_KEY_SECRET)
-      throw new functions.https.HttpsError("failed-precondition", "Razorpay credentials not configured");
+      throw new HttpsError("failed-precondition", "Razorpay credentials not configured");
 
     // ═══════════════════════════════════════════════════
     // 🔐 STEP 1: Verify signature using HMAC-SHA256
@@ -186,7 +191,8 @@ export const verifyRazorpayPayment = functions.https.onCall(async (data, context
     }
   } catch (error: any) {
     log.error(`❌ Razorpay verification error: ${error.message}`);
-    throw new functions.https.HttpsError("internal", error.message);
+    throw new HttpsError("internal", error.message);
   }
-});
+  }
+);
 

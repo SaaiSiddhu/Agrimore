@@ -47,7 +47,10 @@ class _WebShopScreenState extends State<WebShopScreen> {
   void _loadData() {
     WidgetsBinding.instance.addPostFrameCallback((_) {
       if (!mounted) return;
-      Provider.of<ProductProvider>(context, listen: false).loadProducts();
+      // Bounded — this screen filters the in-memory catalog client-side
+      // (see _getFilteredProducts), same as the mobile shop screen.
+      Provider.of<ProductProvider>(context, listen: false)
+          .loadProducts(limit: 100);
       Provider.of<CategoryProvider>(context, listen: false).loadCategories();
     });
   }

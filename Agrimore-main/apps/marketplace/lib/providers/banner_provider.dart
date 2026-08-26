@@ -17,6 +17,14 @@ const String _kBannersCacheTimeKey = 'cached_banners_time';
 const int _kCacheTTLMinutes = 10;
 
 class BannerProvider with ChangeNotifier {
+  // Shared by every banners query in this provider (loadBanners,
+  // _startRealtimeListener, bannersStream) so they can never drift apart.
+  // Production currently has 1 banner; a promotional carousel realistically
+  // shows a handful (confirmed via banner_slider.dart's plain
+  // CarouselSlider.builder over the full list, no pagination) — 20 is
+  // generous headroom without being unbounded.
+  static const int _bannerQueryLimit = 20;
+
   final FirebaseFirestore _firestore = FirebaseFirestore.instance;
   final FirebaseStorage _storage = FirebaseStorage.instance;
 
@@ -76,7 +84,11 @@ class BannerProvider with ChangeNotifier {
     if (!_isCacheLoaded) notifyListeners();
 
     try {
-      final snapshot = await _firestore.collection('banners').orderBy('priority').get();
+      final snapshot = await _firestore
+          .collection('banners')
+          .orderBy('priority')
+          .limit(_bannerQueryLimit)
+          .get();
       _banners = snapshot.docs.map((doc) => BannerModel.fromFirestore(doc)).toList();
       await _saveToCache(_banners);
       debugPrint('✅ NETWORK: Loaded ${_banners.length} banners');
@@ -152,6 +164,7 @@ class BannerProvider with ChangeNotifier {
       _subscription = _firestore
           .collection('banners')
           .orderBy('priority')
+          .limit(_bannerQueryLimit)
           .snapshots()
           .listen((snapshot) {
         final newList = snapshot.docs.map((doc) => BannerModel.fromFirestore(doc)).toList();
@@ -193,8 +206,13 @@ class BannerProvider with ChangeNotifier {
   }
 
   Stream<List<BannerModel>> bannersStream() {
-    return _firestore.collection('banners').orderBy('priority').snapshots().map(
-        (snapshot) => snapshot.docs.map((doc) => BannerModel.fromFirestore(doc)).toList());
+    return _firestore
+        .collection('banners')
+        .orderBy('priority')
+        .limit(_bannerQueryLimit)
+        .snapshots()
+        .map((snapshot) =>
+            snapshot.docs.map((doc) => BannerModel.fromFirestore(doc)).toList());
   }
 
   /// Upload image bytes (web-compatible)

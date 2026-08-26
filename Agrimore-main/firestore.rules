@@ -12,15 +12,6 @@ service cloud.firestore {
       return request.auth != null;
     }
 
-    function isBootstrapAdminEmail() {
-      return isAuthenticated() &&
-        request.auth.token.email in [
-          'admin@agrimore.com',
-          'admin@admin.com',
-          'agrimore@gmail.com'
-        ];
-    }
-    
     // Check if user is the owner of the document
     function isOwner(userId) {
       return isAuthenticated() && request.auth.uid == userId;
@@ -32,11 +23,10 @@ service cloud.firestore {
     
     // Check if user is an admin
     function isAdmin() {
-      return isAuthenticated() && 
+      return isAuthenticated() &&
         (
           request.auth.token.admin == true ||
           hasRole('admin') ||
-          isBootstrapAdminEmail() ||
           get(/databases/$(database)/documents/users/$(request.auth.uid)).data.role == 'admin'
         );
     }
@@ -574,12 +564,57 @@ service cloud.firestore {
     // ============================================
     // WALLETS COLLECTION
     // ============================================
+    // Finding #3 fix: previously `allow read, write: if isOwner(userId)`
+    // with zero field restriction — any authenticated user could grant
+    // themselves unlimited balance/coins with a direct client write. Every
+    // balance-bearing field is now Cloud-Functions-only (verifyWalletTopup,
+    // redeemReferralCode, creditSignupBonus in
+    // functions/src/customer/wallet.ts, all using the Admin SDK, which
+    // bypasses these rules). Wallet-document *creation* stays client-side
+    // (wallet_provider.dart's loadWallet()) since it's constrained below to
+    // WalletModel.empty()'s exact all-zero shape — a self-created wallet
+    // with a nonzero balance/coins would be the same exploit at create time
+    // instead of update time.
+    function walletBalanceFieldsAreZero() {
+      return request.resource.data.balance == 0 &&
+        request.resource.data.coins == 0 &&
+        request.resource.data.lifetimeEarnings == 0 &&
+        request.resource.data.lifetimeSpent == 0 &&
+        request.resource.data.lifetimeCoinsEarned == 0 &&
+        request.resource.data.lifetimeCoinsUsed == 0 &&
+        request.resource.data.referralCount == 0 &&
+        request.resource.data.referredBy == null &&
+        request.resource.data.signupBonusCredited == false;
+    }
+
+    function ownerCannotChangeWalletBalanceFields() {
+      return !request.resource.data.diff(resource.data).affectedKeys().hasAny([
+        'balance', 'coins', 'lifetimeEarnings', 'lifetimeSpent',
+        'lifetimeCoinsEarned', 'lifetimeCoinsUsed', 'referredBy',
+        'referralCount', 'signupBonusCredited'
+      ]);
+    }
+
     match /wallets/{userId} {
-      // User can read/write their own wallet
-      allow read, write: if isOwner(userId);
-      
-      // Admin can audit wallet balances.
-      allow read: if isAdmin();
+      // User can read their own wallet; admin can audit all balances.
+      allow read: if isOwner(userId) || isAdmin();
+
+      // Owner may bootstrap their own wallet document, but only at
+      // all-zero starting values.
+      allow create: if isOwner(userId) && walletBalanceFieldsAreZero();
+
+      // Owner may update non-balance fields (e.g. isActive); every
+      // balance-bearing field is locked to Cloud Functions only.
+      allow update: if isOwner(userId) && ownerCannotChangeWalletBalanceFields();
+
+      // No legitimate flow ever deletes a wallet document. Blocking delete
+      // entirely also closes a real, confirmed exploit: since `write`
+      // previously covered delete too, a client could delete their own
+      // wallet doc and call loadWallet() again to recreate it from scratch,
+      // re-triggering the signup-bonus credit indefinitely. With delete
+      // blocked, that recreate-to-farm path no longer exists regardless of
+      // how the bonus itself is credited.
+      allow delete: if false;
     }
     
     // ============================================
@@ -599,15 +634,32 @@ service cloud.firestore {
     }
     
     // ============================================
+    // WALLET TOPUPS COLLECTION (idempotency anchor)
+    // ============================================
+    // One document per Razorpay paymentId, written only by verifyWalletTopup
+    // (functions/src/customer/wallet.ts) after a successful credit — its
+    // existence is what prevents a retried call from double-crediting.
+    match /wallet_topups/{paymentId} {
+      allow read: if isAuthenticated() && (resource.data.uid == request.auth.uid || isAdmin());
+      allow write: if false;
+    }
+
+    // ============================================
     // REFERRALS COLLECTION
     // ============================================
     match /referrals/{referralId} {
       // Authenticated users can read (to check referral status)
       allow read: if isAuthenticated();
-      
-      // Authenticated users can create referrals
-      allow create: if isAuthenticated();
-      
+
+      // Previously `allow create: if isAuthenticated()` with no field
+      // checks — any client could fabricate a referral record naming any
+      // referrer/referred pair and bonus amounts. redeemReferralCode
+      // (functions/src/customer/wallet.ts) is now the only writer, since
+      // it's the only code path that also performs the matching wallet
+      // credits — a client-created record can no longer exist disconnected
+      // from an actual credited bonus.
+      allow create: if false;
+
       // No one can update/delete referrals
       allow update, delete: if false;
     }

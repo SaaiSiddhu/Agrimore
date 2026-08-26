@@ -70,3 +70,8 @@ export {
 // ============================================
 export { payEmployeeCommissionOnDelivery } from "./customer/employeeCommission";
 export { requestEmployeePayout } from "./customer/requestEmployeePayout";
+
+// ============================================
+// WALLET HARDENING (Finding #3)
+// ============================================
+export { verifyWalletTopup, redeemReferralCode, creditSignupBonus } from "./customer/wallet";

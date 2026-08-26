@@ -6,6 +6,7 @@ import 'package:font_awesome_flutter/font_awesome_flutter.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:firebase_auth/firebase_auth.dart';
 import 'package:cached_network_image/cached_network_image.dart';
+import 'package:cloud_functions/cloud_functions.dart';
 import 'package:agrimore_ui/agrimore_ui.dart';
 import '../../../providers/cart_provider.dart';
 import '../../../providers/coupon_provider.dart';
@@ -91,6 +92,12 @@ class _MobileCartScreenState extends State<MobileCartScreen>
   // Payment method
   String _selectedPaymentMethod = 'Razorpay'; // Default to Razorpay
 
+  // B2B checkout: employee attribution code, required when the cart's
+  // CartProvider.cartMode is 'B2B'. Mirrors payment_method_screen.dart's
+  // _employeeCodeController.
+  final TextEditingController _employeeCodeController =
+      TextEditingController();
+
   // Wallet & Checkout
   bool _useWalletBalance = false;
   bool _isPlacingOrder = false;
@@ -115,9 +122,17 @@ class _MobileCartScreenState extends State<MobileCartScreen>
 
     WidgetsBinding.instance.addPostFrameCallback((_) {
       context.read<CartProvider>().loadCart();
+      // "You might also like" (_buildYouMightAlsoLike) only ever shows up to
+      // 9 products (6 shown + 3 preview), filtered by category overlap with
+      // the cart — it never needs the full catalog. 30 is a deliberate
+      // middle ground: small enough to be real savings over an unbounded
+      // fetch, large enough to have a reasonable chance of covering
+      // whichever categories are actually in the user's cart (an exact
+      // category-scoped query would be better but is a larger change than
+      // this phase's footprint — see the completion report).
       context
           .read<ProductProvider>()
-          .loadProducts(); // Load for "You might also like"
+          .loadProducts(limit: 30); // Load for "You might also like"
       context
           .read<AddressProvider>()
           .loadAddresses(); // Load addresses for selection list
@@ -142,6 +157,7 @@ class _MobileCartScreenState extends State<MobileCartScreen>
     _audioRecorder.dispose();
     _audioPlayer.dispose();
     _recordTimer?.cancel();
+    _employeeCodeController.dispose();
     super.dispose();
   }
 
@@ -523,8 +539,16 @@ class _MobileCartScreenState extends State<MobileCartScreen>
                 ),
 
                 // Sticky Bottom Bar
+                // Passes the true chargeable total (subtotal - coupon +
+                // delivery, no wallet subtraction, no tip) — this is what
+                // createOrder.ts will actually verify/charge. finalTotal
+                // alone subtracts a client-side wallet discount that
+                // createOrder doesn't know about (see the comment on
+                // _createOrderInFirestore for why).
                 _buildBlinkitBottomBar(
-                  pricingData['finalTotal'] ?? 0.0,
+                  (pricingData['finalTotal'] ?? 0.0) +
+                      (pricingData['walletDiscount'] ?? 0.0),
+                  cartProvider.cartMode,
                   isDark,
                   accentColor,
                   cardColor,
@@ -3506,6 +3530,18 @@ class _MobileCartScreenState extends State<MobileCartScreen>
     setState(() => _isPlacingOrder = false);
   }
 
+  /// Calls the server-validated `createOrder` callable
+  /// (functions/src/customer/createOrder.ts) instead of writing order
+  /// documents directly to Firestore. `orders`' firestore.rules now has
+  /// `allow create: if false` — any remaining direct client write here would
+  /// simply fail with permission-denied, which is exactly what was breaking
+  /// checkout via this screen. Mirrors payment_method_screen.dart's
+  /// `_createSellerScopedOrders`: only productId/quantity are sent, never
+  /// prices or totals. orderMode is derived from CartProvider.cartMode (set
+  /// at add-to-cart time) rather than MarketModeProvider.isB2B, since it
+  /// reflects what's actually in the cart rather than the toggle's current
+  /// state — see the comment on _buildBlinkitBottomBar for the known gap
+  /// where cartMode can be null on a reloaded cart with items.
   Future<void> _createOrderInFirestore({
     required AddressModel address,
     required String paymentStatus,
@@ -3519,104 +3555,81 @@ class _MobileCartScreenState extends State<MobileCartScreen>
 
       final cartProvider = context.read<CartProvider>();
       final couponProvider = context.read<CouponProvider>();
-      final walletProvider = context.read<WalletProvider>();
 
-      final pricing = _calculateAdvancedPricing(cartProvider, couponProvider);
-      final subtotal = pricing['subtotal'] ?? cartProvider.subtotal;
-      final couponDiscount = pricing['couponDiscount'] ?? 0.0;
-      final shippingFee = pricing['shippingFee'] ?? 0.0;
-      final expressDeliveryFee = pricing['expressDeliveryFee'] ?? 0.0;
-      final walletDiscount = pricing['walletDiscount'] ?? 0.0;
-      final deliveryCharge = shippingFee + expressDeliveryFee;
-      final total = ((pricing['finalTotal'] ?? 0.0) + _selectedTipAmount)
-          .clamp(0.0, double.infinity)
-          .toDouble();
-
-      if (cartProvider.items.isNotEmpty) {
-        final createdOrders = await _createSellerSplitOrders(
-          userId: userId,
-          address: address,
-          items: cartProvider.items,
-          subtotal: subtotal,
-          couponDiscount: couponDiscount,
-          deliveryCharge: deliveryCharge,
-          total: total,
-          walletDiscount: walletDiscount,
-          paymentStatus: paymentStatus,
-          razorpayOrderId: razorpayOrderId,
-          razorpayPaymentId: razorpayPaymentId,
-          razorpaySignature: razorpaySignature,
-          couponCode: couponProvider.appliedCoupon?.code,
-        );
-
-        if (_useWalletBalance && walletDiscount > 0) {
-          await walletProvider.useWalletForOrder(
-            orderId: createdOrders.checkoutGroupId,
-            amount: walletDiscount,
-            coinsUsed: 0,
-          );
-        }
-
-        await cartProvider.clearCart();
-        couponProvider.removeCoupon();
-
-        if (!mounted) return;
-
-        setState(() => _isPlacingOrder = false);
-        HapticFeedback.heavyImpact();
-
-        Navigator.pushAndRemoveUntil(
-          context,
-          MaterialPageRoute(
-            builder: (_) =>
-                OrderSuccessScreen(order: createdOrders.orders.first),
-          ),
-          (route) => route.isFirst,
-        );
-        return;
+      if (cartProvider.items.isEmpty) {
+        throw Exception('Cart is empty');
       }
 
-      final orderId = FirebaseFirestore.instance.collection('orders').doc().id;
+      final isB2B = cartProvider.cartMode == 'B2B';
+      final employeeCode = _employeeCodeController.text.trim();
+      if (isB2B && employeeCode.isEmpty) {
+        throw Exception('Employee ID is required for B2B orders');
+      }
 
-      // Generate a unique delivery verification code for secure handover
-      final verificationCode = OrderModel.generateVerificationCode();
-      debugPrint(
-          '🔐 Generated delivery verification code: $verificationCode for order $orderId');
+      final pricing = _calculateAdvancedPricing(cartProvider, couponProvider);
+      final shippingFee = pricing['shippingFee'] ?? 0.0;
+      final expressDeliveryFee = pricing['expressDeliveryFee'] ?? 0.0;
+      final deliveryCharge = shippingFee + expressDeliveryFee;
+      // deliveryCharge/couponCode are sent below and createOrder.ts
+      // re-derives its own grandTotal server-side (subtotal - discount +
+      // deliveryCharge + tax) from them — this function deliberately never
+      // computes or sends a total. The amount actually charged via Razorpay
+      // (for non-COD orders) is fixed *before* this function runs, at the
+      // "Pay"/"Place Order" button's call to _buildBlinkitBottomBar/
+      // _placeOrder. It must equal what createOrder computes, so it excludes
+      // the client-side wallet discount and the tip amount, neither of which
+      // createOrder.ts knows how to validate. Wallet debit and tip support
+      // are both out of scope for this fix — see the comments where
+      // _useWalletBalance and _selectedTipAmount are read elsewhere in this
+      // file.
 
-      final order = OrderModel(
-        id: orderId,
-        userId: userId,
-        orderNumber: OrderModel.generateOrderNumber(),
-        items: cartProvider.items,
-        deliveryAddress: address,
-        subtotal: subtotal,
-        discount: couponDiscount,
-        deliveryCharge: deliveryCharge,
-        tax: 0.0,
-        total: total,
-        paymentMethod: _selectedPaymentMethod,
-        paymentStatus: paymentStatus,
-        orderStatus: 'pending',
-        razorpayOrderId: razorpayOrderId,
-        razorpayPaymentId: razorpayPaymentId,
-        razorpaySignature: razorpaySignature,
-        couponCode: couponProvider.appliedCoupon?.code,
-        createdAt: DateTime.now(),
-        deliveryVerificationCode: verificationCode,
-      );
+      // paymentMethod values in this screen's UI are 'COD'/'Razorpay'
+      // (display casing); createOrder.ts compares paymentMethod against the
+      // literal lowercase string "cod" to decide whether Razorpay
+      // verification is required. Sending the raw display-cased value would
+      // make a COD order look like a non-COD one server-side and fail with
+      // "Razorpay payment details are required for non-COD orders".
+      final normalizedPaymentMethod = _selectedPaymentMethod.toLowerCase();
 
-      await FirebaseFirestore.instance
-          .collection('orders')
-          .doc(orderId)
-          .set(order.toMap());
+      final callable = FirebaseFunctions.instance.httpsCallable('createOrder');
+      final result = await callable.call<Map<String, dynamic>>({
+        'items': cartProvider.items
+            .map((item) => {
+                  'productId': item.productId,
+                  'quantity': item.quantity,
+                })
+            .toList(),
+        'orderMode': isB2B ? 'B2B' : 'B2C',
+        if (isB2B) 'employeeCode': employeeCode,
+        'deliveryAddress': address.toMap(),
+        'paymentMethod': normalizedPaymentMethod,
+        if (razorpayOrderId != null) 'razorpayOrderId': razorpayOrderId,
+        if (razorpayPaymentId != null) 'razorpayPaymentId': razorpayPaymentId,
+        if (razorpaySignature != null) 'razorpaySignature': razorpaySignature,
+        if (couponProvider.appliedCoupon?.code != null)
+          'couponCode': couponProvider.appliedCoupon!.code,
+        'deliveryCharge': deliveryCharge,
+        'tax': 0.0,
+      });
 
-      // Deduct wallet balance if used
-      if (_useWalletBalance && walletDiscount > 0) {
-        await walletProvider.useWalletForOrder(
-          orderId: orderId,
-          amount: walletDiscount,
-          coinsUsed: 0, // We're using balance, not coins
-        );
+      final data = result.data;
+      if (data['success'] != true) {
+        throw Exception('Failed to create order');
+      }
+
+      final createdRefs = (data['orders'] as List).cast<Map<dynamic, dynamic>>();
+      final db = FirebaseFirestore.instance;
+      final createdOrders = <OrderModel>[];
+      for (final ref in createdRefs) {
+        final orderId = ref['orderId'] as String;
+        final doc = await db.collection('orders').doc(orderId).get();
+        if (doc.exists) {
+          createdOrders.add(OrderModel.fromMap(doc.data()!, doc.id));
+        }
+      }
+
+      if (createdOrders.isEmpty) {
+        throw Exception('Order creation failed');
       }
 
       await cartProvider.clearCart();
@@ -3629,7 +3642,9 @@ class _MobileCartScreenState extends State<MobileCartScreen>
 
       Navigator.pushAndRemoveUntil(
         context,
-        MaterialPageRoute(builder: (_) => OrderSuccessScreen(order: order)),
+        MaterialPageRoute(
+          builder: (_) => OrderSuccessScreen(order: createdOrders.first),
+        ),
         (route) => route.isFirst,
       );
     } catch (e) {
@@ -3637,134 +3652,6 @@ class _MobileCartScreenState extends State<MobileCartScreen>
       _showSnackBar('Error creating order: ${e.toString()}', isError: true);
       setState(() => _isPlacingOrder = false);
     }
-  }
-
-  Future<_SplitOrderResult> _createSellerSplitOrders({
-    required String userId,
-    required AddressModel address,
-    required List<CartItemModel> items,
-    required double subtotal,
-    required double couponDiscount,
-    required double deliveryCharge,
-    required double total,
-    required double walletDiscount,
-    required String paymentStatus,
-    String? razorpayOrderId,
-    String? razorpayPaymentId,
-    String? razorpaySignature,
-    String? couponCode,
-  }) async {
-    final itemsBySeller = await _groupCartItemsBySeller(items);
-    if (itemsBySeller.isEmpty) {
-      throw Exception('No seller found for cart items');
-    }
-
-    final checkoutGroupId =
-        FirebaseFirestore.instance.collection('orders').doc().id;
-    final totalItemSubtotal = items.fold<double>(
-      0,
-      (sum, item) => sum + _cartItemSubtotal(item),
-    );
-    final batch = FirebaseFirestore.instance.batch();
-    final createdOrders = <OrderModel>[];
-    var sellerOrderIndex = 0;
-
-    for (final entry in itemsBySeller.entries) {
-      sellerOrderIndex++;
-      final sellerId = entry.key;
-      final sellerItems = entry.value;
-      final sellerSubtotal = sellerItems.fold<double>(
-        0,
-        (sum, item) => sum + _cartItemSubtotal(item),
-      );
-      final ratio = totalItemSubtotal > 0
-          ? sellerSubtotal / totalItemSubtotal
-          : 1 / itemsBySeller.length;
-      final sellerDiscount = couponDiscount * ratio;
-      final sellerDeliveryCharge = deliveryCharge * ratio;
-      final sellerTotal =
-          (sellerSubtotal - sellerDiscount + sellerDeliveryCharge)
-              .clamp(0.0, double.infinity)
-              .toDouble();
-
-      final orderRef = FirebaseFirestore.instance.collection('orders').doc();
-      final order = OrderModel(
-        id: orderRef.id,
-        userId: userId,
-        sellerId: sellerId,
-        orderNumber: OrderModel.generateOrderNumber(),
-        items: sellerItems,
-        deliveryAddress: address,
-        subtotal: sellerSubtotal,
-        discount: sellerDiscount,
-        deliveryCharge: sellerDeliveryCharge,
-        tax: 0.0,
-        total: sellerTotal,
-        paymentMethod: _selectedPaymentMethod,
-        paymentStatus: paymentStatus,
-        orderStatus: 'pending',
-        razorpayOrderId: razorpayOrderId,
-        razorpayPaymentId: razorpayPaymentId,
-        razorpaySignature: razorpaySignature,
-        couponCode: couponCode,
-        createdAt: DateTime.now(),
-        deliveryVerificationCode: OrderModel.generateVerificationCode(),
-      );
-
-      batch.set(orderRef, {
-        ...order.toMap(),
-        'checkoutGroupId': checkoutGroupId,
-        'sellerOrderIndex': sellerOrderIndex,
-        'sellerOrderCount': itemsBySeller.length,
-        'parentOrderSubtotal': subtotal,
-        'parentOrderTotal': total,
-        'walletDiscount': walletDiscount * ratio,
-      });
-      batch.set(orderRef.collection('timeline').doc(), {
-        'status': 'pending',
-        'title': 'Order Placed',
-        'description': 'Order placed successfully',
-        'timestamp': FieldValue.serverTimestamp(),
-      });
-      createdOrders.add(order);
-    }
-
-    await batch.commit();
-    return _SplitOrderResult(
-      checkoutGroupId: checkoutGroupId,
-      orders: createdOrders,
-    );
-  }
-
-  double _cartItemSubtotal(CartItemModel item) => item.price * item.quantity;
-
-  Future<Map<String, List<CartItemModel>>> _groupCartItemsBySeller(
-    List<CartItemModel> items,
-  ) async {
-    final grouped = <String, List<CartItemModel>>{};
-    for (final item in items) {
-      final sellerId = await _resolveSellerIdForItem(item);
-      grouped.putIfAbsent(sellerId, () => <CartItemModel>[]).add(
-            item.sellerId == sellerId
-                ? item
-                : item.copyWith(sellerId: sellerId),
-          );
-    }
-    return grouped;
-  }
-
-  Future<String> _resolveSellerIdForItem(CartItemModel item) async {
-    if (item.sellerId.trim().isNotEmpty) return item.sellerId.trim();
-
-    final productDoc = await FirebaseFirestore.instance
-        .collection('products')
-        .doc(item.productId)
-        .get();
-    final sellerId = productDoc.data()?['sellerId']?.toString().trim() ?? '';
-    if (sellerId.isEmpty) {
-      throw Exception('Seller not found for ${item.productName}');
-    }
-    return sellerId;
   }
 
   void _showSnackBar(String message, {bool isError = false}) {
@@ -4332,8 +4219,17 @@ class _MobileCartScreenState extends State<MobileCartScreen>
   }
 
   // --- Sticky Bottom Bar ---
-  Widget _buildBlinkitBottomBar(
-      double total, bool isDark, Color accentColor, Color cardColor) {
+  Widget _buildBlinkitBottomBar(double total, String? cartMode, bool isDark,
+      Color accentColor, Color cardColor) {
+    // cartMode ('B2B'/'B2C'/null) comes from CartProvider.cartMode, set at
+    // add-to-cart time — it reflects what's actually in the cart, unlike
+    // MarketModeProvider.isB2B which only reflects the toggle's current
+    // state and could have changed since items were added. NOTE: cartMode
+    // can be null even with items in the cart if CartProvider was recreated
+    // and reloaded a persisted cart from Firestore (loadCart() never
+    // restores cartMode — it's in-memory-only) — see the completion report
+    // for this phase for why null is treated as B2C here rather than fixed.
+    final isB2B = cartMode == 'B2B';
     return Consumer<AddressProvider>(
       builder: (context, addressProvider, _) {
         final address = addressProvider.hasAddresses
@@ -4480,6 +4376,24 @@ class _MobileCartScreenState extends State<MobileCartScreen>
                     ),
                   ),
                 ),
+                if (isB2B) ...[
+                  const SizedBox(height: 10),
+                  TextField(
+                    controller: _employeeCodeController,
+                    decoration: InputDecoration(
+                      labelText: 'Employee ID *',
+                      hintText: 'Enter the sales employee code',
+                      isDense: true,
+                      prefixIcon: const Icon(Icons.badge_outlined, size: 20),
+                      border: OutlineInputBorder(
+                        borderRadius: BorderRadius.circular(10),
+                      ),
+                      filled: true,
+                      fillColor:
+                          isDark ? const Color(0xFF252525) : Colors.white,
+                    ),
+                  ),
+                ],
                 const SizedBox(height: 10),
 
                 // Payment Buttons Row
@@ -4543,8 +4457,24 @@ class _MobileCartScreenState extends State<MobileCartScreen>
                         onPressed: _isPlacingOrder || !hasAddress
                             ? null
                             : () {
-                                _placeOrder(
-                                    total + _selectedTipAmount, address!);
+                                if (isB2B &&
+                                    _employeeCodeController.text
+                                        .trim()
+                                        .isEmpty) {
+                                  _showSnackBar(
+                                      'Employee ID is required for B2B orders',
+                                      isError: true);
+                                  return;
+                                }
+                                // `total` here is already the true
+                                // chargeable amount (see the call site of
+                                // _buildBlinkitBottomBar) — tip is
+                                // intentionally not added; createOrder.ts has
+                                // no tip field, and including it would make
+                                // the Razorpay-captured amount diverge from
+                                // createOrder's server-computed grandTotal,
+                                // failing payment verification.
+                                _placeOrder(total, address!);
                               },
                         style: ElevatedButton.styleFrom(
                           backgroundColor: accentColor,
@@ -5839,14 +5769,4 @@ class _MobileCartScreenState extends State<MobileCartScreen>
       ),
     );
   }
-}
-
-class _SplitOrderResult {
-  final String checkoutGroupId;
-  final List<OrderModel> orders;
-
-  const _SplitOrderResult({
-    required this.checkoutGroupId,
-    required this.orders,
-  });
 }

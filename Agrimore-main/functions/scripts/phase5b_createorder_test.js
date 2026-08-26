@@ -26,15 +26,15 @@ async function main() {
     images: [],
   });
 
-  const result = await wrapped(
-    {
+  const result = await wrapped({
+    data: {
       items: [{ productId: "phase5b-test-product", quantity: 3 }],
       orderMode: "B2C",
       paymentMethod: "cod",
       deliveryAddress: { name: "Test Customer", phone: "9999999999" },
     },
-    { auth: { uid: "phase5b-test-customer", token: {} } }
-  );
+    auth: { uid: "phase5b-test-customer", token: {} },
+  });
 
   console.log("=== PHASE 5b createOrder EMULATOR TEST ===");
   console.log("createOrder() result:", JSON.stringify(result, null, 2));

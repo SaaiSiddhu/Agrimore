@@ -206,7 +206,11 @@ class _MobileShopScreenState extends State<MobileShopScreen>
   void _loadData() {
     WidgetsBinding.instance.addPostFrameCallback((_) {
       if (!mounted) return;
-      Provider.of<ProductProvider>(context, listen: false).loadProducts();
+      // Bounded — this screen filters/searches the in-memory catalog
+      // client-side (see _getFilteredProducts), so it needs broad coverage
+      // of the catalog, not the entire collection unconditionally.
+      Provider.of<ProductProvider>(context, listen: false)
+          .loadProducts(limit: 100);
       Provider.of<CategoryProvider>(context, listen: false).loadCategories();
     });
   }
@@ -337,7 +341,7 @@ class _MobileShopScreenState extends State<MobileShopScreen>
                         onRefresh: () async {
                           setState(() => _isRefreshing = true);
                           HapticFeedback.mediumImpact();
-                          await productProvider.loadProducts();
+                          await productProvider.loadProducts(limit: 100);
                           await categoryProvider.loadCategories();
                           setState(() => _isRefreshing = false);
                         },
