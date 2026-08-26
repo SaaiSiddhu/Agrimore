@@ -86,3 +86,8 @@ release-builds/
 build_log.txt
 *_analyze_latest.txt
 flutter_0*.png
+
+# Secret/keystore backup archives — NEVER commit these
+AGRIMORE_PLAYSTORE_AND_SECRET_KEYS_BACKUP*
+*_SECRET_KEYS_BACKUP*
+key.properties

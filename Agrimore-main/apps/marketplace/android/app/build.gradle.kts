@@ -28,8 +28,21 @@ android {
         minSdk = 24  // Android 7.0
         targetSdk = 35  // Android 15 (required by Play Store)
         
-        versionCode = 1
-        versionName = "1.0.0"
+        // Sourced from pubspec.yaml's `version:` (the `+N` build number becomes
+        // versionCode, the part before `+` becomes versionName) so a release
+        // bump happens in exactly one place instead of drifting between
+        // pubspec and Gradle. Falls back to the previous hardcoded values only
+        // if Flutter didn't inject them, so a bare `gradlew` invocation outside
+        // the Flutter toolchain still builds.
+        //
+        // NOTE: Play Console rejects any upload whose versionCode is not
+        // strictly greater than the last published one. pubspec is currently
+        // at +100, deliberately jumped clear of the old hardcoded `1` and of
+        // any hand-managed count from earlier releases. If a previously
+        // published build already used a versionCode >= 100, raise the `+N` in
+        // apps/marketplace/pubspec.yaml — not this file.
+        versionCode = flutter.versionCode
+        versionName = flutter.versionName
         
         multiDexEnabled = true
         vectorDrawables.useSupportLibrary = true
