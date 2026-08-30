@@ -33,6 +33,7 @@ import 'providers/search_provider.dart';
 import 'providers/bestseller_provider.dart';
 import 'providers/category_section_provider.dart';
 import 'providers/wallet_provider.dart';
+import 'providers/product_credit_provider.dart';
 import 'providers/section_banner_provider.dart';
 import 'providers/seller_provider.dart';
 import 'providers/shop_entry_provider.dart';
@@ -142,6 +143,7 @@ void main() async {
         ChangeNotifierProvider(create: (_) => BestsellerProvider()),
         ChangeNotifierProvider(create: (_) => CategorySectionProvider()),
         ChangeNotifierProvider(create: (_) => WalletProvider()),
+        ChangeNotifierProvider(create: (_) => ProductCreditProvider()),
         ChangeNotifierProvider(create: (_) => SectionBannerProvider()),
         ChangeNotifierProvider(create: (_) => SellerProvider()),
         ChangeNotifierProvider(create: (_) => ShopEntryProvider()),

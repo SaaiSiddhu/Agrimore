@@ -62,6 +62,7 @@ import '../screens/user/wallet/wallet_screen.dart';
 import '../screens/user/wallet/add_money_screen.dart';
 import '../screens/user/wallet/transaction_history_screen.dart';
 import '../screens/user/wallet/referral_screen.dart';
+import '../screens/user/wallet/product_credit_screen.dart';
 
 // Notifications
 import '../screens/user/notifications/notifications_screen.dart';
@@ -212,6 +213,10 @@ class AppRoutes {
   static const String addMoney = '/wallet/add-money';
   static const String transactionHistory = '/wallet/history';
   static const String referral = '/wallet/referral';
+  // Phase E: AgriMore Product Credit history — a separate route from
+  // transactionHistory above, deliberately, since credit history is
+  // never interleaved into the cash transaction list.
+  static const String productCredit = '/wallet/product-credit';
 
   // ============================================
   // ROUTE GENERATOR
@@ -578,6 +583,9 @@ class AppRoutes {
         case referral:
           return _buildRoute(
               const AuthGuard(child: ReferralScreen()), settings);
+        case productCredit:
+          return _buildRoute(
+              const AuthGuard(child: ProductCreditScreen()), settings);
 
         // Default
         default:

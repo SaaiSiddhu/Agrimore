@@ -4,12 +4,27 @@ import 'package:provider/provider.dart';
 import 'package:agrimore_ui/agrimore_ui.dart';
 
 import '../../../providers/wallet_provider.dart';
+import '../../../providers/product_credit_provider.dart';
 import '../../../providers/theme_provider.dart';
 import '../../../app/routes.dart';
 import 'widgets/wallet_balance_card.dart';
 import 'widgets/transaction_tile.dart';
+import 'widgets/product_credit_card.dart';
 
-/// Main wallet dashboard screen
+/// Main wallet dashboard screen.
+///
+/// Phase E: presents TWO legally and functionally distinct instruments,
+/// always as separate sections, NEVER summed into one figure —
+/// `wallets/{uid}.balance` (cash-like, funded by real Razorpay top-ups)
+/// and AgriMore Product Credit (non-convertible store credit, redeemable
+/// only towards AgriMore products, never withdrawable as cash). A
+/// combined "total balance" would make credit indistinguishable from
+/// cash and is exactly what this design must never do. The Product
+/// Credit section renders only when
+/// `ProductCreditProvider.isEnabled` is true (fails closed on every
+/// feature-flag/BenefitFlagService error) — with the flags off, as they
+/// are in every environment today, this screen is a visual no-op versus
+/// its pre-Phase-E layout.
 class WalletScreen extends StatefulWidget {
   const WalletScreen({Key? key}) : super(key: key);
 
@@ -26,8 +41,14 @@ class _WalletScreenState extends State<WalletScreen> {
 
   Future<void> _loadData() async {
     final walletProvider = Provider.of<WalletProvider>(context, listen: false);
+    final productCreditProvider =
+        Provider.of<ProductCreditProvider>(context, listen: false);
     await walletProvider.loadWallet();
     await walletProvider.loadTransactions(limit: 5);
+    // Fails closed internally — a no-op (zero Firestore reads for credit
+    // data) whenever the benefit-program flag is off, which is every
+    // environment today.
+    await productCreditProvider.init();
   }
 
   @override
@@ -90,7 +111,41 @@ class _WalletScreenState extends State<WalletScreen> {
 
                   const SizedBox(height: 28),
 
-                  // Recent Transactions
+                  // AgriMore Product Credit — a SEPARATE section, never
+                  // merged with the cash wallet above. Consumer here
+                  // (rather than reading the outer Consumer<WalletProvider>
+                  // builder's provider) so a credit-only update doesn't
+                  // rebuild the whole scroll view, and so this section
+                  // renders nothing at all — not even an empty
+                  // SizedBox.shrink() placeholder gap beyond the spacing
+                  // already used by the cash sections — when disabled.
+                  Consumer<ProductCreditProvider>(
+                    builder: (context, creditProvider, _) {
+                      if (!creditProvider.isEnabled) {
+                        return const SizedBox.shrink();
+                      }
+                      return Column(
+                        crossAxisAlignment: CrossAxisAlignment.start,
+                        children: [
+                          ProductCreditCard(
+                            available: creditProvider.available,
+                            onHold: creditProvider.onHold,
+                            pending: creditProvider.pending,
+                            isDark: isDark,
+                            hasLedgerError: creditProvider.hasLedgerError,
+                            onViewHistory: () =>
+                                _navigateTo(AppRoutes.productCredit),
+                          ),
+                          const SizedBox(height: 28),
+                        ],
+                      );
+                    },
+                  ),
+
+                  // Recent Transactions — CASH ONLY. Product Credit's own
+                  // history lives on its own screen (product_credit_screen.dart),
+                  // reached via the card above — never interleaved into
+                  // this list.
                   _buildRecentTransactions(walletProvider, isDark, cardColor, accentColor),
 
                   const SizedBox(height: 28),
