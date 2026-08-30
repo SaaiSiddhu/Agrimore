@@ -169,9 +169,17 @@ export const verifyRazorpayPayment = onCall(
     const isValid = payment.status === "captured";
 
     if (isValid) {
+      // Phase 14, Workstream 4 fix: userId binds this verified payment to
+      // the user who actually made it. Without it, createOrder.ts could
+      // only check that SOME captured payment with this id/orderId/amount
+      // existed — not that IT belonged to the caller — letting any user's
+      // razorpayPaymentId satisfy any other user's order of the same
+      // amount. Nothing else about the HMAC/live-API verification above
+      // changes.
       await admin.firestore().collection("verified_payments").doc(paymentId).set({
         orderId,
         paymentId,
+        userId: request.auth.uid,
         signatureVerified: true,
         upiId: upiId || null,
         verifiedAt: admin.firestore.FieldValue.serverTimestamp(),

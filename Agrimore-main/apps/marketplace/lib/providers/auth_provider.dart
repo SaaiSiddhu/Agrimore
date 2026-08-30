@@ -326,7 +326,7 @@ class AuthProvider with ChangeNotifier {
   // ============================================
   // SEND PHONE OTP
   // ============================================
-  Future<bool> sendPhoneOTP(String phone) async {
+  Future<bool> sendPhoneOTP(String phone, {String channel = 'sms'}) async {
     try {
       if (isLocked) {
         _error = 'Too many attempts. Please try again later.';
@@ -338,9 +338,9 @@ class AuthProvider with ChangeNotifier {
       _error = null;
       notifyListeners();
 
-      debugPrint('📱 Sending OTP to: $phone');
+      debugPrint('📱 Sending OTP to: $phone (channel: $channel)');
 
-      await _authService.sendPhoneOTP(phone);
+      await _authService.sendPhoneOTP(phone, channel: channel);
 
       debugPrint('✅ OTP sent');
 
@@ -413,6 +413,83 @@ class AuthProvider with ChangeNotifier {
       _error = e.toString().replaceAll('Exception: ', '');
       _incrementFailedAttempts();
       await _logAuthEvent('phone_login', false, phone, error: e.toString());
+      _isLoading = false;
+      notifyListeners();
+      return false;
+    }
+  }
+
+  // ============================================
+  // PROFILE COMPLETION (Phase 16)
+  // ============================================
+  bool get needsProfileCompletion => isLoggedIn && _currentUser?.profileCompleted != true;
+
+  Future<bool> sendEmailOtpForProfile(String email) async {
+    try {
+      _error = null;
+      notifyListeners();
+      await _authService.sendEmailOtpForProfile(email);
+      return true;
+    } on AuthException catch (e) {
+      _error = e.message;
+      notifyListeners();
+      return false;
+    } catch (e) {
+      _error = e.toString().replaceAll('Exception: ', '');
+      notifyListeners();
+      return false;
+    }
+  }
+
+  Future<bool> verifyEmailOtpForProfile({required String email, required String otp}) async {
+    try {
+      _error = null;
+      notifyListeners();
+      await _authService.verifyEmailOtpForProfile(email: email, otp: otp);
+      return true;
+    } on AuthException catch (e) {
+      _error = e.message;
+      notifyListeners();
+      return false;
+    } catch (e) {
+      _error = e.toString().replaceAll('Exception: ', '');
+      notifyListeners();
+      return false;
+    }
+  }
+
+  Future<bool> completeUserProfile({
+    required String name,
+    required String email,
+    required DateTime dateOfBirth,
+    required String gender,
+  }) async {
+    try {
+      _isLoading = true;
+      _error = null;
+      notifyListeners();
+
+      _currentUser = await _authService.completeUserProfile(
+        name: name,
+        email: email,
+        dateOfBirth: dateOfBirth,
+        gender: gender,
+      );
+
+      await _logAuthEvent('profile_completion', true, email);
+
+      _isLoading = false;
+      notifyListeners();
+      return true;
+    } on AuthException catch (e) {
+      _error = e.message;
+      await _logAuthEvent('profile_completion', false, email, error: e.message);
+      _isLoading = false;
+      notifyListeners();
+      return false;
+    } catch (e) {
+      _error = e.toString().replaceAll('Exception: ', '');
+      await _logAuthEvent('profile_completion', false, email, error: e.toString());
       _isLoading = false;
       notifyListeners();
       return false;

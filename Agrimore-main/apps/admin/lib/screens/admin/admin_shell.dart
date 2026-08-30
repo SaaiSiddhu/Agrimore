@@ -84,6 +84,20 @@ class _AdminShellState extends State<AdminShell> {
       'Employee Payouts',
       AdminRoutes.employeePayouts,
     ),
+    // Customer Product Benefit Program compliance/feature-flag gate
+    // (Phase A). Appended at the end for the same reason as Employees/
+    // Employee Payouts above — inserting mid-list would shift the indices
+    // _getSubtitle() and _buildBottomNav() hardcode.
+    _NavItem(
+      Icons.policy_rounded,
+      'Benefit Compliance',
+      AdminRoutes.benefitComplianceControl,
+    ),
+    _NavItem(
+      Icons.flag_rounded,
+      'Benefit Feature Flags',
+      AdminRoutes.benefitFeatureFlags,
+    ),
   ];
 
   int get _currentIndex {

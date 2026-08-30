@@ -1,5 +1,25 @@
 import 'package:cloud_firestore/cloud_firestore.dart';
 
+// Phase 16, Workstream 1: allowed `gender` values for the profile-completion
+// flow. A defined, closed set — validated server-side too
+// (completeUserProfile.ts) — chosen to include a non-binary option and a
+// prefer-not-to-say option rather than a binary-only choice.
+const List<String> kAllowedGenders = [
+  'male',
+  'female',
+  'non_binary',
+  'prefer_not_to_say',
+];
+
+// Phase 16, Workstream 1: minimum age enforced at profile completion. The
+// owner did not specify a value, so this is a conservative, easily-changed
+// default (India's Consumer Protection Act / most marketplace ToS use 18
+// as the age of contractual capacity) rather than scattered inline logic —
+// change this one constant to adjust the policy. The authoritative check
+// lives server-side in completeUserProfile.ts; this copy is for client-side
+// UX validation only.
+const int kMinimumProfileAgeYears = 18;
+
 class UserModel {
   // ✅ Core Fields (Immutable)
   final String uid;
@@ -13,6 +33,19 @@ class UserModel {
   final bool isActive;
   final Map<String, dynamic>? metadata;
 
+  // Phase 16, Workstream 1: identity/profile-completion fields. All
+  // null-safe and default sanely (false / null) for the ~93 pre-existing
+  // `users` documents that predate this phase and don't have these fields
+  // at all — a missing field reads exactly like an incomplete profile,
+  // which is the safe default until the Workstream 1 backfill (or the
+  // completeUserProfile callable) sets it explicitly.
+  final DateTime? dateOfBirth;
+  final String? gender;
+  final bool profileCompleted;
+  final bool phoneVerified;
+  final bool emailVerified;
+  final DateTime? profileCompletedAt;
+
   // ✅ Constructor
   UserModel({
     required this.uid,
@@ -25,6 +58,12 @@ class UserModel {
     this.lastLogin,
     this.isActive = true,
     this.metadata,
+    this.dateOfBirth,
+    this.gender,
+    this.profileCompleted = false,
+    this.phoneVerified = false,
+    this.emailVerified = false,
+    this.profileCompletedAt,
   });
 
   // ✅ FROM MAP (Firestore Document)
@@ -43,6 +82,15 @@ class UserModel {
       isActive: map['isActive'] ?? true,
       metadata: map['metadata'] != null
           ? Map<String, dynamic>.from(map['metadata'])
+          : null,
+      dateOfBirth:
+          map['dateOfBirth'] != null ? _parseDateTime(map['dateOfBirth']) : null,
+      gender: map['gender'],
+      profileCompleted: map['profileCompleted'] ?? false,
+      phoneVerified: map['phoneVerified'] ?? false,
+      emailVerified: map['emailVerified'] ?? false,
+      profileCompletedAt: map['profileCompletedAt'] != null
+          ? _parseDateTime(map['profileCompletedAt'])
           : null,
     );
   }
@@ -75,6 +123,15 @@ class UserModel {
       'lastLogin': lastLogin != null ? Timestamp.fromDate(lastLogin!) : null,
       'isActive': isActive,
       'metadata': metadata,
+      'dateOfBirth':
+          dateOfBirth != null ? Timestamp.fromDate(dateOfBirth!) : null,
+      'gender': gender,
+      'profileCompleted': profileCompleted,
+      'phoneVerified': phoneVerified,
+      'emailVerified': emailVerified,
+      'profileCompletedAt': profileCompletedAt != null
+          ? Timestamp.fromDate(profileCompletedAt!)
+          : null,
     };
   }
 
@@ -91,6 +148,12 @@ class UserModel {
       'lastLogin': lastLogin?.toIso8601String(),
       'isActive': isActive,
       'metadata': metadata,
+      'dateOfBirth': dateOfBirth?.toIso8601String(),
+      'gender': gender,
+      'profileCompleted': profileCompleted,
+      'phoneVerified': phoneVerified,
+      'emailVerified': emailVerified,
+      'profileCompletedAt': profileCompletedAt?.toIso8601String(),
     };
   }
 
@@ -113,6 +176,16 @@ class UserModel {
       metadata: json['metadata'] != null
           ? Map<String, dynamic>.from(json['metadata'])
           : null,
+      dateOfBirth: json['dateOfBirth'] != null
+          ? DateTime.parse(json['dateOfBirth'])
+          : null,
+      gender: json['gender'],
+      profileCompleted: json['profileCompleted'] ?? false,
+      phoneVerified: json['phoneVerified'] ?? false,
+      emailVerified: json['emailVerified'] ?? false,
+      profileCompletedAt: json['profileCompletedAt'] != null
+          ? DateTime.parse(json['profileCompletedAt'])
+          : null,
     );
   }
 
@@ -128,6 +201,12 @@ class UserModel {
     DateTime? lastLogin,
     bool? isActive,
     Map<String, dynamic>? metadata,
+    DateTime? dateOfBirth,
+    String? gender,
+    bool? profileCompleted,
+    bool? phoneVerified,
+    bool? emailVerified,
+    DateTime? profileCompletedAt,
   }) {
     return UserModel(
       uid: uid ?? this.uid,
@@ -140,6 +219,12 @@ class UserModel {
       lastLogin: lastLogin ?? this.lastLogin,
       isActive: isActive ?? this.isActive,
       metadata: metadata ?? this.metadata,
+      dateOfBirth: dateOfBirth ?? this.dateOfBirth,
+      gender: gender ?? this.gender,
+      profileCompleted: profileCompleted ?? this.profileCompleted,
+      phoneVerified: phoneVerified ?? this.phoneVerified,
+      emailVerified: emailVerified ?? this.emailVerified,
+      profileCompletedAt: profileCompletedAt ?? this.profileCompletedAt,
     );
   }
 

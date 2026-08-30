@@ -71,3 +71,8 @@ export 'deep_link/deep_link_service.dart';
 // LOCAL STORAGE
 // ============================================
 export 'local/shared_preferences_service.dart';
+
+// ============================================
+// BENEFIT PROGRAM CONFIG (Phase A — feature-flag gate only)
+// ============================================
+export 'config/benefit_flag_service.dart';

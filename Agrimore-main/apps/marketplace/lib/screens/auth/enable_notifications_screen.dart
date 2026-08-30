@@ -8,11 +8,13 @@ import 'package:flutter/material.dart';
 import 'package:agrimore_ui/agrimore_ui.dart';
 import 'package:agrimore_services/agrimore_services.dart';
 import 'package:shared_preferences/shared_preferences.dart';
-import '../../app/routes.dart';
+import 'post_auth_router.dart';
 
 class EnableNotificationsScreen extends StatefulWidget {
   final bool isNewUser;
-  const EnableNotificationsScreen({Key? key, required this.isNewUser}) : super(key: key);
+  final String phone;
+  const EnableNotificationsScreen({Key? key, required this.isNewUser, required this.phone})
+      : super(key: key);
 
   @override
   State<EnableNotificationsScreen> createState() => _EnableNotificationsScreenState();
@@ -44,10 +46,7 @@ class _EnableNotificationsScreenState extends State<EnableNotificationsScreen> {
   }
 
   void _proceed() {
-    Navigator.of(context).pushNamedAndRemoveUntil(
-      widget.isNewUser ? AppRoutes.onboardingAddress : AppRoutes.main,
-      (route) => false,
-    );
+    PostAuthRouter.routeAfterAuth(context, phone: widget.phone, isNewUser: widget.isNewUser);
   }
 
   @override

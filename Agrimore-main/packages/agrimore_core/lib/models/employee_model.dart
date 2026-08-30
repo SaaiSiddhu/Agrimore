@@ -3,6 +3,12 @@ import 'package:cloud_firestore/cloud_firestore.dart';
 /// Employee (B2B sales rep) model.
 /// Employees earn commission on B2B orders attributed to them via
 /// [employeeCode], entered by the customer at checkout.
+///
+/// Phase 16A: adds the ₹500 one-time Registration & Onboarding Fee fields.
+/// User-facing screens should refer to this role as "AgriMore Sales
+/// Associate" (see functions/src/employee/associateTerm.ts) — this class
+/// name and every field name stay unchanged; only the copy shown to users
+/// changes.
 class EmployeeModel {
   final String id;
   final String userId;
@@ -16,6 +22,20 @@ class EmployeeModel {
   final DateTime createdAt;
   final DateTime updatedAt;
 
+  // ---- Phase 16A: onboarding fee fields ----
+  // All seven are written ONLY by Cloud Functions (see
+  // functions/src/employee/activationCore.ts and adminOnboardingActions.ts)
+  // — firestore.rules structurally denies any owner write to any of them.
+  // This model only ever READS them; nothing in this phase adds a new
+  // client write path for them.
+  final bool onboardingPaid;
+  final bool onboardingWaived;
+  final double? onboardingFeeAmount;
+  final String? onboardingPaymentId;
+  final DateTime? onboardingPaidAt;
+  final DateTime? onboardingWaivedAt;
+  final DateTime? onboardingRefundedAt;
+
   EmployeeModel({
     required this.id,
     required this.userId,
@@ -28,11 +48,36 @@ class EmployeeModel {
     this.createdBy = 'self',
     required this.createdAt,
     required this.updatedAt,
+    this.onboardingPaid = false,
+    this.onboardingWaived = false,
+    this.onboardingFeeAmount,
+    this.onboardingPaymentId,
+    this.onboardingPaidAt,
+    this.onboardingWaivedAt,
+    this.onboardingRefundedAt,
   });
 
   bool get isApproved => status == 'approved';
   bool get isPending => status == 'pending';
   bool get isSuspended => status == 'suspended';
+
+  /// True once this associate has cleared the ₹500 onboarding money gate —
+  /// either by paying the fee ([onboardingPaid]) or having it waived by an
+  /// admin ([onboardingWaived]) — AND that clearance has not since been
+  /// reversed by a recorded refund ([onboardingRefundedAt] is null).
+  ///
+  /// This does NOT mean the associate is approved. Clearing the onboarding
+  /// gate and admin approval (`status == 'approved'`) are two fully
+  /// independent facts, decided by two fully independent actions — see
+  /// functions/src/employee/activationCore.ts's header comment for why
+  /// paying (or having waived) the fee must never itself grant `status`.
+  /// A `pending` associate can have `hasClearedOnboardingGate == true` and
+  /// still be waiting on admin approval; an `approved` associate can in
+  /// principle still have `hasClearedOnboardingGate == false` if onboarding
+  /// hasn't been completed yet (this phase adds no gating on that
+  /// combination anywhere — see the completion report).
+  bool get hasClearedOnboardingGate =>
+      (onboardingPaid || onboardingWaived) && onboardingRefundedAt == null;
 
   /// Generate unique employee code: First 4 letters of name + 2 digit sequence.
   /// Mirrors WalletModel's referral code generation.
@@ -61,6 +106,19 @@ class EmployeeModel {
       return DateTime.now();
     }
 
+    // Optional onboarding date fields must stay null when absent — unlike
+    // createdAt/updatedAt above, defaulting a missing value to
+    // DateTime.now() here would fabricate a "paid at"/"waived at"/
+    // "refunded at" timestamp on a legacy document that was never paid,
+    // waived, or refunded. Every non-null value still goes through the
+    // exact same parseDateTime() parsing logic above — this only guards
+    // the null case before calling it, rather than duplicating a second
+    // parsing helper.
+    DateTime? parseOptionalDateTime(dynamic value) {
+      if (value == null) return null;
+      return parseDateTime(value);
+    }
+
     final resolvedId = id ?? map['id'] ?? '';
     return EmployeeModel(
       id: resolvedId,
@@ -74,6 +132,17 @@ class EmployeeModel {
       createdBy: map['createdBy'] ?? 'self',
       createdAt: parseDateTime(map['createdAt']),
       updatedAt: parseDateTime(map['updatedAt']),
+      // == true (not `as bool?`) is deliberate: a missing, null, or
+      // unexpectedly-typed value reads as false rather than throwing —
+      // fail closed, mirroring this phase's server-side "never treat
+      // unknown as paid" rule (see activationCore.ts).
+      onboardingPaid: map['onboardingPaid'] == true,
+      onboardingWaived: map['onboardingWaived'] == true,
+      onboardingFeeAmount: (map['onboardingFeeAmount'] as num?)?.toDouble(),
+      onboardingPaymentId: map['onboardingPaymentId'] as String?,
+      onboardingPaidAt: parseOptionalDateTime(map['onboardingPaidAt']),
+      onboardingWaivedAt: parseOptionalDateTime(map['onboardingWaivedAt']),
+      onboardingRefundedAt: parseOptionalDateTime(map['onboardingRefundedAt']),
     );
   }
 
@@ -89,6 +158,16 @@ class EmployeeModel {
       'createdBy': createdBy,
       'createdAt': Timestamp.fromDate(createdAt),
       'updatedAt': Timestamp.fromDate(updatedAt),
+      'onboardingPaid': onboardingPaid,
+      'onboardingWaived': onboardingWaived,
+      'onboardingFeeAmount': onboardingFeeAmount,
+      'onboardingPaymentId': onboardingPaymentId,
+      'onboardingPaidAt':
+          onboardingPaidAt != null ? Timestamp.fromDate(onboardingPaidAt!) : null,
+      'onboardingWaivedAt':
+          onboardingWaivedAt != null ? Timestamp.fromDate(onboardingWaivedAt!) : null,
+      'onboardingRefundedAt':
+          onboardingRefundedAt != null ? Timestamp.fromDate(onboardingRefundedAt!) : null,
     };
   }
 
@@ -104,6 +183,13 @@ class EmployeeModel {
     String? createdBy,
     DateTime? createdAt,
     DateTime? updatedAt,
+    bool? onboardingPaid,
+    bool? onboardingWaived,
+    double? onboardingFeeAmount,
+    String? onboardingPaymentId,
+    DateTime? onboardingPaidAt,
+    DateTime? onboardingWaivedAt,
+    DateTime? onboardingRefundedAt,
   }) {
     return EmployeeModel(
       id: id ?? this.id,
@@ -117,6 +203,13 @@ class EmployeeModel {
       createdBy: createdBy ?? this.createdBy,
       createdAt: createdAt ?? this.createdAt,
       updatedAt: updatedAt ?? this.updatedAt,
+      onboardingPaid: onboardingPaid ?? this.onboardingPaid,
+      onboardingWaived: onboardingWaived ?? this.onboardingWaived,
+      onboardingFeeAmount: onboardingFeeAmount ?? this.onboardingFeeAmount,
+      onboardingPaymentId: onboardingPaymentId ?? this.onboardingPaymentId,
+      onboardingPaidAt: onboardingPaidAt ?? this.onboardingPaidAt,
+      onboardingWaivedAt: onboardingWaivedAt ?? this.onboardingWaivedAt,
+      onboardingRefundedAt: onboardingRefundedAt ?? this.onboardingRefundedAt,
     );
   }
 

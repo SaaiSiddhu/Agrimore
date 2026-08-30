@@ -1,9 +1,14 @@
 // ============================================================
 //  AGRIMORE - VERIFY EMAIL OTP CLOUD FUNCTION
 // ============================================================
+//
+// Phase 15, Workstream 1 fix: compares against the SHA-256 hash
+// sendEmailOTP.ts now stores (otpHash), never a plaintext code — mirrors
+// verifyPhoneOTP.ts's hashOtp() helper exactly.
 
 import * as functions from "firebase-functions/v1";
 import * as admin from "firebase-admin";
+import * as crypto from "crypto";
 
 // Initialize only if not already initialized
 if (admin.apps.length === 0) {
@@ -12,6 +17,10 @@ if (admin.apps.length === 0) {
 
 const db = admin.firestore();
 const auth = admin.auth();
+
+function hashOtp(otp: string): string {
+    return crypto.createHash("sha256").update(otp).digest("hex");
+}
 
 // ============================================
 // VERIFY EMAIL OTP FUNCTION
@@ -82,7 +91,7 @@ export const verifyEmailOTP = functions.https.onRequest(async (req, res) => {
         }
 
         // Verify OTP
-        if (otpData.otp !== otp) {
+        if (otpData.otpHash !== hashOtp(otp)) {
             res.status(400).json({ success: false, error: "Invalid OTP. Please try again." });
             return;
         }

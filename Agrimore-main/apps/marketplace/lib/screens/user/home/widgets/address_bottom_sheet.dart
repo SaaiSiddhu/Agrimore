@@ -118,7 +118,7 @@ class _AddressBottomSheetState extends State<AddressBottomSheet> {
       } else {
         // Fallback to HTTP Geocoding
         try {
-          const apiKey = 'AIzaSyCKL5RYJ39x93yz1Km59KwpYybRod3IOeg';
+          const apiKey = MapsConfig.apiKey;
           final url = 'https://maps.googleapis.com/maps/api/geocode/json?latlng=${pos.latitude},${pos.longitude}&key=$apiKey&language=en';
           final response = await http.get(Uri.parse(url)).timeout(const Duration(seconds: 10));
           

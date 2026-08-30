@@ -28,6 +28,7 @@ import 'providers/wallet_config_provider.dart';
 import 'providers/section_banner_provider.dart';
 import 'providers/vendor_provider.dart';
 import 'providers/seller_provider.dart';
+import 'providers/benefit_compliance_provider.dart';
 
 // ============================================
 // MAIN ENTRY POINT - ADMIN APP
@@ -119,6 +120,7 @@ void main() async {
         ChangeNotifierProvider(create: (_) => SectionBannerProvider()),
         ChangeNotifierProvider(create: (_) => VendorProvider()),
         ChangeNotifierProvider(create: (_) => SellerProvider()),
+        ChangeNotifierProvider(create: (_) => BenefitComplianceProvider()),
       ],
       child: const AdminApp(),
     ),

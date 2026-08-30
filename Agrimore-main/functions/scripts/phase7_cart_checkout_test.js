@@ -66,6 +66,15 @@ async function main() {
   let allPassed = true;
   const results = {};
 
+  // Phase 16, Workstream 7 fixture update: createOrder.ts now rejects an
+  // incomplete-profile caller. This file's scenarios are about checkout
+  // payload shape, unrelated to profile completion, so every test user
+  // here is seeded profileCompleted:true up front — purely additive, no
+  // assertion below is touched.
+  for (const uid of ["phase7-cod-customer", "phase7-razorpay-customer", "phase7-uncased-customer"]) {
+    await db.collection("users").doc(uid).set({ uid, profileCompleted: true });
+  }
+
   console.log("=== PHASE 7 — mobile_cart_screen.dart -> createOrder payload shape ===");
 
   // salePrice 250 * qty 2 = 500 subtotal, matching the reference product used
@@ -129,8 +138,23 @@ async function main() {
   // doc, exactly like payment_method_screen.dart's already-migrated path.
   {
     // subtotal 500 + deliveryCharge 40 + tax 0 = grandTotal 540
+    //
+    // Phase 14, Workstream 4 update: `userId` added to this fixture — as of
+    // this phase, verifyRazorpayPayment (functions/src/customer/payment.ts)
+    // always stamps the paying user's uid onto verified_payments/{paymentId}
+    // (closing a cross-user payment-reuse hole), and createOrder now
+    // requires it to match the caller. This fixture is hand-seeded (it
+    // bypasses verifyRazorpayPayment entirely, the same way it always has),
+    // so it must be kept in sync with that same schema by hand. Without
+    // this field the call below would be rejected with "Payment could not
+    // be verified for this user" — the exact intended behavior for a
+    // legacy/foreign payment, proven separately and on purpose by
+    // phase14_payment_replay_test.js's scenario 4 — which is not what this
+    // scenario is testing, so the fixture is updated to match rather than
+    // left stale.
     await db.collection("verified_payments").doc("phase7-pay-correct").set({
       orderId: "phase7-razorpay-order",
+      userId: "phase7-razorpay-customer",
       status: "captured",
       amount: 540,
     });

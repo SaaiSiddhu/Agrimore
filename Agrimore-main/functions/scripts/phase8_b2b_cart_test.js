@@ -57,6 +57,15 @@ async function main() {
   let allPassed = true;
   const results = {};
 
+  // Phase 16, Workstream 7 fixture update: createOrder.ts now rejects an
+  // incomplete-profile caller. This file's scenarios are about B2B payload
+  // shape, unrelated to profile completion, so every test user here is
+  // seeded profileCompleted:true up front — purely additive, no assertion
+  // below is touched.
+  for (const uid of ["phase8-b2b-customer", "phase8-b2b-customer2"]) {
+    await db.collection("users").doc(uid).set({ uid, profileCompleted: true });
+  }
+
   console.log("=== PHASE 8 — mobile_cart_screen.dart B2B payload shape ===");
 
   // salePrice 250 (B2C) vs b2bPrice 180 (B2B) — deliberately different so a

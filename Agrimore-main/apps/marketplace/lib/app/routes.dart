@@ -327,11 +327,11 @@ class AppRoutes {
           );
         case completeProfile:
           final args = settings.arguments as Map<String, dynamic>?;
-          final emailArg = args?['email'] as String?;
-          if (emailArg == null || emailArg.isEmpty) {
+          final phoneArg = args?['phone'] as String?;
+          if (phoneArg == null || phoneArg.isEmpty) {
             return _buildRoute(const LoginScreen(), settings);
           }
-          return _buildRoute(CompleteProfileScreen(email: emailArg), settings);
+          return _buildRoute(CompleteProfileScreen(phone: phoneArg), settings);
         case forgotPassword:
           return _buildRoute(const LoginScreen(), settings);
 

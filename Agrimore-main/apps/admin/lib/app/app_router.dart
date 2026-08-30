@@ -35,6 +35,8 @@ import '../screens/admin/wallet/wallet_tracking_screen.dart';
 import '../screens/admin/employees/employee_management_screen.dart';
 import '../screens/admin/employees/add_employee_screen.dart';
 import '../screens/admin/employees/employee_payouts_screen.dart';
+import '../screens/admin/benefit_program/compliance_control_screen.dart';
+import '../screens/admin/benefit_program/feature_flags_screen.dart';
 
 class AdminRoutes {
   // Auth
@@ -102,6 +104,13 @@ class AdminRoutes {
   static const String addEmployee = '/add-employee';
 
   static const String employeePayouts = '/employee-payouts';
+
+  // Customer Product Benefit Program — compliance & feature-flag control
+  // plane (Phase A). Appended at the end, mirroring D5's rule for
+  // employees/employeePayouts above: keeps every existing _navItems index
+  // in admin_shell.dart unshifted.
+  static const String benefitComplianceControl = '/benefit-program/compliance';
+  static const String benefitFeatureFlags = '/benefit-program/feature-flags';
 
   // Legacy seller paths kept so archived screens compile, but they are not
   // registered in the admin router.
@@ -445,6 +454,20 @@ class AppRouter {
               name: 'employee-payouts',
               pageBuilder: (context, state) =>
                   _buildPage(const EmployeePayoutsScreen(), state),
+            ),
+
+            GoRoute(
+              path: AdminRoutes.benefitComplianceControl,
+              name: 'benefit-compliance-control',
+              pageBuilder: (context, state) =>
+                  _buildPage(const ComplianceControlScreen(), state),
+            ),
+
+            GoRoute(
+              path: AdminRoutes.benefitFeatureFlags,
+              name: 'benefit-feature-flags',
+              pageBuilder: (context, state) =>
+                  _buildPage(const FeatureFlagsScreen(), state),
             ),
           ],
         ),

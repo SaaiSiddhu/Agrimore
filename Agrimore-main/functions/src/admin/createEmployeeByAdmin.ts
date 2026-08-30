@@ -17,7 +17,23 @@ async function loadAdminEmailsLower(): Promise<string[]> {
         .filter((e) => e.length > 0);
 }
 
-async function callerIsAdmin(uid: string): Promise<boolean> {
+// Phase 14, Workstream 6: prefer the caller's own custom claim (set only by
+// syncUserRoleClaims from a real Firestore role, itself now locked to
+// admin/Cloud-Functions-only by firestore.rules — see
+// ownerCannotChangePrivilegedFields()) and fall back to the Firestore role
+// only if the claim is absent (e.g. immediately after promotion, before the
+// onWrite trigger has minted claims yet). This is defence in depth — the
+// real fix is Workstream 2 making the underlying `role` field itself
+// unwritable by a non-admin.
+// Phase 15, Workstream 3c decision: KEPT unchanged — see the identical,
+// fuller note in createSellerByAdmin.ts's callerIsAdmin(). Summary: now
+// that role is unwritable by a non-admin client (Phase 14), every path to
+// role:'admin' is already a trusted, server-side action, so narrowing this
+// further adds no real security margin while risking locking an admin out
+// of their own tooling.
+async function callerIsAdmin(uid: string, isAdminClaim: boolean): Promise<boolean> {
+    if (isAdminClaim) return true;
+
     const u = await db.collection("users").doc(uid).get();
     if (!u.exists) return false;
     const d = u.data()!;
@@ -55,7 +71,7 @@ export const createEmployeeByAdmin = functions.https.onCall(async (data, context
         throw new functions.https.HttpsError("unauthenticated", "Sign in required");
     }
 
-    if (!(await callerIsAdmin(context.auth.uid))) {
+    if (!(await callerIsAdmin(context.auth.uid, context.auth.token.admin === true))) {
         throw new functions.https.HttpsError("permission-denied", "Admin only");
     }
 
@@ -74,11 +90,21 @@ export const createEmployeeByAdmin = functions.https.onCall(async (data, context
 
     let uid: string;
     let createdAuth = false;
+    // Phase 14, Workstream 6 fix: an existing account used to have its
+    // password silently reset to whatever the admin submitted
+    // (auth.updateUser(uid, { password, ... })) — if the email happened to
+    // belong to a customer, another admin, or the real owner, their
+    // password was overwritten and emailVerified forced to true with no
+    // signal to them. This now throws instead of touching the password at
+    // all; an admin who genuinely needs to change an existing user's role
+    // must do so through the real role-assignment flow, not this
+    // "create an employee" endpoint.
+    let existingAccountEmail: string | null = null;
 
     try {
         const existing = await auth.getUserByEmail(email);
         uid = existing.uid;
-        await auth.updateUser(uid, { password, displayName: name });
+        existingAccountEmail = email;
     } catch (e: unknown) {
         const err = e as { code?: string };
         if (err.code === "auth/user-not-found") {
@@ -94,6 +120,13 @@ export const createEmployeeByAdmin = functions.https.onCall(async (data, context
             console.error("createEmployeeByAdmin auth error", e);
             throw new functions.https.HttpsError("internal", "Auth error");
         }
+    }
+
+    if (existingAccountEmail) {
+        throw new functions.https.HttpsError(
+            "already-exists",
+            "An account with this email already exists. Manage its role through the role-assignment flow instead of creating a new employee — this endpoint no longer resets an existing account's password."
+        );
     }
 
     const employeeCode = generateEmployeeCode(uid, name);

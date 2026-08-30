@@ -1,9 +1,15 @@
 // ============================================================
 //  AGRIMORE - OTP VERIFICATION SCREEN
-//  6-digit code entry. In dev (no SMS provider wired yet) the code is
-//  silently auto-filled after a short delay, simulating SMS auto-read —
-//  this fallback is never surfaced anywhere in the UI copy.
+//  6-digit code entry, with a "Call me instead" voice fallback offered
+//  once the SMS resend cooldown elapses.
 // ============================================================
+//
+// Phase 16, Workstream 6 fix: this screen used to silently auto-fill and
+// submit a hardcoded "123456" 800ms after opening — a leftover from when
+// the server had no real SMS provider and always issued that fixed code
+// (the exact bug Phase 14 closed server-side). Left in place, it would now
+// just auto-submit a wrong code against the real server on every open.
+// Removed entirely, along with the timer that drove it.
 
 import 'dart:async';
 import 'dart:convert';
@@ -12,17 +18,12 @@ import 'package:flutter/services.dart';
 import 'package:agrimore_ui/agrimore_ui.dart';
 import 'package:provider/provider.dart';
 import 'package:shared_preferences/shared_preferences.dart';
-import '../../app/routes.dart';
 import '../../providers/auth_provider.dart';
 import 'enable_notifications_screen.dart';
+import 'post_auth_router.dart';
 
 const int _kOtpLength = 6;
 const int _kResendCooldownSeconds = 30;
-// Dev-only: no SMS provider is wired up yet, so the backend always issues
-// this fixed code. Flip this off (and delete the auto-fill timer below)
-// once a real SMS provider is connected server-side.
-const String _kDevAutofillOtp = '123456';
-const Duration _kAutofillDelay = Duration(milliseconds: 800);
 
 class OtpVerificationScreen extends StatefulWidget {
   final String phone;
@@ -37,24 +38,21 @@ class _OtpVerificationScreenState extends State<OtpVerificationScreen> {
       List.generate(_kOtpLength, (_) => TextEditingController());
   final List<FocusNode> _focusNodes = List.generate(_kOtpLength, (_) => FocusNode());
 
-  Timer? _autofillTimer;
   Timer? _resendTimer;
   int _resendSecondsLeft = _kResendCooldownSeconds;
   bool _isVerifying = false;
   bool _isResending = false;
-  bool _userEdited = false;
+  bool _isRequestingVoice = false;
   String? _errorMessage;
 
   @override
   void initState() {
     super.initState();
     _startResendCountdown();
-    _autofillTimer = Timer(_kAutofillDelay, _autofillOtp);
   }
 
   @override
   void dispose() {
-    _autofillTimer?.cancel();
     _resendTimer?.cancel();
     for (final c in _controllers) {
       c.dispose();
@@ -79,17 +77,7 @@ class _OtpVerificationScreenState extends State<OtpVerificationScreen> {
     });
   }
 
-  void _autofillOtp() {
-    if (!mounted || _userEdited) return;
-    for (int i = 0; i < _kOtpLength; i++) {
-      _controllers[i].text = _kDevAutofillOtp[i];
-    }
-    setState(() {});
-    _handleVerify();
-  }
-
   void _onDigitChanged(int index, String value) {
-    _userEdited = true;
     if (value.isNotEmpty && index < _kOtpLength - 1) {
       _focusNodes[index + 1].requestFocus();
     }
@@ -158,16 +146,15 @@ class _OtpVerificationScreenState extends State<OtpVerificationScreen> {
 
     if (!alreadyPrimed) {
       Navigator.of(context).pushAndRemoveUntil(
-        MaterialPageRoute(builder: (_) => EnableNotificationsScreen(isNewUser: isNewUser)),
+        MaterialPageRoute(
+          builder: (_) => EnableNotificationsScreen(isNewUser: isNewUser, phone: widget.phone),
+        ),
         (route) => false,
       );
       return;
     }
 
-    Navigator.of(context).pushNamedAndRemoveUntil(
-      isNewUser ? AppRoutes.onboardingAddress : AppRoutes.main,
-      (route) => false,
-    );
+    PostAuthRouter.routeAfterAuth(context, phone: widget.phone, isNewUser: isNewUser);
   }
 
   Future<void> _handleResend() async {
@@ -181,17 +168,40 @@ class _OtpVerificationScreenState extends State<OtpVerificationScreen> {
     setState(() => _isResending = false);
 
     if (success) {
-      _userEdited = false;
       for (final c in _controllers) {
         c.clear();
       }
       _focusNodes.first.requestFocus();
       _startResendCountdown();
-      _autofillTimer?.cancel();
-      _autofillTimer = Timer(_kAutofillDelay, _autofillOtp);
     } else {
       ScaffoldMessenger.of(context).showSnackBar(
         SnackBar(content: Text(authProvider.error ?? 'Failed to resend OTP')),
+      );
+    }
+  }
+
+  // Offered once the SMS resend cooldown has elapsed — server-side, this
+  // redelivers the SAME code the SMS already carries (see
+  // sendPhoneOTP.ts's voice-reuse logic), so requesting a call never
+  // invalidates a pending SMS.
+  Future<void> _handleVoiceResend() async {
+    if (_resendSecondsLeft > 0 || _isRequestingVoice) return;
+
+    setState(() => _isRequestingVoice = true);
+    final authProvider = context.read<AuthProvider>();
+    final success = await authProvider.sendPhoneOTP(widget.phone, channel: 'voice');
+
+    if (!mounted) return;
+    setState(() => _isRequestingVoice = false);
+
+    if (success) {
+      _startResendCountdown();
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(content: Text("We're calling you now with your code")),
+      );
+    } else {
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(content: Text(authProvider.error ?? 'Failed to place the call')),
       );
     }
   }
@@ -253,6 +263,19 @@ class _OtpVerificationScreenState extends State<OtpVerificationScreen> {
             ),
           ),
         ),
+        // Voice fallback — only offered once the cooldown has elapsed, so
+        // it's never shown as an option before the SMS has even had a
+        // chance to arrive.
+        if (_resendSecondsLeft == 0) ...[
+          const SizedBox(height: 12),
+          GestureDetector(
+            onTap: _handleVoiceResend,
+            child: Text(
+              _isRequestingVoice ? 'Calling you...' : 'Call me instead',
+              style: const TextStyle(fontSize: 13, color: AppColors.primary, fontWeight: FontWeight.w700),
+            ),
+          ),
+        ],
       ],
     );
 

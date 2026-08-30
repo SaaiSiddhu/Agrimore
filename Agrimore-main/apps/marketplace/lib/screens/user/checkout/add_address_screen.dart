@@ -260,7 +260,7 @@ class _AddAddressScreenState extends State<AddAddressScreen> {
   /// HTTP-based geocoding fallback using Google Maps Geocoding API
   Future<void> _getAddressFromLatLngHttp(LatLng position) async {
     try {
-      const apiKey = 'AIzaSyCKL5RYJ39x93yz1Km59KwpYybRod3IOeg';
+      const apiKey = MapsConfig.apiKey;
       final url = 'https://maps.googleapis.com/maps/api/geocode/json'
           '?latlng=${position.latitude},${position.longitude}'
           '&key=$apiKey&language=en';

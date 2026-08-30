@@ -103,6 +103,18 @@ export const verifyWalletTopup = onCall(
       throw new HttpsError("failed-precondition", "Razorpay credentials not configured");
     }
 
+    // Phase 16, Workstream 7: a voluntary, identity-bound financial action
+    // (crediting the caller's own wallet) — gated the same way createOrder
+    // is, unlike creditSignupBonus (fires automatically at account
+    // bootstrap, before profile completion is even possible) or
+    // createRazorpayOrder/verifyRazorpayPayment (verify a payment but don't
+    // themselves credit/spend anything — the actual value-transfer step,
+    // createOrder, is already gated).
+    const callerSnap = await admin.firestore().collection("users").doc(uid).get();
+    if (!callerSnap.exists || callerSnap.data()?.profileCompleted !== true) {
+      throw new HttpsError("failed-precondition", "Please complete your profile before topping up your wallet");
+    }
+
     // STEP 1: HMAC-SHA256 signature check — the primary gate, identical to
     // verifyRazorpayPayment's.
     const expectedSignature = crypto
@@ -279,6 +291,13 @@ export const redeemReferralCode = onCall(
     }
 
     const db = admin.firestore();
+
+    // Phase 16, Workstream 7: same reasoning as verifyWalletTopup above —
+    // a voluntary, identity-bound financial action.
+    const callerSnap = await db.collection("users").doc(uid).get();
+    if (!callerSnap.exists || callerSnap.data()?.profileCompleted !== true) {
+      throw new HttpsError("failed-precondition", "Please complete your profile before redeeming a referral code");
+    }
 
     const configSnap = await db.collection("settings").doc("wallet_config").get();
     const configData = configSnap.data() || {};

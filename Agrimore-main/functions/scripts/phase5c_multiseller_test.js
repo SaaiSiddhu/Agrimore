@@ -18,6 +18,14 @@ async function main() {
   let allPassed = true;
   const results = {};
 
+  // Phase 16, Workstream 7 fixture update: createOrder.ts now rejects an
+  // incomplete-profile caller — unrelated to this file's multi-seller-cart
+  // scenarios, so every test user here is seeded profileCompleted:true up
+  // front. Purely additive, no assertion below is touched.
+  for (const uid of ["phase5c-ms-customer", "phase5c-ms-customer-2"]) {
+    await db.collection("users").doc(uid).set({ uid, profileCompleted: true });
+  }
+
   console.log("=== WORKSTREAM 1 — Multi-seller cart splitting ===");
 
   // Scenario 1: two products from two different sellers in one cart.

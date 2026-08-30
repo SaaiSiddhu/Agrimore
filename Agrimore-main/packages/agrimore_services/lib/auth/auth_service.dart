@@ -3,6 +3,7 @@ import 'dart:convert';
 import 'package:firebase_auth/firebase_auth.dart';
 import 'package:google_sign_in/google_sign_in.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
+import 'package:cloud_functions/cloud_functions.dart';
 import 'package:flutter/foundation.dart' show kIsWeb, debugPrint;
 import 'package:http/http.dart' as http;
 import 'package:agrimore_core/agrimore_core.dart';
@@ -324,22 +325,43 @@ class AuthService {
   // forever — the UI would just sit on "Sending OTP" with no way out.
   static const Duration _requestTimeout = Duration(seconds: 12);
 
-  /// Requests an OTP for [phone] (10-digit Indian number or +91-prefixed).
+  /// Requests an OTP for [phone] (10-digit Indian number or +91-prefixed),
+  /// delivered via SMS by default or, when [channel] is `'voice'`, as a
+  /// voice call — server-side, a voice request for a number with a live,
+  /// unexpired OTP redelivers the SAME code rather than issuing a new one
+  /// (see sendPhoneOTP.ts), so requesting voice never invalidates a
+  /// pending SMS.
   /// Returns whether an account already exists for this number.
-  Future<bool> sendPhoneOTP(String phone) async {
+  ///
+  /// A 503 (no SMS provider configured) or 429 (rate limited) response is
+  /// surfaced as a specific, distinguishable [AuthException] message rather
+  /// than a generic failure — see PhoneOtpRateLimitException/
+  /// PhoneOtpUnavailableException.
+  Future<bool> sendPhoneOTP(String phone, {String channel = 'sms'}) async {
     try {
-      debugPrint('🔥 Requesting phone OTP for: $phone');
+      debugPrint('🔥 Requesting phone OTP for: $phone (channel: $channel)');
 
       final response = await http
           .post(
             Uri.parse('$_functionsBaseUrl/sendPhoneOTP'),
             headers: {'Content-Type': 'application/json'},
-            body: jsonEncode({'phone': phone}),
+            body: jsonEncode({'phone': phone, 'channel': channel}),
           )
           .timeout(_requestTimeout);
 
       final data = jsonDecode(response.body) as Map<String, dynamic>;
 
+      if (response.statusCode == 503) {
+        throw PhoneOtpUnavailableException(
+          data['error']?.toString() ?? 'Phone login is currently unavailable',
+        );
+      }
+      if (response.statusCode == 429) {
+        throw PhoneOtpRateLimitException(
+          data['error']?.toString() ?? 'Too many requests. Please try again later.',
+          retryAfterMs: data['retryAfterMs'] is num ? (data['retryAfterMs'] as num).toInt() : null,
+        );
+      }
       if (response.statusCode != 200 || data['success'] != true) {
         throw AuthException(data['error']?.toString() ?? 'Failed to send OTP');
       }
@@ -411,6 +433,90 @@ class AuthService {
     }
   }
 
+  // ============================================
+  // PROFILE COMPLETION (Phase 16)
+  // ============================================
+
+  /// Sends an email-verification OTP to [email] via sendEmailOTP.ts
+  /// (Resend-backed). Used only during profile completion — this endpoint
+  /// does not sign anyone in or touch Firebase Auth.
+  Future<void> sendEmailOtpForProfile(String email) async {
+    try {
+      final response = await http
+          .post(
+            Uri.parse('$_functionsBaseUrl/sendEmailOTP'),
+            headers: {'Content-Type': 'application/json'},
+            body: jsonEncode({'email': email}),
+          )
+          .timeout(_requestTimeout);
+
+      final data = jsonDecode(response.body) as Map<String, dynamic>;
+
+      if (response.statusCode == 429) {
+        throw PhoneOtpRateLimitException(
+          data['error']?.toString() ?? 'Too many requests. Please try again later.',
+          retryAfterMs: data['retryAfterMs'] is num ? (data['retryAfterMs'] as num).toInt() : null,
+        );
+      }
+      if (response.statusCode != 200 || data['success'] != true) {
+        throw AuthException(data['error']?.toString() ?? 'Failed to send verification code');
+      }
+    } on AuthException {
+      rethrow;
+    } on TimeoutException {
+      throw AuthException('Network is too slow right now. Please try again.');
+    } catch (e) {
+      throw AuthException('Failed to send verification code: ${e.toString()}');
+    }
+  }
+
+  /// Verifies [otp] for [email] via the authenticated verifyEmailForProfile
+  /// callable — proves ownership without minting a second Firebase Auth
+  /// identity (see that function's header comment for why it's not
+  /// verifyEmailOTP.ts). Must be called while already signed in (phone
+  /// OTP happens first in the real flow).
+  Future<void> verifyEmailOtpForProfile({required String email, required String otp}) async {
+    try {
+      final callable = FirebaseFunctions.instance.httpsCallable('verifyEmailForProfile');
+      await callable.call<Map<String, dynamic>>({'email': email, 'otp': otp});
+    } on FirebaseFunctionsException catch (e) {
+      throw AuthException(e.message ?? 'Invalid verification code');
+    } catch (e) {
+      throw AuthException('Failed to verify code: ${e.toString()}');
+    }
+  }
+
+  /// Completes the caller's profile via the completeUserProfile callable —
+  /// server-validated, server-authoritative. Refreshes and returns the
+  /// resulting UserModel.
+  Future<UserModel> completeUserProfile({
+    required String name,
+    required String email,
+    required DateTime dateOfBirth,
+    required String gender,
+  }) async {
+    final user = currentUser;
+    if (user == null) throw UnauthorizedException();
+
+    try {
+      final callable = FirebaseFunctions.instance.httpsCallable('completeUserProfile');
+      await callable.call<Map<String, dynamic>>({
+        'name': name,
+        'email': email,
+        'dateOfBirth': dateOfBirth.toIso8601String(),
+        'gender': gender,
+      });
+
+      final updated = await getUserData(user.uid);
+      await _savePersistentSession(updated);
+      return updated;
+    } on FirebaseFunctionsException catch (e) {
+      throw AuthException(e.message ?? 'Failed to complete profile');
+    } catch (e) {
+      throw AuthException('Failed to complete profile: ${e.toString()}');
+    }
+  }
+
   /// Firestore `settings/access` field `adminEmails` (list of strings), lowercased.
   Future<Set<String>> _adminAllowlistEmailsLower() async {
     try {
@@ -430,6 +536,29 @@ class AuthService {
 
   /// Admin if: bootstrap define, or on Firestore allowlist, or allowlist empty and user already admin.
   /// If allowlist is non-empty and email is not listed (and not bootstrap), strip `admin` role.
+  ///
+  /// Phase 14, Workstream 3 fix: this used to also OR in a hardcoded
+  /// three-address list (admin@agrimore.com / admin@admin.com /
+  /// agrimore@gmail.com) — of which the latter two had no live Auth account
+  /// and were claimable by anyone through open signup, making this an
+  /// unconditional self-service admin-promotion path shipped in every app.
+  /// That list is removed; AdminAccessConfig.shouldBootstrapAdminRole and
+  /// the settings/access.adminEmails allowlist remain the only legitimate
+  /// promotion mechanisms.
+  ///
+  /// Phase 14, Workstream 2 fix: the promotion write below (`role: 'admin'`)
+  /// is also removed outright — firestore.rules now locks `role` on
+  /// users/{uid} to admin/Cloud-Functions-only (see
+  /// ownerCannotChangePrivilegedFields()), so this write could never
+  /// succeed from the client regardless of email. An allowlisted/bootstrap
+  /// email that isn't already admin in Firestore can no longer be
+  /// auto-promoted by this method — promotion now requires a real
+  /// server-side (Admin SDK) action. The remaining demotion write is now
+  /// best-effort: it will also be rejected by the same rule once the
+  /// caller isn't the actual document owner acting within policy, and a
+  /// PermissionDenied here must never surface as a sign-in failure (this
+  /// write sits inside getUserData()'s try block, which wraps any escaping
+  /// exception as a DatabaseException).
   Future<UserModel> _syncRoleWithAdminPolicy(
     UserModel user,
     String uid,
@@ -439,18 +568,12 @@ class AuthService {
     final emailLower = user.email.trim().toLowerCase();
     final bootstrap = AdminAccessConfig.shouldBootstrapAdminRole(emailLower);
     final onList = allow.contains(emailLower);
-    final shouldBeAdmin = bootstrap ||
-        onList ||
-        (allow.isEmpty && user.isAdmin) ||
-        ['admin@agrimore.com', 'admin@admin.com', 'agrimore@gmail.com']
-            .contains(emailLower);
+    final shouldBeAdmin = bootstrap || onList || (allow.isEmpty && user.isAdmin);
 
     if (shouldBeAdmin) {
-      if (!user.isAdmin) {
-        debugPrint('👑 Promoting to admin: ${user.email}');
-        await _firestore.collection('users').doc(uid).update({'role': 'admin'});
-        return user.copyWith(role: 'admin');
-      }
+      // Can no longer write role: 'admin' onto our own doc (see above) —
+      // this method can only detect that a user SHOULD be admin now, not
+      // grant it. A real admin must promote this account server-side.
       return user;
     }
 
@@ -458,8 +581,15 @@ class AuthService {
       final sellerStatus = raw['sellerStatus']?.toString();
       final nextRole = sellerStatus == 'approved' ? 'seller' : 'user';
       debugPrint('🔻 Removing admin role for ${user.email} → $nextRole');
-      await _firestore.collection('users').doc(uid).update({'role': nextRole});
-      return user.copyWith(role: nextRole);
+      try {
+        await _firestore.collection('users').doc(uid).update({'role': nextRole});
+        return user.copyWith(role: nextRole);
+      } catch (e) {
+        debugPrint(
+            '⚠️ Role-sync demotion write rejected (expected under the Phase '
+            '14 rules lockdown — role is admin/Cloud-Functions-only now): $e');
+        return user;
+      }
     }
 
     return user;

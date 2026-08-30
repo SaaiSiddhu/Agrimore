@@ -50,6 +50,12 @@ android/key.properties
 .env.local
 .env.*.local
 
+# Phase 15, Workstream 6b: a real secrets file at the git root, previously
+# untracked but NOT gitignored — one `git add -A` away from being committed
+# forever. Never opened/printed its contents; this entry is the only
+# permitted interaction with it.
+/_env
+
 # Firebase
 google-services.json
 GoogleService-Info.plist

@@ -1,18 +1,29 @@
 // ============================================================
 //  AGRIMORE - COMPLETE PROFILE SCREEN (Premium Design)
 // ============================================================
+//
+// Phase 16, Workstream 6 rewrite. Previously took a required `email` arg
+// (pre-verified by the now-legacy Google/email-signup path) and collected
+// only Name + Phone, writing profileCompleted: true directly to Firestore
+// from the client. Now takes `phone` (already verified via OTP before this
+// screen is ever shown) and collects Name, Email (with an inline
+// send/verify-OTP step — new users only get here with an empty email on
+// file, see completeUserProfile.ts), Date of Birth, and Gender — submitted
+// via the completeUserProfile callable, never a direct Firestore write.
 
 import 'dart:ui';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
-import 'package:firebase_auth/firebase_auth.dart';
-import 'package:cloud_firestore/cloud_firestore.dart';
+import 'package:provider/provider.dart';
 import 'package:agrimore_ui/agrimore_ui.dart';
+import 'package:agrimore_core/agrimore_core.dart';
+import '../../app/routes.dart';
+import '../../providers/auth_provider.dart';
 
 class CompleteProfileScreen extends StatefulWidget {
-  final String email;
+  final String phone;
 
-  const CompleteProfileScreen({Key? key, required this.email}) : super(key: key);
+  const CompleteProfileScreen({Key? key, required this.phone}) : super(key: key);
 
   @override
   State<CompleteProfileScreen> createState() => _CompleteProfileScreenState();
@@ -21,13 +32,29 @@ class CompleteProfileScreen extends StatefulWidget {
 class _CompleteProfileScreenState extends State<CompleteProfileScreen>
     with SingleTickerProviderStateMixin {
   final _nameController = TextEditingController();
-  final _phoneController = TextEditingController();
+  final _emailController = TextEditingController();
+  final _emailOtpController = TextEditingController();
   final _formKey = GlobalKey<FormState>();
+
   bool _isLoading = false;
+  bool _isSendingCode = false;
+  bool _isVerifyingCode = false;
+  bool _emailVerified = false;
+  bool _codeSent = false;
   String? _errorMessage;
+  DateTime? _dateOfBirth;
+  String? _gender;
+
   late AnimationController _animController;
   late Animation<double> _fadeAnimation;
   late Animation<double> _slideAnimation;
+
+  static const List<Map<String, String>> _genderOptions = [
+    {'value': 'male', 'label': 'Male'},
+    {'value': 'female', 'label': 'Female'},
+    {'value': 'non_binary', 'label': 'Non-binary'},
+    {'value': 'prefer_not_to_say', 'label': 'Prefer not to say'},
+  ];
 
   @override
   void initState() {
@@ -48,36 +75,110 @@ class _CompleteProfileScreenState extends State<CompleteProfileScreen>
   @override
   void dispose() {
     _nameController.dispose();
-    _phoneController.dispose();
+    _emailController.dispose();
+    _emailOtpController.dispose();
     _animController.dispose();
     super.dispose();
   }
 
   String? _validateName(String? value) {
-    if (value == null || value.trim().isEmpty) {
-      return 'Please enter your name';
-    }
-    if (value.trim().length < 2) {
-      return 'Name must be at least 2 characters';
+    final v = value?.trim() ?? '';
+    if (v.isEmpty) return 'Please enter your name';
+    if (v.length < 2) return 'Name must be at least 2 characters';
+    return null;
+  }
+
+  String? _validateEmail(String? value) {
+    final v = value?.trim() ?? '';
+    if (v.isEmpty) return 'Please enter your email';
+    if (!RegExp(r'^[^\s@]+@[^\s@]+\.[^\s@]+$').hasMatch(v)) {
+      return 'Enter a valid email address';
     }
     return null;
   }
 
-  String? _validatePhone(String? value) {
-    if (value == null || value.trim().isEmpty) {
-      return 'Phone number is required';
+  bool get _canSubmit =>
+      _dateOfBirth != null && _gender != null && _emailVerified && !_isLoading;
+
+  Future<void> _handleSendCode() async {
+    final emailError = _validateEmail(_emailController.text);
+    if (emailError != null) {
+      setState(() => _errorMessage = emailError);
+      return;
     }
-    if (value.length < 10) {
-      return 'Please enter a valid 10-digit phone number';
+    HapticFeedback.lightImpact();
+    setState(() {
+      _isSendingCode = true;
+      _errorMessage = null;
+    });
+
+    final authProvider = context.read<AuthProvider>();
+    final success = await authProvider.sendEmailOtpForProfile(_emailController.text.trim());
+
+    if (!mounted) return;
+    setState(() {
+      _isSendingCode = false;
+      if (success) {
+        _codeSent = true;
+      } else {
+        _errorMessage = authProvider.error ?? 'Failed to send verification code';
+      }
+    });
+  }
+
+  Future<void> _handleVerifyCode() async {
+    final code = _emailOtpController.text.trim();
+    if (code.length != 6) {
+      setState(() => _errorMessage = 'Enter the 6-digit code');
+      return;
     }
-    if (value.length > 10) {
-      return 'Phone number should be 10 digits';
+    HapticFeedback.lightImpact();
+    setState(() {
+      _isVerifyingCode = true;
+      _errorMessage = null;
+    });
+
+    final authProvider = context.read<AuthProvider>();
+    final success = await authProvider.verifyEmailOtpForProfile(
+      email: _emailController.text.trim(),
+      otp: code,
+    );
+
+    if (!mounted) return;
+    setState(() {
+      _isVerifyingCode = false;
+      if (success) {
+        _emailVerified = true;
+      } else {
+        _errorMessage = authProvider.error ?? 'Invalid code. Please try again.';
+      }
+    });
+  }
+
+  Future<void> _handlePickDateOfBirth() async {
+    final now = DateTime.now();
+    final picked = await showDatePicker(
+      context: context,
+      initialDate: DateTime(now.year - kMinimumProfileAgeYears, now.month, now.day),
+      firstDate: DateTime(now.year - 120),
+      lastDate: DateTime(now.year - kMinimumProfileAgeYears, now.month, now.day),
+      helpText: 'Select your date of birth',
+    );
+    if (picked != null) {
+      setState(() => _dateOfBirth = picked);
     }
-    return null;
   }
 
   Future<void> _handleComplete() async {
     if (!_formKey.currentState!.validate()) return;
+    if (!_canSubmit) {
+      setState(() {
+        _errorMessage = !_emailVerified
+            ? 'Please verify your email first'
+            : 'Please select your date of birth and gender';
+      });
+      return;
+    }
 
     HapticFeedback.mediumImpact();
     setState(() {
@@ -85,38 +186,25 @@ class _CompleteProfileScreenState extends State<CompleteProfileScreen>
       _errorMessage = null;
     });
 
-    try {
-      final user = FirebaseAuth.instance.currentUser;
-      if (user == null) {
-        throw Exception('User not authenticated');
-      }
+    final authProvider = context.read<AuthProvider>();
+    final success = await authProvider.completeUserProfile(
+      name: _nameController.text.trim(),
+      email: _emailController.text.trim(),
+      dateOfBirth: _dateOfBirth!,
+      gender: _gender!,
+    );
 
-      final name = _nameController.text.trim();
-      final phone = _phoneController.text.trim();
+    if (!mounted) return;
 
-      await user.updateDisplayName(name);
-
-      await FirebaseFirestore.instance.collection('users').doc(user.uid).update({
-        'name': name,
-        'phone': '+91$phone',
-        'profileCompleted': true,
-        'updatedAt': FieldValue.serverTimestamp(),
-      });
-
-      if (mounted) {
-        Navigator.pushNamedAndRemoveUntil(context, '/main', (route) => false);
-      }
-    } catch (e) {
+    if (!success) {
       setState(() {
-        _errorMessage = e.toString().replaceAll('Exception: ', '');
+        _isLoading = false;
+        _errorMessage = authProvider.error ?? 'Failed to complete profile';
       });
-    } finally {
-      if (mounted) {
-        setState(() {
-          _isLoading = false;
-        });
-      }
+      return;
     }
+
+    Navigator.of(context).pushNamedAndRemoveUntil(AppRoutes.main, (route) => false);
   }
 
   @override
@@ -125,17 +213,12 @@ class _CompleteProfileScreenState extends State<CompleteProfileScreen>
     final size = MediaQuery.of(context).size;
 
     return Scaffold(
-      resizeToAvoidBottomInset: true, // Let Flutter resize with keyboard
+      resizeToAvoidBottomInset: true,
       backgroundColor: isDark ? AppColors.backgroundDark : AppColors.background,
       body: Stack(
         children: [
-          // Premium background
           Positioned.fill(child: _buildBackground(isDark)),
-          
-          // Decorative elements
           _buildDecorativeElements(isDark),
-
-          // Main content
           SafeArea(
             child: AnimatedBuilder(
               animation: _animController,
@@ -147,7 +230,6 @@ class _CompleteProfileScreenState extends State<CompleteProfileScreen>
                 ),
               ),
               child: SingleChildScrollView(
-                // ✅ Dismiss keyboard when dragging
                 keyboardDismissBehavior: ScrollViewKeyboardDismissBehavior.onDrag,
                 padding: EdgeInsets.symmetric(
                   horizontal: size.width > 600 ? size.width * 0.2 : 24,
@@ -157,33 +239,16 @@ class _CompleteProfileScreenState extends State<CompleteProfileScreen>
                   child: Column(
                     children: [
                       SizedBox(height: size.height * 0.06),
-
-                      // Logo
                       _buildLogo(isDark),
-
                       const SizedBox(height: 32),
-
-                      // Header
                       _buildHeader(isDark),
-
                       const SizedBox(height: 36),
-
-                      // Profile Card
                       _buildProfileCard(isDark),
-
                       const SizedBox(height: 24),
-
-                      // Error message
                       if (_errorMessage != null) _buildErrorMessage(),
-
-                      // Complete button
                       _buildCompleteButton(isDark),
-
                       const SizedBox(height: 32),
-
-                      // Security note
                       _buildSecurityNote(isDark),
-
                       SizedBox(height: size.height * 0.05),
                     ],
                   ),
@@ -285,11 +350,7 @@ class _CompleteProfileScreenState extends State<CompleteProfileScreen>
               gradient: AppColors.primaryGradient,
               borderRadius: BorderRadius.circular(26),
             ),
-            child: const Icon(
-              Icons.person_rounded,
-              size: 50,
-              color: Colors.white,
-            ),
+            child: const Icon(Icons.person_rounded, size: 50, color: Colors.white),
           ),
         ),
       ),
@@ -310,7 +371,7 @@ class _CompleteProfileScreenState extends State<CompleteProfileScreen>
         ),
         const SizedBox(height: 10),
         Text(
-          'Tell us about yourself to personalize your experience',
+          'Just a few details to personalize your experience',
           textAlign: TextAlign.center,
           style: TextStyle(
             fontSize: 15,
@@ -330,32 +391,26 @@ class _CompleteProfileScreenState extends State<CompleteProfileScreen>
         child: Container(
           padding: const EdgeInsets.all(24),
           decoration: BoxDecoration(
-            color: isDark
-                ? Colors.white.withOpacity(0.08)
-                : Colors.white.withOpacity(0.9),
+            color: isDark ? Colors.white.withOpacity(0.08) : Colors.white.withOpacity(0.9),
             borderRadius: BorderRadius.circular(20),
             border: Border.all(
-              color: isDark
-                  ? Colors.white.withOpacity(0.1)
-                  : AppColors.border,
+              color: isDark ? Colors.white.withOpacity(0.1) : AppColors.border,
             ),
-            boxShadow: isDark ? null : [
-              BoxShadow(
-                color: Colors.black.withOpacity(0.05),
-                blurRadius: 20,
-                offset: const Offset(0, 10),
-              ),
-            ],
+            boxShadow: isDark
+                ? null
+                : [
+                    BoxShadow(
+                      color: Colors.black.withOpacity(0.05),
+                      blurRadius: 20,
+                      offset: const Offset(0, 10),
+                    ),
+                  ],
           ),
           child: Column(
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
-              // Email (verified)
-              _buildEmailDisplay(isDark),
-
+              _buildPhoneDisplay(isDark),
               const SizedBox(height: 20),
-
-              // Name field
               _buildSectionLabel('Full Name', Icons.person_rounded, isDark),
               const SizedBox(height: 10),
               _buildInputField(
@@ -365,13 +420,18 @@ class _CompleteProfileScreenState extends State<CompleteProfileScreen>
                 isDark: isDark,
                 textCapitalization: TextCapitalization.words,
               ),
-
               const SizedBox(height: 20),
-
-              // Phone field
-              _buildSectionLabel('Phone Number', Icons.phone_rounded, isDark, isRequired: true),
+              _buildSectionLabel('Email', Icons.email_rounded, isDark, isRequired: true),
               const SizedBox(height: 10),
-              _buildPhoneField(isDark),
+              _buildEmailSection(isDark),
+              const SizedBox(height: 20),
+              _buildSectionLabel('Date of Birth', Icons.cake_rounded, isDark, isRequired: true),
+              const SizedBox(height: 10),
+              _buildDateOfBirthField(isDark),
+              const SizedBox(height: 20),
+              _buildSectionLabel('Gender', Icons.wc_rounded, isDark, isRequired: true),
+              const SizedBox(height: 10),
+              _buildGenderSelector(isDark),
             ],
           ),
         ),
@@ -379,7 +439,7 @@ class _CompleteProfileScreenState extends State<CompleteProfileScreen>
     );
   }
 
-  Widget _buildEmailDisplay(bool isDark) {
+  Widget _buildPhoneDisplay(bool isDark) {
     return Container(
       padding: const EdgeInsets.all(16),
       decoration: BoxDecoration(
@@ -395,11 +455,7 @@ class _CompleteProfileScreenState extends State<CompleteProfileScreen>
               color: AppColors.success.withOpacity(0.15),
               borderRadius: BorderRadius.circular(10),
             ),
-            child: Icon(
-              Icons.email_rounded,
-              color: AppColors.success,
-              size: 20,
-            ),
+            child: const Icon(Icons.phone_rounded, color: AppColors.success, size: 20),
           ),
           const SizedBox(width: 14),
           Expanded(
@@ -407,16 +463,12 @@ class _CompleteProfileScreenState extends State<CompleteProfileScreen>
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
                 Text(
-                  'Email Verified',
-                  style: TextStyle(
-                    fontSize: 12,
-                    fontWeight: FontWeight.w600,
-                    color: AppColors.success,
-                  ),
+                  'Phone Verified',
+                  style: TextStyle(fontSize: 12, fontWeight: FontWeight.w600, color: AppColors.success),
                 ),
                 const SizedBox(height: 2),
                 Text(
-                  widget.email,
+                  widget.phone,
                   style: TextStyle(
                     fontSize: 14,
                     fontWeight: FontWeight.w500,
@@ -426,24 +478,203 @@ class _CompleteProfileScreenState extends State<CompleteProfileScreen>
               ],
             ),
           ),
-          Icon(
-            Icons.verified_rounded,
-            color: AppColors.success,
-            size: 22,
-          ),
+          const Icon(Icons.verified_rounded, color: AppColors.success, size: 22),
         ],
       ),
+    );
+  }
+
+  Widget _buildEmailSection(bool isDark) {
+    if (_emailVerified) {
+      return Container(
+        padding: const EdgeInsets.all(16),
+        decoration: BoxDecoration(
+          color: AppColors.success.withOpacity(0.08),
+          borderRadius: BorderRadius.circular(14),
+          border: Border.all(color: AppColors.success.withOpacity(0.2)),
+        ),
+        child: Row(
+          children: [
+            Expanded(
+              child: Text(
+                _emailController.text.trim(),
+                style: TextStyle(
+                  fontSize: 14,
+                  fontWeight: FontWeight.w500,
+                  color: isDark ? AppColors.textLight : AppColors.textPrimary,
+                ),
+              ),
+            ),
+            const Icon(Icons.verified_rounded, color: AppColors.success, size: 22),
+          ],
+        ),
+      );
+    }
+
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.stretch,
+      children: [
+        Row(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            Expanded(
+              child: _buildInputField(
+                controller: _emailController,
+                hint: 'you@example.com',
+                validator: _validateEmail,
+                isDark: isDark,
+                keyboardType: TextInputType.emailAddress,
+                enabled: !_codeSent,
+              ),
+            ),
+            const SizedBox(width: 10),
+            SizedBox(
+              height: 52,
+              child: ElevatedButton(
+                onPressed: (_isSendingCode || _codeSent) ? null : _handleSendCode,
+                style: ElevatedButton.styleFrom(
+                  backgroundColor: AppColors.primary,
+                  foregroundColor: Colors.white,
+                  elevation: 0,
+                  shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(14)),
+                  padding: const EdgeInsets.symmetric(horizontal: 16),
+                ),
+                child: _isSendingCode
+                    ? const SizedBox(
+                        width: 18,
+                        height: 18,
+                        child: CircularProgressIndicator(strokeWidth: 2, color: Colors.white),
+                      )
+                    : Text(_codeSent ? 'Sent' : 'Send Code', style: const TextStyle(fontSize: 13, fontWeight: FontWeight.w700)),
+              ),
+            ),
+          ],
+        ),
+        if (_codeSent) ...[
+          const SizedBox(height: 12),
+          Row(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              Expanded(
+                child: _buildInputField(
+                  controller: _emailOtpController,
+                  hint: '6-digit code',
+                  validator: null,
+                  isDark: isDark,
+                  keyboardType: TextInputType.number,
+                  inputFormatters: [
+                    FilteringTextInputFormatter.digitsOnly,
+                    LengthLimitingTextInputFormatter(6),
+                  ],
+                ),
+              ),
+              const SizedBox(width: 10),
+              SizedBox(
+                height: 52,
+                child: ElevatedButton(
+                  onPressed: _isVerifyingCode ? null : _handleVerifyCode,
+                  style: ElevatedButton.styleFrom(
+                    backgroundColor: AppColors.secondary,
+                    foregroundColor: Colors.white,
+                    elevation: 0,
+                    shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(14)),
+                    padding: const EdgeInsets.symmetric(horizontal: 16),
+                  ),
+                  child: _isVerifyingCode
+                      ? const SizedBox(
+                          width: 18,
+                          height: 18,
+                          child: CircularProgressIndicator(strokeWidth: 2, color: Colors.white),
+                        )
+                      : const Text('Verify', style: TextStyle(fontSize: 13, fontWeight: FontWeight.w700)),
+                ),
+              ),
+            ],
+          ),
+          TextButton(
+            onPressed: _isSendingCode
+                ? null
+                : () {
+                    setState(() => _codeSent = false);
+                    _handleSendCode();
+                  },
+            child: const Text('Resend code', style: TextStyle(color: AppColors.primary, fontSize: 13)),
+          ),
+        ],
+      ],
+    );
+  }
+
+  Widget _buildDateOfBirthField(bool isDark) {
+    return InkWell(
+      onTap: _handlePickDateOfBirth,
+      borderRadius: BorderRadius.circular(14),
+      child: Container(
+        padding: const EdgeInsets.symmetric(horizontal: 18, vertical: 16),
+        decoration: BoxDecoration(
+          color: isDark ? Colors.white.withOpacity(0.05) : AppColors.surfaceVariant,
+          borderRadius: BorderRadius.circular(14),
+          border: Border.all(
+            color: isDark ? Colors.white.withOpacity(0.1) : AppColors.borderLight,
+          ),
+        ),
+        child: Row(
+          children: [
+            Expanded(
+              child: Text(
+                _dateOfBirth == null
+                    ? 'Select date of birth'
+                    : '${_dateOfBirth!.day}/${_dateOfBirth!.month}/${_dateOfBirth!.year}',
+                style: TextStyle(
+                  fontSize: 16,
+                  fontWeight: FontWeight.w500,
+                  color: _dateOfBirth == null
+                      ? (isDark ? AppColors.textLightTertiary : AppColors.textHint)
+                      : (isDark ? AppColors.textLight : AppColors.textPrimary),
+                ),
+              ),
+            ),
+            Icon(Icons.calendar_today_rounded, size: 18, color: AppColors.primary),
+          ],
+        ),
+      ),
+    );
+  }
+
+  Widget _buildGenderSelector(bool isDark) {
+    return Wrap(
+      spacing: 8,
+      runSpacing: 8,
+      children: _genderOptions.map((option) {
+        final selected = _gender == option['value'];
+        return ChoiceChip(
+          label: Text(option['label']!),
+          selected: selected,
+          onSelected: (_) => setState(() => _gender = option['value']),
+          selectedColor: AppColors.primary,
+          labelStyle: TextStyle(
+            color: selected ? Colors.white : (isDark ? AppColors.textLight : AppColors.textPrimary),
+            fontWeight: FontWeight.w600,
+            fontSize: 13,
+          ),
+          backgroundColor: isDark ? Colors.white.withOpacity(0.05) : AppColors.surfaceVariant,
+          shape: RoundedRectangleBorder(
+            borderRadius: BorderRadius.circular(10),
+            side: BorderSide(
+              color: selected
+                  ? AppColors.primary
+                  : (isDark ? Colors.white.withOpacity(0.1) : AppColors.borderLight),
+            ),
+          ),
+        );
+      }).toList(),
     );
   }
 
   Widget _buildSectionLabel(String label, IconData icon, bool isDark, {bool isRequired = false}) {
     return Row(
       children: [
-        Icon(
-          icon,
-          color: AppColors.primary,
-          size: 18,
-        ),
+        Icon(icon, color: AppColors.primary, size: 18),
         const SizedBox(width: 8),
         Text(
           label,
@@ -455,14 +686,7 @@ class _CompleteProfileScreenState extends State<CompleteProfileScreen>
         ),
         if (isRequired) ...[
           const SizedBox(width: 4),
-          Text(
-            '*',
-            style: TextStyle(
-              fontSize: 14,
-              fontWeight: FontWeight.w700,
-              color: AppColors.error,
-            ),
-          ),
+          const Text('*', style: TextStyle(fontSize: 14, fontWeight: FontWeight.w700, color: AppColors.error)),
         ],
       ],
     );
@@ -471,26 +695,24 @@ class _CompleteProfileScreenState extends State<CompleteProfileScreen>
   Widget _buildInputField({
     required TextEditingController controller,
     required String hint,
-    required String? Function(String?) validator,
+    required String? Function(String?)? validator,
     required bool isDark,
     TextInputType? keyboardType,
     List<TextInputFormatter>? inputFormatters,
     TextCapitalization textCapitalization = TextCapitalization.none,
+    bool enabled = true,
   }) {
     return Container(
       decoration: BoxDecoration(
-        color: isDark
-            ? Colors.white.withOpacity(0.05)
-            : AppColors.surfaceVariant,
+        color: isDark ? Colors.white.withOpacity(0.05) : AppColors.surfaceVariant,
         borderRadius: BorderRadius.circular(14),
         border: Border.all(
-          color: isDark
-              ? Colors.white.withOpacity(0.1)
-              : AppColors.borderLight,
+          color: isDark ? Colors.white.withOpacity(0.1) : AppColors.borderLight,
         ),
       ),
       child: TextFormField(
         controller: controller,
+        enabled: enabled,
         keyboardType: keyboardType,
         inputFormatters: inputFormatters,
         textCapitalization: textCapitalization,
@@ -513,82 +735,6 @@ class _CompleteProfileScreenState extends State<CompleteProfileScreen>
     );
   }
 
-  Widget _buildPhoneField(bool isDark) {
-    return Container(
-      decoration: BoxDecoration(
-        color: isDark
-            ? Colors.white.withOpacity(0.05)
-            : AppColors.surfaceVariant,
-        borderRadius: BorderRadius.circular(14),
-        border: Border.all(
-          color: isDark
-              ? Colors.white.withOpacity(0.1)
-              : AppColors.borderLight,
-        ),
-      ),
-      child: Row(
-        children: [
-          // Country code
-          Container(
-            padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 16),
-            decoration: BoxDecoration(
-              border: Border(
-                right: BorderSide(
-                  color: isDark
-                      ? Colors.white.withOpacity(0.1)
-                      : AppColors.borderLight,
-                ),
-              ),
-            ),
-            child: Row(
-              children: [
-                Text(
-                  '🇮🇳',
-                  style: const TextStyle(fontSize: 20),
-                ),
-                const SizedBox(width: 6),
-                Text(
-                  '+91',
-                  style: TextStyle(
-                    fontSize: 16,
-                    fontWeight: FontWeight.w600,
-                    color: isDark ? AppColors.textLight : AppColors.textPrimary,
-                  ),
-                ),
-              ],
-            ),
-          ),
-          // Phone input
-          Expanded(
-            child: TextFormField(
-              controller: _phoneController,
-              keyboardType: TextInputType.phone,
-              inputFormatters: [
-                FilteringTextInputFormatter.digitsOnly,
-                LengthLimitingTextInputFormatter(10),
-              ],
-              style: TextStyle(
-                fontSize: 16,
-                fontWeight: FontWeight.w500,
-                color: isDark ? AppColors.textLight : AppColors.textPrimary,
-              ),
-              decoration: InputDecoration(
-                hintText: 'Enter 10-digit mobile number',
-                hintStyle: TextStyle(
-                  color: isDark ? AppColors.textLightTertiary : AppColors.textHint,
-                  fontWeight: FontWeight.w400,
-                ),
-                border: InputBorder.none,
-                contentPadding: const EdgeInsets.symmetric(horizontal: 16, vertical: 16),
-              ),
-              validator: _validatePhone,
-            ),
-          ),
-        ],
-      ),
-    );
-  }
-
   Widget _buildErrorMessage() {
     return Container(
       padding: const EdgeInsets.all(14),
@@ -600,12 +746,12 @@ class _CompleteProfileScreenState extends State<CompleteProfileScreen>
       ),
       child: Row(
         children: [
-          Icon(Icons.error_outline_rounded, color: AppColors.error, size: 22),
+          const Icon(Icons.error_outline_rounded, color: AppColors.error, size: 22),
           const SizedBox(width: 12),
           Expanded(
             child: Text(
               _errorMessage!,
-              style: TextStyle(color: AppColors.error, fontSize: 14, fontWeight: FontWeight.w500),
+              style: const TextStyle(color: AppColors.error, fontSize: 14, fontWeight: FontWeight.w500),
             ),
           ),
         ],
@@ -621,11 +767,7 @@ class _CompleteProfileScreenState extends State<CompleteProfileScreen>
         gradient: AppColors.primaryGradient,
         borderRadius: BorderRadius.circular(16),
         boxShadow: [
-          BoxShadow(
-            color: AppColors.primary.withOpacity(0.4),
-            blurRadius: 18,
-            offset: const Offset(0, 8),
-          ),
+          BoxShadow(color: AppColors.primary.withOpacity(0.4), blurRadius: 18, offset: const Offset(0, 8)),
         ],
       ),
       child: ElevatedButton(
@@ -634,31 +776,19 @@ class _CompleteProfileScreenState extends State<CompleteProfileScreen>
           backgroundColor: Colors.transparent,
           shadowColor: Colors.transparent,
           foregroundColor: Colors.white,
-          shape: RoundedRectangleBorder(
-            borderRadius: BorderRadius.circular(16),
-          ),
+          shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
           elevation: 0,
         ),
         child: _isLoading
             ? const SizedBox(
                 width: 26,
                 height: 26,
-                child: CircularProgressIndicator(
-                  strokeWidth: 2.5,
-                  valueColor: AlwaysStoppedAnimation<Color>(Colors.white),
-                ),
+                child: CircularProgressIndicator(strokeWidth: 2.5, valueColor: AlwaysStoppedAnimation<Color>(Colors.white)),
               )
             : Row(
                 mainAxisAlignment: MainAxisAlignment.center,
                 children: const [
-                  Text(
-                    'Get Started',
-                    style: TextStyle(
-                      fontSize: 17,
-                      fontWeight: FontWeight.w700,
-                      letterSpacing: 0.3,
-                    ),
-                  ),
+                  Text('Get Started', style: TextStyle(fontSize: 17, fontWeight: FontWeight.w700, letterSpacing: 0.3)),
                   SizedBox(width: 10),
                   Icon(Icons.arrow_forward_rounded, size: 22),
                 ],
@@ -671,18 +801,11 @@ class _CompleteProfileScreenState extends State<CompleteProfileScreen>
     return Row(
       mainAxisAlignment: MainAxisAlignment.center,
       children: [
-        Icon(
-          Icons.lock_rounded,
-          size: 14,
-          color: isDark ? AppColors.textLightTertiary : AppColors.textTertiary,
-        ),
+        Icon(Icons.lock_rounded, size: 14, color: isDark ? AppColors.textLightTertiary : AppColors.textTertiary),
         const SizedBox(width: 6),
         Text(
           'Your information is secure and private',
-          style: TextStyle(
-            fontSize: 13,
-            color: isDark ? AppColors.textLightTertiary : AppColors.textTertiary,
-          ),
+          style: TextStyle(fontSize: 13, color: isDark ? AppColors.textLightTertiary : AppColors.textTertiary),
         ),
       ],
     );

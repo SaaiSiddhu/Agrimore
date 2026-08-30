@@ -34,6 +34,19 @@ class InvalidCredentialsException extends AuthException {
   InvalidCredentialsException(String message) : super(message, code: 'INVALID_CREDENTIALS');
 }
 
+// Phase 16: distinguishable from a generic AuthException so the UI can show
+// a specific message instead of a generic failure for a 503 (provider not
+// configured) or 429 (rate limited) phone-OTP response.
+class PhoneOtpUnavailableException extends AuthException {
+  PhoneOtpUnavailableException(String message) : super(message, code: 'PHONE_OTP_UNAVAILABLE');
+}
+
+class PhoneOtpRateLimitException extends AuthException {
+  final int? retryAfterMs;
+  PhoneOtpRateLimitException(String message, {this.retryAfterMs})
+      : super(message, code: 'PHONE_OTP_RATE_LIMITED');
+}
+
 class ValidationException extends AppException {
   ValidationException(String message) : super(message, code: 'VALIDATION_ERROR');
 }

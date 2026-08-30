@@ -29,6 +29,21 @@ async function main() {
   const results = {};
   const now = Date.now();
 
+  // Phase 16, Workstream 7 fixture update: createOrder.ts now rejects an
+  // incomplete-profile caller — unrelated to this file's coupon
+  // scenarios, so every test user here is seeded profileCompleted:true up
+  // front. Purely additive, no assertion below is touched.
+  for (const uid of [
+    "phase5c-coupon-customer1",
+    "phase5c-coupon-customer2",
+    "phase5c-coupon-customer3",
+    "phase5c-coupon-customer4",
+    "phase5c-coupon-customer5",
+    "phase5c-coupon-customer6",
+  ]) {
+    await db.collection("users").doc(uid).set({ uid, profileCompleted: true });
+  }
+
   console.log("=== WORKSTREAM 3 — Server-side coupon re-validation ===");
 
   await db.collection("products").doc("phase5c-coupon-product").set({

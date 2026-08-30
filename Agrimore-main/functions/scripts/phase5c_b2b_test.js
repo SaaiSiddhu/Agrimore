@@ -29,6 +29,21 @@ async function main() {
   let allPassed = true;
   const results = {};
 
+  // Phase 16, Workstream 7 fixture update: createOrder.ts now rejects an
+  // incomplete-profile caller — unrelated to this file's B2B validation
+  // scenarios, so every test user here is seeded profileCompleted:true up
+  // front. Purely additive, no assertion below is touched.
+  for (const uid of [
+    "phase5c-b2b-customer1",
+    "phase5c-b2b-customer2",
+    "phase5c-b2b-customer3",
+    "phase5c-b2b-customer4a",
+    "phase5c-b2b-customer4b",
+    "phase5c-b2b-customer5",
+  ]) {
+    await db.collection("users").doc(uid).set({ uid, profileCompleted: true });
+  }
+
   console.log("=== WORKSTREAM 2 — B2B validation + employee-code attribution ===");
 
   await db.collection("employees").doc("phase5c-b2b-emp-approved").set({

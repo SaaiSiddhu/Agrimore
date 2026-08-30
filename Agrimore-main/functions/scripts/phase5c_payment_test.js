@@ -28,6 +28,21 @@ async function main() {
   let allPassed = true;
   const results = {};
 
+  // Phase 16, Workstream 7 fixture update: createOrder.ts now rejects an
+  // incomplete-profile caller — unrelated to this file's payment-trust
+  // scenarios, so every test user here is seeded profileCompleted:true up
+  // front. Purely additive, no assertion below is touched.
+  for (const uid of [
+    "phase5c-pay-customer1",
+    "phase5c-pay-customer2",
+    "phase5c-pay-customer3",
+    "phase5c-pay-customer4",
+    "phase5c-pay-customer5",
+    "phase5c-pay-customer6",
+  ]) {
+    await db.collection("users").doc(uid).set({ uid, profileCompleted: true });
+  }
+
   console.log("=== WORKSTREAM 4 — verified_payments trust boundary (non-COD) ===");
 
   // salePrice 500 * qty 1, no discount/deliveryCharge/tax -> grandTotal = 500
@@ -96,9 +111,17 @@ async function main() {
 
   // Scenario 3: verified_payments doc exists but its orderId doesn't match
   // what the client is claiming this order's razorpayOrderId is.
+  //
+  // Phase 14, Workstream 4 update: `userId` added, matching this scenario's
+  // own caller (phase5c-pay-customer3) — createOrder now requires it to
+  // reach the orderId-mismatch check this scenario actually tests, rather
+  // than being rejected one step earlier for lacking user ownership (that
+  // earlier rejection is proven deliberately, on its own, by
+  // phase14_payment_replay_test.js's scenario 4).
   {
     await db.collection("verified_payments").doc("pay_mismatch").set({
       orderId: "order_totally_different",
+      userId: "phase5c-pay-customer3",
       status: "captured",
       amount: 500,
     });
@@ -130,9 +153,12 @@ async function main() {
 
   // Scenario 4: verified_payments doc matches orderId but status isn't
   // "captured" (e.g. still "created" — payment initiated but never completed).
+  // Phase 14, Workstream 4 update: `userId` added, matching this scenario's
+  // own caller — see the identical note on Scenario 3 above.
   {
     await db.collection("verified_payments").doc("pay_notcaptured").set({
       orderId: "order_notcaptured",
+      userId: "phase5c-pay-customer4",
       status: "created",
       amount: 500,
     });
@@ -166,9 +192,12 @@ async function main() {
   // orderId, is captured, but the verified amount (₹1) is nowhere near the
   // real order total (₹500). Proves a customer can't pay ₹1 and claim a
   // ₹500 order.
+  // Phase 14, Workstream 4 update: `userId` added, matching this scenario's
+  // own caller — see the identical note on Scenario 3 above.
   {
     await db.collection("verified_payments").doc("pay_tampered").set({
       orderId: "order_tampered",
+      userId: "phase5c-pay-customer5",
       status: "captured",
       amount: 1,
     });
@@ -204,8 +233,11 @@ async function main() {
     // grandTotal = roundMoney(max(0, 500 - 0) + 0 + 0) = 500, computed the
     // same way createOrder.ts itself computes it, not guessed.
     const expectedGrandTotal = 500;
+    // Phase 14, Workstream 4 update: `userId` added, matching this
+    // scenario's own caller — see the identical note on Scenario 3 above.
     await db.collection("verified_payments").doc("pay_correct").set({
       orderId: "order_correct",
+      userId: "phase5c-pay-customer6",
       status: "captured",
       amount: expectedGrandTotal,
     });

@@ -2,9 +2,28 @@
 //  AGRIMORE - VERIFY PHONE OTP CLOUD FUNCTION
 //  Mirrors verifyEmailOTP.ts, but for mobile-number login/signup.
 // ============================================================
+//
+// Phase 14, Workstream 1 fix: this endpoint used to compare the submitted
+// code against a hardcoded FIXED_OTP ("123456", written by sendPhoneOTP.ts)
+// and, on match, mint a real Firebase custom token via
+// auth.createCustomToken — creating the Auth user if one didn't already
+// exist — with no authentication and no App Check on the request itself.
+// Two unauthenticated POSTs from a browser were enough to obtain a valid
+// session for ANY phone-registered account, including administrators. This
+// is gated behind PHONE_OTP_ENABLED, checked FIRST — before the Firestore
+// lookup, the code comparison, any Auth user creation, and the token mint —
+// so disabling it costs zero side effects, not just a rejected response
+// after the fact.
+//
+// Phase 16, Workstream 2 fix: PHONE_OTP_ENABLED's MEANING changes — see
+// sendPhoneOTP.ts's identical truth table. It now tracks whether a real SMS
+// provider (2Factor.in) is actually configured, not a standalone flag that
+// could drift out of sync with whether delivery is genuinely possible.
 
 import * as functions from "firebase-functions/v1";
 import * as admin from "firebase-admin";
+import * as crypto from "crypto";
+import { isSmsProviderConfigured } from "./smsProvider";
 
 // Initialize only if not already initialized
 if (admin.apps.length === 0) {
@@ -13,6 +32,12 @@ if (admin.apps.length === 0) {
 
 const db = admin.firestore();
 const auth = admin.auth();
+
+const PHONE_OTP_ENABLED = isSmsProviderConfigured();
+
+function hashOtp(otp: string): string {
+  return crypto.createHash("sha256").update(otp).digest("hex");
+}
 
 function normalizePhone(raw: string): string | null {
   const digits = raw.replace(/[^\d]/g, "");
@@ -46,6 +71,17 @@ export const verifyPhoneOTP = functions.https.onRequest(async (req, res) => {
 
   if (req.method !== "POST") {
     res.status(405).json({ success: false, error: "Method not allowed" });
+    return;
+  }
+
+  // Fail closed, before ANY Firestore lookup, code comparison, Auth user
+  // creation, or token mint — the whole point of this gate is that a
+  // disabled flow costs zero side effects, not just a rejected response.
+  if (!PHONE_OTP_ENABLED) {
+    res.status(503).json({
+      success: false,
+      error: "Phone login is currently unavailable",
+    });
     return;
   }
 
@@ -96,7 +132,7 @@ export const verifyPhoneOTP = functions.https.onRequest(async (req, res) => {
       return;
     }
 
-    if (otpData.otp !== otp) {
+    if (otpData.otpHash !== hashOtp(otp)) {
       res.status(400).json({ success: false, error: "Invalid OTP. Please try again." });
       return;
     }

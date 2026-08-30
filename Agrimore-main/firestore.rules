@@ -85,17 +85,112 @@ service cloud.firestore {
     // ============================================
     // USER COLLECTION
     // ============================================
+    // Phase 14, Workstream 2 fix: `allow update: if isOwner(userId) ||
+    // isAdmin();` had NO field restriction — any signed-in user could write
+    // `role: "admin"` onto their own doc and immediately satisfy isAdmin()'s
+    // Firestore-role fallback (line ~30), which syncUserRoleClaims then
+    // mints as a REAL custom claim. The same shape let a user grant
+    // themselves seller/delivery/employee approval via `sellerStatus`/
+    // `employeeStatus`/`deliveryStatus` (isEmployee()/isSeller() both accept
+    // either the users-doc status field OR the respective collection's own
+    // status — both paths must be closed), or hijack another seller's
+    // sponsored_banners/campaigns by self-writing `sellerId` (read at lines
+    // ~341/359/363 for ownership matching).
+    //
+    // These fields are value-guarded rather than blanket-blocked on update:
+    // apps/marketplace's seller_apply_screen.dart and
+    // employee_apply_screen.dart both have real, live "re-apply after
+    // rejection/suspension" flows that legitimately write
+    // sellerStatus/employeeStatus back to 'pending' (or null) on an
+    // already-existing user doc via the owner's own client write — a
+    // blanket block on ANY change to these fields would reject that
+    // real flow. The actual exploit is reaching the value 'approved';
+    // blocking only that value closes the escalation while preserving the
+    // pending/null transitions those screens depend on. deliveryStatus has
+    // no real write site at all (grepped: zero) but is guarded identically
+    // for consistency and because roleClaims.ts (Cloud Function) reads it
+    // as an alternate path to minting the delivery_partner custom claim.
+    //
+    // role/isAdmin/isSeller/sellerId/permissions have no legitimate
+    // owner-update call site at all (grepped across apps/) and are blanket
+    // -blocked instead — including the client-side admin-promotion write in
+    // auth_service.dart's _syncRoleWithAdminPolicy, which Workstream 3
+    // removes for exactly this reason.
+    // Phase 16, Workstream 5 fix: profileCompleted/profileCompletedAt/
+    // phoneVerified/emailVerified are set ONLY by completeUserProfile.ts /
+    // verifyPhoneOTP.ts (both Admin SDK, which bypasses this rule entirely)
+    // — without this, a client could simply write `profileCompleted: true`
+    // onto its own doc and skip the entire server-validated completion
+    // flow. Blanket-blocked (no legitimate owner-update call site changes
+    // them — real profile edits, e.g. edit_profile_screen.dart, carry them
+    // over UNCHANGED via a full-object update, which diff().affectedKeys()
+    // correctly does not flag). `email`/`dateOfBirth` are similarly
+    // blanket-blocked post-creation: email changes must go through
+    // completeUserProfile.ts's re-verification, and dateOfBirth (unlike
+    // name/gender, which real edit flows do legitimately change) has no
+    // legitimate post-completion edit path today.
+    function ownerCannotChangePrivilegedFields() {
+      let d = request.resource.data;
+      let changedKeys = d.diff(resource.data).affectedKeys();
+      return
+        !changedKeys.hasAny(['role', 'isAdmin', 'isSeller', 'sellerId', 'permissions']) &&
+        (!changedKeys.hasAny(['sellerStatus']) || d.sellerStatus != 'approved') &&
+        (!changedKeys.hasAny(['employeeStatus']) || d.employeeStatus != 'approved') &&
+        (!changedKeys.hasAny(['deliveryStatus']) || d.deliveryStatus != 'approved') &&
+        !changedKeys.hasAny([
+          'profileCompleted', 'profileCompletedAt', 'phoneVerified',
+          'emailVerified', 'email', 'dateOfBirth'
+        ]);
+    }
+
+    // CREATE-time counterpart: a self-registering user must not be able to
+    // create their own doc already pre-approved for any privileged
+    // capability. Real signup paths (grepped: registerWithEmail/
+    // signInWithEmail-recreate/verifyPhoneOTP.ts write role:'user';
+    // apps/delivery's partner_registration_screen.dart writes
+    // role:'delivery_partner' directly at signup — harmless by itself since
+    // isDeliveryPartner() also requires delivery_partners/{uid}.status ==
+    // 'approved', which this same phase locks to admin/Cloud-Functions-only
+    // below; apps/seller's seller_registration_screen.dart writes
+    // sellerStatus:'pending', never 'approved', at create) — no real path
+    // writes 'employee', 'admin', 'seller', or an approved status at create.
+    function newUserCreateHasNoPrivilegedFields() {
+      let d = request.resource.data;
+      return
+        (!('role' in d) || d.role == 'user' || d.role == 'delivery_partner') &&
+        (!('sellerStatus' in d) || d.sellerStatus != 'approved') &&
+        (!('employeeStatus' in d) || d.employeeStatus != 'approved') &&
+        (!('deliveryStatus' in d) || d.deliveryStatus != 'approved') &&
+        (!('isAdmin' in d) || d.isAdmin == false) &&
+        (!('isSeller' in d) || d.isSeller == false) &&
+        !('sellerId' in d) &&
+        !('permissions' in d) &&
+        // Phase 16, Workstream 5 fix: value-guarded (not blanket-blocked),
+        // matching sellerStatus/employeeStatus above — real client signup
+        // (registerWithEmail/signInWithGoogle in auth_service.dart) now
+        // writes the FULL UserModel.toMap(), which includes these fields
+        // as their safe default (false), and that real create must keep
+        // working. Only the value true is what a self-registering user
+        // must never be able to set.
+        (!('profileCompleted' in d) || d.profileCompleted == false) &&
+        (!('phoneVerified' in d) || d.phoneVerified == false) &&
+        (!('emailVerified' in d) || d.emailVerified == false);
+    }
+
     match /users/{userId} {
       // ✅ SECURITY FIX: Only authenticated users can read user data
       // Users can read their own full profile, admins can read any
       allow read: if isOwner(userId) || isAdmin();
-      
+
       // Users can create their own profile, admins can create for delivery partners
-      allow create: if isOwner(userId) || isAdmin();
-      
-      // Users can update their own profile, admins can update any
-      allow update: if isOwner(userId) || isAdmin();
-      
+      allow create: if isAdmin() ||
+        (isOwner(userId) && newUserCreateHasNoPrivilegedFields());
+
+      // Users can update their own profile (but not privileged fields —
+      // see ownerCannotChangePrivilegedFields() above), admins can update any
+      allow update: if isAdmin() ||
+        (isOwner(userId) && ownerCannotChangePrivilegedFields());
+
       // Only admins can delete users
       allow delete: if isAdmin();
       
@@ -221,6 +316,63 @@ service cloud.firestore {
          resource.data.orderStatus != 'delivered');
     }
 
+    // Phase 14, Workstream 7 fix: the seller and delivery-partner update
+    // branches below had NO field restriction at all (and the seller branch
+    // didn't even call isSeller() — any account merely NAMED as sellerId on
+    // an order, approved or not, could update it). The CTO proved the
+    // account named as sellerId could rewrite total/subtotal/paymentStatus
+    // and force orderStatus:'delivered' in one update — which, chained with
+    // payEmployeeCommissionOnDelivery firing real wallet credit on exactly
+    // that transition, and a self-approved 100%-commission employee
+    // (Workstream 2), mints unlimited real wallet balance.
+    //
+    // Fields chosen by reading the real, live fulfilment call sites rather
+    // than assumption: apps/seller/lib/providers/seller_order_provider.dart
+    // (_updateOrderStatus/acceptOrder/rejectOrder/markPacking/
+    // markReadyForPickup) writes only orderStatus, status, updatedAt,
+    // inventoryDeducted, inventoryDeductedAt, sellerDecision, acceptedAt,
+    // cancelledBy, cancelledAt, readyForPickupAt — never any field in the
+    // list below. apps/delivery/lib/providers/order_provider.dart
+    // (acceptOrder/updateOrderStatus/denyOrder) writes only
+    // deliveryPartnerId, orderStatus, status, updatedAt,
+    // deliveryAcceptedAt, deliveryRejectedBy, arrivedAtStoreAt, pickedUpAt,
+    // outForDeliveryAt, deliveredAt, codSettlementStatus — likewise never
+    // touches any field below. (apps/seller/lib/providers/order_provider.dart's
+    // DeliveryOrderProvider class also writes deliveryPartnerId/orderStatus,
+    // but is dead code — never registered as a Provider or referenced by
+    // any seller-app screen — so it wasn't used to justify this field list.)
+    // Phase 15, Workstream 3a fix: `deliveryPartnerId` was absent from this
+    // denylist — a seller (or the already-assigned delivery partner) could
+    // rewrite it on their own order to redirect delivery to an accomplice,
+    // a COD-cash-settlement risk. It is added here for the seller and
+    // already-assigned-partner branches (real call sites for both — see
+    // Phase 14's field-list comment — never touch deliveryPartnerId once
+    // set), but a delivery partner claiming a currently-UNASSIGNED order
+    // legitimately needs to set it for the first time — see
+    // deliveryPartnerCanClaimOrder() below, used only by that one branch.
+    function orderFulfilmentCannotChangeProtectedFields() {
+      return !request.resource.data.diff(resource.data).affectedKeys().hasAny([
+        'total', 'subtotal', 'discount', 'deliveryCharge', 'tax', 'items',
+        'paymentStatus', 'userId', 'sellerId', 'employeeUid', 'employeeCode',
+        'orderMode', 'commissionPaid', 'commissionAmount', 'deliveryVerificationCode',
+        'deliveryPartnerId'
+      ]);
+    }
+
+    // Identical to the above MINUS deliveryPartnerId — used only by the
+    // unassigned-order-claim branch, which is already independently guarded
+    // (below) to require the order's existing deliveryPartnerId to be
+    // absent/null/empty AND the new value to equal the caller's own uid.
+    // That combination is the only way deliveryPartnerId can ever change:
+    // empty -> the claiming partner's own uid, nothing else.
+    function deliveryPartnerCanClaimOrder() {
+      return !request.resource.data.diff(resource.data).affectedKeys().hasAny([
+        'total', 'subtotal', 'discount', 'deliveryCharge', 'tax', 'items',
+        'paymentStatus', 'userId', 'sellerId', 'employeeUid', 'employeeCode',
+        'orderMode', 'commissionPaid', 'commissionAmount', 'deliveryVerificationCode'
+      ]);
+    }
+
     match /orders/{orderId} {
       // Order owner can read, seller/delivery partner/admin can read all
       allow read: if isAuthenticated() &&
@@ -235,18 +387,23 @@ service cloud.firestore {
       allow create: if false;
 
       // Owner can update (for cancellation) but not financial fields/items;
-      // seller/admin/delivery partner can update status as before.
+      // seller/delivery partner can advance fulfilment status but not
+      // financial/attribution fields (see orderFulfilmentCannotChangeProtectedFields
+      // above); admin unrestricted.
       allow update: if isAuthenticated() &&
         ((resource.data.userId == request.auth.uid &&
           ownerCannotChangeOrderFinancials() &&
           ownerOrderStatusChangeIsValid()) ||
-         resource.data.sellerId == request.auth.uid ||
-         (isDeliveryPartner() && resource.data.deliveryPartnerId == request.auth.uid) ||
+         (isSeller() && resource.data.sellerId == request.auth.uid &&
+          orderFulfilmentCannotChangeProtectedFields()) ||
+         (isDeliveryPartner() && resource.data.deliveryPartnerId == request.auth.uid &&
+          orderFulfilmentCannotChangeProtectedFields()) ||
          (isDeliveryPartner() &&
           (!('deliveryPartnerId' in resource.data) ||
            resource.data.deliveryPartnerId == null ||
            resource.data.deliveryPartnerId == '') &&
-          request.resource.data.deliveryPartnerId == request.auth.uid) ||
+          request.resource.data.deliveryPartnerId == request.auth.uid &&
+          deliveryPartnerCanClaimOrder()) ||
          isAdmin());
 
       // Only admin can delete orders
@@ -294,9 +451,23 @@ service cloud.firestore {
     match /coupons/{couponId} {
       // Public read for coupons (display offers to guests)
       allow read: if true;
-      
+
       // Only admin can manage coupons
       allow write: if isAdmin();
+    }
+
+    // ============================================
+    // COUPON REDEMPTIONS COLLECTION (Phase 15, Workstream 2)
+    // ============================================
+    // One document per (couponCode, uid) pair, id `{couponCode}_{uid}`.
+    // Written only by createOrder (functions/src/customer/createOrder.ts)
+    // inside the same transaction that creates the order the coupon
+    // discounted — its existence is what blocks a second redemption of the
+    // same coupon by the same user. Mirrors wallet_topups' idempotency-
+    // anchor shape exactly.
+    match /coupon_redemptions/{redemptionId} {
+      allow read: if isAuthenticated() && (resource.data.uid == request.auth.uid || isAdmin());
+      allow write: if false;
     }
     
     // ============================================
@@ -331,13 +502,30 @@ service cloud.firestore {
     // ============================================
     // SPONSORED BANNERS / CAMPAIGNS
     // ============================================
+    // Phase 15, Workstream 4d fix: `allow create: if isSeller() || isAdmin();`
+    // had no binding between the document's `sellerId` and the caller — any
+    // approved seller could create a banner attributed to a different
+    // seller's id. Bound to request.auth.uid directly: grepped every app
+    // for a real seller-side creator of this collection and found none —
+    // apps/admin/lib/providers/sponsored_banner_provider.dart is the only
+    // live writer (createSponsoredBanner(), which doesn't even set a
+    // sellerId field, and goes through the isAdmin() branch regardless, so
+    // this binding doesn't affect it). request.auth.uid is the same
+    // convention already used everywhere else sellerId appears
+    // (products.sellerId, orders.sellerId, and the sellers/{sellerId}
+    // document id itself) — chosen over the update/delete rules' existing
+    // `get(users/uid).data.sellerId` indirection because that field is
+    // never written anywhere in the codebase (grepped) and is therefore
+    // always undefined; see this phase's completion report for the
+    // separate, more severe bug that indirection causes on update/delete
+    // (out of this workstream's explicit scope to fix — reported only).
     match /sponsored_banners/{bannerId} {
       // Public read for active banners
       allow read: if true;
-      
+
       // Sellers can create their own, admins can manage all
-      allow create: if isSeller() || isAdmin();
-      allow update: if isAdmin() || 
+      allow create: if isAdmin() || (isSeller() && request.resource.data.sellerId == request.auth.uid);
+      allow update: if isAdmin() ||
         (isSeller() && resource.data.sellerId == get(/databases/$(database)/documents/users/$(request.auth.uid)).data.sellerId);
       allow delete: if isAdmin();
     }
@@ -353,46 +541,169 @@ service cloud.firestore {
       allow write: if isAdmin();
     }
     
+    // Phase 15, Workstream 4d fix: same shape and same reasoning as
+    // sponsored_banners above. `campaigns` has ZERO writers anywhere in
+    // apps/ or packages/ (grepped) — entirely dead at the application
+    // layer today — but the rule itself still permitted any approved
+    // seller to create a document with an arbitrary sellerId, so it's
+    // fixed regardless of current disuse.
     match /campaigns/{campaignId} {
       // Campaign owner and admin can read
-      allow read: if isAuthenticated() && 
+      allow read: if isAuthenticated() &&
         (resource.data.sellerId == get(/databases/$(database)/documents/users/$(request.auth.uid)).data.sellerId || isAdmin());
-      
-      allow create: if isSeller() || isAdmin();
-      allow update, delete: if isAdmin() || 
+
+      allow create: if isAdmin() || (isSeller() && request.resource.data.sellerId == request.auth.uid);
+      allow update, delete: if isAdmin() ||
         (isSeller() && resource.data.sellerId == get(/databases/$(database)/documents/users/$(request.auth.uid)).data.sellerId);
     }
     
     // ============================================
     // SELLERS COLLECTION
     // ============================================
+    // Phase 14, Workstream 2 fix: `allow create: if isAuthenticated();` let
+    // any signed-in user create a seller doc at ANY id (not just their own)
+    // — id-squatting another seller's account. `allow update: if
+    // isOwner(sellerId) || isAdmin();` had no field restriction, so
+    // `status: "approved"` was self-grantable, immediately satisfying
+    // isSeller()'s `sellers/{uid}.status == 'approved'` fallback.
+    //
+    // Value-guarded (owner cannot make status become 'approved') rather
+    // than a blanket "status can never change" block: apps/marketplace's
+    // seller_provider.dart's applyAsSeller() (dead code today — zero call
+    // sites — but still a reachable rules-level write path regardless of
+    // whether any current screen calls it) and the general re-apply shape
+    // used elsewhere in this codebase (employee_apply_screen.dart) write
+    // status:'pending' on the owner's own doc; a blanket block would also
+    // incorrectly reject an approved seller's own unrelated profile edits
+    // (shopName/shopAddress/etc.) any time `status` is merely carried over
+    // unchanged in a full-document `.set()`. Blocking only the 'approved'
+    // value closes the exploit while preserving both.
+    function ownerCannotApproveSellerStatus() {
+      return !request.resource.data.diff(resource.data).affectedKeys().hasAny(['status']) ||
+        request.resource.data.status != 'approved';
+    }
+
     match /sellers/{sellerId} {
       // Public read for seller profiles
       allow read: if true;
-      
-      // Seller can update own profile, admin can manage all
-      allow create: if isAuthenticated();
-      allow update: if isOwner(sellerId) || isAdmin();
+
+      // Seller can create their own profile (never pre-approved), admin can manage all
+      allow create: if isAdmin() ||
+        (isOwner(sellerId) &&
+         (!('status' in request.resource.data) || request.resource.data.status != 'approved'));
+
+      // Seller can update own profile but not self-approve, admin can manage all
+      allow update: if isAdmin() ||
+        (isOwner(sellerId) && ownerCannotApproveSellerStatus());
       allow delete: if isAdmin();
-      
+
       // Seller products subcollection
       match /products/{productId} {
         allow read: if true;
         allow write: if isOwner(sellerId) || isAdmin();
       }
     }
-    
+
     // ============================================
     // EMPLOYEES COLLECTION (B2B Sales Reps)
     // ============================================
+    // Phase 14, Workstream 2 fix: both create and update let the owner set
+    // `status: "approved"` and `commissionRate: 100` — self-granting both
+    // employee approval (isEmployee()'s employees/{uid}.status=='approved'
+    // fallback) and, chained with payEmployeeCommissionOnDelivery, an
+    // unlimited real wallet-balance mint (see Workstream 7's orders fix).
+    // Self-apply must still work (the B2B plan explicitly allows a pending
+    // self-application, and employee_apply_screen.dart's real "Re-Apply
+    // after suspension" flow re-writes status:'pending' on an
+    // already-existing doc) — so update is value-guarded (owner cannot make
+    // status become 'approved', or commissionRate become nonzero) rather
+    // than blanket-blocked, and create is forced to exactly the values that
+    // screen actually writes (status:'pending', commissionRate:0).
+    function ownerCannotApproveEmployeeStatusOrCommission() {
+      let d = request.resource.data;
+      let changedKeys = d.diff(resource.data).affectedKeys();
+      return (!changedKeys.hasAny(['status']) || d.status != 'approved') &&
+        (!changedKeys.hasAny(['commissionRate']) || d.commissionRate == 0);
+    }
+
+    // Phase 16A, Workstream 10: the ₹500 one-time Registration & Onboarding
+    // Fee gate. Unlike `status`/`commissionRate` above — where the owner
+    // legitimately re-writes `status` to 'pending' on re-apply, so those
+    // are VALUE-guarded (only the dangerous value is blocked) — there is
+    // NO legitimate client write of ANY value to ANY of these seven
+    // fields. Every write to them is performed exclusively by Cloud
+    // Functions using the Admin SDK, which bypasses these rules entirely
+    // (see functions/src/employee/activationCore.ts and
+    // adminOnboardingActions.ts) — so this is a blanket DENYLIST, not a
+    // value-guard: touching any of these keys, to any value, from an
+    // owner write is rejected outright, full stop.
+    //
+    // A sibling helper (not folded into
+    // ownerCannotApproveEmployeeStatusOrCommission() above) deliberately —
+    // mixing a blanket denylist into a helper whose other half is a
+    // narrow value-guard would make that helper's name misleading and
+    // harder to reason about; matches this ruleset's own existing pattern
+    // of one helper per distinct guarded-field-set (see wallets'
+    // walletBalanceFieldsAreZero() + ownerCannotChangeWalletBalanceFields()
+    // above, which are two separate helpers for the same reason).
+    //
+    // Decision on the "merge carrying an unchanged/default value" edge
+    // case (e.g. a hypothetical future `.set({...}, merge:true)` that
+    // includes `onboardingPaid: false` even though the field was never
+    // present before): DENIED, deliberately, with no value-based
+    // tolerance — mirrors ownerCannotChangePrivilegedFields()'s blanket
+    // block on role/isAdmin/isSeller/sellerId/permissions above (not the
+    // status/commissionRate value-guard precedent), because these seven
+    // fields need the same absolute "structurally unwritable" guarantee
+    // those privileged fields have, not the narrower "one dangerous value
+    // is blocked" guarantee status/commissionRate have. Verified
+    // empirically before choosing this: the ONLY current client write
+    // site to employees/{employeeId} — apps/marketplace/lib/screens/
+    // employee/employee_apply_screen.dart — writes a fixed 10-key map
+    // that never includes any of these seven fields, on both its initial
+    // apply AND its re-apply flow (re-apply only ever resets
+    // users/{uid}.employeeStatus client-side; it does not write to
+    // employees/{uid} directly at all) — so this rule changes nothing
+    // about that real, live flow. See functions/scripts/
+    // phase16a_onboarding_rules_test.js for the emulator proof of both.
+    function ownerCannotSetOnboardingFields() {
+      let changedKeys = request.resource.data.diff(resource.data).affectedKeys();
+      return !changedKeys.hasAny([
+        'onboardingPaid', 'onboardingWaived', 'onboardingFeeAmount',
+        'onboardingPaymentId', 'onboardingPaidAt', 'onboardingWaivedAt',
+        'onboardingRefundedAt'
+      ]);
+    }
+
+    // CREATE-time counterpart: `resource` doesn't exist yet on create, so
+    // there is no `diff()` to take — checks presence directly instead.
+    function newEmployeeCreateHasNoOnboardingFields() {
+      let d = request.resource.data;
+      return !('onboardingPaid' in d) && !('onboardingWaived' in d) &&
+        !('onboardingFeeAmount' in d) && !('onboardingPaymentId' in d) &&
+        !('onboardingPaidAt' in d) && !('onboardingWaivedAt' in d) &&
+        !('onboardingRefundedAt' in d);
+    }
+
     match /employees/{employeeId} {
       // Employees are internal staff, not a public storefront — unlike sellers.
       allow read: if isAuthenticated() && (isOwner(employeeId) || isAdmin());
 
-      // Self-apply (pending) or admin-direct-create (approved)
-      allow create: if isAdmin() || isOwner(employeeId);
+      // Self-apply is forced to pending/zero-commission, and (Phase 16A)
+      // to carrying none of the seven onboarding fields; admin-direct-create
+      // (approved, real commissionRate, or onboarding fields set) is
+      // unrestricted — Cloud Functions use the Admin SDK and bypass these
+      // rules entirely regardless of this branch.
+      allow create: if isAdmin() ||
+        (isOwner(employeeId) &&
+         request.resource.data.status == 'pending' &&
+         (!('commissionRate' in request.resource.data) || request.resource.data.commissionRate == 0) &&
+         newEmployeeCreateHasNoOnboardingFields());
 
-      allow update: if isOwner(employeeId) || isAdmin();
+      allow update: if isAdmin() ||
+        (isOwner(employeeId) &&
+         ownerCannotApproveEmployeeStatusOrCommission() &&
+         ownerCannotSetOnboardingFields());
 
       allow delete: if isAdmin();
     }
@@ -449,11 +760,56 @@ service cloud.firestore {
       allow write: if isAdmin();
     }
     
+    // Phase 15, Workstream 4a fix: `allow write: if isAuthenticated();`
+    // covers create, update, AND delete — any signed-in user could forge,
+    // tamper with, or delete arbitrary log documents. Mirrors auth_events,
+    // which already gets this right: clients legitimately create logs, but
+    // never update or delete them afterward.
     match /logs/{logId} {
       allow read: if isAdmin();
-      allow write: if isAuthenticated();
+      allow create: if isAuthenticated();
+      allow update, delete: if false;
     }
-    
+
+    // ============================================
+    // CUSTOMER PRODUCT BENEFIT PROGRAM — COMPLIANCE GATE (Phase A)
+    // ============================================
+    // Deliberately NOT nested under `settings/{docId}` (see above) even
+    // though it's config-shaped: Firestore security rules are ADDITIVE
+    // (OR'd) across every matching `match` block — a narrower match can
+    // never RESTRICT a broader one that also matches the same path.
+    // `match /settings/{docId}` above already grants
+    // `allow write: if isAdmin()`, so any flag/compliance document placed
+    // under settings/ would remain directly admin-client-writable no
+    // matter what extra rule was written here. Their own top-level
+    // collections are the only way to make them Cloud-Function-write-only.
+    // The only writers are functions/src/admin/complianceGate.ts's
+    // setBenefitFeatureFlag and setComplianceStatus callables, which run
+    // with the Admin SDK (bypasses these rules) and audit-log every
+    // change. Do not "tidy" these back into settings/.
+    match /feature_flags/{docId} {
+      // Clients (including logged-out ones) must be able to read flags to
+      // decide whether to show anything — fail-closed if the doc is
+      // absent or a field is missing, never fail-open.
+      allow read: if true;
+      allow write: if false;
+    }
+
+    match /compliance_config/{programId} {
+      // Contains reviewer names and internal legal notes — admin-read
+      // only, unlike the world-readable settings/ and feature_flags/.
+      allow read: if isAdmin();
+      allow write: if false;
+    }
+
+    match /compliance_audit_log/{entryId} {
+      // Append-only and Cloud-Function-write-only: even an admin client
+      // cannot create, edit, or delete an entry directly, so the log
+      // stays tamper-evident.
+      allow read: if isAdmin();
+      allow create, update, delete: if false;
+    }
+
     // ============================================
     // WISHLISTS COLLECTION (Top-level)
     // ============================================
@@ -493,6 +849,17 @@ service cloud.firestore {
     // ============================================
     match /phone_otp_codes/{phone} {
       // Only cloud functions can access
+      allow read, write: if false;
+    }
+
+    // ============================================
+    // OTP DELIVERY FAILURES (Phase 16, Workstream 2/3 — diagnostics)
+    // ============================================
+    // Written only by sendPhoneOTP.ts / sendEmailOTP.ts when the 2Factor/
+    // Resend provider call itself fails — never contains an OTP value or
+    // an API key. Cloud-Functions-only, mirroring otp_codes/
+    // phone_otp_codes above.
+    match /otp_delivery_failures/{docId} {
       allow read, write: if false;
     }
 
@@ -549,14 +916,26 @@ service cloud.firestore {
     // ============================================
     // AUTH LOGS (Login/Logout Tracking)
     // ============================================
+    // Phase 15, Workstream 4b fix: `allow create: if isAuthenticated();` had
+    // no binding to the caller — any signed-in user could forge an
+    // auth_logs entry attributed to anyone. The real writer
+    // (apps/marketplace's auth_provider.dart's _logAuthEvent, and the
+    // identical apps/admin copy) stores the acting user's id in a field
+    // literally named `uid` — NOT `userId` like auth_events uses — grepped
+    // and confirmed before writing this, since binding to the wrong field
+    // name would reject the only real writer. Known, pre-existing, and
+    // unrelated-to-this-fix limitation: the 'logout' event's write happens
+    // AFTER _authService.signOut() completes, and every failed-auth-attempt
+    // event fires with no session ever having existed — both cases already
+    // fail isAuthenticated() today (no valid request.auth at write time)
+    // regardless of this fix, so this rule doesn't regress anything that
+    // was working.
     match /auth_logs/{logId} {
-      // ✅ SECURITY FIX: Only authenticated users can create auth logs
-      // Logout events should be logged before signOut() completes
-      allow create: if isAuthenticated();
-      
+      allow create: if isAuthenticated() && request.resource.data.uid == request.auth.uid;
+
       // Only admins can read auth logs
       allow read: if isAdmin();
-      
+
       // No one can update/delete
       allow update, delete: if false;
     }
@@ -587,11 +966,24 @@ service cloud.firestore {
         request.resource.data.signupBonusCredited == false;
     }
 
+    // Phase 15, Workstream 4c fix: `referralCode` added — it was absent from
+    // this list, so an owner could rewrite their own referral code at any
+    // time, including to squat a code someone else is publicising (
+    // redeemReferralCode in functions/src/customer/wallet.ts resolves codes
+    // with a `.limit(1)` query on `referralCode`, so a squatted duplicate
+    // would silently shadow the real owner's code for anyone who scans/
+    // types it afterward). Verified no legitimate client path sets it after
+    // creation — grepped apps/marketplace's wallet_provider.dart and
+    // WalletModel: referralCode is only ever generated once, inside
+    // WalletModel.empty(), at wallet-document creation time. `allow create`
+    // is a separate rule from `allow update` (see walletBalanceFieldsAreZero()
+    // above, which doesn't constrain referralCode), so the real creation
+    // path — writing a freshly-generated, non-empty code — is unaffected.
     function ownerCannotChangeWalletBalanceFields() {
       return !request.resource.data.diff(resource.data).affectedKeys().hasAny([
         'balance', 'coins', 'lifetimeEarnings', 'lifetimeSpent',
         'lifetimeCoinsEarned', 'lifetimeCoinsUsed', 'referredBy',
-        'referralCount', 'signupBonusCredited'
+        'referralCount', 'signupBonusCredited', 'referralCode'
       ]);
     }
 
@@ -667,17 +1059,36 @@ service cloud.firestore {
     // ============================================
     // DELIVERY PARTNERS COLLECTION
     // ============================================
+    // Phase 14, Workstream 2 fix: same shape as sellers/employees above —
+    // `status: "approved"` was self-grantable on both create and update,
+    // immediately satisfying isDeliveryPartner()'s
+    // delivery_partners/{uid}.status=='approved' fallback. Value-guarded on
+    // update (not blanket-blocked) so a real approved partner's own
+    // location/online-status updates (apps/delivery's location_provider.dart
+    // — currentLat/currentLng/lastLocationUpdate/isOnline, none of which
+    // touch `status`) keep working, and so status carrying over unchanged in
+    // a merge-set is never mistaken for an attempted change.
+    function ownerCannotApproveDeliveryStatus() {
+      return !request.resource.data.diff(resource.data).affectedKeys().hasAny(['status']) ||
+        request.resource.data.status != 'approved';
+    }
+
     match /delivery_partners/{partnerId} {
       // Partner can read own data, admin can read all
-      allow read: if isAuthenticated() && 
+      allow read: if isAuthenticated() &&
         (isOwner(partnerId) || isAdmin());
-      
-      // Admin can create, or delivery partner can create their own (for set with merge)
-      allow create: if isAdmin() || isOwner(partnerId);
-      
-      // Partner can update own location/status, admin can update all
-      allow update: if isOwner(partnerId) || isAdmin();
-      
+
+      // Admin can create, or delivery partner can create their own — but
+      // never already pre-approved (apps/delivery's
+      // partner_registration_screen.dart always writes status:'pending').
+      allow create: if isAdmin() ||
+        (isOwner(partnerId) &&
+         (!('status' in request.resource.data) || request.resource.data.status != 'approved'));
+
+      // Partner can update own location/status fields but not self-approve, admin can update all
+      allow update: if isAdmin() ||
+        (isOwner(partnerId) && ownerCannotApproveDeliveryStatus());
+
       // Only admin can delete partners
       allow delete: if isAdmin();
     }
@@ -814,6 +1225,66 @@ service cloud.firestore {
       // Only Cloud Functions write; admins can read
       allow read: if isAdmin();
       allow write: if false;
+    }
+
+    // ============================================
+    // ASSOCIATE ONBOARDING COLLECTIONS (Phase 16A, Workstream 10g)
+    // ============================================
+    // settings/associate_onboarding (the ₹500 fee/copy config) needs NO new
+    // rule here — it already falls under `match /settings/{docId}` above
+    // (`allow read: if true; allow write: if isAdmin();`), which already
+    // gives it exactly the shape Workstream 1 needs (public read, admin-only
+    // write). A redundant `match /settings/associate_onboarding` block
+    // would add nothing (Firestore rules are additive/OR'd across matching
+    // blocks — see the compliance-gate comment above for why a narrower
+    // match can never RESTRICT a broader one that already matches).
+    //
+    // The four collections below are new. Cloud Functions use the Admin
+    // SDK and bypass these rules entirely regardless of what's written
+    // here — these blocks exist for defence-in-depth and documentation,
+    // mirroring verified_payments/payment_security_logs above exactly.
+    match /onboarding_events/{eventId} {
+      // Audit trail of activation/waiver/refund/config-violation events —
+      // admin-read only, Cloud-Functions-write only.
+      allow read: if isAdmin();
+      allow write: if false;
+    }
+
+    match /onboarding_exceptions/{exceptionId} {
+      // "Paid but could not activate" records for admin visibility —
+      // admin-read only, Cloud-Functions-write only.
+      allow read: if isAdmin();
+      allow write: if false;
+    }
+
+    match /associate_refund_requests/{requestId} {
+      // The affected associate can see their own pending refund request;
+      // admins can see all. Never client-writable — created only by the
+      // requestAssociateOnboardingRefundOnSuspend trigger, updated only by
+      // future admin tooling via the Admin SDK.
+      allow read: if isAdmin() ||
+        (isAuthenticated() && resource.data.employeeId == request.auth.uid);
+      allow write: if false;
+    }
+
+    match /webhook_events/{eventId} {
+      // razorpayOnboardingWebhook's idempotency ledger — admin-read only
+      // (for debugging redelivery behaviour), Cloud-Functions-write only.
+      allow read: if isAdmin();
+      allow write: if false;
+    }
+
+    // ============================================
+    // ONBOARDING RATE LIMITS COLLECTION (Phase 16A, Workstream 4)
+    // ============================================
+    // No client read or write path exists or is needed — the deliberate
+    // absence of a `match` block here already denies everything by
+    // Firestore's own default-deny (every unmatched path is denied). This
+    // explicit block exists only so a future reader doesn't mistake the
+    // absence for an oversight. createAssociateOnboardingPayment.ts (Admin
+    // SDK) is the only reader/writer.
+    match /onboarding_rate_limits/{uid} {
+      allow read, write: if false;
     }
   }
 }

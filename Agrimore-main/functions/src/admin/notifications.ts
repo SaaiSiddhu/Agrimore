@@ -2,28 +2,21 @@ import * as functions from "firebase-functions/v1";
 import * as admin from "firebase-admin";
 import { log, NotificationData, validateNotificationData, createNotificationMessage } from "../common/helpers";
 
-const BOOTSTRAP_ADMIN_EMAILS = new Set([
-  "admin@agrimore.com",
-  "admin@admin.com",
-  "agrimore@gmail.com",
-]);
-
+// Phase 14, Workstream 3 fix: this used to contain a
+// BOOTSTRAP_ADMIN_EMAILS allowlist and, on a match, WROTE role:"admin" onto
+// the caller's own user doc via the Admin SDK (bypassing firestore.rules
+// entirely) before returning success — an authorisation check that mutates
+// state is itself the bug, independent of which emails were listed. Of the
+// three addresses previously here, only admin@agrimore.com had a live Auth
+// account; the other two were unregistered and claimable by anyone through
+// open signup. requireAdmin() is now read-only: custom claim first, then
+// the Firestore role, never a write.
 async function requireAdmin(context: functions.https.CallableContext) {
   if (!context.auth) {
     throw new functions.https.HttpsError("unauthenticated", "User must be authenticated");
   }
 
   if (context.auth.token.admin === true) return;
-
-  const email = String(context.auth.token.email || "").trim().toLowerCase();
-  if (BOOTSTRAP_ADMIN_EMAILS.has(email)) {
-    await admin.firestore().collection("users").doc(context.auth.uid).set({
-      email,
-      role: "admin",
-      updatedAt: admin.firestore.FieldValue.serverTimestamp(),
-    }, { merge: true });
-    return;
-  }
 
   const uid = context.auth.uid;
   const userDoc = await admin.firestore().collection("users").doc(uid).get();

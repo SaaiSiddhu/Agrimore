@@ -41,6 +41,11 @@ export 'models/wallet_transaction_model.dart';
 export 'models/wallet_config_model.dart';
 export 'models/referral_model.dart';
 
+// Customer Product Benefit Program Models (compliance/feature-flag gate —
+// Phase A; no enrollment/ledger models exist yet)
+export 'models/benefit_feature_flags_model.dart';
+export 'models/benefit_compliance_model.dart';
+
 // ============================================
 // CONSTANTS
 // ============================================
@@ -74,3 +79,4 @@ export 'config/admin_access_config.dart';
 export 'config/app_routing_config.dart';
 export 'config/firebase_options.dart';
 export 'config/gemini_config.dart';
+export 'config/maps_config.dart';

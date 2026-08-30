@@ -65,7 +65,10 @@ async function buildClaims(uid: string): Promise<Record<string, unknown> | null>
   };
 }
 
-async function setClaims(uid: string): Promise<Record<string, unknown> | null> {
+// Exported for setUserRole.ts (Phase 15, Workstream 3b) to reuse the exact
+// same claim-derivation logic after an admin-driven role change, rather
+// than duplicating it.
+export async function setClaims(uid: string): Promise<Record<string, unknown> | null> {
   const claims = await buildClaims(uid);
 
   try {
