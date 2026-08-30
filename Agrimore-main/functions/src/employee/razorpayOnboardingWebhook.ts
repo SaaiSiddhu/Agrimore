@@ -16,14 +16,22 @@
 // activationCore.performOnboardingActivation, called once below.
 
 import { onRequest } from "firebase-functions/v2/https";
+import { defineSecret } from "firebase-functions/params";
 import * as admin from "firebase-admin";
 import * as crypto from "crypto";
 import axios from "axios";
 import { log } from "../common/helpers";
-import { getRazorpayCredentials } from "../customer/payment";
+import { getRazorpayCredentials, RAZORPAY_KEY_SECRET } from "../customer/payment";
 import { performOnboardingActivation } from "./activationCore";
 import { ONBOARDING_PURPOSE } from "./onboardingConfig";
 
+// Phase 18, Workstream 1: distinct from RAZORPAY_KEY_SECRET (imported above,
+// used for HMAC-signing checkout payments) — Razorpay issues a separate
+// webhook secret when a webhook endpoint is configured in the dashboard.
+// Read site unchanged (still process.env.RAZORPAY_WEBHOOK_SECRET) — see
+// payment.ts's RAZORPAY_KEY_SECRET comment for why binding a secret never
+// requires changing how it's read.
+const RAZORPAY_WEBHOOK_SECRET_PARAM = defineSecret("RAZORPAY_WEBHOOK_SECRET");
 const RAZORPAY_WEBHOOK_SECRET = process.env.RAZORPAY_WEBHOOK_SECRET || "";
 
 // Minimal shape of a Razorpay `payment.captured` webhook delivery — only
@@ -70,7 +78,16 @@ export const razorpayOnboardingWebhook = onRequest(
   // verifyEmailOTP.ts — all still carry that pattern today because they
   // ARE called from a browser). Nothing in this function ever sets
   // Access-Control-Allow-Origin.
-  { minInstances: 0, memory: "256MiB", cors: false },
+  {
+    minInstances: 0,
+    memory: "256MiB",
+    cors: false,
+    // Phase 18, Workstream 1: needs BOTH secrets — RAZORPAY_KEY_SECRET for
+    // the live-API capture check (via getRazorpayCredentials(), used
+    // further down in this file) and RAZORPAY_WEBHOOK_SECRET for the
+    // webhook signature check above.
+    secrets: [RAZORPAY_KEY_SECRET, RAZORPAY_WEBHOOK_SECRET_PARAM],
+  },
   async (req, res) => {
     if (req.method !== "POST") {
       res.status(405).send("Method Not Allowed");

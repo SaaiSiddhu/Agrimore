@@ -283,9 +283,27 @@ service cloud.firestore {
     // ownerCannotChangeOrderFinancials() below. The seller/delivery-partner/
     // admin update branches are unchanged; they never needed this
     // restriction and still perform normal order-status fulfillment writes.
+    // Phase 16D-2, Workstream 3a fix: `employeeUid`/`employeeCode` were
+    // ABSENT from this denylist — the seller/delivery-partner update path
+    // (orderFulfilmentCannotChangeProtectedFields() below) already blocks
+    // both, but the OWNER (customer) update branch used only this
+    // function, which never restricted them. That was harmless while
+    // `employeeUid` only ever gated B2B commission (a customer attributing
+    // their OWN order to themselves gained nothing before Phase 16D-1
+    // widened payEmployeeCommissionOnDelivery's eligibility to `employeeUid`
+    // presence alone, regardless of orderMode) — but the moment retail
+    // attribution exists, a client-writable `employeeUid` on an existing
+    // order lets a customer attribute ANY of their own orders to a
+    // colluding (or their own) associate account after the fact,
+    // completely bypassing this phase's server-side resolution and
+    // self-attribution guard in createOrder.ts. Verified no legitimate
+    // owner call site touches either field: order_provider.dart's
+    // cancelOrder() (the only real owner-update site) writes only
+    // orderStatus/status — confirmed by reading it and by
+    // ownerOrderStatusChangeIsValid()'s own comment above.
     function ownerCannotChangeOrderFinancials() {
       return !request.resource.data.diff(resource.data).affectedKeys()
-        .hasAny(['subtotal', 'discount', 'deliveryCharge', 'tax', 'total', 'items', 'paymentStatus']);
+        .hasAny(['subtotal', 'discount', 'deliveryCharge', 'tax', 'total', 'items', 'paymentStatus', 'employeeUid', 'employeeCode']);
     }
 
     // Phase 5b fix: the financial-fields guard above did not restrict
@@ -863,6 +881,16 @@ service cloud.firestore {
       // or admin can read; Cloud Functions only can write, keeping it from
       // ever diverging from the ledger via a direct client write.
       allow read: if isOwner(customerId) || isAdmin();
+      allow write: if false;
+    }
+
+    // Phase C, Workstream 5/7: a reservation against a customer's Product
+    // Credit taken at checkout-quote time (functions/src/customer/
+    // productCreditHold.ts) — Cloud-Function write-only, same additive-
+    // rules reasoning as every other collection in this section.
+    match /product_credit_holds/{holdId} {
+      allow read: if isAuthenticated() &&
+        (resource.data.customerId == request.auth.uid || isAdmin());
       allow write: if false;
     }
 

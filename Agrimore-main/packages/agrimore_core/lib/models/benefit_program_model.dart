@@ -108,6 +108,39 @@ class BenefitProgramModel {
   /// Category id -> rate, used only when benefitRuleType == category.
   final Map<String, dynamic>? categoryRates;
 
+  /// The window a `promotional`-rule program's rate actually applies in —
+  /// deliberately SEPARATE from [enrollmentOpensAt]/[enrollmentClosesAt]
+  /// (Phase C, Workstream 2): when a customer may JOIN the program is not
+  /// the same question as when a promotional rate is IN EFFECT. Phase B
+  /// conflated the two as a stopgap; this corrects it. Null on either side
+  /// means "no bound in that direction" (see BenefitCalculationProgram in
+  /// benefitCalculation.ts for how an unset window is treated).
+  final DateTime? promotionalFrom;
+  final DateTime? promotionalTo;
+
+  // ---- Redemption restrictions (Phase C, Workstream 3) ----
+
+  /// Cart subtotal below which no credit may be redeemed. Default 0 (no
+  /// minimum).
+  final double minOrderValueForRedemption;
+
+  /// Absolute rupee cap on credit applied to a single order. Null = no cap.
+  final double? maxCreditPerOrder;
+
+  /// 0-100 cap on credit as a percentage of the (eligible) order value.
+  /// Null = no percentage cap. A configured 0 means "no credit at all",
+  /// never "unlimited" — see redemptionRules.ts.
+  final double? maxCreditPercentOfOrder;
+
+  /// Category ids credit may be redeemed against. Null/empty = every
+  /// category is eligible.
+  final List<String>? redeemableCategoryIds;
+
+  /// Master switch for redemption on this program. Defaults to false —
+  /// redemption must be deliberately turned on, mirroring every other
+  /// fail-closed default in this model.
+  final bool redemptionEnabled;
+
   final DateTime createdAt;
   final DateTime updatedAt;
   final String? updatedBy;
@@ -130,6 +163,13 @@ class BenefitProgramModel {
     this.eligibleCategoryIds,
     this.tierRates,
     this.categoryRates,
+    this.promotionalFrom,
+    this.promotionalTo,
+    this.minOrderValueForRedemption = 0,
+    this.maxCreditPerOrder,
+    this.maxCreditPercentOfOrder,
+    this.redeemableCategoryIds,
+    this.redemptionEnabled = false,
     required this.createdAt,
     required this.updatedAt,
     this.updatedBy,
@@ -166,6 +206,13 @@ class BenefitProgramModel {
       eligibleCategoryIds: (map['eligibleCategoryIds'] as List?)?.whereType<String>().toList(),
       tierRates: (map['tierRates'] as Map?)?.map((k, v) => MapEntry(k.toString(), v)),
       categoryRates: (map['categoryRates'] as Map?)?.map((k, v) => MapEntry(k.toString(), v)),
+      promotionalFrom: _parseNullableDateTime(map['promotionalFrom']),
+      promotionalTo: _parseNullableDateTime(map['promotionalTo']),
+      minOrderValueForRedemption: (map['minOrderValueForRedemption'] as num?)?.toDouble() ?? 0,
+      maxCreditPerOrder: (map['maxCreditPerOrder'] as num?)?.toDouble(),
+      maxCreditPercentOfOrder: (map['maxCreditPercentOfOrder'] as num?)?.toDouble(),
+      redeemableCategoryIds: (map['redeemableCategoryIds'] as List?)?.whereType<String>().toList(),
+      redemptionEnabled: map['redemptionEnabled'] == true,
       createdAt: _parseDateTime(map['createdAt']),
       updatedAt: _parseDateTime(map['updatedAt']),
       updatedBy: map['updatedBy'] as String?,
@@ -190,6 +237,13 @@ class BenefitProgramModel {
       'eligibleCategoryIds': eligibleCategoryIds,
       'tierRates': tierRates,
       'categoryRates': categoryRates,
+      'promotionalFrom': promotionalFrom == null ? null : Timestamp.fromDate(promotionalFrom!),
+      'promotionalTo': promotionalTo == null ? null : Timestamp.fromDate(promotionalTo!),
+      'minOrderValueForRedemption': minOrderValueForRedemption,
+      'maxCreditPerOrder': maxCreditPerOrder,
+      'maxCreditPercentOfOrder': maxCreditPercentOfOrder,
+      'redeemableCategoryIds': redeemableCategoryIds,
+      'redemptionEnabled': redemptionEnabled,
       'createdAt': Timestamp.fromDate(createdAt),
       'updatedAt': Timestamp.fromDate(updatedAt),
       'updatedBy': updatedBy,
@@ -231,6 +285,13 @@ class BenefitProgramModel {
     List<String>? eligibleCategoryIds,
     Map<String, dynamic>? tierRates,
     Map<String, dynamic>? categoryRates,
+    DateTime? promotionalFrom,
+    DateTime? promotionalTo,
+    double? minOrderValueForRedemption,
+    double? maxCreditPerOrder,
+    double? maxCreditPercentOfOrder,
+    List<String>? redeemableCategoryIds,
+    bool? redemptionEnabled,
     DateTime? createdAt,
     DateTime? updatedAt,
     String? updatedBy,
@@ -253,6 +314,13 @@ class BenefitProgramModel {
       eligibleCategoryIds: eligibleCategoryIds ?? this.eligibleCategoryIds,
       tierRates: tierRates ?? this.tierRates,
       categoryRates: categoryRates ?? this.categoryRates,
+      promotionalFrom: promotionalFrom ?? this.promotionalFrom,
+      promotionalTo: promotionalTo ?? this.promotionalTo,
+      minOrderValueForRedemption: minOrderValueForRedemption ?? this.minOrderValueForRedemption,
+      maxCreditPerOrder: maxCreditPerOrder ?? this.maxCreditPerOrder,
+      maxCreditPercentOfOrder: maxCreditPercentOfOrder ?? this.maxCreditPercentOfOrder,
+      redeemableCategoryIds: redeemableCategoryIds ?? this.redeemableCategoryIds,
+      redemptionEnabled: redemptionEnabled ?? this.redemptionEnabled,
       createdAt: createdAt ?? this.createdAt,
       updatedAt: updatedAt ?? this.updatedAt,
       updatedBy: updatedBy ?? this.updatedBy,

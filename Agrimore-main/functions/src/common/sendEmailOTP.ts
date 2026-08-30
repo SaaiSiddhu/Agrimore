@@ -160,7 +160,13 @@ function generateOTP(): string {
 // ============================================
 // SEND EMAIL OTP FUNCTION
 // ============================================
-export const sendEmailOTP = functions.https.onRequest(async (req, res) => {
+// Phase 18, Workstream 2: needs RESEND_API_KEY (delivery, via
+// emailProvider.ts's sendEmailViaResend, called below). RESEND_FROM_EMAIL
+// is deliberately NOT bound here — see emailProvider.ts's Workstream 3
+// comment for why it's ordinary config, not a secret.
+export const sendEmailOTP = functions
+  .runWith({ secrets: ["RESEND_API_KEY"] })
+  .https.onRequest(async (req, res) => {
   // CORS headers
   res.set("Access-Control-Allow-Origin", "*");
   res.set("Access-Control-Allow-Methods", "POST, OPTIONS");

@@ -21,10 +21,18 @@
 // discount/delivery/tax distribution exactly (by seller subtotal share of
 // the cart total) and its order-number suffixing convention
 // ($baseOrderNumber-$index for carts spanning more than one seller).
+//
+// Phase C, Workstream 4: the pricing logic (product lookup, B2B/B2C price
+// selection, MOQ, stock, coupon, delivery/tax sanity ceilings, per-seller
+// ratio split, grand total) was extracted VERBATIM into orderPricing.ts's
+// computeOrderPricing — see that file's header for why. This function's
+// own transaction structure, its reads, and its writes are unchanged;
+// it now calls that shared function instead of computing prices inline.
 
 import { onCall, HttpsError } from "firebase-functions/v2/https";
 import * as admin from "firebase-admin";
 import * as crypto from "crypto";
+import { computeOrderPricing } from "./orderPricing";
 
 interface CreateOrderItemInput {
   productId: string;
@@ -61,114 +69,6 @@ function generateVerificationCode(): string {
   return crypto.randomInt(100000, 1000000).toString();
 }
 
-function roundMoney(value: number): number {
-  return Math.round(value * 100) / 100;
-}
-
-interface ValidatedItem {
-  productId: string;
-  price: number;
-  quantity: number;
-  data: Record<string, unknown>;
-}
-
-interface CouponResult {
-  discountAmount: number;
-  couponCode: string | null;
-}
-
-/**
- * Ports CouponModel.calculateDiscount's exact logic
- * (packages/agrimore_core/lib/models/coupon_model.dart) server-side. Does
- * NOT reuse OrderService.validateCoupon
- * (packages/agrimore_services/lib/orders/order_service.dart) — that method
- * reads different, stale field names (expiry/usedCount/usageLimit/minOrder/
- * discountType vs. this schema's validFrom/validTo/minOrderAmount/type) left
- * over from an earlier port and is not what the live client checkout flow
- * actually calls (CouponProvider.calculateDiscount -> CouponModel.
- * calculateDiscount is the real, live path — verified by reading both).
- *
- * Phase 14, Workstream 4: takes an already-fetched QuerySnapshot instead of
- * querying itself — createOrder now runs inside a single db.runTransaction,
- * and Firestore transactions require every read to happen before any write,
- * so this coupon lookup is performed up front alongside the product/payment
- * reads rather than inline here.
- */
-function computeCouponDiscount(
-  couponSnap: FirebaseFirestore.QuerySnapshot | null,
-  couponCode: string | undefined,
-  orderAmount: number,
-  validatedItems: ValidatedItem[]
-): CouponResult {
-  if (!couponCode || !couponCode.trim()) {
-    return { discountAmount: 0, couponCode: null };
-  }
-
-  const normalizedCode = couponCode.trim().toUpperCase();
-  if (!couponSnap || couponSnap.empty) {
-    throw new HttpsError("failed-precondition", "Invalid coupon code");
-  }
-
-  const coupon = couponSnap.docs[0].data();
-  const nowMs = Date.now();
-  const validFromMs = (coupon.validFrom as admin.firestore.Timestamp | undefined)?.toMillis() ?? 0;
-  const validToMs = (coupon.validTo as admin.firestore.Timestamp | undefined)?.toMillis() ?? 0;
-  const isActive = coupon.isActive !== false;
-  const usageLimit = typeof coupon.usageLimit === "number" ? coupon.usageLimit : 0;
-  const usedCount = typeof coupon.usedCount === "number" ? coupon.usedCount : 0;
-
-  const isValid =
-    isActive && nowMs > validFromMs && nowMs < validToMs && (usageLimit === 0 || usedCount < usageLimit);
-  if (!isValid) {
-    throw new HttpsError(
-      "failed-precondition",
-      "This coupon has expired or reached its usage limit"
-    );
-  }
-
-  const minOrderAmount = typeof coupon.minOrderAmount === "number" ? coupon.minOrderAmount : 0;
-  if (orderAmount < minOrderAmount) {
-    throw new HttpsError(
-      "failed-precondition",
-      `Minimum order amount is ₹${minOrderAmount}`
-    );
-  }
-
-  const type = String(coupon.type || "flat");
-  const discountValue = typeof coupon.discount === "number" ? coupon.discount : 0;
-  let discountAmount = 0;
-
-  if (type === "flat") {
-    discountAmount = discountValue;
-  } else if (type === "percentage") {
-    discountAmount = (orderAmount * discountValue) / 100;
-  } else if (type === "buyOneGetOne") {
-    const buyProductId = coupon.buyProductId as string | undefined;
-    const getProductId = coupon.getProductId as string | undefined;
-    const buyItem = buyProductId
-      ? validatedItems.find((i) => i.productId === buyProductId)
-      : undefined;
-    if (buyItem) {
-      if (getProductId) {
-        const getItem = validatedItems.find((i) => i.productId === getProductId);
-        discountAmount = getItem ? getItem.price : 0;
-      } else {
-        discountAmount = buyItem.price;
-      }
-    }
-  }
-
-  const maxDiscountAmount = coupon.maxDiscountAmount as number | undefined;
-  if (typeof maxDiscountAmount === "number" && discountAmount > maxDiscountAmount) {
-    discountAmount = maxDiscountAmount;
-  }
-
-  return {
-    discountAmount: Math.max(0, discountAmount),
-    couponCode: (coupon.code as string | undefined) || normalizedCode,
-  };
-}
-
 export const createOrder = onCall({ minInstances: 0, memory: "256MiB" }, async (request) => {
   const data = request.data as CreateOrderData;
 
@@ -188,7 +88,20 @@ export const createOrder = onCall({ minInstances: 0, memory: "256MiB" }, async (
     throw new HttpsError("invalid-argument", "orderMode must be 'B2C' or 'B2B'");
   }
 
-  const employeeCode = orderMode === "B2B" ? String(data?.employeeCode || "").trim() : "";
+  // Phase 16D-2, Workstream 1: employeeCode is now read for BOTH modes —
+  // previously it was discarded outright for B2C (`orderMode === "B2B" ?
+  // ... : ""`), which is the reason no B2C order could ever be attributed
+  // to a Sales Associate (see employeeCommission.ts's header comment for
+  // the full history). Deliberately NOT uppercased/case-normalised beyond
+  // the existing `.trim()` — B2B's behaviour must not change in any
+  // observable way (D5/1c), and B2B has never case-normalised this value
+  // (a case-mismatched B2B code has always simply failed to match the
+  // stored, always-uppercase code from EmployeeModel.generateEmployeeCode()
+  // — that pre-existing behaviour is preserved exactly). For B2C, the same
+  // case-sensitivity applies: a case-mismatched code silently resolves to
+  // "no attribution" rather than an error, which is exactly D5's required
+  // behaviour anyway.
+  const employeeCode = String(data?.employeeCode || "").trim();
   if (orderMode === "B2B" && !employeeCode) {
     throw new HttpsError("invalid-argument", "employeeCode is required for B2B orders");
   }
@@ -238,8 +151,17 @@ export const createOrder = onCall({ minInstances: 0, memory: "256MiB" }, async (
     // ============================================
     const userSnap = await tx.get(userRef);
 
+    // Phase 16D-2, Workstream 1b: the ONE employee-code lookup query in
+    // this codebase — unchanged in shape from its original B2B-only form
+    // (same two equality filters, same `.limit(1)`), just no longer gated
+    // on `orderMode === "B2B"`. Gated on `employeeCode` being non-empty
+    // instead: a B2B order always has one (enforced above, before the
+    // transaction even starts) so this is unconditional for B2B exactly as
+    // before; a B2C order with no code supplied skips this read entirely
+    // (Workstream 1f — no added read cost for the common unattributed
+    // case).
     let employeeQuerySnap: FirebaseFirestore.QuerySnapshot | null = null;
-    if (orderMode === "B2B") {
+    if (employeeCode) {
       employeeQuerySnap = await tx.get(
         db
           .collection("employees")
@@ -292,164 +214,87 @@ export const createOrder = onCall({ minInstances: 0, memory: "256MiB" }, async (
       );
     }
 
+    // Phase 16D-2, Workstream 1c/2: THE CRITICAL ASYMMETRY. B2B is a
+    // wholesale transaction identified BY its employee code — an
+    // invalid/unapproved code still hard-fails the whole order, byte-for-
+    // byte the same as before this phase (D5/1c: B2B's observable
+    // behaviour must not change). B2C is an ordinary retail sale that just
+    // HAPPENS to carry an optional attribution — per D5, a customer
+    // mistyping (or never entering) an associate's code must still be able
+    // to buy groceries, so every B2C failure-to-attribute case (unknown
+    // code, pending/suspended associate, refunded/incomplete onboarding,
+    // self-attribution) silently results in `employeeUid: null` and the
+    // order is created normally. Never an error for B2C.
     let employeeUid: string | null = null;
     if (orderMode === "B2B") {
       if (!employeeQuerySnap || employeeQuerySnap.empty) {
         throw new HttpsError("failed-precondition", "Invalid or unapproved employee code");
       }
-      employeeUid = employeeQuerySnap.docs[0].id;
-    }
-
-    // Re-derive every price server-side. Never trust client-supplied amounts.
-    // Grouped by sellerId as we go — see the multi-seller note above. Also
-    // kept as a flat list (validatedItems) for coupon BOGO matching.
-    const itemsBySeller = new Map<string, Record<string, unknown>[]>();
-    const validatedItems: ValidatedItem[] = [];
-    let cartSubtotal = 0;
-
-    for (let i = 0; i < items.length; i++) {
-      const item = items[i];
-      const productSnap = productSnaps[i];
-      if (!productSnap.exists) {
-        throw new HttpsError("not-found", `Product ${item.productId} not found`);
-      }
-      const product = productSnap.data()!;
-
-      let price: number;
-      if (orderMode === "B2B") {
-        if (product.isB2BEnabled !== true) {
-          throw new HttpsError(
-            "failed-precondition",
-            `Product ${item.productId} is not enabled for B2B ordering`
-          );
-        }
-        if (typeof product.b2bPrice !== "number") {
-          throw new HttpsError(
-            "failed-precondition",
-            `Product ${item.productId} has no B2B price configured`
-          );
-        }
-        const moq = typeof product.b2bMoq === "number" ? product.b2bMoq : 1;
-        if (item.quantity < moq) {
-          throw new HttpsError(
-            "failed-precondition",
-            `Quantity for product ${item.productId} is below the minimum order quantity (${moq})`
-          );
-        }
-        price = product.b2bPrice;
-      } else {
-        if (typeof product.salePrice !== "number") {
-          throw new HttpsError(
-            "failed-precondition",
-            `Product ${item.productId} has no price configured`
-          );
-        }
-        price = product.salePrice;
-      }
-
-      // Phase 15, Workstream 2: stock validation. Fail-OPEN (with a logged
-      // warning) when `stock` is missing or non-numeric, rather than
-      // fail-closed — deliberately mirroring
-      // packages/agrimore_core/lib/models/product_model.dart's own
-      // ProductModel.fromMap, which defaults a missing/non-numeric stock to
-      // 999 (`(map['stock'] as num?)?.toInt() ?? 999`). That default,
-      // chosen by this codebase's own developers, is strong evidence that
-      // many real products predate this field entirely — rejecting every
-      // order for such a product would break checkout that has always
-      // worked, for a data-completeness gap this phase didn't create. Live
-      // production data was not queried directly to confirm the exact
-      // proportion (no safe read-only Admin SDK credential path was set up
-      // in this environment); the decision instead rests on this explicit,
-      // deliberate model-layer default, which is the alternative basis the
-      // brief itself allows. When stock IS a real number, it is enforced
-      // exactly — this closes the actual overselling gap for every product
-      // that already reports its stock accurately.
-      const stockRaw = product.stock;
-      if (typeof stockRaw !== "number" || !Number.isFinite(stockRaw)) {
-        console.warn(
-          `⚠️ Product ${item.productId} has no numeric stock field — assuming available (mirrors ProductModel.fromMap's default of 999). Backfill this product's stock to enforce real limits.`
-        );
-      } else if (stockRaw < item.quantity) {
+      const candidateUid = employeeQuerySnap.docs[0].id;
+      // Workstream 2 (S3): self-attribution must be impossible. B2B is
+      // all-or-nothing by design (it either gets a valid, non-self,
+      // approved attribution, or the order fails outright, exactly like
+      // an invalid code) — so self-attribution throws here rather than
+      // silently dropping, consistent with every other B2B failure mode.
+      if (candidateUid === uid) {
         throw new HttpsError(
           "failed-precondition",
-          `Product ${item.productId} does not have enough stock (available: ${stockRaw}, requested: ${item.quantity})`
+          "You cannot attribute an order to your own associate code"
         );
       }
-
-      const sellerId = typeof product.sellerId === "string" && product.sellerId ? product.sellerId : "_unassigned";
-      cartSubtotal += price * item.quantity;
-
-      const validatedItem: Record<string, unknown> = {
-        id: item.productId,
-        productId: item.productId,
-        productName: product.name || "",
-        productImage: Array.isArray(product.images) && product.images.length > 0 ? product.images[0] : "",
-        price,
-        quantity: item.quantity,
-        userId: uid,
-        sellerId: sellerId === "_unassigned" ? "" : sellerId,
-        // Server timestamps are not supported inside array elements — use a
-        // fixed Timestamp instead of FieldValue.serverTimestamp() here.
-        addedAt: admin.firestore.Timestamp.now(),
-      };
-
-      validatedItems.push({ productId: item.productId, price, quantity: item.quantity, data: validatedItem });
-
-      const bucket = itemsBySeller.get(sellerId);
-      if (bucket) {
-        bucket.push(validatedItem);
+      employeeUid = candidateUid;
+    } else if (employeeCode && employeeQuerySnap && !employeeQuerySnap.empty) {
+      const candidate = employeeQuerySnap.docs[0];
+      const candidateUid = candidate.id;
+      const candidateData = candidate.data();
+      // Mirrors EmployeeModel.hasClearedOnboardingGate exactly (paid OR
+      // waived, AND not refunded) — an associate who hasn't cleared the
+      // ₹500 onboarding gate, or whose fee was refunded, does not earn
+      // retail-attribution credit. This is a B2C-only check: B2B has never
+      // required onboarding completion (it predates the Phase 16A fee
+      // entirely), so it is deliberately NOT applied to the B2B branch
+      // above.
+      const candidateGateCleared =
+        (candidateData.onboardingPaid === true || candidateData.onboardingWaived === true) &&
+        !candidateData.onboardingRefundedAt;
+      if (candidateUid === uid) {
+        console.warn(
+          `⚠️ B2C order: associate ${candidateUid} attempted to attribute their own order to themselves — dropping attribution`
+        );
+      } else if (!candidateGateCleared) {
+        console.warn(
+          `⚠️ B2C order: associate code "${employeeCode}" resolved to ${candidateUid}, who has not cleared onboarding (or was refunded) — dropping attribution`
+        );
       } else {
-        itemsBySeller.set(sellerId, [validatedItem]);
+        employeeUid = candidateUid;
       }
+    } else if (employeeCode) {
+      console.warn(
+        `⚠️ B2C order: associate code "${employeeCode}" did not match any approved associate — creating order with no attribution`
+      );
     }
 
-    // Coupon discount — server-computed, never trusted from the client.
-    const { discountAmount, couponCode } = computeCouponDiscount(
+    // All pricing (product lookup, B2B/B2C price selection, MOQ, stock,
+    // coupon, delivery/tax sanity ceilings, per-seller ratio split, grand
+    // total) is computed by the shared, behaviour-preserving extraction in
+    // orderPricing.ts — see that file for the full logic. This is the exact
+    // same computation, in the exact same order, as before the extraction.
+    const pricing = computeOrderPricing({
+      items,
+      productSnaps,
+      orderMode,
+      uid,
       couponSnap,
-      data?.couponCode,
-      cartSubtotal,
-      validatedItems
-    );
-
-    // Phase 15, Workstream 2: per-user redemption re-check, inside the same
-    // transaction as the coupon's own usageLimit check above (both read
-    // from snapshots taken at the start of this transaction, so a
-    // concurrent double-redemption of the last available use correctly
-    // causes one caller to retry and then fail). A coupon that validated
-    // successfully but was already redeemed by this exact user is rejected
-    // here — computeCouponDiscount only knows about the coupon document
-    // itself, not per-user history.
-    if (couponCode && redemptionSnap && redemptionSnap.exists) {
-      throw new HttpsError("failed-precondition", "You have already redeemed this coupon");
-    }
-
-    // deliveryCharge/tax have no server-side source of truth to recompute
-    // from (investigated: settings/delivery only stores time-window labels,
-    // not fees — see DeliverySlotService — and the live checkout route
-    // doesn't even forward non-zero values for either field today). Until a
-    // real fee schedule exists to validate against, apply a sanity ceiling
-    // instead of trusting the client number outright — this is a stopgap,
-    // not a fix; it only catches a wildly-inflated value, not a modestly
-    // inflated one.
-    const MAX_REASONABLE_DELIVERY_CHARGE = 1000;
-    const MAX_REASONABLE_TAX = 1000;
-    const deliveryCharge = typeof data?.deliveryCharge === "number" && data.deliveryCharge > 0 ? data.deliveryCharge : 0;
-    const tax = typeof data?.tax === "number" && data.tax > 0 ? data.tax : 0;
-    if (deliveryCharge > MAX_REASONABLE_DELIVERY_CHARGE) {
-      throw new HttpsError(
-        "invalid-argument",
-        `deliveryCharge exceeds the maximum allowed value of ₹${MAX_REASONABLE_DELIVERY_CHARGE}`
-      );
-    }
-    if (tax > MAX_REASONABLE_TAX) {
-      throw new HttpsError(
-        "invalid-argument",
-        `tax exceeds the maximum allowed value of ₹${MAX_REASONABLE_TAX}`
-      );
-    }
-    const grandTotal = roundMoney(
-      Math.max(0, cartSubtotal - discountAmount) + deliveryCharge + tax
-    );
+      couponCode: data?.couponCode,
+      // Phase 15, Workstream 2: per-user redemption re-check, at the same
+      // point in the sequence it always ran — after the coupon's own
+      // validity/usageLimit check, before the delivery/tax sanity
+      // ceilings. Passed as a plain boolean (not the snapshot itself) so
+      // computeOrderPricing stays read-free.
+      couponAlreadyRedeemed: !!(redemptionSnap && redemptionSnap.exists),
+      deliveryCharge: data?.deliveryCharge,
+      tax: data?.tax,
+    });
 
     // Payment trust boundary: for any non-COD order, a real verified_payments
     // document (written only by verifyRazorpayPayment after HMAC + live API
@@ -490,7 +335,7 @@ export const createOrder = onCall({ minInstances: 0, memory: "256MiB" }, async (
         throw new HttpsError("failed-precondition", "Payment was not captured");
       }
       const verifiedAmount = typeof payment.amount === "number" ? payment.amount : -1;
-      if (Math.abs(verifiedAmount - grandTotal) > 1) {
+      if (Math.abs(verifiedAmount - pricing.grandTotal) > 1) {
         throw new HttpsError(
           "failed-precondition",
           "Verified payment amount does not match the order total"
@@ -503,13 +348,13 @@ export const createOrder = onCall({ minInstances: 0, memory: "256MiB" }, async (
     // _createSellerScopedOrders's own grouping (payment_method_screen.dart)
     // and keeping every order visible to its seller under firestore.rules
     // (`resource.data.sellerId == request.auth.uid`). Discount/delivery/tax
-    // are distributed by each seller's share of the cart subtotal,
-    // mirroring _createSellerScopedOrders's ratio-based split
-    // exactly. Nothing above this point has written anything.
+    // are distributed by each seller's share of the cart subtotal
+    // (computed by orderPricing.ts), mirroring _createSellerScopedOrders's
+    // ratio-based split exactly. Nothing above this point has written
+    // anything.
     // ============================================
     const createdOrders: { orderId: string; orderNumber: string; sellerId: string; total: number }[] = [];
     const baseOrderNumber = generateOrderNumber();
-    const sellerCount = itemsBySeller.size;
     const deliverySlot = typeof data?.deliverySlot === "string" ? data.deliverySlot : null;
     const notes = typeof data?.notes === "string" && data.notes.trim() ? data.notes.trim() : null;
     const orderType = typeof data?.orderType === "string" && data.orderType ? data.orderType : "One Time";
@@ -517,35 +362,22 @@ export const createOrder = onCall({ minInstances: 0, memory: "256MiB" }, async (
       orderType === "Auto Delivery" && typeof data?.autoFrequency === "string" ? data.autoFrequency : null;
 
     let index = 0;
-    for (const [sellerId, sellerItems] of itemsBySeller.entries()) {
+    for (const sellerResult of pricing.perSeller) {
       index++;
-      let sellerSubtotal = 0;
-      for (const item of sellerItems) {
-        sellerSubtotal += (item.price as number) * (item.quantity as number);
-      }
-      const ratio = cartSubtotal > 0 ? sellerSubtotal / cartSubtotal : 1 / sellerCount;
-      const sellerDiscount = roundMoney(discountAmount * ratio);
-      const sellerDeliveryCharge = roundMoney(deliveryCharge * ratio);
-      const sellerTax = roundMoney(tax * ratio);
-      const sellerTotal = roundMoney(
-        Math.max(0, sellerSubtotal - sellerDiscount) + sellerDeliveryCharge + sellerTax
-      );
-      const resolvedSellerId = sellerId === "_unassigned" ? null : sellerId;
-
       const orderRef = db.collection("orders").doc();
-      const orderNumber = sellerCount === 1 ? baseOrderNumber : `${baseOrderNumber}-${index}`;
+      const orderNumber = pricing.perSeller.length === 1 ? baseOrderNumber : `${baseOrderNumber}-${index}`;
 
       tx.set(orderRef, {
         id: orderRef.id,
         userId: uid,
-        sellerId: resolvedSellerId,
+        sellerId: sellerResult.sellerId,
         orderNumber,
-        items: sellerItems,
-        subtotal: roundMoney(sellerSubtotal),
-        discount: sellerDiscount,
-        deliveryCharge: sellerDeliveryCharge,
-        tax: sellerTax,
-        total: sellerTotal,
+        items: sellerResult.items,
+        subtotal: sellerResult.subtotal,
+        discount: sellerResult.discount,
+        deliveryCharge: sellerResult.deliveryCharge,
+        tax: sellerResult.tax,
+        total: sellerResult.total,
         paymentMethod,
         paymentStatus: paymentMethod === "cod" ? "pending" : "paid",
         orderStatus: "pending",
@@ -553,7 +385,7 @@ export const createOrder = onCall({ minInstances: 0, memory: "256MiB" }, async (
         razorpayOrderId: data?.razorpayOrderId || null,
         razorpayPaymentId: data?.razorpayPaymentId || null,
         razorpaySignature: data?.razorpaySignature || null,
-        couponCode,
+        couponCode: pricing.couponCode,
         notes,
         deliveryAddress: data?.deliveryAddress || null,
         deliverySlot,
@@ -561,8 +393,15 @@ export const createOrder = onCall({ minInstances: 0, memory: "256MiB" }, async (
         autoFrequency,
         deliveryVerificationCode: generateVerificationCode(),
         orderMode,
-        employeeCode: orderMode === "B2B" ? employeeCode : null,
-        employeeUid: orderMode === "B2B" ? employeeUid : null,
+        // Phase 16D-2, Workstream 1d: both fields now tie to the SAME
+        // resolution outcome for either mode — `employeeUid` is only ever
+        // set when an attribution was actually resolved (see above), so
+        // gating `employeeCode` on it (rather than on `orderMode`) stores
+        // the RESOLVED, normalised code and never an orphaned code with no
+        // matching uid. For B2B this is unchanged: employeeUid is always
+        // truthy here (the function already threw otherwise).
+        employeeCode: employeeUid ? employeeCode : null,
+        employeeUid: employeeUid,
         commissionPaid: false,
         createdAt: admin.firestore.FieldValue.serverTimestamp(),
         updatedAt: admin.firestore.FieldValue.serverTimestamp(),
@@ -577,7 +416,12 @@ export const createOrder = onCall({ minInstances: 0, memory: "256MiB" }, async (
         timestamp: admin.firestore.FieldValue.serverTimestamp(),
       });
 
-      createdOrders.push({ orderId: orderRef.id, orderNumber, sellerId: resolvedSellerId ?? "", total: sellerTotal });
+      createdOrders.push({
+        orderId: orderRef.id,
+        orderNumber,
+        sellerId: sellerResult.sellerId ?? "",
+        total: sellerResult.total,
+      });
     }
 
     // Idempotency-anchor pattern, mirroring wallet.ts's verifyWalletTopup
@@ -608,12 +452,12 @@ export const createOrder = onCall({ minInstances: 0, memory: "256MiB" }, async (
     // incrementUsageCount() call sites are dead code with zero callers, and
     // would be rejected by firestore.rules' admin-only `coupons` write rule
     // regardless) — this is the first real enforcement of usageLimit.
-    if (couponCode && couponSnap && !couponSnap.empty && redemptionRef) {
+    if (pricing.couponCode && couponSnap && !couponSnap.empty && redemptionRef) {
       tx.update(couponSnap.docs[0].ref, {
         usedCount: admin.firestore.FieldValue.increment(1),
       });
       tx.set(redemptionRef, {
-        couponCode,
+        couponCode: pricing.couponCode,
         uid,
         orderId: createdOrders[0].orderId,
         orderNumber: baseOrderNumber,

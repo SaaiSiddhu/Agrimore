@@ -51,6 +51,12 @@ interface CreateBenefitEnrollmentData {
   startDate?: string | number;
   consentTermsVersion?: string;
   consentMetadata?: Record<string, unknown>;
+  /** Optional (Phase C, Workstream 2) — required when the program's
+   *  benefitRuleType is "tier"/"category" for this enrollment to ever
+   *  accrue anything nonzero; validated against the program's own
+   *  tierRates/categoryRates keys, never accepted blind. */
+  benefitTierId?: string;
+  benefitCategoryId?: string;
   reason?: string;
 }
 
@@ -174,6 +180,32 @@ export const createBenefitEnrollment = onCall(
       const maturityDate = addMonthsUTC(startDate, durationMonths);
       const rulesVersionAtEnrollment = typeof program.rulesVersion === "number" ? program.rulesVersion : 1;
 
+      // Reject an unknown tier/category id rather than silently accepting
+      // it — an enrollment pointing at a key that doesn't exist in the
+      // program's tierRates/categoryRates would accrue 0 forever with no
+      // indication why, which is worse than failing loudly at enrollment
+      // time.
+      const benefitTierId = data?.benefitTierId ? String(data.benefitTierId).trim() : null;
+      if (benefitTierId) {
+        const tierRates = (program.tierRates as Record<string, unknown> | undefined) ?? {};
+        if (!(benefitTierId in tierRates)) {
+          throw new HttpsError(
+            "invalid-argument",
+            `benefitTierId "${benefitTierId}" is not a configured tier on this program`
+          );
+        }
+      }
+      const benefitCategoryId = data?.benefitCategoryId ? String(data.benefitCategoryId).trim() : null;
+      if (benefitCategoryId) {
+        const categoryRates = (program.categoryRates as Record<string, unknown> | undefined) ?? {};
+        if (!(benefitCategoryId in categoryRates)) {
+          throw new HttpsError(
+            "invalid-argument",
+            `benefitCategoryId "${benefitCategoryId}" is not a configured category on this program`
+          );
+        }
+      }
+
       tx.set(enrollmentRef, {
         id: enrollmentRef.id,
         customerId,
@@ -189,6 +221,8 @@ export const createBenefitEnrollment = onCall(
         consentAcceptedAt: admin.firestore.FieldValue.serverTimestamp(),
         consentMetadata: data?.consentMetadata ?? null,
         lastAccrualPeriod: null,
+        benefitTierId,
+        benefitCategoryId,
         createdAt: admin.firestore.FieldValue.serverTimestamp(),
         updatedAt: admin.firestore.FieldValue.serverTimestamp(),
       });

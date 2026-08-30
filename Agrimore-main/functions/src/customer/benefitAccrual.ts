@@ -114,14 +114,16 @@ async function accrueOneEnrollment(
         rulesVersion: typeof program.rulesVersion === "number" ? program.rulesVersion : 1,
         tierRates: program.tierRates ?? null,
         categoryRates: program.categoryRates ?? null,
-        enrollmentOpensAt: (program.enrollmentOpensAt as admin.firestore.Timestamp | undefined)?.toDate() ?? null,
-        enrollmentClosesAt: (program.enrollmentClosesAt as admin.firestore.Timestamp | undefined)?.toDate() ?? null,
+        promotionalFrom: (program.promotionalFrom as admin.firestore.Timestamp | undefined)?.toDate() ?? null,
+        promotionalTo: (program.promotionalTo as admin.firestore.Timestamp | undefined)?.toDate() ?? null,
       },
       enrollment: {
         // programAmount 0/missing -> accrue 0, never throw (edge case).
         programAmount: typeof enrollment.programAmount === "number" ? enrollment.programAmount : 0,
         rulesVersionAtEnrollment:
           typeof enrollment.rulesVersionAtEnrollment === "number" ? enrollment.rulesVersionAtEnrollment : 1,
+        benefitTierId: (enrollment.benefitTierId as string | undefined) ?? null,
+        benefitCategoryId: (enrollment.benefitCategoryId as string | undefined) ?? null,
       },
       period,
       periodDate,

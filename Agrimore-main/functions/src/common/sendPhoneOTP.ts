@@ -143,7 +143,14 @@ function normalizePhone(raw: string): string | null {
 // ============================================
 // SEND PHONE OTP FUNCTION
 // ============================================
-export const sendPhoneOTP = functions.https.onRequest(async (req, res) => {
+// Phase 18, Workstream 2: v1 secret binding uses secret NAMES (strings),
+// not defineSecret() objects — do not mix the two API styles. Needs both
+// TWOFACTOR_API_KEY (delivery, via smsProvider.ts) and OTP_ENCRYPTION_KEY
+// (voice-reuse redelivery, read directly in this file). Read sites
+// unchanged — both still resolve via plain process.env.X.
+export const sendPhoneOTP = functions
+  .runWith({ secrets: ["TWOFACTOR_API_KEY", "OTP_ENCRYPTION_KEY"] })
+  .https.onRequest(async (req, res) => {
   // CORS headers
   res.set("Access-Control-Allow-Origin", "*");
   res.set("Access-Control-Allow-Methods", "POST, OPTIONS");

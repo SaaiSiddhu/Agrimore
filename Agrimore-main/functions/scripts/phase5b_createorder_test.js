@@ -18,6 +18,17 @@ const wrapped = test.wrap(createOrder);
 async function main() {
   const db = admin.firestore();
 
+  // Phase 18 fixture update (found while running a broader regression
+  // sweep than any prior phase's explicit list required): createOrder.ts
+  // has rejected an incomplete-profile caller since Phase 16, Workstream 7
+  // — unrelated to what this file actually tests, so the test user is
+  // seeded profileCompleted:true up front. Purely additive, no assertion
+  // below is touched.
+  await db.collection("users").doc("phase5b-test-customer").set({
+    uid: "phase5b-test-customer",
+    profileCompleted: true,
+  });
+
   await db.collection("products").doc("phase5b-test-product").set({
     name: "Phase 5b Test Product",
     salePrice: 150,

@@ -12,7 +12,7 @@ import { onCall, HttpsError } from "firebase-functions/v2/https";
 import * as admin from "firebase-admin";
 import Razorpay from "razorpay";
 import { log } from "../common/helpers";
-import { getRazorpayCredentials } from "../customer/payment";
+import { getRazorpayCredentials, RAZORPAY_KEY_SECRET } from "../customer/payment";
 import { loadOnboardingConfig, ONBOARDING_PURPOSE } from "./onboardingConfig";
 import { ASSOCIATE_DISPLAY_TERM } from "./associateTerm";
 
@@ -23,7 +23,10 @@ import { ASSOCIATE_DISPLAY_TERM } from "./associateTerm";
 const RATE_LIMIT_WINDOW_MS = 30 * 1000;
 
 export const createAssociateOnboardingPayment = onCall(
-  { minInstances: 0, memory: "256MiB" },
+  // Phase 18, Workstream 1 / Trap 2: reached indirectly via
+  // getRazorpayCredentials() imported above, not a direct process.env read
+  // — easy to miss with a grep for "process.env" alone.
+  { minInstances: 0, memory: "256MiB", secrets: [RAZORPAY_KEY_SECRET] },
   async (request) => {
     if (!request.auth) {
       throw new HttpsError("unauthenticated", "Sign in required");

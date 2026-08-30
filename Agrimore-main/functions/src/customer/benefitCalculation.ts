@@ -13,26 +13,20 @@
 // benefit_programs/{programId} — nothing here is a fallback default that
 // could silently apply an un-configured rate.
 //
-// Schema gap, stated honestly rather than silently guessed around: the
-// `tier`/`category` rule types need a per-enrollment "which tier/category
-// does this customer belong to" assignment to look up a rate for, but
-// CustomerEnrollmentModel (Phase B, Workstream 3) has no such field —
-// nothing in this phase's instructions specifies how a customer gets
-// assigned a tier or category. Both rule types therefore always resolve to
-// 0 in this phase (the same "unmatched -> 0" behavior the spec calls for),
-// with an explanation string saying why. A future phase must add an
-// enrollment-side assignment field before either rule type can produce a
-// nonzero result — this is not a bug, it is the fail-closed default D6
-// requires in the absence of that field.
+// RESOLVED (Phase C, Workstream 2): Phase B's `tier`/`category` rule types
+// always resolved to 0 because CustomerEnrollmentModel had no per-enrollment
+// tier/category assignment field. `benefitTierId`/`benefitCategoryId` now
+// exist on the enrollment (Phase C) — both rule types look up that id in
+// the program's `tierRates`/`categoryRates` map. An enrollment with no
+// assignment, or an assignment that doesn't match any configured key, still
+// resolves to 0 (fail-closed — D6: never a default positive rate).
 //
-// Similarly, `promotional`'s "promotional window" is not a separately
-// modeled field on BenefitProgramModel — this function reuses the
-// program's enrollmentOpensAt/enrollmentClosesAt as that window, on the
-// basis that both concepts ("is new participation being promoted right
-// now" and "is this promotional rate active right now") describe the same
-// campaign period in practice. This is a deliberate interpretation filling
-// an implicit gap, documented here and in the Phase B completion report,
-// not a silent guess.
+// RESOLVED (Phase C, Workstream 2): `promotional` no longer reuses
+// enrollmentOpensAt/enrollmentClosesAt — Phase B's stopgap conflated "when
+// a customer may JOIN" with "when a promotional RATE applies", which are
+// different questions and would have silently mis-priced a program that
+// legitimately wanted both configured differently. BenefitProgramModel now
+// has dedicated `promotionalFrom`/`promotionalTo` fields for this.
 
 export type BenefitRuleType = "none" | "flatRupee" | "percentage" | "promotional" | "tier" | "category";
 export type CreditFrequency = "monthly" | "quarterly" | "annual";
@@ -50,13 +44,15 @@ export interface BenefitCalculationProgram {
   rulesVersion: number;
   tierRates?: Record<string, number> | null;
   categoryRates?: Record<string, number> | null;
-  enrollmentOpensAt?: Date | null;
-  enrollmentClosesAt?: Date | null;
+  promotionalFrom?: Date | null;
+  promotionalTo?: Date | null;
 }
 
 export interface BenefitCalculationEnrollment {
   programAmount: number;
   rulesVersionAtEnrollment: number;
+  benefitTierId?: string | null;
+  benefitCategoryId?: string | null;
 }
 
 export interface CalculateBenefitInput {
@@ -118,32 +114,45 @@ export function calculateBenefitForPeriod(input: CalculateBenefitInput): Calcula
     }
 
     case "tier": {
-      // See file header: no per-enrollment tier assignment field exists
-      // yet in this phase's schema, so this rule type always resolves to
-      // 0 — a fail-closed "unmatched" result, not an error.
-      amount = 0;
-      explanation =
-        `tier: no per-enrollment tier assignment field exists in this phase's schema -> 0 ` +
-        `(configured tierRates: ${JSON.stringify(program.tierRates ?? {})})${note}`;
+      const tierId = enrollment.benefitTierId ?? null;
+      const rate = tierId ? program.tierRates?.[tierId] : undefined;
+      if (tierId && typeof rate === "number") {
+        amount = rate;
+        explanation = `tier: enrollment assigned to tier "${tierId}" -> Rs.${rate} for period ${period}${note}`;
+      } else {
+        amount = 0;
+        explanation = tierId
+          ? `tier: enrollment's benefitTierId "${tierId}" has no matching rate in tierRates -> 0 ` +
+            `(configured tierRates: ${JSON.stringify(program.tierRates ?? {})})${note}`
+          : `tier: enrollment has no benefitTierId assigned -> 0${note}`;
+      }
       break;
     }
 
     case "category": {
-      amount = 0;
-      explanation =
-        `category: no per-enrollment category assignment field exists in this phase's schema -> 0 ` +
-        `(configured categoryRates: ${JSON.stringify(program.categoryRates ?? {})})${note}`;
+      const categoryId = enrollment.benefitCategoryId ?? null;
+      const rate = categoryId ? program.categoryRates?.[categoryId] : undefined;
+      if (categoryId && typeof rate === "number") {
+        amount = rate;
+        explanation = `category: enrollment assigned to category "${categoryId}" -> Rs.${rate} for period ${period}${note}`;
+      } else {
+        amount = 0;
+        explanation = categoryId
+          ? `category: enrollment's benefitCategoryId "${categoryId}" has no matching rate in categoryRates -> 0 ` +
+            `(configured categoryRates: ${JSON.stringify(program.categoryRates ?? {})})${note}`
+          : `category: enrollment has no benefitCategoryId assigned -> 0${note}`;
+      }
       break;
     }
 
     case "promotional": {
-      const opensAt = program.enrollmentOpensAt ?? null;
-      const closesAt = program.enrollmentClosesAt ?? null;
-      const withinWindow = (!opensAt || input.periodDate >= opensAt) && (!closesAt || input.periodDate <= closesAt);
+      const from = program.promotionalFrom ?? null;
+      const to = program.promotionalTo ?? null;
+      const withinWindow = (!from || input.periodDate >= from) && (!to || input.periodDate <= to);
       amount = withinWindow ? program.benefitRateValue : 0;
       explanation = withinWindow
-        ? `promotional: Rs.${program.benefitRateValue} for period ${period} (within enrollmentOpensAt/enrollmentClosesAt window)${note}`
-        : `promotional: period ${period} is outside the configured enrollmentOpensAt/enrollmentClosesAt window -> 0${note}`;
+        ? `promotional: Rs.${program.benefitRateValue} for period ${period} (within promotionalFrom/promotionalTo window)${note}`
+        : `promotional: period ${period} is outside the configured promotionalFrom/promotionalTo window -> 0${note}`;
       break;
     }
 

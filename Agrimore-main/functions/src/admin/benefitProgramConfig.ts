@@ -51,13 +51,26 @@ const PATCHABLE_FIELDS = [
   "eligibleCategoryIds",
   "tierRates",
   "categoryRates",
+  "promotionalFrom",
+  "promotionalTo",
+  "minOrderValueForRedemption",
+  "maxCreditPerOrder",
+  "maxCreditPercentOfOrder",
+  "redeemableCategoryIds",
+  "redemptionEnabled",
 ] as const;
 type PatchableField = (typeof PATCHABLE_FIELDS)[number];
 
 // D6: "never hardcode 12%, or any rate" — these are the fields that decide
-// HOW MUCH benefit a customer earns. Changing any of them bumps
+// HOW MUCH benefit a customer EARNS. Changing any of them bumps
 // rulesVersion so an already-accrued benefit remains explainable under the
 // rules version in force when it accrued (see benefitCalculation.ts).
+// Redemption-restriction fields (minOrderValueForRedemption,
+// maxCreditPerOrder, maxCreditPercentOfOrder, redeemableCategoryIds,
+// redemptionEnabled) are deliberately NOT here — they govern how much
+// ALREADY-EARNED credit may be SPENT, evaluated fresh against the current
+// config every time (redemptionRules.ts), not something a past accrual
+// needs to stay explainable under.
 const VERSION_BUMPING_FIELDS: readonly PatchableField[] = [
   "durationMonths",
   "minProgramAmount",
@@ -69,6 +82,8 @@ const VERSION_BUMPING_FIELDS: readonly PatchableField[] = [
   "eligibleCategoryIds",
   "tierRates",
   "categoryRates",
+  "promotionalFrom",
+  "promotionalTo",
 ];
 
 function sanitizePatchValue(field: PatchableField, value: unknown): unknown {
@@ -118,7 +133,9 @@ function sanitizePatchValue(field: PatchableField, value: unknown): unknown {
       }
       return value;
     case "enrollmentOpensAt":
-    case "enrollmentClosesAt": {
+    case "enrollmentClosesAt":
+    case "promotionalFrom":
+    case "promotionalTo": {
       if (value === null) return null;
       const date = new Date(value as string | number);
       if (Number.isNaN(date.getTime())) {
@@ -127,14 +144,35 @@ function sanitizePatchValue(field: PatchableField, value: unknown): unknown {
       return admin.firestore.Timestamp.fromDate(date);
     }
     case "eligibleCategoryIds":
+    case "redeemableCategoryIds":
       if (value !== null && !(Array.isArray(value) && value.every((v) => typeof v === "string"))) {
-        throw new HttpsError("invalid-argument", "eligibleCategoryIds must be an array of strings or null");
+        throw new HttpsError("invalid-argument", `${field} must be an array of strings or null`);
       }
       return value;
     case "tierRates":
     case "categoryRates":
       if (value !== null && (typeof value !== "object" || Array.isArray(value))) {
         throw new HttpsError("invalid-argument", `${field} must be an object map or null`);
+      }
+      return value;
+    case "minOrderValueForRedemption":
+      if (typeof value !== "number" || !Number.isFinite(value) || value < 0) {
+        throw new HttpsError("invalid-argument", "minOrderValueForRedemption must be a non-negative number");
+      }
+      return value;
+    case "maxCreditPerOrder":
+      if (value !== null && (typeof value !== "number" || !Number.isFinite(value) || value < 0)) {
+        throw new HttpsError("invalid-argument", "maxCreditPerOrder must be a non-negative number or null");
+      }
+      return value;
+    case "maxCreditPercentOfOrder":
+      if (value !== null && (typeof value !== "number" || !Number.isFinite(value) || value < 0 || value > 100)) {
+        throw new HttpsError("invalid-argument", "maxCreditPercentOfOrder must be between 0 and 100, or null");
+      }
+      return value;
+    case "redemptionEnabled":
+      if (typeof value !== "boolean") {
+        throw new HttpsError("invalid-argument", "redemptionEnabled must be a boolean");
       }
       return value;
   }

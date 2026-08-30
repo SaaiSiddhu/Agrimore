@@ -66,6 +66,15 @@ class CustomerEnrollmentModel {
   /// if never accrued.
   final String? lastAccrualPeriod;
 
+  /// Key into the program's `tierRates` map (Phase C, Workstream 2) — null
+  /// means unassigned, which `calculateBenefitForPeriod` treats as 0 for a
+  /// `tier`-rule program, never a default positive rate.
+  final String? benefitTierId;
+
+  /// Key into the program's `categoryRates` map — same fail-closed
+  /// treatment as [benefitTierId] when null or unmatched.
+  final String? benefitCategoryId;
+
   final DateTime createdAt;
   final DateTime updatedAt;
 
@@ -84,6 +93,8 @@ class CustomerEnrollmentModel {
     this.consentAcceptedAt,
     this.consentMetadata,
     this.lastAccrualPeriod,
+    this.benefitTierId,
+    this.benefitCategoryId,
     required this.createdAt,
     required this.updatedAt,
   });
@@ -109,6 +120,8 @@ class CustomerEnrollmentModel {
       consentAcceptedAt: _parseNullableDateTime(map['consentAcceptedAt']),
       consentMetadata: (map['consentMetadata'] as Map?)?.map((k, v) => MapEntry(k.toString(), v)),
       lastAccrualPeriod: map['lastAccrualPeriod'] as String?,
+      benefitTierId: map['benefitTierId'] as String?,
+      benefitCategoryId: map['benefitCategoryId'] as String?,
       createdAt: _parseDateTime(map['createdAt']),
       updatedAt: _parseDateTime(map['updatedAt']),
     );
@@ -129,6 +142,8 @@ class CustomerEnrollmentModel {
       'consentAcceptedAt': consentAcceptedAt == null ? null : Timestamp.fromDate(consentAcceptedAt!),
       'consentMetadata': consentMetadata,
       'lastAccrualPeriod': lastAccrualPeriod,
+      'benefitTierId': benefitTierId,
+      'benefitCategoryId': benefitCategoryId,
       'createdAt': Timestamp.fromDate(createdAt),
       'updatedAt': Timestamp.fromDate(updatedAt),
     };
@@ -166,6 +181,8 @@ class CustomerEnrollmentModel {
     DateTime? consentAcceptedAt,
     Map<String, dynamic>? consentMetadata,
     String? lastAccrualPeriod,
+    String? benefitTierId,
+    String? benefitCategoryId,
     DateTime? createdAt,
     DateTime? updatedAt,
   }) {
@@ -184,6 +201,8 @@ class CustomerEnrollmentModel {
       consentAcceptedAt: consentAcceptedAt ?? this.consentAcceptedAt,
       consentMetadata: consentMetadata ?? this.consentMetadata,
       lastAccrualPeriod: lastAccrualPeriod ?? this.lastAccrualPeriod,
+      benefitTierId: benefitTierId ?? this.benefitTierId,
+      benefitCategoryId: benefitCategoryId ?? this.benefitCategoryId,
       createdAt: createdAt ?? this.createdAt,
       updatedAt: updatedAt ?? this.updatedAt,
     );

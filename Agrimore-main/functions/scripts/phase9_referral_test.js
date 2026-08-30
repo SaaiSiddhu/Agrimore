@@ -41,6 +41,14 @@ async function main() {
   const referredUid = "phase9-referred-customer";
   const referralCode = "PHASE9REF";
 
+  // Phase 18 fixture update (found while running a broader regression
+  // sweep than any prior phase's explicit list required): redeemReferralCode
+  // has rejected an incomplete-profile caller since Phase 16, Workstream 7
+  // — unrelated to what this file actually tests, so the caller is seeded
+  // profileCompleted:true up front. Purely additive, no assertion below is
+  // touched.
+  await db.collection("users").doc(referredUid).set({ uid: referredUid, profileCompleted: true });
+
   await db.collection("wallets").doc(referrerUid).set({
     userId: referrerUid,
     balance: 0,

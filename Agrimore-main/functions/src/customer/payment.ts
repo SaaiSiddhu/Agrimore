@@ -1,9 +1,33 @@
 import { onCall, HttpsError } from "firebase-functions/v2/https";
+import { defineSecret } from "firebase-functions/params";
 import * as admin from "firebase-admin";
 import axios from "axios";
 import Razorpay from "razorpay";
 import { log } from "../common/helpers";
 
+// Phase 18, Workstream 1: Secret Manager binding. Every function below (and
+// every indirect importer of getRazorpayCredentials() — wallet.ts,
+// employee/createAssociateOnboardingPayment.ts,
+// employee/reconcileStaleOnboardingPayments.ts,
+// employee/razorpayOnboardingWebhook.ts) must list this in its own
+// `secrets` option array. Declaring it here does NOT bind it anywhere by
+// itself — `defineSecret` only registers the parameter; each function's own
+// options object is what actually grants it access at deploy time. Once
+// bound, Cloud Functions injects the resolved value into that function's
+// `process.env.RAZORPAY_KEY_SECRET` at runtime automatically — the read
+// site below needs no change at all.
+export const RAZORPAY_KEY_SECRET = defineSecret("RAZORPAY_KEY_SECRET");
+
+// Phase 18, Workstream 3 decision: RAZORPAY_KEY_ID is deliberately NOT in
+// Secret Manager — it is returned to the client in createRazorpayOrder's
+// response below (`keyId: RAZORPAY_KEY_ID`) so the checkout SDK can use it;
+// Razorpay key IDs are public by design, and putting a value the client
+// already receives into Secret Manager would cost real money/IAM overhead
+// for zero security benefit. Chose plain functions/.env over `defineString`
+// specifically so this function needs ZERO code change (see the completion
+// report's Workstream 3 section for the full justification, including why
+// `defineString` was rejected here) — it already reads
+// `process.env.RAZORPAY_KEY_ID` exactly as it always has.
 export function getRazorpayCredentials(): { keyId: string; keySecret: string } {
   return {
     keyId: process.env.RAZORPAY_KEY_ID || "",
@@ -20,7 +44,7 @@ interface CreateOrderData {
 }
 
 export const createRazorpayOrder = onCall(
-  { minInstances: 0, memory: "256MiB" },
+  { minInstances: 0, memory: "256MiB", secrets: [RAZORPAY_KEY_SECRET] },
   async (request) => {
     const data = request.data as CreateOrderData;
     try {
@@ -111,7 +135,7 @@ interface RazorpayPayment {
 }
 
 export const verifyRazorpayPayment = onCall(
-  { minInstances: 0, memory: "256MiB" },
+  { minInstances: 0, memory: "256MiB", secrets: [RAZORPAY_KEY_SECRET] },
   async (request) => {
   const data = request.data;
   try {

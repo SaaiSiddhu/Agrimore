@@ -18,11 +18,22 @@ import axios from "axios";
 const RESEND_API_URL = "https://api.resend.com/emails";
 const REQUEST_TIMEOUT_MS = 10_000;
 
+// Phase 18, Workstream 1/2: RESEND_API_KEY is bound as a Secret Manager
+// secret on sendEmailOTP (the only function that ever calls
+// sendEmailViaResend below) — see sendEmailOTP.ts's runWith({secrets}).
+// This module itself declares no binding; it's a plain helper, not an
+// exported Cloud Function, so it has nothing to bind a secret TO — it just
+// reads process.env at call time, which resolves correctly as long as the
+// CALLING function declared the secret.
 function apiKey(): string | null {
   const key = process.env.RESEND_API_KEY;
   return key && key.trim() ? key.trim() : null;
 }
 
+// Phase 18, Workstream 3 decision: RESEND_FROM_EMAIL is deliberately NOT a
+// Secret Manager secret — it's a from-address, and appears in the header of
+// every email this sends; there is nothing to protect. Supplied via plain
+// functions/.env (see .env.example), like RAZORPAY_KEY_ID in payment.ts.
 function fromAddress(): string | null {
   const from = process.env.RESEND_FROM_EMAIL;
   return from && from.trim() ? from.trim() : null;

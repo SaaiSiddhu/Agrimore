@@ -68,33 +68,48 @@ export function toProjectionFields(data: FirebaseFirestore.DocumentData | undefi
   };
 }
 
-// Balance arithmetic (D3/Workstream 4), applied verbatim as specified:
+// Balance arithmetic (D3/Workstream 4 of Phase B, CORRECTED by Phase C
+// Workstream 1):
 //   available   += CREDIT, RELEASE, REVERSAL(of a REDEMPTION)
-//   available   -= REDEMPTION, EXPIRY, HOLD
+//   available   -= EXPIRY, HOLD, REDEMPTION (only when it has NO
+//                  relatedEntryId — see below)
 //   onHold      += HOLD ; onHold -= RELEASE, REDEMPTION
 //   ADJUSTMENT  moves `available` by metadata.direction ('credit'|'debit')
 //               — never inferred from sign.
 //
-// ⚠️ Flagged honestly, not silently resolved: read literally, a REDEMPTION
-// decrements BOTH `available` and `onHold` by the same amount. If Phase C's
-// checkout flow always precedes a REDEMPTION with a HOLD for that exact
-// amount (HOLD: available -= X, onHold += X), then a subsequent REDEMPTION
-// for the same X would decrement `available` a SECOND time — a double
-// decrement relative to what was actually reserved. This file implements
-// the rule exactly as specified in this phase's instructions ("stated
-// explicitly so Phase C inherits it unambiguously"); it does not attempt
-// to silently reinterpret it. Phase C's author must resolve this with the
-// owner before wiring a real HOLD → REDEMPTION sequence — either by never
-// following a HOLD with a REDEMPTION for the same amount (treat them as
-// alternative, not sequential, flows), or by having the "finalize a hold
-// into a spend" step emit something that only clears `onHold` without a
-// second `available` decrement. No redemption code exists in this phase
-// (Q1), so this ambiguity has no live effect yet.
+// RESOLVED (Phase C): Phase B's original spec had REDEMPTION unconditionally
+// decrement BOTH `available` and `onHold` by the same amount. A real
+// checkout — HOLD ₹1000 at payment time (available -1000, onHold +1000),
+// then REDEMPTION ₹1000 at order creation — would double-decrement
+// `available` to -2000 for a ₹1000 purchase, since HOLD already took the
+// money out of `available` once. The Phase B worker implemented the spec
+// literally and flagged it rather than silently reinterpreting it; this is
+// the fix, keyed off `relatedEntryId` (already present on every ledger
+// entry):
+//   REDEMPTION WITH relatedEntryId (settles a prior HOLD):
+//     onHold -= amount; lifetimeUsed += amount
+//     (available is untouched here — it was already reduced when the HOLD
+//     was created; touching it again would be the original bug.)
+//   REDEMPTION WITHOUT relatedEntryId (a direct spend, no reservation):
+//     available -= amount; lifetimeUsed += amount
+//
+// Assumption the caller must uphold, not enforced here (this function has
+// no Firestore access to verify it): a REDEMPTION's relatedEntryId must
+// point at a HOLD entry for the SAME amount that is still active. Settling
+// a hold for a different (partial) amount is out of scope for Phase C — a
+// hold is settled in full or released in full (see productCreditHold.ts).
+//
+// REVERSAL currently only reverses a NON-hold-settled REDEMPTION (crediting
+// `available` back) — reversing a hold-settled REDEMPTION (which would need
+// to distinguish "give the money back to available" from "the hold already
+// left available untouched") is explicitly Phase D's problem, not assumed
+// or silently handled here.
 function applyEntryToProjection(
   current: ProjectionFields,
   type: LedgerEntryType,
   amount: number,
-  metadata: Record<string, unknown> | null | undefined
+  metadata: Record<string, unknown> | null | undefined,
+  relatedEntryId: string | null | undefined
 ): ProjectionFields {
   const next: ProjectionFields = { ...current };
 
@@ -109,12 +124,18 @@ function applyEntryToProjection(
       break;
     case "REVERSAL":
       // The only reversal shape this phase's arithmetic table defines:
-      // reversing a REDEMPTION credits `available` back.
+      // reversing a (non-hold-settled) REDEMPTION credits `available` back.
       next.available += amount;
       break;
     case "REDEMPTION":
-      next.available -= amount;
-      next.onHold -= amount;
+      if (relatedEntryId) {
+        // Settling a prior HOLD: available was already decremented when
+        // the HOLD was created — only clear the hold itself.
+        next.onHold -= amount;
+      } else {
+        // Direct spend with no prior reservation.
+        next.available -= amount;
+      }
       next.lifetimeUsed += amount;
       break;
     case "EXPIRY":
@@ -199,7 +220,8 @@ export function appendLedgerEntry(
     params.currentProjection,
     params.type,
     params.amount,
-    params.metadata
+    params.metadata,
+    params.relatedEntryId
   );
 
   const entryRef = params.entryRef ?? db.collection("product_credit_ledger").doc();

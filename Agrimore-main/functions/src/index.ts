@@ -120,7 +120,17 @@ export { setBenefitFeatureFlag, setComplianceStatus } from "./admin/complianceGa
 export { setBenefitProgramConfig } from "./admin/benefitProgramConfig";
 export { createBenefitEnrollment, setEnrollmentStatus } from "./admin/benefitEnrollment";
 export { accrueMonthlyBenefits, runBenefitAccrualNow } from "./customer/benefitAccrual";
-export { expireProductCredits, reconcileProductCreditBalances } from "./customer/productCreditExpiry";
+export {
+  expireProductCredits,
+  releaseExpiredProductCreditHolds,
+  reconcileProductCreditBalances
+} from "./customer/productCreditExpiry";
+// Phase C: everything redemption needs, WITHOUT spending credit yet — a
+// server-authoritative quote (reused pricing logic from orderPricing.ts,
+// shared verbatim with createOrder.ts) and the hold/release reservation
+// lifecycle it places. No REDEMPTION entry is ever written by this phase;
+// see customer/productCreditHold.ts's header comment.
+export { quoteOrderWithCredit, releaseProductCreditHold } from "./customer/productCreditHold";
 
 // ============================================
 // ASSOCIATE ONBOARDING (Phase 16A — ₹500 one-time Registration &

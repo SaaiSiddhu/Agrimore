@@ -1,23 +1,34 @@
 // ============================================================
-//  Product Credit expiry and reconciliation
-//  (Phase B: benefit ledger & accrual engine)
+//  Product Credit expiry, stale-hold sweep, and reconciliation
+//  (Phase B: benefit ledger & accrual engine;
+//   Phase C, Workstream 6: releaseExpiredProductCreditHolds)
 // ============================================================
 //
 // expireProductCredits (scheduled) appends an EXPIRY entry for every
 // CREDIT entry past its expiresAt that hasn't already been expired.
+// releaseExpiredProductCreditHolds (scheduled, Phase C) does the same for
+// abandoned checkouts: a HOLD past its TTL (see productCreditHold.ts) is
+// auto-released so it doesn't lock a customer's credit forever.
 // reconcileProductCreditBalances (admin callable) recomputes each
 // projection from the full ledger and reports drift — correcting it, when
 // found, via an explicit ADJUSTMENT ledger entry (D4: never silently
 // overwrite the projection).
 //
-// Idempotency choice for expiry (Workstream 6 asks this to be stated
-// explicitly): a QUERY for an existing EXPIRY entry whose relatedEntryId
-// points at the original CREDIT entry, read inside the same transaction
-// before any write — not a marker field on the original entry, and not a
-// separate anchor collection. This keeps the ledger truly append-only with
-// zero update() calls ever, even from Cloud Functions, and needs no extra
-// schema (mirrors createOrder.ts's own transactional query-then-decide
-// pattern for coupon/employee lookups).
+// Idempotency choice for credit expiry (Workstream 6 of Phase B asks this
+// to be stated explicitly): a QUERY for an existing EXPIRY entry whose
+// relatedEntryId points at the original CREDIT entry, read inside the same
+// transaction before any write — not a marker field on the original entry,
+// and not a separate anchor collection. This keeps the ledger truly
+// append-only with zero update() calls ever, even from Cloud Functions,
+// and needs no extra schema (mirrors createOrder.ts's own transactional
+// query-then-decide pattern for coupon/employee lookups).
+//
+// Idempotency for the hold sweep (Phase C) is simpler: the hold DOCUMENT
+// ITSELF carries its own status ('active'|'released'|'expired'|'settled'),
+// so re-checking `status === 'active'` inside the transaction before
+// writing is sufficient — no query needed, since (unlike a ledger CREDIT
+// entry) a hold is mutable, Cloud-Function-owned state, not an immutable
+// ledger fact.
 
 import * as functions from "firebase-functions/v1";
 import { onCall, HttpsError } from "firebase-functions/v2/https";
@@ -117,6 +128,98 @@ export const expireProductCredits = functions.pubsub
       `[ProductCreditExpiry] processed=${docs.length} expired=${expired} skipped=${skipped} truncated=${truncated}`
     );
     return { processed: docs.length, expired, skipped, truncated };
+  });
+
+// ------------------------------------------------------------
+// Stale hold sweep (Phase C, Workstream 6)
+// ------------------------------------------------------------
+
+const MAX_HOLD_RELEASES_PER_RUN = 500;
+
+async function releaseOneExpiredHold(
+  db: admin.firestore.Firestore,
+  holdRef: FirebaseFirestore.DocumentReference
+): Promise<"released" | "skipped"> {
+  return db.runTransaction(async (tx) => {
+    // All reads before all writes.
+    const holdSnap = await tx.get(holdRef);
+    if (!holdSnap.exists) return "skipped";
+    const hold = holdSnap.data()!;
+
+    // Idempotency: only ever act on a hold still 'active' whose expiresAt
+    // is in the past. A hold already released/expired/settled by a
+    // concurrent path (e.g. the customer released it themselves moments
+    // before this run) is left untouched.
+    if (hold.status !== "active") return "skipped";
+    const expiresAt = (hold.expiresAt as admin.firestore.Timestamp | undefined)?.toDate();
+    if (!expiresAt || expiresAt > new Date()) return "skipped";
+
+    const holdAmount = typeof hold.amount === "number" ? hold.amount : 0;
+    if (holdAmount > 0) {
+      const projectionRef = db.collection("product_credit_balances").doc(hold.customerId);
+      const projectionSnap = await tx.get(projectionRef);
+      const currentProjection = toProjectionFields(projectionSnap.data());
+
+      appendLedgerEntry(tx, db, {
+        customerId: hold.customerId,
+        enrollmentId: hold.enrollmentId ?? "",
+        type: "RELEASE",
+        amount: holdAmount,
+        currentProjection,
+        relatedEntryId: hold.ledgerEntryId ?? null,
+        description: `Hold ${holdRef.id} auto-released: TTL exceeded (abandoned checkout)`,
+      });
+    }
+
+    // `releasedAt` doubles as "when this hold left the active state" for
+    // both a manual release (productCreditHold.ts) and this sweep — the
+    // schema has no separate expiredAt field, and `status` already
+    // distinguishes the two cases.
+    tx.update(holdRef, {
+      status: "expired",
+      releasedAt: admin.firestore.FieldValue.serverTimestamp(),
+    });
+
+    return "released";
+  });
+}
+
+export const releaseExpiredProductCreditHolds = functions.pubsub
+  .schedule("every 15 minutes")
+  .timeZone("Asia/Kolkata")
+  .onRun(async () => {
+    const db = admin.firestore();
+    const now = admin.firestore.Timestamp.now();
+
+    const dueSnap = await db
+      .collection("product_credit_holds")
+      .where("status", "==", "active")
+      .where("expiresAt", "<=", now)
+      .limit(MAX_HOLD_RELEASES_PER_RUN + 1)
+      .get();
+
+    const truncated = dueSnap.size > MAX_HOLD_RELEASES_PER_RUN;
+    const docs = truncated ? dueSnap.docs.slice(0, MAX_HOLD_RELEASES_PER_RUN) : dueSnap.docs;
+    if (truncated) {
+      console.warn(
+        `[ProductCreditHoldSweep] Hit the ${MAX_HOLD_RELEASES_PER_RUN}-hold cap — ` +
+          `${dueSnap.size - MAX_HOLD_RELEASES_PER_RUN} hold(s) NOT processed this run; ` +
+          "each remains due and will be picked up on a later run."
+      );
+    }
+
+    let released = 0;
+    let skipped = 0;
+    for (const doc of docs) {
+      const outcome = await releaseOneExpiredHold(db, doc.ref);
+      if (outcome === "released") released++;
+      else skipped++;
+    }
+
+    console.log(
+      `[ProductCreditHoldSweep] processed=${docs.length} released=${released} skipped=${skipped} truncated=${truncated}`
+    );
+    return { processed: docs.length, released, skipped, truncated };
   });
 
 async function computeLedgerSumAvailable(

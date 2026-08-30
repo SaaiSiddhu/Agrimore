@@ -33,7 +33,7 @@ import * as admin from "firebase-admin";
 import * as crypto from "crypto";
 import axios from "axios";
 import { log } from "../common/helpers";
-import { getRazorpayCredentials } from "./payment";
+import { getRazorpayCredentials, RAZORPAY_KEY_SECRET } from "./payment";
 
 interface RazorpayPayment {
   id: string;
@@ -78,7 +78,11 @@ interface VerifyWalletTopupData {
 }
 
 export const verifyWalletTopup = onCall(
-  { minInstances: 0, memory: "256MiB" },
+  // Phase 18, Workstream 1 / Trap 3: ONLY this function among wallet.ts's
+  // three exports touches Razorpay (via getRazorpayCredentials()) —
+  // redeemReferralCode and creditSignupBonus below must NOT receive this
+  // grant.
+  { minInstances: 0, memory: "256MiB", secrets: [RAZORPAY_KEY_SECRET] },
   async (request) => {
     const data = request.data as VerifyWalletTopupData;
     if (!request.auth) {

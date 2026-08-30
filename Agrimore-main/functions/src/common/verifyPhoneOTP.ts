@@ -58,7 +58,17 @@ function normalizePhone(raw: string): string | null {
 // ============================================
 // VERIFY PHONE OTP FUNCTION
 // ============================================
-export const verifyPhoneOTP = functions.https.onRequest(async (req, res) => {
+// Phase 18, Workstream 2 / Trap 1: this function never SENDS anything, but
+// PHONE_OTP_ENABLED above is computed at module load time from
+// isSmsProviderConfigured(), which reads process.env.TWOFACTOR_API_KEY.
+// Without this binding, that read sees undefined at cold start, the gate
+// evaluates PHONE_OTP_ENABLED=false permanently for that container, and
+// this function 503s unconditionally — phone login breaks entirely even
+// though the key is correctly configured elsewhere. This is the nastiest
+// failure in the whole set because everything else looks right.
+export const verifyPhoneOTP = functions
+  .runWith({ secrets: ["TWOFACTOR_API_KEY"] })
+  .https.onRequest(async (req, res) => {
   // CORS headers
   res.set("Access-Control-Allow-Origin", "*");
   res.set("Access-Control-Allow-Methods", "POST, OPTIONS");

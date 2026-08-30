@@ -12,7 +12,7 @@ import { onSchedule } from "firebase-functions/v2/scheduler";
 import * as admin from "firebase-admin";
 import Razorpay from "razorpay";
 import { log } from "../common/helpers";
-import { getRazorpayCredentials } from "../customer/payment";
+import { getRazorpayCredentials, RAZORPAY_KEY_SECRET } from "../customer/payment";
 import { performOnboardingActivation } from "./activationCore";
 import { ONBOARDING_PURPOSE } from "./onboardingConfig";
 
@@ -30,7 +30,16 @@ const LOOKBACK_HOURS = 24;
 const MAX_ORDERS_PER_RUN = 50;
 
 export const reconcileStaleOnboardingPayments = onSchedule(
-  { schedule: "every 15 minutes", timeZone: "Asia/Kolkata", memory: "256MiB" },
+  // Phase 18, Workstream 1 / Trap 2: reached indirectly via
+  // getRazorpayCredentials() imported above. This is a v2 onSchedule
+  // trigger, not onCall/onRequest — its options object still accepts
+  // `secrets` (same GlobalOptions base every v2 trigger shares).
+  {
+    schedule: "every 15 minutes",
+    timeZone: "Asia/Kolkata",
+    memory: "256MiB",
+    secrets: [RAZORPAY_KEY_SECRET],
+  },
   async () => {
     const db = admin.firestore();
     const now = Date.now();
