@@ -27,7 +27,13 @@ const int _kResendCooldownSeconds = 30;
 
 class OtpVerificationScreen extends StatefulWidget {
   final String phone;
-  const OtpVerificationScreen({Key? key, required this.phone}) : super(key: key);
+  // Phase 22: the EFFECTIVE channel the initial send actually used (from
+  // PhoneOtpSendResult.channel) — never guessed or re-queried, threaded
+  // straight through from the login screen's send call. Defaults to 'sms'
+  // only as a safety net for any caller that doesn't pass it.
+  final String channel;
+  const OtpVerificationScreen({Key? key, required this.phone, this.channel = 'sms'})
+      : super(key: key);
 
   @override
   State<OtpVerificationScreen> createState() => _OtpVerificationScreenState();
@@ -44,10 +50,15 @@ class _OtpVerificationScreenState extends State<OtpVerificationScreen> {
   bool _isResending = false;
   bool _isRequestingVoice = false;
   String? _errorMessage;
+  // Updated after every successful (re)send so the copy always reflects the
+  // most recent EFFECTIVE channel, not just the one the screen opened with.
+  late String _channel;
+  bool get _isVoiceChannel => _channel == 'voice';
 
   @override
   void initState() {
     super.initState();
+    _channel = widget.channel;
     _startResendCountdown();
   }
 
@@ -162,12 +173,13 @@ class _OtpVerificationScreenState extends State<OtpVerificationScreen> {
 
     setState(() => _isResending = true);
     final authProvider = context.read<AuthProvider>();
-    final success = await authProvider.sendPhoneOTP(widget.phone);
+    final result = await authProvider.sendPhoneOTP(widget.phone);
 
     if (!mounted) return;
     setState(() => _isResending = false);
 
-    if (success) {
+    if (result != null) {
+      setState(() => _channel = result.channel);
       for (final c in _controllers) {
         c.clear();
       }
@@ -189,12 +201,13 @@ class _OtpVerificationScreenState extends State<OtpVerificationScreen> {
 
     setState(() => _isRequestingVoice = true);
     final authProvider = context.read<AuthProvider>();
-    final success = await authProvider.sendPhoneOTP(widget.phone, channel: 'voice');
+    final result = await authProvider.sendPhoneOTP(widget.phone, channel: 'voice');
 
     if (!mounted) return;
     setState(() => _isRequestingVoice = false);
 
-    if (success) {
+    if (result != null) {
+      setState(() => _channel = result.channel);
       _startResendCountdown();
       ScaffoldMessenger.of(context).showSnackBar(
         const SnackBar(content: Text("We're calling you now with your code")),
@@ -215,7 +228,13 @@ class _OtpVerificationScreenState extends State<OtpVerificationScreen> {
           TextSpan(
             style: const TextStyle(fontSize: 14, color: AppColors.textSecondary),
             children: [
-              const TextSpan(text: 'We have sent a verification code to\n'),
+              // Phase 22: say what actually happened — a call, not a text
+              // — when the effective channel is voice.
+              TextSpan(
+                text: _isVoiceChannel
+                    ? "We're calling you now with your code, on\n"
+                    : 'We have sent a verification code to\n',
+              ),
               TextSpan(
                 text: widget.phone,
                 style: const TextStyle(fontWeight: FontWeight.w700, color: AppColors.textPrimary),
@@ -252,8 +271,8 @@ class _OtpVerificationScreenState extends State<OtpVerificationScreen> {
                 const TextSpan(text: "Didn't get the OTP? "),
                 TextSpan(
                   text: _resendSecondsLeft > 0
-                      ? 'Resend SMS in ${_resendSecondsLeft}s'
-                      : (_isResending ? 'Resending...' : 'Resend SMS'),
+                      ? 'Resend ${_isVoiceChannel ? 'call' : 'SMS'} in ${_resendSecondsLeft}s'
+                      : (_isResending ? 'Resending...' : 'Resend ${_isVoiceChannel ? 'call' : 'SMS'}'),
                   style: TextStyle(
                     color: _resendSecondsLeft > 0 ? AppColors.textTertiary : AppColors.primary,
                     fontWeight: FontWeight.w700,
@@ -265,8 +284,12 @@ class _OtpVerificationScreenState extends State<OtpVerificationScreen> {
         ),
         // Voice fallback — only offered once the cooldown has elapsed, so
         // it's never shown as an option before the SMS has even had a
-        // chance to arrive.
-        if (_resendSecondsLeft == 0) ...[
+        // chance to arrive. Phase 22: meaningless (and hidden) when voice
+        // is already the primary channel — "call me instead" makes no
+        // sense when every resend is already a call. Left in the code
+        // untouched otherwise, so it reappears exactly as-is the moment
+        // SMS becomes available again.
+        if (_resendSecondsLeft == 0 && !_isVoiceChannel) ...[
           const SizedBox(height: 12),
           GestureDetector(
             onTap: _handleVoiceResend,

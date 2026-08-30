@@ -113,13 +113,13 @@ class _LoginScreenState extends State<LoginScreen> {
       builder: (_) => const _SendingOtpDialog(),
     );
 
-    final success = await authProvider.sendPhoneOTP(phone);
+    final result = await authProvider.sendPhoneOTP(phone);
 
     if (!mounted) return;
     Navigator.of(context, rootNavigator: true).pop(); // dismiss "Sending OTP"
     setState(() => _isSubmitting = false);
 
-    if (!success) {
+    if (result == null) {
       ScaffoldMessenger.of(context).showSnackBar(
         SnackBar(
           content: Text(authProvider.error ?? 'Failed to send OTP. Please try again.'),
@@ -131,7 +131,9 @@ class _LoginScreenState extends State<LoginScreen> {
 
     Navigator.push(
       context,
-      MaterialPageRoute(builder: (_) => OtpVerificationScreen(phone: phone)),
+      MaterialPageRoute(
+        builder: (_) => OtpVerificationScreen(phone: phone, channel: result.channel),
+      ),
     );
   }
 

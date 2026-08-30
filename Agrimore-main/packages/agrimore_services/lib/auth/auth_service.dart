@@ -17,6 +17,18 @@ class PhoneAuthResult {
   PhoneAuthResult({required this.user, required this.isNewUser});
 }
 
+/// Result of a successful phone OTP *send* request — carries whether an
+/// account already exists AND which channel actually delivered the code.
+/// Phase 22: the server may deliver by voice even when SMS was requested
+/// (see sendPhoneOTP.ts's channel resolution, gated on
+/// PHONE_OTP_SMS_ENABLED) — [channel] is always the EFFECTIVE channel used,
+/// straight from the response, never just an echo of what was requested.
+class PhoneOtpSendResult {
+  final bool userExists;
+  final String channel; // 'sms' or 'voice'
+  PhoneOtpSendResult({required this.userExists, required this.channel});
+}
+
 class AuthService {
   static final AuthService _instance = AuthService._internal();
   static const String _googleWebClientId =
@@ -331,13 +343,19 @@ class AuthService {
   /// unexpired OTP redelivers the SAME code rather than issuing a new one
   /// (see sendPhoneOTP.ts), so requesting voice never invalidates a
   /// pending SMS.
-  /// Returns whether an account already exists for this number.
+  ///
+  /// [channel] here is the REQUESTED channel. The server may deliver by a
+  /// different, EFFECTIVE channel (Phase 22: while PHONE_OTP_SMS_ENABLED is
+  /// off, every request is delivered by voice regardless of what was
+  /// requested) — the returned [PhoneOtpSendResult.channel] always reflects
+  /// what actually happened, straight from the response, so callers can
+  /// tell the user the truth instead of assuming the request was honoured.
   ///
   /// A 503 (no SMS provider configured) or 429 (rate limited) response is
   /// surfaced as a specific, distinguishable [AuthException] message rather
   /// than a generic failure — see PhoneOtpRateLimitException/
   /// PhoneOtpUnavailableException.
-  Future<bool> sendPhoneOTP(String phone, {String channel = 'sms'}) async {
+  Future<PhoneOtpSendResult> sendPhoneOTP(String phone, {String channel = 'sms'}) async {
     try {
       debugPrint('🔥 Requesting phone OTP for: $phone (channel: $channel)');
 
@@ -366,8 +384,12 @@ class AuthService {
         throw AuthException(data['error']?.toString() ?? 'Failed to send OTP');
       }
 
-      debugPrint('✅ Phone OTP requested successfully');
-      return data['userExists'] == true;
+      final effectiveChannel = data['channel']?.toString() ?? channel;
+      debugPrint('✅ Phone OTP requested successfully (channel: $effectiveChannel)');
+      return PhoneOtpSendResult(
+        userExists: data['userExists'] == true,
+        channel: effectiveChannel,
+      );
     } on AuthException {
       rethrow;
     } on TimeoutException {

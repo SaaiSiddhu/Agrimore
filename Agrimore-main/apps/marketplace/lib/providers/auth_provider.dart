@@ -326,12 +326,15 @@ class AuthProvider with ChangeNotifier {
   // ============================================
   // SEND PHONE OTP
   // ============================================
-  Future<bool> sendPhoneOTP(String phone, {String channel = 'sms'}) async {
+  /// Returns the [PhoneOtpSendResult] (including the EFFECTIVE delivery
+  /// channel — see auth_service.dart) on success, or `null` on failure —
+  /// callers should read [error] for the failure message.
+  Future<PhoneOtpSendResult?> sendPhoneOTP(String phone, {String channel = 'sms'}) async {
     try {
       if (isLocked) {
         _error = 'Too many attempts. Please try again later.';
         notifyListeners();
-        return false;
+        return null;
       }
 
       _isLoading = true;
@@ -340,25 +343,25 @@ class AuthProvider with ChangeNotifier {
 
       debugPrint('📱 Sending OTP to: $phone (channel: $channel)');
 
-      await _authService.sendPhoneOTP(phone, channel: channel);
+      final result = await _authService.sendPhoneOTP(phone, channel: channel);
 
-      debugPrint('✅ OTP sent');
+      debugPrint('✅ OTP sent via ${result.channel}');
 
       _isLoading = false;
       notifyListeners();
-      return true;
+      return result;
     } on AuthException catch (e) {
       debugPrint('❌ Send OTP error: ${e.message}');
       _error = e.message;
       _isLoading = false;
       notifyListeners();
-      return false;
+      return null;
     } catch (e) {
       debugPrint('❌ Send OTP error: $e');
       _error = e.toString().replaceAll('Exception: ', '');
       _isLoading = false;
       notifyListeners();
-      return false;
+      return null;
     }
   }
 

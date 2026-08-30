@@ -39,11 +39,18 @@ const RESEND_COOLDOWN_MS = 30 * 1000; // 30 seconds
 // number can be bombarded with per day. Per-number only, not per-IP — a
 // distributed enumerator needs App Check, deferred.
 const MAX_SENDS_PER_DAY = 10;
-// A separate, LOWER cap specifically for voice — voice minutes cost 2Factor
-// meaningfully more than an SMS segment, and a voice call is more disruptive
-// to bombard a real phone with (it rings) — 3/day comfortably covers a user
-// who genuinely can't receive SMS (e.g. temporarily out of signal-but-not-
-// call-range) without opening a cheap abuse vector on the pricier channel.
+// A separate, LOWER cap specifically for voice — but it is ONLY ENFORCED
+// while PHONE_OTP_SMS_ENABLED is "true" (see below), i.e. while voice is a
+// genuine fallback alongside a working SMS channel. Its premise — that
+// 3/day "comfortably covers a user who genuinely can't receive SMS" — is
+// FALSE the moment voice becomes the only channel (see the OPEN ISSUE
+// comment in smsProvider.ts): a real user who mistypes their code twice
+// and asks for a third delivery would be locked out of the app for 24
+// hours, on the only login path there is. While SMS is disabled, voice
+// requests are bounded by MAX_SENDS_PER_DAY alone (see the cap check
+// below). This constant and its value are UNCHANGED so the stricter cap
+// returns automatically, with no code change, the moment
+// PHONE_OTP_SMS_ENABLED flips back to "true".
 const MAX_VOICE_SENDS_PER_DAY = 3;
 const DAY_MS = 24 * 60 * 60 * 1000;
 
@@ -56,6 +63,22 @@ const DAY_MS = 24 * 60 * 60 * 1000;
 // real provider is configured, not a separate boolean flag that could drift
 // out of sync with reality.
 const PHONE_OTP_ENABLED = isSmsProviderConfigured();
+
+// Phase 22: a SEPARATE, independent concern from PHONE_OTP_ENABLED above.
+// PHONE_OTP_ENABLED answers "is a provider configured at all" (fails
+// closed to a 503 with zero side effects if not). This flag answers "of
+// the channels that provider offers, which ones may we actually use" —
+// see the OPEN ISSUE comment in smsProvider.ts: this account has no usable
+// DLT registration, so 2Factor delivers every SMS request as a voice call
+// regardless of what is requested. Non-secret — lives in functions/.env
+// alongside RESEND_FROM_EMAIL, not Secret Manager (see
+// functions/.env.example). Fails closed on anything but the exact string
+// "true": unset, "", "false", "1", "yes" are all treated as disabled, so a
+// typo can never silently re-enable a channel that does not work today.
+// Flip to "true" once DLT registration completes (see smsProvider.ts's
+// OPEN ISSUE comment for what "completes" means) — no other code change
+// is needed.
+const PHONE_OTP_SMS_ENABLED = process.env.PHONE_OTP_SMS_ENABLED === "true";
 
 // Firestore is defence-in-depth here (phone_otp_codes is already `allow
 // read, write: if false` — no client can read this regardless), but storing
@@ -179,7 +202,17 @@ export const sendPhoneOTP = functions
 
   try {
     const { phone } = req.body;
-    const channel = req.body?.channel === "voice" ? "voice" : "sms";
+    const requestedChannel = req.body?.channel === "voice" ? "voice" : "sms";
+    // Phase 22: while PHONE_OTP_SMS_ENABLED is off (the DLT gap — see
+    // smsProvider.ts), every request is delivered by voice regardless of
+    // what was requested, because voice is the only channel that actually
+    // works on this account today. The EFFECTIVE channel — never the
+    // requested one — drives delivery, the cap check, the Firestore
+    // record, and the response, so the API never claims a channel it
+    // didn't use. An explicit channel:"voice" request is unaffected: it
+    // was always going to be voice. This downgrade disappears the moment
+    // PHONE_OTP_SMS_ENABLED flips to "true" — no other code change needed.
+    const channel = PHONE_OTP_SMS_ENABLED ? requestedChannel : "voice";
 
     if (!phone || typeof phone !== "string") {
       res.status(400).json({ success: false, error: "Phone number is required" });
@@ -234,7 +267,12 @@ export const sendPhoneOTP = functions
         voiceSendWindowStart = voiceWindowStart;
         voiceSendCount = typeof existingData!.voiceSendCount === "number" ? existingData!.voiceSendCount : 0;
       }
-      if (channel === "voice" && voiceSendCount >= MAX_VOICE_SENDS_PER_DAY) {
+      // Phase 22: the stricter voice cap applies ONLY while SMS is enabled
+      // — i.e. only while voice really is a fallback alongside a working
+      // SMS channel. With SMS disabled, voice requests fall through to
+      // the combined MAX_SENDS_PER_DAY check above instead (already
+      // evaluated first, so it remains the outer bound in both modes).
+      if (PHONE_OTP_SMS_ENABLED && channel === "voice" && voiceSendCount >= MAX_VOICE_SENDS_PER_DAY) {
         res.status(429).json({
           success: false,
           error: "Too many voice call requests for this number today. Please try again later.",
@@ -251,12 +289,29 @@ export const sendPhoneOTP = functions
     // stored ciphertext still decrypts; otherwise falls through to
     // generating fresh (a UX degradation, not a security issue — see the
     // encryptionKey() comment above).
+    //
+    // Phase 22 decision: this gate stays keyed on the REQUESTED channel,
+    // not the effective one. Reuse exists to protect an in-flight
+    // delivery on a DIFFERENT channel from being invalidated — that only
+    // makes sense when the request explicitly asks for voice while
+    // something else (an SMS) might still be in flight. With SMS
+    // disabled, an ordinary resend still nominally requests "sms" and
+    // should still behave like a normal resend always has: a FRESH code,
+    // freshly delivered (by voice, because that's the only channel
+    // available right now — but fresh all the same). Keying this on the
+    // EFFECTIVE channel instead would make every ordinary resend silently
+    // replay a stale code instead of generating a new one, which is not
+    // what a user pressing "resend" is asking for. An explicit
+    // channel:"voice" request (requestedChannel === "voice") still reuses
+    // the code either way, exactly as it does today, flag or no flag —
+    // satisfying the "call me instead" button's existing contract
+    // unconditionally.
     let otp: string | null = null;
     const key = encryptionKey();
     const isLiveSession =
       !!existingData && !existingData.verified && now < (existingData.expiresAt as number);
 
-    if (channel === "voice" && isLiveSession && key && existingData!.otpEncrypted) {
+    if (requestedChannel === "voice" && isLiveSession && key && existingData!.otpEncrypted) {
       otp = decryptOtp(existingData!.otpEncrypted as EncryptedOtp, key);
     }
 

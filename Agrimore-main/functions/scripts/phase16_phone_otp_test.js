@@ -117,6 +117,15 @@ async function main() {
   // ---------------------------------------------------------------
   process.env.TWOFACTOR_API_KEY = "phase16-fake-2factor-key-never-real";
   process.env.OTP_ENCRYPTION_KEY = "phase16-fake-encryption-passphrase";
+  // Phase 22 additive fixture note: this part's scenarios (3 and 7 in
+  // particular) test a working SMS provider — scenario 3 asserts delivery
+  // hits the `/SMS/` endpoint, scenario 7 asserts the voice-specific daily
+  // cap. Phase 22 made SMS delivery conditional on PHONE_OTP_SMS_ENABLED
+  // (default disabled, to match this account's current DLT-gap reality —
+  // see smsProvider.ts's OPEN ISSUE comment), so this part must opt in
+  // explicitly to keep testing what it always tested: a provider that can
+  // actually deliver SMS. No assertion below changed.
+  process.env.PHONE_OTP_SMS_ENABLED = "true";
   const { sendPhoneOTP, verifyPhoneOTP } = reloadPhoneOtpModules();
 
   // Scenario 3: OTP generated, hashed (not plaintext), handed to provider
