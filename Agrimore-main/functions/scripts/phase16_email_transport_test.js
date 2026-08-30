@@ -78,8 +78,16 @@ async function main() {
       call.data.from === "noreply@phase16-test.example" &&
       typeof call.data.subject === "string" &&
       call.data.subject.includes("Agrimore") &&
-      typeof call.data.html === "string" &&
-      call.data.html.includes(email) &&
+      // 2026-08-30: the body is now PLAIN TEXT ONLY (owner decision) — Resend
+      // is sent `text`, never `html`. The previous assertion here was
+      // `html.includes(email)`, which proved the themed template had rendered
+      // with the right recipient; the plain-text body deliberately does not
+      // repeat the address back, so that check is replaced rather than
+      // dropped: assert a real text body went out AND that no html part was
+      // sent at all, which is the property that actually matters now.
+      typeof call.data.text === "string" &&
+      call.data.text.includes("Agrimore") &&
+      call.data.html === undefined &&
       call.config.headers.Authorization === "Bearer phase16-fake-resend-key-never-real";
     results.scenario1_resend_receives_correct_payload = s1;
     console.log(`scenario1_resend_receives_correct_payload: ${s1 ? "PASSED" : "FAILED"} — call=${JSON.stringify({ url: call?.url, to: call?.data?.to, from: call?.data?.from })}`);

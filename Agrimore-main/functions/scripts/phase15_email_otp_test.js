@@ -32,7 +32,9 @@ process.env.RESEND_FROM_EMAIL = "noreply@phase15-test.example";
 const axios = require("axios");
 const sentEmails = [];
 axios.post = async (url, data) => {
-  sentEmails.push({ to: data.to, subject: data.subject, html: data.html });
+  // `text` is the live field since the body became plain text (2026-08-30);
+  // `html` is captured too so this stays honest if an html part ever returns.
+  sentEmails.push({ to: data.to, subject: data.subject, text: data.text, html: data.html });
   return { data: { id: "phase15-fake-email-id" } };
 };
 

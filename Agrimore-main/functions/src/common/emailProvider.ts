@@ -43,24 +43,41 @@ export function isEmailProviderConfigured(): boolean {
   return apiKey() !== null && fromAddress() !== null;
 }
 
+// Resend accepts `text`, `html`, or both. Both are OPTIONAL here and at least
+// one must be supplied — enforced at runtime below, because TypeScript cannot
+// express "at least one of these two" without an awkward union that every
+// caller would then have to satisfy.
+//
+// The OTP mail deliberately sends `text` only (owner decision, 2026-08-30:
+// plain text, no colours, no theme). Plain text is also the better default for
+// a one-time code — nothing to render, nothing to strip, and no image or CSS
+// for a mail client to block.
 interface SendEmailArgs {
   to: string;
   subject: string;
-  html: string;
+  text?: string;
+  html?: string;
 }
 
 /** Sends an email via Resend. Throws on any failure — never returns partial success. */
-export async function sendEmailViaResend({ to, subject, html }: SendEmailArgs): Promise<void> {
+export async function sendEmailViaResend({ to, subject, text, html }: SendEmailArgs): Promise<void> {
   const key = apiKey();
   const from = fromAddress();
   if (!key || !from) {
     throw new Error("Email provider not configured");
   }
+  if (!text && !html) {
+    // Fail loudly rather than posting a body-less email that Resend would
+    // accept and the recipient would receive blank.
+    throw new Error("sendEmailViaResend requires at least one of `text` or `html`");
+  }
 
   try {
     const response = await axios.post(
       RESEND_API_URL,
-      { from, to, subject, html },
+      // Omit the absent field entirely rather than sending `undefined` —
+      // Resend treats a present-but-empty body part as a real empty body.
+      { from, to, subject, ...(text ? { text } : {}), ...(html ? { html } : {}) },
       {
         headers: {
           Authorization: `Bearer ${key}`,

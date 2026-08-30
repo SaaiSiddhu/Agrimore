@@ -51,99 +51,29 @@ function hashOtp(otp: string): string {
 }
 
 // ============================================
-// BEAUTIFUL HTML EMAIL TEMPLATE
+// PLAIN-TEXT EMAIL BODY
 // ============================================
-function generateOTPEmailTemplate(otp: string, email: string): string {
-  // Agrimore Theme Colors
-  const colors = {
-    primary: "#00E676",
-    secondary: "#4CAF50",
-    background: "#0A120A",
-    cardBg: "#0F2818",
-    textLight: "#FFFFFF",
-    textDim: "#A5D6A7",
-    accent: "#81C784"
-  };
-
-  return `
-<!DOCTYPE html>
-<html lang="en">
-<head>
-  <meta charset="UTF-8">
-  <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>Your Verification Code - Agrimore</title>
-  <style>
-    @media only screen and (max-width: 600px) {
-      .container { width: 100% !important; padding: 20px !important; }
-      .otp-code { font-size: 32px !important; letter-spacing: 8px !important; }
-    }
-  </style>
-</head>
-<body style="margin: 0; padding: 0; font-family: 'Segoe UI', Roboto, Helvetica, Arial, sans-serif; background-color: ${colors.background}; color: ${colors.textLight};">
-  <table role="presentation" width="100%" cellspacing="0" cellpadding="0" border="0">
-    <tr>
-      <td align="center" style="padding: 40px 0;">
-        <!-- Main Container -->
-        <table class="container" role="presentation" width="480" cellspacing="0" cellpadding="0" border="0" style="background: linear-gradient(145deg, #1A2E1A 0%, #0A120A 100%); border-radius: 24px; border: 1px solid rgba(0, 230, 118, 0.1); box-shadow: 0 20px 40px rgba(0, 0, 0, 0.4); overflow: hidden;">
-          
-          <!-- Header (Logo) -->
-          <tr>
-            <td align="center" style="padding: 40px 40px 20px 40px;">
-              <div style="display: inline-block; width: 64px; height: 64px; border-radius: 16px; background: linear-gradient(135deg, ${colors.primary} 0%, ${colors.secondary} 100%); line-height: 64px; text-align: center; box-shadow: 0 8px 16px rgba(0, 230, 118, 0.2);">
-                <span style="font-size: 32px; font-weight: 800; color: #003300;">A</span>
-              </div>
-              <h1 style="margin: 16px 0 0 0; font-size: 24px; font-weight: 700; background: linear-gradient(90deg, #FFFFFF 0%, #A5D6A7 100%); -webkit-background-clip: text; -webkit-text-fill-color: transparent; letter-spacing: 1px;">AGRIMORE</h1>
-            </td>
-          </tr>
-
-          <!-- Content -->
-          <tr>
-            <td style="padding: 0 40px;">
-              <p style="margin: 0 0 24px 0; font-size: 16px; line-height: 1.6; color: rgba(255, 255, 255, 0.9); text-align: center;">
-                Hello, use the verification code below to securely access your Agrimore account.
-              </p>
-
-              <!-- OTP Box -->
-              <div style="background: rgba(0, 230, 118, 0.08); border: 1px dashed rgba(0, 230, 118, 0.3); border-radius: 16px; padding: 32px 20px; text-align: center; margin-bottom: 24px;">
-                <span style="display: block; font-size: 12px; font-weight: 600; text-transform: uppercase; color: ${colors.primary}; letter-spacing: 1.5px; margin-bottom: 8px;">Verification Code</span>
-                <span class="otp-code" style="display: block; font-size: 40px; font-weight: 800; color: #FFFFFF; font-family: monospace; letter-spacing: 12px;">${otp}</span>
-              </div>
-
-              <p style="margin: 0; font-size: 14px; text-align: center; color: ${colors.textDim};">
-                ⏱️ This code will expire in 5 minutes.
-              </p>
-            </td>
-          </tr>
-
-          <!-- Security Tip -->
-          <tr>
-            <td style="padding: 30px 40px;">
-              <div style="background: rgba(255, 255, 255, 0.03); border-left: 3px solid ${colors.secondary}; padding: 12px 16px; border-radius: 0 8px 8px 0;">
-                <p style="margin: 0; font-size: 13px; color: rgba(255, 255, 255, 0.7); line-height: 1.5;">
-                  <strong>Security Notice:</strong> Agrimore will never ask for this code via call or SMS. Do not share it with anyone.
-                </p>
-              </div>
-            </td>
-          </tr>
-
-          <!-- Footer -->
-          <tr>
-            <td style="padding: 30px 40px; background-color: rgba(0, 0, 0, 0.2); border-top: 1px solid rgba(255, 255, 255, 0.05); text-align: center;">
-              <p style="margin: 0 0 8px 0; font-size: 12px; color: ${colors.textDim};">
-                Sent to <span style="color: ${colors.primary};">${email}</span>
-              </p>
-              <p style="margin: 0; font-size: 11px; color: rgba(255, 255, 255, 0.4);">
-                &copy; ${new Date().getFullYear()} Agrimore Marketplace. All rights reserved.
-              </p>
-            </td>
-          </tr>
-        </table>
-      </td>
-    </tr>
-  </table>
-</body>
-</html>
-  `;
+// Owner decision, 2026-08-30: the verification email is PLAIN TEXT ONLY — no
+// colours, no theme, no HTML. This replaced a themed HTML template.
+//
+// Beyond the owner's preference, plain text is the better default for a
+// one-time code: there is nothing for a mail client to block, strip, or
+// render badly, and no image or CSS can hide the code from a screen reader.
+// sendEmailViaResend is passed `text` (not `html`) below, so this really is
+// sent as text/plain rather than HTML that merely looks plain.
+//
+// Keep it short. Every extra line is another thing that can wrap badly in a
+// narrow mobile mail client and push the code out of the preview pane.
+function generateOTPEmailBody(otp: string): string {
+  return [
+    `Your Agrimore verification code is ${otp}`,
+    "",
+    "This code expires in 5 minutes.",
+    "",
+    "Do not share it with anyone. Agrimore will never ask you for it.",
+    "",
+    "If you did not request this code, you can ignore this email.",
+  ].join("\n");
 }
 
 // ============================================
@@ -248,13 +178,14 @@ export const sendEmailOTP = functions
     });
 
     // Send email via Resend (Phase 16, Workstream 3 — see emailProvider.ts).
-    const emailHtml = generateOTPEmailTemplate(otp, email);
+    const emailText = generateOTPEmailBody(otp);
 
     try {
       await sendEmailViaResend({
         to: email,
         subject: `${otp} is your Agrimore verification code`,
-        html: emailHtml,
+        // `text`, not `html` — see generateOTPEmailBody above.
+        text: emailText,
       });
     } catch (deliveryError: any) {
       console.error("❌ Resend delivery failed:", deliveryError?.message || deliveryError);
