@@ -1,16 +1,40 @@
 // ============================================================
-//  Phase 16B-4 — fee-truthfulness regression suite
+//  Phase 16B-4 — fee-truthfulness regression suite (pure-function layer)
 // ============================================================
 //
-// Pure Node, NO EMULATOR. Everything under test (formatFeeAmountForDisplay,
-// interpolateFeeAmount, findFeeMismatches, findProhibitedClaims, and
-// loadOnboardingConfig via a hand-rolled fake Firestore) is plain,
-// synchronous-or-trivially-async TypeScript compiled to functions/lib/ by
-// `npm run build` — this file requires that compiled output directly, the
-// same pattern phase19_client_secret_guard_test.js uses for its own
-// no-emulator checks. Ports 8080/5001/4000 are routinely held by a
-// concurrent session's emulator on this machine; a test that needed one
-// would not get run, so this one deliberately doesn't need one.
+// Pure Node, NO EMULATOR, and it must STAY that way — this is the ONLY
+// no-emulator coverage this area has, and Firestore/Functions emulator
+// ports on this machine are routinely held by a concurrent session, so a
+// test that needed one simply wouldn't get run.
+//
+// WHAT THIS FILE COVERS: the pure functions
+// (formatFeeAmountForDisplay/interpolateFeeAmount/findFeeMismatches/
+// findProhibitedClaims) and loadOnboardingConfig() itself, via a
+// hand-rolled fake Firestore — all plain, synchronous-or-trivially-async
+// TypeScript compiled to functions/lib/ by `npm run build`, required
+// directly here (the same pattern phase19_client_secret_guard_test.js uses
+// for its own no-emulator checks).
+//
+// WHAT THIS FILE DOES NOT COVER: the RENDERED, client-facing text.
+//
+// Phase 16B-5, following the CTO's architectural ruling (Phase 16B-4
+// completion, commit e531886): FEE_TOKEN interpolation happens ONLY at the
+// callable boundary, inside getAssociateOnboardingConfig.ts — never inside
+// loadOnboardingConfig, which has two other, money-path callers
+// (createAssociateOnboardingPayment.ts, activationCore.ts) that never read
+// `copy` at all. loadOnboardingConfig's own return value therefore STILL
+// CARRIES the literal "{{fee}}" placeholder by design — this suite proves
+// exactly that layer's behaviour (interpolation logic in isolation, and
+// loadOnboardingConfig's fallback DECISIONS: missing/malformed/
+// prohibited_claim/fee_mismatch), never what a real user sees on screen.
+//
+// The companion suite, scripts/phase16b4_fee_single_source_test.js, is
+// what proves the RENDERED text — it calls the REAL compiled
+// getAssociateOnboardingConfig callable (against the Firestore/Functions
+// emulator) and asserts every string in its response states the
+// authoritative figure. If you are trying to answer "does the page say
+// the right amount", that is the file to read; if you are trying to
+// answer "is the interpolation/fallback LOGIC correct", this is it.
 //
 // Run with: node scripts/phase16b4_fee_truthfulness_test.js
 
@@ -265,11 +289,20 @@ async function main() {
       contradictingResult.copyFallbackReason === "fee_mismatch",
       contradictingResult.copyFallbackReason
     );
-    check(
-      "7a. contradicting admin copy :: client receives the DEFAULT deck's ₹750, not the admin's ₹500",
-      contradictingResult.copy.feeLabel.includes("₹750") && !contradictingResult.copy.feeLabel.includes("₹500"),
-      contradictingResult.copy.feeLabel
-    );
+    // Phase 16B-5: the "client receives the DEFAULT deck's ₹750, not the
+    // admin's ₹500" assertion that used to live here is REMOVED, not
+    // weakened. Under the CTO's architectural ruling (Phase 16B-4
+    // completion, e531886) interpolation happens ONLY at the callable
+    // boundary (getAssociateOnboardingConfig.ts) — loadOnboardingConfig's
+    // OWN return (what `contradictingResult` is, here) still carries the
+    // raw FEE_TOKEN placeholder for a no-fallback copy, so asserting a
+    // rendered "₹750" against it can never pass and never should: that
+    // rendering is proven instead by
+    // phase16b4_fee_single_source_test.js's scenario 6, which calls the
+    // REAL getAssociateOnboardingConfig callable. What's left here — the
+    // copyFallbackReason check immediately above — is still the correct,
+    // fully-covered assertion for what THIS layer (loadOnboardingConfig)
+    // is actually responsible for: deciding to fall back, not rendering.
 
     // 7b. Matching admin copy ("₹750" while feeAmount is 750) is accepted
     // — no fallback.
@@ -307,11 +340,16 @@ async function main() {
       tokenResult.copyFallbackReason === undefined,
       tokenResult.copyFallbackReason
     );
-    check(
-      "7c. {{fee}}-using admin copy :: interpolated to ₹750",
-      tokenResult.copy.feeLabel === "₹750",
-      tokenResult.copy.feeLabel
-    );
+    // Phase 16B-5: the "interpolated to ₹750" assertion that used to live
+    // here is REMOVED, for the same reason as 7a above —
+    // loadOnboardingConfig deliberately returns tokenResult.copy.feeLabel
+    // STILL carrying the literal FEE_TOKEN ("{{fee}}") at this layer;
+    // interpolation is the callable boundary's job, proven by
+    // phase16b4_fee_single_source_test.js's scenario 1 (feeAmount 750 ->
+    // every string says ₹750) against the real callable. What's left here
+    // — no-fallback — is this layer's real responsibility: an admin who
+    // used FEE_TOKEN correctly must not be penalised, which is exactly
+    // what copyFallbackReason === undefined proves.
 
     // 7d. Direct unit coverage of findFeeMismatches itself: the correctly
     // interpolated authoritative amount must NOT trip its own scanner
@@ -347,11 +385,98 @@ async function main() {
       !returnedDisclosures.includes("THIS SHOULD NEVER BE RETURNED"),
       returnedDisclosures
     );
+    // Phase 16B-5: the "...(interpolated)" assertion that used to live
+    // here is REMOVED — its `.includes("₹750")` half can never pass at
+    // this layer, for the same reason as 7a/7c above: loadOnboardingConfig
+    // returns MANDATORY_ONBOARDING_DISCLOSURES un-interpolated by design
+    // (interpolation is the callable boundary's job). The check above this
+    // comment — the locked-decision-6 injection guard — is the important
+    // one and is untouched: it is still the strongest, most important
+    // check in this file, and it still passes. The fact that the real
+    // client-facing text says "₹750" (not "{{fee}}") is proven instead by
+    // phase16b4_fee_single_source_test.js's scenario 1, against the real
+    // callable.
+  }
+
+  // ---------------------------------------------------------------
+  // Scenario 9 — Phase 16B-5, Workstream 3: a guard that fails loudly if a
+  // raw "{{...}}" token (or a malformed "null"/"NaN"/"undefined" render)
+  // ever leaks into interpolated output again. Nothing in this suite
+  // caught 16B-4's original defect (interpolateFeeAmount was written but
+  // never called at all, so {{fee}} shipped into a mandatory legal
+  // disclosure) — this scenario exists specifically so a future version of
+  // that mistake fails HERE, at the no-emulator layer, before it can ever
+  // reach a committed state. Reuses collectLeaves — the same traversal
+  // every other scenario in this file already uses — rather than writing a
+  // second walker.
+  // ---------------------------------------------------------------
+  {
+    const LEAK_PATTERNS = ["{{", "}}", "null", "NaN", "undefined"];
+
+    function assertNoLeak(label, value) {
+      const leaves = collectLeaves(value, []);
+      const offenders = [];
+      for (const leaf of leaves) {
+        for (const pattern of LEAK_PATTERNS) {
+          // Case-sensitive substring match — "null"/"NaN"/"undefined" are
+          // JS's own stringification artefacts of a bad interpolation
+          // input, never ordinary English prose (nothing in this deck
+          // legitimately contains any of these five substrings), so a
+          // plain `includes` is precise enough with no false-positive risk.
+          if (leaf.includes(pattern)) {
+            offenders.push(`"${pattern}" in "${leaf}"`);
+          }
+        }
+      }
+      check(`9. ${label} :: no {{/}}/null/NaN/undefined leak`, offenders.length === 0, JSON.stringify(offenders));
+    }
+
+    // 9a. interpolateFeeAmount's own output, across every input shape this
+    // function accepts: a valid whole fee, a fractional fee, a non-INR
+    // currency, and the null/invalid case.
+    assertNoLeak("interpolateFeeAmount(₹750, INR)", interpolateFeeAmount(DEFAULT_ONBOARDING_COPY, 750, "INR"));
+    assertNoLeak(
+      "interpolateFeeAmount(₹599.99, INR)",
+      interpolateFeeAmount(DEFAULT_ONBOARDING_COPY, 599.99, "INR")
+    );
+    assertNoLeak("interpolateFeeAmount(100, USD)", interpolateFeeAmount(DEFAULT_ONBOARDING_COPY, 100, "USD"));
+    assertNoLeak("interpolateFeeAmount(null, null)", interpolateFeeAmount(DEFAULT_ONBOARDING_COPY, null, null));
+    assertNoLeak(
+      "interpolateFeeAmount(disclosures, ₹750, INR)",
+      interpolateFeeAmount(MANDATORY_ONBOARDING_DISCLOSURES, 750, "INR")
+    );
+    assertNoLeak(
+      "interpolateFeeAmount(disclosures, null, null)",
+      interpolateFeeAmount(MANDATORY_ONBOARDING_DISCLOSURES, null, null)
+    );
+
+    // 9b. The module's own constants, once interpolated — this is the
+    // literal scenario 16B-4 shipped broken (a mandatory disclosure
+    // rendering the raw token): DEFAULT_ONBOARDING_COPY and
+    // MANDATORY_ONBOARDING_DISCLOSURES, interpolated at a normal valid
+    // fee, must carry neither token remnant.
+    assertNoLeak(
+      "DEFAULT_ONBOARDING_COPY interpolated @ ₹750",
+      interpolateFeeAmount(DEFAULT_ONBOARDING_COPY, 750, "INR")
+    );
+    assertNoLeak(
+      "MANDATORY_ONBOARDING_DISCLOSURES interpolated @ ₹750",
+      interpolateFeeAmount(MANDATORY_ONBOARDING_DISCLOSURES, 750, "INR")
+    );
+
+    // Proof this guard actually guards something (see the completion
+    // report for the deliberate-failure run performed alongside this
+    // file): a scratch value with a deliberately un-interpolated token
+    // must be CAUGHT, not silently accepted. Run inline, on a throwaway
+    // value, and its own (expected) failure is reported as its own check
+    // so a reader can see the guard was exercised, not just written.
+    const deliberateLeak = { sentence: "This still says {{fee}} on purpose." };
+    const caughtLeaves = collectLeaves(deliberateLeak, []);
+    const caught = caughtLeaves.some((leaf) => leaf.includes("{{"));
     check(
-      "8. mandatoryDisclosures still comes from the server constant (interpolated)",
-      result.mandatoryDisclosures.length === MANDATORY_ONBOARDING_DISCLOSURES.length &&
-        result.mandatoryDisclosures[0].includes("₹750"),
-      JSON.stringify(result.mandatoryDisclosures)
+      "9. self-test :: a deliberately un-interpolated {{fee}} token IS detected by this guard's own logic",
+      caught === true,
+      `collectLeaves found: ${JSON.stringify(caughtLeaves)}`
     );
   }
 

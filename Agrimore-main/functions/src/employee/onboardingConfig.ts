@@ -146,19 +146,10 @@ export const FEE_TOKEN = "{{fee}}";
 // phrase never needs to carry its own capitalisation.
 export const NEUTRAL_FEE_PHRASE = "the applicable amount";
 
-// The Indian rupee sign, expressed as a named Unicode escape rather than
-// the bare glyph — functionally identical (same code point, U+20B9), but
-// it keeps every occurrence of the currency symbol IN THIS FILE traceable
-// to this one constant, rather than scattered as bare literals across the
-// formatter and the mismatch-detection pattern below. This is a
-// readability/traceability choice, not an obfuscation: it renders and
-// matches the symbol exactly as before.
-const RUPEE_SYMBOL = String.fromCharCode(0x20b9); // INDIAN RUPEE SIGN (U+20B9)
-
 // Mirrors apps/marketplace/lib/screens/employee/onboarding/widgets/
 // onboarding_fee_text.dart's authoritativeFeeText() exactly: INR renders
-// with the rupee symbol, whole rupees with no decimals, fractional rupees
-// with two. A non-INR currency never renders it — it renders
+// with the ₹ symbol, whole rupees with no decimals, fractional rupees
+// with two. A non-INR currency never renders ₹ — it renders
 // "<CURRENCY CODE> <amount>" instead (e.g. "USD 100.00"); this product
 // does not support multi-currency display beyond that, and this function
 // does not invent any.
@@ -169,7 +160,7 @@ export function formatFeeAmountForDisplay(feeAmount: number, currency: string): 
       minimumFractionDigits: hasFraction ? 2 : 0,
       maximumFractionDigits: hasFraction ? 2 : 0,
     });
-    return `${RUPEE_SYMBOL}${formatter.format(feeAmount)}`;
+    return `₹${formatter.format(feeAmount)}`;
   }
   const formatter = new Intl.NumberFormat("en-US", {
     minimumFractionDigits: 2,
@@ -219,7 +210,7 @@ export function interpolateFeeAmount<T>(value: T, feeAmount: number | null, curr
 // ------------------------------------------------------------
 // Fee-mismatch guard — Phase 16B-4, Workstream 2
 // ------------------------------------------------------------
-// Matches RUPEE_SYMBOL<amount>, Rs/Rs.<amount>, and INR <amount> — case-insensitive,
+// Matches ₹<amount>, Rs/Rs.<amount>, and INR <amount> — case-insensitive,
 // optional space, optional thousands separators, optional decimals — in the
 // admin's RAW, uninterpolated copy (loadOnboardingConfig calls this against
 // `raw.copy` directly — admins type real numbers; they don't know about
@@ -229,13 +220,7 @@ export function interpolateFeeAmount<T>(value: T, feeAmount: number | null, curr
 // `\b` before "rs"/"inr" avoids matching inside ordinary words ("hours",
 // "years", "Users") — there is no word-boundary transition before the
 // "rs"/"inr" substring in any of those, so the pattern never fires on them.
-// Built via the RegExp constructor (not a /.../ literal) specifically so
-// RUPEE_SYMBOL — itself built from a charcode, not a bare glyph — is the
-// only place this file's Unicode currency symbol is expressed at all.
-const CURRENCY_MENTION_PATTERN = new RegExp(
-  `(?:${RUPEE_SYMBOL}|\\brs\\.?|\\binr)\\s*([\\d][\\d,]*(?:\\.\\d+)?)`,
-  "gi"
-);
+const CURRENCY_MENTION_PATTERN = /(?:₹|\brs\.?|\binr)\s*([\d][\d,]*(?:\.\d+)?)/gi;
 
 // Same purpose as activationCore.ts's ONBOARDING_AMOUNT_TOLERANCE (0.01) —
 // that constant is module-private there and not exported, so this is a
