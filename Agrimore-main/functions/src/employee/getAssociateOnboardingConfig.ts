@@ -12,7 +12,7 @@
 import { onCall } from "firebase-functions/v2/https";
 import * as admin from "firebase-admin";
 import { log } from "../common/helpers";
-import { loadOnboardingConfig } from "./onboardingConfig";
+import { loadOnboardingConfig, interpolateFeeAmount } from "./onboardingConfig";
 
 export const getAssociateOnboardingConfig = onCall(
   { minInstances: 0, memory: "256MiB" },
@@ -50,6 +50,43 @@ export const getAssociateOnboardingConfig = onCall(
       });
     }
 
+    // Phase 16B-4: mirrors the prohibited_claim block above exactly — an
+    // admin copy override stating a rupee figure that disagrees with
+    // feeAmount is caught by onboardingConfig.ts's findFeeMismatches (run
+    // against the admin's RAW text) and already fell back to the default
+    // copy inside loadOnboardingConfig(); this just logs/audits it, same
+    // shape as prohibited_claim.
+    if (config.copyFallbackReason === "fee_mismatch") {
+      log.error(
+        `🚨 settings/associate_onboarding copy states a rupee figure that disagrees with feeAmount (${
+          config.feeAmount
+        }) — serving DEFAULT copy instead. Offending sentences: ${(config.violatedPhrases || []).join(", ")}`
+      );
+      await db.collection("onboarding_events").add({
+        type: "config_violation",
+        detail: `fee_mismatch: ${(config.violatedPhrases || []).join(", ")}`,
+        configVersion: config.configVersion,
+        createdAt: admin.firestore.FieldValue.serverTimestamp(),
+      });
+    }
+
+    // Phase 16B-4: this callable is the ONLY place FEE_TOKEN is ever
+    // interpolated — see onboardingConfig.ts's header comment for why
+    // (loadOnboardingConfig has two other, money-path callers that never
+    // read `copy`, and a pre-existing test asserts loadOnboardingConfig's
+    // raw return against the raw module constants). config.feeAmount/
+    // config.currency are already `valid ? amount : null` from
+    // loadOnboardingConfig, so interpolateFeeAmount's own null-handling
+    // (substitutes a neutral, non-numeric phrase — never "null", "NaN", or
+    // a bare currency symbol) applies automatically whenever the fee is
+    // unusable.
+    const renderedCopy = interpolateFeeAmount(config.copy, config.feeAmount, config.currency);
+    const renderedDisclosures = interpolateFeeAmount(
+      config.mandatoryDisclosures,
+      config.feeAmount,
+      config.currency
+    );
+
     return {
       // Never return a fee/enabled state the server would not itself
       // honour — activateAssociateOnboarding and
@@ -59,11 +96,11 @@ export const getAssociateOnboardingConfig = onCall(
       isEnabled: config.valid && config.isEnabled,
       feeAmount: config.valid ? config.feeAmount : null,
       currency: config.valid ? config.currency : null,
-      copy: config.copy,
+      copy: renderedCopy,
       // Separate top-level array (2b) — never nested inside `copy` — so a
       // UI cannot accidentally drop it by only rendering known `copy`
       // fields.
-      mandatoryDisclosures: config.mandatoryDisclosures,
+      mandatoryDisclosures: renderedDisclosures,
       configVersion: config.configVersion,
       unavailableReason:
         config.valid && config.isEnabled ? null : config.unavailableReason || "config_invalid",

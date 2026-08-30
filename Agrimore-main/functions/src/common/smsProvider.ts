@@ -89,9 +89,21 @@ async function call2Factor(pathSuffix: string): Promise<void> {
 //    encrypted-code-reuse path, and otp_verification_screen.dart has a real
 //    "call me instead" button. Legitimate voice traffic is therefore expected
 //    and is NOT evidence of this bug.)
-//  - The account HAS an approved DLT template: "Agrimore2026", sender AGRIMO,
-//    body "XXXX is your OTP for AGRIMORE. Please do not share OTP with
-//    anyone.", approved 2026-06-12. So plain "no template" is NOT the cause.
+//  - ROOT CAUSE FOUND, 2026-08-30: the account has NO usable DLT
+//    registration at all. The owner's own dlt-registration.2factor.in
+//    screenshots show "My DLT Templates" -> Approved Templates (0),
+//    Blacklisted (0), "No results found"; and "My DLT Registrations" -> no
+//    mapped entity at all (an empty "MAP NEW ENTITY" row, placeholder text
+//    only). Whatever "Agrimore2026" / sender AGRIMO approval exists, it
+//    exists on the OPERATOR's DLT platform and was never mapped into THIS
+//    2Factor account. 2Factor cannot attach a DLT entity/template it does
+//    not have, so it cannot send DLT-compliant transactional SMS on an
+//    Indian route — and falling back to voice is exactly what that
+//    produces. (An earlier version of this bullet asserted the account
+//    "HAS an approved DLT template" and concluded "no template" was
+//    therefore not the cause — that premise was checked against 2Factor's
+//    internal OTP-template panel, not the actual TRAI DLT platform, and
+//    was false. It is corrected here, not left standing.)
 //  - Naming that template does NOT help, and must not be re-attempted here:
 //    2Factor's docs for the custom-OTP form (the one we use, where WE supply
 //    the code) define exactly one shape —
@@ -125,15 +137,25 @@ async function call2Factor(pathSuffix: string): Promise<void> {
 //    unavailable for this account or this destination number.
 //
 // NOTHING IN THIS REPOSITORY CAN FIX THIS. Do not add retries, channel
-// overrides, or provider-shape experiments here — seven have been eliminated.
-// The open questions are provider-side and need 2Factor support plus the DLT
-// portal: is a default template mapped to the SMS-OTP service, and is
-// "Agrimore2026" registered under a transactional/service-implicit category
-// rather than promotional (promotional is blocked on DND-registered numbers,
-// which would block the SMS route and trigger their voice fallback)?
-// The one experiment still worth running is varying the DESTINATION: send to
-// a second, known non-DND number. SMS there means the fault is destination
-// specific (DND/category); voice there too means it is account-level.
+// overrides, or provider-shape experiments here — every other hypothesis
+// above has been eliminated, and the bullet above this one confirms the
+// actual root cause. There is no longer an open question about WHAT
+// category "Agrimore2026" is registered under (asked by an earlier version
+// of this paragraph) — that question is moot: there is no mapped template
+// in the 2Factor account to HAVE a category. THE FIX IS AN OWNER ACTION IN
+// THE 2FACTOR DLT PORTAL (dlt-registration.2factor.in), NOT a code change:
+// (1) Map New Entity — business name + PAN exactly as registered with the
+// operator, PE ID as issued by the operator; (2) register the template
+// content so it appears under Approved Templates. Until both rows are
+// non-empty there, no amount of code work here will make SMS arrive — and
+// sendSmsOtp below already does the right thing and needs no change once
+// DLT registration clears.
+// One diagnostic still worth running, independent of the above: vary the
+// DESTINATION — send to a second, known non-DND number. SMS there would
+// mean the fault also has a destination-specific (DND/category) component
+// even after DLT is fixed; voice there too would simply confirm what is
+// already established: a purely account-level cause (the missing DLT
+// mapping), consistent with every other finding above.
 
 /** Sends `otp` to `normalizedPhone` via SMS. Throws on any delivery failure. */
 export async function sendSmsOtp(normalizedPhone: string, otp: string): Promise<void> {
