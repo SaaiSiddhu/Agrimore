@@ -124,7 +124,13 @@ const STATUS_FIELDS: readonly ComplianceField[] = [
 // Shared helpers
 // ------------------------------------------------------------
 
-interface AuditEntryInput {
+// Exported (Phase B) so every later admin-only, audit-logged callable in
+// this codebase — benefitProgramConfig.ts, benefitEnrollment.ts,
+// benefitAccrual.ts, productCreditExpiry.ts — writes the EXACT same audit
+// entry shape and uses the EXACT same admin check, instead of each
+// reinventing a slightly-different version of both. No behavior change to
+// setBenefitFeatureFlag/setComplianceStatus below.
+export interface AuditEntryInput {
   actorUid: string;
   actorEmail: string | null;
   action: string;
@@ -134,7 +140,7 @@ interface AuditEntryInput {
   reason: string | null;
 }
 
-function auditEntry(input: AuditEntryInput) {
+export function auditEntry(input: AuditEntryInput) {
   return {
     ...input,
     createdAt: admin.firestore.FieldValue.serverTimestamp(),
@@ -143,7 +149,7 @@ function auditEntry(input: AuditEntryInput) {
 
 // Claim-first, mirroring setUserRole.ts's callerIsAdmin(uid, isAdminClaim)
 // shape exactly, rather than inventing a new admin check.
-async function resolveIsAdmin(
+export async function resolveIsAdmin(
   db: admin.firestore.Firestore,
   uid: string,
   isAdminClaim: boolean
@@ -382,11 +388,37 @@ export const setComplianceStatus = onCall(
     }
 
     const complianceRef = db.collection("compliance_config").doc(PROGRAM_ID);
+    const flagRef = db.collection(FLAG_DOC_PATH.collection).doc(FLAG_DOC_PATH.doc);
     const auditRef = db.collection("compliance_audit_log").doc();
+    // Only allocated (and only written) when the cascade below actually
+    // disables something — see the "at least one flag was actually true"
+    // guard.
+    const cascadeAuditRef = db.collection("compliance_audit_log").doc();
+
+    // Approval-revocation cascade (Workstream 1 fix): withdrawing either
+    // approval status must immediately disarm the two customer-facing
+    // launch switches. Before this fix, setComplianceStatus wrote only
+    // complianceRef — so revoking legalReviewStatus AFTER
+    // BENEFIT_PROGRAM_ENABLED had legitimately been set true left the flag
+    // still true, and BenefitFlagService (which reads ONLY the flag
+    // document — compliance_config is admin-read-only, unreachable by any
+    // customer client) would keep reporting the program as live.
+    // assertProgramLaunchable() alone caught this, but nothing yet calls
+    // it from a customer-facing read path, so the flag itself must be
+    // corrected here, at the moment approval is withdrawn — not left to a
+    // future caller to notice.
+    //
+    // One-directional and safe-direction only: setting a status TO
+    // APPROVED never auto-enables anything (enabling stays a deliberate,
+    // separate setBenefitFeatureFlag call); only setting it to anything
+    // OTHER than APPROVED can force flags false.
+    const isRevocationCandidate = STATUS_FIELDS.includes(field) && value !== "APPROVED";
 
     const result = await db.runTransaction(async (tx) => {
       // All reads before all writes.
       const complianceSnap = await tx.get(complianceRef);
+      const flagSnap = isRevocationCandidate ? await tx.get(flagRef) : null;
+
       const previousValue = complianceSnap.exists
         ? (complianceSnap.data() as Record<string, unknown>)[field] ?? null
         : null;
@@ -413,7 +445,32 @@ export const setComplianceStatus = onCall(
         })
       );
 
-      return { previousValue, newValue: value };
+      let cascadeDisabledFlags: FeatureFlagKey[] = [];
+      if (isRevocationCandidate && flagSnap && flagSnap.exists) {
+        const currentFlags = { ...defaultFlags(), ...sanitizeFlags(flagSnap.data()) };
+        cascadeDisabledFlags = APPROVAL_GATED_TRUE_FLAGS.filter((k) => currentFlags[k] === true);
+
+        if (cascadeDisabledFlags.length > 0) {
+          const cascadedFlags = { ...currentFlags };
+          for (const k of cascadeDisabledFlags) cascadedFlags[k] = false;
+          tx.set(flagRef, cascadedFlags, { merge: true });
+
+          tx.set(
+            cascadeAuditRef,
+            auditEntry({
+              actorUid: uid,
+              actorEmail: email,
+              action: "setComplianceStatus.cascadeDisable",
+              target: cascadeDisabledFlags.join(","),
+              previousValue: Object.fromEntries(cascadeDisabledFlags.map((k) => [k, true])),
+              newValue: Object.fromEntries(cascadeDisabledFlags.map((k) => [k, false])),
+              reason: `Cascaded from ${field} being set to "${value}" (no longer APPROVED) in the same change — see audit entry ${auditRef.id}`,
+            })
+          );
+        }
+      }
+
+      return { previousValue, newValue: value, cascadeDisabledFlags };
     });
 
     return { success: true, field, ...result };

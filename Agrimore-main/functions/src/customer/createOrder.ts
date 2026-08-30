@@ -473,6 +473,16 @@ export const createOrder = onCall({ minInstances: 0, memory: "256MiB" }, async (
       if (payment.consumedByOrderId) {
         throw new HttpsError("failed-precondition", "This payment has already been used for an order");
       }
+      // Phase 16D-1, Workstream 1 (CTO-confirmed finding 16A-X): symmetric
+      // counterpart to functions/src/employee/activationCore.ts's own
+      // `payment.consumedByOrderId` check, which already blocks an
+      // order-consumed payment from also activating onboarding. This
+      // blocks the reverse direction: a payment already spent on an
+      // associate's ₹500 onboarding activation must never also create a
+      // real order.
+      if (payment.consumedByOnboardingFor) {
+        throw new HttpsError("failed-precondition", "This payment has already been used for onboarding");
+      }
       if (payment.orderId !== razorpayOrderId) {
         throw new HttpsError("failed-precondition", "Payment does not match this order");
       }

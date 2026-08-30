@@ -108,6 +108,21 @@ export { verifyWalletTopup, redeemReferralCode, creditSignupBonus } from "./cust
 export { setBenefitFeatureFlag, setComplianceStatus } from "./admin/complianceGate";
 
 // ============================================
+// CUSTOMER PRODUCT BENEFIT PROGRAM — LEDGER & ACCRUAL ENGINE (Phase B)
+// ============================================
+// Backend only: program config, enrollment records, the immutable
+// product_credit_ledger, and the accrual/expiry/reconciliation jobs that
+// write it. No redemption, no money movement — see
+// customer/productCreditLedger.ts and admin/benefitEnrollment.ts's header
+// comments. Every state-changing callable here calls
+// admin/complianceGate.ts's assertProgramLaunchable() and refuses to run
+// when it returns false.
+export { setBenefitProgramConfig } from "./admin/benefitProgramConfig";
+export { createBenefitEnrollment, setEnrollmentStatus } from "./admin/benefitEnrollment";
+export { accrueMonthlyBenefits, runBenefitAccrualNow } from "./customer/benefitAccrual";
+export { expireProductCredits, reconcileProductCreditBalances } from "./customer/productCreditExpiry";
+
+// ============================================
 // ASSOCIATE ONBOARDING (Phase 16A — ₹500 one-time Registration &
 // Onboarding Fee). User-facing strings say "Sales Associate"; every
 // internal identifier (the `employee` role, `employees` collection,

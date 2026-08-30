@@ -47,6 +47,9 @@ void main() async {
       options: DefaultFirebaseOptions.currentPlatform,
     );
     debugPrint('✅ Firebase initialized');
+    // Phase 17, Workstream 2: monitoring mode only — see
+    // AppCheckService's header comment. Never blocks startup.
+    await AppCheckService.activate();
   } catch (e) {
     debugPrint('❌ Firebase init error: $e');
   }

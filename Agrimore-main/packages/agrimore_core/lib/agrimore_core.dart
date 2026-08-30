@@ -41,10 +41,15 @@ export 'models/wallet_transaction_model.dart';
 export 'models/wallet_config_model.dart';
 export 'models/referral_model.dart';
 
-// Customer Product Benefit Program Models (compliance/feature-flag gate —
-// Phase A; no enrollment/ledger models exist yet)
+// Customer Product Benefit Program Models
+// Phase A — compliance/feature-flag gate:
 export 'models/benefit_feature_flags_model.dart';
 export 'models/benefit_compliance_model.dart';
+// Phase B — benefit ledger & accrual engine (no redemption model yet):
+export 'models/benefit_program_model.dart';
+export 'models/customer_enrollment_model.dart';
+export 'models/product_credit_ledger_model.dart';
+export 'models/product_credit_balance_model.dart';
 
 // ============================================
 // CONSTANTS

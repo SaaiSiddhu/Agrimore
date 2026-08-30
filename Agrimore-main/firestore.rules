@@ -811,6 +811,62 @@ service cloud.firestore {
     }
 
     // ============================================
+    // CUSTOMER PRODUCT BENEFIT PROGRAM — LEDGER & ACCRUAL ENGINE (Phase B)
+    // ============================================
+    // Every collection below is Cloud-Function write-only, for the same
+    // additive-rules reason documented on Phase A's feature_flags/
+    // compliance_config above: a narrower `match` block can never RESTRICT
+    // a broader one that also matches the same path, so anything placed
+    // under settings/ (which already grants `allow write: if isAdmin()`)
+    // would stay directly admin-client-writable no matter what was written
+    // here. These get their own top-level collections instead. The only
+    // writers are functions/src/admin/benefitProgramConfig.ts,
+    // admin/benefitEnrollment.ts, customer/benefitAccrual.ts, and
+    // customer/productCreditExpiry.ts.
+    match /benefit_programs/{programId} {
+      allow read: if isAdmin();
+      allow write: if false;
+    }
+
+    match /benefit_enrollments/{enrollmentId} {
+      // Owner (the enrolled customer) or admin can read; nobody can write
+      // directly — createBenefitEnrollment/setEnrollmentStatus are the
+      // only writers.
+      allow read: if isAuthenticated() &&
+        (resource.data.customerId == request.auth.uid || isAdmin());
+      allow write: if false;
+    }
+
+    match /benefit_accruals/{accrualId} {
+      // The idempotency anchor for benefitAccrual.ts — one document per
+      // (enrollmentId, period). Owner or admin can read; Cloud Functions
+      // only can write.
+      allow read: if isAuthenticated() &&
+        (resource.data.customerId == request.auth.uid || isAdmin());
+      allow write: if false;
+    }
+
+    match /product_credit_ledger/{entryId} {
+      // The immutable source of truth. Append-only in spirit AND in rules:
+      // even `create` is Cloud-Functions-only here (unlike wallet_topups/
+      // wallet_transactions' shape, where a client never writes either but
+      // the entry itself represents something the client triggered) —
+      // appendLedgerEntry (functions/src/customer/productCreditLedger.ts)
+      // is the only writer, full stop.
+      allow read: if isAuthenticated() &&
+        (resource.data.customerId == request.auth.uid || isAdmin());
+      allow create, update, delete: if false;
+    }
+
+    match /product_credit_balances/{customerId} {
+      // A PROJECTION, not the truth (see productCreditLedger.ts) — owner
+      // or admin can read; Cloud Functions only can write, keeping it from
+      // ever diverging from the ledger via a direct client write.
+      allow read: if isOwner(customerId) || isAdmin();
+      allow write: if false;
+    }
+
+    // ============================================
     // WISHLISTS COLLECTION (Top-level)
     // ============================================
     match /wishlists/{userId} {
@@ -1285,6 +1341,19 @@ service cloud.firestore {
     // SDK) is the only reader/writer.
     match /onboarding_rate_limits/{uid} {
       allow read, write: if false;
+    }
+
+    // ============================================
+    // COMMISSION EXCEPTIONS COLLECTION (Phase 16D-1, Workstream 3f)
+    // ============================================
+    // "Delivered order, resolved employeeUid, but no usable commission
+    // rate" records for admin visibility — written only by
+    // functions/src/customer/employeeCommission.ts. Mirrors
+    // onboarding_exceptions above exactly: admin-read only,
+    // Cloud-Functions-write only.
+    match /commission_exceptions/{exceptionId} {
+      allow read: if isAdmin();
+      allow write: if false;
     }
   }
 }

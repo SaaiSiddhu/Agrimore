@@ -19,6 +19,10 @@ void main() async {
   } else {
     await Firebase.initializeApp();
   }
+  // Phase 17, Workstream 2: monitoring mode only — see
+  // AppCheckService's header comment. Never blocks startup (activate()
+  // swallows its own errors internally).
+  await AppCheckService.activate();
   await NotificationService.initialize();
 
   // Force portrait orientation
