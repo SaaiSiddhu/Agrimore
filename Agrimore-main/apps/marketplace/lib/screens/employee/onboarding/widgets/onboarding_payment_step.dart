@@ -11,6 +11,7 @@ import 'package:agrimore_ui/agrimore_ui.dart';
 // (Play-safety, D2). This screen's own payment button is ALSO kIsWeb-gated
 // below — belt and suspenders, not either/or.
 import '../../../../services/razorpay_web.dart' if (dart.library.io) '../../../../services/razorpay_stub.dart';
+import 'onboarding_fee_text.dart';
 
 Map<String, dynamic>? _asMap(dynamic v) => v is Map<String, dynamic> ? v : null;
 String _asString(dynamic v) => v is String ? v : '';
@@ -28,7 +29,13 @@ enum _PaymentPhase { idle, creatingOrder, awaitingModal, verifying, activating, 
 /// causes `activateAssociateOnboarding` to be called at all.
 class OnboardingPaymentStep extends StatefulWidget {
   final Map<String, dynamic> copy;
-  const OnboardingPaymentStep({super.key, required this.copy});
+  // Phase 16B-3, Defect 1 fix: the authoritative top-level fee fields —
+  // discovered missing here during Workstream 5 eye-verification. This CTA
+  // button is the literal control a visitor taps to pay; it must never
+  // show a figure the server will not actually charge.
+  final num? feeAmount;
+  final String? currency;
+  const OnboardingPaymentStep({super.key, required this.copy, this.feeAmount, this.currency});
 
   @override
   State<OnboardingPaymentStep> createState() => _OnboardingPaymentStepState();
@@ -213,9 +220,19 @@ class _OnboardingPaymentStepState extends State<OnboardingPaymentStep> {
   @override
   Widget build(BuildContext context) {
     final summary = _asMap(widget.copy['summaryCard']);
-    final ctaLabel = _asString(summary?['ctaLabel']).isNotEmpty
-        ? _asString(summary?['ctaLabel'])
-        : 'Complete Registration';
+    // Defect 1: summary['ctaLabel'] (e.g. "Complete Registration — ₹500")
+    // is never read for its fee figure — only the authoritative feeAmount
+    // is. If a valid figure is available, it always wins; the copy string
+    // is used only as a full fallback when the amount is unusable (should
+    // not happen on this step in practice, since reaching it already
+    // implies isEnabled/valid — see the null-check in
+    // authoritativeFeeText's callers).
+    final feeText = authoritativeFeeText(widget.feeAmount, widget.currency);
+    final ctaLabel = feeText != null
+        ? 'Complete Registration — $feeText'
+        : (_asString(summary?['ctaLabel']).isNotEmpty
+            ? _asString(summary?['ctaLabel'])
+            : 'Complete Registration');
     final ctaSubtext = _asString(summary?['ctaSubtext']);
 
     // D2 / Workstream 3c — the payment surface itself does not exist on a

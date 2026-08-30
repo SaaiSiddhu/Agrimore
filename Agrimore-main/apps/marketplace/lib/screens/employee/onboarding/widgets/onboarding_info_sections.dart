@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:agrimore_ui/agrimore_ui.dart';
+import 'onboarding_fee_text.dart';
 
 /// Phase 16B-2, Workstream 1 — pure, config-driven rendering of the
 /// onboarding copy deck returned by `getAssociateOnboardingConfig`
@@ -10,21 +11,41 @@ import 'package:agrimore_ui/agrimore_ui.dart';
 /// sentence (1b). Every widget also handles its OWN section being absent or
 /// structurally empty by rendering nothing (`SizedBox.shrink()`) rather than
 /// crashing or substituting placeholder text (1b's edge case).
+///
+/// Phase 16B-3, Defect 1 fix: `copy.feeLabel` / `copy.summaryCard.feeLine`
+/// are STATIC STRINGS that can silently disagree with the numeric
+/// `feeAmount` the server will actually charge (they only agree today
+/// because nobody has created `settings/associate_onboarding` with a
+/// non-₹500 fee yet). `OnboardingHeaderSection` and
+/// `OnboardingSummaryCardSection` now take `feeAmount`/`currency` — the
+/// authoritative top-level fields from the same callable response — and
+/// render ONLY a figure derived from them, never the copy-sourced fee
+/// strings (chosen approach (a) from the phase prompt: suppress, don't
+/// cross-check). See `authoritativeFeeText` below.
 
 Map<String, dynamic>? _asMap(dynamic v) => v is Map<String, dynamic> ? v : null;
 List<dynamic> _asList(dynamic v) => v is List ? v : const [];
 String _asString(dynamic v) => v is String ? v : '';
 
+// The fee-formatting logic itself now lives in onboarding_fee_text.dart,
+// shared with onboarding_payment_step.dart's CTA button — see that file's
+// header comment for why a shared function, not a second copy, is required
+// here.
+
 class OnboardingHeaderSection extends StatelessWidget {
   final Map<String, dynamic> copy;
-  const OnboardingHeaderSection({super.key, required this.copy});
+  final num? feeAmount;
+  final String? currency;
+  const OnboardingHeaderSection({super.key, required this.copy, this.feeAmount, this.currency});
 
   @override
   Widget build(BuildContext context) {
     final headline = _asString(copy['headline']);
-    final feeLabel = _asString(copy['feeLabel']);
+    // Defect 1: copy['feeLabel'] is never read here anymore — the badge
+    // below is built entirely from the authoritative feeAmount/currency.
+    final feeText = authoritativeFeeText(feeAmount, currency);
     final supportingStatement = _asString(copy['supportingStatement']);
-    if (headline.isEmpty && feeLabel.isEmpty && supportingStatement.isEmpty) {
+    if (headline.isEmpty && feeText == null && supportingStatement.isEmpty) {
       return const SizedBox.shrink();
     }
     return Container(
@@ -45,7 +66,7 @@ class OnboardingHeaderSection extends StatelessWidget {
               headline,
               style: const TextStyle(color: Colors.white, fontSize: 22, fontWeight: FontWeight.w900, height: 1.2),
             ),
-          if (feeLabel.isNotEmpty) ...[
+          if (feeText != null) ...[
             const SizedBox(height: 10),
             Container(
               padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
@@ -54,7 +75,7 @@ class OnboardingHeaderSection extends StatelessWidget {
                 borderRadius: BorderRadius.circular(8),
               ),
               child: Text(
-                feeLabel,
+                'One-Time Registration & Onboarding Fee: $feeText',
                 style: const TextStyle(color: Color(0xFF1F2937), fontWeight: FontWeight.w800, fontSize: 13),
               ),
             ),
@@ -303,26 +324,29 @@ class OnboardingJourneyStepsSection extends StatelessWidget {
 
 class OnboardingSummaryCardSection extends StatelessWidget {
   final Map<String, dynamic> copy;
-  const OnboardingSummaryCardSection({super.key, required this.copy});
+  final num? feeAmount;
+  final String? currency;
+  const OnboardingSummaryCardSection({super.key, required this.copy, this.feeAmount, this.currency});
 
   @override
   Widget build(BuildContext context) {
     final section = _asMap(copy['summaryCard']);
-    if (section == null) return const SizedBox.shrink();
-    final title = _asString(section['title']);
-    final feeLine = _asString(section['feeLine']);
-    final includes = _asList(section['includes']).map(_asString).where((s) => s.isNotEmpty).toList();
-    if (title.isEmpty && feeLine.isEmpty && includes.isEmpty) return const SizedBox.shrink();
+    // Defect 1: section['feeLine'] is never read — see authoritativeFeeText.
+    final feeText = authoritativeFeeText(feeAmount, currency);
+    if (section == null && feeText == null) return const SizedBox.shrink();
+    final title = _asString(section?['title']);
+    final includes = _asList(section?['includes']).map(_asString).where((s) => s.isNotEmpty).toList();
+    if (title.isEmpty && feeText == null && includes.isEmpty) return const SizedBox.shrink();
     return _Card(
       title: title.isNotEmpty ? title : 'Summary',
       icon: Icons.summarize_rounded,
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          if (feeLine.isNotEmpty)
+          if (feeText != null)
             Padding(
               padding: const EdgeInsets.only(bottom: 10),
-              child: Text(feeLine, style: const TextStyle(fontWeight: FontWeight.w800, fontSize: 15, color: AppColors.primaryDark)),
+              child: Text('One-Time Fee: $feeText', style: const TextStyle(fontWeight: FontWeight.w800, fontSize: 15, color: AppColors.primaryDark)),
             ),
           if (includes.isNotEmpty)
             Wrap(

@@ -97,10 +97,13 @@ class RazorpayWebService {
   ///
   /// `amountPaise` matches `createAssociateOnboardingPayment`'s response
   /// shape exactly (`amount: order.amount`, which the Razorpay SDK returns
-  /// in paise) — converted to rupees here, once, at this single boundary,
-  /// specifically so no caller has to re-derive `_openRazorpayModal`'s
-  /// paise-conversion convention (`(amount * 100).toInt()`) and risk a
-  /// double-conversion overcharge bug.
+  /// in paise). Phase 16B-3, Defect 3 fix: this used to divide by 100.0
+  /// here and let `_openRazorpayModal` multiply back by 100 and `.toInt()`
+  /// truncate — exact at ₹500 (50000 paise) but LOSSY for a fractional-
+  /// rupee fee (59999 paise -> 599.99 -> 59998.999999999993 -> 59998),
+  /// which Razorpay Checkout would then reject as an amount mismatch
+  /// against the server-created order. `exactAmountPaise` below now carries
+  /// the integer straight through with no float round-trip at all.
   Future<void> openCheckoutForExistingOrder({
     required String keyId,
     required String orderId,
@@ -114,6 +117,7 @@ class RazorpayWebService {
       keyId: keyId,
       orderId: orderId,
       amount: amountPaise / 100.0,
+      exactAmountPaise: amountPaise,
       userName: userName,
       userEmail: userEmail,
       userPhone: userPhone,
@@ -122,18 +126,28 @@ class RazorpayWebService {
   }
 
   /// Open the Razorpay checkout modal using JS eval
+  ///
+  /// [exactAmountPaise] — Phase 16B-3, Defect 3 — when non-null, used
+  /// VERBATIM as the paise value sent to Razorpay, with no float
+  /// arithmetic. When null (every existing call site — `openCheckout()`
+  /// above, used by the live cart and wallet flows, passes nothing new and
+  /// is therefore UNCHANGED), the original `(amount * 100).toInt()`
+  /// computation runs exactly as it always has.
   void _openRazorpayModal({
     required String keyId,
     required String orderId,
     required double amount,
+    int? exactAmountPaise,
     required String userName,
     required String userEmail,
     required String userPhone,
     String? description,
   }) {
     try {
-      // Amount in paise
-      final amountPaise = (amount * 100).toInt();
+      // Amount in paise — exact when the caller supplied it (Defect 3),
+      // otherwise the original float-based computation, byte-for-byte
+      // unchanged for openCheckout()'s existing callers.
+      final amountPaise = exactAmountPaise ?? (amount * 100).toInt();
       final desc = description ?? 'Order Payment';
 
       // Escape special characters in user inputs

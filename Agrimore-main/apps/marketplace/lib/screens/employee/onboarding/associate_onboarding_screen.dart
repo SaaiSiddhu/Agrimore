@@ -164,6 +164,11 @@ class _AssociateOnboardingScreenState
     final disclosures = (config['mandatoryDisclosures'] as List? ?? [])
         .map((e) => e.toString())
         .toList();
+    // Phase 16B-3, Defect 1: the top-level, AUTHORITATIVE fee fields —
+    // never the copy deck's own static fee strings — passed into the two
+    // sections that render a rupee figure.
+    final feeAmount = config['feeAmount'] is num ? config['feeAmount'] as num : null;
+    final currency = config['currency'] as String?;
 
     final auth = context.watch<app_auth.AuthProvider>();
     final isSignedIn = auth.isLoggedIn;
@@ -177,7 +182,7 @@ class _AssociateOnboardingScreenState
         children: [
           // Workstream 1a — the info deck, in the specified order, entirely
           // config-driven (1b). Renders regardless of sign-in state (1f).
-          OnboardingHeaderSection(copy: copy),
+          OnboardingHeaderSection(copy: copy, feeAmount: feeAmount, currency: currency),
           const SizedBox(height: 16),
           OnboardingWhyFeeSection(copy: copy),
           const SizedBox(height: 16),
@@ -187,7 +192,7 @@ class _AssociateOnboardingScreenState
           const SizedBox(height: 16),
           OnboardingJourneyStepsSection(copy: copy),
           const SizedBox(height: 16),
-          OnboardingSummaryCardSection(copy: copy),
+          OnboardingSummaryCardSection(copy: copy, feeAmount: feeAmount, currency: currency),
           const SizedBox(height: 16),
           // Workstream 1c/D5 — mandatory disclosures, ABOVE the CTA below.
           OnboardingDisclosuresSection(disclosures: disclosures),
@@ -201,7 +206,7 @@ class _AssociateOnboardingScreenState
           else if (!isSignedIn)
             _buildSignInPrompt()
           else
-            _EmployeeStateGate(uid: uid!, copy: copy),
+            _EmployeeStateGate(uid: uid!, copy: copy, feeAmount: feeAmount, currency: currency),
 
           const SizedBox(height: 20),
           OnboardingSupportContactSection(copy: copy),
@@ -295,8 +300,15 @@ class _AssociateOnboardingScreenState
 class _EmployeeStateGate extends StatelessWidget {
   final String uid;
   final Map<String, dynamic> copy;
+  final num? feeAmount;
+  final String? currency;
 
-  const _EmployeeStateGate({required this.uid, required this.copy});
+  const _EmployeeStateGate({
+    required this.uid,
+    required this.copy,
+    this.feeAmount,
+    this.currency,
+  });
 
   @override
   Widget build(BuildContext context) {
@@ -342,14 +354,27 @@ class _EmployeeStateGate extends StatelessWidget {
         // admin-approval `status` — D6, paying is not approval, so this is
         // shown whether status is pending, approved, or suspended.
         if (gateCleared) {
+          // Phase 16B-3, Defect 2: onboardingPaid and onboardingWaived are
+          // mutually exclusive by server-side design
+          // (waiveAssociateOnboardingFee explicitly refuses to waive an
+          // already-paid associate — adminOnboardingActions.ts line 72-77),
+          // so this data should never show both true. If it somehow does,
+          // a real charge outranks a waiver flag: treat as PAID. Data
+          // source for the truthful figure is onboardingFeeAmount — the
+          // amount ACTUALLY charged at payment time (activationCore.ts line
+          // 166), never the current config, which may have changed since.
+          final rawFeeAmount = data['onboardingFeeAmount'];
+          final paidAmount = rawFeeAmount is num ? rawFeeAmount : null;
           return OnboardingConfirmationStep(
             employeeCode: employeeCode,
             status: status,
+            wasWaived: onboardingWaived && !onboardingPaid,
+            paidAmount: paidAmount,
           );
         }
 
         // State: details submitted, fee not yet paid → payment step.
-        return OnboardingPaymentStep(copy: copy);
+        return OnboardingPaymentStep(copy: copy, feeAmount: feeAmount, currency: currency);
       },
     );
   }

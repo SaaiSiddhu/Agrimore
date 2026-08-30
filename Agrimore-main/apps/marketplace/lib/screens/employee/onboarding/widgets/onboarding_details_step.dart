@@ -24,6 +24,10 @@ class _OnboardingDetailsStepState extends State<OnboardingDetailsStep> {
   bool _prefilled = false;
   bool _submitting = false;
   String? _error;
+  // Phase 16B-3, Defect 4: true only when the users/{uid} read failed and
+  // we fell back to an empty, manually-fillable form — shown as a small,
+  // non-blocking note rather than silently pretending prefill succeeded.
+  bool _prefillFailed = false;
 
   @override
   void initState() {
@@ -34,16 +38,31 @@ class _OnboardingDetailsStepState extends State<OnboardingDetailsStep> {
   /// Mirrors `employee_apply_screen.dart`'s `_loadUserData` — prefilling
   /// from `users/{uid}` so a visitor who already has a marketplace profile
   /// does not have to retype it.
+  ///
+  /// Phase 16B-3, Defect 4 fix: this read had no try/catch — a failure
+  /// (offline, permission, transient) left `_prefilled` false forever, and
+  /// `build()` returns a bare spinner while `!_prefilled`, so the visitor
+  /// was stuck with no error and no way forward. On failure, `_prefilled`
+  /// is now still set true (with empty controllers) so the form always
+  /// becomes usable; `_prefillFailed` drives a small, non-blocking note.
   Future<void> _prefillFromUserProfile() async {
-    final userDoc = await FirebaseFirestore.instance.collection('users').doc(widget.uid).get();
-    if (!mounted) return;
-    final data = userDoc.data() ?? {};
-    setState(() {
-      _nameCtrl.text = (data['name'] as String?) ?? '';
-      _phoneCtrl.text = (data['phone'] as String?) ?? '';
-      _emailCtrl.text = (data['email'] as String?) ?? '';
-      _prefilled = true;
-    });
+    try {
+      final userDoc = await FirebaseFirestore.instance.collection('users').doc(widget.uid).get();
+      if (!mounted) return;
+      final data = userDoc.data() ?? {};
+      setState(() {
+        _nameCtrl.text = (data['name'] as String?) ?? '';
+        _phoneCtrl.text = (data['phone'] as String?) ?? '';
+        _emailCtrl.text = (data['email'] as String?) ?? '';
+        _prefilled = true;
+      });
+    } catch (_) {
+      if (!mounted) return;
+      setState(() {
+        _prefilled = true;
+        _prefillFailed = true;
+      });
+    }
   }
 
   Future<void> _submit() async {
@@ -106,6 +125,20 @@ class _OnboardingDetailsStepState extends State<OnboardingDetailsStep> {
             'This creates your associate profile. You will pay the one-time onboarding fee on the next step.',
             style: TextStyle(fontSize: 12, color: Color(0xFF6B7280), height: 1.4),
           ),
+          if (_prefillFailed) ...[
+            const SizedBox(height: 10),
+            Container(
+              padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 8),
+              decoration: BoxDecoration(
+                color: const Color(0xFFFFFBEB),
+                borderRadius: BorderRadius.circular(8),
+              ),
+              child: const Text(
+                'We could not pre-fill your details. Please enter them below.',
+                style: TextStyle(fontSize: 11, color: Color(0xFF92400E), fontWeight: FontWeight.w600),
+              ),
+            ),
+          ],
           const SizedBox(height: 14),
           _field('Full Name', _nameCtrl, Icons.person_outline),
           const SizedBox(height: 10),

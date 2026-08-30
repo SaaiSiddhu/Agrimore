@@ -1,6 +1,9 @@
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 
+// agrimore_ui re-exports agrimore_core, so this single import supplies both
+// AppColors and PriceFormatter (importing agrimore_core as well trips
+// unnecessary_import).
 import 'package:agrimore_ui/agrimore_ui.dart';
 
 /// Phase 16B-2, Workstream 4 — shown once `employees/{uid}` has
@@ -20,14 +23,28 @@ import 'package:agrimore_ui/agrimore_ui.dart';
 /// 4d (show the support contact) is satisfied by the caller: the parent
 /// screen's `OnboardingSupportContactSection` renders unconditionally below
 /// every step, including this one — so it is not duplicated here.
+///
+/// Phase 16B-3, Defect 2 fix: this screen used to say, unconditionally and
+/// with a hardcoded ₹500, that a fee was received — which is false for a
+/// WAIVED associate (`onboardingWaived: true`, `onboardingPaid` never set —
+/// see `waiveAssociateOnboardingFee` in adminOnboardingActions.ts, which
+/// explicitly refuses to also set `onboardingPaid`). `wasWaived` now
+/// renders a distinct, truthful variant with no fee-received claim and no
+/// figure. `paidAmount` — `employees/{uid}.onboardingFeeAmount`, the amount
+/// ACTUALLY charged at payment time — replaces the hardcoded ₹500 for the
+/// paid variant.
 class OnboardingConfirmationStep extends StatelessWidget {
   final String employeeCode;
   final String status;
+  final bool wasWaived;
+  final num? paidAmount;
 
   const OnboardingConfirmationStep({
     super.key,
     required this.employeeCode,
     required this.status,
+    required this.wasWaived,
+    this.paidAmount,
   });
 
   @override
@@ -48,23 +65,22 @@ class OnboardingConfirmationStep extends StatelessWidget {
           child: Column(
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
-              const Row(
+              Row(
                 children: [
-                  Icon(Icons.check_circle_rounded, color: Colors.white, size: 22),
-                  SizedBox(width: 8),
+                  const Icon(Icons.check_circle_rounded, color: Colors.white, size: 22),
+                  const SizedBox(width: 8),
                   Expanded(
                     child: Text(
-                      'Onboarding fee received',
-                      style: TextStyle(color: Colors.white, fontWeight: FontWeight.w900, fontSize: 17),
+                      wasWaived ? 'Onboarding fee waived' : 'Onboarding fee received',
+                      style: const TextStyle(color: Colors.white, fontWeight: FontWeight.w900, fontSize: 17),
                     ),
                   ),
                 ],
               ),
               const SizedBox(height: 8),
-              const Text(
-                'Your one-time ₹500 Registration & Onboarding Fee has been received and your '
-                'account is activated.',
-                style: TextStyle(color: Colors.white, fontSize: 13, height: 1.5),
+              Text(
+                _statusSentence(),
+                style: const TextStyle(color: Colors.white, fontSize: 13, height: 1.5),
               ),
               const SizedBox(height: 14),
               _buildStatusBadge(),
@@ -77,6 +93,30 @@ class OnboardingConfirmationStep extends StatelessWidget {
         _buildApprovalNote(),
       ],
     );
+  }
+
+  /// Defect 2 — the ONLY sentence in this file that states a rupee figure
+  /// or the word "received", and it is now conditional on what actually
+  /// happened. Never falls back to any hardcoded amount (2's edge case: a
+  /// paid associate whose `onboardingFeeAmount` is absent/non-numeric —
+  /// possible for a document written before this field existed — still
+  /// says the fee was received, just without a figure).
+  String _statusSentence() {
+    if (wasWaived) {
+      return 'Your one-time Registration & Onboarding Fee was waived for this account, and '
+          'your account is activated.';
+    }
+    final amount = paidAmount;
+    if (amount != null && amount.toDouble().isFinite && amount.toDouble() > 0) {
+      final value = amount.toDouble();
+      final hasFraction = value != value.roundToDouble();
+      final formatted =
+          hasFraction ? PriceFormatter.formatPrice(value) : PriceFormatter.formatPriceInt(value);
+      return 'Your one-time $formatted Registration & Onboarding Fee has been received and '
+          'your account is activated.';
+    }
+    return 'Your one-time Registration & Onboarding Fee has been received and your account '
+        'is activated.';
   }
 
   Widget _buildStatusBadge() {
@@ -92,10 +132,15 @@ class OnboardingConfirmationStep extends StatelessWidget {
     );
   }
 
-  /// D6 — plain, unambiguous: paying is not approval, selling does not
+  /// D6 — plain, unambiguous: activation is not approval, selling does not
   /// start immediately. This is the load-bearing sentence of this whole
-  /// screen.
+  /// screen. Phase 16B-3: the first clause is now conditional so it is not
+  /// nonsense for a waived associate who did not pay anything — the
+  /// MEANING (activation ≠ approval) is identical in both variants.
   Widget _buildApprovalNote() {
+    final firstClause = wasWaived
+        ? 'Having your onboarding fee waived does not approve your account.'
+        : 'Paying the onboarding fee does not approve your account.';
     return Container(
       padding: const EdgeInsets.all(14),
       decoration: BoxDecoration(
@@ -103,17 +148,17 @@ class OnboardingConfirmationStep extends StatelessWidget {
         borderRadius: BorderRadius.circular(12),
         border: Border.all(color: const Color(0xFFFDE68A)),
       ),
-      child: const Row(
+      child: Row(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          Icon(Icons.info_outline_rounded, color: Color(0xFFB45309), size: 18),
-          SizedBox(width: 10),
+          const Icon(Icons.info_outline_rounded, color: Color(0xFFB45309), size: 18),
+          const SizedBox(width: 10),
           Expanded(
             child: Text(
-              'Paying the onboarding fee does not approve your account. An AgriMore '
-              'admin still needs to review and approve your registration, and complete '
-              'your training, before you can start receiving customer orders.',
-              style: TextStyle(color: Color(0xFF92400E), fontSize: 12.5, height: 1.5),
+              '$firstClause An AgriMore admin still needs to review and approve your '
+              'registration, and complete your training, before you can start receiving '
+              'customer orders.',
+              style: const TextStyle(color: Color(0xFF92400E), fontSize: 12.5, height: 1.5),
             ),
           ),
         ],
