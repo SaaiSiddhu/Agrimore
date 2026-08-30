@@ -81,8 +81,14 @@ async function call2Factor(pathSuffix: string): Promise<void> {
 //
 //  - Not a defect on this side. sendPhoneOTP resolves channel to "sms", calls
 //    sendSmsOtp, which POSTs the URL below; 2Factor returns Status:"Success".
-//    There is no voice fallback anywhere in this codebase — a failed SMS
-//    throws, 502s, and writes to otp_delivery_failures.
+//    A failed SMS never silently becomes a voice call — it throws, 502s, and
+//    writes to otp_delivery_failures. (Precision, because an earlier draft of
+//    this comment said "no voice fallback anywhere", which misreads as "no
+//    voice code exists": there IS a deliberate voice channel — sendPhoneOTP.ts
+//    dispatches sms/voice in a clean if/else, voice has its own daily cap and
+//    encrypted-code-reuse path, and otp_verification_screen.dart has a real
+//    "call me instead" button. Legitimate voice traffic is therefore expected
+//    and is NOT evidence of this bug.)
 //  - The account HAS an approved DLT template: "Agrimore2026", sender AGRIMO,
 //    body "XXXX is your OTP for AGRIMORE. Please do not share OTP with
 //    anyone.", approved 2026-06-12. So plain "no template" is NOT the cause.
@@ -96,15 +102,38 @@ async function call2Factor(pathSuffix: string): Promise<void> {
 //    {to, template_name, var1} body. Appending it to the custom-OTP path was
 //    tried on 2026-08-30, changed nothing, and was reverted.
 //
-// Leading hypothesis, still UNCONFIRMED: the approved template's variable is
-// four characters ("XXXX") while this codebase sends a SIX-digit code
-// (sendPhoneOTP.ts's crypto.randomInt(100000, 1000000)). A DLT content-match
-// failure would make the SMS route reject, and 2Factor's documented
-// multi-route fallback would then satisfy the request by voice while still
-// reporting success. Test it by sending a 4-digit code straight to the URL
-// above before changing any code — and note that dropping to 4 digits is a
-// real security reduction (10^4 vs 10^6) on the only login path, so it needs
-// an owner decision, not a quiet edit.
+//  - OTP LENGTH IS NOT THE CAUSE. The approved template's variable renders as
+//    four characters ("XXXX") while this code sends six digits, which looked
+//    like a DLT content-match failure. DISPROVEN 2026-08-30: direct curls to
+//    the URL below with BOTH a 4-digit and a 6-digit code, bypassing this
+//    codebase entirely, each arrived as a voice call.
+//    ⛔ DO NOT shorten the OTP to 4 digits. It would not fix this, and it
+//    would cut brute-force space 10^6 -> 10^4 on the only login path.
+//  - SMS CREDITS ARE NOT EXHAUSTED. GET /API/V1/{key}/BAL/SMS returns 166
+//    (voice 50, transactional SMS 200, promotional 0). SMS credit sits unused
+//    while voice credit is consumed — 2Factor is choosing voice while it has
+//    SMS credit available. (BAL/ALL is not a valid service name.)
+//  - The newer JSON endpoint POST /API/V1/OTP/SEND (X-API-Key header,
+//    {to, template_name, var1} body) 404s — it does not exist on this
+//    account, despite what search results about 2Factor's docs claim. Treat
+//    any endpoint shape not present on 2factor.in/API/DOCS/SMS_OTP.html as
+//    unverified.
+//  - AUTOGEN + template also delivers voice. This is the decisive one: with
+//    /SMS/{phone}/AUTOGEN/{template} it is 2FACTOR that generates the code and
+//    2FACTOR that selects the template, and it still came through as a call.
+//    No way of asking for SMS produces SMS, so the SMS route itself is
+//    unavailable for this account or this destination number.
+//
+// NOTHING IN THIS REPOSITORY CAN FIX THIS. Do not add retries, channel
+// overrides, or provider-shape experiments here — seven have been eliminated.
+// The open questions are provider-side and need 2Factor support plus the DLT
+// portal: is a default template mapped to the SMS-OTP service, and is
+// "Agrimore2026" registered under a transactional/service-implicit category
+// rather than promotional (promotional is blocked on DND-registered numbers,
+// which would block the SMS route and trigger their voice fallback)?
+// The one experiment still worth running is varying the DESTINATION: send to
+// a second, known non-DND number. SMS there means the fault is destination
+// specific (DND/category); voice there too means it is account-level.
 
 /** Sends `otp` to `normalizedPhone` via SMS. Throws on any delivery failure. */
 export async function sendSmsOtp(normalizedPhone: string, otp: string): Promise<void> {
