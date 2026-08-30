@@ -165,7 +165,7 @@ class AIChatService {
     if (apiKey.trim().isEmpty) {
       dev.log('API key missing.');
       return ChatMessage.ai(
-        text: 'AI service offline or misconfigured.',
+        text: 'Chat assistant is unavailable right now. Please try again later.',
         sessionId: currentSessionId,
         category: 'ai_offline',
       );

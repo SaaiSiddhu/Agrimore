@@ -107,12 +107,12 @@ const FORBIDDEN_ENV_NAMES = [
   "SMTP_PASS",
   "SMTP_FROM_NAME",
   "SMTP_FROM_EMAIL",
-  // GEMINI_API_KEY is a live, billable Generative Language API key — see
-  // finding 19-B (check 9 below) and packages/agrimore_core/lib/config/
-  // gemini_config.dart. It is intentionally NOT read from any `.env` file
-  // today (it is hardcoded in gemini_config.dart instead), so its presence
-  // in a client `.env` would be a second, redundant copy of a credential
-  // that is already tracked as its own finding — forbid it here too.
+  // GEMINI_API_KEY stays forbidden in any client `.env` even though
+  // gemini_config.dart's key was revoked and emptied in Phase 21 — the
+  // key is no longer hardcoded ANYWHERE (client constant or `.env`), and
+  // it must stay that way: any future AI-chat credential belongs in
+  // Secret Manager behind a Cloud Function proxy, never in a client
+  // `.env` file or a client constant. See finding 19-B.
   "GEMINI_API_KEY",
 ];
 
@@ -277,20 +277,21 @@ function main() {
   //   - packages/agrimore_core/lib/config/maps_config.dart — accepted
   //     owner decision; a client-compiled key can't be hidden, mitigation
   //     is provider-side key restriction, not code.
-  //   - packages/agrimore_core/lib/config/gemini_config.dart — TRACKED
-  //     EXCEPTION, finding 19-B. A live, billable Generative Language API
-  //     key, committed to git since c024b3e, read at
-  //     ai_chat_service.dart:164 and reachable from ai_chat_screen.dart /
-  //     chat_history_screen.dart. Cannot be deleted here without breaking
-  //     a shipped feature — the fix is a Cloud Function proxy, planned as
-  //     Phase 21. REMOVE THIS ALLOWLIST ENTRY WHEN PHASE 21 LANDS.
+  //
+  // packages/agrimore_core/lib/config/gemini_config.dart was allowlisted
+  // here as a TRACKED EXCEPTION for finding 19-B. Phase 21 revoked and
+  // emptied that key (the owner revoked it in Google Cloud on 2026-08-30,
+  // and gemini_config.dart's apiKey constant is now ''), so there is no
+  // longer a key literal to excuse — the allowlist entry was removed. A
+  // future restoration of AI chat must get its key from a Cloud Function
+  // proxy + Secret Manager, never a client constant; if one ever
+  // reappears here, this check is meant to catch it.
   // ---------------------------------------------------------------
   {
     const GOOGLE_API_KEY_PATTERN = /['"](AIza[A-Za-z0-9_\-]{20,})['"]/;
 
     const ALLOWLISTED_EXACT_PATHS = new Set([
       "packages/agrimore_core/lib/config/maps_config.dart",
-      "packages/agrimore_core/lib/config/gemini_config.dart", // finding 19-B — remove when Phase 21 lands
     ]);
     function isAllowlisted(relPath) {
       if (path.basename(relPath) === "firebase_options.dart") return true;
