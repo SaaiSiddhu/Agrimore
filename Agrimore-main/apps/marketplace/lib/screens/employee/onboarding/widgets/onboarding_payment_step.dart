@@ -220,19 +220,23 @@ class _OnboardingPaymentStepState extends State<OnboardingPaymentStep> {
   @override
   Widget build(BuildContext context) {
     final summary = _asMap(widget.copy['summaryCard']);
-    // Defect 1: summary['ctaLabel'] (e.g. "Complete Registration — ₹500")
-    // is never read for its fee figure — only the authoritative feeAmount
-    // is. If a valid figure is available, it always wins; the copy string
-    // is used only as a full fallback when the amount is unusable (should
-    // not happen on this step in practice, since reaching it already
-    // implies isEnabled/valid — see the null-check in
-    // authoritativeFeeText's callers).
+    // Phase 16B-4, Workstream 4: summary['ctaLabel'] (e.g. "Complete
+    // Registration — ₹500") is NEVER read here at all, in either branch.
+    // Verified reachable pre-fix: loadOnboardingConfig accepts any
+    // 3-character string as a valid `currency`, so
+    // {feeAmount:100, currency:'USD', isEnabled:true} is a fully enabled
+    // config for which authoritativeFeeText correctly returns null (it is
+    // INR-only) — the OLD code then fell back to the copy-sourced label,
+    // which (as of Phase 16B-4) is now server-interpolated but still
+    // COULD carry a currency literal if an admin's override ever slipped
+    // one past the server-side mismatch guard for a currency this pattern
+    // doesn't scan (findFeeMismatches only recognises ₹/Rs/INR literals,
+    // not USD-style ones — see that function's own scope note). Rather
+    // than depend on the server guard to keep this button truthful, the
+    // button itself now simply never renders a copy-sourced amount: no
+    // authoritative figure means no figure at all, ever.
     final feeText = authoritativeFeeText(widget.feeAmount, widget.currency);
-    final ctaLabel = feeText != null
-        ? 'Complete Registration — $feeText'
-        : (_asString(summary?['ctaLabel']).isNotEmpty
-            ? _asString(summary?['ctaLabel'])
-            : 'Complete Registration');
+    final ctaLabel = feeText != null ? 'Complete Registration — $feeText' : 'Complete Registration';
     final ctaSubtext = _asString(summary?['ctaSubtext']);
 
     // D2 / Workstream 3c — the payment surface itself does not exist on a
