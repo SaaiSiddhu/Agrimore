@@ -76,10 +76,36 @@ async function call2Factor(pathSuffix: string): Promise<void> {
   }
 }
 
+// 2Factor's V1 path form takes an OPTIONAL trailing template name:
+//   /{key}/SMS/{phone}/{otp}             -> the account's DEFAULT template
+//   /{key}/SMS/{phone}/{otp}/{template}  -> that specific DLT-approved template
+//
+// Why this exists: on 2026-08-30 an explicit channel:"sms" request delivered a
+// VOICE CALL instead. The bug was not on this side — the code called the SMS
+// endpoint, and 2Factor returned Status:"Success". 2Factor runs multiple routes
+// per destination with automatic fallback, so when the SMS route cannot deliver
+// (typically no DLT-approved template or sender ID on the account) it can
+// satisfy the request by voice and still report success. Naming an approved
+// template pins delivery to the registered DLT sender and route, which is the
+// only way to make "SMS" actually mean SMS.
+//
+// NOT a secret — a template label, not a credential — so it lives in plain
+// functions/.env alongside RESEND_FROM_EMAIL, never in Secret Manager.
+function smsTemplate(): string | null {
+  const name = process.env.TWOFACTOR_SMS_TEMPLATE;
+  return name && name.trim() ? name.trim() : null;
+}
+
 /** Sends `otp` to `normalizedPhone` via SMS. Throws on any delivery failure. */
 export async function sendSmsOtp(normalizedPhone: string, otp: string): Promise<void> {
   const phone = toTwoFactorPhone(normalizedPhone);
-  await call2Factor(`SMS/${phone}/${otp}`);
+  const template = smsTemplate();
+  // Unset -> byte-identical to the previous behaviour (account default
+  // template), so this is a no-op until a DLT-approved template exists to
+  // name. encodeURIComponent because the name is interpolated into a URL path.
+  await call2Factor(
+    template ? `SMS/${phone}/${otp}/${encodeURIComponent(template)}` : `SMS/${phone}/${otp}`
+  );
 }
 
 /** Calls `normalizedPhone` and reads `otp` aloud via 2Factor's voice API. Throws on failure. */
