@@ -28,11 +28,20 @@
 // computeOrderPricing — see that file's header for why. This function's
 // own transaction structure, its reads, and its writes are unchanged;
 // it now calls that shared function instead of computing prices inline.
+//
+// Phase D: settles an existing Product Credit hold (see
+// productCreditHold.ts) against this order — the amount redeemed always
+// comes from the hold DOCUMENT, read server-side inside this same
+// transaction, NEVER from client input (S4). See the productCreditHoldId
+// handling below for the full validation sequence, the double-spend guard,
+// and the per-seller credit split.
 
 import { onCall, HttpsError } from "firebase-functions/v2/https";
 import * as admin from "firebase-admin";
 import * as crypto from "crypto";
 import { computeOrderPricing } from "./orderPricing";
+import { computeCartFingerprint } from "./productCreditHold";
+import { appendLedgerEntry, toProjectionFields } from "./productCreditLedger";
 
 interface CreateOrderItemInput {
   productId: string;
@@ -55,11 +64,19 @@ interface CreateOrderData {
   notes?: string;
   orderType?: string;
   autoFrequency?: string;
+  /** Phase D: an active hold from quoteOrderWithCredit to settle against
+   *  this order. The amount redeemed is read from the hold document, never
+   *  from this string alone (S4). */
+  productCreditHoldId?: string;
 }
 
 function generateOrderNumber(): string {
   const random = Math.floor(1000 + Math.random() * 9000);
   return `ORD${Date.now()}${random}`;
+}
+
+function roundMoney(value: number): number {
+  return Math.round(value * 100) / 100;
 }
 
 // Mirrors OrderModel.generateVerificationCode()'s range exactly
@@ -117,6 +134,19 @@ export const createOrder = onCall({ minInstances: 0, memory: "256MiB" }, async (
 
   const db = admin.firestore();
 
+  // Phase D: a hold's amount is never known until it's read inside the
+  // transaction below — and it may cover the ENTIRE order, in which case
+  // there is no Razorpay payment at all (see the payable-aware checks in
+  // the transaction body). So the upfront "Razorpay details required"
+  // guard below is skipped ONLY when a hold is supplied; with no hold, this
+  // is byte-for-byte the pre-Phase-D check, firing before any Firestore
+  // access exactly as before (S4 note: the amount itself always comes from
+  // the hold document, never from productCreditHoldId's mere presence).
+  const productCreditHoldId =
+    typeof data?.productCreditHoldId === "string" && data.productCreditHoldId.trim()
+      ? data.productCreditHoldId.trim()
+      : null;
+
   // Phase 14, Workstream 4: the razorpayPaymentId argument shape check
   // happens up front (outside the transaction) since it's pure input
   // validation — the payment DOCUMENT itself, however, is now read and
@@ -130,18 +160,44 @@ export const createOrder = onCall({ minInstances: 0, memory: "256MiB" }, async (
   // user's order of the same amount (cross-user reuse).
   const razorpayPaymentId = data?.razorpayPaymentId;
   const razorpayOrderId = data?.razorpayOrderId;
-  if (paymentMethod !== "cod" && (!razorpayPaymentId || !razorpayOrderId)) {
+  if (!productCreditHoldId && paymentMethod !== "cod" && (!razorpayPaymentId || !razorpayOrderId)) {
     throw new HttpsError(
       "invalid-argument",
       "Razorpay payment details are required for non-COD orders"
     );
   }
+  // Phase D: constructed off razorpayPaymentId's presence rather than
+  // paymentMethod alone — a hold that covers the full order arrives here
+  // with paymentMethod !== "cod" but no razorpayPaymentId at all, and must
+  // not attempt `.doc(undefined)`.
   const paymentRef =
-    paymentMethod !== "cod" ? db.collection("verified_payments").doc(razorpayPaymentId as string) : null;
+    paymentMethod !== "cod" && razorpayPaymentId
+      ? db.collection("verified_payments").doc(razorpayPaymentId as string)
+      : null;
 
   // Phase 16, Workstream 7: an incomplete-profile user must not be able to
   // transact — read alongside every other read this transaction needs.
   const userRef = db.collection("users").doc(uid);
+
+  // Phase D: refs for the hold this order settles, plus the Q5 gate
+  // (assertProgramLaunchable + PRODUCT_CREDIT_REDEMPTION_ENABLED) re-read
+  // fresh HERE — never trusted from quote time — via tx.get() so it is
+  // part of this transaction's own atomic read set rather than
+  // complianceGate.ts's assertProgramLaunchable(), which performs its own
+  // non-transactional reads. All four are no-ops (null) for the
+  // overwhelming majority of orders that carry no hold at all.
+  const creditHoldRef = productCreditHoldId
+    ? db.collection("product_credit_holds").doc(productCreditHoldId)
+    : null;
+  const creditProjectionRef = productCreditHoldId
+    ? db.collection("product_credit_balances").doc(uid)
+    : null;
+  const creditComplianceRef = productCreditHoldId
+    ? db.collection("compliance_config").doc("benefit_program")
+    : null;
+  const creditFlagRef = productCreditHoldId
+    ? db.collection("feature_flags").doc("benefit_program")
+    : null;
 
   const result = await db.runTransaction(async (tx) => {
     // ============================================
@@ -196,6 +252,14 @@ export const createOrder = onCall({ minInstances: 0, memory: "256MiB" }, async (
     const redemptionSnap = redemptionRef ? await tx.get(redemptionRef) : null;
 
     const paymentSnap = paymentRef ? await tx.get(paymentRef) : null;
+
+    // Phase D: the hold this order settles, its owner's balance projection
+    // (needed by appendLedgerEntry's REDEMPTION arithmetic below), and the
+    // Q5 gate documents — all no-ops when no hold was supplied.
+    const creditHoldSnap = creditHoldRef ? await tx.get(creditHoldRef) : null;
+    const creditProjectionSnap = creditProjectionRef ? await tx.get(creditProjectionRef) : null;
+    const creditComplianceSnap = creditComplianceRef ? await tx.get(creditComplianceRef) : null;
+    const creditFlagSnap = creditFlagRef ? await tx.get(creditFlagRef) : null;
 
     // ============================================
     // VALIDATION / COMPUTATION — pure, no further Firestore access until
@@ -296,12 +360,125 @@ export const createOrder = onCall({ minInstances: 0, memory: "256MiB" }, async (
       tax: data?.tax,
     });
 
+    // ============================================
+    // Phase D: settle the Product Credit hold, if one was supplied. This
+    // entire block is a no-op (creditApplied stays 0) when
+    // productCreditHoldId is absent — the overwhelming majority of orders.
+    // Every validation below re-reads from THIS transaction's own snapshot
+    // (never a value cached outside it), so a retried transaction callback
+    // re-validates from scratch. amount is read from the hold document —
+    // never from client input (S4/S7).
+    // ============================================
+    let creditApplied = 0;
+    let creditEnrollmentId = "";
+    let creditRelatedEntryId: string | null = null;
+    let creditProjection: ReturnType<typeof toProjectionFields> | null = null;
+    let creditLedgerEntryRef: FirebaseFirestore.DocumentReference | null = null;
+
+    if (productCreditHoldId) {
+      if (!creditHoldSnap || !creditHoldSnap.exists) {
+        throw new HttpsError(
+          "failed-precondition",
+          "Product Credit hold not found — please re-quote"
+        );
+      }
+      const hold = creditHoldSnap.data()!;
+
+      // Double-spend / cross-user guards, in this order: existence (above),
+      // ownership, then status. A hold already settled/released/expired by
+      // an earlier call (or the expiry sweep) is rejected here exactly like
+      // a not-found hold — this IS the double-spend guard (S7).
+      if (hold.customerId !== uid) {
+        throw new HttpsError(
+          "permission-denied",
+          "This Product Credit hold does not belong to you"
+        );
+      }
+      if (hold.status !== "active") {
+        throw new HttpsError(
+          "failed-precondition",
+          `This Product Credit hold is no longer active (status: ${hold.status}) — please re-quote`
+        );
+      }
+      const expiresAtMs = (hold.expiresAt as admin.firestore.Timestamp | undefined)?.toMillis() ?? 0;
+      if (expiresAtMs <= Date.now()) {
+        throw new HttpsError(
+          "failed-precondition",
+          "This Product Credit hold has expired — please re-quote"
+        );
+      }
+      // Cart-change guard. NOTE: computeCartFingerprint does NOT cover
+      // deliveryCharge/tax (see productCreditHold.ts) — a change in those
+      // alone will NOT be caught here; it is caught by the payment-amount
+      // cross-check below instead, since it changes pricing.grandTotal.
+      const recomputedFingerprint = computeCartFingerprint(items, orderMode, normalizedCouponCode);
+      if (recomputedFingerprint !== hold.cartFingerprint) {
+        throw new HttpsError(
+          "failed-precondition",
+          "Your cart has changed since this Product Credit hold was quoted — please re-quote"
+        );
+      }
+
+      // Q5 gate: both the compliance/launch gate AND the redemption flag
+      // must be open, re-checked fresh (never trusted from quote time).
+      // Read via tx.get() above rather than calling
+      // complianceGate.ts's assertProgramLaunchable() (which performs its
+      // own non-transactional reads) so this check is part of THIS
+      // transaction's atomic snapshot.
+      const compliance = creditComplianceSnap?.data() || {};
+      const flags = creditFlagSnap?.data() || {};
+      const launchable =
+        compliance.legalReviewStatus === "APPROVED" &&
+        compliance.complianceApprovalStatus === "APPROVED" &&
+        flags.BENEFIT_PROGRAM_ENABLED === true;
+      if (!launchable || flags.PRODUCT_CREDIT_REDEMPTION_ENABLED !== true) {
+        throw new HttpsError(
+          "failed-precondition",
+          "Product Credit redemption is not currently enabled — this order cannot be settled with a hold"
+        );
+      }
+
+      creditApplied = typeof hold.amount === "number" ? hold.amount : 0;
+
+      // Phase D-1, DEFECT D-2 fix (defence in depth): quoteOrderWithCredit
+      // now caps a NEW hold's amount at the order's grand total (see
+      // redemptionRules.ts), but this hold was quoted earlier — pricing can
+      // have changed since (e.g. a coupon's usageLimit was hit, stock
+      // dropped, a product's price changed). REJECT rather than silently
+      // cap: capping here would settle the hold for less than its full
+      // amount, which violates the all-or-nothing invariant (a hold is
+      // settled in full or released in full — never partially). The
+      // customer must re-quote instead, same phrasing as the sibling
+      // guards above.
+      if (creditApplied > pricing.grandTotal + 0.01) {
+        throw new HttpsError(
+          "failed-precondition",
+          "This Product Credit hold exceeds the order total — please re-quote"
+        );
+      }
+
+      creditEnrollmentId = (hold.enrollmentId as string) || "";
+      creditRelatedEntryId = (hold.ledgerEntryId as string) || null;
+      creditProjection = toProjectionFields(creditProjectionSnap?.data());
+      // Pre-allocated here (no Firestore round-trip) so its id can be
+      // embedded on every order document created below, for the
+      // cancellation-reversal trigger to look up without a query.
+      creditLedgerEntryRef = db.collection("product_credit_ledger").doc();
+    }
+
     // Payment trust boundary: for any non-COD order, a real verified_payments
     // document (written only by verifyRazorpayPayment after HMAC + live API
     // verification — see functions/src/customer/payment.ts) must exist,
     // belong to THIS caller, not already be consumed by an earlier order,
     // and match this request. A client-supplied razorpayPaymentId string
     // alone proves nothing.
+    //
+    // Phase D: the amount a non-COD order must be verifiably PAID for is no
+    // longer always the grand total — it's the grand total minus whatever
+    // Product Credit was applied (`payable`). When credit covers the order
+    // in full, `payable` is ~0 and there is no Razorpay payment to check at
+    // all (paymentRef is null in that case — see its construction above).
+    const payable = roundMoney(pricing.grandTotal - creditApplied);
     if (paymentRef) {
       if (!paymentSnap || !paymentSnap.exists) {
         throw new HttpsError("failed-precondition", "Payment could not be verified");
@@ -335,12 +512,21 @@ export const createOrder = onCall({ minInstances: 0, memory: "256MiB" }, async (
         throw new HttpsError("failed-precondition", "Payment was not captured");
       }
       const verifiedAmount = typeof payment.amount === "number" ? payment.amount : -1;
-      if (Math.abs(verifiedAmount - pricing.grandTotal) > 1) {
+      if (Math.abs(verifiedAmount - payable) > 1) {
         throw new HttpsError(
           "failed-precondition",
           "Verified payment amount does not match the order total"
         );
       }
+    } else if (paymentMethod !== "cod" && payable > 1) {
+      // Deferred form of the upfront "Razorpay details required" guard
+      // (skipped above only when a hold was supplied) — a hold that does
+      // NOT cover the order in full still requires a real payment for the
+      // remainder.
+      throw new HttpsError(
+        "invalid-argument",
+        "Razorpay payment details are required for non-COD orders"
+      );
     }
 
     // ============================================
@@ -361,8 +547,36 @@ export const createOrder = onCall({ minInstances: 0, memory: "256MiB" }, async (
     const autoFrequency =
       orderType === "Auto Delivery" && typeof data?.autoFrequency === "string" ? data.autoFrequency : null;
 
+    // Phase D: distribute creditApplied across the per-seller order
+    // documents by each seller's share of the cart subtotal — the exact
+    // same ratio orderPricing.ts already used to split discount/delivery/
+    // tax. Rounding: each non-last seller's share is rounded to the nearest
+    // paisa; the LAST seller absorbs whatever residual that rounding left
+    // behind (rather than also being independently rounded), so the shares
+    // always sum to creditApplied exactly — never drift a cent short/over
+    // of what the ledger actually redeemed.
+    const sellerCount = pricing.perSeller.length;
+    const creditShares: number[] = [];
+    if (creditApplied > 0) {
+      let allocated = 0;
+      for (let i = 0; i < sellerCount; i++) {
+        if (i === sellerCount - 1) {
+          creditShares.push(roundMoney(creditApplied - allocated));
+        } else {
+          const ratio =
+            pricing.cartSubtotal > 0 ? pricing.perSeller[i].subtotal / pricing.cartSubtotal : 1 / sellerCount;
+          const share = roundMoney(creditApplied * ratio);
+          creditShares.push(share);
+          allocated = roundMoney(allocated + share);
+        }
+      }
+    } else {
+      for (let i = 0; i < sellerCount; i++) creditShares.push(0);
+    }
+
     let index = 0;
     for (const sellerResult of pricing.perSeller) {
+      const sellerCreditShare = creditShares[index];
       index++;
       const orderRef = db.collection("orders").doc();
       const orderNumber = pricing.perSeller.length === 1 ? baseOrderNumber : `${baseOrderNumber}-${index}`;
@@ -403,6 +617,17 @@ export const createOrder = onCall({ minInstances: 0, memory: "256MiB" }, async (
         employeeCode: employeeUid ? employeeCode : null,
         employeeUid: employeeUid,
         commissionPaid: false,
+        // Phase D: this seller's share of the settled Product Credit hold
+        // (0 when no hold was supplied — the overwhelming majority of
+        // orders). productCreditLedgerEntryId is server-side bookkeeping
+        // (not modeled in OrderModel, same as commissionAmount/
+        // commissionPaid) letting productCreditReversal.ts find the
+        // REDEMPTION ledger entry to reverse on cancellation without a
+        // query.
+        productCreditApplied: sellerCreditShare,
+        productCreditHoldId: productCreditHoldId,
+        productCreditReversed: false,
+        productCreditLedgerEntryId: creditLedgerEntryRef ? creditLedgerEntryRef.id : null,
         createdAt: admin.firestore.FieldValue.serverTimestamp(),
         updatedAt: admin.firestore.FieldValue.serverTimestamp(),
       });
@@ -421,6 +646,32 @@ export const createOrder = onCall({ minInstances: 0, memory: "256MiB" }, async (
         orderNumber,
         sellerId: sellerResult.sellerId ?? "",
         total: sellerResult.total,
+      });
+    }
+
+    // Phase D: settle the hold — append the REDEMPTION ledger entry (with
+    // relatedEntryId pointing at the HOLD entry, which is what
+    // productCreditLedger.ts's arithmetic keys off to clear onHold WITHOUT
+    // touching `available` a second time — see its header comment) and
+    // mark the hold itself settled. All-or-nothing: creditApplied is either
+    // the hold's full amount or this block doesn't run at all (Q3 — no
+    // partial settlement exists anywhere in this codebase).
+    if (productCreditHoldId && creditHoldRef && creditProjection && creditLedgerEntryRef) {
+      appendLedgerEntry(tx, db, {
+        entryRef: creditLedgerEntryRef,
+        customerId: uid,
+        enrollmentId: creditEnrollmentId,
+        type: "REDEMPTION",
+        amount: creditApplied,
+        currentProjection: creditProjection,
+        relatedEntryId: creditRelatedEntryId,
+        orderId: createdOrders[0].orderId,
+        description: `Redeemed against order ${baseOrderNumber}`,
+      });
+      tx.update(creditHoldRef, {
+        status: "settled",
+        settledAt: admin.firestore.FieldValue.serverTimestamp(),
+        settledByOrderId: createdOrders[0].orderId,
       });
     }
 

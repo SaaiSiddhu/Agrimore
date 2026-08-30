@@ -261,6 +261,21 @@ class _ProfileScreenState extends State<ProfileScreen> {
                           title: 'Employee application',
                           onTap: () => _navigateTo(AppRoutes.employeeApply),
                         ),
+                        // Phase 16B-2, Workstream 1h: the new, complete
+                        // onboarding flow (fee, benefits, disclosures,
+                        // payment) — added alongside the older bare-form
+                        // entry above rather than replacing it, since the
+                        // older screen's write path is now shared with this
+                        // one (associate_application_service.dart) and
+                        // nothing depends on removing it. Naming follows D3;
+                        // the entry above predates this phase and is out of
+                        // this phase's scope to rename.
+                        _MenuItem(
+                          icon: Icons.storefront_outlined,
+                          title: 'Become a Sales Associate',
+                          onTap: () =>
+                              _navigateTo(AppRoutes.associateOnboarding),
+                        ),
                       ],
                       _MenuItem(
                         icon: Icons.notifications_none,

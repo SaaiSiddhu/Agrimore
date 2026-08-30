@@ -90,6 +90,7 @@ import '../screens/seller/seller_panel_screen.dart';
 
 // Employee
 import '../screens/employee/employee_apply_screen.dart';
+import '../screens/employee/onboarding/associate_onboarding_screen.dart';
 
 // Models
 import 'package:agrimore_core/agrimore_core.dart';
@@ -200,6 +201,11 @@ class AppRoutes {
 
   // Employee Routes
   static const String employeeApply = '/employee/apply';
+  // Phase 16B-2: the ₹500 Sales Associate onboarding page. Deliberately NOT
+  // wrapped in AuthGuard (unlike every route below it) — Workstream 1f
+  // requires the fee/benefits/disclosures to render for a signed-out
+  // visitor, since getAssociateOnboardingConfig itself requires no auth.
+  static const String associateOnboarding = '/employee/onboarding';
 
   // Wallet Routes
   static const String wallet = '/wallet';
@@ -551,6 +557,14 @@ class AppRoutes {
         case employeeApply:
           return _buildRoute(
               const AuthGuard(child: EmployeeApplyScreen()), settings);
+        // Phase 16B-2, Workstream 1f: deliberately NOT wrapped in AuthGuard.
+        // AssociateOnboardingScreen itself decides, per-section, what a
+        // signed-out visitor may see (the full info deck) versus what
+        // requires auth (the details/payment/confirmation steps) — see its
+        // own header comment for why AuthGuard's web-only "swap to
+        // LandingScreen" behaviour would defeat that requirement outright.
+        case associateOnboarding:
+          return _buildRoute(const AssociateOnboardingScreen(), settings);
 
         // Wallet Routes
         case wallet:

@@ -46,7 +46,11 @@ function roundMoney(value: number): number {
 // A stable hash of what the customer is committing to at quote time — the
 // sorted (productId, quantity) pairs plus orderMode/couponCode. Phase D
 // uses this to confirm the cart hasn't changed between quote and order.
-function computeCartFingerprint(
+// Exported (Phase D) so createOrder.ts can recompute the exact same hash
+// server-side to validate against a hold's stored cartFingerprint —
+// duplicating this logic in two files would risk the two implementations
+// silently drifting apart.
+export function computeCartFingerprint(
   items: OrderPricingItemInput[],
   orderMode: string,
   couponCode: string | null
@@ -258,6 +262,9 @@ export const quoteOrderWithCredit = onCall(
           // allow" by requesting the full available balance as the upper
           // bound; computeRedeemableAmount's other caps still apply.
           requestedAmount: requestedCreditAmount > 0 ? requestedCreditAmount : currentProjection.available,
+          // Phase D-1, DEFECT D-2 fix: credit can never exceed the order's
+          // final payable total — see redemptionRules.ts's cap comment.
+          orderGrandTotal: pricing.grandTotal,
         });
         creditApplied = redemption.amount;
         reasons = redemption.reasons;

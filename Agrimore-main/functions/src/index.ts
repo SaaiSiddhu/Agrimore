@@ -131,6 +131,11 @@ export {
 // lifecycle it places. No REDEMPTION entry is ever written by this phase;
 // see customer/productCreditHold.ts's header comment.
 export { quoteOrderWithCredit, releaseProductCreditHold } from "./customer/productCreditHold";
+// Phase D: the redemption cutover — createOrder.ts (customer/createOrder.ts)
+// settles a Product Credit hold into a real REDEMPTION ledger entry, and
+// this trigger reverses that entry (a REVERSAL) when the order it was
+// spent on is cancelled. See customer/productCreditReversal.ts's header.
+export { reverseProductCreditOnCancellation } from "./customer/productCreditReversal";
 
 // ============================================
 // ASSOCIATE ONBOARDING (Phase 16A — ₹500 one-time Registration &

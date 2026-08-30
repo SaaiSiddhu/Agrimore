@@ -17,6 +17,7 @@ import '../../../providers/market_mode_provider.dart';
 import 'package:agrimore_services/settings/delivery_slot_service.dart';
 import '../../../services/razorpay_service.dart';
 import 'widgets/checkout_steps.dart';
+import 'widgets/associate_code_field.dart';
 import 'order_success_screen.dart';
 
 class PaymentMethodScreen extends StatefulWidget {
@@ -50,7 +51,13 @@ class _PaymentMethodScreenState extends State<PaymentMethodScreen> {
   // âœ… NEW: Order notes / special instructions
   final TextEditingController _notesController = TextEditingController();
 
-  // B2B checkout: employee attribution code, required when MarketModeProvider is B2B.
+  // The associate attribution code. Backs BOTH renderings, which are
+  // mutually exclusive: B2B's REQUIRED "Employee ID *" field inside
+  // _buildPaymentCard (pre-existing, unchanged), and — as of Phase 16B —
+  // B2C's OPTIONAL "Associate Code" card (_buildAssociateCodeCard). One
+  // controller, so one dispose() and no chance of the two drifting apart.
+  // Surviving step 2 <-> step 3 navigation is free: this is State field, so
+  // its text outlives the rebuild that swaps the step-3 cards in and out.
   final TextEditingController _employeeCodeController = TextEditingController();
 
   // Checkout Step & Subscription state
@@ -212,6 +219,14 @@ class _PaymentMethodScreenState extends State<PaymentMethodScreen> {
       throw Exception('Employee ID is required for B2B orders');
     }
 
+    // Phase 16B, Workstream 1: the same controller now also backs the
+    // OPTIONAL B2C "Associate Code" field (_buildAssociateCodeCard) — one
+    // value, one dispose, and the two renderings are mutually exclusive
+    // (`isB2B` vs `!isB2B`), so they can never both be on screen. Read into
+    // a local here purely so the B2B branch below evaluates the exact same
+    // expression it always has.
+    final trimmedAssociateCode = _employeeCodeController.text.trim();
+
     final deliverySlotLabel = _selectedSlot != null
         ? '${_selectedSlot!.label} (${_selectedSlot!.start}-${_selectedSlot!.end})'
         : null;
@@ -228,7 +243,25 @@ class _PaymentMethodScreenState extends State<PaymentMethodScreen> {
               })
           .toList(),
       'orderMode': isB2B ? 'B2B' : 'B2C',
-      if (isB2B) 'employeeCode': _employeeCodeController.text.trim(),
+      // Phase 16B, Workstream 1b/1c. B2B is deliberately untouched: it still
+      // sends the key unconditionally, with the same trimmed value, and
+      // still hard-fails above when it is empty. B2C sends the key ONLY when
+      // the customer actually typed something, so an empty or
+      // whitespace-only field produces a payload with no `employeeCode` key
+      // at all — byte-identical to every B2C order placed before this phase.
+      //
+      // Omitting vs sending "" is observably identical server-side —
+      // createOrder.ts line 121 is
+      //   const employeeCode = String(data?.employeeCode || "").trim();
+      // so `undefined` and `""` both collapse to "", and the gate at line
+      // 220 (`if (employeeCode)`) then skips the associate lookup entirely
+      // in both cases. Omitting is chosen anyway: it keeps the wire payload
+      // for the common unattributed order exactly as it is today, which is
+      // the safer thing to be able to state.
+      if (isB2B)
+        'employeeCode': trimmedAssociateCode
+      else if (trimmedAssociateCode.isNotEmpty)
+        'employeeCode': trimmedAssociateCode,
       'deliveryAddress': widget.selectedAddress.toMap(),
       'paymentMethod': _selectedPaymentMethod,
       if (razorpayOrderId != null) 'razorpayOrderId': razorpayOrderId,
@@ -475,6 +508,12 @@ class _PaymentMethodScreenState extends State<PaymentMethodScreen> {
                     const SizedBox(height: 12),
                     _buildPaymentCard(isDark, cardColor, accentColor),
                     const SizedBox(height: 12),
+                    // Phase 16B: B2C only — B2B's own required Employee ID
+                    // field lives inside _buildPaymentCard, untouched.
+                    if (!context.watch<MarketModeProvider>().isB2B) ...[
+                      _buildAssociateCodeCard(isDark, cardColor, accentColor),
+                      const SizedBox(height: 12),
+                    ],
                     _buildOrderNotesCard(isDark, cardColor, accentColor),
                     const SizedBox(height: 12),
                     _buildSecurityBadge(isDark, accentColor),
@@ -2053,6 +2092,35 @@ class _PaymentMethodScreenState extends State<PaymentMethodScreen> {
                   ),
                 ],
               ),
+      ),
+    );
+  }
+
+  /// Phase 16B, Workstream 1a — the optional Sales Associate attribution
+  /// code, B2C only.
+  ///
+  /// Placement: between the payment-method card and Special Instructions.
+  /// That band is where this screen already keeps its optional, secondary
+  /// inputs, and it is BELOW the payment choice and above the security
+  /// badge — so the field reads as an extra a customer may ignore, never as
+  /// a step in the purchase. It is deliberately not near the price summary
+  /// or the pay button, where it would compete with the payment action.
+  ///
+  /// Nothing here can block checkout (D2): no validator, no Form, no error
+  /// state, and _proceedToConfirm's only code guard is still
+  /// `isB2B && ...`, which cannot fire in this branch.
+  Widget _buildAssociateCodeCard(
+      bool isDark, Color cardColor, Color accentColor) {
+    return _buildCardSection(
+      isDark: isDark,
+      cardColor: cardColor,
+      title: 'Sales Associate',
+      icon: Icons.badge_outlined,
+      accentColor: accentColor,
+      child: AssociateCodeField(
+        controller: _employeeCodeController,
+        isDark: isDark,
+        accentColor: accentColor,
       ),
     );
   }

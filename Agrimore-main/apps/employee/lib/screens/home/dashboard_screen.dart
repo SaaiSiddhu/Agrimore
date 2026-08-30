@@ -1,7 +1,13 @@
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:firebase_auth/firebase_auth.dart';
 import 'package:flutter/material.dart';
+import 'package:flutter/services.dart';
 import 'package:provider/provider.dart';
+import 'package:share_plus/share_plus.dart';
+// agrimore_ui re-exports agrimore_core, so this single import supplies both
+// AppColors and EmployeeModel (importing agrimore_core as well trips
+// unnecessary_import, and this app's analyze baseline is zero issues).
+import 'package:agrimore_ui/agrimore_ui.dart';
 import '../../providers/auth_provider.dart';
 import '../wallet/wallet_screen.dart';
 import '../wallet/payout_screen.dart';
@@ -57,6 +63,11 @@ class DashboardScreen extends StatelessWidget {
         child: ListView(
           padding: const EdgeInsets.all(16),
           children: [
+            // Phase 16B, Workstream 3b: first thing on the screen. This is
+            // how an associate is attributed at all, so it outranks the
+            // wallet figures below it.
+            _AssociateCodeCard(uid: uid),
+            const SizedBox(height: 16),
             _buildCommissionSummary(uid),
             const SizedBox(height: 16),
             const Text(
@@ -178,6 +189,334 @@ class DashboardScreen extends StatelessWidget {
           }).toList(),
         );
       },
+    );
+  }
+}
+
+/// Phase 16B, Workstream 3 — the associate's own attribution code.
+///
+/// Until this phase the dashboard showed an associate their wallet balance
+/// and their attributed orders, but never the one thing they need in order
+/// to be attributed at all: their own `employeeCode`. They had no way to
+/// tell a customer what to type at checkout.
+///
+/// Reads `employees/{uid}` directly, which firestore.rules already permits
+/// and nothing more —
+///   allow read: if isAuthenticated() && (isOwner(employeeId) || isAdmin());
+/// (firestore.rules:718). An associate can read their own document and no
+/// one else's; this phase adds no rule and widens none (S3/S6). No associate
+/// list, and no other associate's code, is reachable from anywhere in this
+/// widget.
+///
+/// Copy constraint (3e): this card explains the mechanism only. It states no
+/// figure, makes no promise, and implies no guaranteed income.
+class _AssociateCodeCard extends StatelessWidget {
+  final String uid;
+
+  const _AssociateCodeCard({required this.uid});
+
+  static const String _guidance =
+      'Share this code with your customers. When someone enters it at '
+      'checkout, that order is recorded against you. Commission applies to '
+      'eligible orders once they are completed, in line with your programme '
+      'terms.';
+
+  /// Shown when the associate has not cleared the ₹500 onboarding gate.
+  /// Scoped to RETAIL deliberately: `createOrder.ts` drops B2C attribution
+  /// for an associate whose gate is not cleared, but B2B attribution has
+  /// never required it — so "no retail orders" is the accurate statement and
+  /// "your code does not work" would not be.
+  static const String _onboardingNote =
+      'Complete your onboarding so retail orders that use your code can be '
+      'recorded against you.';
+
+  @override
+  Widget build(BuildContext context) {
+    return StreamBuilder<DocumentSnapshot<Map<String, dynamic>>>(
+      stream:
+          FirebaseFirestore.instance.collection('employees').doc(uid).snapshots(),
+      builder: (context, snap) {
+        // State: the read failed (offline, or rules denied it).
+        if (snap.hasError) {
+          return _shell(
+            child: _message('Could not load your associate code right now.'),
+          );
+        }
+
+        // State: still loading.
+        if (!snap.hasData) {
+          return _shell(child: _message('Loading your code…'));
+        }
+
+        // State: employees/{uid} is missing. EmployeeAuthProvider signs a
+        // user out when this document is absent at login, so reaching this
+        // branch means it vanished mid-session — rare, but it must not
+        // render a blank card.
+        final doc = snap.data!;
+        if (!doc.exists || doc.data() == null) {
+          return _shell(
+            child: _message(
+              'We could not find your associate profile. Please sign out and '
+              'sign in again, or contact support.',
+            ),
+          );
+        }
+
+        final employee = EmployeeModel.fromMap(doc.data()!, doc.id);
+        final code = employee.employeeCode.trim();
+
+        // State: the document exists but carries no code.
+        if (code.isEmpty) {
+          return _shell(
+            child: _message(
+              'No associate code has been assigned to your account yet. '
+              'Please contact support.',
+            ),
+          );
+        }
+
+        // State: code present. Shown whether or not the onboarding gate is
+        // cleared — hiding it would be wrong, because a B2B order attributes
+        // on this code regardless of the gate; an uncleared gate only stops
+        // RETAIL attribution, which the note below says plainly.
+        return _shell(
+          child: _codeBody(context, code, employee.hasClearedOnboardingGate),
+        );
+      },
+    );
+  }
+
+  /// The card chrome, shared by every state so the surface never jumps size
+  /// or colour as the stream resolves. Emerald per the brand identity
+  /// (AppColors.primary), matching _SummaryCard's rounded/elevated shape.
+  Widget _shell({required Widget child}) {
+    return Container(
+      width: double.infinity,
+      padding: const EdgeInsets.all(18),
+      decoration: BoxDecoration(
+        gradient: const LinearGradient(
+          colors: [AppColors.primary, AppColors.primaryDark],
+          begin: Alignment.topLeft,
+          end: Alignment.bottomRight,
+        ),
+        borderRadius: BorderRadius.circular(16),
+        boxShadow: [
+          BoxShadow(
+            color: AppColors.primary.withValues(alpha: 0.25),
+            blurRadius: 14,
+            offset: const Offset(0, 6),
+          ),
+        ],
+      ),
+      child: child,
+    );
+  }
+
+  Widget _message(String text) {
+    return Row(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        const Icon(Icons.badge_outlined, color: Colors.white, size: 20),
+        const SizedBox(width: 10),
+        Expanded(
+          child: Text(
+            text,
+            style: const TextStyle(
+              color: Colors.white,
+              fontSize: 13,
+              height: 1.4,
+              fontWeight: FontWeight.w600,
+            ),
+          ),
+        ),
+      ],
+    );
+  }
+
+  Widget _codeBody(BuildContext context, String code, bool gateCleared) {
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        Row(
+          children: [
+            const Icon(Icons.badge_outlined, color: AppColors.accent, size: 20),
+            const SizedBox(width: 8),
+            const Text(
+              'Your Associate Code',
+              style: TextStyle(
+                color: Colors.white,
+                fontSize: 13,
+                fontWeight: FontWeight.w700,
+                letterSpacing: 0.3,
+              ),
+            ),
+          ],
+        ),
+        const SizedBox(height: 12),
+
+        // The code itself — tap anywhere on it to copy (3c).
+        Row(
+          children: [
+            Expanded(
+              child: InkWell(
+                onTap: () => _copy(context, code),
+                borderRadius: BorderRadius.circular(12),
+                child: Container(
+                  padding:
+                      const EdgeInsets.symmetric(horizontal: 16, vertical: 14),
+                  decoration: BoxDecoration(
+                    color: Colors.white.withValues(alpha: 0.16),
+                    borderRadius: BorderRadius.circular(12),
+                    border: Border.all(
+                      color: AppColors.accent.withValues(alpha: 0.55),
+                    ),
+                  ),
+                  child: Row(
+                    children: [
+                      Expanded(
+                        child: Column(
+                          crossAxisAlignment: CrossAxisAlignment.start,
+                          children: [
+                            Text(
+                              code,
+                              style: const TextStyle(
+                                color: Colors.white,
+                                fontSize: 26,
+                                fontWeight: FontWeight.w900,
+                                letterSpacing: 3,
+                              ),
+                            ),
+                            const SizedBox(height: 2),
+                            Text(
+                              'Tap to copy',
+                              style: TextStyle(
+                                color: Colors.white.withValues(alpha: 0.75),
+                                fontSize: 11,
+                                fontWeight: FontWeight.w600,
+                              ),
+                            ),
+                          ],
+                        ),
+                      ),
+                      const Icon(Icons.copy_rounded,
+                          color: AppColors.accent, size: 20),
+                    ],
+                  ),
+                ),
+              ),
+            ),
+            const SizedBox(width: 10),
+            _ActionButton(
+              icon: Icons.ios_share_rounded,
+              label: 'Share',
+              onTap: () => _share(code),
+            ),
+          ],
+        ),
+
+        const SizedBox(height: 14),
+        Text(
+          _guidance,
+          style: TextStyle(
+            color: Colors.white.withValues(alpha: 0.92),
+            fontSize: 12,
+            height: 1.45,
+            fontWeight: FontWeight.w500,
+          ),
+        ),
+
+        if (!gateCleared) ...[
+          const SizedBox(height: 12),
+          Container(
+            padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 10),
+            decoration: BoxDecoration(
+              color: AppColors.accent.withValues(alpha: 0.18),
+              borderRadius: BorderRadius.circular(10),
+              border:
+                  Border.all(color: AppColors.accent.withValues(alpha: 0.5)),
+            ),
+            child: Row(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                const Icon(Icons.info_outline_rounded,
+                    color: AppColors.accent, size: 16),
+                const SizedBox(width: 8),
+                Expanded(
+                  child: Text(
+                    _onboardingNote,
+                    style: const TextStyle(
+                      color: Colors.white,
+                      fontSize: 11.5,
+                      height: 1.4,
+                      fontWeight: FontWeight.w600,
+                    ),
+                  ),
+                ),
+              ],
+            ),
+          ),
+        ],
+      ],
+    );
+  }
+
+  /// 3c — Flutter's built-in clipboard; no dependency added for this.
+  Future<void> _copy(BuildContext context, String code) async {
+    final messenger = ScaffoldMessenger.of(context);
+    await Clipboard.setData(ClipboardData(text: code));
+    HapticFeedback.selectionClick();
+    messenger.showSnackBar(
+      const SnackBar(
+        content: Text('Associate code copied'),
+        behavior: SnackBarBehavior.floating,
+        duration: Duration(seconds: 2),
+      ),
+    );
+  }
+
+  Future<void> _share(String code) async {
+    await Share.share('Use my AgriMore Sales Associate code $code at checkout.');
+  }
+}
+
+class _ActionButton extends StatelessWidget {
+  final IconData icon;
+  final String label;
+  final VoidCallback onTap;
+
+  const _ActionButton({
+    required this.icon,
+    required this.label,
+    required this.onTap,
+  });
+
+  @override
+  Widget build(BuildContext context) {
+    return InkWell(
+      onTap: onTap,
+      borderRadius: BorderRadius.circular(12),
+      child: Container(
+        padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 14),
+        decoration: BoxDecoration(
+          color: AppColors.accent,
+          borderRadius: BorderRadius.circular(12),
+        ),
+        child: Column(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            Icon(icon, size: 18, color: AppColors.primaryDarker),
+            const SizedBox(height: 3),
+            Text(
+              label,
+              style: const TextStyle(
+                fontSize: 10,
+                fontWeight: FontWeight.w900,
+                color: AppColors.primaryDarker,
+              ),
+            ),
+          ],
+        ),
+      ),
     );
   }
 }

@@ -36,6 +36,14 @@ dependencies:
   # UI
   cupertino_icons: ^1.0.8
 
+  # Phase 16B: share sheet for the associate's own code (dashboard_screen).
+  # Pinned to the SAME constraint apps/marketplace already ships
+  # (apps/marketplace/pubspec.yaml), so this adds no new version to resolve
+  # anywhere in the workspace. Deliberately app-local — never added to
+  # agrimore_core/agrimore_services/agrimore_ui, which would push it onto
+  # the four apps that have no use for it.
+  share_plus: ^10.1.2
+
 dev_dependencies:
   flutter_test:
     sdk: flutter

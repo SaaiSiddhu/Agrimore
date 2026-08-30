@@ -12,9 +12,11 @@
 // appendLedgerEntry() is the ONLY place either collection is ever written.
 // Every future writer — this phase's accrual/expiry/reconciliation code,
 // and Phase C's redemption — must go through it, so the ledger and its
-// projection can never diverge (reconcileProductCreditBalances.ts still
-// checks for drift, but appendLedgerEntry is what prevents it from
-// happening in the first place).
+// projection can never diverge (the reconcileProductCreditBalances
+// callable — exported from customer/productCreditExpiry.ts, NOT its own
+// file, despite this comment's earlier claim — still checks for drift by
+// recomputing each projection from the full ledger; appendLedgerEntry is
+// what prevents that drift from happening in the first place).
 //
 // Deliberately NOT itself async: it performs zero reads, only tx.set()
 // calls, so it can be called freely from anywhere inside an already-open
@@ -99,11 +101,18 @@ export function toProjectionFields(data: FirebaseFirestore.DocumentData | undefi
 // a hold for a different (partial) amount is out of scope for Phase C — a
 // hold is settled in full or released in full (see productCreditHold.ts).
 //
-// REVERSAL currently only reverses a NON-hold-settled REDEMPTION (crediting
-// `available` back) — reversing a hold-settled REDEMPTION (which would need
-// to distinguish "give the money back to available" from "the hold already
-// left available untouched") is explicitly Phase D's problem, not assumed
-// or silently handled here.
+// REVERSAL (verified correct by Phase D, which is the first caller that
+// actually reverses a hold-settled REDEMPTION —
+// customer/productCreditReversal.ts): `available += amount` is right for
+// BOTH REDEMPTION shapes, not just the non-hold-settled one this comment
+// used to describe as the only handled case. A HOLD already removed the
+// amount from `available` when it was placed (available -= amount); a
+// hold-settled REDEMPTION never touches `available` again (it only clears
+// onHold — see the REDEMPTION case below). So crediting `available` back
+// by the same amount on REVERSAL restores it to exactly where it was
+// before the HOLD, regardless of which REDEMPTION shape is being reversed
+// — the same single arithmetic line is correct either way; no branch on
+// relatedEntryId is needed here the way REDEMPTION itself needs one.
 function applyEntryToProjection(
   current: ProjectionFields,
   type: LedgerEntryType,

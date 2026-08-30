@@ -40,6 +40,19 @@ export interface ComputeRedeemableAmountInput {
   /** An upper-bound REQUEST from the client — never trusted as the final
    *  amount; only ever narrows the caps below. */
   requestedAmount: number;
+  /** Phase D-1, DEFECT D-2 fix: the order's final payable grand total
+   *  (subtotal - discount + deliveryCharge + tax). REQUIRED, not optional —
+   *  an omitted value would make Math.max(0, undefined) -> NaN and poison
+   *  the min() below. Without this cap, a coupon discount large enough to
+   *  push grandTotal below eligibleSubtotal let creditApplied exceed what
+   *  the order actually costs: `payable` (grandTotal - creditApplied) went
+   *  negative, the payment-amount guard's `payable > 1` check passed
+   *  trivially, and the customer's hold was redeemed in full against an
+   *  order worth less than the credit spent — silently losing the
+   *  difference. Credit can never exceed either the value of eligible
+   *  goods (the existing eligibleSubtotal cap) OR what the order actually
+   *  costs after every other adjustment (this cap) — whichever is smaller. */
+  orderGrandTotal: number;
 }
 
 export interface ComputeRedeemableAmountResult {
@@ -60,7 +73,7 @@ function roundDownMoney(value: number): number {
 }
 
 export function computeRedeemableAmount(input: ComputeRedeemableAmountInput): ComputeRedeemableAmountResult {
-  const { program, orderSubtotal, eligibleSubtotal, availableCredit, requestedAmount } = input;
+  const { program, orderSubtotal, eligibleSubtotal, availableCredit, requestedAmount, orderGrandTotal } = input;
 
   // Rule 1: redemptionEnabled false.
   if (!program.redemptionEnabled) {
@@ -84,13 +97,19 @@ export function computeRedeemableAmount(input: ComputeRedeemableAmountInput): Co
   }
 
   // Rule 3: cap = min(requestedAmount, availableCredit, maxCreditPerOrder,
-  // eligibleSubtotal * maxCreditPercentOfOrder/100, eligibleSubtotal).
-  // Every term is clamped to >= 0 first — a negative requestedAmount, for
-  // instance, must never make the min() spuriously permissive.
+  // eligibleSubtotal * maxCreditPercentOfOrder/100, eligibleSubtotal,
+  // orderGrandTotal). Every term is clamped to >= 0 first — a negative
+  // requestedAmount, for instance, must never make the min() spuriously
+  // permissive. orderGrandTotal (Phase D-1, DEFECT D-2 fix) stops credit
+  // from ever exceeding what the order actually costs, independent of the
+  // eligibleSubtotal cap — a coupon discount can push grandTotal below
+  // eligibleSubtotal even though the eligible-goods value itself didn't
+  // change.
   const caps: number[] = [
     Math.max(0, requestedAmount),
     Math.max(0, availableCredit),
     Math.max(0, eligibleSubtotal),
+    Math.max(0, orderGrandTotal),
   ];
   const hasMaxPerOrder = typeof program.maxCreditPerOrder === "number";
   if (hasMaxPerOrder) {

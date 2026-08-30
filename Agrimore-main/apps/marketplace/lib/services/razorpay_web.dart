@@ -85,6 +85,42 @@ class RazorpayWebService {
     }
   }
 
+  /// Phase 16B-2, Workstream 3a/3b — opens the checkout modal for an order
+  /// ALREADY created server-side (by `createAssociateOnboardingPayment`,
+  /// which prices the ₹500 onboarding fee from server config — S1). This is
+  /// the narrow, additive entry point the associate-onboarding payment step
+  /// uses instead of `openCheckout()` above: `openCheckout()` always calls
+  /// `createRazorpayOrder` first, which trusts a client-supplied `amount`
+  /// and must never be used for a fee the client does not get to set.
+  /// `openCheckout()`'s own behaviour is untouched by this addition — the
+  /// live cart and wallet flows that depend on it are unaffected.
+  ///
+  /// `amountPaise` matches `createAssociateOnboardingPayment`'s response
+  /// shape exactly (`amount: order.amount`, which the Razorpay SDK returns
+  /// in paise) — converted to rupees here, once, at this single boundary,
+  /// specifically so no caller has to re-derive `_openRazorpayModal`'s
+  /// paise-conversion convention (`(amount * 100).toInt()`) and risk a
+  /// double-conversion overcharge bug.
+  Future<void> openCheckoutForExistingOrder({
+    required String keyId,
+    required String orderId,
+    required int amountPaise,
+    required String userName,
+    required String userEmail,
+    required String userPhone,
+    String? description,
+  }) async {
+    _openRazorpayModal(
+      keyId: keyId,
+      orderId: orderId,
+      amount: amountPaise / 100.0,
+      userName: userName,
+      userEmail: userEmail,
+      userPhone: userPhone,
+      description: description,
+    );
+  }
+
   /// Open the Razorpay checkout modal using JS eval
   void _openRazorpayModal({
     required String keyId,

@@ -58,6 +58,10 @@ flutter_launcher_icons:
 flutter:
   uses-material-design: true
 
+  # Phase 19: `.env` is deliberately NOT an asset here. Flutter copies assets
+  # verbatim into the APK/AAB, and the project `.env` carries server-only
+  # credentials — they shipped inside the published 1.0.7 build because of this
+  # one line. Nothing in the Dart code reads it (EnvConfig was deleted in the
+  # same phase). Do not re-add it.
   assets:
-    - .env
     - assets/images/

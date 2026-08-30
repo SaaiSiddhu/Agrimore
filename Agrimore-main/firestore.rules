@@ -301,9 +301,26 @@ service cloud.firestore {
     // cancelOrder() (the only real owner-update site) writes only
     // orderStatus/status — confirmed by reading it and by
     // ownerOrderStatusChangeIsValid()'s own comment above.
+    // Phase D: productCreditApplied/productCreditHoldId/productCreditReversed
+    // added to this denylist — createOrder.ts (Admin SDK, bypasses this
+    // file) is the only legitimate writer of all three, at order-creation
+    // time and again (productCreditReversed only) via
+    // reverseProductCreditOnCancellation on cancellation. Without this, an
+    // owner could rewrite productCreditApplied on their own order after
+    // creation to misrepresent what they actually paid, or flip
+    // productCreditReversed to true to make the cancellation trigger treat
+    // already-reversed credit as still owed (no-op) or vice versa.
+    // Phase D-1: productCreditLedgerEntryId added — Phase D itself omitted
+    // it here (it only protected the other three). It is server-only
+    // bookkeeping (createOrder.ts writes it, reverseProductCreditOnCancellation
+    // reads it to link a REVERSAL's relatedEntryId back to the settling
+    // REDEMPTION entry); an owner rewriting it can't move money, but it can
+    // corrupt that audit trail, so it belongs in the same denylist as its
+    // three siblings.
     function ownerCannotChangeOrderFinancials() {
       return !request.resource.data.diff(resource.data).affectedKeys()
-        .hasAny(['subtotal', 'discount', 'deliveryCharge', 'tax', 'total', 'items', 'paymentStatus', 'employeeUid', 'employeeCode']);
+        .hasAny(['subtotal', 'discount', 'deliveryCharge', 'tax', 'total', 'items', 'paymentStatus', 'employeeUid', 'employeeCode',
+                 'productCreditApplied', 'productCreditHoldId', 'productCreditReversed', 'productCreditLedgerEntryId']);
     }
 
     // Phase 5b fix: the financial-fields guard above did not restrict
@@ -368,12 +385,28 @@ service cloud.firestore {
     // set), but a delivery partner claiming a currently-UNASSIGNED order
     // legitimately needs to set it for the first time — see
     // deliveryPartnerCanClaimOrder() below, used only by that one branch.
+    // Phase D-1, DEFECT D-0 (CRITICAL) fix: Phase D added
+    // productCreditApplied/productCreditHoldId/productCreditReversed/
+    // productCreditLedgerEntryId to ownerCannotChangeOrderFinancials() above,
+    // but never to this function or deliveryPartnerCanClaimOrder() below —
+    // runtime-proven exploitable via reverseProductCreditOnCancellation
+    // (which historically trusted the trigger's `after` snapshot for the
+    // refund amount): a seller could set productCreditApplied to an
+    // arbitrary value on their OWN order, wait for the customer to cancel,
+    // and mint unlimited Product Credit into that customer's `available`
+    // balance on reversal — or pre-set productCreditReversed:true to make a
+    // genuine future reversal silently no-op, permanently destroying the
+    // customer's real credit. Workstream 2 of this same phase also hardens
+    // the trigger itself to re-derive the amount from the transaction
+    // snapshot rather than `after`, but that is defence-in-depth, not a
+    // substitute for closing the write path here.
     function orderFulfilmentCannotChangeProtectedFields() {
       return !request.resource.data.diff(resource.data).affectedKeys().hasAny([
         'total', 'subtotal', 'discount', 'deliveryCharge', 'tax', 'items',
         'paymentStatus', 'userId', 'sellerId', 'employeeUid', 'employeeCode',
         'orderMode', 'commissionPaid', 'commissionAmount', 'deliveryVerificationCode',
-        'deliveryPartnerId'
+        'deliveryPartnerId',
+        'productCreditApplied', 'productCreditHoldId', 'productCreditReversed', 'productCreditLedgerEntryId'
       ]);
     }
 
@@ -383,11 +416,18 @@ service cloud.firestore {
     // absent/null/empty AND the new value to equal the caller's own uid.
     // That combination is the only way deliveryPartnerId can ever change:
     // empty -> the claiming partner's own uid, nothing else.
+    //
+    // Phase D-1, DEFECT D-0 fix: same four product-credit fields added here
+    // as above, for the same reason — a claiming delivery partner has the
+    // exact same write access to this document as a seller does via
+    // orderFulfilmentCannotChangeProtectedFields(), so the same mint/
+    // suppress exploit applied equally to this branch.
     function deliveryPartnerCanClaimOrder() {
       return !request.resource.data.diff(resource.data).affectedKeys().hasAny([
         'total', 'subtotal', 'discount', 'deliveryCharge', 'tax', 'items',
         'paymentStatus', 'userId', 'sellerId', 'employeeUid', 'employeeCode',
-        'orderMode', 'commissionPaid', 'commissionAmount', 'deliveryVerificationCode'
+        'orderMode', 'commissionPaid', 'commissionAmount', 'deliveryVerificationCode',
+        'productCreditApplied', 'productCreditHoldId', 'productCreditReversed', 'productCreditLedgerEntryId'
       ]);
     }
 

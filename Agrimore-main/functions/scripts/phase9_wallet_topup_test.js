@@ -59,6 +59,21 @@ async function main() {
 
   console.log("=== PHASE 9, WORKSTREAM 1 — verifyWalletTopup ===");
 
+  // Phase 18 fixture update (found while running a broader regression
+  // sweep than any prior phase's explicit list required): verifyWalletTopup
+  // has rejected an incomplete-profile caller since Phase 16, Workstream 7
+  // — unrelated to what this file actually tests, so every test user here
+  // is seeded profileCompleted:true up front. Purely additive, no
+  // assertion below is touched.
+  for (const uid of [
+    "phase9-topup-customer1",
+    "phase9-topup-customer2",
+    "phase9-topup-customer3",
+    "phase9-topup-customer4",
+  ]) {
+    await db.collection("users").doc(uid).set({ uid, profileCompleted: true });
+  }
+
   // Seed a non-default wallet_config so bonus computation is exercised
   // against a real Firestore read, not just the hardcoded default.
   await db.collection("settings").doc("wallet_config").set({

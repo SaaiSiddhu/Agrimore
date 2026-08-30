@@ -50,6 +50,12 @@ class OrderModel {
   final String? employeeCode;
   final String? employeeUid;
 
+  // ✅ Phase D: AgriMore Product Credit applied to this order (this
+  // seller's share, for a multi-seller cart — see createOrder.ts).
+  final double productCreditApplied;
+  final String? productCreditHoldId;
+  final bool productCreditReversed;
+
   OrderModel({
     required this.id,
     required this.userId,
@@ -87,6 +93,9 @@ class OrderModel {
     this.orderMode = 'B2C',
     this.employeeCode,
     this.employeeUid,
+    this.productCreditApplied = 0,
+    this.productCreditHoldId,
+    this.productCreditReversed = false,
   }) : createdAt = createdAt ?? DateTime.now();
 
   // ============================================
@@ -254,6 +263,12 @@ class OrderModel {
         orderMode: (map['orderMode'] as String?) ?? 'B2C',
         employeeCode: map['employeeCode'] as String?,
         employeeUid: map['employeeUid'] as String?,
+        // ✅ Phase D: fail-closed defaults — a missing or non-numeric
+        // productCreditApplied reads as 0, never as a guess.
+        productCreditApplied:
+            (map['productCreditApplied'] as num?)?.toDouble() ?? 0.0,
+        productCreditHoldId: map['productCreditHoldId'] as String?,
+        productCreditReversed: map['productCreditReversed'] == true,
       );
 
       debugPrint(
@@ -309,6 +324,9 @@ class OrderModel {
       'orderMode': orderMode,
       'employeeCode': employeeCode,
       'employeeUid': employeeUid,
+      'productCreditApplied': productCreditApplied,
+      'productCreditHoldId': productCreditHoldId,
+      'productCreditReversed': productCreditReversed,
     };
   }
 
@@ -420,6 +438,9 @@ class OrderModel {
     String? orderMode,
     String? employeeCode,
     String? employeeUid,
+    double? productCreditApplied,
+    String? productCreditHoldId,
+    bool? productCreditReversed,
   }) {
     return OrderModel(
       id: id ?? this.id,
@@ -460,6 +481,9 @@ class OrderModel {
       orderMode: orderMode ?? this.orderMode,
       employeeCode: employeeCode ?? this.employeeCode,
       employeeUid: employeeUid ?? this.employeeUid,
+      productCreditApplied: productCreditApplied ?? this.productCreditApplied,
+      productCreditHoldId: productCreditHoldId ?? this.productCreditHoldId,
+      productCreditReversed: productCreditReversed ?? this.productCreditReversed,
     );
   }
 

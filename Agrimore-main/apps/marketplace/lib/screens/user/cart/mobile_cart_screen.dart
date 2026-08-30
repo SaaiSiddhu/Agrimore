@@ -22,6 +22,7 @@ import 'coupon_selection_screen.dart';
 import 'blinkit_coupon_screen.dart';
 import '../checkout/checkout_screen.dart';
 import '../checkout/order_success_screen.dart';
+import '../checkout/widgets/associate_code_field.dart';
 import 'dart:async';
 import 'package:record/record.dart';
 import 'package:audioplayers/audioplayers.dart';
@@ -92,11 +93,20 @@ class _MobileCartScreenState extends State<MobileCartScreen>
   // Payment method
   String _selectedPaymentMethod = 'Razorpay'; // Default to Razorpay
 
-  // B2B checkout: employee attribution code, required when the cart's
-  // CartProvider.cartMode is 'B2B'. Mirrors payment_method_screen.dart's
-  // _employeeCodeController.
+  // The associate attribution code. Mirrors payment_method_screen.dart's
+  // _employeeCodeController exactly: required for B2B (cart's
+  // CartProvider.cartMode == 'B2B'), and — as of Phase 16B — also the
+  // OPTIONAL Sales Associate code for B2C. The two renderings are mutually
+  // exclusive, so one controller and one dispose() covers both.
   final TextEditingController _employeeCodeController =
       TextEditingController();
+
+  // Phase 16B: this quick-checkout bottom bar is cramped and sits inches
+  // above the pay button, so the optional B2C code field starts collapsed
+  // behind a one-line prompt. That keeps D2 literally true here — a
+  // customer with no code taps exactly what they tap today — while still
+  // making the field reachable for one who has one.
+  bool _showAssociateCodeField = false;
 
   // Wallet & Checkout
   bool _useWalletBalance = false;
@@ -3600,7 +3610,18 @@ class _MobileCartScreenState extends State<MobileCartScreen>
                 })
             .toList(),
         'orderMode': isB2B ? 'B2B' : 'B2C',
-        if (isB2B) 'employeeCode': employeeCode,
+        // Phase 16B, Workstream 1b/1c — identical rule to
+        // payment_method_screen.dart. B2B unchanged: key always sent, same
+        // trimmed value, still hard-failing above when empty. B2C sends the
+        // key only when the customer actually typed something, so an empty
+        // or whitespace-only field yields a payload with no `employeeCode`
+        // key — byte-identical to every B2C order placed before this phase.
+        // (createOrder.ts line 121 collapses both `undefined` and `""` to
+        // "" anyway, so this is a wire-shape choice, not a behavioural one.)
+        if (isB2B)
+          'employeeCode': employeeCode
+        else if (employeeCode.isNotEmpty)
+          'employeeCode': employeeCode,
         'deliveryAddress': address.toMap(),
         'paymentMethod': normalizedPaymentMethod,
         if (razorpayOrderId != null) 'razorpayOrderId': razorpayOrderId,
@@ -4393,6 +4414,47 @@ class _MobileCartScreenState extends State<MobileCartScreen>
                           isDark ? const Color(0xFF252525) : Colors.white,
                     ),
                   ),
+                ] else ...[
+                  // Phase 16B, Workstream 1a — the optional B2C Sales
+                  // Associate code, collapsed by default (see
+                  // _showAssociateCodeField). Purely additive: the prompt is
+                  // a single tappable line, and nothing in this branch is
+                  // read by the "Proceed to Pay" button below, whose only
+                  // code guard is `isB2B && ...` and so cannot fire here.
+                  const SizedBox(height: 10),
+                  if (_showAssociateCodeField)
+                    AssociateCodeField(
+                      controller: _employeeCodeController,
+                      isDark: isDark,
+                      accentColor: accentColor,
+                      dense: true,
+                    )
+                  else
+                    GestureDetector(
+                      behavior: HitTestBehavior.opaque,
+                      onTap: () {
+                        HapticFeedback.selectionClick();
+                        setState(() => _showAssociateCodeField = true);
+                      },
+                      child: Padding(
+                        padding: const EdgeInsets.symmetric(vertical: 2),
+                        child: Row(
+                          children: [
+                            Icon(Icons.badge_outlined,
+                                size: 15, color: accentColor),
+                            const SizedBox(width: 6),
+                            Text(
+                              'Have a Sales Associate code?',
+                              style: TextStyle(
+                                fontSize: 11,
+                                fontWeight: FontWeight.w700,
+                                color: accentColor,
+                              ),
+                            ),
+                          ],
+                        ),
+                      ),
+                    ),
                 ],
                 const SizedBox(height: 10),
 

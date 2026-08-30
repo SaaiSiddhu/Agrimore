@@ -1,7 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:firebase_auth/firebase_auth.dart';
-import 'package:agrimore_core/agrimore_core.dart';
+import '../../services/associate_application_service.dart';
 
 class EmployeeApplyScreen extends StatefulWidget {
   const EmployeeApplyScreen({Key? key}) : super(key: key);
@@ -54,26 +54,17 @@ class _EmployeeApplyScreenState extends State<EmployeeApplyScreen> {
     try {
       final uid = FirebaseAuth.instance.currentUser!.uid;
       final name = _nameCtrl.text.trim();
-      // Reuse the same code-generation approach as WalletModel/EmployeeModel
-      // (built in Phase 1) — never reimplement this a second time.
-      final employeeCode = EmployeeModel.generateEmployeeCode(uid, name);
-
-      await FirebaseFirestore.instance.collection('employees').doc(uid).set({
-        'userId': uid,
-        'name': name,
-        'email': _emailCtrl.text.trim(),
-        'phone': _mobileCtrl.text.trim(),
-        'employeeCode': employeeCode,
-        'status': 'pending',
-        'commissionRate': 0,
-        'createdBy': 'self',
-        'createdAt': FieldValue.serverTimestamp(),
-        'updatedAt': FieldValue.serverTimestamp(),
-      }, SetOptions(merge: true));
-
-      await FirebaseFirestore.instance.collection('users').doc(uid).set({
-        'employeeStatus': 'pending',
-      }, SetOptions(merge: true));
+      // Phase 16B-2, Workstream 2a: the employees/{uid} write itself now
+      // lives in associate_application_service.dart, shared with the new
+      // associate-onboarding flow (screens/employee/onboarding/) so both
+      // callers write the exact same document shape — never two divergent
+      // copies. This screen's own form/status UI is unchanged.
+      await submitAssociateApplication(
+        uid: uid,
+        name: name,
+        email: _emailCtrl.text.trim(),
+        phone: _mobileCtrl.text.trim(),
+      );
 
       setState(() => _employeeStatus = 'pending');
       ScaffoldMessenger.of(context).showSnackBar(
