@@ -75,6 +75,74 @@ function roundDownMoney(value: number): number {
 export function computeRedeemableAmount(input: ComputeRedeemableAmountInput): ComputeRedeemableAmountResult {
   const { program, orderSubtotal, eligibleSubtotal, availableCredit, requestedAmount, orderGrandTotal } = input;
 
+  // Rule 0 (Phase D-2, DEFECT D-3 fix): every numeric input must be a
+  // finite number before any cap arithmetic below runs. Without this, a
+  // single non-finite input (most realistically a missing orderGrandTotal,
+  // but equally NaN/Infinity/-Infinity/undefined/null on any of these)
+  // poisons `Math.min(...caps)` into NaN — and `NaN <= 0` evaluates to
+  // FALSE in JavaScript, so Rule 5's own "amount <= 0 -> disallowed"
+  // contract further down is silently bypassed, and the function returns
+  // {allowed: true, amount: NaN}: permission to redeem an amount that
+  // isn't a number.
+  //
+  // This FAILS CLOSED (returns allowed:false) rather than throwing —
+  // deliberately the opposite of productCreditLedger.ts's
+  // appendLedgerEntry, whose own `Number.isFinite` check on `amount`
+  // throws an HttpsError. That's correct THERE because it runs inside a
+  // Firestore transaction's WRITE phase, aborting real money movement that
+  // was about to happen — the right response to a corrupt value at that
+  // point. This function runs during a QUOTE, before any write exists to
+  // abort; throwing here would fail the customer's entire checkout
+  // (including the part that has nothing to do with credit) over what
+  // should just be "no credit available this time". Number.isFinite (never
+  // `typeof x === "number"` alone, which admits NaN) is the one check that
+  // correctly rejects NaN, +/-Infinity, undefined, null, and non-numeric
+  // types in a single expression.
+  const requiredNumericInputs: [string, number][] = [
+    ["orderSubtotal", orderSubtotal],
+    ["eligibleSubtotal", eligibleSubtotal],
+    ["availableCredit", availableCredit],
+    ["requestedAmount", requestedAmount],
+    ["orderGrandTotal", orderGrandTotal],
+  ];
+  for (const [name, value] of requiredNumericInputs) {
+    if (!Number.isFinite(value)) {
+      return {
+        allowed: false,
+        amount: 0,
+        reasons: [`Invalid redemption input: ${name} must be a finite number`],
+      };
+    }
+  }
+  // The two program caps are OPTIONAL — null/undefined are their
+  // documented "no cap" values and must remain valid (including
+  // maxCreditPercentOfOrder: 0, which is finite and means something
+  // different: "no credit at all", handled by Rule 5 below). Only a
+  // PRESENT-but-non-finite value is invalid (e.g. a compliance_config
+  // document corrupted with a non-numeric cap).
+  if (
+    program.maxCreditPerOrder !== null &&
+    program.maxCreditPerOrder !== undefined &&
+    !Number.isFinite(program.maxCreditPerOrder)
+  ) {
+    return {
+      allowed: false,
+      amount: 0,
+      reasons: ["Invalid redemption input: program.maxCreditPerOrder must be a finite number or null"],
+    };
+  }
+  if (
+    program.maxCreditPercentOfOrder !== null &&
+    program.maxCreditPercentOfOrder !== undefined &&
+    !Number.isFinite(program.maxCreditPercentOfOrder)
+  ) {
+    return {
+      allowed: false,
+      amount: 0,
+      reasons: ["Invalid redemption input: program.maxCreditPercentOfOrder must be a finite number or null"],
+    };
+  }
+
   // Rule 1: redemptionEnabled false.
   if (!program.redemptionEnabled) {
     return {

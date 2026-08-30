@@ -15,6 +15,16 @@ const baseProgram = {
   maxCreditPercentOfOrder: null,
 };
 
+// Phase D-1 made orderGrandTotal a REQUIRED field on
+// ComputeRedeemableAmountInput (a coupon-discount cap fix); these fixtures
+// predate that and omitted it, which — before Phase D-2's fail-closed
+// guard — silently poisoned every case below into {allowed:true,
+// amount:NaN}. Every case now sets orderGrandTotal equal to that case's
+// own orderSubtotal: in every one of these scenarios something else (an
+// earlier short-circuiting rule, or a tighter cap already in play) is what
+// the case is actually proving, so orderGrandTotal == orderSubtotal is
+// never the binding cap — it only has to be present and finite so Phase
+// D-2's new guard lets the case reach the rule it was written to exercise.
 const cases = [
   {
     name: "redemptionEnabled false -> disallowed",
@@ -24,6 +34,7 @@ const cases = [
       eligibleSubtotal: 1000,
       availableCredit: 500,
       requestedAmount: 500,
+      orderGrandTotal: 1000, // non-binding: Rule 1 (redemptionEnabled) short-circuits first
     },
     expectAllowed: false,
     expectAmount: 0,
@@ -36,6 +47,7 @@ const cases = [
       eligibleSubtotal: 300,
       availableCredit: 500,
       requestedAmount: 500,
+      orderGrandTotal: 300, // non-binding: Rule 2 (minOrderValueForRedemption) short-circuits first
     },
     expectAllowed: false,
     expectAmount: 0,
@@ -49,6 +61,7 @@ const cases = [
       eligibleSubtotal: 1000,
       availableCredit: 500,
       requestedAmount: 500,
+      orderGrandTotal: 1000, // non-binding: maxCreditPerOrder (100) is far tighter
     },
     expectAllowed: true,
     expectAmount: 100,
@@ -61,6 +74,7 @@ const cases = [
       eligibleSubtotal: 1000,
       availableCredit: 500,
       requestedAmount: 500,
+      orderGrandTotal: 1000, // non-binding: the 10% cap (100) is far tighter
     },
     expectAllowed: true,
     expectAmount: 100, // 10% of 1000
@@ -73,6 +87,7 @@ const cases = [
       eligibleSubtotal: 1000,
       availableCredit: 500,
       requestedAmount: 500,
+      orderGrandTotal: 1000, // non-binding: the 0% cap (0) is already the tightest
     },
     expectAllowed: false,
     expectAmount: 0,
@@ -85,6 +100,7 @@ const cases = [
       eligibleSubtotal: 0,
       availableCredit: 500,
       requestedAmount: 500,
+      orderGrandTotal: 1000, // non-binding: eligibleSubtotal (0) is already the tightest
     },
     expectAllowed: false,
     expectAmount: 0,
@@ -97,6 +113,7 @@ const cases = [
       eligibleSubtotal: 1000,
       availableCredit: 300,
       requestedAmount: 999999,
+      orderGrandTotal: 1000, // non-binding: availableCredit (300) is tighter
     },
     expectAllowed: true,
     expectAmount: 300,
@@ -109,6 +126,7 @@ const cases = [
       eligibleSubtotal: 1000,
       availableCredit: 33.335,
       requestedAmount: 33.335,
+      orderGrandTotal: 1000, // non-binding: availableCredit/requestedAmount (33.335) are tighter
     },
     expectAllowed: true,
     expectAmount: 33.33,
@@ -121,6 +139,7 @@ const cases = [
       eligibleSubtotal: 0,
       availableCredit: 500,
       requestedAmount: 500,
+      orderGrandTotal: 0, // non-binding: eligibleSubtotal (0) is already the tightest; also the natural grand total of an empty cart
     },
     expectAllowed: false,
     expectAmount: 0,
@@ -133,6 +152,7 @@ const cases = [
       eligibleSubtotal: 1000,
       availableCredit: 0,
       requestedAmount: 500,
+      orderGrandTotal: 1000, // non-binding: availableCredit (0) is already the tightest — proves Phase D-2's new guard does NOT swallow this pre-existing, specifically-worded deny path
     },
     expectAllowed: false,
     expectAmount: 0,
@@ -145,6 +165,7 @@ const cases = [
       eligibleSubtotal: 1000,
       availableCredit: 500,
       requestedAmount: 500,
+      orderGrandTotal: 1000, // non-binding: maxCreditPerOrder (0) is already the tightest
     },
     expectAllowed: false,
     expectAmount: 0,
