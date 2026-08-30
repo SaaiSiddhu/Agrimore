@@ -49,6 +49,25 @@ function toTwoFactorPhone(normalizedPhone: string): string {
   return normalizedPhone.replace(/^\+/, "");
 }
 
+// ...but the VOICE endpoint does NOT accept that form. Proven against the live
+// API on 2026-08-30, same key, same instant:
+//   POST /API/V1/{key}/SMS/918610787151/123456    -> {"Status":"Success"}
+//   POST /API/V1/{key}/VOICE/918610787151/123456  -> HTTP 400
+//        {"Status":"Error","Details":"Invalid Phone Number - Length Mismatch(Expected: 10)"}
+// Voice wants the BARE 10-DIGIT national number, no country code. Because
+// normalizePhone() in sendPhoneOTP.ts guarantees +91XXXXXXXXXX, stripping the
+// leading "+91" is exact here rather than a guess.
+//
+// This defect was latent from Phase 16 (when voice was added) and invisible
+// because every test mocks axios at this boundary, so no suite ever exercised
+// the real endpoint — and because the voice calls that DID arrive were
+// 2Factor internally converting SMS-endpoint requests, not this path working.
+// Phase 22 made voice the default channel, which turned it into a total login
+// outage: every sendPhoneOTP 502'd.
+function toTwoFactorVoicePhone(normalizedPhone: string): string {
+  return normalizedPhone.replace(/^\+91/, "");
+}
+
 async function call2Factor(pathSuffix: string): Promise<void> {
   const key = apiKey();
   if (!key) {
@@ -165,6 +184,8 @@ export async function sendSmsOtp(normalizedPhone: string, otp: string): Promise<
 
 /** Calls `normalizedPhone` and reads `otp` aloud via 2Factor's voice API. Throws on failure. */
 export async function sendVoiceOtp(normalizedPhone: string, otp: string): Promise<void> {
-  const phone = toTwoFactorPhone(normalizedPhone);
+  // toTwoFactorVoicePhone, NOT toTwoFactorPhone — the two endpoints disagree
+  // about the country code. See that function's comment for the live proof.
+  const phone = toTwoFactorVoicePhone(normalizedPhone);
   await call2Factor(`VOICE/${phone}/${otp}`);
 }
