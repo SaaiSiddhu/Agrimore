@@ -15,7 +15,12 @@ import '../../../app/routes.dart';
 /// Premium Quick Commerce Style Categories Screen
 /// Enhanced with Blinkit/Zepto-inspired design patterns
 class CategoriesScreen extends StatefulWidget {
-  const CategoriesScreen({Key? key}) : super(key: key);
+  // Non-null only when embedded as a MainScreen tab — see main_screen.dart's
+  // _buildScreens(). This screen has no other reach path today, but falls
+  // back to a plain pop if ever pushed standalone in the future.
+  final VoidCallback? onBack;
+
+  const CategoriesScreen({Key? key, this.onBack}) : super(key: key);
 
   @override
   State<CategoriesScreen> createState() => _CategoriesScreenState();
@@ -170,6 +175,17 @@ class _CategoriesScreenState extends State<CategoriesScreen>
       elevation: 0,
       automaticallyImplyLeading: false,
       toolbarHeight: 52,
+      leading: IconButton(
+        icon: const Icon(Icons.arrow_back_rounded, color: Colors.white),
+        onPressed: () {
+          HapticFeedback.lightImpact();
+          if (widget.onBack != null) {
+            widget.onBack!();
+          } else {
+            Navigator.of(context).maybePop();
+          }
+        },
+      ),
       title: AnimatedSwitcher(
         duration: const Duration(milliseconds: 200),
         child: _isSearching

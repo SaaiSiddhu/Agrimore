@@ -36,7 +36,16 @@ import '../../../providers/wallet_provider.dart';
 const _kAppVersion = '1.0.7'; // mirrors pubspec.yaml's version: line
 
 class ProfileScreen extends StatefulWidget {
-  const ProfileScreen({Key? key}) : super(key: key);
+  // Non-null when embedded as MainScreen's Profile tab (see
+  // main_screen.dart's _buildScreens()), where a plain pop would exit
+  // MainScreen entirely instead of switching tabs. When this screen is
+  // reached the other way — pushed from the home app bar's avatar — onBack
+  // is left null and the fallback plain pop already lands back on Home,
+  // since that's exactly where it was pushed from. Either path ends up
+  // back on Home, which is the point.
+  final VoidCallback? onBack;
+
+  const ProfileScreen({Key? key, this.onBack}) : super(key: key);
 
   @override
   State<ProfileScreen> createState() => _ProfileScreenState();
@@ -502,7 +511,13 @@ class _ProfileScreenState extends State<ProfileScreen> {
 
   Widget _buildBackButton(bool isDark) {
     return GestureDetector(
-      onTap: () => Navigator.pop(context),
+      onTap: () {
+        if (widget.onBack != null) {
+          widget.onBack!();
+        } else {
+          Navigator.pop(context);
+        }
+      },
       child: Container(
         width: 36,
         height: 36,

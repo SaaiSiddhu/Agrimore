@@ -9,6 +9,11 @@ class ShopScreen extends StatelessWidget {
   final String? searchQuery;
   final bool showRecentlyViewed;
   final bool showDeals;
+  // Non-null only when embedded as a MainScreen tab — see main_screen.dart's
+  // _buildScreens(). Left null everywhere this is reached via a genuine
+  // Navigator.push (e.g. /category/:id in routes.dart), where the back
+  // button should just pop instead.
+  final VoidCallback? onBack;
 
   const ShopScreen({
     Key? key,
@@ -17,6 +22,7 @@ class ShopScreen extends StatelessWidget {
     this.searchQuery,
     this.showRecentlyViewed = false,
     this.showDeals = false,
+    this.onBack,
   }) : super(key: key);
 
   @override
@@ -28,6 +34,7 @@ class ShopScreen extends StatelessWidget {
         searchQuery: searchQuery,
         showRecentlyViewed: showRecentlyViewed,
         showDeals: showDeals,
+        onBack: onBack,
       ),
       tablet: WebShopScreen(
         categoryId: categoryId,

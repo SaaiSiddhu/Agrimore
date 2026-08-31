@@ -58,6 +58,13 @@ class _MainScreenState extends State<MainScreen>
   late ShopEntryProvider _shopEntry;
   int _lastShopTabRequest = 0;
 
+  // Every non-Home tab is a standalone screen with its own back button (see
+  // _currentIndex != 0 below) — onBack switches THIS MainScreen's IndexedStack
+  // back to Home rather than popping, since a tab switch never pushed a route
+  // in the first place. Each screen falls back to a plain Navigator.pop when
+  // no onBack is given, which is what happens when it's reached via a genuine
+  // push instead of as one of these tabs (e.g. ShopScreen(categoryId:...)
+  // pushed directly from a /category/:id deep link in routes.dart).
   List<Widget> _buildScreens() => [
         const HomeScreen(),
         Consumer<ShopEntryProvider>(
@@ -68,12 +75,13 @@ class _MainScreenState extends State<MainScreen>
               categoryId: cid,
               categoryName: cname,
               searchQuery: widget.searchQuery,
+              onBack: () => _onTabTapped(0),
             );
           },
         ),
-        const CategoriesScreen(),
-        const CartScreen(),
-        const ProfileScreen(),
+        CategoriesScreen(onBack: () => _onTabTapped(0)),
+        CartScreen(onBack: () => _onTabTapped(0)),
+        ProfileScreen(onBack: () => _onTabTapped(0)),
       ];
 
   @override
@@ -353,11 +361,12 @@ class _MainScreenState extends State<MainScreen>
             ),
           ),
         ),
-        // Profile (index 4) is a full, standalone screen with its own
-        // sticky app bar and back button — the bottom nav would fight that
-        // design (double navigation chrome) and isn't shown there at all,
-        // matching the reference this screen was redesigned against.
-        bottomNavigationBar: _currentIndex == 4
+        // Only Home shows the bottom nav. Shop, Categories, Cart and Profile
+        // are each a full, standalone screen with its own back button —
+        // the bottom nav would fight that design (double navigation chrome)
+        // — so it's hidden everywhere except Home, matching the Profile
+        // screen precedent this was first built for.
+        bottomNavigationBar: _currentIndex != 0
             ? null
             : AnimatedSlide(
                 duration: const Duration(milliseconds: 400),

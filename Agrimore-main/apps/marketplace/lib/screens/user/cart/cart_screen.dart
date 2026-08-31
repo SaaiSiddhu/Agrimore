@@ -4,7 +4,13 @@ import 'mobile_cart_screen.dart';
 import 'web_cart_screen.dart';
 
 class CartScreen extends StatelessWidget {
-  const CartScreen({Key? key}) : super(key: key);
+  // Non-null only when embedded as a MainScreen tab — see main_screen.dart's
+  // _buildScreens(). Left null everywhere this is reached via a genuine
+  // Navigator.push (order_details_screen.dart, the '/cart' named route),
+  // where the back button should just pop instead.
+  final VoidCallback? onBack;
+
+  const CartScreen({Key? key, this.onBack}) : super(key: key);
 
   @override
   Widget build(BuildContext context) {
@@ -18,6 +24,6 @@ class CartScreen extends StatelessWidget {
     }
 
     // Use mobile layout for small screens and mobile platforms
-    return const MobileCartScreen();
+    return MobileCartScreen(onBack: onBack);
   }
 }

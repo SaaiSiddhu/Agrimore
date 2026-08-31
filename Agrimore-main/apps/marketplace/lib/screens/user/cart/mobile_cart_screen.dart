@@ -60,7 +60,9 @@ class ShippingFeeInfo {
 }
 
 class MobileCartScreen extends StatefulWidget {
-  const MobileCartScreen({Key? key}) : super(key: key);
+  final VoidCallback? onBack;
+
+  const MobileCartScreen({Key? key, this.onBack}) : super(key: key);
 
   @override
   State<MobileCartScreen> createState() => _MobileCartScreenState();
@@ -585,6 +587,9 @@ class _MobileCartScreenState extends State<MobileCartScreen>
       ),
       child: Row(
         children: [
+          // Back button — when this is the Cart tab inside MainScreen,
+          // onBack switches the tab back to Home; when reached via a real
+          // push (order details, the /cart route, etc.) it just pops.
           IconButton(
             icon: Icon(
               Icons.arrow_back,
@@ -592,7 +597,11 @@ class _MobileCartScreenState extends State<MobileCartScreen>
             ),
             onPressed: () {
               HapticFeedback.lightImpact();
-              Navigator.pushReplacementNamed(context, '/');
+              if (widget.onBack != null) {
+                widget.onBack!();
+              } else {
+                Navigator.of(context).maybePop();
+              }
             },
           ),
           Text(

@@ -20,6 +20,7 @@ class MobileShopScreen extends StatefulWidget {
   final String? searchQuery;
   final bool showRecentlyViewed;
   final bool showDeals;
+  final VoidCallback? onBack;
 
   const MobileShopScreen({
     Key? key,
@@ -28,6 +29,7 @@ class MobileShopScreen extends StatefulWidget {
     this.searchQuery,
     this.showRecentlyViewed = false,
     this.showDeals = false,
+    this.onBack,
   }) : super(key: key);
 
   @override
@@ -391,7 +393,9 @@ class _MobileShopScreenState extends State<MobileShopScreen>
       ),
       child: Row(
         children: [
-          // Back button - always goes to home with clean transition
+          // Back button — when this is the Shop tab inside MainScreen,
+          // onBack switches the tab back to Home; when reached via a real
+          // push (category deep link, etc.) it just pops.
           IconButton(
             icon: Icon(
               Icons.arrow_back,
@@ -399,8 +403,11 @@ class _MobileShopScreenState extends State<MobileShopScreen>
             ),
             onPressed: () {
               HapticFeedback.lightImpact();
-              // Always replace with home for clean navigation (no stuck cards)
-              Navigator.pushReplacementNamed(context, '/');
+              if (widget.onBack != null) {
+                widget.onBack!();
+              } else {
+                Navigator.of(context).maybePop();
+              }
             },
           ),
           // Search field
