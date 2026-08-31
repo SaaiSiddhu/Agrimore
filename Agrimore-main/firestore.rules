@@ -141,6 +141,14 @@ service cloud.firestore {
           'profileCompleted', 'profileCompletedAt', 'phoneVerified',
           'emailVerified', 'email', 'dateOfBirth'
         ]);
+      // NOT blocking 'phone' here (unlike 'email') despite changePhoneNumber.ts
+      // now being a real, verified, Admin-SDK-only write path for it: doing so
+      // was found to break mobile_number_screen.dart's existing, unrelated,
+      // already-shipped post-signup "add your phone" step, which writes
+      // `phone` directly from the client with no OTP check at all. That is a
+      // real, pre-existing gap of the same shape — out of this phase's scope
+      // to fix, and left open rather than silently regressing a working
+      // screen. changePhoneNumber.ts is the only VERIFIED path either way.
     }
 
     // CREATE-time counterpart: a self-registering user must not be able to

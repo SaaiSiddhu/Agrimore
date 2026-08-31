@@ -84,7 +84,10 @@ const PHONE_OTP_SMS_ENABLED = process.env.PHONE_OTP_SMS_ENABLED === "true";
 // read, write: if false` — no client can read this regardless), but storing
 // only a hash means a Firestore export/backup leak can't reveal a live,
 // usable code.
-function hashOtp(otp: string): string {
+// Exported so changePhoneNumber.ts can check a submitted code against the
+// same phone_otp_codes/{phone} document this file writes, without
+// duplicating the hash function.
+export function hashOtp(otp: string): string {
   return crypto.createHash("sha256").update(otp).digest("hex");
 }
 
@@ -146,8 +149,12 @@ function decryptOtp(enc: EncryptedOtp, key: Buffer): string | null {
 
 // ============================================
 // NORMALIZE + VALIDATE INDIAN MOBILE NUMBER → +91XXXXXXXXXX
+// Exported for the same reason as hashOtp above — changePhoneNumber.ts must
+// key phone_otp_codes lookups by the identical normalized form this file
+// used when it wrote the document, or a legitimately-entered number in a
+// different (but equivalent) shape would never match.
 // ============================================
-function normalizePhone(raw: string): string | null {
+export function normalizePhone(raw: string): string | null {
   const digits = raw.replace(/[^\d]/g, "");
   let national: string | null = null;
 

@@ -68,6 +68,11 @@ export { onOrderCreatedNotifications } from "./customer/orderNotifications";
 // proving they own an email address).
 export { completeUserProfile } from "./customer/completeUserProfile";
 export { verifyEmailForProfile } from "./customer/verifyEmailForProfile";
+// The post-completion "change my email/phone" path completeUserProfile.ts's
+// own comment says is out of its scope — see each file's header comment for
+// why neither reuses its corresponding login-purpose OTP endpoint.
+export { changeEmailAddress } from "./customer/changeEmailAddress";
+export { changePhoneNumber } from "./customer/changePhoneNumber";
 
 // ============================================
 // INVENTORY & STOCK ALERTS

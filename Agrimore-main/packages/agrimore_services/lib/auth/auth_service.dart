@@ -539,6 +539,58 @@ class AuthService {
     }
   }
 
+  /// Changes the caller's OWN phone number via the changePhoneNumber
+  /// callable — the OTP for [phone] must already have been requested via
+  /// sendPhoneOTP. Verification happens server-side against the same
+  /// phone_otp_codes/{phone} document sendPhoneOTP.ts writes; this never
+  /// touches Firebase Auth (see changePhoneNumber.ts's header comment for
+  /// why it deliberately doesn't reuse the login-purpose verifyPhoneOTP).
+  /// Returns the refreshed UserModel on success.
+  Future<UserModel> changePhoneNumber({
+    required String phone,
+    required String otp,
+  }) async {
+    final user = currentUser;
+    if (user == null) throw UnauthorizedException();
+
+    try {
+      final callable = FirebaseFunctions.instance.httpsCallable('changePhoneNumber');
+      await callable.call<Map<String, dynamic>>({'phone': phone, 'otp': otp});
+
+      final updated = await getUserData(user.uid);
+      await _savePersistentSession(updated);
+      return updated;
+    } on FirebaseFunctionsException catch (e) {
+      throw AuthException(e.message ?? 'Failed to update mobile number');
+    } catch (e) {
+      throw AuthException('Failed to update mobile number: ${e.toString()}');
+    }
+  }
+
+  /// Changes the caller's OWN email address via the changeEmailAddress
+  /// callable. [email] must already have been proven via
+  /// verifyEmailOtpForProfile — this callable only checks that marker and
+  /// writes; it does not accept or re-check an OTP itself (see
+  /// changeEmailAddress.ts's header comment). Returns the refreshed
+  /// UserModel on success.
+  Future<UserModel> changeEmailAddress({required String email}) async {
+    final user = currentUser;
+    if (user == null) throw UnauthorizedException();
+
+    try {
+      final callable = FirebaseFunctions.instance.httpsCallable('changeEmailAddress');
+      await callable.call<Map<String, dynamic>>({'email': email});
+
+      final updated = await getUserData(user.uid);
+      await _savePersistentSession(updated);
+      return updated;
+    } on FirebaseFunctionsException catch (e) {
+      throw AuthException(e.message ?? 'Failed to update email address');
+    } catch (e) {
+      throw AuthException('Failed to update email address: ${e.toString()}');
+    }
+  }
+
   /// Firestore `settings/access` field `adminEmails` (list of strings), lowercased.
   Future<Set<String>> _adminAllowlistEmailsLower() async {
     try {

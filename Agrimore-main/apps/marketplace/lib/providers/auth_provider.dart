@@ -500,6 +500,60 @@ class AuthProvider with ChangeNotifier {
   }
 
   // ============================================
+  // CHANGE PHONE / EMAIL (post-completion profile edit)
+  // ============================================
+
+  /// [otp] must have been requested against [phone] via sendPhoneOTP first.
+  Future<bool> changePhoneNumber({required String phone, required String otp}) async {
+    try {
+      _isLoading = true;
+      _error = null;
+      notifyListeners();
+
+      _currentUser = await _authService.changePhoneNumber(phone: phone, otp: otp);
+
+      _isLoading = false;
+      notifyListeners();
+      return true;
+    } on AuthException catch (e) {
+      _error = e.message;
+      _isLoading = false;
+      notifyListeners();
+      return false;
+    } catch (e) {
+      _error = e.toString().replaceAll('Exception: ', '');
+      _isLoading = false;
+      notifyListeners();
+      return false;
+    }
+  }
+
+  /// [email] must already be verified via verifyEmailOtpForProfile first.
+  Future<bool> changeEmailAddress({required String email}) async {
+    try {
+      _isLoading = true;
+      _error = null;
+      notifyListeners();
+
+      _currentUser = await _authService.changeEmailAddress(email: email);
+
+      _isLoading = false;
+      notifyListeners();
+      return true;
+    } on AuthException catch (e) {
+      _error = e.message;
+      _isLoading = false;
+      notifyListeners();
+      return false;
+    } catch (e) {
+      _error = e.toString().replaceAll('Exception: ', '');
+      _isLoading = false;
+      notifyListeners();
+      return false;
+    }
+  }
+
+  // ============================================
   // SIGN IN WITH GOOGLE
   // ============================================
   Future<bool> signInWithGoogle() async {

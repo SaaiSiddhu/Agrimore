@@ -11,6 +11,8 @@ import 'package:firebase_auth/firebase_auth.dart' as auth;
 import 'package:agrimore_ui/agrimore_ui.dart';
 import '../../../providers/auth_provider.dart' as app_auth;
 import '../../../providers/theme_provider.dart';
+import 'change_phone_screen.dart';
+import 'change_email_screen.dart';
 
 class EditProfileScreen extends StatefulWidget {
   const EditProfileScreen({Key? key}) : super(key: key);
@@ -23,7 +25,16 @@ class _EditProfileScreenState extends State<EditProfileScreen>
     with TickerProviderStateMixin {
   final _formKey = GlobalKey<FormState>();
   final _nameController = TextEditingController();
+  // Phone/email are shown read-only here, not free-text editable — see
+  // _buildVerifiedFieldCard below. Editing either now goes through
+  // ChangePhoneScreen/ChangeEmailScreen, which require a fresh OTP verified
+  // server-side (changePhoneNumber.ts / changeEmailAddress.ts). This
+  // screen's Save button used to write _phoneController's text straight to
+  // Firestore with no verification of any kind — the same account-takeover
+  // shape closed elsewhere in this codebase this session, reachable through
+  // the primary Edit Profile screen every time it was opened.
   final _phoneController = TextEditingController();
+  final _emailController = TextEditingController();
 
   late AnimationController _animationController;
   late Animation<double> _fadeAnimation;
@@ -120,6 +131,7 @@ class _EditProfileScreenState extends State<EditProfileScreen>
     if (user != null) {
       _nameController.text = user.name ?? '';
       _phoneController.text = user.phone ?? '';
+      _emailController.text = user.email ?? '';
       _photoUrl = user.photoUrl;
       debugPrint('✅ Loaded user data: ${user.name}');
     }
@@ -151,6 +163,7 @@ class _EditProfileScreenState extends State<EditProfileScreen>
   void dispose() {
     _nameController.dispose();
     _phoneController.dispose();
+    _emailController.dispose();
     _animationController.dispose();
     _avatarController.dispose();
     _toastAnimationController.dispose();
@@ -205,16 +218,6 @@ class _EditProfileScreenState extends State<EditProfileScreen>
     return null;
   }
 
-  String? _validatePhone(String? value) {
-    if (value == null || value.isEmpty) {
-      return 'Please enter your phone number';
-    }
-    if (value.length < 10) {
-      return 'Please enter a valid phone number';
-    }
-    return null;
-  }
-
   Future<void> _saveProfile() async {
     if (!_formKey.currentState!.validate()) {
       _showToastMessage('⚠️ Please fix the errors in the form', isSuccess: false);
@@ -240,9 +243,10 @@ class _EditProfileScreenState extends State<EditProfileScreen>
       final authProvider =
           Provider.of<app_auth.AuthProvider>(context, listen: false);
 
+      // phone is deliberately NOT sent here — it is read-only on this
+      // screen and can only change via ChangePhoneScreen's verified flow.
       final success = await authProvider.updateUserProfile(
         name: _nameController.text.trim(),
-        phone: _phoneController.text.trim(),
         photoUrl: photoUrl,
       );
 
@@ -693,6 +697,99 @@ class _EditProfileScreenState extends State<EditProfileScreen>
     );
   }
 
+  // Read-only field + a CHANGE trigger, same card shape as
+  // _buildTextFormCard above. Used for phone/email specifically because
+  // both require a fresh, server-verified OTP to change (see
+  // ChangePhoneScreen/ChangeEmailScreen) — unlike name/photo, they cannot
+  // be a plain free-text field that silently saves on the next tap of Save.
+  Widget _buildVerifiedFieldCard({
+    required String label,
+    required IconData icon,
+    required String value,
+    required String placeholder,
+    required bool isDark,
+    required VoidCallback onChange,
+  }) {
+    final tileColor = isDark ? AppColors.primaryLight : const Color(0xFF2D7D3C);
+    final hasValue = value.trim().isNotEmpty;
+
+    return Container(
+      margin: const EdgeInsets.only(bottom: 10),
+      decoration: BoxDecoration(
+        color: isDark ? const Color(0xFF1E1E1E) : Colors.white,
+        borderRadius: BorderRadius.circular(14),
+        border: Border.all(color: isDark ? Colors.grey[800]! : Colors.grey.shade200),
+        boxShadow: [
+          BoxShadow(
+            color: Colors.black.withOpacity(isDark ? 0.3 : 0.02),
+            blurRadius: 8,
+            offset: const Offset(0, 2),
+          ),
+        ],
+      ),
+      child: Padding(
+        padding: const EdgeInsets.fromLTRB(14, 8, 14, 8),
+        child: Row(
+          children: [
+            Container(
+              width: 44,
+              height: 44,
+              decoration: BoxDecoration(
+                color: tileColor.withOpacity(0.1),
+                borderRadius: BorderRadius.circular(12),
+              ),
+              child: Icon(icon, color: tileColor, size: 22),
+            ),
+            const SizedBox(width: 14),
+            Expanded(
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  Text(
+                    label,
+                    style: TextStyle(
+                      fontSize: 12,
+                      color: isDark ? Colors.grey[400] : Colors.grey[600],
+                      fontWeight: FontWeight.w500,
+                    ),
+                  ),
+                  const SizedBox(height: 2),
+                  Text(
+                    hasValue ? value : placeholder,
+                    style: TextStyle(
+                      fontSize: 14,
+                      fontWeight: FontWeight.w700,
+                      color: hasValue
+                          ? (isDark ? Colors.white : Colors.black87)
+                          : (isDark ? Colors.grey[600] : Colors.grey[400]),
+                    ),
+                    maxLines: 1,
+                    overflow: TextOverflow.ellipsis,
+                  ),
+                ],
+              ),
+            ),
+            GestureDetector(
+              onTap: onChange,
+              child: Padding(
+                padding: const EdgeInsets.symmetric(horizontal: 4, vertical: 8),
+                child: Text(
+                  'CHANGE',
+                  style: TextStyle(
+                    fontSize: 12,
+                    fontWeight: FontWeight.w800,
+                    color: tileColor,
+                    letterSpacing: 0.5,
+                  ),
+                ),
+              ),
+            ),
+          ],
+        ),
+      ),
+    );
+  }
+
   // --- End New Widgets ---
 
   @override
@@ -741,13 +838,47 @@ class _EditProfileScreenState extends State<EditProfileScreen>
                               validator: _validateName,
                               isDark: isDark,
                             ),
-                            _buildTextFormCard(
-                              controller: _phoneController,
+                            _buildVerifiedFieldCard(
                               label: 'Phone Number',
                               icon: Icons.phone_outlined,
-                              keyboardType: TextInputType.phone,
-                              validator: _validatePhone,
+                              value: _phoneController.text,
+                              placeholder: 'Add mobile number',
                               isDark: isDark,
+                              onChange: () async {
+                                final newPhone = await Navigator.push<String>(
+                                  context,
+                                  MaterialPageRoute(
+                                    builder: (_) => ChangePhoneScreen(
+                                      currentPhone: _phoneController.text.trim(),
+                                    ),
+                                  ),
+                                );
+                                if (newPhone != null && newPhone.isNotEmpty && mounted) {
+                                  setState(() => _phoneController.text = newPhone);
+                                  _showToastMessage('Mobile number updated to $newPhone');
+                                }
+                              },
+                            ),
+                            _buildVerifiedFieldCard(
+                              label: 'Email Address',
+                              icon: Icons.email_outlined,
+                              value: _emailController.text,
+                              placeholder: 'Add email address',
+                              isDark: isDark,
+                              onChange: () async {
+                                final newEmail = await Navigator.push<String>(
+                                  context,
+                                  MaterialPageRoute(
+                                    builder: (_) => ChangeEmailScreen(
+                                      currentEmail: _emailController.text.trim(),
+                                    ),
+                                  ),
+                                );
+                                if (newEmail != null && newEmail.isNotEmpty && mounted) {
+                                  setState(() => _emailController.text = newEmail);
+                                  _showToastMessage('Email updated to $newEmail');
+                                }
+                              },
                             ),
                             const SizedBox(height: 24),
 
