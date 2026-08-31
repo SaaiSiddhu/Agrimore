@@ -7,17 +7,17 @@
     <style name="LaunchTheme" parent="@android:style/Theme.Light.NoTitleBar">
         <!-- Show splash screen on activity. Automatically removed when Flutter renders first frame -->
         <item name="android:windowBackground">@drawable/launch_background</item>
-        <item name="android:windowFullscreen">false</item>
-        <item name="android:windowDrawsSystemBarBackgrounds">true</item>
-        <item name="android:windowLayoutInDisplayCutoutMode">shortEdges</item>
         <item name="android:statusBarColor">@color/colorPrimary</item>
         <item name="android:navigationBarColor">@color/colorPrimary</item>
         <item name="android:windowLightStatusBar">false</item>
         <item name="android:windowLightNavigationBar">false</item>
         <!-- FIXED: Show preview window immediately for faster perceived startup -->
         <item name="android:windowDisablePreview">false</item>
+        <item name="android:forceDarkAllowed">false</item>
+        <item name="android:windowFullscreen">false</item>
+        <item name="android:windowDrawsSystemBarBackgrounds">false</item>
+        <item name="android:windowLayoutInDisplayCutoutMode">shortEdges</item>
     </style>
-
     <!-- ========================================
          NORMAL THEME (Main App Theme)
          Applied after Flutter initializes
@@ -32,7 +32,6 @@
         <item name="android:enforceNavigationBarContrast">false</item>
         <item name="android:windowDrawsSystemBarBackgrounds">true</item>
     </style>
-
     <!-- ========================================
          RAZORPAY CHECKOUT THEME
          Custom theme for payment gateway
@@ -42,30 +41,25 @@
         <item name="colorPrimary">@color/colorPrimary</item>
         <item name="colorPrimaryDark">@color/colorPrimaryDark</item>
         <item name="colorAccent">@color/colorAccent</item>
-        
         <!-- Background colors -->
         <item name="android:windowBackground">@android:color/white</item>
         <item name="android:colorBackground">@android:color/white</item>
-        
         <!-- Status and navigation bars -->
         <item name="android:statusBarColor">@color/colorPrimary</item>
         <item name="android:navigationBarColor">@android:color/white</item>
         <item name="android:windowLightNavigationBar">true</item>
         <item name="android:windowLightStatusBar">false</item>
-        
         <!-- Window properties -->
         <item name="android:windowFullscreen">false</item>
         <item name="android:windowContentOverlay">@null</item>
         <item name="android:windowActionBar">false</item>
         <item name="windowActionBar">false</item>
         <item name="windowNoTitle">true</item>
-        
         <!-- Material design -->
         <item name="android:windowDrawsSystemBarBackgrounds">true</item>
         <item name="android:windowTranslucentStatus">false</item>
         <item name="android:windowTranslucentNavigation">false</item>
     </style>
-
     <!-- ========================================
          TRANSPARENT ACTIVITY THEME
          For dialogs and overlays
@@ -79,7 +73,6 @@
         <item name="android:backgroundDimEnabled">true</item>
         <item name="android:windowAnimationStyle">@android:style/Animation.Dialog</item>
     </style>
-
     <!-- ========================================
          FULLSCREEN THEME
          For immersive experiences
@@ -92,7 +85,6 @@
         <item name="android:statusBarColor">@android:color/transparent</item>
         <item name="android:navigationBarColor">@android:color/transparent</item>
     </style>
-
     <!-- ========================================
          NOTIFICATION THEME
          For notification activities
@@ -103,7 +95,6 @@
         <item name="android:statusBarColor">@color/colorPrimary</item>
         <item name="android:windowLightStatusBar">false</item>
     </style>
-
     <!-- ========================================
          ADMOB THEME
          For AdMob activities

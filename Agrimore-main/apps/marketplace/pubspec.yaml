@@ -80,11 +80,20 @@ dependencies:
   audioplayers: ^6.0.0
   path_provider: ^2.1.2
 
+  # Location — imported directly by address_bottom_sheet.dart, mobile_home_screen.dart
+  # and home_app_bar.dart, but was previously only resolving transitively (declared
+  # by accident under the flutter_launcher_icons: block below instead of here). Moved
+  # so it's a real, direct dependency rather than depending on some other package
+  # continuing to pull it in.
+  geolocator: ^13.0.2
+  geocoding: ^3.0.0
+
 dev_dependencies:
   flutter_test:
     sdk: flutter
   flutter_lints: ^5.0.0
   flutter_launcher_icons: ^0.14.4
+  flutter_native_splash: ^2.4.4
 
 flutter:
   uses-material-design: true
@@ -108,13 +117,30 @@ flutter:
         - asset: assets/fonts/NotoSans-Regular.ttf
           weight: 400
 
+# Regenerate with: dart run flutter_launcher_icons
+# customer_logo.png is the mark-only brand icon (no text) — matches what the
+# reference Agrimore build ships as App_Icon.png. The previous source here was
+# the full text logo (also used for the in-app splash/hero image), which
+# Android's adaptive-icon masking crops hard: most of the mark and all of the
+# "AgriMore" wordmark got cut away, leaving only a bare wheat+cart glyph on
+# launcher screens. #000000 matches the mark's own baked-in background so
+# there's no visible seam between the foreground artwork and the background.
 flutter_launcher_icons:
   android: true
   ios: true
   image_path: "assets/icons/customer_logo.png"
-  adaptive_icon_background: "#2E7D32"
+  adaptive_icon_background: "#000000"
   adaptive_icon_foreground: "assets/icons/customer_logo.png"
   remove_alpha_ios: true
 
-  geolocator: ^13.0.2
-  geocoding: ^3.0.0
+# Regenerate with: dart run flutter_native_splash:create
+# Previously unconfigured — android/app/src/main/res/drawable/launch_background.xml
+# was a hand-edited placeholder showing the (broken, cropped) launcher icon on a
+# flat colorPrimary green. splash_icon.png is the full logo+text mark on a
+# transparent background, so the black splash color shows through everywhere
+# except the artwork itself — matching the reference build's Splash_Icon.png.
+flutter_native_splash:
+  color: "#000000"
+  image: "assets/icons/splash_icon.png"
+  android: true
+  ios: true
