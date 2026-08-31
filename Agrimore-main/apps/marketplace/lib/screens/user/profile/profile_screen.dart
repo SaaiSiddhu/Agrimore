@@ -480,10 +480,15 @@ class _ProfileScreenState extends State<ProfileScreen> {
 
   Widget _buildQuickActions(bool isDark, WalletProvider walletProvider) {
     return Padding(
-      // Negative top: pulls the row up into the header gradient's fade-out
-      // zone so the cards read as floating across the hero/page boundary
-      // rather than starting fresh below a hard colour line.
-      padding: const EdgeInsets.fromLTRB(16, -34, 16, 16),
+      // A NEGATIVE top inset here previously crashed at runtime —
+      // RenderPadding asserts padding.isNonNegative (shifted_box.dart);
+      // Padding's own constructor has no such check, so `flutter analyze`
+      // and a plain read of the widget tree don't catch it, only running
+      // the screen does. The header gradient already fades all the way to
+      // the exact page background colour by its own bottom edge (see
+      // _buildHeaderSliver), so there is no hard seam to hide with an
+      // overlap in the first place — a small ordinary gap is enough.
+      padding: const EdgeInsets.fromLTRB(16, 8, 16, 16),
       child: Row(
         children: [
           _buildQuickActionCard(
