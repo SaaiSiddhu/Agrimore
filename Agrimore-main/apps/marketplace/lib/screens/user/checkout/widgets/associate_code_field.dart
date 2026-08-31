@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
+import '../../../../services/associate_application_service.dart' as service;
 
 /// Phase 16B, Workstream 1 — the OPTIONAL "Associate Code" input.
 ///
@@ -18,20 +19,24 @@ import 'package:flutter/services.dart';
 /// would push it onto four apps that have no use for it.
 ///
 /// INVARIANTS THIS WIDGET MUST KEEP (locked decisions D2/D3):
-///   * It can NEVER block or fail a purchase. There is no validator, no
-///     `Form`, no error state, and nothing the pay button reads. A customer
-///     with no code reaches payment in exactly the taps they did before this
-///     field existed.
-///   * It NEVER decides whether attribution happens. The server re-resolves
-///     the code independently; an unrecognised code silently yields no
-///     attribution and the order is still created.
-///   * It NEVER shows another associate's code, and never any associate list
-///     — a customer only ever sees what they themselves typed.
+///   * It can NEVER block or fail a purchase. The Apply button below only
+///     ever produces informational feedback ("code applied" / "not
+///     recognised") — it is never a `Form` validator, nothing it shows
+///     disables the pay button, and a customer who never taps Apply (or
+///     never opens this field at all) reaches payment exactly as before.
+///   * It NEVER decides whether attribution happens. `createOrder.ts`
+///     re-resolves the code independently at order time — Apply's
+///     verifyAssociateCode call is advisory UI feedback only, using the same
+///     resolution rules so the checkmark is truthful, but it is not the
+///     thing that actually grants attribution.
+///   * It NEVER shows another associate's code, a name, or any associate
+///     list — a customer only ever sees what they themselves typed, plus a
+///     valid/not-recognised state with no identifying detail in it.
 ///   * It makes no earnings claim, states no figure, and implies no income.
 ///
 /// This widget is used for B2C only. B2B keeps its own separate, REQUIRED
 /// "Employee ID *" field on both screens, unchanged by this phase.
-class AssociateCodeField extends StatelessWidget {
+class AssociateCodeField extends StatefulWidget {
   final TextEditingController controller;
   final bool isDark;
   final Color accentColor;
@@ -53,9 +58,9 @@ class AssociateCodeField extends StatelessWidget {
   static const String hint = 'e.g. RAME07';
 
   static const String longHelper =
-      'Helped by an AgriMore Sales Associate? Enter their code so this order '
-      'is recorded against them. Leave it blank if not — your order and your '
-      'total are the same either way.';
+      'Helped by an AgriMore Sales Associate? Enter their code and tap Apply '
+      'so this order is recorded against them. Leave it blank if not — your '
+      'order and your total are the same either way.';
 
   static const String shortHelper =
       'Optional — records this order against your Sales Associate.';
@@ -88,12 +93,72 @@ class AssociateCodeField extends StatelessWidget {
   ];
 
   @override
+  State<AssociateCodeField> createState() => _AssociateCodeFieldState();
+}
+
+enum _CheckState { idle, checking, valid, notRecognized, checkFailed }
+
+class _AssociateCodeFieldState extends State<AssociateCodeField> {
+  _CheckState _state = _CheckState.idle;
+  String? _lastCheckedCode;
+
+  @override
+  void initState() {
+    super.initState();
+    widget.controller.addListener(_onTextChanged);
+  }
+
+  @override
+  void dispose() {
+    widget.controller.removeListener(_onTextChanged);
+    super.dispose();
+  }
+
+  // A stale "✓ Applied" state left over after the customer edits the code
+  // post-Apply would be actively misleading — drop back to idle the moment
+  // the text no longer matches what was actually checked.
+  void _onTextChanged() {
+    if (widget.controller.text.trim() != _lastCheckedCode &&
+        _state != _CheckState.idle &&
+        _state != _CheckState.checking) {
+      setState(() => _state = _CheckState.idle);
+    }
+  }
+
+  Future<void> _handleApply() async {
+    final code = widget.controller.text.trim();
+    if (code.isEmpty || _state == _CheckState.checking) return;
+
+    FocusScope.of(context).unfocus();
+    HapticFeedback.lightImpact();
+    setState(() => _state = _CheckState.checking);
+
+    try {
+      final valid = await service.verifyAssociateCode(code);
+      if (!mounted) return;
+      _lastCheckedCode = code;
+      setState(() => _state = valid ? _CheckState.valid : _CheckState.notRecognized);
+      HapticFeedback.selectionClick();
+    } catch (_) {
+      // Network/auth hiccup — never presented as "invalid". The order can
+      // still be placed either way; createOrder.ts re-resolves the code
+      // independently regardless of whether this check ever ran.
+      if (!mounted) return;
+      setState(() => _state = _CheckState.checkFailed);
+    }
+  }
+
+  @override
   Widget build(BuildContext context) {
+    final isDark = widget.isDark;
+    final accentColor = widget.accentColor;
+
     final field = TextField(
-      controller: controller,
+      controller: widget.controller,
       textCapitalization: TextCapitalization.characters,
       textInputAction: TextInputAction.done,
-      inputFormatters: inputFormatters,
+      inputFormatters: AssociateCodeField.inputFormatters,
+      onSubmitted: (_) => _handleApply(),
       style: TextStyle(
         fontSize: 14,
         fontWeight: FontWeight.w700,
@@ -101,16 +166,10 @@ class AssociateCodeField extends StatelessWidget {
         color: isDark ? Colors.white : Colors.black87,
       ),
       decoration: InputDecoration(
-        labelText: label,
-        hintText: hint,
-        helperText: dense ? shortHelper : null,
-        helperMaxLines: 2,
-        helperStyle: TextStyle(
-          fontSize: 11,
-          color: isDark ? Colors.grey[500] : Colors.grey[600],
-        ),
-        isDense: dense,
-        prefixIcon: Icon(Icons.badge_outlined, size: dense ? 20 : 22),
+        labelText: AssociateCodeField.label,
+        hintText: AssociateCodeField.hint,
+        isDense: widget.dense,
+        prefixIcon: Icon(Icons.badge_outlined, size: widget.dense ? 20 : 22),
         filled: true,
         fillColor: isDark ? const Color(0xFF252525) : Colors.white,
         border: OutlineInputBorder(
@@ -129,13 +188,49 @@ class AssociateCodeField extends StatelessWidget {
       ),
     );
 
-    if (dense) return field;
+    final applyButton = _buildApplyButton(isDark, accentColor);
+
+    final row = Row(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        Expanded(child: field),
+        const SizedBox(width: 8),
+        applyButton,
+      ],
+    );
+
+    final feedback = _buildFeedback(isDark, accentColor);
+
+    if (widget.dense) {
+      return Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          row,
+          if (feedback != null) ...[
+            const SizedBox(height: 6),
+            feedback,
+          ] else ...[
+            const SizedBox(height: 4),
+            Padding(
+              padding: const EdgeInsets.only(left: 4),
+              child: Text(
+                AssociateCodeField.shortHelper,
+                style: TextStyle(
+                  fontSize: 11,
+                  color: isDark ? Colors.grey[500] : Colors.grey[600],
+                ),
+              ),
+            ),
+          ],
+        ],
+      );
+    }
 
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
         Text(
-          longHelper,
+          AssociateCodeField.longHelper,
           style: TextStyle(
             fontSize: 12,
             height: 1.4,
@@ -143,7 +238,102 @@ class AssociateCodeField extends StatelessWidget {
           ),
         ),
         const SizedBox(height: 12),
-        field,
+        row,
+        if (feedback != null) ...[
+          const SizedBox(height: 10),
+          feedback,
+        ],
+      ],
+    );
+  }
+
+  Widget _buildApplyButton(bool isDark, Color accentColor) {
+    final height = widget.dense ? 46.0 : 52.0;
+    return SizedBox(
+      height: height,
+      child: ElevatedButton(
+        onPressed: _state == _CheckState.checking ? null : _handleApply,
+        style: ElevatedButton.styleFrom(
+          backgroundColor: accentColor,
+          disabledBackgroundColor: accentColor.withOpacity(0.5),
+          foregroundColor: Colors.white,
+          padding: const EdgeInsets.symmetric(horizontal: 16),
+          shape: RoundedRectangleBorder(
+            borderRadius: BorderRadius.circular(10),
+          ),
+          elevation: 0,
+        ),
+        child: _state == _CheckState.checking
+            ? const SizedBox(
+                width: 16,
+                height: 16,
+                child: CircularProgressIndicator(
+                  strokeWidth: 2,
+                  valueColor: AlwaysStoppedAnimation<Color>(Colors.white),
+                ),
+              )
+            : const Text(
+                'Apply',
+                style: TextStyle(fontSize: 13, fontWeight: FontWeight.w800),
+              ),
+      ),
+    );
+  }
+
+  // Purely informational — never rendered as an error, never anything the
+  // pay button reads. "Not recognised" and "couldn't check" are worded to
+  // reassure, not alarm, since the order proceeds identically either way.
+  Widget? _buildFeedback(bool isDark, Color accentColor) {
+    switch (_state) {
+      case _CheckState.valid:
+        return _FeedbackChip(
+          icon: Icons.check_circle_rounded,
+          color: Colors.green.shade600,
+          text: 'Code applied — this order will support your Sales Associate.',
+        );
+      case _CheckState.notRecognized:
+        return _FeedbackChip(
+          icon: Icons.info_outline_rounded,
+          color: isDark ? Colors.grey[400]! : Colors.grey[600]!,
+          text: "Code not recognised — you can still place your order.",
+        );
+      case _CheckState.checkFailed:
+        return _FeedbackChip(
+          icon: Icons.wifi_off_rounded,
+          color: isDark ? Colors.grey[400]! : Colors.grey[600]!,
+          text: "Couldn't check right now — you can still place your order.",
+        );
+      case _CheckState.idle:
+      case _CheckState.checking:
+        return null;
+    }
+  }
+}
+
+class _FeedbackChip extends StatelessWidget {
+  final IconData icon;
+  final Color color;
+  final String text;
+
+  const _FeedbackChip({
+    required this.icon,
+    required this.color,
+    required this.text,
+  });
+
+  @override
+  Widget build(BuildContext context) {
+    return Row(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        Icon(icon, size: 15, color: color),
+        const SizedBox(width: 6),
+        Expanded(
+          child: Text(
+            text,
+            style: TextStyle(fontSize: 11.5, fontWeight: FontWeight.w600, color: color),
+          ),
+        ),
       ],
     );
   }

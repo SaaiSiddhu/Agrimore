@@ -589,13 +589,13 @@ class _MobileCartScreenState extends State<MobileCartScreen>
         children: [
           // Back button — when this is the Cart tab inside MainScreen,
           // onBack switches the tab back to Home; when reached via a real
-          // push (order details, the /cart route, etc.) it just pops.
-          IconButton(
-            icon: Icon(
-              Icons.arrow_back,
-              color: isDark ? Colors.white : Colors.black87,
-            ),
-            onPressed: () {
+          // push (order details, the /cart route, etc.) it just pops. A
+          // tinted card behind the icon rather than Profile/Categories'
+          // literal white circle — this app bar's own background is
+          // already near-white in light mode, so a white-on-white card
+          // would have no visible contrast.
+          GestureDetector(
+            onTap: () {
               HapticFeedback.lightImpact();
               if (widget.onBack != null) {
                 widget.onBack!();
@@ -603,7 +603,28 @@ class _MobileCartScreenState extends State<MobileCartScreen>
                 Navigator.of(context).maybePop();
               }
             },
+            child: Container(
+              width: 36,
+              height: 36,
+              decoration: BoxDecoration(
+                shape: BoxShape.circle,
+                color: isDark ? Colors.white.withOpacity(0.08) : const Color(0xFFF2F2F2),
+                boxShadow: [
+                  BoxShadow(
+                    color: Colors.black.withOpacity(isDark ? 0.3 : 0.06),
+                    blurRadius: 6,
+                    offset: const Offset(0, 2),
+                  ),
+                ],
+              ),
+              child: Icon(
+                Icons.arrow_back_rounded,
+                size: 19,
+                color: isDark ? Colors.white : Colors.black87,
+              ),
+            ),
           ),
+          const SizedBox(width: 12),
           Text(
             'Checkout',
             style: TextStyle(
@@ -613,25 +634,6 @@ class _MobileCartScreenState extends State<MobileCartScreen>
             ),
           ),
           const Spacer(),
-          TextButton.icon(
-            onPressed: () {
-              HapticFeedback.lightImpact();
-              // Share cart functionality
-            },
-            icon: Icon(
-              Icons.shopping_cart_outlined,
-              size: 18,
-              color: isDark ? AppColors.primaryLight : AppColors.primary,
-            ),
-            label: Text(
-              'Share',
-              style: TextStyle(
-                fontSize: 14,
-                fontWeight: FontWeight.w600,
-                color: isDark ? AppColors.primaryLight : AppColors.primary,
-              ),
-            ),
-          ),
         ],
       ),
     );
@@ -1026,11 +1028,17 @@ class _MobileCartScreenState extends State<MobileCartScreen>
             child: GridView.builder(
               shrinkWrap: true,
               physics: const NeverScrollableScrollPhysics(),
+              // 0.54 gave each cell a fixed height that the card's actual
+              // content (image + a 20px top-padding reservation for the
+              // floating ADD button + unit badge + up-to-2-line name +
+              // rating/delivery row + price row) routinely exceeded —
+              // the classic RenderFlex overflow. 0.48 gives real headroom
+              // instead of riding right at the edge of a tight estimate.
               gridDelegate: const SliverGridDelegateWithFixedCrossAxisCount(
                 crossAxisCount: 3,
                 crossAxisSpacing: 6,
                 mainAxisSpacing: 8,
-                childAspectRatio: 0.54,
+                childAspectRatio: 0.48,
               ),
               itemCount: suggestedProducts.length,
               itemBuilder: (context, index) {
@@ -3321,12 +3329,16 @@ class _MobileCartScreenState extends State<MobileCartScreen>
       {
         'name': 'Razorpay',
         'icon': Icons.payment_rounded,
-        'subtitle': 'UPI, Cards, Wallets & More'
+        'subtitle': 'UPI, Cards, Wallets & More',
+        'color': const Color(0xFF3B82F6),
+        'recommended': true,
       },
       {
         'name': 'COD',
         'icon': Icons.local_shipping_rounded,
-        'subtitle': 'Cash on Delivery'
+        'subtitle': 'Cash on Delivery',
+        'color': const Color(0xFFF59E0B),
+        'recommended': false,
       },
     ];
 
@@ -3415,12 +3427,12 @@ class _MobileCartScreenState extends State<MobileCartScreen>
                           width: 44,
                           height: 44,
                           decoration: BoxDecoration(
-                            color: isDark ? Colors.grey[800] : Colors.white,
+                            color: (method['color'] as Color).withValues(alpha: isDark ? 0.2 : 0.12),
                             borderRadius: BorderRadius.circular(10),
                           ),
                           child: Icon(
                             method['icon'] as IconData,
-                            color: accentColor,
+                            color: method['color'] as Color,
                             size: 22,
                           ),
                         ),
@@ -3429,14 +3441,38 @@ class _MobileCartScreenState extends State<MobileCartScreen>
                           child: Column(
                             crossAxisAlignment: CrossAxisAlignment.start,
                             children: [
-                              Text(
-                                method['name'] as String,
-                                style: TextStyle(
-                                  fontSize: 14,
-                                  fontWeight: FontWeight.w700,
-                                  color: isDark ? Colors.white : Colors.black87,
-                                ),
+                              Row(
+                                children: [
+                                  Text(
+                                    method['name'] as String,
+                                    style: TextStyle(
+                                      fontSize: 14,
+                                      fontWeight: FontWeight.w700,
+                                      color: isDark ? Colors.white : Colors.black87,
+                                    ),
+                                  ),
+                                  if (method['recommended'] as bool) ...[
+                                    const SizedBox(width: 6),
+                                    Container(
+                                      padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 1.5),
+                                      decoration: BoxDecoration(
+                                        color: accentColor.withValues(alpha: 0.12),
+                                        borderRadius: BorderRadius.circular(5),
+                                      ),
+                                      child: Text(
+                                        'Recommended',
+                                        style: TextStyle(
+                                          fontSize: 8.5,
+                                          fontWeight: FontWeight.w800,
+                                          color: accentColor,
+                                          letterSpacing: 0.2,
+                                        ),
+                                      ),
+                                    ),
+                                  ],
+                                ],
                               ),
+                              const SizedBox(height: 1),
                               Text(
                                 method['subtitle'] as String,
                                 style: TextStyle(

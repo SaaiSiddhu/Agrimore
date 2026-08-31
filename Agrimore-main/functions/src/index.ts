@@ -73,6 +73,7 @@ export { verifyEmailForProfile } from "./customer/verifyEmailForProfile";
 // why neither reuses its corresponding login-purpose OTP endpoint.
 export { changeEmailAddress } from "./customer/changeEmailAddress";
 export { changePhoneNumber } from "./customer/changePhoneNumber";
+export { verifyAssociateCode } from "./customer/verifyAssociateCode";
 
 // ============================================
 // INVENTORY & STOCK ALERTS
