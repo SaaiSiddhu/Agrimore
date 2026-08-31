@@ -4,7 +4,6 @@ import 'package:provider/provider.dart';
 import 'package:carousel_slider/carousel_slider.dart';
 import 'package:cached_network_image/cached_network_image.dart';
 import 'package:agrimore_ui/agrimore_ui.dart';
-import 'package:agrimore_ui/agrimore_ui.dart';
 import '../../../../providers/banner_provider.dart';
 import '../../../../app/routes.dart';
 import 'package:agrimore_core/agrimore_core.dart';
@@ -42,7 +41,7 @@ class _BannerSliderState extends State<BannerSlider> {
                 return _buildBannerCard(context, banner);
               },
               options: CarouselOptions(
-                height: 240,
+                height: 210,
                 viewportFraction: 1.0, // Full width
                 autoPlay: banners.length > 1,
                 autoPlayInterval: const Duration(seconds: 4),
@@ -59,7 +58,7 @@ class _BannerSliderState extends State<BannerSlider> {
             // Indicators on banner
             if (banners.length > 1)
               Positioned(
-                bottom: 12,
+                bottom: 22,
                 left: 0,
                 right: 0,
                 child: _buildIndicators(banners.length),
@@ -79,20 +78,24 @@ class _BannerSliderState extends State<BannerSlider> {
           AppRoutes.navigateTo(context, banner.targetRoute!);
         }
       },
+      // A floating rounded card with real margin, not a full-bleed rectangle
+      // butting straight into the app bar — that read as an unfinished
+      // placeholder rather than a designed element.
       child: Container(
         width: double.infinity,
+        margin: const EdgeInsets.fromLTRB(14, 12, 14, 4),
         decoration: BoxDecoration(
-          borderRadius: BorderRadius.circular(0), // Edge-to-edge
+          borderRadius: BorderRadius.circular(22),
           boxShadow: [
             BoxShadow(
-              color: color.withValues(alpha: 0.2),
-              blurRadius: 8,
-              offset: const Offset(0, 4),
+              color: color.withValues(alpha: 0.28),
+              blurRadius: 20,
+              offset: const Offset(0, 10),
             ),
           ],
         ),
         child: ClipRRect(
-          borderRadius: BorderRadius.circular(0),
+          borderRadius: BorderRadius.circular(22),
           child: Stack(
             fit: StackFit.expand,
             children: [
@@ -130,37 +133,50 @@ class _BannerSliderState extends State<BannerSlider> {
                 ),
               ),
 
-              // Gradient overlay
+              // Gradient overlay — three stops so text stays legible without
+              // flattening the whole image under a single opacity wash.
               Container(
                 decoration: BoxDecoration(
                   gradient: LinearGradient(
                     colors: [
-                      Colors.black.withOpacity(0.7),
+                      Colors.black.withOpacity(0.78),
+                      Colors.black.withOpacity(0.22),
                       Colors.transparent,
                     ],
+                    stops: const [0.0, 0.45, 0.85],
                     begin: Alignment.bottomCenter,
                     end: Alignment.topCenter,
                   ),
                 ),
               ),
 
+              // A hairline inner border reads as a deliberate glassy edge
+              // rather than a flat cutout.
+              Container(
+                decoration: BoxDecoration(
+                  borderRadius: BorderRadius.circular(22),
+                  border: Border.all(color: Colors.white.withOpacity(0.10)),
+                ),
+              ),
+
               // Text content
               Padding(
-                padding: const EdgeInsets.all(24.0),
+                padding: const EdgeInsets.fromLTRB(20, 20, 20, 22),
                 child: Column(
                   crossAxisAlignment: CrossAxisAlignment.start,
                   mainAxisAlignment: MainAxisAlignment.end,
                   children: [
                     if (banner.iconName.isNotEmpty)
                       Container(
-                        padding: const EdgeInsets.all(10),
+                        padding: const EdgeInsets.all(9),
                         decoration: BoxDecoration(
-                          color: Colors.white.withOpacity(0.25),
+                          color: Colors.white.withOpacity(0.22),
                           borderRadius: BorderRadius.circular(12),
+                          border: Border.all(color: Colors.white.withOpacity(0.3), width: 0.8),
                         ),
                         child: Icon(
                           _getIconData(banner.iconName),
-                          size: 30,
+                          size: 26,
                           color: Colors.white,
                         ),
                       ),
@@ -169,7 +185,8 @@ class _BannerSliderState extends State<BannerSlider> {
                       banner.title,
                       style: AppTextStyles.headlineMedium.copyWith(
                         color: Colors.white,
-                        fontWeight: FontWeight.bold,
+                        fontWeight: FontWeight.w800,
+                        letterSpacing: -0.3,
                         shadows: [
                           Shadow(
                             color: Colors.black.withOpacity(0.5),
@@ -180,11 +197,11 @@ class _BannerSliderState extends State<BannerSlider> {
                       maxLines: 1,
                       overflow: TextOverflow.ellipsis,
                     ),
-                    const SizedBox(height: 6),
+                    const SizedBox(height: 5),
                     Text(
                       banner.subtitle,
                       style: AppTextStyles.bodyMedium.copyWith(
-                        color: Colors.white.withOpacity(0.95),
+                        color: Colors.white.withOpacity(0.92),
                         shadows: [
                           Shadow(
                             color: Colors.black.withOpacity(0.5),

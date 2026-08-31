@@ -18,9 +18,13 @@ import '../../profile/profile_screen.dart';
 import 'address_bottom_sheet.dart';
 
 class HomeAppBar extends StatefulWidget {
-  final bool isCollapsed;
+  // 0.0 = fully expanded (top row + search bar), 1.0 = fully collapsed (only
+  // the pinned search bar). Driven continuously by scroll offset via
+  // _HomeAppBarDelegate in mobile_home_screen.dart, so the top row shrinks
+  // and fades in step with the scroll instead of snapping at a threshold.
+  final double collapseProgress;
 
-  const HomeAppBar({Key? key, this.isCollapsed = false}) : super(key: key);
+  const HomeAppBar({Key? key, this.collapseProgress = 0.0}) : super(key: key);
 
   @override
   State<HomeAppBar> createState() => _HomeAppBarState();
@@ -249,6 +253,11 @@ class _HomeAppBarState extends State<HomeAppBar> {
             ? const [Color(0xFF0D3D2B), Color(0xFF0A2F22)]
             : const [Color(0xFF0D9B5C), Color(0xFF06804A)]);
 
+    // Directly bound to scroll-driven collapseProgress, not an
+    // AnimationController — any implicit duration here would lag a frame
+    // behind the user's finger and feel rubbery instead of 1:1 with the drag.
+    final revealFactor = (1 - widget.collapseProgress).clamp(0.0, 1.0);
+
     return AnimatedContainer(
       duration: const Duration(milliseconds: 350),
       decoration: BoxDecoration(
@@ -263,10 +272,18 @@ class _HomeAppBarState extends State<HomeAppBar> {
         child: Column(
           mainAxisSize: MainAxisSize.min,
           children: [
-            // Top section - Only show when not collapsed
-            if (!widget.isCollapsed) ...[
-              _buildTopRow(isDark, isB2B),
-              const SizedBox(height: 8),
+            if (revealFactor > 0) ...[
+              ClipRect(
+                child: Align(
+                  heightFactor: revealFactor,
+                  alignment: Alignment.topCenter,
+                  child: Opacity(
+                    opacity: revealFactor,
+                    child: _buildTopRow(isDark, isB2B),
+                  ),
+                ),
+              ),
+              SizedBox(height: 8 * revealFactor),
             ],
             // Search bar + B2B toggle - always visible
             _buildSearchBar(isDark, isB2B),

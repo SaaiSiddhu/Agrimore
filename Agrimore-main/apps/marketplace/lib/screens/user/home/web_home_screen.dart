@@ -18,7 +18,6 @@ import 'widgets/categories_grid.dart'; // <-- FIXED
 import 'widgets/bestsellers.dart'; // <-- RENAMED
 import 'widgets/dynamic_category_sections.dart';
 import 'widgets/recently_viewed_widget.dart'; // <-- ADDED FROM MOBILE
-import 'widgets/quick_links_widget.dart'; // <-- ADDED FOR QUICK LINKS
 
 class WebHomeScreen extends StatefulWidget {
   const WebHomeScreen({Key? key}) : super(key: key);
@@ -141,8 +140,6 @@ class _WebHomeScreenState extends State<WebHomeScreen>
                         SizedBox(height: 20),
                         BannerSlider(),
                         SizedBox(height: 20),
-                        QuickLinksWidget(),
-                        SizedBox(height: 30),
                       ],
                     ),
                   ),

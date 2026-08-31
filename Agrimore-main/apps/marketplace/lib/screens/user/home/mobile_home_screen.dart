@@ -23,7 +23,6 @@ import 'widgets/bestsellers.dart';
 import 'widgets/dynamic_category_sections.dart';
 import 'widgets/grocery_kitchen_home_strip.dart';
 import 'widgets/section_banner_carousel.dart';
-import 'widgets/quick_links_widget.dart';
 
 class MobileHomeScreen extends StatefulWidget {
   const MobileHomeScreen({Key? key}) : super(key: key);
@@ -34,14 +33,25 @@ class MobileHomeScreen extends StatefulWidget {
 
 class _MobileHomeScreenState extends State<MobileHomeScreen>
     with TickerProviderStateMixin, WidgetsBindingObserver {
+  // Content-only heights (status bar is added separately wherever these are
+  // used) for HomeAppBar's expanded/collapsed states — kept as named
+  // constants since both the sliver header below and the snackbar
+  // positioning need to agree on them.
+  static const double _kAppBarExpandedContent = 138;
+  static const double _kAppBarCollapsedContent = 60;
+
   late ScrollController _scrollController;
   late AnimationController _fabAnimationController;
   late AnimationController _staggerAnimationController;
 
   bool _showBackToTop = false;
   bool _isRefreshing = false;
-  bool _isAppBarCollapsed = false;
   DateTime? _lastRefreshTime;
+
+  // 0.0..1.0, updated continuously from scroll offset (see _onScroll) so the
+  // app bar shrinks in step with the drag instead of snapping between two
+  // fixed heights at a threshold — that snap was the "hard, not smooth" jump.
+  double _headerCollapseProgress = 0.0;
 
   @override
   void initState() {
@@ -85,11 +95,13 @@ class _MobileHomeScreenState extends State<MobileHomeScreen>
   void _onScroll() {
     final offset = _scrollController.offset;
 
-    // Collapse app bar when scrolled past 50 pixels
-    if (offset > 50 && !_isAppBarCollapsed) {
-      setState(() => _isAppBarCollapsed = true);
-    } else if (offset <= 50 && _isAppBarCollapsed) {
-      setState(() => _isAppBarCollapsed = false);
+    // Continuous 0..1 over the first 90px of scroll, instead of a boolean
+    // flip at a single threshold — the app bar height and HomeAppBar's own
+    // internal shrink/fade (see collapseProgress in home_app_bar.dart) both
+    // read this every frame, so they track the finger 1:1.
+    final headerProgress = (offset / 90).clamp(0.0, 1.0);
+    if (headerProgress != _headerCollapseProgress) {
+      setState(() => _headerCollapseProgress = headerProgress);
     }
 
     // FAB visibility
@@ -193,7 +205,7 @@ class _MobileHomeScreenState extends State<MobileHomeScreen>
         behavior: SnackBarBehavior.floating,
         // This margin positions it correctly below the app bar
         margin: EdgeInsets.only(
-          top: statusBarHeight + (_isAppBarCollapsed ? 100 : 155) + 8.0,
+          top: statusBarHeight + _kAppBarExpandedContent + 8.0,
           left: 16,
           right: 16,
         ),
@@ -234,7 +246,7 @@ class _MobileHomeScreenState extends State<MobileHomeScreen>
         behavior: SnackBarBehavior.floating,
         // This margin positions it correctly below the app bar
         margin: EdgeInsets.only(
-          top: statusBarHeight + (_isAppBarCollapsed ? 100 : 155) + 8.0,
+          top: statusBarHeight + _kAppBarExpandedContent + 8.0,
           left: 16,
           right: 16,
         ),
@@ -330,10 +342,15 @@ class _MobileHomeScreenState extends State<MobileHomeScreen>
           ? const Color(0xFF121212)
           : AppColors.primary.withValues(alpha: 0.05),
       appBar: PreferredSize(
-        // Tuned to HomeAppBar's compact layout (small fonts, 32px icons, no
-        // category chips, no wallet balance label) — see home_app_bar.dart.
-        preferredSize: Size.fromHeight(_isAppBarCollapsed ? 60 : 138),
-        child: HomeAppBar(isCollapsed: _isAppBarCollapsed),
+        // Height interpolates continuously with _headerCollapseProgress
+        // (see _onScroll) instead of jumping between the two constants.
+        preferredSize: Size.fromHeight(
+          Tween<double>(
+            begin: _kAppBarExpandedContent,
+            end: _kAppBarCollapsedContent,
+          ).transform(_headerCollapseProgress),
+        ),
+        child: HomeAppBar(collapseProgress: _headerCollapseProgress),
       ),
       body: Consumer2<ProductProvider, CategoryProvider>(
         builder: (context, productProvider, categoryProvider, child) {
@@ -380,20 +397,7 @@ class _MobileHomeScreenState extends State<MobileHomeScreen>
                 SliverToBoxAdapter(
                   child: _buildAnimatedBoxWrapper(
                     index: 0,
-                    child: Column(
-                      children: const [
-                        BannerSlider(), // No padding for edge-to-edge
-                        SizedBox(height: 0), // No space below banner
-                      ],
-                    ),
-                  ),
-                ),
-
-                // 1.5 Quick Links (Flash sale, Rewards, Wallet, Subs)
-                SliverToBoxAdapter(
-                  child: _buildAnimatedBoxWrapper(
-                    index: 1,
-                    child: const QuickLinksWidget(),
+                    child: const BannerSlider(),
                   ),
                 ),
 
