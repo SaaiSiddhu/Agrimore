@@ -15,6 +15,7 @@ import '../../../providers/theme_provider.dart';
 import '../../../providers/cart_provider.dart';
 import '../../../providers/seller_provider.dart';
 import '../../../providers/market_mode_provider.dart';
+import '../../../providers/wallet_provider.dart';
 
 class ProfileScreen extends StatefulWidget {
   const ProfileScreen({Key? key}) : super(key: key);
@@ -48,7 +49,18 @@ class _ProfileScreenState extends State<ProfileScreen> {
     setState(() => _isCheckingAuth = false);
     _loadUserStats();
     WidgetsBinding.instance.addPostFrameCallback((_) {
-      if (mounted) context.read<SellerProvider>().checkSellerStatus();
+      if (!mounted) return;
+      context.read<SellerProvider>().checkSellerStatus();
+      // Pull the latest users/{uid} doc so name/email/phone/photo shown here
+      // reflect any edit made elsewhere (Edit Profile, phone/email change,
+      // an admin edit) rather than the stale copy cached in AuthProvider
+      // since login.
+      context.read<app_auth.AuthProvider>().refreshUserData();
+      // WalletProvider is only loaded on signup and on the Wallet screen's
+      // own init today, so an existing user who logs in and opens Profile
+      // without ever visiting Wallet would otherwise see a stale/zero
+      // balance on the card below.
+      context.read<WalletProvider>().loadWallet();
     });
   }
 
@@ -95,9 +107,14 @@ class _ProfileScreenState extends State<ProfileScreen> {
     }
   }
 
-  void _navigateTo(String route) {
+  void _navigateTo(String route) async {
     HapticFeedback.lightImpact();
-    Navigator.pushNamed(context, route);
+    await Navigator.pushNamed(context, route);
+    // Re-run the same load used on entry (stats + seller status + a fresh
+    // profile fetch) after returning — e.g. from Edit Profile, or an address
+    // add/delete — so this screen never shows what was true before the trip,
+    // without needing a manual pull-to-refresh.
+    if (mounted) _checkAuthAndLoadData();
   }
 
   Future<void> _logout() async {
@@ -149,7 +166,10 @@ class _ProfileScreenState extends State<ProfileScreen> {
 
                 // Quick Action Cards
                 SliverToBoxAdapter(
-                  child: _buildQuickActions(isDark),
+                  child: Consumer<WalletProvider>(
+                    builder: (context, walletProvider, _) =>
+                        _buildQuickActions(isDark, walletProvider),
+                  ),
                 ),
 
                 // Appearance Toggle
@@ -434,7 +454,7 @@ class _ProfileScreenState extends State<ProfileScreen> {
 
 
 
-  Widget _buildQuickActions(bool isDark) {
+  Widget _buildQuickActions(bool isDark, WalletProvider walletProvider) {
     return Padding(
       padding: const EdgeInsets.all(16),
       child: Row(
@@ -452,6 +472,9 @@ class _ProfileScreenState extends State<ProfileScreen> {
           _buildQuickActionCard(
             icon: Icons.account_balance_wallet_outlined,
             label: 'Wallet',
+            // The live balance, shown right on the profile screen instead of
+            // requiring a trip to the Wallet screen to find out.
+            subtitle: '₹${walletProvider.balance.toStringAsFixed(0)}',
             isDark: isDark,
             onTap: () => _navigateTo(AppRoutes.wallet),
             color: const Color(0xFFFFF3E0),
@@ -475,6 +498,7 @@ class _ProfileScreenState extends State<ProfileScreen> {
     required IconData icon,
     required String label,
     int? count,
+    String? subtitle,
     required bool isDark,
     required VoidCallback onTap,
     required Color color,
@@ -543,6 +567,20 @@ class _ProfileScreenState extends State<ProfileScreen> {
                 ),
                 textAlign: TextAlign.center,
               ),
+              if (subtitle != null) ...[
+                const SizedBox(height: 2),
+                Text(
+                  subtitle,
+                  style: TextStyle(
+                    fontSize: 12,
+                    fontWeight: FontWeight.w800,
+                    color: iconColor,
+                  ),
+                  textAlign: TextAlign.center,
+                  maxLines: 1,
+                  overflow: TextOverflow.ellipsis,
+                ),
+              ],
             ],
           ),
         ),
