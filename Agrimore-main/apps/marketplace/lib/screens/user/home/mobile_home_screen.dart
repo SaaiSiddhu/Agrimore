@@ -330,7 +330,10 @@ class _MobileHomeScreenState extends State<MobileHomeScreen>
           ? const Color(0xFF121212)
           : AppColors.primary.withValues(alpha: 0.05),
       appBar: PreferredSize(
-        preferredSize: Size.fromHeight(_isAppBarCollapsed ? 100 : 170),
+        // Category chips were removed from HomeAppBar (see home_app_bar.dart),
+        // shrinking its collapsed height; the expanded value barely changed
+        // since the taller "30 minutes" text offsets what the chips used to take.
+        preferredSize: Size.fromHeight(_isAppBarCollapsed ? 66 : 170),
         child: HomeAppBar(isCollapsed: _isAppBarCollapsed),
       ),
       body: Consumer2<ProductProvider, CategoryProvider>(

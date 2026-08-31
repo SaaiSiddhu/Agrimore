@@ -10,10 +10,7 @@ import 'package:shared_preferences/shared_preferences.dart';
 import 'dart:convert';
 import '../../../../app/routes.dart';
 import '../../../../providers/theme_provider.dart';
-import '../../../../providers/category_provider.dart';
-import '../../../../providers/shop_entry_provider.dart';
 import '../../../../providers/address_provider.dart';
-import '../../../../providers/cart_provider.dart';
 import '../../../../providers/wallet_provider.dart';
 import '../../../../providers/market_mode_provider.dart';
 import '../../../../providers/auth_provider.dart' as app_auth;
@@ -30,8 +27,6 @@ class HomeAppBar extends StatefulWidget {
 }
 
 class _HomeAppBarState extends State<HomeAppBar> {
-  int _selectedCategoryIndex = 0;
-
   // Auto-location state (fallback only if no saved addresses)
   String _autoLocationText = '';
   bool _isLoadingAutoLocation = true;
@@ -271,14 +266,11 @@ class _HomeAppBarState extends State<HomeAppBar> {
             // Top section - Only show when not collapsed
             if (!widget.isCollapsed) ...[
               _buildTopRow(isDark, isB2B),
-              const SizedBox(height: 6),
+              const SizedBox(height: 12),
             ],
             // Search bar + B2B toggle - always visible
             _buildSearchBar(isDark, isB2B),
-            const SizedBox(height: 6),
-            // Categories - always visible
-            _buildCategoryChips(isDark),
-            const SizedBox(height: 6), // Space below categories
+            const SizedBox(height: 10),
           ],
         ),
       ),
@@ -287,69 +279,38 @@ class _HomeAppBarState extends State<HomeAppBar> {
 
   Widget _buildTopRow(bool isDark, bool isB2B) {
     return Padding(
-      padding: const EdgeInsets.fromLTRB(16, 12, 16, 0),
+      padding: const EdgeInsets.fromLTRB(16, 14, 16, 0),
       child: Row(
+        crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          // Left: Brand + Location
+          // Left: "Agrimore in" / "30 minutes" / address
           Expanded(
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
-                // Brand name with lightning
-                Row(
-                  children: [
-                    Text(
-                      isB2B ? 'Agrimore B2B' : 'Agrimore',
-                      style: const TextStyle(
-                        fontSize: 24,
-                        fontWeight: FontWeight.w900,
-                        color: Colors.white,
-                        letterSpacing: -0.5,
-                      ),
-                    ),
-                    const SizedBox(width: 8),
-                    Container(
-                      padding: const EdgeInsets.symmetric(
-                          horizontal: 8, vertical: 3),
-                      decoration: BoxDecoration(
-                        color: isB2B
-                            ? Colors.white.withOpacity(0.25)
-                            : Colors.amber.withOpacity(0.2),
-                        borderRadius: BorderRadius.circular(6),
-                        border: Border.all(
-                          color: isB2B
-                              ? Colors.white.withOpacity(0.4)
-                              : Colors.amber.withOpacity(0.3),
-                          width: 0.5,
-                        ),
-                      ),
-                      child: Row(
-                        mainAxisSize: MainAxisSize.min,
-                        children: [
-                          Icon(
-                            isB2B ? Icons.local_shipping_rounded : Icons.bolt,
-                            size: 14,
-                            color: isB2B ? Colors.white : Colors.amber[300],
-                          ),
-                          const SizedBox(width: 3),
-                          Text(
-                            isB2B ? 'Bulk Freight' : '30 min',
-                            style: TextStyle(
-                              fontSize: 11,
-                              fontWeight: FontWeight.w700,
-                              color: isB2B ? Colors.white : Colors.amber[100],
-                            ),
-                          ),
-                        ],
-                      ),
-                    ),
-                  ],
+                Text(
+                  isB2B ? 'Agrimore B2B in' : 'Agrimore in',
+                  style: TextStyle(
+                    fontSize: 13,
+                    fontWeight: FontWeight.w700,
+                    color: Colors.white.withOpacity(0.85),
+                  ),
                 ),
                 const SizedBox(height: 2),
+                Text(
+                  isB2B ? 'Bulk Freight' : '30 minutes',
+                  style: const TextStyle(
+                    fontSize: 26,
+                    fontWeight: FontWeight.w900,
+                    color: Colors.white,
+                    letterSpacing: -0.5,
+                    height: 1.0,
+                  ),
+                ),
+                const SizedBox(height: 8),
                 // Location - Prioritizes saved address, falls back to auto-detected
                 Consumer<AddressProvider>(
                   builder: (context, addressProvider, _) {
-                    // Determine what to display
                     final hasSavedAddress =
                         addressProvider.addresses.isNotEmpty;
                     final defaultAddress = hasSavedAddress
@@ -360,117 +321,70 @@ class _HomeAppBarState extends State<HomeAppBar> {
                         : null;
 
                     // Priority: 1. Saved/Selected address, 2. Auto-detected, 3. Fallback
-                    String displayLocation;
-                    IconData locationIcon;
-                    Color iconColor;
-                    String? addressLabel;
+                    String label;
+                    String addressText;
 
                     if (hasSavedAddress && defaultAddress != null) {
-                      // Show saved address - House, Road, City, State, Pincode
-                      final parts = <String>[];
-                      if (defaultAddress.addressLine1.isNotEmpty)
-                        parts.add(defaultAddress.addressLine1);
-                      if (defaultAddress.addressLine2.isNotEmpty)
-                        parts.add(defaultAddress.addressLine2);
-                      if (defaultAddress.city.isNotEmpty)
-                        parts.add(defaultAddress.city);
-                      if (defaultAddress.state.isNotEmpty)
-                        parts.add(defaultAddress.state);
-                      if (defaultAddress.zipcode.isNotEmpty)
-                        parts.add(defaultAddress.zipcode);
-                      displayLocation = parts.isNotEmpty
+                      final rawLabel = defaultAddress.addressType?.trim() ?? '';
+                      label = rawLabel.isNotEmpty ? rawLabel.toUpperCase() : 'SAVED';
+                      final parts = <String>[
+                        if (defaultAddress.addressLine1.isNotEmpty)
+                          defaultAddress.addressLine1,
+                        if (defaultAddress.addressLine2.isNotEmpty)
+                          defaultAddress.addressLine2,
+                        if (defaultAddress.city.isNotEmpty) defaultAddress.city,
+                      ];
+                      addressText = parts.isNotEmpty
                           ? parts.join(', ')
                           : defaultAddress.fullAddress;
-                      locationIcon = Icons.home_rounded;
-                      iconColor = Colors.greenAccent;
-                      addressLabel = defaultAddress.addressType?.toUpperCase();
                     } else if (_autoLocationText.isNotEmpty) {
-                      // Show auto-detected location
-                      displayLocation = _autoLocationText;
-                      locationIcon = Icons.my_location;
-                      iconColor = Colors.cyanAccent;
-                      addressLabel = null;
+                      label = 'CURRENT';
+                      addressText = _autoLocationText;
                     } else if (_isLoadingAutoLocation) {
-                      // Still loading
-                      displayLocation = 'Detecting location...';
-                      locationIcon = Icons.location_searching;
-                      iconColor = Colors.white70;
-                      addressLabel = null;
+                      label = '';
+                      addressText = 'Detecting location...';
                     } else {
-                      // Fallback
-                      displayLocation = 'Set delivery location';
-                      locationIcon = Icons.add_location_alt;
-                      iconColor = Colors.white70;
-                      addressLabel = null;
+                      label = '';
+                      addressText = 'Set delivery location';
                     }
-                    // Clickable address row (plain text style)
+
                     return GestureDetector(
                       onTap: () => AddressBottomSheet.show(context),
                       child: Row(
                         children: [
-                          // Address Type Badge or Icon
-                          if (hasSavedAddress && addressLabel != null) ...[
-                            Container(
-                              padding: const EdgeInsets.symmetric(
-                                  horizontal: 6, vertical: 3),
-                              decoration: BoxDecoration(
-                                color: Colors.white.withOpacity(0.2),
-                                borderRadius: BorderRadius.circular(6),
-                              ),
-                              child: Row(
-                                mainAxisSize: MainAxisSize.min,
+                          Flexible(
+                            child: RichText(
+                              maxLines: 1,
+                              overflow: TextOverflow.ellipsis,
+                              text: TextSpan(
                                 children: [
-                                  Icon(locationIcon,
-                                      size: 12, color: iconColor),
-                                  const SizedBox(width: 4),
-                                  Text(
-                                    addressLabel,
-                                    style: const TextStyle(
-                                      fontSize: 9,
-                                      fontWeight: FontWeight.w700,
-                                      color: Colors.white,
-                                      letterSpacing: 0.3,
+                                  if (label.isNotEmpty)
+                                    TextSpan(
+                                      text: '$label - ',
+                                      style: const TextStyle(
+                                        fontSize: 12.5,
+                                        fontWeight: FontWeight.w800,
+                                        color: Colors.white,
+                                      ),
+                                    ),
+                                  TextSpan(
+                                    text: addressText,
+                                    style: TextStyle(
+                                      fontSize: 12.5,
+                                      fontWeight: FontWeight.w500,
+                                      color: Colors.white.withOpacity(0.85),
                                     ),
                                   ),
                                 ],
                               ),
                             ),
-                            const SizedBox(width: 6),
-                          ] else ...[
-                            if (_isLoadingAutoLocation && !hasSavedAddress)
-                              SizedBox(
-                                width: 10,
-                                height: 10,
-                                child: CircularProgressIndicator(
-                                  strokeWidth: 1.5,
-                                  valueColor:
-                                      AlwaysStoppedAnimation(Colors.white70),
-                                ),
-                              )
-                            else
-                              Icon(locationIcon, size: 12, color: iconColor),
-                            const SizedBox(width: 4),
-                          ],
-                          // Address Text
-                          Flexible(
-                            child: Text(
-                              displayLocation,
-                              style: TextStyle(
-                                fontSize: 11,
-                                color: hasSavedAddress
-                                    ? Colors.white
-                                    : Colors.white70,
-                                fontWeight: hasSavedAddress
-                                    ? FontWeight.w500
-                                    : FontWeight.normal,
-                              ),
-                              maxLines: 1,
-                              overflow: TextOverflow.ellipsis,
-                            ),
                           ),
                           const SizedBox(width: 2),
-                          Icon(Icons.keyboard_arrow_down,
-                              size: 14, color: Colors.white70),
+                          Icon(
+                            Icons.keyboard_arrow_down_rounded,
+                            size: 16,
+                            color: Colors.white.withOpacity(0.85),
+                          ),
                         ],
                       ),
                     );
@@ -479,30 +393,71 @@ class _HomeAppBarState extends State<HomeAppBar> {
               ],
             ),
           ),
+          const SizedBox(width: 12),
           // Right: Wallet + Profile avatar
           Row(
             mainAxisSize: MainAxisSize.min,
             children: [
-              Consumer<WalletProvider>(
-                builder: (context, walletProvider, _) {
-                  final balance = walletProvider.balance;
-                  final displayBalance = balance >= 1000
-                      ? '₹${(balance / 1000).toStringAsFixed(1)}k'
-                      : '₹${balance.toStringAsFixed(0)}';
-                  return _buildIconBtn(
-                    Icons.account_balance_wallet_outlined,
-                    displayBalance,
-                    isDark,
-                    onTap: () => Navigator.pushNamed(context, AppRoutes.wallet),
-                  );
-                },
-              ),
+              _buildWalletIconBtn(isDark),
               const SizedBox(width: 10),
               _buildProfileAvatar(isDark, isB2B),
             ],
           ),
         ],
       ),
+    );
+  }
+
+  // Circular icon + tiny balance badge underneath — mirrors the profile
+  // avatar's shape so the two sit as a matched pair at the top-right.
+  Widget _buildWalletIconBtn(bool isDark) {
+    return Consumer<WalletProvider>(
+      builder: (context, walletProvider, _) {
+        final balance = walletProvider.balance;
+        final displayBalance = balance >= 1000
+            ? '₹${(balance / 1000).toStringAsFixed(1)}k'
+            : '₹${balance.toStringAsFixed(0)}';
+        return GestureDetector(
+          onTap: () {
+            HapticFeedback.lightImpact();
+            Navigator.pushNamed(context, AppRoutes.wallet);
+          },
+          child: Column(
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              Container(
+                width: 36,
+                height: 36,
+                decoration: BoxDecoration(
+                  shape: BoxShape.circle,
+                  color: Colors.white,
+                  boxShadow: [
+                    BoxShadow(
+                      color: Colors.black.withOpacity(0.15),
+                      blurRadius: 6,
+                      offset: const Offset(0, 2),
+                    ),
+                  ],
+                ),
+                child: Icon(
+                  Icons.account_balance_wallet_rounded,
+                  size: 18,
+                  color: isDark ? AppColors.primaryLight : AppColors.primary,
+                ),
+              ),
+              const SizedBox(height: 2),
+              Text(
+                displayBalance,
+                style: const TextStyle(
+                  fontSize: 10,
+                  fontWeight: FontWeight.w800,
+                  color: Colors.white,
+                ),
+              ),
+            ],
+          ),
+        );
+      },
     );
   }
 
@@ -571,37 +526,6 @@ class _HomeAppBarState extends State<HomeAppBar> {
           ),
         );
       },
-    );
-  }
-
-  Widget _buildIconBtn(IconData icon, String? badge, bool isDark,
-      {VoidCallback? onTap}) {
-    return GestureDetector(
-      onTap: () {
-        HapticFeedback.lightImpact();
-        onTap?.call();
-      },
-      child: Container(
-        padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 6),
-        decoration: BoxDecoration(
-          color: Colors.white.withOpacity(0.15),
-          borderRadius: BorderRadius.circular(10),
-        ),
-        child: Row(
-          mainAxisSize: MainAxisSize.min,
-          children: [
-            Icon(icon, size: 18, color: Colors.white),
-            if (badge != null) ...[
-              const SizedBox(width: 4),
-              Text(badge,
-                  style: TextStyle(
-                      fontSize: 11,
-                      fontWeight: FontWeight.w600,
-                      color: Colors.white)),
-            ],
-          ],
-        ),
-      ),
     );
   }
 
@@ -748,113 +672,4 @@ class _HomeAppBarState extends State<HomeAppBar> {
     );
   }
 
-  Widget _buildCategoryChips(bool isDark) {
-    return Consumer<CategoryProvider>(
-      builder: (context, categoryProvider, _) {
-        final categories = categoryProvider.categories
-            .where((c) =>
-                c.isActive &&
-                (c.parentId == null || c.parentId!.trim().isEmpty))
-            .toList()
-          ..sort((a, b) => a.displayOrder.compareTo(b.displayOrder));
-
-        final allItems = [
-          {'name': 'All', 'icon': Icons.apps},
-          ...categories.map((c) => {'name': c.name, 'icon': _getIcon(c.name)}),
-        ];
-
-        return SizedBox(
-          height: 34,
-          child: ListView.builder(
-            scrollDirection: Axis.horizontal,
-            padding: const EdgeInsets.symmetric(horizontal: 12),
-            itemCount: allItems.length,
-            itemBuilder: (context, index) {
-              final item = allItems[index];
-              final isSelected = _selectedCategoryIndex == index;
-
-              return GestureDetector(
-                onTap: () {
-                  HapticFeedback.lightImpact();
-                  setState(() => _selectedCategoryIndex = index);
-                  final shopEntry =
-                      Provider.of<ShopEntryProvider>(context, listen: false);
-                  if (index == 0) {
-                    shopEntry.clearCategoryFilter();
-                    shopEntry.openShopWithCategory();
-                  } else {
-                    final cat = categories[index - 1];
-                    shopEntry.openShopWithCategory(
-                      categoryId: cat.id,
-                      categoryName: cat.name,
-                    );
-                  }
-                },
-                child: Container(
-                  margin: const EdgeInsets.symmetric(horizontal: 4),
-                  padding:
-                      const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
-                  decoration: BoxDecoration(
-                    color: isSelected
-                        ? Colors.white
-                        : Colors.white.withOpacity(0.15),
-                    borderRadius: BorderRadius.circular(20),
-                  ),
-                  child: Row(
-                    mainAxisSize: MainAxisSize.min,
-                    children: [
-                      Icon(
-                        item['icon'] as IconData,
-                        size: 14,
-                        color: isSelected
-                            ? (isDark
-                                ? AppColors.primaryLight
-                                : AppColors.primary)
-                            : Colors.white,
-                      ),
-                      const SizedBox(width: 4),
-                      Text(
-                        item['name'] as String,
-                        style: TextStyle(
-                          fontSize: 11,
-                          fontWeight:
-                              isSelected ? FontWeight.w600 : FontWeight.w500,
-                          color: isSelected
-                              ? (isDark
-                                  ? AppColors.primaryLight
-                                  : AppColors.primary)
-                              : Colors.white,
-                        ),
-                      ),
-                    ],
-                  ),
-                ),
-              );
-            },
-          ),
-        );
-      },
-    );
-  }
-
-  IconData _getIcon(String name) {
-    final n = name.toLowerCase();
-    if (n.contains('bath') || n.contains('wash')) return Icons.soap;
-    if (n.contains('biscuit') || n.contains('cookie')) return Icons.cookie;
-    if (n.contains('chip') || n.contains('namkeen')) return Icons.fastfood;
-    if (n.contains('chocolate') || n.contains('candy')) return Icons.cake;
-    if (n.contains('detergent') || n.contains('clean'))
-      return Icons.cleaning_services;
-    if (n.contains('oil')) return Icons.water_drop;
-    if (n.contains('hair')) return Icons.face;
-    if (n.contains('sweet')) return Icons.icecream;
-    if (n.contains('masala') || n.contains('spice'))
-      return Icons.local_fire_department;
-    if (n.contains('milk') || n.contains('dairy')) return Icons.egg;
-    if (n.contains('noodle') || n.contains('pasta')) return Icons.ramen_dining;
-    if (n.contains('oral') || n.contains('tooth')) return Icons.auto_fix_high;
-    if (n.contains('salt') || n.contains('sugar')) return Icons.grain;
-    if (n.contains('tea') || n.contains('coffee')) return Icons.coffee;
-    return Icons.category;
-  }
 }

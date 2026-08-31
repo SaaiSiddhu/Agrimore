@@ -49,10 +49,32 @@ class _ProfileScreenState extends State<ProfileScreen> {
   int _addressesCount = 0;
   bool _isLoadingStats = true;
 
+  // Drives the collapsed-header "Profile" label: invisible while the hero
+  // (avatar/name) is expanded, fades in next to the back button only once
+  // scrolled far enough that the hero itself has scrolled out of view — so
+  // there's never a moment with both the hero name AND this label showing.
+  final ScrollController _scrollController = ScrollController();
+  double _headerCollapse = 0.0;
+
   @override
   void initState() {
     super.initState();
+    _scrollController.addListener(_onScroll);
     _checkAuthAndLoadData();
+  }
+
+  void _onScroll() {
+    final progress = (_scrollController.offset / 150).clamp(0.0, 1.0);
+    if (progress != _headerCollapse) {
+      setState(() => _headerCollapse = progress);
+    }
+  }
+
+  @override
+  void dispose() {
+    _scrollController.removeListener(_onScroll);
+    _scrollController.dispose();
+    super.dispose();
   }
 
   Future<void> _checkAuthAndLoadData() async {
@@ -177,9 +199,10 @@ class _ProfileScreenState extends State<ProfileScreen> {
           final user = authProvider.currentUser;
 
           return CustomScrollView(
+            controller: _scrollController,
             physics: const ClampingScrollPhysics(),
             slivers: [
-              _buildHeaderSliver(user, isDark),
+              _buildHeaderSliver(user, isDark, _headerCollapse),
 
               // Quick Action Cards — pulled up to float over the header
               // gradient's fade zone (see _buildHeaderSliver), so there is
@@ -353,7 +376,7 @@ class _ProfileScreenState extends State<ProfileScreen> {
   // title text takes its place; a floating back arrow over whatever is
   // currently under it is all the top bar needs once the page has its own
   // section headers doing the labelling.
-  Widget _buildHeaderSliver(dynamic user, bool isDark) {
+  Widget _buildHeaderSliver(dynamic user, bool isDark, double headerCollapse) {
     final pageBackground = isDark ? const Color(0xFF121212) : const Color(0xFFF5F5F5);
     final heroDark = isDark ? const Color(0xFF14251B) : const Color(0xFF1B5E20);
     final heroLight = isDark ? const Color(0xFF1A1A2E) : const Color(0xFF2E7D32);
@@ -374,6 +397,23 @@ class _ProfileScreenState extends State<ProfileScreen> {
       leading: Padding(
         padding: const EdgeInsets.all(8),
         child: _buildBackButton(isDark),
+      ),
+      centerTitle: false,
+      titleSpacing: 4,
+      // Only the collapsed toolbar strip is ever visible here (the hero's
+      // name/avatar live in flexibleSpace's background below) — opacity is
+      // driven by scroll offset so it's invisible while the hero shows and
+      // fades in once the user has scrolled past it.
+      title: Opacity(
+        opacity: headerCollapse,
+        child: Text(
+          'Profile',
+          style: TextStyle(
+            color: isDark ? Colors.white : Colors.black87,
+            fontSize: 18,
+            fontWeight: FontWeight.w700,
+          ),
+        ),
       ),
       flexibleSpace: FlexibleSpaceBar(
         background: Container(
