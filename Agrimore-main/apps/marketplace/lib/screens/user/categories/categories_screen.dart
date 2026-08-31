@@ -169,22 +169,41 @@ class _CategoriesScreenState extends State<CategoriesScreen>
     );
   }
 
+  // Same hero gradient as profile_screen.dart's header, and the same
+  // white-circular-card treatment for its back button — brings this app
+  // bar's icon language in line with Profile's and the home app bar's
+  // wallet/profile buttons instead of bare icons on a flat colour fill.
   PreferredSizeWidget _buildAppBar(bool isDark, Color accentColor) {
+    final heroDark = isDark ? const Color(0xFF14251B) : const Color(0xFF1B5E20);
+    final heroLight = isDark ? const Color(0xFF1A1A2E) : const Color(0xFF2E7D32);
+
     return AppBar(
-      backgroundColor: isDark ? const Color(0xFF1A1A1A) : accentColor,
+      backgroundColor: Colors.transparent,
+      flexibleSpace: Container(
+        decoration: BoxDecoration(
+          gradient: LinearGradient(
+            begin: Alignment.topLeft,
+            end: Alignment.bottomRight,
+            colors: [heroDark, heroLight],
+          ),
+        ),
+      ),
       elevation: 0,
       automaticallyImplyLeading: false,
-      toolbarHeight: 52,
-      leading: IconButton(
-        icon: const Icon(Icons.arrow_back_rounded, color: Colors.white),
-        onPressed: () {
-          HapticFeedback.lightImpact();
-          if (widget.onBack != null) {
-            widget.onBack!();
-          } else {
-            Navigator.of(context).maybePop();
-          }
-        },
+      toolbarHeight: 56,
+      titleSpacing: 4,
+      leading: Padding(
+        padding: const EdgeInsets.all(10),
+        child: _buildCardIconButton(
+          icon: Icons.arrow_back_rounded,
+          onTap: () {
+            if (widget.onBack != null) {
+              widget.onBack!();
+            } else {
+              Navigator.of(context).maybePop();
+            }
+          },
+        ),
       ),
       title: AnimatedSwitcher(
         duration: const Duration(milliseconds: 200),
@@ -194,53 +213,94 @@ class _CategoriesScreenState extends State<CategoriesScreen>
                 'Categories',
                 style: TextStyle(
                   color: Colors.white,
-                  fontWeight: FontWeight.w700,
-                  fontSize: 17,
+                  fontWeight: FontWeight.w800,
+                  fontSize: 18,
                   letterSpacing: -0.3,
                 ),
               ),
       ),
       actions: [
-        IconButton(
-          icon: Icon(
-            _isSearching ? Icons.close_rounded : Icons.search_rounded,
-            color: Colors.white,
-            size: 22,
+        Padding(
+          padding: const EdgeInsets.symmetric(vertical: 10),
+          child: _buildCardIconButton(
+            icon: _isSearching ? Icons.close_rounded : Icons.search_rounded,
+            onTap: _toggleSearch,
           ),
-          onPressed: _toggleSearch,
         ),
         if (!_isSearching)
-          Consumer<CartProvider>(
-            builder: (context, cart, _) => Stack(
-              children: [
-                IconButton(
-                  icon: const Icon(Icons.shopping_bag_outlined,
-                      color: Colors.white, size: 22),
-                  onPressed: () => Navigator.pushNamed(context, AppRoutes.cart),
-                ),
-                if (cart.itemCount > 0)
-                  Positioned(
-                    right: 6,
-                    top: 6,
-                    child: Container(
-                      padding: const EdgeInsets.all(4),
-                      decoration: BoxDecoration(
-                        color: Colors.redAccent,
-                        shape: BoxShape.circle,
-                      ),
-                      child: Text(
-                        '${cart.itemCount}',
-                        style: const TextStyle(
-                            color: Colors.white,
-                            fontSize: 9,
-                            fontWeight: FontWeight.w700),
-                      ),
-                    ),
-                  ),
-              ],
+          Padding(
+            padding: const EdgeInsets.fromLTRB(8, 10, 16, 10),
+            child: Consumer<CartProvider>(
+              builder: (context, cart, _) => _buildCardIconButton(
+                icon: Icons.shopping_bag_outlined,
+                onTap: () => Navigator.pushNamed(context, AppRoutes.cart),
+                badge: cart.itemCount > 0 ? cart.itemCount : null,
+              ),
             ),
           ),
       ],
+    );
+  }
+
+  // A 36x36 white circular card — exactly profile_screen.dart's
+  // _buildBackButton treatment, reused here for every app bar icon so the
+  // toolbar reads as one consistent set of buttons, not bare icons on a
+  // colour fill.
+  Widget _buildCardIconButton({
+    required IconData icon,
+    required VoidCallback onTap,
+    int? badge,
+  }) {
+    return GestureDetector(
+      onTap: () {
+        HapticFeedback.lightImpact();
+        onTap();
+      },
+      child: Stack(
+        clipBehavior: Clip.none,
+        children: [
+          Container(
+            width: 36,
+            height: 36,
+            decoration: BoxDecoration(
+              shape: BoxShape.circle,
+              color: Colors.white.withOpacity(0.92),
+              boxShadow: [
+                BoxShadow(
+                  color: Colors.black.withOpacity(0.15),
+                  blurRadius: 6,
+                  offset: const Offset(0, 2),
+                ),
+              ],
+            ),
+            child: Icon(icon, size: 19, color: Colors.black87),
+          ),
+          if (badge != null)
+            Positioned(
+              right: -2,
+              top: -2,
+              child: Container(
+                padding: const EdgeInsets.all(3.5),
+                decoration: BoxDecoration(
+                  color: Colors.redAccent,
+                  shape: BoxShape.circle,
+                  border: Border.all(color: Colors.white, width: 1.2),
+                ),
+                constraints: const BoxConstraints(minWidth: 16, minHeight: 16),
+                child: Text(
+                  badge > 9 ? '9+' : '$badge',
+                  textAlign: TextAlign.center,
+                  style: const TextStyle(
+                    color: Colors.white,
+                    fontSize: 8.5,
+                    fontWeight: FontWeight.w800,
+                    height: 1.0,
+                  ),
+                ),
+              ),
+            ),
+        ],
+      ),
     );
   }
 
@@ -390,7 +450,7 @@ class _CategoriesScreenState extends State<CategoriesScreen>
             sliver: SliverGrid(
               gridDelegate: const SliverGridDelegateWithFixedCrossAxisCount(
                 crossAxisCount: 3,
-                mainAxisExtent: 230,
+                mainAxisExtent: 195,
                 crossAxisSpacing: 6,
                 mainAxisSpacing: 8,
               ),
@@ -422,7 +482,7 @@ class _CategoriesScreenState extends State<CategoriesScreen>
         return SliverGrid(
           gridDelegate: const SliverGridDelegateWithFixedCrossAxisCount(
             crossAxisCount: 3,
-            mainAxisExtent: 230,
+            mainAxisExtent: 195,
             crossAxisSpacing: 6,
             mainAxisSpacing: 8,
           ),
@@ -544,7 +604,7 @@ class _CategoriesScreenState extends State<CategoriesScreen>
                       gridDelegate:
                           const SliverGridDelegateWithFixedCrossAxisCount(
                         crossAxisCount: 3,
-                        mainAxisExtent: 230,
+                        mainAxisExtent: 195,
                         crossAxisSpacing: 6,
                         mainAxisSpacing: 8,
                       ),
@@ -708,34 +768,8 @@ class _EnhancedSidebarItem extends StatefulWidget {
   State<_EnhancedSidebarItem> createState() => _EnhancedSidebarItemState();
 }
 
-class _EnhancedSidebarItemState extends State<_EnhancedSidebarItem>
-    with SingleTickerProviderStateMixin {
-  late AnimationController _controller;
+class _EnhancedSidebarItemState extends State<_EnhancedSidebarItem> {
   bool _isPressed = false;
-
-  @override
-  void initState() {
-    super.initState();
-    _controller = AnimationController(
-      vsync: this,
-      duration: const Duration(milliseconds: 200),
-    );
-    if (widget.isSelected) _controller.forward();
-  }
-
-  @override
-  void didUpdateWidget(covariant _EnhancedSidebarItem oldWidget) {
-    super.didUpdateWidget(oldWidget);
-    if (widget.isSelected != oldWidget.isSelected) {
-      widget.isSelected ? _controller.forward() : _controller.reverse();
-    }
-  }
-
-  @override
-  void dispose() {
-    _controller.dispose();
-    super.dispose();
-  }
 
   @override
   Widget build(BuildContext context) {
@@ -747,104 +781,97 @@ class _EnhancedSidebarItemState extends State<_EnhancedSidebarItem>
       child: AnimatedScale(
         scale: _isPressed ? 0.95 : 1.0,
         duration: const Duration(milliseconds: 100),
-        child: AnimatedBuilder(
-          animation: _controller,
-          builder: (context, child) {
-            return Container(
-              margin: const EdgeInsets.symmetric(horizontal: 6, vertical: 3),
-              child: Stack(
-                children: [
-                  // Selection indicator bar
-                  Positioned(
-                    left: 0,
-                    top: 8,
-                    bottom: 8,
-                    child: AnimatedContainer(
-                      duration: const Duration(milliseconds: 200),
-                      width: widget.isSelected ? 3 : 0,
-                      decoration: BoxDecoration(
-                        gradient: LinearGradient(
+        child: Row(
+          children: [
+            // A flush accent bar against the sidebar's true left edge reads
+            // as "attached to the rail," unlike the old version which
+            // floated inside the item's own margin with a visible gap
+            // before it reached the edge.
+            AnimatedContainer(
+              duration: const Duration(milliseconds: 200),
+              curve: Curves.easeOutCubic,
+              width: 3,
+              height: 34,
+              margin: const EdgeInsets.only(right: 3),
+              decoration: BoxDecoration(
+                color: widget.isSelected ? widget.accentColor : Colors.transparent,
+                borderRadius: const BorderRadius.horizontal(right: Radius.circular(3)),
+              ),
+            ),
+            Expanded(
+              child: AnimatedContainer(
+                duration: const Duration(milliseconds: 200),
+                curve: Curves.easeOutCubic,
+                margin: const EdgeInsets.symmetric(horizontal: 4, vertical: 3),
+                padding: const EdgeInsets.symmetric(vertical: 9, horizontal: 4),
+                decoration: BoxDecoration(
+                  gradient: widget.isSelected
+                      ? LinearGradient(
                           begin: Alignment.topCenter,
                           end: Alignment.bottomCenter,
                           colors: [
-                            widget.accentColor,
-                            widget.accentColor.withOpacity(0.6),
+                            widget.accentColor.withOpacity(widget.isDark ? 0.22 : 0.13),
+                            widget.accentColor.withOpacity(widget.isDark ? 0.12 : 0.06),
                           ],
+                        )
+                      : null,
+                  border: widget.isSelected
+                      ? Border.all(color: widget.accentColor.withOpacity(0.25), width: 1)
+                      : Border.all(color: Colors.transparent, width: 1),
+                  borderRadius: BorderRadius.circular(14),
+                ),
+                child: Column(
+                  mainAxisSize: MainAxisSize.min,
+                  children: [
+                    // Category icon with a coloured ring when selected
+                    AnimatedContainer(
+                      duration: const Duration(milliseconds: 200),
+                      width: 46,
+                      height: 46,
+                      decoration: BoxDecoration(
+                        color: widget.isSelected
+                            ? widget.accentColor.withOpacity(widget.isDark ? 0.22 : 0.12)
+                            : (widget.isDark ? const Color(0xFF2A2A2A) : const Color(0xFFF3F3F3)),
+                        shape: BoxShape.circle,
+                        border: widget.isSelected
+                            ? Border.all(color: widget.accentColor, width: 2)
+                            : Border.all(color: Colors.transparent, width: 2),
+                        boxShadow: widget.isSelected
+                            ? [
+                                BoxShadow(
+                                  color: widget.accentColor.withOpacity(0.3),
+                                  blurRadius: 10,
+                                  spreadRadius: 0.5,
+                                ),
+                              ]
+                            : null,
+                      ),
+                      child: _buildCategoryIcon(),
+                    ),
+                    const SizedBox(height: 6),
+                    // Category name
+                    SizedBox(
+                      height: 24,
+                      child: Text(
+                        widget.category.name,
+                        textAlign: TextAlign.center,
+                        maxLines: 2,
+                        overflow: TextOverflow.ellipsis,
+                        style: TextStyle(
+                          fontSize: 9.5,
+                          fontWeight: widget.isSelected ? FontWeight.w800 : FontWeight.w500,
+                          color: widget.isSelected
+                              ? widget.accentColor
+                              : (widget.isDark ? Colors.grey[400] : Colors.grey[700]),
+                          height: 1.15,
                         ),
-                        borderRadius: BorderRadius.circular(2),
                       ),
                     ),
-                  ),
-                  // Main content
-                  Container(
-                    padding:
-                        const EdgeInsets.symmetric(vertical: 8, horizontal: 4),
-                    decoration: BoxDecoration(
-                      color: widget.isSelected
-                          ? (widget.isDark
-                              ? widget.accentColor.withOpacity(0.12)
-                              : widget.accentColor.withOpacity(0.08))
-                          : Colors.transparent,
-                      borderRadius: BorderRadius.circular(10),
-                    ),
-                    child: Column(
-                      mainAxisSize: MainAxisSize.min,
-                      children: [
-                        // Category icon with glow effect
-                        AnimatedContainer(
-                          duration: const Duration(milliseconds: 200),
-                          width: 44,
-                          height: 44,
-                          decoration: BoxDecoration(
-                            color: widget.isDark
-                                ? const Color(0xFF303030)
-                                : (widget.isSelected
-                                    ? widget.accentColor.withOpacity(0.1)
-                                    : const Color(0xFFF5F5F5)),
-                            shape: BoxShape.circle,
-                            boxShadow: widget.isSelected
-                                ? [
-                                    BoxShadow(
-                                      color:
-                                          widget.accentColor.withOpacity(0.25),
-                                      blurRadius: 8,
-                                      spreadRadius: 1,
-                                    ),
-                                  ]
-                                : null,
-                          ),
-                          child: _buildCategoryIcon(),
-                        ),
-                        const SizedBox(height: 5),
-                        // Category name
-                        SizedBox(
-                          height: 24,
-                          child: Text(
-                            widget.category.name,
-                            textAlign: TextAlign.center,
-                            maxLines: 2,
-                            overflow: TextOverflow.ellipsis,
-                            style: TextStyle(
-                              fontSize: 9,
-                              fontWeight: widget.isSelected
-                                  ? FontWeight.w700
-                                  : FontWeight.w500,
-                              color: widget.isSelected
-                                  ? widget.accentColor
-                                  : (widget.isDark
-                                      ? Colors.grey[400]
-                                      : Colors.grey[700]),
-                              height: 1.15,
-                            ),
-                          ),
-                        ),
-                      ],
-                    ),
-                  ),
-                ],
+                  ],
+                ),
               ),
-            );
-          },
+            ),
+          ],
         ),
       ),
     );
@@ -880,24 +907,53 @@ class _EnhancedSidebarItemState extends State<_EnhancedSidebarItem>
       color: widget.isSelected
           ? widget.accentColor
           : (widget.isDark ? Colors.grey[500] : Colors.grey[600]),
-      size: 20,
+      size: 22,
     );
   }
 
+  // Categories without an admin-uploaded image fall back to this — it was
+  // only covering non-grocery categories (fashion, electronics, books...)
+  // so grocery staples like Dairy/Fruits/Meats/Laundry all landed on the
+  // same generic triangle-circle-square placeholder glyph. Grocery keywords
+  // checked first since this is primarily a grocery marketplace.
   IconData _getCategoryIcon(String name) {
     final n = name.toLowerCase();
-    if (n.contains('grocery') || n.contains('food'))
-      return Icons.local_grocery_store;
-    if (n.contains('fashion') || n.contains('cloth')) return Icons.checkroom;
-    if (n.contains('mobile') || n.contains('phone')) return Icons.phone_android;
-    if (n.contains('electronic')) return Icons.devices;
-    if (n.contains('home') || n.contains('furniture')) return Icons.home;
-    if (n.contains('beauty') || n.contains('personal')) return Icons.face;
-    if (n.contains('health')) return Icons.health_and_safety;
-    if (n.contains('baby') || n.contains('toy')) return Icons.child_care;
-    if (n.contains('sport')) return Icons.sports_soccer;
-    if (n.contains('book')) return Icons.menu_book;
-    return Icons.category;
+    if (n.contains('dairy') || n.contains('milk') || n.contains('cheese') || n.contains('paneer')) {
+      return Icons.icecream_rounded;
+    }
+    if (n.contains('fruit')) return Icons.apple_rounded;
+    if (n.contains('vegetable') || n.contains('veggie')) return Icons.eco_rounded;
+    if (n.contains('flower')) return Icons.local_florist_rounded;
+    if (n.contains('meat') || n.contains('chicken') || n.contains('fish') || n.contains('seafood')) {
+      return Icons.set_meal_rounded;
+    }
+    if (n.contains('laundry') || n.contains('detergent') || n.contains('wash')) {
+      return Icons.local_laundry_service_rounded;
+    }
+    if (n.contains('clean')) return Icons.cleaning_services_rounded;
+    if (n.contains('bakery') || n.contains('bread')) return Icons.bakery_dining_rounded;
+    if (n.contains('snack') || n.contains('chip') || n.contains('namkeen')) return Icons.fastfood_rounded;
+    if (n.contains('beverage') || n.contains('drink') || n.contains('juice')) return Icons.local_drink_rounded;
+    if (n.contains('tea') || n.contains('coffee')) return Icons.coffee_rounded;
+    if (n.contains('spice') || n.contains('masala')) return Icons.local_fire_department_rounded;
+    if (n.contains('oil') || n.contains('ghee')) return Icons.water_drop_rounded;
+    if (n.contains('rice') || n.contains('grain') || n.contains('atta') || n.contains('flour')) {
+      return Icons.grass_rounded;
+    }
+    if (n.contains('frozen')) return Icons.ac_unit_rounded;
+    if (n.contains('pet')) return Icons.pets_rounded;
+    if (n.contains('stationery') || n.contains('office')) return Icons.edit_note_rounded;
+    if (n.contains('grocery') || n.contains('food')) return Icons.local_grocery_store_rounded;
+    if (n.contains('fashion') || n.contains('cloth')) return Icons.checkroom_rounded;
+    if (n.contains('mobile') || n.contains('phone')) return Icons.phone_android_rounded;
+    if (n.contains('electronic')) return Icons.devices_rounded;
+    if (n.contains('home') || n.contains('furniture')) return Icons.home_rounded;
+    if (n.contains('beauty') || n.contains('personal')) return Icons.face_rounded;
+    if (n.contains('health')) return Icons.health_and_safety_rounded;
+    if (n.contains('baby') || n.contains('toy')) return Icons.child_care_rounded;
+    if (n.contains('sport')) return Icons.sports_soccer_rounded;
+    if (n.contains('book')) return Icons.menu_book_rounded;
+    return Icons.category_rounded;
   }
 }
 
@@ -921,7 +977,7 @@ class _PremiumCategoryHeader extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return Container(
-      padding: const EdgeInsets.all(12),
+      padding: const EdgeInsets.all(10),
       decoration: BoxDecoration(
         gradient: LinearGradient(
           begin: Alignment.topLeft,
@@ -947,8 +1003,8 @@ class _PremiumCategoryHeader extends StatelessWidget {
         children: [
           // Category icon
           Container(
-            width: 42,
-            height: 42,
+            width: 38,
+            height: 38,
             decoration: BoxDecoration(
               gradient: LinearGradient(
                 begin: Alignment.topLeft,
@@ -975,19 +1031,25 @@ class _PremiumCategoryHeader extends StatelessWidget {
                 : Icon(
                     Icons.category_rounded,
                     color: accentColor,
-                    size: 22,
+                    size: 20,
                   ),
           ),
-          const SizedBox(width: 12),
+          const SizedBox(width: 10),
           // Title and description
           Expanded(
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
+                // Category names sometimes carry a bilingual "English/
+                // Translation" form (admin-entered), which can run to 3+
+                // lines unbounded — capped here so the banner stays a
+                // fixed, compact height regardless of name length.
                 Text(
                   category.name,
+                  maxLines: 1,
+                  overflow: TextOverflow.ellipsis,
                   style: TextStyle(
-                    fontSize: 15,
+                    fontSize: 14,
                     fontWeight: FontWeight.w700,
                     color: isDark ? Colors.white : Colors.black87,
                     letterSpacing: -0.3,
@@ -1319,7 +1381,7 @@ class _AdvancedProductCardState extends State<_AdvancedProductCard> {
                         // Product Image
                         Container(
                           width: double.infinity,
-                          padding: const EdgeInsets.all(8),
+                          padding: const EdgeInsets.all(6),
                           decoration: BoxDecoration(
                             color: widget.isDark
                                 ? const Color(0xFF222222)
@@ -1399,7 +1461,7 @@ class _AdvancedProductCardState extends State<_AdvancedProductCard> {
                   Expanded(
                     flex: 4,
                     child: Padding(
-                      padding: const EdgeInsets.fromLTRB(8, 6, 8, 6),
+                      padding: const EdgeInsets.fromLTRB(8, 5, 8, 5),
                       child: Column(
                         crossAxisAlignment: CrossAxisAlignment.start,
                         children: [
@@ -1409,7 +1471,7 @@ class _AdvancedProductCardState extends State<_AdvancedProductCard> {
                             maxLines: 2,
                             overflow: TextOverflow.ellipsis,
                             style: TextStyle(
-                              fontSize: 10,
+                              fontSize: 9.5,
                               fontWeight: FontWeight.w600,
                               color:
                                   widget.isDark ? Colors.white : Colors.black87,
@@ -1465,7 +1527,7 @@ class _AdvancedProductCardState extends State<_AdvancedProductCard> {
                             ],
                           ),
 
-                          const SizedBox(height: 6),
+                          const SizedBox(height: 4),
 
                           // Add/Quantity Button
                           _buildCartButton(cartProvider, isInCart, quantity),
@@ -1487,7 +1549,7 @@ class _AdvancedProductCardState extends State<_AdvancedProductCard> {
     if (isInCart && quantity > 0) {
       // Quantity Controls
       return Container(
-        height: 28,
+        height: 25,
         decoration: BoxDecoration(
           color: widget.accentColor,
           borderRadius: BorderRadius.circular(6),
@@ -1506,13 +1568,13 @@ class _AdvancedProductCardState extends State<_AdvancedProductCard> {
                 }
               },
               child: Container(
-                width: 28,
-                height: 28,
+                width: 25,
+                height: 25,
                 alignment: Alignment.center,
                 child: Icon(
                   quantity > 1 ? Icons.remove : Icons.delete_outline,
                   color: Colors.white,
-                  size: 14,
+                  size: 13,
                 ),
               ),
             ),
@@ -1524,7 +1586,7 @@ class _AdvancedProductCardState extends State<_AdvancedProductCard> {
                   '$quantity',
                   style: const TextStyle(
                     color: Colors.white,
-                    fontSize: 12,
+                    fontSize: 11,
                     fontWeight: FontWeight.w700,
                   ),
                 ),
@@ -1537,13 +1599,13 @@ class _AdvancedProductCardState extends State<_AdvancedProductCard> {
                 cartProvider.incrementQuantity(widget.product.id);
               },
               child: Container(
-                width: 28,
-                height: 28,
+                width: 25,
+                height: 25,
                 alignment: Alignment.center,
                 child: const Icon(
                   Icons.add,
                   color: Colors.white,
-                  size: 14,
+                  size: 13,
                 ),
               ),
             ),
@@ -1559,7 +1621,7 @@ class _AdvancedProductCardState extends State<_AdvancedProductCard> {
         cartProvider.addItem(widget.product, quantity: 1);
       },
       child: Container(
-        height: 28,
+        height: 25,
         decoration: BoxDecoration(
           color: widget.isDark
               ? widget.accentColor.withOpacity(0.15)
