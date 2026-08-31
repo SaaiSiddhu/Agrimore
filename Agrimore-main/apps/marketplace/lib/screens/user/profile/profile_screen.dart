@@ -1,5 +1,21 @@
 // lib/screens/user/profile/profile_screen.dart
-// Blinkit-style Profile Screen - Premium UI
+// Profile — sticky-header list design.
+//
+// The header is a real SliverAppBar(pinned: true) + FlexibleSpaceBar, not a
+// scroll listener faking it: Flutter collapses the hero (avatar/name) into
+// a plain "Profile" title bar as the user scrolls, and pins it there —
+// exactly the two states a scroll capture of this screen shows.
+//
+// The menu below only lists items that are real, working destinations.
+// Two that were here before are deliberately gone:
+//   - "Help & Support" routed to AIChatScreen, which Phase 21 (this same
+//     session) made permanently dormant after the Gemini key was revoked —
+//     every message now returns a static "unavailable" reply. Reachable,
+//     but not something that works.
+//   - "Language" only ever called local setState on the selected row; it
+//     never persisted a choice or changed the app's locale anywhere.
+// Neither does what tapping it implies, so neither belongs in a list whose
+// whole point is "everything here actually does something."
 
 import 'dart:async';
 import 'package:flutter/material.dart';
@@ -16,6 +32,8 @@ import '../../../providers/cart_provider.dart';
 import '../../../providers/seller_provider.dart';
 import '../../../providers/market_mode_provider.dart';
 import '../../../providers/wallet_provider.dart';
+
+const _kAppVersion = '1.0.7'; // mirrors pubspec.yaml's version: line
 
 class ProfileScreen extends StatefulWidget {
   const ProfileScreen({Key? key}) : super(key: key);
@@ -132,6 +150,14 @@ class _ProfileScreenState extends State<ProfileScreen> {
     }
   }
 
+  String _formatDob(DateTime dob) {
+    const months = [
+      'Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun',
+      'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec',
+    ];
+    return '${dob.day.toString().padLeft(2, '0')} ${months[dob.month - 1]} ${dob.year}';
+  }
+
   @override
   Widget build(BuildContext context) {
     final themeProvider = Provider.of<ThemeProvider>(context);
@@ -146,313 +172,304 @@ class _ProfileScreenState extends State<ProfileScreen> {
 
     return Scaffold(
       backgroundColor: isDark ? const Color(0xFF121212) : const Color(0xFFF5F5F5),
-      body: SafeArea(
-        child: Consumer2<app_auth.AuthProvider, SellerProvider>(
-          builder: (context, authProvider, sellerProvider, child) {
-            final user = authProvider.currentUser;
-            
-            return CustomScrollView(
-              physics: const ClampingScrollPhysics(),
-              slivers: [
-                // Simple AppBar Header
-                SliverToBoxAdapter(
-                  child: _buildCompactAppBar(isDark),
-                ),
+      body: Consumer2<app_auth.AuthProvider, SellerProvider>(
+        builder: (context, authProvider, sellerProvider, child) {
+          final user = authProvider.currentUser;
 
-                // User Profile Card
-                SliverToBoxAdapter(
-                  child: _buildUserCard(user, isDark),
-                ),
+          return CustomScrollView(
+            physics: const ClampingScrollPhysics(),
+            slivers: [
+              _buildHeaderSliver(user, isDark),
 
-                // Quick Action Cards
-                SliverToBoxAdapter(
-                  child: Consumer<WalletProvider>(
-                    builder: (context, walletProvider, _) =>
-                        _buildQuickActions(isDark, walletProvider),
-                  ),
+              // Quick Action Cards
+              SliverToBoxAdapter(
+                child: Consumer<WalletProvider>(
+                  builder: (context, walletProvider, _) =>
+                      _buildQuickActions(isDark, walletProvider),
                 ),
+              ),
 
-                // Appearance Toggle
-                SliverToBoxAdapter(
-                  child: _buildAppearanceToggle(isDark, themeProvider),
+              // Appearance Toggle
+              SliverToBoxAdapter(
+                child: _buildAppearanceToggle(isDark, themeProvider),
+              ),
+
+              // B2B Ordering Mode Toggle
+              SliverToBoxAdapter(
+                child: Consumer<MarketModeProvider>(
+                  builder: (context, marketMode, _) => _buildB2BToggle(isDark, marketMode),
                 ),
+              ),
 
-                // Your Information Section
+              // Your Information Section
+              SliverToBoxAdapter(
+                child: _buildSection(
+                  title: 'Your information',
+                  isDark: isDark,
+                  items: [
+                    _MenuItem(
+                      icon: Icons.shopping_bag_rounded,
+                      title: 'My Orders',
+                      count: _isLoadingStats ? null : _ordersCount,
+                      onTap: () => _navigateTo(AppRoutes.orders),
+                    ),
+                    _MenuItem(
+                      icon: Icons.event_repeat_rounded,
+                      title: 'My Subscriptions',
+                      onTap: () => _navigateTo(AppRoutes.mySubscriptions),
+                    ),
+                    _MenuItem(
+                      icon: Icons.location_on_rounded,
+                      title: 'Delivery Addresses',
+                      count: _isLoadingStats ? null : _addressesCount,
+                      onTap: () => _navigateTo(AppRoutes.savedAddresses),
+                    ),
+                    _MenuItem(
+                      icon: Icons.favorite_rounded,
+                      title: 'Your Wishlist',
+                      count: _isLoadingStats ? null : _wishlistCount,
+                      onTap: () => _navigateTo(AppRoutes.wishlist),
+                    ),
+                  ],
+                ),
+              ),
+
+              // Payment & Rewards Section
+              SliverToBoxAdapter(
+                child: _buildSection(
+                  title: 'Payment and rewards',
+                  isDark: isDark,
+                  items: [
+                    _MenuItem(
+                      icon: Icons.account_balance_wallet_rounded,
+                      title: 'Agrimore Wallet',
+                      onTap: () => _navigateTo(AppRoutes.wallet),
+                    ),
+                    _MenuItem(
+                      icon: Icons.card_giftcard_rounded,
+                      title: 'Rewards & Offers',
+                      onTap: () => _navigateTo(AppRoutes.rewards),
+                    ),
+                    _MenuItem(
+                      icon: Icons.bolt_rounded,
+                      title: 'Flash Sale',
+                      onTap: () => _navigateTo(AppRoutes.flashSale),
+                    ),
+                    _MenuItem(
+                      icon: Icons.group_add_rounded,
+                      title: 'Refer & Earn',
+                      onTap: () => _navigateTo(AppRoutes.referral),
+                    ),
+                  ],
+                ),
+              ),
+
+              // Grow With Agrimore Section
+              if (!authProvider.isAdmin)
                 SliverToBoxAdapter(
                   child: _buildSection(
-                    title: 'Your information',
+                    title: 'Grow with Agrimore',
                     isDark: isDark,
                     items: [
+                      if (sellerProvider.isApproved)
+                        _MenuItem(
+                          icon: Icons.storefront_rounded,
+                          title: 'Seller dashboard',
+                          onTap: () => _navigateTo(AppRoutes.sellerPanel),
+                        )
+                      else
+                        _MenuItem(
+                          icon: Icons.storefront_rounded,
+                          title: sellerProvider.isPending
+                              ? 'Seller application (pending)'
+                              : 'Seller registration',
+                          onTap: () => _navigateTo(AppRoutes.sellerApply),
+                        ),
                       _MenuItem(
-                        icon: Icons.shopping_bag_outlined,
-                        title: 'My Orders',
-                        count: _isLoadingStats ? null : _ordersCount,
-                        onTap: () => _navigateTo(AppRoutes.orders),
+                        icon: Icons.badge_rounded,
+                        title: 'Employee application',
+                        onTap: () => _navigateTo(AppRoutes.employeeApply),
                       ),
                       _MenuItem(
-                        icon: Icons.card_membership,
-                        title: 'My Subscriptions',
-                        onTap: () => _navigateTo(AppRoutes.mySubscriptions),
-                      ),
-                      _MenuItem(
-                        icon: Icons.location_on_outlined,
-                        title: 'Delivery Addresses',
-                        count: _isLoadingStats ? null : _addressesCount,
-                        onTap: () => _navigateTo(AppRoutes.savedAddresses),
-                      ),
-                      _MenuItem(
-                        icon: Icons.account_balance_wallet_outlined,
-                        title: 'Wallet',
-                        onTap: () => _navigateTo(AppRoutes.wallet),
-                      ),
-                      _MenuItem(
-                        icon: Icons.favorite_outline,
-                        title: 'Your Wishlist',
-                        count: _isLoadingStats ? null : _wishlistCount,
-                        onTap: () => _navigateTo(AppRoutes.wishlist),
-                      ),
-                      _MenuItem(
-                        icon: Icons.card_giftcard,
-                        title: 'Rewards & Offers',
-                        onTap: () => _navigateTo(AppRoutes.rewards),
-                      ),
-                      _MenuItem(
-                        icon: Icons.bolt,
-                        title: 'Flash Sale',
-                        onTap: () => _navigateTo(AppRoutes.flashSale),
+                        icon: Icons.handshake_rounded,
+                        title: 'Become a Sales Associate',
+                        onTap: () => _navigateTo(AppRoutes.associateOnboarding),
                       ),
                     ],
                   ),
                 ),
 
-                // B2B Ordering Mode Toggle
-                SliverToBoxAdapter(
-                  child: Padding(
-                    padding: const EdgeInsets.symmetric(
-                        horizontal: 16, vertical: 8),
-                    child: Consumer<MarketModeProvider>(
-                      builder: (context, marketMode, _) => Card(
-                        margin: EdgeInsets.zero,
-                        color: isDark ? const Color(0xFF1E1E1E) : Colors.white,
-                        child: SwitchListTile(
-                          secondary: const Icon(Icons.storefront_outlined),
-                          title: const Text('B2B (Wholesale) Mode'),
-                          subtitle: Text(
-                            marketMode.isB2B
-                                ? 'Showing wholesale pricing and MOQ'
-                                : 'Showing regular retail pricing',
-                          ),
-                          value: marketMode.isB2B,
-                          onChanged: (value) => marketMode.setB2B(value),
+              // Other Information Section
+              SliverToBoxAdapter(
+                child: _buildSection(
+                  title: 'Other information',
+                  isDark: isDark,
+                  items: [
+                    _MenuItem(
+                      icon: Icons.notifications_rounded,
+                      title: 'Notifications',
+                      onTap: () => _navigateTo(AppRoutes.notifications),
+                    ),
+                    _MenuItem(
+                      icon: Icons.ios_share_rounded,
+                      title: 'Share Agrimore',
+                      onTap: () => _showShareBottomSheet(isDark),
+                    ),
+                    _MenuItem(
+                      icon: Icons.settings_rounded,
+                      title: 'Account Settings',
+                      onTap: () => _navigateTo(AppRoutes.appSettings),
+                    ),
+                    _MenuItem(
+                      icon: Icons.logout_rounded,
+                      title: 'Log out',
+                      onTap: _logout,
+                      isDestructive: true,
+                    ),
+                  ],
+                ),
+              ),
+
+              // Footer with Version
+              SliverToBoxAdapter(
+                child: _buildFooter(isDark),
+              ),
+            ],
+          );
+        },
+      ),
+    );
+  }
+
+  // Sticky header: SliverAppBar(pinned: true) collapses the big hero
+  // (avatar/name/phone·DOB) into a plain "Profile" title bar as the user
+  // scrolls — Flutter's own FlexibleSpaceBar title-fade, not a manual
+  // scroll-offset listener faking the effect.
+  Widget _buildHeaderSliver(dynamic user, bool isDark) {
+    final gradientColors = isDark
+        ? [const Color(0xFF1A1A2E), const Color(0xFF16213E)]
+        : [const Color(0xFF1B5E20), const Color(0xFF2E7D32)];
+
+    final subtitleParts = <String>[
+      if (user?.phone != null && user.phone.toString().trim().isNotEmpty)
+        user.phone.toString(),
+      if (user?.dateOfBirth is DateTime) _formatDob(user.dateOfBirth as DateTime),
+    ];
+
+    return SliverAppBar(
+      pinned: true,
+      elevation: 0,
+      expandedHeight: 248,
+      backgroundColor: isDark ? const Color(0xFF1E1E1E) : Colors.white,
+      surfaceTintColor: Colors.transparent,
+      leading: Padding(
+        padding: const EdgeInsets.all(8),
+        child: _buildBackButton(isDark),
+      ),
+      flexibleSpace: FlexibleSpaceBar(
+        centerTitle: true,
+        titlePadding: const EdgeInsets.only(bottom: 16),
+        title: Text(
+          'Profile',
+          style: TextStyle(
+            fontSize: 18,
+            fontWeight: FontWeight.w800,
+            color: isDark ? Colors.white : Colors.black87,
+          ),
+        ),
+        background: Container(
+          decoration: BoxDecoration(
+            gradient: LinearGradient(
+              begin: Alignment.topLeft,
+              end: Alignment.bottomRight,
+              colors: gradientColors,
+            ),
+          ),
+          child: SafeArea(
+            child: Center(
+              child: Column(
+                mainAxisSize: MainAxisSize.min,
+                children: [
+                  Stack(
+                    alignment: Alignment.bottomRight,
+                    children: [
+                      Container(
+                        width: 84,
+                        height: 84,
+                        decoration: BoxDecoration(
+                          shape: BoxShape.circle,
+                          color: Colors.white.withOpacity(0.15),
+                          border: Border.all(color: Colors.white, width: 2.5),
+                          boxShadow: [
+                            BoxShadow(
+                              color: Colors.black.withOpacity(0.2),
+                              blurRadius: 12,
+                              offset: const Offset(0, 4),
+                            ),
+                          ],
+                        ),
+                        child: ClipOval(
+                          child: user?.photoUrl != null
+                              ? Image.network(user!.photoUrl!, fit: BoxFit.cover)
+                              : const Icon(Icons.person_rounded, size: 44, color: Colors.white),
                         ),
                       ),
+                      GestureDetector(
+                        onTap: () => _navigateTo(AppRoutes.editProfile),
+                        child: Container(
+                          padding: const EdgeInsets.all(6),
+                          decoration: BoxDecoration(
+                            shape: BoxShape.circle,
+                            color: Colors.white,
+                            border: Border.all(color: gradientColors.first, width: 1.5),
+                          ),
+                          child: Icon(Icons.edit_rounded, size: 14, color: gradientColors.last),
+                        ),
+                      ),
+                    ],
+                  ),
+                  const SizedBox(height: 12),
+                  Text(
+                    user?.name ?? 'User',
+                    style: const TextStyle(
+                      fontSize: 20,
+                      fontWeight: FontWeight.w800,
+                      color: Colors.white,
                     ),
                   ),
-                ),
-
-                // Other Information Section
-                SliverToBoxAdapter(
-                  child: _buildSection(
-                    title: 'Other information',
-                    isDark: isDark,
-                    items: [
-                      _MenuItem(
-                        icon: Icons.person_add_alt_1_outlined,
-                        title: 'Refer & Earn',
-                        onTap: () => _navigateTo(AppRoutes.referral),
-                      ),
-                      if (!authProvider.isAdmin) ...[
-                        if (sellerProvider.isApproved)
-                          _MenuItem(
-                            icon: Icons.storefront_outlined,
-                            title: 'Seller dashboard',
-                            onTap: () => _navigateTo(AppRoutes.sellerPanel),
-                          )
-                        else
-                          _MenuItem(
-                            icon: Icons.app_registration_rounded,
-                            title: sellerProvider.isPending
-                                ? 'Seller application (pending)'
-                                : 'Seller registration',
-                            onTap: () => _navigateTo(AppRoutes.sellerApply),
-                          ),
-                        _MenuItem(
-                          icon: Icons.badge_outlined,
-                          title: 'Employee application',
-                          onTap: () => _navigateTo(AppRoutes.employeeApply),
-                        ),
-                        // Phase 16B-2, Workstream 1h: the new, complete
-                        // onboarding flow (fee, benefits, disclosures,
-                        // payment) — added alongside the older bare-form
-                        // entry above rather than replacing it, since the
-                        // older screen's write path is now shared with this
-                        // one (associate_application_service.dart) and
-                        // nothing depends on removing it. Naming follows D3;
-                        // the entry above predates this phase and is out of
-                        // this phase's scope to rename.
-                        _MenuItem(
-                          icon: Icons.storefront_outlined,
-                          title: 'Become a Sales Associate',
-                          onTap: () =>
-                              _navigateTo(AppRoutes.associateOnboarding),
-                        ),
-                      ],
-                      _MenuItem(
-                        icon: Icons.notifications_none,
-                        title: 'Notifications',
-                        onTap: () => _navigateTo(AppRoutes.notifications),
-                      ),
-                      _MenuItem(
-                        icon: Icons.share_outlined,
-                        title: 'Share Agrimore',
-                        onTap: () => _showShareBottomSheet(isDark),
-                      ),
-                      _MenuItem(
-                        icon: Icons.language,
-                        title: 'Language',
-                        onTap: () => _navigateTo(AppRoutes.language),
-                      ),
-                      _MenuItem(
-                        icon: Icons.help_outline_rounded,
-                        title: 'Help & Support',
-                        onTap: () => _navigateTo(AppRoutes.support),
-                      ),
-                      _MenuItem(
-                        icon: Icons.settings_outlined,
-                        title: 'Account Settings',
-                        onTap: () => _navigateTo(AppRoutes.appSettings),
-                      ),
-                      _MenuItem(
-                        icon: Icons.logout_rounded,
-                        title: 'Log out',
-                        onTap: _logout,
-                        isDestructive: true,
-                      ),
-                    ],
-                  ),
-                ),
-
-                // Footer with Version
-                SliverToBoxAdapter(
-                  child: _buildFooter(isDark),
-                ),
-              ],
-            );
-          },
-        ),
-      ),
-    );
-  }
-
-  Widget _buildCompactAppBar(bool isDark) {
-    return Padding(
-      padding: const EdgeInsets.fromLTRB(16, 12, 16, 8),
-      child: Row(
-        children: [
-          GestureDetector(
-            onTap: () => Navigator.pop(context),
-            child: Icon(
-              Icons.arrow_back,
-              size: 24,
-              color: isDark ? Colors.white : Colors.black87,
-            ),
-          ),
-          const SizedBox(width: 16),
-          Text(
-            'Profile',
-            style: TextStyle(
-              fontSize: 18,
-              fontWeight: FontWeight.w700,
-              color: isDark ? Colors.white : Colors.black87,
-            ),
-          ),
-        ],
-      ),
-    );
-  }
-
-  Widget _buildUserCard(dynamic user, bool isDark) {
-    return Container(
-      margin: const EdgeInsets.fromLTRB(16, 8, 16, 8),
-      padding: const EdgeInsets.all(16),
-      decoration: BoxDecoration(
-        gradient: LinearGradient(
-          begin: Alignment.topLeft,
-          end: Alignment.bottomRight,
-          colors: isDark
-              ? [const Color(0xFF1A1A2E), const Color(0xFF16213E)]
-              : [const Color(0xFF1B5E20), const Color(0xFF2E7D32)],
-        ),
-        borderRadius: BorderRadius.circular(16),
-        boxShadow: [
-          BoxShadow(
-            color: (isDark ? Colors.black : const Color(0xFF1B5E20)).withOpacity(0.3),
-            blurRadius: 12,
-            offset: const Offset(0, 4),
-          ),
-        ],
-      ),
-      child: Row(
-        children: [
-          // Avatar
-          Container(
-            width: 60,
-            height: 60,
-            decoration: BoxDecoration(
-              shape: BoxShape.circle,
-              color: Colors.white.withOpacity(0.2),
-              border: Border.all(color: Colors.white, width: 2),
-            ),
-            child: ClipOval(
-              child: user?.photoUrl != null
-                  ? Image.network(user!.photoUrl!, fit: BoxFit.cover)
-                  : const Icon(Icons.person, size: 30, color: Colors.white),
-            ),
-          ),
-          const SizedBox(width: 14),
-          // Info
-          Expanded(
-            child: Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                Text(
-                  user?.name ?? 'User',
-                  style: const TextStyle(
-                    fontSize: 18,
-                    fontWeight: FontWeight.w800,
-                    color: Colors.white,
-                  ),
-                ),
-                const SizedBox(height: 4),
-                Text(
-                  user?.email ?? 'email@example.com',
-                  style: TextStyle(
-                    fontSize: 12,
-                    color: Colors.white.withOpacity(0.85),
-                  ),
-                  overflow: TextOverflow.ellipsis,
-                ),
-              ],
-            ),
-          ),
-          // Edit Button
-          GestureDetector(
-            onTap: () => _navigateTo(AppRoutes.editProfile),
-            child: Container(
-              padding: const EdgeInsets.all(10),
-              decoration: BoxDecoration(
-                color: Colors.white.withOpacity(0.2),
-                borderRadius: BorderRadius.circular(10),
+                  if (subtitleParts.isNotEmpty) ...[
+                    const SizedBox(height: 4),
+                    Text(
+                      subtitleParts.join(' • '),
+                      style: TextStyle(fontSize: 12.5, color: Colors.white.withOpacity(0.85)),
+                    ),
+                  ],
+                ],
               ),
-              child: const Icon(Icons.edit_outlined, color: Colors.white, size: 18),
             ),
           ),
-        ],
+        ),
       ),
     );
   }
 
-
+  Widget _buildBackButton(bool isDark) {
+    return GestureDetector(
+      onTap: () => Navigator.pop(context),
+      child: Container(
+        width: 36,
+        height: 36,
+        decoration: BoxDecoration(
+          shape: BoxShape.circle,
+          color: Colors.white.withOpacity(0.92),
+          boxShadow: [
+            BoxShadow(color: Colors.black.withOpacity(0.15), blurRadius: 6, offset: const Offset(0, 2)),
+          ],
+        ),
+        child: const Icon(Icons.arrow_back_rounded, size: 20, color: Colors.black87),
+      ),
+    );
+  }
 
   Widget _buildQuickActions(bool isDark, WalletProvider walletProvider) {
     return Padding(
@@ -460,7 +477,7 @@ class _ProfileScreenState extends State<ProfileScreen> {
       child: Row(
         children: [
           _buildQuickActionCard(
-            icon: Icons.shopping_bag_outlined,
+            icon: Icons.shopping_bag_rounded,
             label: 'Your orders',
             count: _isLoadingStats ? null : _ordersCount,
             isDark: isDark,
@@ -470,7 +487,7 @@ class _ProfileScreenState extends State<ProfileScreen> {
           ),
           const SizedBox(width: 12),
           _buildQuickActionCard(
-            icon: Icons.account_balance_wallet_outlined,
+            icon: Icons.account_balance_wallet_rounded,
             label: 'Wallet',
             // The live balance, shown right on the profile screen instead of
             // requiring a trip to the Wallet screen to find out.
@@ -482,7 +499,7 @@ class _ProfileScreenState extends State<ProfileScreen> {
           ),
           const SizedBox(width: 12),
           _buildQuickActionCard(
-            icon: Icons.card_giftcard,
+            icon: Icons.card_giftcard_rounded,
             label: 'Rewards',
             isDark: isDark,
             onTap: () => _navigateTo(AppRoutes.rewards),
@@ -600,7 +617,7 @@ class _ProfileScreenState extends State<ProfileScreen> {
       child: Row(
         children: [
           Icon(
-            Icons.brightness_6_outlined,
+            Icons.brightness_6_rounded,
             size: 20,
             color: isDark ? Colors.grey[400] : Colors.grey[600],
           ),
@@ -634,7 +651,7 @@ class _ProfileScreenState extends State<ProfileScreen> {
                   ),
                   const SizedBox(width: 4),
                   Icon(
-                    Icons.keyboard_arrow_down,
+                    Icons.keyboard_arrow_down_rounded,
                     size: 18,
                     color: isDark ? AppColors.primaryLight : Colors.black54,
                   ),
@@ -643,6 +660,63 @@ class _ProfileScreenState extends State<ProfileScreen> {
             ),
           ),
         ],
+      ),
+    );
+  }
+
+  Widget _buildB2BToggle(bool isDark, MarketModeProvider marketMode) {
+    return Padding(
+      padding: const EdgeInsets.fromLTRB(16, 10, 16, 0),
+      child: Container(
+        padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
+        decoration: BoxDecoration(
+          color: isDark ? const Color(0xFF1E1E1E) : Colors.white,
+          borderRadius: BorderRadius.circular(14),
+          border: Border.all(color: isDark ? Colors.grey[800]! : Colors.grey[200]!),
+        ),
+        child: Row(
+          children: [
+            Icon(
+              Icons.storefront_rounded,
+              size: 20,
+              color: isDark ? Colors.grey[400] : Colors.grey[600],
+            ),
+            const SizedBox(width: 12),
+            Expanded(
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  Text(
+                    'B2B (Wholesale) Mode',
+                    style: TextStyle(
+                      fontSize: 14,
+                      fontWeight: FontWeight.w600,
+                      color: isDark ? Colors.white : Colors.black87,
+                    ),
+                  ),
+                  const SizedBox(height: 2),
+                  Text(
+                    marketMode.isB2B
+                        ? 'Showing wholesale pricing and MOQ'
+                        : 'Showing regular retail pricing',
+                    style: TextStyle(
+                      fontSize: 11.5,
+                      color: isDark ? Colors.grey[500] : Colors.grey[600],
+                    ),
+                  ),
+                ],
+              ),
+            ),
+            Switch.adaptive(
+              value: marketMode.isB2B,
+              onChanged: (value) {
+                HapticFeedback.mediumImpact();
+                marketMode.setB2B(value);
+              },
+              activeThumbColor: isDark ? AppColors.primaryLight : AppColors.primary,
+            ),
+          ],
+        ),
       ),
     );
   }
@@ -678,7 +752,7 @@ class _ProfileScreenState extends State<ProfileScreen> {
               final index = entry.key;
               final item = entry.value;
               final isLast = index == items.length - 1;
-              
+
               return Column(
                 children: [
                   _buildMenuItem(item, isDark),
@@ -745,8 +819,8 @@ class _ProfileScreenState extends State<ProfileScreen> {
                 )
               else if (!item.isDestructive)
                 Icon(
-                  Icons.arrow_forward_ios,
-                  size: 14,
+                  Icons.chevron_right_rounded,
+                  size: 20,
                   color: isDark ? Colors.grey[600] : Colors.grey[400],
                 ),
             ],
@@ -778,9 +852,9 @@ class _ProfileScreenState extends State<ProfileScreen> {
             Row(
               mainAxisAlignment: MainAxisAlignment.spaceEvenly,
               children: [
-                _buildShareIcon(Icons.message, 'SMS', Colors.blue, isDark),
-                _buildShareIcon(Icons.link, 'Copy Link', Colors.grey, isDark),
-                _buildShareIcon(Icons.email, 'Email', Colors.red, isDark),
+                _buildShareIcon(Icons.sms_rounded, 'SMS', Colors.blue, isDark),
+                _buildShareIcon(Icons.link_rounded, 'Copy Link', Colors.grey, isDark),
+                _buildShareIcon(Icons.email_rounded, 'Email', Colors.red, isDark),
               ],
             ),
             const SizedBox(height: 24),
@@ -813,8 +887,7 @@ class _ProfileScreenState extends State<ProfileScreen> {
 
   Widget _buildFooter(bool isDark) {
     return Padding(
-      // Extra padding at bottom to account for bottom navigation bar (extendBody: true)
-      padding: const EdgeInsets.only(top: 40, bottom: 120),
+      padding: const EdgeInsets.only(top: 40, bottom: 48),
       child: Column(
         children: [
           Text(
@@ -828,7 +901,7 @@ class _ProfileScreenState extends State<ProfileScreen> {
           ),
           const SizedBox(height: 4),
           Text(
-            'v1.0.0',
+            'v$_kAppVersion',
             style: TextStyle(
               fontSize: 12,
               color: isDark ? Colors.grey[700] : Colors.grey[500],
@@ -860,7 +933,7 @@ class _LogoutDialog extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final isDark = Theme.of(context).brightness == Brightness.dark;
-    
+
     return Dialog(
       backgroundColor: isDark ? const Color(0xFF1E1E1E) : Colors.white,
       shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(20)),

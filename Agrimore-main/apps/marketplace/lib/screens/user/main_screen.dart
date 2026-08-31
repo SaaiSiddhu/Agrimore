@@ -353,7 +353,13 @@ class _MainScreenState extends State<MainScreen>
             ),
           ),
         ),
-        bottomNavigationBar: AnimatedSlide(
+        // Profile (index 4) is a full, standalone screen with its own
+        // sticky app bar and back button — the bottom nav would fight that
+        // design (double navigation chrome) and isn't shown there at all,
+        // matching the reference this screen was redesigned against.
+        bottomNavigationBar: _currentIndex == 4
+            ? null
+            : AnimatedSlide(
                 duration: const Duration(milliseconds: 400),
                 curve: Curves.easeOutCubic,
                 offset: _isBottomNavVisible ? Offset.zero : const Offset(0, 1.0),
