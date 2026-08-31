@@ -15,6 +15,9 @@ import '../../../../providers/shop_entry_provider.dart';
 import '../../../../providers/address_provider.dart';
 import '../../../../providers/cart_provider.dart';
 import '../../../../providers/wallet_provider.dart';
+import '../../../../providers/market_mode_provider.dart';
+import '../../../../providers/auth_provider.dart' as app_auth;
+import '../../profile/profile_screen.dart';
 import 'address_bottom_sheet.dart';
 
 class HomeAppBar extends StatefulWidget {
@@ -236,17 +239,26 @@ class _HomeAppBarState extends State<HomeAppBar> {
   @override
   Widget build(BuildContext context) {
     final themeProvider = Provider.of<ThemeProvider>(context);
+    final marketMode = Provider.of<MarketModeProvider>(context);
     final isDark = themeProvider.isDarkMode;
+    final isB2B = marketMode.isB2B;
 
-    return Container(
+    // Amber/gold in B2B mode, the usual emerald-jade otherwise — a
+    // full-bar colour shift so B2B is unmistakable at a glance, not just a
+    // small badge someone could miss.
+    final gradientColors = isB2B
+        ? (isDark
+            ? const [Color(0xFF451A03), Color(0xFF291102)]
+            : const [Color(0xFFD97706), Color(0xFFB45309), Color(0xFF9A3412)])
+        : (isDark
+            ? const [Color(0xFF0D3D2B), Color(0xFF0A2F22)]
+            : const [Color(0xFF0D9B5C), Color(0xFF06804A)]);
+
+    return AnimatedContainer(
+      duration: const Duration(milliseconds: 350),
       decoration: BoxDecoration(
         gradient: LinearGradient(
-          colors: isDark
-              ? [const Color(0xFF0D3D2B), const Color(0xFF0A2F22)]
-              : [
-                  const Color(0xFF0D9B5C),
-                  const Color(0xFF06804A)
-                ], // Unique emerald-jade green
+          colors: gradientColors,
           begin: Alignment.topLeft,
           end: Alignment.bottomRight,
         ),
@@ -258,11 +270,11 @@ class _HomeAppBarState extends State<HomeAppBar> {
           children: [
             // Top section - Only show when not collapsed
             if (!widget.isCollapsed) ...[
-              _buildTopRow(isDark),
+              _buildTopRow(isDark, isB2B),
               const SizedBox(height: 6),
             ],
-            // Search bar - always visible
-            _buildSearchBar(isDark),
+            // Search bar + B2B toggle - always visible
+            _buildSearchBar(isDark, isB2B),
             const SizedBox(height: 6),
             // Categories - always visible
             _buildCategoryChips(isDark),
@@ -273,7 +285,7 @@ class _HomeAppBarState extends State<HomeAppBar> {
     );
   }
 
-  Widget _buildTopRow(bool isDark) {
+  Widget _buildTopRow(bool isDark, bool isB2B) {
     return Padding(
       padding: const EdgeInsets.fromLTRB(16, 12, 16, 0),
       child: Row(
@@ -287,8 +299,8 @@ class _HomeAppBarState extends State<HomeAppBar> {
                 Row(
                   children: [
                     Text(
-                      'Agrimore',
-                      style: TextStyle(
+                      isB2B ? 'Agrimore B2B' : 'Agrimore',
+                      style: const TextStyle(
                         fontSize: 24,
                         fontWeight: FontWeight.w900,
                         color: Colors.white,
@@ -300,22 +312,32 @@ class _HomeAppBarState extends State<HomeAppBar> {
                       padding: const EdgeInsets.symmetric(
                           horizontal: 8, vertical: 3),
                       decoration: BoxDecoration(
-                        color: Colors.amber.withOpacity(0.2),
+                        color: isB2B
+                            ? Colors.white.withOpacity(0.25)
+                            : Colors.amber.withOpacity(0.2),
                         borderRadius: BorderRadius.circular(6),
                         border: Border.all(
-                            color: Colors.amber.withOpacity(0.3), width: 0.5),
+                          color: isB2B
+                              ? Colors.white.withOpacity(0.4)
+                              : Colors.amber.withOpacity(0.3),
+                          width: 0.5,
+                        ),
                       ),
                       child: Row(
                         mainAxisSize: MainAxisSize.min,
                         children: [
-                          Icon(Icons.bolt, size: 14, color: Colors.amber[300]),
+                          Icon(
+                            isB2B ? Icons.local_shipping_rounded : Icons.bolt,
+                            size: 14,
+                            color: isB2B ? Colors.white : Colors.amber[300],
+                          ),
                           const SizedBox(width: 3),
                           Text(
-                            '30 min',
+                            isB2B ? 'Bulk Freight' : '30 min',
                             style: TextStyle(
                               fontSize: 11,
                               fontWeight: FontWeight.w700,
-                              color: Colors.amber[100],
+                              color: isB2B ? Colors.white : Colors.amber[100],
                             ),
                           ),
                         ],
@@ -457,23 +479,98 @@ class _HomeAppBarState extends State<HomeAppBar> {
               ],
             ),
           ),
-          // Right: Wallet
-          Consumer<WalletProvider>(
-            builder: (context, walletProvider, _) {
-              final balance = walletProvider.balance;
-              final displayBalance = balance >= 1000
-                  ? '₹${(balance / 1000).toStringAsFixed(1)}k'
-                  : '₹${balance.toStringAsFixed(0)}';
-              return _buildIconBtn(
-                Icons.account_balance_wallet_outlined,
-                displayBalance,
-                isDark,
-                onTap: () => Navigator.pushNamed(context, AppRoutes.wallet),
-              );
-            },
+          // Right: Wallet + Profile avatar
+          Row(
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              Consumer<WalletProvider>(
+                builder: (context, walletProvider, _) {
+                  final balance = walletProvider.balance;
+                  final displayBalance = balance >= 1000
+                      ? '₹${(balance / 1000).toStringAsFixed(1)}k'
+                      : '₹${balance.toStringAsFixed(0)}';
+                  return _buildIconBtn(
+                    Icons.account_balance_wallet_outlined,
+                    displayBalance,
+                    isDark,
+                    onTap: () => Navigator.pushNamed(context, AppRoutes.wallet),
+                  );
+                },
+              ),
+              const SizedBox(width: 10),
+              _buildProfileAvatar(isDark, isB2B),
+            ],
           ),
         ],
       ),
+    );
+  }
+
+  // Was missing entirely before — the home app bar had a Wallet button but
+  // no way to reach Profile except through the bottom nav. Ported from the
+  // reference build: a small circular avatar (photo, or the user's first
+  // initial as a fallback) that pushes ProfileScreen directly.
+  Widget _buildProfileAvatar(bool isDark, bool isB2B) {
+    return Consumer<app_auth.AuthProvider>(
+      builder: (context, authProvider, _) {
+        final user = authProvider.currentUser;
+        final photoUrl = user?.photoUrl;
+        final userName = user?.name ?? 'U';
+        final initial = userName.isNotEmpty ? userName[0].toUpperCase() : 'U';
+
+        return GestureDetector(
+          onTap: () {
+            HapticFeedback.lightImpact();
+            Navigator.push(
+              context,
+              MaterialPageRoute(builder: (context) => const ProfileScreen()),
+            );
+          },
+          child: Container(
+            width: 36,
+            height: 36,
+            decoration: BoxDecoration(
+              shape: BoxShape.circle,
+              color: isDark ? AppColors.surfaceDark : const Color(0xFFFEF3C7),
+              border: Border.all(color: Colors.white, width: 1.5),
+              boxShadow: [
+                BoxShadow(
+                  color: Colors.black.withOpacity(0.15),
+                  blurRadius: 6,
+                  offset: const Offset(0, 2),
+                ),
+              ],
+            ),
+            child: ClipOval(
+              child: (photoUrl != null && photoUrl.isNotEmpty)
+                  ? Image.network(
+                      photoUrl,
+                      fit: BoxFit.cover,
+                      errorBuilder: (_, __, ___) => Center(
+                        child: Text(
+                          initial,
+                          style: TextStyle(
+                            fontSize: 14,
+                            fontWeight: FontWeight.w900,
+                            color: isB2B ? const Color(0xFFD97706) : AppColors.primary,
+                          ),
+                        ),
+                      ),
+                    )
+                  : Center(
+                      child: Text(
+                        initial,
+                        style: TextStyle(
+                          fontSize: 14,
+                          fontWeight: FontWeight.w900,
+                          color: isB2B ? const Color(0xFFD97706) : AppColors.primary,
+                        ),
+                      ),
+                    ),
+            ),
+          ),
+        );
+      },
     );
   }
 
@@ -508,71 +605,146 @@ class _HomeAppBarState extends State<HomeAppBar> {
     );
   }
 
-  Widget _buildSearchBar(bool isDark) {
+  Widget _buildSearchBar(bool isDark, bool isB2B) {
+    final accent = isB2B
+        ? const Color(0xFFD97706)
+        : (isDark ? AppColors.primaryLight : AppColors.primary);
+
     return Padding(
       padding: const EdgeInsets.symmetric(horizontal: 16),
-      child: GestureDetector(
-        onTap: () async {
-          HapticFeedback.lightImpact();
-          final result = await Navigator.pushNamed(context, AppRoutes.search);
-          if (result != null && result is String && result.isNotEmpty) {
-            // Navigate to shop tab with search query
-            if (context.mounted) {
-              Navigator.pushNamed(
-                context,
-                AppRoutes.shopWithSearch,
-                arguments: result,
-              );
-            }
-          }
-        },
-        child: Container(
-          height: 48,
-          decoration: BoxDecoration(
-            color: isDark ? const Color(0xFF2A2A2A) : Colors.white,
-            borderRadius: BorderRadius.circular(14),
-            boxShadow: [
-              BoxShadow(
-                color: Colors.black.withOpacity(0.12),
-                blurRadius: 12,
-                offset: const Offset(0, 4),
+      child: Row(
+        crossAxisAlignment: CrossAxisAlignment.center,
+        children: [
+          Expanded(
+            child: GestureDetector(
+              onTap: () async {
+                HapticFeedback.lightImpact();
+                final result = await Navigator.pushNamed(context, AppRoutes.search);
+                if (result != null && result is String && result.isNotEmpty) {
+                  // Navigate to shop tab with search query
+                  if (context.mounted) {
+                    Navigator.pushNamed(
+                      context,
+                      AppRoutes.shopWithSearch,
+                      arguments: result,
+                    );
+                  }
+                }
+              },
+              child: Container(
+                height: 48,
+                decoration: BoxDecoration(
+                  color: isDark ? const Color(0xFF2A2A2A) : Colors.white,
+                  borderRadius: BorderRadius.circular(14),
+                  boxShadow: [
+                    BoxShadow(
+                      color: Colors.black.withOpacity(0.12),
+                      blurRadius: 12,
+                      offset: const Offset(0, 4),
+                    ),
+                  ],
+                ),
+                child: Row(
+                  children: [
+                    const SizedBox(width: 14),
+                    Icon(Icons.search, size: 22, color: isB2B ? accent : (isDark ? Colors.grey[400] : const Color(0xFF2E7D32))),
+                    const SizedBox(width: 10),
+                    Expanded(
+                      child: Text(
+                        isB2B ? 'Search wholesale & bulk items...' : 'Search groceries, dairy, snacks...',
+                        style: TextStyle(
+                          fontSize: 14,
+                          color: Colors.grey[500],
+                        ),
+                        maxLines: 1,
+                        overflow: TextOverflow.ellipsis,
+                      ),
+                    ),
+                    Container(
+                      margin: const EdgeInsets.only(right: 8),
+                      padding: const EdgeInsets.all(10),
+                      decoration: BoxDecoration(
+                        color: accent.withOpacity(0.12),
+                        borderRadius: BorderRadius.circular(10),
+                      ),
+                      child: Icon(Icons.mic, size: 18, color: accent),
+                    ),
+                  ],
+                ),
               ),
-            ],
+            ),
           ),
-          child: Row(
+          const SizedBox(width: 12),
+          _buildB2BSwitch(isB2B),
+        ],
+      ),
+    );
+  }
+
+  // Was missing entirely before — MarketModeProvider/isB2B already existed
+  // and drove pricing on other screens (see profile_screen.dart's B2B
+  // SwitchListTile), but nothing on the home screen itself let a user
+  // reach that toggle without going to Profile first. Ported from the
+  // reference build's Zomato-style pill switch.
+  Widget _buildB2BSwitch(bool isB2B) {
+    return Consumer<MarketModeProvider>(
+      builder: (context, marketMode, _) {
+        return GestureDetector(
+          onTap: () {
+            HapticFeedback.heavyImpact();
+            marketMode.setB2B(!isB2B);
+          },
+          child: Column(
+            mainAxisSize: MainAxisSize.min,
             children: [
-              const SizedBox(width: 14),
-              Icon(Icons.search,
-                  size: 22,
-                  color: isDark ? Colors.grey[400] : const Color(0xFF2E7D32)),
-              const SizedBox(width: 10),
-              Expanded(
-                child: Text(
-                  'Search groceries, dairy, snacks...',
-                  style: TextStyle(
-                    fontSize: 14,
-                    color: Colors.grey[500],
+              const Text(
+                'B2B\nMODE',
+                textAlign: TextAlign.center,
+                style: TextStyle(
+                  fontSize: 8.5,
+                  fontWeight: FontWeight.w900,
+                  color: Colors.white,
+                  letterSpacing: 0.8,
+                  height: 1.05,
+                ),
+              ),
+              const SizedBox(height: 3),
+              AnimatedContainer(
+                duration: const Duration(milliseconds: 250),
+                curve: Curves.easeInOut,
+                width: 38,
+                height: 20,
+                padding: const EdgeInsets.all(2),
+                decoration: BoxDecoration(
+                  borderRadius: BorderRadius.circular(12),
+                  color: isB2B ? const Color(0xFFFEF08A) : Colors.white.withOpacity(0.35),
+                  border: Border.all(color: Colors.white.withOpacity(0.6), width: 1.0),
+                ),
+                child: AnimatedAlign(
+                  duration: const Duration(milliseconds: 250),
+                  curve: Curves.easeInOut,
+                  alignment: isB2B ? Alignment.centerRight : Alignment.centerLeft,
+                  child: Container(
+                    width: 14,
+                    height: 14,
+                    decoration: BoxDecoration(
+                      shape: BoxShape.circle,
+                      color: isB2B ? const Color(0xFFD97706) : Colors.white,
+                      boxShadow: [
+                        BoxShadow(
+                          color: Colors.black.withOpacity(0.2),
+                          blurRadius: 3,
+                          offset: const Offset(0, 1),
+                        ),
+                      ],
+                    ),
                   ),
                 ),
               ),
-              Container(
-                margin: const EdgeInsets.only(right: 8),
-                padding: const EdgeInsets.all(10),
-                decoration: BoxDecoration(
-                  color: (isDark ? AppColors.primaryLight : AppColors.primary)
-                      .withOpacity(0.12),
-                  borderRadius: BorderRadius.circular(10),
-                ),
-                child: Icon(
-                  Icons.mic,
-                  size: 18,
-                  color: isDark ? AppColors.primaryLight : AppColors.primary,
-                ),
-              ),
             ],
           ),
-        ),
-      ),
+        );
+      },
     );
   }
 
