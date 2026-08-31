@@ -181,7 +181,14 @@ class _ProfileScreenState extends State<ProfileScreen> {
             slivers: [
               _buildHeaderSliver(user, isDark),
 
-              // Quick Action Cards
+              // Quick Action Cards — pulled up to float over the header
+              // gradient's fade zone (see _buildHeaderSliver), so there is
+              // no hard colour seam between the hero and the rest of the
+              // page; the cards' own shadow is what separates them, not a
+              // background-colour change. A real negative top margin (not
+              // Transform.translate, which only shifts pixels and would
+              // leave a dangling gap below) so the sliver's reported height
+              // shrinks to match — nothing after this needs compensating.
               SliverToBoxAdapter(
                 child: Consumer<WalletProvider>(
                   builder: (context, walletProvider, _) =>
@@ -341,14 +348,16 @@ class _ProfileScreenState extends State<ProfileScreen> {
     );
   }
 
-  // Sticky header: SliverAppBar(pinned: true) collapses the big hero
-  // (avatar/name/phone·DOB) into a plain "Profile" title bar as the user
-  // scrolls — Flutter's own FlexibleSpaceBar title-fade, not a manual
-  // scroll-offset listener faking the effect.
+  // Sticky header: SliverAppBar(pinned: true) keeps the back button pinned
+  // as the hero (avatar/name/phone·DOB) scrolls away underneath it — no
+  // title text takes its place; a floating back arrow over whatever is
+  // currently under it is all the top bar needs once the page has its own
+  // section headers doing the labelling.
   Widget _buildHeaderSliver(dynamic user, bool isDark) {
-    final gradientColors = isDark
-        ? [const Color(0xFF1A1A2E), const Color(0xFF16213E)]
-        : [const Color(0xFF1B5E20), const Color(0xFF2E7D32)];
+    final pageBackground = isDark ? const Color(0xFF121212) : const Color(0xFFF5F5F5);
+    final heroDark = isDark ? const Color(0xFF14251B) : const Color(0xFF1B5E20);
+    final heroLight = isDark ? const Color(0xFF1A1A2E) : const Color(0xFF2E7D32);
+    final gradientColors = [heroDark, heroLight, pageBackground];
 
     final subtitleParts = <String>[
       if (user?.phone != null && user.phone.toString().trim().isNotEmpty)
@@ -359,30 +368,28 @@ class _ProfileScreenState extends State<ProfileScreen> {
     return SliverAppBar(
       pinned: true,
       elevation: 0,
-      expandedHeight: 248,
-      backgroundColor: isDark ? const Color(0xFF1E1E1E) : Colors.white,
+      expandedHeight: 236,
+      backgroundColor: pageBackground,
       surfaceTintColor: Colors.transparent,
       leading: Padding(
         padding: const EdgeInsets.all(8),
         child: _buildBackButton(isDark),
       ),
       flexibleSpace: FlexibleSpaceBar(
-        centerTitle: true,
-        titlePadding: const EdgeInsets.only(bottom: 16),
-        title: Text(
-          'Profile',
-          style: TextStyle(
-            fontSize: 18,
-            fontWeight: FontWeight.w800,
-            color: isDark ? Colors.white : Colors.black87,
-          ),
-        ),
         background: Container(
           decoration: BoxDecoration(
+            // Fades all the way to the page's own background colour by the
+            // bottom of the header — no hard colour seam where this sliver
+            // ends and the scrollable body begins. The quick-action cards
+            // right below (see _buildQuickActions) are pulled up with a
+            // negative top margin into this fade zone, so they read as
+            // floating across the boundary rather than starting fresh
+            // below a line.
             gradient: LinearGradient(
-              begin: Alignment.topLeft,
-              end: Alignment.bottomRight,
+              begin: Alignment.topCenter,
+              end: Alignment.bottomCenter,
               colors: gradientColors,
+              stops: const [0.0, 0.5, 1.0],
             ),
           ),
           child: SafeArea(
@@ -421,9 +428,9 @@ class _ProfileScreenState extends State<ProfileScreen> {
                           decoration: BoxDecoration(
                             shape: BoxShape.circle,
                             color: Colors.white,
-                            border: Border.all(color: gradientColors.first, width: 1.5),
+                            border: Border.all(color: heroDark, width: 1.5),
                           ),
-                          child: Icon(Icons.edit_rounded, size: 14, color: gradientColors.last),
+                          child: Icon(Icons.edit_rounded, size: 14, color: heroLight),
                         ),
                       ),
                     ],
@@ -473,7 +480,10 @@ class _ProfileScreenState extends State<ProfileScreen> {
 
   Widget _buildQuickActions(bool isDark, WalletProvider walletProvider) {
     return Padding(
-      padding: const EdgeInsets.all(16),
+      // Negative top: pulls the row up into the header gradient's fade-out
+      // zone so the cards read as floating across the hero/page boundary
+      // rather than starting fresh below a hard colour line.
+      padding: const EdgeInsets.fromLTRB(16, -34, 16, 16),
       child: Row(
         children: [
           _buildQuickActionCard(
