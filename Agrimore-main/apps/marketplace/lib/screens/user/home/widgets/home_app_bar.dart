@@ -266,11 +266,11 @@ class _HomeAppBarState extends State<HomeAppBar> {
             // Top section - Only show when not collapsed
             if (!widget.isCollapsed) ...[
               _buildTopRow(isDark, isB2B),
-              const SizedBox(height: 12),
+              const SizedBox(height: 8),
             ],
             // Search bar + B2B toggle - always visible
             _buildSearchBar(isDark, isB2B),
-            const SizedBox(height: 10),
+            const SizedBox(height: 8),
           ],
         ),
       ),
@@ -279,35 +279,36 @@ class _HomeAppBarState extends State<HomeAppBar> {
 
   Widget _buildTopRow(bool isDark, bool isB2B) {
     return Padding(
-      padding: const EdgeInsets.fromLTRB(16, 14, 16, 0),
+      padding: const EdgeInsets.fromLTRB(16, 10, 16, 0),
       child: Row(
-        crossAxisAlignment: CrossAxisAlignment.start,
+        crossAxisAlignment: CrossAxisAlignment.center,
         children: [
           // Left: "Agrimore in" / "30 minutes" / address
           Expanded(
             child: Column(
+              mainAxisSize: MainAxisSize.min,
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
                 Text(
                   isB2B ? 'Agrimore B2B in' : 'Agrimore in',
                   style: TextStyle(
-                    fontSize: 13,
+                    fontSize: 11,
                     fontWeight: FontWeight.w700,
                     color: Colors.white.withOpacity(0.85),
                   ),
                 ),
-                const SizedBox(height: 2),
+                const SizedBox(height: 1),
                 Text(
                   isB2B ? 'Bulk Freight' : '30 minutes',
                   style: const TextStyle(
-                    fontSize: 26,
+                    fontSize: 21,
                     fontWeight: FontWeight.w900,
                     color: Colors.white,
                     letterSpacing: -0.5,
                     height: 1.0,
                   ),
                 ),
-                const SizedBox(height: 8),
+                const SizedBox(height: 5),
                 // Location - Prioritizes saved address, falls back to auto-detected
                 Consumer<AddressProvider>(
                   builder: (context, addressProvider, _) {
@@ -362,7 +363,7 @@ class _HomeAppBarState extends State<HomeAppBar> {
                                     TextSpan(
                                       text: '$label - ',
                                       style: const TextStyle(
-                                        fontSize: 12.5,
+                                        fontSize: 11.5,
                                         fontWeight: FontWeight.w800,
                                         color: Colors.white,
                                       ),
@@ -370,7 +371,7 @@ class _HomeAppBarState extends State<HomeAppBar> {
                                   TextSpan(
                                     text: addressText,
                                     style: TextStyle(
-                                      fontSize: 12.5,
+                                      fontSize: 11.5,
                                       fontWeight: FontWeight.w500,
                                       color: Colors.white.withOpacity(0.85),
                                     ),
@@ -382,7 +383,7 @@ class _HomeAppBarState extends State<HomeAppBar> {
                           const SizedBox(width: 2),
                           Icon(
                             Icons.keyboard_arrow_down_rounded,
-                            size: 16,
+                            size: 15,
                             color: Colors.white.withOpacity(0.85),
                           ),
                         ],
@@ -393,13 +394,15 @@ class _HomeAppBarState extends State<HomeAppBar> {
               ],
             ),
           ),
-          const SizedBox(width: 12),
-          // Right: Wallet + Profile avatar
+          const SizedBox(width: 10),
+          // Right: Wallet + Profile avatar — same 32x32 circle, single row,
+          // no stacked label under either so their centres line up exactly.
           Row(
             mainAxisSize: MainAxisSize.min,
+            crossAxisAlignment: CrossAxisAlignment.center,
             children: [
               _buildWalletIconBtn(isDark),
-              const SizedBox(width: 10),
+              const SizedBox(width: 8),
               _buildProfileAvatar(isDark, isB2B),
             ],
           ),
@@ -408,53 +411,36 @@ class _HomeAppBarState extends State<HomeAppBar> {
     );
   }
 
-  // Circular icon + tiny balance badge underneath — mirrors the profile
-  // avatar's shape so the two sit as a matched pair at the top-right.
+  static const double _kTopIconSize = 32;
+
   Widget _buildWalletIconBtn(bool isDark) {
     return Consumer<WalletProvider>(
       builder: (context, walletProvider, _) {
-        final balance = walletProvider.balance;
-        final displayBalance = balance >= 1000
-            ? '₹${(balance / 1000).toStringAsFixed(1)}k'
-            : '₹${balance.toStringAsFixed(0)}';
         return GestureDetector(
           onTap: () {
             HapticFeedback.lightImpact();
             Navigator.pushNamed(context, AppRoutes.wallet);
           },
-          child: Column(
-            mainAxisSize: MainAxisSize.min,
-            children: [
-              Container(
-                width: 36,
-                height: 36,
-                decoration: BoxDecoration(
-                  shape: BoxShape.circle,
-                  color: Colors.white,
-                  boxShadow: [
-                    BoxShadow(
-                      color: Colors.black.withOpacity(0.15),
-                      blurRadius: 6,
-                      offset: const Offset(0, 2),
-                    ),
-                  ],
+          child: Container(
+            width: _kTopIconSize,
+            height: _kTopIconSize,
+            decoration: BoxDecoration(
+              shape: BoxShape.circle,
+              color: Colors.white,
+              border: Border.all(color: Colors.white, width: 1.5),
+              boxShadow: [
+                BoxShadow(
+                  color: Colors.black.withOpacity(0.15),
+                  blurRadius: 6,
+                  offset: const Offset(0, 2),
                 ),
-                child: Icon(
-                  Icons.account_balance_wallet_rounded,
-                  size: 18,
-                  color: isDark ? AppColors.primaryLight : AppColors.primary,
-                ),
-              ),
-              const SizedBox(height: 2),
-              Text(
-                displayBalance,
-                style: const TextStyle(
-                  fontSize: 10,
-                  fontWeight: FontWeight.w800,
-                  color: Colors.white,
-                ),
-              ),
-            ],
+              ],
+            ),
+            child: Icon(
+              Icons.account_balance_wallet_rounded,
+              size: 16,
+              color: isDark ? AppColors.primaryLight : AppColors.primary,
+            ),
           ),
         );
       },
@@ -463,15 +449,19 @@ class _HomeAppBarState extends State<HomeAppBar> {
 
   // Was missing entirely before — the home app bar had a Wallet button but
   // no way to reach Profile except through the bottom nav. Ported from the
-  // reference build: a small circular avatar (photo, or the user's first
-  // initial as a fallback) that pushes ProfileScreen directly.
+  // reference build: a small circular avatar (photo, or a generic user icon
+  // as a fallback) that pushes ProfileScreen directly.
   Widget _buildProfileAvatar(bool isDark, bool isB2B) {
     return Consumer<app_auth.AuthProvider>(
       builder: (context, authProvider, _) {
         final user = authProvider.currentUser;
         final photoUrl = user?.photoUrl;
-        final userName = user?.name ?? 'U';
-        final initial = userName.isNotEmpty ? userName[0].toUpperCase() : 'U';
+        final iconColor = isB2B ? const Color(0xFFD97706) : AppColors.primary;
+        final fallbackIcon = Icon(
+          Icons.person_rounded,
+          size: 18,
+          color: iconColor,
+        );
 
         return GestureDetector(
           onTap: () {
@@ -482,8 +472,8 @@ class _HomeAppBarState extends State<HomeAppBar> {
             );
           },
           child: Container(
-            width: 36,
-            height: 36,
+            width: _kTopIconSize,
+            height: _kTopIconSize,
             decoration: BoxDecoration(
               shape: BoxShape.circle,
               color: isDark ? AppColors.surfaceDark : const Color(0xFFFEF3C7),
@@ -501,27 +491,9 @@ class _HomeAppBarState extends State<HomeAppBar> {
                   ? Image.network(
                       photoUrl,
                       fit: BoxFit.cover,
-                      errorBuilder: (_, __, ___) => Center(
-                        child: Text(
-                          initial,
-                          style: TextStyle(
-                            fontSize: 14,
-                            fontWeight: FontWeight.w900,
-                            color: isB2B ? const Color(0xFFD97706) : AppColors.primary,
-                          ),
-                        ),
-                      ),
+                      errorBuilder: (_, __, ___) => Center(child: fallbackIcon),
                     )
-                  : Center(
-                      child: Text(
-                        initial,
-                        style: TextStyle(
-                          fontSize: 14,
-                          fontWeight: FontWeight.w900,
-                          color: isB2B ? const Color(0xFFD97706) : AppColors.primary,
-                        ),
-                      ),
-                    ),
+                  : Center(child: fallbackIcon),
             ),
           ),
         );
@@ -556,7 +528,7 @@ class _HomeAppBarState extends State<HomeAppBar> {
                 }
               },
               child: Container(
-                height: 48,
+                height: 44,
                 decoration: BoxDecoration(
                   color: isDark ? const Color(0xFF2A2A2A) : Colors.white,
                   borderRadius: BorderRadius.circular(14),
