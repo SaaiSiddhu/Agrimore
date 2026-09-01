@@ -71,7 +71,7 @@ class DashboardScreen extends StatelessWidget {
             _buildCommissionSummary(uid),
             const SizedBox(height: 16),
             const Text(
-              'B2B Orders',
+              'Orders Attributed To You',
               style: TextStyle(fontSize: 16, fontWeight: FontWeight.w800),
             ),
             const SizedBox(height: 8),
@@ -148,7 +148,7 @@ class DashboardScreen extends StatelessWidget {
         if (docs.isEmpty) {
           return const Padding(
             padding: EdgeInsets.all(24),
-            child: Center(child: Text('No B2B orders attributed to you yet')),
+            child: Center(child: Text('No orders attributed to you yet')),
           );
         }
 
@@ -158,12 +158,57 @@ class DashboardScreen extends StatelessWidget {
             final orderNumber = d['orderNumber']?.toString() ?? doc.id;
             final total = (d['total'] as num?)?.toDouble() ?? 0.0;
             final status = (d['orderStatus'] ?? 'pending').toString();
+            // Phase 16C-0: `orderMode` is already present on every fetched
+            // order document (createOrder.ts writes it as "B2C" | "B2B" on
+            // every order, no legacy documents predate the field) — this is
+            // the same document already streamed by the query above, so
+            // reading it here adds no Firestore read. Anything other than
+            // an exact (case-normalised) "B2B"/"B2C" renders no badge at
+            // all, rather than guessing or printing "null".
+            final rawMode = d['orderMode'];
+            final normalizedMode =
+                rawMode is String ? rawMode.trim().toUpperCase() : null;
+            final modeLabel = normalizedMode == 'B2B'
+                ? 'B2B'
+                : normalizedMode == 'B2C'
+                    ? 'Retail'
+                    : null;
 
             return Card(
               margin: const EdgeInsets.only(bottom: 8),
               child: ListTile(
                 title: Text('#$orderNumber'),
-                subtitle: Text(_formatMoney(total)),
+                // Wrap (not Row) so a long order total plus the mode badge
+                // reflow onto their own line on a narrow screen instead of
+                // overflowing horizontally — dropping to a second line
+                // costs nothing here, but clipping either piece of text
+                // would (apps/marketplace has shipped a product-card
+                // overflow bug from exactly this kind of fixed-width Row).
+                subtitle: Wrap(
+                  spacing: 8,
+                  runSpacing: 2,
+                  crossAxisAlignment: WrapCrossAlignment.center,
+                  children: [
+                    Text(_formatMoney(total)),
+                    if (modeLabel != null)
+                      Container(
+                        padding: const EdgeInsets.symmetric(
+                            horizontal: 6, vertical: 2),
+                        decoration: BoxDecoration(
+                          color: Colors.grey.shade200,
+                          borderRadius: BorderRadius.circular(6),
+                        ),
+                        child: Text(
+                          modeLabel,
+                          style: TextStyle(
+                            fontSize: 9.5,
+                            fontWeight: FontWeight.w700,
+                            color: Colors.grey.shade700,
+                          ),
+                        ),
+                      ),
+                  ],
+                ),
                 trailing: Container(
                   padding:
                       const EdgeInsets.symmetric(horizontal: 8, vertical: 4),

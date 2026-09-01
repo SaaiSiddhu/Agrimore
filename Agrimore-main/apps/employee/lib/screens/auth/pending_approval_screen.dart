@@ -51,7 +51,7 @@ class EmployeePendingApprovalScreen extends StatelessWidget {
                 ),
                 const SizedBox(height: 8),
                 Text(
-                  'Once approved, you can start earning commission on B2B orders.',
+                  'Once approved, you can start earning commission on orders attributed to you.',
                   textAlign: TextAlign.center,
                   style: TextStyle(
                     fontSize: 14,
