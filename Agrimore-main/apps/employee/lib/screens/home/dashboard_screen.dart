@@ -2,15 +2,14 @@ import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:firebase_auth/firebase_auth.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
-import 'package:provider/provider.dart';
 import 'package:share_plus/share_plus.dart';
 // agrimore_ui re-exports agrimore_core, so this single import supplies both
 // AppColors and EmployeeModel (importing agrimore_core as well trips
 // unnecessary_import, and this app's analyze baseline is zero issues).
 import 'package:agrimore_ui/agrimore_ui.dart';
-import '../../providers/auth_provider.dart';
 import '../wallet/wallet_screen.dart';
 import '../wallet/payout_screen.dart';
+import '../profile/profile_screen.dart';
 
 /// Employee sales dashboard. Lists orders attributed to this employee
 /// (orders.employeeUid == currentUid — OrderModel already has this field,
@@ -26,7 +25,6 @@ class DashboardScreen extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final uid = FirebaseAuth.instance.currentUser?.uid;
-    final authProvider = context.watch<EmployeeAuthProvider>();
 
     if (uid == null) {
       return const Scaffold(body: Center(child: CircularProgressIndicator()));
@@ -51,10 +49,16 @@ class DashboardScreen extends StatelessWidget {
               MaterialPageRoute(builder: (_) => const PayoutScreen()),
             ),
           ),
+          // Phase 16C, Workstream 2: the old bare, unlabelled logout icon
+          // here signed a user out on a single mis-tap, with no
+          // confirmation. Sign-out now lives in ProfileScreen, labelled and
+          // behind a confirmation dialog — this button just navigates.
           IconButton(
-            icon: const Icon(Icons.logout_rounded),
-            tooltip: 'Sign Out',
-            onPressed: () => authProvider.signOut(),
+            icon: const Icon(Icons.person_outline_rounded),
+            tooltip: 'Profile',
+            onPressed: () => Navigator.of(context).push(
+              MaterialPageRoute(builder: (_) => const ProfileScreen()),
+            ),
           ),
         ],
       ),
