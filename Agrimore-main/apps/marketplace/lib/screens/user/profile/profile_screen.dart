@@ -27,6 +27,7 @@ import 'package:firebase_auth/firebase_auth.dart';
 import 'package:agrimore_ui/agrimore_ui.dart';
 import '../../../app/routes.dart';
 import '../../../providers/auth_provider.dart' as app_auth;
+import 'delete_account_screen.dart';
 import '../../../providers/theme_provider.dart';
 import '../../../providers/cart_provider.dart';
 import '../../../providers/seller_provider.dart';
@@ -363,6 +364,22 @@ class _ProfileScreenState extends State<ProfileScreen> {
                       icon: Icons.logout_rounded,
                       title: 'Log out',
                       onTap: _logout,
+                      isDestructive: true,
+                    ),
+                    // Phase 17, Workstream 2: placed last — visually
+                    // subordinate to every other item in this section,
+                    // including Log out, for an action this app never had
+                    // a reachable path to before this phase.
+                    _MenuItem(
+                      icon: Icons.person_remove_outlined,
+                      title: 'Delete account',
+                      onTap: () {
+                        HapticFeedback.lightImpact();
+                        Navigator.push(
+                          context,
+                          MaterialPageRoute(builder: (_) => const DeleteAccountScreen()),
+                        );
+                      },
                       isDestructive: true,
                     ),
                   ],
