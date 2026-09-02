@@ -10,7 +10,6 @@
 // confirm button stays disabled until the user has explicitly
 // acknowledged that — see _acknowledged below.
 
-import 'package:cloud_functions/cloud_functions.dart';
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 
@@ -46,6 +45,11 @@ class _DeleteAccountScreenState extends State<DeleteAccountScreen> {
         'or associate accounting that depends on it stays correct',
   ];
 
+  // authProvider.deleteAccount() catches everything internally (see
+  // AuthProvider.deleteAccount()) and always returns a bool rather than
+  // throwing — so this method has exactly one success path and one
+  // failure path, both read off the provider afterward, never a caught
+  // exception here.
   Future<void> _submit() async {
     setState(() {
       _state = _DeletionState.submitting;
@@ -53,48 +57,35 @@ class _DeleteAccountScreenState extends State<DeleteAccountScreen> {
     });
 
     final navigator = Navigator.of(context);
-    try {
-      final authProvider = context.read<app_auth.AuthProvider>();
-      final ok = await authProvider.deleteAccount();
-      if (!mounted) return;
+    final authProvider = context.read<app_auth.AuthProvider>();
+    final ok = await authProvider.deleteAccount();
+    if (!mounted) return;
 
-      if (ok) {
-        // Clean, full-stack replacement with the signed-out route — never
-        // leaves this pushed screen (or anything below it) reachable via
-        // back, the same "don't strand the user on a dead route after
-        // sign-out" lesson apps/employee's ProfileScreen already proved,
-        // taken one step further since there is no session left to return
-        // to at all.
-        navigator.pushNamedAndRemoveUntil(AppRoutes.login, (route) => false);
-        return;
-      }
-
-      // authProvider.deleteAccount() returns false (not a thrown
-      // exception) on failure and stores the reason on authProvider.error
-      // — mirror that here rather than inventing a second error channel.
-      final message = authProvider.error;
-      setState(() {
-        _state = _DeletionState.failed;
-        _errorMessage = (message == null || message.isEmpty)
-            ? 'Something went wrong. Please try again.'
-            : message;
-      });
-    } on FirebaseFunctionsException catch (e) {
-      if (!mounted) return;
-      setState(() {
-        _state = e.code == 'failed-precondition'
-            ? _DeletionState.refused
-            : _DeletionState.failed;
-        _errorMessage = e.message ?? 'Something went wrong. Please try again.';
-      });
-    } catch (e) {
-      if (!mounted) return;
-      setState(() {
-        _state = _DeletionState.failed;
-        _errorMessage =
-            'Could not reach the server. Check your connection and try again.';
-      });
+    if (ok) {
+      // Clean, full-stack replacement with the signed-out route — never
+      // leaves this pushed screen (or anything below it) reachable via
+      // back, the same "don't strand the user on a dead route after
+      // sign-out" lesson apps/employee's ProfileScreen already proved,
+      // taken one step further since there is no session left to return
+      // to at all.
+      navigator.pushNamedAndRemoveUntil(AppRoutes.login, (route) => false);
+      return;
     }
+
+    // authProvider.errorCode carries the original
+    // FirebaseFunctionsException.code through AuthException — a
+    // 'failed-precondition' is one of deleteUserData's three refusal
+    // cases (each with its own specific, actionable message already
+    // written server-side); anything else (network failure, a genuine
+    // server error) is a plain failure with a generic retry banner.
+    final message = authProvider.error;
+    final isRefusal = authProvider.errorCode == 'failed-precondition';
+    setState(() {
+      _state = isRefusal ? _DeletionState.refused : _DeletionState.failed;
+      _errorMessage = (message == null || message.isEmpty)
+          ? 'Something went wrong. Please try again.'
+          : message;
+    });
   }
 
   @override

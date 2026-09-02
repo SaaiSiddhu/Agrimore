@@ -839,22 +839,37 @@ class AuthService {
     }
   }
 
-  // ✅ Delete account
+  // Phase 17, Workstream 3: routes through the deleteUserData callable
+  // instead of a client-side Firestore delete. The old
+  // `_firestore.collection('users').doc(user.uid).delete()` here could
+  // never have worked — firestore.rules has said
+  // `allow delete: if isAdmin();` on users/{userId} since before this
+  // engagement started — and `await user.delete()` right after it deleted
+  // the AUTH user regardless, leaving an orphaned users/ doc (which itself
+  // never actually happened, since the Firestore delete always threw
+  // first). The callable now does the real work — Firestore tiering AND
+  // the Auth user deletion, server-side, in that order — so this method
+  // no longer touches `user.delete()` or `_firestore` at all; it is a
+  // sign-in-required precondition check plus a single callable call.
   Future<void> deleteAccount() async {
+    final user = currentUser;
+    if (user == null) throw UnauthorizedException();
+
+    debugPrint('🔥 Deleting account for: ${user.uid}');
+
     try {
-      final user = currentUser;
-      if (user == null) throw UnauthorizedException();
-
-      debugPrint('🔥 Deleting account for: ${user.uid}');
-
-      await _firestore.collection('users').doc(user.uid).delete();
-      await user.delete();
+      final callable = FirebaseFunctions.instance.httpsCallable('deleteUserData');
+      await callable.call<Map<String, dynamic>>();
       await SharedPreferencesService.clearUserSession();
-
       debugPrint('✅ Account deleted successfully');
-    } on FirebaseAuthException catch (e) {
+    } on FirebaseFunctionsException catch (e) {
+      // Code preserved (not just the message) so callers — see
+      // AuthProvider.deleteAccount() and DeleteAccountScreen — can tell a
+      // refusal (failed-precondition: wallet balance / in-flight order /
+      // pending payout, with a specific actionable message already
+      // written by deleteUserData.ts) apart from any other failure.
       debugPrint('❌ Error deleting account: ${e.code} - ${e.message}');
-      throw _handleAuthException(e);
+      throw AuthException(e.message ?? 'Failed to delete account', code: e.code);
     } catch (e) {
       debugPrint('❌ Error deleting account: $e');
       throw AuthException('Failed to delete account: ${e.toString()}');

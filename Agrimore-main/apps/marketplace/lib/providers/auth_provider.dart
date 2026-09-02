@@ -21,6 +21,12 @@ class AuthProvider with ChangeNotifier {
   bool _isLoading = false;
   bool _isInitializing = true;
   String? _error;
+  // Phase 17, Workstream 3: carries the original AuthException.code (e.g.
+  // 'failed-precondition' from deleteUserData's refusal cases) alongside
+  // the human-readable _error message, so a caller like
+  // DeleteAccountScreen can distinguish "you need to do something first"
+  // from a generic failure without parsing message text.
+  String? _errorCode;
   DateTime? _lastAuthCheck;
   bool _rememberMe = false;
   int _failedLoginAttempts = 0;
@@ -34,6 +40,7 @@ class AuthProvider with ChangeNotifier {
   bool get isLoading => _isLoading;
   bool get isInitializing => _isInitializing;
   String? get error => _error;
+  String? get errorCode => _errorCode;
   bool get isLoggedIn => _currentUser != null;
   bool get isAdmin => _currentUser?.isAdmin ?? false;
   bool get isSeller => _currentUser?.isSeller ?? false;
@@ -796,6 +803,7 @@ class AuthProvider with ChangeNotifier {
     try {
       _isLoading = true;
       _error = null;
+      _errorCode = null;
       notifyListeners();
 
       debugPrint('🗑️ Deleting account...');
@@ -816,7 +824,18 @@ class AuthProvider with ChangeNotifier {
       return true;
     } catch (e) {
       debugPrint('❌ Error deleting account: $e');
-      _error = 'Failed to delete account. Please try again.';
+      // Phase 17, Workstream 3: propagate the REAL reason
+      // (AuthException.message/.code, carrying deleteUserData's specific
+      // refusal message when there is one) instead of a hardcoded generic
+      // string — a caller cannot explain a refusal it was never told
+      // about.
+      if (e is AuthException) {
+        _error = e.message;
+        _errorCode = e.code;
+      } else {
+        _error = 'Failed to delete account. Please try again.';
+        _errorCode = null;
+      }
       await _logAuthEvent('account_deletion', false,
           _currentUser?.email ?? 'unknown',
           error: e.toString());
