@@ -4,6 +4,7 @@ import 'package:provider/provider.dart';
 import '../providers/auth_provider.dart';
 import '../screens/auth/login_screen.dart';
 import '../screens/auth/pending_approval_screen.dart';
+import '../screens/auth/suspended_screen.dart';
 import '../screens/home/dashboard_screen.dart';
 
 import 'package:agrimore_ui/agrimore_ui.dart';
@@ -14,7 +15,7 @@ class App extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return MaterialApp(
-      title: 'Agrimore Employee',
+      title: 'Agrimore Sales Associate',
       debugShowCheckedModeBanner: false,
       theme: ThemeData(
         colorScheme: ColorScheme.fromSeed(
@@ -46,8 +47,8 @@ class _EmployeeSplashWrapper extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return PremiumSplashScreen(
-      appName: 'Agrimore Employee',
-      tagline: 'Sales Team',
+      appName: 'Agrimore',
+      tagline: 'Sales Associate',
       // No employee-specific package icon exists yet (agrimore_ui only ships
       // customer/seller/delivery/admin logos) — reusing admin_logo.png as the
       // closest fit since employees are internal staff, not customer-facing
@@ -81,6 +82,15 @@ class _AuthGate extends StatelessWidget {
         // Fully authenticated and approved employee
         if (authProvider.isAuthenticated && authProvider.isEmployee) {
           return const DashboardScreen();
+        }
+
+        // Phase 16C, Workstream 5: checked BEFORE the pending branch below
+        // — a suspended associate's error message must never match the
+        // pending branch's own .contains('pending') check.
+        if (authProvider.user != null &&
+            authProvider.error != null &&
+            authProvider.error!.contains('suspended')) {
+          return const SuspendedScreen();
         }
 
         // Employee logged in but pending approval or has error

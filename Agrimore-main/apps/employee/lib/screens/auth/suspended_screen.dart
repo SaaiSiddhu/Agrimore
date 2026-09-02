@@ -1,9 +1,20 @@
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
+import 'package:agrimore_core/agrimore_core.dart';
 import '../../providers/auth_provider.dart';
 
-class EmployeePendingApprovalScreen extends StatelessWidget {
-  const EmployeePendingApprovalScreen({super.key});
+/// Phase 16C, Workstream 5 — the honest state for a suspended associate.
+///
+/// Until this phase, a suspended associate saw the EXACT SAME "pending
+/// approval... under review" message as a brand-new applicant (see
+/// EmployeeAuthProvider._loadUserData) — false for anyone who had
+/// previously been approved and working. This screen states plainly that
+/// the account is suspended and points to support, without inventing a
+/// reason or an appeals process that doesn't exist server-side (nothing in
+/// functions/src/employee knows WHY an admin suspended an account, so this
+/// screen doesn't guess).
+class SuspendedScreen extends StatelessWidget {
+  const SuspendedScreen({super.key});
 
   @override
   Widget build(BuildContext context) {
@@ -21,18 +32,18 @@ class EmployeePendingApprovalScreen extends StatelessWidget {
                   width: 120,
                   height: 120,
                   decoration: BoxDecoration(
-                    color: Colors.blue.shade50,
+                    color: Colors.red.shade50,
                     shape: BoxShape.circle,
                   ),
                   child: Icon(
-                    Icons.badge_rounded,
+                    Icons.pause_circle_outline_rounded,
                     size: 56,
-                    color: Colors.blue.shade700,
+                    color: Colors.red.shade700,
                   ),
                 ),
                 const SizedBox(height: 32),
                 Text(
-                  'Pending Approval',
+                  'Account Suspended',
                   style: TextStyle(
                     fontSize: 28,
                     fontWeight: FontWeight.w800,
@@ -41,7 +52,8 @@ class EmployeePendingApprovalScreen extends StatelessWidget {
                 ),
                 const SizedBox(height: 12),
                 Text(
-                  'Your Sales Associate application is under review by the admin team.',
+                  'Your Sales Associate account has been suspended by an '
+                  'administrator.',
                   textAlign: TextAlign.center,
                   style: TextStyle(
                     fontSize: 16,
@@ -51,7 +63,8 @@ class EmployeePendingApprovalScreen extends StatelessWidget {
                 ),
                 const SizedBox(height: 8),
                 Text(
-                  'Once approved, you can start earning commission on orders attributed to you.',
+                  'Contact support at ${AppConstants.supportEmail} or '
+                  '${AppConstants.supportPhone} if you have questions.',
                   textAlign: TextAlign.center,
                   style: TextStyle(
                     fontSize: 14,

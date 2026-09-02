@@ -70,7 +70,7 @@ class _LoginScreenState extends State<LoginScreen> {
                     ),
                   ),
                   Text(
-                    'Employee',
+                    'Sales Associate',
                     textAlign: TextAlign.center,
                     style: TextStyle(
                       fontSize: 16,

@@ -56,7 +56,17 @@ class EmployeeAuthProvider extends ChangeNotifier {
               await _firestore.collection('employees').doc(uid).get();
           if (employeeDoc.exists) {
             final status = employeeDoc.data()?['status'] ?? 'pending';
-            if (status != 'approved') {
+            // Phase 16C, Workstream 5: previously ANY non-approved status —
+            // including 'suspended' — produced this exact same "pending
+            // approval" message, so a suspended associate (who may have
+            // been approved and working for months) was told they were
+            // still under initial review. Distinguishing the two is the
+            // ONLY change here — the check that gates FCM registration on
+            // status == 'approved' is untouched, and this still does not
+            // touch signIn()/OTP/the auth mechanism itself.
+            if (status == 'suspended') {
+              _error = 'Your associate account has been suspended.';
+            } else if (status != 'approved') {
               _error = 'Your account is pending approval by an administrator.';
             } else {
               await _updateFCMToken(uid);
