@@ -10,6 +10,7 @@ import 'package:agrimore_ui/agrimore_ui.dart';
 import '../wallet/wallet_screen.dart';
 import '../wallet/payout_screen.dart';
 import '../profile/profile_screen.dart';
+import '../orders/order_detail_screen.dart';
 
 /// Employee sales dashboard. Lists orders attributed to this employee
 /// (orders.employeeUid == currentUid — OrderModel already has this field,
@@ -209,6 +210,14 @@ class DashboardScreen extends StatelessWidget {
             return Card(
               margin: const EdgeInsets.only(bottom: 8),
               child: ListTile(
+                // Phase 16C, Workstream 3: passes the SAME already-fetched
+                // document straight into OrderDetailScreen — no re-query by
+                // id, no second read (locked decision 6).
+                onTap: () => Navigator.of(context).push(
+                  MaterialPageRoute(
+                    builder: (_) => OrderDetailScreen(orderId: doc.id, orderData: d),
+                  ),
+                ),
                 title: Text('#$orderNumber'),
                 // Wrap (not Row) so a long order total plus the mode badge
                 // reflow onto their own line on a narrow screen instead of
