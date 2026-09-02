@@ -96,6 +96,7 @@ export {
 // ============================================
 export { payEmployeeCommissionOnDelivery } from "./customer/employeeCommission";
 export { requestEmployeePayout } from "./customer/requestEmployeePayout";
+export { deleteUserData } from "./customer/deleteUserData";
 
 // ============================================
 // WALLET HARDENING (Finding #3)
