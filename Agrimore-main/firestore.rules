@@ -440,10 +440,32 @@ service cloud.firestore {
     }
 
     match /orders/{orderId} {
-      // Order owner can read, seller/delivery partner/admin can read all
+      // Order owner, seller, delivery partner, attributed Sales Associate,
+      // or admin can read.
+      //
+      // Phase 16C-1: added the employeeUid branch. Until this phase, an
+      // associate had NO read path to an order attributed to them —
+      // apps/employee's dashboard has always run
+      // orders.where('employeeUid', isEqualTo: uid), and Firestore requires
+      // a list query's rule to be provably satisfiable from the query's own
+      // where() constraints, so that query failed closed, structurally,
+      // for every associate, always (confirmed against the real emulator
+      // with seeded data matching every OTHER branch below — data alone
+      // could not fix it; only a rule naming employeeUid could).
+      //
+      // Deliberately UNGATED by any isEmployee()/approval-status check —
+      // mirrors sellerId's own branch two lines below, which has never been
+      // gated behind an isSeller() check either. Two reasons: (1) the CTO's
+      // explicit view is that a SUSPENDED associate must keep read access
+      // to orders/commission history already earned — hiding it helps no
+      // one — and isEmployee() requires status == 'approved', which would
+      // revoke exactly that; (2) matching sellerId's existing shape keeps
+      // this one line as narrow, and only as narrow, as its closest
+      // precedent, rather than inventing a new, inconsistent pattern.
       allow read: if isAuthenticated() &&
         (resource.data.userId == request.auth.uid ||
          resource.data.sellerId == request.auth.uid ||
+         resource.data.employeeUid == request.auth.uid ||
          (isDeliveryPartner() && resource.data.deliveryPartnerId == request.auth.uid) ||
          isAvailableDeliveryOrder() ||
          isAdmin());
