@@ -66,7 +66,19 @@ class DashboardScreen extends StatelessWidget {
             // Phase 16B, Workstream 3b: first thing on the screen. This is
             // how an associate is attributed at all, so it outranks the
             // wallet figures below it.
-            _AssociateCodeCard(uid: uid),
+            //
+            // Phase 16C, Workstream 1: the associate-code card and the new
+            // onboarding-fee-status card both read nothing but
+            // employees/{uid} — so they now share ONE StreamBuilder/
+            // listener on that document instead of each opening its own.
+            // Two independent `.snapshots()` calls on the same document is
+            // a real, avoidable doubling of ongoing read cost for a screen
+            // every associate opens regularly (locked decision 6). Placed
+            // directly below the code card: both describe the same
+            // "employees/{uid}" facts (the code, then the fee gate behind
+            // it), before the screen moves on to a different document
+            // (wallets/{uid}) for the money summary below.
+            _buildAssociateSection(uid),
             const SizedBox(height: 16),
             _buildCommissionSummary(uid),
             const SizedBox(height: 16),
@@ -79,6 +91,22 @@ class DashboardScreen extends StatelessWidget {
           ],
         ),
       ),
+    );
+  }
+
+  Widget _buildAssociateSection(String uid) {
+    return StreamBuilder<DocumentSnapshot<Map<String, dynamic>>>(
+      stream:
+          FirebaseFirestore.instance.collection('employees').doc(uid).snapshots(),
+      builder: (context, snap) {
+        return Column(
+          children: [
+            _AssociateCodeCard(snapshot: snap),
+            const SizedBox(height: 12),
+            _OnboardingFeeStatusCard(snapshot: snap),
+          ],
+        );
+      },
     );
   }
 
@@ -255,10 +283,16 @@ class DashboardScreen extends StatelessWidget {
 ///
 /// Copy constraint (3e): this card explains the mechanism only. It states no
 /// figure, makes no promise, and implies no guaranteed income.
+///
+/// Phase 16C, Workstream 1: takes the employees/{uid} snapshot from the
+/// dashboard's own shared StreamBuilder (see _buildAssociateSection) rather
+/// than opening its own — the exact same state branching as before, just no
+/// longer opening a second listener on a document _OnboardingFeeStatusCard
+/// (below) reads too.
 class _AssociateCodeCard extends StatelessWidget {
-  final String uid;
+  final AsyncSnapshot<DocumentSnapshot<Map<String, dynamic>>> snapshot;
 
-  const _AssociateCodeCard({required this.uid});
+  const _AssociateCodeCard({required this.snapshot});
 
   static const String _guidance =
       'Share this code with your customers. When someone enters it at '
@@ -277,57 +311,51 @@ class _AssociateCodeCard extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    return StreamBuilder<DocumentSnapshot<Map<String, dynamic>>>(
-      stream:
-          FirebaseFirestore.instance.collection('employees').doc(uid).snapshots(),
-      builder: (context, snap) {
-        // State: the read failed (offline, or rules denied it).
-        if (snap.hasError) {
-          return _shell(
-            child: _message('Could not load your associate code right now.'),
-          );
-        }
+    // State: the read failed (offline, or rules denied it).
+    if (snapshot.hasError) {
+      return _shell(
+        child: _message('Could not load your associate code right now.'),
+      );
+    }
 
-        // State: still loading.
-        if (!snap.hasData) {
-          return _shell(child: _message('Loading your code…'));
-        }
+    // State: still loading.
+    if (!snapshot.hasData) {
+      return _shell(child: _message('Loading your code…'));
+    }
 
-        // State: employees/{uid} is missing. EmployeeAuthProvider signs a
-        // user out when this document is absent at login, so reaching this
-        // branch means it vanished mid-session — rare, but it must not
-        // render a blank card.
-        final doc = snap.data!;
-        if (!doc.exists || doc.data() == null) {
-          return _shell(
-            child: _message(
-              'We could not find your associate profile. Please sign out and '
-              'sign in again, or contact support.',
-            ),
-          );
-        }
+    // State: employees/{uid} is missing. EmployeeAuthProvider signs a
+    // user out when this document is absent at login, so reaching this
+    // branch means it vanished mid-session — rare, but it must not
+    // render a blank card.
+    final doc = snapshot.data!;
+    if (!doc.exists || doc.data() == null) {
+      return _shell(
+        child: _message(
+          'We could not find your associate profile. Please sign out and '
+          'sign in again, or contact support.',
+        ),
+      );
+    }
 
-        final employee = EmployeeModel.fromMap(doc.data()!, doc.id);
-        final code = employee.employeeCode.trim();
+    final employee = EmployeeModel.fromMap(doc.data()!, doc.id);
+    final code = employee.employeeCode.trim();
 
-        // State: the document exists but carries no code.
-        if (code.isEmpty) {
-          return _shell(
-            child: _message(
-              'No associate code has been assigned to your account yet. '
-              'Please contact support.',
-            ),
-          );
-        }
+    // State: the document exists but carries no code.
+    if (code.isEmpty) {
+      return _shell(
+        child: _message(
+          'No associate code has been assigned to your account yet. '
+          'Please contact support.',
+        ),
+      );
+    }
 
-        // State: code present. Shown whether or not the onboarding gate is
-        // cleared — hiding it would be wrong, because a B2B order attributes
-        // on this code regardless of the gate; an uncleared gate only stops
-        // RETAIL attribution, which the note below says plainly.
-        return _shell(
-          child: _codeBody(context, code, employee.hasClearedOnboardingGate),
-        );
-      },
+    // State: code present. Shown whether or not the onboarding gate is
+    // cleared — hiding it would be wrong, because a B2B order attributes
+    // on this code regardless of the gate; an uncleared gate only stops
+    // RETAIL attribution, which the note below says plainly.
+    return _shell(
+      child: _codeBody(context, code, employee.hasClearedOnboardingGate),
     );
   }
 
@@ -564,6 +592,150 @@ class _ActionButton extends StatelessWidget {
       ),
     );
   }
+}
+
+/// Phase 16C, Workstream 1 — the ₹500 onboarding fee's gate status, made
+/// visible in the associate's own app for the first time. Every one of
+/// these facts (onboardingPaid, onboardingWaived, onboardingFeeAmount,
+/// onboardingPaidAt, onboardingRefundedAt) already exists on
+/// employees/{uid}, written only by functions/src/employee/activationCore.ts
+/// and adminOnboardingActions.ts (S4) — this widget only ever reads them.
+///
+/// Deliberately separate from _AssociateCodeCard's own onboarding-gate note
+/// above: that note is a short "why your code might not work for retail"
+/// nudge; this card is the full, honest breakdown of which of the five real
+/// states applies. Deliberately says nothing about `status`/approval
+/// anywhere — clearing this gate is not approval (locked decision 4), and
+/// the two must stay visually and textually separate.
+///
+/// No payment affordance anywhere in this widget, in any state (locked
+/// decision 2) — "not yet cleared" is informational prose only.
+class _OnboardingFeeStatusCard extends StatelessWidget {
+  final AsyncSnapshot<DocumentSnapshot<Map<String, dynamic>>> snapshot;
+
+  const _OnboardingFeeStatusCard({required this.snapshot});
+
+  @override
+  Widget build(BuildContext context) {
+    // Loading, error, and missing-document states are already explained in
+    // full, directly above, by _AssociateCodeCard reading this exact same
+    // snapshot — repeating a second near-identical banner here would be
+    // noise, not honesty, so this card simply doesn't render until there is
+    // a real employee document to describe.
+    if (snapshot.hasError || !snapshot.hasData) {
+      return const SizedBox.shrink();
+    }
+    final doc = snapshot.data!;
+    if (!doc.exists || doc.data() == null) {
+      return const SizedBox.shrink();
+    }
+
+    final employee = EmployeeModel.fromMap(doc.data()!, doc.id);
+    final state = _resolveState(employee);
+
+    return Container(
+      width: double.infinity,
+      padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 14),
+      decoration: BoxDecoration(
+        color: Colors.white,
+        borderRadius: BorderRadius.circular(14),
+        boxShadow: [
+          BoxShadow(
+            color: Colors.black.withValues(alpha: 0.05),
+            blurRadius: 10,
+            offset: const Offset(0, 3),
+          ),
+        ],
+      ),
+      child: Row(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Icon(state.icon, color: state.color, size: 20),
+          const SizedBox(width: 10),
+          Expanded(
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                const Text(
+                  'Onboarding Fee',
+                  style: TextStyle(
+                    fontSize: 12,
+                    fontWeight: FontWeight.w700,
+                    color: Colors.black54,
+                  ),
+                ),
+                const SizedBox(height: 2),
+                Text(
+                  state.message,
+                  style: const TextStyle(
+                    fontSize: 13,
+                    height: 1.4,
+                    fontWeight: FontWeight.w600,
+                    color: Colors.black87,
+                  ),
+                ),
+              ],
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+
+  // Order matters: a refund reverses a prior paid/waived clearance, so it
+  // must be checked FIRST — mirrors EmployeeModel.hasClearedOnboardingGate's
+  // own precedence ((paid || waived) && refundedAt == null).
+  _FeeStatusInfo _resolveState(EmployeeModel employee) {
+    if (employee.onboardingRefundedAt != null) {
+      return _FeeStatusInfo(
+        icon: Icons.undo_rounded,
+        color: Colors.orange.shade700,
+        message: 'Your onboarding fee was refunded. If you have questions, '
+            'please contact support.',
+      );
+    }
+
+    if (employee.onboardingPaid) {
+      final amount = employee.onboardingFeeAmount;
+      // A legacy or malformed document can carry onboardingPaid:true with
+      // no usable amount — never fall back to a hardcoded figure (a
+      // hardcoded "₹500" would be a guess, not a fact, and could be wrong).
+      final amountIsUsable = amount != null && amount.isFinite && amount > 0;
+      return _FeeStatusInfo(
+        icon: Icons.check_circle_rounded,
+        color: Colors.green.shade700,
+        message: amountIsUsable
+            ? 'Onboarding fee paid: ${PriceFormatter.formatPrice(amount)}.'
+            : 'Your onboarding fee has been received.',
+      );
+    }
+
+    if (employee.onboardingWaived) {
+      return const _FeeStatusInfo(
+        icon: Icons.verified_outlined,
+        color: Color(0xFF2563EB),
+        message: 'Your onboarding fee was waived.',
+      );
+    }
+
+    return const _FeeStatusInfo(
+      icon: Icons.info_outline_rounded,
+      color: Colors.black54,
+      message: "You haven't completed the onboarding fee yet.",
+    );
+  }
+}
+
+class _FeeStatusInfo {
+  final IconData icon;
+  final Color color;
+  final String message;
+
+  const _FeeStatusInfo({
+    required this.icon,
+    required this.color,
+    required this.message,
+  });
 }
 
 class _SummaryCard extends StatelessWidget {
