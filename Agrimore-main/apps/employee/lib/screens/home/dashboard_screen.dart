@@ -18,8 +18,21 @@ import '../orders/order_detail_screen.dart';
 /// directly from wallets/{uid}.lifetimeEarnings (simpler and already kept
 /// accurate by payEmployeeCommissionOnDelivery's own increment, rather than
 /// re-summing commissionAmount across delivered orders client-side).
-class DashboardScreen extends StatelessWidget {
+class DashboardScreen extends StatefulWidget {
   const DashboardScreen({super.key});
+
+  @override
+  State<DashboardScreen> createState() => _DashboardScreenState();
+}
+
+class _DashboardScreenState extends State<DashboardScreen> {
+  // Phase 19: this stream previously had NO limit — an unbounded realtime
+  // listener on a collection that only grows with an associate's tenure is
+  // a real, avoidable cost (locked decision 6), not a hypothetical one, on
+  // the screen every associate opens most often. Mirrors wallet_screen.dart's
+  // _pageSize exactly: starts at a sensible page size, grows on request via
+  // "Load more" rather than fetching the whole order history up front.
+  int _pageSize = 20;
 
   static String _formatMoney(double value) => 'Rs ${value.toStringAsFixed(0)}';
 
@@ -151,9 +164,18 @@ class DashboardScreen extends StatelessWidget {
 
   Widget _buildOrdersList(String uid) {
     return StreamBuilder<QuerySnapshot<Map<String, dynamic>>>(
+      // Phase 19: bounded by _pageSize (see field comment), mirroring
+      // wallet_screen.dart's _buildTransactionsList exactly. orderBy +
+      // limit rather than the previous unbounded .where(...) stream —
+      // sorting client-side after an unbounded fetch was the old shape;
+      // sorting server-side lets the limit actually bound the read.
+      // Requires the new orders(employeeUid ASC, createdAt DESC) composite
+      // index added in this same phase — see firestore.indexes.json.
       stream: FirebaseFirestore.instance
           .collection('orders')
           .where('employeeUid', isEqualTo: uid)
+          .orderBy('createdAt', descending: true)
+          .limit(_pageSize)
           .snapshots(),
       builder: (context, snap) {
         if (snap.hasError) {
@@ -168,15 +190,9 @@ class DashboardScreen extends StatelessWidget {
             child: Center(child: CircularProgressIndicator()),
           );
         }
-        final docs = snap.data!.docs.toList()
-          ..sort((a, b) {
-            final ta = a.data()['createdAt'];
-            final tb = b.data()['createdAt'];
-            if (ta is Timestamp && tb is Timestamp) {
-              return tb.toDate().compareTo(ta.toDate());
-            }
-            return 0;
-          });
+        // Already ordered by the query itself (createdAt desc) — no
+        // client-side re-sort needed.
+        final docs = snap.data!.docs;
 
         if (docs.isEmpty) {
           return const Padding(
@@ -185,8 +201,11 @@ class DashboardScreen extends StatelessWidget {
           );
         }
 
+        final reachedPageLimit = docs.length >= _pageSize;
+
         return Column(
-          children: docs.map((doc) {
+          children: [
+            ...docs.map((doc) {
             final d = doc.data();
             final orderNumber = d['orderNumber']?.toString() ?? doc.id;
             final total = (d['total'] as num?)?.toDouble() ?? 0.0;
@@ -272,7 +291,17 @@ class DashboardScreen extends StatelessWidget {
                 ),
               ),
             );
-          }).toList(),
+            }),
+            if (reachedPageLimit) ...[
+              const SizedBox(height: 8),
+              Center(
+                child: TextButton(
+                  onPressed: () => setState(() => _pageSize += 20),
+                  child: const Text('Load more'),
+                ),
+              ),
+            ],
+          ],
         );
       },
     );
