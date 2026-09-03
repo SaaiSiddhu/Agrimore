@@ -50,11 +50,13 @@ class _RateOrderScreenState extends State<RateOrderScreen> with SingleTickerProv
       }
       setState(() => _submitted = true);
     } catch (e) {
-      ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(content: Text('Error: $e'), backgroundColor: Colors.red),
-      );
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(content: Text('Error: $e'), backgroundColor: Colors.red),
+        );
+      }
     }
-    setState(() => _submitting = false);
+    if (mounted) setState(() => _submitting = false);
   }
 
   @override

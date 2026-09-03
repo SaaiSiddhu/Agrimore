@@ -261,8 +261,9 @@ class _WebWishlistScreenState extends State<WebWishlistScreen> {
     
     HapticFeedback.heavyImpact();
     await wishlistProvider.clearWishlist();
-    
-    if (mounted) {
+
+    // `context` is this method's own parameter — check its own .mounted.
+    if (context.mounted) {
       ScaffoldMessenger.of(context).showSnackBar(
         SnackBar(
           content: const Text('Wishlist cleared'),
@@ -291,7 +292,8 @@ class _WebWishlistScreenState extends State<WebWishlistScreen> {
 
     await wishlistProvider.clearWishlist();
 
-    if (mounted) {
+    // `context` is this method's own parameter — check its own .mounted.
+    if (context.mounted) {
       ScaffoldMessenger.of(context).showSnackBar(
         SnackBar(
           content: Text('${products.length} items moved to cart'),

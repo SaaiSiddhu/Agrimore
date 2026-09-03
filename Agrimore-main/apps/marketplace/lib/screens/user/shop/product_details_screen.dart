@@ -141,8 +141,14 @@ Future<void> _addToCart(BuildContext context, {bool buyNow = false}) async {
     variantOriginalPrice: variantOriginalPrice,
   );
 
+  // `context` is this method's own parameter, not necessarily the State's
+  // live context getter, so the State's `mounted` field doesn't guarantee
+  // it's still valid after the addItem() await above — check context.mounted
+  // once, here, for everything below.
+  if (!context.mounted) return;
+
   // 🚀 Fly-to-cart animation
-  if (mounted && !buyNow) {
+  if (!buyNow) {
     Offset? startPos;
     final renderBox = _addToCartKey.currentContext?.findRenderObject() as RenderBox?;
     if (renderBox != null) {
@@ -163,7 +169,7 @@ Future<void> _addToCart(BuildContext context, {bool buyNow = false}) async {
   }
 
   // Show success message
-  if (!buyNow && mounted) {
+  if (!buyNow) {
     ScaffoldMessenger.of(context).showSnackBar(
       SnackBar(
         content: Row(
@@ -196,7 +202,7 @@ Future<void> _addToCart(BuildContext context, {bool buyNow = false}) async {
   }
 
   // If Buy Now, navigate to cart immediately
-  if (buyNow && mounted) {
+  if (buyNow) {
     AppRoutes.navigateTo(context, AppRoutes.cart);
   }
 }

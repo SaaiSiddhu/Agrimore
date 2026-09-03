@@ -4883,7 +4883,11 @@ class _MobileCartScreenState extends State<MobileCartScreen>
                     : () async {
                         final success =
                             await cartProvider.removeItem(item.productId);
-                        if (success && mounted) {
+                        // This `context` is the itemBuilder's own, item-scoped
+                        // BuildContext, not the State's — the removed item's
+                        // element can go stale independently of the State's
+                        // own `mounted`, so check context.mounted specifically.
+                        if (success && context.mounted) {
                           SnackbarHelper.showSuccess(context, 'Item removed');
                           await _loadProductDetails();
                         }

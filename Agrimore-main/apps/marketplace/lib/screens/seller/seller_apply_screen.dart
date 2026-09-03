@@ -83,6 +83,7 @@ class _SellerApplyScreenState extends State<SellerApplyScreen> {
         'appliedAt': FieldValue.serverTimestamp(),
       });
 
+      if (!mounted) return;
       setState(() => _sellerStatus = 'pending');
       ScaffoldMessenger.of(context).showSnackBar(
         const SnackBar(content: Text('✅ Your seller application has been submitted!'), backgroundColor: Color(0xFF145A32)),

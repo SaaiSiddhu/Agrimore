@@ -239,6 +239,8 @@ class _EditProfileScreenState extends State<EditProfileScreen>
         }
       }
 
+      if (!mounted) return;
+
       // Step 2: Update profile via AuthProvider
       final authProvider =
           Provider.of<app_auth.AuthProvider>(context, listen: false);

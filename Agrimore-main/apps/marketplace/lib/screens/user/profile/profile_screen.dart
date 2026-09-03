@@ -178,6 +178,8 @@ class _ProfileScreenState extends State<ProfileScreen> {
         Provider.of<CartProvider>(context, listen: false).reset();
       } catch (e) {}
       await FirebaseAuth.instance.signOut();
+      // signOut() is a second async gap past the mounted check above.
+      if (!mounted) return;
       Navigator.of(context).pushReplacementNamed(AppRoutes.login);
     }
   }

@@ -36,6 +36,7 @@ class _SubscriptionSetupScreenState extends State<SubscriptionSetupScreen> {
 
     // Get user data
     final userDoc = await FirebaseFirestore.instance.collection('users').doc(user.uid).get();
+    if (!mounted) return;
     final userData = userDoc.data() ?? {};
 
     if (userData['defaultAddress'] == null || userData['location'] == null) {
@@ -75,6 +76,7 @@ class _SubscriptionSetupScreenState extends State<SubscriptionSetupScreen> {
         'createdAt': FieldValue.serverTimestamp(),
       });
 
+      if (!mounted) return;
       ScaffoldMessenger.of(context).showSnackBar(
         SnackBar(
           content: Text('Subscription Active! 🎉 First delivery tomorrow $_slot'),
@@ -82,10 +84,13 @@ class _SubscriptionSetupScreenState extends State<SubscriptionSetupScreen> {
         ),
       );
       Navigator.pop(context);
+      return;
     } catch (e) {
-      ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text('Error: $e'), backgroundColor: Colors.red));
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text('Error: $e'), backgroundColor: Colors.red));
+      }
     }
-    setState(() => _loading = false);
+    if (mounted) setState(() => _loading = false);
   }
 
   @override

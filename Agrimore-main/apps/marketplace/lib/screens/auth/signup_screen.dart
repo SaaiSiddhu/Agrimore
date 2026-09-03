@@ -186,6 +186,10 @@ class _SignupScreenState extends State<SignupScreen>
             debugPrint('Referral error (non-blocking): $e');
           }
         }
+        // The loadWallet()/applyReferralCode() awaits above can outlive the
+        // widget, so the outer `mounted` check is stale by the time we get
+        // here — re-check immediately before using context.
+        if (!mounted) return;
         Navigator.pushNamedAndRemoveUntil(context, '/main', (route) => false);
       }
     } catch (e) {

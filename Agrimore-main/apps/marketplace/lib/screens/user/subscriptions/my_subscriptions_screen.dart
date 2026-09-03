@@ -44,6 +44,7 @@ class _MySubscriptionsScreenState extends State<MySubscriptionsScreen> {
     try {
       await FirebaseFirestore.instance.collection('subscriptions').doc(id).update({'isActive': !current});
     } catch (e) {
+      if (!mounted) return;
       ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text('Error: $e'), backgroundColor: Colors.red));
     }
   }
@@ -68,6 +69,7 @@ class _MySubscriptionsScreenState extends State<MySubscriptionsScreen> {
       try {
         await FirebaseFirestore.instance.collection('subscriptions').doc(id).delete();
       } catch (e) {
+        if (!mounted) return;
         ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text('Error: $e'), backgroundColor: Colors.red));
       }
     }

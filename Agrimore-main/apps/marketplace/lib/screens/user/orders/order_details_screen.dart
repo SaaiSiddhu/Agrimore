@@ -1758,9 +1758,15 @@ class _OrderDetailsScreenState extends State<OrderDetailsScreen>
 
   void _showCancelDialog(OrderModel order, bool isDark) {
     final reasonController = TextEditingController();
+    // Captured before the dialog opens. The dialog's own builder context
+    // (below) is popped as soon as the user confirms, well before the
+    // cancelOrder() await even starts — using it again afterwards for
+    // navigation was reusing an already-detached context. screenContext is
+    // this screen's own, which the dialog never pops.
+    final screenContext = context;
     showDialog(
       context: context,
-      builder: (context) => Dialog(
+      builder: (dialogContext) => Dialog(
         backgroundColor: Colors.transparent,
         child: Container(
           margin: const EdgeInsets.all(20),
@@ -1847,7 +1853,7 @@ class _OrderDetailsScreenState extends State<OrderDetailsScreen>
                   children: [
                     Expanded(
                       child: OutlinedButton(
-                        onPressed: () => Navigator.pop(context),
+                        onPressed: () => Navigator.pop(dialogContext),
                         style: OutlinedButton.styleFrom(
                           padding: const EdgeInsets.symmetric(vertical: 12),
                           shape: RoundedRectangleBorder(
@@ -1874,13 +1880,14 @@ class _OrderDetailsScreenState extends State<OrderDetailsScreen>
                              _showToastMessage('⚠️ Please provide a reason', isSuccess: false);
                             return;
                           }
-                          Navigator.pop(context);
-                          final success = await Provider.of<OrderProvider>(context,
+                          Navigator.pop(dialogContext);
+                          final success = await Provider.of<OrderProvider>(
+                                  screenContext,
                                   listen: false)
                               .cancelOrder(order.id, reason);
-                          if (success && mounted) {
+                          if (success && screenContext.mounted) {
                             _showToastMessage('✅ Order cancelled successfully');
-                            Navigator.pop(context);
+                            Navigator.pop(screenContext);
                           } else {
                             _showToastMessage('❌ Failed to cancel order', isSuccess: false);
                           }

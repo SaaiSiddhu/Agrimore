@@ -421,7 +421,9 @@ class _MobileWishlistScreenState extends State<MobileWishlistScreen>
     HapticFeedback.heavyImpact();
     await wishlistProvider.clearWishlist();
 
-    if (mounted) {
+    // `context` is this method's own parameter — check its own .mounted,
+    // not the State's bare `mounted`.
+    if (context.mounted) {
       ScaffoldMessenger.of(context).showSnackBar(
         SnackBar(
           content: Row(
@@ -515,10 +517,11 @@ class _MobileWishlistScreenState extends State<MobileWishlistScreen>
 
     await wishlistProvider.clearWishlist();
 
+    // `context` is this method's own parameter — check its own .mounted.
     // Close loading
-    if (mounted) Navigator.pop(context);
+    if (context.mounted) Navigator.pop(context);
 
-    if (mounted) {
+    if (context.mounted) {
       ScaffoldMessenger.of(context).showSnackBar(
         SnackBar(
           content: Row(

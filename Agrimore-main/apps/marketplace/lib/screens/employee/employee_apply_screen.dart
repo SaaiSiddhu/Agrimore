@@ -66,6 +66,7 @@ class _EmployeeApplyScreenState extends State<EmployeeApplyScreen> {
         phone: _mobileCtrl.text.trim(),
       );
 
+      if (!mounted) return;
       setState(() => _employeeStatus = 'pending');
       ScaffoldMessenger.of(context).showSnackBar(
         const SnackBar(

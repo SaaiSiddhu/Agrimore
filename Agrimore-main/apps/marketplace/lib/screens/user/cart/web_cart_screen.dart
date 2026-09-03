@@ -412,7 +412,8 @@ class _WebCartScreenState extends State<WebCartScreen>
                   onRemove: () async {
                     final success =
                         await cartProvider.removeItem(item.productId);
-                    if (success && mounted) {
+                    // itemBuilder's own item-scoped context, not the State's.
+                    if (success && context.mounted) {
                       SnackbarHelper.showSuccess(
                           context, 'Item removed from cart');
                     }

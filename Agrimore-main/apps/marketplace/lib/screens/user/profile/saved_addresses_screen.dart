@@ -481,25 +481,25 @@ class _SavedAddressesScreenState extends State<SavedAddressesScreen>
       // THEME-AWARE FLOATING ACTION BUTTON
       // ============================================
       floatingActionButton: FloatingActionButton.extended(
-        onPressed: () {
+        onPressed: () async {
           HapticFeedback.mediumImpact();
-          Navigator.push(
+          final result = await Navigator.push(
             context,
             MaterialPageRoute(
               builder: (context) => const AddAddressScreen(),
             ),
-          ).then((result) {
-            if (result != null && result is AddressModel && mounted) {
-              context.read<AddressProvider>().loadAddresses();
-              context.read<AddressProvider>().selectAddress(result);
-              _showToastMessage('✅ Address added successfully');
-              
-              // Auto return to cart (or previous screen) with the selected address
-              Future.delayed(const Duration(milliseconds: 600), () {
-                if (mounted) Navigator.pop(context);
-              });
-            }
-          });
+          );
+          if (!context.mounted) return;
+          if (result != null && result is AddressModel) {
+            context.read<AddressProvider>().loadAddresses();
+            context.read<AddressProvider>().selectAddress(result);
+            _showToastMessage('✅ Address added successfully');
+
+            // Auto return to cart (or previous screen) with the selected address
+            Future.delayed(const Duration(milliseconds: 600), () {
+              if (context.mounted) Navigator.pop(context);
+            });
+          }
         },
         icon: const Icon(Icons.add_location_alt_outlined),
         label: const Text('Add Address', style: TextStyle(fontWeight: FontWeight.w700)),
