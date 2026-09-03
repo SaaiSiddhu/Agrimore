@@ -263,39 +263,63 @@ void _initializeDeferredMobileServices() {
 // ============================================
 // HANDLE NOTIFICATION TAP
 // ============================================
+
+/// Reads [key] out of an FCM `data` payload as a trimmed, non-empty String.
+///
+/// FCM delivers every `data` value as a string over the wire, but the map is
+/// typed `Map<String, dynamic>` — so an `as String?` cast here would throw on
+/// anything unexpected. Type-check instead; this must never be able to throw.
+String? _notificationDataString(Map<String, dynamic> data, String key) {
+  final value = data[key];
+  if (value is! String) return null;
+  final trimmed = value.trim();
+  return trimmed.isEmpty ? null : trimmed;
+}
+
 void _handleNotificationTap(RemoteMessage message) {
   debugPrint('📱 Handling Notification Tap: ${message.data}');
-  
-  if (navigatorKey.currentState == null) {
+
+  final navigator = navigatorKey.currentState;
+  if (navigator == null) {
     debugPrint('⚠️ Navigator is not ready to route notification');
     return;
   }
-  
+
   final type = message.data['type'];
-  final orderId = message.data['orderId'];
-  final productId = message.data['productId'];
-  
+  final orderId = _notificationDataString(message.data, 'orderId');
+  final productId = _notificationDataString(message.data, 'productId');
+
+  // Path-style navigation, matching what NotificationService's own
+  // handleNotificationNavigation already does successfully for foreground
+  // local-notification taps. routes.dart's `/order/` and `/product/` prefix
+  // handlers parse the id straight out of the path.
+  //
+  // This replaces `pushNamed(AppRoutes.orderDetails, arguments: {'orderId': id})`.
+  // That form handed a Map to a route case that casts its arguments to String?;
+  // the resulting _CastError was swallowed by onGenerateRoute's own try/catch and
+  // turned into the 404 screen, so EVERY background and terminated-state
+  // notification tap dead-ended. Both this call site and the route case have been
+  // fixed — see AppRoutes._idArgument.
   if (type == 'order' || type == 'order_update') {
     if (orderId != null) {
-      navigatorKey.currentState!.pushNamed(
-        AppRoutes.orderDetails, 
-        arguments: {'orderId': orderId}
-      );
+      navigator.pushNamed('/order/$orderId');
     } else {
-      navigatorKey.currentState!.pushNamed(AppRoutes.orders);
+      // A blank id would build the bare path '/order/', which the prefix handler
+      // deliberately rejects — send the user to their order list instead of 404.
+      navigator.pushNamed(AppRoutes.orders);
     }
   } else if (type == 'product') {
     if (productId != null) {
-      navigatorKey.currentState!.pushNamed(
-        AppRoutes.productDetails,
-        arguments: {'productId': productId}
-      );
+      navigator.pushNamed('/product/$productId');
+    } else {
+      // Previously this branch did nothing at all, leaving the tap dead.
+      navigator.pushNamed(AppRoutes.main);
     }
   } else if (type == 'offer') {
-    navigatorKey.currentState!.pushNamed(AppRoutes.offers); 
+    navigator.pushNamed(AppRoutes.offers);
   } else {
     // general or fallback
-    navigatorKey.currentState!.pushNamed(AppRoutes.main);
+    navigator.pushNamed(AppRoutes.main);
   }
 }
 

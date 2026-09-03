@@ -1,8 +1,6 @@
-import 'package:flutter/foundation.dart' show kIsWeb;
 import 'package:flutter/material.dart';
 
 // Splash & Onboarding
-import '../screens/splash/splash_screen.dart';
 import '../screens/auth/auth_wrapper.dart';
 import '../screens/auth/auth_guard.dart';
 import '../screens/onboarding/onboarding_screen.dart';
@@ -23,14 +21,11 @@ import '../screens/legal/privacy_policy_screen.dart';
 
 // User Screens
 import '../screens/user/main_screen.dart';
-import '../screens/user/home/home_screen.dart';
 import '../screens/user/home/search/search_screen.dart';
 import '../screens/user/home/search/search_results_screen.dart';
 import '../screens/user/shop/shop_screen.dart';
 import '../screens/user/shop/product_details_screen.dart';
-import '../screens/user/cart/cart_screen.dart';
 import '../screens/user/wishlist/wishlist_screen.dart';
-import '../screens/user/profile/profile_screen.dart';
 
 // AI Chat
 import '../screens/chat/ai_chat_screen.dart';
@@ -39,14 +34,12 @@ import '../screens/chat/chat_history_screen.dart';
 // Checkout
 import '../screens/user/checkout/checkout_screen.dart';
 import '../screens/user/checkout/order_success_screen.dart';
-import '../screens/user/checkout/add_address_screen.dart';
 import '../screens/user/checkout/payment_method_screen.dart';
 
 // Orders
 import '../screens/user/orders/orders_screen.dart';
 import '../screens/user/orders/order_details_screen.dart';
 import '../screens/user/orders/order_tracking_screen.dart';
-import '../screens/user/orders/track_order_screen.dart';
 
 // Profile
 import '../screens/user/profile/edit_profile_screen.dart';
@@ -161,7 +154,11 @@ class AppRoutes {
   static const String orders = '/orders';
   static const String orderDetails = '/order-details';
   static const String orderTracking = '/order-tracking';
-  static const String trackOrder = '/order/track';
+  // NOTE: there is deliberately no '/order/track' route. It was unreachable —
+  // the dynamic `/order/` handler in onGenerateRoute consumed it first, reading
+  // the literal word "track" as an order id — and TrackOrderScreen duplicated
+  // LiveTrackingScreen, which is what order_details_screen and orders_screen
+  // actually use. Both the route and the screen were removed in Phase M1.
   static const String myOrders = '/my-orders';
 
   // Profile Routes
@@ -219,6 +216,49 @@ class AppRoutes {
   static const String productCredit = '/wallet/product-credit';
 
   // ============================================
+  // ARGUMENT / SEGMENT RESOLUTION
+  // ============================================
+
+  /// Path segments under `/order/` that name a STATIC route rather than an
+  /// order id.
+  ///
+  /// Without this, the dynamic `/order/` handler in [onGenerateRoute] swallows
+  /// them: `/order/track` was read as "the order whose id is the word track", so
+  /// the static case further down could never execute and the user was shown an
+  /// order-detail screen for an order that does not exist. The `/order/track`
+  /// route has since been removed as redundant (LiveTrackingScreen already
+  /// serves live tracking), but the guard stays — if you ever add a static
+  /// `/order/<word>` route, add that word here or it will be shadowed the same way.
+  ///
+  /// Matching is whole-segment equality on purpose: an order id that merely
+  /// *contains* a reserved word (e.g. `track123`) must still resolve normally.
+  static const Set<String> _reservedOrderSegments = {'track'};
+
+  /// Resolves an id passed as a route argument, accepting BOTH shapes this app
+  /// has historically used: a bare [String] (what every in-app call site passes)
+  /// and a [Map] carrying [mapKey] (the shape notification payloads were
+  /// forwarded in). Returns null for any other shape, or for a blank id.
+  ///
+  /// Deliberately type-checked rather than cast. A failed `as` here throws into
+  /// [onGenerateRoute]'s outer try/catch, which silently converts the failure
+  /// into the 404 screen — and that swallowing is exactly what hid the broken
+  /// notification routing. This must not be able to throw.
+  static String? _idArgument(Object? arguments, String mapKey) {
+    if (arguments is String) {
+      final trimmed = arguments.trim();
+      return trimmed.isEmpty ? null : trimmed;
+    }
+    if (arguments is Map) {
+      final value = arguments[mapKey];
+      if (value is String) {
+        final trimmed = value.trim();
+        return trimmed.isEmpty ? null : trimmed;
+      }
+    }
+    return null;
+  }
+
+  // ============================================
   // ROUTE GENERATOR
   // ============================================
   static Route<dynamic> onGenerateRoute(RouteSettings settings) {
@@ -257,16 +297,21 @@ class AppRoutes {
             .replaceFirst('/order/', '')
             .split('?')[0]
             .split('#')[0];
-        if (orderId.isNotEmpty && orderId != ':id') {
+        // The reserved-segment check keeps this dynamic handler from swallowing
+        // a static `/order/<word>` route — see [_reservedOrderSegments].
+        if (orderId.isNotEmpty &&
+            orderId != ':id' &&
+            !_reservedOrderSegments.contains(orderId)) {
           return _buildRoute(OrderDetailsScreen(orderId: orderId), settings);
         }
       }
 
       // ✅ STATIC ROUTES
       switch (settings.name) {
-        // ✅ ROOT ROUTE - AuthWrapper for all platforms
+        // ✅ ROOT ROUTE - AuthWrapper for all platforms.
+        // `splash` IS '/', so a separate `case '/'` here was dead — the analyzer
+        // flagged it as unreachable_switch_case.
         case splash:
-        case '/':
           // AuthWrapper handles auth persistence and redirects
           return _buildRoute(const AuthWrapper(), settings);
 
@@ -388,9 +433,11 @@ class AppRoutes {
           return _buildRoute(SearchResultsScreen(query: query), settings);
 
         // Products & Categories
+        // Accepts a bare String id or a {'productId': ...} Map — see
+        // [_idArgument] for why both, and why it must not cast.
         case productDetails:
-          final productId = settings.arguments as String?;
-          if (productId == null || productId.isEmpty) {
+          final productId = _idArgument(settings.arguments, 'productId');
+          if (productId == null) {
             return _buildErrorRoute('Product ID is required', settings);
           }
           return _buildRoute(
@@ -436,9 +483,11 @@ class AppRoutes {
         case orders:
         case myOrders:
           return _buildRoute(const OrdersScreen(), settings);
+        // Accepts a bare String id or an {'orderId': ...} Map — see
+        // [_idArgument] for why both, and why it must not cast.
         case orderDetails:
-          final orderId = settings.arguments as String?;
-          if (orderId == null || orderId.isEmpty) {
+          final orderId = _idArgument(settings.arguments, 'orderId');
+          if (orderId == null) {
             return _buildErrorRoute('Order ID is required', settings);
           }
           return _buildRoute(OrderDetailsScreen(orderId: orderId), settings);
@@ -448,13 +497,6 @@ class AppRoutes {
             return _buildErrorRoute('Order data is required', settings);
           }
           return _buildRoute(OrderTrackingScreen(order: order), settings);
-        case trackOrder:
-          final trackOrderArgs = settings.arguments as Map<String, dynamic>?;
-          final trackOrderId = trackOrderArgs?['orderId'] as String?;
-          if (trackOrderId == null || trackOrderId.isEmpty) {
-            return _buildErrorRoute('Order ID is required', settings);
-          }
-          return _buildRoute(TrackOrderScreen(orderId: trackOrderId), settings);
 
         // Profile Routes
         case editProfile:
@@ -624,19 +666,6 @@ class AppRoutes {
     );
   }
 
-  static void _handleErrorNavigation(BuildContext context) {
-    try {
-      if (Navigator.canPop(context)) {
-        Navigator.pop(context);
-      } else {
-        Navigator.pushReplacementNamed(context, main);
-      }
-    } catch (e) {
-      debugPrint('❌ Navigation error: $e');
-      Navigator.pushReplacementNamed(context, main);
-    }
-  }
-
   // ============================================
   // NAVIGATION HELPERS
   // ============================================
@@ -767,7 +796,6 @@ class AppRoutes {
       debugPrint('🌐 Navigating from URL: $url');
       final uri = Uri.parse(url);
       final path = uri.path;
-      final queryParams = uri.queryParameters;
 
       if (path.startsWith('/product/')) {
         final segments = path.split('/');
