@@ -26,7 +26,7 @@ android {
         applicationId = "com.customer.agrimore"
         
         minSdk = 24  // Android 7.0
-        targetSdk = 35  // Android 15 (required by Play Store)
+        targetSdk = 36  // Android 16 (required by Play Store)
         
         // Sourced from pubspec.yaml's `version:` (the `+N` build number becomes
         // versionCode, the part before `+` becomes versionName) so a release

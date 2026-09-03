@@ -2,10 +2,10 @@ name: agrimore_marketplace
 description: Agrimore Marketplace - Customer-facing agricultural e-commerce application
 # versionCode follows the existing date-based scheme already used on Play:
 # YYYYMMDD + a 2-digit build counter for that day. The previously published
-# release was 2026062201 (1.0.6), so this must stay strictly above it.
+# release was 2026082701 (1.0.7), so this must stay strictly above it.
 # Play's hard ceiling for versionCode is 2100000000, which this scheme stays
 # under until the year 2100.
-version: 1.0.7+2026082701
+version: 1.0.8+2026090102
 publish_to: 'none'
 
 environment:
