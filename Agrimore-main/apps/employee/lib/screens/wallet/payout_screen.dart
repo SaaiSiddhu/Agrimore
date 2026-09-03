@@ -13,6 +13,12 @@ class PayoutScreen extends StatefulWidget {
 class _PayoutScreenState extends State<PayoutScreen> {
   final _amountController = TextEditingController();
   bool _isSubmitting = false;
+  // Phase 20: this stream previously had NO limit — an unbounded realtime
+  // listener on a collection that only grows with an associate's payout
+  // history is a real, avoidable cost (locked decision 6), the same defect
+  // shape 16C-W4 fixed for wallet_transactions and Phase 19 fixed for
+  // orders. Mirrors both of their _pageSize fields exactly.
+  int _pageSize = 20;
 
   @override
   void dispose() {
@@ -154,9 +160,19 @@ class _PayoutScreenState extends State<PayoutScreen> {
 
   Widget _buildHistory(String uid) {
     return StreamBuilder<QuerySnapshot<Map<String, dynamic>>>(
+      // Phase 20: bounded by _pageSize (see field comment), mirroring
+      // wallet_screen.dart's _buildTransactionsList and dashboard_screen.dart's
+      // _buildOrdersList (Phase 19) exactly. orderBy + limit rather than the
+      // previous unbounded .where(...) stream — sorting client-side after an
+      // unbounded fetch was the old shape; sorting server-side lets the limit
+      // actually bound the read. Requires the new
+      // employee_payouts(employeeId ASC, createdAt DESC) composite index
+      // added in this same phase — see firestore.indexes.json.
       stream: FirebaseFirestore.instance
           .collection('employee_payouts')
           .where('employeeId', isEqualTo: uid)
+          .orderBy('createdAt', descending: true)
+          .limit(_pageSize)
           .snapshots(),
       builder: (context, snap) {
         if (snap.hasError) {
@@ -171,15 +187,9 @@ class _PayoutScreenState extends State<PayoutScreen> {
             child: Center(child: CircularProgressIndicator()),
           );
         }
-        final docs = snap.data!.docs.toList()
-          ..sort((a, b) {
-            final ta = a.data()['createdAt'];
-            final tb = b.data()['createdAt'];
-            if (ta is Timestamp && tb is Timestamp) {
-              return tb.toDate().compareTo(ta.toDate());
-            }
-            return 0;
-          });
+        // Already ordered by the query itself (createdAt desc) — no
+        // client-side re-sort needed.
+        final docs = snap.data!.docs;
 
         if (docs.isEmpty) {
           return const Padding(
@@ -188,8 +198,11 @@ class _PayoutScreenState extends State<PayoutScreen> {
           );
         }
 
+        final reachedPageLimit = docs.length >= _pageSize;
+
         return Column(
-          children: docs.map((doc) {
+          children: [
+            ...docs.map((doc) {
             final d = doc.data();
             final amount = (d['amount'] as num?)?.toDouble() ?? 0.0;
             final status = (d['status'] ?? 'requested').toString();
@@ -220,7 +233,17 @@ class _PayoutScreenState extends State<PayoutScreen> {
                 ),
               ),
             );
-          }).toList(),
+            }),
+            if (reachedPageLimit) ...[
+              const SizedBox(height: 8),
+              Center(
+                child: TextButton(
+                  onPressed: () => setState(() => _pageSize += 20),
+                  child: const Text('Load more'),
+                ),
+              ),
+            ],
+          ],
         );
       },
     );
