@@ -564,7 +564,7 @@ class _UnifiedProductCardState extends State<UnifiedProductCard>
         borderRadius: BorderRadius.circular(16),
         boxShadow: [
           BoxShadow(
-            color: Colors.black.withOpacity(isDark ? 0.2 : 0.06),
+            color: Colors.black.withValues(alpha: isDark ? 0.2 : 0.06),
             blurRadius: 15,
             offset: const Offset(0, 4),
           ),
@@ -636,7 +636,7 @@ class _UnifiedProductCardState extends State<UnifiedProductCard>
         borderRadius: BorderRadius.circular(20),
         boxShadow: [
           BoxShadow(
-            color: Colors.black.withOpacity(0.08),
+            color: Colors.black.withValues(alpha: 0.08),
             blurRadius: 15,
             offset: const Offset(0, 5),
           ),
@@ -685,7 +685,7 @@ class _UnifiedProductCardState extends State<UnifiedProductCard>
                 Positioned.fill(
                   child: Container(
                     decoration: BoxDecoration(
-                      color: Colors.black.withOpacity(0.5),
+                      color: Colors.black.withValues(alpha: 0.5),
                       borderRadius:
                           const BorderRadius.vertical(top: Radius.circular(20)),
                     ),
@@ -883,8 +883,8 @@ class _UnifiedProductCardState extends State<UnifiedProductCard>
         boxShadow: [
           BoxShadow(
             color: isDark
-                ? Colors.black.withOpacity(0.25)
-                : Colors.black.withOpacity(0.07),
+                ? Colors.black.withValues(alpha: 0.25)
+                : Colors.black.withValues(alpha: 0.07),
             blurRadius: 10,
             offset: const Offset(0, 3),
           ),
@@ -909,13 +909,13 @@ class _UnifiedProductCardState extends State<UnifiedProductCard>
                   // Out of stock overlay
                   if (isOutOfStock)
                     Container(
-                      color: Colors.black.withOpacity(0.55),
+                      color: Colors.black.withValues(alpha: 0.55),
                       child: Center(
                         child: Container(
                           padding: const EdgeInsets.symmetric(
                               horizontal: 10, vertical: 4),
                           decoration: BoxDecoration(
-                            color: Colors.black.withOpacity(0.7),
+                            color: Colors.black.withValues(alpha: 0.7),
                             borderRadius: BorderRadius.circular(4),
                           ),
                           child: const Text(
@@ -978,11 +978,11 @@ class _UnifiedProductCardState extends State<UnifiedProductCard>
                           width: 30,
                           height: 30,
                           decoration: BoxDecoration(
-                            color: Colors.white.withOpacity(0.95),
+                            color: Colors.white.withValues(alpha: 0.95),
                             shape: BoxShape.circle,
                             boxShadow: [
                               BoxShadow(
-                                color: Colors.black.withOpacity(0.12),
+                                color: Colors.black.withValues(alpha: 0.12),
                                 blurRadius: 6,
                                 offset: const Offset(0, 2),
                               ),
@@ -1190,7 +1190,7 @@ class _UnifiedProductCardState extends State<UnifiedProductCard>
                             borderRadius: BorderRadius.circular(8),
                             elevation: isOutOfStock ? 0 : 2,
                             shadowColor: (isDark ? addToCartColorDark : addToCartColor)
-                                .withOpacity(0.4),
+                                .withValues(alpha: 0.4),
                             child: InkWell(
                               onTap: isOutOfStock || _isProcessing || (_isInCart && widget.product.variants.isEmpty)
                                   ? null
@@ -1265,7 +1265,7 @@ class _UnifiedProductCardState extends State<UnifiedProductCard>
         borderRadius: BorderRadius.circular(12),
         boxShadow: [
           BoxShadow(
-            color: Colors.black.withOpacity(isDark ? 0.2 : 0.08),
+            color: Colors.black.withValues(alpha: isDark ? 0.2 : 0.08),
             blurRadius: 8,
             offset: const Offset(0, 2),
           ),
@@ -1288,7 +1288,7 @@ class _UnifiedProductCardState extends State<UnifiedProductCard>
                   // Out of stock overlay
                   if (isOutOfStock)
                     Container(
-                      color: Colors.black.withOpacity(0.6),
+                      color: Colors.black.withValues(alpha: 0.6),
                       child: const Center(
                         child: Text(
                           'OUT OF STOCK',
@@ -1480,7 +1480,7 @@ class _UnifiedProductCardState extends State<UnifiedProductCard>
         borderRadius: BorderRadius.circular(5),
         boxShadow: [
           BoxShadow(
-            color: Colors.red.withOpacity(0.35),
+            color: Colors.red.withValues(alpha: 0.35),
             blurRadius: 6,
             offset: const Offset(0, 1),
           ),
@@ -1506,7 +1506,7 @@ class _UnifiedProductCardState extends State<UnifiedProductCard>
         borderRadius: BorderRadius.circular(5),
         boxShadow: [
           BoxShadow(
-            color: color.withOpacity(0.35),
+            color: color.withValues(alpha: 0.35),
             blurRadius: 6,
             offset: const Offset(0, 1),
           ),
@@ -1528,11 +1528,11 @@ class _UnifiedProductCardState extends State<UnifiedProductCard>
     return Container(
       padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 3),
       decoration: BoxDecoration(
-        color: color.withOpacity(0.9),
+        color: color.withValues(alpha: 0.9),
         borderRadius: BorderRadius.circular(4),
         boxShadow: [
           BoxShadow(
-            color: Colors.black.withOpacity(0.2),
+            color: Colors.black.withValues(alpha: 0.2),
             blurRadius: 4,
             offset: const Offset(0, 1),
           ),
@@ -1547,11 +1547,11 @@ class _UnifiedProductCardState extends State<UnifiedProductCard>
       padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 3),
       decoration: BoxDecoration(
         color: (isDark ? AppColors.primaryLight : AppColors.primary)
-            .withOpacity(0.9),
+            .withValues(alpha: 0.9),
         borderRadius: BorderRadius.circular(4),
         boxShadow: [
           BoxShadow(
-            color: Colors.black.withOpacity(0.2),
+            color: Colors.black.withValues(alpha: 0.2),
             blurRadius: 4,
             offset: const Offset(0, 1),
           ),
@@ -1583,13 +1583,13 @@ class _UnifiedProductCardState extends State<UnifiedProductCard>
       padding: const EdgeInsets.symmetric(horizontal: 4, vertical: 2),
       decoration: BoxDecoration(
         color: isOutOfStock
-            ? (isDark ? Colors.red[900]!.withOpacity(0.7) : Colors.red[600])
-            : Colors.red.shade100.withOpacity(isDark ? 0.3 : 0.7),
+            ? (isDark ? Colors.red[900]!.withValues(alpha: 0.7) : Colors.red[600])
+            : Colors.red.shade100.withValues(alpha: isDark ? 0.3 : 0.7),
         borderRadius: BorderRadius.circular(4),
         border: Border.all(
           color: isOutOfStock
               ? (isDark ? Colors.red[400]! : Colors.red[700]!)
-              : Colors.red.withOpacity(isDark ? 0.4 : 0.3),
+              : Colors.red.withValues(alpha: isDark ? 0.4 : 0.3),
           width: 0.8,
         ),
       ),
@@ -1971,8 +1971,8 @@ class _UnifiedProductCardState extends State<UnifiedProductCard>
           color: _isInWishlist
               ? Colors.red[50]
               : (isDark
-                  ? const Color(0xFF303030).withOpacity(0.96)
-                  : Colors.white.withOpacity(0.96)),
+                  ? const Color(0xFF303030).withValues(alpha: 0.96)
+                  : Colors.white.withValues(alpha: 0.96)),
           shape: BoxShape.circle,
           border: Border.all(
             color: _isInWishlist
@@ -1982,7 +1982,7 @@ class _UnifiedProductCardState extends State<UnifiedProductCard>
           ),
           boxShadow: [
             BoxShadow(
-              color: Colors.black.withOpacity(isDark ? 0.3 : 0.12),
+              color: Colors.black.withValues(alpha: isDark ? 0.3 : 0.12),
               blurRadius: 8,
               offset: const Offset(0, 1),
             ),
@@ -2027,7 +2027,7 @@ class _UnifiedProductCardState extends State<UnifiedProductCard>
           decoration: BoxDecoration(
             borderRadius: BorderRadius.circular(8),
             border: Border.all(
-              color: Colors.white.withOpacity(0.1),
+              color: Colors.white.withValues(alpha: 0.1),
               width: 0.5,
             ),
           ),

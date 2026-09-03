@@ -177,7 +177,7 @@ class _SellerDashboardScreenState extends State<SellerDashboardScreen> {
                                   crossAxisAlignment: CrossAxisAlignment.start,
                                   children: [
                                     Text(_greeting.substring(_greeting.indexOf(' ') + 1) + ',',
-                                        style: TextStyle(color: Colors.white.withOpacity(0.8), fontSize: 14)),
+                                        style: TextStyle(color: Colors.white.withValues(alpha: 0.8), fontSize: 14)),
                                     Text('$_userName!',
                                         style: const TextStyle(color: Colors.white, fontSize: 24, fontWeight: FontWeight.w900)),
                                   ],
@@ -185,7 +185,7 @@ class _SellerDashboardScreenState extends State<SellerDashboardScreen> {
                               ),
                               Container(
                                 padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 5),
-                                decoration: BoxDecoration(color: Colors.white.withOpacity(0.2), borderRadius: BorderRadius.circular(12)),
+                                decoration: BoxDecoration(color: Colors.white.withValues(alpha: 0.2), borderRadius: BorderRadius.circular(12)),
                                 child: const Text('🟢 Active', style: TextStyle(color: Colors.white, fontSize: 10, fontWeight: FontWeight.w700)),
                               ),
                             ],
@@ -394,7 +394,7 @@ class _SellerDashboardScreenState extends State<SellerDashboardScreen> {
               const SizedBox(height: 4),
               Container(
                 padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 2),
-                decoration: BoxDecoration(color: color.withOpacity(0.12), borderRadius: BorderRadius.circular(6)),
+                decoration: BoxDecoration(color: color.withValues(alpha: 0.12), borderRadius: BorderRadius.circular(6)),
                 child: Text(status.toUpperCase(),
                     style: TextStyle(fontSize: 9, fontWeight: FontWeight.w800, color: color)),
               ),

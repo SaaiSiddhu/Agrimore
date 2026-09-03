@@ -77,7 +77,7 @@ class _HelpScreenState extends State<HelpScreen> with TickerProviderStateMixin {
         children: [
           Container(
             decoration: BoxDecoration(
-              color: Colors.white.withOpacity(0.2),
+              color: Colors.white.withValues(alpha: 0.2),
               borderRadius: BorderRadius.circular(10),
             ),
             child: Material(
@@ -177,7 +177,7 @@ class _HelpScreenState extends State<HelpScreen> with TickerProviderStateMixin {
         ),
         boxShadow: [
           BoxShadow(
-            color: Colors.black.withOpacity(isDark ? 0.3 : 0.02),
+            color: Colors.black.withValues(alpha: isDark ? 0.3 : 0.02),
             blurRadius: 8,
             offset: const Offset(0, 2),
           ),

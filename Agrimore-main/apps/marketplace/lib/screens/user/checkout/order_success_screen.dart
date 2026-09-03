@@ -350,7 +350,7 @@ class _OrderSuccessScreenState extends State<OrderSuccessScreen>
         ),
         boxShadow: [
           BoxShadow(
-            color: Colors.black.withOpacity(isDark ? 0.3 : 0.05),
+            color: Colors.black.withValues(alpha: isDark ? 0.3 : 0.05),
             blurRadius: 8,
             offset: const Offset(0, 2),
           ),
@@ -412,10 +412,10 @@ class _OrderSuccessScreenState extends State<OrderSuccessScreen>
                         vertical: 6,
                       ),
                       decoration: BoxDecoration(
-                        color: accentColor.withOpacity(0.15),
+                        color: accentColor.withValues(alpha: 0.15),
                         borderRadius: BorderRadius.circular(6),
                         border: Border.all(
-                          color: accentColor.withOpacity(0.3),
+                          color: accentColor.withValues(alpha: 0.3),
                         ),
                       ),
                       child: Text(
@@ -473,8 +473,8 @@ class _OrderSuccessScreenState extends State<OrderSuccessScreen>
                       ),
                       decoration: BoxDecoration(
                         color: widget.order.paymentMethod == 'cod'
-                            ? Colors.orange.withOpacity(0.15)
-                            : Colors.blue.withOpacity(0.15),
+                            ? Colors.orange.withValues(alpha: 0.15)
+                            : Colors.blue.withValues(alpha: 0.15),
                         borderRadius: BorderRadius.circular(6),
                       ),
                       child: Text(
@@ -515,7 +515,7 @@ class _OrderSuccessScreenState extends State<OrderSuccessScreen>
         ),
         boxShadow: [
           BoxShadow(
-            color: Colors.black.withOpacity(isDark ? 0.3 : 0.05),
+            color: Colors.black.withValues(alpha: isDark ? 0.3 : 0.05),
             blurRadius: 8,
             offset: const Offset(0, 2),
           ),
@@ -680,9 +680,9 @@ class _OrderSuccessScreenState extends State<OrderSuccessScreen>
                   Container(
                     padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 6),
                     decoration: BoxDecoration(
-                      color: _getAddressTypeColor(addr.addressType!).withOpacity(0.15),
+                      color: _getAddressTypeColor(addr.addressType!).withValues(alpha: 0.15),
                       border: Border.all(
-                        color: _getAddressTypeColor(addr.addressType!).withOpacity(0.3),
+                        color: _getAddressTypeColor(addr.addressType!).withValues(alpha: 0.3),
                       ),
                       borderRadius: BorderRadius.circular(6),
                     ),
@@ -821,7 +821,7 @@ class _OrderSuccessScreenState extends State<OrderSuccessScreen>
         ),
         boxShadow: [
           BoxShadow(
-            color: Colors.black.withOpacity(isDark ? 0.3 : 0.05),
+            color: Colors.black.withValues(alpha: isDark ? 0.3 : 0.05),
             blurRadius: 8,
             offset: const Offset(0, 2),
           ),

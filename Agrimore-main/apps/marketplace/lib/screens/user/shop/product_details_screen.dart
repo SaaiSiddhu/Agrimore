@@ -319,7 +319,7 @@ Future<void> _addToCart(BuildContext context, {bool buyNow = false}) async {
           borderRadius: const BorderRadius.vertical(top: Radius.circular(20)),
           boxShadow: [
             BoxShadow(
-              color: Colors.black.withOpacity(isDark ? 0.3 : 0.08),
+              color: Colors.black.withValues(alpha: isDark ? 0.3 : 0.08),
               blurRadius: 10,
               offset: const Offset(0, -4),
             ),
@@ -384,7 +384,7 @@ Future<void> _addToCart(BuildContext context, {bool buyNow = false}) async {
         Container(
           padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
           decoration: BoxDecoration(
-            color: accentColor.withOpacity(0.1),
+            color: accentColor.withValues(alpha: 0.1),
             borderRadius: BorderRadius.circular(6),
           ),
           child: Row(
@@ -458,7 +458,7 @@ Future<void> _addToCart(BuildContext context, {bool buyNow = false}) async {
                     padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 10),
                     decoration: BoxDecoration(
                       color: isSelected 
-                          ? (isDark ? accentColor.withOpacity(0.1) : Colors.white)
+                          ? (isDark ? accentColor.withValues(alpha: 0.1) : Colors.white)
                           : (isDark ? const Color(0xFF2A2A2A) : Colors.grey[50]),
                       borderRadius: BorderRadius.circular(10),
                       border: Border.all(
@@ -574,7 +574,7 @@ Future<void> _addToCart(BuildContext context, {bool buyNow = false}) async {
             Container(
               padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 5),
               decoration: BoxDecoration(
-                color: isDark ? Colors.red.withOpacity(0.15) : Colors.red[50],
+                color: isDark ? Colors.red.withValues(alpha: 0.15) : Colors.red[50],
                 border: Border.all(color: isDark ? Colors.red[700]! : Colors.red[300]!),
                 borderRadius: BorderRadius.circular(6),
               ),
@@ -597,7 +597,7 @@ Future<void> _addToCart(BuildContext context, {bool buyNow = false}) async {
           Container(
             padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 5),
             decoration: BoxDecoration(
-              color: isDark ? Colors.orange.withOpacity(0.15) : Colors.orange[50],
+              color: isDark ? Colors.orange.withValues(alpha: 0.15) : Colors.orange[50],
               border: Border.all(color: isDark ? Colors.orange[700]! : Colors.orange[300]!),
               borderRadius: BorderRadius.circular(6),
             ),
@@ -700,9 +700,9 @@ Future<void> _addToCart(BuildContext context, {bool buyNow = false}) async {
     return Container(
       padding: const EdgeInsets.all(12),
       decoration: BoxDecoration(
-        color: accentColor.withOpacity(0.1),
+        color: accentColor.withValues(alpha: 0.1),
         borderRadius: BorderRadius.circular(10),
-        border: Border.all(color: accentColor.withOpacity(0.2)),
+        border: Border.all(color: accentColor.withValues(alpha: 0.2)),
       ),
       child: Row(
         children: [
@@ -924,7 +924,7 @@ Future<void> _addToCart(BuildContext context, {bool buyNow = false}) async {
         border: Border.all(color: isDark ? Colors.grey[800]! : Colors.grey[200]!, width: 1),
         boxShadow: [
           BoxShadow(
-            color: Colors.black.withOpacity(isDark ? 0.3 : 0.05),
+            color: Colors.black.withValues(alpha: isDark ? 0.3 : 0.05),
             blurRadius: 8,
             offset: const Offset(0, 2),
           ),
@@ -973,7 +973,7 @@ Future<void> _addToCart(BuildContext context, {bool buyNow = false}) async {
           Container(
             padding: const EdgeInsets.all(8),
             decoration: BoxDecoration(
-              color: accentColor.withOpacity(0.1),
+              color: accentColor.withValues(alpha: 0.1),
               borderRadius: BorderRadius.circular(8),
             ),
             child: Icon(icon, color: accentColor, size: 20),
@@ -1066,7 +1066,7 @@ Future<void> _addToCart(BuildContext context, {bool buyNow = false}) async {
             color: isDark ? const Color(0xFF1E1E1E) : Colors.white,
             boxShadow: [
               BoxShadow(
-                color: Colors.black.withOpacity(0.08),
+                color: Colors.black.withValues(alpha: 0.08),
                 blurRadius: 8,
                 offset: const Offset(0, -2),
               ),
@@ -1164,7 +1164,7 @@ Future<void> _addToCart(BuildContext context, {bool buyNow = false}) async {
                       borderRadius: BorderRadius.circular(12),
                     ),
                     elevation: product.inStock ? 2 : 0,
-                    shadowColor: accentColor.withOpacity(0.3),
+                    shadowColor: accentColor.withValues(alpha: 0.3),
                   ),
                   child: Text(
                     product.inStock ? 'Add to cart' : 'Out of Stock',
@@ -1207,9 +1207,9 @@ Future<void> _addToCart(BuildContext context, {bool buyNow = false}) async {
           Container(
             padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 6),
             decoration: BoxDecoration(
-              color: accentColor.withOpacity(0.1),
+              color: accentColor.withValues(alpha: 0.1),
               borderRadius: BorderRadius.circular(8),
-              border: Border.all(color: accentColor.withOpacity(0.3)),
+              border: Border.all(color: accentColor.withValues(alpha: 0.3)),
             ),
             child: Row(
               mainAxisSize: MainAxisSize.min,
@@ -1403,19 +1403,19 @@ Future<void> _addToCart(BuildContext context, {bool buyNow = false}) async {
                   label: const Text('One-time'),
                   selected: _subscriptionCadence == 'one_off',
                   onSelected: (_) => setState(() => _subscriptionCadence = 'one_off'),
-                  selectedColor: accent.withOpacity(0.2),
+                  selectedColor: accent.withValues(alpha: 0.2),
                 ),
                 ChoiceChip(
                   label: const Text('Daily'),
                   selected: _subscriptionCadence == 'daily',
                   onSelected: (_) => setState(() => _subscriptionCadence = 'daily'),
-                  selectedColor: accent.withOpacity(0.2),
+                  selectedColor: accent.withValues(alpha: 0.2),
                 ),
                 ChoiceChip(
                   label: const Text('Weekly'),
                   selected: _subscriptionCadence == 'weekly',
                   onSelected: (_) => setState(() => _subscriptionCadence = 'weekly'),
-                  selectedColor: accent.withOpacity(0.2),
+                  selectedColor: accent.withValues(alpha: 0.2),
                 ),
               ],
             ),
@@ -1688,7 +1688,7 @@ class _ProductDetailsSliverHeader extends SliverPersistentHeaderDelegate {
   Widget build(BuildContext context, double shrinkOffset, bool overlapsContent) {
     // Cleaner app bar - matches Blinkit style with transparent/white background
     final Color iconColor = isDark ? Colors.white : Colors.black87;
-    final Color iconBgColor = isDark ? Colors.black.withOpacity(0.3) : Colors.grey.withOpacity(0.15);
+    final Color iconBgColor = isDark ? Colors.black.withValues(alpha: 0.3) : Colors.grey.withValues(alpha: 0.15);
 
     return Container(
       padding: EdgeInsets.fromLTRB(16, topPadding + 8, 16, 8),
@@ -1699,7 +1699,7 @@ class _ProductDetailsSliverHeader extends SliverPersistentHeaderDelegate {
             : (isDark ? const Color(0xFF1A1A1A) : Colors.white),
         boxShadow: isCollapsed ? [
           BoxShadow(
-            color: Colors.black.withOpacity(isDark ? 0.2 : 0.08),
+            color: Colors.black.withValues(alpha: isDark ? 0.2 : 0.08),
             blurRadius: 4,
             offset: const Offset(0, 2),
           )

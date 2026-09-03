@@ -166,7 +166,7 @@ class _FlashSaleScreenState extends State<FlashSaleScreen> {
         children: [
           Text(value, style: const TextStyle(color: Colors.white, fontSize: 22, fontWeight: FontWeight.w900)),
           const SizedBox(height: 2),
-          Text(label, style: TextStyle(color: Colors.white.withOpacity(0.7), fontSize: 9, fontWeight: FontWeight.w700)),
+          Text(label, style: TextStyle(color: Colors.white.withValues(alpha: 0.7), fontSize: 9, fontWeight: FontWeight.w700)),
         ],
       ),
     );

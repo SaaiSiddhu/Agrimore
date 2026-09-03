@@ -203,7 +203,7 @@ class _CheckoutScreenState extends State<CheckoutScreen> {
         icon: Container(
           padding: const EdgeInsets.all(6),
           decoration: BoxDecoration(
-            color: isDark ? Colors.white.withOpacity(0.1) : Colors.grey.shade100,
+            color: isDark ? Colors.white.withValues(alpha: 0.1) : Colors.grey.shade100,
             borderRadius: BorderRadius.circular(8),
           ),
           child: Icon(
@@ -335,7 +335,7 @@ class _CheckoutScreenState extends State<CheckoutScreen> {
         padding: const EdgeInsets.all(14),
         decoration: BoxDecoration(
           color: isSelected
-              ? accentColor.withOpacity(0.1)
+              ? accentColor.withValues(alpha: 0.1)
               : (isDark ? const Color(0xFF303030) : Colors.grey[50]),
           borderRadius: BorderRadius.circular(10),
           border: Border.all(
@@ -664,7 +664,7 @@ class _CheckoutScreenState extends State<CheckoutScreen> {
         ),
         boxShadow: [
           BoxShadow(
-            color: Colors.black.withOpacity(isDark ? 0.3 : 0.05),
+            color: Colors.black.withValues(alpha: isDark ? 0.3 : 0.05),
             blurRadius: 8,
             offset: const Offset(0, 2),
           ),
@@ -718,7 +718,7 @@ class _CheckoutScreenState extends State<CheckoutScreen> {
         color: cardColor,
         boxShadow: [
           BoxShadow(
-            color: Colors.black.withOpacity(isDark ? 0.3 : 0.1),
+            color: Colors.black.withValues(alpha: isDark ? 0.3 : 0.1),
             blurRadius: 10,
             offset: const Offset(0, -2),
           ),
@@ -747,7 +747,7 @@ class _CheckoutScreenState extends State<CheckoutScreen> {
           minimumSize: const Size(double.infinity, 54),
           backgroundColor: accentColor,
           foregroundColor: isDark ? Colors.black : Colors.white,
-          disabledBackgroundColor: accentColor.withOpacity(0.5),
+          disabledBackgroundColor: accentColor.withValues(alpha: 0.5),
           elevation: 0,
           shape: RoundedRectangleBorder(
             borderRadius: BorderRadius.circular(10),

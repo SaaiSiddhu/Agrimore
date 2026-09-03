@@ -387,7 +387,7 @@ class _MobileCartScreenState extends State<MobileCartScreen>
             Container(
               padding: const EdgeInsets.all(8),
               decoration: BoxDecoration(
-                color: AppColors.error.withOpacity(0.1),
+                color: AppColors.error.withValues(alpha: 0.1),
                 borderRadius: BorderRadius.circular(8),
               ),
               child: const Icon(Icons.delete_outline, color: AppColors.error),
@@ -608,10 +608,10 @@ class _MobileCartScreenState extends State<MobileCartScreen>
               height: 36,
               decoration: BoxDecoration(
                 shape: BoxShape.circle,
-                color: isDark ? Colors.white.withOpacity(0.08) : const Color(0xFFF2F2F2),
+                color: isDark ? Colors.white.withValues(alpha: 0.08) : const Color(0xFFF2F2F2),
                 boxShadow: [
                   BoxShadow(
-                    color: Colors.black.withOpacity(isDark ? 0.3 : 0.06),
+                    color: Colors.black.withValues(alpha: isDark ? 0.3 : 0.06),
                     blurRadius: 6,
                     offset: const Offset(0, 2),
                   ),
@@ -4743,7 +4743,7 @@ class _MobileCartScreenState extends State<MobileCartScreen>
           padding: const EdgeInsets.all(6),
           decoration: BoxDecoration(
             color:
-                isDark ? Colors.white.withOpacity(0.1) : Colors.grey.shade100,
+                isDark ? Colors.white.withValues(alpha: 0.1) : Colors.grey.shade100,
             borderRadius: BorderRadius.circular(8),
           ),
           child: Icon(
@@ -4796,7 +4796,7 @@ class _MobileCartScreenState extends State<MobileCartScreen>
                 padding:
                     const EdgeInsets.symmetric(horizontal: 10, vertical: 6),
                 decoration: BoxDecoration(
-                  color: accentColor.withOpacity(0.15),
+                  color: accentColor.withValues(alpha: 0.15),
                   borderRadius: BorderRadius.circular(6),
                 ),
                 child: Row(
@@ -4821,9 +4821,9 @@ class _MobileCartScreenState extends State<MobileCartScreen>
                   padding:
                       const EdgeInsets.symmetric(horizontal: 8, vertical: 5),
                   decoration: BoxDecoration(
-                    color: Colors.green.withOpacity(isDark ? 0.2 : 0.1),
+                    color: Colors.green.withValues(alpha: isDark ? 0.2 : 0.1),
                     borderRadius: BorderRadius.circular(6),
-                    border: Border.all(color: Colors.green.withOpacity(0.3)),
+                    border: Border.all(color: Colors.green.withValues(alpha: 0.3)),
                   ),
                   child: Row(
                     mainAxisSize: MainAxisSize.min,
@@ -4914,11 +4914,11 @@ class _MobileCartScreenState extends State<MobileCartScreen>
     return Container(
       decoration: BoxDecoration(
         color: isFree
-            ? Colors.green.withOpacity(isDark ? 0.08 : 0.03)
+            ? Colors.green.withValues(alpha: isDark ? 0.08 : 0.03)
             : Colors.transparent,
         borderRadius: BorderRadius.circular(8),
         border:
-            isFree ? Border.all(color: Colors.green.withOpacity(0.2)) : null,
+            isFree ? Border.all(color: Colors.green.withValues(alpha: 0.2)) : null,
       ),
       padding: isFree ? const EdgeInsets.all(8) : EdgeInsets.zero,
       child: Column(
@@ -5013,15 +5013,15 @@ class _MobileCartScreenState extends State<MobileCartScreen>
           decoration: BoxDecoration(
             color: hasAppliedCoupon
                 ? (isBogo
-                    ? Colors.purple.withOpacity(isDark ? 0.15 : 0.08)
-                    : Colors.green.withOpacity(isDark ? 0.15 : 0.08))
+                    ? Colors.purple.withValues(alpha: isDark ? 0.15 : 0.08)
+                    : Colors.green.withValues(alpha: isDark ? 0.15 : 0.08))
                 : (isDark ? const Color(0xFF303030) : Colors.grey[50]),
             borderRadius: BorderRadius.circular(8),
             border: Border.all(
               color: hasAppliedCoupon
                   ? (isBogo
-                      ? Colors.purple.withOpacity(0.3)
-                      : Colors.green.withOpacity(0.3))
+                      ? Colors.purple.withValues(alpha: 0.3)
+                      : Colors.green.withValues(alpha: 0.3))
                   : (isDark ? Colors.grey[700]! : Colors.grey[300]!),
             ),
           ),
@@ -5034,9 +5034,9 @@ class _MobileCartScreenState extends State<MobileCartScreen>
                     decoration: BoxDecoration(
                       color: hasAppliedCoupon
                           ? (isBogo
-                              ? Colors.purple.withOpacity(0.2)
-                              : Colors.green.withOpacity(0.2))
-                          : accentColor.withOpacity(0.15),
+                              ? Colors.purple.withValues(alpha: 0.2)
+                              : Colors.green.withValues(alpha: 0.2))
+                          : accentColor.withValues(alpha: 0.15),
                       borderRadius: BorderRadius.circular(6),
                     ),
                     child: FaIcon(
@@ -5116,7 +5116,7 @@ class _MobileCartScreenState extends State<MobileCartScreen>
                   padding: const EdgeInsets.all(10),
                   decoration: BoxDecoration(
                     color: isDark
-                        ? Colors.purple[900]?.withOpacity(0.2)
+                        ? Colors.purple[900]?.withValues(alpha: 0.2)
                         : Colors.purple[50],
                     borderRadius: BorderRadius.circular(6),
                   ),
@@ -5219,16 +5219,16 @@ class _MobileCartScreenState extends State<MobileCartScreen>
             Container(
               padding: const EdgeInsets.all(12),
               decoration: BoxDecoration(
-                color: Colors.blue.withOpacity(isDark ? 0.15 : 0.08),
+                color: Colors.blue.withValues(alpha: isDark ? 0.15 : 0.08),
                 borderRadius: BorderRadius.circular(8),
-                border: Border.all(color: Colors.blue.withOpacity(0.3)),
+                border: Border.all(color: Colors.blue.withValues(alpha: 0.3)),
               ),
               child: Row(
                 children: [
                   Container(
                     padding: const EdgeInsets.all(8),
                     decoration: BoxDecoration(
-                      color: Colors.blue.withOpacity(0.2),
+                      color: Colors.blue.withValues(alpha: 0.2),
                       borderRadius: BorderRadius.circular(6),
                     ),
                     child: FaIcon(FontAwesomeIcons.circleInfo,
@@ -5276,12 +5276,12 @@ class _MobileCartScreenState extends State<MobileCartScreen>
                 padding: const EdgeInsets.all(12),
                 decoration: BoxDecoration(
                   color: _expressDeliverySelected
-                      ? Colors.purple.withOpacity(isDark ? 0.15 : 0.08)
+                      ? Colors.purple.withValues(alpha: isDark ? 0.15 : 0.08)
                       : (isDark ? const Color(0xFF303030) : Colors.grey[50]),
                   borderRadius: BorderRadius.circular(8),
                   border: Border.all(
                     color: _expressDeliverySelected
-                        ? Colors.purple.withOpacity(0.5)
+                        ? Colors.purple.withValues(alpha: 0.5)
                         : (isDark ? Colors.grey[700]! : Colors.grey[300]!),
                     width: _expressDeliverySelected ? 2 : 1,
                   ),
@@ -5291,7 +5291,7 @@ class _MobileCartScreenState extends State<MobileCartScreen>
                     Container(
                       padding: const EdgeInsets.all(8),
                       decoration: BoxDecoration(
-                        color: Colors.purple.withOpacity(0.2),
+                        color: Colors.purple.withValues(alpha: 0.2),
                         borderRadius: BorderRadius.circular(6),
                       ),
                       child: FaIcon(FontAwesomeIcons.boltLightning,
@@ -5401,12 +5401,12 @@ class _MobileCartScreenState extends State<MobileCartScreen>
       padding: const EdgeInsets.all(12),
       decoration: BoxDecoration(
         color: isFree
-            ? (isDark ? Colors.green[900]?.withOpacity(0.2) : Colors.green[50])
+            ? (isDark ? Colors.green[900]?.withValues(alpha: 0.2) : Colors.green[50])
             : (isDark ? const Color(0xFF303030) : Colors.grey[50]),
         borderRadius: BorderRadius.circular(8),
         border: Border.all(
           color: isFree
-              ? Colors.green.withOpacity(0.4)
+              ? Colors.green.withValues(alpha: 0.4)
               : (isDark ? Colors.grey[700]! : Colors.grey[300]!),
         ),
       ),
@@ -5417,7 +5417,7 @@ class _MobileCartScreenState extends State<MobileCartScreen>
               Container(
                 padding: const EdgeInsets.all(8),
                 decoration: BoxDecoration(
-                  color: color.withOpacity(0.15),
+                  color: color.withValues(alpha: 0.15),
                   borderRadius: BorderRadius.circular(6),
                 ),
                 child: FaIcon(icon, size: 16, color: color),
@@ -5574,19 +5574,19 @@ class _MobileCartScreenState extends State<MobileCartScreen>
                 gradient: LinearGradient(
                   colors: bogoValue > 0
                       ? [
-                          Colors.purple.withOpacity(isDark ? 0.2 : 0.1),
-                          Colors.green.withOpacity(isDark ? 0.2 : 0.1)
+                          Colors.purple.withValues(alpha: isDark ? 0.2 : 0.1),
+                          Colors.green.withValues(alpha: isDark ? 0.2 : 0.1)
                         ]
                       : [
-                          Colors.green.withOpacity(isDark ? 0.2 : 0.1),
-                          Colors.green.withOpacity(isDark ? 0.15 : 0.05)
+                          Colors.green.withValues(alpha: isDark ? 0.2 : 0.1),
+                          Colors.green.withValues(alpha: isDark ? 0.15 : 0.05)
                         ],
                 ),
                 borderRadius: BorderRadius.circular(8),
                 border: Border.all(
                     color: bogoValue > 0
-                        ? Colors.purple.withOpacity(0.3)
-                        : Colors.green.withOpacity(0.3)),
+                        ? Colors.purple.withValues(alpha: 0.3)
+                        : Colors.green.withValues(alpha: 0.3)),
               ),
               child: Row(
                 children: [
@@ -5594,8 +5594,8 @@ class _MobileCartScreenState extends State<MobileCartScreen>
                     padding: const EdgeInsets.all(8),
                     decoration: BoxDecoration(
                       color: bogoValue > 0
-                          ? Colors.purple.withOpacity(0.2)
-                          : Colors.green.withOpacity(0.2),
+                          ? Colors.purple.withValues(alpha: 0.2)
+                          : Colors.green.withValues(alpha: 0.2),
                       borderRadius: BorderRadius.circular(8),
                     ),
                     child: FaIcon(
@@ -5656,8 +5656,8 @@ class _MobileCartScreenState extends State<MobileCartScreen>
     return Container(
       padding: const EdgeInsets.all(14),
       decoration: BoxDecoration(
-        color: Colors.green.withOpacity(isDark ? 0.15 : 0.08),
-        border: Border.all(color: Colors.green.withOpacity(0.3)),
+        color: Colors.green.withValues(alpha: isDark ? 0.15 : 0.08),
+        border: Border.all(color: Colors.green.withValues(alpha: 0.3)),
         borderRadius: BorderRadius.circular(12),
       ),
       child: Row(
@@ -5665,7 +5665,7 @@ class _MobileCartScreenState extends State<MobileCartScreen>
           Container(
             padding: const EdgeInsets.all(8),
             decoration: BoxDecoration(
-              color: Colors.green.withOpacity(0.2),
+              color: Colors.green.withValues(alpha: 0.2),
               borderRadius: BorderRadius.circular(8),
             ),
             child: FaIcon(FontAwesomeIcons.shieldHalved,
@@ -5711,7 +5711,7 @@ class _MobileCartScreenState extends State<MobileCartScreen>
             color: isDark ? Colors.grey[800]! : Colors.grey[200]!, width: 1),
         boxShadow: [
           BoxShadow(
-              color: Colors.black.withOpacity(isDark ? 0.3 : 0.05),
+              color: Colors.black.withValues(alpha: isDark ? 0.3 : 0.05),
               blurRadius: 8,
               offset: const Offset(0, 2))
         ],
@@ -5813,7 +5813,7 @@ class _MobileCartScreenState extends State<MobileCartScreen>
         color: cardColor,
         boxShadow: [
           BoxShadow(
-              color: Colors.black.withOpacity(isDark ? 0.3 : 0.1),
+              color: Colors.black.withValues(alpha: isDark ? 0.3 : 0.1),
               blurRadius: 10,
               offset: const Offset(0, -2))
         ],

@@ -289,7 +289,7 @@ class _AddReviewDialogState extends State<AddReviewDialog> {
           borderRadius: BorderRadius.circular(20),
           boxShadow: [
             BoxShadow(
-              color: Colors.black.withOpacity(isDark ? 0.4 : 0.15),
+              color: Colors.black.withValues(alpha: isDark ? 0.4 : 0.15),
               blurRadius: 30,
               offset: const Offset(0, 10),
             ),
@@ -443,7 +443,7 @@ class _AddReviewDialogState extends State<AddReviewDialog> {
                     filter: ImageFilter.blur(sigmaX: 3, sigmaY: 3),
                     child: Container(
                       decoration: BoxDecoration(
-                        color: (isDark ? const Color(0xFF1E1E1E) : Colors.white).withOpacity(0.9),
+                        color: (isDark ? const Color(0xFF1E1E1E) : Colors.white).withValues(alpha: 0.9),
                       ),
                       child: Center(
                         child: Column(
@@ -629,7 +629,7 @@ class _AddReviewDialogState extends State<AddReviewDialog> {
                     },
                     child: Container(
                       decoration: BoxDecoration(
-                        color: Colors.black.withOpacity(0.6),
+                        color: Colors.black.withValues(alpha: 0.6),
                         shape: BoxShape.circle,
                       ),
                       child: const Icon(Icons.close_rounded, color: Colors.white, size: 16),

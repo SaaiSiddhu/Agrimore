@@ -29,13 +29,13 @@ class QuickReplyChip extends StatelessWidget {
           decoration: BoxDecoration(
             gradient: LinearGradient(
               colors: [
-                const Color(0xFF2E7D32).withOpacity(isDark ? 0.3 : 0.12),
-                const Color(0xFF43A047).withOpacity(isDark ? 0.2 : 0.08),
+                const Color(0xFF2E7D32).withValues(alpha: isDark ? 0.3 : 0.12),
+                const Color(0xFF43A047).withValues(alpha: isDark ? 0.2 : 0.08),
               ],
             ),
             borderRadius: BorderRadius.circular(24),
             border: Border.all(
-              color: const Color(0xFF2E7D32).withOpacity(isDark ? 0.5 : 0.4),
+              color: const Color(0xFF2E7D32).withValues(alpha: isDark ? 0.5 : 0.4),
               width: 1.2,
             ),
           ),

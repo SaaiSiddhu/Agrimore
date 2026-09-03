@@ -119,8 +119,8 @@ class _MobileNumberScreenState extends State<MobileNumberScreen>
                   begin: Alignment.topCenter,
                   end: Alignment.bottomCenter,
                   colors: isDark
-                      ? [const Color(0xFF1A6B3A).withOpacity(0.18), const Color(0xFF121212)]
-                      : [const Color(0xFF1A6B3A).withOpacity(0.07), const Color(0xFFF7FAF8)],
+                      ? [const Color(0xFF1A6B3A).withValues(alpha: 0.18), const Color(0xFF121212)]
+                      : [const Color(0xFF1A6B3A).withValues(alpha: 0.07), const Color(0xFFF7FAF8)],
                 ),
               ),
             ),
@@ -135,7 +135,7 @@ class _MobileNumberScreenState extends State<MobileNumberScreen>
               height: 220,
               decoration: BoxDecoration(
                 shape: BoxShape.circle,
-                color: const Color(0xFF1A6B3A).withOpacity(0.08),
+                color: const Color(0xFF1A6B3A).withValues(alpha: 0.08),
               ),
             ),
           ),
@@ -147,7 +147,7 @@ class _MobileNumberScreenState extends State<MobileNumberScreen>
               height: 160,
               decoration: BoxDecoration(
                 shape: BoxShape.circle,
-                color: const Color(0xFF1A6B3A).withOpacity(0.06),
+                color: const Color(0xFF1A6B3A).withValues(alpha: 0.06),
               ),
             ),
           ),
@@ -188,7 +188,7 @@ class _MobileNumberScreenState extends State<MobileNumberScreen>
                               borderRadius: BorderRadius.circular(22),
                               boxShadow: [
                                 BoxShadow(
-                                  color: const Color(0xFF1A6B3A).withOpacity(0.35),
+                                  color: const Color(0xFF1A6B3A).withValues(alpha: 0.35),
                                   blurRadius: 20,
                                   offset: const Offset(0, 8),
                                 ),
@@ -291,13 +291,13 @@ class _MobileNumberScreenState extends State<MobileNumberScreen>
         shape: BoxShape.circle,
         color: done || active
             ? const Color(0xFF1A6B3A)
-            : Colors.grey.withOpacity(0.2),
+            : Colors.grey.withValues(alpha: 0.2),
         border: active
             ? Border.all(color: const Color(0xFF1A6B3A), width: 2)
             : null,
         boxShadow: active
             ? [BoxShadow(
-                color: const Color(0xFF1A6B3A).withOpacity(0.3),
+                color: const Color(0xFF1A6B3A).withValues(alpha: 0.3),
                 blurRadius: 8)]
             : null,
       ),
@@ -325,7 +325,7 @@ class _MobileNumberScreenState extends State<MobileNumberScreen>
           borderRadius: BorderRadius.circular(2),
           color: done
               ? const Color(0xFF1A6B3A)
-              : Colors.grey.withOpacity(0.25),
+              : Colors.grey.withValues(alpha: 0.25),
         ),
       ),
     );
@@ -340,19 +340,19 @@ class _MobileNumberScreenState extends State<MobileNumberScreen>
           padding: const EdgeInsets.all(20),
           decoration: BoxDecoration(
             color: isDark
-                ? Colors.white.withOpacity(0.07)
-                : Colors.white.withOpacity(0.92),
+                ? Colors.white.withValues(alpha: 0.07)
+                : Colors.white.withValues(alpha: 0.92),
             borderRadius: BorderRadius.circular(18),
             border: Border.all(
               color: isDark
-                  ? Colors.white.withOpacity(0.1)
+                  ? Colors.white.withValues(alpha: 0.1)
                   : Colors.grey.shade200,
             ),
             boxShadow: isDark
                 ? null
                 : [
                     BoxShadow(
-                      color: Colors.black.withOpacity(0.06),
+                      color: Colors.black.withValues(alpha: 0.06),
                       blurRadius: 16,
                       offset: const Offset(0, 6),
                     ),
@@ -373,12 +373,12 @@ class _MobileNumberScreenState extends State<MobileNumberScreen>
               Container(
                 decoration: BoxDecoration(
                   color: isDark
-                      ? Colors.white.withOpacity(0.05)
+                      ? Colors.white.withValues(alpha: 0.05)
                       : const Color(0xFFF5F9F6),
                   borderRadius: BorderRadius.circular(12),
                   border: Border.all(
                     color: isDark
-                        ? Colors.white.withOpacity(0.1)
+                        ? Colors.white.withValues(alpha: 0.1)
                         : Colors.grey.shade200,
                   ),
                 ),
@@ -392,7 +392,7 @@ class _MobileNumberScreenState extends State<MobileNumberScreen>
                         border: Border(
                           right: BorderSide(
                             color: isDark
-                                ? Colors.white.withOpacity(0.1)
+                                ? Colors.white.withValues(alpha: 0.1)
                                 : Colors.grey.shade200,
                           ),
                         ),
@@ -463,9 +463,9 @@ class _MobileNumberScreenState extends State<MobileNumberScreen>
     return Container(
       padding: const EdgeInsets.all(14),
       decoration: BoxDecoration(
-        color: Colors.red.withOpacity(0.1),
+        color: Colors.red.withValues(alpha: 0.1),
         borderRadius: BorderRadius.circular(12),
-        border: Border.all(color: Colors.red.withOpacity(0.3)),
+        border: Border.all(color: Colors.red.withValues(alpha: 0.3)),
       ),
       child: Row(
         children: [
@@ -495,7 +495,7 @@ class _MobileNumberScreenState extends State<MobileNumberScreen>
           borderRadius: BorderRadius.circular(14),
           boxShadow: [
             BoxShadow(
-              color: const Color(0xFF1A6B3A).withOpacity(0.38),
+              color: const Color(0xFF1A6B3A).withValues(alpha: 0.38),
               blurRadius: 16,
               offset: const Offset(0, 6),
             ),

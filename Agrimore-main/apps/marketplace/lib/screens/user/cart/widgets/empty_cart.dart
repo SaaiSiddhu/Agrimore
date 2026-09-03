@@ -110,8 +110,8 @@ class _EmptyCartState extends State<EmptyCart> with TickerProviderStateMixin {
               decoration: BoxDecoration(
                 gradient: RadialGradient(
                   colors: [
-                    AppColors.primary.withOpacity(0.15),
-                    AppColors.primary.withOpacity(0.05),
+                    AppColors.primary.withValues(alpha: 0.15),
+                    AppColors.primary.withValues(alpha: 0.05),
                     Colors.transparent,
                   ],
                 ),
@@ -127,7 +127,7 @@ class _EmptyCartState extends State<EmptyCart> with TickerProviderStateMixin {
                     decoration: BoxDecoration(
                       shape: BoxShape.circle,
                       border: Border.all(
-                        color: AppColors.primary.withOpacity(0.2),
+                        color: AppColors.primary.withValues(alpha: 0.2),
                         width: 2,
                       ),
                     ),
@@ -141,14 +141,14 @@ class _EmptyCartState extends State<EmptyCart> with TickerProviderStateMixin {
                         begin: Alignment.topLeft,
                         end: Alignment.bottomRight,
                         colors: [
-                          AppColors.primary.withOpacity(0.2),
+                          AppColors.primary.withValues(alpha: 0.2),
                           AppColors.primary.withValues(alpha: 0.1),
                         ],
                       ),
                       shape: BoxShape.circle,
                       boxShadow: [
                         BoxShadow(
-                          color: AppColors.primary.withOpacity(0.2),
+                          color: AppColors.primary.withValues(alpha: 0.2),
                           blurRadius: 30,
                           offset: const Offset(0, 10),
                         ),
@@ -200,7 +200,7 @@ class _EmptyCartState extends State<EmptyCart> with TickerProviderStateMixin {
                 shape: BoxShape.circle,
                 boxShadow: [
                   BoxShadow(
-                    color: AppColors.primary.withOpacity(0.5),
+                    color: AppColors.primary.withValues(alpha: 0.5),
                     blurRadius: 4,
                   ),
                 ],
@@ -231,7 +231,7 @@ class _EmptyCartState extends State<EmptyCart> with TickerProviderStateMixin {
             gradient: LinearGradient(
               colors: [
                 AppColors.primary,
-                AppColors.primary.withOpacity(0.3),
+                AppColors.primary.withValues(alpha: 0.3),
               ],
             ),
             borderRadius: BorderRadius.circular(2),
@@ -276,12 +276,12 @@ class _EmptyCartState extends State<EmptyCart> with TickerProviderStateMixin {
             gradient: LinearGradient(
               colors: [
                 AppColors.primary,
-                AppColors.primary.withOpacity(0.8),
+                AppColors.primary.withValues(alpha: 0.8),
               ],
             ),
             boxShadow: [
               BoxShadow(
-                color: AppColors.primary.withOpacity(0.4),
+                color: AppColors.primary.withValues(alpha: 0.4),
                 blurRadius: 20,
                 offset: const Offset(0, 8),
               ),

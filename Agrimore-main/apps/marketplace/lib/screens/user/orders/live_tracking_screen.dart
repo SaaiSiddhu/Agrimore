@@ -268,7 +268,7 @@ class _LiveTrackingScreenState extends State<LiveTrackingScreen>
           borderRadius: BorderRadius.circular(16),
           boxShadow: [
             BoxShadow(
-              color: Colors.black.withOpacity(0.15),
+              color: Colors.black.withValues(alpha: 0.15),
               blurRadius: 20,
               offset: const Offset(0, 4),
             ),
@@ -290,7 +290,7 @@ class _LiveTrackingScreenState extends State<LiveTrackingScreen>
                       shape: BoxShape.circle,
                       boxShadow: [
                         BoxShadow(
-                          color: const Color(0xFF2D7D3C).withOpacity(0.4),
+                          color: const Color(0xFF2D7D3C).withValues(alpha: 0.4),
                           blurRadius: 8,
                           spreadRadius: 2,
                         ),
@@ -333,7 +333,7 @@ class _LiveTrackingScreenState extends State<LiveTrackingScreen>
             Container(
               padding: const EdgeInsets.all(10),
               decoration: BoxDecoration(
-                color: const Color(0xFF2D7D3C).withOpacity(0.1),
+                color: const Color(0xFF2D7D3C).withValues(alpha: 0.1),
                 borderRadius: BorderRadius.circular(12),
               ),
               child: const Icon(
@@ -361,7 +361,7 @@ class _LiveTrackingScreenState extends State<LiveTrackingScreen>
             shape: BoxShape.circle,
             boxShadow: [
               BoxShadow(
-                color: Colors.black.withOpacity(0.1),
+                color: Colors.black.withValues(alpha: 0.1),
                 blurRadius: 8,
               ),
             ],
@@ -388,7 +388,7 @@ class _LiveTrackingScreenState extends State<LiveTrackingScreen>
             borderRadius: const BorderRadius.vertical(top: Radius.circular(24)),
             boxShadow: [
               BoxShadow(
-                color: Colors.black.withOpacity(0.15),
+                color: Colors.black.withValues(alpha: 0.15),
                 blurRadius: 20,
                 offset: const Offset(0, -4),
               ),
@@ -462,7 +462,7 @@ class _LiveTrackingScreenState extends State<LiveTrackingScreen>
                           fit: BoxFit.cover,
                         )
                       : Container(
-                          color: const Color(0xFF2D7D3C).withOpacity(0.1),
+                          color: const Color(0xFF2D7D3C).withValues(alpha: 0.1),
                           child: Icon(
                             Icons.person_rounded,
                             size: 28,

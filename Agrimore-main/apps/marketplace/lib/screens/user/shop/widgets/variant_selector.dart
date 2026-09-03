@@ -91,7 +91,7 @@ class VariantSelector extends StatelessWidget {
         padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
         decoration: BoxDecoration(
           color: isSelected 
-              ? accentColor.withOpacity(0.08)
+              ? accentColor.withValues(alpha: 0.08)
               : (isDark ? const Color(0xFF1E1E1E) : Colors.white),
           borderRadius: BorderRadius.circular(12),
           border: Border.all(
@@ -102,7 +102,7 @@ class VariantSelector extends StatelessWidget {
           ),
           boxShadow: isSelected ? [
             BoxShadow(
-              color: accentColor.withOpacity(0.15),
+              color: accentColor.withValues(alpha: 0.15),
               blurRadius: 8,
               offset: const Offset(0, 2),
             ),

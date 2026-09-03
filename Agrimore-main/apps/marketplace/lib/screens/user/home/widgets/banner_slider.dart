@@ -106,7 +106,7 @@ class _BannerSliderState extends State<BannerSlider> {
                 placeholder: (context, url) => Container(
                   decoration: BoxDecoration(
                     gradient: LinearGradient(
-                      colors: [color.withOpacity(0.2), color.withOpacity(0.4)],
+                      colors: [color.withValues(alpha: 0.2), color.withValues(alpha: 0.4)],
                       begin: Alignment.topLeft,
                       end: Alignment.bottomRight,
                     ),
@@ -122,7 +122,7 @@ class _BannerSliderState extends State<BannerSlider> {
                 errorWidget: (context, url, error) => Container(
                   decoration: BoxDecoration(
                     gradient: LinearGradient(
-                      colors: [color, color.withOpacity(0.7)],
+                      colors: [color, color.withValues(alpha: 0.7)],
                       begin: Alignment.topLeft,
                       end: Alignment.bottomRight,
                     ),
@@ -139,8 +139,8 @@ class _BannerSliderState extends State<BannerSlider> {
                 decoration: BoxDecoration(
                   gradient: LinearGradient(
                     colors: [
-                      Colors.black.withOpacity(0.78),
-                      Colors.black.withOpacity(0.22),
+                      Colors.black.withValues(alpha: 0.78),
+                      Colors.black.withValues(alpha: 0.22),
                       Colors.transparent,
                     ],
                     stops: const [0.0, 0.45, 0.85],
@@ -155,7 +155,7 @@ class _BannerSliderState extends State<BannerSlider> {
               Container(
                 decoration: BoxDecoration(
                   borderRadius: BorderRadius.circular(22),
-                  border: Border.all(color: Colors.white.withOpacity(0.10)),
+                  border: Border.all(color: Colors.white.withValues(alpha: 0.10)),
                 ),
               ),
 
@@ -170,9 +170,9 @@ class _BannerSliderState extends State<BannerSlider> {
                       Container(
                         padding: const EdgeInsets.all(9),
                         decoration: BoxDecoration(
-                          color: Colors.white.withOpacity(0.22),
+                          color: Colors.white.withValues(alpha: 0.22),
                           borderRadius: BorderRadius.circular(12),
-                          border: Border.all(color: Colors.white.withOpacity(0.3), width: 0.8),
+                          border: Border.all(color: Colors.white.withValues(alpha: 0.3), width: 0.8),
                         ),
                         child: Icon(
                           _getIconData(banner.iconName),
@@ -189,7 +189,7 @@ class _BannerSliderState extends State<BannerSlider> {
                         letterSpacing: -0.3,
                         shadows: [
                           Shadow(
-                            color: Colors.black.withOpacity(0.5),
+                            color: Colors.black.withValues(alpha: 0.5),
                             blurRadius: 4,
                           ),
                         ],
@@ -201,10 +201,10 @@ class _BannerSliderState extends State<BannerSlider> {
                     Text(
                       banner.subtitle,
                       style: AppTextStyles.bodyMedium.copyWith(
-                        color: Colors.white.withOpacity(0.92),
+                        color: Colors.white.withValues(alpha: 0.92),
                         shadows: [
                           Shadow(
-                            color: Colors.black.withOpacity(0.5),
+                            color: Colors.black.withValues(alpha: 0.5),
                             blurRadius: 4,
                           ),
                         ],

@@ -145,7 +145,7 @@ class _ChatMessageWidgetState extends State<ChatMessageWidget>
                               ? LinearGradient(
                                   colors: [
                                     AppColors.primary,
-                                    AppColors.primary.withOpacity(0.8),
+                                    AppColors.primary.withValues(alpha: 0.8),
                                   ],
                                   begin: Alignment.topLeft,
                                   end: Alignment.bottomRight,
@@ -161,8 +161,8 @@ class _ChatMessageWidgetState extends State<ChatMessageWidget>
                           boxShadow: [
                             BoxShadow(
                               color: widget.isUser
-                                  ? AppColors.primary.withOpacity(0.2)
-                                  : Colors.black.withOpacity(0.08),
+                                  ? AppColors.primary.withValues(alpha: 0.2)
+                                  : Colors.black.withValues(alpha: 0.08),
                               blurRadius: 10,
                               offset: const Offset(0, 3),
                             ),
@@ -198,7 +198,7 @@ class _ChatMessageWidgetState extends State<ChatMessageWidget>
                                     Icons.access_time,
                                     size: 11,
                                     color: widget.isUser 
-                                        ? Colors.white.withOpacity(0.7) 
+                                        ? Colors.white.withValues(alpha: 0.7) 
                                         : Colors.grey[500],
                                   ),
                                   const SizedBox(width: 4),
@@ -207,7 +207,7 @@ class _ChatMessageWidgetState extends State<ChatMessageWidget>
                                     style: TextStyle(
                                       fontSize: 11,
                                       color: widget.isUser 
-                                          ? Colors.white.withOpacity(0.8) 
+                                          ? Colors.white.withValues(alpha: 0.8) 
                                           : Colors.grey[600],
                                     ),
                                   ),
@@ -232,13 +232,13 @@ class _ChatMessageWidgetState extends State<ChatMessageWidget>
                               gradient: LinearGradient(
                                 colors: [
                                   AppColors.primary,
-                                  AppColors.primary.withOpacity(0.7),
+                                  AppColors.primary.withValues(alpha: 0.7),
                                 ],
                               ),
                               borderRadius: BorderRadius.circular(12),
                               boxShadow: [
                                 BoxShadow(
-                                  color: AppColors.primary.withOpacity(0.3),
+                                  color: AppColors.primary.withValues(alpha: 0.3),
                                   blurRadius: 8,
                                   offset: const Offset(0, 2),
                                 ),
@@ -320,7 +320,7 @@ class _ChatMessageWidgetState extends State<ChatMessageWidget>
                           borderRadius: BorderRadius.circular(16),
                           boxShadow: [
                             BoxShadow(
-                              color: Colors.black.withOpacity(0.05),
+                              color: Colors.black.withValues(alpha: 0.05),
                               blurRadius: 15,
                               offset: const Offset(0, 5),
                             ),
@@ -342,13 +342,13 @@ class _ChatMessageWidgetState extends State<ChatMessageWidget>
                                     decoration: BoxDecoration(
                                       gradient: LinearGradient(
                                         colors: [
-                                          AppColors.primary.withOpacity(0.15),
-                                          AppColors.primary.withOpacity(0.05),
+                                          AppColors.primary.withValues(alpha: 0.15),
+                                          AppColors.primary.withValues(alpha: 0.05),
                                         ],
                                       ),
                                       borderRadius: BorderRadius.circular(20),
                                       border: Border.all(
-                                        color: AppColors.primary.withOpacity(0.3),
+                                        color: AppColors.primary.withValues(alpha: 0.3),
                                       ),
                                     ),
                                     child: Row(
@@ -442,7 +442,7 @@ class _ChatMessageWidgetState extends State<ChatMessageWidget>
           color: color.withValues(alpha: 0.1),
           borderRadius: BorderRadius.circular(20),
           border: Border.all(
-            color: color.withOpacity(0.3),
+            color: color.withValues(alpha: 0.3),
           ),
         ),
         child: Row(

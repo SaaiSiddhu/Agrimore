@@ -128,13 +128,13 @@ class _RewardsScreenState extends State<RewardsScreen> {
                 Container(
                   padding: const EdgeInsets.all(16),
                   decoration: BoxDecoration(
-                    color: Colors.white.withOpacity(0.1),
+                    color: Colors.white.withValues(alpha: 0.1),
                     borderRadius: BorderRadius.circular(20),
                     border: Border.all(color: const Color(0x4DD4A843)),
                   ),
                   child: Column(
                     children: [
-                      Text('You have', style: TextStyle(color: Colors.white.withOpacity(0.8), fontSize: 14, fontWeight: FontWeight.bold)),
+                      Text('You have', style: TextStyle(color: Colors.white.withValues(alpha: 0.8), fontSize: 14, fontWeight: FontWeight.bold)),
                       const SizedBox(height: 4),
                       Text('${_pendingCards.length} Reward${_pendingCards.length != 1 ? "s" : ""}',
                           style: const TextStyle(color: Color(0xFFD4A843), fontSize: 32, fontWeight: FontWeight.w900)),
@@ -290,7 +290,7 @@ class _RewardsScreenState extends State<RewardsScreen> {
                         color: _scratched ? Colors.white : const Color(0xFFD4A843),
                         borderRadius: BorderRadius.circular(24),
                         boxShadow: [BoxShadow(
-                          color: (_scratched ? const Color(0xFF145A32) : const Color(0xFFD4A843)).withOpacity(0.4),
+                          color: (_scratched ? const Color(0xFF145A32) : const Color(0xFFD4A843)).withValues(alpha: 0.4),
                           blurRadius: 20,
                           offset: const Offset(0, 8),
                         )],

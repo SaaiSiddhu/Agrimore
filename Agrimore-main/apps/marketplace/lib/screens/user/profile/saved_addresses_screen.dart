@@ -137,7 +137,7 @@ class _SavedAddressesScreenState extends State<SavedAddressesScreen>
             borderRadius: BorderRadius.circular(20),
             boxShadow: [
               BoxShadow(
-                color: Colors.black.withOpacity(isDark ? 0.4 : 0.15),
+                color: Colors.black.withValues(alpha: isDark ? 0.4 : 0.15),
                 blurRadius: 30,
                 offset: const Offset(0, 10),
               ),
@@ -282,7 +282,7 @@ class _SavedAddressesScreenState extends State<SavedAddressesScreen>
         children: [
           Container(
             decoration: BoxDecoration(
-              color: Colors.white.withOpacity(0.2),
+              color: Colors.white.withValues(alpha: 0.2),
               borderRadius: BorderRadius.circular(10),
             ),
             child: Material(
@@ -435,12 +435,12 @@ class _SavedAddressesScreenState extends State<SavedAddressesScreen>
                       padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 14),
                       decoration: BoxDecoration(
                         gradient: LinearGradient(
-                          colors: [_toastColor, _toastColor.withOpacity(0.9)],
+                          colors: [_toastColor, _toastColor.withValues(alpha: 0.9)],
                         ),
                         borderRadius: BorderRadius.circular(16),
                         boxShadow: [
                           BoxShadow(
-                            color: _toastColor.withOpacity(0.4),
+                            color: _toastColor.withValues(alpha: 0.4),
                             blurRadius: 20,
                             offset: const Offset(0, 8),
                           ),
@@ -451,7 +451,7 @@ class _SavedAddressesScreenState extends State<SavedAddressesScreen>
                           Container(
                             padding: const EdgeInsets.all(6),
                             decoration: BoxDecoration(
-                              color: Colors.white.withOpacity(0.2),
+                              color: Colors.white.withValues(alpha: 0.2),
                               shape: BoxShape.circle,
                             ),
                             child: Icon(_toastIcon, color: Colors.white, size: 18),
@@ -532,7 +532,7 @@ class _SavedAddressesScreenState extends State<SavedAddressesScreen>
                 end: Alignment.bottomRight,
                 colors: [
                   accentColor.withValues(alpha: 0.1),
-                  accentColor.withOpacity(0.05),
+                  accentColor.withValues(alpha: 0.05),
                 ],
               )
             : null,
@@ -540,15 +540,15 @@ class _SavedAddressesScreenState extends State<SavedAddressesScreen>
         borderRadius: BorderRadius.circular(16),
         border: Border.all(
           color: address.isDefault
-              ? accentColor.withOpacity(0.3)
+              ? accentColor.withValues(alpha: 0.3)
               : (isDark ? Colors.grey[800]! : Colors.grey[200]!),
           width: 1.5,
         ),
         boxShadow: [
           BoxShadow(
             color: address.isDefault
-                ? accentColor.withOpacity(0.1)
-                : Colors.black.withOpacity(isDark ? 0.3 : 0.04),
+                ? accentColor.withValues(alpha: 0.1)
+                : Colors.black.withValues(alpha: isDark ? 0.3 : 0.04),
             blurRadius: 16,
             offset: const Offset(0, 4),
           ),
@@ -573,7 +573,7 @@ class _SavedAddressesScreenState extends State<SavedAddressesScreen>
                       color: accentColor.withValues(alpha: 0.1),
                       borderRadius: BorderRadius.circular(8),
                       border: Border.all(
-                        color: accentColor.withOpacity(0.2),
+                        color: accentColor.withValues(alpha: 0.2),
                       ),
                     ),
                     child: Row(
@@ -612,7 +612,7 @@ class _SavedAddressesScreenState extends State<SavedAddressesScreen>
                       borderRadius: BorderRadius.circular(8),
                       boxShadow: [
                         BoxShadow(
-                          color: accentColor.withOpacity(0.3),
+                          color: accentColor.withValues(alpha: 0.3),
                           blurRadius: 8,
                           offset: const Offset(0, 2),
                         ),
@@ -716,7 +716,7 @@ class _SavedAddressesScreenState extends State<SavedAddressesScreen>
                           borderRadius: BorderRadius.circular(10),
                         ),
                         side: BorderSide(
-                          color: accentColor.withOpacity(0.5),
+                          color: accentColor.withValues(alpha: 0.5),
                           width: 1.5,
                         ),
                       ),
@@ -740,7 +740,7 @@ class _SavedAddressesScreenState extends State<SavedAddressesScreen>
                         borderRadius: BorderRadius.circular(10),
                       ),
                       side: BorderSide(
-                        color: Colors.red.withOpacity(0.5),
+                        color: Colors.red.withValues(alpha: 0.5),
                         width: 1.5,
                       ),
                     ),
@@ -786,12 +786,12 @@ class _SavedAddressesScreenState extends State<SavedAddressesScreen>
                 end: Alignment.bottomRight,
                 colors: [
                   accentColor.withValues(alpha: 0.1),
-                  accentColor.withOpacity(0.05),
+                  accentColor.withValues(alpha: 0.05),
                 ],
               ),
               shape: BoxShape.circle,
               border: Border.all(
-                color: accentColor.withOpacity(0.2),
+                color: accentColor.withValues(alpha: 0.2),
                 width: 2,
               ),
             ),

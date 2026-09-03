@@ -155,7 +155,7 @@ class SortBottomSheet extends StatelessWidget {
               const EdgeInsets.symmetric(horizontal: 12, vertical: 10), // Reduced padding
           decoration: BoxDecoration(
             color: isSelected
-                ? accentColor.withOpacity(0.1)
+                ? accentColor.withValues(alpha: 0.1)
                 : (isDark ? const Color(0xFF303030) : Colors.grey[50]),
             borderRadius: BorderRadius.circular(10),
             border: Border.all(
@@ -171,7 +171,7 @@ class SortBottomSheet extends StatelessWidget {
                 padding: const EdgeInsets.all(6), // Reduced icon padding
                 decoration: BoxDecoration(
                   color: isSelected
-                      ? accentColor.withOpacity(0.15)
+                      ? accentColor.withValues(alpha: 0.15)
                       : (isDark ? Colors.grey[800] : Colors.grey[100]),
                   borderRadius: BorderRadius.circular(8),
                 ),

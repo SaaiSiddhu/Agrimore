@@ -137,12 +137,12 @@ class _Tile extends StatelessWidget {
                           imageUrl!,
                           fit: BoxFit.cover,
                           errorBuilder: (_, __, ___) => ColoredBox(
-                            color: accent.withOpacity(0.12),
+                            color: accent.withValues(alpha: 0.12),
                             child: Icon(Icons.storefront, color: accent),
                           ),
                         )
                       : ColoredBox(
-                          color: accent.withOpacity(0.12),
+                          color: accent.withValues(alpha: 0.12),
                           child: Icon(Icons.storefront, color: accent),
                         ),
                 ),

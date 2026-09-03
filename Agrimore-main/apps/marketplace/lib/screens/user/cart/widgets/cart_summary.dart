@@ -177,7 +177,7 @@ class _CartSummaryState extends State<CartSummary>
         borderRadius: BorderRadius.circular(16),
         boxShadow: [
           BoxShadow(
-            color: AppColors.primary.withOpacity(0.08),
+            color: AppColors.primary.withValues(alpha: 0.08),
             blurRadius: 8,
             offset: const Offset(0, 3),
           ),
@@ -305,7 +305,7 @@ class _CartSummaryState extends State<CartSummary>
         decoration: BoxDecoration(
           color: AppColors.success.withValues(alpha: 0.1),
           borderRadius: BorderRadius.circular(12),
-          border: Border.all(color: AppColors.success.withOpacity(0.3)),
+          border: Border.all(color: AppColors.success.withValues(alpha: 0.3)),
         ),
         child: Row(
           children: [

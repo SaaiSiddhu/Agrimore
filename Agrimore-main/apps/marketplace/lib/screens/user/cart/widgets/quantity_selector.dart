@@ -78,14 +78,14 @@ class _QuantitySelectorState extends State<QuantitySelector>
           decoration: BoxDecoration(
             gradient: LinearGradient(
               colors: [
-                AppColors.primary.withOpacity(0.08),
-                AppColors.primary.withOpacity(0.04),
+                AppColors.primary.withValues(alpha: 0.08),
+                AppColors.primary.withValues(alpha: 0.04),
               ],
             ),
             borderRadius: BorderRadius.circular(widget.compact ? 10 : 12),
             border: Border.all(
               color: widget.enabled
-                  ? AppColors.primary.withOpacity(0.3)
+                  ? AppColors.primary.withValues(alpha: 0.3)
                   : Colors.grey.shade300,
               width: 1.5,
             ),
@@ -206,7 +206,7 @@ class _QuantitySelectorState extends State<QuantitySelector>
         color: Colors.white,
         border: Border.symmetric(
           vertical: BorderSide(
-            color: AppColors.primary.withOpacity(0.2),
+            color: AppColors.primary.withValues(alpha: 0.2),
             width: 1,
           ),
         ),
@@ -235,8 +235,8 @@ class _QuantitySelectorState extends State<QuantitySelector>
                 width: 20,
                 decoration: BoxDecoration(
                   color: widget.enabled
-                      ? AppColors.primary.withOpacity(0.3)
-                      : AppColors.textDisabled.withOpacity(0.2),
+                      ? AppColors.primary.withValues(alpha: 0.3)
+                      : AppColors.textDisabled.withValues(alpha: 0.2),
                   borderRadius: BorderRadius.circular(1),
                 ),
               ),
@@ -266,7 +266,7 @@ class _QuantitySelectorState extends State<QuantitySelector>
               color: AppColors.warning.withValues(alpha: 0.1),
               borderRadius: BorderRadius.circular(6),
               border: Border.all(
-                color: AppColors.warning.withOpacity(0.3),
+                color: AppColors.warning.withValues(alpha: 0.3),
               ),
             ),
             child: Row(

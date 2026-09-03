@@ -200,7 +200,7 @@ class _MobileWishlistScreenState extends State<MobileWishlistScreen>
         ),
         boxShadow: [
           BoxShadow(
-            color: Colors.black.withOpacity(isDark ? 0.3 : 0.05),
+            color: Colors.black.withValues(alpha: isDark ? 0.3 : 0.05),
             blurRadius: 8,
             offset: const Offset(0, 2),
           ),
@@ -213,7 +213,7 @@ class _MobileWishlistScreenState extends State<MobileWishlistScreen>
             width: 50,
             height: 50,
             decoration: BoxDecoration(
-              color: Colors.red.withOpacity(0.15),
+              color: Colors.red.withValues(alpha: 0.15),
               borderRadius: BorderRadius.circular(12),
             ),
             child: Icon(
@@ -321,7 +321,7 @@ class _MobileWishlistScreenState extends State<MobileWishlistScreen>
                   shape: BoxShape.circle,
                   boxShadow: [
                     BoxShadow(
-                      color: Colors.red.withOpacity(0.3),
+                      color: Colors.red.withValues(alpha: 0.3),
                       blurRadius: 20,
                       offset: const Offset(0, 10),
                     ),
@@ -484,7 +484,7 @@ class _MobileWishlistScreenState extends State<MobileWishlistScreen>
             borderRadius: BorderRadius.circular(16),
             boxShadow: [
               BoxShadow(
-                color: Colors.black.withOpacity(isDark ? 0.3 : 0.1),
+                color: Colors.black.withValues(alpha: isDark ? 0.3 : 0.1),
                 blurRadius: 20,
                 offset: const Offset(0, 10),
               ),

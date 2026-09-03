@@ -124,7 +124,7 @@ class _CouponSelectionScreenState extends State<CouponSelectionScreen>
           borderRadius: const BorderRadius.vertical(top: Radius.circular(24)),
           boxShadow: [
             BoxShadow(
-              color: Colors.black.withOpacity(isDark ? 0.5 : 0.15),
+              color: Colors.black.withValues(alpha: isDark ? 0.5 : 0.15),
               blurRadius: 20,
               offset: const Offset(0, -5),
             ),
@@ -238,7 +238,7 @@ class _CouponSelectionScreenState extends State<CouponSelectionScreen>
                   padding: const EdgeInsets.all(6),
                   decoration: BoxDecoration(
                     color: isDark
-                        ? Colors.white.withOpacity(0.1)
+                        ? Colors.white.withValues(alpha: 0.1)
                         : Colors.grey.shade100,
                     borderRadius: BorderRadius.circular(8),
                   ),
@@ -561,7 +561,7 @@ class _CouponSelectionScreenState extends State<CouponSelectionScreen>
             ),
             boxShadow: [
               BoxShadow(
-                color: Colors.black.withOpacity(isDark ? 0.3 : 0.05),
+                color: Colors.black.withValues(alpha: isDark ? 0.3 : 0.05),
                 blurRadius: 8,
                 offset: const Offset(0, 2),
               ),
@@ -585,7 +585,7 @@ class _CouponSelectionScreenState extends State<CouponSelectionScreen>
                       padding: const EdgeInsets.all(8),
                       decoration: BoxDecoration(
                         color: canApply
-                            ? accentColor.withOpacity(0.15)
+                            ? accentColor.withValues(alpha: 0.15)
                             : (isDark ? Colors.grey[800] : Colors.grey[200]),
                         borderRadius: BorderRadius.circular(8),
                       ),
@@ -632,7 +632,7 @@ class _CouponSelectionScreenState extends State<CouponSelectionScreen>
                           vertical: 6,
                         ),
                         decoration: BoxDecoration(
-                          color: Colors.green.withOpacity(isDark ? 0.2 : 0.1),
+                          color: Colors.green.withValues(alpha: isDark ? 0.2 : 0.1),
                           borderRadius: BorderRadius.circular(6),
                         ),
                         child: Row(
@@ -709,12 +709,12 @@ class _CouponSelectionScreenState extends State<CouponSelectionScreen>
                             ),
                             decoration: BoxDecoration(
                               color: canApply
-                                  ? Colors.green.withOpacity(isDark ? 0.15 : 0.08)
-                                  : Colors.red.withOpacity(isDark ? 0.15 : 0.08),
+                                  ? Colors.green.withValues(alpha: isDark ? 0.15 : 0.08)
+                                  : Colors.red.withValues(alpha: isDark ? 0.15 : 0.08),
                               borderRadius: BorderRadius.circular(6),
                               border: Border.all(
                                 color: canApply
-                                    ? Colors.green.withOpacity(0.3)
+                                    ? Colors.green.withValues(alpha: 0.3)
                                     : Colors.red.withValues(alpha: 0.3),
                               ),
                             ),

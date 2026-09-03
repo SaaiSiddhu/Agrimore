@@ -30,7 +30,7 @@ class RecentlyViewedWidget extends StatelessWidget {
             borderRadius: BorderRadius.circular(16),
             boxShadow: [
               BoxShadow(
-                color: Colors.black.withOpacity(isDark ? 0.3 : 0.06),
+                color: Colors.black.withValues(alpha: isDark ? 0.3 : 0.06),
                 blurRadius: 12,
                 offset: const Offset(0, 4),
               ),
@@ -50,8 +50,8 @@ class RecentlyViewedWidget extends StatelessWidget {
                       decoration: BoxDecoration(
                         gradient: LinearGradient(
                           colors: [
-                            accentColor.withOpacity(0.2),
-                            accentColor.withOpacity(0.1),
+                            accentColor.withValues(alpha: 0.2),
+                            accentColor.withValues(alpha: 0.1),
                           ],
                           begin: Alignment.topLeft,
                           end: Alignment.bottomRight,
@@ -88,7 +88,7 @@ class RecentlyViewedWidget extends StatelessWidget {
                                   vertical: 2,
                                 ),
                                 decoration: BoxDecoration(
-                                  color: accentColor.withOpacity(0.15),
+                                  color: accentColor.withValues(alpha: 0.15),
                                   borderRadius: BorderRadius.circular(4),
                                 ),
                                 child: Text(

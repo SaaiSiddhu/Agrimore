@@ -251,7 +251,7 @@ class _BestsellerCardState extends State<_BestsellerCard> {
             ),
             boxShadow: [
               BoxShadow(
-                color: Colors.black.withOpacity(widget.isDark ? 0.15 : 0.03),
+                color: Colors.black.withValues(alpha: widget.isDark ? 0.15 : 0.03),
                 blurRadius: 4,
                 offset: const Offset(0, 1),
               ),
@@ -303,8 +303,8 @@ class _BestsellerCardState extends State<_BestsellerCard> {
                                 tile = Container(
                                   decoration: BoxDecoration(
                                     color: widget.isDark
-                                        ? Colors.grey[800]!.withOpacity(0.3)
-                                        : Colors.white.withOpacity(0.4),
+                                        ? Colors.grey[800]!.withValues(alpha: 0.3)
+                                        : Colors.white.withValues(alpha: 0.4),
                                     borderRadius: BorderRadius.circular(4),
                                   ),
                                 );
@@ -328,7 +328,7 @@ class _BestsellerCardState extends State<_BestsellerCard> {
                                           boxShadow: [
                                             BoxShadow(
                                               color:
-                                                  Colors.black.withOpacity(0.3),
+                                                  Colors.black.withValues(alpha: 0.3),
                                               blurRadius: 2,
                                               offset: const Offset(0, 1),
                                             ),
@@ -361,8 +361,8 @@ class _BestsellerCardState extends State<_BestsellerCard> {
                 padding: const EdgeInsets.symmetric(horizontal: 4, vertical: 3),
                 decoration: BoxDecoration(
                   color: widget.isDark
-                      ? Colors.grey[800]!.withOpacity(0.4)
-                      : Colors.white.withOpacity(0.65),
+                      ? Colors.grey[800]!.withValues(alpha: 0.4)
+                      : Colors.white.withValues(alpha: 0.65),
                   borderRadius:
                       const BorderRadius.vertical(bottom: Radius.circular(9)),
                 ),

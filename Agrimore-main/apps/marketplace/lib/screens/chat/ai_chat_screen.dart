@@ -675,9 +675,9 @@ class _ReplyingToBar extends StatelessWidget {
     return Container(
       padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
       decoration: BoxDecoration(
-        color: colorScheme.primaryContainer.withOpacity(0.6),
+        color: colorScheme.primaryContainer.withValues(alpha: 0.6),
         border: Border(
-          top: BorderSide(color: colorScheme.outlineVariant.withOpacity(0.5)),
+          top: BorderSide(color: colorScheme.outlineVariant.withValues(alpha: 0.5)),
         ),
       ),
       child: Row(
@@ -735,7 +735,7 @@ class _ChatInputArea extends StatelessWidget {
         color: isDark ? const Color(0xFF1E293B) : Colors.white,
         boxShadow: [
           BoxShadow(
-            color: Colors.black.withOpacity(0.08),
+            color: Colors.black.withValues(alpha: 0.08),
             blurRadius: 15,
             offset: const Offset(0, -3),
           )
@@ -751,12 +751,12 @@ class _ChatInputArea extends StatelessWidget {
                 child: Container(
                   decoration: BoxDecoration(
                     color: isDark 
-                        ? Colors.white.withOpacity(0.08) 
+                        ? Colors.white.withValues(alpha: 0.08) 
                         : const Color(0xFFF1F5F9),
                     borderRadius: BorderRadius.circular(28),
                     border: Border.all(
                       color: isDark 
-                          ? Colors.white.withOpacity(0.1)
+                          ? Colors.white.withValues(alpha: 0.1)
                           : const Color(0xFFE2E8F0),
                     ),
                   ),
@@ -819,7 +819,7 @@ class _ChatInputArea extends StatelessWidget {
                         ? null
                         : [
                             BoxShadow(
-                              color: const Color(0xFF2E7D32).withOpacity(0.4),
+                              color: const Color(0xFF2E7D32).withValues(alpha: 0.4),
                               blurRadius: 12,
                               offset: const Offset(0, 4),
                             ),

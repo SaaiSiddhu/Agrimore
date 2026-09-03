@@ -173,7 +173,7 @@ class _LoginScreenState extends State<LoginScreen> {
             gradient: LinearGradient(
               begin: Alignment.topCenter,
               end: Alignment.bottomCenter,
-              colors: [Colors.black.withOpacity(0.85), Colors.black.withOpacity(0.35), Colors.transparent],
+              colors: [Colors.black.withValues(alpha: 0.85), Colors.black.withValues(alpha: 0.35), Colors.transparent],
               stops: const [0.0, 0.5, 0.85],
             ),
           ),
@@ -206,7 +206,7 @@ class _LoginScreenState extends State<LoginScreen> {
                         gradient: AppColors.primaryGradient,
                         borderRadius: BorderRadius.circular(6),
                         boxShadow: [
-                          BoxShadow(color: AppColors.primary.withOpacity(0.4), blurRadius: 12, offset: const Offset(0, 4)),
+                          BoxShadow(color: AppColors.primary.withValues(alpha: 0.4), blurRadius: 12, offset: const Offset(0, 4)),
                         ],
                       ),
                       child: const Text(

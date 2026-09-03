@@ -338,7 +338,7 @@ class _SellerApplyScreenState extends State<SellerApplyScreen> {
             onTap: () => Navigator.pop(context),
             child: Container(
               width: 40, height: 40,
-              decoration: BoxDecoration(color: Colors.white.withOpacity(0.15), borderRadius: BorderRadius.circular(14)),
+              decoration: BoxDecoration(color: Colors.white.withValues(alpha: 0.15), borderRadius: BorderRadius.circular(14)),
               child: const Icon(Icons.arrow_back, color: Color(0xFFD4A843), size: 24),
             ),
           ),

@@ -211,7 +211,7 @@ class _OrderTrackingScreenState extends State<OrderTrackingScreen> {
                 boxShadow: isActive
                     ? [
                         BoxShadow(
-                          color: AppColors.primary.withOpacity(0.3),
+                          color: AppColors.primary.withValues(alpha: 0.3),
                           blurRadius: 8,
                           spreadRadius: 2,
                         ),
@@ -258,10 +258,10 @@ class _OrderTrackingScreenState extends State<OrderTrackingScreen> {
       child: Container(
         padding: const EdgeInsets.all(16),
         decoration: BoxDecoration(
-          color: AppColors.primary.withOpacity(0.05),
+          color: AppColors.primary.withValues(alpha: 0.05),
           borderRadius: BorderRadius.circular(12),
           border: Border.all(
-            color: AppColors.primary.withOpacity(0.2),
+            color: AppColors.primary.withValues(alpha: 0.2),
           ),
         ),
         child: Row(
@@ -367,7 +367,7 @@ class _OrderTrackingScreenState extends State<OrderTrackingScreen> {
                 isFirst: isFirst,
                 isLast: index == timeline.length - 1,
                 beforeLineStyle: LineStyle(
-                  color: AppColors.primary.withOpacity(0.5),
+                  color: AppColors.primary.withValues(alpha: 0.5),
                   thickness: 2,
                 ),
                 indicatorStyle: IndicatorStyle(
@@ -383,7 +383,7 @@ class _OrderTrackingScreenState extends State<OrderTrackingScreen> {
                       ),
                       boxShadow: [
                         BoxShadow(
-                          color: AppColors.primary.withOpacity(0.2),
+                          color: AppColors.primary.withValues(alpha: 0.2),
                           blurRadius: 8,
                           spreadRadius: 2,
                         ),
@@ -406,7 +406,7 @@ class _OrderTrackingScreenState extends State<OrderTrackingScreen> {
                       borderRadius: BorderRadius.circular(12),
                       border: Border.all(
                         color: isFirst
-                            ? AppColors.primary.withOpacity(0.2)
+                            ? AppColors.primary.withValues(alpha: 0.2)
                             : Colors.grey[200]!,
                         width: isFirst ? 2 : 1,
                       ),
@@ -542,9 +542,9 @@ class _OrderTrackingScreenState extends State<OrderTrackingScreen> {
     return Container(
       padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
       decoration: BoxDecoration(
-        color: config['color'].withOpacity(0.1),
+        color: config['color'].withValues(alpha: 0.1),
         borderRadius: BorderRadius.circular(20),
-        border: Border.all(color: config['color'].withOpacity(0.3)),
+        border: Border.all(color: config['color'].withValues(alpha: 0.3)),
       ),
       child: Row(
         mainAxisSize: MainAxisSize.min,

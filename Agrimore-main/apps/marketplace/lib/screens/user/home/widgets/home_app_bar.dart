@@ -311,7 +311,7 @@ class _HomeAppBarState extends State<HomeAppBar> {
                   style: TextStyle(
                     fontSize: 11,
                     fontWeight: FontWeight.w700,
-                    color: Colors.white.withOpacity(0.85),
+                    color: Colors.white.withValues(alpha: 0.85),
                   ),
                 ),
                 const SizedBox(height: 1),
@@ -390,7 +390,7 @@ class _HomeAppBarState extends State<HomeAppBar> {
                                     style: TextStyle(
                                       fontSize: 11.5,
                                       fontWeight: FontWeight.w500,
-                                      color: Colors.white.withOpacity(0.85),
+                                      color: Colors.white.withValues(alpha: 0.85),
                                     ),
                                   ),
                                 ],
@@ -401,7 +401,7 @@ class _HomeAppBarState extends State<HomeAppBar> {
                           Icon(
                             Icons.keyboard_arrow_down_rounded,
                             size: 15,
-                            color: Colors.white.withOpacity(0.85),
+                            color: Colors.white.withValues(alpha: 0.85),
                           ),
                         ],
                       ),
@@ -447,7 +447,7 @@ class _HomeAppBarState extends State<HomeAppBar> {
               border: Border.all(color: Colors.white, width: 1.5),
               boxShadow: [
                 BoxShadow(
-                  color: Colors.black.withOpacity(0.15),
+                  color: Colors.black.withValues(alpha: 0.15),
                   blurRadius: 6,
                   offset: const Offset(0, 2),
                 ),
@@ -497,7 +497,7 @@ class _HomeAppBarState extends State<HomeAppBar> {
               border: Border.all(color: Colors.white, width: 1.5),
               boxShadow: [
                 BoxShadow(
-                  color: Colors.black.withOpacity(0.15),
+                  color: Colors.black.withValues(alpha: 0.15),
                   blurRadius: 6,
                   offset: const Offset(0, 2),
                 ),
@@ -551,7 +551,7 @@ class _HomeAppBarState extends State<HomeAppBar> {
                   borderRadius: BorderRadius.circular(14),
                   boxShadow: [
                     BoxShadow(
-                      color: Colors.black.withOpacity(0.12),
+                      color: Colors.black.withValues(alpha: 0.12),
                       blurRadius: 12,
                       offset: const Offset(0, 4),
                     ),
@@ -577,7 +577,7 @@ class _HomeAppBarState extends State<HomeAppBar> {
                       margin: const EdgeInsets.only(right: 8),
                       padding: const EdgeInsets.all(10),
                       decoration: BoxDecoration(
-                        color: accent.withOpacity(0.12),
+                        color: accent.withValues(alpha: 0.12),
                         borderRadius: BorderRadius.circular(10),
                       ),
                       child: Icon(Icons.mic, size: 18, color: accent),
@@ -630,8 +630,8 @@ class _HomeAppBarState extends State<HomeAppBar> {
                 padding: const EdgeInsets.all(2),
                 decoration: BoxDecoration(
                   borderRadius: BorderRadius.circular(12),
-                  color: isB2B ? const Color(0xFFFEF08A) : Colors.white.withOpacity(0.35),
-                  border: Border.all(color: Colors.white.withOpacity(0.6), width: 1.0),
+                  color: isB2B ? const Color(0xFFFEF08A) : Colors.white.withValues(alpha: 0.35),
+                  border: Border.all(color: Colors.white.withValues(alpha: 0.6), width: 1.0),
                 ),
                 child: AnimatedAlign(
                   duration: const Duration(milliseconds: 250),
@@ -645,7 +645,7 @@ class _HomeAppBarState extends State<HomeAppBar> {
                       color: isB2B ? const Color(0xFFD97706) : Colors.white,
                       boxShadow: [
                         BoxShadow(
-                          color: Colors.black.withOpacity(0.2),
+                          color: Colors.black.withValues(alpha: 0.2),
                           blurRadius: 3,
                           offset: const Offset(0, 1),
                         ),

@@ -255,7 +255,7 @@ class _SignupScreenState extends State<SignupScreen>
                           borderRadius: BorderRadius.circular(16),
                           boxShadow: [
                             BoxShadow(
-                              color: Colors.black.withOpacity(0.15),
+                              color: Colors.black.withValues(alpha: 0.15),
                               blurRadius: 20,
                               offset: const Offset(0, 8),
                             ),
@@ -302,7 +302,7 @@ class _SignupScreenState extends State<SignupScreen>
                     'Create your account and start exploring\nthousands of quality agricultural products.',
                     style: TextStyle(
                       fontSize: 16,
-                      color: Colors.white.withOpacity(0.85),
+                      color: Colors.white.withValues(alpha: 0.85),
                       height: 1.6,
                     ),
                   ),
@@ -334,9 +334,9 @@ class _SignupScreenState extends State<SignupScreen>
       width: size + 20,
       height: size + 20,
       decoration: BoxDecoration(
-        color: Colors.white.withOpacity(0.15),
+        color: Colors.white.withValues(alpha: 0.15),
         borderRadius: BorderRadius.circular(16),
-        border: Border.all(color: Colors.white.withOpacity(0.2)),
+        border: Border.all(color: Colors.white.withValues(alpha: 0.2)),
       ),
       child: Center(child: Text(emoji, style: TextStyle(fontSize: size * 0.6))),
     );
@@ -346,9 +346,9 @@ class _SignupScreenState extends State<SignupScreen>
     return Container(
       padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
       decoration: BoxDecoration(
-        color: Colors.white.withOpacity(0.15),
+        color: Colors.white.withValues(alpha: 0.15),
         borderRadius: BorderRadius.circular(12),
-        border: Border.all(color: Colors.white.withOpacity(0.2)),
+        border: Border.all(color: Colors.white.withValues(alpha: 0.2)),
       ),
       child: Row(
         mainAxisSize: MainAxisSize.min,
@@ -360,7 +360,7 @@ class _SignupScreenState extends State<SignupScreen>
             style: TextStyle(
               fontSize: 13,
               fontWeight: FontWeight.w600,
-              color: Colors.white.withOpacity(0.95),
+              color: Colors.white.withValues(alpha: 0.95),
               height: 1.3,
             ),
           ),
@@ -437,7 +437,7 @@ class _SignupScreenState extends State<SignupScreen>
             borderRadius: BorderRadius.circular(18),
             boxShadow: [
               BoxShadow(
-                color: AppColors.primary.withOpacity(0.2),
+                color: AppColors.primary.withValues(alpha: 0.2),
                 blurRadius: 20,
                 offset: const Offset(0, 6),
               ),
@@ -638,9 +638,9 @@ class _SignupScreenState extends State<SignupScreen>
               margin: const EdgeInsets.only(bottom: 16),
               padding: const EdgeInsets.all(12),
               decoration: BoxDecoration(
-                color: AppColors.error.withOpacity(0.1),
+                color: AppColors.error.withValues(alpha: 0.1),
                 borderRadius: BorderRadius.circular(10),
-                border: Border.all(color: AppColors.error.withOpacity(0.3)),
+                border: Border.all(color: AppColors.error.withValues(alpha: 0.3)),
               ),
               child: Row(
                 children: [
@@ -764,9 +764,9 @@ class _SignupScreenState extends State<SignupScreen>
               : (isDark ? Colors.white24 : const Color(0xFFE0E0E0)),
           width: _isPhoneFocused ? 2 : 1,
         ),
-        color: isDark ? Colors.white.withOpacity(0.05) : const Color(0xFFFAFAFA),
+        color: isDark ? Colors.white.withValues(alpha: 0.05) : const Color(0xFFFAFAFA),
         boxShadow: _isPhoneFocused
-            ? [BoxShadow(color: AppColors.primary.withOpacity(0.1), blurRadius: 8, offset: const Offset(0, 2))]
+            ? [BoxShadow(color: AppColors.primary.withValues(alpha: 0.1), blurRadius: 8, offset: const Offset(0, 2))]
             : null,
       ),
       child: Row(
@@ -847,10 +847,10 @@ class _SignupScreenState extends State<SignupScreen>
           width: isFocused ? 2 : 1,
         ),
         color: enabled 
-            ? (isDark ? Colors.white.withOpacity(0.05) : const Color(0xFFFAFAFA))
-            : (isDark ? Colors.white.withOpacity(0.02) : const Color(0xFFEEEEEE)),
+            ? (isDark ? Colors.white.withValues(alpha: 0.05) : const Color(0xFFFAFAFA))
+            : (isDark ? Colors.white.withValues(alpha: 0.02) : const Color(0xFFEEEEEE)),
         boxShadow: isFocused
-            ? [BoxShadow(color: AppColors.primary.withOpacity(0.1), blurRadius: 8, offset: const Offset(0, 2))]
+            ? [BoxShadow(color: AppColors.primary.withValues(alpha: 0.1), blurRadius: 8, offset: const Offset(0, 2))]
             : null,
       ),
       child: TextFormField(
@@ -884,7 +884,7 @@ class _PatternPainter extends CustomPainter {
   @override
   void paint(Canvas canvas, Size size) {
     final paint = Paint()
-      ..color = Colors.white.withOpacity(0.03)
+      ..color = Colors.white.withValues(alpha: 0.03)
       ..style = PaintingStyle.fill;
 
     for (int i = 0; i < 20; i++) {

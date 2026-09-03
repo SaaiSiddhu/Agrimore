@@ -550,7 +550,7 @@ class _PaymentMethodScreenState extends State<PaymentMethodScreen> {
           padding: const EdgeInsets.all(6),
           decoration: BoxDecoration(
             color:
-                isDark ? Colors.white.withOpacity(0.1) : Colors.grey.shade100,
+                isDark ? Colors.white.withValues(alpha: 0.1) : Colors.grey.shade100,
             borderRadius: BorderRadius.circular(8),
           ),
           child: Icon(
@@ -586,7 +586,7 @@ class _PaymentMethodScreenState extends State<PaymentMethodScreen> {
               icon: Container(
                 padding: const EdgeInsets.all(8),
                 decoration: BoxDecoration(
-                  color: accentColor.withOpacity(0.15),
+                  color: accentColor.withValues(alpha: 0.15),
                   borderRadius: BorderRadius.circular(8),
                 ),
                 child: Icon(
@@ -722,10 +722,10 @@ class _PaymentMethodScreenState extends State<PaymentMethodScreen> {
               padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 6),
               decoration: BoxDecoration(
                 color:
-                    _getAddressTypeColor(addr.addressType!).withOpacity(0.15),
+                    _getAddressTypeColor(addr.addressType!).withValues(alpha: 0.15),
                 border: Border.all(
                   color:
-                      _getAddressTypeColor(addr.addressType!).withOpacity(0.3),
+                      _getAddressTypeColor(addr.addressType!).withValues(alpha: 0.3),
                 ),
                 borderRadius: BorderRadius.circular(6),
               ),
@@ -953,7 +953,7 @@ class _PaymentMethodScreenState extends State<PaymentMethodScreen> {
                             padding: const EdgeInsets.all(16),
                             decoration: BoxDecoration(
                               color: isSelected
-                                  ? accentColor.withOpacity(0.08)
+                                  ? accentColor.withValues(alpha: 0.08)
                                   : (isDark ? const Color(0xFF303030) : Colors.grey[50]!),
                               borderRadius: BorderRadius.circular(16),
                               border: Border.all(
@@ -1036,7 +1036,7 @@ class _PaymentMethodScreenState extends State<PaymentMethodScreen> {
         padding: const EdgeInsets.symmetric(vertical: 14),
         decoration: BoxDecoration(
           color: isSelected
-              ? accentColor.withOpacity(0.1)
+              ? accentColor.withValues(alpha: 0.1)
               : (isDark ? const Color(0xFF303030) : Colors.grey[50]!),
           border: Border.all(
             color: isSelected
@@ -1073,7 +1073,7 @@ class _PaymentMethodScreenState extends State<PaymentMethodScreen> {
         borderRadius: const BorderRadius.vertical(top: Radius.circular(24)),
         boxShadow: [
           BoxShadow(
-            color: Colors.black.withOpacity(isDark ? 0.3 : 0.05),
+            color: Colors.black.withValues(alpha: isDark ? 0.3 : 0.05),
             blurRadius: 10,
             offset: const Offset(0, -5),
           ),
@@ -1216,7 +1216,7 @@ class _PaymentMethodScreenState extends State<PaymentMethodScreen> {
             Container(
               padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 6),
               decoration: BoxDecoration(
-                color: Colors.green.withOpacity(isDark ? 0.15 : 0.08),
+                color: Colors.green.withValues(alpha: isDark ? 0.15 : 0.08),
                 borderRadius: BorderRadius.circular(6),
               ),
               child: Row(
@@ -1247,7 +1247,7 @@ class _PaymentMethodScreenState extends State<PaymentMethodScreen> {
             Container(
               padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 6),
               decoration: BoxDecoration(
-                color: Colors.green.withOpacity(isDark ? 0.15 : 0.08),
+                color: Colors.green.withValues(alpha: isDark ? 0.15 : 0.08),
                 borderRadius: BorderRadius.circular(6),
               ),
               child: Row(
@@ -1306,7 +1306,7 @@ class _PaymentMethodScreenState extends State<PaymentMethodScreen> {
                 padding: const EdgeInsets.all(14),
                 decoration: BoxDecoration(
                   color: _useWalletBalance
-                      ? accentColor.withOpacity(0.1)
+                      ? accentColor.withValues(alpha: 0.1)
                       : (isDark ? const Color(0xFF303030) : Colors.grey[50]),
                   borderRadius: BorderRadius.circular(10),
                   border: Border.all(
@@ -1321,7 +1321,7 @@ class _PaymentMethodScreenState extends State<PaymentMethodScreen> {
                     Container(
                       padding: const EdgeInsets.all(8),
                       decoration: BoxDecoration(
-                        color: const Color(0xFF1E3A5F).withOpacity(0.15),
+                        color: const Color(0xFF1E3A5F).withValues(alpha: 0.15),
                         borderRadius: BorderRadius.circular(8),
                       ),
                       child: const Icon(
@@ -1391,7 +1391,7 @@ class _PaymentMethodScreenState extends State<PaymentMethodScreen> {
                   padding: const EdgeInsets.all(14),
                   decoration: BoxDecoration(
                     color: _useCoins
-                        ? Colors.amber.withOpacity(0.1)
+                        ? Colors.amber.withValues(alpha: 0.1)
                         : (isDark ? const Color(0xFF303030) : Colors.grey[50]),
                     borderRadius: BorderRadius.circular(10),
                     border: Border.all(
@@ -1408,7 +1408,7 @@ class _PaymentMethodScreenState extends State<PaymentMethodScreen> {
                           Container(
                             padding: const EdgeInsets.all(8),
                             decoration: BoxDecoration(
-                              color: Colors.amber.withOpacity(0.2),
+                              color: Colors.amber.withValues(alpha: 0.2),
                               borderRadius: BorderRadius.circular(8),
                             ),
                             child: Icon(
@@ -1484,7 +1484,7 @@ class _PaymentMethodScreenState extends State<PaymentMethodScreen> {
                                 max: maxCoins.toDouble(),
                                 divisions: maxCoins - 1,
                                 activeColor: Colors.amber[700],
-                                inactiveColor: Colors.amber.withOpacity(0.2),
+                                inactiveColor: Colors.amber.withValues(alpha: 0.2),
                                 onChanged: (value) {
                                   setState(() => _coinsToUse = value.round());
                                 },
@@ -1505,7 +1505,7 @@ class _PaymentMethodScreenState extends State<PaymentMethodScreen> {
                           padding: const EdgeInsets.symmetric(
                               horizontal: 12, vertical: 6),
                           decoration: BoxDecoration(
-                            color: Colors.amber.withOpacity(0.15),
+                            color: Colors.amber.withValues(alpha: 0.15),
                             borderRadius: BorderRadius.circular(8),
                           ),
                           child: Text(
@@ -1527,10 +1527,10 @@ class _PaymentMethodScreenState extends State<PaymentMethodScreen> {
               Container(
                 padding: const EdgeInsets.all(14),
                 decoration: BoxDecoration(
-                  color: Colors.orange.withOpacity(0.1),
+                  color: Colors.orange.withValues(alpha: 0.1),
                   borderRadius: BorderRadius.circular(10),
                   border: Border.all(
-                    color: Colors.orange.withOpacity(0.3),
+                    color: Colors.orange.withValues(alpha: 0.3),
                   ),
                 ),
                 child: Row(
@@ -1538,7 +1538,7 @@ class _PaymentMethodScreenState extends State<PaymentMethodScreen> {
                     Container(
                       padding: const EdgeInsets.all(8),
                       decoration: BoxDecoration(
-                        color: Colors.orange.withOpacity(0.2),
+                        color: Colors.orange.withValues(alpha: 0.2),
                         borderRadius: BorderRadius.circular(8),
                       ),
                       child: Icon(
@@ -1648,7 +1648,7 @@ class _PaymentMethodScreenState extends State<PaymentMethodScreen> {
                 padding: const EdgeInsets.all(14),
                 decoration: BoxDecoration(
                   color: _selectedPaymentMethod == 'razorpay'
-                      ? accentColor.withOpacity(0.1)
+                      ? accentColor.withValues(alpha: 0.1)
                       : (isDark ? const Color(0xFF303030) : Colors.grey[50]),
                   borderRadius: BorderRadius.circular(10),
                   border: Border.all(
@@ -1666,7 +1666,7 @@ class _PaymentMethodScreenState extends State<PaymentMethodScreen> {
                         Container(
                           padding: const EdgeInsets.all(8),
                           decoration: BoxDecoration(
-                            color: accentColor.withOpacity(0.15),
+                            color: accentColor.withValues(alpha: 0.15),
                             borderRadius: BorderRadius.circular(8),
                           ),
                           child: Icon(
@@ -1759,7 +1759,7 @@ class _PaymentMethodScreenState extends State<PaymentMethodScreen> {
               padding: const EdgeInsets.all(14),
               decoration: BoxDecoration(
                 color: _selectedPaymentMethod == 'cod'
-                    ? accentColor.withOpacity(0.1)
+                    ? accentColor.withValues(alpha: 0.1)
                     : (isDark ? const Color(0xFF303030) : Colors.grey[50]),
                 borderRadius: BorderRadius.circular(10),
                 border: Border.all(
@@ -1774,7 +1774,7 @@ class _PaymentMethodScreenState extends State<PaymentMethodScreen> {
                   Container(
                     padding: const EdgeInsets.all(8),
                     decoration: BoxDecoration(
-                      color: Colors.orange.withOpacity(0.15),
+                      color: Colors.orange.withValues(alpha: 0.15),
                       borderRadius: BorderRadius.circular(8),
                     ),
                     child: FaIcon(
@@ -1870,8 +1870,8 @@ class _PaymentMethodScreenState extends State<PaymentMethodScreen> {
     return Container(
       padding: const EdgeInsets.all(14),
       decoration: BoxDecoration(
-        color: Colors.green.withOpacity(isDark ? 0.15 : 0.08),
-        border: Border.all(color: Colors.green.withOpacity(0.3)),
+        color: Colors.green.withValues(alpha: isDark ? 0.15 : 0.08),
+        border: Border.all(color: Colors.green.withValues(alpha: 0.3)),
         borderRadius: BorderRadius.circular(12),
       ),
       child: Row(
@@ -1879,7 +1879,7 @@ class _PaymentMethodScreenState extends State<PaymentMethodScreen> {
           Container(
             padding: const EdgeInsets.all(8),
             decoration: BoxDecoration(
-              color: Colors.green.withOpacity(0.2),
+              color: Colors.green.withValues(alpha: 0.2),
               borderRadius: BorderRadius.circular(8),
             ),
             child: FaIcon(
@@ -1940,7 +1940,7 @@ class _PaymentMethodScreenState extends State<PaymentMethodScreen> {
         ),
         boxShadow: [
           BoxShadow(
-            color: Colors.black.withOpacity(isDark ? 0.3 : 0.05),
+            color: Colors.black.withValues(alpha: isDark ? 0.3 : 0.05),
             blurRadius: 8,
             offset: const Offset(0, 2),
           ),
@@ -2024,7 +2024,7 @@ class _PaymentMethodScreenState extends State<PaymentMethodScreen> {
         color: cardColor,
         boxShadow: [
           BoxShadow(
-            color: Colors.black.withOpacity(isDark ? 0.3 : 0.1),
+            color: Colors.black.withValues(alpha: isDark ? 0.3 : 0.1),
             blurRadius: 10,
             offset: const Offset(0, -2),
           ),
@@ -2040,7 +2040,7 @@ class _PaymentMethodScreenState extends State<PaymentMethodScreen> {
           minimumSize: const Size(double.infinity, 54),
           backgroundColor: accentColor,
           foregroundColor: isDark ? Colors.black : Colors.white,
-          disabledBackgroundColor: accentColor.withOpacity(0.5),
+          disabledBackgroundColor: accentColor.withValues(alpha: 0.5),
           elevation: 0,
           shape: RoundedRectangleBorder(
             borderRadius: BorderRadius.circular(10),

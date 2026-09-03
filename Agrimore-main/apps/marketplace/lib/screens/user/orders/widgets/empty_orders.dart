@@ -26,12 +26,12 @@ class EmptyOrders extends StatelessWidget {
                 gradient: LinearGradient(
                   colors: [
                     const Color(0xFF2D7D3C).withValues(alpha: 0.1),
-                    const Color(0xFF3DA34E).withOpacity(0.05),
+                    const Color(0xFF3DA34E).withValues(alpha: 0.05),
                   ],
                 ),
                 shape: BoxShape.circle,
                 border: Border.all(
-                  color: const Color(0xFF2D7D3C).withOpacity(0.2),
+                  color: const Color(0xFF2D7D3C).withValues(alpha: 0.2),
                   width: 2,
                 ),
               ),
@@ -80,7 +80,7 @@ class EmptyOrders extends StatelessWidget {
                   borderRadius: BorderRadius.circular(12),
                   boxShadow: [
                     BoxShadow(
-                      color: const Color(0xFF2D7D3C).withOpacity(0.3),
+                      color: const Color(0xFF2D7D3C).withValues(alpha: 0.3),
                       blurRadius: 16,
                       offset: const Offset(0, 8),
                     ),

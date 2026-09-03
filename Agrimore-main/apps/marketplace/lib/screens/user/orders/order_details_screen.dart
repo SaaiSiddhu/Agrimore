@@ -294,12 +294,12 @@ class _OrderDetailsScreenState extends State<OrderDetailsScreen>
                       padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 14),
                       decoration: BoxDecoration(
                         gradient: LinearGradient(
-                          colors: [_toastColor, _toastColor.withOpacity(0.9)],
+                          colors: [_toastColor, _toastColor.withValues(alpha: 0.9)],
                         ),
                         borderRadius: BorderRadius.circular(16),
                         boxShadow: [
                           BoxShadow(
-                            color: _toastColor.withOpacity(0.4),
+                            color: _toastColor.withValues(alpha: 0.4),
                             blurRadius: 20,
                             offset: const Offset(0, 8),
                           ),
@@ -310,7 +310,7 @@ class _OrderDetailsScreenState extends State<OrderDetailsScreen>
                           Container(
                             padding: const EdgeInsets.all(6),
                             decoration: BoxDecoration(
-                              color: Colors.white.withOpacity(0.2),
+                              color: Colors.white.withValues(alpha: 0.2),
                               shape: BoxShape.circle,
                             ),
                             child: Icon(_toastIcon, color: Colors.white, size: 18),
@@ -366,7 +366,7 @@ class _OrderDetailsScreenState extends State<OrderDetailsScreen>
         children: [
           Container(
             decoration: BoxDecoration(
-              color: Colors.white.withOpacity(0.2),
+              color: Colors.white.withValues(alpha: 0.2),
               borderRadius: BorderRadius.circular(10),
             ),
             child: Material(
@@ -403,7 +403,7 @@ class _OrderDetailsScreenState extends State<OrderDetailsScreen>
                 style: TextStyle(
                   fontSize: 11,
                   fontWeight: FontWeight.w500,
-                  color: Colors.white.withOpacity(0.8),
+                  color: Colors.white.withValues(alpha: 0.8),
                   letterSpacing: 0.1,
                 ),
               ),
@@ -413,7 +413,7 @@ class _OrderDetailsScreenState extends State<OrderDetailsScreen>
             width: 40,
             height: 40,
             decoration: BoxDecoration(
-              color: Colors.white.withOpacity(0.2),
+              color: Colors.white.withValues(alpha: 0.2),
               shape: BoxShape.circle,
             ),
             child: Material(
@@ -810,7 +810,7 @@ class _OrderDetailsScreenState extends State<OrderDetailsScreen>
         ),
         boxShadow: [
           BoxShadow(
-            color: Colors.green.withOpacity(isDark ? 0.2 : 0.15),
+            color: Colors.green.withValues(alpha: isDark ? 0.2 : 0.15),
             blurRadius: 12,
             offset: const Offset(0, 4),
           ),
@@ -897,7 +897,7 @@ class _OrderDetailsScreenState extends State<OrderDetailsScreen>
             Container(
               padding: const EdgeInsets.all(10),
               decoration: BoxDecoration(
-                color: isDark ? Colors.amber.withOpacity(0.1) : Colors.amber.shade50,
+                color: isDark ? Colors.amber.withValues(alpha: 0.1) : Colors.amber.shade50,
                 borderRadius: BorderRadius.circular(8),
                 border: Border.all(
                   color: isDark ? Colors.amber.shade800 : Colors.amber.shade200,
@@ -1209,7 +1209,7 @@ class _OrderDetailsScreenState extends State<OrderDetailsScreen>
                       boxShadow: isCompleted
                           ? [
                               BoxShadow(
-                                color: accentColor.withOpacity(0.3),
+                                color: accentColor.withValues(alpha: 0.3),
                                 blurRadius: 12,
                                 offset: const Offset(0, 3),
                               )
@@ -1229,7 +1229,7 @@ class _OrderDetailsScreenState extends State<OrderDetailsScreen>
                       width: 2,
                       height: 40,
                       color: isCompleted
-                          ? accentColor.withOpacity(0.3)
+                          ? accentColor.withValues(alpha: 0.3)
                           : (isDark ? Colors.grey[700] : Colors.grey[300]),
                     ),
                 ],
@@ -1288,10 +1288,10 @@ class _OrderDetailsScreenState extends State<OrderDetailsScreen>
                             vertical: 5,
                           ),
                           decoration: BoxDecoration(
-                            color: accentColor.withOpacity(0.12),
+                            color: accentColor.withValues(alpha: 0.12),
                             borderRadius: BorderRadius.circular(6),
                             border: Border.all(
-                              color: accentColor.withOpacity(0.25),
+                              color: accentColor.withValues(alpha: 0.25),
                             ),
                           ),
                           child: Row(
@@ -1381,8 +1381,8 @@ class _OrderDetailsScreenState extends State<OrderDetailsScreen>
     final bool isPaid = order.paymentStatus.toLowerCase() == 'paid' || isDelivered;
     final String paymentStatus = isPaid ? 'PAID' : order.paymentStatus.toUpperCase();
     final Color paymentStatusColor = isPaid ? Colors.green[600]! : Colors.orange[600]!;
-    final Color paymentStatusBgColor = isPaid ? Colors.green.withOpacity(0.1) : Colors.orange.withOpacity(0.1);
-    final Color paymentStatusBorderColor = isPaid ? Colors.green.withOpacity(0.3) : Colors.orange.withOpacity(0.3);
+    final Color paymentStatusBgColor = isPaid ? Colors.green.withValues(alpha: 0.1) : Colors.orange.withValues(alpha: 0.1);
+    final Color paymentStatusBorderColor = isPaid ? Colors.green.withValues(alpha: 0.3) : Colors.orange.withValues(alpha: 0.3);
     final IconData paymentStatusIcon = isPaid ? Icons.check_circle_rounded : Icons.schedule_rounded;
 
     // ✅ FIXED: 1-Hour Cancel Window
@@ -1415,7 +1415,7 @@ class _OrderDetailsScreenState extends State<OrderDetailsScreen>
                   decoration: BoxDecoration(
                     color: Colors.green.withValues(alpha: 0.1),
                     borderRadius: BorderRadius.circular(6),
-                    border: Border.all(color: Colors.green.withOpacity(0.3)),
+                    border: Border.all(color: Colors.green.withValues(alpha: 0.3)),
                   ),
                   child: Row(
                     mainAxisAlignment: MainAxisAlignment.center,
@@ -1542,7 +1542,7 @@ class _OrderDetailsScreenState extends State<OrderDetailsScreen>
                 label: const Text('Cancel Order (1 Hour Window)'),
                 style: OutlinedButton.styleFrom(
                   foregroundColor: Colors.red,
-                  side: BorderSide(color: Colors.red.withOpacity(0.5), width: 1.5),
+                  side: BorderSide(color: Colors.red.withValues(alpha: 0.5), width: 1.5),
                   padding: const EdgeInsets.symmetric(vertical: 12),
                   shape: RoundedRectangleBorder(
                       borderRadius: BorderRadius.circular(10)),
@@ -1572,7 +1572,7 @@ class _OrderDetailsScreenState extends State<OrderDetailsScreen>
         border: Border.all(color: isDark ? Colors.grey[800]! : Colors.grey[200]!, width: 1),
         boxShadow: [
           BoxShadow(
-            color: Colors.black.withOpacity(isDark ? 0.3 : 0.05),
+            color: Colors.black.withValues(alpha: isDark ? 0.3 : 0.05),
             blurRadius: 8,
             offset: const Offset(0, 2),
           ),
@@ -1638,7 +1638,7 @@ class _OrderDetailsScreenState extends State<OrderDetailsScreen>
         color: config['color'].withValues(alpha: 0.1),
         borderRadius: BorderRadius.circular(8),
         border: Border.all(
-          color: config['color'].withOpacity(0.4),
+          color: config['color'].withValues(alpha: 0.4),
           width: 1.2,
         ),
       ),
@@ -1769,7 +1769,7 @@ class _OrderDetailsScreenState extends State<OrderDetailsScreen>
             borderRadius: BorderRadius.circular(20),
             boxShadow: [
               BoxShadow(
-                color: Colors.black.withOpacity(isDark ? 0.4 : 0.15),
+                color: Colors.black.withValues(alpha: isDark ? 0.4 : 0.15),
                 blurRadius: 30,
                 offset: const Offset(0, 10),
               ),
@@ -2188,7 +2188,7 @@ class _ProductSelectionModalState extends State<_ProductSelectionModal> {
                   ),
                   boxShadow: [
                     BoxShadow(
-                      color: Colors.black.withOpacity(widget.isDark ? 0.2 : 0.05),
+                      color: Colors.black.withValues(alpha: widget.isDark ? 0.2 : 0.05),
                       blurRadius: 20,
                       offset: const Offset(0, -5)
                     )
@@ -2207,10 +2207,10 @@ class _ProductSelectionModalState extends State<_ProductSelectionModal> {
                     Container(
                       padding: const EdgeInsets.all(14),
                       decoration: BoxDecoration(
-                        color: accentColor.withOpacity(0.06),
+                        color: accentColor.withValues(alpha: 0.06),
                         borderRadius: BorderRadius.circular(12),
                         border: Border.all(
-                          color: accentColor.withOpacity(0.15),
+                          color: accentColor.withValues(alpha: 0.15),
                           width: 1.2,
                         ),
                       ),
@@ -2251,7 +2251,7 @@ class _ProductSelectionModalState extends State<_ProductSelectionModal> {
                               borderRadius: BorderRadius.circular(8),
                               boxShadow: [
                                 BoxShadow(
-                                  color: accentColor.withOpacity(0.25),
+                                  color: accentColor.withValues(alpha: 0.25),
                                   blurRadius: 8,
                                   offset: const Offset(0, 2),
                                 )
@@ -2319,7 +2319,7 @@ class _ProductSelectionModalState extends State<_ProductSelectionModal> {
                                 borderRadius: BorderRadius.circular(10),
                               ),
                               elevation: 4,
-                              shadowColor: accentColor.withOpacity(0.3),
+                              shadowColor: accentColor.withValues(alpha: 0.3),
                             ),
                             child: Row(
                               mainAxisAlignment: MainAxisAlignment.center,
@@ -2380,11 +2380,11 @@ class _ProductSelectionItem extends StatelessWidget {
           padding: const EdgeInsets.fromLTRB(8, 12, 12, 12),
           decoration: BoxDecoration(
             color: isSelected
-                ? accentColor.withOpacity(0.08)
+                ? accentColor.withValues(alpha: 0.08)
                 : (isDark ? const Color(0xFF2C2C2C) : Colors.grey[50]),
             border: Border.all(
               color: isSelected
-                  ? accentColor.withOpacity(0.4)
+                  ? accentColor.withValues(alpha: 0.4)
                   : (isDark ? Colors.grey[700]! : Colors.grey[200]!),
               width: 1.5,
             ),

@@ -160,7 +160,7 @@ class _CartItemCardState extends State<CartItemCard> with SingleTickerProviderSt
               Positioned.fill(
                 child: Container(
                   decoration: BoxDecoration(
-                    color: (isDark ? Colors.black : Colors.white).withOpacity(0.7),
+                    color: (isDark ? Colors.black : Colors.white).withValues(alpha: 0.7),
                     borderRadius: BorderRadius.circular(8),
                   ),
                   child: Center(
@@ -189,7 +189,7 @@ class _CartItemCardState extends State<CartItemCard> with SingleTickerProviderSt
           ),
           boxShadow: [
             BoxShadow(
-              color: Colors.black.withOpacity(isDark ? 0.3 : 0.05),
+              color: Colors.black.withValues(alpha: isDark ? 0.3 : 0.05),
               blurRadius: 6,
               offset: const Offset(0, 2),
             ),
@@ -207,7 +207,7 @@ class _CartItemCardState extends State<CartItemCard> with SingleTickerProviderSt
               child: Center(
                 child: CircularProgressIndicator(
                   strokeWidth: 2,
-                  valueColor: AlwaysStoppedAnimation<Color>(accentColor.withOpacity(0.5)),
+                  valueColor: AlwaysStoppedAnimation<Color>(accentColor.withValues(alpha: 0.5)),
                 ),
               ),
             ),
@@ -417,10 +417,10 @@ class _CartItemCardState extends State<CartItemCard> with SingleTickerProviderSt
         Container(
           padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 6),
           decoration: BoxDecoration(
-            color: accentColor.withOpacity(0.15),
+            color: accentColor.withValues(alpha: 0.15),
             borderRadius: BorderRadius.circular(6),
             border: Border.all(
-              color: accentColor.withOpacity(0.3),
+              color: accentColor.withValues(alpha: 0.3),
               width: 1,
             ),
           ),
@@ -431,7 +431,7 @@ class _CartItemCardState extends State<CartItemCard> with SingleTickerProviderSt
                 'Total: ',
                 style: TextStyle(
                   fontSize: 11,
-                  color: accentColor.withOpacity(0.8),
+                  color: accentColor.withValues(alpha: 0.8),
                   fontWeight: FontWeight.w600,
                   letterSpacing: -0.1,
                 ),
@@ -461,12 +461,12 @@ class _CartItemCardState extends State<CartItemCard> with SingleTickerProviderSt
         color: isDark ? const Color(0xFF303030) : Colors.white,
         borderRadius: BorderRadius.circular(8),
         border: Border.all(
-          color: accentColor.withOpacity(0.3),
+          color: accentColor.withValues(alpha: 0.3),
           width: 1.5,
         ),
         boxShadow: [
           BoxShadow(
-            color: Colors.black.withOpacity(isDark ? 0.2 : 0.05),
+            color: Colors.black.withValues(alpha: isDark ? 0.2 : 0.05),
             blurRadius: 4,
             offset: const Offset(0, 2),
           ),
@@ -491,7 +491,7 @@ class _CartItemCardState extends State<CartItemCard> with SingleTickerProviderSt
               color: isDark ? Colors.grey[800] : Colors.grey[50],
               border: Border.symmetric(
                 vertical: BorderSide(
-                  color: accentColor.withOpacity(0.2),
+                  color: accentColor.withValues(alpha: 0.2),
                   width: 1,
                 ),
               ),

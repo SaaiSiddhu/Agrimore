@@ -110,7 +110,7 @@ class TrendingSearches extends StatelessWidget {
                             ? LinearGradient(
                                 colors: [
                                   AppColors.primary,
-                                  AppColors.primary.withOpacity(0.8),
+                                  AppColors.primary.withValues(alpha: 0.8),
                                 ],
                               )
                             : null,
@@ -119,12 +119,12 @@ class TrendingSearches extends StatelessWidget {
                         border: isTop3
                             ? null
                             : Border.all(
-                                color: AppColors.primary.withOpacity(0.3),
+                                color: AppColors.primary.withValues(alpha: 0.3),
                               ),
                         boxShadow: isTop3
                             ? [
                                 BoxShadow(
-                                  color: AppColors.primary.withOpacity(0.3),
+                                  color: AppColors.primary.withValues(alpha: 0.3),
                                   blurRadius: 8,
                                   offset: const Offset(0, 2),
                                 ),

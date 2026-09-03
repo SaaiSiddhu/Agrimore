@@ -146,17 +146,17 @@ class _NotFoundScreenState extends State<NotFoundScreen>
         Positioned(
           top: -50,
           right: -50,
-          child: _buildOrb(150, AppColors.primary.withOpacity(0.15)),
+          child: _buildOrb(150, AppColors.primary.withValues(alpha: 0.15)),
         ),
         Positioned(
           bottom: size.height * 0.3,
           left: -80,
-          child: _buildOrb(200, AppColors.primaryLight.withOpacity(0.1)),
+          child: _buildOrb(200, AppColors.primaryLight.withValues(alpha: 0.1)),
         ),
         Positioned(
           top: size.height * 0.4,
           right: -30,
-          child: _buildOrb(100, Colors.purple.withOpacity(0.08)),
+          child: _buildOrb(100, Colors.purple.withValues(alpha: 0.08)),
         ),
       ],
     );
@@ -171,7 +171,7 @@ class _NotFoundScreenState extends State<NotFoundScreen>
         decoration: BoxDecoration(
           shape: BoxShape.circle,
           gradient: RadialGradient(
-            colors: [color, color.withOpacity(0)],
+            colors: [color, color.withValues(alpha: 0)],
           ),
         ),
       ),
@@ -191,18 +191,18 @@ class _NotFoundScreenState extends State<NotFoundScreen>
               padding: const EdgeInsets.all(28),
               decoration: BoxDecoration(
                 color: isDark 
-                    ? Colors.white.withOpacity(0.08)
-                    : Colors.white.withOpacity(0.7),
+                    ? Colors.white.withValues(alpha: 0.08)
+                    : Colors.white.withValues(alpha: 0.7),
                 borderRadius: BorderRadius.circular(28),
                 border: Border.all(
                   color: isDark 
-                      ? Colors.white.withOpacity(0.1)
-                      : Colors.white.withOpacity(0.8),
+                      ? Colors.white.withValues(alpha: 0.1)
+                      : Colors.white.withValues(alpha: 0.8),
                   width: 1.5,
                 ),
                 boxShadow: [
                   BoxShadow(
-                    color: AppColors.primary.withOpacity(0.1),
+                    color: AppColors.primary.withValues(alpha: 0.1),
                     blurRadius: 40,
                     offset: const Offset(0, 20),
                   ),
@@ -221,8 +221,8 @@ class _NotFoundScreenState extends State<NotFoundScreen>
                         decoration: BoxDecoration(
                           gradient: LinearGradient(
                             colors: [
-                              AppColors.primary.withOpacity(0.2),
-                              AppColors.primaryLight.withOpacity(0.1),
+                              AppColors.primary.withValues(alpha: 0.2),
+                              AppColors.primaryLight.withValues(alpha: 0.1),
                             ],
                             begin: Alignment.topLeft,
                             end: Alignment.bottomRight,
@@ -245,7 +245,7 @@ class _NotFoundScreenState extends State<NotFoundScreen>
                                     decoration: BoxDecoration(
                                       shape: BoxShape.circle,
                                       border: Border.all(
-                                        color: AppColors.primary.withOpacity(0.15 - (index * 0.04)),
+                                        color: AppColors.primary.withValues(alpha: 0.15 - (index * 0.04)),
                                         width: 2,
                                       ),
                                     ),
@@ -331,7 +331,7 @@ class _NotFoundScreenState extends State<NotFoundScreen>
               height: 1,
               shadows: [
                 Shadow(
-                  color: AppColors.primary.withOpacity(0.3),
+                  color: AppColors.primary.withValues(alpha: 0.3),
                   blurRadius: 20,
                   offset: const Offset(0, 8),
                 ),
@@ -410,12 +410,12 @@ class _NotFoundScreenState extends State<NotFoundScreen>
                 : null,
             color: isPrimary 
                 ? null 
-                : (isDark ? Colors.white.withOpacity(0.1) : Colors.grey[200]),
+                : (isDark ? Colors.white.withValues(alpha: 0.1) : Colors.grey[200]),
             borderRadius: BorderRadius.circular(16),
             boxShadow: isPrimary
                 ? [
                     BoxShadow(
-                      color: AppColors.primary.withOpacity(0.4),
+                      color: AppColors.primary.withValues(alpha: 0.4),
                       blurRadius: 16,
                       offset: const Offset(0, 6),
                     ),
@@ -424,7 +424,7 @@ class _NotFoundScreenState extends State<NotFoundScreen>
             border: isPrimary 
                 ? null 
                 : Border.all(
-                    color: isDark ? Colors.white.withOpacity(0.1) : Colors.grey[300]!,
+                    color: isDark ? Colors.white.withValues(alpha: 0.1) : Colors.grey[300]!,
                     width: 1,
                   ),
           ),
@@ -484,7 +484,7 @@ class _NotFoundScreenState extends State<NotFoundScreen>
                       borderRadius: BorderRadius.circular(12),
                       boxShadow: [
                         BoxShadow(
-                          color: Colors.orange.withOpacity(0.4),
+                          color: Colors.orange.withValues(alpha: 0.4),
                           blurRadius: 12,
                           offset: const Offset(0, 4),
                         ),

@@ -161,7 +161,7 @@ Widget _buildMessageContent(
   } else if (message.isError) {
     bubbleColor = colorScheme.errorContainer;
     textColor = colorScheme.onErrorContainer;
-    timeColor = colorScheme.onErrorContainer.withOpacity(0.7);
+    timeColor = colorScheme.onErrorContainer.withValues(alpha: 0.7);
   } else {
     // AI MESSAGE
     bubbleColor = colorScheme.surfaceContainerHighest;
@@ -176,7 +176,7 @@ Widget _buildMessageContent(
       borderRadius: borderRadius,
       boxShadow: [
         BoxShadow(
-          color: Colors.black.withOpacity(0.1),
+          color: Colors.black.withValues(alpha: 0.1),
           blurRadius: 6,
           offset: const Offset(0, 2),
         ),
@@ -292,7 +292,7 @@ Widget _buildSuggestions(
     decoration: BoxDecoration(
       color: colorScheme.tertiaryContainer,
       borderRadius: BorderRadius.circular(12),
-      border: Border.all(color: colorScheme.outlineVariant.withOpacity(0.5)),
+      border: Border.all(color: colorScheme.outlineVariant.withValues(alpha: 0.5)),
     ),
     child: Column(
       crossAxisAlignment: CrossAxisAlignment.start,

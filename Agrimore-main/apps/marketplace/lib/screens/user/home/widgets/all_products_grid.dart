@@ -150,7 +150,7 @@ class _AllProductsGridState extends State<AllProductsGrid>
                 boxShadow: [
                   BoxShadow(
                     color: (isDark ? AppColors.primaryLight : AppColors.primary)
-                        .withOpacity(0.4 + (_shimmerController.value * 0.2)),
+                        .withValues(alpha: 0.4 + (_shimmerController.value * 0.2)),
                     blurRadius: 8,
                     offset: const Offset(0, 2),
                   ),

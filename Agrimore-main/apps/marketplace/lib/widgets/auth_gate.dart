@@ -101,7 +101,7 @@ class AuthGate extends StatelessWidget {
                             shape: BoxShape.circle,
                             boxShadow: [
                               BoxShadow(
-                                color: Colors.green.withOpacity(0.3),
+                                color: Colors.green.withValues(alpha: 0.3),
                                 blurRadius: 20,
                                 offset: const Offset(0, 10),
                               ),
@@ -253,13 +253,13 @@ class AuthGate extends StatelessWidget {
       padding: const EdgeInsets.all(20),
       decoration: BoxDecoration(
         color: isDark 
-            ? Colors.white.withOpacity(0.05) 
-            : Colors.green.withOpacity(0.05),
+            ? Colors.white.withValues(alpha: 0.05) 
+            : Colors.green.withValues(alpha: 0.05),
         borderRadius: BorderRadius.circular(16),
         border: Border.all(
           color: isDark 
-              ? Colors.white.withOpacity(0.1) 
-              : Colors.green.withOpacity(0.1),
+              ? Colors.white.withValues(alpha: 0.1) 
+              : Colors.green.withValues(alpha: 0.1),
         ),
       ),
       child: Column(
@@ -271,7 +271,7 @@ class AuthGate extends StatelessWidget {
                 Container(
                   padding: const EdgeInsets.all(8),
                   decoration: BoxDecoration(
-                    color: Colors.green.withOpacity(0.1),
+                    color: Colors.green.withValues(alpha: 0.1),
                     borderRadius: BorderRadius.circular(10),
                   ),
                   child: Icon(

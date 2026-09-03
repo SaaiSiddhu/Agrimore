@@ -264,10 +264,10 @@ class _CategoriesScreenState extends State<CategoriesScreen>
             height: 36,
             decoration: BoxDecoration(
               shape: BoxShape.circle,
-              color: Colors.white.withOpacity(0.92),
+              color: Colors.white.withValues(alpha: 0.92),
               boxShadow: [
                 BoxShadow(
-                  color: Colors.black.withOpacity(0.15),
+                  color: Colors.black.withValues(alpha: 0.15),
                   blurRadius: 6,
                   offset: const Offset(0, 2),
                 ),
@@ -308,7 +308,7 @@ class _CategoriesScreenState extends State<CategoriesScreen>
     return Container(
       height: 38,
       decoration: BoxDecoration(
-        color: Colors.white.withOpacity(0.15),
+        color: Colors.white.withValues(alpha: 0.15),
         borderRadius: BorderRadius.circular(10),
       ),
       child: TextField(
@@ -319,9 +319,9 @@ class _CategoriesScreenState extends State<CategoriesScreen>
         decoration: InputDecoration(
           hintText: 'Search in category...',
           hintStyle:
-              TextStyle(color: Colors.white.withOpacity(0.6), fontSize: 14),
+              TextStyle(color: Colors.white.withValues(alpha: 0.6), fontSize: 14),
           prefixIcon: Icon(Icons.search,
-              color: Colors.white.withOpacity(0.6), size: 20),
+              color: Colors.white.withValues(alpha: 0.6), size: 20),
           border: InputBorder.none,
           contentPadding: const EdgeInsets.symmetric(vertical: 10),
         ),
@@ -723,7 +723,7 @@ class _EnhancedCategorySidebar extends StatelessWidget {
         color: isDark ? const Color(0xFF151515) : Colors.white,
         boxShadow: [
           BoxShadow(
-            color: Colors.black.withOpacity(isDark ? 0.3 : 0.06),
+            color: Colors.black.withValues(alpha: isDark ? 0.3 : 0.06),
             blurRadius: 8,
             offset: const Offset(2, 0),
           ),
@@ -810,13 +810,13 @@ class _EnhancedSidebarItemState extends State<_EnhancedSidebarItem> {
                           begin: Alignment.topCenter,
                           end: Alignment.bottomCenter,
                           colors: [
-                            widget.accentColor.withOpacity(widget.isDark ? 0.22 : 0.13),
-                            widget.accentColor.withOpacity(widget.isDark ? 0.12 : 0.06),
+                            widget.accentColor.withValues(alpha: widget.isDark ? 0.22 : 0.13),
+                            widget.accentColor.withValues(alpha: widget.isDark ? 0.12 : 0.06),
                           ],
                         )
                       : null,
                   border: widget.isSelected
-                      ? Border.all(color: widget.accentColor.withOpacity(0.25), width: 1)
+                      ? Border.all(color: widget.accentColor.withValues(alpha: 0.25), width: 1)
                       : Border.all(color: Colors.transparent, width: 1),
                   borderRadius: BorderRadius.circular(14),
                 ),
@@ -830,7 +830,7 @@ class _EnhancedSidebarItemState extends State<_EnhancedSidebarItem> {
                       height: 46,
                       decoration: BoxDecoration(
                         color: widget.isSelected
-                            ? widget.accentColor.withOpacity(widget.isDark ? 0.22 : 0.12)
+                            ? widget.accentColor.withValues(alpha: widget.isDark ? 0.22 : 0.12)
                             : (widget.isDark ? const Color(0xFF2A2A2A) : const Color(0xFFF3F3F3)),
                         shape: BoxShape.circle,
                         border: widget.isSelected
@@ -839,7 +839,7 @@ class _EnhancedSidebarItemState extends State<_EnhancedSidebarItem> {
                         boxShadow: widget.isSelected
                             ? [
                                 BoxShadow(
-                                  color: widget.accentColor.withOpacity(0.3),
+                                  color: widget.accentColor.withValues(alpha: 0.3),
                                   blurRadius: 10,
                                   spreadRadius: 0.5,
                                 ),
@@ -993,7 +993,7 @@ class _PremiumCategoryHeader extends StatelessWidget {
         ),
         boxShadow: [
           BoxShadow(
-            color: Colors.black.withOpacity(isDark ? 0.2 : 0.04),
+            color: Colors.black.withValues(alpha: isDark ? 0.2 : 0.04),
             blurRadius: 10,
             offset: const Offset(0, 2),
           ),
@@ -1010,8 +1010,8 @@ class _PremiumCategoryHeader extends StatelessWidget {
                 begin: Alignment.topLeft,
                 end: Alignment.bottomRight,
                 colors: [
-                  accentColor.withOpacity(0.15),
-                  accentColor.withOpacity(0.05),
+                  accentColor.withValues(alpha: 0.15),
+                  accentColor.withValues(alpha: 0.05),
                 ],
               ),
               borderRadius: BorderRadius.circular(10),
@@ -1081,12 +1081,12 @@ class _PremiumCategoryHeader extends StatelessWidget {
               padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
               decoration: BoxDecoration(
                 gradient: LinearGradient(
-                  colors: [accentColor, accentColor.withOpacity(0.8)],
+                  colors: [accentColor, accentColor.withValues(alpha: 0.8)],
                 ),
                 borderRadius: BorderRadius.circular(16),
                 boxShadow: [
                   BoxShadow(
-                    color: accentColor.withOpacity(0.3),
+                    color: accentColor.withValues(alpha: 0.3),
                     blurRadius: 6,
                     offset: const Offset(0, 2),
                   ),
@@ -1149,7 +1149,7 @@ class _PremiumSubcategoryGrid extends StatelessWidget {
             Container(
               padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 2),
               decoration: BoxDecoration(
-                color: accentColor.withOpacity(isDark ? 0.18 : 0.1),
+                color: accentColor.withValues(alpha: isDark ? 0.18 : 0.1),
                 borderRadius: BorderRadius.circular(8),
               ),
               child: Text(
@@ -1242,7 +1242,7 @@ class _SubcategoryImageCardState extends State<_SubcategoryImageCard> {
               ),
               boxShadow: [
                 BoxShadow(
-                  color: Colors.black.withOpacity(widget.isDark ? 0.16 : 0.04),
+                  color: Colors.black.withValues(alpha: widget.isDark ? 0.16 : 0.04),
                   blurRadius: 8,
                   offset: const Offset(0, 2),
                 ),
@@ -1293,7 +1293,7 @@ class _SubcategoryImageCardState extends State<_SubcategoryImageCard> {
 
   Widget _buildFallbackImage() {
     return Container(
-      color: widget.accentColor.withOpacity(widget.isDark ? 0.14 : 0.08),
+      color: widget.accentColor.withValues(alpha: widget.isDark ? 0.14 : 0.08),
       alignment: Alignment.center,
       child: Icon(
         Icons.category_rounded,
@@ -1364,7 +1364,7 @@ class _AdvancedProductCardState extends State<_AdvancedProductCard> {
                 ),
                 boxShadow: [
                   BoxShadow(
-                    color: Colors.black.withOpacity(widget.isDark ? 0.2 : 0.05),
+                    color: Colors.black.withValues(alpha: widget.isDark ? 0.2 : 0.05),
                     blurRadius: 8,
                     offset: const Offset(0, 2),
                   ),
@@ -1436,7 +1436,7 @@ class _AdvancedProductCardState extends State<_AdvancedProductCard> {
                                 borderRadius: BorderRadius.circular(6),
                                 boxShadow: [
                                   BoxShadow(
-                                    color: Colors.red.withOpacity(0.3),
+                                    color: Colors.red.withValues(alpha: 0.3),
                                     blurRadius: 4,
                                     offset: const Offset(0, 1),
                                   ),
@@ -1624,8 +1624,8 @@ class _AdvancedProductCardState extends State<_AdvancedProductCard> {
         height: 25,
         decoration: BoxDecoration(
           color: widget.isDark
-              ? widget.accentColor.withOpacity(0.15)
-              : widget.accentColor.withOpacity(0.1),
+              ? widget.accentColor.withValues(alpha: 0.15)
+              : widget.accentColor.withValues(alpha: 0.1),
           borderRadius: BorderRadius.circular(6),
           border: Border.all(
             color: widget.accentColor,

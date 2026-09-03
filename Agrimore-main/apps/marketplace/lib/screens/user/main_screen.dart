@@ -429,7 +429,7 @@ class _MainScreenState extends State<MainScreen>
           color: isDark ? const Color(0xFF1A1A1A) : Colors.white,
           boxShadow: [
             BoxShadow(
-              color: Colors.black.withOpacity(isDark ? 0.3 : 0.08),
+              color: Colors.black.withValues(alpha: isDark ? 0.3 : 0.08),
               blurRadius: 12,
               offset: const Offset(0, -2),
               spreadRadius: 0,
@@ -530,7 +530,7 @@ class _MainScreenState extends State<MainScreen>
                         colors: isActive
                             ? [
                                 primaryColor,
-                                primaryColor.withOpacity(0.85),
+                                primaryColor.withValues(alpha: 0.85),
                               ]
                             : [
                                 isDark ? const Color(0xFF2D2D2D) : Colors.grey[100]!,
@@ -540,7 +540,7 @@ class _MainScreenState extends State<MainScreen>
                       shape: BoxShape.circle,
                       border: Border.all(
                         color: isActive 
-                            ? primaryColor.withOpacity(0.4 + (glowValue * 0.2))
+                            ? primaryColor.withValues(alpha: 0.4 + (glowValue * 0.2))
                             : (isDark ? Colors.grey[700]! : Colors.grey[300]!),
                         width: isActive ? 2.5 : 1.5,
                       ),
@@ -548,8 +548,8 @@ class _MainScreenState extends State<MainScreen>
                         // Primary shadow
                         BoxShadow(
                           color: isActive 
-                              ? primaryColor.withOpacity(0.35 + (glowValue * 0.15))
-                              : Colors.black.withOpacity(isDark ? 0.25 : 0.08),
+                              ? primaryColor.withValues(alpha: 0.35 + (glowValue * 0.15))
+                              : Colors.black.withValues(alpha: isDark ? 0.25 : 0.08),
                           blurRadius: isActive ? 18 + (glowValue * 6) : 10,
                           offset: const Offset(0, 4),
                           spreadRadius: isActive ? 1 + (glowValue * 2) : 0,
@@ -557,14 +557,14 @@ class _MainScreenState extends State<MainScreen>
                         // Inner highlight for depth
                         if (!isDark && !isActive)
                           BoxShadow(
-                            color: Colors.white.withOpacity(0.9),
+                            color: Colors.white.withValues(alpha: 0.9),
                             blurRadius: 0,
                             offset: const Offset(-1, -1),
                           ),
                         // Ambient glow when active
                         if (isActive)
                           BoxShadow(
-                            color: primaryColor.withOpacity(0.2),
+                            color: primaryColor.withValues(alpha: 0.2),
                             blurRadius: 24,
                             spreadRadius: 0,
                           ),
@@ -587,7 +587,7 @@ class _MainScreenState extends State<MainScreen>
                             fontSize: 8,
                             fontWeight: FontWeight.w700,
                             color: isActive 
-                                ? Colors.white.withOpacity(0.95)
+                                ? Colors.white.withValues(alpha: 0.95)
                                 : (isDark ? Colors.white70 : Colors.black87),
                             letterSpacing: 0.2,
                           ),
@@ -647,8 +647,8 @@ class _MainScreenState extends State<MainScreen>
                                   begin: Alignment.topLeft,
                                   end: Alignment.bottomRight,
                                   colors: [
-                                    primaryColor.withOpacity(0.18),
-                                    primaryColor.withOpacity(0.08),
+                                    primaryColor.withValues(alpha: 0.18),
+                                    primaryColor.withValues(alpha: 0.08),
                                   ],
                                 )
                               : null,
@@ -656,14 +656,14 @@ class _MainScreenState extends State<MainScreen>
                           borderRadius: BorderRadius.circular(16),
                           border: isActive
                               ? Border.all(
-                                  color: primaryColor.withOpacity(0.15),
+                                  color: primaryColor.withValues(alpha: 0.15),
                                   width: 1,
                                 )
                               : null,
                           boxShadow: isActive
                               ? [
                                   BoxShadow(
-                                    color: primaryColor.withOpacity(0.12),
+                                    color: primaryColor.withValues(alpha: 0.12),
                                     blurRadius: 8,
                                     offset: const Offset(0, 2),
                                   ),
@@ -757,8 +757,8 @@ class _MainScreenState extends State<MainScreen>
                               : null,
                           color: isActive && !isSpecial
                               ? (isDark
-                                  ? AppColors.primaryLight.withOpacity(0.2)
-                                  : AppColors.primary.withOpacity(0.15))
+                                  ? AppColors.primaryLight.withValues(alpha: 0.2)
+                                  : AppColors.primary.withValues(alpha: 0.15))
                               : Colors.transparent,
                           borderRadius: BorderRadius.circular(12),
                           boxShadow: isActive
@@ -891,7 +891,7 @@ class _MainScreenState extends State<MainScreen>
                 border: Border.all(color: Colors.white, width: 1.5),
                 boxShadow: [
                   BoxShadow(
-                    color: Colors.green.withOpacity(0.4),
+                    color: Colors.green.withValues(alpha: 0.4),
                     blurRadius: 6,
                     offset: const Offset(0, 2),
                   ),

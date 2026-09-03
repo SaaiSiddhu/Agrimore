@@ -75,12 +75,12 @@ class _WebCartScreenState extends State<WebCartScreen>
               padding: const EdgeInsets.all(12),
               decoration: BoxDecoration(
                 gradient: LinearGradient(
-                  colors: [AppColors.error, AppColors.error.withOpacity(0.8)],
+                  colors: [AppColors.error, AppColors.error.withValues(alpha: 0.8)],
                 ),
                 borderRadius: BorderRadius.circular(12),
                 boxShadow: [
                   BoxShadow(
-                    color: AppColors.error.withOpacity(0.3),
+                    color: AppColors.error.withValues(alpha: 0.3),
                     blurRadius: 8,
                     offset: const Offset(0, 2),
                   ),
@@ -220,7 +220,7 @@ class _WebCartScreenState extends State<WebCartScreen>
             padding: const EdgeInsets.all(10),
             decoration: BoxDecoration(
               gradient: LinearGradient(
-                colors: [AppColors.primary, AppColors.primary.withOpacity(0.8)],
+                colors: [AppColors.primary, AppColors.primary.withValues(alpha: 0.8)],
               ),
               borderRadius: BorderRadius.circular(12),
             ),
@@ -261,7 +261,7 @@ class _WebCartScreenState extends State<WebCartScreen>
                   padding:
                       const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
                   decoration: BoxDecoration(
-                    color: AppColors.primary.withOpacity(0.1),
+                    color: AppColors.primary.withValues(alpha: 0.1),
                     borderRadius: BorderRadius.circular(12),
                   ),
                   child: Row(
@@ -292,7 +292,7 @@ class _WebCartScreenState extends State<WebCartScreen>
                   style: OutlinedButton.styleFrom(
                     padding: const EdgeInsets.symmetric(
                         horizontal: 20, vertical: 12),
-                    side: BorderSide(color: AppColors.error.withOpacity(0.3)),
+                    side: BorderSide(color: AppColors.error.withValues(alpha: 0.3)),
                     shape: RoundedRectangleBorder(
                       borderRadius: BorderRadius.circular(12),
                     ),
@@ -314,7 +314,7 @@ class _WebCartScreenState extends State<WebCartScreen>
         borderRadius: BorderRadius.circular(20),
         boxShadow: [
           BoxShadow(
-            color: Colors.black.withOpacity(0.05),
+            color: Colors.black.withValues(alpha: 0.05),
             blurRadius: 20,
             offset: const Offset(0, 4),
           ),
@@ -330,7 +330,7 @@ class _WebCartScreenState extends State<WebCartScreen>
                 begin: Alignment.topLeft,
                 end: Alignment.bottomRight,
                 colors: [
-                  AppColors.primary.withOpacity(0.05),
+                  AppColors.primary.withValues(alpha: 0.05),
                   Colors.white,
                 ],
               ),
@@ -368,13 +368,13 @@ class _WebCartScreenState extends State<WebCartScreen>
                       gradient: LinearGradient(
                         colors: [
                           AppColors.success,
-                          AppColors.success.withOpacity(0.8)
+                          AppColors.success.withValues(alpha: 0.8)
                         ],
                       ),
                       borderRadius: BorderRadius.circular(12),
                       boxShadow: [
                         BoxShadow(
-                          color: AppColors.success.withOpacity(0.3),
+                          color: AppColors.success.withValues(alpha: 0.3),
                           blurRadius: 8,
                         ),
                       ],
@@ -448,8 +448,8 @@ class _WebCartScreenState extends State<WebCartScreen>
               boxShadow: [
                 BoxShadow(
                   color: _isSummarySticky
-                      ? AppColors.primary.withOpacity(0.15)
-                      : Colors.black.withOpacity(0.05),
+                      ? AppColors.primary.withValues(alpha: 0.15)
+                      : Colors.black.withValues(alpha: 0.05),
                   blurRadius: _isSummarySticky ? 25 : 20,
                   offset: const Offset(0, 4),
                 ),
@@ -488,7 +488,7 @@ class _WebCartScreenState extends State<WebCartScreen>
             borderRadius: BorderRadius.circular(16),
           ),
           elevation: 6,
-          shadowColor: AppColors.primary.withOpacity(0.5),
+          shadowColor: AppColors.primary.withValues(alpha: 0.5),
         ),
         child: Row(
           mainAxisAlignment: MainAxisAlignment.center,
@@ -507,7 +507,7 @@ class _WebCartScreenState extends State<WebCartScreen>
             Container(
               padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
               decoration: BoxDecoration(
-                color: Colors.white.withOpacity(0.2),
+                color: Colors.white.withValues(alpha: 0.2),
                 borderRadius: BorderRadius.circular(8),
               ),
               child: Text(
@@ -566,7 +566,7 @@ class _WebCartScreenState extends State<WebCartScreen>
         Container(
           padding: const EdgeInsets.all(10),
           decoration: BoxDecoration(
-            color: AppColors.primary.withOpacity(0.1),
+            color: AppColors.primary.withValues(alpha: 0.1),
             shape: BoxShape.circle,
           ),
           child: Icon(icon, color: AppColors.primary, size: 20),

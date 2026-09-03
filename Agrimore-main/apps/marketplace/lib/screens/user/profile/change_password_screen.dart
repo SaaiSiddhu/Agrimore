@@ -291,7 +291,7 @@ class _ChangePasswordScreenState extends State<ChangePasswordScreen>
         children: [
           Container(
             decoration: BoxDecoration(
-              color: Colors.white.withOpacity(0.2),
+              color: Colors.white.withValues(alpha: 0.2),
               borderRadius: BorderRadius.circular(10),
             ),
             child: Material(
@@ -348,7 +348,7 @@ class _ChangePasswordScreenState extends State<ChangePasswordScreen>
         ),
         boxShadow: [
           BoxShadow(
-            color: Colors.black.withOpacity(isDark ? 0.3 : 0.02),
+            color: Colors.black.withValues(alpha: isDark ? 0.3 : 0.02),
             blurRadius: 8,
             offset: const Offset(0, 2),
           ),
@@ -419,7 +419,7 @@ class _ChangePasswordScreenState extends State<ChangePasswordScreen>
         ),
         boxShadow: [
           BoxShadow(
-            color: Colors.black.withOpacity(isDark ? 0.3 : 0.02),
+            color: Colors.black.withValues(alpha: isDark ? 0.3 : 0.02),
             blurRadius: 8,
             offset: const Offset(0, 2),
           ),
@@ -567,14 +567,14 @@ class _ChangePasswordScreenState extends State<ChangePasswordScreen>
                               decoration: BoxDecoration(
                                 gradient: LinearGradient(
                                   colors: [
-                                    (isDark ? AppColors.primaryLight : const Color(0xFF2D7D3C)).withOpacity(_isLoading ? 0.7 : 1.0),
-                                    (isDark ? AppColors.primaryLight : const Color(0xFF2D7D3C)).withOpacity(_isLoading ? 0.5 : 0.8),
+                                    (isDark ? AppColors.primaryLight : const Color(0xFF2D7D3C)).withValues(alpha: _isLoading ? 0.7 : 1.0),
+                                    (isDark ? AppColors.primaryLight : const Color(0xFF2D7D3C)).withValues(alpha: _isLoading ? 0.5 : 0.8),
                                   ],
                                 ),
                                 borderRadius: BorderRadius.circular(14),
                                 boxShadow: [
                                   BoxShadow(
-                                    color: (isDark ? AppColors.primaryLight : const Color(0xFF2D7D3C)).withOpacity(0.25),
+                                    color: (isDark ? AppColors.primaryLight : const Color(0xFF2D7D3C)).withValues(alpha: 0.25),
                                     blurRadius: 12,
                                     offset: const Offset(0, 4),
                                   ),
@@ -640,12 +640,12 @@ class _ChangePasswordScreenState extends State<ChangePasswordScreen>
                       padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 14),
                       decoration: BoxDecoration(
                         gradient: LinearGradient(
-                          colors: [_toastColor, _toastColor.withOpacity(0.9)],
+                          colors: [_toastColor, _toastColor.withValues(alpha: 0.9)],
                         ),
                         borderRadius: BorderRadius.circular(16),
                         boxShadow: [
                           BoxShadow(
-                            color: _toastColor.withOpacity(0.4),
+                            color: _toastColor.withValues(alpha: 0.4),
                             blurRadius: 20,
                             offset: const Offset(0, 8),
                           ),
@@ -656,7 +656,7 @@ class _ChangePasswordScreenState extends State<ChangePasswordScreen>
                           Container(
                             padding: const EdgeInsets.all(6),
                             decoration: BoxDecoration(
-                              color: Colors.white.withOpacity(0.2),
+                              color: Colors.white.withValues(alpha: 0.2),
                               shape: BoxShape.circle,
                             ),
                             child: Icon(_toastIcon, color: Colors.white, size: 18),

@@ -124,7 +124,7 @@ class EmptyWishlist extends StatelessWidget {
               width: (isMobile ? 140 : 180) * value,
               height: (isMobile ? 140 : 180) * value,
               decoration: BoxDecoration(
-                color: AppColors.error.withOpacity(0.05 / value),
+                color: AppColors.error.withValues(alpha: 0.05 / value),
                 shape: BoxShape.circle,
               ),
             );
@@ -141,14 +141,14 @@ class EmptyWishlist extends StatelessWidget {
               begin: Alignment.topLeft,
               end: Alignment.bottomRight,
               colors: [
-                AppColors.error.withOpacity(0.15),
-                AppColors.error.withOpacity(0.08),
+                AppColors.error.withValues(alpha: 0.15),
+                AppColors.error.withValues(alpha: 0.08),
               ],
             ),
             shape: BoxShape.circle,
             boxShadow: [
               BoxShadow(
-                color: AppColors.error.withOpacity(0.2),
+                color: AppColors.error.withValues(alpha: 0.2),
                 blurRadius: 30,
                 offset: const Offset(0, 10),
               ),
@@ -157,7 +157,7 @@ class EmptyWishlist extends StatelessWidget {
           child: Icon(
             Icons.favorite_border,
             size: isMobile ? 70 : 90,
-            color: AppColors.error.withOpacity(0.6),
+            color: AppColors.error.withValues(alpha: 0.6),
           ),
         ),
       ],
@@ -180,7 +180,7 @@ class EmptyWishlist extends StatelessWidget {
           borderRadius: BorderRadius.circular(isMobile ? 12 : 14),
         ),
         elevation: 0,
-        shadowColor: AppColors.primary.withOpacity(0.3),
+        shadowColor: AppColors.primary.withValues(alpha: 0.3),
       ),
       icon: Icon(
         Icons.shopping_bag_outlined,
@@ -242,7 +242,7 @@ class EmptyWishlist extends StatelessWidget {
         borderRadius: BorderRadius.circular(16),
         boxShadow: [
           BoxShadow(
-            color: Colors.black.withOpacity(0.05),
+            color: Colors.black.withValues(alpha: 0.05),
             blurRadius: 15,
             offset: const Offset(0, 5),
           ),

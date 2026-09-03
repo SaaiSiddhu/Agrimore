@@ -389,7 +389,7 @@ class _AddressBottomSheetState extends State<AddressBottomSheet> {
                 width: 32,
                 height: 32,
                 decoration: BoxDecoration(
-                  color: iconColor.withOpacity(0.12),
+                  color: iconColor.withValues(alpha: 0.12),
                   borderRadius: BorderRadius.circular(8),
                 ),
                 child: isLoading
@@ -439,10 +439,10 @@ class _AddressBottomSheetState extends State<AddressBottomSheet> {
         margin: const EdgeInsets.only(bottom: 8),
         padding: const EdgeInsets.all(10),
         decoration: BoxDecoration(
-          color: address.isDefault ? accentColor.withOpacity(0.08) : (isDark ? const Color(0xFF303030) : Colors.white),
+          color: address.isDefault ? accentColor.withValues(alpha: 0.08) : (isDark ? const Color(0xFF303030) : Colors.white),
           borderRadius: BorderRadius.circular(10),
           border: Border.all(
-            color: address.isDefault ? accentColor.withOpacity(0.3) : (isDark ? Colors.grey[800]! : Colors.grey[200]!),
+            color: address.isDefault ? accentColor.withValues(alpha: 0.3) : (isDark ? Colors.grey[800]! : Colors.grey[200]!),
           ),
         ),
         child: Row(
@@ -450,7 +450,7 @@ class _AddressBottomSheetState extends State<AddressBottomSheet> {
             Container(
               width: 30,
               height: 30,
-              decoration: BoxDecoration(color: typeColor.withOpacity(0.1), borderRadius: BorderRadius.circular(6)),
+              decoration: BoxDecoration(color: typeColor.withValues(alpha: 0.1), borderRadius: BorderRadius.circular(6)),
               child: Icon(typeIcon, color: typeColor, size: 16),
             ),
             const SizedBox(width: 10),
@@ -468,7 +468,7 @@ class _AddressBottomSheetState extends State<AddressBottomSheet> {
                         const SizedBox(width: 6),
                         Container(
                           padding: const EdgeInsets.symmetric(horizontal: 4, vertical: 1),
-                          decoration: BoxDecoration(color: accentColor.withOpacity(0.15), borderRadius: BorderRadius.circular(3)),
+                          decoration: BoxDecoration(color: accentColor.withValues(alpha: 0.15), borderRadius: BorderRadius.circular(3)),
                           child: Text('DEFAULT', style: TextStyle(fontSize: 8, fontWeight: FontWeight.w700, color: accentColor)),
                         ),
                       ],

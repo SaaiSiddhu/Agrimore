@@ -524,7 +524,7 @@ class _MobileSearchScreenState extends State<MobileSearchScreen> {
                               borderRadius: BorderRadius.circular(8),
                               border: Border.all(
                                 color: isDark
-                                    ? AppColors.primaryLight.withOpacity(0.5)
+                                    ? AppColors.primaryLight.withValues(alpha: 0.5)
                                     : const Color(0xFF2E7D32),
                                 width: 1.5,
                               ),
@@ -667,7 +667,7 @@ class _MobileSearchScreenState extends State<MobileSearchScreen> {
                               borderRadius: BorderRadius.circular(8),
                               border: Border.all(
                                 color: isDark
-                                    ? AppColors.primaryLight.withOpacity(0.5)
+                                    ? AppColors.primaryLight.withValues(alpha: 0.5)
                                     : const Color(0xFF2E7D32),
                                 width: 1.5,
                               ),

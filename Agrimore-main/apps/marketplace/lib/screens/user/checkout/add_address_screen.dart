@@ -586,7 +586,7 @@ class _AddAddressScreenState extends State<AddAddressScreen> {
                   gradient: LinearGradient(
                     begin: Alignment.topLeft,
                     end: Alignment.bottomRight,
-                    colors: [accentColor, accentColor.withOpacity(0.8)],
+                    colors: [accentColor, accentColor.withValues(alpha: 0.8)],
                   ),
                   borderRadius: const BorderRadius.vertical(top: Radius.circular(24)),
                 ),
@@ -596,7 +596,7 @@ class _AddAddressScreenState extends State<AddAddressScreen> {
                       width: 48,
                       height: 48,
                       decoration: BoxDecoration(
-                        color: Colors.white.withOpacity(0.2),
+                        color: Colors.white.withValues(alpha: 0.2),
                         shape: BoxShape.circle,
                       ),
                       child: Icon(Icons.location_on_rounded, color: Colors.white, size: 26),
@@ -604,7 +604,7 @@ class _AddAddressScreenState extends State<AddAddressScreen> {
                     const SizedBox(height: 10),
                     Text('Confirm Location', style: TextStyle(fontSize: 18, fontWeight: FontWeight.w800, color: Colors.white)),
                     const SizedBox(height: 4),
-                    Text('Is this address correct?', style: TextStyle(fontSize: 12, color: Colors.white.withOpacity(0.85), fontWeight: FontWeight.w500)),
+                    Text('Is this address correct?', style: TextStyle(fontSize: 12, color: Colors.white.withValues(alpha: 0.85), fontWeight: FontWeight.w500)),
                   ],
                 ),
               ),
@@ -734,7 +734,7 @@ class _AddAddressScreenState extends State<AddAddressScreen> {
             width: 26,
             height: 26,
             decoration: BoxDecoration(
-              color: accentColor.withOpacity(0.12),
+              color: accentColor.withValues(alpha: 0.12),
               borderRadius: BorderRadius.circular(6),
             ),
             child: Icon(icon, size: 13, color: accentColor),
@@ -1174,12 +1174,12 @@ class _AddAddressScreenState extends State<AddAddressScreen> {
                         gradient: LinearGradient(
                           begin: Alignment.topLeft,
                           end: Alignment.bottomRight,
-                          colors: [accentColor, accentColor.withOpacity(0.8)],
+                          colors: [accentColor, accentColor.withValues(alpha: 0.8)],
                         ),
                         shape: BoxShape.circle,
                         boxShadow: [
                           BoxShadow(
-                            color: accentColor.withOpacity(0.5),
+                            color: accentColor.withValues(alpha: 0.5),
                             blurRadius: 16,
                             offset: const Offset(0, 6),
                           ),
@@ -1217,7 +1217,7 @@ class _AddAddressScreenState extends State<AddAddressScreen> {
                             borderRadius: BorderRadius.circular(16),
                             boxShadow: [
                               BoxShadow(
-                                color: Colors.black.withOpacity(isDark ? 0.3 : 0.12),
+                                color: Colors.black.withValues(alpha: isDark ? 0.3 : 0.12),
                                 blurRadius: 8,
                                 offset: const Offset(0, 3),
                               ),
@@ -1331,7 +1331,7 @@ class _AddAddressScreenState extends State<AddAddressScreen> {
                   borderRadius: const BorderRadius.vertical(top: Radius.circular(24)),
                   boxShadow: [
                     BoxShadow(
-                      color: Colors.black.withOpacity(isDark ? 0.3 : 0.12),
+                      color: Colors.black.withValues(alpha: isDark ? 0.3 : 0.12),
                       blurRadius: 16,
                       offset: const Offset(0, -4),
                     ),
@@ -1440,7 +1440,7 @@ class _AddAddressScreenState extends State<AddAddressScreen> {
                                   height: 42,
                                   padding: const EdgeInsets.symmetric(horizontal: 10),
                                   decoration: BoxDecoration(
-                                    color: _isDefault ? accentColor.withOpacity(0.15) : (isDark ? const Color(0xFF252525) : Colors.grey[100]),
+                                    color: _isDefault ? accentColor.withValues(alpha: 0.15) : (isDark ? const Color(0xFF252525) : Colors.grey[100]),
                                     borderRadius: BorderRadius.circular(8),
                                     border: Border.all(color: _isDefault ? accentColor : (isDark ? Colors.grey[700]! : Colors.grey[300]!), width: _isDefault ? 1.5 : 1),
                                   ),
@@ -1467,7 +1467,7 @@ class _AddAddressScreenState extends State<AddAddressScreen> {
                               style: ElevatedButton.styleFrom(
                                 backgroundColor: accentColor,
                                 foregroundColor: isDark ? Colors.black : Colors.white,
-                                disabledBackgroundColor: accentColor.withOpacity(0.5),
+                                disabledBackgroundColor: accentColor.withValues(alpha: 0.5),
                                 shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(10)),
                                 elevation: 0,
                               ),
@@ -1620,7 +1620,7 @@ class _AddAddressScreenState extends State<AddAddressScreen> {
           borderRadius: BorderRadius.circular(10),
           border: Border.all(
             color: value != null
-                ? accentColor.withOpacity(0.5)
+                ? accentColor.withValues(alpha: 0.5)
                 : (isDark ? Colors.grey[700]! : Colors.grey[300]!),
             width: value != null ? 1.5 : 1,
           ),
@@ -1790,10 +1790,10 @@ class _AddAddressScreenState extends State<AddAddressScreen> {
       padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 6),
       decoration: BoxDecoration(
         gradient: LinearGradient(
-          colors: [accentColor.withOpacity(0.15), accentColor.withOpacity(0.05)],
+          colors: [accentColor.withValues(alpha: 0.15), accentColor.withValues(alpha: 0.05)],
         ),
         borderRadius: BorderRadius.circular(6),
-        border: Border.all(color: accentColor.withOpacity(0.3), width: 1),
+        border: Border.all(color: accentColor.withValues(alpha: 0.3), width: 1),
       ),
       child: Text(
         title,
@@ -1833,13 +1833,13 @@ class _AddAddressScreenState extends State<AddAddressScreen> {
             borderRadius: BorderRadius.circular(12),
             border: Border.all(
               color: hasValue
-                  ? accentColor.withOpacity(0.6)
+                  ? accentColor.withValues(alpha: 0.6)
                   : (isDark ? Colors.grey[700]! : Colors.grey[300]!),
               width: hasValue ? 1.5 : 1,
             ),
             boxShadow: [
               BoxShadow(
-                color: Colors.black.withOpacity(isDark ? 0.2 : 0.05),
+                color: Colors.black.withValues(alpha: isDark ? 0.2 : 0.05),
                 blurRadius: 4,
                 offset: const Offset(0, 2),
               ),
@@ -1851,7 +1851,7 @@ class _AddAddressScreenState extends State<AddAddressScreen> {
                 padding: const EdgeInsets.all(6),
                 decoration: BoxDecoration(
                   color: hasValue
-                      ? accentColor.withOpacity(0.15)
+                      ? accentColor.withValues(alpha: 0.15)
                       : (isDark ? Colors.grey[800] : Colors.grey[100]),
                   borderRadius: BorderRadius.circular(6),
                 ),
@@ -1923,7 +1923,7 @@ class _AddAddressScreenState extends State<AddAddressScreen> {
         ),
         boxShadow: [
           BoxShadow(
-            color: Colors.black.withOpacity(isDark ? 0.2 : 0.05),
+            color: Colors.black.withValues(alpha: isDark ? 0.2 : 0.05),
             blurRadius: 4,
             offset: const Offset(0, 2),
           ),
@@ -1947,7 +1947,7 @@ class _AddAddressScreenState extends State<AddAddressScreen> {
             margin: const EdgeInsets.only(left: 8, right: 4),
             padding: const EdgeInsets.all(6),
             decoration: BoxDecoration(
-              color: accentColor.withOpacity(0.15),
+              color: accentColor.withValues(alpha: 0.15),
               borderRadius: BorderRadius.circular(6),
             ),
             child: Icon(icon, color: accentColor, size: 16),
@@ -1987,7 +1987,7 @@ class _AddAddressScreenState extends State<AddAddressScreen> {
         ),
         boxShadow: [
           BoxShadow(
-            color: Colors.black.withOpacity(isDark ? 0.2 : 0.05),
+            color: Colors.black.withValues(alpha: isDark ? 0.2 : 0.05),
             blurRadius: 4,
             offset: const Offset(0, 2),
           ),
@@ -2022,7 +2022,7 @@ class _AddAddressScreenState extends State<AddAddressScreen> {
             margin: const EdgeInsets.only(left: 8, right: 4),
             padding: const EdgeInsets.all(6),
             decoration: BoxDecoration(
-              color: accentColor.withOpacity(0.15),
+              color: accentColor.withValues(alpha: 0.15),
               borderRadius: BorderRadius.circular(6),
             ),
             child: Icon(Icons.pin_drop_outlined, color: accentColor, size: 16),
@@ -2059,7 +2059,7 @@ class _AddAddressScreenState extends State<AddAddressScreen> {
         ),
         boxShadow: [
           BoxShadow(
-            color: Colors.black.withOpacity(isDark ? 0.2 : 0.05),
+            color: Colors.black.withValues(alpha: isDark ? 0.2 : 0.05),
             blurRadius: 4,
             offset: const Offset(0, 2),
           ),
@@ -2090,7 +2090,7 @@ class _AddAddressScreenState extends State<AddAddressScreen> {
             margin: const EdgeInsets.only(left: 8, right: 4),
             padding: const EdgeInsets.all(6),
             decoration: BoxDecoration(
-              color: accentColor.withOpacity(0.15),
+              color: accentColor.withValues(alpha: 0.15),
               borderRadius: BorderRadius.circular(6),
             ),
             child: Icon(icon, color: accentColor, size: 16),
@@ -2231,7 +2231,7 @@ class _AddAddressScreenState extends State<AddAddressScreen> {
           ),
           boxShadow: isSelected ? [
             BoxShadow(
-              color: accentColor.withOpacity(0.3),
+              color: accentColor.withValues(alpha: 0.3),
               blurRadius: 6,
               offset: const Offset(0, 2),
             ),
@@ -2497,7 +2497,7 @@ class _LocationSelectorState extends State<_LocationSelector> {
         borderRadius: const BorderRadius.vertical(top: Radius.circular(28)),
         boxShadow: [
           BoxShadow(
-            color: Colors.black.withOpacity(isDark ? 0.3 : 0.12),
+            color: Colors.black.withValues(alpha: isDark ? 0.3 : 0.12),
             blurRadius: 20,
             offset: const Offset(0, -5),
           ),
@@ -2634,7 +2634,7 @@ class _LocationSelectorState extends State<_LocationSelector> {
                           ),
                           decoration: BoxDecoration(
                             color: isSelected
-                                ? accentColor.withOpacity(0.1)
+                                ? accentColor.withValues(alpha: 0.1)
                                 : null,
                             border: Border(
                               bottom: BorderSide(

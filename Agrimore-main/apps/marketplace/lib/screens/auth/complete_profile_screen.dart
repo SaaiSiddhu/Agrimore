@@ -271,12 +271,12 @@ class _CompleteProfileScreenState extends State<CompleteProfileScreen>
           end: Alignment.bottomCenter,
           colors: isDark
               ? [
-                  AppColors.primaryDark.withOpacity(0.25),
+                  AppColors.primaryDark.withValues(alpha: 0.25),
                   AppColors.backgroundDark,
                   AppColors.backgroundDark,
                 ]
               : [
-                  AppColors.primaryLight.withOpacity(0.08),
+                  AppColors.primaryLight.withValues(alpha: 0.08),
                   AppColors.background,
                   AppColors.surface,
                 ],
@@ -298,7 +298,7 @@ class _CompleteProfileScreenState extends State<CompleteProfileScreen>
               shape: BoxShape.circle,
               gradient: RadialGradient(
                 colors: [
-                  AppColors.secondary.withOpacity(isDark ? 0.1 : 0.12),
+                  AppColors.secondary.withValues(alpha: isDark ? 0.1 : 0.12),
                   Colors.transparent,
                 ],
               ),
@@ -315,7 +315,7 @@ class _CompleteProfileScreenState extends State<CompleteProfileScreen>
               shape: BoxShape.circle,
               gradient: RadialGradient(
                 colors: [
-                  AppColors.primary.withOpacity(isDark ? 0.12 : 0.15),
+                  AppColors.primary.withValues(alpha: isDark ? 0.12 : 0.15),
                   Colors.transparent,
                 ],
               ),
@@ -334,7 +334,7 @@ class _CompleteProfileScreenState extends State<CompleteProfileScreen>
         borderRadius: BorderRadius.circular(26),
         boxShadow: [
           BoxShadow(
-            color: AppColors.primary.withOpacity(0.35),
+            color: AppColors.primary.withValues(alpha: 0.35),
             blurRadius: 25,
             spreadRadius: 3,
           ),
@@ -391,16 +391,16 @@ class _CompleteProfileScreenState extends State<CompleteProfileScreen>
         child: Container(
           padding: const EdgeInsets.all(24),
           decoration: BoxDecoration(
-            color: isDark ? Colors.white.withOpacity(0.08) : Colors.white.withOpacity(0.9),
+            color: isDark ? Colors.white.withValues(alpha: 0.08) : Colors.white.withValues(alpha: 0.9),
             borderRadius: BorderRadius.circular(20),
             border: Border.all(
-              color: isDark ? Colors.white.withOpacity(0.1) : AppColors.border,
+              color: isDark ? Colors.white.withValues(alpha: 0.1) : AppColors.border,
             ),
             boxShadow: isDark
                 ? null
                 : [
                     BoxShadow(
-                      color: Colors.black.withOpacity(0.05),
+                      color: Colors.black.withValues(alpha: 0.05),
                       blurRadius: 20,
                       offset: const Offset(0, 10),
                     ),
@@ -443,16 +443,16 @@ class _CompleteProfileScreenState extends State<CompleteProfileScreen>
     return Container(
       padding: const EdgeInsets.all(16),
       decoration: BoxDecoration(
-        color: AppColors.success.withOpacity(0.08),
+        color: AppColors.success.withValues(alpha: 0.08),
         borderRadius: BorderRadius.circular(14),
-        border: Border.all(color: AppColors.success.withOpacity(0.2)),
+        border: Border.all(color: AppColors.success.withValues(alpha: 0.2)),
       ),
       child: Row(
         children: [
           Container(
             padding: const EdgeInsets.all(8),
             decoration: BoxDecoration(
-              color: AppColors.success.withOpacity(0.15),
+              color: AppColors.success.withValues(alpha: 0.15),
               borderRadius: BorderRadius.circular(10),
             ),
             child: const Icon(Icons.phone_rounded, color: AppColors.success, size: 20),
@@ -489,9 +489,9 @@ class _CompleteProfileScreenState extends State<CompleteProfileScreen>
       return Container(
         padding: const EdgeInsets.all(16),
         decoration: BoxDecoration(
-          color: AppColors.success.withOpacity(0.08),
+          color: AppColors.success.withValues(alpha: 0.08),
           borderRadius: BorderRadius.circular(14),
-          border: Border.all(color: AppColors.success.withOpacity(0.2)),
+          border: Border.all(color: AppColors.success.withValues(alpha: 0.2)),
         ),
         child: Row(
           children: [
@@ -612,10 +612,10 @@ class _CompleteProfileScreenState extends State<CompleteProfileScreen>
       child: Container(
         padding: const EdgeInsets.symmetric(horizontal: 18, vertical: 16),
         decoration: BoxDecoration(
-          color: isDark ? Colors.white.withOpacity(0.05) : AppColors.surfaceVariant,
+          color: isDark ? Colors.white.withValues(alpha: 0.05) : AppColors.surfaceVariant,
           borderRadius: BorderRadius.circular(14),
           border: Border.all(
-            color: isDark ? Colors.white.withOpacity(0.1) : AppColors.borderLight,
+            color: isDark ? Colors.white.withValues(alpha: 0.1) : AppColors.borderLight,
           ),
         ),
         child: Row(
@@ -657,13 +657,13 @@ class _CompleteProfileScreenState extends State<CompleteProfileScreen>
             fontWeight: FontWeight.w600,
             fontSize: 13,
           ),
-          backgroundColor: isDark ? Colors.white.withOpacity(0.05) : AppColors.surfaceVariant,
+          backgroundColor: isDark ? Colors.white.withValues(alpha: 0.05) : AppColors.surfaceVariant,
           shape: RoundedRectangleBorder(
             borderRadius: BorderRadius.circular(10),
             side: BorderSide(
               color: selected
                   ? AppColors.primary
-                  : (isDark ? Colors.white.withOpacity(0.1) : AppColors.borderLight),
+                  : (isDark ? Colors.white.withValues(alpha: 0.1) : AppColors.borderLight),
             ),
           ),
         );
@@ -704,10 +704,10 @@ class _CompleteProfileScreenState extends State<CompleteProfileScreen>
   }) {
     return Container(
       decoration: BoxDecoration(
-        color: isDark ? Colors.white.withOpacity(0.05) : AppColors.surfaceVariant,
+        color: isDark ? Colors.white.withValues(alpha: 0.05) : AppColors.surfaceVariant,
         borderRadius: BorderRadius.circular(14),
         border: Border.all(
-          color: isDark ? Colors.white.withOpacity(0.1) : AppColors.borderLight,
+          color: isDark ? Colors.white.withValues(alpha: 0.1) : AppColors.borderLight,
         ),
       ),
       child: TextFormField(
@@ -740,9 +740,9 @@ class _CompleteProfileScreenState extends State<CompleteProfileScreen>
       padding: const EdgeInsets.all(14),
       margin: const EdgeInsets.only(bottom: 20),
       decoration: BoxDecoration(
-        color: AppColors.error.withOpacity(0.1),
+        color: AppColors.error.withValues(alpha: 0.1),
         borderRadius: BorderRadius.circular(14),
-        border: Border.all(color: AppColors.error.withOpacity(0.3)),
+        border: Border.all(color: AppColors.error.withValues(alpha: 0.3)),
       ),
       child: Row(
         children: [
@@ -767,7 +767,7 @@ class _CompleteProfileScreenState extends State<CompleteProfileScreen>
         gradient: AppColors.primaryGradient,
         borderRadius: BorderRadius.circular(16),
         boxShadow: [
-          BoxShadow(color: AppColors.primary.withOpacity(0.4), blurRadius: 18, offset: const Offset(0, 8)),
+          BoxShadow(color: AppColors.primary.withValues(alpha: 0.4), blurRadius: 18, offset: const Offset(0, 8)),
         ],
       ),
       child: ElevatedButton(

@@ -219,7 +219,7 @@ class _DeliveryInfoWidgetState extends State<DeliveryInfoWidget> {
         border: Border.all(color: isDark ? Colors.grey[800]! : Colors.grey[200]!, width: 1),
         boxShadow: [
           BoxShadow(
-            color: Colors.black.withOpacity(isDark ? 0.3 : 0.05),
+            color: Colors.black.withValues(alpha: isDark ? 0.3 : 0.05),
             blurRadius: 8,
             offset: const Offset(0, 2),
           ),

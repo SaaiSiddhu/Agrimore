@@ -42,7 +42,7 @@ class ProductCreditCard extends StatelessWidget {
         borderRadius: BorderRadius.circular(24),
         boxShadow: [
           BoxShadow(
-            color: AppColors.primary.withOpacity(0.35),
+            color: AppColors.primary.withValues(alpha: 0.35),
             blurRadius: 20,
             offset: const Offset(0, 10),
           ),
@@ -56,7 +56,7 @@ class ProductCreditCard extends StatelessWidget {
               Container(
                 padding: const EdgeInsets.all(8),
                 decoration: BoxDecoration(
-                  color: Colors.white.withOpacity(0.2),
+                  color: Colors.white.withValues(alpha: 0.2),
                   borderRadius: BorderRadius.circular(10),
                 ),
                 child: const Icon(
@@ -107,7 +107,7 @@ class ProductCreditCard extends StatelessWidget {
           // the headline figure above.
           if (onHold > 0 || pending > 0) ...[
             const SizedBox(height: 16),
-            Container(height: 1, color: Colors.white.withOpacity(0.2)),
+            Container(height: 1, color: Colors.white.withValues(alpha: 0.2)),
             const SizedBox(height: 16),
             if (onHold > 0)
               _StatusRow(
@@ -128,7 +128,7 @@ class ProductCreditCard extends StatelessWidget {
           Text(
             'Redeemable towards AgriMore products at checkout. Cannot be withdrawn as cash.',
             style: TextStyle(
-              color: Colors.white.withOpacity(0.85),
+              color: Colors.white.withValues(alpha: 0.85),
               fontSize: 12,
               height: 1.4,
             ),
@@ -139,7 +139,7 @@ class ProductCreditCard extends StatelessWidget {
             Text(
               'History is temporarily unavailable.',
               style: TextStyle(
-                color: Colors.white.withOpacity(0.7),
+                color: Colors.white.withValues(alpha: 0.7),
                 fontSize: 11,
                 fontStyle: FontStyle.italic,
               ),

@@ -91,7 +91,7 @@ class _AddMoneyScreenState extends State<AddMoneyScreen> {
                 color: cardColor,
                 borderRadius: BorderRadius.circular(16),
                 border: Border.all(
-                  color: accentColor.withOpacity(0.3),
+                  color: accentColor.withValues(alpha: 0.3),
                   width: 2,
                 ),
               ),
@@ -201,19 +201,19 @@ class _AddMoneyScreenState extends State<AddMoneyScreen> {
                 decoration: BoxDecoration(
                   gradient: LinearGradient(
                     colors: [
-                      Colors.amber.withOpacity(0.15),
-                      Colors.orange.withOpacity(0.1),
+                      Colors.amber.withValues(alpha: 0.15),
+                      Colors.orange.withValues(alpha: 0.1),
                     ],
                   ),
                   borderRadius: BorderRadius.circular(16),
-                  border: Border.all(color: Colors.amber.withOpacity(0.3)),
+                  border: Border.all(color: Colors.amber.withValues(alpha: 0.3)),
                 ),
                 child: Row(
                   children: [
                     Container(
                       padding: const EdgeInsets.all(10),
                       decoration: BoxDecoration(
-                        color: Colors.amber.withOpacity(0.2),
+                        color: Colors.amber.withValues(alpha: 0.2),
                         borderRadius: BorderRadius.circular(10),
                       ),
                       child: const Icon(Icons.celebration, color: Colors.amber, size: 24),
@@ -270,7 +270,7 @@ class _AddMoneyScreenState extends State<AddMoneyScreen> {
           color: cardColor,
           boxShadow: [
             BoxShadow(
-              color: Colors.black.withOpacity(0.1),
+              color: Colors.black.withValues(alpha: 0.1),
               blurRadius: 10,
               offset: const Offset(0, -5),
             ),
@@ -352,7 +352,7 @@ class _AddMoneyScreenState extends State<AddMoneyScreen> {
         borderRadius: BorderRadius.circular(16),
         boxShadow: [
           BoxShadow(
-            color: Colors.black.withOpacity(isDark ? 0.3 : 0.05),
+            color: Colors.black.withValues(alpha: isDark ? 0.3 : 0.05),
             blurRadius: 10,
             offset: const Offset(0, 4),
           ),
@@ -363,7 +363,7 @@ class _AddMoneyScreenState extends State<AddMoneyScreen> {
           Container(
             padding: const EdgeInsets.all(10),
             decoration: BoxDecoration(
-              color: AppColors.primary.withOpacity(0.1),
+              color: AppColors.primary.withValues(alpha: 0.1),
               borderRadius: BorderRadius.circular(10),
             ),
             child: Icon(

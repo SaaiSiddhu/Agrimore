@@ -255,7 +255,7 @@ class _AssociateCodeFieldState extends State<AssociateCodeField> {
         onPressed: _state == _CheckState.checking ? null : _handleApply,
         style: ElevatedButton.styleFrom(
           backgroundColor: accentColor,
-          disabledBackgroundColor: accentColor.withOpacity(0.5),
+          disabledBackgroundColor: accentColor.withValues(alpha: 0.5),
           foregroundColor: Colors.white,
           padding: const EdgeInsets.symmetric(horizontal: 16),
           shape: RoundedRectangleBorder(

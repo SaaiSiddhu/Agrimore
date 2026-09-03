@@ -84,7 +84,7 @@ class _ReviewsSectionState extends State<ReviewsSection> {
               icon: Icon(Icons.add_comment_outlined, size: 16, color: accentColor),
               label: Text('Add Review', style: TextStyle(color: accentColor, fontWeight: FontWeight.bold)),
               style: TextButton.styleFrom(
-                backgroundColor: accentColor.withOpacity(0.1),
+                backgroundColor: accentColor.withValues(alpha: 0.1),
                 shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(8)),
               ),
             ),

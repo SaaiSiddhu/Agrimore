@@ -114,14 +114,14 @@ class _FilterDrawerState extends State<FilterDrawer>
         gradient: LinearGradient(
           colors: [
             accentColor,
-            accentColor.withOpacity(0.8),
+            accentColor.withValues(alpha: 0.8),
           ],
           begin: Alignment.topLeft,
           end: Alignment.bottomRight,
         ),
         boxShadow: [
           BoxShadow(
-            color: accentColor.withOpacity(0.3),
+            color: accentColor.withValues(alpha: 0.3),
             blurRadius: 15,
             offset: const Offset(0, 4),
           ),
@@ -132,7 +132,7 @@ class _FilterDrawerState extends State<FilterDrawer>
           Container(
             padding: const EdgeInsets.all(10),
             decoration: BoxDecoration(
-              color: Colors.white.withOpacity(0.2),
+              color: Colors.white.withValues(alpha: 0.2),
               borderRadius: BorderRadius.circular(12),
             ),
             child: const FaIcon(
@@ -156,7 +156,7 @@ class _FilterDrawerState extends State<FilterDrawer>
                 Text(
                   'Refine your search',
                   style: AppTextStyles.bodyMedium.copyWith(
-                    color: Colors.white.withOpacity(0.9),
+                    color: Colors.white.withValues(alpha: 0.9),
                   ),
                 ),
               ],
@@ -174,7 +174,7 @@ class _FilterDrawerState extends State<FilterDrawer>
               ),
             ),
             style: TextButton.styleFrom(
-              backgroundColor: Colors.white.withOpacity(0.2),
+              backgroundColor: Colors.white.withValues(alpha: 0.2),
               shape: RoundedRectangleBorder(
                 borderRadius: BorderRadius.circular(10),
               ),
@@ -228,7 +228,7 @@ class _FilterDrawerState extends State<FilterDrawer>
                 max: 10000,
                 divisions: 100,
                 activeColor: accentColor,
-                inactiveColor: accentColor.withOpacity(0.2),
+                inactiveColor: accentColor.withValues(alpha: 0.2),
                 labels: RangeLabels(
                   '₹${_priceRange.start.round()}',
                   '₹${_priceRange.end.round()}',
@@ -413,7 +413,7 @@ class _FilterDrawerState extends State<FilterDrawer>
               const EdgeInsets.symmetric(horizontal: 12, vertical: 10),
           decoration: BoxDecoration(
             color: isSelected
-                ? accentColor.withOpacity(0.1)
+                ? accentColor.withValues(alpha: 0.1)
                 : (isDark ? const Color(0xFF303030) : Colors.grey[50]),
             borderRadius: BorderRadius.circular(10),
             border: Border.all(
@@ -429,7 +429,7 @@ class _FilterDrawerState extends State<FilterDrawer>
                 padding: const EdgeInsets.all(6),
                 decoration: BoxDecoration(
                   color: isSelected
-                      ? accentColor.withOpacity(0.15)
+                      ? accentColor.withValues(alpha: 0.15)
                       : (isDark ? Colors.grey[800] : Colors.grey[100]),
                   borderRadius: BorderRadius.circular(8),
                 ),
@@ -600,7 +600,7 @@ class _FilterDrawerState extends State<FilterDrawer>
         color: cardColor,
         boxShadow: [
           BoxShadow(
-            color: Colors.black.withOpacity(isDark ? 0.3 : 0.1),
+            color: Colors.black.withValues(alpha: isDark ? 0.3 : 0.1),
             blurRadius: 20,
             offset: const Offset(0, -4),
           ),

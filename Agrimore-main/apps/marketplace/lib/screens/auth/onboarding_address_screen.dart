@@ -237,11 +237,11 @@ class _OnboardingAddressScreenState extends State<OnboardingAddressScreen>
                   end: Alignment.bottomCenter,
                   colors: isDark
                       ? [
-                          const Color(0xFF1A6B3A).withOpacity(0.15),
+                          const Color(0xFF1A6B3A).withValues(alpha: 0.15),
                           const Color(0xFF121212)
                         ]
                       : [
-                          const Color(0xFF1A6B3A).withOpacity(0.06),
+                          const Color(0xFF1A6B3A).withValues(alpha: 0.06),
                           const Color(0xFFF7FAF8)
                         ],
                 ),
@@ -258,7 +258,7 @@ class _OnboardingAddressScreenState extends State<OnboardingAddressScreen>
               height: 180,
               decoration: BoxDecoration(
                 shape: BoxShape.circle,
-                color: const Color(0xFF1A6B3A).withOpacity(0.07),
+                color: const Color(0xFF1A6B3A).withValues(alpha: 0.07),
               ),
             ),
           ),
@@ -464,11 +464,11 @@ class _OnboardingAddressScreenState extends State<OnboardingAddressScreen>
         shape: BoxShape.circle,
         color: done || active
             ? const Color(0xFF1A6B3A)
-            : Colors.grey.withOpacity(0.2),
+            : Colors.grey.withValues(alpha: 0.2),
         boxShadow: active
             ? [
                 BoxShadow(
-                    color: const Color(0xFF1A6B3A).withOpacity(0.3),
+                    color: const Color(0xFF1A6B3A).withValues(alpha: 0.3),
                     blurRadius: 8)
               ]
             : null,
@@ -497,7 +497,7 @@ class _OnboardingAddressScreenState extends State<OnboardingAddressScreen>
           borderRadius: BorderRadius.circular(2),
           color: done
               ? const Color(0xFF1A6B3A)
-              : Colors.grey.withOpacity(0.25),
+              : Colors.grey.withValues(alpha: 0.25),
         ),
       ),
     );
@@ -513,7 +513,7 @@ class _OnboardingAddressScreenState extends State<OnboardingAddressScreen>
             padding: const EdgeInsets.all(8),
             decoration: BoxDecoration(
               color: isDark
-                  ? Colors.white.withOpacity(0.08)
+                  ? Colors.white.withValues(alpha: 0.08)
                   : Colors.grey.shade100,
               borderRadius: BorderRadius.circular(12),
             ),
@@ -595,21 +595,21 @@ class _OnboardingAddressScreenState extends State<OnboardingAddressScreen>
                 color: selected
                     ? const Color(0xFF1A6B3A)
                     : isDark
-                        ? Colors.white.withOpacity(0.06)
+                        ? Colors.white.withValues(alpha: 0.06)
                         : Colors.white,
                 borderRadius: BorderRadius.circular(12),
                 border: Border.all(
                   color: selected
                       ? const Color(0xFF1A6B3A)
                       : isDark
-                          ? Colors.white.withOpacity(0.1)
+                          ? Colors.white.withValues(alpha: 0.1)
                           : Colors.grey.shade200,
                   width: selected ? 1.5 : 1,
                 ),
                 boxShadow: selected
                     ? [
                         BoxShadow(
-                          color: const Color(0xFF1A6B3A).withOpacity(0.25),
+                          color: const Color(0xFF1A6B3A).withValues(alpha: 0.25),
                           blurRadius: 10,
                           offset: const Offset(0, 4),
                         )
@@ -657,19 +657,19 @@ class _OnboardingAddressScreenState extends State<OnboardingAddressScreen>
           padding: const EdgeInsets.all(20),
           decoration: BoxDecoration(
             color: isDark
-                ? Colors.white.withOpacity(0.07)
-                : Colors.white.withOpacity(0.92),
+                ? Colors.white.withValues(alpha: 0.07)
+                : Colors.white.withValues(alpha: 0.92),
             borderRadius: BorderRadius.circular(18),
             border: Border.all(
               color: isDark
-                  ? Colors.white.withOpacity(0.1)
+                  ? Colors.white.withValues(alpha: 0.1)
                   : Colors.grey.shade200,
             ),
             boxShadow: isDark
                 ? null
                 : [
                     BoxShadow(
-                      color: Colors.black.withOpacity(0.05),
+                      color: Colors.black.withValues(alpha: 0.05),
                       blurRadius: 14,
                       offset: const Offset(0, 5),
                     )
@@ -746,12 +746,12 @@ class _OnboardingAddressScreenState extends State<OnboardingAddressScreen>
         Container(
           decoration: BoxDecoration(
             color: isDark
-                ? Colors.white.withOpacity(0.05)
+                ? Colors.white.withValues(alpha: 0.05)
                 : const Color(0xFFF5F9F6),
             borderRadius: BorderRadius.circular(10),
             border: Border.all(
               color: isDark
-                  ? Colors.white.withOpacity(0.1)
+                  ? Colors.white.withValues(alpha: 0.1)
                   : Colors.grey.shade200,
             ),
           ),
@@ -805,12 +805,12 @@ class _OnboardingAddressScreenState extends State<OnboardingAddressScreen>
         Container(
           decoration: BoxDecoration(
             color: isDark
-                ? Colors.white.withOpacity(0.05)
+                ? Colors.white.withValues(alpha: 0.05)
                 : const Color(0xFFF5F9F6),
             borderRadius: BorderRadius.circular(10),
             border: Border.all(
               color: isDark
-                  ? Colors.white.withOpacity(0.1)
+                  ? Colors.white.withValues(alpha: 0.1)
                   : Colors.grey.shade200,
             ),
           ),
@@ -886,9 +886,9 @@ class _OnboardingAddressScreenState extends State<OnboardingAddressScreen>
       padding: const EdgeInsets.all(14),
       margin: const EdgeInsets.only(bottom: 8),
       decoration: BoxDecoration(
-        color: Colors.red.withOpacity(0.1),
+        color: Colors.red.withValues(alpha: 0.1),
         borderRadius: BorderRadius.circular(12),
-        border: Border.all(color: Colors.red.withOpacity(0.3)),
+        border: Border.all(color: Colors.red.withValues(alpha: 0.3)),
       ),
       child: Row(
         children: [
@@ -922,7 +922,7 @@ class _OnboardingAddressScreenState extends State<OnboardingAddressScreen>
           borderRadius: BorderRadius.circular(14),
           boxShadow: [
             BoxShadow(
-              color: const Color(0xFF1A6B3A).withOpacity(0.38),
+              color: const Color(0xFF1A6B3A).withValues(alpha: 0.38),
               blurRadius: 16,
               offset: const Offset(0, 6),
             ),

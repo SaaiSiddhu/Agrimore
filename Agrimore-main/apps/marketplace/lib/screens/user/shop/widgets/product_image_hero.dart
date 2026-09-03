@@ -262,12 +262,12 @@ class _ProductImageHeroState extends State<ProductImageHero> {
         height: 40,
         decoration: BoxDecoration(
           color: isDark 
-              ? Colors.black.withOpacity(0.5) 
-              : Colors.white.withOpacity(0.9),
+              ? Colors.black.withValues(alpha: 0.5) 
+              : Colors.white.withValues(alpha: 0.9),
           shape: BoxShape.circle,
           boxShadow: [
             BoxShadow(
-              color: Colors.black.withOpacity(0.1),
+              color: Colors.black.withValues(alpha: 0.1),
               blurRadius: 8,
               offset: const Offset(0, 2),
             ),

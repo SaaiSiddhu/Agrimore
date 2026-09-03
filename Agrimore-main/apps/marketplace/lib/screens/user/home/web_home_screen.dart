@@ -321,7 +321,7 @@ class _WebHomeScreenState extends State<WebHomeScreen>
             shape: BoxShape.circle,
             boxShadow: [
               BoxShadow(
-                color: AppColors.primary.withOpacity(0.3),
+                color: AppColors.primary.withValues(alpha: 0.3),
                 blurRadius: 20,
                 offset: const Offset(0, 8),
               ),
@@ -374,7 +374,7 @@ class _WebHomeScreenState extends State<WebHomeScreen>
                 borderRadius: BorderRadius.circular(20),
                 boxShadow: [
                   BoxShadow(
-                    color: Colors.black.withOpacity(0.08),
+                    color: Colors.black.withValues(alpha: 0.08),
                     blurRadius: 20,
                     offset: const Offset(0, 8),
                   ),
@@ -426,13 +426,13 @@ class _WebHomeScreenState extends State<WebHomeScreen>
                                 gradient: LinearGradient(
                                   colors: [
                                     AppColors.error,
-                                    AppColors.error.withOpacity(0.8),
+                                    AppColors.error.withValues(alpha: 0.8),
                                   ],
                                 ),
                                 borderRadius: BorderRadius.circular(14),
                                 boxShadow: [
                                   BoxShadow(
-                                    color: AppColors.error.withOpacity(0.4),
+                                    color: AppColors.error.withValues(alpha: 0.4),
                                     blurRadius: 12,
                                     offset: const Offset(0, 4),
                                   ),
@@ -517,7 +517,7 @@ class _WebHomeScreenState extends State<WebHomeScreen>
                               vertical: 8,
                             ),
                             decoration: BoxDecoration(
-                              color: Colors.black.withOpacity(0.7),
+                              color: Colors.black.withValues(alpha: 0.7),
                               borderRadius: BorderRadius.circular(12),
                             ),
                             child: Row(
@@ -742,7 +742,7 @@ class _WebHomeScreenState extends State<WebHomeScreen>
           height: 40,
           decoration: BoxDecoration(
             gradient: LinearGradient(
-              colors: [AppColors.primary, AppColors.primary.withOpacity(0.5)],
+              colors: [AppColors.primary, AppColors.primary.withValues(alpha: 0.5)],
               begin: Alignment.topCenter,
               end: Alignment.bottomCenter,
             ),
@@ -929,7 +929,7 @@ class _WebHomeScreenState extends State<WebHomeScreen>
               child: Icon(
                 Icons.shopping_bag_outlined,
                 size: 90,
-                color: AppColors.primary.withOpacity(0.5),
+                color: AppColors.primary.withValues(alpha: 0.5),
               ),
             ),
             const SizedBox(height: 32),
@@ -959,8 +959,8 @@ class _WebHomeScreenState extends State<WebHomeScreen>
       decoration: BoxDecoration(
         gradient: LinearGradient(
           colors: [
-            AppColors.primary.withOpacity(0.08),
-            AppColors.primary.withOpacity(0.03),
+            AppColors.primary.withValues(alpha: 0.08),
+            AppColors.primary.withValues(alpha: 0.03),
           ],
           begin: Alignment.topLeft,
           end: Alignment.bottomRight,
@@ -1079,7 +1079,7 @@ class _StickyWebSearchBarDelegate extends SliverPersistentHeaderDelegate {
                 borderRadius: BorderRadius.circular(20),
                 boxShadow: [
                   BoxShadow(
-                    color: AppColors.primary.withOpacity(0.12),
+                    color: AppColors.primary.withValues(alpha: 0.12),
                     blurRadius: 30,
                     offset: const Offset(0, 8),
                   ),

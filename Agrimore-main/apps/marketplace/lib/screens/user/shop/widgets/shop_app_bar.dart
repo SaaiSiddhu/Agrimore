@@ -212,7 +212,7 @@ class _ShopAppBarState extends State<ShopAppBar>
             boxShadow: [
               BoxShadow(
                 color: (isDark ? Colors.black : const Color(0xFF2D7D3C))
-                    .withOpacity(isDark ? 0.5 : 0.3),
+                    .withValues(alpha: isDark ? 0.5 : 0.3),
                 blurRadius: 20,
                 offset: const Offset(0, 8),
               ),
@@ -333,7 +333,7 @@ class _ShopAppBarState extends State<ShopAppBar>
         borderRadius: BorderRadius.circular(12),
         boxShadow: [
           BoxShadow(
-            color: Colors.black.withOpacity(isDark ? 0.25 : 0.1),
+            color: Colors.black.withValues(alpha: isDark ? 0.25 : 0.1),
             blurRadius: 10,
             offset: const Offset(0, 3),
           ),
@@ -419,16 +419,16 @@ class _ShopAppBarState extends State<ShopAppBar>
           padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 6),
           decoration: BoxDecoration(
             color: isDark
-                ? Colors.white.withOpacity(0.08)
-                : Colors.white.withOpacity(0.12),
+                ? Colors.white.withValues(alpha: 0.08)
+                : Colors.white.withValues(alpha: 0.12),
             borderRadius: BorderRadius.circular(8),
             border: Border.all(
-              color: Colors.white.withOpacity(isDark ? 0.15 : 0.25),
+              color: Colors.white.withValues(alpha: isDark ? 0.15 : 0.25),
               width: 1,
             ),
             boxShadow: [
               BoxShadow(
-                color: Colors.black.withOpacity(isDark ? 0.2 : 0.1),
+                color: Colors.black.withValues(alpha: isDark ? 0.2 : 0.1),
                 blurRadius: 8,
                 offset: const Offset(0, 2),
               ),
@@ -449,7 +449,7 @@ class _ShopAppBarState extends State<ShopAppBar>
                       : 'Deliver to: ${displayLoc.isEmpty ? 'Set Location' : displayLoc}',
                   style: TextStyle(
                     fontSize: 10,
-                    color: Colors.white.withOpacity(isDark ? 0.9 : 0.85),
+                    color: Colors.white.withValues(alpha: isDark ? 0.9 : 0.85),
                     fontWeight: FontWeight.w500,
                     height: 1.3,
                   ),
@@ -481,7 +481,7 @@ class _ShopAppBarState extends State<ShopAppBar>
                       color: (isDark
                               ? AppColors.primaryLight
                               : const Color(0xFF2D7D3C))
-                          .withOpacity(0.1),
+                          .withValues(alpha: 0.1),
                       borderRadius: BorderRadius.circular(4),
                     ),
                     child: Text(
@@ -525,15 +525,15 @@ class _ShopAppBarState extends State<ShopAppBar>
               Container(
                 padding: const EdgeInsets.all(8),
                 decoration: BoxDecoration(
-                  color: Colors.white.withOpacity(isDark ? 0.15 : 0.2),
+                  color: Colors.white.withValues(alpha: isDark ? 0.15 : 0.2),
                   borderRadius: BorderRadius.circular(10),
                   border: Border.all(
-                    color: Colors.white.withOpacity(isDark ? 0.2 : 0.3),
+                    color: Colors.white.withValues(alpha: isDark ? 0.2 : 0.3),
                     width: 1,
                   ),
                   boxShadow: [
                     BoxShadow(
-                      color: Colors.black.withOpacity(isDark ? 0.2 : 0.1),
+                      color: Colors.black.withValues(alpha: isDark ? 0.2 : 0.1),
                       blurRadius: 8,
                       offset: const Offset(0, 2),
                     ),
@@ -550,12 +550,12 @@ class _ShopAppBarState extends State<ShopAppBar>
                         const EdgeInsets.symmetric(horizontal: 5, vertical: 1),
                     decoration: BoxDecoration(
                       gradient: LinearGradient(
-                        colors: [badgeColor.withOpacity(0.9), badgeColor],
+                        colors: [badgeColor.withValues(alpha: 0.9), badgeColor],
                       ),
                       borderRadius: BorderRadius.circular(10),
                       boxShadow: [
                         BoxShadow(
-                          color: badgeColor.withOpacity(0.7),
+                          color: badgeColor.withValues(alpha: 0.7),
                           blurRadius: 10,
                           offset: const Offset(0, 3),
                         ),
@@ -587,7 +587,7 @@ class PremiumPatternPainter extends CustomPainter {
   @override
   void paint(Canvas canvas, Size size) {
     final paint = Paint()
-      ..color = Colors.white.withOpacity(0.1)
+      ..color = Colors.white.withValues(alpha: 0.1)
       ..strokeWidth = 1;
 
     for (int i = 0; i < size.width; i += 40) {
@@ -607,7 +607,7 @@ class PremiumPatternPainter extends CustomPainter {
     }
 
     final circlePaint = Paint()
-      ..color = Colors.white.withOpacity(0.08)
+      ..color = Colors.white.withValues(alpha: 0.08)
       ..style = PaintingStyle.stroke
       ..strokeWidth = 1.5;
 
@@ -620,7 +620,7 @@ class PremiumPatternPainter extends CustomPainter {
     }
 
     final accentPaint = Paint()
-      ..color = Colors.white.withOpacity(0.05)
+      ..color = Colors.white.withValues(alpha: 0.05)
       ..strokeWidth = 1;
 
     for (int i = 0; i < (size.width + size.height); i += 80) {

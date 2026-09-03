@@ -672,7 +672,7 @@ class _MobileShopScreenState extends State<MobileShopScreen>
         color: backgroundColor,
         borderRadius: BorderRadius.circular(20),
         elevation: isActive ? 3 : 0,
-        shadowColor: accentColor.withOpacity(0.25),
+        shadowColor: accentColor.withValues(alpha: 0.25),
         child: InkWell(
           onTap: onTap,
           borderRadius: BorderRadius.circular(20),
@@ -742,7 +742,7 @@ class _MobileShopScreenState extends State<MobileShopScreen>
         ),
         decoration: BoxDecoration(
           color: isActive
-              ? accentColor.withOpacity(0.1)
+              ? accentColor.withValues(alpha: 0.1)
               : (isDark ? const Color(0xFF2A2A2A) : Colors.white),
           borderRadius: BorderRadius.circular(20),
           border: Border.all(
@@ -910,14 +910,14 @@ class _MobileShopScreenState extends State<MobileShopScreen>
                 colors: isDark
                     ? [
                         AppColors.primaryLight,
-                        AppColors.primaryLight.withOpacity(0.5)
+                        AppColors.primaryLight.withValues(alpha: 0.5)
                       ]
-                    : [AppColors.primary, AppColors.primary.withOpacity(0.5)],
+                    : [AppColors.primary, AppColors.primary.withValues(alpha: 0.5)],
               ),
               boxShadow: [
                 BoxShadow(
                   color: (isDark ? AppColors.primaryLight : AppColors.primary)
-                      .withOpacity(0.3),
+                      .withValues(alpha: 0.3),
                   blurRadius: 8,
                 ),
               ],
@@ -940,7 +940,7 @@ class _MobileShopScreenState extends State<MobileShopScreen>
             boxShadow: [
               BoxShadow(
                 color: (isDark ? AppColors.primaryLight : AppColors.primary)
-                    .withOpacity(0.4),
+                    .withValues(alpha: 0.4),
                 blurRadius: 20,
                 offset: const Offset(0, 8),
               ),
@@ -997,7 +997,7 @@ class _MobileShopScreenState extends State<MobileShopScreen>
             ),
             boxShadow: [
               BoxShadow(
-                color: Colors.black.withOpacity(isDark ? 0.4 : 0.1),
+                color: Colors.black.withValues(alpha: isDark ? 0.4 : 0.1),
                 blurRadius: 12,
                 offset: const Offset(0, 4),
               ),
@@ -1140,7 +1140,7 @@ class _MobileShopScreenState extends State<MobileShopScreen>
             },
             child: Material(
               elevation: 8,
-              shadowColor: accentGreen.withOpacity(0.4),
+              shadowColor: accentGreen.withValues(alpha: 0.4),
               borderRadius: BorderRadius.circular(16),
               child: InkWell(
                 onTap: () {
@@ -1166,7 +1166,7 @@ class _MobileShopScreenState extends State<MobileShopScreen>
                         padding: const EdgeInsets.symmetric(
                             horizontal: 10, vertical: 4),
                         decoration: BoxDecoration(
-                          color: Colors.white.withOpacity(0.25),
+                          color: Colors.white.withValues(alpha: 0.25),
                           borderRadius: BorderRadius.circular(10),
                         ),
                         child: Text(
@@ -1236,12 +1236,12 @@ class _MobileShopScreenState extends State<MobileShopScreen>
                         gradient: LinearGradient(
                           colors: isDark
                               ? [
-                                  AppColors.primaryLight.withOpacity(0.2),
-                                  AppColors.primaryLight.withOpacity(0.05),
+                                  AppColors.primaryLight.withValues(alpha: 0.2),
+                                  AppColors.primaryLight.withValues(alpha: 0.05),
                                 ]
                               : [
-                                  AppColors.primary.withOpacity(0.2),
-                                  AppColors.primary.withOpacity(0.05),
+                                  AppColors.primary.withValues(alpha: 0.2),
+                                  AppColors.primary.withValues(alpha: 0.05),
                                 ],
                         ),
                         shape: BoxShape.circle,
@@ -1309,7 +1309,7 @@ class _MobileShopScreenState extends State<MobileShopScreen>
                   elevation: 8,
                   shadowColor:
                       (isDark ? AppColors.primaryLight : AppColors.primary)
-                          .withOpacity(0.4),
+                          .withValues(alpha: 0.4),
                 ),
               ),
             ],
@@ -1328,7 +1328,7 @@ class _MobileShopScreenState extends State<MobileShopScreen>
               Container(
                 padding: const EdgeInsets.all(8),
                 decoration: BoxDecoration(
-                  color: Colors.white.withOpacity(0.2),
+                  color: Colors.white.withValues(alpha: 0.2),
                   borderRadius: BorderRadius.circular(8),
                 ),
                 child: const Icon(Icons.check_circle_rounded,

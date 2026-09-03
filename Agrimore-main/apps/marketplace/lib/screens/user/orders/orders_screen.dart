@@ -213,12 +213,12 @@ class _OrdersScreenState extends State<OrdersScreen> with TickerProviderStateMix
                       padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 14),
                       decoration: BoxDecoration(
                         gradient: LinearGradient(
-                          colors: [_toastColor, _toastColor.withOpacity(0.9)],
+                          colors: [_toastColor, _toastColor.withValues(alpha: 0.9)],
                         ),
                         borderRadius: BorderRadius.circular(16),
                         boxShadow: [
                           BoxShadow(
-                            color: _toastColor.withOpacity(0.4),
+                            color: _toastColor.withValues(alpha: 0.4),
                             blurRadius: 20,
                             offset: const Offset(0, 8),
                           ),
@@ -229,7 +229,7 @@ class _OrdersScreenState extends State<OrdersScreen> with TickerProviderStateMix
                           Container(
                             padding: const EdgeInsets.all(6),
                             decoration: BoxDecoration(
-                              color: Colors.white.withOpacity(0.2),
+                              color: Colors.white.withValues(alpha: 0.2),
                               shape: BoxShape.circle,
                             ),
                             child: Icon(_toastIcon, color: Colors.white, size: 18),
@@ -287,7 +287,7 @@ class _OrdersScreenState extends State<OrdersScreen> with TickerProviderStateMix
           // Back Button
           Container(
             decoration: BoxDecoration(
-              color: Colors.white.withOpacity(0.2),
+              color: Colors.white.withValues(alpha: 0.2),
               borderRadius: BorderRadius.circular(10),
             ),
             child: Material(
@@ -366,7 +366,7 @@ class _OrdersScreenState extends State<OrdersScreen> with TickerProviderStateMix
                       boxShadow: isSelected
                           ? [
                               BoxShadow(
-                                color: accentColor.withOpacity(0.2),
+                                color: accentColor.withValues(alpha: 0.2),
                                 blurRadius: 8,
                                 offset: const Offset(0, 2),
                               )
@@ -493,12 +493,12 @@ class _OrdersScreenState extends State<OrdersScreen> with TickerProviderStateMix
             Container(
               decoration: BoxDecoration(
                 gradient: LinearGradient(
-                  colors: [accentColor, accentColor.withOpacity(0.8)],
+                  colors: [accentColor, accentColor.withValues(alpha: 0.8)],
                 ),
                 borderRadius: BorderRadius.circular(12),
                 boxShadow: [
                   BoxShadow(
-                    color: accentColor.withOpacity(0.3),
+                    color: accentColor.withValues(alpha: 0.3),
                     blurRadius: 12,
                     offset: const Offset(0, 4),
                   )
@@ -589,7 +589,7 @@ class _OrdersScreenState extends State<OrdersScreen> with TickerProviderStateMix
               borderRadius: BorderRadius.circular(12),
               boxShadow: [
                 BoxShadow(
-                  color: Colors.red[700]!.withOpacity(0.3),
+                  color: Colors.red[700]!.withValues(alpha: 0.3),
                   blurRadius: 12,
                   offset: const Offset(0, 4),
                 )
@@ -744,7 +744,7 @@ class _OrderCardState extends State<_OrderCard> with SingleTickerProviderStateMi
               border: Border.all(color: widget.isDark ? Colors.grey[800]! : Colors.grey[200]!, width: 1),
               boxShadow: [
                 BoxShadow(
-                  color: Colors.black.withOpacity(widget.isDark ? 0.3 : 0.06),
+                  color: Colors.black.withValues(alpha: widget.isDark ? 0.3 : 0.06),
                   blurRadius: 12,
                   offset: const Offset(0, 3),
                 ),
@@ -894,7 +894,7 @@ class _OrderCardState extends State<_OrderCard> with SingleTickerProviderStateMi
           borderRadius: BorderRadius.circular(10),
         ),
         elevation: 4,
-        shadowColor: accentColor.withOpacity(0.3),
+        shadowColor: accentColor.withValues(alpha: 0.3),
       ),
       child: Row(
         children: [
@@ -1130,11 +1130,11 @@ class _OrderCardState extends State<_OrderCard> with SingleTickerProviderStateMi
                   vertical: 3,
                 ),
                 decoration: BoxDecoration(
-                  color: Colors.black.withOpacity(0.85),
+                  color: Colors.black.withValues(alpha: 0.85),
                   borderRadius: BorderRadius.circular(5),
                   boxShadow: [
                     BoxShadow(
-                      color: Colors.black.withOpacity(0.4),
+                      color: Colors.black.withValues(alpha: 0.4),
                       blurRadius: 4,
                       offset: const Offset(0, 1),
                     )
@@ -1210,7 +1210,7 @@ class _StatusBadge extends StatelessWidget {
         color: config['color'].withValues(alpha: 0.1),
         borderRadius: BorderRadius.circular(8),
         border: Border.all(
-          color: config['color'].withOpacity(0.4),
+          color: config['color'].withValues(alpha: 0.4),
           width: 1,
         ),
       ),

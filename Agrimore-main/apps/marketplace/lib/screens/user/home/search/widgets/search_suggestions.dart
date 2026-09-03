@@ -27,7 +27,7 @@ class SearchSuggestions extends StatelessWidget {
               Icon(
                 Icons.search_off_rounded,
                 size: 64,
-                color: AppColors.grey.withOpacity(0.5),
+                color: AppColors.grey.withValues(alpha: 0.5),
               ),
               const SizedBox(height: 16),
               Text(

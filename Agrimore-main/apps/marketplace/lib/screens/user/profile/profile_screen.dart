@@ -471,11 +471,11 @@ class _ProfileScreenState extends State<ProfileScreen> {
                         height: 84,
                         decoration: BoxDecoration(
                           shape: BoxShape.circle,
-                          color: Colors.white.withOpacity(0.15),
+                          color: Colors.white.withValues(alpha: 0.15),
                           border: Border.all(color: Colors.white, width: 2.5),
                           boxShadow: [
                             BoxShadow(
-                              color: Colors.black.withOpacity(0.2),
+                              color: Colors.black.withValues(alpha: 0.2),
                               blurRadius: 12,
                               offset: const Offset(0, 4),
                             ),
@@ -514,7 +514,7 @@ class _ProfileScreenState extends State<ProfileScreen> {
                     const SizedBox(height: 4),
                     Text(
                       subtitleParts.join(' • '),
-                      style: TextStyle(fontSize: 12.5, color: Colors.white.withOpacity(0.85)),
+                      style: TextStyle(fontSize: 12.5, color: Colors.white.withValues(alpha: 0.85)),
                     ),
                   ],
                 ],
@@ -540,9 +540,9 @@ class _ProfileScreenState extends State<ProfileScreen> {
         height: 36,
         decoration: BoxDecoration(
           shape: BoxShape.circle,
-          color: Colors.white.withOpacity(0.92),
+          color: Colors.white.withValues(alpha: 0.92),
           boxShadow: [
-            BoxShadow(color: Colors.black.withOpacity(0.15), blurRadius: 6, offset: const Offset(0, 2)),
+            BoxShadow(color: Colors.black.withValues(alpha: 0.15), blurRadius: 6, offset: const Offset(0, 2)),
           ],
         ),
         child: const Icon(Icons.arrow_back_rounded, size: 20, color: Colors.black87),
@@ -621,7 +621,7 @@ class _ProfileScreenState extends State<ProfileScreen> {
             ),
             boxShadow: isDark ? null : [
               BoxShadow(
-                color: Colors.black.withOpacity(0.04),
+                color: Colors.black.withValues(alpha: 0.04),
                 blurRadius: 10,
                 offset: const Offset(0, 2),
               ),
@@ -634,7 +634,7 @@ class _ProfileScreenState extends State<ProfileScreen> {
                   Container(
                     padding: const EdgeInsets.all(12),
                     decoration: BoxDecoration(
-                      color: isDark ? iconColor.withOpacity(0.15) : color,
+                      color: isDark ? iconColor.withValues(alpha: 0.15) : color,
                       borderRadius: BorderRadius.circular(12),
                     ),
                     child: Icon(icon, color: iconColor, size: 24),
@@ -962,7 +962,7 @@ class _ProfileScreenState extends State<ProfileScreen> {
         children: [
           Container(
             padding: const EdgeInsets.all(16),
-            decoration: BoxDecoration(color: color.withOpacity(0.15), shape: BoxShape.circle),
+            decoration: BoxDecoration(color: color.withValues(alpha: 0.15), shape: BoxShape.circle),
             child: Icon(icon, color: color, size: 28),
           ),
           const SizedBox(height: 8),

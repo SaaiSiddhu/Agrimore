@@ -85,7 +85,7 @@ class _SellerPanelScreenState extends State<SellerPanelScreen> {
       child: Container(
         padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 8),
         decoration: BoxDecoration(
-          color: isActive ? const Color(0xFF145A32).withOpacity(0.1) : Colors.transparent,
+          color: isActive ? const Color(0xFF145A32).withValues(alpha: 0.1) : Colors.transparent,
           borderRadius: BorderRadius.circular(12),
         ),
         child: Column(
@@ -531,7 +531,7 @@ class _SellerOrdersPlaceholderState extends State<_SellerOrdersPlaceholder> {
                                           Container(
                                             padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 3),
                                             decoration: BoxDecoration(
-                                              color: color.withOpacity(0.12),
+                                              color: color.withValues(alpha: 0.12),
                                               borderRadius: BorderRadius.circular(8),
                                             ),
                                             child: Text(status.toUpperCase(),
