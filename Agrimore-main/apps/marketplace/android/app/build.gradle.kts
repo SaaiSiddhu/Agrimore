@@ -3,6 +3,8 @@ plugins {
     id("kotlin-android")
     // Firebase
     id("com.google.gms.google-services")
+    // Firebase Crashlytics - Phase M2 (crash reporting)
+    id("com.google.firebase.crashlytics")
     // Flutter
     id("dev.flutter.flutter-gradle-plugin")
 }
@@ -92,8 +94,15 @@ android {
             )
             
             signingConfig = signingConfigs.getByName("release")
-            
-            buildConfigField("Boolean", "ENABLE_CRASHLYTICS", "false")
+
+            // Phase M2: this native BuildConfig constant is informational only — Flutter
+            // code cannot read Android BuildConfig fields without a platform channel, so
+            // it is NOT what actually gates Crashlytics reporting. The real gate is
+            // kReleaseMode, checked directly in Dart at
+            // FirebaseCrashlytics.instance.setCrashlyticsCollectionEnabled(kReleaseMode)
+            // in lib/main.dart. This field is kept true/false in parallel purely so a
+            // native-code reader of this file sees the same intent the Dart gate encodes.
+            buildConfigField("Boolean", "ENABLE_CRASHLYTICS", "true")
             buildConfigField("Boolean", "DEBUG_MODE", "false")
         }
     }

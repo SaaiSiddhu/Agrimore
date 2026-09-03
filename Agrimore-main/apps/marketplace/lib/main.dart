@@ -1,9 +1,10 @@
 import 'dart:async';
 import 'package:flutter/material.dart';
-import 'package:flutter/foundation.dart' show kIsWeb;
+import 'package:flutter/foundation.dart' show kIsWeb, kReleaseMode, PlatformDispatcher;
 import 'package:flutter/services.dart';
 import 'package:firebase_core/firebase_core.dart';
 import 'package:firebase_auth/firebase_auth.dart';
+import 'package:firebase_crashlytics/firebase_crashlytics.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:cloud_functions/cloud_functions.dart';
 import 'package:provider/provider.dart';
@@ -97,6 +98,30 @@ void main() async {
     // Phase 17, Workstream 2: monitoring mode only — see
     // AppCheckService's header comment. Never blocks startup.
     await AppCheckService.activate();
+
+    // Phase M2: real crash reporting. Debug builds stay silent — kReleaseMode is
+    // the actual gate (not the native ENABLE_CRASHLYTICS BuildConfig field in
+    // android/app/build.gradle.kts, which Dart code cannot read without a
+    // platform channel; that field is kept in sync purely as documentation for
+    // native-code readers). Forwards Flutter framework errors AND uncaught
+    // async/platform errors. PII-safe: Crashlytics receives stack traces and
+    // exception messages only — no setCustomKey/log call anywhere in this app
+    // sends phone numbers, addresses, order contents or payment identifiers.
+    await FirebaseCrashlytics.instance.setCrashlyticsCollectionEnabled(kReleaseMode);
+    FlutterError.onError = (FlutterErrorDetails details) {
+      FlutterError.presentError(details);
+      if (kReleaseMode) {
+        FirebaseCrashlytics.instance.recordFlutterFatalError(details);
+      }
+    };
+    PlatformDispatcher.instance.onError = (Object error, StackTrace stack) {
+      if (kReleaseMode) {
+        FirebaseCrashlytics.instance.recordError(error, stack, fatal: true);
+      } else {
+        debugPrint('⚠️ Uncaught async error: $error\n$stack');
+      }
+      return true;
+    };
   } catch (e) {
     debugPrint('❌ Firebase error: $e');
   }

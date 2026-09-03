@@ -79,12 +79,22 @@
         <meta-data
             android:name="firebase_analytics_collection_deferred"
             android:value="true"/>
+        <!-- Phase M2: Crashlytics has its own dedicated collection flag, verified
+             independent of firebase_data_collection_default_enabled below by reading
+             the firebase_crashlytics plugin's Android source directly (it reads only
+             this key). The real debug/release gate is kReleaseMode in main.dart, not
+             this manifest value — see FirebaseCrashlytics.instance
+             .setCrashlyticsCollectionEnabled(kReleaseMode) there. This is left "true"
+             so the runtime call is what actually decides, not a build-time constant. -->
         <meta-data
             android:name="firebase_crashlytics_collection_enabled"
-            android:value="false"/>
+            android:value="true"/>
         <meta-data
             android:name="firebase_messaging_auto_init_enabled"
             android:value="false"/>
+        <!-- Deliberately left false — this flag governs ALL Firebase products
+             (Analytics included), not just Crashlytics, and flipping it is a bigger
+             decision than "turn on crash reporting". Crashlytics does not need it. -->
         <meta-data
             android:name="firebase_data_collection_default_enabled"
             android:value="false"/>

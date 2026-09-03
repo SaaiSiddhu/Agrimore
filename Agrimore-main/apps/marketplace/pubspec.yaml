@@ -36,6 +36,11 @@ dependencies:
   cloud_firestore: ^5.4.4
   firebase_messaging: ^15.1.3
   firebase_app_check: ^0.3.1
+  # Phase M2: pinned to the 4.x line (not the latest 5.x) because 5.x requires
+  # firebase_core ^4.14.0, a breaking major bump this app hasn't made. 4.3.10 is
+  # the newest release still compatible with the firebase_core 3.15.2 already
+  # resolved here.
+  firebase_crashlytics: ^4.3.10
 
   # Authentication
   google_sign_in: ^6.2.1
