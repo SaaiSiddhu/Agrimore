@@ -10,8 +10,10 @@
 //
 // deleteUserData is a v1 onCall (firebase-functions/v1 — see the file's own
 // header comment for why: production is v1 and there is no in-place
-// Gen1->Gen2 upgrade), wrapped and invoked as `wrapped({ data: payload, auth })`,
-// same convention as every other callable test in this directory.
+// Gen1->Gen2 upgrade), wrapped and invoked as `wrapped(data, {auth})` — v1's
+// two-positional-argument form, NOT the v2 single-object `{data, auth}` form
+// most other callable tests in this directory use (see callAndCapture below
+// for why that distinction matters).
 //
 // Run with: node scripts/phase17_delete_user_data_test.js
 process.env.FIRESTORE_EMULATOR_HOST = "127.0.0.1:8080";
