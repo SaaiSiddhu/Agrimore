@@ -365,6 +365,66 @@ class _MobileCartScreenState extends State<MobileCartScreen>
     }
   }
 
+  // Restored — see _buildBlinkitAppBar's own comment for why. Modernized to
+  // this file's current async-safety convention (isolated context.mounted-
+  // shaped checks, a distinct dialogContext) rather than the compound
+  // `confirmed == true && mounted` shape this had before it was deleted,
+  // which the analyzer doesn't reliably recognize as a real guard.
+  Future<void> _showClearCartDialog(CartProvider cartProvider) async {
+    HapticFeedback.mediumImpact();
+
+    final confirmed = await showDialog<bool>(
+      context: context,
+      builder: (dialogContext) => AlertDialog(
+        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(20)),
+        title: Row(
+          children: [
+            Container(
+              padding: const EdgeInsets.all(8),
+              decoration: BoxDecoration(
+                color: AppColors.error.withValues(alpha: 0.1),
+                borderRadius: BorderRadius.circular(8),
+              ),
+              child: const Icon(Icons.delete_outline, color: AppColors.error),
+            ),
+            const SizedBox(width: 12),
+            const Text('Clear Cart'),
+          ],
+        ),
+        content: const Text(
+          'Are you sure you want to remove all items from your cart? This action cannot be undone.',
+        ),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.pop(dialogContext, false),
+            child: Text(
+              'Cancel',
+              style: TextStyle(color: AppColors.textSecondary),
+            ),
+          ),
+          ElevatedButton(
+            onPressed: () => Navigator.pop(dialogContext, true),
+            style: ElevatedButton.styleFrom(
+              backgroundColor: AppColors.error,
+              shape: RoundedRectangleBorder(
+                borderRadius: BorderRadius.circular(10),
+              ),
+            ),
+            child:
+                const Text('Clear All', style: TextStyle(color: Colors.white)),
+          ),
+        ],
+      ),
+    );
+
+    if (confirmed != true) return;
+    await cartProvider.clearCart();
+    _bogoFreeItems.clear();
+    if (!mounted) return;
+    HapticFeedback.heavyImpact();
+    SnackbarHelper.showSuccess(context, 'Cart cleared successfully');
+  }
+
   @override
   Widget build(BuildContext context) {
     final isDark = context.watch<ThemeProvider>().isDarkMode;
@@ -384,7 +444,7 @@ class _MobileCartScreenState extends State<MobileCartScreen>
             if (cartProvider.isEmpty) {
               return Column(
                 children: [
-                  _buildBlinkitAppBar(isDark, cardColor),
+                  _buildBlinkitAppBar(isDark, cardColor, cartProvider),
                   Expanded(
                     child: EmptyCart(
                       onStartShopping: () {
@@ -415,7 +475,7 @@ class _MobileCartScreenState extends State<MobileCartScreen>
             return Column(
               children: [
                 // Blinkit-style App Bar
-                _buildBlinkitAppBar(isDark, cardColor),
+                _buildBlinkitAppBar(isDark, cardColor, cartProvider),
 
                 // Main scrollable content
                 Expanded(
@@ -507,7 +567,8 @@ class _MobileCartScreenState extends State<MobileCartScreen>
   }
 
   // --- Blinkit-style App Bar ---
-  Widget _buildBlinkitAppBar(bool isDark, Color cardColor) {
+  Widget _buildBlinkitAppBar(
+      bool isDark, Color cardColor, CartProvider cartProvider) {
     return Container(
       padding: const EdgeInsets.fromLTRB(8, 8, 16, 12),
       decoration: BoxDecoration(
@@ -567,6 +628,30 @@ class _MobileCartScreenState extends State<MobileCartScreen>
             ),
           ),
           const Spacer(),
+          // Restored: this app bar's earlier revision had a Clear Cart
+          // button; the redesign into this Blinkit-style bar dropped it
+          // without a replacement anywhere else in the UI, leaving a fully
+          // working feature (see _showClearCartDialog) with no way to reach
+          // it. Hidden when the cart is already empty — nothing to clear.
+          if (!cartProvider.isEmpty)
+            GestureDetector(
+              onTap: () => _showClearCartDialog(cartProvider),
+              child: Container(
+                width: 36,
+                height: 36,
+                decoration: BoxDecoration(
+                  shape: BoxShape.circle,
+                  color: isDark
+                      ? Colors.white.withValues(alpha: 0.08)
+                      : const Color(0xFFF2F2F2),
+                ),
+                child: Icon(
+                  Icons.delete_outline,
+                  size: 19,
+                  color: isDark ? Colors.white : Colors.black87,
+                ),
+              ),
+            ),
         ],
       ),
     );
@@ -2980,6 +3065,14 @@ class _MobileCartScreenState extends State<MobileCartScreen>
           'couponCode': couponProvider.appliedCoupon!.code,
         'deliveryCharge': deliveryCharge,
         'tax': 0.0,
+        // _deliveryNote is captured from the delivery-instructions TextField
+        // above but was never included in this payload — createOrder.ts has
+        // always accepted and stored `notes` correctly (see its own
+        // definition), this screen just never sent it, so every note typed
+        // here was silently discarded before reaching the order. Mirrors
+        // payment_method_screen.dart's own createOrder call, the other of
+        // the two call sites, which already sends notes correctly.
+        if (_deliveryNote.trim().isNotEmpty) 'notes': _deliveryNote.trim(),
       });
 
       final data = result.data;
