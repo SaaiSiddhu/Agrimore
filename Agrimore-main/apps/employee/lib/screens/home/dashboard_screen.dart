@@ -76,38 +76,41 @@ class _DashboardScreenState extends State<DashboardScreen> {
           ),
         ],
       ),
-      body: RefreshIndicator(
-        onRefresh: () async {},
-        child: ListView(
-          padding: const EdgeInsets.all(16),
-          children: [
-            // Phase 16B, Workstream 3b: first thing on the screen. This is
-            // how an associate is attributed at all, so it outranks the
-            // wallet figures below it.
-            //
-            // Phase 16C, Workstream 1: the associate-code card and the new
-            // onboarding-fee-status card both read nothing but
-            // employees/{uid} — so they now share ONE StreamBuilder/
-            // listener on that document instead of each opening its own.
-            // Two independent `.snapshots()` calls on the same document is
-            // a real, avoidable doubling of ongoing read cost for a screen
-            // every associate opens regularly (locked decision 6). Placed
-            // directly below the code card: both describe the same
-            // "employees/{uid}" facts (the code, then the fee gate behind
-            // it), before the screen moves on to a different document
-            // (wallets/{uid}) for the money summary below.
-            _buildAssociateSection(uid),
-            const SizedBox(height: 16),
-            _buildCommissionSummary(uid),
-            const SizedBox(height: 16),
-            const Text(
-              'Orders Attributed To You',
-              style: TextStyle(fontSize: 16, fontWeight: FontWeight.w800),
-            ),
-            const SizedBox(height: 8),
-            _buildOrdersList(uid),
-          ],
-        ),
+      // Phase 21, Workstream 2: previously wrapped in a RefreshIndicator
+      // whose onRefresh did nothing — every value on this screen
+      // (employees/{uid}, wallets/{uid}, the orders list) is already a live
+      // StreamBuilder, so there was genuinely nothing for a manual refresh
+      // to fetch. A spinner that runs and changes nothing is misleading,
+      // not a safety net; removed rather than given a fake action to run.
+      body: ListView(
+        padding: const EdgeInsets.all(16),
+        children: [
+          // Phase 16B, Workstream 3b: first thing on the screen. This is
+          // how an associate is attributed at all, so it outranks the
+          // wallet figures below it.
+          //
+          // Phase 16C, Workstream 1: the associate-code card and the new
+          // onboarding-fee-status card both read nothing but
+          // employees/{uid} — so they now share ONE StreamBuilder/
+          // listener on that document instead of each opening its own.
+          // Two independent `.snapshots()` calls on the same document is
+          // a real, avoidable doubling of ongoing read cost for a screen
+          // every associate opens regularly (locked decision 6). Placed
+          // directly below the code card: both describe the same
+          // "employees/{uid}" facts (the code, then the fee gate behind
+          // it), before the screen moves on to a different document
+          // (wallets/{uid}) for the money summary below.
+          _buildAssociateSection(uid),
+          const SizedBox(height: 16),
+          _buildCommissionSummary(uid),
+          const SizedBox(height: 16),
+          const Text(
+            'Orders Attributed To You',
+            style: TextStyle(fontSize: 16, fontWeight: FontWeight.w800),
+          ),
+          const SizedBox(height: 8),
+          _buildOrdersList(uid),
+        ],
       ),
     );
   }

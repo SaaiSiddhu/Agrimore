@@ -255,6 +255,55 @@ class EmployeeAuthProvider extends ChangeNotifier {
     }
   }
 
+  // ============================================
+  // PASSWORD RESET (Phase 21, Workstream 3)
+  // ============================================
+  // Only relevant to the email+password path — an admin-created associate
+  // has a real password to forget. A self-applied associate signs in by
+  // phone OTP and has never had one; this method is simply never reachable
+  // for them (the UI only offers it on the email tab).
+
+  /// Sends a Firebase password-reset email to [email] via the shared
+  /// AuthService (already used by apps/admin's own "Forgot password?" for
+  /// exactly this purpose). Returns true once the request has been handled
+  /// in a way that is indistinguishable, from the caller's side, between a
+  /// real account and no account at all — see the `USER_NOT_FOUND` branch
+  /// below for why that isn't automatic.
+  Future<bool> sendPasswordReset(String email) async {
+    try {
+      _isLoading = true;
+      _error = null;
+      notifyListeners();
+
+      await _authService.sendPasswordResetEmail(email);
+      return true;
+    } on AuthException catch (e) {
+      // Verified directly against a real Auth emulator while building this
+      // phase: Firebase's sendOobCode endpoint genuinely DOES return a
+      // distinguishable EMAIL_NOT_FOUND for a non-existent account (a real,
+      // documented Firebase quirk, not the leak-proof behaviour it's often
+      // assumed to have) — AuthService surfaces this as
+      // UserNotFoundException, code 'USER_NOT_FOUND'. Treating it as a
+      // FAILURE like every other AuthException would let an attacker
+      // enumerate real associate emails by watching which ones "succeed"
+      // vs. "fail" here — exactly what this phase's own security invariant
+      // forbids. So this ONE code is deliberately normalised to success;
+      // every other AuthException still fails honestly.
+      if (e.code == 'USER_NOT_FOUND') {
+        return true;
+      }
+      _error = e.message;
+      return false;
+    } catch (e) {
+      debugPrint('Error sending associate password reset: $e');
+      _error = 'Failed to send reset email. Please try again.';
+      return false;
+    } finally {
+      _isLoading = false;
+      notifyListeners();
+    }
+  }
+
   /// Verifies [otp] and, on success, signs in and runs the same associate
   /// gate the email path runs.
   ///

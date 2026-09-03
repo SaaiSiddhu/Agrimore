@@ -64,6 +64,13 @@ void main() async {
   // swallows its own errors internally).
   await AppCheckService.activate();
   await NotificationService.initialize();
+  // Phase 21, Workstream 1: share this app's global navigatorKey with
+  // NotificationService so a tapped notification has a real BuildContext to
+  // navigate from — mirrors apps/marketplace/lib/main.dart's identical
+  // assignment. Without this, handleNotificationNavigation's
+  // navigatorKey.currentContext is always null, and it retries forever,
+  // silently, once per second, doing nothing.
+  NotificationService.navigatorKey = navigatorKey;
 
   // Force portrait orientation
   await SystemChrome.setPreferredOrientations([

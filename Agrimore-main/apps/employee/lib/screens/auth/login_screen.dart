@@ -442,7 +442,34 @@ class _LoginScreenState extends State<LoginScreen> {
               return null;
             },
           ),
-          const SizedBox(height: 24),
+          const SizedBox(height: 8),
+          // Phase 21, Workstream 3: only reachable on this tab. A
+          // self-applied associate signs in by phone OTP and has never had
+          // a password to forget — this deliberately has no phone-tab
+          // equivalent. Own Consumer (not the button's) so it shares the
+          // exact same auth.isLoading guard the Sign In button already
+          // uses, rather than a second, separate loading flag.
+          Consumer<EmployeeAuthProvider>(
+            builder: (context, auth, _) {
+              return Align(
+                alignment: Alignment.centerRight,
+                child: GestureDetector(
+                  onTap: auth.isLoading ? null : _handleForgotPassword,
+                  child: Text(
+                    'Forgot password?',
+                    style: TextStyle(
+                      fontSize: 13,
+                      fontWeight: FontWeight.w700,
+                      color: auth.isLoading
+                          ? colorScheme.onSurfaceVariant.withValues(alpha: 0.5)
+                          : colorScheme.primary,
+                    ),
+                  ),
+                ),
+              );
+            },
+          ),
+          const SizedBox(height: 16),
           Consumer<EmployeeAuthProvider>(
             builder: (context, auth, _) {
               return FilledButton(
@@ -485,6 +512,38 @@ class _LoginScreenState extends State<LoginScreen> {
       await auth.signIn(
         _emailController.text.trim(),
         _passwordController.text,
+      );
+    }
+  }
+
+  Future<void> _handleForgotPassword() async {
+    final email = _emailController.text.trim();
+    if (email.isEmpty) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(content: Text('Please enter your email first')),
+      );
+      return;
+    }
+
+    HapticFeedback.lightImpact();
+    final auth = context.read<EmployeeAuthProvider>();
+    auth.clearError();
+    final sent = await auth.sendPasswordReset(email);
+
+    if (!mounted) return;
+
+    if (sent) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(content: Text('Password reset link sent to $email')),
+      );
+    } else {
+      // auth.error is already set and rendered by the banner above; a
+      // SnackBar as well makes the failure impossible to miss.
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(
+          content: Text(
+              auth.error ?? 'Failed to send reset email. Please try again.'),
+        ),
       );
     }
   }

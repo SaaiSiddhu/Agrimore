@@ -9,14 +9,36 @@ import '../screens/home/dashboard_screen.dart';
 
 import 'package:agrimore_ui/agrimore_ui.dart';
 
+// Phase 21, Workstream 1: shared with NotificationService (see main.dart)
+// so a tapped notification has a real BuildContext to navigate from —
+// mirrors apps/marketplace/lib/app/app.dart:16's identical top-level
+// declaration exactly.
+final GlobalKey<NavigatorState> navigatorKey = GlobalKey<NavigatorState>();
+
 class App extends StatelessWidget {
   const App({super.key});
 
   @override
   Widget build(BuildContext context) {
     return MaterialApp(
+      navigatorKey: navigatorKey,
       title: 'Agrimore Sales Associate',
       debugShowCheckedModeBanner: false,
+      // Phase 21, Workstream 1: this app has no routes: map and no
+      // onGenerateRoute anywhere — every screen transition is a direct
+      // Navigator.push(MaterialPageRoute(...)) call. The shared
+      // NotificationService.handleNotificationNavigation exclusively calls
+      // Navigator.pushNamed(...), which — with no routes/onGenerateRoute to
+      // resolve it and no onUnknownRoute either — throws a FlutterError
+      // during route resolution rather than a catchable rejected Future.
+      // Without this, wiring navigatorKey above would turn a silently
+      // no-op notification tap into a visible crash. _AuthGate is already
+      // the single source of truth for "what should be showing right now"
+      // (dashboard/suspended/pending/login, based on live auth state), so
+      // routing every unresolved pushNamed here is correct for any
+      // possible current state, not just a generic fallback.
+      onUnknownRoute: (settings) =>
+          MaterialPageRoute(builder: (_) => const _AuthGate()),
       theme: ThemeData(
         colorScheme: ColorScheme.fromSeed(
           seedColor: const Color(0xFF2D7D3C),
