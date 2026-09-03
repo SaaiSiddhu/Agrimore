@@ -84,7 +84,7 @@ class EmployeeAuthProvider extends ChangeNotifier {
         // always creates users/{uid}, so this should be unreachable on the
         // phone path, but "should be unreachable" is not a reason to leave a
         // silent dead end in an auth flow.
-        await _rejectNonAssociate();
+        await _rejectNonAssociate(uid);
       }
     } catch (e) {
       // Being signed out mid-flight by the other pass is an EXPECTED way to
@@ -109,7 +109,7 @@ class EmployeeAuthProvider extends ChangeNotifier {
     if (!_user!.isEmployee) {
       debugPrint(
           '⛔ Unauthorized access attempt by non-associate: ${_user!.email}');
-      await _rejectNonAssociate();
+      await _rejectNonAssociate(uid);
       return;
     }
 
@@ -153,7 +153,16 @@ class EmployeeAuthProvider extends ChangeNotifier {
   /// ⚠️ Neither message may contain the substrings 'pending' or 'suspended'
   /// — app.dart's _AuthGate routes on those, and a stray match here would
   /// send a total stranger to the "pending approval" screen.
-  Future<void> _rejectNonAssociate() async {
+  Future<void> _rejectNonAssociate(String uid) async {
+    // CTO review, 2026-09-03: the same overlapping-pass guard the other
+    // three read/write sites in this file already carry, added here too —
+    // this call site was the one gap in the "identity guard before every
+    // _error write" claim. If the current Firebase Auth session is no
+    // longer this pass's target uid, another pass already resolved (and
+    // signed out) this same sign-in attempt, or a brand-new attempt has
+    // superseded it entirely; either way this pass's verdict is stale and
+    // must not sign out again or overwrite whatever _error is now current.
+    if (_auth.currentUser?.uid != uid) return;
     await _auth.signOut();
     _user = null;
     final subject = _signInMethod == AssociateSignInMethod.phone
