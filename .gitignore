@@ -50,15 +50,12 @@ android/key.properties
 .env.local
 .env.*.local
 
-# Phase 15, Workstream 6b: a real secrets file at the git root, previously
-# untracked but NOT gitignored — one `git add -A` away from being committed
-# forever. Never opened/printed its contents; this entry is the only
-# permitted interaction with it.
-/_env
-
 # Firebase
 google-services.json
+google-services*.json
 GoogleService-Info.plist
+.firebase/
+firebase-debug.log
 
 # Keystore
 *.keystore
@@ -80,7 +77,24 @@ GoogleService-Info.plist
 # Pub overrides
 pubspec_overrides.yaml
 
-.firebase/
+# Build outputs / release artifacts (regenerate via build scripts, don't commit)
+apk-output/
 apks/
 release-builds/
+*.apk
+*.aab
+build_log.txt
+*_analyze_latest.txt
+flutter_0*.png
+
+# Secret/keystore backup archives — NEVER commit these
+AGRIMORE_PLAYSTORE_AND_SECRET_KEYS_BACKUP*
+*_SECRET_KEYS_BACKUP*
+key.properties
+
+# Carried over from the outer git root's .gitignore when the Agrimore-main/
+# nesting was flattened into this directory. `_env` is a real secrets file
+# sitting at the repo root: untracked, and it must stay that way — one
+# `git add -A` away from being committed forever.
+/_env
 *.cache

@@ -6,7 +6,7 @@
       "runtimeExecutable": "bash",
       "runtimeArgs": [
         "-c",
-        "cd Agrimore-main/apps/marketplace && flutter run -d web-server --web-port 8090 --web-hostname 0.0.0.0"
+        "cd apps/marketplace && flutter run -d web-server --web-port 8090 --web-hostname 0.0.0.0"
       ],
       "port": 8090
     }
