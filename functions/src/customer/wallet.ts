@@ -179,12 +179,32 @@ export const verifyWalletTopup = onCall(
     const topupRef = db.collection("wallet_topups").doc(paymentId);
     const amountTxRef = db.collection("wallet_transactions").doc();
     const bonusTxRef = db.collection("wallet_transactions").doc();
+    // Phase FIX-1 (finding N-1, P0). Before this change wallet_topups/{paymentId}
+    // above was this function's ONLY idempotency anchor, and it lives in a
+    // collection nothing else reads. createOrder.ts and employee/activationCore.ts
+    // both anchor on verified_payments/{paymentId}'s consumedBy* markers, and
+    // neither reads wallet_topups. The two namespaces were therefore DISJOINT,
+    // so one captured Razorpay payment could buy goods AND credit the wallet —
+    // pay ₹5,000 once, receive ₹5,000 of goods plus ₹5,000 of balance plus the
+    // bonus coins, in either order. verified_payments/{paymentId} is now the
+    // single consumption namespace for all three spending paths; wallet_topups
+    // stays as the top-up record and its own retry anchor, it is simply no
+    // longer the only thing standing between a payment and a second spend.
+    const paymentRef = db.collection("verified_payments").doc(paymentId);
+    // Phase FIX-1 (finding N-6, P1). createRazorpayOrder writes this document for
+    // every Razorpay order it creates, stamped with the caller's uid — it is the
+    // binding between a payment and the person who actually paid. This function
+    // never read it, so anyone holding a valid (orderId, paymentId, signature)
+    // triple could credit THEIR OWN wallet with someone else's money.
+    const razorpayOrderRef = db.collection("razorpay_orders").doc(orderId);
 
     const result = await db.runTransaction(async (tx) => {
-      const [topupSnap, walletSnap, configSnap] = await Promise.all([
+      const [topupSnap, walletSnap, configSnap, paymentSnap, razorpayOrderSnap] = await Promise.all([
         tx.get(topupRef),
         tx.get(walletRef),
         tx.get(configRef),
+        tx.get(paymentRef),
+        tx.get(razorpayOrderRef),
       ]);
 
       if (topupSnap.exists) {
@@ -195,6 +215,74 @@ export const verifyWalletTopup = onCall(
           balanceAfter: existing.balanceAfter as number,
           coinsAfter: existing.coinsAfter as number,
         };
+      }
+
+      // ============================================
+      // Phase FIX-1, N-6: bind this payment to the caller BEFORE crediting.
+      // ============================================
+      // Fail-closed and ordered cheapest-signal-first. razorpay_orders/{orderId}
+      // is written by createRazorpayOrder for every order it creates, so a real
+      // top-up always has one; verified_payments/{paymentId}.userId is written by
+      // verifyRazorpayPayment when that path was used. A mismatch on EITHER is a
+      // hard refusal. Requiring at least one of them to exist is deliberate: a
+      // payment that went through neither cannot have been created by this
+      // platform for this user, and "no evidence of ownership" must not read as
+      // "owned by whoever asked" — that was exactly the N-6 hole.
+      const orderOwner = razorpayOrderSnap.exists
+        ? (razorpayOrderSnap.data()?.userId as string | undefined)
+        : undefined;
+      const paymentOwner = paymentSnap.exists
+        ? (paymentSnap.data()?.userId as string | undefined)
+        : undefined;
+      if (orderOwner && orderOwner !== uid) {
+        log.error(
+          `🚨 Wallet top-up ownership mismatch: payment ${paymentId} / order ${orderId} belongs to another user; caller=${uid}`
+        );
+        throw new HttpsError("permission-denied", "This payment does not belong to you");
+      }
+      if (paymentOwner && paymentOwner !== uid) {
+        log.error(
+          `🚨 Wallet top-up ownership mismatch: verified_payments/${paymentId} belongs to another user; caller=${uid}`
+        );
+        throw new HttpsError("permission-denied", "This payment does not belong to you");
+      }
+      if (!orderOwner && !paymentOwner) {
+        log.error(
+          `🚨 Wallet top-up with no ownership evidence: neither razorpay_orders/${orderId} nor verified_payments/${paymentId} names an owner; caller=${uid}`
+        );
+        throw new HttpsError(
+          "failed-precondition",
+          "This payment could not be verified for your account"
+        );
+      }
+
+      // ============================================
+      // Phase FIX-1, N-1: cross-namespace double-spend guard.
+      // ============================================
+      // Mirrors createOrder.ts's own trust block field-for-field. A payment
+      // already spent on an order or on an associate's onboarding activation
+      // must never also credit a wallet, and vice versa — createOrder.ts and
+      // activationCore.ts reject consumedByWalletTopup in the same way, so all
+      // three paths now refuse each other's markers. Checked here, before any
+      // write, and the marker is written below inside this same transaction.
+      const payment = paymentSnap.exists ? paymentSnap.data()! : null;
+      if (payment?.consumedByOrderId) {
+        throw new HttpsError(
+          "failed-precondition",
+          "This payment has already been used for an order"
+        );
+      }
+      if (payment?.consumedByOnboardingFor) {
+        throw new HttpsError(
+          "failed-precondition",
+          "This payment has already been used for onboarding"
+        );
+      }
+      if (payment?.consumedByWalletTopup) {
+        throw new HttpsError(
+          "failed-precondition",
+          "This payment has already been used for a wallet top-up"
+        );
       }
 
       const bonusCoins = getBonusForAmount(configSnap.data()?.topupBonuses, amount);
@@ -265,6 +353,29 @@ export const verifyWalletTopup = onCall(
         coinsAfter,
         createdAt: admin.firestore.FieldValue.serverTimestamp(),
       });
+
+      // Phase FIX-1, N-1: claim this payment in the SHARED namespace, inside the
+      // same transaction that credits the wallet — the identical idempotency-
+      // anchor shape createOrder.ts uses for consumedByOrderId. set+merge, not
+      // update, because a wallet top-up does not require verifyRazorpayPayment to
+      // have run first, so verified_payments/{paymentId} may not exist yet; the
+      // seeded fields below are the same ones verifyRazorpayPayment writes, so a
+      // document created here is indistinguishable to createOrder.ts's own trust
+      // block (which is precisely what makes the guard work in both directions).
+      tx.set(
+        paymentRef,
+        {
+          paymentId,
+          orderId,
+          userId: uid,
+          amount,
+          status: "captured",
+          consumedByWalletTopup: uid,
+          consumedByWalletTopupPaymentId: paymentId,
+          consumedAt: admin.firestore.FieldValue.serverTimestamp(),
+        },
+        { merge: true }
+      );
 
       return { alreadyCredited: false, bonusCoins, balanceAfter, coinsAfter };
     });

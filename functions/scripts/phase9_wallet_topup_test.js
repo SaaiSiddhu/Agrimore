@@ -74,6 +74,36 @@ async function main() {
     await db.collection("users").doc(uid).set({ uid, profileCompleted: true });
   }
 
+  // Phase FIX-1 fixture update (finding N-6), same class as the Phase 18
+  // profileCompleted update noted above and made for the same reason: the
+  // function grew a precondition this file's fixtures never satisfied.
+  // verifyWalletTopup now requires the payment to be provably the caller's —
+  // razorpay_orders/{orderId}.userId (written by createRazorpayOrder for every
+  // order it creates) or verified_payments/{paymentId}.userId must name the
+  // caller, and "neither exists" is a refusal rather than a pass. Without this
+  // seed, scenarios 1 and 4 fail with "This payment could not be verified for
+  // your account" — confirmed by running this suite against the WS1 build
+  // before adding it. All four orders are seeded, not just the two that must
+  // succeed, so that scenarios 2 and 3 still prove what their names claim: that
+  // the refusal comes from the tampered signature and the amount mismatch
+  // respectively, and NOT incidentally from missing ownership evidence.
+  const PHASE9_ORDERS = [
+    ["order_phase9_topup1", "phase9-topup-customer1", 1000],
+    ["order_phase9_topup2", "phase9-topup-customer2", 1000],
+    ["order_phase9_topup3", "phase9-topup-customer3", 500],
+    ["order_phase9_topup4", "phase9-topup-customer4", 500],
+  ];
+  for (const [orderId, uid, amount] of PHASE9_ORDERS) {
+    await db.collection("razorpay_orders").doc(orderId).set({
+      orderId,
+      userId: uid,
+      amount,
+      amountPaise: amount * 100,
+      currency: "INR",
+      status: "created",
+    });
+  }
+
   // Seed a non-default wallet_config so bonus computation is exercised
   // against a real Firestore read, not just the hardcoded default.
   await db.collection("settings").doc("wallet_config").set({

@@ -32,6 +32,9 @@ export type ActivationFailureCode =
   | "payment_amount_mismatch"
   | "payment_already_consumed_by_order"
   | "payment_already_consumed_by_onboarding"
+  // Phase FIX-1 (finding N-1, P0): the third consumption direction. A payment
+  // already credited to a wallet must not also activate onboarding.
+  | "payment_already_consumed_by_wallet_topup"
   | "employee_not_found";
 
 export interface ActivationResult {
@@ -150,6 +153,15 @@ export async function performOnboardingActivation(
     }
     if (payment.consumedByOnboardingFor) {
       return { ok: false, failureCode: "payment_already_consumed_by_onboarding" as const };
+    }
+    // Phase FIX-1 (finding N-1, P0): third direction. verifyWalletTopup
+    // (functions/src/customer/wallet.ts) now claims a payment it credits with
+    // consumedByWalletTopup, in the same transaction as the credit — so a
+    // payment already turned into wallet balance must not also activate an
+    // associate's ₹500 onboarding. Symmetric with the two checks above and with
+    // createOrder.ts's own trust block.
+    if (payment.consumedByWalletTopup) {
+      return { ok: false, failureCode: "payment_already_consumed_by_wallet_topup" as const };
     }
 
     // ============================================
