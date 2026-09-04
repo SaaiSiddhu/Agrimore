@@ -7,11 +7,11 @@
     "serve": "npm run build && firebase emulators:start --only functions",
     "shell": "npm run build && firebase functions:shell",
     "start": "npm run shell",
-    "deploy": "npm run build && firebase deploy --only functions",
+    "_deploy_REMOVED_see_A19": "A bare `firebase deploy --only functions` offered to DELETE the 6 live functions that have no source (retryFailedNotifications, sendMorning/Afternoon/Evening/NightGreeting, subscriptionChecker). Deploy only by explicit name: firebase deploy --only functions:<name1>,functions:<name2> --project agrimore-66a4e",
     "logs": "firebase functions:log"
   },
   "engines": {
-    "node": "20"
+    "node": "22"
   },
   "main": "lib/index.js",
   "dependencies": {

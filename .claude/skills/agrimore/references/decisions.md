@@ -118,7 +118,7 @@ D-ID, D-BRANCH, D-UIUX, D-STAGING, D-HOME, D-LEDGER.
 | D-REPO-VISIBILITY | make `SRIESWARAN01/Agrimore-Full-Project` private (A-2) | never add CI secrets while public |
 | D-ADMIN-ACCOUNT | is `admin@agrimore.com` still live under the exposed password (A-3)? | owner console check |
 | D-ORPHANS | keep or delete the 6 orphan functions (product decision — greetings, retries, `subscriptionChecker`) | keep; never name them in a deploy |
-| D-NODE20 | plan the Node 20 → 22 runtime move for 31 functions before 2026-10-30 | a dedicated phase; deploy by explicit names |
+| D-NODE20 | **When to run the prepared Node 22 deploy** (deadline 2026-10-30). The code half is DONE: SEC-4 moved both runtime declarations to `nodejs22` and produced the exact 31-name command. | STILL OPEN — the owner runs the deploy. It is an in-place runtime bump (no gen change, no delete+recreate, no outage window); the 6 orphans are already `nodejs22` and must never be named. |
 | D-STAGING-PROJECT | create a staging Firebase project? | `staging` = branch + emulator sweep |
 | D-APPCHECK | flip App Check to enforcement (`enforceAppCheck`) after a debug-mode activation log exists? | monitoring only |
 | D-LOCATION-BACKFILL | backfill product locations or adopt "no location = visible everywhere" before any server-side filter | no server filter |
