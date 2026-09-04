@@ -277,6 +277,15 @@ async function main() {
     await seedUser(uid);
     await seedProduct(productId, "phase25-dirB-seller", amount, 50);
     await seedRazorpayOrder(orderId, uid, amount);
+    // Seeded deliberately, with NO consumedBy* marker: this is what a payment
+    // looks like after verifyRazorpayPayment has run but before anything has
+    // spent it. Without this seed the scenario is vacuous under revert-and-
+    // watch — the pre-fix wallet.ts never creates verified_payments, so
+    // createOrder would bail at "Payment could not be verified" (a missing
+    // document) instead of demonstrating the double-spend. With it, the
+    // reverted build creates the order AND keeps the wallet credit, which is
+    // the N-1 exploit itself.
+    await seedVerifiedPayment(paymentId, orderId, uid, amount);
     mockCaptured(paymentId, amount);
 
     const topup = await callTopup(
@@ -324,6 +333,11 @@ async function main() {
       commissionRate: 0,
       createdBy: "self",
     });
+    // Same reason as scenario 3: seeded with no consumedBy* marker so that the
+    // reverted build reaches activationCore's real consumption checks and
+    // ACTIVATES onboarding off an already-spent payment, rather than stopping
+    // early at payment_not_found.
+    await seedVerifiedPayment(paymentId, orderId, uid, amount);
     mockCaptured(paymentId, amount);
 
     const topup = await callTopup(
