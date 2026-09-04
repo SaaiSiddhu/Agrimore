@@ -75,13 +75,23 @@ Four preconditions, then the porcelain command, in the same session that merged:
 git merge-base --is-ancestor <branch> develop            # contained
 git -C <wt> status --porcelain | wc -l                   # 0
 git -C <wt> ls-files --others --exclude-standard | wc -l # 0 (untracked = STOP: archive outside the repo first, verify, then proceed)
-git worktree remove <wt> && git worktree prune           # never rm -rf; refusing on dirty is a safety feature
+git worktree list                                        # BEFORE disposal: note every `prunable` record you did NOT create
+git worktree remove <wt>                                 # never rm -rf; refusing on dirty is a safety feature
+                                                         # `remove` already drops THIS worktree's record — do NOT chain
+                                                         # a bare `git worktree prune` (see below)
 ```
 `df -h /` before and after (a worktree with `node_modules` + five `.dart_tool`s is ~1 GB). Never
 delete the merged branch ref. Never remove the primary checkout, `Agrimore-develop`, or any worktree
-holding an in-flight phase. The one pre-existing prunable record (`claude/bold-spence-01813b`, old
-nested path) is the owner's to prune (D-PRUNE). A merge phase that leaves its worktree standing is
-`PARTIAL`.
+holding an in-flight phase. A merge phase that leaves its worktree standing is `PARTIAL`.
+
+**Why there is no `git worktree prune` in that command** (changed by SEC-2, 2026-09-04): `git worktree
+remove` already deletes the record for the worktree it removes, so a chained `prune` can only ever
+affect OTHER stale records — records this phase did not create and was not authorised to touch. That
+is exactly what happened during the SEC-1 merge: the bare `prune` silently removed the long-standing
+`claude/bold-spence-01813b` record, actioning half of open decision D-PRUNE without an owner's word,
+and contradicting Absolute Rule 3 ("never `worktree prune` blindly"). If `git worktree list` shows a
+prunable record you did not create, **report it and stop** — pruning it is a separate, owner-authorised
+step, never a side effect of a merge.
 
 ## 5. Report
 

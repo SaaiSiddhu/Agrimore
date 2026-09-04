@@ -202,8 +202,10 @@ the primary checkout.** Hard stops, deny-list, budgets and permissions: `referen
 
 ```
 Root       /Users/saai_siddharth/Projects/Clients/Agrimore   (flat since c8f6f30; holds main; never build here)
-Worktrees  ../Agrimore-develop [develop] · phase worktrees ../Agrimore-<slug> · one prunable stale record
-           (claude/bold-spence-01813b → old nested path; owner decides D-PRUNE)
+Worktrees  ../Agrimore-develop [develop] · phase worktrees ../Agrimore-<slug> · no stale records (re-measure with
+           `git worktree list`). The old `claude/bold-spence-01813b` record (→ the pre-flattening nested path) was
+           pruned on 2026-09-04 as a side effect of the SEC-1 merge disposition; its BRANCH ref survives at 0ea1e53
+           and deleting it is still open (D-PRUNE).
 Remote     https://github.com/SRIESWARAN01/Agrimore-Full-Project (PUBLIC; only `master` at 0ea1e53, 64 behind)
            machine credential = gh Edynox-hq (no write access) → the owner pushes
 Apps       apps/marketplace (187 dart / 78.7k LOC · android ios web · Play 1.0.7 live, 1.0.8+2026090102 unreleased)
@@ -212,7 +214,7 @@ Apps       apps/marketplace (187 dart / 78.7k LOC · android ios web · Play 1.0
 Packages   agrimore_core (57 files: models, config incl. firebase_options/maps/gemini(key ''), utils)
            agrimore_services (21: auth, database, payment, notifications, storage, app_check, ai) · agrimore_ui (27: themes,
            responsive, 15 common widgets, snackbar/dialog helpers) — every packages/** change = 5-app analyze
-Functions  functions/src: 47 TS files, 58 exports from index.ts (v2 onCall money paths; v1 triggers/OTP)
+Functions  functions/src: 48 TS files, 58 exports from index.ts (v2 onCall money paths; v1 triggers/OTP)
            live on agrimore-66a4e: 48 functions (16 v2 / 32 v1; 31 nodejs20 (decommission 2026-10-30) / 17 nodejs22)
            6 ORPHANS with no source anywhere: retryFailedNotifications · sendMorning/Afternoon/Evening/NightGreeting ·
            subscriptionChecker (load-bearing) · 16 source-only functions UNDEPLOYED (benefit program, setUserRole,
@@ -220,10 +222,11 @@ Functions  functions/src: 47 TS files, 58 exports from index.ts (v2 onCall money
 Rules      firestore.rules 1,457 lines / 59 top-level match blocks (deployed 2026-08-31, = HEAD then) · storage.rules 149
            firestore.indexes.json 38 entries, in sync with live (2026-09-03); firebase.json declares rules+indexes+storage,
            4 hosting sites, emulators firestore 8080 · functions 5001 · auth 9099 · ui 4000
-Tests      apps/marketplace/test (3 files, `flutter test`) · functions/scripts: 59 scripts = 55 phase*_test.js emulator
-           suites (10 rules suites) + 3 no-emulator guards (phase16b4_fee_truthfulness, phase18_secret_binding,
-           phase19_client_secret_guard) + verify_secrets.js (deploy gate, cloud metadata read) + add_categories.js,
-           phase16_profile_backfill.js, create_admin.js (hardcoded admin credential — open finding A-1)
+Tests      apps/marketplace/test (3 files, `flutter test`) · functions/scripts: 59 scripts = 56 phase*_test.js files
+           (10 rules suites) of which 4 are no-emulator guards (phase16b4_fee_truthfulness, phase18_secret_binding,
+           phase19_client_secret_guard, phase23_deploy_bundle_guard) + verify_secrets.js (deploy gate, cloud metadata
+           read) + add_categories.js, phase16_profile_backfill.js.  create_admin.js was DELETED by SEC-1 (finding A-1);
+           `functions/scripts/` is now in the functions `ignore` list, so nothing here ships in a deploy bundle.
 Toolchain  Flutter 3.44.8 · Dart 3.12.2 · Node 26.5.1 · npm 11.17.0 · firebase-tools 15.28.1 (login agrimorein@gmail.com,
            `firebase use` = agrimore-66a4e) · melos 6.3.3 via `dart run melos` (not on PATH) · JDK 21 at
            /opt/homebrew/opt/openjdk@21 (emulator refuses the default JDK 17) · gh 2.97.0 · bash 3.2 (no declare -A)

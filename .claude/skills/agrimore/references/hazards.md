@@ -110,8 +110,14 @@ commit they were measured at. **Not a substitute for measuring again.**
   strict subset of production once (a deploy would have deleted 26 live indexes). `firebase.json`
   now declares `"indexes"`; before 2026-09-03 the deploy silently no-op'd with exit 0.
 - `firebase functions:delete` can print FAILURE while succeeding — verify with `functions:list`.
-- `functions/scripts/` ships in every functions deploy bundle (`firebase.json` ignore list), which is
-  how `fix_admin.js` reached GCP repeatedly and why `create_admin.js` (still present) is finding A-1.
+- `functions/scripts/` USED to ship in every functions deploy bundle, which is how `fix_admin.js`
+  reached GCP repeatedly (deleted in `8fd06b2`) and how `create_admin.js` became finding A-1. Phase
+  SEC-1 (2026-09-04) deleted `create_admin.js` and added `scripts` to the functions `ignore` list, so
+  the directory is no longer uploaded; `phase23_deploy_bundle_guard_test.js` fails if either regresses.
+  Two things that did NOT change: the A-1 credential is still valid until the owner rotates it
+  (D-CREATE-ADMIN), and the ignore entry only takes effect on the next functions deploy. Never put a
+  credential under `functions/` regardless — the guard now catches password/secret/token/credential/
+  apikey-shaped string literals there.
 - `.firebaserc` is at the root now (flat layout); still pass `--project agrimore-66a4e` explicitly to
   any read-only cloud command so a wrong cwd can never hit another project (two other projects are
   visible on this account: `agrimore-8ae3b`, `arasupandian-farm-servic-a7c84`).
