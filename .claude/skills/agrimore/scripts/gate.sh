@@ -8,6 +8,7 @@
 #   node scripts/phase19_client_secret_guard_test.js    no emulator   (client secret exposure guard, 15 checks)
 #   node scripts/phase18_secret_binding_test.js         no emulator   (Secret Manager bindings)
 #   node scripts/phase16b4_fee_truthfulness_test.js     no emulator   (fee copy logic, 54 checks)
+#   node scripts/phase23_deploy_bundle_guard_test.js    no emulator   (no credential in the deploy bundle, 5 checks)
 #   node scripts/governance/validate-branch-dispositions.mjs   ledger vs git (warnings; exit 0 always — we count "warning(s)")
 #   (cd apps/marketplace && flutter test)               --full        (the only Dart suite)
 #   firebase emulators:exec --only firestore,functions,auth "cd functions && node scripts/<suite>.js"   --emulator, one FRESH emulator per suite
@@ -71,6 +72,7 @@ if [ "$MODE" != quick ]; then
   run guard:client-secrets     bash -c 'cd functions && node scripts/phase19_client_secret_guard_test.js'
   run guard:secret-bindings    bash -c 'cd functions && node scripts/phase18_secret_binding_test.js'
   run guard:fee-truthfulness   bash -c 'cd functions && node scripts/phase16b4_fee_truthfulness_test.js'
+  run guard:deploy-bundle      bash -c 'cd functions && node scripts/phase23_deploy_bundle_guard_test.js'
   # the validator always exits 0 — count its warnings as the signal
   VLOG="$OUT/ledger_validator.log"; node scripts/governance/validate-branch-dispositions.mjs >"$VLOG" 2>&1; VW=$(grep -c '•' "$VLOG" || true)
   row "ledger:validate" "0" "0" "warnings=$VW$( [ "$VW" -gt 0 ] && echo " — $(grep -m1 '•' "$VLOG" | cut -c1-100)" )"

@@ -61,7 +61,7 @@ async function main() {
         email: "admin@agrimore.com",
       });
 
-      // Caller 2: the legitimate bootstrap path (create_admin.js-style) —
+      // Caller 2: the legitimate bootstrap path (console-edit style) —
       // role: 'admin' written directly to Firestore, no special email, and
       // (realistically) before syncUserRoleClaims has refreshed their custom
       // claims — this is exactly the window the Firestore-doc fallback in
@@ -92,7 +92,7 @@ async function main() {
       const snap = await legitAdminDb.collection("users").doc("phase6-target-user").get();
       if (!snap.exists) throw new Error("read succeeded but returned doc unexpectedly did not exist");
       scenario2 =
-        "PASSED — a caller with Firestore role:'admin' (the legitimate create_admin.js-style bootstrap path) could still read another user's document";
+        "PASSED — a caller with Firestore role:'admin' (the legitimate console-edit bootstrap path) could still read another user's document";
     } catch (e) {
       scenario2 = `FAILED — the legitimate admin (Firestore role:'admin', no special email) was rejected: ${e.message}`;
     }
