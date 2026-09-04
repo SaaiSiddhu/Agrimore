@@ -39,7 +39,7 @@
 import { onCall, HttpsError } from "firebase-functions/v2/https";
 import * as admin from "firebase-admin";
 import * as crypto from "crypto";
-import { computeOrderPricing } from "./orderPricing";
+import { computeOrderPricing, normalizeOrderItems } from "./orderPricing";
 import { computeCartFingerprint } from "./productCreditHold";
 import { appendLedgerEntry, toProjectionFields } from "./productCreditLedger";
 
@@ -131,6 +131,19 @@ export const createOrder = onCall({ minInstances: 0, memory: "256MiB" }, async (
       throw new HttpsError("invalid-argument", `Invalid quantity for product ${item.productId}`);
     }
   }
+
+  // Phase FIX-3 (finding N-4, P1). Collapse repeated productIds into one line
+  // with the summed quantity, and bound the cart, BEFORE anything downstream
+  // consumes the list. Every later consumer must see the SAME normalized array:
+  // the product refs (so tx.getAll is bounded and stays index-aligned with the
+  // items), the pricing call (so the per-entry stock check sees the true total
+  // per product — that per-entry comparison is what let [{p,5},{p,5}] pass
+  // twice against stock 5), and computeCartFingerprint (so a hold quoted by
+  // quoteOrderWithCredit, which normalizes identically, produces a matching
+  // fingerprint here instead of failing its cart-change guard). Shared
+  // implementation in orderPricing.ts for the same reason the pricing itself
+  // lives there: the quote and the order must never disagree.
+  const normalizedItems = normalizeOrderItems(items);
 
   const db = admin.firestore();
 
@@ -232,7 +245,7 @@ export const createOrder = onCall({ minInstances: 0, memory: "256MiB" }, async (
     // productSnaps[i] always corresponds to items[i]. Same document-read
     // count and billing as before (Firestore bills per document regardless
     // of batching); this only removes N sequential round-trips.
-    const productRefs = items.map((item) => db.collection("products").doc(item.productId));
+    const productRefs = normalizedItems.map((item) => db.collection("products").doc(item.productId));
     const productSnaps = await tx.getAll(...productRefs);
 
     const normalizedCouponCode =
@@ -344,7 +357,7 @@ export const createOrder = onCall({ minInstances: 0, memory: "256MiB" }, async (
     // orderPricing.ts — see that file for the full logic. This is the exact
     // same computation, in the exact same order, as before the extraction.
     const pricing = computeOrderPricing({
-      items,
+      items: normalizedItems,
       productSnaps,
       orderMode,
       uid,
@@ -411,7 +424,7 @@ export const createOrder = onCall({ minInstances: 0, memory: "256MiB" }, async (
       // deliveryCharge/tax (see productCreditHold.ts) — a change in those
       // alone will NOT be caught here; it is caught by the payment-amount
       // cross-check below instead, since it changes pricing.grandTotal.
-      const recomputedFingerprint = computeCartFingerprint(items, orderMode, normalizedCouponCode);
+      const recomputedFingerprint = computeCartFingerprint(normalizedItems, orderMode, normalizedCouponCode);
       if (recomputedFingerprint !== hold.cartFingerprint) {
         throw new HttpsError(
           "failed-precondition",

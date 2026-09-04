@@ -184,6 +184,67 @@ export interface ComputeOrderPricingParams {
 const MAX_REASONABLE_DELIVERY_CHARGE = 1000;
 const MAX_REASONABLE_TAX = 1000;
 
+/**
+ * Phase FIX-3 (findings N-4, N-23-partial).
+ *
+ * Upper bound on DISTINCT product lines in one cart. It exists to bound the
+ * `tx.getAll(...productRefs)` both callers perform — that read was previously
+ * unbounded, so a crafted request could ask the transaction to fetch an
+ * arbitrary number of documents. 100 distinct products is far above any real
+ * grocery basket while still being a bound.
+ */
+export const MAX_CART_LINES = 100;
+
+/**
+ * Phase FIX-3 (finding N-4, P1). Collapses repeated `productId` entries into
+ * one line with the summed quantity, and enforces MAX_CART_LINES.
+ *
+ * WHY THIS EXISTS: `computeOrderPricing` validates stock per ITEM ENTRY, not
+ * per product. A cart of `[{p,5},{p,5}]` against `stock: 5` passed the check
+ * twice and oversold — each entry was compared against the full stock
+ * independently. Summing first makes the existing check correct without
+ * touching it.
+ *
+ * WHY IT LIVES HERE, and why both callers must call it BEFORE building their
+ * product refs:
+ *   - `createOrder.ts` and `productCreditHold.ts` (quoteOrderWithCredit) both
+ *     call computeOrderPricing, and this module exists precisely so the quote
+ *     and the order can never disagree on a number (see the file header). A
+ *     de-duplication implemented in one caller would reintroduce exactly the
+ *     drift this file was created to prevent.
+ *   - The cap must be applied before `tx.getAll`, which happens in the caller.
+ *     Enforcing it inside computeOrderPricing would be too late to bound the
+ *     read it is meant to bound.
+ *   - `computeCartFingerprint` (productCreditHold.ts) hashes the item list, and
+ *     createOrder re-derives that fingerprint to validate a hold. Both sides
+ *     must therefore fingerprint the SAME normalized list, or every hold would
+ *     fail its cart-change guard. Normalize first, then use the normalized
+ *     array for the fingerprint, the refs and the pricing alike.
+ *
+ * First-appearance order is preserved so that per-seller grouping, the
+ * order-number suffixing and the BOGO coupon match keep their existing,
+ * observable ordering.
+ */
+export function normalizeOrderItems(items: OrderPricingItemInput[]): OrderPricingItemInput[] {
+  const byProduct = new Map<string, OrderPricingItemInput>();
+  for (const item of items) {
+    const existing = byProduct.get(item.productId);
+    if (existing) {
+      existing.quantity += item.quantity;
+    } else {
+      byProduct.set(item.productId, { productId: item.productId, quantity: item.quantity });
+    }
+  }
+  const normalized = Array.from(byProduct.values());
+  if (normalized.length > MAX_CART_LINES) {
+    throw new HttpsError(
+      "invalid-argument",
+      `A cart cannot contain more than ${MAX_CART_LINES} different products`
+    );
+  }
+  return normalized;
+}
+
 export function computeOrderPricing(params: ComputeOrderPricingParams): OrderPricingResult {
   const { items, productSnaps, orderMode, uid } = params;
 
