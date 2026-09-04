@@ -693,6 +693,40 @@ service cloud.firestore {
     }
 
     // ============================================
+    // SELLER PAYOUT DETAILS (Phase FIX-2, finding N-2, P0)
+    // ============================================
+    // `sellers/{sellerId}` above is `allow read: if true` — a deliberate public
+    // read, because the marketplace storefront shows seller profiles to
+    // logged-out visitors. The defect was WHAT was stored in that publicly
+    // readable document: apps/admin's approval flow copied `bankName`,
+    // `accountNumber` and `ifsc` out of `sellerRequests` into `sellers/{uid}`,
+    // so every approved seller's bank account number and IFSC could be read by
+    // anyone who knew the project id, over the REST API, unauthenticated.
+    //
+    // Payout data lives here instead. Deliberately a TOP-LEVEL collection and
+    // not a `sellers/{sellerId}/payout` subcollection: the public read above
+    // does not reach subcollections today, but keeping payout data out of that
+    // document's subtree entirely means no future edit to the `sellers` block —
+    // a `{document=**}` recursive wildcard, say — can widen it by accident. Same
+    // reasoning `feature_flags` uses for not living under `settings/`.
+    //
+    // Read is owner-or-admin. Write is admin-only, which is exactly the status
+    // quo: the admin approval screen is the only writer of these fields today.
+    // Making this Cloud-Functions-only would have needed a new callable and a
+    // functions deploy for no gain over admin-only — the exposure being closed
+    // is unauthenticated READ, not privileged write.
+    //
+    // FOR WHOEVER DEPLOYS THIS: adding this block does NOT remove the payout
+    // fields already sitting in existing `sellers/*` documents. Those rows stay
+    // world-readable until a migration moves them. That migration is a write to
+    // agrimore-66a4e and is an owner action, not part of this phase.
+    match /seller_payout_details/{sellerId} {
+      allow read: if isOwner(sellerId) || isAdmin();
+      allow create, update: if isAdmin();
+      allow delete: if isAdmin();
+    }
+
+    // ============================================
     // EMPLOYEES COLLECTION (B2B Sales Reps)
     // ============================================
     // Phase 14, Workstream 2 fix: both create and update let the owner set
