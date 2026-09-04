@@ -17,6 +17,14 @@ class SellerProfileScreen extends StatefulWidget {
 class _SellerProfileScreenState extends State<SellerProfileScreen> {
   Map<String, dynamic>? _sellerData;
   bool _isLoading = true;
+  // Phase FIX-2 (finding F-1, raised by this phase's own feedback lane).
+  // Payout fields moved to seller_payout_details/{uid}, a document that — unlike
+  // the seller's own profile — can fail to load on its own (denied read, offline,
+  // not yet created by an admin). Without this flag the Bank Details card falls
+  // back to "Not added" for all three cases, telling a seller who HAS bank
+  // details that they have none. feedback.md §2: a read failure must not
+  // masquerade as an empty state.
+  bool _payoutUnavailable = false;
 
   @override
   void initState() {
@@ -34,12 +42,35 @@ class _SellerProfileScreenState extends State<SellerProfileScreen> {
       final userDoc =
           await FirebaseFirestore.instance.collection('users').doc(uid).get();
 
+      // Phase FIX-2 (finding N-2, P0): bankName/accountNumber/ifsc no longer
+      // live in the publicly readable `sellers/{uid}` document — they moved to
+      // `seller_payout_details/{uid}`, which only the owner and an admin can
+      // read. Fetched in its OWN try so that a payout-read failure degrades the
+      // Bank Details card to "Not added" instead of failing the whole profile
+      // load: this screen also renders business details, hours and delivery
+      // radius, none of which should disappear because one read was denied.
+      Map<String, dynamic> payoutData = {};
+      bool payoutUnavailable = false;
+      try {
+        final payoutDoc = await FirebaseFirestore.instance
+            .collection('seller_payout_details')
+            .doc(uid)
+            .get();
+        payoutData = payoutDoc.data() ?? {};
+      } catch (e) {
+        // Detail to the log only — never to the card (feedback.md §2).
+        debugPrint('⚠️ Could not load seller payout details: $e');
+        payoutUnavailable = true;
+      }
+
       if (mounted) {
         setState(() {
           _sellerData = {
             ...(doc.data() ?? {}),
             ...(userDoc.data() ?? {}),
+            ...payoutData,
           };
+          _payoutUnavailable = payoutUnavailable;
           _isLoading = false;
         });
       }
@@ -264,11 +295,21 @@ class _SellerProfileScreenState extends State<SellerProfileScreen> {
             _buildDivider(isDark),
             _buildMenuItem(Icons.account_balance_outlined, 'Bank Details',
                 'Payout account settings', isDark, () {
-              _showDetailsDialog('Bank Details', [
-                'Bank: ${_sellerData?['bankName'] ?? 'Not added'}',
-                'Account: ${_sellerData?['accountNumber'] ?? 'Not added'}',
-                'IFSC: ${_sellerData?['ifsc'] ?? 'Not added'}',
-              ]);
+              // F-1: three distinct states, never conflated. A failed read says
+              // so; it does not claim the seller has no bank details.
+              _showDetailsDialog(
+                'Bank Details',
+                _payoutUnavailable
+                    ? const [
+                        'We could not load your bank details right now.',
+                        'Please reopen this screen, or contact support if it keeps happening.',
+                      ]
+                    : [
+                        'Bank: ${_sellerData?['bankName'] ?? 'Not added'}',
+                        'Account: ${_sellerData?['accountNumber'] ?? 'Not added'}',
+                        'IFSC: ${_sellerData?['ifsc'] ?? 'Not added'}',
+                      ],
+              );
             }),
             _buildDivider(isDark),
             _buildMenuItem(Icons.access_time, 'Business Hours',
