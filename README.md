@@ -32,3 +32,9 @@ melos run:marketplace   # or run:admin, etc.
 ```
 
 Build scripts live in [scripts/](scripts).
+
+## Operating skill
+
+Every AI coding tool that works in this repository follows [`.claude/skills/agrimore/SKILL.md`](.claude/skills/agrimore/SKILL.md)
+(single agent · `develop` → `staging` → `main`, fast-forward only · never `firebase deploy` — the owner deploys).
+Repository rules in [`CLAUDE.md`](CLAUDE.md); branch claims in [`docs/active/BRANCH_DISPOSITIONS.md`](docs/active/BRANCH_DISPOSITIONS.md).
