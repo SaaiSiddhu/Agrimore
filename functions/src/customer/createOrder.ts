@@ -505,6 +505,19 @@ export const createOrder = onCall({ minInstances: 0, memory: "256MiB" }, async (
       if (payment.consumedByOnboardingFor) {
         throw new HttpsError("failed-precondition", "This payment has already been used for onboarding");
       }
+      // Phase FIX-1 (finding N-1, P0): the third consumption direction, which
+      // did not exist as a check until now. verifyWalletTopup
+      // (functions/src/customer/wallet.ts) used to anchor idempotency ONLY on
+      // wallet_topups/{paymentId} — a collection neither this function nor
+      // activationCore.ts reads — so the wallet namespace and this one were
+      // disjoint and a single captured payment could be spent twice: once on
+      // real goods here, once as wallet balance there, in either order. That
+      // function now claims the payment with consumedByWalletTopup inside the
+      // same transaction that credits the wallet; this check is the half that
+      // makes the guard mutual.
+      if (payment.consumedByWalletTopup) {
+        throw new HttpsError("failed-precondition", "This payment has already been used for a wallet top-up");
+      }
       if (payment.orderId !== razorpayOrderId) {
         throw new HttpsError("failed-precondition", "Payment does not match this order");
       }
