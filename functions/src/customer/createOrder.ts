@@ -675,6 +675,56 @@ export const createOrder = onCall({ minInstances: 0, memory: "256MiB" }, async (
       });
     }
 
+    // ============================================
+    // Phase FIX-3 (finding N-3, P1): actually reserve the stock.
+    // ============================================
+    // Until now NOTHING in this codebase decremented stock. computeOrderPricing
+    // validated `product.stock` and no code path anywhere wrote it back — a
+    // grep for a stock write across functions/src returned zero, and the only
+    // decrement that ever existed (updateStockAfterOrder in
+    // packages/agrimore_services/lib/orders/order_service.dart) has no callers
+    // and would be denied by the `products` rules anyway. So stock never fell,
+    // an out-of-stock product stayed purchasable forever, `soldCount` never
+    // moved, and onProductStockChanged's low-stock alerts could only ever fire
+    // from a manual seller edit — never from a sale.
+    //
+    // Written here, in the same transaction that creates the orders, so the
+    // stock check performed earlier in this same transaction and the decrement
+    // are atomic: two concurrent orders for the last unit cannot both pass.
+    // productSnaps is index-aligned with normalizedItems (tx.getAll preserves
+    // the order of the refs it was given), so snap i belongs to item i.
+    //
+    // N-49, deliberately preserved: `stock` is only decremented when it is
+    // ALREADY a finite number. computeOrderPricing fails OPEN for a missing or
+    // non-numeric stock — mirroring ProductModel.fromMap's default of 999 — and
+    // blindly applying increment(-qty) to such a product would materialise a
+    // negative stock field out of nothing, turning a documented fail-open into
+    // silent data corruption. Whether that fail-open should become fail-closed
+    // is an owner decision about the live catalogue (how many products were
+    // never backfilled), not something this phase decides.
+    //
+    // `soldCount` is incremented unconditionally: it is a pure counter, and
+    // increment() on a missing field starts it at 0, which is correct.
+    for (let i = 0; i < normalizedItems.length; i++) {
+      const item = normalizedItems[i];
+      const snap = productSnaps[i];
+      const stockRaw = snap.data()?.stock;
+      const stockIsEnforceable = typeof stockRaw === "number" && Number.isFinite(stockRaw);
+      tx.update(
+        productRefs[i],
+        stockIsEnforceable
+          ? {
+            stock: admin.firestore.FieldValue.increment(-item.quantity),
+            soldCount: admin.firestore.FieldValue.increment(item.quantity),
+            updatedAt: admin.firestore.FieldValue.serverTimestamp(),
+          }
+          : {
+            soldCount: admin.firestore.FieldValue.increment(item.quantity),
+            updatedAt: admin.firestore.FieldValue.serverTimestamp(),
+          }
+      );
+    }
+
     // Phase D: settle the hold — append the REDEMPTION ledger entry (with
     // relatedEntryId pointing at the HOLD entry, which is what
     // productCreditLedger.ts's arithmetic keys off to clear onHold WITHOUT
