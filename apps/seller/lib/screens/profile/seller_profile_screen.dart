@@ -34,11 +34,30 @@ class _SellerProfileScreenState extends State<SellerProfileScreen> {
       final userDoc =
           await FirebaseFirestore.instance.collection('users').doc(uid).get();
 
+      // Phase FIX-2 (finding N-2, P0): bankName/accountNumber/ifsc no longer
+      // live in the publicly readable `sellers/{uid}` document — they moved to
+      // `seller_payout_details/{uid}`, which only the owner and an admin can
+      // read. Fetched in its OWN try so that a payout-read failure degrades the
+      // Bank Details card to "Not added" instead of failing the whole profile
+      // load: this screen also renders business details, hours and delivery
+      // radius, none of which should disappear because one read was denied.
+      Map<String, dynamic> payoutData = {};
+      try {
+        final payoutDoc = await FirebaseFirestore.instance
+            .collection('seller_payout_details')
+            .doc(uid)
+            .get();
+        payoutData = payoutDoc.data() ?? {};
+      } catch (e) {
+        debugPrint('⚠️ Could not load seller payout details: $e');
+      }
+
       if (mounted) {
         setState(() {
           _sellerData = {
             ...(doc.data() ?? {}),
             ...(userDoc.data() ?? {}),
+            ...payoutData,
           };
           _isLoading = false;
         });

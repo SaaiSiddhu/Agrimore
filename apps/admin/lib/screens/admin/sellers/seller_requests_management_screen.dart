@@ -14,6 +14,14 @@ class SellerRequestsManagementScreen extends StatelessWidget {
       final reqRef = FirebaseFirestore.instance.collection('sellerRequests').doc(uid);
       final userRef = FirebaseFirestore.instance.collection('users').doc(uid);
       final sellerRef = FirebaseFirestore.instance.collection('sellers').doc(uid);
+      // Phase FIX-2 (finding N-2, P0). `sellers/{uid}` is `allow read: if true`
+      // in firestore.rules — deliberately public, because the marketplace
+      // storefront shows seller profiles to logged-out visitors. Copying the
+      // payout fields into it, as this screen used to, published every approved
+      // seller's bank account number and IFSC to anyone who knew the project id.
+      // They go here instead: read owner-or-admin, write admin-only.
+      final payoutRef =
+          FirebaseFirestore.instance.collection('seller_payout_details').doc(uid);
 
       batch.set(
         userRef,
@@ -43,6 +51,20 @@ class SellerRequestsManagementScreen extends StatelessWidget {
           'email': data['email'],
           'shopName': data['shopName'],
           'shopAddress': data['shopAddress'],
+          'updatedAt': FieldValue.serverTimestamp(),
+          'createdAt': FieldValue.serverTimestamp(),
+        },
+        SetOptions(merge: true),
+      );
+
+      // Payout data, in the non-public collection. Written in the SAME batch as
+      // the approval itself so a seller can never end up approved without their
+      // payout details, or vice versa — the two writes commit atomically or not
+      // at all, exactly as they did when both lived in `sellers/{uid}`.
+      batch.set(
+        payoutRef,
+        {
+          'sellerId': uid,
           'bankName': data['bankName'],
           'accountNumber': data['accountNumber'],
           'ifsc': data['ifsc'],
