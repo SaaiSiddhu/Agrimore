@@ -113,8 +113,8 @@ D-ID, D-BRANCH, D-UIUX, D-STAGING, D-HOME, D-LEDGER.
 
 | ID | Question | Safe default while open |
 |---|---|---|
-| D-PRUNE | `git worktree prune` the stale `claude/bold-spence-01813b` record and delete that branch? | leave both; the row records it as `MERGED` |
-| D-CREATE-ADMIN | delete/move `functions/scripts/create_admin.js` (hardcoded admin credential in the deploy bundle) and rotate that account | treat as P1 (A-1); the next security phase removes it; owner rotates |
+| D-PRUNE | Delete the `claude/bold-spence-01813b` BRANCH? (The stale worktree RECORD is already gone: `merge.md` §4's disposition command carried a bare `git worktree prune`, which pruned it during the SEC-1 merge on 2026-09-04. SEC-2 removed that bare prune — see `merge.md` §4.) | leave the branch; its tip `0ea1e53` is an ancestor of `main`, and the ledger row records it as `MERGED` |
+| D-CREATE-ADMIN | **Rotate that admin account's password.** (The code half is DONE: phase SEC-1 deleted `functions/scripts/create_admin.js` on 2026-09-04 and excluded `functions/scripts` from the deploy bundle.) | STILL OPEN — P1. Deletion does not invalidate the credential: it stays valid in Auth, in git history, and in already-uploaded source archives. Only the owner can rotate it. A-1 is CLOSED IN CODE, OPEN IN PRODUCTION. |
 | D-REPO-VISIBILITY | make `SRIESWARAN01/Agrimore-Full-Project` private (A-2) | never add CI secrets while public |
 | D-ADMIN-ACCOUNT | is `admin@agrimore.com` still live under the exposed password (A-3)? | owner console check |
 | D-ORPHANS | keep or delete the 6 orphan functions (product decision — greetings, retries, `subscriptionChecker`) | keep; never name them in a deploy |
