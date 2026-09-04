@@ -11,7 +11,8 @@
 #   node scripts/phase23_deploy_bundle_guard_test.js    no emulator   (no credential in the deploy bundle, 5 checks)
 #   node scripts/governance/validate-branch-dispositions.mjs   ledger vs git (warnings; exit 0 always — we count "warning(s)")
 #   (cd apps/marketplace && flutter test)               --full        (the only Dart suite)
-#   firebase emulators:exec --only firestore,functions,auth "cd functions && node scripts/<suite>.js"   --emulator, one FRESH emulator per suite
+#   firebase emulators:exec --only <set> --project agrimore-66a4e "cd functions && node scripts/<suite>.js"   --emulator, one FRESH emulator per suite
+#     <set> is per suite: a *storage* suite gets `storage` (port 9199), every other suite gets `firestore,functions,auth`
 #   node scripts/verify_secrets.js                      --secrets     (cloud METADATA read; deploy gate)
 #
 # Usage: bash .claude/skills/agrimore/scripts/gate.sh [--quick|--baseline|--full] [--emulator] [--emulator-suites a,b] [--secrets] [--apps a,b]
@@ -85,7 +86,7 @@ if [ $SECRETS = 1 ]; then
 fi
 if [ $EMU = 1 ]; then
   export JAVA_HOME="${JAVA_HOME:-/opt/homebrew/opt/openjdk@21}"; export PATH="$JAVA_HOME/bin:$PATH"
-  HELD=""; for p in 8080 5001 9099 4000; do lsof -nP -iTCP:$p -sTCP:LISTEN >/dev/null 2>&1 && HELD="$HELD $p"; done
+  HELD=""; for p in 8080 5001 9099 4000 9199; do lsof -nP -iTCP:$p -sTCP:LISTEN >/dev/null 2>&1 && HELD="$HELD $p"; done   # 9199 = storage (SEC-3)
   if [ -n "$HELD" ]; then
     row "emulator:suites" "SKIP" "0" "ports$HELD held by another process — never stop it; re-run when free"
   elif ! "$JAVA_HOME/bin/java" -version >/dev/null 2>&1; then
@@ -94,7 +95,17 @@ if [ $EMU = 1 ]; then
     [ -f functions/.secret.local ] || echo "note: functions/.secret.local absent — provider-dependent suites (phase16_phone_otp, phase16_email_transport, phase22_channel_config, phase14_phone_otp) will report the DISABLED state; attribute, do not chase"
     [ -n "$SUITES" ] || SUITES="$(ls functions/scripts | grep -E '^phase.*_test\.js$' | sed 's/\.js$//' | tr '\n' ' ')"
     for s in $SUITES; do
-      run "emu:$s" bash -c "firebase emulators:exec --only firestore,functions,auth --project agrimore-66a4e \"cd functions && node scripts/$s.js\""
+      # SEC-3: the emulator set is per suite. phase24_storage_rules_test drives the
+      # STORAGE rules engine and needs --only storage; every other suite needs
+      # firestore,functions,auth. Booting a storage suite without the storage
+      # emulator fails at connect time, which reads like a rules regression and is
+      # not one — hence the split rather than one union list (a union would also
+      # boot emulators each suite does not need).
+      case "$s" in
+        *storage*) EMU_ONLY="storage";;
+        *)         EMU_ONLY="firestore,functions,auth";;
+      esac
+      run "emu:$s" bash -c "firebase emulators:exec --only $EMU_ONLY --project agrimore-66a4e \"cd functions && node scripts/$s.js\""
     done
   fi
 fi
