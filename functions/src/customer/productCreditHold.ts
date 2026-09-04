@@ -23,7 +23,7 @@ import * as admin from "firebase-admin";
 import * as crypto from "crypto";
 import { assertProgramLaunchable, resolveIsAdmin } from "../admin/complianceGate";
 import { appendLedgerEntry, toProjectionFields } from "./productCreditLedger";
-import { computeOrderPricing, OrderPricingItemInput } from "./orderPricing";
+import { computeOrderPricing, normalizeOrderItems, OrderPricingItemInput } from "./orderPricing";
 import { computeRedeemableAmount } from "./redemptionRules";
 
 // 30 minutes: long enough to cover a real Razorpay checkout flow, short
@@ -113,6 +113,14 @@ export const quoteOrderWithCredit = onCall(
       }
     }
 
+    // Phase FIX-3 (finding N-4, P1). Identical normalization to createOrder.ts,
+    // from the SAME shared implementation. This is load-bearing for holds, not
+    // just for pricing: computeCartFingerprint below hashes the item list, and
+    // createOrder re-derives that fingerprint to validate the hold. If only one
+    // side normalized, every hold quoted from a cart containing a repeated
+    // productId would fail its cart-change guard at settlement.
+    const normalizedItems = normalizeOrderItems(items);
+
     const requestedCreditAmount =
       typeof data?.requestedCreditAmount === "number" && data.requestedCreditAmount > 0
         ? data.requestedCreditAmount
@@ -131,9 +139,9 @@ export const quoteOrderWithCredit = onCall(
 
     const normalizedCouponCode =
       data?.couponCode && data.couponCode.trim() ? data.couponCode.trim().toUpperCase() : null;
-    const cartFingerprint = computeCartFingerprint(items, orderMode, normalizedCouponCode);
+    const cartFingerprint = computeCartFingerprint(normalizedItems, orderMode, normalizedCouponCode);
 
-    const productRefs = items.map((item) => db.collection("products").doc(item.productId));
+    const productRefs = normalizedItems.map((item) => db.collection("products").doc(item.productId));
     const couponQuery = normalizedCouponCode
       ? db.collection("coupons").where("code", "==", normalizedCouponCode).limit(1)
       : null;
@@ -172,7 +180,7 @@ export const quoteOrderWithCredit = onCall(
       // COMPUTATION — same authoritative pricing createOrder would produce.
       // ============================================
       const pricing = computeOrderPricing({
-        items,
+        items: normalizedItems,
         productSnaps,
         orderMode,
         uid,

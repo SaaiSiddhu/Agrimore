@@ -39,7 +39,7 @@
 import { onCall, HttpsError } from "firebase-functions/v2/https";
 import * as admin from "firebase-admin";
 import * as crypto from "crypto";
-import { computeOrderPricing } from "./orderPricing";
+import { computeOrderPricing, normalizeOrderItems } from "./orderPricing";
 import { computeCartFingerprint } from "./productCreditHold";
 import { appendLedgerEntry, toProjectionFields } from "./productCreditLedger";
 
@@ -131,6 +131,19 @@ export const createOrder = onCall({ minInstances: 0, memory: "256MiB" }, async (
       throw new HttpsError("invalid-argument", `Invalid quantity for product ${item.productId}`);
     }
   }
+
+  // Phase FIX-3 (finding N-4, P1). Collapse repeated productIds into one line
+  // with the summed quantity, and bound the cart, BEFORE anything downstream
+  // consumes the list. Every later consumer must see the SAME normalized array:
+  // the product refs (so tx.getAll is bounded and stays index-aligned with the
+  // items), the pricing call (so the per-entry stock check sees the true total
+  // per product — that per-entry comparison is what let [{p,5},{p,5}] pass
+  // twice against stock 5), and computeCartFingerprint (so a hold quoted by
+  // quoteOrderWithCredit, which normalizes identically, produces a matching
+  // fingerprint here instead of failing its cart-change guard). Shared
+  // implementation in orderPricing.ts for the same reason the pricing itself
+  // lives there: the quote and the order must never disagree.
+  const normalizedItems = normalizeOrderItems(items);
 
   const db = admin.firestore();
 
@@ -232,7 +245,7 @@ export const createOrder = onCall({ minInstances: 0, memory: "256MiB" }, async (
     // productSnaps[i] always corresponds to items[i]. Same document-read
     // count and billing as before (Firestore bills per document regardless
     // of batching); this only removes N sequential round-trips.
-    const productRefs = items.map((item) => db.collection("products").doc(item.productId));
+    const productRefs = normalizedItems.map((item) => db.collection("products").doc(item.productId));
     const productSnaps = await tx.getAll(...productRefs);
 
     const normalizedCouponCode =
@@ -344,7 +357,7 @@ export const createOrder = onCall({ minInstances: 0, memory: "256MiB" }, async (
     // orderPricing.ts — see that file for the full logic. This is the exact
     // same computation, in the exact same order, as before the extraction.
     const pricing = computeOrderPricing({
-      items,
+      items: normalizedItems,
       productSnaps,
       orderMode,
       uid,
@@ -411,7 +424,7 @@ export const createOrder = onCall({ minInstances: 0, memory: "256MiB" }, async (
       // deliveryCharge/tax (see productCreditHold.ts) — a change in those
       // alone will NOT be caught here; it is caught by the payment-amount
       // cross-check below instead, since it changes pricing.grandTotal.
-      const recomputedFingerprint = computeCartFingerprint(items, orderMode, normalizedCouponCode);
+      const recomputedFingerprint = computeCartFingerprint(normalizedItems, orderMode, normalizedCouponCode);
       if (recomputedFingerprint !== hold.cartFingerprint) {
         throw new HttpsError(
           "failed-precondition",
@@ -660,6 +673,56 @@ export const createOrder = onCall({ minInstances: 0, memory: "256MiB" }, async (
         sellerId: sellerResult.sellerId ?? "",
         total: sellerResult.total,
       });
+    }
+
+    // ============================================
+    // Phase FIX-3 (finding N-3, P1): actually reserve the stock.
+    // ============================================
+    // Until now NOTHING in this codebase decremented stock. computeOrderPricing
+    // validated `product.stock` and no code path anywhere wrote it back — a
+    // grep for a stock write across functions/src returned zero, and the only
+    // decrement that ever existed (updateStockAfterOrder in
+    // packages/agrimore_services/lib/orders/order_service.dart) has no callers
+    // and would be denied by the `products` rules anyway. So stock never fell,
+    // an out-of-stock product stayed purchasable forever, `soldCount` never
+    // moved, and onProductStockChanged's low-stock alerts could only ever fire
+    // from a manual seller edit — never from a sale.
+    //
+    // Written here, in the same transaction that creates the orders, so the
+    // stock check performed earlier in this same transaction and the decrement
+    // are atomic: two concurrent orders for the last unit cannot both pass.
+    // productSnaps is index-aligned with normalizedItems (tx.getAll preserves
+    // the order of the refs it was given), so snap i belongs to item i.
+    //
+    // N-49, deliberately preserved: `stock` is only decremented when it is
+    // ALREADY a finite number. computeOrderPricing fails OPEN for a missing or
+    // non-numeric stock — mirroring ProductModel.fromMap's default of 999 — and
+    // blindly applying increment(-qty) to such a product would materialise a
+    // negative stock field out of nothing, turning a documented fail-open into
+    // silent data corruption. Whether that fail-open should become fail-closed
+    // is an owner decision about the live catalogue (how many products were
+    // never backfilled), not something this phase decides.
+    //
+    // `soldCount` is incremented unconditionally: it is a pure counter, and
+    // increment() on a missing field starts it at 0, which is correct.
+    for (let i = 0; i < normalizedItems.length; i++) {
+      const item = normalizedItems[i];
+      const snap = productSnaps[i];
+      const stockRaw = snap.data()?.stock;
+      const stockIsEnforceable = typeof stockRaw === "number" && Number.isFinite(stockRaw);
+      tx.update(
+        productRefs[i],
+        stockIsEnforceable
+          ? {
+            stock: admin.firestore.FieldValue.increment(-item.quantity),
+            soldCount: admin.firestore.FieldValue.increment(item.quantity),
+            updatedAt: admin.firestore.FieldValue.serverTimestamp(),
+          }
+          : {
+            soldCount: admin.firestore.FieldValue.increment(item.quantity),
+            updatedAt: admin.firestore.FieldValue.serverTimestamp(),
+          }
+      );
     }
 
     // Phase D: settle the hold — append the REDEMPTION ledger entry (with
