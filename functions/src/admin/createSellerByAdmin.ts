@@ -32,10 +32,16 @@ async function loadAdminEmailsLower(): Promise<string[]> {
 // admin" meant "any user who wrote role:'admin' onto their own doc"). Now
 // that firestore.rules' ownerCannotChangePrivilegedFields() makes role
 // unwritable by a non-admin client, the ONLY ways role:'admin' can be set
-// at all are: functions/scripts/create_admin.js (one-off, owner-run,
-// Admin SDK), a direct Firestore console edit, or this phase's own
-// setUserRole.ts (itself gated behind an existing admin's claim/role).
-// Every path is already a trusted, server-side action — narrowing this
+// at all are: a direct Firestore console edit (followed by the deployed
+// refreshUserRoleClaims callable, which mints the matching custom claim),
+// or setUserRole.ts (itself gated behind an existing admin's claim/role,
+// and source-only/UNDEPLOYED as of 2026-09-04 — so the console edit is
+// today the only live path).
+// Phase SEC-1 (2026-09-04) removed a third path that used to be listed
+// here: functions/scripts/create_admin.js, a one-off owner-run Admin SDK
+// script that hardcoded an admin email + password and shipped inside every
+// functions deploy bundle (finding A-1). It is deleted; do not re-add it.
+// Every remaining path is already a trusted, server-side action — narrowing this
 // further would add no real security margin, and the failure mode of
 // getting it wrong (an admin locked out of their own tooling because
 // settings/access.adminEmails is empty or stale) is worse than the finding.
