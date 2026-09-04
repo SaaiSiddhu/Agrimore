@@ -216,6 +216,8 @@ Packages   agrimore_core (57 files: models, config incl. firebase_options/maps/g
            responsive, 15 common widgets, snackbar/dialog helpers) — every packages/** change = 5-app analyze
 Functions  functions/src: 48 TS files, 58 exports from index.ts (v2 onCall money paths; v1 triggers/OTP)
            live on agrimore-66a4e: 48 functions (16 v2 / 32 v1; 31 nodejs20 (decommission 2026-10-30) / 17 nodejs22)
+           SEC-4 set BOTH runtime declarations to nodejs22 (firebase.json functions[0].runtime AND functions/package.json engines.node —
+           two separate declarations, both had to move). The 31 are NOT yet migrated: that needs the owner's explicit-name deploy.
            6 ORPHANS with no source anywhere: retryFailedNotifications · sendMorning/Afternoon/Evening/NightGreeting ·
            subscriptionChecker (load-bearing) · 16 source-only functions UNDEPLOYED (benefit program, setUserRole,
            changeEmail/PhoneNumber, quote/hold/reversal) — reconcile with `firebase functions:list` before any deploy talk
