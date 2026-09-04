@@ -219,11 +219,12 @@ Functions  functions/src: 48 TS files, 58 exports from index.ts (v2 onCall money
            6 ORPHANS with no source anywhere: retryFailedNotifications · sendMorning/Afternoon/Evening/NightGreeting ·
            subscriptionChecker (load-bearing) · 16 source-only functions UNDEPLOYED (benefit program, setUserRole,
            changeEmail/PhoneNumber, quote/hold/reversal) — reconcile with `firebase functions:list` before any deploy talk
-Rules      firestore.rules 1,457 lines / 59 top-level match blocks (deployed 2026-08-31, = HEAD then) · storage.rules 149
+Rules      firestore.rules 1,457 lines / 59 top-level match blocks (deployed 2026-08-31, = HEAD then) · storage.rules 149 (14 blocks, covered by phase24_storage_rules_test since SEC-3)
            firestore.indexes.json 38 entries, in sync with live (2026-09-03); firebase.json declares rules+indexes+storage,
-           4 hosting sites, emulators firestore 8080 · functions 5001 · auth 9099 · ui 4000
-Tests      apps/marketplace/test (3 files, `flutter test`) · functions/scripts: 59 scripts = 56 phase*_test.js files
-           (10 rules suites) of which 4 are no-emulator guards (phase16b4_fee_truthfulness, phase18_secret_binding,
+           4 hosting sites, emulators firestore 8080 · storage 9199 (added by SEC-3) · functions 5001 · auth 9099 · ui 4000
+Tests      apps/marketplace/test (3 files, `flutter test`) · functions/scripts: 60 scripts = 57 phase*_test.js files
+           (11 rules suites, incl. the first STORAGE one: phase24_storage_rules_test — 14 blocks / 64 scenarios)
+           of which 4 are no-emulator guards (phase16b4_fee_truthfulness, phase18_secret_binding,
            phase19_client_secret_guard, phase23_deploy_bundle_guard) + verify_secrets.js (deploy gate, cloud metadata
            read) + add_categories.js, phase16_profile_backfill.js.  create_admin.js was DELETED by SEC-1 (finding A-1);
            `functions/scripts/` is now in the functions `ignore` list, so nothing here ships in a deploy bundle.
