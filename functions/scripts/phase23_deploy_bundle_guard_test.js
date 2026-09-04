@@ -24,8 +24,8 @@
 // assignment and reports only `path:line` and the IDENTIFIER name (the text
 // left of the `=`). It never reads, logs, stores or compares anything to
 // the right of the `=` — a reader auditing this file for value-safety only
-// needs to confirm that `scanCredentialLiterals()` pushes `rel`, `lineNo`
-// and `match[2]` (the identifier) and never the remainder of the line.
+// needs to confirm that `scanCredentialLiterals()` pushes `rel`, the line
+// number and the captured identifier, and never the remainder of the line.
 // This mirrors the same guarantee phase19_client_secret_guard_test.js makes
 // for env files.
 //
@@ -63,20 +63,54 @@ const REQUIRED_IGNORE_DIRS = ["node_modules", "scripts"];
 // Directories under `functions/` that are build output or third-party code.
 const SCAN_SKIP_DIRS = new Set(["node_modules", "lib", ".git", "coverage"]);
 
-// A module-scope `const|let|var <name> = "<literal>"`. Anchored to column 0
-// so an indented (in-function, derived, or generated) assignment is not
-// matched — those are legitimate, e.g. createSellerByAdmin.ts /
-// createEmployeeByAdmin.ts build a password inside a function and never as
-// a top-level constant.
+// Two shapes of "a credential written as a literal", plus the identifier
+// test applied to both. Widened by phase SEC-2 (2026-09-04) to close
+// finding NB-1: the original pair matched only a COLUMN-0 const/let/var
+// whose identifier contained [Pp]assword|[Pp]asswd|[Pp]wd, while the check
+// was LABELLED as covering module-scope password literals generally. A
+// six-decoy probe showed it silently missed `adminPass`, `ADMIN_PWD`
+// (all-caps PWD), an indented in-function assignment, an object-literal
+// credential property, and `apiToken`. A label broader than the behaviour
+// is a false PASS waiting to happen — the worst failure mode for a guard —
+// and it mattered most in functions/src/**, which IS uploaded.
 //
-// The identifier is captured WHOLE and then tested against
-// CREDENTIAL_NAME separately, rather than being pattern-matched in one
-// regex. The one-regex form is easy to get wrong: requiring a leading
-// `[A-Za-z_$]` before the `password` alternation silently fails to match a
-// constant named exactly `password` (the very case finding A-1 is made of),
-// which is a false PASS — the worst possible failure mode for a guard.
-const MODULE_SCOPE_STRING_ASSIGNMENT = /^(const|let|var)\s+([A-Za-z_$][A-Za-z0-9_$]*)\s*=\s*["'`]/;
-const CREDENTIAL_NAME = /[Pp]assword|[Pp]asswd|[Pp]wd/;
+// The identifier is still captured WHOLE and tested separately rather than
+// folded into one regex. The one-regex form is easy to get wrong: requiring
+// a leading `[A-Za-z_$]` before the alternation silently fails to match a
+// constant named exactly `password` — the very shape finding A-1 was made
+// of.
+//
+// Indentation is now allowed. The original comment justified anchoring at
+// column 0 by pointing at createSellerByAdmin.ts / createEmployeeByAdmin.ts,
+// which build a password inside a function — but those DERIVE a value and
+// never assign a string LITERAL, so they are not matched either way. The
+// anchor bought nothing and cost the in-function case.
+const STRING_ASSIGNMENT = /^\s*(?:const|let|var)\s+([A-Za-z_$][A-Za-z0-9_$]*)\s*=\s*["'`]/;
+// A property is recognised at line start OR immediately after a `{` or `,`,
+// so BOTH an own-line property and an inline `{ name: "lit" }` are caught.
+// Anchoring only at line start (the first SEC-2 attempt) missed every inline
+// object literal — found by the decoy probe, not by reading the regex.
+const OBJECT_LITERAL_PROPERTY = /(?:^|[{,])\s*([A-Za-z_$][A-Za-z0-9_$]*)\s*:\s*["'`]/;
+const CREDENTIAL_NAME = /pass(word|wd)?|pwd|secret|token|credential|apikey|api_key/i;
+
+// The ONE measured exception, allowlisted by exact path AND identifier so a
+// different offender in the same file is still caught. Measured across all
+// 108 .js/.ts files under functions/ at develop 10e01e1: this was the only
+// hit of the widened pattern.
+//
+// phase16a_webhook_test.js drives razorpayOnboardingWebhook's HMAC path from
+// a local fixture. It is a test input, not a live credential; it lives in
+// functions/scripts/, which phase SEC-1 excluded from the deploy bundle
+// (checks 2/3 above); and the identifier appears nowhere in functions/src.
+// Follow the phase19_client_secret_guard_test.js precedent: add an entry
+// here ONLY for a documented exception, never to silence a real finding.
+const ALLOWLIST = [
+  { path: "functions/scripts/phase16a_webhook_test.js", identifier: "TEST_SECRET" },
+];
+
+function isAllowlisted(rel, identifier) {
+  return ALLOWLIST.some((a) => a.path === rel && a.identifier === identifier);
+}
 
 function scanCredentialLiterals() {
   const offenders = [];
@@ -92,12 +126,14 @@ function scanCredentialLiterals() {
         const rel = path.relative(REPO_ROOT, full);
         const lines = fs.readFileSync(full, "utf8").split("\n");
         lines.forEach((line, i) => {
-          const m = line.match(MODULE_SCOPE_STRING_ASSIGNMENT);
-          // VALUE-SAFE: only the path, the line number and m[2] (the
-          // identifier name) ever leave this function. The string literal on
-          // the right of the `=` is never read, logged or compared.
-          if (m && CREDENTIAL_NAME.test(m[2])) {
-            offenders.push(`${rel}:${i + 1} (identifier \`${m[2]}\`)`);
+          const m = line.match(STRING_ASSIGNMENT) || line.match(OBJECT_LITERAL_PROPERTY);
+          if (!m) return;
+          const identifier = m[1];
+          // VALUE-SAFE: only the path, the line number and the IDENTIFIER
+          // ever leave this function. The string literal to the right of the
+          // `=` or `:` is never read, logged, stored or compared.
+          if (CREDENTIAL_NAME.test(identifier) && !isAllowlisted(rel, identifier)) {
+            offenders.push(`${rel}:${i + 1} (identifier \`${identifier}\`)`);
           }
         });
       }
@@ -163,7 +199,9 @@ function main() {
   // ---------------------------------------------------------------
   const offenders = scanCredentialLiterals();
   check(
-    "no module-scope password literal in any .js/.ts file under functions/ (excluding node_modules, lib)",
+    "no .js/.ts file under functions/ (excluding node_modules, lib) assigns a string literal to a const/let/var " +
+      "or object-literal property whose name contains pass/password/passwd/pwd/secret/token/credential/apikey " +
+      "(case-insensitive, any indentation), except the documented ALLOWLIST",
     offenders.length === 0,
     `found at: ${offenders.join(", ")} — a credential must never be a top-level constant in this tree. ` +
       "Read it from Secret Manager or pass it in at run time; if this is a one-off owner script, it does not belong under functions/."
