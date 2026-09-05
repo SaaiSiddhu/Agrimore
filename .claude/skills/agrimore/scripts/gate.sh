@@ -101,9 +101,16 @@ if [ $EMU = 1 ]; then
       # emulator fails at connect time, which reads like a rules regression and is
       # not one — hence the split rather than one union list (a union would also
       # boot emulators each suite does not need).
+      #
+      # FIX-11 amendment: phase24 now ALSO cross-reads Firestore
+      # (firestore.get() in storage.rules' chat/delivery_proofs blocks), so
+      # it needs both emulators — the ONLY storage suite that does. Matched
+      # by exact name, not widened to *storage*, so a future storage-only
+      # suite doesn't silently inherit an emulator it doesn't need.
       case "$s" in
-        *storage*) EMU_ONLY="storage";;
-        *)         EMU_ONLY="firestore,functions,auth";;
+        phase24_storage_rules_test) EMU_ONLY="storage,firestore";;
+        *storage*)                  EMU_ONLY="storage";;
+        *)                          EMU_ONLY="firestore,functions,auth";;
       esac
       run "emu:$s" bash -c "firebase emulators:exec --only $EMU_ONLY --project agrimore-66a4e \"cd functions && node scripts/$s.js\""
     done
