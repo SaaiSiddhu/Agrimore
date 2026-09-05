@@ -85,95 +85,116 @@ async function main() {
     record("scenario1_control_realistic_order_succeeds", r.ok, `ok=${r.ok} err=${r.ok ? "" : r.message}`);
   }
 
-  // 2 — N-23 WS1, THE FINDING. A second createOrder call from the SAME uid
-  // within the cooldown window must be refused, and must not create a
-  // second order.
+  // 2 — legitimate back-to-back distinct orders from the SAME uid, up to
+  // the cap, must ALL succeed. This is the exact real-world pattern (and
+  // the pattern this codebase's own phase14/phase15/phase27/phaseD suites
+  // already rely on) that a flat per-call cooldown broke — see WS1's
+  // comment in createOrder.ts for the full story.
   {
     const uid = "phase36-u2"; const p = "phase36-p2";
-    await seedUser(uid); await seedProduct(p, 100, 20);
-    const first = await call(payload([{ productId: p, quantity: 1 }]), { uid, token: {} });
-    const second = await call(payload([{ productId: p, quantity: 1 }]), { uid, token: {} });
+    await seedUser(uid); await seedProduct(p, 100, 100);
+    let allOk = true; const codes = [];
+    for (let i = 0; i < 8; i++) {
+      const r = await call(payload([{ productId: p, quantity: 1 }]), { uid, token: {} });
+      codes.push(r.ok ? "ok" : r.code);
+      if (!r.ok) allOk = false;
+    }
     const orders = await ordersFor(uid);
-    record("scenario2_N23_burst_second_call_refused",
-      first.ok && !second.ok && second.code === "resource-exhausted" && orders.size === 1,
-      `first.ok=${first.ok} second.code=${second.code} orderCount=${orders.size} (expect 1)`);
+    record("scenario2_eight_backtoback_orders_within_cap_all_succeed",
+      allOk && orders.size === 8,
+      `codes=${JSON.stringify(codes)} orderCount=${orders.size} (expect 8)`);
   }
 
-  // 3 — the limiter is PER-USER, not global: a different uid's order right
-  // after scenario 2's burst must not be affected by it.
+  // 3 — N-23 WS1, THE FINDING. The (MAX_ORDERS_PER_WINDOW + 1)th order in
+  // the same window is refused, and creates no order.
   {
     const uid = "phase36-u3"; const p = "phase36-p3";
-    await seedUser(uid); await seedProduct(p, 100, 20);
-    const r = await call(payload([{ productId: p, quantity: 1 }]), { uid, token: {} });
-    record("scenario3_rate_limit_is_per_user_not_global", r.ok, `ok=${r.ok} err=${r.ok ? "" : r.message}`);
+    await seedUser(uid); await seedProduct(p, 100, 100);
+    for (let i = 0; i < 8; i++) await call(payload([{ productId: p, quantity: 1 }]), { uid, token: {} });
+    const ninth = await call(payload([{ productId: p, quantity: 1 }]), { uid, token: {} });
+    const orders = await ordersFor(uid);
+    record("scenario3_N23_ninth_order_in_window_refused",
+      !ninth.ok && ninth.code === "resource-exhausted" && orders.size === 8,
+      `ninth.code=${ninth.code} orderCount=${orders.size} (expect 8, not 9)`);
   }
 
-  // 4 — the cooldown EXPIRES: once the window has passed, the same uid can
-  // order again. Backdates order_rate_limits/{uid}.lastOrderAt directly via
-  // the Admin SDK rather than sleeping 10s in the test.
+  // 4 — the limiter is PER-USER, not global: a different uid's order right
+  // after scenario 3's cap-out must not be affected by it.
   {
     const uid = "phase36-u4"; const p = "phase36-p4";
     await seedUser(uid); await seedProduct(p, 100, 20);
+    const r = await call(payload([{ productId: p, quantity: 1 }]), { uid, token: {} });
+    record("scenario4_rate_limit_is_per_user_not_global", r.ok, `ok=${r.ok} err=${r.ok ? "" : r.message}`);
+  }
+
+  // 5 — the window EXPIRES: once it has passed, the same uid's count resets
+  // and a new order succeeds even though the prior window was maxed out.
+  // Backdates order_rate_limits/{uid}.windowStart directly via the Admin
+  // SDK rather than sleeping 60s in the test.
+  {
+    const uid = "phase36-u5"; const p = "phase36-p5";
+    await seedUser(uid); await seedProduct(p, 100, 20);
     const first = await call(payload([{ productId: p, quantity: 1 }]), { uid, token: {} });
     await db.collection("order_rate_limits").doc(uid).set({
-      lastOrderAt: admin.firestore.Timestamp.fromMillis(Date.now() - 11000),
+      windowStart: admin.firestore.Timestamp.fromMillis(Date.now() - 61000),
+      count: 8,
     });
     const second = await call(payload([{ productId: p, quantity: 1 }]), { uid, token: {} });
     const orders = await ordersFor(uid);
-    record("scenario4_N23_cooldown_expires_after_window",
+    record("scenario5_N23_window_expires_and_count_resets",
       first.ok && second.ok && orders.size === 2,
       `first.ok=${first.ok} second.ok=${second.ok} orderCount=${orders.size} (expect 2)`);
   }
 
-  // 5 — N-23 WS2. An oversized deliveryAddress (over MAX_DELIVERY_ADDRESS_BYTES)
+  // 6 — N-23 WS2. An oversized deliveryAddress (over MAX_DELIVERY_ADDRESS_BYTES)
   // is refused before any Firestore read.
   {
-    const uid = "phase36-u5"; const p = "phase36-p5";
+    const uid = "phase36-u6"; const p = "phase36-p6";
     await seedUser(uid); await seedProduct(p, 100, 20);
     const r = await call(payload([{ productId: p, quantity: 1 }], {
       deliveryAddress: Object.assign({}, REAL_ADDRESS, { addressLine1: "x".repeat(5000) }),
     }), { uid, token: {} });
-    record("scenario5_WS2_oversized_deliveryAddress_refused",
+    record("scenario6_WS2_oversized_deliveryAddress_refused",
       !r.ok && r.code === "invalid-argument", `code=${r.code} msg="${r.message}"`);
   }
 
-  // 6 — N-23 WS2. A deliveryAddress that isn't a plain object (an array) is
+  // 7 — N-23 WS2. A deliveryAddress that isn't a plain object (an array) is
   // refused rather than silently written.
-  {
-    const uid = "phase36-u6"; const p = "phase36-p6";
-    await seedUser(uid); await seedProduct(p, 100, 20);
-    const r = await call(payload([{ productId: p, quantity: 1 }], { deliveryAddress: [1, 2, 3] }), { uid, token: {} });
-    record("scenario6_WS2_deliveryAddress_wrong_shape_refused",
-      !r.ok && r.code === "invalid-argument", `code=${r.code} msg="${r.message}"`);
-  }
-
-  // 7 — N-23 WS2. Oversized notes (over MAX_NOTES_LENGTH) refused.
   {
     const uid = "phase36-u7"; const p = "phase36-p7";
     await seedUser(uid); await seedProduct(p, 100, 20);
-    const r = await call(payload([{ productId: p, quantity: 1 }], { notes: "x".repeat(501) }), { uid, token: {} });
-    record("scenario7_WS2_oversized_notes_refused",
+    const r = await call(payload([{ productId: p, quantity: 1 }], { deliveryAddress: [1, 2, 3] }), { uid, token: {} });
+    record("scenario7_WS2_deliveryAddress_wrong_shape_refused",
       !r.ok && r.code === "invalid-argument", `code=${r.code} msg="${r.message}"`);
   }
 
-  // 8 — N-23 WS2. Oversized deliverySlot (over MAX_SHORT_STRING_FIELD_LENGTH)
-  // refused.
+  // 8 — N-23 WS2. Oversized notes (over MAX_NOTES_LENGTH) refused.
   {
     const uid = "phase36-u8"; const p = "phase36-p8";
     await seedUser(uid); await seedProduct(p, 100, 20);
-    const r = await call(payload([{ productId: p, quantity: 1 }], { deliverySlot: "x".repeat(101) }), { uid, token: {} });
-    record("scenario8_WS2_oversized_deliverySlot_refused",
+    const r = await call(payload([{ productId: p, quantity: 1 }], { notes: "x".repeat(501) }), { uid, token: {} });
+    record("scenario8_WS2_oversized_notes_refused",
       !r.ok && r.code === "invalid-argument", `code=${r.code} msg="${r.message}"`);
   }
 
-  // 9 — N-23 WS2. Oversized autoFrequency refused — proves the shared
-  // deliverySlot/orderType/autoFrequency loop actually reaches every field,
-  // not just the first one checked.
+  // 9 — N-23 WS2. Oversized deliverySlot (over MAX_SHORT_STRING_FIELD_LENGTH)
+  // refused.
   {
     const uid = "phase36-u9"; const p = "phase36-p9";
     await seedUser(uid); await seedProduct(p, 100, 20);
+    const r = await call(payload([{ productId: p, quantity: 1 }], { deliverySlot: "x".repeat(101) }), { uid, token: {} });
+    record("scenario9_WS2_oversized_deliverySlot_refused",
+      !r.ok && r.code === "invalid-argument", `code=${r.code} msg="${r.message}"`);
+  }
+
+  // 10 — N-23 WS2. Oversized autoFrequency refused — proves the shared
+  // deliverySlot/orderType/autoFrequency loop actually reaches every field,
+  // not just the first one checked.
+  {
+    const uid = "phase36-u10"; const p = "phase36-p10";
+    await seedUser(uid); await seedProduct(p, 100, 20);
     const r = await call(payload([{ productId: p, quantity: 1 }], { autoFrequency: "x".repeat(101) }), { uid, token: {} });
-    record("scenario9_WS2_oversized_autoFrequency_refused",
+    record("scenario10_WS2_oversized_autoFrequency_refused",
       !r.ok && r.code === "invalid-argument", `code=${r.code} msg="${r.message}"`);
   }
 

@@ -98,20 +98,32 @@ function generateVerificationCode(): string {
 
 // FIX-16, WS1 (finding N-23). createOrder had no per-user rate limit at
 // all, and a COD order costs the caller nothing to create, so a script
-// could hammer this callable without bound. Mirrors
-// createAssociateOnboardingPayment.ts's `onboarding_rate_limits` cooldown
-// pattern exactly (a dedicated Cloud-Functions-only collection keyed by
-// uid, a direct get-by-id needing no composite index) but reads/writes the
-// marker INSIDE this function's own transaction rather than around it:
-// createOrder already runs one transaction per call, so folding the
-// check-then-write into it makes the two atomic against each other for
-// free, closing the read-then-write race a separate get()/set() pair
-// would have. 10 seconds is a generous safety margin, not a measured
-// legitimate-usage ceiling — a real checkout (even a multi-seller cart,
-// which is still exactly one createOrder call) never needs a second call
-// within 10 seconds, but a burst-abuse script hammering the endpoint is
-// throttled to at most one order per window.
-const ORDER_RATE_LIMIT_WINDOW_MS = 10 * 1000;
+// could hammer this callable without bound.
+//
+// First attempt was a flat per-uid COOLDOWN (createAssociateOnboardingPayment.ts's
+// `onboarding_rate_limits` pattern) — reverted after the full emulator
+// battery caught it regressing four EXISTING suites (phase14_payment_replay,
+// phase15_order_integrity, phase27_stock_integrity, phaseD_redemption), all
+// of which legitimately call createOrder a second time for the SAME uid
+// within seconds (retrying with a different coupon, attempting a double
+// spend that must be rejected for ITS OWN reason, a second real order after
+// stock moved) — real evidence that "a legitimate checkout never needs a
+// second call within N seconds" was wrong, not merely a test-fixture
+// inconvenience: a genuine customer does the same thing (buys something,
+// then immediately buys something else they forgot).
+//
+// Replaced with a fixed-window COUNTER instead: up to MAX_ORDERS_PER_WINDOW
+// successful orders per uid per ORDER_RATE_LIMIT_WINDOW_MS, read/written
+// INSIDE this function's own transaction (createOrder already runs one
+// transaction per call, so folding the check-then-write into it makes the
+// two atomic against each other for free — no separate get()/set() race).
+// 8 orders per 60 seconds is a generous safety margin, not a measured
+// business ceiling: comfortably above every same-uid call pattern in this
+// codebase's own test suites (none exceeds 2), while still turning
+// "unlimited" into a real, enforced ceiling (≤480/hour) against a
+// burst-abuse script.
+const ORDER_RATE_LIMIT_WINDOW_MS = 60 * 1000;
+const MAX_ORDERS_PER_WINDOW = 8;
 
 // FIX-16, WS2 (finding N-23). deliveryAddress/notes/deliverySlot/orderType/
 // autoFrequency were written into the order document verbatim from client
@@ -296,14 +308,25 @@ export const createOrder = onCall({ minInstances: 0, memory: "256MiB" }, async (
 
     // FIX-16, WS1 (finding N-23). Checked right after the mandatory reads,
     // before the (unconditional) employee-code/product reads below, so a
-    // throttled caller doesn't pay for reads it can't use.
+    // throttled caller doesn't pay for reads it can't use. Fixed-window
+    // counter, computed here (not via FieldValue.increment(), which cannot
+    // also conditionally reset the window in the same merge) since the
+    // current state is already known from this same read.
     const rateLimitSnap = await tx.get(rateLimitRef);
-    const lastOrderAt = rateLimitSnap.data()?.lastOrderAt as
-      | admin.firestore.Timestamp
-      | undefined;
-    if (lastOrderAt && Date.now() - lastOrderAt.toMillis() < ORDER_RATE_LIMIT_WINDOW_MS) {
-      throw new HttpsError("resource-exhausted", "Please wait a moment before placing another order.");
+    const rateLimitData = rateLimitSnap.data();
+    const windowStart = rateLimitData?.windowStart as admin.firestore.Timestamp | undefined;
+    const withinWindow = !!windowStart && Date.now() - windowStart.toMillis() < ORDER_RATE_LIMIT_WINDOW_MS;
+    const ordersInWindow = withinWindow ? (rateLimitData?.count as number) || 0 : 0;
+    if (withinWindow && ordersInWindow >= MAX_ORDERS_PER_WINDOW) {
+      throw new HttpsError(
+        "resource-exhausted",
+        "You're placing orders too quickly. Please wait a moment and try again."
+      );
     }
+    const rateLimitWindowStartToWrite = withinWindow
+      ? windowStart!
+      : admin.firestore.FieldValue.serverTimestamp();
+    const rateLimitCountToWrite = ordersInWindow + 1;
 
     // Phase 16D-2, Workstream 1b: the ONE employee-code lookup query in
     // this codebase — unchanged in shape from its original B2B-only form
@@ -889,8 +912,12 @@ export const createOrder = onCall({ minInstances: 0, memory: "256MiB" }, async (
 
     // FIX-16, WS1 (finding N-23). Marked only once every other write this
     // order needs has been queued — a caller who hits an error above never
-    // gets cooled down for an order that didn't happen.
-    tx.set(rateLimitRef, { lastOrderAt: admin.firestore.FieldValue.serverTimestamp() }, { merge: true });
+    // consumes a slot in their own window for an order that didn't happen.
+    tx.set(
+      rateLimitRef,
+      { windowStart: rateLimitWindowStartToWrite, count: rateLimitCountToWrite },
+      { merge: true }
+    );
 
     return { success: true, orders: createdOrders };
   });
