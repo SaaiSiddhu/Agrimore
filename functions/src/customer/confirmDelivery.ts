@@ -42,6 +42,39 @@ interface ConfirmDeliveryData {
 // these has been fulfilled; confirming again is a retry, not a new delivery.
 const DELIVERED_EQUIVALENT = new Set(["delivered", "completed"]);
 
+// An order in one of these is finished in the other direction. Confirming it as
+// delivered would be a real payout and a real associate commission on goods the
+// customer is not receiving — calculateSellerPayout and
+// payEmployeeCommissionOnDelivery both fire on exactly the transition this
+// callable performs. Refused, not silently ignored: a partner standing at a
+// door with a cancelled order needs to be told, not to get a success.
+const NOT_DELIVERABLE = new Set(["cancelled", "refunded", "returned", "rejected"]);
+
+/**
+ * Reads a status signal the way the rest of this codebase already does: as
+ * `orderStatus` OR the mirrored `status`, either one.
+ *
+ * Not a stylistic choice. productCreditReversal.ts:50 and firestore.rules'
+ * ownerOrderStatusChangeIsValid() both treat the two fields as one signal for a
+ * measured reason — order_provider.dart's cancelOrder() (customer path) writes
+ * only `orderStatus`, while seller_panel_screen.dart's _updateOrderStatus and
+ * apps/admin's copy write ONLY `status`. A one-field read here would miss every
+ * seller- or admin-initiated cancellation, which is exactly the case
+ * NOT_DELIVERABLE exists to catch.
+ *
+ * Measured, not assumed. Narrowing this to `set.has(a)` — the one-field read
+ * this function replaced — drops phase29_delivery_confirmation_test.js to
+ * 10/12, and the failure is a delivery, not a refusal: a seller-cancelled order
+ * comes back `orderStatus=delivered status=delivered` (scenario 10), and a
+ * seller-marked-delivered order is re-delivered with a second timeline entry
+ * (scenario 11, alreadyDelivered=false).
+ */
+function statusIsIn(order: FirebaseFirestore.DocumentData, set: Set<string>): boolean {
+  const a = typeof order.orderStatus === "string" ? order.orderStatus.toLowerCase() : "";
+  const b = typeof order.status === "string" ? order.status.toLowerCase() : "";
+  return set.has(a) || set.has(b);
+}
+
 /**
  * Constant-time comparison. The codes are six digits from a CSPRNG
  * (createOrder.ts's generateVerificationCode), so a timing oracle is not the
@@ -110,9 +143,27 @@ export const confirmDelivery = onCall(
       // the same reasoning activationCore.ts applies to a duplicated activation.
       // Checked before the code comparison so a retry does not depend on the
       // partner still having the code to hand.
-      const currentStatus = typeof order.orderStatus === "string" ? order.orderStatus.toLowerCase() : "";
-      if (DELIVERED_EQUIVALENT.has(currentStatus)) {
+      if (statusIsIn(order, DELIVERED_EQUIVALENT)) {
         return { success: true, alreadyDelivered: true };
+      }
+
+      // A cancelled, refunded, returned or rejected order is not deliverable,
+      // and the correct code does not make it so. Checked AFTER the
+      // already-delivered branch so that an order which is both is read as the
+      // retry it is, and BEFORE the code comparison so that this refusal never
+      // depends on the guess — it must not become an oracle either.
+      //
+      // Measured, not assumed. Removing this block drops
+      // phase29_delivery_confirmation_test.js to 9/12: a cancelled order with
+      // the correct code is DELIVERED (scenario 9, status=delivered,
+      // timeline=1), and the refusal that remains for a wrong code makes the
+      // pair distinguishable again (scenario 12, identical=false).
+      if (statusIsIn(order, NOT_DELIVERABLE)) {
+        throw new HttpsError(
+          "failed-precondition",
+          "This order is no longer active and cannot be marked delivered",
+          { reason: "not_deliverable" }
+        );
       }
 
       const expected = typeof order.deliveryVerificationCode === "string"
@@ -123,7 +174,8 @@ export const confirmDelivery = onCall(
         // path; it needs an admin, not a guess.
         throw new HttpsError(
           "failed-precondition",
-          "This order has no verification code — please contact support"
+          "This order has no verification code — please contact support",
+          { reason: "no_code" }
         );
       }
 

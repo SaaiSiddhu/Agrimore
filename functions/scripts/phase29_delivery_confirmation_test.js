@@ -46,8 +46,12 @@ async function seedOrder(orderId, opts = {}) {
     orderNumber: `ORD-${orderId}`,
     sellerId: "phase29-seller",
     deliveryPartnerId: opts.partnerId === undefined ? PARTNER : opts.partnerId,
-    orderStatus: opts.status || "out_for_delivery",
-    status: opts.status || "out_for_delivery",
+    // The two fields are seedable INDEPENDENTLY on purpose. The customer
+    // cancel path writes only `orderStatus`; the seller/admin panel writes only
+    // `status` (productCreditReversal.ts:34-44). Scenarios 10 and 11 depend on
+    // being able to reproduce each of those one-sided writes exactly.
+    orderStatus: opts.orderStatus || opts.status || "out_for_delivery",
+    status: opts.mirrorStatus || opts.status || "out_for_delivery",
     total: 500,
     items: [],
   };
@@ -162,6 +166,64 @@ async function main() {
     record("scenario8_unassigned_order_cannot_be_confirmed",
       !r.ok && r.code === "permission-denied" && d.orderStatus === "out_for_delivery",
       `code=${r.code} status=${d.orderStatus}`);
+  }
+
+  // 9 — a CANCELLED order is refused even with the correct code, from the
+  // assigned partner. calculateSellerPayout and payEmployeeCommissionOnDelivery
+  // both fire on the transition this callable performs, so a cancelled order
+  // confirmed as delivered is real money paid out on goods nobody is receiving.
+  let cancelledRight, cancelledWrong;
+  {
+    const oid = "phase29-o9";
+    await seedOrder(oid, { status: "cancelled" });
+    cancelledRight = await call(oid, REAL_CODE, PARTNER);
+    const d = await orderDoc(oid);
+    record("scenario9_cancelled_order_is_refused_even_with_the_correct_code",
+      !cancelledRight.ok && cancelledRight.code === "failed-precondition" &&
+      d.orderStatus === "cancelled" && (await timelineCount(oid)) === 0,
+      `code=${cancelledRight.code} status=${d.orderStatus} timeline=${await timelineCount(oid)}`);
+  }
+
+  // 10 — THE TWO-FIELD READ, cancel side. A seller/admin cancellation writes
+  // ONLY `status`; `orderStatus` is left at out_for_delivery. A one-field read
+  // of orderStatus would see an active order here and DELIVER a cancelled one.
+  {
+    const oid = "phase29-o10";
+    await seedOrder(oid, { mirrorStatus: "cancelled" });
+    const r = await call(oid, REAL_CODE, PARTNER);
+    const d = await orderDoc(oid);
+    record("scenario10_seller_side_cancellation_status_only_is_still_refused",
+      !r.ok && r.code === "failed-precondition" && d.orderStatus === "out_for_delivery" &&
+      d.status === "cancelled" && (await timelineCount(oid)) === 0,
+      `code=${r.code} orderStatus=${d.orderStatus} status=${d.status} (a one-field read delivers this)`);
+  }
+
+  // 11 — THE TWO-FIELD READ, delivered side. Same one-sided write, opposite
+  // direction: an order already marked delivered from the seller/admin panel
+  // must read as the retry it is, not as a fresh delivery with a second
+  // timeline entry and a second deliveredAt.
+  {
+    const oid = "phase29-o11";
+    await seedOrder(oid, { mirrorStatus: "delivered" });
+    const r = await call(oid, REAL_CODE, PARTNER);
+    record("scenario11_seller_side_delivered_status_only_reads_as_a_retry",
+      r.ok && r.result?.alreadyDelivered === true && (await timelineCount(oid)) === 0,
+      `ok=${r.ok} alreadyDelivered=${r.result?.alreadyDelivered} timeline=${await timelineCount(oid)} (expect 0 — nothing new written)`);
+  }
+
+  // 12 — the not-deliverable refusal must not become an oracle either. Right
+  // and wrong guesses on a cancelled order are refused identically, which is
+  // why the status check runs BEFORE the code comparison.
+  {
+    const oid = "phase29-o12";
+    await seedOrder(oid, { status: "cancelled" });
+    cancelledWrong = await call(oid, WRONG_CODE, PARTNER);
+    const same =
+      cancelledRight.code === cancelledWrong.code &&
+      cancelledRight.message === cancelledWrong.message;
+    record("scenario12_cancelled_refusal_is_not_an_oracle",
+      !cancelledWrong.ok && same,
+      `rightGuess=(${cancelledRight.code}: "${cancelledRight.message}") wrongGuess=(${cancelledWrong.code}: "${cancelledWrong.message}") identical=${same}`);
   }
 
   console.log("\n=== SUMMARY ===");

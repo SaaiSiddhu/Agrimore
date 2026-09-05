@@ -878,8 +878,16 @@ class _ActiveOrderScreenState extends State<ActiveOrderScreen> {
           errorMessage = 'This order could not be found.';
           break;
         case 'failed-precondition':
-          errorMessage =
-              'Verification is not available for this order. Please contact support.';
+          // Two different situations, two different things for the partner to
+          // do, so the callable tags which one it is rather than making this
+          // client guess from prose. Unknown/absent tag falls back to the
+          // support wording, which is safe for either.
+          final reason = (e.details is Map)
+              ? (e.details as Map)['reason'] as String?
+              : null;
+          errorMessage = reason == 'not_deliverable'
+              ? 'This order is no longer active and cannot be marked delivered.'
+              : 'Verification is not available for this order. Please contact support.';
           break;
         default:
           errorMessage = 'Could not confirm delivery. Please try again.';
