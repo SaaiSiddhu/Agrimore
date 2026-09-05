@@ -127,11 +127,14 @@ export const verifyWalletTopup = onCall(
       .digest("hex");
     if (expectedSignature !== signature) {
       log.error(`🚨 Wallet top-up signature mismatch for payment ${paymentId}`);
+      // FIX-9, WS1. Mirrors payment.ts's identical fix: never persist the
+      // correct signature, even into an admin-read-only collection — see
+      // that file's own comment for why "admin-only" isn't "safe to store".
       await admin.firestore().collection("payment_security_logs").add({
         paymentId,
         orderId,
-        receivedSignature: signature,
-        expectedSignature,
+        receivedSignatureLength: signature ? String(signature).length : 0,
+        signatureMatched: false,
         flaggedAt: admin.firestore.FieldValue.serverTimestamp(),
         type: "wallet_topup_signature_mismatch",
         uid,
