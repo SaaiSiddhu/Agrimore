@@ -80,36 +80,11 @@ class OrderProvider with ChangeNotifier {
     }
   }
 
-  // ============================================
-  // CREATE ORDER
-  // ============================================
-  Future<String?> createOrder(OrderModel order) async {
-    try {
-      _isLoading = true;
-      _error = null;
-      notifyListeners();
-
-      debugPrint('📦 Creating order: ${order.orderNumber}');
-
-      final orderId = await _databaseService.createOrder(order);
-
-      if (orderId != null) {
-        // Add to local list
-        _orders.insert(0, order);
-        debugPrint('✅ Order created: $orderId');
-      }
-
-      _isLoading = false;
-      notifyListeners();
-      return orderId;
-    } catch (e) {
-      debugPrint('❌ Error creating order: $e');
-      _error = e.toString();
-      _isLoading = false;
-      notifyListeners();
-      return null;
-    }
-  }
+  // FIX-15 (finding N-32): CREATE ORDER removed — wrapped
+  // DatabaseService.createOrder(), itself removed as dead (orders/{orderId}
+  // has had allow create: if false for as long as this codebase has had a
+  // server-side createOrder Cloud Function). Confirmed zero UI callers of
+  // this wrapper anywhere in apps/admin before removing.
 
   // ============================================
   // LOAD ORDER BY ID
