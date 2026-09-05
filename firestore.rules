@@ -443,6 +443,36 @@ service cloud.firestore {
       ]);
     }
 
+    // FIX-13 (finding N-24). None of orders/{orderId}'s four update
+    // branches permit a delivery partner to write deliveryRejectedBy on an
+    // UNASSIGNED order without also setting deliveryPartnerId to their own
+    // uid (the claim branch's own condition) — but denying an order and
+    // claiming it are opposite actions. apps/delivery/lib/providers/
+    // order_provider.dart's denyOrder() writes ONLY deliveryRejectedBy +
+    // updatedAt, so every deny attempt fell through to the implicit
+    // deny-all, threw uncaught, and the order only LOOKED denied via a
+    // purely local, unpersisted Set the UI filters on. Modeled on
+    // isAvailableDeliveryOrder()/deliveryPartnerCanClaimOrder()'s existing
+    // unassigned-order check: only an approved partner, only on a still-
+    // unassigned order, and the new array must be EXACTLY the old one with
+    // the caller's own uid appended once — never someone else's uid, never
+    // more than one entry added, never touching any other field. A repeat
+    // deny by the same partner (already present) is treated as the no-op
+    // it actually is, not forced to duplicate the entry.
+    function deliveryPartnerCanDenyUnassignedOrder() {
+      return isDeliveryPartner() &&
+        (!('deliveryPartnerId' in resource.data) ||
+         resource.data.deliveryPartnerId == null ||
+         resource.data.deliveryPartnerId == '') &&
+        request.resource.data.diff(resource.data).affectedKeys().hasOnly(['deliveryRejectedBy', 'updatedAt']) &&
+        (
+          resource.data.get('deliveryRejectedBy', []).hasAny([request.auth.uid])
+            ? request.resource.data.deliveryRejectedBy == resource.data.get('deliveryRejectedBy', [])
+            : request.resource.data.deliveryRejectedBy ==
+                resource.data.get('deliveryRejectedBy', []).concat([request.auth.uid])
+        );
+    }
+
     match /orders/{orderId} {
       // Order owner, seller, delivery partner, attributed Sales Associate,
       // or admin can read.
@@ -496,6 +526,8 @@ service cloud.firestore {
            resource.data.deliveryPartnerId == '') &&
           request.resource.data.deliveryPartnerId == request.auth.uid &&
           deliveryPartnerCanClaimOrder()) ||
+         // FIX-13 (finding N-24).
+         deliveryPartnerCanDenyUnassignedOrder() ||
          isAdmin());
 
       // Only admin can delete orders
