@@ -79,7 +79,7 @@
         android:icon="@mipmap/ic_launcher"
         android:usesCleartextTraffic="false"
         android:requestLegacyExternalStorage="true"
-        android:allowBackup="true"
+        android:allowBackup="false"
         android:fullBackupContent="@xml/backup_rules"
         android:dataExtractionRules="@xml/data_extraction_rules"
         android:supportsRtl="true"
@@ -116,9 +116,15 @@
         <!-- ========================================
              GOOGLE MAPS API KEY
              ======================================== -->
+        <!-- FIX-7 (finding N-37): value now injected from key.properties via
+             build.gradle.kts's manifestPlaceholders — was a hardcoded,
+             plaintext, tracked API key. google_maps_flutter IS a real
+             dependency here (add_address_screen.dart, live_tracking_screen.dart),
+             unlike apps/admin's now-removed one, so this key stays, just
+             out of the tracked file. -->
         <meta-data
             android:name="com.google.android.geo.API_KEY"
-            android:value="AIzaSyCKL5RYJ39x93yz1Km59KwpYybRod3IOeg"/>
+            android:value="${mapsApiKey}"/>
         
         <!-- ========================================
              MAIN ACTIVITY
