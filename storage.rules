@@ -25,10 +25,6 @@ service firebase.storage {
       return isAuthenticated() && request.auth.token.delivery_partner == true;
     }
 
-    function isEmployee() {
-      return isAuthenticated() && request.auth.token.employee == true;
-    }
-    
     // Check if file size is under limit (10MB)
     function isValidFileSize() {
       return request.resource.size < 10 * 1024 * 1024;
@@ -45,13 +41,35 @@ service firebase.storage {
     // ============================================
     // PRODUCT IMAGES — Authenticated users with size/type check
     // ============================================
+    // FIX-11 (finding N-18). `allow write: if isSeller() || isAdmin()` with
+    // no owner segment in the path let ANY approved seller overwrite ANY
+    // other seller's file by writing the same fileName — a real cross-
+    // tenant risk regardless of what the current UI happens to do, since
+    // the rule is the actual boundary. Grepped every app: filenames here
+    // are a bare `Uuid().v4()` (image_uploader.dart) with no owner-
+    // identifying prefix at all, and only apps/admin's own product image
+    // uploader writes to this path — zero seller-facing code found.
+    // Restricted to admin-only write: closes the overwrite with no client
+    // change (nothing seller-facing uses this path today) and no migration
+    // question (the read shape and every existing object are untouched).
     match /products/{fileName} {
       allow read: if true;
-      allow write: if (isSeller() || isAdmin()) && isValidFileSize() && isImage();
+      allow write: if isAdmin() && isValidFileSize() && isImage();
     }
+    // FIX-11 (finding N-18). Same defect, different fix: filenames here are
+    // `{sellerId}_{timestamp}.ext` (add_product_screen.dart:444), where
+    // sellerId is confirmed (at the call site, :457) to be
+    // `auth.currentUser!.uid` — the uploader's OWN uid, already. A seller
+    // can therefore only overwrite files that start with THEIR OWN uid; a
+    // seller cannot construct a filename starting with someone else's uid
+    // to target their file. Admin is exempt from the prefix requirement —
+    // no admin-facing code writes here today, but nothing should assume
+    // that stays true, and admin is already the more broadly trusted role.
+    // No client change: the existing convention already satisfies this.
     match /product_images/{fileName} {
       allow read: if true;
-      allow write: if (isSeller() || isAdmin()) && isValidFileSize() && isImage();
+      allow write: if isValidFileSize() && isImage() &&
+        (isAdmin() || (isSeller() && fileName.matches(request.auth.uid + '_.*')));
     }
 
     // ============================================
@@ -83,9 +101,13 @@ service firebase.storage {
       allow read: if isAuthenticated();
       allow write: if isAdmin() && isValidFileSize() && isImage();
     }
+    // FIX-11 (finding N-18). Same defect and fix as products/ above:
+    // filenames are `sponsored_banner_{timestamp}.jpg` with no owner
+    // prefix, and only apps/admin's sponsored-banner dialog writes here —
+    // zero seller-facing code found. Admin-only write.
     match /sponsored/{fileName} {
       allow read: if true;
-      allow write: if (isSeller() || isAdmin()) && isValidFileSize() && isImage();
+      allow write: if isAdmin() && isValidFileSize() && isImage();
     }
 
     // ============================================
@@ -99,47 +121,110 @@ service firebase.storage {
     // ============================================
     // CHAT ATTACHMENTS — Authenticated with size limit
     // ============================================
+    // FIX-11 (finding N-20). Was `isAuthenticated()` for both read and
+    // write, with no content-type check either — ANY signed-in user could
+    // read or overwrite ANY thread's attachments, and upload any file type.
+    // threads/{threadId} Firestore documents (written by apps/delivery and
+    // apps/seller) carry a `participantIds` array naming exactly who the
+    // thread belongs to — scoped to that via the same cross-service
+    // firestore.get() read this file's delivery_proofs block below also
+    // uses. isImage() added; phase24's own OBSERVED-PERMISSIVE scenario 9
+    // already proves a PDF was previously accepted only because nothing
+    // checked.
     match /chat/{threadId}/{fileName} {
-      allow read: if isAuthenticated();
-      allow write: if isAuthenticated() && isValidFileSize();
+      function isThreadParticipant() {
+        return isAuthenticated() &&
+          firestore.get(/databases/(default)/documents/threads/$(threadId))
+            .data.participantIds.hasAny([request.auth.uid]);
+      }
+      allow read: if isThreadParticipant() || isAdmin();
+      allow write: if (isThreadParticipant() || isAdmin()) && isValidFileSize() && isImage();
     }
 
     // ============================================
     // SELLER DOCUMENTS — Only the seller can upload
     // ============================================
+    // FIX-11 (finding N-18). No isImage() (or any content-type check at
+    // all) meant an authenticated owner could upload arbitrary HTML/JS here
+    // and serve it from this object's own download URL — a hosting vector
+    // unrelated to whatever Firestore/Storage READ rules say, since a
+    // shared/leaked download-token URL bypasses rules entirely. Grepped
+    // every app for a write to this path: zero found, so this is zero-risk
+    // — nothing currently uploads here to break.
     match /seller_documents/{userId}/{fileName} {
       allow read: if isAuthenticated() && (request.auth.uid == userId || isAdmin());
       allow write: if isAuthenticated() 
                    && request.auth.uid == userId
-                   && isValidFileSize();
+                   && isValidFileSize()
+                   && isImage();
     }
 
     // ============================================
     // EMPLOYEE DOCUMENTS — Only the employee can upload
     // ============================================
+    // FIX-11 (finding N-18). No isImage() (or any content-type check at
+    // all) meant an authenticated owner could upload arbitrary HTML/JS here
+    // and serve it from this object's own download URL — a hosting vector
+    // unrelated to whatever Firestore/Storage READ rules say, since a
+    // shared/leaked download-token URL bypasses rules entirely. Grepped
+    // every app for a write to this path: zero found, so this is zero-risk
+    // — nothing currently uploads here to break.
     match /employee_documents/{userId}/{fileName} {
       allow read: if isAuthenticated() && (request.auth.uid == userId || isAdmin());
       allow write: if isAuthenticated()
                    && request.auth.uid == userId
-                   && isValidFileSize();
+                   && isValidFileSize()
+                   && isImage();
     }
 
     // ============================================
     // DELIVERY PARTNER DOCUMENTS
     // ============================================
+    // FIX-11 (finding N-18). No isImage() (or any content-type check at
+    // all) meant an authenticated owner could upload arbitrary HTML/JS here
+    // and serve it from this object's own download URL — a hosting vector
+    // unrelated to whatever Firestore/Storage READ rules say, since a
+    // shared/leaked download-token URL bypasses rules entirely. Grepped
+    // every app for a write to this path: zero found (the delivery
+    // partner registration flow's KYC uploads go to a DIFFERENT,
+    // uncovered path, delivery_partners/{category}/{fileName}, and happen
+    // before authentication even completes — a separate, significant
+    // finding registered for its own future phase, not fixed here; see
+    // this phase's ledger row). This change is zero-risk regardless —
+    // nothing currently uploads to THIS path to break.
     match /delivery_documents/{userId}/{fileName} {
       allow read: if isAuthenticated() && (request.auth.uid == userId || isAdmin());
       allow write: if isAuthenticated() 
                    && request.auth.uid == userId
-                   && isValidFileSize();
+                   && isValidFileSize()
+                   && isImage();
     }
 
     // ============================================
     // DELIVERY PROOF PHOTOS
     // ============================================
+    // FIX-11 (findings N-18, N-19 / A-17). Read was `isAuthenticated()` —
+    // ANY signed-in user could read EVERY delivery-proof photo, which
+    // routinely shows addresses and customer detail (A-17). Write was
+    // `isDeliveryPartner() || isAdmin()` with no owner segment — any
+    // partner could overwrite any other order's proof. Filenames are
+    // `{orderId}_{timestamp}.jpg` (active_order_screen.dart:873) — no
+    // partner-uid prefix, so ownership is resolved by parsing the orderId
+    // back out of the filename and cross-checking the order's own
+    // deliveryPartnerId via firestore.get(), the same cross-service pattern
+    // this file's chat block above uses. No client change: the existing
+    // filename convention already carries what this check needs.
     match /delivery_proofs/{fileName} {
-      allow read: if isAuthenticated();
-      allow write: if (isDeliveryPartner() || isAdmin()) && isValidFileSize() && isImage();
+      function assignedOrderId() {
+        return fileName.split('_')[0];
+      }
+      function isAssignedPartnerForThisProof() {
+        return isDeliveryPartner() &&
+          firestore.get(/databases/(default)/documents/orders/$(assignedOrderId()))
+            .data.deliveryPartnerId == request.auth.uid;
+      }
+      allow read: if isAssignedPartnerForThisProof() || isAdmin();
+      allow write: if (isAssignedPartnerForThisProof() || isAdmin()) && isValidFileSize() && isImage();
     }
 
     match /{allPaths=**} {
