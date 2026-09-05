@@ -1124,6 +1124,19 @@ service cloud.firestore {
     }
 
     // ============================================
+    // OTP PER-IP SEND LIMIT (FIX-12, finding N-21)
+    // ============================================
+    // Written only by sendPhoneOTP.ts / sendEmailOTP.ts, keyed by a hashed
+    // caller IP — bounds an attacker iterating through many different
+    // phone numbers/email addresses from one source, which the per-number/
+    // per-address caps on otp_codes/phone_otp_codes above cannot. Never
+    // contains an OTP value. Cloud-Functions-only, mirroring every other
+    // OTP-adjacent collection in this file.
+    match /otp_ip_limits/{hashedIp} {
+      allow read, write: if false;
+    }
+
+    // ============================================
     // ADDRESSES COLLECTION (Top-level)
     // ============================================
     match /addresses/{addressId} {

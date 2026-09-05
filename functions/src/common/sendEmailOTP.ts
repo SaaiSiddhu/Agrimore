@@ -42,12 +42,37 @@ const RESEND_COOLDOWN_MS = 30 * 1000; // 30 seconds — mirrors sendPhoneOTP.ts
 const MAX_SENDS_PER_DAY = 10;
 const DAY_MS = 24 * 60 * 60 * 1000;
 
+// FIX-12 (finding N-21). Mirrors sendPhoneOTP.ts's identical fix and
+// identical reasoning: the cap above is keyed ONLY by email address, so an
+// attacker iterating through many different addresses from one source is
+// bound only by the Resend account's own budget. 50/day is deliberately
+// much higher than MAX_SENDS_PER_DAY so a shared IP (office wifi, a mobile
+// carrier's CGNAT) sees no practical impact under normal use.
+const MAX_SENDS_PER_IP_PER_DAY = 50;
+
 // Mirrors sendPhoneOTP.ts's hashOtp() helper exactly — Firestore is
 // defence-in-depth here (otp_codes is already `allow read, write: if
 // false`), but storing only a hash means a Firestore export/backup leak
 // can't reveal a live, usable code.
 function hashOtp(otp: string): string {
   return crypto.createHash("sha256").update(otp).digest("hex");
+}
+
+// FIX-12 (finding N-21). Mirrors sendPhoneOTP.ts's identical helpers.
+function hashIp(ip: string): string {
+  return crypto.createHash("sha256").update(ip).digest("hex");
+}
+
+function callerIp(req: functions.https.Request): string {
+  if (req.ip) return req.ip;
+  // Defensive: this codebase's own test suites call these handlers with a
+  // bare { method, body } object, no headers property at all — req.headers
+  // being absent must degrade to a shared "unknown" bucket, not throw. In
+  // any real deployment req.ip is always present (see this function's own
+  // header comment), so this branch exists for tests, not production.
+  const forwarded = req.headers?.["x-forwarded-for"];
+  const first = Array.isArray(forwarded) ? forwarded[0] : forwarded;
+  return (first || "unknown").split(",")[0].trim();
 }
 
 // ============================================
@@ -131,8 +156,35 @@ export const sendEmailOTP = functions
     // otp_codes/{email} document — mirrors sendPhoneOTP.ts's cooldown
     // check, extended with a rolling daily counter.
     const existingRef = db.collection("otp_codes").doc(email);
-    const existing = await existingRef.get();
+    // FIX-12 (finding N-21). Read alongside the per-address document,
+    // before any side effect.
+    const ipLimitRef = db.collection("otp_ip_limits").doc(hashIp(callerIp(req)));
+    const [existing, existingIpLimit] = await Promise.all([existingRef.get(), ipLimitRef.get()]);
     const now = Date.now();
+
+    // FIX-12 (finding N-21). Independent of, and checked BEFORE, the
+    // per-address cap below — bounds an attacker iterating through many
+    // different addresses from one source, which the per-address cap alone
+    // cannot.
+    let ipSendCount = 0;
+    let ipSendWindowStart = now;
+    if (existingIpLimit.exists) {
+      const ipData = existingIpLimit.data()!;
+      const ipWindowStart = typeof ipData.sendWindowStart === "number" ? ipData.sendWindowStart : now;
+      if (now - ipWindowStart < DAY_MS) {
+        ipSendWindowStart = ipWindowStart;
+        ipSendCount = typeof ipData.sendCount === "number" ? ipData.sendCount : 0;
+      }
+      if (ipSendCount >= MAX_SENDS_PER_IP_PER_DAY) {
+        res.status(429).json({
+          success: false,
+          error: "Too many code requests from this network today. Please try again later.",
+          retryAfterMs: ipSendWindowStart + DAY_MS - now,
+        });
+        return;
+      }
+    }
+
     let sendCount = 0;
     let windowStart = now;
     if (existing.exists) {
@@ -197,6 +249,10 @@ export const sendEmailOTP = functions
       });
       return;
     }
+
+    // FIX-12 (finding N-21). Counted on an actual successful delivery, same
+    // semantics as the per-address counter above.
+    await ipLimitRef.set({ sendCount: ipSendCount + 1, sendWindowStart: ipSendWindowStart }, { merge: true });
 
     console.log(`✅ OTP sent to ${email}`);
 
