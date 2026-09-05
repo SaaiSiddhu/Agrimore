@@ -70,14 +70,24 @@ interface CreateOrderData {
   productCreditHoldId?: string;
 }
 
+// FIX-9, WS5. Was `Date.now()` plus a `Math.random()` 4-digit tail — neither
+// CSPRNG nor collision-checked, so two orders in the same millisecond had a
+// real chance of an identical suffix. crypto.randomInt is the same CSPRNG
+// primitive createOrder.ts's own delivery verification code (and
+// sendPhoneOTP.ts's) already uses for exactly this reason.
 function generateOrderNumber(): string {
-  const random = Math.floor(1000 + Math.random() * 9000);
+  const random = crypto.randomInt(1000, 10000);
   return `ORD${Date.now()}${random}`;
 }
 
 function roundMoney(value: number): number {
   return Math.round(value * 100) / 100;
 }
+
+// FIX-9, WS3. Shared by the verified-payment tolerance check and the
+// payable-requires-a-real-payment branch below — see both call sites' own
+// comments for why 0.02 (2 paise), not the previous 1 (a full rupee).
+const MONEY_EPSILON = 0.02;
 
 // Mirrors OrderModel.generateVerificationCode()'s range exactly
 // (packages/agrimore_core/lib/models/order_model.dart:
@@ -538,13 +548,23 @@ export const createOrder = onCall({ minInstances: 0, memory: "256MiB" }, async (
         throw new HttpsError("failed-precondition", "Payment was not captured");
       }
       const verifiedAmount = typeof payment.amount === "number" ? payment.amount : -1;
-      if (Math.abs(verifiedAmount - payable) > 1) {
+      // FIX-9, WS3. Was `> 1` — a full RUPEE, on values that are already
+      // rupee-denominated (payment.ts converts Razorpay's paise back to
+      // rupees before storage) and each independently rounded exactly ONCE
+      // (orderPricing.ts's grandTotal, roundMoney to 2dp). True drift between
+      // two independently-computed totals is on the order of a paisa, not a
+      // rupee — the old tolerance let a customer pay up to ₹1 less than the
+      // order total and still pass. MONEY_EPSILON is generous enough to
+      // absorb one independent rounding step on each side without leaving a
+      // rupee-scale gap; if real-world false-rejects ever appear, this is
+      // the one constant to revisit.
+      if (Math.abs(verifiedAmount - payable) > MONEY_EPSILON) {
         throw new HttpsError(
           "failed-precondition",
           "Verified payment amount does not match the order total"
         );
       }
-    } else if (paymentMethod !== "cod" && payable > 1) {
+    } else if (paymentMethod !== "cod" && payable > MONEY_EPSILON) {
       // Deferred form of the upfront "Razorpay details required" guard
       // (skipped above only when a hold was supplied) — a hold that does
       // NOT cover the order in full still requires a real payment for the

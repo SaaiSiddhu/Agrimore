@@ -109,24 +109,46 @@ export const setLowStockThreshold = functions.https.onCall(async (data, context)
 
   const { productId, threshold } = data;
 
-  if (!productId || threshold === undefined) {
+  if (!productId || typeof productId !== "string") {
     throw new functions.https.HttpsError(
       "invalid-argument",
-      "productId and threshold are required"
+      "productId is required"
+    );
+  }
+
+  // FIX-9, WS4. Was `threshold === undefined` only — any other type
+  // (a string, NaN, Infinity, a negative number) reached the bare
+  // `productRef.update({ lowStockThreshold: threshold })` below unchecked.
+  // A non-finite or negative threshold either breaks onProductStockChanged's
+  // numeric comparison against it or fires a low-stock alert on every write.
+  if (typeof threshold !== "number" || !Number.isFinite(threshold) || threshold < 0) {
+    throw new functions.https.HttpsError(
+      "invalid-argument",
+      "threshold must be a non-negative finite number"
     );
   }
 
   const productRef = admin.firestore().collection("products").doc(productId);
+
+  // FIX-9, WS4. Claim-first, mirroring createEmployeeByAdmin.ts's and
+  // createSellerByAdmin.ts's own callerIsAdmin() idiom: check the auth
+  // token's admin claim before touching Firestore at all, rather than
+  // unconditionally reading userDoc even when the claim already answers the
+  // question. Falls back to the Firestore role field only when the claim
+  // is absent, matching those two files' fallback for the same reason.
+  const isAdminByClaim = context.auth.token.admin === true;
   const [productDoc, userDoc] = await Promise.all([
     productRef.get(),
-    admin.firestore().collection("users").doc(context.auth.uid).get(),
+    isAdminByClaim
+      ? Promise.resolve(null)
+      : admin.firestore().collection("users").doc(context.auth.uid).get(),
   ]);
 
   if (!productDoc.exists) {
     throw new functions.https.HttpsError("not-found", "Product not found");
   }
 
-  const isAdmin = userDoc.data()?.role === "admin";
+  const isAdmin = isAdminByClaim || userDoc?.data()?.role === "admin";
   const isSellerOwner = productDoc.data()?.sellerId === context.auth.uid;
   if (!isAdmin && !isSellerOwner) {
     throw new functions.https.HttpsError(

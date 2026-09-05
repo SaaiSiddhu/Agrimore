@@ -379,20 +379,53 @@ export function computeOrderPricing(params: ComputeOrderPricingParams): OrderPri
   // Per-seller ratio split — mirrors _createSellerScopedOrders's own
   // ratio-based discount/delivery/tax distribution exactly (by seller
   // subtotal share of the cart total).
+  //
+  // FIX-9, WS7. Every seller's discount/deliveryCharge/tax/total used to be
+  // rounded independently with no reconciliation step, so
+  // sum(perSeller[].total) could drift from grandTotal by up to roughly
+  // sellerCount x 0.5 paisa — small, but a real gap between what the
+  // customer was charged and what the per-seller records (which
+  // calculateSellerPayout reads) sum to. createOrder.ts's own comment shows
+  // this "last one absorbs the residual" pattern already exists for
+  // creditApplied distribution; generalized here to all four per-seller
+  // fields, not just total. Running totals track every EARLIER seller's
+  // rounded share; the LAST seller in iteration order gets the exact
+  // remainder instead of its own independently-rounded value, so the sums
+  // are exact by construction rather than by coincidence.
   const sellerCount = itemsBySeller.size;
   const perSeller: PerSellerPricing[] = [];
+  let discountAssigned = 0;
+  let deliveryAssigned = 0;
+  let taxAssigned = 0;
+  let totalAssigned = 0;
+  let sellerIndex = 0;
   for (const [sellerId, sellerItems] of itemsBySeller.entries()) {
+    sellerIndex += 1;
+    const isLastSeller = sellerIndex === sellerCount;
     let sellerSubtotal = 0;
     for (const item of sellerItems) {
       sellerSubtotal += (item.price as number) * (item.quantity as number);
     }
     const ratio = cartSubtotal > 0 ? sellerSubtotal / cartSubtotal : 1 / sellerCount;
-    const sellerDiscount = roundMoney(discountAmount * ratio);
-    const sellerDeliveryCharge = roundMoney(deliveryCharge * ratio);
-    const sellerTax = roundMoney(tax * ratio);
-    const sellerTotal = roundMoney(
-      Math.max(0, sellerSubtotal - sellerDiscount) + sellerDeliveryCharge + sellerTax
-    );
+
+    const sellerDiscount = isLastSeller
+      ? roundMoney(discountAmount - discountAssigned)
+      : roundMoney(discountAmount * ratio);
+    const sellerDeliveryCharge = isLastSeller
+      ? roundMoney(deliveryCharge - deliveryAssigned)
+      : roundMoney(deliveryCharge * ratio);
+    const sellerTax = isLastSeller
+      ? roundMoney(tax - taxAssigned)
+      : roundMoney(tax * ratio);
+    const sellerTotal = isLastSeller
+      ? roundMoney(grandTotal - totalAssigned)
+      : roundMoney(Math.max(0, sellerSubtotal - sellerDiscount) + sellerDeliveryCharge + sellerTax);
+
+    discountAssigned = roundMoney(discountAssigned + sellerDiscount);
+    deliveryAssigned = roundMoney(deliveryAssigned + sellerDeliveryCharge);
+    taxAssigned = roundMoney(taxAssigned + sellerTax);
+    totalAssigned = roundMoney(totalAssigned + sellerTotal);
+
     const resolvedSellerId = sellerId === "_unassigned" ? null : sellerId;
 
     perSeller.push({

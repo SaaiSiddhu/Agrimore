@@ -40,7 +40,10 @@ interface CreateOrderData {
   currency?: string;
   receipt?: string;
   notes?: Record<string, string>;
-  transfers?: { account: string; amount: number; currency: string }[];
+  // FIX-9, WS8. `transfers` removed — accepted from the client, destructured,
+  // and never referenced again anywhere in this function. Agrimore does not
+  // use Razorpay Route; seller payouts are computed and disbursed by this
+  // codebase's own calculateSellerPayout, not by Razorpay-native transfers.
 }
 
 export const createRazorpayOrder = onCall(
@@ -55,7 +58,7 @@ export const createRazorpayOrder = onCall(
         );
       }
 
-      const { amount, currency = "INR", receipt, notes, transfers } = data;
+      const { amount, currency = "INR", receipt, notes } = data;
 
       if (!amount || amount <= 0) {
         throw new HttpsError(
@@ -70,7 +73,12 @@ export const createRazorpayOrder = onCall(
       if (!RAZORPAY_KEY_ID || !RAZORPAY_KEY_SECRET) {
         throw new HttpsError(
           "failed-precondition",
-          "Razorpay credentials not configured. Run: firebase functions:config:set razorpay.key_id=YOUR_KEY razorpay.key_secret=YOUR_SECRET"
+          // FIX-9, WS8. This used to include the internal deployment runbook
+          // command verbatim in a CLIENT-facing error — no client action can
+          // fix a missing server secret, so this told an attacker something
+          // true about the deployment while giving a legitimate caller
+          // nothing they could act on either.
+          "Payment provider is not configured. Please contact support."
         );
       }
 
@@ -83,9 +91,14 @@ export const createRazorpayOrder = onCall(
         amount: Math.round(amount * 100),
         currency: currency,
         receipt: receipt || `order_${Date.now()}`,
+        // FIX-9, WS2. userId now comes AFTER the spread — it used to come
+        // first, so a client-supplied `notes.userId` silently overwrote the
+        // server's own value. This is order metadata attached to a real
+        // payment record, not an access-control field, but a forged userId
+        // here is still a forged attribution on a financial record.
         notes: {
-          userId: request.auth.uid,
           ...notes,
+          userId: request.auth.uid,
         },
       };
 
@@ -166,11 +179,19 @@ export const verifyRazorpayPayment = onCall(
 
     if (generatedSignature !== signature) {
       log.error(`🚨 SIGNATURE MISMATCH for payment ${paymentId}. Possible spoofing attempt.`);
+      // FIX-9, WS1. Never persist the correct signature: `payment_security_
+      // logs` is admin-read-only (firestore.rules), but "admin-only" is not
+      // the same claim as "safe to store a reusable forgery credential" —
+      // an admin-account compromise, a future dashboard rendering this
+      // collection, or a Firestore backup would all hand an attacker the
+      // exact value that makes their NEXT signature check pass. A boolean
+      // is enough to know a mismatch happened; the raw value adds nothing
+      // a human debugging this needs and everything an attacker would want.
       await admin.firestore().collection("payment_security_logs").add({
         paymentId,
         orderId,
-        receivedSignature: signature,
-        expectedSignature: generatedSignature,
+        receivedSignatureLength: signature ? String(signature).length : 0,
+        signatureMatched: false,
         flaggedAt: admin.firestore.FieldValue.serverTimestamp(),
         type: "signature_mismatch",
       });
@@ -216,14 +237,31 @@ export const verifyRazorpayPayment = onCall(
         status: payment.status,
       });
       log.success(`✅ Verified Razorpay payment: ${paymentId}`);
-      return { success: true, verified: true, payment };
+      // FIX-9, WS8. Used to return the FULL raw Razorpay payment object —
+      // potentially including the payer's email/contact/bank details — to
+      // whichever client called this. Narrowed to what a client actually
+      // needs to react to the result.
+      return {
+        success: true,
+        verified: true,
+        payment: { id: payment.id, status: payment.status, method: payment.method },
+      };
     } else {
       log.warn(`⚠️ Payment not captured: ${paymentId}, status: ${payment.status}`);
-      return { success: true, verified: false, payment };
+      return {
+        success: true,
+        verified: false,
+        payment: { id: payment.id, status: payment.status, method: payment.method },
+      };
     }
   } catch (error: any) {
+    // FIX-9, WS8. The raw error (a Razorpay API error body, an axios
+    // message that can include the request URL, or any other internal
+    // detail) used to be rethrown verbatim to the client. Logged in full
+    // server-side; the client gets a generic, actionable message only.
     log.error(`❌ Razorpay verification error: ${error.message}`);
-    throw new HttpsError("internal", error.message);
+    if (error instanceof HttpsError) throw error;
+    throw new HttpsError("internal", "Could not verify this payment. Please contact support.");
   }
   }
 );

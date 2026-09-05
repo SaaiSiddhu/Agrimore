@@ -39,6 +39,18 @@ function hashOtp(otp: string): string {
   return crypto.createHash("sha256").update(otp).digest("hex");
 }
 
+// FIX-9, WS6. Mirrors confirmDelivery.ts's codesMatch() exactly, same
+// reasoning: both operands are fixed-length SHA-256 hex digests, so a
+// length mismatch can't happen in practice, but timingSafeEqual is the
+// established idiom this codebase already uses for a hash comparison that
+// gates account access, and a plain `!==` here was the one place it wasn't.
+function otpHashesMatch(a: string, b: string): boolean {
+  const bufA = Buffer.from(a, "utf8");
+  const bufB = Buffer.from(b, "utf8");
+  if (bufA.length !== bufB.length) return false;
+  return crypto.timingSafeEqual(bufA, bufB);
+}
+
 function normalizePhone(raw: string): string | null {
   const digits = raw.replace(/[^\d]/g, "");
   let national: string | null = null;
@@ -142,7 +154,11 @@ export const verifyPhoneOTP = functions
       return;
     }
 
-    if (otpData.otpHash !== hashOtp(otp)) {
+    // Defensive: the plain `!==` this replaces never threw on a malformed
+    // stored value (undefined !== "hash" is just true in JS); Buffer.from
+    // would throw on anything that isn't a string, so that has to be ruled
+    // out explicitly first rather than becoming a 500 on a corrupt document.
+    if (typeof otpData.otpHash !== "string" || !otpHashesMatch(otpData.otpHash, hashOtp(otp))) {
       res.status(400).json({ success: false, error: "Invalid OTP. Please try again." });
       return;
     }
