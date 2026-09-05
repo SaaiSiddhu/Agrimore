@@ -90,6 +90,14 @@ export const confirmDelivery = onCall(
       // fishing for another order's code cannot use this callable as an oracle
       // — a wrong-partner call is refused identically whether the code is right
       // or wrong.
+      //
+      // Measured, not assumed: removing these five lines makes
+      // phase29_delivery_confirmation_test.js drop to 5/8, and not by failing
+      // softly — an UNASSIGNED partner holding the correct code SUCCEEDS
+      // (scenario 3, status=delivered), an order with NO assigned partner is
+      // deliverable by anyone (scenario 8), and right and wrong guesses become
+      // distinguishable (scenario 4, identical=false), which is the oracle this
+      // ordering exists to prevent.
       if (order.deliveryPartnerId !== uid) {
         throw new HttpsError(
           "permission-denied",
