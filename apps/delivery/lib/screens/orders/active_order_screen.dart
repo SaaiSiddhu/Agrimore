@@ -7,6 +7,7 @@ import 'package:url_launcher/url_launcher.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:image_picker/image_picker.dart';
 import 'package:firebase_storage/firebase_storage.dart';
+import 'package:cloud_functions/cloud_functions.dart';
 import 'package:agrimore_core/agrimore_core.dart';
 import '../../providers/order_provider.dart';
 
@@ -670,6 +671,15 @@ class _ActiveOrderScreenState extends State<ActiveOrderScreen> {
   void _showVerificationDialog(BuildContext context) {
     final codeController = TextEditingController();
     String? errorText;
+    // Phase FIX-5 (finding N-5). The check used to be one local Firestore read
+    // and a string compare — effectively instant, so an always-enabled button
+    // was fine. It is now a round trip to the confirmDelivery callable, which
+    // runs at minInstances: 0 and can cold-start. Without a busy state the
+    // partner sees nothing happen for seconds and taps again. The callable is
+    // idempotent (phase29 scenario 5), so a double tap cannot double-deliver —
+    // but "nothing appears to be happening" is still the wrong thing to show
+    // someone standing at a customer's door.
+    bool submitting = false;
 
     showDialog(
       context: context,
@@ -776,59 +786,60 @@ class _ActiveOrderScreenState extends State<ActiveOrderScreen> {
             ),
             actions: [
               TextButton(
-                onPressed: () => Navigator.pop(ctx),
+                onPressed: submitting ? null : () => Navigator.pop(ctx),
                 child: const Text('Cancel'),
               ),
               FilledButton.icon(
-                onPressed: () async {
-                  final inputCode = codeController.text.trim();
+                onPressed: submitting
+                    ? null
+                    : () async {
+                        final inputCode = codeController.text.trim();
 
-                  if (inputCode.isEmpty || inputCode.length < 6) {
-                    setDialogState(
-                      () => errorText = 'Enter the full 6-digit code',
-                    );
-                    return;
-                  }
+                        if (inputCode.isEmpty || inputCode.length < 6) {
+                          setDialogState(
+                            () => errorText = 'Enter the full 6-digit code',
+                          );
+                          return;
+                        }
 
-                  // 🔐 Fetch the real code from Firestore (never stored locally)
-                  try {
-                    final orderDoc = await FirebaseFirestore.instance
-                        .collection('orders')
-                        .doc(widget.order.id)
-                        .get();
+                        // Phase FIX-5 (finding N-5, P1). This used to FETCH the real
+                        // code from Firestore into this client and compare it here —
+                        // handing the answer to the very party being verified, and
+                        // leaving the whole check skippable because the status write
+                        // that follows was a plain client write.
+                        //
+                        // The code now goes to the confirmDelivery callable, which
+                        // compares it inside the Admin SDK and performs the transition
+                        // itself. This client never learns the expected value, and a
+                        // wrong code comes back as a server refusal.
+                        setDialogState(() {
+                          submitting = true;
+                          errorText = null;
+                        });
+                        final error = await _completeDelivery(inputCode);
 
-                    final realCode =
-                        orderDoc.data()?['deliveryVerificationCode'] as String?;
-
-                    if (!ctx.mounted) return;
-
-                    if (realCode == null) {
-                      setDialogState(
-                        () => errorText =
-                            'Verification not available for this order',
-                      );
-                      return;
-                    }
-
-                    if (inputCode == realCode) {
-                      // ✅ Code matches — complete delivery
-                      Navigator.pop(ctx);
-                      await _completeDelivery();
-                    } else {
-                      HapticFeedback.heavyImpact();
-                      setDialogState(
-                        () => errorText = 'Incorrect code. Please try again.',
-                      );
-                    }
-                  } catch (e) {
-                    debugPrint('❌ Verification error: $e');
-                    setDialogState(
-                      () => errorText = 'Verification failed. Try again.',
-                    );
-                  }
-                },
-                icon: const Icon(Icons.check, size: 18),
-                label: const Text('Verify & Complete'),
+                        if (!ctx.mounted) return;
+                        if (error == null) {
+                          Navigator.pop(ctx);
+                        } else {
+                          HapticFeedback.heavyImpact();
+                          setDialogState(() {
+                            submitting = false;
+                            errorText = error;
+                          });
+                        }
+                      },
+                icon: submitting
+                    ? const SizedBox(
+                        width: 18,
+                        height: 18,
+                        child: CircularProgressIndicator(
+                          strokeWidth: 2,
+                          color: Colors.white,
+                        ),
+                      )
+                    : const Icon(Icons.check, size: 18),
+                label: Text(submitting ? 'Verifying…' : 'Verify & Complete'),
                 style: FilledButton.styleFrom(backgroundColor: Colors.green),
               ),
             ],
@@ -841,14 +852,21 @@ class _ActiveOrderScreenState extends State<ActiveOrderScreen> {
   // ════════════════════════════════════════════
   // COMPLETE THE DELIVERY
   // ════════════════════════════════════════════
-  Future<void> _completeDelivery() async {
+  /// Phase FIX-5 (finding N-5, P1). Returns `null` on success, or a user-safe
+  /// sentence to show in the dialog. The verification code is now sent to the
+  /// `confirmDelivery` callable, which compares it server-side and performs the
+  /// status transition itself — this client never sees the expected value and no
+  /// longer writes the delivered status directly.
+  Future<String?> _completeDelivery(String code) async {
     setState(() => _isUpdating = true);
     HapticFeedback.heavyImpact();
 
     String? proofPhotoUrl;
-    final orderProvider = context.read<DeliveryOrderProvider>();
 
-    // Upload proof photo if available
+    // Upload proof photo if available. Deliberately BEFORE the confirmation
+    // call: a failed upload must not block a genuine delivery (it is best
+    // effort today and was before this change), while a refused confirmation
+    // must leave no delivered status behind.
     if (_proofPhoto != null) {
       try {
         final ref =
@@ -864,12 +882,52 @@ class _ActiveOrderScreenState extends State<ActiveOrderScreen> {
       }
     }
 
-    // Update order status to delivered
-    final success = await orderProvider.updateOrderStatus(
-      widget.order.id,
-      'delivered',
-      'Order delivered and verified by customer',
-    );
+    bool success = false;
+    String? errorMessage;
+    try {
+      final callable =
+          FirebaseFunctions.instance.httpsCallable('confirmDelivery');
+      await callable.call<Map<String, dynamic>>({
+        'orderId': widget.order.id,
+        'code': code,
+      });
+      success = true;
+    } on FirebaseFunctionsException catch (e) {
+      // feedback.md §2: never render the raw provider message. Map the codes
+      // this callable actually returns to sentences a delivery partner can act
+      // on; log the detail.
+      debugPrint('❌ confirmDelivery failed: ${e.code} ${e.message}');
+      switch (e.code) {
+        case 'permission-denied':
+          errorMessage = 'Incorrect code. Please try again.';
+          break;
+        case 'not-found':
+          errorMessage = 'This order could not be found.';
+          break;
+        case 'failed-precondition':
+          // Two different situations, two different things for the partner to
+          // do, so the callable tags which one it is rather than making this
+          // client guess from prose. Unknown/absent tag falls back to the
+          // support wording, which is safe for either.
+          final reason = (e.details is Map)
+              ? (e.details as Map)['reason'] as String?
+              : null;
+          errorMessage = reason == 'not_deliverable'
+              ? 'This order is no longer active and cannot be marked delivered.'
+              : 'Verification is not available for this order. Please contact support.';
+          break;
+        default:
+          errorMessage = 'Could not confirm delivery. Please try again.';
+      }
+    } catch (e) {
+      debugPrint('❌ confirmDelivery error: $e');
+      errorMessage = 'Could not confirm delivery. Please try again.';
+    }
+
+    if (!success) {
+      if (mounted) setState(() => _isUpdating = false);
+      return errorMessage ?? 'Could not confirm delivery. Please try again.';
+    }
 
     // Save proof photo URL if available
     if (proofPhotoUrl != null) {
@@ -939,6 +997,9 @@ class _ActiveOrderScreenState extends State<ActiveOrderScreen> {
         );
       }
     }
+
+    // Confirmed by the server. The caller closes the verification dialog.
+    return null;
   }
 
   // ════════════════════════════════════════════
