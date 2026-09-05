@@ -258,8 +258,12 @@ service cloud.firestore {
         // Authenticated users can create reviews
         allow create: if isAuthenticated() && request.resource.data.userId == request.auth.uid;
         
-        // Users can update their own reviews
-        allow update: if isAuthenticated() && resource.data.userId == request.auth.uid;
+        // Users can update their own reviews. Phase FIX-6, Workstream 3 fix:
+        // this checked only the EXISTING document's userId, not whether the
+        // update kept it the same — a user editing their own review could
+        // rewrite `userId` to someone else's uid, misattributing the review.
+        allow update: if isAuthenticated() && resource.data.userId == request.auth.uid &&
+          request.resource.data.userId == resource.data.userId;
         
         // Users can delete their own reviews, admins can delete any
         allow delete: if isAuthenticated() && 
@@ -505,7 +509,14 @@ service cloud.firestore {
            (isDeliveryPartner() &&
             get(/databases/$(database)/documents/orders/$(orderId)).data.deliveryPartnerId == request.auth.uid) ||
            isAdmin());
-        allow write: if isAdmin() ||
+        // Phase FIX-6, Workstream 3 fix: `allow write` covered create, update,
+        // AND delete for every one of these actors — an order's own owner,
+        // seller, or delivery partner could rewrite or delete entries in
+        // what is supposed to be an append-only audit trail of what
+        // happened to their order, up to and including hiding a disputed
+        // status change. Split: the append conditions are unchanged, but
+        // only admin may update or delete an existing entry.
+        allow create: if isAdmin() ||
           (isAuthenticated() &&
            (get(/databases/$(database)/documents/orders/$(orderId)).data.userId == request.auth.uid ||
             getAfter(/databases/$(database)/documents/orders/$(orderId)).data.userId == request.auth.uid)) ||
@@ -513,6 +524,7 @@ service cloud.firestore {
            get(/databases/$(database)/documents/orders/$(orderId)).data.sellerId == request.auth.uid) ||
           (isDeliveryPartner() &&
            get(/databases/$(database)/documents/orders/$(orderId)).data.deliveryPartnerId == request.auth.uid);
+        allow update, delete: if isAdmin();
       }
     }
     
@@ -568,8 +580,12 @@ service cloud.firestore {
       // Authenticated users can create reviews
       allow create: if isAuthenticated() && request.resource.data.userId == request.auth.uid;
       
-      // Users can only update their own reviews
-      allow update: if isAuthenticated() && resource.data.userId == request.auth.uid;
+      // Users can only update their own reviews. Phase FIX-6, Workstream 3
+      // fix: this checked only the EXISTING document's userId, not whether
+      // the update kept it the same — a user editing their own review could
+      // rewrite `userId` to someone else's uid, misattributing the review.
+      allow update: if isAuthenticated() && resource.data.userId == request.auth.uid &&
+        request.resource.data.userId == resource.data.userId;
       
       // Users can delete their own reviews, admins can delete any
       allow delete: if isAuthenticated() && 
@@ -857,16 +873,64 @@ service cloud.firestore {
       allow write: if isAdmin();
     }
     
-    match /settings/{docId} {
+    // Phase FIX-6, Workstream 3 fix: this single wildcard block served every
+    // settings/* document identically — including `access` (adminEmails, the
+    // ADMIN EMAIL ALLOWLIST that auth_service.dart's
+    // _adminAllowlistEmailsLower() reads to decide role promotion) and
+    // `commission` (the payout rate table calculateSellerPayout resolves
+    // against) — behind `allow read: if true`. Any unauthenticated visitor
+    // on the internet could read the admin email list and the commission
+    // rate table.
+    //
+    // Firestore rules are OR'd across every block that matches a path — a
+    // narrower match can only WIDEN what a broader one already allows, never
+    // restrict it (see the associate_onboarding comment below, which states
+    // this same rule for the same reason). So the wildcard below is the
+    // FLOOR, set to the most restrictive requirement in this group
+    // (`isAdmin()` — nothing needs anonymous OR merely-authenticated read of
+    // `commission` or `rewards`), and the two documents that genuinely have
+    // an authenticated, non-admin reader get their OWN block ADDING that
+    // wider read on top of the floor: `access`, because every app resolves
+    // role after login by reading it (never before — there is no anonymous
+    // caller to serve), and `wallet_config`, because apps/marketplace's
+    // wallet_provider.dart reads it from a wallet screen that is inherently
+    // behind login already. Neither block below needs its own `allow write`
+    // — the floor's `isAdmin()` write already covers both, and OR only
+    // widens reads that are actually declared, so omitting write here adds
+    // nothing (never subtracts from the floor either).
+    match /settings/access {
+      allow read: if isAuthenticated();
+    }
+    match /settings/wallet_config {
+      allow read: if isAuthenticated();
+    }
+    // Public read is a protected, tested contract for this one document —
+    // phase16a_onboarding_rules_test.js's
+    // 14_anyone_can_read_associate_onboarding_config — because a prospective
+    // associate reading the fee/copy config has not signed up yet. Unlike
+    // `access`/`commission`, this document's content (public fee and terms
+    // copy) has no sensitivity that anonymous read would expose.
+    match /settings/associate_onboarding {
       allow read: if true;
+    }
+    match /settings/{docId} {
+      allow read: if isAdmin();
       allow write: if isAdmin();
     }
     
     // ============================================
     // NOTIFICATIONS (Global)
     // ============================================
+    // Phase FIX-6, Workstream 3 fix: `isAuthenticated()` let any signed-in
+    // user read every notification meant for every other user — a
+    // cross-user data leak, and needlessly: every write here carries a
+    // `userId` field naming its recipient (sellerNotifications.ts:112,
+    // admin/notifications.ts:179), but no app anywhere reads this top-level
+    // collection. The real, correctly-scoped client path is
+    // users/{userId}/notifications above (isOwner(userId)); this collection
+    // is server-write-only.
     match /notifications/{notificationId} {
-      allow read: if isAuthenticated();
+      allow read: if isAdmin();
       allow write: if isAdmin();
     }
 
@@ -887,6 +951,14 @@ service cloud.firestore {
     // tamper with, or delete arbitrary log documents. Mirrors auth_events,
     // which already gets this right: clients legitimately create logs, but
     // never update or delete them afterward.
+    // FIX-6 investigated this collection (the original scan flagged create
+    // as "client-creatable" alongside the update/delete gap Phase 15
+    // Workstream 4a already closed) and found the create permission is
+    // ALSO already correct, not stale: phase15_rules_test.js's
+    // w4a_log_create_succeeds is an existing, deliberately-designed
+    // invariant proving isAuthenticated() create is intentional (mirrors
+    // auth_events). No client currently exercises it, but "unused today"
+    // is not "wrong" — left unchanged.
     match /logs/{logId} {
       allow read: if isAdmin();
       allow create: if isAuthenticated();
@@ -1227,9 +1299,13 @@ service cloud.firestore {
     // ============================================
     // REFERRALS COLLECTION
     // ============================================
+    // Phase FIX-6, Workstream 3 fix: "to check referral status" describes
+    // an intent no client implements — grep across every app found zero
+    // reads of this collection. `isAuthenticated()` let any signed-in user
+    // read every OTHER user's referral records (who referred whom, bonus
+    // amounts) for no feature that exists.
     match /referrals/{referralId} {
-      // Authenticated users can read (to check referral status)
-      allow read: if isAuthenticated();
+      allow read: if isAdmin();
 
       // Previously `allow create: if isAuthenticated()` with no field
       // checks — any client could fabricate a referral record naming any
@@ -1418,14 +1494,22 @@ service cloud.firestore {
     // ============================================
     // ASSOCIATE ONBOARDING COLLECTIONS (Phase 16A, Workstream 10g)
     // ============================================
-    // settings/associate_onboarding (the ₹500 fee/copy config) needs NO new
-    // rule here — it already falls under `match /settings/{docId}` above
-    // (`allow read: if true; allow write: if isAdmin();`), which already
-    // gives it exactly the shape Workstream 1 needs (public read, admin-only
-    // write). A redundant `match /settings/associate_onboarding` block
-    // would add nothing (Firestore rules are additive/OR'd across matching
-    // blocks — see the compliance-gate comment above for why a narrower
-    // match can never RESTRICT a broader one that already matches).
+    // settings/associate_onboarding (the ₹500 fee/copy config): Phase FIX-6,
+    // Workstream 3 tightened `match /settings/{docId}`'s FLOOR from public
+    // read to `isAdmin()`-only (see that block's own comment), because
+    // several other documents under settings/ — the admin email allowlist,
+    // the commission rate table — have no business being publicly
+    // readable. This document is different: phase16a_onboarding_rules_
+    // test.js's 14_anyone_can_read_associate_onboarding_config is an
+    // existing, deliberately-designed invariant proving anonymous read is a
+    // protected contract here (a prospective associate reading fee/terms
+    // copy has not signed up yet), so it now has its OWN widening block,
+    // just above settings/{docId}, adding `allow read: if true` back for
+    // this one document specifically. apps/marketplace's onboarding screen
+    // additionally calls the getAssociateOnboardingConfig callable (Admin
+    // SDK, bypasses rules) for the validated, sanitized copy — see that
+    // callable's own header — but the rules-level contract exists
+    // independently of whether any current screen happens to use it.
     //
     // The four collections below are new. Cloud Functions use the Admin
     // SDK and bypass these rules entirely regardless of what's written
