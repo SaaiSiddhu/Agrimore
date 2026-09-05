@@ -1620,6 +1620,18 @@ service cloud.firestore {
     }
 
     // ============================================
+    // ORDER RATE LIMITS COLLECTION (FIX-16, Workstream 1, finding N-23)
+    // ============================================
+    // Same shape and same reasoning as onboarding_rate_limits above: no
+    // client read or write path exists or is needed, and this explicit
+    // block exists only so a future reader doesn't mistake the absence for
+    // an oversight. functions/src/customer/createOrder.ts (Admin SDK,
+    // inside its own order-creation transaction) is the only reader/writer.
+    match /order_rate_limits/{uid} {
+      allow read, write: if false;
+    }
+
+    // ============================================
     // COMMISSION EXCEPTIONS COLLECTION (Phase 16D-1, Workstream 3f)
     // ============================================
     // "Delivered order, resolved employeeUid, but no usable commission
