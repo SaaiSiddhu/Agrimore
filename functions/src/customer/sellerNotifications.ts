@@ -133,6 +133,46 @@ export const notifySellerNewOrder = functions.firestore
  * Trigger: Fires when order status changes to 'delivered'.
  * Purpose: Calculate seller payout based on commission rate.
  */
+// Phase FIX-4 (finding N-8, P1). Mirrors employeeCommission.ts's
+// DELIVERED_EQUIVALENT_STATUSES exactly. Kept as a local copy rather than an
+// import because that module is owned by FIX-4B (finding N-29 lives in it) and
+// this phase must not touch it; if the two ever diverge, a seller is unpaid for
+// an order an associate was paid for, which is precisely the bug this closes.
+const PAYOUT_ELIGIBLE_STATUSES = new Set(["delivered", "completed"]);
+
+function isPayoutEligibleStatus(status: unknown): boolean {
+  return typeof status === "string" && PAYOUT_ELIGIBLE_STATUSES.has(status.toLowerCase());
+}
+
+const DEFAULT_COMMISSION_RATE = 8;
+const MAX_PAYOUT_COMMISSION_RATE = 100;
+
+/**
+ * Phase FIX-4 (finding N-28, P1). `categoryRates[...]` and `defaultRate` were
+ * used with no validation at all, so a non-numeric or negative admin entry
+ * produced `NaN` or a NEGATIVE netAmount — real money, computed from unchecked
+ * input. employeeCommission.ts validates carefully via resolveCommissionRate;
+ * this file did not.
+ *
+ * Same ceiling reasoning as that function: a rate at or above 100% would mean
+ * AgriMore keeps everything or more, which is a data-entry error rather than a
+ * business decision, so it is REFUSED rather than clamped — clamping would
+ * still pay out at a rate nobody chose. A present-but-zero or negative value is
+ * treated as unconfigured, matching that file's documented "rate 0 semantics"
+ * decision, instead of `|| 8` silently turning a configured 0 into 8.
+ */
+function resolvePayoutRate(value: unknown, fallback: number): number {
+  if (typeof value !== "number" || !Number.isFinite(value)) return fallback;
+  if (value <= 0) return fallback;
+  if (value > MAX_PAYOUT_COMMISSION_RATE) {
+    console.error(
+      `❌ settings/commission holds a rate above ${MAX_PAYOUT_COMMISSION_RATE}% — refusing it and using ${fallback}%`
+    );
+    return fallback;
+  }
+  return value;
+}
+
 export const calculateSellerPayout = functions.firestore
   .document("orders/{orderId}")
   .onUpdate(async (change, context) => {
@@ -140,47 +180,77 @@ export const calculateSellerPayout = functions.firestore
     const after = change.after.data();
     const orderId = context.params.orderId;
 
-    // Only trigger when status changes to "delivered"
-    if (before.orderStatus === "delivered" || after.orderStatus !== "delivered") {
+    // Phase FIX-4 (finding N-8, P1). This fired ONLY on the exact string
+    // "delivered", while employeeCommission.ts's payEmployeeCommissionOnDelivery
+    // treats "delivered" and "completed" as equivalent, case-insensitively —
+    // and its own comment records that apps/admin's order_management_screen has
+    // a live bulk action writing the literal 'completed'. An order closed that
+    // way paid the ASSOCIATE and silently never created a seller_payouts
+    // document at all. The two triggers now share one definition of "the order
+    // was fulfilled"; anything else is a way for a seller to go unpaid.
+    if (isPayoutEligibleStatus(before.orderStatus) || !isPayoutEligibleStatus(after.orderStatus)) {
       return null;
     }
 
     console.log(`💰 Calculating payout for delivered order ${orderId}`);
 
     const items = after.items as Array<any> || [];
-    const orderTotal = after.total || 0;
 
-    // Get commission settings
-    let defaultCommission = 8; // 8% default
+    // Phase FIX-4 (N-28, and the N+1 read observed alongside it). settings/
+    // commission was read once here for defaultRate AND again inside the
+    // per-seller loop for categoryRates — an N+1 read on a money path. One read,
+    // both values.
+    //
+    // `defaultRate || 8` also silently turned a CONFIGURED rate of 0 into 8.
+    // employeeCommission.ts documents that exact hazard as its "rate 0
+    // semantics" decision and handles it deliberately; this file simply got it
+    // wrong. resolvePayoutRate below treats 0 as unconfigured rather than as
+    // "pay nothing", matching that decision, but never silently substitutes a
+    // number for a value that is present and out of range.
+    let commissionSettings: admin.firestore.DocumentData = {};
     try {
-      const settingsDoc = await admin
-        .firestore()
-        .collection("settings")
-        .doc("commission")
-        .get();
-
-      if (settingsDoc.exists) {
-        defaultCommission = settingsDoc.data()?.defaultRate || 8;
-      }
+      const settingsDoc = await admin.firestore().collection("settings").doc("commission").get();
+      commissionSettings = settingsDoc.data() || {};
     } catch (e) {
-      console.log("⚠️ Using default commission rate");
+      console.log("⚠️ settings/commission unreadable — falling back to the default rate");
     }
+    const defaultCommission = resolvePayoutRate(commissionSettings.defaultRate, DEFAULT_COMMISSION_RATE);
 
     // Group items by seller
     const sellerItems: Record<string, { total: number; items: any[] }> = {};
 
     for (const item of items) {
       try {
-        const productDoc = await admin
-          .firestore()
-          .collection("products")
-          .doc(item.productId)
-          .get();
+        // Phase FIX-4 (finding N-26, P1). sellerId now comes from the ORDER's
+        // own stored per-item value (written by orderPricing.ts:327 at creation
+        // time), NOT from the live products/{id} document. Re-deriving it from
+        // the product meant a product reassigned to a different seller after the
+        // order paid the WRONG seller, and a deleted product hit
+        // `if (!sellerId) continue;` and silently dropped that item from the
+        // payout — the seller simply never got paid for it, with no error.
+        // The order is the record of what was sold and by whom; the product
+        // document is mutable state that has moved on.
+        //
+        // The product is still read, for categoryId ONLY, because the
+        // category-rate selection depends on it and changing that selection is
+        // finding N-27 — deliberately out of this phase's scope (see FIX-4B).
+        // A missing product now degrades to the default rate instead of
+        // dropping the line.
+        const sellerId = typeof item.sellerId === "string" ? item.sellerId : "";
+        if (!sellerId) {
+          console.warn(
+            `⚠️ Order ${orderId} item ${item.productId} has no sellerId on the order — no payout target, skipping this line`
+          );
+          continue;
+        }
 
-        const sellerId = productDoc.data()?.sellerId;
-        const categoryId = productDoc.data()?.categoryId;
-
-        if (!sellerId) continue;
+        let categoryId: string | undefined;
+        try {
+          const productDoc = await admin.firestore().collection("products").doc(item.productId).get();
+          categoryId = productDoc.data()?.categoryId;
+        } catch (e) {
+          console.warn(`⚠️ Could not read product ${item.productId} for its category — using the default rate`);
+        }
 
         if (!sellerItems[sellerId]) {
           sellerItems[sellerId] = { total: 0, items: [] };
@@ -200,59 +270,71 @@ export const calculateSellerPayout = functions.firestore
     // Create payout document for each seller
     const payoutPromises = Object.entries(sellerItems).map(
       async ([sellerId, data]) => {
-        // Check for category-specific commission
-        let commissionRate = defaultCommission;
-        try {
-          const settingsDoc = await admin
-            .firestore()
-            .collection("settings")
-            .doc("commission")
-            .get();
-
-          const categoryRates = settingsDoc.data()?.categoryRates || {};
-          // Use the first item's category for simplicity
-          const firstCategory = data.items[0]?.categoryId;
-          if (firstCategory && categoryRates[firstCategory]) {
-            commissionRate = categoryRates[firstCategory];
-          }
-        } catch (e) {
-          // Use default
-        }
+        // Category-specific commission. The SELECTION RULE — "the first item's
+        // category decides the rate for the whole payout" — is preserved
+        // verbatim: it is wrong for mixed-category orders, that is finding N-27,
+        // and correcting it changes payout amounts on live rate tables, so it
+        // belongs to FIX-4B and an owner decision. What changes here is only
+        // that the chosen rate is now VALIDATED (N-28) and that
+        // settings/commission is no longer re-read per seller.
+        const categoryRates = commissionSettings.categoryRates || {};
+        const firstCategory = data.items[0]?.categoryId;
+        const rawCategoryRate =
+          firstCategory && categoryRates[firstCategory] !== undefined
+            ? categoryRates[firstCategory]
+            : undefined;
+        const commissionRate =
+          rawCategoryRate === undefined
+            ? defaultCommission
+            : resolvePayoutRate(rawCategoryRate, defaultCommission);
 
         const grossAmount = data.total;
         const commissionAmount = grossAmount * (commissionRate / 100);
         const netAmount = grossAmount - commissionAmount;
 
-        // Check if payout already exists for this order+seller
-        const existing = await admin
+        // Phase FIX-4 (finding N-7, P1). This was a non-transactional
+        // check-then-act: a query, an early return if non-empty, then a bare
+        // .add() with a RANDOM document id. v1 Firestore triggers are
+        // at-least-once and can be delivered concurrently, so two invocations
+        // both observed `empty` and both added — paying the seller twice.
+        // payEmployeeCommissionOnDelivery in the sibling file already got this
+        // right by re-checking inside runTransaction; this one never did.
+        //
+        // Two changes make a double payout impossible rather than unlikely:
+        // the document id is now DETERMINISTIC (`{orderId}_{sellerId}`), so a
+        // duplicate is the same document rather than a second one; and the
+        // existence check and the write are in one transaction, so a concurrent
+        // invocation either sees the marker or loses the transaction lock and
+        // retries. Either alone would leave a window; the pair does not.
+        const payoutRef = admin
           .firestore()
           .collection("seller_payouts")
-          .where("orderId", "==", orderId)
-          .where("sellerId", "==", sellerId)
-          .limit(1)
-          .get();
+          .doc(`${orderId}_${sellerId}`);
 
-        if (!existing.empty) {
-          console.log(
-            `⚠️ Payout already exists for order ${orderId}, seller ${sellerId}`
-          );
+        const created = await admin.firestore().runTransaction(async (tx) => {
+          const existing = await tx.get(payoutRef);
+          if (existing.exists) return false;
+          tx.set(payoutRef, {
+            sellerId,
+            orderId,
+            orderNumber: after.orderNumber || "",
+            grossAmount,
+            commissionRate,
+            commissionAmount,
+            netAmount,
+            amount: netAmount, // Alias for backward compat
+            status: "pending",
+            itemCount: data.items.length,
+            createdAt: admin.firestore.FieldValue.serverTimestamp(),
+            paidAt: null,
+          });
+          return true;
+        });
+
+        if (!created) {
+          console.log(`⚠️ Payout already exists for order ${orderId}, seller ${sellerId}`);
           return;
         }
-
-        await admin.firestore().collection("seller_payouts").add({
-          sellerId,
-          orderId,
-          orderNumber: after.orderNumber || "",
-          grossAmount,
-          commissionRate,
-          commissionAmount,
-          netAmount,
-          amount: netAmount, // Alias for backward compat
-          status: "pending",
-          itemCount: data.items.length,
-          createdAt: admin.firestore.FieldValue.serverTimestamp(),
-          paidAt: null,
-        });
 
         console.log(
           `✅ Payout created: seller=${sellerId}, gross=₹${grossAmount}, commission=${commissionRate}%, net=₹${netAmount}`
