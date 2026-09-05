@@ -31,15 +31,24 @@ service cloud.firestore {
         );
     }
     
-    // Check if user is a seller
+    // Check if user is a seller.
+    // FIX-15 (finding N-45): was two separate get() calls to the SAME
+    // users/{uid} document (once for .role, again for .sellerStatus) —
+    // Firestore rules cap a single evaluation at 20 get()/exists() calls,
+    // and every one is a real, separately-billed read; a `let` binding
+    // fetches it once and reuses the result. Same boolean logic, verified
+    // against every existing rules suite.
     function isSeller() {
-      return isAuthenticated() && 
+      let userDoc = isAuthenticated()
+        ? get(/databases/$(database)/documents/users/$(request.auth.uid)).data
+        : null;
+      return isAuthenticated() &&
         (
           request.auth.token.seller == true ||
           (
-            get(/databases/$(database)/documents/users/$(request.auth.uid)).data.role == 'seller' &&
+            userDoc.role == 'seller' &&
             (
-              get(/databases/$(database)/documents/users/$(request.auth.uid)).data.sellerStatus == 'approved' ||
+              userDoc.sellerStatus == 'approved' ||
               get(/databases/$(database)/documents/sellers/$(request.auth.uid)).data.status == 'approved'
             )
           )
@@ -58,15 +67,19 @@ service cloud.firestore {
         );
     }
 
-    // Check if user is an approved employee (B2B sales rep)
+    // Check if user is an approved employee (B2B sales rep).
+    // FIX-15 (finding N-45): same fix as isSeller() above, same reason.
     function isEmployee() {
+      let userDoc = isAuthenticated()
+        ? get(/databases/$(database)/documents/users/$(request.auth.uid)).data
+        : null;
       return isAuthenticated() &&
         (
           request.auth.token.employee == true ||
           (
-            get(/databases/$(database)/documents/users/$(request.auth.uid)).data.role == 'employee' &&
+            userDoc.role == 'employee' &&
             (
-              get(/databases/$(database)/documents/users/$(request.auth.uid)).data.employeeStatus == 'approved' ||
+              userDoc.employeeStatus == 'approved' ||
               get(/databases/$(database)/documents/employees/$(request.auth.uid)).data.status == 'approved'
             )
           )
@@ -1442,22 +1455,24 @@ service cloud.firestore {
           request.auth.uid in resource.data.participantIds) ||
          isAdmin());
          
+      // FIX-15 (finding N-45): allow read and allow create each called
+      // get() on the SAME threads/{threadId} document FIVE times (once per
+      // OR-branch) — a helper function with a `let` binding (mirroring
+      // ownerCannotChangePrivilegedFields()'s own established pattern
+      // above) fetches it once per evaluation and reuses the result. Same
+      // boolean logic, verified against every existing rules suite.
+      function isThreadPartyOrAdmin() {
+        let thread = get(/databases/$(database)/documents/threads/$(threadId)).data;
+        return thread.customerId == request.auth.uid ||
+          thread.sellerId == request.auth.uid ||
+          thread.deliveryPartnerId == request.auth.uid ||
+          (thread.participantIds is list && request.auth.uid in thread.participantIds) ||
+          isAdmin();
+      }
+
       match /messages/{messageId} {
-        allow read: if isAuthenticated() && 
-          (get(/databases/$(database)/documents/threads/$(threadId)).data.customerId == request.auth.uid || 
-           get(/databases/$(database)/documents/threads/$(threadId)).data.sellerId == request.auth.uid || 
-           get(/databases/$(database)/documents/threads/$(threadId)).data.deliveryPartnerId == request.auth.uid ||
-           (get(/databases/$(database)/documents/threads/$(threadId)).data.participantIds is list &&
-            request.auth.uid in get(/databases/$(database)/documents/threads/$(threadId)).data.participantIds) ||
-           isAdmin());
-           
-        allow create: if isAuthenticated() && 
-          (get(/databases/$(database)/documents/threads/$(threadId)).data.customerId == request.auth.uid || 
-           get(/databases/$(database)/documents/threads/$(threadId)).data.sellerId == request.auth.uid || 
-           get(/databases/$(database)/documents/threads/$(threadId)).data.deliveryPartnerId == request.auth.uid ||
-           (get(/databases/$(database)/documents/threads/$(threadId)).data.participantIds is list &&
-            request.auth.uid in get(/databases/$(database)/documents/threads/$(threadId)).data.participantIds) ||
-           isAdmin());
+        allow read: if isAuthenticated() && isThreadPartyOrAdmin();
+        allow create: if isAuthenticated() && isThreadPartyOrAdmin();
       }
     }
 
