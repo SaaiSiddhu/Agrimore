@@ -96,6 +96,60 @@ function generateVerificationCode(): string {
   return crypto.randomInt(100000, 1000000).toString();
 }
 
+// FIX-16, WS1 (finding N-23). createOrder had no per-user rate limit at
+// all, and a COD order costs the caller nothing to create, so a script
+// could hammer this callable without bound. Mirrors
+// createAssociateOnboardingPayment.ts's `onboarding_rate_limits` cooldown
+// pattern exactly (a dedicated Cloud-Functions-only collection keyed by
+// uid, a direct get-by-id needing no composite index) but reads/writes the
+// marker INSIDE this function's own transaction rather than around it:
+// createOrder already runs one transaction per call, so folding the
+// check-then-write into it makes the two atomic against each other for
+// free, closing the read-then-write race a separate get()/set() pair
+// would have. 10 seconds is a generous safety margin, not a measured
+// legitimate-usage ceiling — a real checkout (even a multi-seller cart,
+// which is still exactly one createOrder call) never needs a second call
+// within 10 seconds, but a burst-abuse script hammering the endpoint is
+// throttled to at most one order per window.
+const ORDER_RATE_LIMIT_WINDOW_MS = 10 * 1000;
+
+// FIX-16, WS2 (finding N-23). deliveryAddress/notes/deliverySlot/orderType/
+// autoFrequency were written into the order document verbatim from client
+// input with no shape or size bound. Firestore's own per-document limit
+// (1 MiB) would eventually reject an extreme payload, but only AFTER this
+// transaction has already done all its other reads/writes and is about to
+// commit — turning a cheap, clean invalid-argument rejection into an
+// expensive failed transaction. These caps are generous relative to any
+// real value (AddressModel's real fields — name/phone/address lines/city/
+// state/zipcode/country/landmark — serialize to well under 1 KB; a real
+// delivery note is a short sentence) while still blocking a multi-KB/MB
+// payload outright.
+const MAX_NOTES_LENGTH = 500;
+const MAX_SHORT_STRING_FIELD_LENGTH = 100;
+const MAX_DELIVERY_ADDRESS_BYTES = 4096;
+
+function validateOrderInputBounds(data: CreateOrderData): void {
+  if (data?.deliveryAddress !== undefined && data?.deliveryAddress !== null) {
+    const addr = data.deliveryAddress;
+    if (typeof addr !== "object" || Array.isArray(addr)) {
+      throw new HttpsError("invalid-argument", "deliveryAddress must be an object");
+    }
+    const byteLength = Buffer.byteLength(JSON.stringify(addr), "utf8");
+    if (byteLength > MAX_DELIVERY_ADDRESS_BYTES) {
+      throw new HttpsError("invalid-argument", "deliveryAddress is too large");
+    }
+  }
+  if (typeof data?.notes === "string" && data.notes.length > MAX_NOTES_LENGTH) {
+    throw new HttpsError("invalid-argument", "notes is too long");
+  }
+  for (const field of ["deliverySlot", "orderType", "autoFrequency"] as const) {
+    const value = data?.[field];
+    if (typeof value === "string" && value.length > MAX_SHORT_STRING_FIELD_LENGTH) {
+      throw new HttpsError("invalid-argument", `${field} is too long`);
+    }
+  }
+}
+
 export const createOrder = onCall({ minInstances: 0, memory: "256MiB" }, async (request) => {
   const data = request.data as CreateOrderData;
 
@@ -141,6 +195,11 @@ export const createOrder = onCall({ minInstances: 0, memory: "256MiB" }, async (
       throw new HttpsError("invalid-argument", `Invalid quantity for product ${item.productId}`);
     }
   }
+
+  // FIX-16, WS2 (finding N-23). Pure input shape/size validation — no
+  // Firestore dependency, so it runs before any read, same as the item
+  // checks above.
+  validateOrderInputBounds(data);
 
   // Phase FIX-3 (finding N-4, P1). Collapse repeated productIds into one line
   // with the summed quantity, and bound the cart, BEFORE anything downstream
@@ -202,6 +261,11 @@ export const createOrder = onCall({ minInstances: 0, memory: "256MiB" }, async (
   // transact — read alongside every other read this transaction needs.
   const userRef = db.collection("users").doc(uid);
 
+  // FIX-16, WS1 (finding N-23). Read+written inside this same transaction
+  // (see ORDER_RATE_LIMIT_WINDOW_MS's comment above) so the check and the
+  // marker update are atomic with the order-creation writes they gate.
+  const rateLimitRef = db.collection("order_rate_limits").doc(uid);
+
   // Phase D: refs for the hold this order settles, plus the Q5 gate
   // (assertProgramLaunchable + PRODUCT_CREDIT_REDEMPTION_ENABLED) re-read
   // fresh HERE — never trusted from quote time — via tx.get() so it is
@@ -229,6 +293,17 @@ export const createOrder = onCall({ minInstances: 0, memory: "256MiB" }, async (
     // docs) happen only in the second half of this callback, below.
     // ============================================
     const userSnap = await tx.get(userRef);
+
+    // FIX-16, WS1 (finding N-23). Checked right after the mandatory reads,
+    // before the (unconditional) employee-code/product reads below, so a
+    // throttled caller doesn't pay for reads it can't use.
+    const rateLimitSnap = await tx.get(rateLimitRef);
+    const lastOrderAt = rateLimitSnap.data()?.lastOrderAt as
+      | admin.firestore.Timestamp
+      | undefined;
+    if (lastOrderAt && Date.now() - lastOrderAt.toMillis() < ORDER_RATE_LIMIT_WINDOW_MS) {
+      throw new HttpsError("resource-exhausted", "Please wait a moment before placing another order.");
+    }
 
     // Phase 16D-2, Workstream 1b: the ONE employee-code lookup query in
     // this codebase — unchanged in shape from its original B2B-only form
@@ -811,6 +886,11 @@ export const createOrder = onCall({ minInstances: 0, memory: "256MiB" }, async (
         redeemedAt: admin.firestore.FieldValue.serverTimestamp(),
       });
     }
+
+    // FIX-16, WS1 (finding N-23). Marked only once every other write this
+    // order needs has been queued — a caller who hits an error above never
+    // gets cooled down for an order that didn't happen.
+    tx.set(rateLimitRef, { lastOrderAt: admin.firestore.FieldValue.serverTimestamp() }, { merge: true });
 
     return { success: true, orders: createdOrders };
   });
