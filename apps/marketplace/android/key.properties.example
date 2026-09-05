@@ -1,0 +1,13 @@
+# Copy to key.properties in this same directory (already gitignored — see
+# .gitignore and android/.gitignore) and fill in the real values. Never
+# commit key.properties itself.
+storePassword=CHANGE_ME
+keyPassword=CHANGE_ME
+keyAlias=upload
+storeFile=../upload-key.jks
+
+# FIX-7 (finding N-37): the Google Maps API key AndroidManifest.xml reads
+# via ${mapsApiKey}. Get the real value from the GCP console — never from
+# git history, where the old hardcoded key still lives (rotate it there
+# first).
+mapsApiKey=CHANGE_ME

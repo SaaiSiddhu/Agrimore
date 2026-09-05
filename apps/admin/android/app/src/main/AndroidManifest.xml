@@ -11,9 +11,15 @@
     <uses-permission android:name="android.permission.ACCESS_NETWORK_STATE"/>
     <uses-permission android:name="android.permission.ACCESS_WIFI_STATE"/>
     
-    <!-- Location Permissions (For Google Maps & Address Selection) -->
-    <uses-permission android:name="android.permission.ACCESS_FINE_LOCATION"/>
-    <uses-permission android:name="android.permission.ACCESS_COARSE_LOCATION"/>
+    <!-- FIX-7 (finding N-38): removed ACCESS_FINE_LOCATION/ACCESS_COARSE_LOCATION.
+         "For Google Maps & Address Selection" described a feature this app
+         does not have — google_maps_flutter is not a dependency here (see
+         the now-removed Maps API key below), and grep found zero callers of
+         packages/agrimore_services' LocationService anywhere in apps/admin.
+         geolocator_android's own plugin manifest (checked directly in the
+         pub cache) declares no location permission itself — only a
+         foreground service — so this was the sole source and plain removal
+         is enough; no manifest-merge override needed. -->
     
     <!-- Camera & Storage (For Profile Pictures & Product Images) -->
     <uses-permission android:name="android.permission.CAMERA"/>
@@ -33,9 +39,11 @@
     <uses-permission android:name="android.permission.WAKE_LOCK"/>
     
     
-    <!-- Biometric Authentication -->
-    <uses-permission android:name="android.permission.USE_BIOMETRIC"/>
-    <uses-permission android:name="android.permission.USE_FINGERPRINT"/>
+    <!-- FIX-7 (finding N-38): removed USE_BIOMETRIC/USE_FINGERPRINT.
+         local_auth is not a dependency anywhere in this app's pubspec tree;
+         settings_provider.dart's `biometricEnabled` is a bare
+         SharedPreferences toggle with no biometric API ever invoked — an
+         orphaned UI switch, not a feature. -->
     
     <!-- Foreground Service (For Background Tasks) -->
     <uses-permission android:name="android.permission.FOREGROUND_SERVICE"/>
@@ -63,28 +71,24 @@
         android:icon="@mipmap/ic_launcher"
         android:usesCleartextTraffic="false"
         android:requestLegacyExternalStorage="true"
-        android:allowBackup="true"
+        android:allowBackup="false"
         android:fullBackupContent="@xml/backup_rules"
         android:dataExtractionRules="@xml/data_extraction_rules"
         android:supportsRtl="true"
         android:enableOnBackInvokedCallback="true"
         tools:targetApi="34">
         
-        <!-- ========================================
-             ADMOB APP ID (TEST ID)
-             Replace with your actual AdMob ID in production
-             ======================================== -->
-        <meta-data
-            android:name="com.google.android.gms.ads.APPLICATION_ID"
-            android:value="ca-app-pub-3940256099942544~3347511713"/>
-        
-        <!-- ========================================
-             GOOGLE MAPS API KEY
-             ======================================== -->
-        <meta-data
-            android:name="com.google.android.geo.API_KEY"
-            android:value="AIzaSyAB-NXBRjrubWRDrp2HNgbgeG7fNzxSQlY"/>
-        
+        <!-- FIX-7 (finding N-35): removed the AdMob meta-data that shipped
+             Google's own PUBLIC SAMPLE app id in this production manifest.
+             google_mobile_ads is not a dependency of this app and grep found
+             zero ad-related Dart code anywhere in apps/admin — the tag was
+             inert (no ads SDK to read it) but wrong to ship regardless. -->
+        <!-- FIX-7 (finding N-37): removed the Maps API key meta-data.
+             google_maps_flutter is not a dependency of this app and grep
+             found zero GoogleMap usage anywhere in apps/admin/lib — this key
+             was hardcoded, plaintext, and unused. apps/marketplace's Maps
+             key IS genuinely used and is handled separately (parameterized
+             via key.properties, not removed). -->
         <!-- ========================================
              MAIN ACTIVITY
              ======================================== -->
