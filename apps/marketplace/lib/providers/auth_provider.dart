@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:firebase_auth/firebase_auth.dart';
+import 'package:firebase_messaging/firebase_messaging.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 import 'package:agrimore_core/agrimore_core.dart';
@@ -228,6 +229,7 @@ class AuthProvider with ChangeNotifier {
       );
 
       await _logAuthEvent('registration', true, email);
+      if (_currentUser != null) await _updateFCMToken(_currentUser!.uid);
 
       if (_rememberMe) {
         await _storeCredentials(email);
@@ -292,6 +294,7 @@ class AuthProvider with ChangeNotifier {
       );
 
       await _logAuthEvent('login', true, email);
+      if (_currentUser != null) await _updateFCMToken(_currentUser!.uid);
 
       if (_rememberMe) {
         await _storeCredentials(email);
@@ -403,6 +406,7 @@ class AuthProvider with ChangeNotifier {
       _isNewUser = result.isNewUser;
 
       await _logAuthEvent('phone_login', true, phone);
+      if (_currentUser != null) await _updateFCMToken(_currentUser!.uid);
 
       debugPrint('✅ Phone login successful: ${_currentUser?.uid} (new: $_isNewUser)');
 
@@ -580,6 +584,7 @@ class AuthProvider with ChangeNotifier {
       _currentUser = await _authService.signInWithGoogle();
 
       await _logAuthEvent('google_login', true, _currentUser?.email ?? 'unknown');
+      if (_currentUser != null) await _updateFCMToken(_currentUser!.uid);
 
       debugPrint('✅ Google sign in successful: ${_currentUser?.uid}');
 
@@ -862,6 +867,33 @@ class AuthProvider with ChangeNotifier {
   // ============================================
   // LOG AUTH EVENTS (Analytics)
   // ============================================
+  // FIX-10 (finding N-16). FCMService().initialize() in main.dart saves a
+  // token only once, at app cold-start, and only when a user is ALREADY
+  // signed in at that exact moment — a returning customer who was signed in
+  // before relaunching is fine, but a customer's FIRST sign-in within a
+  // given app session (the common case: fresh install, or signing in again
+  // after a logout without restarting the app) never gets a token saved,
+  // because initialize() already ran with no user before the login screen
+  // even rendered. Mirrors apps/delivery/lib/providers/auth_provider.dart's
+  // own _updateFCMToken(uid) exactly — same field shape, same arrayUnion —
+  // called explicitly right after every genuine new-session success below,
+  // independent of FCMService's app-startup timing.
+  Future<void> _updateFCMToken(String uid) async {
+    try {
+      final token = await FirebaseMessaging.instance.getToken();
+      if (token != null) {
+        await _firestore.collection('users').doc(uid).set({
+          'fcmTokens': FieldValue.arrayUnion([token]),
+          'fcmToken': token,
+          'lastTokenUpdate': FieldValue.serverTimestamp(),
+        }, SetOptions(merge: true));
+        debugPrint('✅ FCM token saved for user: $uid');
+      }
+    } catch (e) {
+      debugPrint('⚠️ FCM token save skipped: $e');
+    }
+  }
+
   Future<void> _logAuthEvent(
     String eventType,
     bool success,
