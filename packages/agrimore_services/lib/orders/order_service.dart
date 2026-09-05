@@ -6,42 +6,12 @@ import 'package:agrimore_core/agrimore_core.dart';
 class OrderService {
   final FirebaseFirestore _firestore = FirebaseFirestore.instance;
 
-  // ============================================
-  // CREATE ORDER WITH INITIAL TIMELINE
-  // ============================================
-  Future<String?> createOrder(OrderModel order) async {
-    try {
-      debugPrint('📦 Creating order: ${order.orderNumber}');
-
-      // 1️⃣ Create order document
-      final orderId = order.id.isNotEmpty ? order.id : _firestore.collection('orders').doc().id;
-      
-      // Update the id if we had to generate a new one
-      final orderData = order.toMap();
-      orderData['id'] = orderId;
-      
-      await _firestore.collection('orders').doc(orderId).set(orderData);
-
-      // 2️⃣ Create initial timeline entry
-      await _firestore
-          .collection('orders')
-          .doc(orderId)
-          .collection('timeline')
-          .add({
-        'status': 'pending',
-        'title': 'Order Placed',
-        'description': 'Your order has been placed successfully.',
-        'timestamp': FieldValue.serverTimestamp(),
-        'icon': 'shopping_bag',
-      });
-
-      debugPrint('✅ Order created with ID: $orderId');
-      return orderId;
-    } catch (e) {
-      debugPrint('❌ Error creating order: $e');
-      return null;
-    }
-  }
+  // FIX-15 (finding N-32): CREATE ORDER WITH INITIAL TIMELINE removed —
+  // orders/{orderId} has had `allow create: if false` for as long as this
+  // codebase has had a server-side createOrder Cloud Function (only the
+  // Admin SDK, which bypasses rules, may create an order); this method's
+  // direct client write could never have succeeded. Confirmed zero callers
+  // of OrderService() anywhere in any app before removing.
 
   // ============================================
   // ADD TIMELINE EVENT MANUALLY
@@ -125,53 +95,13 @@ class OrderService {
     }
   }
 
-  // ============================================
-  // COUPON VALIDATION (Migrated from React Native)
-  // ============================================
-  Future<Map<String, dynamic>> validateCoupon(String code, double cartTotal, String userId) async {
-    try {
-      final snap = await _firestore.collection('coupons').where('code', isEqualTo: code).get();
-
-      if (snap.docs.isEmpty) return {'valid': false, 'error': 'Invalid coupon code'};
-
-      final couponDoc = snap.docs.first;
-      final coupon = couponDoc.data();
-
-      if (coupon['isActive'] == false) return {'valid': false, 'error': 'This coupon is no longer active'};
-
-      final expiryDate = (coupon['expiry'] as Timestamp).toDate();
-      if (DateTime.now().isAfter(expiryDate)) return {'valid': false, 'error': 'This coupon has expired'};
-
-      if ((coupon['usedCount'] ?? 0) >= (coupon['usageLimit'] ?? 999999)) {
-        return {'valid': false, 'error': 'Coupon usage limit reached'};
-      }
-
-      if (cartTotal < (coupon['minOrder'] ?? 0)) {
-        return {'valid': false, 'error': 'Minimum order value is ₹${coupon['minOrder']}'};
-      }
-
-      double discountAmount = 0;
-      if (coupon['discountType'] == 'percentage') {
-        discountAmount = cartTotal * (coupon['discount'] / 100);
-        if (coupon['maxDiscount'] != null && discountAmount > coupon['maxDiscount']) {
-          discountAmount = coupon['maxDiscount'].toDouble();
-        }
-      } else {
-        discountAmount = coupon['discount'].toDouble();
-      }
-
-      return {
-        'valid': true,
-        'couponId': couponDoc.id,
-        'discountAmount': discountAmount.round(),
-        'code': coupon['code'],
-        'description': coupon['description'],
-      };
-    } catch (e) {
-      debugPrint('Coupon validation error: $e');
-      return {'valid': false, 'error': 'Failed to validate coupon'};
-    }
-  }
+  // FIX-15 (finding N-43): COUPON VALIDATION (migrated from React Native)
+  // removed. Reads a coupon field schema (`expiry`, `usedCount`,
+  // `usageLimit`, `minOrder`, `discountType`, `maxDiscount`) that no
+  // longer matches the live schema this codebase's server-side coupon
+  // logic actually uses. Confirmed zero callers anywhere before removing —
+  // apps/*'s own CouponProvider.validateCoupon(double) is an unrelated
+  // method with a different signature on a different class.
 
   // ============================================
   // STOCK UPDATE (Migrated from React Native)

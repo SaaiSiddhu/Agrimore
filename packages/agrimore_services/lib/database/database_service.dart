@@ -504,27 +504,13 @@ class DatabaseService {
   // ORDERS
   // ============================================
 
-  // Create order
-  Future<String> createOrder(OrderModel order) async {
-    try {
-      final docRef = order.id.isNotEmpty
-          ? _firestore.collection('orders').doc(order.id)
-          : _firestore.collection('orders').doc();
-
-      final batch = _firestore.batch();
-      batch.set(docRef, order.toMap());
-      batch.set(docRef.collection('timeline').doc(), {
-        'status': order.orderStatus,
-        'title': 'Order Placed',
-        'description': 'Your order has been placed successfully',
-        'timestamp': FieldValue.serverTimestamp(),
-      });
-      await batch.commit();
-      return docRef.id;
-    } catch (e) {
-      throw DatabaseException('Failed to create order: ${e.toString()}');
-    }
-  }
+  // FIX-15 (finding N-32): createOrder removed — orders/{orderId} has had
+  // `allow create: if false` for as long as this codebase has had a
+  // server-side createOrder Cloud Function; this direct client write could
+  // never have succeeded. Its two callers (apps/marketplace and
+  // apps/admin's own OrderProvider.createOrder() wrapper methods) had no
+  // UI caller of their own in either app — removed alongside this method
+  // rather than left calling something that no longer exists.
 
   // Get user orders
   Stream<List<OrderModel>> getUserOrders(String userId) {

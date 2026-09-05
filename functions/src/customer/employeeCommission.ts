@@ -17,21 +17,17 @@
 // now the ONLY eligibility gate; `orderMode` is read only to pick which
 // configured rate applies (see resolveCommissionRate() below).
 //
-// IMPORTANT, CONFIRMED BLOCKER (see the Phase 16D-1 completion report,
-// Section L, for the full write-up): as of this phase,
-// functions/src/customer/createOrder.ts NEVER writes a non-null
-// `employeeUid` for a B2C order — `employeeCode` is forced to `""` for
-// B2C at the top of that function, and `employeeUid` is written as
-// `orderMode === "B2B" ? employeeUid : null`. This means the eligibility
-// widening below is necessary but NOT sufficient: no real, live B2C order
-// can reach this trigger with a resolved `employeeUid` until a future
-// phase adds a server-validated retail-attribution mechanism to
-// createOrder.ts (explicitly out of THIS phase's scope — see Decision D5
-// in the phase prompt: "associate-placed orders are not in this phase").
-// This trigger's own logic is still correct and tested in isolation
-// (seeding an orders/{id} document directly, the same way Phase 16A's own
-// suites seed Firestore documents to test trigger logic) — it is simply
-// unreachable via the live client flow today.
+// FIX-15 (finding N-42) correction: the paragraph this replaces asserted
+// createOrder.ts could NEVER write a non-null employeeUid for a B2C order
+// — true when Phase 16D-1 shipped, false since Phase 16D-2. Re-read
+// createOrder.ts directly (:314-360): a B2C order now resolves employeeUid
+// unconditionally whenever the supplied code matches a non-self, approved,
+// onboarding-cleared associate — `employeeUid: employeeUid` (:664), not
+// the `orderMode === "B2B" ? employeeUid : null` this comment used to
+// describe. Retail attribution is a live, reachable path today, not a
+// documented gap awaiting a future phase; leaving the old paragraph in
+// place actively misled a future reader into believing this trigger was
+// still unreachable via the real client flow.
 //
 // Phase 16D-1, Workstream 3: the previous hardcoded `?? 5` percent
 // fallback is REMOVED. An order whose commission rate cannot be resolved
