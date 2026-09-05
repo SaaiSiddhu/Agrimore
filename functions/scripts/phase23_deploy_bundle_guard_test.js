@@ -137,6 +137,13 @@ const ALLOWLIST = [
   // only because the widened name list contains "token". It is interpolated
   // into user-facing copy and is not a credential of any kind.
   { path: "functions/src/employee/onboardingConfig.ts", identifier: "FEE_TOKEN" },
+  // FIX-10's phase33 seeds fixture FCM registration tokens as object-literal
+  // properties (`fcmToken: "tok-..."`). Matched only because the widened
+  // name list contains "token" — an FCM push token identifies a device for
+  // notification delivery; it is not a password, API key, or any other
+  // secret this guard exists to catch, and this file lives in
+  // functions/scripts/, which SEC-1 already excludes from the deploy bundle.
+  { path: "functions/scripts/phase33_broadcast_audience_test.js", identifier: "fcmToken" },
 ];
 
 function isAllowlisted(rel, identifier) {

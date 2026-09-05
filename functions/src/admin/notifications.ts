@@ -47,6 +47,20 @@ function uniqueTokens(data: admin.firestore.DocumentData | undefined): string[] 
   return Array.from(tokens);
 }
 
+// FIX-10 (finding N-17). Bounds how many raw Firestore document snapshots
+// (every field on every user document, not just what this function needs)
+// are held in memory at once — the specific thing a single unbounded
+// `.get()` did unboundedly. allTokens/userMapping still accumulate across
+// the whole scan (this fixes the READ pattern, not the overall send-loop
+// memory shape, which the contract did not ask this phase to redesign), but
+// those are two flat arrays of strings, far lighter per user than a full
+// document snapshot — 500 keeps each page's snapshot weight small relative
+// to the 256MiB budget regardless of how large the users collection grows.
+// Overridable via env for tests that need to exercise the multi-page cursor
+// loop without seeding hundreds of documents; unset in every real
+// deployment, so production always uses 500.
+const BROADCAST_PAGE_SIZE = Number(process.env.BROADCAST_PAGE_SIZE_OVERRIDE) || 500;
+
 const DELIVERY_ASSIGNMENT_RADIUS_KM = 5;
 const DELIVERY_REQUEST_LIMIT = 12;
 const DELIVERY_LOCATION_FRESHNESS_MS = 30 * 60 * 1000;
@@ -345,21 +359,44 @@ export const sendBroadcastNotification = functions.https.onCall(
 
       log.info("📢 Starting broadcast notification");
 
-      const usersSnapshot = await admin.firestore().collection("users").get();
-      if (usersSnapshot.empty) return { success: true, successCount: 0, failureCount: 0, message: "No users found" };
-
+      // FIX-10 (finding N-17). Was a single `collection("users").get()` —
+      // the ENTIRE users collection loaded into this 256MiB callable's
+      // memory in one shot, with no bound on how large that collection
+      // grows. Paginated at BROADCAST_PAGE_SIZE per page instead; the
+      // running totals below (totalUsers, allTokens) are identical to what
+      // a single unbounded read would have produced — this changes how the
+      // data is FETCHED, not what the admin UI's delivery-count contract
+      // reports (the stop condition this phase was given).
+      const usersRef = admin.firestore().collection("users");
+      let totalUsers = 0;
       const allTokens: string[] = [];
       const userMapping: Record<string, string> = {};
-      usersSnapshot.forEach((doc: admin.firestore.QueryDocumentSnapshot) => {
-        const tokens = doc.data().fcmTokens || [];
-        if (Array.isArray(tokens) && tokens.length > 0) {
-          tokens.forEach((token: string) => {
+      let lastDoc: admin.firestore.QueryDocumentSnapshot | null = null;
+      for (;;) {
+        let pageQuery = usersRef.orderBy(admin.firestore.FieldPath.documentId()).limit(BROADCAST_PAGE_SIZE);
+        if (lastDoc) pageQuery = pageQuery.startAfter(lastDoc.id);
+        const page = await pageQuery.get();
+        if (page.empty) break;
+        totalUsers += page.size;
+        page.forEach((doc: admin.firestore.QueryDocumentSnapshot) => {
+          // FIX-10 (finding N-16). Was `doc.data().fcmTokens || []` — the
+          // ARRAY field only, unlike sendOrderPushToUser below (the only
+          // other caller of uniqueTokens()), which also falls back to the
+          // singular fcmToken field. A user whose token exists only in that
+          // singular shape (a stale document from before fcm_service.dart
+          // started writing both, or any future regression that writes only
+          // one) was silently excluded from every broadcast. Same helper,
+          // same fallback, now shared instead of duplicated and drifting.
+          for (const token of uniqueTokens(doc.data())) {
             allTokens.push(token);
             userMapping[token] = doc.id;
-          });
-        }
-      });
+          }
+        });
+        lastDoc = page.docs[page.docs.length - 1];
+        if (page.size < BROADCAST_PAGE_SIZE) break;
+      }
 
+      if (!totalUsers) return { success: true, successCount: 0, failureCount: 0, message: "No users found" };
       if (!allTokens.length) return { success: true, successCount: 0, failureCount: 0, message: "No FCM tokens found" };
 
       let totalSuccess = 0;
@@ -395,7 +432,7 @@ export const sendBroadcastNotification = functions.https.onCall(
         actionUrl: actionUrl || null,
         notificationType: type || "general",
         productId: productId || null,
-        totalUsers: usersSnapshot.size,
+        totalUsers,
         totalTokens: allTokens.length,
         successCount: totalSuccess,
         failureCount: totalFailure,
@@ -405,7 +442,7 @@ export const sendBroadcastNotification = functions.https.onCall(
       });
 
       log.success(`Broadcast done: ${totalSuccess} success, ${totalFailure} fail`);
-      return { success: true, successCount: totalSuccess, failureCount: totalFailure, totalUsers: usersSnapshot.size, totalTokens: allTokens.length };
+      return { success: true, successCount: totalSuccess, failureCount: totalFailure, totalUsers, totalTokens: allTokens.length };
     } catch (error: any) {
       log.error(`Broadcast error: ${error.message}`);
       rethrowHttpsError(error);
