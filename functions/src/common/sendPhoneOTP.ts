@@ -54,6 +54,18 @@ const MAX_SENDS_PER_DAY = 10;
 const MAX_VOICE_SENDS_PER_DAY = 3;
 const DAY_MS = 24 * 60 * 60 * 1000;
 
+// FIX-12 (finding N-21). The cap above is keyed ONLY by phone number — an
+// attacker iterating through many DIFFERENT numbers from one source is
+// bound only by the 2Factor account's own budget, not by anything this
+// codebase enforces (sendPhoneOTP is an unauthenticated onRequest with
+// Access-Control-Allow-Origin "*", and App Check here is monitoring-only,
+// not enforcing). 50/day is deliberately much higher than MAX_SENDS_PER_DAY:
+// a shared IP behind NAT (office wifi, a mobile carrier's CGNAT) is a real,
+// common scenario and must see no practical impact under normal use — this
+// bounds an enumeration attack's cost to roughly 5x one legitimate user's
+// own daily allowance, not zero collateral risk to shared-IP users.
+const MAX_SENDS_PER_IP_PER_DAY = 50;
+
 // Phase 16, Workstream 2 fix: this flag's MEANING changes from Phase 14.
 // Truth table:
 //   TWOFACTOR_API_KEY present     -> phone OTP ENABLED (real delivery)
@@ -89,6 +101,32 @@ const PHONE_OTP_SMS_ENABLED = process.env.PHONE_OTP_SMS_ENABLED === "true";
 // duplicating the hash function.
 export function hashOtp(otp: string): string {
   return crypto.createHash("sha256").update(otp).digest("hex");
+}
+
+// FIX-12 (finding N-21). Hashed before use as a Firestore document id —
+// mirrors this codebase's own preference for not storing a sensitive
+// identifier in the clear (the same reasoning hashOtp above exists for),
+// and keeps the doc id a fixed, safe shape regardless of IPv4 vs IPv6.
+function hashIp(ip: string): string {
+  return crypto.createHash("sha256").update(ip).digest("hex");
+}
+
+// Firebase's HTTPS load balancer sets x-forwarded-for on every request
+// reaching an onRequest function; Express (which onRequest wraps) parses
+// that into req.ip when the runtime's trust-proxy setting is configured,
+// which Firebase's does. req.ip is normal, documented practice for this —
+// the fallback below is defensive only, for a request shape this runtime
+// should never actually produce.
+function callerIp(req: functions.https.Request): string {
+  if (req.ip) return req.ip;
+  // Defensive: this codebase's own test suites call these handlers with a
+  // bare { method, body } object, no headers property at all — req.headers
+  // being absent must degrade to a shared "unknown" bucket, not throw. In
+  // any real deployment req.ip is always present (see this function's own
+  // header comment), so this branch exists for tests, not production.
+  const forwarded = req.headers?.["x-forwarded-for"];
+  const first = Array.isArray(forwarded) ? forwarded[0] : forwarded;
+  return (first || "unknown").split(",")[0].trim();
 }
 
 // ============================================
@@ -233,8 +271,38 @@ export const sendPhoneOTP = functions
     }
 
     const otpRef = db.collection("phone_otp_codes").doc(normalizedPhone);
-    const existing = await otpRef.get();
+    // FIX-12 (finding N-21). Read alongside the per-number document, before
+    // any side effect — same fail-fast shape as every other cap check in
+    // this handler.
+    const ipLimitRef = db.collection("otp_ip_limits").doc(hashIp(callerIp(req)));
+    const [existing, existingIpLimit] = await Promise.all([otpRef.get(), ipLimitRef.get()]);
     const now = Date.now();
+
+    // FIX-12 (finding N-21). Independent of, and checked BEFORE, the
+    // per-number cap below — this is what actually bounds an attacker
+    // iterating through many different numbers from one source, which the
+    // per-number cap alone cannot (each new number starts its own count at
+    // zero). Not nested inside the per-number existing.exists branch below:
+    // it must apply the same way whether this number has been seen before
+    // or not.
+    let ipSendCount = 0;
+    let ipSendWindowStart = now;
+    if (existingIpLimit.exists) {
+      const ipData = existingIpLimit.data()!;
+      const ipWindowStart = typeof ipData.sendWindowStart === "number" ? ipData.sendWindowStart : now;
+      if (now - ipWindowStart < DAY_MS) {
+        ipSendWindowStart = ipWindowStart;
+        ipSendCount = typeof ipData.sendCount === "number" ? ipData.sendCount : 0;
+      }
+      if (ipSendCount >= MAX_SENDS_PER_IP_PER_DAY) {
+        res.status(429).json({
+          success: false,
+          error: "Too many code requests from this network today. Please try again later.",
+          retryAfterMs: ipSendWindowStart + DAY_MS - now,
+        });
+        return;
+      }
+    }
 
     let sendCount = 0;
     let sendWindowStart = now;
@@ -382,6 +450,10 @@ export const sendPhoneOTP = functions
         voiceSendWindowStart,
       });
     }
+
+    // FIX-12 (finding N-21). Counted on an actual successful delivery, same
+    // semantics as the per-number counter above — not on a mere attempt.
+    await ipLimitRef.set({ sendCount: ipSendCount + 1, sendWindowStart: ipSendWindowStart }, { merge: true });
 
     console.log(`✅ OTP ${isReusedCode ? "redelivered" : "issued"} for ${normalizedPhone} via ${channel}`);
 
