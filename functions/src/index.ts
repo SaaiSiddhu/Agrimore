@@ -59,6 +59,13 @@ export {
 // function — the owner must also run
 // `firebase functions:delete splitCartIntoOrders`.
 export { createOrder } from "./customer/createOrder";
+// Phase FIX-5 (finding N-5, P1): server-side delivery verification. NEW export —
+// this function does not exist on agrimore-66a4e yet, so the owner deploy is a
+// CREATE, not an update. It does NOT close N-5 on its own: the direct status
+// write the delivery client uses today is still permitted by the rules until
+// phase FIX-5B tightens them, which must wait for a released client that uses
+// this callable (B2B_PHASE_SEQUENCING).
+export { confirmDelivery } from "./customer/confirmDelivery";
 export { onOrderCreatedNotifications } from "./customer/orderNotifications";
 // Phase 16, Workstream 4: server-authoritative profile completion — see
 // completeUserProfile.ts's header comment for the new-vs-existing-user
