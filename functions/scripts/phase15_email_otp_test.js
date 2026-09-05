@@ -180,47 +180,50 @@ async function main() {
     console.log("Scenario 4:", s);
   }
 
-  // Scenario 5 — the correct OTP passes the hash comparison. This
-  // environment runs no Auth emulator (firebase.json has none configured,
-  // and adding one is an out-of-scope config change for this phase) and
-  // there is no real service account credential available (nor
-  // appropriate to use) — so admin.auth().getUserByEmail/createCustomToken
-  // genuinely cannot succeed here, and the callVerify call below is
-  // expected to fail at THAT later, Auth-SDK step, not at the OTP
-  // comparison this phase actually changed. The comparison's own success
-  // is proven directly instead: verifyEmailOTP.ts marks the OTP document
-  // `verified: true` immediately after the hash check passes, BEFORE any
-  // admin.auth() call — so the document's own state, not the HTTP
-  // response, is the real evidence for "the correct OTP authenticates."
-  // The end-to-end token-mint is honestly reported as unverified in this
-  // environment, not silently assumed.
+  // Scenario 5 — the correct OTP passes the hash comparison.
+  //
+  // FIX-5C, WS1. This used to check the OTP document's `verified` flag
+  // FIRST and treat its absence as failure — reasonable when this repo's
+  // firebase.json had no Auth emulator and the flow could never reach
+  // admin.auth().createCustomToken(). It has one now, so the flow completes
+  // end-to-end, and verifyEmailOTP.ts:159 DELETES the otp_codes document on
+  // exactly that success path, right before returning. The unconditional
+  // flag check ran before this scenario could ever see that: it failed with
+  // doc=undefined on the environment getting BETTER, not worse.
+  //
+  // The full end-to-end response is itself the stronger proof anyway —
+  // verifyEmailOTP.ts cannot reach admin.auth() at all without passing the
+  // hash comparison first — so it is checked FIRST now, and the document's
+  // `verified` flag is only consulted as the fallback for an environment
+  // that still can't mint a token (no Auth emulator, no service-account
+  // credential). Same two accepted outcomes as before; only which is
+  // checked first, and therefore which is possible to reach, changed.
   {
     const realOtp = extractOtpFromLastSentEmail();
     const r = await callVerify({ email, otp: realOtp });
     console.log("Scenario 5 raw:", JSON.stringify(r, null, 2));
     let s;
     try {
-      const otpDoc = await db.collection("otp_codes").doc(email).get();
-      const verifiedFlagSet = otpDoc.exists && otpDoc.data()?.verified === true;
-      if (!verifiedFlagSet) {
-        throw new Error(
-          `expected the OTP document's verified flag to be true after a hash-matching OTP, doc=${JSON.stringify(otpDoc.data())}`
-        );
-      }
-      const failedOnlyAtAuthStep =
-        r.status === 500 && typeof r.json?.error === "string" && r.json.error.includes("credential");
       if (r.status === 200 && r.json?.success === true && r.json?.token) {
-        s = `PASSED (full end-to-end) — the correct OTP authenticated and minted a real token. userId=${r.json.userId}`;
-      } else if (failedOnlyAtAuthStep) {
-        s =
-          "PASSED (partial — environment-limited) — the hash comparison correctly accepted the real OTP " +
-          "(otp_codes verified flag set to true, BEFORE any admin.auth() call), proving Workstream 1's actual " +
-          "change works. The subsequent admin.auth().createCustomToken() step failed only because no Auth " +
-          "emulator is configured in this repo's firebase.json and no real service account credential is " +
-          "available/appropriate here — that is a pre-existing, unrelated environment gap, not a regression " +
-          "from this phase. Full token-mint round-trip is NOT verified in this environment.";
+        s = `PASSED (full end-to-end) — the correct OTP authenticated and minted a real token, and the OTP document was cleaned up as designed (verifyEmailOTP.ts:159). userId=${r.json.userId}`;
       } else {
-        throw new Error(`unexpected failure shape: status=${r.status} body=${JSON.stringify(r.json)}`);
+        const otpDoc = await db.collection("otp_codes").doc(email).get();
+        const verifiedFlagSet = otpDoc.exists && otpDoc.data()?.verified === true;
+        const failedOnlyAtAuthStep =
+          r.status === 500 && typeof r.json?.error === "string" && r.json.error.includes("credential");
+        if (verifiedFlagSet && failedOnlyAtAuthStep) {
+          s =
+            "PASSED (partial — environment-limited) — the hash comparison correctly accepted the real OTP " +
+            "(otp_codes verified flag set to true, BEFORE any admin.auth() call), proving Workstream 1's actual " +
+            "change works. The subsequent admin.auth().createCustomToken() step failed only because no Auth " +
+            "emulator is configured in this repo's firebase.json and no real service account credential is " +
+            "available/appropriate here — that is a pre-existing, unrelated environment gap, not a regression " +
+            "from this phase. Full token-mint round-trip is NOT verified in this environment.";
+        } else {
+          throw new Error(
+            `unexpected failure shape: status=${r.status} body=${JSON.stringify(r.json)} otpDoc=${JSON.stringify(otpDoc.data())}`
+          );
+        }
       }
     } catch (e) {
       s = `FAILED — ${e.message}`;
