@@ -8,23 +8,35 @@
 // read **no suite exists** (finding A-10). 149 lines and 13 real match
 // blocks were shipping unverified.
 //
-// This suite proves CURRENT behaviour. It is deliberately NOT a statement of
-// desired behaviour: where a rule is more permissive than its section
-// comment suggests, the scenario is labelled OBSERVED-PERMISSIVE and the
-// finding is reported upward. Phase SEC-3 must not edit storage.rules —
-// tightening a live rule is its own phase, with its own client-release
-// sequencing (B2B_PHASE_SEQUENCING).
+// Originally (Phase SEC-3) proved CURRENT behaviour only, deliberately not a
+// statement of desired behaviour — SEC-3 was not permitted to edit
+// storage.rules itself, so scenarios more permissive than their section
+// comment suggested were labelled OBSERVED-PERMISSIVE and reported upward
+// rather than fixed.
+//
+// FIX-11 is that follow-up phase. Every OBSERVED-PERMISSIVE scenario SEC-3
+// found is now a FIX-11-labelled DENY scenario below, alongside a positive
+// control proving the legitimate access path still works. Any comment
+// still saying "OBSERVED-PERMISSIVE" below is a defect this phase did not
+// touch — check its finding id before assuming it is covered.
 //
 // Every block gets BOTH a positive and a negative scenario: a suite that
 // only asserts assertFails is vacuous (worker.md §3).
 //
 // Mirrors phase14_rules_test.js's @firebase/rules-unit-testing pattern.
-// Run with: firebase emulators:exec --only storage "node scripts/phase24_storage_rules_test.js"
+//
+// FIX-11 update: now ALSO configures firestore (not just storage) in the
+// same testEnv. The chat and delivery_proofs blocks' rules cross-read
+// Firestore (firestore.get()) to resolve thread participants and delivery-
+// partner assignment, so this suite needs a real Firestore emulator behind
+// it, not just Storage's own.
+// Run with: firebase emulators:exec --only storage,firestore "node scripts/phase24_storage_rules_test.js"
 
 const fs = require("fs");
 const path = require("path");
 const { initializeTestEnvironment, assertFails, assertSucceeds } = require("@firebase/rules-unit-testing");
 const { ref, uploadBytes, getBytes } = require("firebase/storage");
+const { doc, setDoc } = require("firebase/firestore");
 
 const REPO_ROOT = path.join(__dirname, "..", "..");
 const PNG = new Uint8Array([0x89, 0x50, 0x4e, 0x47, 0x0d, 0x0a, 0x1a, 0x0a]);
@@ -73,6 +85,14 @@ async function seed(p) {
   });
 }
 
+// FIX-11: seeds a Firestore document the storage rules' firestore.get()
+// calls read (threads/{id}.participantIds, orders/{id}.deliveryPartnerId).
+async function seedFirestoreDoc(collectionPath, docId, data) {
+  await testEnv.withSecurityRulesDisabled(async (ctx) => {
+    await setDoc(doc(ctx.firestore(), collectionPath, docId), data);
+  });
+}
+
 async function main() {
   testEnv = await initializeTestEnvironment({
     projectId: "agrimore-66a4e",
@@ -81,20 +101,37 @@ async function main() {
       host: "127.0.0.1",
       port: 9199,
     },
+    firestore: {
+      rules: fs.readFileSync(path.join(REPO_ROOT, "firestore.rules"), "utf8"),
+      host: "127.0.0.1",
+      port: 8080,
+    },
   });
 
   const U1 = "phase24-user-1";
   const U2 = "phase24-user-2";
 
-  // 1/2 — products, product_images: public read; seller|admin write, image + size
-  for (const dir of ["products", "product_images"]) {
-    await seed(`${dir}/seed.png`);
-    await scenario(dir, "public (unauthenticated) read is allowed", "allow", get(ctxStorage("unauth"), `${dir}/seed.png`));
-    await scenario(dir, "seller writes an image", "allow", put(ctxStorage("seller", U1), `${dir}/s.png`));
-    await scenario(dir, "admin writes an image", "allow", put(ctxStorage("admin", U1), `${dir}/a.png`));
-    await scenario(dir, "plain user write is denied", "deny", put(ctxStorage("user", U1), `${dir}/u.png`));
-    await scenario(dir, "seller writing a NON-image is denied", "deny", put(ctxStorage("seller", U1), `${dir}/s.pdf`, PDF));
-  }
+  // 1 — products: public read; FIX-11 restricted write to admin-only (no
+  // seller-facing code uses this path — a bare Uuid().v4() filename with no
+  // owner prefix made any seller able to overwrite any other seller's file).
+  await seed("products/seed.png");
+  await scenario("products", "public (unauthenticated) read is allowed", "allow", get(ctxStorage("unauth"), "products/seed.png"));
+  await scenario("products", "admin writes an image", "allow", put(ctxStorage("admin", U1), "products/a.png"));
+  await scenario("products", "FIX-11: seller write is now denied (was allowed pre-fix)", "deny", put(ctxStorage("seller", U1), "products/s.png"));
+  await scenario("products", "plain user write is denied", "deny", put(ctxStorage("user", U1), "products/u.png"));
+  await scenario("products", "admin writing a NON-image is denied", "deny", put(ctxStorage("admin", U1), "products/a.pdf", PDF));
+
+  // 2 — product_images: public read; FIX-11 scoped seller write to their OWN
+  // uid-prefixed filename (add_product_screen.dart already names files
+  // `${sellerId}_...`, sellerId == the uploader's own uid — no client change
+  // needed). Admin is exempt from the prefix.
+  await seed("product_images/seed.png");
+  await scenario("product_images", "public (unauthenticated) read is allowed", "allow", get(ctxStorage("unauth"), "product_images/seed.png"));
+  await scenario("product_images", "seller writes an image under their OWN uid prefix", "allow", put(ctxStorage("seller", U1), `product_images/${U1}_s.png`));
+  await scenario("product_images", "admin writes an image with no uid prefix at all", "allow", put(ctxStorage("admin", U1), "product_images/a.png"));
+  await scenario("product_images", "FIX-11: seller writing under ANOTHER seller's uid prefix is denied", "deny", put(ctxStorage("seller", U2), `product_images/${U1}_evil.png`));
+  await scenario("product_images", "plain user write is denied", "deny", put(ctxStorage("user", U1), `product_images/${U1}_u.png`));
+  await scenario("product_images", "seller writing a NON-image is denied", "deny", put(ctxStorage("seller", U1), `product_images/${U1}_s.pdf`, PDF));
 
   // 3/4 — profiles, users: owner-only read and write, image + size
   for (const dir of ["profiles", "users"]) {
@@ -120,10 +157,12 @@ async function main() {
   await scenario("notifications", "admin writes", "allow", put(ctxStorage("admin", U1), "notifications/a.png"));
   await scenario("notifications", "plain user write is denied", "deny", put(ctxStorage("user", U1), "notifications/u.png"));
 
-  // 7 — sponsored: public read, seller|admin write
+  // 7 — sponsored: public read; FIX-11 restricted write to admin-only (same
+  // reasoning as products above — no seller-facing code uses this path).
   await seed("sponsored/seed.png");
   await scenario("sponsored", "public read is allowed", "allow", get(ctxStorage("unauth"), "sponsored/seed.png"));
-  await scenario("sponsored", "seller writes", "allow", put(ctxStorage("seller", U1), "sponsored/s.png"));
+  await scenario("sponsored", "admin writes", "allow", put(ctxStorage("admin", U1), "sponsored/a.png"));
+  await scenario("sponsored", "FIX-11: seller write is now denied (was allowed pre-fix)", "deny", put(ctxStorage("seller", U1), "sponsored/s.png"));
   await scenario("sponsored", "plain user write is denied", "deny", put(ctxStorage("user", U1), "sponsored/u.png"));
 
   // 8 — categories: public read, admin-only write
@@ -132,32 +171,50 @@ async function main() {
   await scenario("categories", "admin writes", "allow", put(ctxStorage("admin", U1), "categories/a.png"));
   await scenario("categories", "seller write is denied", "deny", put(ctxStorage("seller", U1), "categories/s.png"));
 
-  // 9 — chat: authenticated read/write, size only. See OBSERVED-PERMISSIVE below.
+  // 9 — chat: FIX-11 scoped to thread PARTICIPANTS (threads/{id}.participantIds
+  // in Firestore, cross-read via firestore.get()) instead of any signed-in
+  // user, and added isImage(). U1 is a real participant of thread-A; U2 is
+  // not — both seeded in Firestore, not just assumed by naming.
+  await seedFirestoreDoc("threads", "thread-A", { participantIds: [U1], orderId: "order-thread-A" });
   await seed("chat/thread-A/seed.png");
-  await scenario("chat", "a participant-shaped user reads an attachment", "allow", get(ctxStorage("user", U1), "chat/thread-A/seed.png"));
+  await scenario("chat", "a real participant reads an attachment", "allow", get(ctxStorage("user", U1), "chat/thread-A/seed.png"));
   await scenario("chat", "unauthenticated read is denied", "deny", get(ctxStorage("unauth"), "chat/thread-A/seed.png"));
-  await scenario("chat", "authenticated user writes an attachment", "allow", put(ctxStorage("user", U1), "chat/thread-A/u.png"));
-  await scenario("chat", "OBSERVED-PERMISSIVE: an unrelated user reads ANOTHER thread's attachment", "allow", get(ctxStorage("user", U2), "chat/thread-A/seed.png"));
-  await scenario("chat", "OBSERVED-PERMISSIVE: an unrelated user WRITES into another thread", "allow", put(ctxStorage("user", U2), "chat/thread-A/evil.png"));
-  await scenario("chat", "OBSERVED-PERMISSIVE: a NON-image attachment is accepted (no isImage check)", "allow", put(ctxStorage("user", U1), "chat/thread-A/u.pdf", PDF));
+  await scenario("chat", "a real participant writes an attachment", "allow", put(ctxStorage("user", U1), "chat/thread-A/u.png"));
+  await scenario("chat", "admin reads any thread's attachment", "allow", get(ctxStorage("admin", U2), "chat/thread-A/seed.png"));
+  await scenario("chat", "FIX-11: an unrelated (non-participant) user reading another thread's attachment is now denied", "deny", get(ctxStorage("user", U2), "chat/thread-A/seed.png"));
+  await scenario("chat", "FIX-11: an unrelated (non-participant) user WRITING into another thread is now denied", "deny", put(ctxStorage("user", U2), "chat/thread-A/evil.png"));
+  await scenario("chat", "FIX-11: a NON-image attachment from a real participant is now denied", "deny", put(ctxStorage("user", U1), "chat/thread-A/u.pdf", PDF));
 
-  // 10/11/12 — seller/employee/delivery documents: owner or admin read, owner-only write, no image check
+  // 10/11/12 — seller/employee/delivery documents: owner or admin read,
+  // owner-only write. FIX-11 added isImage() — no app code was found
+  // uploading anything here, so this is a pure tightening with nothing
+  // legitimate to protect from breaking.
   for (const dir of ["seller_documents", "employee_documents", "delivery_documents"]) {
     await seed(`${dir}/${U1}/seed.png`);
     await scenario(dir, "owner reads own document", "allow", get(ctxStorage("user", U1), `${dir}/${U1}/seed.png`));
     await scenario(dir, "admin reads someone's document", "allow", get(ctxStorage("admin", U2), `${dir}/${U1}/seed.png`));
     await scenario(dir, "an unrelated user reading it is denied", "deny", get(ctxStorage("user", U2), `${dir}/${U1}/seed.png`));
-    await scenario(dir, "owner uploads a PDF (documents are deliberately not image-only)", "allow", put(ctxStorage("user", U1), `${dir}/${U1}/doc.pdf`, PDF));
-    await scenario(dir, "an unrelated user writing into someone's folder is denied", "deny", put(ctxStorage("user", U2), `${dir}/${U1}/evil.pdf`, PDF));
+    await scenario(dir, "owner uploads an image", "allow", put(ctxStorage("user", U1), `${dir}/${U1}/doc.png`));
+    await scenario(dir, "FIX-11: owner uploading a NON-image (e.g. HTML/JS) is now denied", "deny", put(ctxStorage("user", U1), `${dir}/${U1}/doc.pdf`, PDF));
+    await scenario(dir, "an unrelated user writing into someone's folder is denied", "deny", put(ctxStorage("user", U2), `${dir}/${U1}/evil.png`));
   }
 
-  // 13 — delivery_proofs: authenticated read, delivery|admin write
-  await seed("delivery_proofs/seed.png");
-  await scenario("delivery_proofs", "delivery partner writes a proof photo", "allow", put(ctxStorage("delivery", U1), "delivery_proofs/d.png"));
-  await scenario("delivery_proofs", "admin writes", "allow", put(ctxStorage("admin", U1), "delivery_proofs/a.png"));
-  await scenario("delivery_proofs", "plain user write is denied", "deny", put(ctxStorage("user", U1), "delivery_proofs/u.png"));
-  await scenario("delivery_proofs", "OBSERVED-PERMISSIVE: any authenticated user reads every proof photo", "allow", get(ctxStorage("user", U2), "delivery_proofs/seed.png"));
-  await scenario("delivery_proofs", "unauthenticated read is denied", "deny", get(ctxStorage("unauth"), "delivery_proofs/seed.png"));
+  // 13 — delivery_proofs: FIX-11 scoped both read and write to the order's
+  // ASSIGNED delivery partner (orders/{id}.deliveryPartnerId in Firestore,
+  // cross-read via firestore.get() after parsing the orderId back out of the
+  // filename — active_order_screen.dart already names files
+  // `{orderId}_{timestamp}.jpg`, no client change needed). order-proof-1 is
+  // assigned to U1; U2 is a different, unassigned delivery partner.
+  await seedFirestoreDoc("orders", "order-proof-1", { deliveryPartnerId: U1, userId: "phase24-customer" });
+  await seed("delivery_proofs/order-proof-1_seed.png");
+  await scenario("delivery_proofs", "the ASSIGNED delivery partner writes a proof photo", "allow", put(ctxStorage("delivery", U1), "delivery_proofs/order-proof-1_d.png"));
+  await scenario("delivery_proofs", "admin writes", "allow", put(ctxStorage("admin", U1), "delivery_proofs/order-proof-1_a.png"));
+  await scenario("delivery_proofs", "plain user write is denied", "deny", put(ctxStorage("user", U1), "delivery_proofs/order-proof-1_u.png"));
+  await scenario("delivery_proofs", "FIX-11: an UNASSIGNED delivery partner writing to this order's proof is now denied", "deny", put(ctxStorage("delivery", U2), "delivery_proofs/order-proof-1_evil.png"));
+  await scenario("delivery_proofs", "the ASSIGNED delivery partner reads their own proof photo", "allow", get(ctxStorage("delivery", U1), "delivery_proofs/order-proof-1_seed.png"));
+  await scenario("delivery_proofs", "admin reads any proof photo", "allow", get(ctxStorage("admin", U2), "delivery_proofs/order-proof-1_seed.png"));
+  await scenario("delivery_proofs", "FIX-11: an UNASSIGNED delivery partner (or any other authenticated user) reading this proof is now denied", "deny", get(ctxStorage("delivery", U2), "delivery_proofs/order-proof-1_seed.png"));
+  await scenario("delivery_proofs", "unauthenticated read is denied", "deny", get(ctxStorage("unauth"), "delivery_proofs/order-proof-1_seed.png"));
 
   // 14 — {allPaths=**}: default deny for anything not matched above
   await seed("unmatched_area/seed.png");
