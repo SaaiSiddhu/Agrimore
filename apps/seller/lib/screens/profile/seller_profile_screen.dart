@@ -6,6 +6,7 @@ import 'package:firebase_auth/firebase_auth.dart';
 import '../../providers/seller_auth_provider.dart';
 import '../../providers/seller_product_provider.dart';
 import '../../providers/seller_order_provider.dart';
+import '../rfq/seller_rfq_inbox_screen.dart';
 
 class SellerProfileScreen extends StatefulWidget {
   const SellerProfileScreen({super.key});
@@ -292,6 +293,14 @@ class _SellerProfileScreenState extends State<SellerProfileScreen> {
           children: [
             _buildMenuItem(Icons.store_outlined, 'Business Details',
                 'Name, GST, location', isDark, () => _showEditDialog()),
+            _buildDivider(isDark),
+            _buildMenuItem(Icons.request_quote_outlined, 'Quote Requests',
+                'Respond to bulk quote requests', isDark, () {
+              Navigator.push(
+                context,
+                MaterialPageRoute(builder: (_) => const SellerRfqInboxScreen()),
+              );
+            }),
             _buildDivider(isDark),
             _buildMenuItem(Icons.account_balance_outlined, 'Bank Details',
                 'Payout account settings', isDark, () {
