@@ -46,7 +46,8 @@ class RfqProvider with ChangeNotifier {
       _isLoading = false;
       notifyListeners();
     }, onError: (e) {
-      _error = 'Failed to load your quote requests: $e';
+      debugPrint('RfqProvider.loadMyRfqs stream error: $e');
+      _error = 'Failed to load your quote requests';
       _isLoading = false;
       notifyListeners();
     });
