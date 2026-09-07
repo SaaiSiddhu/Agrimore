@@ -24,6 +24,7 @@ export 'models/order_timeline_model.dart';
 export 'models/payment_settings_model.dart';
 export 'models/product_model.dart';
 export 'models/review_model.dart';
+export 'models/rfq_model.dart';
 export 'models/sponsored_banner_model.dart';
 export 'models/upi_app_model.dart';
 export 'models/user_model.dart';
