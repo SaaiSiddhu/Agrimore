@@ -40,6 +40,7 @@ import 'providers/seller_provider.dart';
 import 'providers/shop_entry_provider.dart';
 import 'providers/settings_provider.dart';
 import 'providers/market_mode_provider.dart';
+import 'providers/ai_connection_provider.dart';
 
 // ============================================
 // Phase 16B-3, Workstream 5a — OPT-IN Firebase emulator wiring.
@@ -174,6 +175,7 @@ void main() async {
         ChangeNotifierProvider(create: (_) => ShopEntryProvider()),
         ChangeNotifierProvider(create: (_) => SettingsProvider()),
         ChangeNotifierProvider(create: (_) => MarketModeProvider()),
+        ChangeNotifierProvider(create: (_) => AiConnectionProvider()),
       ],
       child: const MarketplaceApp(),
     ),

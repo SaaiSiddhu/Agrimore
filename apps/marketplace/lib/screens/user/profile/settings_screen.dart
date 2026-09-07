@@ -2,8 +2,9 @@ import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:provider/provider.dart';
 import 'package:agrimore_ui/agrimore_ui.dart';
-import 'package:agrimore_ui/agrimore_ui.dart';
 import '../../../providers/theme_provider.dart';
+import '../../../providers/ai_connection_provider.dart';
+import '../../../providers/wallet_provider.dart';
 
 class SettingsScreen extends StatefulWidget {
   const SettingsScreen({Key? key}) : super(key: key);
@@ -34,6 +35,16 @@ class _SettingsScreenState extends State<SettingsScreen>
       CurvedAnimation(parent: _fadeController, curve: Curves.easeOut),
     );
     _fadeController.forward();
+
+    // Mirrors profile_screen.dart's own pattern for WalletProvider: loaded
+    // here so a user who opens Settings without ever visiting Wallet still
+    // sees a real balance in the AI Assistant section below, not a stale
+    // zero.
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      if (!mounted) return;
+      context.read<AiConnectionProvider>().loadStatus();
+      context.read<WalletProvider>().loadWallet();
+    });
   }
 
   @override
@@ -255,6 +266,11 @@ class _SettingsScreenState extends State<SettingsScreen>
                 ),
               ],
             ),
+
+            const SizedBox(height: 20),
+
+            // AI Assistant Section (Phase AI-3)
+            _buildAiAssistantSection(isDark),
 
             const SizedBox(height: 20),
 
@@ -562,6 +578,361 @@ class _SettingsScreenState extends State<SettingsScreen>
         Icons.arrow_forward_ios_rounded,
         size: 16,
         color: isDark ? Colors.grey[600] : Colors.grey[400],
+      ),
+    );
+  }
+
+  // ==========================================================
+  // AI Assistant (Phase AI-3)
+  // ==========================================================
+  // Unlike the switches above this section, every control here is wired to
+  // a real backend effect — connectAiProvider/disconnectAiProvider
+  // (functions/src/customer/aiConnection.ts, Phase AI-1) — not a local
+  // setState() with nothing behind it.
+
+  Widget _buildAiAssistantSection(bool isDark) {
+    return Consumer2<AiConnectionProvider, WalletProvider>(
+      builder: (context, aiConnection, wallet, _) {
+        return Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            _buildSectionTitle('AI Assistant', isDark),
+            _buildSettingCard(
+              isDark: isDark,
+              children: [
+                if (aiConnection.isLoading)
+                  const Padding(
+                    padding: EdgeInsets.all(20),
+                    child: Center(
+                      child: SizedBox(
+                        width: 24,
+                        height: 24,
+                        child: CircularProgressIndicator(strokeWidth: 2),
+                      ),
+                    ),
+                  )
+                else if (aiConnection.connected) ...[
+                  ListTile(
+                    contentPadding:
+                        const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
+                    leading: Container(
+                      padding: const EdgeInsets.all(10),
+                      decoration: BoxDecoration(
+                        color: AppColors.success.withValues(alpha: 0.1),
+                        borderRadius: BorderRadius.circular(12),
+                      ),
+                      child: Icon(Icons.smart_toy_outlined,
+                          color: AppColors.success, size: 24),
+                    ),
+                    title: Text(
+                      'Connected: ${_aiProviderLabel(aiConnection.provider)}',
+                      style: TextStyle(
+                        fontSize: 15,
+                        fontWeight: FontWeight.w600,
+                        color: isDark ? Colors.white : Colors.black87,
+                      ),
+                    ),
+                    subtitle: Padding(
+                      padding: const EdgeInsets.only(top: 4),
+                      child: Text(
+                        aiConnection.connectedAt != null
+                            ? 'Since ${aiConnection.connectedAt!.day}/${aiConnection.connectedAt!.month}/${aiConnection.connectedAt!.year}'
+                            : 'Active',
+                        style: TextStyle(
+                          fontSize: 12,
+                          color: isDark ? Colors.grey[400] : Colors.grey[600],
+                        ),
+                      ),
+                    ),
+                  ),
+                  Divider(
+                    height: 1,
+                    color: isDark ? Colors.grey[800] : Colors.grey[300],
+                  ),
+                  _buildActionTile(
+                    title: 'Change key or provider',
+                    subtitle: 'Reconnect with a different key — no extra charge',
+                    icon: Icons.sync,
+                    iconColor: isDark ? Colors.blue.shade300 : Colors.blue,
+                    isDark: isDark,
+                    onTap: () {
+                      HapticFeedback.lightImpact();
+                      _showAiConnectSheet(isDark, wallet.balance);
+                    },
+                  ),
+                  Divider(
+                    height: 1,
+                    color: isDark ? Colors.grey[800] : Colors.grey[300],
+                  ),
+                  _buildActionTile(
+                    title: 'Disconnect AI Assistant',
+                    subtitle: 'The ₹50 activation fee is not refunded',
+                    icon: Icons.link_off,
+                    iconColor: Colors.red,
+                    isDark: isDark,
+                    onTap: () {
+                      HapticFeedback.mediumImpact();
+                      _confirmDisconnectAi(isDark);
+                    },
+                  ),
+                ] else
+                  _buildActionTile(
+                    title: 'Connect AI Assistant',
+                    subtitle:
+                        'Use your own Gemini or ChatGPT key — ₹50 one-time activation',
+                    icon: Icons.smart_toy_outlined,
+                    iconColor: isDark ? Colors.purple.shade300 : Colors.purple,
+                    isDark: isDark,
+                    onTap: () {
+                      HapticFeedback.lightImpact();
+                      _showAiConnectSheet(isDark, wallet.balance);
+                    },
+                  ),
+              ],
+            ),
+          ],
+        );
+      },
+    );
+  }
+
+  String _aiProviderLabel(String? provider) {
+    switch (provider) {
+      case 'gemini':
+        return 'Gemini';
+      case 'chatgpt':
+        return 'ChatGPT';
+      default:
+        return 'AI Assistant';
+    }
+  }
+
+  void _showAiConnectSheet(bool isDark, double walletBalance) {
+    showModalBottomSheet(
+      context: context,
+      isScrollControlled: true,
+      backgroundColor: isDark ? AppColors.surfaceDark : AppColors.surface,
+      shape: const RoundedRectangleBorder(
+        borderRadius: BorderRadius.vertical(top: Radius.circular(20)),
+      ),
+      builder: (_) => _AiConnectFormSheet(isDark: isDark, walletBalance: walletBalance),
+    );
+  }
+
+  Future<void> _confirmDisconnectAi(bool isDark) async {
+    final confirmed = await DialogHelper.showConfirmation(
+      context,
+      title: 'Disconnect AI Assistant?',
+      message:
+          'Your key will be removed. The ₹50 activation fee is not refunded, and '
+          'reconnecting later will charge ₹50 again.',
+      confirmText: 'Disconnect',
+      isDangerous: true,
+    );
+    if (confirmed == true && mounted) {
+      final aiConnection = context.read<AiConnectionProvider>();
+      try {
+        await aiConnection.disconnect();
+        if (mounted) {
+          SnackbarHelper.showSuccess(context, 'AI Assistant disconnected');
+        }
+      } catch (_) {
+        if (mounted) {
+          SnackbarHelper.showError(
+            context,
+            aiConnection.error ?? 'Failed to disconnect',
+          );
+        }
+      }
+    }
+  }
+}
+
+/// Bottom sheet form for connecting (or rotating) an AI provider key.
+/// Isolated as its own StatefulWidget so its form state (the text
+/// controller, the selected provider, the obscure-text toggle) doesn't leak
+/// into _SettingsScreenState.
+class _AiConnectFormSheet extends StatefulWidget {
+  final bool isDark;
+  final double walletBalance;
+
+  const _AiConnectFormSheet({required this.isDark, required this.walletBalance});
+
+  @override
+  State<_AiConnectFormSheet> createState() => _AiConnectFormSheetState();
+}
+
+class _AiConnectFormSheetState extends State<_AiConnectFormSheet> {
+  String _provider = 'gemini';
+  bool _obscureKey = true;
+  bool _submitting = false;
+  final _keyController = TextEditingController();
+
+  @override
+  void dispose() {
+    _keyController.dispose();
+    super.dispose();
+  }
+
+  Future<void> _submit() async {
+    final apiKey = _keyController.text.trim();
+    if (apiKey.isEmpty) {
+      SnackbarHelper.showWarning(context, 'Enter your API key first');
+      return;
+    }
+    if (widget.walletBalance < 50) {
+      SnackbarHelper.showWarning(
+        context,
+        'You need at least ₹50 in your Agrimore Wallet to connect an AI provider',
+      );
+      return;
+    }
+
+    final providerName = _provider == 'gemini' ? 'Gemini' : 'ChatGPT';
+    final providerCompany = _provider == 'gemini' ? 'Google' : 'OpenAI';
+    final confirmed = await DialogHelper.showConfirmation(
+      context,
+      title: 'Connect $providerName?',
+      message:
+          'AgriMore charges a one-time ₹50 activation fee from your Wallet. '
+          'Any usage cost your own $providerName key incurs afterwards is billed '
+          'to you directly by $providerCompany, not AgriMore.',
+      confirmText: 'Connect for ₹50',
+    );
+    if (confirmed != true || !mounted) return;
+
+    setState(() => _submitting = true);
+    final aiConnection = context.read<AiConnectionProvider>();
+    try {
+      await aiConnection.connect(provider: _provider, apiKey: apiKey);
+      if (mounted) {
+        Navigator.of(context).pop();
+        SnackbarHelper.showSuccess(context, 'AI Assistant connected');
+      }
+    } catch (_) {
+      if (mounted) {
+        SnackbarHelper.showError(
+          context,
+          aiConnection.error ?? 'Failed to connect AI Assistant',
+        );
+      }
+    } finally {
+      if (mounted) setState(() => _submitting = false);
+    }
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    final isDark = widget.isDark;
+    return Padding(
+      padding: EdgeInsets.only(
+        left: 20,
+        right: 20,
+        top: 20,
+        bottom: MediaQuery.of(context).viewInsets.bottom + 20,
+      ),
+      child: Column(
+        mainAxisSize: MainAxisSize.min,
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Text(
+            'Connect AI Assistant',
+            style: TextStyle(
+              fontSize: 18,
+              fontWeight: FontWeight.w700,
+              color: isDark ? Colors.white : Colors.black87,
+            ),
+          ),
+          const SizedBox(height: 12),
+          Row(
+            children: [
+              Expanded(
+                child: RadioListTile<String>(
+                  contentPadding: EdgeInsets.zero,
+                  title: const Text('Gemini'),
+                  value: 'gemini',
+                  groupValue: _provider,
+                  onChanged: (v) => setState(() => _provider = v!),
+                ),
+              ),
+              Expanded(
+                child: RadioListTile<String>(
+                  contentPadding: EdgeInsets.zero,
+                  title: const Text('ChatGPT'),
+                  value: 'chatgpt',
+                  groupValue: _provider,
+                  onChanged: (v) => setState(() => _provider = v!),
+                ),
+              ),
+            ],
+          ),
+          TextField(
+            controller: _keyController,
+            obscureText: _obscureKey,
+            decoration: InputDecoration(
+              labelText: '${_provider == 'gemini' ? 'Gemini' : 'ChatGPT'} API key',
+              suffixIcon: IconButton(
+                icon: Icon(_obscureKey ? Icons.visibility_off : Icons.visibility),
+                onPressed: () => setState(() => _obscureKey = !_obscureKey),
+              ),
+              border: OutlineInputBorder(borderRadius: BorderRadius.circular(12)),
+            ),
+          ),
+          const SizedBox(height: 12),
+          Container(
+            padding: const EdgeInsets.all(12),
+            decoration: BoxDecoration(
+              color: (isDark ? AppColors.primaryLight : AppColors.primary)
+                  .withValues(alpha: 0.08),
+              borderRadius: BorderRadius.circular(10),
+            ),
+            child: Text(
+              'AgriMore charges a one-time ₹50 activation fee from your Wallet. '
+              'This is separate from your AI provider\'s own usage charges, if '
+              'any — those are billed to you directly by Google/OpenAI, never '
+              'by AgriMore.',
+              style: TextStyle(
+                fontSize: 12,
+                color: isDark ? Colors.grey[300] : Colors.grey[700],
+              ),
+            ),
+          ),
+          const SizedBox(height: 8),
+          Text(
+            'Wallet balance: ${PriceFormatter.formatPrice(widget.walletBalance)}',
+            style: TextStyle(
+              fontSize: 12,
+              fontWeight: FontWeight.w600,
+              color: isDark ? Colors.grey[400] : Colors.grey[600],
+            ),
+          ),
+          const SizedBox(height: 20),
+          SizedBox(
+            width: double.infinity,
+            height: 50,
+            child: ElevatedButton(
+              onPressed: _submitting ? null : _submit,
+              style: ElevatedButton.styleFrom(
+                backgroundColor: isDark ? AppColors.primaryLight : AppColors.primary,
+                foregroundColor: Colors.white,
+                shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(14)),
+              ),
+              child: _submitting
+                  ? const SizedBox(
+                      width: 22,
+                      height: 22,
+                      child: CircularProgressIndicator(
+                        strokeWidth: 2,
+                        color: Colors.white,
+                      ),
+                    )
+                  : const Text(
+                      'Connect for ₹50',
+                      style: TextStyle(fontWeight: FontWeight.w700),
+                    ),
+            ),
+          ),
+        ],
       ),
     );
   }
