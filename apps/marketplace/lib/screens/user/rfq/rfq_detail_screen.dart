@@ -3,15 +3,24 @@ import 'package:provider/provider.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:firebase_auth/firebase_auth.dart';
 import 'package:agrimore_ui/agrimore_ui.dart';
-import 'package:agrimore_core/agrimore_core.dart';
 import '../../../providers/rfq_provider.dart';
 import '../../../providers/theme_provider.dart';
+import '../../../providers/address_provider.dart';
+import '../../../app/routes.dart';
 
 /// The negotiation thread for a single RFQ (Phase RFQ-2). Shows the full
 /// append-only history from functions/src/customer/rfq.ts (Phase RFQ-1),
 /// the current lastOffer, and — only when it is the caller's turn
 /// (rfq.canActNow, re-checked unconditionally server-side on every call) —
 /// actions to counter, accept, or reject.
+///
+/// Phase RFQ-4: once accepted, shows a real "Place Order" action calling
+/// createOrderFromRfq. Cash-on-delivery only in this first slice —
+/// deliberately does not reuse or duplicate payment_method_screen.dart's
+/// ~2,200-line Razorpay/cart-coupled flow; a non-COD RFQ order is a
+/// disclosed follow-up, not a silent gap. consumedByOrderId is read
+/// directly off the raw snapshot map below rather than added to RfqModel,
+/// since that shared model is out of this phase's scope.
 class RfqDetailScreen extends StatefulWidget {
   final String rfqId;
 
@@ -25,6 +34,15 @@ class _RfqDetailScreenState extends State<RfqDetailScreen> {
   final _priceController = TextEditingController();
   final _quantityController = TextEditingController();
   final _notesController = TextEditingController();
+
+  @override
+  void initState() {
+    super.initState();
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      if (!mounted) return;
+      context.read<AddressProvider>().loadAddresses();
+    });
+  }
 
   @override
   void dispose() {
@@ -98,6 +116,42 @@ class _RfqDetailScreenState extends State<RfqDetailScreen> {
     }
   }
 
+  Future<void> _placeOrder(RfqModel rfq) async {
+    final addressProvider = context.read<AddressProvider>();
+    final address = addressProvider.defaultAddress;
+    if (address == null) {
+      SnackbarHelper.showWarning(context, 'Add a delivery address first');
+      await Navigator.pushNamed(context, AppRoutes.savedAddresses);
+      return;
+    }
+
+    final confirmed = await DialogHelper.showConfirmation(
+      context,
+      title: 'Place this order?',
+      message:
+          '${PriceFormatter.formatPrice(rfq.finalPrice ?? 0)} x ${rfq.finalQuantity ?? 0} units, delivered to ${address.addressLine1}. Payment: Cash on Delivery.',
+      confirmText: 'Place Order',
+    );
+    if (confirmed != true) return;
+
+    try {
+      await context.read<RfqProvider>().placeOrder(
+            rfqId: rfq.id,
+            productId: rfq.productId,
+            quantity: rfq.finalQuantity ?? 0,
+            deliveryAddress: address.toMap(),
+          );
+      if (mounted) {
+        SnackbarHelper.showSuccess(context, 'Order placed');
+        Navigator.pop(context);
+      }
+    } catch (_) {
+      if (mounted) {
+        SnackbarHelper.showError(context, context.read<RfqProvider>().error ?? 'Failed to place your order');
+      }
+    }
+  }
+
   @override
   Widget build(BuildContext context) {
     final isDark = context.watch<ThemeProvider>().isDarkMode;
@@ -125,6 +179,9 @@ class _RfqDetailScreenState extends State<RfqDetailScreen> {
           }
           final rfq = RfqModel.fromFirestore(snapshot.data!);
           final canAct = rfq.canActNow(uid);
+          final rawData = snapshot.data!.data() as Map<String, dynamic>?;
+          final consumedByOrderId = rawData?['consumedByOrderId'] as String?;
+          final canPlaceOrder = rfq.status == RfqStatus.accepted && consumedByOrderId == null;
 
           return Column(
             children: [
@@ -146,12 +203,37 @@ class _RfqDetailScreenState extends State<RfqDetailScreen> {
                 onAccept: () => _respond(rfq, 'accept'),
                 onReject: () => _respond(rfq, 'reject'),
               )
+              else if (canPlaceOrder)
+                Padding(
+                  padding: const EdgeInsets.all(16),
+                  child: Column(
+                    children: [
+                      Text(
+                        'Accepted — locked at ${rfq.finalPrice != null ? PriceFormatter.formatPrice(rfq.finalPrice!) : ''} x ${rfq.finalQuantity ?? ''}',
+                        style: AppTextStyles.bodyMedium,
+                        textAlign: TextAlign.center,
+                      ),
+                      const SizedBox(height: 12),
+                      SizedBox(
+                        width: double.infinity,
+                        child: ElevatedButton(
+                          onPressed: () => _placeOrder(rfq),
+                          style: ElevatedButton.styleFrom(
+                            backgroundColor: AppColors.success,
+                            foregroundColor: Colors.white,
+                          ),
+                          child: const Text('Place Order (Cash on Delivery)'),
+                        ),
+                      ),
+                    ],
+                  ),
+                )
               else
                 Padding(
                   padding: const EdgeInsets.all(16),
                   child: Text(
                     rfq.status == RfqStatus.accepted
-                        ? 'Accepted — locked at ${rfq.finalPrice != null ? PriceFormatter.formatPrice(rfq.finalPrice!) : ''} x ${rfq.finalQuantity ?? ''}'
+                        ? 'Order already placed'
                         : rfq.status == RfqStatus.rejected
                             ? 'This quote request was rejected.'
                             : 'Waiting for the other party to respond.',
