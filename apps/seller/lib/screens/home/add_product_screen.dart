@@ -41,7 +41,6 @@ class _AddProductScreenState extends State<AddProductScreen> {
   List<Map<String, dynamic>> _centers = [];
   Map<String, dynamic>? _selectedMasterProduct;
   Map<String, dynamic>? _selectedCenter;
-  bool _isGeneratingAI = false;
   bool _isSaving = false;
   bool _isSearchingMasterProducts = false;
   bool _isLoadingCenters = false;
@@ -371,37 +370,6 @@ class _AddProductScreenState extends State<AddProductScreen> {
       }
     } finally {
       if (mounted) setState(() => _isDetectingCoverageLocation = false);
-    }
-  }
-
-  Future<void> _generateAIDescription() async {
-    final name = _nameController.text.trim();
-    if (name.isEmpty) {
-      SnackbarHelper.showError(context, 'Please enter a product name first.');
-      return;
-    }
-
-    setState(() => _isGeneratingAI = true);
-
-    // Simulate AI Generation Delay
-    await Future.delayed(const Duration(seconds: 2));
-
-    final aiDescription =
-        'Premium quality $name sourced directly from trusted farms. '
-        'Rich in flavor and naturally grown to ensure the best health benefits for you and your family. '
-        'Perfect for everyday use.\n\n'
-        '✨ 100% Organic\n'
-        '✨ Farm Fresh\n'
-        '✨ No Artificial Preservatives';
-
-    setState(() {
-      _descriptionController.text = aiDescription;
-      _isGeneratingAI = false;
-    });
-
-    if (mounted) {
-      SnackbarHelper.showSuccess(
-          context, 'AI Description Generated Successfully!');
     }
   }
 
@@ -1149,65 +1117,15 @@ class _AddProductScreenState extends State<AddProductScreen> {
               const SizedBox(height: 16),
 
               // AI Description Field
-              Container(
-                decoration: BoxDecoration(
-                  borderRadius: BorderRadius.circular(12),
-                  border: Border.all(
-                      color: Colors.purple.withValues(alpha: 0.3), width: 2),
+              TextFormField(
+                controller: _descriptionController,
+                maxLines: 4,
+                decoration: const InputDecoration(
+                  labelText: 'Description',
+                  hintText: 'Enter a product description.',
+                  border: OutlineInputBorder(),
                 ),
-                child: Column(
-                  children: [
-                    Padding(
-                      padding: const EdgeInsets.symmetric(
-                          horizontal: 16, vertical: 8),
-                      child: Row(
-                        mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                        children: [
-                          const Row(
-                            children: [
-                              Icon(Icons.auto_awesome,
-                                  color: Colors.purple, size: 18),
-                              SizedBox(width: 8),
-                              Text(
-                                'AI Description',
-                                style: TextStyle(
-                                    color: Colors.purple,
-                                    fontWeight: FontWeight.bold),
-                              ),
-                            ],
-                          ),
-                          TextButton.icon(
-                            onPressed:
-                                _isGeneratingAI ? null : _generateAIDescription,
-                            icon: _isGeneratingAI
-                                ? const SizedBox(
-                                    width: 16,
-                                    height: 16,
-                                    child: CircularProgressIndicator(
-                                        strokeWidth: 2))
-                                : const Icon(Icons.flash_on, size: 16),
-                            label: Text(
-                                _isGeneratingAI ? 'Generating...' : 'Generate'),
-                            style: TextButton.styleFrom(
-                              foregroundColor: Colors.purple,
-                            ),
-                          ),
-                        ],
-                      ),
-                    ),
-                    TextFormField(
-                      controller: _descriptionController,
-                      maxLines: 4,
-                      decoration: const InputDecoration(
-                        hintText:
-                            'Enter product description or use AI to generate an SEO-friendly description.',
-                        border: InputBorder.none,
-                        contentPadding: EdgeInsets.all(16),
-                      ),
-                      validator: (v) => v!.isEmpty ? 'Required' : null,
-                    ),
-                  ],
-                ),
+                validator: (v) => v!.isEmpty ? 'Required' : null,
               ),
               const SizedBox(height: 16),
 
