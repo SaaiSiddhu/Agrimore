@@ -19,6 +19,7 @@
 
 import { onCall, HttpsError } from "firebase-functions/v2/https";
 import * as admin from "firebase-admin";
+import { FieldValue } from "firebase-admin/firestore";
 import * as functionsV1 from "firebase-functions/v1";
 import { log } from "../common/helpers";
 import { ASSOCIATE_DISPLAY_TERM } from "./associateTerm";
@@ -85,10 +86,10 @@ export const waiveAssociateOnboardingFee = onCall(
       // unchanged, admin-only action performed elsewhere.
       tx.update(employeeRef, {
         onboardingWaived: true,
-        onboardingWaivedAt: admin.firestore.FieldValue.serverTimestamp(),
+        onboardingWaivedAt: FieldValue.serverTimestamp(),
         onboardingWaivedBy: auth.uid,
         onboardingWaivedReason: reason,
-        updatedAt: admin.firestore.FieldValue.serverTimestamp(),
+        updatedAt: FieldValue.serverTimestamp(),
       });
 
       const eventRef = db.collection("onboarding_events").doc();
@@ -97,7 +98,7 @@ export const waiveAssociateOnboardingFee = onCall(
         uid: employeeId,
         actorUid: auth.uid,
         reason,
-        createdAt: admin.firestore.FieldValue.serverTimestamp(),
+        createdAt: FieldValue.serverTimestamp(),
       });
     });
 
@@ -149,10 +150,10 @@ export const recordAssociateOnboardingRefund = onCall(
       // onboardingRefundedAt is set, regardless of onboardingPaid.
       // ================================================================
       tx.update(employeeRef, {
-        onboardingRefundedAt: admin.firestore.FieldValue.serverTimestamp(),
+        onboardingRefundedAt: FieldValue.serverTimestamp(),
         onboardingRefundedBy: auth.uid,
         onboardingRefundedReason: reason,
-        updatedAt: admin.firestore.FieldValue.serverTimestamp(),
+        updatedAt: FieldValue.serverTimestamp(),
       });
 
       const eventRef = db.collection("onboarding_events").doc();
@@ -161,7 +162,7 @@ export const recordAssociateOnboardingRefund = onCall(
         uid: employeeId,
         actorUid: auth.uid,
         reason,
-        createdAt: admin.firestore.FieldValue.serverTimestamp(),
+        createdAt: FieldValue.serverTimestamp(),
       });
     });
 
@@ -228,7 +229,7 @@ export const requestAssociateOnboardingRefundOnSuspend = functionsV1.firestore
       amount: amount ?? null,
       status: "pending",
       reason: "Associate suspended after clearing onboarding by payment — automatic refund request",
-      requestedAt: admin.firestore.FieldValue.serverTimestamp(),
+      requestedAt: FieldValue.serverTimestamp(),
     });
 
     log.info(

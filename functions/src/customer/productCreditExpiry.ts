@@ -33,6 +33,7 @@
 import * as functions from "firebase-functions/v1";
 import { onCall, HttpsError } from "firebase-functions/v2/https";
 import * as admin from "firebase-admin";
+import { FieldValue, Timestamp } from "firebase-admin/firestore";
 import { auditEntry, resolveIsAdmin } from "../admin/complianceGate";
 import { appendLedgerEntry, toProjectionFields } from "./productCreditLedger";
 
@@ -97,7 +98,7 @@ export const expireProductCredits = functions.pubsub
   .timeZone("Asia/Kolkata")
   .onRun(async () => {
     const db = admin.firestore();
-    const now = admin.firestore.Timestamp.now();
+    const now = Timestamp.now();
 
     const dueSnap = await db
       .collection("product_credit_ledger")
@@ -177,7 +178,7 @@ async function releaseOneExpiredHold(
     // distinguishes the two cases.
     tx.update(holdRef, {
       status: "expired",
-      releasedAt: admin.firestore.FieldValue.serverTimestamp(),
+      releasedAt: FieldValue.serverTimestamp(),
     });
 
     return "released";
@@ -189,7 +190,7 @@ export const releaseExpiredProductCreditHolds = functions.pubsub
   .timeZone("Asia/Kolkata")
   .onRun(async () => {
     const db = admin.firestore();
-    const now = admin.firestore.Timestamp.now();
+    const now = Timestamp.now();
 
     const dueSnap = await db
       .collection("product_credit_holds")

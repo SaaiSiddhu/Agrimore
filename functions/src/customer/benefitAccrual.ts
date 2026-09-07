@@ -26,6 +26,7 @@
 import * as functions from "firebase-functions/v1";
 import { onCall, HttpsError } from "firebase-functions/v2/https";
 import * as admin from "firebase-admin";
+import { FieldValue, Timestamp } from "firebase-admin/firestore";
 import { assertProgramLaunchable, auditEntry, resolveIsAdmin } from "../admin/complianceGate";
 import { appendLedgerEntry, toProjectionFields } from "./productCreditLedger";
 import { calculateBenefitForPeriod } from "./benefitCalculation";
@@ -147,13 +148,13 @@ async function accrueOneEnrollment(
       explanation: calc.explanation,
       status: calc.amount > 0 ? "credited" : "zero",
       ledgerEntryId: entryRef?.id ?? null,
-      calculatedAt: admin.firestore.FieldValue.serverTimestamp(),
+      calculatedAt: FieldValue.serverTimestamp(),
     });
 
     if (calc.amount > 0 && entryRef) {
       const expiresAt =
         typeof program.creditExpiryDays === "number"
-          ? admin.firestore.Timestamp.fromMillis(periodDate.getTime() + program.creditExpiryDays * 86400000)
+          ? Timestamp.fromMillis(periodDate.getTime() + program.creditExpiryDays * 86400000)
           : null;
 
       appendLedgerEntry(tx, db, {
@@ -167,7 +168,7 @@ async function accrueOneEnrollment(
         description: `Monthly Product Credit for ${period}`,
         metadata: { ruleType: calc.ruleType, rulesVersion: calc.rulesVersion, explanation: calc.explanation },
         expiresAt,
-        nextCreditDate: admin.firestore.Timestamp.fromDate(
+        nextCreditDate: Timestamp.fromDate(
           addMonthsUTC(periodDate, 12 / periodsPerYearFor(program.creditFrequency))
         ),
       });
@@ -175,7 +176,7 @@ async function accrueOneEnrollment(
 
     tx.update(enrollmentRef, {
       lastAccrualPeriod: period,
-      updatedAt: admin.firestore.FieldValue.serverTimestamp(),
+      updatedAt: FieldValue.serverTimestamp(),
     });
 
     return calc.amount > 0 ? "credited" : "skipped";

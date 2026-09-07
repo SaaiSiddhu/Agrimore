@@ -4,6 +4,7 @@
 
 import * as functions from "firebase-functions/v1";
 import * as admin from "firebase-admin";
+import { FieldValue } from "firebase-admin/firestore";
 import { log } from "../common/helpers";
 
 /**
@@ -87,7 +88,7 @@ export const onProductStockChanged = functions.firestore
         threshold: lowStockThreshold,
         alertType: currentStock === 0 ? "out_of_stock" : "low_stock",
         isRead: false,
-        createdAt: admin.firestore.FieldValue.serverTimestamp(),
+        createdAt: FieldValue.serverTimestamp(),
       });
     } catch (error: any) {
       log.error(`❌ Low-stock alert error: ${error.message}`);

@@ -4,6 +4,7 @@
 
 import * as functions from "firebase-functions/v1";
 import * as admin from "firebase-admin";
+import { FieldValue } from "firebase-admin/firestore";
 
 /**
  * Trigger: Fires when a new order is created in the orders collection.
@@ -116,7 +117,7 @@ export const notifySellerNewOrder = functions.firestore
           type: "new_order",
           data: { orderId, orderNumber },
           isRead: false,
-          createdAt: admin.firestore.FieldValue.serverTimestamp(),
+          createdAt: FieldValue.serverTimestamp(),
         });
       } catch (error: any) {
         console.error(
@@ -325,7 +326,7 @@ export const calculateSellerPayout = functions.firestore
             amount: netAmount, // Alias for backward compat
             status: "pending",
             itemCount: data.items.length,
-            createdAt: admin.firestore.FieldValue.serverTimestamp(),
+            createdAt: FieldValue.serverTimestamp(),
             paidAt: null,
           });
           return true;
