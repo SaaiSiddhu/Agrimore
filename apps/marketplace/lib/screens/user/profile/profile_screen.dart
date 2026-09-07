@@ -261,6 +261,11 @@ class _ProfileScreenState extends State<ProfileScreen> {
                       onTap: () => _navigateTo(AppRoutes.mySubscriptions),
                     ),
                     _MenuItem(
+                      icon: Icons.request_quote_outlined,
+                      title: 'My Quotes',
+                      onTap: () => _navigateTo(AppRoutes.myRfqs),
+                    ),
+                    _MenuItem(
                       icon: Icons.location_on_rounded,
                       title: 'Delivery Addresses',
                       count: _isLoadingStats ? null : _addressesCount,

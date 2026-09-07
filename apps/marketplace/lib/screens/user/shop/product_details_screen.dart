@@ -21,6 +21,7 @@ import 'widgets/delivery_info_widget.dart';
 import '../../../providers/theme_provider.dart';
 import '../../../widgets/product/unified_product_card.dart';
 import '../../../widgets/cart_fly_animation.dart';
+import '../rfq/widgets/request_quote_sheet.dart';
 
 class ProductDetailsScreen extends StatefulWidget {
   final String productId;
@@ -1079,9 +1080,34 @@ Future<void> _addToCart(BuildContext context, {bool buyNow = false}) async {
             ],
             border: Border(top: BorderSide(color: isDark ? Colors.grey[800]! : Colors.grey[200]!)),
           ),
-          child: Row(
+          child: Column(
+            mainAxisSize: MainAxisSize.min,
             children: [
-              // Left: Variant info + Price with MRP strikeout + Offer badge
+              // Phase RFQ-2: a bulk-quote entry point for B2B-enabled
+              // products only — RFQ-1's createRfq already refuses any
+              // product where isB2BEnabled isn't true, so this mirrors that
+              // same gate client-side rather than showing a button that
+              // would always fail.
+              if (product.isB2BEnabled) ...[
+                SizedBox(
+                  width: double.infinity,
+                  child: OutlinedButton.icon(
+                    onPressed: () => _showRequestQuoteSheet(context, product, isDark),
+                    icon: const Icon(Icons.request_quote_outlined, size: 18),
+                    label: const Text('Request a Bulk Quote'),
+                    style: OutlinedButton.styleFrom(
+                      foregroundColor: accentColor,
+                      side: BorderSide(color: accentColor),
+                      padding: const EdgeInsets.symmetric(vertical: 10),
+                      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+                    ),
+                  ),
+                ),
+                const SizedBox(height: 10),
+              ],
+              Row(
+                children: [
+                  // Left: Variant info + Price with MRP strikeout + Offer badge
               Expanded(
                 child: Column(
                   crossAxisAlignment: CrossAxisAlignment.start,
@@ -1181,10 +1207,29 @@ Future<void> _addToCart(BuildContext context, {bool buyNow = false}) async {
                   ),
                 ),
               ),
+                ],
+              ),
             ],
           ),
         );
       },
+    );
+  }
+
+  void _showRequestQuoteSheet(BuildContext context, ProductModel product, bool isDark) {
+    showModalBottomSheet(
+      context: context,
+      isScrollControlled: true,
+      backgroundColor: isDark ? AppColors.surfaceDark : AppColors.surface,
+      shape: const RoundedRectangleBorder(
+        borderRadius: BorderRadius.vertical(top: Radius.circular(20)),
+      ),
+      builder: (_) => RequestQuoteSheet(
+        productId: product.id,
+        productName: product.name,
+        moq: product.b2bMoq ?? 1,
+        isDark: isDark,
+      ),
     );
   }
 
