@@ -208,7 +208,13 @@ export const createOrderFromRfq = onCall(
           "The order quantity does not match the accepted quote"
         );
       }
-      if (typeof rfq.finalPrice !== "number" || rfq.finalPrice <= 0) {
+      // Mirrors rfq.ts's own validatePrice() check exactly (Number.isFinite,
+      // not just typeof — a NaN/Infinity value is technically typeof
+      // "number" in JS and would otherwise slip past a bare `<= 0` guard,
+      // since every comparison against NaN is false). rfq.ts's own
+      // validatePrice() already guarantees this in practice; this is
+      // defense-in-depth, not a currently reachable gap.
+      if (typeof rfq.finalPrice !== "number" || !Number.isFinite(rfq.finalPrice) || rfq.finalPrice <= 0) {
         throw new HttpsError(
           "failed-precondition",
           "This quote request has no locked price"
