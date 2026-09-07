@@ -11,6 +11,7 @@ import 'app/app.dart';
 import 'providers/seller_auth_provider.dart';
 import 'providers/seller_product_provider.dart';
 import 'providers/seller_order_provider.dart';
+import 'providers/rfq_provider.dart';
 
 void main() async {
   WidgetsFlutterBinding.ensureInitialized();
@@ -46,6 +47,7 @@ class SellerApp extends StatelessWidget {
         ChangeNotifierProvider(create: (_) => SellerAuthProvider()),
         ChangeNotifierProvider(create: (_) => SellerProductProvider()),
         ChangeNotifierProvider(create: (_) => SellerOrderProvider()),
+        ChangeNotifierProvider(create: (_) => RfqProvider()),
       ],
       child: const App(),
     );
