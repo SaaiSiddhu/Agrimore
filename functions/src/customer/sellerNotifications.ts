@@ -232,11 +232,11 @@ export const calculateSellerPayout = functions.firestore
         // The order is the record of what was sold and by whom; the product
         // document is mutable state that has moved on.
         //
-        // The product is still read, for categoryId ONLY, because the
-        // category-rate selection depends on it and changing that selection is
-        // finding N-27 — deliberately out of this phase's scope (see FIX-4B).
-        // A missing product now degrades to the default rate instead of
-        // dropping the line.
+        // The product is still read, for categoryId ONLY, so EACH item's own
+        // category rate can be resolved below (Phase FIX-4B, N-27,
+        // D-PAYOUT-MIXED-CATEGORY — a weighted average across items, not the
+        // first item's category alone). A missing product now degrades that
+        // one item to the default rate instead of dropping the line.
         const sellerId = typeof item.sellerId === "string" ? item.sellerId : "";
         if (!sellerId) {
           console.warn(
@@ -271,26 +271,35 @@ export const calculateSellerPayout = functions.firestore
     // Create payout document for each seller
     const payoutPromises = Object.entries(sellerItems).map(
       async ([sellerId, data]) => {
-        // Category-specific commission. The SELECTION RULE — "the first item's
-        // category decides the rate for the whole payout" — is preserved
-        // verbatim: it is wrong for mixed-category orders, that is finding N-27,
-        // and correcting it changes payout amounts on live rate tables, so it
-        // belongs to FIX-4B and an owner decision. What changes here is only
-        // that the chosen rate is now VALIDATED (N-28) and that
-        // settings/commission is no longer re-read per seller.
+        // Phase FIX-4B (finding N-27, D-PAYOUT-MIXED-CATEGORY — owner
+        // decision, 2026-09-07): a mixed-category order now uses a WEIGHTED
+        // AVERAGE of each item's own category rate, not the first item's
+        // category rate applied to the whole payout. Each item's own
+        // resolved rate (via the SAME categoryRates/resolvePayoutRate this
+        // file already reads once — no new Firestore read) is applied to
+        // that item's own value, and commissionAmount is the sum across the
+        // seller's items. The stored `commissionRate` field is then the
+        // DERIVED weighted average (commissionAmount/grossAmount×100) —
+        // mathematically identical to averaging the per-item rates weighted
+        // by value, computed the simpler way, and kept as a single
+        // percentage for backward-compat with anything already reading it.
         const categoryRates = commissionSettings.categoryRates || {};
-        const firstCategory = data.items[0]?.categoryId;
-        const rawCategoryRate =
-          firstCategory && categoryRates[firstCategory] !== undefined
-            ? categoryRates[firstCategory]
-            : undefined;
-        const commissionRate =
-          rawCategoryRate === undefined
-            ? defaultCommission
-            : resolvePayoutRate(rawCategoryRate, defaultCommission);
+        let commissionAmount = 0;
+        for (const item of data.items) {
+          const itemTotal = (item.price || 0) * (item.quantity || 1);
+          const rawCategoryRate =
+            item.categoryId && categoryRates[item.categoryId] !== undefined
+              ? categoryRates[item.categoryId]
+              : undefined;
+          const itemRate =
+            rawCategoryRate === undefined
+              ? defaultCommission
+              : resolvePayoutRate(rawCategoryRate, defaultCommission);
+          commissionAmount += itemTotal * (itemRate / 100);
+        }
 
         const grossAmount = data.total;
-        const commissionAmount = grossAmount * (commissionRate / 100);
+        const commissionRate = grossAmount > 0 ? (commissionAmount / grossAmount) * 100 : 0;
         const netAmount = grossAmount - commissionAmount;
 
         // Phase FIX-4 (finding N-7, P1). This was a non-transactional
