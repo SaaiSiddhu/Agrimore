@@ -240,7 +240,23 @@ export const payEmployeeCommissionOnDelivery = functions.firestore
         const commissionRate = resolution.rate;
         const rateSource = resolution.source;
 
-        const grossAmount = (after.total as number | undefined) ?? 0;
+        // Phase FIX-4B (finding N-29, D-COMMISSION-BASE — owner decision,
+        // 2026-09-07): commission is computed on the goods subtotal only,
+        // excluding delivery charge and tax. `after.total` (the previous
+        // basis) is orderPricing.ts's grandTotal = max(0,subtotal-discount)
+        // + deliveryCharge + tax — an associate was earning commission on
+        // the customer's delivery fee and tax. `max(0, subtotal-discount)`
+        // is exactly that same total with deliveryCharge and tax excluded
+        // (orderPricing.ts:467-469's own per-seller construction), i.e. the
+        // net goods value actually transacted — a coupon-discounted order
+        // pays commission on what was actually sold, not the pre-discount
+        // sticker value. Forward-looking only: an order whose commission
+        // was already paid before this phase keeps its old commissionAmount
+        // untouched; only NEW payouts use this basis.
+        const grossAmount = Math.max(
+          0,
+          ((after.subtotal as number | undefined) ?? 0) - ((after.discount as number | undefined) ?? 0)
+        );
         const commissionAmount = Math.round(grossAmount * (commissionRate / 100) * 100) / 100;
 
         if (commissionAmount <= 0) {
@@ -312,6 +328,177 @@ export const payEmployeeCommissionOnDelivery = functions.firestore
     } catch (error: unknown) {
       const message = error instanceof Error ? error.message : String(error);
       console.error(`❌ Failed to pay employee commission for order ${orderId}: ${message}`);
+      throw error;
+    }
+
+    return null;
+  });
+
+// ============================================================
+//  reverseEmployeeCommissionOnCancellation (Phase FIX-4B, N-9)
+// ============================================================
+//
+// D-COMMISSION-REVERSAL (owner decision, 2026-09-07): when a delivered
+// order that already paid commission is later cancelled/reversed, claw the
+// commission back by debiting the associate's wallet balance directly — the
+// balance CAN go negative as a result (not floored at 0, not a
+// compensating ledger-only entry).
+//
+// Mirrors productCreditReversal.ts's trigger shape exactly: a cheap,
+// non-authoritative pre-filter on `after` before opening a transaction;
+// every value actually WRITTEN is re-derived from the LIVE order document
+// read inside the transaction, never trusted from `after` — the same
+// defence-in-depth against a future write path that forgets to extend a
+// denylist, which is exactly the class of gap that let a tampered `after`
+// dictate real money movement before that file's own Phase D-1 hardening.
+// Idempotency is re-checked AND written inside that same transaction,
+// guarding against Firestore's at-least-once trigger delivery.
+//
+// STATUS SET: deliberately the BROADER
+// {"cancelled","refunded","returned","rejected"} — confirmDelivery.ts's own
+// NOT_DELIVERABLE set, the most complete "this order did not actually
+// complete as a sale" set already established in this codebase — rather
+// than productCreditReversal.ts's narrower cancelled-only check. D-
+// COMMISSION-REVERSAL's own language ("cancelled/reversed") is broader
+// than the literal string "cancelled", and this is new code with no
+// existing narrower precedent of its own to preserve.
+const COMMISSION_REVERSAL_STATUSES = new Set(["cancelled", "refunded", "returned", "rejected"]);
+
+function orderStatusIsIn(order: FirebaseFirestore.DocumentData | undefined, set: Set<string>): boolean {
+  if (!order) return false;
+  const a = typeof order.orderStatus === "string" ? order.orderStatus.toLowerCase() : "";
+  const b = typeof order.status === "string" ? order.status.toLowerCase() : "";
+  return set.has(a) || set.has(b);
+}
+
+export const reverseEmployeeCommissionOnCancellation = functions.firestore
+  .document("orders/{orderId}")
+  .onUpdate(async (change, context) => {
+    const before = change.before.data();
+    const after = change.after.data();
+    const orderId = context.params.orderId;
+
+    // Transition guard: fires only when neither field was already in the
+    // reversal-status set before this write, and at least one is after it —
+    // mirrors productCreditReversal.ts's own guard, generalized from a
+    // single "cancelled" string to this broader set.
+    const wasReversal = orderStatusIsIn(before, COMMISSION_REVERSAL_STATUSES);
+    const isNowReversal = orderStatusIsIn(after, COMMISSION_REVERSAL_STATUSES);
+    if (wasReversal || !isNowReversal) {
+      return null;
+    }
+
+    // Cheap PRE-FILTER before any Firestore access — NOT authoritative for
+    // anything written below. Lets the overwhelming majority of
+    // cancellations (no commission was ever paid on this order) skip
+    // opening a transaction entirely.
+    if (after?.commissionPaid !== true) {
+      return null;
+    }
+    if (after?.commissionReversed === true) {
+      return null;
+    }
+
+    const db = admin.firestore();
+    const orderRef = db.collection("orders").doc(orderId);
+
+    try {
+      await db.runTransaction(async (tx) => {
+        // ============================================
+        // ALL READS FIRST.
+        // ============================================
+        const orderSnap = await tx.get(orderRef);
+        if (!orderSnap.exists) {
+          return;
+        }
+        const order = orderSnap.data()!;
+
+        // Idempotency re-check against the LIVE document, guarding a
+        // concurrent/retried trigger invocation.
+        if (order.commissionReversed === true) {
+          console.log(`⚠️ Commission already reversed for order ${orderId} (checked in tx) — skipping`);
+          return;
+        }
+        if (order.commissionPaid !== true) {
+          // The pre-filter saw commissionPaid:true in `after`, but the live
+          // document disagrees — nothing to reverse. Do not mark
+          // commissionReversed:true for an order that never paid.
+          return;
+        }
+
+        const employeeUid = order.employeeUid as string | undefined;
+        const commissionAmount =
+          typeof order.commissionAmount === "number" ? order.commissionAmount : 0;
+
+        if (!employeeUid || commissionAmount <= 0) {
+          // Nothing to actually claw back (a zero-amount payout, or a
+          // malformed record missing employeeUid) — still close out the
+          // reversal so this order does not re-evaluate on every future
+          // write to it.
+          tx.update(orderRef, { commissionReversed: true, commissionReversedAt: FieldValue.serverTimestamp() });
+          return;
+        }
+
+        const walletRef = db.collection("wallets").doc(employeeUid);
+        const walletSnap = await tx.get(walletRef);
+        const currentBalance = (walletSnap.data()?.balance as number | undefined) ?? 0;
+        // Deliberately UNGUARDED — D-COMMISSION-REVERSAL: the balance CAN
+        // go negative. No insufficient-balance check, unlike
+        // requestEmployeePayout.ts's own debit (a voluntary withdrawal,
+        // which correctly refuses to overdraw); this is an involuntary
+        // clawback of money the associate should never have kept.
+        const balanceAfter = currentBalance - commissionAmount;
+
+        // ============================================
+        // ALL WRITES.
+        // ============================================
+        tx.set(
+          walletRef,
+          {
+            balance: FieldValue.increment(-commissionAmount),
+            updatedAt: FieldValue.serverTimestamp(),
+          },
+          { merge: true }
+        );
+
+        const walletTransactionRef = db.collection("wallet_transactions").doc();
+        // source:"commission" (the existing TransactionSource enum value,
+        // packages/agrimore_core/lib/models/wallet_transaction_model.dart)
+        // reused rather than a new "commission_reversal" value — that would
+        // require a packages/** change (a five-app analyze for a label) and
+        // an unrecognized string falls back to "adjustment" client-side
+        // anyway (WalletTransactionModel.fromMap's own orElse). type:"debit"
+        // together with this source already conveys "commission, reversed".
+        tx.set(walletTransactionRef, {
+          walletId: employeeUid,
+          userId: employeeUid,
+          type: "debit",
+          source: "commission",
+          amount: commissionAmount,
+          coins: 0,
+          balanceAfter,
+          coinsAfter: walletSnap.data()?.coins ?? 0,
+          orderId,
+          description: `Commission reversed — order ${order.orderNumber || orderId} was cancelled/refunded/returned`,
+          referenceId: orderId,
+          createdAt: FieldValue.serverTimestamp(),
+          expiresAt: null,
+          metadata: {
+            originalCommissionAmount: commissionAmount,
+            reversalOrderStatus: order.orderStatus ?? order.status ?? null,
+          },
+        });
+
+        tx.update(orderRef, {
+          commissionReversed: true,
+          commissionReversedAt: FieldValue.serverTimestamp(),
+        });
+      });
+
+      console.log(`✅ Commission reversal processed for order ${orderId}`);
+    } catch (error: unknown) {
+      const message = error instanceof Error ? error.message : String(error);
+      console.error(`❌ Failed to reverse commission for order ${orderId}: ${message}`);
       throw error;
     }
 
