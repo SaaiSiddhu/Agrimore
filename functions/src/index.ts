@@ -121,6 +121,11 @@ export { connectAiProvider, disconnectAiProvider } from "./customer/aiConnection
 export { aiChatProxy } from "./customer/aiChatProxy";
 
 // ============================================
+// B2B RFQ & NEGOTIATION (Phase RFQ-1)
+// ============================================
+export { createRfq, submitRfqOffer, respondToRfqOffer } from "./customer/rfq";
+
+// ============================================
 // CUSTOMER PRODUCT BENEFIT PROGRAM — COMPLIANCE GATE (Phase A)
 // ============================================
 // The only way to change feature_flags/benefit_program or
