@@ -57,6 +57,32 @@ class SellerOrderProvider extends ChangeNotifier {
         .fold(0.0, (total, o) => total + o.total);
   }
 
+  /// This calendar week (Monday through today), delivered orders only.
+  double get weekRevenue {
+    final now = DateTime.now();
+    final startOfWeek = DateTime(now.year, now.month, now.day)
+        .subtract(Duration(days: now.weekday - 1));
+    return _orders
+        .where((o) => o.isDelivered && !o.createdAt.isBefore(startOfWeek))
+        .fold(0.0, (total, o) => total + o.total);
+  }
+
+  /// This calendar month, delivered orders only.
+  double get monthRevenue {
+    final today = DateTime.now();
+    return _orders
+        .where(
+          (o) =>
+              o.isDelivered &&
+              o.createdAt.year == today.year &&
+              o.createdAt.month == today.month,
+        )
+        .fold(0.0, (total, o) => total + o.total);
+  }
+
+  /// Orders accepted but not yet delivered or cancelled.
+  int get activeOrderCount => totalOrders - deliveredOrders - cancelledOrders;
+
   List<OrderModel> get _filteredOrders {
     if (_selectedFilter == 'all') return _orders;
     return _orders.where((o) {

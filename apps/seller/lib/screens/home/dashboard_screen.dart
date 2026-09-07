@@ -17,6 +17,8 @@ class DashboardScreen extends StatefulWidget {
 }
 
 class _DashboardScreenState extends State<DashboardScreen> {
+  String _statsPeriod = 'today';
+
   @override
   void initState() {
     super.initState();
@@ -24,6 +26,7 @@ class _DashboardScreenState extends State<DashboardScreen> {
       final auth = context.read<SellerAuthProvider>();
       if (auth.currentUser != null) {
         context.read<SellerProductProvider>().loadSellerProducts(auth.currentUser!.uid);
+        context.read<SellerOrderProvider>().loadSellerOrders(auth.currentUser!.uid);
       }
     });
   }
@@ -32,6 +35,7 @@ class _DashboardScreenState extends State<DashboardScreen> {
   Widget build(BuildContext context) {
     final auth = context.watch<SellerAuthProvider>();
     final productProvider = context.watch<SellerProductProvider>();
+    final orderProvider = context.watch<SellerOrderProvider>();
     final theme = Theme.of(context);
     final isDark = theme.brightness == Brightness.dark;
 
@@ -48,7 +52,9 @@ class _DashboardScreenState extends State<DashboardScreen> {
                 children: [
                   _buildSmartAlerts(isDark),
                   const SizedBox(height: 24),
-                  _buildStatsGrid(),
+                  _buildPeriodSelector(isDark),
+                  const SizedBox(height: 12),
+                  _buildStatsGrid(orderProvider),
                   const SizedBox(height: 24),
                   const Text(
                     'Quick Actions',
@@ -201,15 +207,71 @@ class _DashboardScreenState extends State<DashboardScreen> {
     );
   }
 
-  Widget _buildStatsGrid() {
+  Widget _buildPeriodSelector(bool isDark) {
+    const periods = [
+      {'key': 'today', 'label': 'Today'},
+      {'key': 'week', 'label': 'This Week'},
+      {'key': 'month', 'label': 'This Month'},
+    ];
+    return Row(
+      children: [
+        for (final period in periods)
+          Padding(
+            padding: const EdgeInsets.only(right: 8),
+            child: ChoiceChip(
+              label: Text(period['label'] as String),
+              selected: _statsPeriod == period['key'],
+              onSelected: (_) => setState(() => _statsPeriod = period['key'] as String),
+              selectedColor: const Color(0xFF2D7D3C).withOpacity(0.15),
+              labelStyle: TextStyle(
+                color: _statsPeriod == period['key'] ? const Color(0xFF2D7D3C) : (isDark ? Colors.grey[300] : Colors.black87),
+                fontWeight: _statsPeriod == period['key'] ? FontWeight.bold : FontWeight.normal,
+              ),
+              side: BorderSide(color: _statsPeriod == period['key'] ? const Color(0xFF2D7D3C) : Colors.grey.withOpacity(0.3)),
+              backgroundColor: isDark ? Colors.grey[900] : Colors.white,
+            ),
+          ),
+      ],
+    );
+  }
+
+  Widget _buildStatsGrid(SellerOrderProvider orderProvider) {
+    final double salesAmount;
+    final String salesLabel;
+    switch (_statsPeriod) {
+      case 'week':
+        salesAmount = orderProvider.weekRevenue;
+        salesLabel = 'This Week\'s Sales';
+        break;
+      case 'month':
+        salesAmount = orderProvider.monthRevenue;
+        salesLabel = 'This Month\'s Sales';
+        break;
+      default:
+        salesAmount = orderProvider.todayRevenue;
+        salesLabel = 'Today\'s Sales';
+    }
+
     return Row(
       children: [
         Expanded(
-          child: _buildStatCard('Today\'s Sales', '₹4,250', '+15%', Icons.currency_rupee, Colors.green),
+          child: _buildStatCard(
+            salesLabel,
+            '₹${salesAmount.toStringAsFixed(0)}',
+            'From delivered orders',
+            Icons.currency_rupee,
+            Colors.green,
+          ),
         ),
         const SizedBox(width: 16),
         Expanded(
-          child: _buildStatCard('Active Orders', '12', '4 pending', Icons.shopping_bag_outlined, Colors.blue),
+          child: _buildStatCard(
+            'Active Orders',
+            '${orderProvider.activeOrderCount}',
+            '${orderProvider.pendingOrders} pending',
+            Icons.shopping_bag_outlined,
+            Colors.blue,
+          ),
         ),
       ],
     );
