@@ -57,9 +57,9 @@ const REQUIRED_ENV_KEYS = [
   { name: "RESEND_FROM_EMAIL", neededBy: ["sendEmailOTP (emailProvider.ts)"] },
 ];
 
-// The five secrets Workstreams 1/2 bind, and exactly which functions need
-// each — kept in sync with phase18_secret_binding_test.js's own list;
-// changing one without the other is a bug.
+// The secrets Workstreams 1/2 (plus Phase AI-1) bind, and exactly which
+// functions need each — kept in sync with phase18_secret_binding_test.js's
+// own list; changing one without the other is a bug.
 const REQUIRED_SECRETS = [
   {
     name: "RAZORPAY_KEY_SECRET",
@@ -87,6 +87,10 @@ const REQUIRED_SECRETS = [
   {
     name: "RESEND_API_KEY",
     neededBy: ["sendEmailOTP"],
+  },
+  {
+    name: "AI_KEY_ENCRYPTION_SECRET",
+    neededBy: ["connectAiProvider"],
   },
 ];
 

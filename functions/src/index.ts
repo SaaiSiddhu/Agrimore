@@ -111,6 +111,11 @@ export { deleteUserData } from "./customer/deleteUserData";
 export { verifyWalletTopup, redeemReferralCode, creditSignupBonus } from "./customer/wallet";
 
 // ============================================
+// AI MARKETPLACE ASSISTANT — WALLET-GATED BYO KEY CONNECTION (Phase AI-1)
+// ============================================
+export { connectAiProvider, disconnectAiProvider } from "./customer/aiConnection";
+
+// ============================================
 // CUSTOMER PRODUCT BENEFIT PROGRAM — COMPLIANCE GATE (Phase A)
 // ============================================
 // The only way to change feature_flags/benefit_program or
