@@ -112,7 +112,12 @@ export { deleteUserData } from "./customer/deleteUserData";
 // ============================================
 // WALLET HARDENING (Finding #3)
 // ============================================
-export { verifyWalletTopup, redeemReferralCode, creditSignupBonus } from "./customer/wallet";
+export {
+  verifyWalletTopup,
+  redeemReferralCode,
+  creditSignupBonus,
+  completeReferralOnFirstDelivery,
+} from "./customer/wallet";
 
 // ============================================
 // AI MARKETPLACE ASSISTANT — WALLET-GATED BYO KEY CONNECTION (Phase AI-1)

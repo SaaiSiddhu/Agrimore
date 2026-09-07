@@ -29,7 +29,9 @@
 // rule, so this callable performs it instead.
 
 import { onCall, HttpsError } from "firebase-functions/v2/https";
+import * as functions from "firebase-functions/v1";
 import * as admin from "firebase-admin";
+import { FieldValue } from "firebase-admin/firestore";
 import * as crypto from "crypto";
 import axios from "axios";
 import { log } from "../common/helpers";
@@ -446,13 +448,13 @@ export const redeemReferralCode = onCall(
     const callerWalletRef = db.collection("wallets").doc(uid);
     const referralRef = db.collection("referrals").doc();
     const callerTxRef = db.collection("wallet_transactions").doc();
-    const referrerTxRef = db.collection("wallet_transactions").doc();
 
     const result = await db.runTransaction(async (tx) => {
-      const [callerSnap, referrerSnap] = await Promise.all([
-        tx.get(callerWalletRef),
-        tx.get(referrerRef),
-      ]);
+      // Phase FIX-15B (D-REFERRAL-TIMING) moved the referrer's own credit to
+      // completeReferralOnFirstDelivery below, so this transaction no longer
+      // reads the referrer's wallet at all — its existence was already
+      // confirmed by the referralCode query above.
+      const callerSnap = await tx.get(callerWalletRef);
 
       if (!callerSnap.exists) {
         throw new HttpsError("failed-precondition", "Wallet not found");
@@ -469,21 +471,11 @@ export const redeemReferralCode = onCall(
       }
 
       const callerCoinsAfter = ((callerSnap.data()?.coins as number | undefined) ?? 0) + referredBonus;
-      const referrerCoinsAfter = ((referrerSnap.data()?.coins as number | undefined) ?? 0) + referrerBonus;
 
       tx.update(callerWalletRef, {
         referredBy: code,
         coins: admin.firestore.FieldValue.increment(referredBonus),
         lifetimeCoinsEarned: admin.firestore.FieldValue.increment(referredBonus),
-        updatedAt: admin.firestore.FieldValue.serverTimestamp(),
-      });
-
-      // The referrer's wallet is proven to exist (it's how it was found via
-      // the referralCode query above), so a plain update is safe here.
-      tx.update(referrerRef, {
-        coins: admin.firestore.FieldValue.increment(referrerBonus),
-        lifetimeCoinsEarned: admin.firestore.FieldValue.increment(referrerBonus),
-        referralCount: admin.firestore.FieldValue.increment(1),
         updatedAt: admin.firestore.FieldValue.serverTimestamp(),
       });
 
@@ -504,23 +496,16 @@ export const redeemReferralCode = onCall(
         metadata: null,
       });
 
-      tx.set(referrerTxRef, {
-        walletId: referrerUid,
-        userId: referrerUid,
-        type: "credit",
-        source: "referral",
-        amount: 0,
-        coins: referrerBonus,
-        balanceAfter: (referrerSnap.data()?.balance as number | undefined) ?? 0,
-        coinsAfter: referrerCoinsAfter,
-        orderId: null,
-        description: "Referral bonus for inviting a friend",
-        referenceId: null,
-        createdAt: admin.firestore.FieldValue.serverTimestamp(),
-        expiresAt: null,
-        metadata: null,
-      });
-
+      // Phase FIX-15B (D-REFERRAL-TIMING, 2026-09-07): the referrer's
+      // `referrerBonus` is deliberately NOT credited here any more. It used
+      // to be credited immediately, in this same transaction, alongside an
+      // `isCompleted: false` field that nothing ever read or updated
+      // (finding N-44). The owner decided the referrer should be paid only
+      // after the referred user's first delivered order — see
+      // completeReferralOnFirstDelivery below, which is the ONLY other
+      // writer of this document and the only place `referrerBonus` is ever
+      // actually credited now. `isCompleted`/`completedAt` are therefore no
+      // longer dead fields; they are this document's own real state machine.
       tx.set(referralRef, {
         referrerUserId: referrerUid,
         referrerEmail: null,
@@ -534,7 +519,7 @@ export const redeemReferralCode = onCall(
         completedAt: null,
       });
 
-      return { referrerUid, referredBonus, referrerBonus, callerCoinsAfter, referrerCoinsAfter };
+      return { referrerUid, referredBonus, referrerBonus, callerCoinsAfter };
     });
 
     log.success(
@@ -544,6 +529,153 @@ export const redeemReferralCode = onCall(
     return { success: true, ...result };
   }
 );
+
+// ============================================================
+//  completeReferralOnFirstDelivery (Phase FIX-15B, D-REFERRAL-TIMING)
+// ============================================================
+//
+// redeemReferralCode above no longer credits the referrer — it only opens a
+// `referrals/{id}` doc with `isCompleted: false`. This trigger is the ONLY
+// place that ever sets `isCompleted: true` or credits `referrerBonus`, and it
+// does so exactly once, on the transition into a delivered-equivalent status
+// for the REFERRED user's order — i.e. their first delivered order, by
+// construction: `isCompleted` only exists in the false state until the first
+// such transition observes it, so there is nothing further to check to prove
+// "first" beyond the flag's own one-way flip inside a transaction.
+//
+// v1 TRIGGER SAFETY. This is a v1 Firestore trigger, not the v2 onCall
+// redeemReferralCode is. The P0-FIELDVALUE investigation (this session)
+// found that v1 background functions crash on `admin.firestore.FieldValue`
+// namespace access; every write below uses the modular `FieldValue` import
+// instead, mirroring employeeCommission.ts's own fix for the identical class
+// of function.
+//
+// STATUS FIELD: deliberately checks BOTH `orderStatus` and `status` (mirrors
+// confirmDelivery.ts's own statusIsIn(), not employeeCommission.ts's
+// narrower orderStatus-only check) — confirmDelivery.ts's own comment
+// documents that seller-panel and admin writes set only `status`, so a
+// single-field check would silently miss a real delivery. (This same gap
+// likely exists in payEmployeeCommissionOnDelivery's own narrower check —
+// out of scope here, flagged in the ledger for a future phase, not fixed on
+// this branch.)
+const REFERRAL_DELIVERED_EQUIVALENT = new Set(["delivered", "completed"]);
+function referralOrderIsDelivered(order: FirebaseFirestore.DocumentData | undefined): boolean {
+  if (!order) return false;
+  const a = typeof order.orderStatus === "string" ? order.orderStatus.toLowerCase() : "";
+  const b = typeof order.status === "string" ? order.status.toLowerCase() : "";
+  return REFERRAL_DELIVERED_EQUIVALENT.has(a) || REFERRAL_DELIVERED_EQUIVALENT.has(b);
+}
+
+export const completeReferralOnFirstDelivery = functions.firestore
+  .document("orders/{orderId}")
+  .onUpdate(async (change) => {
+    const before = change.before.data();
+    const after = change.after.data();
+
+    // Only fire on the transition INTO delivered, not on every write while
+    // already delivered/completed (mirrors payEmployeeCommissionOnDelivery).
+    if (referralOrderIsDelivered(before) || !referralOrderIsDelivered(after)) {
+      return null;
+    }
+
+    const referredUserId = typeof after?.userId === "string" ? after.userId : undefined;
+    if (!referredUserId) {
+      return null;
+    }
+
+    const db = admin.firestore();
+
+    // Cheap no-op for the overwhelming majority of orders, which belong to a
+    // user with no referral at all.
+    const referralQuery = await db
+      .collection("referrals")
+      .where("referredUserId", "==", referredUserId)
+      .where("isCompleted", "==", false)
+      .limit(1)
+      .get();
+    if (referralQuery.empty) {
+      return null;
+    }
+    const referralRef = referralQuery.docs[0].ref;
+
+    await db.runTransaction(async (tx) => {
+      const referralSnap = await tx.get(referralRef);
+      if (!referralSnap.exists) {
+        return;
+      }
+      const referral = referralSnap.data()!;
+      // Re-checked inside the transaction against concurrent/retried trigger
+      // invocations — the same reasoning as commissionPaid's own re-check.
+      if (referral.isCompleted === true) {
+        console.log(`⚠️ Referral ${referralRef.id} already completed — skipping`);
+        return;
+      }
+
+      const referrerUid = referral.referrerUserId as string | undefined;
+      const referrerBonus = typeof referral.referrerBonus === "number" ? referral.referrerBonus : 0;
+      if (!referrerUid || referrerBonus <= 0) {
+        // Nothing to pay — still close out the referral so a malformed or
+        // zero-bonus record does not sit open forever re-querying on every
+        // future delivery for this user.
+        tx.update(referralRef, {
+          isCompleted: true,
+          completedAt: FieldValue.serverTimestamp(),
+        });
+        return;
+      }
+
+      const referrerRef = db.collection("wallets").doc(referrerUid);
+      const referrerSnap = await tx.get(referrerRef);
+      if (!referrerSnap.exists) {
+        // The referrer's wallet existed at redemption time (redeemReferralCode
+        // only ever finds a referral code via a wallets query) but no longer
+        // does now — an account deletion between redemption and delivery.
+        // Close out the referral without paying rather than throw: a thrown
+        // error here would make Cloud Functions retry this trigger
+        // indefinitely against a wallet that will never come back.
+        console.log(`⚠️ Referrer wallet ${referrerUid} not found for referral ${referralRef.id} — closing without payment`);
+        tx.update(referralRef, {
+          isCompleted: true,
+          completedAt: FieldValue.serverTimestamp(),
+        });
+        return;
+      }
+
+      const referrerCoinsAfter = ((referrerSnap.data()?.coins as number | undefined) ?? 0) + referrerBonus;
+      const referrerTxRef = db.collection("wallet_transactions").doc();
+
+      tx.update(referrerRef, {
+        coins: FieldValue.increment(referrerBonus),
+        lifetimeCoinsEarned: FieldValue.increment(referrerBonus),
+        referralCount: FieldValue.increment(1),
+        updatedAt: FieldValue.serverTimestamp(),
+      });
+
+      tx.set(referrerTxRef, {
+        walletId: referrerUid,
+        userId: referrerUid,
+        type: "credit",
+        source: "referral",
+        amount: 0,
+        coins: referrerBonus,
+        balanceAfter: (referrerSnap.data()?.balance as number | undefined) ?? 0,
+        coinsAfter: referrerCoinsAfter,
+        orderId: null,
+        description: "Referral bonus — friend's first delivered order",
+        referenceId: null,
+        createdAt: FieldValue.serverTimestamp(),
+        expiresAt: null,
+        metadata: null,
+      });
+
+      tx.update(referralRef, {
+        isCompleted: true,
+        completedAt: FieldValue.serverTimestamp(),
+      });
+    });
+
+    return null;
+  });
 
 export const creditSignupBonus = onCall(
   { minInstances: 0, memory: "256MiB" },
