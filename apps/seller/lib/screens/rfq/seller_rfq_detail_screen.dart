@@ -74,7 +74,7 @@ class _SellerRfqDetailScreenState extends State<SellerRfqDetailScreen> {
         context,
         title: 'Accept this offer?',
         message: rfq.lastOffer != null
-            ? 'You are agreeing to ₹${rfq.lastOffer!.price.toStringAsFixed(0)} for ${rfq.lastOffer!.quantity} units. This cannot be undone.'
+            ? 'You are agreeing to ${PriceFormatter.formatPriceInt(rfq.lastOffer!.price)} for ${rfq.lastOffer!.quantity} units. This cannot be undone.'
             : 'This cannot be undone.',
         confirmText: 'Accept',
       );
@@ -169,7 +169,7 @@ class _SellerRfqDetailScreenState extends State<SellerRfqDetailScreen> {
                   padding: const EdgeInsets.all(16),
                   child: Text(
                     rfq.status == RfqStatus.accepted
-                        ? 'Accepted — locked at ${rfq.finalPrice != null ? '₹${rfq.finalPrice!.toStringAsFixed(0)}' : ''} x ${rfq.finalQuantity ?? ''}'
+                        ? 'Accepted — locked at ${rfq.finalPrice != null ? PriceFormatter.formatPriceInt(rfq.finalPrice!) : ''} x ${rfq.finalQuantity ?? ''}'
                         : rfq.status == RfqStatus.rejected
                             ? 'This quote request was rejected.'
                             : 'Waiting for the buyer to respond.',
@@ -195,11 +195,11 @@ class _HistoryTile extends StatelessWidget {
     final who = entry.actor == RfqRole.seller ? 'You' : 'Buyer';
     switch (entry.action) {
       case 'create':
-        return '$who requested a quote${entry.price != null ? ' at ₹${entry.price!.toStringAsFixed(0)}' : ''} for ${entry.quantity} units';
+        return '$who requested a quote${entry.price != null ? ' at ${PriceFormatter.formatPriceInt(entry.price!)}' : ''} for ${entry.quantity} units';
       case 'offer':
-        return '$who offered ₹${(entry.price ?? 0).toStringAsFixed(0)} for ${entry.quantity} units';
+        return '$who offered ${PriceFormatter.formatPriceInt(entry.price ?? 0)} for ${entry.quantity} units';
       case 'accept':
-        return '$who accepted ₹${(entry.price ?? 0).toStringAsFixed(0)} for ${entry.quantity} units';
+        return '$who accepted ${PriceFormatter.formatPriceInt(entry.price ?? 0)} for ${entry.quantity} units';
       case 'reject':
         return '$who rejected the quote request';
       default:

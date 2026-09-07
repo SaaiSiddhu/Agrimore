@@ -166,7 +166,7 @@ class _RfqCard extends StatelessWidget {
             const SizedBox(height: 8),
             if (offer != null)
               Text(
-                '₹${offer.price.toStringAsFixed(0)} x ${offer.quantity}',
+                '${PriceFormatter.formatPriceInt(offer.price)} x ${offer.quantity}',
                 style: TextStyle(fontSize: 14, color: isDark ? Colors.grey[300] : Colors.grey[700]),
               )
             else
