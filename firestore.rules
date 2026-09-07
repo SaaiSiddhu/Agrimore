@@ -1383,6 +1383,19 @@ service cloud.firestore {
     }
 
     // ============================================
+    // RFQ / NEGOTIATION COLLECTION (Phase RFQ-1)
+    // ============================================
+    // createRfq / submitRfqOffer / respondToRfqOffer (functions/src/customer/
+    // rfq.ts) are the only writers, via the Admin SDK, which bypasses these
+    // rules entirely. Only the two parties to a given RFQ (or an admin) may
+    // even read it — mirrors orders/{orderId}'s "server-derives-everything,
+    // client only ever reads" shape.
+    match /rfqs/{rfqId} {
+      allow read: if isOwner(resource.data.buyerId) || isOwner(resource.data.sellerId) || isAdmin();
+      allow write: if false;
+    }
+
+    // ============================================
     // REFERRALS COLLECTION
     // ============================================
     // Phase FIX-6, Workstream 3 fix: "to check referral status" describes
