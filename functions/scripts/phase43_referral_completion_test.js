@@ -178,6 +178,11 @@ async function main() {
     referrerTxAfterDelivery.size === 1 && referrerTxAfterDelivery.docs[0].data().coins === 100,
     referrerTxAfterDelivery.docs.map((d) => d.data())
   );
+  check(
+    "FIRST DELIVERY: the referrer's wallet_transactions doc records which order actually triggered it (orderId, not null)",
+    referrerTxAfterDelivery.size === 1 && referrerTxAfterDelivery.docs[0].data().orderId === orderId1,
+    referrerTxAfterDelivery.docs.map((d) => d.data())
+  );
   const referralAfterDelivery = await db.collection("referrals").doc(referralDocsForReferred1.docs[0].id).get();
   check(
     "FIRST DELIVERY: referral doc is now isCompleted:true with a completedAt timestamp",

@@ -568,9 +568,10 @@ function referralOrderIsDelivered(order: FirebaseFirestore.DocumentData | undefi
 
 export const completeReferralOnFirstDelivery = functions.firestore
   .document("orders/{orderId}")
-  .onUpdate(async (change) => {
+  .onUpdate(async (change, context) => {
     const before = change.before.data();
     const after = change.after.data();
+    const orderId = context.params.orderId as string;
 
     // Only fire on the transition INTO delivered, not on every write while
     // already delivered/completed (mirrors payEmployeeCommissionOnDelivery).
@@ -660,7 +661,7 @@ export const completeReferralOnFirstDelivery = functions.firestore
         coins: referrerBonus,
         balanceAfter: (referrerSnap.data()?.balance as number | undefined) ?? 0,
         coinsAfter: referrerCoinsAfter,
-        orderId: null,
+        orderId,
         description: "Referral bonus — friend's first delivered order",
         referenceId: null,
         createdAt: FieldValue.serverTimestamp(),
