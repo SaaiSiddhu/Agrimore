@@ -74,6 +74,10 @@ import '../screens/user/orders/rate_order_screen.dart';
 import '../screens/user/subscriptions/my_subscriptions_screen.dart';
 import '../screens/user/subscriptions/subscription_setup_screen.dart';
 
+// RFQ (Phase RFQ-2)
+import '../screens/user/rfq/my_rfqs_screen.dart';
+import '../screens/user/rfq/rfq_detail_screen.dart';
+
 // Language
 import '../screens/user/settings/language_screen.dart';
 
@@ -184,6 +188,10 @@ class AppRoutes {
 
   // Rate Order
   static const String rateOrder = '/rate-order';
+
+  // RFQ (Phase RFQ-2)
+  static const String myRfqs = '/my-rfqs';
+  static const String rfqDetail = '/rfq-detail';
 
   // Subscriptions
   static const String mySubscriptions = '/my-subscriptions';
@@ -566,6 +574,15 @@ class AppRoutes {
               settings);
 
         // Subscriptions
+        case myRfqs:
+          return _buildRoute(const AuthGuard(child: MyRfqsScreen()), settings);
+        case rfqDetail:
+          final rfqId = _idArgument(settings.arguments, 'rfqId');
+          if (rfqId == null) {
+            return _buildErrorRoute('Quote request ID is required', settings);
+          }
+          return _buildRoute(
+              AuthGuard(child: RfqDetailScreen(rfqId: rfqId)), settings);
         case mySubscriptions:
           return _buildRoute(
               const AuthGuard(child: MySubscriptionsScreen()), settings);
