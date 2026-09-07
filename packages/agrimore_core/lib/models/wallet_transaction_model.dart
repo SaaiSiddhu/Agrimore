@@ -15,6 +15,7 @@ enum TransactionSource {
   expiry,     // Expired coins
   adjustment, // Admin manual adjustment
   commission, // Employee commission on a delivered B2B order
+  aiActivation, // One-time AI Assistant connection activation fee
 }
 
 /// Model for wallet transaction history
@@ -103,6 +104,8 @@ class WalletTransactionModel {
         return Icons.tune;
       case TransactionSource.commission:
         return Icons.percent;
+      case TransactionSource.aiActivation:
+        return Icons.smart_toy_outlined;
     }
   }
 
@@ -134,6 +137,8 @@ class WalletTransactionModel {
         return 'Adjustment';
       case TransactionSource.commission:
         return 'Commission';
+      case TransactionSource.aiActivation:
+        return 'AI Assistant Activation';
     }
   }
 
