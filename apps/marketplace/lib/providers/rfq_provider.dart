@@ -112,6 +112,41 @@ class RfqProvider with ChangeNotifier {
     }
   }
 
+  /// Converts an accepted, not-yet-consumed RFQ into a real order via
+  /// createOrderFromRfq (Phase RFQ-3). Cash-on-delivery only in this first
+  /// slice — deliberately does not accept a paymentMethod parameter, since
+  /// a non-COD path needs the full Razorpay flow this provider does not
+  /// drive (see rfq_detail_screen.dart's own module comment). Returns the
+  /// new orderId.
+  Future<String> placeOrder({
+    required String rfqId,
+    required String productId,
+    required int quantity,
+    required Map<String, dynamic> deliveryAddress,
+  }) async {
+    _isSubmitting = true;
+    _error = null;
+    notifyListeners();
+
+    try {
+      final callable = FirebaseFunctions.instance.httpsCallable('createOrderFromRfq');
+      final result = await callable.call<Map<String, dynamic>>({
+        'rfqId': rfqId,
+        'productId': productId,
+        'quantity': quantity,
+        'deliveryAddress': deliveryAddress,
+        'paymentMethod': 'cod',
+      });
+      return result.data['orderId'] as String;
+    } on FirebaseFunctionsException catch (e) {
+      _error = e.message ?? 'Failed to place your order';
+      rethrow;
+    } finally {
+      _isSubmitting = false;
+      notifyListeners();
+    }
+  }
+
   /// Accepts or rejects the other party's last offer via
   /// respondToRfqOffer.
   Future<void> respond({required String rfqId, required String action}) async {
