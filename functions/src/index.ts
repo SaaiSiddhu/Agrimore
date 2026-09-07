@@ -59,6 +59,10 @@ export {
 // function — the owner must also run
 // `firebase functions:delete splitCartIntoOrders`.
 export { createOrder } from "./customer/createOrder";
+// Phase RFQ-3: converts an accepted rfqs/{rfqId} into a real order at its
+// locked finalPrice/finalQuantity. NEW export — does not exist on
+// agrimore-66a4e yet.
+export { createOrderFromRfq } from "./customer/createOrderFromRfq";
 // Phase FIX-5 (finding N-5, P1): server-side delivery verification. NEW export —
 // this function does not exist on agrimore-66a4e yet, so the owner deploy is a
 // CREATE, not an update. It does NOT close N-5 on its own: the direct status

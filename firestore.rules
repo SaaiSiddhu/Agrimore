@@ -342,10 +342,14 @@ service cloud.firestore {
     // REDEMPTION entry); an owner rewriting it can't move money, but it can
     // corrupt that audit trail, so it belongs in the same denylist as its
     // three siblings.
+    // Phase RFQ-3: rfqId added to all three order-update denylists below —
+    // it names which accepted rfqs/{rfqId} (if any) createOrderFromRfq
+    // priced this order from, and must be exactly as unwritable by a client
+    // update as the other bookkeeping/financial fields it sits alongside.
     function ownerCannotChangeOrderFinancials() {
       return !request.resource.data.diff(resource.data).affectedKeys()
         .hasAny(['subtotal', 'discount', 'deliveryCharge', 'tax', 'total', 'items', 'paymentStatus', 'employeeUid', 'employeeCode',
-                 'productCreditApplied', 'productCreditHoldId', 'productCreditReversed', 'productCreditLedgerEntryId']);
+                 'productCreditApplied', 'productCreditHoldId', 'productCreditReversed', 'productCreditLedgerEntryId', 'rfqId']);
     }
 
     // Phase 5b fix: the financial-fields guard above did not restrict
@@ -431,7 +435,8 @@ service cloud.firestore {
         'paymentStatus', 'userId', 'sellerId', 'employeeUid', 'employeeCode',
         'orderMode', 'commissionPaid', 'commissionAmount', 'deliveryVerificationCode',
         'deliveryPartnerId',
-        'productCreditApplied', 'productCreditHoldId', 'productCreditReversed', 'productCreditLedgerEntryId'
+        'productCreditApplied', 'productCreditHoldId', 'productCreditReversed', 'productCreditLedgerEntryId',
+        'rfqId'
       ]);
     }
 
@@ -452,7 +457,8 @@ service cloud.firestore {
         'total', 'subtotal', 'discount', 'deliveryCharge', 'tax', 'items',
         'paymentStatus', 'userId', 'sellerId', 'employeeUid', 'employeeCode',
         'orderMode', 'commissionPaid', 'commissionAmount', 'deliveryVerificationCode',
-        'productCreditApplied', 'productCreditHoldId', 'productCreditReversed', 'productCreditLedgerEntryId'
+        'productCreditApplied', 'productCreditHoldId', 'productCreditReversed', 'productCreditLedgerEntryId',
+        'rfqId'
       ]);
     }
 
