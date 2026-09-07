@@ -81,6 +81,10 @@ const SECRET_MANAGER_NAMES = [
   "TWOFACTOR_API_KEY",
   "OTP_ENCRYPTION_KEY",
   "RESEND_API_KEY",
+  // Phase AI-1 (2026-09-07): AES-256-GCM key used to encrypt each user's own
+  // BYO ChatGPT/Gemini key at rest (aiConnection.ts). Kept in sync with
+  // verify_secrets.js's own REQUIRED_SECRETS list — see that file's comment.
+  "AI_KEY_ENCRYPTION_SECRET",
 ];
 
 // ------------------------------------------------------------------------

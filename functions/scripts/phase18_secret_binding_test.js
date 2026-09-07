@@ -255,6 +255,33 @@ function main() {
     }
   }
 
+  // ---------------------------------------------------------------
+  // aiConnection.ts — Phase AI-1's new secret (extends this suite the same
+  // way payment.ts's block above proves RAZORPAY_KEY_SECRET's binding).
+  // ---------------------------------------------------------------
+  {
+    const src = read("customer/aiConnection.ts");
+    check(
+      "aiConnection.ts declares AI_KEY_ENCRYPTION_SECRET via defineSecret",
+      /export const AI_KEY_ENCRYPTION_SECRET\s*=\s*defineSecret\(\s*["']AI_KEY_ENCRYPTION_SECRET["']\s*\)/.test(src),
+      'expected `export const AI_KEY_ENCRYPTION_SECRET = defineSecret("AI_KEY_ENCRYPTION_SECRET")`'
+    );
+
+    const connectOpts = optionsObjectOf(extractDeclaration(src, "connectAiProvider") || "");
+    check(
+      "aiConnection.ts: connectAiProvider declares secrets: [AI_KEY_ENCRYPTION_SECRET]",
+      /secrets:\s*\[[^\]]*AI_KEY_ENCRYPTION_SECRET[^\]]*\]/.test(connectOpts),
+      `options object was: ${connectOpts.replace(/\s+/g, " ").slice(0, 200)}`
+    );
+
+    const disconnectOpts = optionsObjectOf(extractDeclaration(src, "disconnectAiProvider") || "");
+    check(
+      "aiConnection.ts: disconnectAiProvider declares NO secrets (it never decrypts anything)",
+      !/secrets\s*:/.test(disconnectOpts),
+      `disconnectAiProvider must not receive a grant it doesn't need — found options: ${disconnectOpts}`
+    );
+  }
+
   console.log("");
   for (const r of results) {
     console.log(`${r.pass ? "PASSED" : "FAILED"} — ${r.label}${r.pass ? "" : ` :: ${r.detail || ""}`}`);
