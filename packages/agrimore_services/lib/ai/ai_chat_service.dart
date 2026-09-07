@@ -2,7 +2,7 @@
 import 'dart:developer' as dev;
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:firebase_auth/firebase_auth.dart';
-import 'package:google_generative_ai/google_generative_ai.dart';
+import 'package:cloud_functions/cloud_functions.dart';
 import 'package:agrimore_core/agrimore_core.dart';
 
 class AIChatService {
@@ -13,70 +13,14 @@ class AIChatService {
   final List<ChatMessage> context = [];
   Map<String, dynamic>? userProfileCache;
 
-  final tools = [
-    Tool(functionDeclarations: [
-      FunctionDeclaration(
-        'searchProducts',
-        'Searches around your query in the product catalog.',
-        Schema(
-          SchemaType.object,
-          properties: {
-            'query': Schema(SchemaType.string, description: 'Product search query'),
-            'categoryId': Schema(SchemaType.string, description: 'Optional category filter'),
-            'limit': Schema(SchemaType.integer, description: 'Max results'),
-          },
-        ),
-      ),
-      FunctionDeclaration(
-        'getProductDetails',
-        'Get detailed info about a specific product.',
-        Schema(
-          SchemaType.object,
-          properties: {
-            'productId': Schema(SchemaType.string, description: 'Product ID'),
-          },
-          requiredProperties: ['productId'],
-        ),
-      ),
-      FunctionDeclaration(
-        'getOrders',
-        'Fetch the current user\'s recent orders.',
-        Schema(
-          SchemaType.object,
-          properties: {
-            'limit': Schema(SchemaType.integer, description: 'Number of orders'),
-            'status': Schema(SchemaType.string, description: 'Order status filter'),
-          },
-        ),
-      ),
-      FunctionDeclaration(
-        'getOrderDetails',
-        'Get details of a specific order.',
-        Schema(
-          SchemaType.object,
-          properties: {
-            'orderId': Schema(SchemaType.string, description: 'Order ID'),
-          },
-          requiredProperties: ['orderId'],
-        ),
-      ),
-      FunctionDeclaration(
-        'getUserProfile',
-        'Get your profile info.',
-        Schema(SchemaType.object, properties: {}),
-      ),
-      FunctionDeclaration(
-        'getCategories',
-        'Get all product categories.',
-        Schema(SchemaType.object, properties: {}),
-      ),
-      FunctionDeclaration(
-        'getAvailableCoupons',
-        'Fetch active coupons.',
-        Schema(SchemaType.object, properties: {}),
-      ),
-    ])
-  ];
+  // Phase AI-2: the seven tool declarations that used to live here (as
+  // google_generative_ai Tool/FunctionDeclaration/Schema objects passed
+  // straight into a client-side GenerativeModel) now live server-side, as
+  // the source of truth, in functions/src/customer/aiChatProxy.ts's TOOLS
+  // constant — never client-supplied, per the codebase's standing rule that
+  // nothing the client sends is trusted as authoritative. Keep the two in
+  // sync by hand; there is no shared schema between the Dart and TypeScript
+  // copies of "which seven functions the assistant may call."
 
   void startNewSession() {
     currentSessionId = DateTime.now().millisecondsSinceEpoch.toString();
@@ -157,54 +101,39 @@ class AIChatService {
     }
   }
 
+  // Phase AI-2: this method used to instantiate a GenerativeModel directly
+  // with GeminiConfig.apiKey (empty and dormant since Phase 21, finding
+  // 19-B: that key was committed to git and shipped in every Play build).
+  // It now calls the aiChatProxy Cloud Function, which holds the caller's
+  // OWN connected key server-side (AI-1) and does the actual Gemini REST
+  // call. The two-call function-calling sequence (initial message -> maybe
+  // a function call -> function result -> final text) is unchanged in
+  // SHAPE; only WHERE the outbound Gemini call happens has moved. Every
+  // handleXxx Firestore lookup below is untouched — those were never the
+  // exposed secret, only the API key was.
   Future<ChatMessage> handleGeminiResponse(
     String msg,
     List<ChatMessage>? history,
   ) async {
-    final apiKey = GeminiConfig.apiKey;
-    if (apiKey.trim().isEmpty) {
-      dev.log('API key missing.');
-      return ChatMessage.ai(
-        text: 'Chat assistant is unavailable right now. Please try again later.',
-        sessionId: currentSessionId,
-        category: 'ai_offline',
-      );
-    }
+    final callable = FirebaseFunctions.instance.httpsCallable('aiChatProxy');
 
     try {
-      final systemPrompt = await buildSystemPrompt();
-
-      final model = GenerativeModel(
-        model: 'gemini-2.5-flash',
-        apiKey: apiKey,
-        tools: tools,
-        systemInstruction: Content.text(systemPrompt),
-      );
-
       final chatHistory = await buildChatHistory(history);
+      final contents = [
+        ...chatHistory,
+        {
+          'role': 'user',
+          'parts': [
+            {'text': msg}
+          ],
+        },
+      ];
 
-      final chat = model.startChat(history: chatHistory);
-      final response = await chat.sendMessage(Content.text(msg));
+      final response = await callable.call<Map<String, dynamic>>({'contents': contents});
+      final data = response.data;
 
-      // Check if there are any candidates first
-      if (response.candidates == null || response.candidates!.isEmpty) {
-        dev.log('No candidates in response');
-        return ChatMessage.ai(
-          text: 'Sorry, I could not process that request.',
-          sessionId: currentSessionId,
-          category: 'ai_empty',
-        );
-      }
-
-      final part = response.candidates!.first.content.parts.first;
-
-      // Check if it's a function call FIRST (before checking text)
-      if (part is FunctionCall) {
-        dev.log('Function call detected: ${part.name}');
-        // Process function call (continues below)
-      } else {
-        // Plain text response
-        final text = response.text;
+      if (data['type'] != 'functionCall') {
+        final text = data['text'] as String?;
         if (text == null || text.isEmpty) {
           return ChatMessage.ai(
             text: 'Sorry, no response from AI.',
@@ -219,8 +148,9 @@ class AIChatService {
         );
       }
 
-      final call = part as FunctionCall;
-      final args = call.args;
+      dev.log('Function call detected: ${data['name']}');
+      final name = data['name'] as String;
+      final args = Map<String, dynamic>.from(data['args'] as Map? ?? {});
 
       // Helper for safe type casting
       String? getString(Object? obj) => obj == null ? null : obj.toString();
@@ -232,7 +162,7 @@ class AIChatService {
       }
 
       Map<String, dynamic> resultData = {};
-      switch (call.name) {
+      switch (name) {
         case 'searchProducts':
           final query = getString(args['query']) ?? msg;
           final categoryId = getString(args['categoryId']);
@@ -262,24 +192,53 @@ class AIChatService {
           resultData = await handleGetCoupons();
           break;
         default:
-          dev.log('Unknown function call: ${call.name}');
+          dev.log('Unknown function call: $name');
           resultData = {'error': 'Unknown function'};
       }
 
-      final finalResponse = await chat.sendMessage(
-        Content.functionResponse(call.name, resultData),
-      );
+      final finalContents = [
+        ...contents,
+        {
+          'role': 'model',
+          'parts': [
+            {
+              'functionCall': {'name': name, 'args': args}
+            }
+          ],
+        },
+        {
+          'role': 'function',
+          'parts': [
+            {
+              'functionResponse': {'name': name, 'response': resultData}
+            }
+          ],
+        },
+      ];
+      final finalResponse = await callable.call<Map<String, dynamic>>({'contents': finalContents});
+      final finalText = finalResponse.data['text'] as String?;
 
       return ChatMessage.ai(
-        text: finalResponse.text ?? 'Result from function.',
+        text: finalText ?? 'Result from function.',
         sessionId: currentSessionId,
         category: 'ai_function_response',
         products: resultData['products'] ?? null,
         orders: resultData['orders'] ?? null,
-        quickReplies: suggestReplies(call.name, resultData),
+        quickReplies: suggestReplies(name, resultData),
       );
-    } on GenerativeAIException catch (e) {
-      dev.log('Gemini API error: ${e.message}');
+    } on FirebaseFunctionsException catch (e) {
+      if (e.code == 'failed-precondition') {
+        // Covers both "not connected yet" and "your key was rejected" —
+        // aiChatProxy.ts's own message already says which. Not an error:
+        // this is the expected state before AI-3 gives the user somewhere
+        // to connect a provider.
+        return ChatMessage.ai(
+          text: e.message ?? 'Connect an AI provider in Settings to use the AI Assistant.',
+          sessionId: currentSessionId,
+          category: 'ai_offline',
+        );
+      }
+      dev.log('aiChatProxy error: ${e.message}');
       return ChatMessage.error(
         text: 'AI service error: ${e.message}',
         sessionId: currentSessionId,
@@ -295,42 +254,29 @@ class AIChatService {
     }
   }
 
-  Future<String> buildSystemPrompt() async {
-    final user = auth.currentUser;
-    String userName = 'the user';
+  // Phase AI-2: buildSystemPrompt() was removed from here — aiChatProxy.ts
+  // rebuilds the same prompt server-side (it needs to, since it is the one
+  // making the actual Gemini call now), so keeping a second, unused copy
+  // client-side would just be dead code inviting drift.
 
-    if (user != null) {
-      userProfileCache ??= await handleUserProfile();
-      if (userProfileCache != null && !userProfileCache!.containsKey('error')) {
-        userName = userProfileCache!['name'] ?? userName;
-      }
-    }
-
-    return '''You are Agrimore AI, a friendly, helpful assistant for agricultural products and orders.
-User: $userName
-Provide relevant product recommendations, order info, and answer general questions.
-Follow these rules:
-- Be concise
-- Use markdown
-- Use data from your database when asked about products, orders, or categories.
-- Do not mention AI or models.
-- Assist with online shopping, order tracking, coupons, and categories.
-- Always respond nicely and helpfully.
-''';
-  }
-
-  Future<List<Content>> buildChatHistory(List<ChatMessage>? history) async {
-    final List<Content> content = [];
+  /// Gemini-native `{role, parts:[{text}]}` shape, matching what
+  /// functions/src/customer/aiChatProxy.ts's `contents` parameter expects —
+  /// replaces the google_generative_ai SDK's `List<Content>` return type
+  /// from before Phase AI-2, since that SDK type cannot cross a Cloud
+  /// Functions callable boundary.
+  Future<List<Map<String, dynamic>>> buildChatHistory(List<ChatMessage>? history) async {
+    final List<Map<String, dynamic>> content = [];
     final messages = (history ?? context)
         .where((m) => m.text.trim().isNotEmpty && m.messageType != MessageType.loading)
         .toList();
 
     for (var m in messages) {
-      if (m.isUser) {
-        content.add(Content.text(m.text));
-      } else {
-        content.add(Content.model([TextPart(m.text)]));
-      }
+      content.add({
+        'role': m.isUser ? 'user' : 'model',
+        'parts': [
+          {'text': m.text}
+        ],
+      });
     }
     return content;
   }
