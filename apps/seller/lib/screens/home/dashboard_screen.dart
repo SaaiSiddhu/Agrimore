@@ -50,8 +50,7 @@ class _DashboardScreenState extends State<DashboardScreen> {
               child: Column(
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
-                  _buildSmartAlerts(isDark),
-                  const SizedBox(height: 24),
+                  ..._buildSmartAlerts(isDark, productProvider),
                   _buildPeriodSelector(isDark),
                   const SizedBox(height: 12),
                   _buildStatsGrid(orderProvider),
@@ -157,54 +156,70 @@ class _DashboardScreenState extends State<DashboardScreen> {
     );
   }
 
-  Widget _buildSmartAlerts(bool isDark) {
-    return Container(
-      padding: const EdgeInsets.all(16),
-      decoration: BoxDecoration(
-        gradient: const LinearGradient(
-          colors: [Color(0xFFFFF3E0), Color(0xFFFFE0B2)],
-          begin: Alignment.topLeft,
-          end: Alignment.bottomRight,
+  /// Real low-stock alert (was a hardcoded fictional claim). Empty when
+  /// nothing is actually low on stock -- no banner is shown rather than
+  /// showing a fake "all good" message nobody asked for.
+  List<Widget> _buildSmartAlerts(bool isDark, SellerProductProvider productProvider) {
+    final lowStock = productProvider.allProducts.where((p) => p.stock > 0 && p.stock < 10).toList()
+      ..sort((a, b) => a.stock.compareTo(b.stock));
+    if (lowStock.isEmpty) return const [];
+
+    final product = lowStock.first;
+    final extraCount = lowStock.length - 1;
+    final message = extraCount > 0
+        ? '"${product.name}" has only ${product.stock} left in stock, and $extraCount other product${extraCount == 1 ? '' : 's'} ${extraCount == 1 ? 'is' : 'are'} running low too.'
+        : '"${product.name}" has only ${product.stock} left in stock.';
+
+    return [
+      Container(
+        padding: const EdgeInsets.all(16),
+        decoration: BoxDecoration(
+          gradient: const LinearGradient(
+            colors: [Color(0xFFFFF3E0), Color(0xFFFFE0B2)],
+            begin: Alignment.topLeft,
+            end: Alignment.bottomRight,
+          ),
+          borderRadius: BorderRadius.circular(16),
+          boxShadow: [
+            BoxShadow(
+              color: Colors.orange.withOpacity(0.1),
+              blurRadius: 10,
+              offset: const Offset(0, 4),
+            ),
+          ],
         ),
-        borderRadius: BorderRadius.circular(16),
-        boxShadow: [
-          BoxShadow(
-            color: Colors.orange.withOpacity(0.1),
-            blurRadius: 10,
-            offset: const Offset(0, 4),
-          ),
-        ],
-      ),
-      child: Row(
-        children: [
-          Container(
-            padding: const EdgeInsets.all(10),
-            decoration: const BoxDecoration(
-              color: Colors.orange,
-              shape: BoxShape.circle,
+        child: Row(
+          children: [
+            Container(
+              padding: const EdgeInsets.all(10),
+              decoration: const BoxDecoration(
+                color: Colors.orange,
+                shape: BoxShape.circle,
+              ),
+              child: const Icon(Icons.trending_up, color: Colors.white, size: 20),
             ),
-            child: const Icon(Icons.trending_up, color: Colors.white, size: 20),
-          ),
-          const SizedBox(width: 16),
-          const Expanded(
-            child: Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                Text(
-                  'Smart Inventory Alert',
-                  style: TextStyle(fontWeight: FontWeight.bold, color: Colors.orange),
-                ),
-                SizedBox(height: 4),
-                Text(
-                  'Your "Organic Mangoes" usually sell out by 2 PM today. You have only 5 left in stock!',
-                  style: TextStyle(fontSize: 13, color: Colors.black87),
-                ),
-              ],
+            const SizedBox(width: 16),
+            Expanded(
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  const Text(
+                    'Low Stock Alert',
+                    style: TextStyle(fontWeight: FontWeight.bold, color: Colors.orange),
+                  ),
+                  const SizedBox(height: 4),
+                  Text(
+                    message,
+                    style: const TextStyle(fontSize: 13, color: Colors.black87),
+                  ),
+                ],
+              ),
             ),
-          ),
-        ],
+          ],
+        ),
       ),
-    );
+      const SizedBox(height: 24),
+    ];
   }
 
   Widget _buildPeriodSelector(bool isDark) {
@@ -353,9 +368,6 @@ class _DashboardScreenState extends State<DashboardScreen> {
           }),
           _buildActionItem('Pricing Insights', Icons.insights, Colors.indigo, () {
             _showInfoSheet('Pricing Insights', 'Use stock, MRP, and sale price from Products to tune your selling price.');
-          }),
-          _buildActionItem('AI Assistant', Icons.auto_awesome, Colors.purple, () {
-            Navigator.push(context, MaterialPageRoute(builder: (_) => const AddProductScreen()));
           }),
         ],
       ),
