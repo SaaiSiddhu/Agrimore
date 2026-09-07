@@ -1,5 +1,6 @@
 import * as functions from "firebase-functions/v1";
 import * as admin from "firebase-admin";
+import { FieldValue, FieldPath, Timestamp } from "firebase-admin/firestore";
 import { log, NotificationData, validateNotificationData, createNotificationMessage } from "../common/helpers";
 
 // Phase 14, Workstream 3 fix: this used to contain a
@@ -95,7 +96,7 @@ function distanceKm(
 
 function timestampMillis(value: unknown): number | null {
   if (!value) return null;
-  if (value instanceof admin.firestore.Timestamp) return value.toMillis();
+  if (value instanceof Timestamp) return value.toMillis();
   if (typeof (value as any).toDate === "function") {
     return (value as any).toDate().getTime();
   }
@@ -196,7 +197,7 @@ async function sendOrderPushToUser(
     type,
     data: { orderId, orderNumber, orderStatus, actionUrl: `order/${orderId}` },
     unread: true,
-    createdAt: admin.firestore.FieldValue.serverTimestamp(),
+    createdAt: FieldValue.serverTimestamp(),
   });
 
   for (const token of uniqueTokens(userDoc.data())) {
@@ -218,7 +219,7 @@ async function sendOrderPushToUser(
 
   if (invalidTokens.length) {
     await userRef.update({
-      fcmTokens: admin.firestore.FieldValue.arrayRemove(...invalidTokens),
+      fcmTokens: FieldValue.arrayRemove(...invalidTokens),
     });
   }
 
@@ -288,8 +289,8 @@ async function notifyDeliveryPartnersForPickup(
       pickupLng: pickupPoint?.lng ?? null,
       pickupSource: pickupPoint?.source ?? null,
       radiusKm: DELIVERY_ASSIGNMENT_RADIUS_KM,
-      createdAt: admin.firestore.FieldValue.serverTimestamp(),
-      updatedAt: admin.firestore.FieldValue.serverTimestamp(),
+      createdAt: FieldValue.serverTimestamp(),
+      updatedAt: FieldValue.serverTimestamp(),
     };
     batch.set(
       admin.firestore().collection("orders").doc(orderId).collection("deliveryRequests").doc(doc.id),
@@ -335,7 +336,7 @@ async function closeDeliveryRequests(orderId: string, assignedPartnerId: string)
     const update = {
       status,
       assignedPartnerId,
-      updatedAt: admin.firestore.FieldValue.serverTimestamp(),
+      updatedAt: FieldValue.serverTimestamp(),
     };
     batch.set(doc.ref, update, { merge: true });
     batch.set(
@@ -373,7 +374,7 @@ export const sendBroadcastNotification = functions.https.onCall(
       const userMapping: Record<string, string> = {};
       let lastDoc: admin.firestore.QueryDocumentSnapshot | null = null;
       for (;;) {
-        let pageQuery = usersRef.orderBy(admin.firestore.FieldPath.documentId()).limit(BROADCAST_PAGE_SIZE);
+        let pageQuery = usersRef.orderBy(FieldPath.documentId()).limit(BROADCAST_PAGE_SIZE);
         if (lastDoc) pageQuery = pageQuery.startAfter(lastDoc.id);
         const page = await pageQuery.get();
         if (page.empty) break;
@@ -416,7 +417,7 @@ export const sendBroadcastNotification = functions.https.onCall(
               const userId = userMapping[token];
               if (userId)
                 await admin.firestore().collection("users").doc(userId).update({
-                  fcmTokens: admin.firestore.FieldValue.arrayRemove(token),
+                  fcmTokens: FieldValue.arrayRemove(token),
                 });
             }
           }
@@ -437,8 +438,8 @@ export const sendBroadcastNotification = functions.https.onCall(
         successCount: totalSuccess,
         failureCount: totalFailure,
         sentBy: senderUid,
-        timestamp: admin.firestore.FieldValue.serverTimestamp(),
-        sentAt: admin.firestore.FieldValue.serverTimestamp(),
+        timestamp: FieldValue.serverTimestamp(),
+        sentAt: FieldValue.serverTimestamp(),
       });
 
       log.success(`Broadcast done: ${totalSuccess} success, ${totalFailure} fail`);
@@ -488,7 +489,7 @@ export const sendNotificationToUser = functions.https.onCall(
       }
 
       if (invalidTokens.length)
-        await admin.firestore().collection("users").doc(userId).update({ fcmTokens: admin.firestore.FieldValue.arrayRemove(...invalidTokens) });
+        await admin.firestore().collection("users").doc(userId).update({ fcmTokens: FieldValue.arrayRemove(...invalidTokens) });
 
       await admin.firestore().collection("notification_history").add({
         type: "single", userId, title: title.trim(), body: body.trim(),
@@ -497,8 +498,8 @@ export const sendNotificationToUser = functions.https.onCall(
         orderNumber: orderNumber || null, orderStatus: orderStatus || null,
         productId: productId || null, successCount, failureCount,
         sentBy: senderUid,
-        timestamp: admin.firestore.FieldValue.serverTimestamp(),
-        sentAt: admin.firestore.FieldValue.serverTimestamp(),
+        timestamp: FieldValue.serverTimestamp(),
+        sentAt: FieldValue.serverTimestamp(),
       });
 
       log.success(`User ${userId}: ${successCount} sent, ${failureCount} failed`);
@@ -572,14 +573,14 @@ export const sendOrderUpdateNotification = functions.https.onCall(
       }
 
       if (invalidTokens.length)
-        await admin.firestore().collection("users").doc(userId).update({ fcmTokens: admin.firestore.FieldValue.arrayRemove(...invalidTokens) });
+        await admin.firestore().collection("users").doc(userId).update({ fcmTokens: FieldValue.arrayRemove(...invalidTokens) });
 
       await admin.firestore().collection("notification_history").add({
         type: "order_update", orderId, orderNumber, userId, title, body: finalBody,
         orderStatus, notificationType: "order_update", successCount, failureCount,
         sentBy: senderUid,
-        timestamp: admin.firestore.FieldValue.serverTimestamp(),
-        sentAt: admin.firestore.FieldValue.serverTimestamp(),
+        timestamp: FieldValue.serverTimestamp(),
+        sentAt: FieldValue.serverTimestamp(),
       });
 
       log.success(`Order ${orderNumber}: ${successCount} ok, ${failureCount} fail`);
@@ -715,8 +716,8 @@ export const onOrderStatusChanged = functions.firestore
         orderStatus, notificationType: "order_update", successCount, failureCount,
         deliveryTargets,
         sentBy: "system",
-        timestamp: admin.firestore.FieldValue.serverTimestamp(),
-        sentAt: admin.firestore.FieldValue.serverTimestamp(),
+        timestamp: FieldValue.serverTimestamp(),
+        sentAt: FieldValue.serverTimestamp(),
       });
     }
   });

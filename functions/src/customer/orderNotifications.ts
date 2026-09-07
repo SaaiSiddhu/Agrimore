@@ -1,5 +1,6 @@
 import * as functions from "firebase-functions/v1";
 import * as admin from "firebase-admin";
+import { FieldValue } from "firebase-admin/firestore";
 
 function uniqueTokens(data: admin.firestore.DocumentData | undefined): string[] {
   if (!data) return [];
@@ -35,7 +36,7 @@ async function writeInAppNotification(
     data,
     emoji,
     unread: true,
-    createdAt: admin.firestore.FieldValue.serverTimestamp(),
+    createdAt: FieldValue.serverTimestamp(),
   };
 
   await admin
@@ -109,7 +110,7 @@ async function notifyUser(
 
   if (invalidTokens.length) {
     await userRef.update({
-      fcmTokens: admin.firestore.FieldValue.arrayRemove(...invalidTokens),
+      fcmTokens: FieldValue.arrayRemove(...invalidTokens),
     });
   }
 
@@ -225,7 +226,7 @@ export const onOrderCreatedNotifications = functions.firestore
       userId: order.userId || null,
       deliveryPartnerTargets,
       adminTargets: admins.size,
-      sentAt: admin.firestore.FieldValue.serverTimestamp(),
+      sentAt: FieldValue.serverTimestamp(),
     });
 
     return null;

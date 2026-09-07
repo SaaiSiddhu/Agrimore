@@ -42,6 +42,7 @@
 
 import * as functions from "firebase-functions/v1";
 import * as admin from "firebase-admin";
+import { FieldValue } from "firebase-admin/firestore";
 
 // Matches OrderModel.isDelivered exactly (packages/agrimore_core/lib/models/order_model.dart),
 // which treats 'delivered' and 'completed' as equivalent terminal states — NOT just the
@@ -231,7 +232,7 @@ export const payEmployeeCommissionOnDelivery = functions.firestore
             orderMode,
             total: (after.total as number | undefined) ?? null,
             reason: resolution.reason,
-            createdAt: admin.firestore.FieldValue.serverTimestamp(),
+            createdAt: FieldValue.serverTimestamp(),
           });
           return;
         }
@@ -251,7 +252,7 @@ export const payEmployeeCommissionOnDelivery = functions.firestore
           tx.update(orderRef, {
             commissionPaid: true,
             commissionAmount: 0,
-            commissionPaidAt: admin.firestore.FieldValue.serverTimestamp(),
+            commissionPaidAt: FieldValue.serverTimestamp(),
           });
           return;
         }
@@ -263,13 +264,13 @@ export const payEmployeeCommissionOnDelivery = functions.firestore
           walletRef,
           {
             userId: employeeUid,
-            balance: admin.firestore.FieldValue.increment(commissionAmount),
-            lifetimeEarnings: admin.firestore.FieldValue.increment(commissionAmount),
+            balance: FieldValue.increment(commissionAmount),
+            lifetimeEarnings: FieldValue.increment(commissionAmount),
             isActive: true,
-            updatedAt: admin.firestore.FieldValue.serverTimestamp(),
+            updatedAt: FieldValue.serverTimestamp(),
             createdAt: walletSnap.exists
               ? walletSnap.data()?.createdAt
-              : admin.firestore.FieldValue.serverTimestamp(),
+              : FieldValue.serverTimestamp(),
           },
           { merge: true }
         );
@@ -290,7 +291,7 @@ export const payEmployeeCommissionOnDelivery = functions.firestore
           orderId,
           description: `Commission on ${orderMode} order ${after.orderNumber || orderId}`,
           referenceId: orderId,
-          createdAt: admin.firestore.FieldValue.serverTimestamp(),
+          createdAt: FieldValue.serverTimestamp(),
           expiresAt: null,
           metadata: {
             commissionRate,
@@ -303,7 +304,7 @@ export const payEmployeeCommissionOnDelivery = functions.firestore
         tx.update(orderRef, {
           commissionPaid: true,
           commissionAmount,
-          commissionPaidAt: admin.firestore.FieldValue.serverTimestamp(),
+          commissionPaidAt: FieldValue.serverTimestamp(),
         });
       });
 

@@ -27,7 +27,7 @@
 // `currentProjection` — this function never reads Firestore itself.
 
 import { HttpsError } from "firebase-functions/v2/https";
-import * as admin from "firebase-admin";
+import { FieldValue } from "firebase-admin/firestore";
 
 export const LEDGER_ENTRY_TYPES = [
   "CREDIT",
@@ -248,14 +248,14 @@ export function appendLedgerEntry(
     expiresAt: params.expiresAt ?? null,
     description: params.description,
     metadata: params.metadata ?? null,
-    createdAt: admin.firestore.FieldValue.serverTimestamp(),
+    createdAt: FieldValue.serverTimestamp(),
   });
 
   const projectionRef = db.collection("product_credit_balances").doc(params.customerId);
   const projectionUpdate: Record<string, unknown> = {
     ...newProjection,
     lastLedgerEntryId: entryRef.id,
-    updatedAt: admin.firestore.FieldValue.serverTimestamp(),
+    updatedAt: FieldValue.serverTimestamp(),
   };
   if (params.nextCreditDate !== undefined) {
     projectionUpdate.nextCreditDate = params.nextCreditDate;
