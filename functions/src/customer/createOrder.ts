@@ -42,6 +42,7 @@ import * as crypto from "crypto";
 import { computeOrderPricing, normalizeOrderItems } from "./orderPricing";
 import { computeCartFingerprint } from "./productCreditHold";
 import { appendLedgerEntry, toProjectionFields } from "./productCreditLedger";
+import { DeliveryFeeSchedule, parseDeliveryFeeSchedule } from "./deliveryFeeSchedule";
 
 interface CreateOrderItemInput {
   productId: string;
@@ -356,6 +357,33 @@ export const createOrder = onCall({ minInstances: 0, memory: "256MiB" }, async (
     const productRefs = normalizedItems.map((item) => db.collection("products").doc(item.productId));
     const productSnaps = await tx.getAll(...productRefs);
 
+    // Phase FIX-8, WS1: fetch the cart's single seller's own delivery fee
+    // schedule, if the cart resolves to exactly one real seller. Mirrors
+    // orderPricing.ts's own sellerId-extraction sentinel exactly (a
+    // deliberate small duplication, not a shared helper — the caller must
+    // know the seller set BEFORE calling computeOrderPricing, which is
+    // what determines it, and this read must happen before any write in
+    // this transaction regardless). A multi-seller cart, or one where the
+    // single seller has no schedule configured, reads nothing extra here
+    // and falls through to computeOrderPricing's own legacy path.
+    const cartSellerIds = new Set(
+      productSnaps.map((snap) => {
+        const sellerId = snap.exists ? (snap.data() as Record<string, unknown> | undefined)?.sellerId : undefined;
+        return typeof sellerId === "string" && sellerId ? sellerId : "_unassigned";
+      })
+    );
+    let sellerFeeSchedules: Map<string, DeliveryFeeSchedule> | undefined;
+    if (cartSellerIds.size === 1) {
+      const [onlySellerId] = Array.from(cartSellerIds);
+      if (onlySellerId !== "_unassigned") {
+        const sellerSnap = await tx.get(db.collection("sellers").doc(onlySellerId));
+        const schedule = parseDeliveryFeeSchedule(sellerSnap.data()?.deliveryFeeSchedule);
+        if (schedule) {
+          sellerFeeSchedules = new Map([[onlySellerId, schedule]]);
+        }
+      }
+    }
+
     const normalizedCouponCode =
       data?.couponCode && data.couponCode.trim() ? data.couponCode.trim().toUpperCase() : null;
     const couponSnap = normalizedCouponCode
@@ -479,6 +507,7 @@ export const createOrder = onCall({ minInstances: 0, memory: "256MiB" }, async (
       couponAlreadyRedeemed: !!(redemptionSnap && redemptionSnap.exists),
       deliveryCharge: data?.deliveryCharge,
       tax: data?.tax,
+      sellerFeeSchedules,
     });
 
     // ============================================

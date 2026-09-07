@@ -25,6 +25,7 @@ import { assertProgramLaunchable, resolveIsAdmin } from "../admin/complianceGate
 import { appendLedgerEntry, toProjectionFields } from "./productCreditLedger";
 import { computeOrderPricing, normalizeOrderItems, OrderPricingItemInput } from "./orderPricing";
 import { computeRedeemableAmount } from "./redemptionRules";
+import { DeliveryFeeSchedule, parseDeliveryFeeSchedule } from "./deliveryFeeSchedule";
 
 // 30 minutes: long enough to cover a real Razorpay checkout flow, short
 // enough that an abandoned cart doesn't lock a customer's credit for long —
@@ -176,6 +177,28 @@ export const quoteOrderWithCredit = onCall(
         programSnap = await tx.get(db.collection("benefit_programs").doc(programId));
       }
 
+      // Phase FIX-8, WS1: mirrors createOrder.ts's own identical seller-
+      // schedule read exactly, so a quote and the order it precedes can
+      // never disagree on the delivery charge — see orderPricing.ts's own
+      // header for why this file exists at all.
+      const cartSellerIds = new Set(
+        productSnaps.map((snap) => {
+          const sellerId = snap.exists ? (snap.data() as Record<string, unknown> | undefined)?.sellerId : undefined;
+          return typeof sellerId === "string" && sellerId ? sellerId : "_unassigned";
+        })
+      );
+      let sellerFeeSchedules: Map<string, DeliveryFeeSchedule> | undefined;
+      if (cartSellerIds.size === 1) {
+        const [onlySellerId] = Array.from(cartSellerIds);
+        if (onlySellerId !== "_unassigned") {
+          const sellerSnap = await tx.get(db.collection("sellers").doc(onlySellerId));
+          const schedule = parseDeliveryFeeSchedule(sellerSnap.data()?.deliveryFeeSchedule);
+          if (schedule) {
+            sellerFeeSchedules = new Map([[onlySellerId, schedule]]);
+          }
+        }
+      }
+
       // ============================================
       // COMPUTATION — same authoritative pricing createOrder would produce.
       // ============================================
@@ -189,6 +212,7 @@ export const quoteOrderWithCredit = onCall(
         couponAlreadyRedeemed: !!(redemptionSnap && redemptionSnap.exists),
         deliveryCharge: data?.deliveryCharge,
         tax: data?.tax,
+        sellerFeeSchedules,
       });
 
       // ============================================
