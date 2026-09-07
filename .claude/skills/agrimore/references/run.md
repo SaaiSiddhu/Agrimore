@@ -23,7 +23,7 @@ never change what happens next.
 {
   "programme": "<name>", "created": "<iso>", "base_develop": "<sha>",
   "config": { "push_develop": false, "max_ticks": 400, "max_hours": 72, "max_ticks_per_phase": 60,
-              "wake_seconds": 300, "allow_emulator": true, "allow_device_run": false },
+              "wake_seconds": 60, "allow_emulator": true, "allow_device_run": false },
   "phases": [ { "id": "X-1", "title": "…", "state": "PLANNED|CLAIMED|BUILT|SELF_GATED|LANES_PASSED|VERIFIED|MERGED_DEVELOP|E2E_DEVELOP|BLOCKED|STOPPED",
                 "branch": "agrimore/x1-…", "worktree": "…/Agrimore-x1", "depends_on": [], "contract": { …SKILL §2.2… },
                 "step": "<next step id>", "ticks": 0, "evidence": { "gate": "logs/…", "lanes": {…}, "merge": "…" },
@@ -32,6 +32,11 @@ never change what happens next.
   "promotions": [], "ticks": 0, "started": "<iso>", "stop": null, "tick_log": [ {"t":"<iso>","phase":"X-1","step":"…","result":"…"} ]
 }
 ```
+
+`wake_seconds: 60` is the working default (owner decision, 2026-09-07) — not a theoretical starting point.
+Long-running commands inside a tick (an emulator sweep, `npm ci`, an 8-package `pub get`) already run
+to completion before the wake fires, so 60s mostly governs the gap between ticks once a tick's own
+work is done, not how often the loop interrupts real work.
 
 ## 3. The tick
 
