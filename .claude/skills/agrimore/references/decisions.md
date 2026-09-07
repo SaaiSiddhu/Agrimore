@@ -73,6 +73,56 @@ deployed 2026-09-03 · `createEmployeeByAdmin` phone-linking deployed 2026-09-03
 customer PII on attributed orders accepted 2026-09-02 · `splitCartIntoOrders` and
 `resetUserPassword` deleted from production 2026-08-30.
 
+**Delivery fee schedule — D-DELIVERY-FEE (2026-09-07, resolves the row in §6):** per-seller, and each
+seller picks their own fee shape (flat / slab / distance) for their own orders — the owner's own
+answer explicitly listed all four shapes plus "ALL" then, on clarification, chose the broadest
+option over a single-shape default. This is the largest of the four shapes offered; scope a phase
+accordingly (a seller-side fee-schedule config screen, a schema for per-seller fee rules, and the
+`createOrder.ts`/`orderPricing.ts`/`quoteOrderWithCredit` read path — `createOrder.ts` remains the
+single most collision-prone file in this codebase, so this phase needs the same care RFQ-3 took to
+avoid touching its own transaction shape carelessly).
+
+**Referral payout timing — D-REFERRAL-TIMING (2026-09-07, resolves FIX-15B):** a referral payout
+happens only after the referred user's first delivered order, not immediately on redemption (today's
+behaviour). `wallet.ts:532`'s `isCompleted: false` field, currently write-only and never read,
+becomes load-bearing: the redeemer's own first delivered order must flip it and pay the referrer at
+that point, not at redemption time. Redemption itself is unaffected; only WHEN the referrer's payout
+fires changes.
+
+**Seller AI-connect funding — D-SELLER-AI-FUNDING (2026-09-07, resolves AI-4):** sellers fund the
+₹50 AI-connect activation fee via a direct Razorpay charge at connect time, mirroring
+`createAssociateOnboardingPayment.ts`'s own ₹500 Sales Associate onboarding fee pattern exactly — not
+a wallet debit (apps/seller has no wallet system and none is being built for this). `connectAiProvider`
+(AI-1) currently debits `wallets/{uid}.balance` unconditionally; the seller-side connect flow needs
+its own Razorpay order-creation + verification path (or a seller-specific variant of
+`connectAiProvider`) rather than reusing that debit, since sellers have no such balance to debit from.
+
+**Sales Associate commission — three money-policy decisions resolved 2026-09-07 (FIX-4B, findings
+N-9/N-29/N-27):**
+- **D-COMMISSION-REVERSAL (N-9):** when a delivered order paying commission is later cancelled/
+  reversed, claw the commission back by debiting the associate's wallet balance directly — the
+  balance CAN go negative as a result (not floored at 0, not a compensating ledger-only entry).
+- **D-COMMISSION-BASE (N-29):** commission is computed on the goods subtotal only, excluding
+  delivery charge and tax — changes what every associate earns under already-configured rates going
+  forward (not retroactive to commission already paid).
+- **D-PAYOUT-MIXED-CATEGORY (N-27):** a seller payout on a mixed-category order uses a weighted
+  average of each item's own category commission rate, not the first item's category rate alone.
+
+**CORS origin narrowing — D-CORS-ORIGINS (2026-09-07, resolves FIX-12B):** leave the wildcard (`*`)
+CORS origin on `sendPhoneOTP`/`sendEmailOTP` for now. The owner does not currently have the exact
+Hosting custom-domain mapping in hand to narrow it safely, and getting it wrong risks breaking OTP
+login for real customers on the live production web app; the exposure is accepted a while longer
+rather than guessed at. Reopen this once the real domain list is available.
+
+**Business Profile scope — D-BUSINESS-PROFILE-SCOPE (2026-09-07, resolves BUSINESS-NETWORK-1):**
+the "Social" tier — buyers can follow a seller and receive a notification when that seller lists a
+new product. This is the largest of the four scope options offered (beyond it: business hours,
+certifications, a name+description+product-list page) and needs its own notification-fan-out design
+(a `followers` sub-collection or equivalent, a trigger on new-product-create that notifies followers)
+— treat it as a multi-workstream phase, not a single bounded slice, and re-derive the actual current
+shape of `product_details_screen.dart`/the notification pipeline fresh at claim time rather than
+trusting this summary's own phrasing.
+
 ## 4. Superseded assumptions — must not return
 
 - The nested `Agrimore-Full-Project/Agrimore-main/` root, and "the owner declined flattening" —
@@ -107,7 +157,14 @@ delete `splitCartIntoOrders`, fee module decisions delegated to the CTO · 2026-
 deploy accepted with its consequence · 2026-09-02 OTP functions deploy, PII position accepted ·
 2026-09-03 Gen2 delete+recreate, onboarding-fee and `deleteUserData` deploys, credentials "already
 rotated", `targetSdk 36` bump confirmed as theirs, "book orders" declined · 2026-09-04 flattening,
-D-ID, D-BRANCH, D-UIUX, D-STAGING, D-HOME, D-LEDGER.
+D-ID, D-BRANCH, D-UIUX, D-STAGING, D-HOME, D-LEDGER · 2026-09-07 D-DELIVERY-FEE (per-seller,
+per-seller-chosen shape), D-REFERRAL-TIMING (pay on first delivered order), D-SELLER-AI-FUNDING
+(direct Razorpay charge, not a wallet debit), D-COMMISSION-REVERSAL (debit wallet directly, can go
+negative), D-COMMISSION-BASE (goods subtotal only), D-PAYOUT-MIXED-CATEGORY (weighted average by
+category), D-CORS-ORIGINS (leave wildcard for now), D-BUSINESS-PROFILE-SCOPE (Social tier: follow +
+new-product notifications) — all answered via `AskUserQuestion` in the running session, not
+inferred. FIX-5B's own question (has a `confirmDelivery`-using `apps/delivery` build been released
+and adopted?) got "not sure / need to check" — still genuinely open, not decided.
 
 ## 6. Open owner decisions (do not resolve silently)
 
@@ -123,7 +180,6 @@ D-ID, D-BRANCH, D-UIUX, D-STAGING, D-HOME, D-LEDGER.
 | D-APPCHECK | flip App Check to enforcement (`enforceAppCheck`) after a debug-mode activation log exists? | monitoring only |
 | D-LOCATION-BACKFILL | backfill product locations or adopt "no location = visible everywhere" before any server-side filter | no server filter |
 | D-MININSTANCES | warm-capacity budget for hot-path callables (all `minInstances: 0`) | 0 |
-| D-DELIVERY-FEE | a server-side delivery/tax schedule (today client-supplied under ₹1000) | keep the ceiling; flag A-6 |
 | D-ADMIN-ORDER-TRUST | restrict `isAdmin()` writes to product-credit fields on `orders` (A-9) | unchanged; recorded |
 | D-KEYSTORE-PASSWORDS | move gradle signing passwords to a gitignored `key.properties` (A-4) | do not add more |
 | D-PHONE-WRITE | close the client-side `users.phone` write path (A-7) | leave; `changePhoneNumber` is the verified path (undeployed) |
