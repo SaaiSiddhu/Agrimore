@@ -1,6 +1,12 @@
+import 'dart:io';
+
+import 'package:flutter/foundation.dart' show kIsWeb;
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
+import 'package:package_info_plus/package_info_plus.dart';
+import 'package:path_provider/path_provider.dart';
 import 'package:provider/provider.dart';
+import 'package:url_launcher/url_launcher.dart';
 import 'package:agrimore_ui/agrimore_ui.dart';
 import '../../../providers/theme_provider.dart';
 import '../../../providers/ai_connection_provider.dart';
@@ -15,14 +21,11 @@ class SettingsScreen extends StatefulWidget {
 
 class _SettingsScreenState extends State<SettingsScreen>
     with SingleTickerProviderStateMixin {
-  bool _pushNotifications = true;
-  bool _emailNotifications = false;
-  bool _orderUpdates = true;
-  bool _promotions = false;
-  bool _showPrices = true;
-
   late AnimationController _fadeController;
   late Animation<double> _fadeAnimation;
+
+  String _appVersion = '';
+  String _appBuild = '';
 
   @override
   void initState() {
@@ -35,6 +38,7 @@ class _SettingsScreenState extends State<SettingsScreen>
       CurvedAnimation(parent: _fadeController, curve: Curves.easeOut),
     );
     _fadeController.forward();
+    _loadAppVersion();
 
     // Mirrors profile_screen.dart's own pattern for WalletProvider: loaded
     // here so a user who opens Settings without ever visiting Wallet still
@@ -53,54 +57,63 @@ class _SettingsScreenState extends State<SettingsScreen>
     super.dispose();
   }
 
-  void _showSnackBar(String message, {required bool isDark}) {
-    ScaffoldMessenger.of(context).showSnackBar(
-      SnackBar(
-        content: Row(
-          children: [
-            Icon(Icons.check_circle, color: Colors.white, size: 20),
-            const SizedBox(width: 12),
-            Text(
-              message,
-              style: const TextStyle(fontWeight: FontWeight.w600),
-            ),
-          ],
-        ),
-        backgroundColor: isDark ? AppColors.primaryLight : AppColors.primary,
-        behavior: SnackBarBehavior.floating,
-        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
-        duration: const Duration(seconds: 2),
-      ),
-    );
+  Future<void> _loadAppVersion() async {
+    final info = await PackageInfo.fromPlatform();
+    if (!mounted) return;
+    setState(() {
+      _appVersion = info.version;
+      _appBuild = info.buildNumber;
+    });
   }
 
-  Future<bool> _showConfirmDialog({
-    required String title,
-    required String message,
-    required bool isDark,
-  }) async {
-    return await showDialog<bool>(
-          context: context,
-          builder: (context) => AlertDialog(
-            shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
-            title: Text(title),
-            content: Text(message),
-            actions: [
-              TextButton(
-                onPressed: () => Navigator.pop(context, false),
-                child: const Text('Cancel'),
-              ),
-              ElevatedButton(
-                onPressed: () => Navigator.pop(context, true),
-                style: ElevatedButton.styleFrom(
-                  backgroundColor: isDark ? AppColors.primaryLight : AppColors.primary,
-                ),
-                child: const Text('Confirm'),
-              ),
-            ],
-          ),
-        ) ??
-        false;
+  Future<void> _clearCache() async {
+    final confirmed = await DialogHelper.showConfirmation(
+      context,
+      title: 'Clear Cache',
+      message: 'This deletes cached images and temporary files. Nothing you '
+          "haven't saved will be lost, but images will need to reload.",
+      confirmText: 'Clear',
+      isDangerous: true,
+    );
+    if (confirmed != true || !mounted) return;
+
+    try {
+      PaintingBinding.instance.imageCache.clear();
+      PaintingBinding.instance.imageCache.clearLiveImages();
+      if (!kIsWeb) {
+        final tempDir = await getTemporaryDirectory();
+        if (await tempDir.exists()) {
+          await tempDir.delete(recursive: true);
+          await tempDir.create(recursive: true);
+        }
+      }
+      if (mounted) {
+        SnackbarHelper.showSuccess(context, 'Cache cleared');
+      }
+    } catch (_) {
+      if (mounted) {
+        SnackbarHelper.showError(context, 'Could not clear the cache. Try again.');
+      }
+    }
+  }
+
+  Future<void> _reportBug() async {
+    final platform = kIsWeb ? 'web' : '${Platform.operatingSystem} ${Platform.operatingSystemVersion}';
+    final subject = Uri.encodeComponent('Bug report — AgriMore $_appVersion');
+    final body = Uri.encodeComponent(
+      'Describe the issue:\n\n\n'
+      '---\n'
+      'App version: $_appVersion (build $_appBuild)\n'
+      'Platform: $platform',
+    );
+    final uri = Uri.parse('mailto:support@agrimore.in?subject=$subject&body=$body');
+    final launched = await launchUrl(uri);
+    if (!launched && mounted) {
+      SnackbarHelper.showError(
+        context,
+        'No email app found. Reach us directly at support@agrimore.in',
+      );
+    }
   }
 
   @override
@@ -144,87 +157,11 @@ class _SettingsScreenState extends State<SettingsScreen>
                     HapticFeedback.mediumImpact();
                     await themeProvider.toggleTheme();
                     if (mounted) {
-                      _showSnackBar(
+                      SnackbarHelper.showSuccess(
+                        context,
                         value ? '🌙 Dark mode enabled' : '☀️ Light mode enabled',
-                        isDark: value,
                       );
                     }
-                  },
-                ),
-              ],
-            ),
-
-            const SizedBox(height: 20),
-
-            // Notifications Section
-            _buildSectionTitle('Notifications', isDark),
-            _buildSettingCard(
-              isDark: isDark,
-              children: [
-                _buildSwitchTile(
-                  title: 'Push Notifications',
-                  subtitle: 'Receive notifications on your device',
-                  icon: Icons.notifications_active,
-                  iconColor: isDark ? Colors.orange.shade300 : Colors.orange,
-                  value: _pushNotifications,
-                  isDark: isDark,
-                  onChanged: (value) {
-                    setState(() => _pushNotifications = value);
-                    HapticFeedback.selectionClick();
-                    _showSnackBar(
-                      value
-                          ? 'Push notifications enabled'
-                          : 'Push notifications disabled',
-                      isDark: isDark,
-                    );
-                  },
-                ),
-                Divider(
-                  height: 1,
-                  color: isDark ? Colors.grey[800] : Colors.grey[300],
-                ),
-                _buildSwitchTile(
-                  title: 'Order Updates',
-                  subtitle: 'Get notified about your order status',
-                  icon: Icons.shopping_bag,
-                  iconColor: isDark ? Colors.green.shade300 : Colors.green,
-                  value: _orderUpdates,
-                  isDark: isDark,
-                  onChanged: (value) {
-                    setState(() => _orderUpdates = value);
-                    HapticFeedback.selectionClick();
-                  },
-                ),
-                Divider(
-                  height: 1,
-                  color: isDark ? Colors.grey[800] : Colors.grey[300],
-                ),
-                _buildSwitchTile(
-                  title: 'Email Notifications',
-                  subtitle: 'Receive updates via email',
-                  icon: Icons.email,
-                  iconColor: isDark ? Colors.blue.shade300 : Colors.blue,
-                  value: _emailNotifications,
-                  isDark: isDark,
-                  onChanged: (value) {
-                    setState(() => _emailNotifications = value);
-                    HapticFeedback.selectionClick();
-                  },
-                ),
-                Divider(
-                  height: 1,
-                  color: isDark ? Colors.grey[800] : Colors.grey[300],
-                ),
-                _buildSwitchTile(
-                  title: 'Promotions & Offers',
-                  subtitle: 'Get exclusive deals and discounts',
-                  icon: Icons.local_offer,
-                  iconColor: isDark ? Colors.red.shade300 : Colors.red,
-                  value: _promotions,
-                  isDark: isDark,
-                  onChanged: (value) {
-                    setState(() => _promotions = value);
-                    HapticFeedback.selectionClick();
                   },
                 ),
               ],
@@ -237,22 +174,6 @@ class _SettingsScreenState extends State<SettingsScreen>
             _buildSettingCard(
               isDark: isDark,
               children: [
-                _buildSwitchTile(
-                  title: 'Show Product Prices',
-                  subtitle: 'Display prices on product cards',
-                  icon: Icons.attach_money,
-                  iconColor: isDark ? Colors.teal.shade300 : Colors.teal,
-                  value: _showPrices,
-                  isDark: isDark,
-                  onChanged: (value) {
-                    setState(() => _showPrices = value);
-                    HapticFeedback.selectionClick();
-                  },
-                ),
-                Divider(
-                  height: 1,
-                  color: isDark ? Colors.grey[800] : Colors.grey[300],
-                ),
                 _buildActionTile(
                   title: 'Language',
                   subtitle: 'English (US)',
@@ -285,35 +206,9 @@ class _SettingsScreenState extends State<SettingsScreen>
                   icon: Icons.delete_outline,
                   iconColor: Colors.red,
                   isDark: isDark,
-                  onTap: () async {
-                    HapticFeedback.mediumImpact();
-                    final confirmed = await _showConfirmDialog(
-                      title: 'Clear Cache',
-                      message:
-                          'This will clear all cached data. The app will reload.',
-                      isDark: isDark,
-                    );
-
-                    if (confirmed && mounted) {
-                      _showSnackBar('Cache cleared successfully',
-                          isDark: isDark);
-                    }
-                  },
-                ),
-                Divider(
-                  height: 1,
-                  color: isDark ? Colors.grey[800] : Colors.grey[300],
-                ),
-                _buildActionTile(
-                  title: 'Download Quality',
-                  subtitle: 'High quality images',
-                  icon: Icons.download_outlined,
-                  iconColor: isDark ? Colors.blue.shade300 : Colors.blue,
-                  isDark: isDark,
                   onTap: () {
-                    HapticFeedback.lightImpact();
-                    _showSnackBar('Image quality set to high resolution',
-                        isDark: isDark);
+                    HapticFeedback.mediumImpact();
+                    _clearCache();
                   },
                 ),
               ],
@@ -352,31 +247,12 @@ class _SettingsScreenState extends State<SettingsScreen>
                   subtitle: Padding(
                     padding: const EdgeInsets.only(top: 4),
                     child: Text(
-                      'Version 1.0.0',
+                      _appVersion.isEmpty
+                          ? 'Loading…'
+                          : 'Version $_appVersion (Build $_appBuild)',
                       style: TextStyle(
                         fontSize: 12,
                         color: isDark ? Colors.grey[400] : Colors.grey[600],
-                      ),
-                    ),
-                  ),
-                  trailing: Container(
-                    padding:
-                        const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
-                    decoration: BoxDecoration(
-                      gradient: LinearGradient(
-                        colors: [
-                          AppColors.success,
-                          AppColors.success.withValues(alpha: 0.8)
-                        ],
-                      ),
-                      borderRadius: BorderRadius.circular(12),
-                    ),
-                    child: const Text(
-                      'Latest',
-                      style: TextStyle(
-                        color: Colors.white,
-                        fontSize: 11,
-                        fontWeight: FontWeight.bold,
                       ),
                     ),
                   ),
@@ -387,13 +263,13 @@ class _SettingsScreenState extends State<SettingsScreen>
                 ),
                 _buildActionTile(
                   title: 'Report a Bug',
-                  subtitle: 'Help us improve',
+                  subtitle: 'Email our support team',
                   icon: Icons.bug_report_outlined,
                   iconColor: isDark ? Colors.orange.shade300 : Colors.orange,
                   isDark: isDark,
                   onTap: () {
                     HapticFeedback.lightImpact();
-                    _showSnackBar('Bug report submitted. Thank you!', isDark: isDark);
+                    _reportBug();
                   },
                 ),
                 Divider(
@@ -412,36 +288,6 @@ class _SettingsScreenState extends State<SettingsScreen>
                   },
                 ),
               ],
-            ),
-
-            const SizedBox(height: 30),
-
-            // Save Button
-            SizedBox(
-              width: double.infinity,
-              height: 54,
-              child: ElevatedButton.icon(
-                onPressed: () {
-                  HapticFeedback.mediumImpact();
-                  _showSnackBar('Settings saved successfully', isDark: isDark);
-                },
-                icon: const Icon(Icons.check_circle, size: 20),
-                label: const Text(
-                  'Save Settings',
-                  style: TextStyle(
-                    fontSize: 16,
-                    fontWeight: FontWeight.w700,
-                  ),
-                ),
-                style: ElevatedButton.styleFrom(
-                  backgroundColor: isDark ? AppColors.primaryLight : AppColors.primary,
-                  foregroundColor: Colors.white,
-                  shape: RoundedRectangleBorder(
-                    borderRadius: BorderRadius.circular(14),
-                  ),
-                  elevation: 2,
-                ),
-              ),
             ),
 
             const SizedBox(height: 20),
