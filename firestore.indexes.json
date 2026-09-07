@@ -539,6 +539,20 @@
                     "order": "DESCENDING"
                 }
             ]
+        },
+        {
+            "collectionGroup": "referrals",
+            "queryScope": "COLLECTION",
+            "fields": [
+                {
+                    "fieldPath": "referredUserId",
+                    "order": "ASCENDING"
+                },
+                {
+                    "fieldPath": "isCompleted",
+                    "order": "ASCENDING"
+                }
+            ]
         }
     ],
     "fieldOverrides": []
