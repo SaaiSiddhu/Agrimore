@@ -81,6 +81,7 @@ dependencies:
   record: ^6.0.0
   audioplayers: ^6.0.0
   path_provider: ^2.1.2
+  package_info_plus: ^8.1.2
 
   # Location — imported directly by address_bottom_sheet.dart, mobile_home_screen.dart
   # and home_app_bar.dart, but was previously only resolving transitively (declared
