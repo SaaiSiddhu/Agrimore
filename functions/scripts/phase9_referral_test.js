@@ -1,8 +1,19 @@
-// Phase 9, Workstream 2: proves redeemReferralCode credits BOTH the caller
-// and the referrer in one call — this is the direct proof that the
-// referrer-credit bug (previously rejected by isOwner() since the write
-// targeted wallets/{referrerWallet.userId}, not the caller's own uid) is
-// now fixed, since the Admin SDK bypasses firestore.rules entirely.
+// Phase 9, Workstream 2: proves redeemReferralCode credits the caller (the
+// referred user) — this is the direct proof that the referrer-credit bug
+// (previously rejected by isOwner() since the write targeted
+// wallets/{referrerWallet.userId}, not the caller's own uid) is fixed at
+// the Firestore-write level, since the Admin SDK bypasses firestore.rules
+// entirely.
+//
+// Phase FIX-15C (2026-09-08): Scenario 1 below used to also assert the
+// referrer was credited immediately, in this same call. D-REFERRAL-TIMING
+// (owner decision, 2026-09-07, implemented in FIX-15B) moved that credit to
+// the referred user's first delivered order instead — see
+// functions/scripts/phase43_referral_completion_test.js for that suite.
+// Scenario 1 here now asserts the referrer's wallet is UNTOUCHED at
+// redemption (still their starting balance) and that a referrals/{id} doc
+// exists with isCompleted:false, which is what redeemReferralCode is still
+// solely responsible for. Scenarios 2 and 3 are unaffected by this change.
 // Run with: node scripts/phase9_referral_test.js
 process.env.FIRESTORE_EMULATOR_HOST = "127.0.0.1:8080";
 process.env.GCLOUD_PROJECT = "agrimore-66a4e";
@@ -79,7 +90,12 @@ async function main() {
     signupBonusCredited: true,
   });
 
-  // Scenario 1: redeeming a valid code credits BOTH wallets in one call.
+  // Scenario 1: redeeming a valid code credits the referred user's own
+  // wallet immediately and opens an incomplete referrals/ record. The
+  // referrer's own wallet is deliberately UNTOUCHED here (Phase FIX-15C,
+  // D-REFERRAL-TIMING) — see phase43_referral_completion_test.js for the
+  // suite proving the referrer is credited later, on the referred user's
+  // first delivered order.
   {
     const r = await callAndCapture({ code: referralCode }, { uid: referredUid, token: {} });
     console.log("Scenario 1 raw:", JSON.stringify(r, null, 2));
@@ -94,26 +110,33 @@ async function main() {
 
       const referrerDoc = await db.collection("wallets").doc(referrerUid).get();
       const referrerWallet = referrerDoc.data();
-      // Started at 10 coins, +100 referrer bonus = 110. Under the OLD
-      // direct-write code, this write was rejected by isOwner() and the
-      // referrer's coins would have stayed at 10 forever.
-      if (referrerWallet.coins !== 110) {
-        throw new Error(`expected referrer's coins to be 110 (10 starting + 100 bonus), got ${referrerWallet.coins} — REFERRER BUG NOT FIXED`);
+      // Started at 10 coins. D-REFERRAL-TIMING (FIX-15B) moved the
+      // referrer's own credit to completeReferralOnFirstDelivery, fired
+      // only once the referred user's first order is delivered — redemption
+      // itself must leave the referrer's wallet exactly as it was.
+      if (referrerWallet.coins !== 10) {
+        throw new Error(`expected referrer's coins to remain at their starting 10 (unpaid until first delivery), got ${referrerWallet.coins}`);
       }
-      if (referrerWallet.referralCount !== 1) throw new Error(`expected referrer's referralCount to be 1, got ${referrerWallet.referralCount}`);
+      if (referrerWallet.referralCount !== 0) {
+        throw new Error(`expected referrer's referralCount to remain 0 at redemption (incremented only on completion), got ${referrerWallet.referralCount}`);
+      }
 
       const referralQuery = await db.collection("referrals")
         .where("referrerUserId", "==", referrerUid)
         .where("referredUserId", "==", referredUid)
         .get();
       if (referralQuery.empty) throw new Error("expected a referrals/ document to have been created");
+      const referral = referralQuery.docs[0].data();
+      if (referral.isCompleted !== false) {
+        throw new Error(`expected the new referrals/ doc to be isCompleted:false at redemption, got ${referral.isCompleted}`);
+      }
 
-      s = `PASSED — BOTH wallets credited in one call. referred.coins=${referredWallet.coins}, referrer.coins=${referrerWallet.coins} (was 10, +100 bonus — proves the referrer-credit bug is fixed), referrer.referralCount=${referrerWallet.referralCount}`;
+      s = `PASSED — referred user's own wallet credited (coins=${referredWallet.coins}); referrer's wallet left untouched at redemption (coins=${referrerWallet.coins}, referralCount=${referrerWallet.referralCount}) pending first delivery, per D-REFERRAL-TIMING; referrals/ doc created with isCompleted:false`;
     } catch (e) {
       s = `FAILED — ${e.message}`;
       allPassed = false;
     }
-    results.scenario1_both_wallets_credited = s;
+    results.scenario1_referred_credited_referrer_pending = s;
     console.log("Scenario 1:", s);
   }
 
