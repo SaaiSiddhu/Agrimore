@@ -711,7 +711,7 @@ class _SettingsScreenState extends State<SettingsScreen>
     showModalBottomSheet(
       context: context,
       isScrollControlled: true,
-      backgroundColor: isDark ? const Color(0xFF1E1E1E) : Colors.white,
+      backgroundColor: isDark ? AppColors.surfaceDark : AppColors.surface,
       shape: const RoundedRectangleBorder(
         borderRadius: BorderRadius.vertical(top: Radius.circular(20)),
       ),
@@ -899,7 +899,7 @@ class _AiConnectFormSheetState extends State<_AiConnectFormSheet> {
           ),
           const SizedBox(height: 8),
           Text(
-            'Wallet balance: ₹${widget.walletBalance.toStringAsFixed(2)}',
+            'Wallet balance: ${PriceFormatter.formatPrice(widget.walletBalance)}',
             style: TextStyle(
               fontSize: 12,
               fontWeight: FontWeight.w600,
