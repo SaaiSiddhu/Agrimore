@@ -130,7 +130,7 @@ class _RfqCard extends StatelessWidget {
       child: Container(
         padding: const EdgeInsets.all(16),
         decoration: BoxDecoration(
-          color: isDark ? const Color(0xFF1E1E1E) : Colors.white,
+          color: isDark ? Colors.grey[900] : Colors.white,
           borderRadius: BorderRadius.circular(14),
           border: Border.all(color: isDark ? Colors.grey[800]! : Colors.grey.shade200),
         ),

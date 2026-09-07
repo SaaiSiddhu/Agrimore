@@ -213,7 +213,7 @@ class _HistoryTile extends StatelessWidget {
       margin: const EdgeInsets.only(bottom: 10),
       padding: const EdgeInsets.all(12),
       decoration: BoxDecoration(
-        color: isDark ? const Color(0xFF1E1E1E) : Colors.white,
+        color: isDark ? Colors.grey[900] : Colors.white,
         borderRadius: BorderRadius.circular(12),
         border: Border.all(color: isDark ? Colors.grey[800]! : Colors.grey.shade200),
       ),
@@ -265,7 +265,7 @@ class _ActionBar extends StatelessWidget {
     return Container(
       padding: const EdgeInsets.all(16),
       decoration: BoxDecoration(
-        color: isDark ? const Color(0xFF1E1E1E) : Colors.white,
+        color: isDark ? Colors.grey[900] : Colors.white,
         boxShadow: [BoxShadow(color: Colors.black.withOpacity(0.06), blurRadius: 8, offset: const Offset(0, -2))],
       ),
       child: Column(
