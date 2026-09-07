@@ -129,6 +129,11 @@ async function main() {
       orderMode: "B2C",
       paymentMethod: "cod",
       deliveryAddress: DELIVERY_ADDRESS,
+      // Deliberately non-zero and different from the expected schedule-computed
+      // fee (0): if the schedule were ever silently disabled, the legacy
+      // fallback would return this 999 unchanged, so the assertion below would
+      // fail loudly instead of coincidentally matching a fallback default of 0.
+      deliveryCharge: 999,
     },
     auth: { uid: "p42-cust-slab-high", token: {} },
   });
