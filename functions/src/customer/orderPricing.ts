@@ -25,6 +25,7 @@
 
 import { HttpsError } from "firebase-functions/v2/https";
 import * as admin from "firebase-admin";
+import { DeliveryFeeSchedule, computeFeeFromSchedule } from "./deliveryFeeSchedule";
 
 export interface OrderPricingItemInput {
   productId: string;
@@ -179,6 +180,19 @@ export interface ComputeOrderPricingParams {
   couponAlreadyRedeemed?: boolean;
   deliveryCharge?: number;
   tax?: number;
+  /** Phase FIX-8, Workstream 1. Keyed by real sellerId (never the
+   *  "_unassigned" sentinel) — the caller's own already-fetched, already-
+   *  parsed schedule for each seller in the cart, or omitted entirely for a
+   *  seller with none configured. ONLY consulted when the cart resolves to
+   *  exactly one real seller (see the single-seller guard below) — a
+   *  multi-seller cart keeps 100% of the legacy ratio-split behaviour
+   *  unconditionally in this workstream; correctly prorating multiple
+   *  independent per-seller schedules across one client-supplied total is
+   *  deferred to its own follow-up (see the ledger row), not guessed at
+   *  here. This function still performs zero Firestore access — the caller
+   *  reads and parses every schedule before calling in, same discipline as
+   *  every other input here. */
+  sellerFeeSchedules?: Map<string, DeliveryFeeSchedule>;
 }
 
 const MAX_REASONABLE_DELIVERY_CHARGE = 1000;
@@ -355,12 +369,45 @@ export function computeOrderPricing(params: ComputeOrderPricingParams): OrderPri
     throw new HttpsError("failed-precondition", "You have already redeemed this coupon");
   }
 
+  // Phase FIX-8, WS1: a single-seller cart whose seller has a configured
+  // delivery fee schedule gets a REAL server-computed charge instead of
+  // the client-supplied stopgap below. Guarded on itemsBySeller.size === 1
+  // (not just "one real sellerId") so a cart mixing a real seller with an
+  // "_unassigned" bucket — a product missing sellerId entirely, an
+  // anomalous data state — never has its schedule-computed charge silently
+  // split with that bucket by the per-seller ratio logic further down;
+  // it falls through to the legacy path instead, same as any multi-seller
+  // cart. When this IS a true single-seller cart, the per-seller split
+  // loop's own "last seller absorbs the residual" rule already gives 100%
+  // of `deliveryCharge` to that one seller by construction — no further
+  // change needed there.
+  const singleSellerId = itemsBySeller.size === 1 ? Array.from(itemsBySeller.keys())[0] : null;
+  let scheduleComputedDeliveryCharge: number | null = null;
+  if (singleSellerId && singleSellerId !== "_unassigned") {
+    const schedule = params.sellerFeeSchedules?.get(singleSellerId);
+    if (schedule) {
+      let sellerSubtotal = 0;
+      for (const item of itemsBySeller.get(singleSellerId)!) {
+        sellerSubtotal += (item.price as number) * (item.quantity as number);
+      }
+      scheduleComputedDeliveryCharge = computeFeeFromSchedule(schedule, sellerSubtotal);
+    }
+  }
+
   // deliveryCharge/tax have no server-side source of truth to recompute
   // from — apply a sanity ceiling instead of trusting the client number
   // outright. This is a stopgap, not a fix; it only catches a
-  // wildly-inflated value, not a modestly inflated one.
+  // wildly-inflated value, not a modestly inflated one. Superseded above
+  // for a single seller with a configured schedule — the ceiling check
+  // below still applies to that value too, as defence in depth (it can
+  // never actually trigger for one, since parseDeliveryFeeSchedule already
+  // enforces the identical bound at write-parse time).
   const deliveryCharge =
-    typeof params.deliveryCharge === "number" && params.deliveryCharge > 0 ? params.deliveryCharge : 0;
+    scheduleComputedDeliveryCharge !== null
+      ? scheduleComputedDeliveryCharge
+      : typeof params.deliveryCharge === "number" && params.deliveryCharge > 0
+      ? params.deliveryCharge
+      : 0;
   const tax = typeof params.tax === "number" && params.tax > 0 ? params.tax : 0;
   if (deliveryCharge > MAX_REASONABLE_DELIVERY_CHARGE) {
     throw new HttpsError(
