@@ -116,6 +116,11 @@ export { verifyWalletTopup, redeemReferralCode, creditSignupBonus } from "./cust
 export { connectAiProvider, disconnectAiProvider } from "./customer/aiConnection";
 
 // ============================================
+// AI MARKETPLACE ASSISTANT — GEMINI CHAT PROXY (Phase AI-2)
+// ============================================
+export { aiChatProxy } from "./customer/aiChatProxy";
+
+// ============================================
 // CUSTOMER PRODUCT BENEFIT PROGRAM — COMPLIANCE GATE (Phase A)
 // ============================================
 // The only way to change feature_flags/benefit_program or
