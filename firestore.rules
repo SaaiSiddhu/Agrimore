@@ -347,9 +347,17 @@ service cloud.firestore {
     // priced this order from, and must be exactly as unwritable by a client
     // update as the other bookkeeping/financial fields it sits alongside.
     function ownerCannotChangeOrderFinancials() {
+      // Phase FIX-4B (D-COMMISSION-REVERSAL, N-9): commissionReversed added
+      // alongside productCreditReversed — the identical exploit class Phase
+      // D-1's DEFECT D-0 found and fixed for that field applies equally
+      // here: an owner cancelling their own order could, in the same write,
+      // pre-set commissionReversed:true to make reverseEmployeeCommissionOnCancellation
+      // silently no-op on a genuine future reversal, permanently letting an
+      // associate keep commission on an order the owner then cancels.
       return !request.resource.data.diff(resource.data).affectedKeys()
         .hasAny(['subtotal', 'discount', 'deliveryCharge', 'tax', 'total', 'items', 'paymentStatus', 'employeeUid', 'employeeCode',
-                 'productCreditApplied', 'productCreditHoldId', 'productCreditReversed', 'productCreditLedgerEntryId', 'rfqId']);
+                 'productCreditApplied', 'productCreditHoldId', 'productCreditReversed', 'productCreditLedgerEntryId', 'rfqId',
+                 'commissionReversed']);
     }
 
     // Phase 5b fix: the financial-fields guard above did not restrict
@@ -430,10 +438,15 @@ service cloud.firestore {
     // snapshot rather than `after`, but that is defence-in-depth, not a
     // substitute for closing the write path here.
     function orderFulfilmentCannotChangeProtectedFields() {
+      // Phase FIX-4B (N-9): commissionReversed added alongside
+      // commissionPaid/commissionAmount — a seller could otherwise pre-set
+      // it on their own order to suppress a genuine future commission
+      // clawback, the same class of exploit Phase D-1 closed for
+      // productCreditReversed.
       return !request.resource.data.diff(resource.data).affectedKeys().hasAny([
         'total', 'subtotal', 'discount', 'deliveryCharge', 'tax', 'items',
         'paymentStatus', 'userId', 'sellerId', 'employeeUid', 'employeeCode',
-        'orderMode', 'commissionPaid', 'commissionAmount', 'deliveryVerificationCode',
+        'orderMode', 'commissionPaid', 'commissionAmount', 'commissionReversed', 'deliveryVerificationCode',
         'deliveryPartnerId',
         'productCreditApplied', 'productCreditHoldId', 'productCreditReversed', 'productCreditLedgerEntryId',
         'rfqId'
@@ -453,10 +466,12 @@ service cloud.firestore {
     // orderFulfilmentCannotChangeProtectedFields(), so the same mint/
     // suppress exploit applied equally to this branch.
     function deliveryPartnerCanClaimOrder() {
+      // Phase FIX-4B (N-9): commissionReversed added, same reasoning as
+      // orderFulfilmentCannotChangeProtectedFields() above.
       return !request.resource.data.diff(resource.data).affectedKeys().hasAny([
         'total', 'subtotal', 'discount', 'deliveryCharge', 'tax', 'items',
         'paymentStatus', 'userId', 'sellerId', 'employeeUid', 'employeeCode',
-        'orderMode', 'commissionPaid', 'commissionAmount', 'deliveryVerificationCode',
+        'orderMode', 'commissionPaid', 'commissionAmount', 'commissionReversed', 'deliveryVerificationCode',
         'productCreditApplied', 'productCreditHoldId', 'productCreditReversed', 'productCreditLedgerEntryId',
         'rfqId'
       ]);
