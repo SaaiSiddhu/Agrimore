@@ -74,6 +74,12 @@ async function main() {
     orderNumber: "P41-0001",
     userId: customerId,
     orderMode: "B2C",
+    // Phase FIX-4C: subtotal/discount complete this fixture for FIX-4B's
+    // commission basis (max(0, subtotal-discount)) -- 300-0=300, same as
+    // this order's own pre-existing total, so the commissionAmount===30
+    // assertion below is unchanged from before that phase.
+    subtotal: 300,
+    discount: 0,
     total: 300,
     orderStatus: "confirmed",
     employeeUid: "p41-employee",
