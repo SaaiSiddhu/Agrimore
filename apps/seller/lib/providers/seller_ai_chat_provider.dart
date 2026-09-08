@@ -221,6 +221,10 @@ class SellerAiChatProvider with ChangeNotifier {
                 'name': p.name,
                 'salePrice': p.salePrice,
                 'stock': p.stock,
+                // D-AI4D2-SCOPE: stock prediction reuses this threshold
+                // rather than a new forecast -- 5 matches inventory.ts's own
+                // server-side default (after.lowStockThreshold ?? 5) exactly.
+                'lowStockThreshold': p.lowStockThreshold ?? 5,
                 'isActive': p.isActive,
                 'category': p.categoryName,
               })
@@ -255,6 +259,9 @@ class SellerAiChatProvider with ChangeNotifier {
         'salePrice': product.salePrice,
         'originalPrice': product.originalPrice,
         'stock': product.stock,
+        // D-AI4D2-SCOPE: same server-side default as inventory.ts
+        // (after.lowStockThreshold ?? 5), not an invented one.
+        'lowStockThreshold': product.lowStockThreshold ?? 5,
         'isActive': product.isActive,
         'category': product.categoryName,
         'rating': product.rating,
