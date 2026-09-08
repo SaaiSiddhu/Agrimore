@@ -104,13 +104,20 @@ if [ $EMU = 1 ]; then
       #
       # FIX-11 amendment: phase24 now ALSO cross-reads Firestore
       # (firestore.get() in storage.rules' chat/delivery_proofs blocks), so
-      # it needs both emulators — the ONLY storage suite that does. Matched
-      # by exact name, not widened to *storage*, so a future storage-only
-      # suite doesn't silently inherit an emulator it doesn't need.
+      # it needs both emulators. Matched by exact name, not widened to
+      # *storage*, so a future storage-only suite doesn't silently inherit
+      # an emulator it doesn't need.
+      #
+      # FIX-GATE-1 amendment: phase48_business_posts_test (BUSINESS-NETWORK-2)
+      # is the same combined shape — Section A drives firestore.rules' own
+      # business_posts collection, Section B drives storage.rules' own
+      # business_posts/{fileName} path — so it needs both emulators too.
+      # Added to this same case arm rather than widening the wildcard, for
+      # the identical reason phase24 stayed exact-matched above.
       case "$s" in
-        phase24_storage_rules_test) EMU_ONLY="storage,firestore";;
-        *storage*)                  EMU_ONLY="storage";;
-        *)                          EMU_ONLY="firestore,functions,auth";;
+        phase24_storage_rules_test|phase48_business_posts_test) EMU_ONLY="storage,firestore";;
+        *storage*)                                              EMU_ONLY="storage";;
+        *)                                                       EMU_ONLY="firestore,functions,auth";;
       esac
       run "emu:$s" bash -c "firebase emulators:exec --only $EMU_ONLY --project agrimore-66a4e \"cd functions && node scripts/$s.js\""
     done
