@@ -1915,5 +1915,36 @@ service cloud.firestore {
       allow delete: if isAuthenticated() &&
         (resource.data.followerId == request.auth.uid || isAdmin());
     }
+
+    // ============================================
+    // BUSINESS POSTS COLLECTION (Phase BUSINESS-NETWORK-2, slice 2)
+    // ============================================
+    // A seller's post to their followers: text and/or an image and/or a
+    // tag/link to one of their own products (per owner decision
+    // D-BUSINESS-PROFILE-SHAPE, all three shapes, not one fixed type).
+    // Public read, matching this file's own established public-catalog
+    // pattern for `products`/`sellers` above -- personalizing the feed to
+    // "sellers I follow" is a CLIENT-SIDE query filter (via the `follows`
+    // collection), not a server-side access restriction, so there is
+    // nothing here that would need per-follower authorization. Create is
+    // self-attributed to an APPROVED seller only (isSeller() already
+    // encodes the approval check, matching every other seller-write block
+    // in this file) and must carry at least one content field -- an empty
+    // post cannot be created. No update: posts are immutable in this
+    // slice (editing/moderation is explicitly out of scope). Delete is
+    // available to the owning seller (remove their own post) or admin.
+    match /business_posts/{postId} {
+      allow read: if true;
+      allow create: if isSeller() &&
+        request.resource.data.sellerId == request.auth.uid &&
+        (
+          request.resource.data.text is string ||
+          request.resource.data.imageUrl is string ||
+          request.resource.data.productId is string
+        );
+      allow update: if false;
+      allow delete: if isAdmin() ||
+        (isSeller() && resource.data.sellerId == request.auth.uid);
+    }
   }
 }
