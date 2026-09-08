@@ -2,21 +2,20 @@ import 'package:flutter/material.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:agrimore_ui/agrimore_ui.dart' show SnackbarHelper;
 import 'package:agrimore_core/agrimore_core.dart';
+import 'delivery_fee_validation.dart';
 
 // Phase FIX-8B — seller-side config for functions/src/customer/
 // deliveryFeeSchedule.ts (Phase FIX-8, WS1a, already merged and E2E_DEVELOP).
 // firestore.rules places no constraint on sellers/{uid}.deliveryFeeSchedule
 // beyond the existing blanket privileged-field denylist (status stays
 // admin-only) — parseDeliveryFeeSchedule() on the server is the ONLY other
-// validation this value ever gets, so every bound below is copied from that
-// file's own source, not reinvented: a malformed schedule is treated by the
-// server as fully ABSENT (silent fallback to legacy pricing), not partially
-// applied and not an error the seller would ever see — so getting these
-// bounds wrong here would look like "my setting did nothing" with no
-// explanation, which is worse than rejecting it up front with a clear
-// reason.
-const int _kMaxFeeRupees = 1000;
-const int _kMaxSlabs = 10;
+// validation this value ever gets, so a malformed schedule is treated by
+// the server as fully ABSENT (silent fallback to legacy pricing), not
+// partially applied and not an error the seller would ever see — so
+// getting the bounds wrong here would look like "my setting did nothing"
+// with no explanation, which is worse than rejecting it up front with a
+// clear reason. The bounds themselves live in delivery_fee_validation.dart,
+// unit-tested against deliveryFeeSchedule.ts's own source there.
 const _kAccentColor = Color(0xFF2D7D3C);
 
 /// Opens the Flat/Slab delivery fee editor as a bottom sheet, writing
@@ -119,47 +118,24 @@ class _DeliveryFeeSheetState extends State<_DeliveryFeeSheet> {
     super.dispose();
   }
 
-  /// Returns a user-safe error message, or null if valid — mirrors
-  /// parseDeliveryFeeSchedule()'s exact bounds. Never throws; the caller
-  /// shows the returned string via SnackbarHelper.showError directly, so it
-  /// must already be a complete, honest sentence (feedback.md §2).
+  /// Returns a user-safe error message, or null if valid. Delegates to
+  /// delivery_fee_validation.dart's pure functions (unit-tested in
+  /// apps/seller/test/delivery_fee_validation_test.dart) so this widget
+  /// only handles reading the current form state, never the bounds
+  /// themselves. Never throws; the caller shows the returned string via
+  /// SnackbarHelper.showError directly, so it must already be a complete,
+  /// honest sentence (feedback.md §2).
   String? _validate() {
     if (!_isSlab) {
-      final amount = double.tryParse(_flatAmount.text.trim());
-      if (amount == null || amount < 0) {
-        return 'Enter a valid delivery fee (0 or more)';
-      }
-      if (amount > _kMaxFeeRupees) {
-        return 'Delivery fee cannot exceed ${PriceFormatter.formatPriceInt(_kMaxFeeRupees.toDouble())}';
-      }
-      return null;
+      return validateFlatFee(double.tryParse(_flatAmount.text.trim()));
     }
-
-    if (_slabs.isEmpty) {
-      return 'Add at least one slab';
-    }
-    if (_slabs.length > _kMaxSlabs) {
-      return 'A maximum of $_kMaxSlabs slabs is allowed';
-    }
-    bool hasZeroSlab = false;
-    for (final slab in _slabs) {
-      final minOrderValue = double.tryParse(slab.minOrderValue.text.trim());
-      final fee = double.tryParse(slab.fee.text.trim());
-      if (minOrderValue == null || minOrderValue < 0) {
-        return 'Every slab needs a valid minimum order value (0 or more)';
-      }
-      if (fee == null || fee < 0) {
-        return 'Every slab needs a valid delivery fee (0 or more)';
-      }
-      if (fee > _kMaxFeeRupees) {
-        return 'A slab fee cannot exceed ${PriceFormatter.formatPriceInt(_kMaxFeeRupees.toDouble())}';
-      }
-      if (minOrderValue == 0) hasZeroSlab = true;
-    }
-    if (!hasZeroSlab) {
-      return 'One slab must start at a minimum order value of 0, so every order matches a slab';
-    }
-    return null;
+    return validateSlabSchedule([
+      for (final slab in _slabs)
+        (
+          minOrderValue: double.tryParse(slab.minOrderValue.text.trim()),
+          fee: double.tryParse(slab.fee.text.trim()),
+        ),
+    ]);
   }
 
   Future<void> _save() async {
@@ -209,7 +185,7 @@ class _DeliveryFeeSheetState extends State<_DeliveryFeeSheet> {
   }
 
   void _addSlab() {
-    if (_slabs.length >= _kMaxSlabs) return;
+    if (_slabs.length >= kMaxSlabs) return;
     setState(() => _slabs.add(_SlabRow()));
   }
 
@@ -335,7 +311,7 @@ class _DeliveryFeeSheetState extends State<_DeliveryFeeSheet> {
         const SizedBox(height: 10),
         for (int i = 0; i < _slabs.length; i++) _buildSlabRow(i),
         const SizedBox(height: 4),
-        if (_slabs.length < _kMaxSlabs)
+        if (_slabs.length < kMaxSlabs)
           TextButton.icon(
             onPressed: _addSlab,
             icon: const Icon(Icons.add, color: _kAccentColor),
