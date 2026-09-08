@@ -114,6 +114,17 @@ Hosting custom-domain mapping in hand to narrow it safely, and getting it wrong 
 login for real customers on the live production web app; the exposure is accepted a while longer
 rather than guessed at. Reopen this once the real domain list is available.
 
+**Ten-collection rules coverage — D-COLLECTION-COVERAGE (2026-09-08, resolves FIX-6B, answered via
+`AskUserQuestion`):** ALL ten collections are KEPT — every one gets a proper `firestore.rules` block
+rather than any client code being deleted: `subscriptions` (backs Auto-Delivery; also read by the
+live, source-less `subscriptionChecker` function — that function's own separate fate is still
+D-ORPHANS, unresolved), `sellerRequests`, `scratchCards`, `transactions` (owner should double-check
+this isn't an unintentional duplicate of the already-covered `wallet_transactions` — flagged, not
+resolved, by this decision), `recent_searches`, `trending_searches`, `masterProducts`, `centers`,
+`product_price_mappings`, `subscription_plans`. No client-code deletion workstream applies to this
+phase at all now — WS3 (write rules blocks) is the entire remaining scope, WS4 (delete dead code) is
+moot.
+
 **Business Profile scope — D-BUSINESS-PROFILE-SCOPE (2026-09-07, resolves BUSINESS-NETWORK-1):**
 the "Social" tier — buyers can follow a seller and receive a notification when that seller lists a
 new product. This is the largest of the four scope options offered (beyond it: business hours,
@@ -122,6 +133,19 @@ certifications, a name+description+product-list page) and needs its own notifica
 — treat it as a multi-workstream phase, not a single bounded slice, and re-derive the actual current
 shape of `product_details_screen.dart`/the notification pipeline fresh at claim time rather than
 trusting this summary's own phrasing.
+
+**Business Profile shape — D-BUSINESS-PROFILE-SHAPE (2026-09-08, resolves the three open questions
+BUSINESS-NETWORK-1's own claim-time investigation raised, answered via `AskUserQuestion`):** a
+content feed IS in scope for this phase (not carried over from a broader draft — a deliberate
+widening of D-BUSINESS-PROFILE-SCOPE above). A seller's post may contain text, an image, and/or a
+tag/link to one of their own existing products (all three, not a single fixed shape) — image posts
+need `storage.rules` coverage and an upload UI; product-tag posts deep-link into the existing
+catalog. New-product-follow notifications (and, by extension, feed posts) go out on BOTH channels:
+in-app (a notifications surface inside `apps/marketplace`) AND push (reusing the existing
+`sendBroadcastNotification`/`sendNotificationToUser` functions), not one or the other. This
+materially grows the phase beyond its original "Social tier" framing — expect a scope split at claim
+time (e.g. profile+follow+notify as one slice, the feed/post-authoring UI as a following one),
+mirroring how AI-1/AI-2/AI-3 and AI-4/AI-4B/AI-4C/AI-4D were each split.
 
 ## 4. Superseded assumptions — must not return
 
@@ -165,6 +189,13 @@ category), D-CORS-ORIGINS (leave wildcard for now), D-BUSINESS-PROFILE-SCOPE (So
 new-product notifications) — all answered via `AskUserQuestion` in the running session, not
 inferred. FIX-5B's own question (has a `confirmDelivery`-using `apps/delivery` build been released
 and adopted?) got "not sure / need to check" — still genuinely open, not decided.
+2026-09-08 D-COLLECTION-COVERAGE (all ten FIX-6B collections kept, none deleted),
+D-BUSINESS-PROFILE-SHAPE (feed in scope; posts carry text/image/product-tag; notifications go both
+in-app and push) — both answered via `AskUserQuestion`. FIX-5B's own question was answered with a
+concrete fact this time, not "not sure": the live `com.agrimore.delivery` Play Store build was last
+updated **May 6**, well before `confirmDelivery` was even added (2026-09-05) — so no released build
+uses it yet. FIX-5B stays genuinely blocked; this needs re-checking once a new `apps/delivery` build
+actually ships.
 
 ## 6. Open owner decisions (do not resolve silently)
 
