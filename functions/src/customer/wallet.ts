@@ -289,6 +289,16 @@ export const verifyWalletTopup = onCall(
           "This payment has already been used for a wallet top-up"
         );
       }
+      // Phase AI-4 (D-SELLER-AI-FUNDING): fourth direction, symmetric with the
+      // three above. A payment already spent on a seller's ₹50 AI Assistant
+      // activation (functions/src/seller/aiConnection.ts's
+      // connectSellerAiProvider) must never also credit a wallet.
+      if (payment?.consumedBySellerAiActivationFor) {
+        throw new HttpsError(
+          "failed-precondition",
+          "This payment has already been used for a seller AI Assistant activation"
+        );
+      }
 
       const bonusCoins = getBonusForAmount(configSnap.data()?.topupBonuses, amount);
       const currentBalance = (walletSnap.data()?.balance as number | undefined) ?? 0;

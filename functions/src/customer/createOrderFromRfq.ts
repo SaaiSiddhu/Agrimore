@@ -308,6 +308,13 @@ export const createOrderFromRfq = onCall(
         if (payment.consumedByWalletTopup) {
           throw new HttpsError("failed-precondition", "This payment has already been used for a wallet top-up");
         }
+        // Phase AI-4 (D-SELLER-AI-FUNDING): fourth consumption direction. A
+        // payment already spent on a seller's ₹50 AI Assistant activation
+        // (functions/src/seller/aiConnection.ts's connectSellerAiProvider)
+        // must never also create a real RFQ order.
+        if (payment.consumedBySellerAiActivationFor) {
+          throw new HttpsError("failed-precondition", "This payment has already been used for a seller AI Assistant activation");
+        }
         if (payment.orderId !== razorpayOrderId) {
           throw new HttpsError("failed-precondition", "Payment does not match this order");
         }
