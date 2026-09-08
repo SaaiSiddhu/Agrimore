@@ -130,7 +130,7 @@ class _DeliveryFeeSheetState extends State<_DeliveryFeeSheet> {
         return 'Enter a valid delivery fee (0 or more)';
       }
       if (amount > _kMaxFeeRupees) {
-        return 'Delivery fee cannot exceed ₹$_kMaxFeeRupees';
+        return 'Delivery fee cannot exceed ${PriceFormatter.formatPriceInt(_kMaxFeeRupees.toDouble())}';
       }
       return null;
     }
@@ -152,7 +152,7 @@ class _DeliveryFeeSheetState extends State<_DeliveryFeeSheet> {
         return 'Every slab needs a valid delivery fee (0 or more)';
       }
       if (fee > _kMaxFeeRupees) {
-        return 'A slab fee cannot exceed ₹$_kMaxFeeRupees';
+        return 'A slab fee cannot exceed ${PriceFormatter.formatPriceInt(_kMaxFeeRupees.toDouble())}';
       }
       if (minOrderValue == 0) hasZeroSlab = true;
     }
