@@ -7,6 +7,7 @@ import '../../providers/seller_auth_provider.dart';
 import '../../providers/seller_product_provider.dart';
 import '../../providers/seller_order_provider.dart';
 import '../rfq/seller_rfq_inbox_screen.dart';
+import 'delivery_fee_sheet.dart';
 
 class SellerProfileScreen extends StatefulWidget {
   const SellerProfileScreen({super.key});
@@ -329,6 +330,25 @@ class _SellerProfileScreenState extends State<SellerProfileScreen> {
                 'Delivery radius: ${_sellerData?['deliveryRadiusKm'] ?? 10} km',
               ]);
             }),
+            _buildDivider(isDark),
+            _buildMenuItem(
+              Icons.local_shipping_outlined,
+              'Delivery Fee',
+              describeDeliveryFeeSchedule(
+                  _sellerData?['deliveryFeeSchedule'] as Map<String, dynamic>?),
+              isDark,
+              () {
+                final uid = context.read<SellerAuthProvider>().currentUser?.uid;
+                if (uid == null) return;
+                showDeliveryFeeSheet(
+                  context,
+                  uid: uid,
+                  initialSchedule:
+                      _sellerData?['deliveryFeeSchedule'] as Map<String, dynamic>?,
+                  onSaved: _loadSellerProfile,
+                );
+              },
+            ),
             _buildDivider(isDark),
             _buildMenuItem(Icons.notifications_outlined, 'Notifications',
                 'Manage alerts', isDark, () {
