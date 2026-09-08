@@ -111,11 +111,9 @@ class _BusinessProfileScreenState extends State<BusinessProfileScreen> {
                 final result =
                     await _followProvider.toggleFollow(widget.sellerId);
                 if (result == null && mounted) {
-                  ScaffoldMessenger.of(context).showSnackBar(
-                    const SnackBar(
-                      content: Text(
-                          'Could not update follow status. Please try again.'),
-                    ),
+                  SnackbarHelper.showError(
+                    context,
+                    'Could not update follow status. Please try again.',
                   );
                 }
               },
@@ -160,32 +158,25 @@ class _BusinessProfileScreenState extends State<BusinessProfileScreen> {
     final shopAddress = (_seller?['shopAddress'] as String?)?.trim();
 
     return Scaffold(
-      backgroundColor: isDark ? const Color(0xFF121212) : Colors.grey[50],
+      backgroundColor: isDark ? AppColors.backgroundDark : Colors.grey[50],
       appBar: AppBar(
         title: Text(shopName?.isNotEmpty == true ? shopName! : 'Business Profile'),
-        backgroundColor: isDark ? const Color(0xFF1E1E1E) : Colors.white,
+        backgroundColor: isDark ? AppColors.surfaceDark : Colors.white,
         foregroundColor: isDark ? Colors.white : Colors.black87,
         elevation: 0,
       ),
       body: _loading
           ? const Center(child: CircularProgressIndicator())
           : _error != null
-              ? Center(
-                  child: Padding(
-                    padding: const EdgeInsets.all(24),
-                    child: Text(
-                      'Could not load this business profile.',
-                      textAlign: TextAlign.center,
-                      style: TextStyle(color: isDark ? Colors.white70 : Colors.black54),
-                    ),
-                  ),
+              ? ErrorView(
+                  message: 'Could not load this business profile.',
+                  onRetry: _load,
                 )
               : _seller == null
-                  ? Center(
-                      child: Text(
-                        'This business could not be found.',
-                        style: TextStyle(color: isDark ? Colors.white70 : Colors.black54),
-                      ),
+                  ? const EmptyState(
+                      icon: Icons.storefront_outlined,
+                      title: 'Not found',
+                      message: 'This business could not be found.',
                     )
                   : RefreshIndicator(
                       onRefresh: _load,
@@ -194,7 +185,7 @@ class _BusinessProfileScreenState extends State<BusinessProfileScreen> {
                           Container(
                             width: double.infinity,
                             padding: const EdgeInsets.all(20),
-                            color: isDark ? const Color(0xFF1E1E1E) : Colors.white,
+                            color: isDark ? AppColors.surfaceDark : Colors.white,
                             child: Column(
                               crossAxisAlignment: CrossAxisAlignment.start,
                               children: [
@@ -251,14 +242,10 @@ class _BusinessProfileScreenState extends State<BusinessProfileScreen> {
                             ),
                           ),
                           if (_products.isEmpty)
-                            Padding(
-                              padding: const EdgeInsets.all(32),
-                              child: Center(
-                                child: Text(
-                                  'No products yet.',
-                                  style: TextStyle(color: isDark ? Colors.white54 : Colors.black45),
-                                ),
-                              ),
+                            const EmptyState(
+                              icon: Icons.inventory_2_outlined,
+                              title: 'No products yet',
+                              message: 'This seller has not listed any products yet.',
                             )
                           else
                             ProductGrid(products: _products),
