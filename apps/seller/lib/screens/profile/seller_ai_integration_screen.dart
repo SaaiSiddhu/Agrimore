@@ -1,3 +1,4 @@
+import 'package:agrimore_ui/agrimore_ui.dart';
 import 'package:cloud_functions/cloud_functions.dart';
 import 'package:firebase_auth/firebase_auth.dart';
 import 'package:flutter/foundation.dart' show kIsWeb;
@@ -278,20 +279,20 @@ class _SellerAiIntegrationScreenState extends State<SellerAiIntegrationScreen> {
       return Container(
         padding: const EdgeInsets.all(16),
         decoration: BoxDecoration(
-          color: const Color(0xFFEFF6FF),
+          color: AppColors.info.withValues(alpha: 0.1),
           borderRadius: BorderRadius.circular(14),
-          border: Border.all(color: const Color(0xFFBFDBFE)),
+          border: Border.all(color: AppColors.info.withValues(alpha: 0.4)),
         ),
-        child: const Row(
+        child: Row(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
-            Icon(Icons.laptop_mac_rounded, color: Color(0xFF1D4ED8)),
-            SizedBox(width: 10),
+            Icon(Icons.laptop_mac_rounded, color: AppColors.infoDark),
+            const SizedBox(width: 10),
             Expanded(
               child: Text(
                 'AI Assistant activation is available on the AgriMore seller website '
                 '(agrimore.in) — the app does not process this payment.',
-                style: TextStyle(color: Color(0xFF1E3A8A), fontSize: 13, height: 1.4, fontWeight: FontWeight.w600),
+                style: TextStyle(color: AppColors.infoDark, fontSize: 13, height: 1.4, fontWeight: FontWeight.w600),
               ),
             ),
           ],
@@ -319,8 +320,8 @@ class _SellerAiIntegrationScreenState extends State<SellerAiIntegrationScreen> {
             const SizedBox(height: 10),
             Container(
               padding: const EdgeInsets.all(10),
-              decoration: BoxDecoration(color: const Color(0xFFFEE2E2), borderRadius: BorderRadius.circular(8)),
-              child: Text(_errorMessage!, style: const TextStyle(color: Color(0xFF991B1B), fontSize: 12)),
+              decoration: BoxDecoration(color: AppColors.error.withValues(alpha: 0.1), borderRadius: BorderRadius.circular(8)),
+              child: Text(_errorMessage!, style: TextStyle(color: AppColors.errorDark, fontSize: 12)),
             ),
           ],
           const SizedBox(height: 14),
@@ -400,8 +401,8 @@ class _SellerAiIntegrationScreenState extends State<SellerAiIntegrationScreen> {
             const SizedBox(height: 10),
             Container(
               padding: const EdgeInsets.all(10),
-              decoration: BoxDecoration(color: const Color(0xFFFEE2E2), borderRadius: BorderRadius.circular(8)),
-              child: Text(_errorMessage!, style: const TextStyle(color: Color(0xFF991B1B), fontSize: 12)),
+              decoration: BoxDecoration(color: AppColors.error.withValues(alpha: 0.1), borderRadius: BorderRadius.circular(8)),
+              child: Text(_errorMessage!, style: TextStyle(color: AppColors.errorDark, fontSize: 12)),
             ),
           ],
           const SizedBox(height: 14),
@@ -483,32 +484,32 @@ class _SellerAiIntegrationScreenState extends State<SellerAiIntegrationScreen> {
     return Container(
       padding: const EdgeInsets.all(14),
       decoration: BoxDecoration(
-        color: const Color(0xFFEFF6FF),
+        color: AppColors.info.withValues(alpha: 0.1),
         borderRadius: BorderRadius.circular(12),
-        border: Border.all(color: const Color(0xFFBFDBFE)),
+        border: Border.all(color: AppColors.info.withValues(alpha: 0.4)),
       ),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          const Row(
+          Row(
             children: [
-              Icon(Icons.check_circle_outline_rounded, color: Color(0xFF1D4ED8)),
-              SizedBox(width: 8),
+              Icon(Icons.check_circle_outline_rounded, color: AppColors.infoDark),
+              const SizedBox(width: 8),
               Expanded(
-                child: Text('Payment received', style: TextStyle(fontWeight: FontWeight.w800, fontSize: 15, color: Color(0xFF1E3A8A))),
+                child: Text('Payment received', style: TextStyle(fontWeight: FontWeight.w800, fontSize: 15, color: AppColors.infoDark)),
               ),
             ],
           ),
           const SizedBox(height: 8),
-          const Text(
+          Text(
             'We received your payment, but could not confirm it just now. Please try connecting again — '
             'you will not be charged twice for the same payment.',
-            style: TextStyle(color: Color(0xFF1E3A8A), fontSize: 13, height: 1.5),
+            style: TextStyle(color: AppColors.infoDark, fontSize: 13, height: 1.5),
           ),
           if (_verifiedPaymentId != null) ...[
             const SizedBox(height: 10),
             SelectableText('Payment reference: $_verifiedPaymentId',
-                style: const TextStyle(fontSize: 12, fontWeight: FontWeight.w700, color: Color(0xFF1E3A8A))),
+                style: TextStyle(fontSize: 12, fontWeight: FontWeight.w700, color: AppColors.infoDark)),
           ],
           const SizedBox(height: 12),
           SizedBox(
