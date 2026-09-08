@@ -8,6 +8,7 @@ import '../../providers/seller_product_provider.dart';
 import '../../providers/seller_order_provider.dart';
 import '../rfq/seller_rfq_inbox_screen.dart';
 import 'delivery_fee_sheet.dart';
+import 'seller_ai_integration_screen.dart';
 
 class SellerProfileScreen extends StatefulWidget {
   const SellerProfileScreen({super.key});
@@ -349,6 +350,18 @@ class _SellerProfileScreenState extends State<SellerProfileScreen> {
                 );
               },
             ),
+            _buildDivider(isDark),
+            // Phase AI-4C: a genuinely stateful, multi-step feature (payment
+            // -> connect -> status -> disconnect), so this pushes a
+            // dedicated screen, matching 'Quote Requests' above rather than
+            // a _showDetailsDialog/_showEditDialog like the simpler items.
+            _buildMenuItem(Icons.smart_toy_outlined, 'AI Integration',
+                'Connect your ChatGPT or Gemini key', isDark, () {
+              Navigator.push(
+                context,
+                MaterialPageRoute(builder: (_) => const SellerAiIntegrationScreen()),
+              );
+            }),
             _buildDivider(isDark),
             _buildMenuItem(Icons.notifications_outlined, 'Notifications',
                 'Manage alerts', isDark, () {
