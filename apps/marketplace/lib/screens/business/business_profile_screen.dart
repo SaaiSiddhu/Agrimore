@@ -1,21 +1,25 @@
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
+import 'package:firebase_auth/firebase_auth.dart';
 import 'package:agrimore_core/agrimore_core.dart';
 import 'package:agrimore_ui/agrimore_ui.dart';
 import '../../providers/theme_provider.dart';
+import '../../providers/business_follow_provider.dart';
 import '../user/shop/widgets/product_grid.dart';
 
 /// BUSINESS-NETWORK-1 (slice 1 of 2): a customer-facing public profile for a
-/// seller -- name/shop details + their product list. The seller's own
-/// "Mini Portal" (SellerPanelScreen, apps/marketplace) is a stub with no
-/// bearing on this; this is the customer's VIEW of a seller, not the
-/// seller's own management UI (that lives in apps/seller).
+/// seller -- name/shop details + their product list + a follow button. The
+/// seller's own "Mini Portal" (SellerPanelScreen, apps/marketplace) is a
+/// stub with no bearing on this; this is the customer's VIEW of a seller,
+/// not the seller's own management UI (that lives in apps/seller).
 ///
 /// Reads `sellers/{sellerId}` directly (firestore.rules: `allow read: if
 /// true`, confirmed at claim time -- no rules change needed for this
-/// screen) and `products` filtered by `sellerId`. Follow/unfollow is
-/// BUSINESS-NETWORK-1's own WS2, not yet wired here.
+/// screen) and `products` filtered by `sellerId`. Follow state is scoped
+/// to this screen via a plain (non-widget-tree) BusinessFollowProvider
+/// instance -- no need for main.dart's app-wide MultiProvider for a toggle
+/// that only matters while this screen is open.
 class BusinessProfileScreen extends StatefulWidget {
   final String sellerId;
 
@@ -31,11 +35,25 @@ class _BusinessProfileScreenState extends State<BusinessProfileScreen> {
   List<ProductModel> _products = [];
   bool _loading = true;
   String? _error;
+  final BusinessFollowProvider _followProvider = BusinessFollowProvider();
 
   @override
   void initState() {
     super.initState();
+    _followProvider.addListener(_onFollowChanged);
+    _followProvider.checkFollowing(widget.sellerId);
     _load();
+  }
+
+  void _onFollowChanged() {
+    if (mounted) setState(() {});
+  }
+
+  @override
+  void dispose() {
+    _followProvider.removeListener(_onFollowChanged);
+    _followProvider.dispose();
+    super.dispose();
   }
 
   Future<void> _load() async {
@@ -69,6 +87,68 @@ class _BusinessProfileScreenState extends State<BusinessProfileScreen> {
         _loading = false;
       });
     }
+  }
+
+  // Hidden for a signed-out viewer or the seller viewing their own profile
+  // (matches firestore.rules' own sellerId != request.auth.uid guard on
+  // create -- a seller can never actually follow themselves, so no button
+  // that would only ever fail).
+  Widget _buildFollowButton(bool isDark, Color accentColor) {
+    final viewerUid = FirebaseAuth.instance.currentUser?.uid;
+    if (viewerUid == null || viewerUid == widget.sellerId) {
+      return const SizedBox.shrink();
+    }
+
+    final isFollowing = _followProvider.isFollowing;
+    final isLoading = _followProvider.isLoading;
+
+    return SizedBox(
+      height: 36,
+      child: OutlinedButton.icon(
+        onPressed: isLoading
+            ? null
+            : () async {
+                final result =
+                    await _followProvider.toggleFollow(widget.sellerId);
+                if (result == null && mounted) {
+                  ScaffoldMessenger.of(context).showSnackBar(
+                    const SnackBar(
+                      content: Text(
+                          'Could not update follow status. Please try again.'),
+                    ),
+                  );
+                }
+              },
+        icon: isLoading
+            ? SizedBox(
+                width: 14,
+                height: 14,
+                child: CircularProgressIndicator(
+                  strokeWidth: 2,
+                  color: isFollowing
+                      ? (isDark ? Colors.white70 : Colors.black54)
+                      : accentColor,
+                ),
+              )
+            : Icon(
+                isFollowing ? Icons.check : Icons.add,
+                size: 16,
+                color: isFollowing
+                    ? (isDark ? Colors.white70 : Colors.black54)
+                    : accentColor,
+              ),
+        label: Text(isFollowing ? 'Following' : 'Follow'),
+        style: OutlinedButton.styleFrom(
+          foregroundColor:
+              isFollowing ? (isDark ? Colors.white70 : Colors.black54) : accentColor,
+          side: BorderSide(
+            color: isFollowing
+                ? (isDark ? Colors.white24 : Colors.black26)
+                : accentColor,
+          ),
+        ),
+      ),
+    );
   }
 
   @override
@@ -153,6 +233,8 @@ class _BusinessProfileScreenState extends State<BusinessProfileScreen> {
                                     ),
                                   ],
                                 ),
+                                const SizedBox(height: 14),
+                                _buildFollowButton(isDark, accentColor),
                               ],
                             ),
                           ),
