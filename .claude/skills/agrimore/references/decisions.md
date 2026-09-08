@@ -99,6 +99,23 @@ its own Razorpay order-creation + verification path (or a seller-specific varian
 
 **Seller AI-connect fee platform restriction — D-SELLER-AI-WEB-ONLY (2026-09-08, resolves AI-4C, answered via AskUserQuestion):** the ₹50 seller AI activation fee's Razorpay checkout is web-only on apps/seller, mirroring the Sales Associate onboarding fee's own D2 (Play-safety, external-payment-steering) restriction exactly — same `kIsWeb`-gated screen, same `openCheckoutForExistingOrder` pattern via `dart:js_interop` (no `razorpay_flutter` package needed at all, since D-SELLER-AI-FUNDING above already established the payment shape mirrors `createAssociateOnboardingPayment.ts`'s own existing-order flow, not a fresh client-side order creation). AI-4's own claim-time scoping never explicitly resolved this platform question; AI-4C's own investigation surfaced it fresh (the seller AI fee needs a NEW payment sheet per activation, unlike AI-3's customer-side flow which debits an existing wallet and never opens Razorpay at all) and the owner chose the cautious, precedent-matching option over asserting a B2B/merchant-tool exemption this codebase has no authority to claim on its own.
 
+**Seller AI bespoke analytical tools — D-AI4D2-SCOPE (2026-09-08, resolves AI-4D-2, answered via
+`AskUserQuestion`):** **stock prediction** reuses the existing low-stock threshold
+(`setLowStockThreshold`, FIX-9) rather than a new order-velocity forecast — surface `currentStock` vs.
+that threshold, never assert a specific days-until-stockout number. The owner chose the safest option
+over a genuine forecasting heuristic, matching this session's own reasoning that a wrong prediction
+shown confidently to a seller is worse than not having the feature. **Pricing insights** surfaces the
+seller's own price history only — no cross-seller/category-average aggregation, and no new tool
+computing one; this is the narrowest of the three options offered (the other two were a new
+cross-seller aggregation query, or no new tool at all and letting Gemini reason freely from the
+existing product/order tools). Both answers narrow AI-4D-2's own scope considerably: the low-stock
+option needs `getMySellerProducts`/`getMySellerProductDetails` (already shipped, AI-4D) to also
+surface `lowStockThreshold` alongside `stock` — a small addition to the client-side tool-dispatch layer
+(`apps/seller/lib/providers/seller_ai_chat_provider.dart`), not a new backend tool at all; the pricing
+answer likely needs NO new tool whatsoever, since the same two existing tools already return
+`salePrice`/`originalPrice`. Re-scope AI-4D-2's own contract fresh at claim time against this — it may
+turn out to need no `functions/**` change at all, contradicting its own original `may_write` guess.
+
 **Sales Associate commission — three money-policy decisions resolved 2026-09-07 (FIX-4B, findings
 N-9/N-29/N-27):**
 - **D-COMMISSION-REVERSAL (N-9):** when a delivered order paying commission is later cancelled/
@@ -201,6 +218,10 @@ actually ships.
 2026-09-08 D-SELLER-AI-WEB-ONLY (the ₹50 seller AI activation fee's Razorpay checkout is web-only,
 mirroring the Sales Associate onboarding fee's own D2 Play-safety restriction) — answered via
 `AskUserQuestion`, resolves a platform question AI-4's own claim never settled.
+2026-09-08 D-AI4D2-SCOPE (stock prediction reuses the existing low-stock threshold, not a new
+forecast; pricing insights surfaces the seller's own price history only, no cross-seller aggregation)
+— answered via `AskUserQuestion` at session-stop, when AI-4D-2 was the only decision-blocked phase
+with no independent work left; unblocks AI-4D-2 for the next tick.
 
 ## 6. Open owner decisions (do not resolve silently)
 
