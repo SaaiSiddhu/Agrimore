@@ -7,6 +7,7 @@ import '../../providers/seller_auth_provider.dart';
 import '../../providers/seller_product_provider.dart';
 import '../../providers/seller_order_provider.dart';
 import '../rfq/seller_rfq_inbox_screen.dart';
+import '../ai/seller_ai_chat_screen.dart';
 import 'delivery_fee_sheet.dart';
 import 'seller_ai_integration_screen.dart';
 
@@ -350,6 +351,19 @@ class _SellerProfileScreenState extends State<SellerProfileScreen> {
                 );
               },
             ),
+            _buildDivider(isDark),
+            // Phase AI-4D: the actual usable chat feature -- placed above
+            // 'AI Integration' (the connect/settings screen) since it's the
+            // primary reason a seller would look for this menu at all; the
+            // chat screen itself gates on connection status and routes to
+            // AI Integration below when not yet connected.
+            _buildMenuItem(Icons.chat_bubble_outline_rounded, 'AI Assistant',
+                'Ask about your sales, products, and orders', isDark, () {
+              Navigator.push(
+                context,
+                MaterialPageRoute(builder: (_) => const SellerAiChatScreen()),
+              );
+            }),
             _buildDivider(isDark),
             // Phase AI-4C: a genuinely stateful, multi-step feature (payment
             // -> connect -> status -> disconnect), so this pushes a
