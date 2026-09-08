@@ -82,6 +82,26 @@ const RATE_LIMIT_WINDOW_MS = 30 * 1000;
 // multi-component computed total.
 const SELLER_AI_AMOUNT_TOLERANCE = 0.01;
 
+// Security lane finding (self-caught before VERIFY): createAssociateOnboardingPayment.ts
+// requires employees/{uid} to already exist before it will take a payment —
+// this is the seller-side mirror of that same precondition, and without it
+// NEITHER callable below actually verifies the caller is a seller at all.
+// request.auth alone only proves "some authenticated Firebase user"; a plain
+// customer could otherwise call these "seller" endpoints, pay their own
+// money, and end up with an ai_connections/{uid} entry through a path that
+// completely bypasses AI-1's wallet-balance funding gate for the exact same
+// resource. Mirrors firestore.rules' own isSeller() precedence exactly:
+// claim first (request.auth.token.seller === true, minted by
+// syncSellerRoleClaims), then the Firestore-doc fallback
+// (sellers/{uid}.status === 'approved') — never a bare request.auth.uid
+// existence check, and never trusting a client-supplied role field.
+async function requireApprovedSeller(uid: string, token: Record<string, unknown>): Promise<void> {
+  if (token.seller === true) return;
+  const sellerSnap = await admin.firestore().collection("sellers").doc(uid).get();
+  if (sellerSnap.exists && sellerSnap.data()?.status === "approved") return;
+  throw new HttpsError("permission-denied", "This feature is only available to approved sellers.");
+}
+
 export const createSellerAiActivationOrder = onCall(
   { minInstances: 0, memory: "256MiB", secrets: [RAZORPAY_KEY_SECRET] },
   async (request) => {
@@ -89,6 +109,7 @@ export const createSellerAiActivationOrder = onCall(
       throw new HttpsError("unauthenticated", "Sign in required");
     }
     const uid = request.auth.uid;
+    await requireApprovedSeller(uid, request.auth.token);
     const db = admin.firestore();
 
     const connectionSnap = await db.collection("ai_connections").doc(uid).get();
@@ -177,6 +198,7 @@ export const connectSellerAiProvider = onCall(
       throw new HttpsError("unauthenticated", "Sign in required");
     }
     const uid = request.auth.uid;
+    await requireApprovedSeller(uid, request.auth.token);
     const data = request.data as ConnectSellerAiProviderData;
     const provider = typeof data?.provider === "string" ? data.provider : "";
     const apiKey = typeof data?.apiKey === "string" ? data.apiKey : "";

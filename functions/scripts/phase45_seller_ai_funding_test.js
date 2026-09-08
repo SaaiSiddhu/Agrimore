@@ -91,6 +91,10 @@ async function seedUser(uid) {
   await db.collection("users").doc(uid).set({ uid, profileCompleted: true });
 }
 
+async function seedApprovedSeller(uid) {
+  await db.collection("sellers").doc(uid).set({ uid, status: "approved" }, { merge: true });
+}
+
 async function seedProduct(productId, sellerId, salePrice, stock) {
   await db.collection("products").doc(productId).set({
     name: `Phase45 Product ${productId}`,
@@ -178,6 +182,7 @@ async function main() {
   // ₹50, tagged with the right purpose, and razorpay_orders is bookkept.
   const SELLER_FRESH = "phase45-seller-fresh";
   {
+    await seedApprovedSeller(SELLER_FRESH);
     const r = await call(wrappedCreateActivationOrder, {}, { uid: SELLER_FRESH, token: {} });
     let s, detail;
     try {
@@ -204,6 +209,7 @@ async function main() {
   // activation order.
   const SELLER_ALREADY_CONNECTED = "phase45-seller-already-connected";
   {
+    await seedApprovedSeller(SELLER_ALREADY_CONNECTED);
     await db.collection("ai_connections").doc(SELLER_ALREADY_CONNECTED).set({ uid: SELLER_ALREADY_CONNECTED, provider: "gemini" });
     const r = await call(wrappedCreateActivationOrder, {}, { uid: SELLER_ALREADY_CONNECTED, token: {} });
     record("scenario3_order_rejected_if_already_connected", !r.ok && r.code === "already-exists", `code=${r.code} message="${r.message}"`);
@@ -214,6 +220,7 @@ async function main() {
   // scenario's own rate-limit window.
   const SELLER_RATELIMIT = "phase45-seller-ratelimit";
   {
+    await seedApprovedSeller(SELLER_RATELIMIT);
     const r1 = await call(wrappedCreateActivationOrder, {}, { uid: SELLER_RATELIMIT, token: {} });
     const r2 = await call(wrappedCreateActivationOrder, {}, { uid: SELLER_RATELIMIT, token: {} });
     record(
@@ -235,6 +242,7 @@ async function main() {
 
   // Scenario 6: invalid provider is rejected.
   {
+    await seedApprovedSeller("phase45-badprovider");
     const r = await call(
       wrappedConnect,
       { provider: "claude", apiKey: "some-fake-key", paymentId: "x" },
@@ -245,6 +253,7 @@ async function main() {
 
   // Scenario 7: empty and oversized apiKey are both rejected.
   {
+    await seedApprovedSeller("phase45-badkey");
     const empty = await call(wrappedConnect, { provider: "gemini", apiKey: "", paymentId: "x" }, { uid: "phase45-badkey", token: {} });
     const oversized = await call(
       wrappedConnect,
@@ -261,12 +270,14 @@ async function main() {
   // Scenario 8: a fresh (never-connected) seller with no paymentId is
   // rejected.
   {
+    await seedApprovedSeller("phase45-nopayment");
     const r = await call(wrappedConnect, { provider: "gemini", apiKey: "AIzaFakeNoPayment" }, { uid: "phase45-nopayment", token: {} });
     record("scenario8_connect_missing_paymentid", !r.ok && r.code === "invalid-argument", `code=${r.code}`);
   }
 
   // Scenario 9: a non-existent paymentId is rejected with a generic message.
   {
+    await seedApprovedSeller("phase45-notfound");
     const r = await call(
       wrappedConnect,
       { provider: "gemini", apiKey: "AIzaFakeNotFound", paymentId: "phase45-does-not-exist" },
@@ -283,6 +294,7 @@ async function main() {
   {
     const paymentId = "phase45-pay-wronguser";
     await seedVerifiedPayment(paymentId, "phase45-real-payer", ACTIVATION_FEE);
+    await seedApprovedSeller("phase45-attacker");
     const r = await call(
       wrappedConnect,
       { provider: "gemini", apiKey: "AIzaFakeWrongUser", paymentId },
@@ -295,6 +307,7 @@ async function main() {
   {
     const uid = "phase45-uncaptured";
     const paymentId = "phase45-pay-uncaptured";
+    await seedApprovedSeller(uid);
     await seedVerifiedPayment(paymentId, uid, ACTIVATION_FEE, { status: "created" });
     const r = await call(wrappedConnect, { provider: "gemini", apiKey: "AIzaFakeUncaptured", paymentId }, { uid, token: {} });
     record("scenario11_connect_uncaptured_payment", !r.ok && r.code === "failed-precondition", `code=${r.code} message="${r.message}"`);
@@ -304,6 +317,7 @@ async function main() {
   {
     const uid = "phase45-wrongamount";
     const paymentId = "phase45-pay-wrongamount";
+    await seedApprovedSeller(uid);
     await seedVerifiedPayment(paymentId, uid, 5); // way below the ₹50 fee
     const r = await call(wrappedConnect, { provider: "gemini", apiKey: "AIzaFakeWrongAmount", paymentId }, { uid, token: {} });
     record("scenario12_connect_wrong_amount", !r.ok && r.code === "failed-precondition", `code=${r.code} message="${r.message}"`);
@@ -313,6 +327,7 @@ async function main() {
   {
     const uid = "phase45-dir-order";
     const paymentId = "phase45-pay-dir-order";
+    await seedApprovedSeller(uid);
     await seedVerifiedPayment(paymentId, uid, ACTIVATION_FEE, { consumedByOrderId: "some-real-order-id" });
     const r = await call(wrappedConnect, { provider: "gemini", apiKey: "AIzaFakeDirOrder", paymentId }, { uid, token: {} });
     record("scenario13_connect_rejects_order_consumed_payment", !r.ok && r.code === "failed-precondition", `code=${r.code} message="${r.message}"`);
@@ -322,6 +337,7 @@ async function main() {
   {
     const uid = "phase45-dir-onboarding";
     const paymentId = "phase45-pay-dir-onboarding";
+    await seedApprovedSeller(uid);
     await seedVerifiedPayment(paymentId, uid, ACTIVATION_FEE, { consumedByOnboardingFor: uid });
     const r = await call(wrappedConnect, { provider: "gemini", apiKey: "AIzaFakeDirOnboarding", paymentId }, { uid, token: {} });
     record("scenario14_connect_rejects_onboarding_consumed_payment", !r.ok && r.code === "failed-precondition", `code=${r.code} message="${r.message}"`);
@@ -331,6 +347,7 @@ async function main() {
   {
     const uid = "phase45-dir-wallet";
     const paymentId = "phase45-pay-dir-wallet";
+    await seedApprovedSeller(uid);
     await seedVerifiedPayment(paymentId, uid, ACTIVATION_FEE, { consumedByWalletTopup: uid });
     const r = await call(wrappedConnect, { provider: "gemini", apiKey: "AIzaFakeDirWallet", paymentId }, { uid, token: {} });
     record("scenario15_connect_rejects_wallettopup_consumed_payment", !r.ok && r.code === "failed-precondition", `code=${r.code} message="${r.message}"`);
@@ -344,6 +361,7 @@ async function main() {
   const SELLER_SUCCESS = "phase45-seller-success";
   const PAYMENT_SUCCESS = "phase45-pay-success";
   {
+    await seedApprovedSeller(SELLER_SUCCESS);
     await seedVerifiedPayment(PAYMENT_SUCCESS, SELLER_SUCCESS, ACTIVATION_FEE);
     const r = await call(
       wrappedConnect,
@@ -376,6 +394,7 @@ async function main() {
   // fund two connections.
   {
     const uid = "phase45-reuse-attacker";
+    await seedApprovedSeller(uid);
     const r = await call(
       wrappedConnect,
       { provider: "gemini", apiKey: "AIzaFakeReuseAttempt", paymentId: PAYMENT_SUCCESS },
@@ -494,6 +513,63 @@ async function main() {
       "scenario22_reverse_createorderfromrfq_rejects_seller_ai_consumed_payment",
       !r.ok && r.code === "failed-precondition" && r.message.toLowerCase().includes("ai"),
       `ok=${r.ok} code=${r.code} message="${r.message}"`
+    );
+  }
+
+  // ==================================================================
+  // Security-lane finding, self-caught before VERIFY: request.auth alone
+  // proves only "some authenticated Firebase user", never "an actual
+  // seller" — mirrors createAssociateOnboardingPayment.ts's own
+  // employees/{uid}-existence precondition, applied here as sellers/{uid}
+  // with status 'approved', matching firestore.rules' own isSeller()
+  // precedence (claim first, Firestore-doc fallback second).
+  // ==================================================================
+
+  // Scenario 23: a plain authenticated user with NO sellers/{uid} doc at
+  // all cannot create a seller AI activation order.
+  {
+    const uid = "phase45-not-a-seller-order";
+    const r = await call(wrappedCreateActivationOrder, {}, { uid, token: {} });
+    record(
+      "scenario23_order_rejects_non_seller",
+      !r.ok && r.code === "permission-denied",
+      `code=${r.code} message="${r.message}"`
+    );
+  }
+
+  // Scenario 24: a PENDING (not yet approved) seller cannot create an
+  // activation order either — doc existence alone is not enough.
+  {
+    const uid = "phase45-pending-seller-order";
+    await db.collection("sellers").doc(uid).set({ uid, status: "pending" });
+    const r = await call(wrappedCreateActivationOrder, {}, { uid, token: {} });
+    record(
+      "scenario24_order_rejects_pending_seller",
+      !r.ok && r.code === "permission-denied",
+      `code=${r.code} message="${r.message}"`
+    );
+  }
+
+  // Scenario 25: a plain authenticated user with NO sellers/{uid} doc
+  // cannot call connectSellerAiProvider either — even with what would
+  // otherwise be a genuine, correctly-amounted, captured, unconsumed
+  // payment for their own uid. Without this check a customer could use
+  // the "seller" funding path to bypass AI-1's own wallet-balance gate
+  // for the exact same ai_connections/{uid} resource.
+  {
+    const uid = "phase45-not-a-seller-connect";
+    const paymentId = "phase45-pay-not-a-seller-connect";
+    await seedVerifiedPayment(paymentId, uid, ACTIVATION_FEE);
+    const r = await call(
+      wrappedConnect,
+      { provider: "gemini", apiKey: "AIzaFakeNonSellerConnect", paymentId },
+      { uid, token: {} }
+    );
+    const connectionSnap = await db.collection("ai_connections").doc(uid).get();
+    record(
+      "scenario25_connect_rejects_non_seller_even_with_valid_payment",
+      !r.ok && r.code === "permission-denied" && !connectionSnap.exists,
+      `code=${r.code} message="${r.message}" connectionCreated=${connectionSnap.exists}`
     );
   }
 
