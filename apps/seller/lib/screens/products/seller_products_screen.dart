@@ -7,6 +7,7 @@ import 'package:cached_network_image/cached_network_image.dart';
 import '../../providers/seller_auth_provider.dart';
 import '../../providers/seller_product_provider.dart';
 import '../home/add_product_screen.dart';
+import '../posts/create_post_screen.dart';
 
 class SellerProductsScreen extends StatefulWidget {
   const SellerProductsScreen({super.key});
@@ -47,6 +48,16 @@ class _SellerProductsScreenState extends State<SellerProductsScreen> {
         automaticallyImplyLeading: false,
         title: const Text('My Products', style: TextStyle(fontWeight: FontWeight.bold, fontSize: 20)),
         actions: [
+          // BUSINESS-NETWORK-2: the entry point into the post composer --
+          // deliberately an AppBar action on this existing screen rather
+          // than a new persistent SellerShell tab (its 5 tabs are fixed).
+          IconButton(
+            icon: const Icon(Icons.add_photo_alternate_outlined),
+            tooltip: 'New Post',
+            onPressed: () {
+              Navigator.push(context, MaterialPageRoute(builder: (_) => const CreatePostScreen()));
+            },
+          ),
           IconButton(
             icon: const Icon(Icons.refresh_rounded),
             onPressed: () {

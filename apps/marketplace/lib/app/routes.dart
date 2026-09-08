@@ -27,6 +27,7 @@ import '../screens/user/shop/shop_screen.dart';
 import '../screens/user/shop/product_details_screen.dart';
 import '../screens/user/wishlist/wishlist_screen.dart';
 import '../screens/business/business_profile_screen.dart';
+import '../screens/business/business_feed_screen.dart';
 
 // AI Chat
 import '../screens/chat/ai_chat_screen.dart';
@@ -113,6 +114,7 @@ class AppRoutes {
   static const String search = '/search';
   static const String searchResults = '/search/results';
   static const String wishlist = '/wishlist';
+  static const String businessFeed = '/business-feed';
   // AI Chat
   static const String aiChat = '/ai-chat';
   static const String chatHistory = '/chat-history';
@@ -376,6 +378,9 @@ class AppRoutes {
         case wishlist:
           return _buildRoute(
               const AuthGuard(child: WishlistScreen()), settings);
+        case businessFeed:
+          return _buildRoute(
+              const AuthGuard(child: BusinessFeedScreen()), settings);
         case profile:
           return _buildRoute(
               const AuthGuard(child: MainScreen(initialIndex: 4)), settings);

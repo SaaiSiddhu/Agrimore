@@ -164,6 +164,16 @@ class _BusinessProfileScreenState extends State<BusinessProfileScreen> {
         backgroundColor: isDark ? AppColors.surfaceDark : Colors.white,
         foregroundColor: isDark ? Colors.white : Colors.black87,
         elevation: 0,
+        actions: [
+          // BUSINESS-NETWORK-2: the entry point into the followers' feed --
+          // deliberately a small addition here rather than a new persistent
+          // bottom-nav tab or main-menu item.
+          IconButton(
+            icon: const Icon(Icons.dynamic_feed_outlined),
+            tooltip: 'Following feed',
+            onPressed: () => Navigator.pushNamed(context, '/business-feed'),
+          ),
+        ],
       ),
       body: _loading
           ? const Center(child: CircularProgressIndicator())
