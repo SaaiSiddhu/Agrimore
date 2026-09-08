@@ -246,32 +246,34 @@ class _SellerAiIntegrationScreenState extends State<SellerAiIntegrationScreen> {
 
   @override
   Widget build(BuildContext context) {
+    final isDark = Theme.of(context).brightness == Brightness.dark;
     return Scaffold(
+      backgroundColor: isDark ? const Color(0xFF121212) : const Color(0xFFF5F7FA),
       appBar: AppBar(title: const Text('AI Integration')),
       body: SingleChildScrollView(
         padding: const EdgeInsets.all(16),
-        child: _buildBody(),
+        child: _buildBody(isDark),
       ),
     );
   }
 
-  Widget _buildBody() {
+  Widget _buildBody(bool isDark) {
     if (_connectionProvider.isLoading) {
       return const Center(child: Padding(padding: EdgeInsets.all(32), child: CircularProgressIndicator()));
     }
     if (_phase == _Phase.connected || (_connectionProvider.connected && _phase != _Phase.connecting)) {
-      return _buildConnectedCard();
+      return _buildConnectedCard(isDark);
     }
     if (_phase == _Phase.connecting) {
-      return _buildConnectForm();
+      return _buildConnectForm(isDark);
     }
     if (_phase == _Phase.moneyTakenNotConnected) {
-      return _buildMoneyTakenNotice();
+      return _buildMoneyTakenNotice(isDark);
     }
-    return _buildActivationCard();
+    return _buildActivationCard(isDark);
   }
 
-  Widget _buildActivationCard() {
+  Widget _buildActivationCard(bool isDark) {
     // D-SELLER-AI-WEB-ONLY -- the payment surface itself does not exist on
     // a non-web build. This branch is the ONLY thing rendered on Android;
     // no payment button, no code path that can initiate a charge.
@@ -303,18 +305,19 @@ class _SellerAiIntegrationScreenState extends State<SellerAiIntegrationScreen> {
     return Container(
       padding: const EdgeInsets.all(18),
       decoration: BoxDecoration(
-        color: Colors.white,
+        color: isDark ? Colors.grey[900] : Colors.white,
         borderRadius: BorderRadius.circular(16),
-        border: Border.all(color: const Color(0xFFE5E7EB)),
+        border: Border.all(color: isDark ? Colors.grey[800]! : const Color(0xFFE5E7EB)),
       ),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          const Text('Activate your AI Assistant', style: TextStyle(fontWeight: FontWeight.w800, fontSize: 16)),
+          Text('Activate your AI Assistant',
+              style: TextStyle(fontWeight: FontWeight.w800, fontSize: 16, color: isDark ? Colors.white : Colors.black87)),
           const SizedBox(height: 4),
-          const Text(
+          Text(
             'Connect your own ChatGPT or Gemini API key for sales analysis, pricing insights, and business questions.',
-            style: TextStyle(fontSize: 12, color: Color(0xFF6B7280)),
+            style: TextStyle(fontSize: 12, color: isDark ? Colors.grey[400] : const Color(0xFF6B7280)),
           ),
           if (_phase == _Phase.error && _errorMessage != null) ...[
             const SizedBox(height: 10),
@@ -356,29 +359,31 @@ class _SellerAiIntegrationScreenState extends State<SellerAiIntegrationScreen> {
     );
   }
 
-  Widget _buildConnectForm() {
+  Widget _buildConnectForm(bool isDark) {
     return Container(
       padding: const EdgeInsets.all(18),
       decoration: BoxDecoration(
-        color: Colors.white,
+        color: isDark ? Colors.grey[900] : Colors.white,
         borderRadius: BorderRadius.circular(16),
-        border: Border.all(color: const Color(0xFFE5E7EB)),
+        border: Border.all(color: isDark ? Colors.grey[800]! : const Color(0xFFE5E7EB)),
       ),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          const Row(
+          Row(
             children: [
-              Icon(Icons.check_circle_outline_rounded, color: _accentColor),
-              SizedBox(width: 8),
-              Text('Payment received', style: TextStyle(fontWeight: FontWeight.w800, fontSize: 15)),
+              const Icon(Icons.check_circle_outline_rounded, color: _accentColor),
+              const SizedBox(width: 8),
+              Text('Payment received',
+                  style: TextStyle(fontWeight: FontWeight.w800, fontSize: 15, color: isDark ? Colors.white : Colors.black87)),
             ],
           ),
           const SizedBox(height: 4),
-          const Text('Now add your AI provider details to finish connecting.',
-              style: TextStyle(fontSize: 12, color: Color(0xFF6B7280))),
+          Text('Now add your AI provider details to finish connecting.',
+              style: TextStyle(fontSize: 12, color: isDark ? Colors.grey[400] : const Color(0xFF6B7280))),
           const SizedBox(height: 14),
-          const Text('Provider', style: TextStyle(fontWeight: FontWeight.w700, fontSize: 13)),
+          Text('Provider',
+              style: TextStyle(fontWeight: FontWeight.w700, fontSize: 13, color: isDark ? Colors.white : Colors.black87)),
           const SizedBox(height: 6),
           DropdownButtonFormField<String>(
             initialValue: _selectedProvider,
@@ -390,7 +395,8 @@ class _SellerAiIntegrationScreenState extends State<SellerAiIntegrationScreen> {
             onChanged: (v) => setState(() => _selectedProvider = v ?? _selectedProvider),
           ),
           const SizedBox(height: 14),
-          const Text('API Key', style: TextStyle(fontWeight: FontWeight.w700, fontSize: 13)),
+          Text('API Key',
+              style: TextStyle(fontWeight: FontWeight.w700, fontSize: 13, color: isDark ? Colors.white : Colors.black87)),
           const SizedBox(height: 6),
           TextField(
             controller: _apiKeyController,
@@ -425,14 +431,14 @@ class _SellerAiIntegrationScreenState extends State<SellerAiIntegrationScreen> {
     );
   }
 
-  Widget _buildConnectedCard() {
+  Widget _buildConnectedCard(bool isDark) {
     final providerLabel = _connectionProvider.provider == 'chatgpt' ? 'ChatGPT (OpenAI)' : 'Google Gemini';
     return Container(
       padding: const EdgeInsets.all(18),
       decoration: BoxDecoration(
-        color: Colors.white,
+        color: isDark ? Colors.grey[900] : Colors.white,
         borderRadius: BorderRadius.circular(16),
-        border: Border.all(color: const Color(0xFFE5E7EB)),
+        border: Border.all(color: isDark ? Colors.grey[800]! : const Color(0xFFE5E7EB)),
       ),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
@@ -449,8 +455,9 @@ class _SellerAiIntegrationScreenState extends State<SellerAiIntegrationScreen> {
                 child: Column(
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
-                    const Text('AI Assistant connected', style: TextStyle(fontWeight: FontWeight.w800, fontSize: 15)),
-                    Text(providerLabel, style: const TextStyle(fontSize: 12, color: Color(0xFF6B7280))),
+                    Text('AI Assistant connected',
+                        style: TextStyle(fontWeight: FontWeight.w800, fontSize: 15, color: isDark ? Colors.white : Colors.black87)),
+                    Text(providerLabel, style: TextStyle(fontSize: 12, color: isDark ? Colors.grey[400] : const Color(0xFF6B7280))),
                   ],
                 ),
               ),
@@ -480,7 +487,7 @@ class _SellerAiIntegrationScreenState extends State<SellerAiIntegrationScreen> {
   /// never a bare failure when money was taken. The seller can simply retry
   /// connecting with the same, still-verified paymentId (connectSellerAiProvider
   /// checks verified_payments, not a one-shot consumption at this stage).
-  Widget _buildMoneyTakenNotice() {
+  Widget _buildMoneyTakenNotice(bool isDark) {
     return Container(
       padding: const EdgeInsets.all(14),
       decoration: BoxDecoration(
