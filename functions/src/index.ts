@@ -103,6 +103,11 @@ export {
 } from "./customer/sellerNotifications";
 
 // ============================================
+// BUSINESS NETWORK — FOLLOW NOTIFICATIONS (Phase BUSINESS-NETWORK-1)
+// ============================================
+export { notifyFollowersOnNewProduct } from "./customer/sellerFollowNotifications";
+
+// ============================================
 // EMPLOYEE COMMISSION (B2B)
 // ============================================
 export {
