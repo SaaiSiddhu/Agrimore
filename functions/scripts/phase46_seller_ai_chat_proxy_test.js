@@ -41,6 +41,10 @@ async function callAndCapture(payload, auth) {
   }
 }
 
+async function seedApprovedSeller(db, uid) {
+  await db.collection("sellers").doc(uid).set({ uid, status: "approved" }, { merge: true });
+}
+
 async function seedConnection(db, uid, provider, plaintextKey) {
   const encrypted = encryptApiKey(plaintextKey);
   await db.collection("ai_connections").doc(uid).set({
@@ -86,6 +90,7 @@ async function main() {
   // Scenario 2: no connection at all -> failed-precondition pointing at Settings.
   {
     const uid = "phase46-seller-noconnection";
+    await seedApprovedSeller(db, uid);
     const r = await callAndCapture({ contents: SAMPLE_CONTENTS }, { uid, token: {} });
     record(
       "scenario2_no_connection",
@@ -97,6 +102,7 @@ async function main() {
   // Scenario 3: connected to chatgpt (not yet implemented) -> failed-precondition.
   {
     const uid = "phase46-seller-chatgpt";
+    await seedApprovedSeller(db, uid);
     await seedConnection(db, uid, "chatgpt", "sk-fakeTestKeyPhase46");
     const r = await callAndCapture({ contents: SAMPLE_CONTENTS }, { uid, token: {} });
     record(
@@ -157,6 +163,7 @@ async function main() {
   // Scenario 5: functionCall response is relayed as-is, naming a seller tool.
   {
     const uid = "phase46-seller-functioncall";
+    await seedApprovedSeller(db, uid);
     await seedConnection(db, uid, "gemini", "AIzaFakeTestKeyPhase46Scenario5");
     mockResponses.push({
       data: {
@@ -181,6 +188,7 @@ async function main() {
   // Scenario 6: empty contents is rejected.
   {
     const uid = "phase46-seller-emptycontents";
+    await seedApprovedSeller(db, uid);
     await seedConnection(db, uid, "gemini", "AIzaFakeTestKeyPhase46Scenario6");
     const r = await callAndCapture({ contents: [] }, { uid, token: {} });
     record("scenario6_empty_contents", !r.ok && r.code === "invalid-argument", `code=${r.code}`);
@@ -189,6 +197,7 @@ async function main() {
   // Scenario 7: oversized contents (too many turns) is rejected.
   {
     const uid = "phase46-seller-oversized";
+    await seedApprovedSeller(db, uid);
     await seedConnection(db, uid, "gemini", "AIzaFakeTestKeyPhase46Scenario7");
     const tooMany = Array.from({ length: 50 }, (_, i) => ({
       role: i % 2 === 0 ? "user" : "model",
@@ -203,6 +212,7 @@ async function main() {
   {
     const uid = "phase46-seller-invalidkey";
     const CONNECTED_TEST_KEY_8 = "AIzaSuperSecretPhase46Scenario8DoNotLeak";
+    await seedApprovedSeller(db, uid);
     await seedConnection(db, uid, "gemini", CONNECTED_TEST_KEY_8);
     const axiosError = new Error("Request failed with status code 403");
     axiosError.isAxiosError = true;
@@ -217,20 +227,81 @@ async function main() {
     );
   }
 
-  // Scenario 9: a seller with NO sellers/{uid} profile doc still gets a
+  // Scenario 9: a seller carrying the `seller` custom claim (no
+  // sellers/{uid} doc at all -- a plausible real state right after
+  // approval, before any business details are filled in) still gets a
   // working chat (fallback name), proving buildSystemPrompt's own
-  // try/catch degrades gracefully exactly like aiChatProxy.ts's original.
+  // try/catch degrades gracefully exactly like aiChatProxy.ts's original,
+  // AND that requireApprovedSeller's claim-first branch is genuinely
+  // sufficient on its own (no Firestore doc needed).
   {
     const uid = "phase46-seller-noprofiledoc";
     await seedConnection(db, uid, "gemini", "AIzaFakeTestKeyPhase46Scenario9");
     mockResponses.push({
       data: { candidates: [{ content: { role: "model", parts: [{ text: "Sure, happy to help." }] } }] },
     });
-    const r = await callAndCapture({ contents: SAMPLE_CONTENTS }, { uid, token: {} });
+    const r = await callAndCapture({ contents: SAMPLE_CONTENTS }, { uid, token: { seller: true } });
     record(
       "scenario9_missing_profile_doc_degrades_gracefully",
       r.ok && r.result.type === "text",
       `ok=${r.ok} result=${JSON.stringify(r.result)}`
+    );
+  }
+
+  // ==================================================================
+  // Security-lane finding, self-caught before VERIFY: request.auth plus a
+  // connected ai_connections/{uid} doc alone proves only "some authenticated
+  // user who has connected SOME AI provider" -- not "an approved seller".
+  // Since AI-1's own connectAiProvider (customer-side, wallet-funded)
+  // writes the IDENTICAL ai_connections/{uid} doc, without
+  // requireApprovedSeller a plain customer could call this seller-scoped
+  // proxy and receive seller-oriented tools/prompt.
+  // ==================================================================
+
+  // Scenario 10: an authenticated user with NO sellers/{uid} doc and NO
+  // seller claim -- i.e. a plain customer -- is rejected outright, even
+  // with a fully valid, connected Gemini key.
+  {
+    const uid = "phase46-not-a-seller";
+    await seedConnection(db, uid, "gemini", "AIzaFakeTestKeyPhase46Scenario10");
+    const r = await callAndCapture({ contents: SAMPLE_CONTENTS }, { uid, token: {} });
+    record(
+      "scenario10_rejects_non_seller_even_with_valid_connection",
+      !r.ok && r.code === "permission-denied",
+      `code=${r.code} message="${r.message}"`
+    );
+  }
+
+  // Scenario 11: the exact cross-namespace case the finding describes -- a
+  // customer who connected via AI-1's OWN connectAiProvider (not the
+  // seller funding path) still cannot reach the seller-scoped proxy.
+  {
+    const uid = "phase46-real-customer-ai1";
+    // Mirrors exactly what connectAiProvider itself writes -- same
+    // collection, same shape, seeded directly since this test only needs
+    // to prove the DOWNSTREAM authorization check, not re-prove AI-1's own
+    // wallet-debit flow (already covered by phase37_ai_wallet_connection_test.js).
+    await seedConnection(db, uid, "gemini", "AIzaFakeTestKeyPhase46Scenario11");
+    const r = await callAndCapture({ contents: SAMPLE_CONTENTS }, { uid, token: {} });
+    record(
+      "scenario11_rejects_customer_side_ai1_connection",
+      !r.ok && r.code === "permission-denied",
+      `code=${r.code} message="${r.message}"`
+    );
+  }
+
+  // Scenario 12: a PENDING (not yet approved) seller is rejected too --
+  // doc existence alone is not enough, mirroring AI-4's own equivalent
+  // scenario for createSellerAiActivationOrder/connectSellerAiProvider.
+  {
+    const uid = "phase46-pending-seller";
+    await db.collection("sellers").doc(uid).set({ uid, status: "pending" });
+    await seedConnection(db, uid, "gemini", "AIzaFakeTestKeyPhase46Scenario12");
+    const r = await callAndCapture({ contents: SAMPLE_CONTENTS }, { uid, token: {} });
+    record(
+      "scenario12_rejects_pending_seller",
+      !r.ok && r.code === "permission-denied",
+      `code=${r.code} message="${r.message}"`
     );
   }
 

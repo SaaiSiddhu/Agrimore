@@ -14,6 +14,22 @@
 // name, args} to the CLIENT, which is responsible for actually running the
 // query and appending the result before calling this again.
 //
+// Security lane finding (self-caught before VERIFY, same class as AI-4's
+// own connectSellerAiProvider/createSellerAiActivationOrder gap): because
+// BOTH funding paths write the identical ai_connections/{uid} doc, checking
+// only auth + connection existence would let ANY authenticated user who has
+// EVER connected an AI provider -- a plain customer via AI-1's
+// connectAiProvider included -- call this SELLER-scoped callable and
+// receive seller-oriented tool declarations and a seller-flavoured system
+// prompt. requireApprovedSeller() (functions/src/seller/aiConnection.ts,
+// exported for this reuse) closes that, mirroring firestore.rules' own
+// isSeller() precedence exactly (claim first, then sellers/{uid}.status
+// === 'approved'). Direct harm here is limited (no Firestore data is read
+// beyond the caller's own connection doc, and any Gemini usage is billed to
+// the caller's own key), but the check keeps this callable actually
+// restricted to what its own name and purpose claim, rather than silently
+// open to any connected identity.
+//
 // This is why the phase note's own framing ("the security-critical
 // authorization boundary") does not describe THIS file: a thin relay that
 // never reads product/order data itself cannot leak another seller's data
@@ -42,6 +58,7 @@ import { onCall, HttpsError } from "firebase-functions/v2/https";
 import * as admin from "firebase-admin";
 import axios from "axios";
 import { AI_KEY_ENCRYPTION_SECRET, decryptApiKey } from "../customer/aiConnection";
+import { requireApprovedSeller } from "./aiConnection";
 
 const GEMINI_MODEL = "gemini-2.5-flash";
 const GEMINI_URL = `https://generativelanguage.googleapis.com/v1beta/models/${GEMINI_MODEL}:generateContent`;
@@ -189,6 +206,7 @@ export const sellerAiChatProxy = onCall(
       throw new HttpsError("unauthenticated", "Sign in required");
     }
     const uid = request.auth.uid;
+    await requireApprovedSeller(uid, request.auth.token);
     const data = request.data as SellerAiChatProxyData;
     const contents = validateContents(data?.contents);
 
