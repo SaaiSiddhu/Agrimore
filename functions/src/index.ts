@@ -138,6 +138,11 @@ export { aiChatProxy } from "./customer/aiChatProxy";
 export { createSellerAiActivationOrder, connectSellerAiProvider } from "./seller/aiConnection";
 
 // ============================================
+// AI MARKETPLACE ASSISTANT — SELLER-SCOPED CHAT PROXY (Phase AI-4B)
+// ============================================
+export { sellerAiChatProxy } from "./seller/aiChatProxy";
+
+// ============================================
 // B2B RFQ & NEGOTIATION (Phase RFQ-1)
 // ============================================
 export { createRfq, submitRfqOffer, respondToRfqOffer } from "./customer/rfq";

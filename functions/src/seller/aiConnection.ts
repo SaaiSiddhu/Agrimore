@@ -95,7 +95,7 @@ const SELLER_AI_AMOUNT_TOLERANCE = 0.01;
 // syncSellerRoleClaims), then the Firestore-doc fallback
 // (sellers/{uid}.status === 'approved') — never a bare request.auth.uid
 // existence check, and never trusting a client-supplied role field.
-async function requireApprovedSeller(uid: string, token: Record<string, unknown>): Promise<void> {
+export async function requireApprovedSeller(uid: string, token: Record<string, unknown>): Promise<void> {
   if (token.seller === true) return;
   const sellerSnap = await admin.firestore().collection("sellers").doc(uid).get();
   if (sellerSnap.exists && sellerSnap.data()?.status === "approved") return;
