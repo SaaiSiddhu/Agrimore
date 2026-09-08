@@ -35,6 +35,10 @@ export type ActivationFailureCode =
   // Phase FIX-1 (finding N-1, P0): the third consumption direction. A payment
   // already credited to a wallet must not also activate onboarding.
   | "payment_already_consumed_by_wallet_topup"
+  // Phase AI-4 (D-SELLER-AI-FUNDING): the fourth consumption direction. A
+  // payment already spent on a seller's AI Assistant activation must not
+  // also activate onboarding.
+  | "payment_already_consumed_by_seller_ai_activation"
   | "employee_not_found";
 
 export interface ActivationResult {
@@ -162,6 +166,14 @@ export async function performOnboardingActivation(
     // createOrder.ts's own trust block.
     if (payment.consumedByWalletTopup) {
       return { ok: false, failureCode: "payment_already_consumed_by_wallet_topup" as const };
+    }
+    // Phase AI-4 (D-SELLER-AI-FUNDING): fourth direction. connectSellerAiProvider
+    // (functions/src/seller/aiConnection.ts) now claims a payment it spends on a
+    // seller's AI Assistant activation with consumedBySellerAiActivationFor, in the
+    // same transaction as the connection write — so a payment already spent there
+    // must not also activate an associate's ₹500 onboarding.
+    if (payment.consumedBySellerAiActivationFor) {
+      return { ok: false, failureCode: "payment_already_consumed_by_seller_ai_activation" as const };
     }
 
     // ============================================

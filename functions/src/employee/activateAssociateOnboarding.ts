@@ -32,6 +32,7 @@ function messageForFailure(code: ActivationFailureCode | undefined): string {
   case "payment_already_consumed_by_order":
   case "payment_already_consumed_by_onboarding":
   case "payment_already_consumed_by_wallet_topup":
+  case "payment_already_consumed_by_seller_ai_activation":
     // Deliberately generic to the caller for every payment-trust-boundary
     // failure — never reveal WHICH specific check failed (e.g. "this
     // payment belongs to a different user") to avoid leaking internal

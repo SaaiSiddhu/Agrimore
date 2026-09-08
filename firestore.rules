@@ -1682,6 +1682,22 @@ service cloud.firestore {
     }
 
     // ============================================
+    // SELLER AI RATE LIMITS COLLECTION (Phase AI-4)
+    // ============================================
+    // Same shape and same reasoning as onboarding_rate_limits above: a
+    // separate, distinctly-named collection (not a reuse of
+    // onboarding_rate_limits, which is documented above as owned
+    // specifically by associate onboarding) so the two unrelated rate
+    // limits are never conflated. No client read or write path exists or
+    // is needed — Firestore's own default-deny already covers it; this
+    // explicit block exists only so a future reader doesn't mistake the
+    // absence for an oversight. functions/src/seller/aiConnection.ts's
+    // createSellerAiActivationOrder (Admin SDK) is the only reader/writer.
+    match /seller_ai_rate_limits/{uid} {
+      allow read, write: if false;
+    }
+
+    // ============================================
     // ORDER RATE LIMITS COLLECTION (FIX-16, Workstream 1, finding N-23)
     // ============================================
     // Same shape and same reasoning as onboarding_rate_limits above: no

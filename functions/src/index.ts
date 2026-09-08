@@ -133,6 +133,11 @@ export { connectAiProvider, disconnectAiProvider } from "./customer/aiConnection
 export { aiChatProxy } from "./customer/aiChatProxy";
 
 // ============================================
+// AI MARKETPLACE ASSISTANT — SELLER FUNDING + CONNECTION (Phase AI-4)
+// ============================================
+export { createSellerAiActivationOrder, connectSellerAiProvider } from "./seller/aiConnection";
+
+// ============================================
 // B2B RFQ & NEGOTIATION (Phase RFQ-1)
 // ============================================
 export { createRfq, submitRfqOffer, respondToRfqOffer } from "./customer/rfq";

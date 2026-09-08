@@ -66,17 +66,22 @@ import * as crypto from "crypto";
 // functions/.secret.local.example for the local emulator placeholder.
 export const AI_KEY_ENCRYPTION_SECRET = defineSecret("AI_KEY_ENCRYPTION_SECRET");
 
-const ALGORITHM = "aes-256-gcm";
+// Exported (Phase AI-4, WS1): functions/src/seller/aiConnection.ts reuses
+// every one of these — the encryption scheme, provider allowlist, input
+// bound, and the fee amount are identical for a seller's own connection,
+// only HOW the fee is collected differs (Razorpay charge, not a wallet
+// debit — apps/seller has no wallet balance mechanism at all).
+export const ALGORITHM = "aes-256-gcm";
 const GCM_IV_LENGTH = 12; // bytes; the standard, recommended IV length for GCM
-const ACTIVATION_FEE = 50;
-const ALLOWED_PROVIDERS = ["gemini", "chatgpt"] as const;
-type AiProvider = (typeof ALLOWED_PROVIDERS)[number];
+export const ACTIVATION_FEE = 50;
+export const ALLOWED_PROVIDERS = ["gemini", "chatgpt"] as const;
+export type AiProvider = (typeof ALLOWED_PROVIDERS)[number];
 // FIX-16 precedent: bound every client-supplied string before it is used or
 // stored. Real provider keys (Gemini "AIza...", OpenAI "sk-...") are well
 // under 100 characters; 200 leaves headroom without inviting abuse.
-const MAX_API_KEY_LENGTH = 200;
+export const MAX_API_KEY_LENGTH = 200;
 
-interface EncryptedPayload {
+export interface EncryptedPayload {
   ciphertext: string; // base64
   iv: string; // base64
   authTag: string; // base64
@@ -132,6 +137,51 @@ interface ConnectAiProviderData {
   apiKey?: string;
 }
 
+// Exported (Phase AI-4, WS1): the ONLY place that writes ai_connections/
+// ai_connection_status. connectAiProvider (below) and
+// functions/src/seller/aiConnection.ts's connectSellerAiProvider both call
+// this AFTER their own, completely different funding gate has already
+// succeeded (a wallet debit here; a verified Razorpay payment there) — this
+// function knows nothing about how the fee was collected, only that it was.
+// Takes the already-encrypted payload (never the plaintext key or an
+// encrypt() call) and the caller's own open transaction, so both callers'
+// funding-gate reads/writes and this connection write commit together
+// atomically, exactly as connectAiProvider's original inline version did.
+export function storeAiConnectionInTransaction(params: {
+  db: admin.firestore.Firestore;
+  tx: admin.firestore.Transaction;
+  uid: string;
+  provider: AiProvider;
+  encrypted: EncryptedPayload;
+  alreadyConnected: boolean;
+}): void {
+  const { db, tx, uid, provider, encrypted, alreadyConnected } = params;
+  const connectionRef = db.collection("ai_connections").doc(uid);
+  const statusRef = db.collection("ai_connection_status").doc(uid);
+
+  const connectionUpdate: Record<string, unknown> = {
+    uid,
+    provider,
+    encryptedKey: encrypted.ciphertext,
+    iv: encrypted.iv,
+    authTag: encrypted.authTag,
+    algorithm: ALGORITHM,
+    updatedAt: admin.firestore.FieldValue.serverTimestamp(),
+  };
+  const statusUpdate: Record<string, unknown> = {
+    provider,
+    connected: true,
+    updatedAt: admin.firestore.FieldValue.serverTimestamp(),
+  };
+  if (!alreadyConnected) {
+    connectionUpdate.connectedAt = admin.firestore.FieldValue.serverTimestamp();
+    statusUpdate.connectedAt = admin.firestore.FieldValue.serverTimestamp();
+  }
+
+  tx.set(connectionRef, connectionUpdate, { merge: true });
+  tx.set(statusRef, statusUpdate, { merge: true });
+}
+
 export const connectAiProvider = onCall(
   { minInstances: 0, memory: "256MiB", secrets: [AI_KEY_ENCRYPTION_SECRET] },
   async (request) => {
@@ -162,7 +212,6 @@ export const connectAiProvider = onCall(
     const db = admin.firestore();
     const walletRef = db.collection("wallets").doc(uid);
     const connectionRef = db.collection("ai_connections").doc(uid);
-    const statusRef = db.collection("ai_connection_status").doc(uid);
     const walletTransactionRef = db.collection("wallet_transactions").doc();
 
     // Encrypted outside the transaction: crypto.createCipheriv is pure CPU
@@ -213,27 +262,14 @@ export const connectAiProvider = onCall(
         });
       }
 
-      const connectionUpdate: Record<string, unknown> = {
+      storeAiConnectionInTransaction({
+        db,
+        tx,
         uid,
-        provider,
-        encryptedKey: encrypted.ciphertext,
-        iv: encrypted.iv,
-        authTag: encrypted.authTag,
-        algorithm: ALGORITHM,
-        updatedAt: admin.firestore.FieldValue.serverTimestamp(),
-      };
-      const statusUpdate: Record<string, unknown> = {
-        provider,
-        connected: true,
-        updatedAt: admin.firestore.FieldValue.serverTimestamp(),
-      };
-      if (!alreadyConnected) {
-        connectionUpdate.connectedAt = admin.firestore.FieldValue.serverTimestamp();
-        statusUpdate.connectedAt = admin.firestore.FieldValue.serverTimestamp();
-      }
-
-      tx.set(connectionRef, connectionUpdate, { merge: true });
-      tx.set(statusRef, statusUpdate, { merge: true });
+        provider: provider as AiProvider,
+        encrypted,
+        alreadyConnected,
+      });
 
       return { activated: !alreadyConnected, rotated: alreadyConnected };
     });
