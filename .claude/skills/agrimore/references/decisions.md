@@ -97,6 +97,8 @@ a wallet debit (apps/seller has no wallet system and none is being built for thi
 its own Razorpay order-creation + verification path (or a seller-specific variant of
 `connectAiProvider`) rather than reusing that debit, since sellers have no such balance to debit from.
 
+**Seller AI-connect fee platform restriction — D-SELLER-AI-WEB-ONLY (2026-09-08, resolves AI-4C, answered via AskUserQuestion):** the ₹50 seller AI activation fee's Razorpay checkout is web-only on apps/seller, mirroring the Sales Associate onboarding fee's own D2 (Play-safety, external-payment-steering) restriction exactly — same `kIsWeb`-gated screen, same `openCheckoutForExistingOrder` pattern via `dart:js_interop` (no `razorpay_flutter` package needed at all, since D-SELLER-AI-FUNDING above already established the payment shape mirrors `createAssociateOnboardingPayment.ts`'s own existing-order flow, not a fresh client-side order creation). AI-4's own claim-time scoping never explicitly resolved this platform question; AI-4C's own investigation surfaced it fresh (the seller AI fee needs a NEW payment sheet per activation, unlike AI-3's customer-side flow which debits an existing wallet and never opens Razorpay at all) and the owner chose the cautious, precedent-matching option over asserting a B2B/merchant-tool exemption this codebase has no authority to claim on its own.
+
 **Sales Associate commission — three money-policy decisions resolved 2026-09-07 (FIX-4B, findings
 N-9/N-29/N-27):**
 - **D-COMMISSION-REVERSAL (N-9):** when a delivered order paying commission is later cancelled/
@@ -196,6 +198,9 @@ concrete fact this time, not "not sure": the live `com.agrimore.delivery` Play S
 updated **May 6**, well before `confirmDelivery` was even added (2026-09-05) — so no released build
 uses it yet. FIX-5B stays genuinely blocked; this needs re-checking once a new `apps/delivery` build
 actually ships.
+2026-09-08 D-SELLER-AI-WEB-ONLY (the ₹50 seller AI activation fee's Razorpay checkout is web-only,
+mirroring the Sales Associate onboarding fee's own D2 Play-safety restriction) — answered via
+`AskUserQuestion`, resolves a platform question AI-4's own claim never settled.
 
 ## 6. Open owner decisions (do not resolve silently)
 
