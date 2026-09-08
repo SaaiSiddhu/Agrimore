@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:provider/provider.dart';
+import 'package:cloud_firestore/cloud_firestore.dart';
 import 'dart:ui';
 
 import 'package:agrimore_ui/agrimore_ui.dart';
@@ -252,6 +253,9 @@ Future<void> _addToCart(BuildContext context, {bool buyNow = false}) async {
                 ),
                 // Overlapped info card
                 _buildOverlappedInfoCard(loadedProduct, isDark),
+                // BUSINESS-NETWORK-1: discovery link to the seller's business
+                // profile -- without this the feature has no entry point.
+                _buildSoldBySection(loadedProduct, isDark),
                 _buildSubscriptionOptions(loadedProduct, isDark),
                 // Similar Products section
                 _buildSimilarProducts(loadedProduct, isDark),
@@ -1001,6 +1005,85 @@ Future<void> _addToCart(BuildContext context, {bool buyNow = false}) async {
   }
 
   // ✅ NEW: Description section (inline)
+  // BUSINESS-NETWORK-1 (slice 1): the only entry point into a seller's
+  // business profile screen. `ProductModel` carries sellerId but not the
+  // seller's display name, so this fetches sellers/{sellerId} directly
+  // (allow read: if true -- public, no rules change needed here). Renders
+  // nothing if the product has no sellerId or the seller doc/shopName is
+  // missing, rather than showing a broken-looking empty card.
+  Widget _buildSoldBySection(ProductModel product, bool isDark) {
+    if (product.sellerId.isEmpty) return const SizedBox.shrink();
+
+    return Padding(
+      padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
+      child: FutureBuilder<DocumentSnapshot>(
+        future: FirebaseFirestore.instance
+            .collection('sellers')
+            .doc(product.sellerId)
+            .get(),
+        builder: (context, snapshot) {
+          if (!snapshot.hasData || !snapshot.data!.exists) {
+            return const SizedBox.shrink();
+          }
+          final data = snapshot.data!.data() as Map<String, dynamic>? ?? {};
+          final shopName = (data['shopName'] as String?)?.trim();
+          if (shopName == null || shopName.isEmpty) {
+            return const SizedBox.shrink();
+          }
+          final accentColor = isDark ? AppColors.primaryLight : AppColors.primary;
+
+          return InkWell(
+            borderRadius: BorderRadius.circular(12),
+            onTap: () => Navigator.pushNamed(
+              context,
+              '/business/${product.sellerId}',
+            ),
+            child: _buildCardSection(
+              isDark: isDark,
+              padding: const EdgeInsets.all(14),
+              child: Row(
+                children: [
+                  CircleAvatar(
+                    radius: 20,
+                    backgroundColor: accentColor.withValues(alpha: 0.1),
+                    child: Icon(Icons.storefront, color: accentColor),
+                  ),
+                  const SizedBox(width: 12),
+                  Expanded(
+                    child: Column(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [
+                        Text(
+                          'Sold by',
+                          style: TextStyle(
+                            fontSize: 12,
+                            color: isDark ? Colors.grey[400] : Colors.grey[600],
+                          ),
+                        ),
+                        Text(
+                          shopName,
+                          style: TextStyle(
+                            fontSize: 15,
+                            fontWeight: FontWeight.w700,
+                            color: isDark ? Colors.white : Colors.black87,
+                          ),
+                        ),
+                      ],
+                    ),
+                  ),
+                  Icon(
+                    Icons.chevron_right,
+                    color: isDark ? Colors.grey[600] : Colors.grey[400],
+                  ),
+                ],
+              ),
+            ),
+          );
+        },
+      ),
+    );
+  }
+
   Widget _buildDescriptionSection(ProductModel product, bool isDark) {
     return Padding(
       padding: const EdgeInsets.symmetric(horizontal: 16),

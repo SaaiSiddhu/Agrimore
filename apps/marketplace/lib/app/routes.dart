@@ -26,6 +26,7 @@ import '../screens/user/home/search/search_results_screen.dart';
 import '../screens/user/shop/shop_screen.dart';
 import '../screens/user/shop/product_details_screen.dart';
 import '../screens/user/wishlist/wishlist_screen.dart';
+import '../screens/business/business_profile_screen.dart';
 
 // AI Chat
 import '../screens/chat/ai_chat_screen.dart';
@@ -145,6 +146,7 @@ class AppRoutes {
   static const String productDetails = '/product-details';
   static const String productDetail = '/product/:id';
   static const String categoryProducts = '/category/:id';
+  static const String businessProfile = '/business/:id';
   static const String categories = '/categories';
   static const String recentlyViewed = '/recently-viewed';
   static const String deals = '/deals';
@@ -288,6 +290,17 @@ class AppRoutes {
       // ✅ FIXED: Handle /product without ID - redirect to main
       if (settings.name == '/product' || settings.name == '/product/') {
         return _buildRoute(const MainScreen(initialIndex: 0), settings);
+      }
+
+      if (settings.name?.startsWith('/business/') == true) {
+        final sellerId = settings.name!
+            .replaceFirst('/business/', '')
+            .split('?')[0]
+            .split('#')[0];
+        if (sellerId.isNotEmpty && sellerId != ':id') {
+          return _buildRoute(
+              BusinessProfileScreen(sellerId: sellerId), settings);
+        }
       }
 
       if (settings.name?.startsWith('/category/') == true) {
