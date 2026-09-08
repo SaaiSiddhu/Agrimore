@@ -249,8 +249,45 @@ service cloud.firestore {
       match /recently_viewed/{productId} {
         allow read, write: if isOwner(userId);
       }
+
+      // Phase FIX-6B — D-COLLECTION-COVERAGE (owner decision 2026-09-08: all
+      // ten uncovered collections kept). Presumably admin/promo-script
+      // seeded (Admin SDK, bypasses rules) — no client anywhere creates a
+      // scratch card. The only live client mutation (rewards_screen.dart's
+      // claim flow) toggles isScratched only; value-guarded to that one
+      // field so nothing else can be rewritten after issuance.
+      match /scratchCards/{cardId} {
+        allow read: if isOwner(userId);
+        allow create: if false;
+        allow update: if isOwner(userId) &&
+          request.resource.data.diff(resource.data).affectedKeys().hasOnly(['isScratched']);
+        allow delete: if false;
+      }
+
+      // Phase FIX-6B — D-COLLECTION-COVERAGE. A reward-claim log entry
+      // (rewards_screen.dart) — display/history only. The actual balance
+      // field it logs against, users/{uid}.walletBalance, is a SEPARATE,
+      // already-disclosed finding (see the FIX-6B ledger row) — NOT fixed
+      // by this collection's own rule, and out of this phase's own scope.
+      match /transactions/{transactionId} {
+        allow read: if isOwner(userId);
+        allow create: if isOwner(userId);
+        allow update, delete: if false;
+      }
+
+      // Phase FIX-6B — D-COLLECTION-COVERAGE. DISCLOSED, not fixed: the
+      // RecentSearches widget that reads/deletes this is never instantiated
+      // anywhere in apps/marketplace (a dead widget — the actual live
+      // "recent searches" feature is a wholly separate, local
+      // SharedPreferences implementation in mobile_search_screen.dart).
+      // Given a real rules block regardless, mirroring the sibling
+      // addresses/wishlist/cart sub-collections' identical shape, per the
+      // owner's own "keep all ten" decision.
+      match /recent_searches/{searchId} {
+        allow read, write: if isOwner(userId);
+      }
     }
-    
+
     // ============================================
     // PRODUCTS COLLECTION
     // ============================================
@@ -1720,6 +1757,131 @@ service cloud.firestore {
     match /commission_exceptions/{exceptionId} {
       allow read: if isAdmin();
       allow write: if false;
+    }
+
+    // ============================================
+    // SUBSCRIPTIONS COLLECTION (Phase FIX-6B — D-COLLECTION-COVERAGE)
+    // ============================================
+    // Auto-Delivery. Two live client create sites (payment_method_screen.dart's
+    // checkout flow, subscription_setup_screen.dart — a second, apparently
+    // duplicate creation path; both self-attribute userId to the caller's
+    // own uid, confirmed by reading both). Owner's own read
+    // (my_subscriptions_screen.dart) is a `.where('userId', isEqualTo: uid)`
+    // query. The client only ever mutates isActive — both the owner's own
+    // toggle and admin's toggle (subscription_management_screen.dart) —
+    // value-guarded to that one field so nothing else can be rewritten
+    // after creation. Also read by the live, source-less
+    // subscriptionChecker function (Admin SDK, bypasses rules regardless).
+    match /subscriptions/{subscriptionId} {
+      allow read: if isAuthenticated() &&
+        (resource.data.userId == request.auth.uid || isAdmin());
+      allow create: if isAuthenticated() &&
+        request.resource.data.userId == request.auth.uid;
+      allow update: if isAuthenticated() &&
+        (resource.data.userId == request.auth.uid || isAdmin()) &&
+        request.resource.data.diff(resource.data).affectedKeys().hasOnly(['isActive']);
+      allow delete: if isAuthenticated() &&
+        (resource.data.userId == request.auth.uid || isAdmin());
+    }
+
+    // ============================================
+    // SELLER REQUESTS COLLECTION (Phase FIX-6B — D-COLLECTION-COVERAGE)
+    // ============================================
+    // A seller application, pending admin review. Currently carries live
+    // bankName/accountNumber/ifsc fields at application time
+    // (seller_apply_screen.dart, both the marketplace and admin copies, and
+    // apps/seller's own seller_registration_screen.dart) — the SAME PII
+    // class FIX-2 (finding N-2) already locked down for sellers/{uid}
+    // itself. Read is therefore owner-or-admin ONLY, mirroring
+    // seller_payout_details/{uid}'s own established pattern, never
+    // sellers/{uid}'s public one. Create is self-attributed at signup
+    // (status must start 'pending', mirroring the self-apply-writes-
+    // pending-only convention used everywhere else in this file). Update:
+    // admin can change anything (approve/reject); the applicant may
+    // resubmit their OWN still-pending request but can never move status
+    // themselves.
+    match /sellerRequests/{uid} {
+      allow read: if isOwner(uid) || isAdmin();
+      allow create: if isOwner(uid) &&
+        request.resource.data.userId == uid &&
+        request.resource.data.status == 'pending';
+      allow update: if isAdmin() ||
+        (isOwner(uid) &&
+         resource.data.status == 'pending' &&
+         !request.resource.data.diff(resource.data).affectedKeys().hasAny(['status', 'userId']));
+      allow delete: if isAdmin();
+    }
+
+    // ============================================
+    // TRENDING SEARCHES COLLECTION (Phase FIX-6B — D-COLLECTION-COVERAGE)
+    // ============================================
+    // A public, non-sensitive aggregate of search-term popularity.
+    // DISCLOSED (not fixed by this phase): the TrendingSearches widget
+    // that reads this is never instantiated anywhere in apps/marketplace —
+    // a dead widget, not a live feature — but the owner's own decision was
+    // to keep it, so this collection gets a real block regardless, ready
+    // if the widget is ever wired up. No client anywhere writes it.
+    match /trending_searches/{searchId} {
+      allow read: if true;
+      allow write: if false;
+    }
+
+    // ============================================
+    // MASTER PRODUCTS COLLECTION (Phase FIX-6B — D-COLLECTION-COVERAGE)
+    // ============================================
+    // A canonical, admin/script-seeded product reference catalog, searched
+    // read-only by sellers when adding their own product
+    // (seller_product_provider.dart's searchMasterProducts(), called from
+    // apps/seller's add_product_screen.dart). No client anywhere writes it.
+    match /masterProducts/{productId} {
+      allow read: if isAuthenticated();
+      allow write: if false;
+    }
+
+    // ============================================
+    // CENTERS COLLECTION (Phase FIX-6B — D-COLLECTION-COVERAGE)
+    // ============================================
+    // A reference list of distribution/pricing centers, read-only by
+    // sellers (seller_product_provider.dart's loadCenters(), same
+    // add_product_screen.dart flow as masterProducts above). No client
+    // anywhere writes it.
+    match /centers/{centerId} {
+      allow read: if isAuthenticated();
+      allow write: if false;
+    }
+
+    // ============================================
+    // PRODUCT PRICE MAPPINGS COLLECTION (Phase FIX-6B — D-COLLECTION-COVERAGE)
+    // ============================================
+    // Per-seller, per-center price overrides for a master product, doc id
+    // `{masterProductId}_{centerId}_{sellerId}`
+    // (seller_product_provider.dart's _saveCenterPriceMapping(), called
+    // from add_product_screen.dart's add/update flow) — always
+    // self-attributes sellerId to the caller's own uid, confirmed by
+    // reading both call sites. A second, non-seller-suffixed doc id shape
+    // (`{masterProductId}_{centerId}`) is also read (getCenterPrice()) as
+    // a shared, admin/script-seeded base price; the create/update rule
+    // below naturally excludes it from client writes, since a client can
+    // never satisfy sellerId == request.auth.uid on a document with no
+    // sellerId field at all.
+    match /product_price_mappings/{mappingId} {
+      allow read: if isAuthenticated();
+      allow create, update: if isAuthenticated() &&
+        request.resource.data.sellerId == request.auth.uid;
+      allow delete: if false;
+    }
+
+    // ============================================
+    // SUBSCRIPTION PLANS COLLECTION (Phase FIX-6B — D-COLLECTION-COVERAGE)
+    // ============================================
+    // Admin-curated Auto-Delivery plan catalog. DISCLOSED (not fixed by
+    // this phase): apps/marketplace's own subscription-creation flows
+    // (subscription_setup_screen.dart / payment_method_screen.dart) never
+    // reference this collection at all — a customer's frequency is a raw
+    // hardcoded string, not tied to any plan document here. Admin-only,
+    // both read and write, since nothing else touches it.
+    match /subscription_plans/{planId} {
+      allow read, write: if isAdmin();
     }
   }
 }
