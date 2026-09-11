@@ -143,15 +143,38 @@ async function main() {
     // ============================================
     // WORKSTREAM 4c — wallets.referralCode
     // ============================================
+    // Phase FIX-N6F amendment (finding N-6F): the create-time expectation
+    // below FLIPPED. Before FIX-N6F, the client generated referralCode
+    // itself, so "create with a freshly-generated code succeeds" was the
+    // correct contract. Now referralCode is assigned server-side
+    // (assignReferralCode, wallets/{userId}.onCreate) and
+    // walletBalanceFieldsAreZero() requires it to be '' at create — this
+    // scenario now asserts the NEW contract (empty succeeds, nonempty at
+    // create is rejected), and the update-rejection scenario below creates
+    // its own wallet first (with the now-required empty code) so it keeps
+    // testing an update on a doc that genuinely exists.
     {
       const uid = "phase15-rules-user";
       const db = testEnv.authenticatedContext(uid, unprivilegedClaims("w4c@phase15-test.example")).firestore();
       try {
-        await assertSucceeds(db.collection("wallets").doc(uid).set(ZERO_WALLET));
-        results.w4c_wallet_create_with_referral_code_succeeds =
-          "PASSED — creating a wallet doc with a freshly-generated referralCode still succeeds";
+        await assertSucceeds(db.collection("wallets").doc(uid).set({ ...ZERO_WALLET, referralCode: "" }));
+        results.w4c_wallet_create_with_empty_referral_code_succeeds =
+          "PASSED — creating a wallet doc with the now-required empty referralCode succeeds";
       } catch (e) {
-        results.w4c_wallet_create_with_referral_code_succeeds = `FAILED — legitimate wallet creation was rejected: ${e.message}`;
+        results.w4c_wallet_create_with_empty_referral_code_succeeds = `FAILED — legitimate wallet creation was rejected: ${e.message}`;
+      }
+      try {
+        await assertFails(
+          db.collection("wallets").doc("phase15-rules-user-2").set({
+            ...ZERO_WALLET,
+            userId: "phase15-rules-user-2",
+            referralCode: "SQUATTED_AT_CREATE",
+          })
+        );
+        results.w4c_wallet_create_with_nonempty_referral_code_rejected =
+          "PASSED — creating a wallet doc with a client-supplied nonempty referralCode was rejected";
+      } catch (e) {
+        results.w4c_wallet_create_with_nonempty_referral_code_rejected = `FAILED — a client set an arbitrary referralCode at wallet creation: ${e.message} — THIS WOULD BE FINDING N-6F STILL OPEN`;
       }
       try {
         await assertFails(db.collection("wallets").doc(uid).update({ referralCode: "SQUATTED" }));

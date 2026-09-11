@@ -24,6 +24,11 @@ function unprivilegedClaims(email) {
   };
 }
 
+// Phase FIX-N6F amendment (finding N-6F): referralCode changed from a
+// fixed nonempty test value to '' — walletBalanceFieldsAreZero() now
+// requires it to be exactly '' at create time (the real code is assigned
+// server-side afterward by assignReferralCode), so a fixture asserting a
+// LEGITIMATE create must match that contract, not the old one.
 const ZERO_WALLET = {
   userId: "phase9-rules-user",
   balance: 0,
@@ -32,7 +37,7 @@ const ZERO_WALLET = {
   lifetimeSpent: 0,
   lifetimeCoinsEarned: 0,
   lifetimeCoinsUsed: 0,
-  referralCode: "TEST01",
+  referralCode: "",
   referredBy: null,
   referralCount: 0,
   isActive: true,
