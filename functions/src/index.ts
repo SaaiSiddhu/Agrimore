@@ -128,6 +128,11 @@ export {
 } from "./customer/wallet";
 
 // ============================================
+// SCRATCH CARD CLAIM — server-side crediting (Phase FIX-N50, closes N-50)
+// ============================================
+export { claimScratchCard } from "./customer/claimScratchCard";
+
+// ============================================
 // AI MARKETPLACE ASSISTANT — WALLET-GATED BYO KEY CONNECTION (Phase AI-1)
 // ============================================
 export { connectAiProvider, disconnectAiProvider } from "./customer/aiConnection";
