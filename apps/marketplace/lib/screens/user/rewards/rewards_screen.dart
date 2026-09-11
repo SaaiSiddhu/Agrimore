@@ -1,6 +1,8 @@
 import 'package:flutter/material.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:firebase_auth/firebase_auth.dart';
+import 'package:cloud_functions/cloud_functions.dart';
+import 'package:agrimore_ui/agrimore_ui.dart';
 
 class RewardsScreen extends StatefulWidget {
   const RewardsScreen({Key? key}) : super(key: key);
@@ -53,6 +55,13 @@ class _RewardsScreenState extends State<RewardsScreen> {
   List<Map<String, dynamic>> get _pendingCards => _cards.where((c) => c['isScratched'] != true).toList();
   List<Map<String, dynamic>> get _claimedCards => _cards.where((c) => c['isScratched'] == true).toList();
 
+  // Phase FIX-N50 (finding N-50): the claim used to be three separate,
+  // non-transactional client writes -- mark the card scratched, then
+  // read-then-write a client-computed walletBalance (no server validation
+  // of the amount, no atomicity), then log a transaction. All three now
+  // happen atomically server-side via claimScratchCard, which reads the
+  // card's own admin-seeded amount field rather than trusting anything the
+  // client sends.
   Future<void> _handleClaim() async {
     if (_activeCard == null || _claiming) return;
     final uid = FirebaseAuth.instance.currentUser?.uid;
@@ -60,32 +69,26 @@ class _RewardsScreenState extends State<RewardsScreen> {
 
     setState(() => _claiming = true);
     try {
-      final cardRef = FirebaseFirestore.instance
-          .collection('users').doc(uid).collection('scratchCards').doc(_activeCard!['id']);
-      await cardRef.update({'isScratched': true});
-
-      final userRef = FirebaseFirestore.instance.collection('users').doc(uid);
-      final userSnap = await userRef.get();
-      final bal = (userSnap.data()?['walletBalance'] as num?)?.toDouble() ?? 0;
-      final amt = (_activeCard!['amount'] as num?)?.toDouble() ?? 0;
-      await userRef.update({'walletBalance': bal + amt});
-
-      await FirebaseFirestore.instance
-          .collection('users').doc(uid).collection('transactions')
-          .add({
-        'type': 'credit',
-        'title': 'Scratch Card Reward 🎁',
-        'amount': amt,
-        'createdAt': FieldValue.serverTimestamp(),
-        'status': 'success',
-      });
+      await FirebaseFunctions.instance
+          .httpsCallable('claimScratchCard')
+          .call<Map<String, dynamic>>({'cardId': _activeCard!['id']});
 
       setState(() {
         _activeCard = null;
         _scratched = false;
       });
+    } on FirebaseFunctionsException catch (e) {
+      if (mounted) {
+        SnackbarHelper.showError(
+          context,
+          e.message ?? 'Could not claim this reward. Please try again.',
+        );
+      }
     } catch (e) {
       debugPrint('Claim error: $e');
+      if (mounted) {
+        SnackbarHelper.showError(context, 'Could not claim this reward. Please try again.');
+      }
     }
     setState(() => _claiming = false);
   }

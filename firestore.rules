@@ -150,6 +150,12 @@ service cloud.firestore {
         (!changedKeys.hasAny(['sellerStatus']) || d.sellerStatus != 'approved') &&
         (!changedKeys.hasAny(['employeeStatus']) || d.employeeStatus != 'approved') &&
         (!changedKeys.hasAny(['deliveryStatus']) || d.deliveryStatus != 'approved') &&
+        // Phase FIX-N50 (finding N-50): walletBalance is now credited only by
+        // claimScratchCard (Admin SDK, bypasses rules) — the client no longer
+        // writes it directly, so blocking it here does not break the
+        // scratch-card feature the way it would have before that callable
+        // existed.
+        !changedKeys.hasAny(['walletBalance']) &&
         !changedKeys.hasAny([
           'profileCompleted', 'profileCompletedAt', 'phoneVerified',
           'emailVerified', 'email', 'dateOfBirth'
@@ -195,7 +201,13 @@ service cloud.firestore {
         // must never be able to set.
         (!('profileCompleted' in d) || d.profileCompleted == false) &&
         (!('phoneVerified' in d) || d.phoneVerified == false) &&
-        (!('emailVerified' in d) || d.emailVerified == false);
+        (!('emailVerified' in d) || d.emailVerified == false) &&
+        // Phase FIX-N50 (finding N-50): the CREATE-time counterpart to the
+        // update-time walletBalance block above — real signup never sets
+        // this field (grepped UserModel.toMap(), zero references), so
+        // value-guarding it at 0 closes the same hole at account-creation
+        // time with no risk to the real signup write.
+        (!('walletBalance' in d) || d.walletBalance == 0);
     }
 
     match /users/{userId} {
