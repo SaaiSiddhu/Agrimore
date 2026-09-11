@@ -6,7 +6,14 @@
 # Lanes: security · rules · functions · shared (packages/** → five-app analyze) · uiux · feedback · tests · indexes · config · docs · skill · ci
 set -uo pipefail
 if [ "${1:-}" = "--files" ]; then FILES="$(cat "$2")"; else
-  BASE="${1:-develop}"; HEAD="${2:-HEAD}"; FILES="$(git diff --name-only "$BASE".."$HEAD" 2>/dev/null || git diff --name-only "$BASE" "$HEAD")"; fi
+  BASE="${1:-develop}"; HEAD="${2:-HEAD}"
+  FILES="$(git diff --name-only "$BASE".."$HEAD" 2>/dev/null)"; status=$?
+  if [ $status -ne 0 ]; then FILES="$(git diff --name-only "$BASE" "$HEAD" 2>&1)"; status=$?; fi
+  if [ $status -ne 0 ]; then
+    echo "surface.sh: git diff failed for base='$BASE' head='$HEAD' — not a valid ref pair, so this is NOT a real \"no changed files\" result: $FILES" >&2
+    exit 1
+  fi
+fi
 LANES=""   # bash 3.2 on macOS: no associative arrays
 lane() { case " $LANES " in *" $1 "*) ;; *) LANES="$LANES $1";; esac; }
 add() { out="${out:+$out,}$1"; lane "$1"; }
@@ -29,6 +36,7 @@ while IFS= read -r f; do [ -z "$f" ] && continue; out=""
     packages/agrimore_core/lib/models/order_model.dart|packages/agrimore_core/lib/models/employee_model.dart|packages/agrimore_core/lib/models/product_credit_*|packages/agrimore_core/lib/models/benefit_*|\
     apps/*/lib/providers/*auth*|apps/*/lib/providers/*wallet*|apps/*/lib/providers/*order*|apps/*/lib/providers/*cart*|apps/*/lib/providers/*payment*|apps/*/lib/providers/*employee*|apps/*/lib/providers/*credit*|\
     apps/*/lib/services/*|apps/*/lib/screens/*/checkout/*|apps/*/lib/screens/*/cart/*|apps/*/lib/screens/*/wallet/*|apps/*/lib/screens/auth/*|apps/*/lib/screens/*/onboarding/*|apps/*/lib/screens/employee/*|\
+    apps/*/lib/screens/admin/sellers/*|apps/*/lib/screens/profile/*|\
     apps/*/pubspec.yaml|packages/*/pubspec.yaml|apps/*/android/app/build.gradle.kts|apps/*/android/app/src/main/AndroidManifest.xml|apps/*/web/index.html|\
     .env.example|.gitignore|.github/*|.claude/settings*.json)
       add security;;
