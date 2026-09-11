@@ -125,6 +125,7 @@ export {
   redeemReferralCode,
   creditSignupBonus,
   completeReferralOnFirstDelivery,
+  assignReferralCode,
 } from "./customer/wallet";
 
 // ============================================
