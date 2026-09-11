@@ -85,9 +85,9 @@ class _PartnerRegistrationScreenState extends State<PartnerRegistrationScreen> {
     }
   }
 
-  Future<String?> _uploadImage(XFile file, String folder) async {
+  Future<String?> _uploadImage(String uid, XFile file, String label) async {
     try {
-      final ref = FirebaseStorage.instance.ref().child('delivery_partners/$folder/${DateTime.now().millisecondsSinceEpoch}_${file.name}');
+      final ref = FirebaseStorage.instance.ref().child('delivery_documents/$uid/${label}_${DateTime.now().millisecondsSinceEpoch}_${file.name}');
       await ref.putFile(File(file.path));
       return await ref.getDownloadURL();
     } catch (e) {
@@ -95,10 +95,10 @@ class _PartnerRegistrationScreenState extends State<PartnerRegistrationScreen> {
       return null;
     }
   }
-  
+
   Future<void> _submitRegistration() async {
     if (!_formKey.currentState!.validate()) return;
-    
+
     // Check required images
     if (_aadhaarFront == null || _aadhaarBack == null || _selfie == null || _licenseImage == null) {
       ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text('Please upload all required images')));
@@ -107,20 +107,31 @@ class _PartnerRegistrationScreenState extends State<PartnerRegistrationScreen> {
 
     setState(() => _isLoading = true);
 
-    try {
-      // 1. Upload all images
-      final aadhaarFrontUrl = await _uploadImage(_aadhaarFront!, 'aadhaar_front');
-      final aadhaarBackUrl = await _uploadImage(_aadhaarBack!, 'aadhaar_back');
-      final selfieUrl = await _uploadImage(_selfie!, 'selfies');
-      final licenseUrl = await _uploadImage(_licenseImage!, 'license');
+    // Created as soon as step 1 below succeeds; used by the catch block to roll
+    // back an orphaned auth account if anything after it fails, so a failed
+    // registration never blocks that email from a clean retry.
+    UserCredential? credential;
 
-      // 2. Create Firebase Auth User
-      final credential = await FirebaseAuth.instance.createUserWithEmailAndPassword(
+    try {
+      // 1. Create the Firebase Auth account FIRST. delivery_documents/{userId}/{fileName}
+      // (storage.rules) requires request.auth.uid == userId, so a real, owner-scoped
+      // upload is only possible once this account exists.
+      credential = await FirebaseAuth.instance.createUserWithEmailAndPassword(
         email: _emailController.text.trim(),
         password: _passwordController.text.trim(),
       );
-      
+
       final uid = credential.user!.uid;
+
+      // 2. Upload all images to the now-owner-scoped, storage.rules-covered path.
+      final aadhaarFrontUrl = await _uploadImage(uid, _aadhaarFront!, 'aadhaar_front');
+      final aadhaarBackUrl = await _uploadImage(uid, _aadhaarBack!, 'aadhaar_back');
+      final selfieUrl = await _uploadImage(uid, _selfie!, 'selfies');
+      final licenseUrl = await _uploadImage(uid, _licenseImage!, 'license');
+
+      if (aadhaarFrontUrl == null || aadhaarBackUrl == null || selfieUrl == null || licenseUrl == null) {
+        throw Exception('One or more document uploads failed. Please try again.');
+      }
 
       // 3. Create UserModel entry
       final userModel = UserModel(
@@ -187,6 +198,18 @@ class _PartnerRegistrationScreenState extends State<PartnerRegistrationScreen> {
       );
 
     } catch (e) {
+      // A failure anywhere after account creation (upload, Firestore write) must not
+      // leave an orphaned auth account behind -- that would silently block this email
+      // from ever registering again. The account is fresh, so delete() needs no
+      // reauthentication.
+      if (credential?.user != null) {
+        try {
+          await credential!.user!.delete();
+        } catch (_) {}
+        try {
+          await FirebaseAuth.instance.signOut();
+        } catch (_) {}
+      }
       if (!mounted) return;
       ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text('Error: $e')));
     } finally {
