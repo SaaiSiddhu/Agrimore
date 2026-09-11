@@ -1351,7 +1351,16 @@ service cloud.firestore {
         request.resource.data.lifetimeCoinsUsed == 0 &&
         request.resource.data.referralCount == 0 &&
         request.resource.data.referredBy == null &&
-        request.resource.data.signupBonusCredited == false;
+        request.resource.data.signupBonusCredited == false &&
+        // Phase FIX-N6F (finding N-6F): the client-generated code was not
+        // just tamperable but genuinely collision-prone for two entirely
+        // honest users (name prefix + a 2-digit userId.hashCode reduction —
+        // only 100 values per prefix). Generation moved server-side
+        // (assignReferralCode, wallets/{userId}.onCreate, Admin SDK,
+        // bypasses this rule) with a real uniqueness check; the client must
+        // now create with an empty code and let the trigger assign the
+        // real one.
+        request.resource.data.referralCode == '';
     }
 
     // Phase 15, Workstream 4c fix: `referralCode` added — it was absent from

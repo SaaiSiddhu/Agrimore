@@ -129,16 +129,21 @@ class WalletProvider with ChangeNotifier {
       if (doc.exists) {
         _wallet = WalletModel.fromFirestore(doc);
       } else {
-        // Create new wallet for user with personalized referral code. This
-        // document creation itself stays client-side — firestore.rules only
-        // allows it when every balance-bearing field is at its zero starting
-        // value (WalletModel.empty()'s exact shape), so it carries no
-        // self-credit risk. The signup bonus itself is a real balance
-        // mutation (coins/lifetimeCoinsEarned), so it's credited by the
-        // creditSignupBonus callable instead of a direct client write, which
-        // firestore.rules would now reject anyway.
-        final userName = _auth.currentUser?.displayName;
-        _wallet = WalletModel.empty(userId, userName: userName);
+        // Create new wallet for user. This document creation itself stays
+        // client-side — firestore.rules only allows it when every
+        // balance-bearing field is at its zero starting value
+        // (WalletModel.empty()'s exact shape, referralCode included), so it
+        // carries no self-credit risk. The signup bonus itself is a real
+        // balance mutation (coins/lifetimeCoinsEarned), so it's credited by
+        // the creditSignupBonus callable instead of a direct client write,
+        // which firestore.rules would now reject anyway.
+        //
+        // Phase FIX-N6F: referralCode is no longer generated here — it's
+        // assigned server-side (assignReferralCode trigger) once this
+        // document lands, with a real uniqueness check. The listener this
+        // method sets up right after (below) picks up the assigned code
+        // automatically.
+        _wallet = WalletModel.empty(userId);
         await _firestore
             .collection('wallets')
             .doc(userId)

@@ -52,9 +52,21 @@ class WalletModel {
     return min(coins, maxAllowed);
   }
 
-  /// Create empty wallet for new user
-  /// Pass userName to generate personalized referral code (NAME + 2 digits)
-  factory WalletModel.empty(String userId, {String? userName}) {
+  /// Create empty wallet for new user.
+  ///
+  /// Phase FIX-N6F (finding N-6F): referralCode used to be generated HERE,
+  /// client-side — a <4-char name prefix><2-digit userId.hashCode % 100>
+  /// scheme that was not just tamperable but genuinely collision-prone for
+  /// two entirely honest users (only 100 values per prefix, and
+  /// String.hashCode has no cross-version/cross-platform stability
+  /// guarantee). firestore.rules now requires this field to be exactly ''
+  /// at create time; the real code is assigned by the new
+  /// assignReferralCode trigger (functions/src/customer/wallet.ts,
+  /// wallets/{userId}.onCreate) the moment this document lands, with a real
+  /// uniqueness check. The caller's own existing wallets/{uid}.snapshots()
+  /// listener (wallet_provider.dart) picks it up automatically — no new
+  /// client-side waiting logic needed.
+  factory WalletModel.empty(String userId) {
     final now = DateTime.now();
     return WalletModel(
       id: userId,
@@ -65,7 +77,7 @@ class WalletModel {
       lifetimeSpent: 0,
       lifetimeCoinsEarned: 0,
       lifetimeCoinsUsed: 0,
-      referralCode: _generateReferralCode(userId, userName),
+      referralCode: '',
       referredBy: null,
       referralCount: 0,
       isActive: true,
@@ -73,19 +85,6 @@ class WalletModel {
       updatedAt: now,
       signupBonusCredited: false,
     );
-  }
-
-  /// Generate unique referral code: First 4 letters of name + 2 digit sequence
-  static String _generateReferralCode(String userId, String? userName) {
-    String namePrefix = 'AGRI';
-    if (userName != null && userName.isNotEmpty) {
-      // Get first 4 letters of name (no spaces)
-      final cleanName = userName.replaceAll(' ', '').toUpperCase();
-      namePrefix = cleanName.length >= 4 ? cleanName.substring(0, 4) : cleanName.padRight(4, 'X');
-    }
-    // Get 2 digit sequence from user ID hash
-    final sequence = (userId.hashCode.abs() % 100).toString().padLeft(2, '0');
-    return '$namePrefix$sequence';
   }
 
   /// Create from Firestore document
