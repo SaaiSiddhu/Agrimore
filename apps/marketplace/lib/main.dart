@@ -97,10 +97,6 @@ void main() async {
       FirebaseFunctions.instance
           .useFunctionsEmulator(_firebaseEmulatorHost, _functionsEmulatorPort);
     }
-    // Phase 17, Workstream 2: monitoring mode only — see
-    // AppCheckService's header comment. Never blocks startup.
-    await AppCheckService.activate();
-
     // Phase M2: real crash reporting. Debug builds stay silent — kReleaseMode is
     // the actual gate (not the native ENABLE_CRASHLYTICS BuildConfig field in
     // android/app/build.gradle.kts, which Dart code cannot read without a
@@ -189,6 +185,19 @@ void main() async {
   } else {
     _initializeDeferredMobileServices();
   }
+
+  // PERF-1: fire-and-forget, deliberately NOT awaited and NOT placed before
+  // runApp() above. This used to be `await`ed inside the try block before
+  // runApp — on a release build it activates Play Integrity (Android) /
+  // App Attest (iOS), a network attestation round-trip with fixed latency
+  // that held the app's very first frame behind it (nothing can render
+  // before runApp is called), which is what produced "stuck after the
+  // native splash screen" regardless of connection speed. App Check is
+  // monitoring-only here (see AppCheckService's header comment — no
+  // `enforceAppCheck` anywhere), so nothing downstream needs to wait on it;
+  // AppCheckService.activate() already swallows its own errors internally,
+  // so no additional error handling is needed at this call site.
+  AppCheckService.activate();
 }
 
 // Whether the user has already been shown the in-app "Enable Notifications"
