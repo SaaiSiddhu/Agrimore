@@ -2,6 +2,7 @@ import 'package:cloud_functions/cloud_functions.dart';
 import 'package:firebase_auth/firebase_auth.dart';
 import 'package:flutter/foundation.dart' show kIsWeb;
 import 'package:flutter/material.dart';
+import 'package:url_launcher/url_launcher.dart';
 
 import 'package:agrimore_ui/agrimore_ui.dart';
 
@@ -11,12 +12,24 @@ import 'package:agrimore_ui/agrimore_ui.dart';
 // (Play-safety, D2). This screen's own payment button is ALSO kIsWeb-gated
 // below — belt and suspenders, not either/or.
 import '../../../../services/razorpay_web.dart' if (dart.library.io) '../../../../services/razorpay_stub.dart';
+import '../../../../app/routes.dart' show AppRoutes;
 import 'onboarding_fee_text.dart';
 
 Map<String, dynamic>? _asMap(dynamic v) => v is Map<String, dynamic> ? v : null;
 String _asString(dynamic v) => v is String ? v : '';
 
-enum _PaymentPhase { idle, creatingOrder, awaitingModal, verifying, activating, moneyTakenNotActivated, error }
+enum _PaymentPhase {
+  idle,
+  creatingOrder,
+  awaitingModal,
+  verifying,
+  activating,
+  moneyTakenNotActivated,
+  error,
+  // Phase ONBOARD-1 — mobile-only: minting the handoff code before opening
+  // the external browser.
+  creatingHandoff,
+}
 
 /// Phase 16B-2, Workstream 3 — the ₹500 payment step.
 ///
@@ -51,7 +64,8 @@ class _OnboardingPaymentStepState extends State<OnboardingPaymentStep> {
       _phase == _PaymentPhase.creatingOrder ||
       _phase == _PaymentPhase.awaitingModal ||
       _phase == _PaymentPhase.verifying ||
-      _phase == _PaymentPhase.activating;
+      _phase == _PaymentPhase.activating ||
+      _phase == _PaymentPhase.creatingHandoff;
 
   @override
   void dispose() {
@@ -144,6 +158,55 @@ class _OnboardingPaymentStepState extends State<OnboardingPaymentStep> {
       userPhone: user.phoneNumber ?? '',
       description: 'AgriMore Sales Associate — One-Time Onboarding Fee',
     );
+  }
+
+  /// Phase ONBOARD-1 — mobile-only. Mints a short-lived, single-use handoff
+  /// code and opens it in the phone's SYSTEM browser (never an in-app
+  /// WebView — `LaunchMode.externalApplication`, the same idiom already
+  /// used for payment/maps links elsewhere in this app), landing the
+  /// visitor on the exact same onboarding page, already signed in.
+  Future<void> _startWebHandoff() async {
+    if (kIsWeb) return; // defense-in-depth, mirrors _startPayment's own guard
+    setState(() {
+      _phase = _PaymentPhase.creatingHandoff;
+      _errorMessage = null;
+    });
+
+    try {
+      final result = await FirebaseFunctions.instance
+          .httpsCallable('createOnboardingWebHandoff')
+          .call<Map<String, dynamic>>();
+      final code = _asString(result.data['code']);
+      if (code.isEmpty) {
+        throw Exception('empty handoff code');
+      }
+
+      final uri = Uri.parse('${AppRoutes.baseUrl}${AppRoutes.associateOnboarding}?handoff=$code');
+      final launched =
+          await canLaunchUrl(uri) && await launchUrl(uri, mode: LaunchMode.externalApplication);
+
+      if (!mounted) return;
+      if (!launched) {
+        setState(() {
+          _phase = _PaymentPhase.error;
+          _errorMessage = 'Could not open the browser. Please visit agrimore.in manually and sign in to continue.';
+        });
+        return;
+      }
+      setState(() => _phase = _PaymentPhase.idle);
+    } on FirebaseFunctionsException catch (e) {
+      if (!mounted) return;
+      setState(() {
+        _phase = _PaymentPhase.error;
+        _errorMessage = e.message ?? 'Could not open the payment page. Please try again.';
+      });
+    } catch (e) {
+      if (!mounted) return;
+      setState(() {
+        _phase = _PaymentPhase.error;
+        _errorMessage = 'Could not open the payment page. Please try again.';
+      });
+    }
   }
 
   /// The Razorpay modal reporting success is NEVER, by itself, treated as
@@ -239,28 +302,63 @@ class _OnboardingPaymentStepState extends State<OnboardingPaymentStep> {
     final ctaLabel = feeText != null ? 'Complete Registration — $feeText' : 'Complete Registration';
     final ctaSubtext = _asString(summary?['ctaSubtext']);
 
-    // D2 / Workstream 3c — the payment surface itself does not exist on a
-    // non-web build. This branch is the ONLY thing rendered on mobile; no
-    // payment button, no code path that can initiate a charge.
+    // D2 / Workstream 3c — the Razorpay payment surface itself still never
+    // exists on a non-web build (no in-app charge is ever possible here).
+    // Phase ONBOARD-1: mobile instead gets a real button that opens the
+    // SAME onboarding page in the phone's external browser, already
+    // signed in, via a one-time handoff code — see _startWebHandoff.
     if (!kIsWeb) {
+      final handoffCtaLabel = feeText != null ? 'Pay $feeText on Web' : 'Pay Onboarding Fee on Web';
       return Container(
-        padding: const EdgeInsets.all(16),
+        padding: const EdgeInsets.all(18),
         decoration: BoxDecoration(
-          color: const Color(0xFFEFF6FF),
-          borderRadius: BorderRadius.circular(14),
-          border: Border.all(color: const Color(0xFFBFDBFE)),
+          color: Colors.white,
+          borderRadius: BorderRadius.circular(16),
+          border: Border.all(color: const Color(0xFFE5E7EB)),
         ),
-        child: const Row(
+        child: Column(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
-            Icon(Icons.laptop_mac_rounded, color: Color(0xFF1D4ED8)),
-            SizedBox(width: 10),
-            Expanded(
-              child: Text(
-                'Your details are saved. Please complete the one-time onboarding '
-                'fee on the AgriMore website (agrimore.in) — the app does not '
-                'process this payment.',
-                style: TextStyle(color: Color(0xFF1E3A8A), fontSize: 13, height: 1.4, fontWeight: FontWeight.w600),
+            const Text('Complete your registration', style: TextStyle(fontWeight: FontWeight.w800, fontSize: 16)),
+            const SizedBox(height: 6),
+            const Text(
+              'This opens agrimore.in in your browser, already signed in, to '
+              'complete the one-time onboarding fee securely.',
+              style: TextStyle(fontSize: 12, color: Color(0xFF6B7280), height: 1.4),
+            ),
+            if (_phase == _PaymentPhase.error && _errorMessage != null) ...[
+              const SizedBox(height: 10),
+              Container(
+                padding: const EdgeInsets.all(10),
+                decoration: BoxDecoration(color: const Color(0xFFFEE2E2), borderRadius: BorderRadius.circular(8)),
+                child: Text(_errorMessage!, style: const TextStyle(color: Color(0xFF991B1B), fontSize: 12)),
+              ),
+            ],
+            const SizedBox(height: 14),
+            SizedBox(
+              width: double.infinity,
+              child: ElevatedButton(
+                onPressed: _busy ? null : _startWebHandoff,
+                style: ElevatedButton.styleFrom(
+                  backgroundColor: AppColors.primary,
+                  disabledBackgroundColor: AppColors.primary.withValues(alpha: 0.5),
+                  padding: const EdgeInsets.symmetric(vertical: 14),
+                  shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(10)),
+                ),
+                child: _busy
+                    ? Row(
+                        mainAxisAlignment: MainAxisAlignment.center,
+                        children: [
+                          const SizedBox(
+                            width: 18,
+                            height: 18,
+                            child: CircularProgressIndicator(strokeWidth: 2.5, color: Colors.white),
+                          ),
+                          const SizedBox(width: 10),
+                          Text(_phaseLabel(), style: const TextStyle(color: Colors.white, fontWeight: FontWeight.w700)),
+                        ],
+                      )
+                    : Text(handoffCtaLabel, style: const TextStyle(color: Colors.white, fontWeight: FontWeight.w700)),
               ),
             ),
           ],
@@ -337,6 +435,7 @@ class _OnboardingPaymentStepState extends State<OnboardingPaymentStep> {
       _PaymentPhase.awaitingModal => 'Opening payment…',
       _PaymentPhase.verifying => 'Verifying payment…',
       _PaymentPhase.activating => 'Activating your account…',
+      _PaymentPhase.creatingHandoff => 'Opening browser…',
       _ => 'Please wait…',
     };
   }
