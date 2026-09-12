@@ -6,11 +6,13 @@ import 'package:shimmer/shimmer.dart';
 
 import 'package:agrimore_ui/agrimore_ui.dart';
 import 'package:agrimore_core/agrimore_core.dart';
+import 'package:agrimore_services/agrimore_services.dart';
 import '../../../providers/category_provider.dart';
 import '../../../providers/product_provider.dart';
 import '../../../providers/cart_provider.dart';
 import '../../../providers/theme_provider.dart';
 import '../../../app/routes.dart';
+import 'widgets/category_content_sections.dart';
 
 /// Premium Quick Commerce Style Categories Screen
 /// Enhanced with Blinkit/Zepto-inspired design patterns
@@ -34,8 +36,10 @@ class _CategoriesScreenState extends State<CategoriesScreen>
   int _selectedIndex = 0;
   String _searchQuery = '';
   bool _isSearching = false;
+  String? _selectedSubcategoryId; // null = the "All" chip
   final TextEditingController _searchController = TextEditingController();
   final FocusNode _searchFocusNode = FocusNode();
+  final AnalyticsService _analytics = AnalyticsService();
 
   late AnimationController _staggerController;
   late AnimationController _searchAnimController;
@@ -52,6 +56,7 @@ class _CategoriesScreenState extends State<CategoriesScreen>
       duration: const Duration(milliseconds: 250),
     );
     _loadCategories();
+    _analytics.logScreenView(screenName: 'categories');
   }
 
   @override
@@ -94,9 +99,30 @@ class _CategoriesScreenState extends State<CategoriesScreen>
         _searchQuery = '';
         _searchController.clear();
         _isSearching = false;
+        _selectedSubcategoryId = null;
       });
       _staggerController.forward(from: 0.0);
+      final categoryProvider =
+          Provider.of<CategoryProvider>(context, listen: false);
+      final mainCategories =
+          categoryProvider.categories.where((c) => c.isMainCategory).toList();
+      if (index < mainCategories.length) {
+        _analytics.logCustomEvent(
+          name: 'category_selected',
+          parameters: {'category_id': mainCategories[index].id},
+        );
+      }
     }
+  }
+
+  void _onSubcategoryChipSelected(String? subcategoryId) {
+    if (_selectedSubcategoryId == subcategoryId) return;
+    HapticFeedback.selectionClick();
+    setState(() => _selectedSubcategoryId = subcategoryId);
+    _analytics.logCustomEvent(
+      name: 'category_chip_selected',
+      parameters: {'subcategory_id': subcategoryId ?? 'all'},
+    );
   }
 
   void _toggleSearch() {
@@ -366,7 +392,47 @@ class _CategoriesScreenState extends State<CategoriesScreen>
             ),
           ),
 
-          // Subcategory image grid
+          // Hero banner — admin-controlled (category.bannerImageUrl); renders
+          // nothing when the category has none configured.
+          SliverToBoxAdapter(
+            child: Padding(
+              padding: const EdgeInsets.fromLTRB(10, 10, 10, 0),
+              child: CategoryHeroBanner(
+                category: category,
+                isDark: isDark,
+                accentColor: accentColor,
+                onShopNow: () {
+                  _analytics.logCustomEvent(
+                    name: 'category_banner_clicked',
+                    parameters: {'category_id': category.id},
+                  );
+                  AppRoutes.navigateToCategoryProducts(
+                    context,
+                    category.id,
+                    categoryName: category.name,
+                  );
+                },
+              ),
+            ),
+          ),
+
+          // Filter chips — "All" + the selected category's direct
+          // subcategories; narrows the product grid below in place.
+          if (subcategories.isNotEmpty)
+            SliverToBoxAdapter(
+              child: Padding(
+                padding: const EdgeInsets.fromLTRB(10, 10, 10, 0),
+                child: CategoryFilterChips(
+                  subcategories: subcategories,
+                  selectedId: _selectedSubcategoryId,
+                  onSelect: _onSubcategoryChipSelected,
+                  isDark: isDark,
+                  accentColor: accentColor,
+                ),
+              ),
+            ),
+
+          // Subcategory image grid ("Shop by Category")
           if (subcategories.isNotEmpty)
             SliverToBoxAdapter(
               child: Padding(
@@ -378,6 +444,35 @@ class _CategoriesScreenState extends State<CategoriesScreen>
                 ),
               ),
             ),
+
+          // Popular Picks — featured products in the current scope, falling
+          // back to a short plain slice when none are marked featured yet.
+          SliverToBoxAdapter(
+            child: Padding(
+              padding: const EdgeInsets.fromLTRB(10, 6, 10, 6),
+              child: Consumer<ProductProvider>(
+                builder: (context, productProvider, _) {
+                  final scoped =
+                      _getFilteredProducts(productProvider, category, allCategories);
+                  final popular = scoped.where((p) => p.isFeatured).toList();
+                  final picks = (popular.isNotEmpty ? popular : scoped)
+                      .take(8)
+                      .toList();
+                  return PopularPicksSection(
+                    isDark: isDark,
+                    cards: [
+                      for (final product in picks)
+                        _AdvancedProductCard(
+                          product: product,
+                          isDark: isDark,
+                          accentColor: accentColor,
+                        ),
+                    ],
+                  );
+                },
+              ),
+            ),
+          ),
 
           // Search Results Count
           if (_searchQuery.isNotEmpty)
@@ -420,8 +515,18 @@ class _CategoriesScreenState extends State<CategoriesScreen>
     CategoryModel category,
     List<CategoryModel> allCategories,
   ) {
+    // A selected filter chip narrows to one direct subcategory instead of
+    // the whole top-level category; "All" (null) keeps the original scope.
+    CategoryModel scopeCategory = category;
+    if (_selectedSubcategoryId != null) {
+      final chipCategory = allCategories
+          .where((c) => c.id == _selectedSubcategoryId)
+          .firstOrNull;
+      if (chipCategory != null) scopeCategory = chipCategory;
+    }
+
     var products = productProvider.products
-        .where((p) => productBelongsToCategory(p, category, allCategories))
+        .where((p) => productBelongsToCategory(p, scopeCategory, allCategories))
         .toList();
 
     if (_searchQuery.isNotEmpty) {
@@ -1138,7 +1243,7 @@ class _PremiumSubcategoryGrid extends StatelessWidget {
         Row(
           children: [
             Text(
-              'Subcategories',
+              'Shop by Category',
               style: TextStyle(
                 color: isDark ? Colors.white : Colors.black87,
                 fontSize: 13,
