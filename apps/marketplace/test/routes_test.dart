@@ -27,6 +27,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
 
 import 'package:agrimore_marketplace/app/routes.dart';
+import 'package:agrimore_marketplace/screens/employee/onboarding/associate_onboarding_screen.dart';
 import 'package:agrimore_marketplace/screens/not_found_screen.dart';
 import 'package:agrimore_marketplace/screens/user/orders/order_details_screen.dart';
 import 'package:agrimore_marketplace/screens/user/shop/product_details_screen.dart';
@@ -201,6 +202,57 @@ void main() {
       final widget = await resolve(tester, '/category/CAT-7');
       expect(widget, isA<ShopScreen>());
       expect((widget as ShopScreen).categoryId, 'CAT-7');
+    });
+  });
+
+  group('ONBOARD-1 guard — associate onboarding web handoff query string', () {
+    testWidgets(
+        'the bare path (no query string) still resolves to '
+        'AssociateOnboardingScreen with a null handoffCode — the pre-existing, '
+        'exact-match case in the switch. If this fails, ordinary in-app '
+        'navigation to Profile → "Become a Sales Associate" is broken.',
+        (tester) async {
+      final widget = await resolve(tester, AppRoutes.associateOnboarding);
+      expect(widget, isA<AssociateOnboardingScreen>());
+      expect((widget as AssociateOnboardingScreen).handoffCode, isNull);
+    });
+
+    testWidgets(
+        'ONBOARD-1: a `?handoff=<code>` query string resolves to '
+        'AssociateOnboardingScreen with that code. Dart\'s switch only matches '
+        'the bare path by exact equality, so this exercises the dedicated '
+        'default-branch parsing added for the mobile-to-web handoff button — '
+        'if this regresses to NotFoundScreen, the button leads to a 404 for '
+        'every visitor.', (tester) async {
+      final widget = await resolve(
+        tester,
+        '${AppRoutes.associateOnboarding}?handoff=abc123',
+      );
+      expect(widget, isA<AssociateOnboardingScreen>());
+      expect((widget as AssociateOnboardingScreen).handoffCode, 'abc123');
+    });
+
+    testWidgets(
+        'a query string present but with no `handoff` key resolves with a '
+        'null handoffCode, not a crash', (tester) async {
+      final widget = await resolve(
+        tester,
+        '${AppRoutes.associateOnboarding}?other=xyz',
+      );
+      expect(widget, isA<AssociateOnboardingScreen>());
+      expect((widget as AssociateOnboardingScreen).handoffCode, isNull);
+    });
+
+    testWidgets(
+        'an empty `handoff=` value resolves with an empty-string handoffCode, '
+        'not null — the screen itself treats empty the same as absent before '
+        'attempting redemption', (tester) async {
+      final widget = await resolve(
+        tester,
+        '${AppRoutes.associateOnboarding}?handoff=',
+      );
+      expect(widget, isA<AssociateOnboardingScreen>());
+      expect((widget as AssociateOnboardingScreen).handoffCode, '');
     });
   });
 

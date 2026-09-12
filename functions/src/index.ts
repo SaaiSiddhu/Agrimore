@@ -211,6 +211,10 @@ export { activateAssociateOnboarding } from "./employee/activateAssociateOnboard
 export { razorpayOnboardingWebhook } from "./employee/razorpayOnboardingWebhook";
 export { reconcileStaleOnboardingPayments } from "./employee/reconcileStaleOnboardingPayments";
 export {
+  createOnboardingWebHandoff,
+  redeemOnboardingWebHandoff,
+} from "./employee/onboardingWebHandoff";
+export {
   waiveAssociateOnboardingFee,
   recordAssociateOnboardingRefund,
   requestAssociateOnboardingRefundOnSuspend,

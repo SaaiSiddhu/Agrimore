@@ -673,6 +673,17 @@ class AppRoutes {
               return _buildRoute(SearchResultsScreen(query: query), settings);
             }
           }
+          // Phase ONBOARD-1: the ₹500 onboarding page carrying a
+          // `?handoff=<code>` query string (opened from the mobile app's
+          // external-browser handoff button) -- `case associateOnboarding:`
+          // above only matches the bare path, since Dart's switch is exact
+          // string equality. Mirrors the `/search?` special case above.
+          if (settings.name?.startsWith('$associateOnboarding?') == true) {
+            final uri = Uri.parse(settings.name!);
+            final handoffCode = uri.queryParameters['handoff'];
+            return _buildRoute(
+                AssociateOnboardingScreen(handoffCode: handoffCode), settings);
+          }
           return _buildErrorRoute(
               'No route defined for ${settings.name}', settings);
       }

@@ -1,5 +1,7 @@
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:cloud_functions/cloud_functions.dart';
+import 'package:firebase_auth/firebase_auth.dart';
+import 'package:flutter/foundation.dart' show kIsWeb;
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 
@@ -40,7 +42,11 @@ import 'widgets/onboarding_confirmation_step.dart';
 /// (one tap from Profile → "Become a Sales Associate", per Workstream 1h)
 /// lands on the correct next step automatically, never back at square one.
 class AssociateOnboardingScreen extends StatefulWidget {
-  const AssociateOnboardingScreen({super.key});
+  // Phase ONBOARD-1: present only when this page was opened via the mobile
+  // app's "Pay on Web" handoff button (routes.dart parses it off the URL's
+  // `?handoff=` query string). Null on every normal, direct visit.
+  final String? handoffCode;
+  const AssociateOnboardingScreen({super.key, this.handoffCode});
 
   @override
   State<AssociateOnboardingScreen> createState() =>
@@ -54,11 +60,37 @@ class _AssociateOnboardingScreenState
   _LoadState _loadState = _LoadState.loading;
   Map<String, dynamic>? _config;
   String? _loadError;
+  bool _handoffAttempted = false;
 
   @override
   void initState() {
     super.initState();
+    _tryRedeemHandoff();
     _loadConfig();
+  }
+
+  /// Phase ONBOARD-1 — a code past this point is worthless (server-side
+  /// single-use, transactionally enforced), so any failure here is silent:
+  /// the visitor simply lands on the ordinary signed-out "Sign In" prompt
+  /// this page already shows, never a dead end. Never overwrites an
+  /// ALREADY signed-in session (e.g. a page reload after redeeming once).
+  Future<void> _tryRedeemHandoff() async {
+    if (_handoffAttempted) return;
+    final code = widget.handoffCode;
+    if (!kIsWeb || code == null || code.isEmpty) return;
+    if (FirebaseAuth.instance.currentUser != null) return;
+    _handoffAttempted = true;
+    try {
+      final result = await FirebaseFunctions.instance
+          .httpsCallable('redeemOnboardingWebHandoff')
+          .call<Map<String, dynamic>>({'code': code});
+      final token = result.data['customToken'];
+      if (token is String && token.isNotEmpty) {
+        await FirebaseAuth.instance.signInWithCustomToken(token);
+      }
+    } catch (e) {
+      debugPrint('Onboarding handoff redemption failed: $e');
+    }
   }
 
   /// Workstream 1e — network/error resilience with a retry affordance, no
