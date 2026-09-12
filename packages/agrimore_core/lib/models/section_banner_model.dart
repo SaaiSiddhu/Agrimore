@@ -3,6 +3,9 @@ import 'package:cloud_firestore/cloud_firestore.dart';
 /// Model for carousel banners that appear between product sections
 /// All text fields are optional - can upload just an image
 class SectionBannerModel {
+  static const String pageScopeHome = 'HOME';
+  static const String pageScopeCategories = 'CATEGORIES';
+
   final String id;
   final String imageUrl;
   final String? title;              // Optional overlay title
@@ -11,6 +14,7 @@ class SectionBannerModel {
   final String? buttonText;         // Optional - defaults to "Shop now"
   final int position;               // Display order (1, 2, 3...)
   final int displayAfterSection;    // Show after which product section (1-indexed)
+  final String pageScope;           // Which screen this banner is eligible on
   final bool isActive;
   final bool showAdBadge;           // Show "Ad" label
   final DateTime createdAt;
@@ -25,6 +29,7 @@ class SectionBannerModel {
     this.buttonText,
     this.position = 0,
     this.displayAfterSection = 1,
+    this.pageScope = pageScopeHome,
     this.isActive = true,
     this.showAdBadge = false,
     required this.createdAt,
@@ -77,9 +82,10 @@ class SectionBannerModel {
       position: data['position'] is int 
           ? data['position'] as int 
           : int.tryParse((data['position'] ?? '0').toString()) ?? 0,
-      displayAfterSection: data['displayAfterSection'] is int 
-          ? data['displayAfterSection'] as int 
+      displayAfterSection: data['displayAfterSection'] is int
+          ? data['displayAfterSection'] as int
           : int.tryParse((data['displayAfterSection'] ?? '1').toString()) ?? 1,
+      pageScope: (data['pageScope'] ?? pageScopeHome).toString(),
       isActive: data['isActive'] is bool ? data['isActive'] as bool : true,
       showAdBadge: data['showAdBadge'] is bool ? data['showAdBadge'] as bool : false,
       createdAt: createdAt,
@@ -96,6 +102,7 @@ class SectionBannerModel {
       'buttonText': buttonText,
       'position': position,
       'displayAfterSection': displayAfterSection,
+      'pageScope': pageScope,
       'isActive': isActive,
       'showAdBadge': showAdBadge,
       'createdAt': Timestamp.fromDate(createdAt),
@@ -112,6 +119,7 @@ class SectionBannerModel {
     String? buttonText,
     int? position,
     int? displayAfterSection,
+    String? pageScope,
     bool? isActive,
     bool? showAdBadge,
     DateTime? createdAt,
@@ -126,6 +134,7 @@ class SectionBannerModel {
       buttonText: buttonText ?? this.buttonText,
       position: position ?? this.position,
       displayAfterSection: displayAfterSection ?? this.displayAfterSection,
+      pageScope: pageScope ?? this.pageScope,
       isActive: isActive ?? this.isActive,
       showAdBadge: showAdBadge ?? this.showAdBadge,
       createdAt: createdAt ?? this.createdAt,
