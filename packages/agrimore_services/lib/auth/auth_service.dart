@@ -891,8 +891,8 @@ class AuthService {
     UserModel user,
     String uid,
     Map<String, dynamic> raw,
+    Set<String> allow,
   ) async {
-    final allow = await _adminAllowlistEmailsLower();
     final emailLower = user.email.trim().toLowerCase();
     final bootstrap = AdminAccessConfig.shouldBootstrapAdminRole(emailLower);
     final onList = allow.contains(emailLower);
@@ -943,7 +943,18 @@ class AuthService {
     try {
       debugPrint('🔥 Getting user data for: $uid');
 
-      final doc = await _firestore.collection('users').doc(uid).get();
+      // PERF-2: the user-doc read and the admin-allowlist read
+      // (_adminAllowlistEmailsLower, consumed by _syncRoleWithAdminPolicy
+      // below) are independent of each other -- the allowlist read needs
+      // nothing from the user doc -- so both Firestore round trips are
+      // started here and run concurrently instead of sequentially (the
+      // second one used to only start once the first had fully resolved,
+      // inside _syncRoleWithAdminPolicy). Every logged-in app launch goes
+      // through this method while AuthWrapper shows a blocking spinner, so
+      // this halves that wait rather than just shortening it.
+      final docFuture = _firestore.collection('users').doc(uid).get();
+      final allowFuture = _adminAllowlistEmailsLower();
+      final doc = await docFuture;
 
       if (!doc.exists) {
         debugPrint('❌ User document does not exist!');
@@ -953,7 +964,7 @@ class AuthService {
       debugPrint('✅ User document found');
       final raw = doc.data()!;
       UserModel user = UserModel.fromMap(raw, doc.id);
-      user = await _syncRoleWithAdminPolicy(user, uid, raw);
+      user = await _syncRoleWithAdminPolicy(user, uid, raw, await allowFuture);
 
       return user;
     } catch (e) {
