@@ -1,5 +1,8 @@
 // lib/screens/user/profile/profile_screen.dart
-// Profile — sticky-header list design.
+// Profile — sticky-header list design, evolved into the customer account hub
+// (Phase PROFILE-1) toward a supplied visual reference: a 4-up quick-action
+// row, a rewards band, and a grouped menu, all wired to real data — no
+// reference-image sample value (name/phone/balances/counts) is hard-coded.
 //
 // The header is a real SliverAppBar(pinned: true) + FlexibleSpaceBar, not a
 // scroll listener faking it: Flutter collapses the hero (avatar/name) into
@@ -7,15 +10,24 @@
 // exactly the two states a scroll capture of this screen shows.
 //
 // The menu below only lists items that are real, working destinations.
-// Two that were here before are deliberately gone:
-//   - "Help & Support" routed to AIChatScreen, which Phase 21 (this same
-//     session) made permanently dormant after the Gemini key was revoked —
-//     every message now returns a static "unavailable" reply. Reachable,
-//     but not something that works.
-//   - "Language" only ever called local setState on the selected row; it
-//     never persisted a choice or changed the app's locale anywhere.
-// Neither does what tapping it implies, so neither belongs in a list whose
-// whole point is "everything here actually does something."
+// "Language" stays deliberately gone: it only ever called local setState on
+// the selected row, never persisted a choice or changed the app's locale
+// anywhere, and no i18n infrastructure exists yet to back it (re-checked at
+// Phase PROFILE-1, still true). "Help & Support" is back, but pointed at a
+// real destination this time — a mailto: to the same support address
+// Settings' own "Report a Bug" already uses — not the old AIChatScreen
+// route, which is a genuine AI assistant now (see the AI Assistant quick
+// action below), not a support-ticket surface.
+//
+// A note on a comment this file used to carry: it previously said Help &
+// Support's old AIChatScreen route was "permanently dormant" after a shared
+// Gemini key was revoked. That was true when written, but Phase AI-2
+// replaced that dead shared-key path with `aiChatProxy` (a Cloud Function
+// that uses each caller's OWN connected key, from AI-1) — confirmed by
+// reading `ai_chat_service.dart`'s own header comment, which documents
+// exactly that switch. The AI Assistant quick action below routes to that
+// now-real chat screen via `AppRoutes.support` (never `AppRoutes.aiChat`,
+// which is a declared-but-unregistered route constant that 404s).
 
 import 'dart:async';
 import 'package:flutter/material.dart';
@@ -23,6 +35,7 @@ import 'package:flutter/services.dart';
 import 'package:provider/provider.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:firebase_auth/firebase_auth.dart';
+import 'package:url_launcher/url_launcher.dart';
 
 import 'package:agrimore_ui/agrimore_ui.dart';
 import '../../../app/routes.dart';
@@ -54,9 +67,12 @@ class ProfileScreen extends StatefulWidget {
 
 class _ProfileScreenState extends State<ProfileScreen> {
   bool _isCheckingAuth = true;
-  int _ordersCount = 0;
+  int _ordersCount = 0; // total orders ever placed — shown on the "My Orders" menu row
+  int _activeOrdersCount = 0; // not yet in a terminal state — shown on the Orders quick action
   int _wishlistCount = 0;
   int _addressesCount = 0;
+  int _unreadNotifications = 0;
+  int _pendingRewardsCount = 0; // unscratched scratch cards (users/{uid}/scratchCards)
   bool _isLoadingStats = true;
 
   // Drives the collapsed-header "Profile" label: invisible while the hero
@@ -114,6 +130,26 @@ class _ProfileScreenState extends State<ProfileScreen> {
     });
   }
 
+  // Orders whose lifecycle has ended — everything else (including any
+  // status this app doesn't recognise yet) counts as active. Undercounting
+  // a genuinely active order is worse than a rare overcount from an unknown
+  // status, so unknown defaults to active rather than the other way round.
+  static const Set<String> _terminalOrderStatuses = {
+    'delivered', 'cancelled', 'returned', 'refunded',
+  };
+
+  bool _isActiveOrder(Map<String, dynamic> data) {
+    // Order documents have historically used both `orderStatus` (the
+    // canonical OrderModel field) and, on some, `status` — the same
+    // defensive fallback ai_chat_service.dart's handleGetOrders already
+    // uses. Normalized (lowercased, separators stripped) to absorb the
+    // casing/underscore drift AppColors.getOrderStatusColor already has to
+    // handle for the same reason.
+    final raw = (data['orderStatus'] ?? data['status'] ?? 'pending').toString();
+    final normalized = raw.toLowerCase().replaceAll('_', '').replaceAll(' ', '');
+    return !_terminalOrderStatuses.contains(normalized);
+  }
+
   Future<void> _loadUserStats() async {
     try {
       final userId = FirebaseAuth.instance.currentUser?.uid;
@@ -129,11 +165,31 @@ class _ProfileScreenState extends State<ProfileScreen> {
             .collection('addresses')
             .where('userId', isEqualTo: userId)
             .get(),
+        // Same subcollection + `unread` field notifications_screen.dart
+        // itself reads — a header-badge count must never invent its own
+        // source of truth for what "unread" means.
+        FirebaseFirestore.instance
+            .collection('users')
+            .doc(userId)
+            .collection('notifications')
+            .get(),
+        // Same subcollection + `isScratched` field rewards_screen.dart's
+        // own `_pendingCards` getter reads (docs missing the field also
+        // count as pending, matching that getter's `!= true` check exactly
+        // — a server-side `where(isEqualTo: false)` would silently miss
+        // them).
+        FirebaseFirestore.instance
+            .collection('users')
+            .doc(userId)
+            .collection('scratchCards')
+            .get(),
       ]);
 
       final ordersSnapshot = results[0] as QuerySnapshot;
       final wishlistDoc = results[1] as DocumentSnapshot;
       final addressesSnapshot = results[2] as QuerySnapshot;
+      final notificationsSnapshot = results[3] as QuerySnapshot;
+      final scratchCardsSnapshot = results[4] as QuerySnapshot;
 
       int wishlistCount = 0;
       if (wishlistDoc.exists) {
@@ -143,11 +199,26 @@ class _ProfileScreenState extends State<ProfileScreen> {
         }
       }
 
+      final activeOrders = ordersSnapshot.docs
+          .where((doc) => _isActiveOrder(doc.data() as Map<String, dynamic>))
+          .length;
+
+      final unreadNotifications = notificationsSnapshot.docs
+          .where((doc) => (doc.data() as Map<String, dynamic>)['unread'] == true)
+          .length;
+
+      final pendingRewards = scratchCardsSnapshot.docs
+          .where((doc) => (doc.data() as Map<String, dynamic>)['isScratched'] != true)
+          .length;
+
       if (mounted) {
         setState(() {
           _ordersCount = ordersSnapshot.docs.length;
+          _activeOrdersCount = activeOrders;
           _wishlistCount = wishlistCount;
           _addressesCount = addressesSnapshot.docs.length;
+          _unreadNotifications = unreadNotifications;
+          _pendingRewardsCount = pendingRewards;
           _isLoadingStats = false;
         });
       }
@@ -181,6 +252,22 @@ class _ProfileScreenState extends State<ProfileScreen> {
       // signOut() is a second async gap past the mounted check above.
       if (!mounted) return;
       Navigator.of(context).pushReplacementNamed(AppRoutes.login);
+    }
+  }
+
+  // Mirrors settings_screen.dart's own _reportBug() mailto pattern exactly —
+  // the same real support address, not a new, unproven contact channel.
+  Future<void> _contactSupport() async {
+    final uri = Uri.parse(
+      'mailto:support@agrimore.in?subject=${Uri.encodeComponent('AgriMore Support')}',
+    );
+    final launched = await launchUrl(uri);
+    if (!launched && mounted) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(
+          content: Text('No email app found. Reach us at support@agrimore.in'),
+        ),
+      );
     }
   }
 
@@ -229,6 +316,12 @@ class _ProfileScreenState extends State<ProfileScreen> {
                   builder: (context, walletProvider, _) =>
                       _buildQuickActions(isDark, walletProvider),
                 ),
+              ),
+
+              // AgriMore Rewards band — real pending-scratch-card count,
+              // never a fabricated points balance (see _loadUserStats).
+              SliverToBoxAdapter(
+                child: _buildRewardsBanner(isDark),
               ),
 
               // Appearance Toggle
@@ -355,7 +448,15 @@ class _ProfileScreenState extends State<ProfileScreen> {
                     _MenuItem(
                       icon: Icons.notifications_rounded,
                       title: 'Notifications',
+                      count: _isLoadingStats || _unreadNotifications == 0
+                          ? null
+                          : _unreadNotifications,
                       onTap: () => _navigateTo(AppRoutes.notifications),
+                    ),
+                    _MenuItem(
+                      icon: Icons.support_agent_rounded,
+                      title: 'Help & Support',
+                      onTap: _contactSupport,
                     ),
                     _MenuItem(
                       icon: Icons.ios_share_rounded,
@@ -431,6 +532,22 @@ class _ProfileScreenState extends State<ProfileScreen> {
         padding: const EdgeInsets.all(8),
         child: _buildBackButton(isDark),
       ),
+      actions: [
+        _buildHeaderIconButton(
+          icon: Icons.notifications_none_rounded,
+          tooltip: 'Open notifications',
+          showDot: !_isLoadingStats && _unreadNotifications > 0,
+          onTap: () => _navigateTo(AppRoutes.notifications),
+        ),
+        const SizedBox(width: 8),
+        _buildHeaderIconButton(
+          icon: Icons.settings_outlined,
+          tooltip: 'Open settings',
+          showDot: false,
+          onTap: () => _navigateTo(AppRoutes.appSettings),
+        ),
+        const SizedBox(width: 12),
+      ],
       centerTitle: false,
       titleSpacing: 4,
       // Only the collapsed toolbar strip is ever visible here (the hero's
@@ -524,6 +641,37 @@ class _ProfileScreenState extends State<ProfileScreen> {
                       style: TextStyle(fontSize: 12.5, color: Colors.white.withValues(alpha: 0.85)),
                     ),
                   ],
+                  // Real signal, not a fabricated paid-membership badge: no
+                  // membership/tier concept exists anywhere in this
+                  // codebase (checked UserModel and every wallet/loyalty
+                  // model). Firebase Auth's own phoneNumber is set only
+                  // after a completed phone-OTP verification — this app's
+                  // primary sign-in method — and is a more reliable signal
+                  // than Firestore's `phoneVerified` flag, which predates
+                  // most existing accounts and was never backfilled for
+                  // them.
+                  if (FirebaseAuth.instance.currentUser?.phoneNumber != null) ...[
+                    const SizedBox(height: 8),
+                    Container(
+                      padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 4),
+                      decoration: BoxDecoration(
+                        color: Colors.white.withValues(alpha: 0.18),
+                        borderRadius: BorderRadius.circular(20),
+                        border: Border.all(color: Colors.white.withValues(alpha: 0.4)),
+                      ),
+                      child: const Row(
+                        mainAxisSize: MainAxisSize.min,
+                        children: [
+                          Icon(Icons.verified_rounded, size: 13, color: Colors.white),
+                          SizedBox(width: 4),
+                          Text(
+                            'Verified',
+                            style: TextStyle(color: Colors.white, fontSize: 11, fontWeight: FontWeight.w700),
+                          ),
+                        ],
+                      ),
+                    ),
+                  ],
                 ],
               ),
             ),
@@ -557,6 +705,55 @@ class _ProfileScreenState extends State<ProfileScreen> {
     );
   }
 
+  // Same 36dp translucent-white circle as _buildBackButton, so the header's
+  // three icon affordances (back, notifications, settings) read as one
+  // consistent language rather than two different button styles.
+  Widget _buildHeaderIconButton({
+    required IconData icon,
+    required String tooltip,
+    required bool showDot,
+    required VoidCallback onTap,
+  }) {
+    return Semantics(
+      button: true,
+      label: tooltip,
+      child: GestureDetector(
+        onTap: onTap,
+        child: Container(
+          width: 36,
+          height: 36,
+          decoration: BoxDecoration(
+            shape: BoxShape.circle,
+            color: Colors.white.withValues(alpha: 0.92),
+            boxShadow: [
+              BoxShadow(color: Colors.black.withValues(alpha: 0.15), blurRadius: 6, offset: const Offset(0, 2)),
+            ],
+          ),
+          child: Stack(
+            alignment: Alignment.center,
+            children: [
+              Icon(icon, size: 19, color: Colors.black87),
+              if (showDot)
+                Positioned(
+                  right: 7,
+                  top: 7,
+                  child: Container(
+                    width: 8,
+                    height: 8,
+                    decoration: BoxDecoration(
+                      shape: BoxShape.circle,
+                      color: Colors.red,
+                      border: Border.all(color: Colors.white, width: 1.2),
+                    ),
+                  ),
+                ),
+            ],
+          ),
+        ),
+      ),
+    );
+  }
+
   Widget _buildQuickActions(bool isDark, WalletProvider walletProvider) {
     return Padding(
       // A NEGATIVE top inset here previously crashed at runtime —
@@ -571,15 +768,20 @@ class _ProfileScreenState extends State<ProfileScreen> {
       child: Row(
         children: [
           _buildQuickActionCard(
-            icon: Icons.shopping_bag_rounded,
-            label: 'Your orders',
-            count: _isLoadingStats ? null : _ordersCount,
+            icon: Icons.smart_toy_outlined,
+            label: 'AI Assistant',
+            // Always "Ask anything" rather than a live value — whether a
+            // key is connected yet is the chat screen's own business
+            // (aiChatProxy already replies inline with how to connect one
+            // if not; see the file header comment), not something this
+            // card should try to summarize.
+            subtitle: 'Ask anything',
             isDark: isDark,
-            onTap: () => _navigateTo(AppRoutes.orders),
-            color: const Color(0xFFE8F5E9),
-            iconColor: const Color(0xFF2E7D32),
+            onTap: () => _navigateTo(AppRoutes.support),
+            color: const Color(0xFFF3E5F5),
+            iconColor: Colors.purple.shade700,
           ),
-          const SizedBox(width: 12),
+          const SizedBox(width: 8),
           _buildQuickActionCard(
             icon: Icons.account_balance_wallet_rounded,
             label: 'Wallet',
@@ -591,14 +793,29 @@ class _ProfileScreenState extends State<ProfileScreen> {
             color: const Color(0xFFFFF3E0),
             iconColor: const Color(0xFFE65100),
           ),
-          const SizedBox(width: 12),
+          const SizedBox(width: 8),
           _buildQuickActionCard(
-            icon: Icons.card_giftcard_rounded,
-            label: 'Rewards',
+            icon: Icons.shopping_bag_rounded,
+            label: 'Orders',
+            subtitle: _isLoadingStats
+                ? null
+                : (_activeOrdersCount > 0 ? '$_activeOrdersCount Active' : 'None active'),
             isDark: isDark,
-            onTap: () => _navigateTo(AppRoutes.rewards),
-            color: const Color(0xFFE3F2FD),
-            iconColor: const Color(0xFF1565C0),
+            onTap: () => _navigateTo(AppRoutes.orders),
+            color: const Color(0xFFE8F5E9),
+            iconColor: const Color(0xFF2E7D32),
+          ),
+          const SizedBox(width: 8),
+          _buildQuickActionCard(
+            icon: Icons.favorite_rounded,
+            label: 'Wishlist',
+            subtitle: _isLoadingStats
+                ? null
+                : (_wishlistCount > 0 ? '$_wishlistCount Item${_wishlistCount == 1 ? '' : 's'}' : 'Empty'),
+            isDark: isDark,
+            onTap: () => _navigateTo(AppRoutes.wishlist),
+            color: const Color(0xFFFCE4EC),
+            iconColor: AppColors.favorite,
           ),
         ],
       ),
@@ -608,7 +825,6 @@ class _ProfileScreenState extends State<ProfileScreen> {
   Widget _buildQuickActionCard({
     required IconData icon,
     required String label,
-    int? count,
     String? subtitle,
     required bool isDark,
     required VoidCallback onTap,
@@ -616,83 +832,162 @@ class _ProfileScreenState extends State<ProfileScreen> {
     required Color iconColor,
   }) {
     return Expanded(
-      child: GestureDetector(
-        onTap: onTap,
-        child: Container(
-          padding: const EdgeInsets.symmetric(vertical: 16),
-          decoration: BoxDecoration(
-            color: isDark ? const Color(0xFF1E1E1E) : Colors.white,
-            borderRadius: BorderRadius.circular(14),
-            border: Border.all(
-              color: isDark ? Colors.grey[800]! : Colors.grey[200]!,
-            ),
-            boxShadow: isDark ? null : [
-              BoxShadow(
-                color: Colors.black.withValues(alpha: 0.04),
-                blurRadius: 10,
-                offset: const Offset(0, 2),
+      child: Semantics(
+        button: true,
+        label: subtitle == null ? label : '$label, $subtitle',
+        child: GestureDetector(
+          onTap: onTap,
+          child: Container(
+            padding: const EdgeInsets.symmetric(vertical: 14, horizontal: 4),
+            decoration: BoxDecoration(
+              color: isDark ? const Color(0xFF1E1E1E) : Colors.white,
+              borderRadius: BorderRadius.circular(14),
+              border: Border.all(
+                color: isDark ? Colors.grey[800]! : Colors.grey[200]!,
               ),
-            ],
-          ),
-          child: Column(
-            children: [
-              Stack(
-                children: [
-                  Container(
-                    padding: const EdgeInsets.all(12),
-                    decoration: BoxDecoration(
-                      color: isDark ? iconColor.withValues(alpha: 0.15) : color,
-                      borderRadius: BorderRadius.circular(12),
-                    ),
-                    child: Icon(icon, color: iconColor, size: 24),
-                  ),
-                  if (count != null && count > 0)
-                    Positioned(
-                      right: 0,
-                      top: 0,
-                      child: Container(
-                        padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 2),
-                        decoration: BoxDecoration(
-                          color: const Color(0xFF2E7D32),
-                          borderRadius: BorderRadius.circular(10),
-                        ),
-                        child: Text(
-                          count.toString(),
-                          style: const TextStyle(
-                            color: Colors.white,
-                            fontSize: 10,
-                            fontWeight: FontWeight.w700,
-                          ),
-                        ),
-                      ),
-                    ),
-                ],
-              ),
-              const SizedBox(height: 10),
-              Text(
-                label,
-                style: TextStyle(
-                  fontSize: 12,
-                  fontWeight: FontWeight.w600,
-                  color: isDark ? Colors.white : Colors.black87,
+              boxShadow: isDark ? null : [
+                BoxShadow(
+                  color: Colors.black.withValues(alpha: 0.04),
+                  blurRadius: 10,
+                  offset: const Offset(0, 2),
                 ),
-                textAlign: TextAlign.center,
-              ),
-              if (subtitle != null) ...[
-                const SizedBox(height: 2),
+              ],
+            ),
+            child: Column(
+              mainAxisSize: MainAxisSize.min,
+              children: [
+                Container(
+                  padding: const EdgeInsets.all(10),
+                  decoration: BoxDecoration(
+                    color: isDark ? iconColor.withValues(alpha: 0.15) : color,
+                    borderRadius: BorderRadius.circular(12),
+                  ),
+                  child: Icon(icon, color: iconColor, size: 21),
+                ),
+                const SizedBox(height: 8),
                 Text(
-                  subtitle,
+                  label,
                   style: TextStyle(
-                    fontSize: 12,
-                    fontWeight: FontWeight.w800,
-                    color: iconColor,
+                    fontSize: 11.5,
+                    fontWeight: FontWeight.w600,
+                    color: isDark ? Colors.white : Colors.black87,
                   ),
                   textAlign: TextAlign.center,
                   maxLines: 1,
                   overflow: TextOverflow.ellipsis,
                 ),
+                if (subtitle != null) ...[
+                  const SizedBox(height: 2),
+                  Text(
+                    subtitle,
+                    style: TextStyle(
+                      fontSize: 11,
+                      fontWeight: FontWeight.w800,
+                      color: iconColor,
+                    ),
+                    textAlign: TextAlign.center,
+                    maxLines: 1,
+                    overflow: TextOverflow.ellipsis,
+                  ),
+                ],
               ],
-            ],
+            ),
+          ),
+        ),
+      ),
+    );
+  }
+
+  // "AgriMore Rewards" band — the mockup's points figure has no backend
+  // (no loyalty/points ledger exists anywhere in this codebase; the real
+  // rewards system is a scratch-card cashback game that credits the real
+  // wallet balance, see rewards_screen.dart/claimScratchCard). Shows a real
+  // pending-card count instead of inventing a points balance.
+  Widget _buildRewardsBanner(bool isDark) {
+    final hasPending = !_isLoadingStats && _pendingRewardsCount > 0;
+    return Padding(
+      padding: const EdgeInsets.fromLTRB(16, 0, 16, 16),
+      child: Semantics(
+        button: true,
+        label: hasPending
+            ? 'AgriMore Rewards, $_pendingRewardsCount reward${_pendingRewardsCount == 1 ? '' : 's'} waiting to be opened'
+            : 'AgriMore Rewards, play a scratch card on every order',
+        child: GestureDetector(
+          onTap: () => _navigateTo(AppRoutes.rewards),
+          child: Container(
+            padding: const EdgeInsets.all(16),
+            decoration: BoxDecoration(
+              gradient: LinearGradient(
+                colors: isDark
+                    ? [const Color(0xFF14251B), const Color(0xFF1B5E20)]
+                    : [const Color(0xFFE8F5E9), const Color(0xFFC8E6C9)],
+                begin: Alignment.topLeft,
+                end: Alignment.bottomRight,
+              ),
+              borderRadius: BorderRadius.circular(16),
+            ),
+            child: Row(
+              children: [
+                Container(
+                  padding: const EdgeInsets.all(10),
+                  decoration: BoxDecoration(
+                    color: isDark ? Colors.white.withValues(alpha: 0.1) : Colors.white.withValues(alpha: 0.6),
+                    borderRadius: BorderRadius.circular(12),
+                  ),
+                  child: Icon(
+                    Icons.eco_rounded,
+                    color: isDark ? AppColors.primaryLight : const Color(0xFF2E7D32),
+                    size: 24,
+                  ),
+                ),
+                const SizedBox(width: 14),
+                Expanded(
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      Text(
+                        'AgriMore Rewards',
+                        style: TextStyle(
+                          fontSize: 15,
+                          fontWeight: FontWeight.w800,
+                          color: isDark ? Colors.white : Colors.black87,
+                        ),
+                      ),
+                      const SizedBox(height: 3),
+                      Text(
+                        hasPending
+                            ? '$_pendingRewardsCount reward${_pendingRewardsCount == 1 ? '' : 's'} waiting to be opened'
+                            : 'Play a scratch card on every order',
+                        style: TextStyle(
+                          fontSize: 12,
+                          color: isDark ? Colors.grey[400] : Colors.grey[700],
+                        ),
+                        maxLines: 1,
+                        overflow: TextOverflow.ellipsis,
+                      ),
+                    ],
+                  ),
+                ),
+                if (hasPending) ...[
+                  Container(
+                    padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 5),
+                    decoration: BoxDecoration(
+                      color: const Color(0xFF2E7D32),
+                      borderRadius: BorderRadius.circular(20),
+                    ),
+                    child: Text(
+                      '$_pendingRewardsCount',
+                      style: const TextStyle(color: Colors.white, fontWeight: FontWeight.w800, fontSize: 13),
+                    ),
+                  ),
+                  const SizedBox(width: 6),
+                ],
+                Icon(
+                  Icons.chevron_right_rounded,
+                  color: isDark ? Colors.grey[600] : Colors.grey[500],
+                ),
+              ],
+            ),
           ),
         ),
       ),
