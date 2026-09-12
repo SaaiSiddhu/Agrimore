@@ -92,7 +92,18 @@ mixin StickyHeaderCollapseMixin<T extends StatefulWidget> on State<T> {
   }
 
   void _onStickyHeaderScroll() {
-    final progress = (stickyHeaderScrollController.offset / stickyHeaderCollapseDistance)
+    // PROFILE-18: when a screen's content doesn't have 150px of scrollable
+    // range to begin with (short content on a tall device), dividing by the
+    // fixed distance left `headerCollapse` permanently stuck mid-fraction —
+    // the hero title and the pinned title both stayed partially visible at
+    // once, with no scroll position that resolved to a clean 0 or 1. Using
+    // whatever range actually exists (when it's smaller) means the bottom
+    // of the real scroll always lands on a clean, fully-collapsed 1.0.
+    final maxExtent = stickyHeaderScrollController.position.maxScrollExtent;
+    final effectiveDistance = (maxExtent > 0 && maxExtent < stickyHeaderCollapseDistance)
+        ? maxExtent
+        : stickyHeaderCollapseDistance;
+    final progress = (stickyHeaderScrollController.offset / effectiveDistance)
         .clamp(0.0, 1.0);
     if (progress != headerCollapse) {
       setState(() => headerCollapse = progress);
