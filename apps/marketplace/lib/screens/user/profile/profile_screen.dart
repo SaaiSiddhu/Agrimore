@@ -486,6 +486,12 @@ class _ProfileScreenState extends State<ProfileScreen>
     // how every other surface in this file already branches on isDark.
     final heroTextPrimary = isDark ? Colors.white : Colors.black87;
     final heroTextSecondary = isDark ? Colors.white70 : Colors.black54;
+    // PROFILE-20: the Verified badge below hardcoded AppColors.primaryDark
+    // (a genuinely dark jade green) for icon/text/border with no isDark
+    // branch at all — fine against the light-mode hero photo, but nearly
+    // invisible against the same photo's darker, scrimmed dark-mode
+    // rendering. primaryLight is bright enough to read against both.
+    final verifiedAccent = isDark ? AppColors.primaryLight : AppColors.primaryDark;
 
     final subtitleParts = <String>[
       if (user?.phone != null && user.phone.toString().trim().isNotEmpty)
@@ -604,19 +610,19 @@ class _ProfileScreenState extends State<ProfileScreen>
                   Container(
                     padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 4),
                     decoration: BoxDecoration(
-                      color: AppColors.primary.withValues(alpha: 0.14),
+                      color: verifiedAccent.withValues(alpha: isDark ? 0.18 : 0.14),
                       borderRadius: BorderRadius.circular(20),
-                      border: Border.all(color: AppColors.primary.withValues(alpha: 0.5)),
+                      border: Border.all(color: verifiedAccent.withValues(alpha: isDark ? 0.6 : 0.5)),
                     ),
                     child: Row(
                       mainAxisSize: MainAxisSize.min,
                       children: [
-                        Icon(Icons.verified_rounded, size: 13, color: AppColors.primaryDark),
+                        Icon(Icons.verified_rounded, size: 13, color: verifiedAccent),
                         const SizedBox(width: 4),
                         Text(
                           'Verified',
                           style: TextStyle(
-                            color: AppColors.primaryDark,
+                            color: verifiedAccent,
                             fontSize: 11,
                             fontWeight: FontWeight.w700,
                           ),
