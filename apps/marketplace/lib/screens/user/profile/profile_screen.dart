@@ -529,6 +529,7 @@ class _ProfileScreenState extends State<ProfileScreen>
           padding: const EdgeInsets.only(right: 12),
           child: _buildHeaderIconButton(
             icon: Icons.notifications_none_rounded,
+            iconAsset: 'assets/images/Profile/Bell_Icon.png',
             tooltip: 'Open notifications',
             showDot: !_isLoadingStats && _unreadNotifications > 0,
             onTap: () => _navigateTo(AppRoutes.notifications),
@@ -713,6 +714,7 @@ class _ProfileScreenState extends State<ProfileScreen>
     required String tooltip,
     required bool showDot,
     required VoidCallback onTap,
+    String? iconAsset,
   }) {
     return Semantics(
       button: true,
@@ -732,7 +734,9 @@ class _ProfileScreenState extends State<ProfileScreen>
           child: Stack(
             alignment: Alignment.center,
             children: [
-              Icon(icon, size: 19, color: Colors.black87),
+              iconAsset != null
+                  ? Image.asset(iconAsset, width: 20, height: 20, fit: BoxFit.contain)
+                  : Icon(icon, size: 19, color: Colors.black87),
               if (showDot)
                 Positioned(
                   right: 7,
