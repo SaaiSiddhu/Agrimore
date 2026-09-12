@@ -6,6 +6,7 @@ import 'package:agrimore_core/agrimore_core.dart';
 import 'package:agrimore_ui/agrimore_ui.dart';
 import '../../providers/theme_provider.dart';
 import '../../providers/business_follow_provider.dart';
+import '../../providers/category_provider.dart';
 import '../user/shop/widgets/product_grid.dart';
 
 /// BUSINESS-NETWORK-1 (slice 1 of 2): a customer-facing public profile for a
@@ -36,13 +37,34 @@ class _BusinessProfileScreenState extends State<BusinessProfileScreen> {
   int? _productCount;
   bool _loading = true;
   String? _error;
+  bool _descriptionExpanded = false;
+  String? _selectedCategoryId;
   final BusinessFollowProvider _followProvider = BusinessFollowProvider();
+
+  List<ProductModel> get _filteredProducts {
+    if (_selectedCategoryId == null) return _products;
+    return _products.where((p) => p.categoryId == _selectedCategoryId).toList();
+  }
+
+  List<String> get _categoryIdsInProducts {
+    final seen = <String>{};
+    final ordered = <String>[];
+    for (final p in _products) {
+      if (seen.add(p.categoryId)) ordered.add(p.categoryId);
+    }
+    return ordered;
+  }
 
   @override
   void initState() {
     super.initState();
     _followProvider.addListener(_onFollowChanged);
     _followProvider.checkFollowing(widget.sellerId);
+    // Fire-and-forget: category chips are a secondary enhancement, not
+    // load-bearing for the primary content below. loadCategories() already
+    // no-ops on a warm cache (most navigations here arrive from a screen
+    // that loaded categories already).
+    context.read<CategoryProvider>().loadCategories();
     _load();
   }
 
@@ -267,15 +289,215 @@ class _BusinessProfileScreenState extends State<BusinessProfileScreen> {
     );
   }
 
+  // "About Seller" -- description (new, ADMIN-SELLER-CMS-1) + the full
+  // shopAddress (already shown compact in the header; repeated here for a
+  // seller whose address is too long for that single line). Renders
+  // nothing when the seller has set neither, matching the "no broken
+  // layout for a seller with none of the new fields" invariant.
+  Widget _buildAboutSection(bool isDark, String? description, String? shopAddress) {
+    final hasDescription = description != null && description.isNotEmpty;
+    final hasAddress = shopAddress != null && shopAddress.isNotEmpty;
+    if (!hasDescription && !hasAddress) return const SizedBox.shrink();
+
+    const collapsedLines = 3;
+    return Container(
+      margin: const EdgeInsets.only(top: 12),
+      width: double.infinity,
+      padding: const EdgeInsets.all(16),
+      color: isDark ? AppColors.surfaceDark : Colors.white,
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Text(
+            'About Seller',
+            style: TextStyle(
+              fontSize: 14,
+              fontWeight: FontWeight.w700,
+              color: isDark ? Colors.white : Colors.black87,
+            ),
+          ),
+          if (hasDescription) ...[
+            const SizedBox(height: 8),
+            Text(
+              description,
+              maxLines: _descriptionExpanded ? null : collapsedLines,
+              overflow: _descriptionExpanded ? TextOverflow.visible : TextOverflow.ellipsis,
+              style: TextStyle(
+                fontSize: 13,
+                height: 1.4,
+                color: isDark ? Colors.grey[300] : Colors.grey[800],
+              ),
+            ),
+            GestureDetector(
+              onTap: () => setState(() => _descriptionExpanded = !_descriptionExpanded),
+              child: Padding(
+                padding: const EdgeInsets.only(top: 4),
+                child: Text(
+                  _descriptionExpanded ? 'Show less' : 'Read more',
+                  style: TextStyle(
+                    fontSize: 12,
+                    fontWeight: FontWeight.w700,
+                    color: isDark ? AppColors.primaryLight : AppColors.primary,
+                  ),
+                ),
+              ),
+            ),
+          ],
+          if (hasAddress) ...[
+            SizedBox(height: hasDescription ? 10 : 8),
+            Row(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Icon(Icons.location_on_outlined,
+                    size: 15, color: isDark ? Colors.grey[400] : Colors.grey[600]),
+                const SizedBox(width: 6),
+                Expanded(
+                  child: Text(
+                    shopAddress,
+                    style: TextStyle(
+                      fontSize: 13,
+                      color: isDark ? Colors.grey[400] : Colors.grey[600],
+                    ),
+                  ),
+                ),
+              ],
+            ),
+          ],
+        ],
+      ),
+    );
+  }
+
+  // Only platform-backed claims: Verified reflects the same rules-enforced
+  // status this screen's own metrics-row badge uses; Secure Payments is a
+  // platform-wide fact (Razorpay HMAC + live-status verification applies
+  // to every order regardless of seller, security.md invariant I5) --
+  // mirrors landing_screen.dart's own trust-badge copy/icons exactly, since
+  // both are the same true claim in a different context. Deliberately NOT
+  // included: any delivery-speed or return-rate claim -- no per-seller
+  // fulfilment-metric data exists anywhere in this codebase to back one.
+  Widget _buildTrustStrip(bool isDark, bool isVerified) {
+    Widget badge(IconData icon, String label) {
+      return Row(
+        mainAxisSize: MainAxisSize.min,
+        children: [
+          Icon(icon, size: 15, color: isDark ? AppColors.primaryLight : AppColors.primary),
+          const SizedBox(width: 5),
+          Text(
+            label,
+            style: TextStyle(
+              fontSize: 12,
+              fontWeight: FontWeight.w500,
+              color: isDark ? Colors.grey[300] : Colors.grey[700],
+            ),
+          ),
+        ],
+      );
+    }
+
+    return Padding(
+      padding: const EdgeInsets.fromLTRB(16, 10, 16, 0),
+      child: Wrap(
+        spacing: 18,
+        runSpacing: 6,
+        children: [
+          if (isVerified) badge(Icons.verified_user_rounded, 'Verified Seller'),
+          badge(Icons.shield_rounded, 'Secure Payments'),
+        ],
+      ),
+    );
+  }
+
+  Widget _buildCategoryChip({
+    required String label,
+    required bool isActive,
+    required VoidCallback onTap,
+    required bool isDark,
+    required Color accentColor,
+  }) {
+    return GestureDetector(
+      onTap: onTap,
+      child: Container(
+        padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 6),
+        decoration: BoxDecoration(
+          color: isActive
+              ? accentColor.withValues(alpha: 0.1)
+              : (isDark ? const Color(0xFF2A2A2A) : Colors.white),
+          borderRadius: BorderRadius.circular(20),
+          border: Border.all(
+            color: isActive ? accentColor : (isDark ? Colors.grey[700]! : Colors.grey[300]!),
+            width: isActive ? 1.5 : 1,
+          ),
+        ),
+        child: Text(
+          label,
+          style: TextStyle(
+            fontSize: 12,
+            fontWeight: isActive ? FontWeight.w700 : FontWeight.w500,
+            color: isActive ? accentColor : (isDark ? Colors.white : Colors.black87),
+          ),
+        ),
+      ),
+    );
+  }
+
+  // Derived from this seller's own products' categoryId (ProductModel,
+  // required field) -- no schema change. Resolves a display name via the
+  // app-wide CategoryProvider already registered in main.dart; falls back
+  // to the raw id only in the (expected to be rare) case a category was
+  // deleted after a product referenced it.
+  Widget _buildCategoryChips(bool isDark, Color accentColor, CategoryProvider categoryProvider) {
+    final ids = _categoryIdsInProducts;
+    if (ids.length < 2) return const SizedBox.shrink();
+
+    return Padding(
+      padding: const EdgeInsets.only(top: 10),
+      child: SizedBox(
+        height: 36,
+        child: ListView.separated(
+          scrollDirection: Axis.horizontal,
+          padding: const EdgeInsets.symmetric(horizontal: 16),
+          itemCount: ids.length + 1,
+          separatorBuilder: (_, __) => const SizedBox(width: 8),
+          itemBuilder: (context, index) {
+            if (index == 0) {
+              return _buildCategoryChip(
+                label: 'All',
+                isActive: _selectedCategoryId == null,
+                onTap: () => setState(() => _selectedCategoryId = null),
+                isDark: isDark,
+                accentColor: accentColor,
+              );
+            }
+            final id = ids[index - 1];
+            final name = categoryProvider.getCategoryById(id)?.name ?? id;
+            return _buildCategoryChip(
+              label: name,
+              isActive: _selectedCategoryId == id,
+              onTap: () => setState(
+                () => _selectedCategoryId = _selectedCategoryId == id ? null : id,
+              ),
+              isDark: isDark,
+              accentColor: accentColor,
+            );
+          },
+        ),
+      ),
+    );
+  }
+
   @override
   Widget build(BuildContext context) {
     final themeProvider = Provider.of<ThemeProvider>(context);
+    final categoryProvider = context.watch<CategoryProvider>();
     final isDark = themeProvider.isDarkMode;
     final accentColor = isDark ? AppColors.primaryLight : AppColors.primary;
     final shopName = (_seller?['shopName'] as String?)?.trim();
     final shopAddress = (_seller?['shopAddress'] as String?)?.trim();
     final logoUrl = (_seller?['logoUrl'] as String?)?.trim();
     final coverUrl = (_seller?['coverImageUrl'] as String?)?.trim();
+    final description = (_seller?['description'] as String?)?.trim();
+    final isVerified = _seller?['status'] == 'approved';
 
     return Scaffold(
       backgroundColor: isDark ? AppColors.backgroundDark : Colors.grey[50],
@@ -366,11 +588,13 @@ class _BusinessProfileScreenState extends State<BusinessProfileScreen> {
                               ],
                             ),
                           ),
-                          const SizedBox(height: 12),
+                          _buildAboutSection(isDark, description, shopAddress),
+                          _buildTrustStrip(isDark, isVerified),
+                          const SizedBox(height: 8),
                           Padding(
                             padding: const EdgeInsets.symmetric(horizontal: 16),
                             child: Text(
-                              'Products (${_products.length})',
+                              'Products (${_productCount ?? _products.length})',
                               style: TextStyle(
                                 fontSize: 15,
                                 fontWeight: FontWeight.w700,
@@ -378,14 +602,17 @@ class _BusinessProfileScreenState extends State<BusinessProfileScreen> {
                               ),
                             ),
                           ),
-                          if (_products.isEmpty)
-                            const EmptyState(
+                          _buildCategoryChips(isDark, accentColor, categoryProvider),
+                          if (_filteredProducts.isEmpty)
+                            EmptyState(
                               icon: Icons.inventory_2_outlined,
-                              title: 'No products yet',
-                              message: 'This seller has not listed any products yet.',
+                              title: _products.isEmpty ? 'No products yet' : 'No products in this category',
+                              message: _products.isEmpty
+                                  ? 'This seller has not listed any products yet.'
+                                  : 'Try a different category.',
                             )
                           else
-                            ProductGrid(products: _products),
+                            ProductGrid(products: _filteredProducts),
                           const SizedBox(height: 24),
                         ],
                       ),
