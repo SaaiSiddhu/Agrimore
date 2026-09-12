@@ -2,7 +2,6 @@ import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:provider/provider.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
-import 'dart:ui';
 
 import 'package:agrimore_ui/agrimore_ui.dart';
 import '../../../app/routes.dart';
@@ -11,16 +10,11 @@ import '../../../providers/category_provider.dart';
 import '../../../providers/cart_provider.dart';
 import '../../../providers/wishlist_provider.dart';
 import 'package:agrimore_core/agrimore_core.dart';
-import 'package:agrimore_services/agrimore_services.dart';
-import 'widgets/product_image_carousel.dart';
 import 'widgets/product_image_hero.dart';
 import 'widgets/specification_list.dart';
 import 'widgets/reviews_section_inline.dart';
-import 'widgets/variant_selector.dart';
 import 'widgets/product_share_widget.dart';
-import 'widgets/delivery_info_widget.dart';
 import '../../../providers/theme_provider.dart';
-import '../../../widgets/product/unified_product_card.dart';
 import '../../../widgets/cart_fly_animation.dart';
 import '../rfq/widgets/request_quote_sheet.dart';
 
@@ -37,20 +31,17 @@ class ProductDetailsScreen extends StatefulWidget {
 }
 
 class _ProductDetailsScreenState extends State<ProductDetailsScreen> {
-  int _quantity = 1;
   final ScrollController _scrollController = ScrollController();
-  late DatabaseService _databaseService;
-  // Key for the Add-to-Cart button — used to get its screen position for fly animation
+  // Key for the Add-to-Cart button -- used to get its screen position for fly animation
   final GlobalKey _addToCartKey = GlobalKey();
 
   bool _isCollapsed = false;
-  /// `one_off`, `daily`, or `weekly` — forwarded to checkout (auto-delivery).
+  /// `one_off`, `daily`, or `weekly` -- forwarded to checkout (auto-delivery).
   String _subscriptionCadence = 'one_off';
 
   @override
   void initState() {
     super.initState();
-    _databaseService = DatabaseService();
     _loadProduct();
 
     _scrollController.addListener(() {
@@ -78,79 +69,80 @@ class _ProductDetailsScreenState extends State<ProductDetailsScreen> {
     super.dispose();
   }
 
-/// Add product to cart with selected variant
-Future<void> _addToCart(BuildContext context, {bool buyNow = false}) async {
-  final productProvider = Provider.of<ProductProvider>(context, listen: false);
-  final cartProvider = Provider.of<CartProvider>(context, listen: false);
-  final product = productProvider.selectedProduct;
+  /// Adds the selected variant (or the base product, if it has none) to the
+  /// cart at quantity 1. The sticky bottom bar transforms into a `[-] N [+]`
+  /// stepper once the item is in the cart (see `_buildBottomBar`) -- matching
+  /// this app's own established quick-commerce add-then-adjust pattern
+  /// rather than asking for a quantity before the first add.
+  Future<void> _addToCart(BuildContext context) async {
+    final productProvider = Provider.of<ProductProvider>(context, listen: false);
+    final cartProvider = Provider.of<CartProvider>(context, listen: false);
+    final product = productProvider.selectedProduct;
 
-  if (product == null || !product.inStock) return;
+    if (product == null || !product.inStock) return;
 
-  if (_subscriptionCadence == 'daily') {
-    cartProvider.setCheckoutSubscriptionIntent('Auto Delivery', 'Daily');
-  } else if (_subscriptionCadence == 'weekly') {
-    cartProvider.setCheckoutSubscriptionIntent('Auto Delivery', 'Weekly');
-  } else {
-    cartProvider.clearCheckoutSubscriptionIntent();
-  }
-
-  HapticFeedback.mediumImpact();
-
-  // Get selected variant if product has variants
-  String? variantName;
-  double? variantPrice;
-  double? variantOriginalPrice;
-  
-  if (product.variants.isNotEmpty) {
-    final selectedVariant = productProvider.selectedVariant;
-    if (selectedVariant != null) {
-      variantName = selectedVariant.name;
-      variantPrice = selectedVariant.salePrice;
-      variantOriginalPrice = selectedVariant.originalPrice;
-      print('🔍 Selected variant: $variantName, price: $variantPrice');
+    if (_subscriptionCadence == 'daily') {
+      cartProvider.setCheckoutSubscriptionIntent('Auto Delivery', 'Daily');
+    } else if (_subscriptionCadence == 'weekly') {
+      cartProvider.setCheckoutSubscriptionIntent('Auto Delivery', 'Weekly');
     } else {
-      // Show error if no variant selected
-      ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(
-          content: Row(
-            children: [
-              Icon(Icons.warning_amber_rounded, color: Colors.white),
-              SizedBox(width: 12),
-              Expanded(
-                child: Text(
-                  'Please select a variant',
-                  style: TextStyle(fontWeight: FontWeight.w600),
-                ),
-              ),
-            ],
-          ),
-          backgroundColor: Colors.orange.shade600,
-          behavior: SnackBarBehavior.floating,
-          shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(10)),
-          duration: Duration(seconds: 2),
-        ),
-      );
-      return;
+      cartProvider.clearCheckoutSubscriptionIntent();
     }
-  }
 
-  // ✅ FIX: Pass variant price to addItem
-  await cartProvider.addItem(
-    product,
-    quantity: _quantity,
-    variant: variantName,
-    variantPrice: variantPrice,
-    variantOriginalPrice: variantOriginalPrice,
-  );
+    HapticFeedback.mediumImpact();
 
-  // `context` is this method's own parameter, not necessarily the State's
-  // live context getter, so the State's `mounted` field doesn't guarantee
-  // it's still valid after the addItem() await above — check context.mounted
-  // once, here, for everything below.
-  if (!context.mounted) return;
+    String? variantName;
+    double? variantPrice;
+    double? variantOriginalPrice;
 
-  // 🚀 Fly-to-cart animation
-  if (!buyNow) {
+    if (product.variants.isNotEmpty) {
+      final selectedVariant = productProvider.selectedVariant;
+      if (selectedVariant != null) {
+        variantName = selectedVariant.name;
+        variantPrice = selectedVariant.salePrice;
+        variantOriginalPrice = selectedVariant.originalPrice;
+      } else {
+        // Defensive: loadProductById/selectVariantByName always pick a
+        // default variant when one exists, so this should not happen in
+        // practice -- kept as a guard against a null selectedVariant rather
+        // than silently adding the wrong price.
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(
+            content: Row(
+              children: [
+                const Icon(Icons.warning_amber_rounded, color: Colors.white),
+                const SizedBox(width: 12),
+                const Expanded(
+                  child: Text(
+                    'Please select a variant',
+                    style: TextStyle(fontWeight: FontWeight.w600),
+                  ),
+                ),
+              ],
+            ),
+            backgroundColor: Colors.orange.shade600,
+            behavior: SnackBarBehavior.floating,
+            shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(10)),
+            duration: const Duration(seconds: 2),
+          ),
+        );
+        return;
+      }
+    }
+
+    await cartProvider.addItem(
+      product,
+      quantity: 1,
+      variant: variantName,
+      variantPrice: variantPrice,
+      variantOriginalPrice: variantOriginalPrice,
+    );
+
+    // `context` is this method's own parameter, not necessarily the State's
+    // live context getter, so the State's `mounted` field doesn't guarantee
+    // it's still valid after the addItem() await above -- check context.mounted.
+    if (!context.mounted) return;
+
     Offset? startPos;
     final renderBox = _addToCartKey.currentContext?.findRenderObject() as RenderBox?;
     if (renderBox != null) {
@@ -168,22 +160,19 @@ Future<void> _addToCart(BuildContext context, {bool buyNow = false}) async {
       imageUrl: imageUrl,
       startPosition: startPos,
     );
-  }
 
-  // Show success message
-  if (!buyNow) {
     ScaffoldMessenger.of(context).showSnackBar(
       SnackBar(
         content: Row(
           children: [
-            Icon(Icons.check_circle, color: Colors.white, size: 20),
-            SizedBox(width: 12),
+            const Icon(Icons.check_circle, color: Colors.white, size: 20),
+            const SizedBox(width: 12),
             Expanded(
               child: Text(
-                variantName != null 
-                    ? 'Added $variantName to cart!' // ✅ Show variant in message
+                variantName != null
+                    ? 'Added $variantName to cart!'
                     : 'Added to cart successfully!',
-                style: TextStyle(fontWeight: FontWeight.w600),
+                style: const TextStyle(fontWeight: FontWeight.w600),
               ),
             ),
           ],
@@ -191,7 +180,7 @@ Future<void> _addToCart(BuildContext context, {bool buyNow = false}) async {
         backgroundColor: Colors.green.shade600,
         behavior: SnackBarBehavior.floating,
         shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(10)),
-        duration: Duration(seconds: 2),
+        duration: const Duration(seconds: 2),
         action: SnackBarAction(
           label: 'View Cart',
           textColor: Colors.white,
@@ -202,13 +191,6 @@ Future<void> _addToCart(BuildContext context, {bool buyNow = false}) async {
       ),
     );
   }
-
-  // If Buy Now, navigate to cart immediately
-  if (buyNow) {
-    AppRoutes.navigateTo(context, AppRoutes.cart);
-  }
-}
-
 
   @override
   Widget build(BuildContext context) {
@@ -225,7 +207,7 @@ Future<void> _addToCart(BuildContext context, {bool buyNow = false}) async {
             return _buildLoadingState(isDark);
           }
 
-          // ✅ Product not found (e.g. deleted product accessed via deep link)
+          // Product not found (e.g. deleted product accessed via deep link)
           if (!productProvider.isLoading && product == null) {
             return _buildNotFoundState(isDark);
           }
@@ -233,15 +215,16 @@ Future<void> _addToCart(BuildContext context, {bool buyNow = false}) async {
           // At this point product is guaranteed non-null
           final loadedProduct = product!;
 
-          // ✅ REDESIGNED: Blinkit-style full-bleed image + floating controls
-          return SingleChildScrollView(
+          return CustomScrollView(
             controller: _scrollController,
             physics: const ClampingScrollPhysics(),
-            child: Column(
-              children: [
-                // Full-bleed image hero with floating action buttons
-                ProductImageHero(
+            slivers: [
+              SliverPersistentHeader(
+                pinned: true,
+                delegate: _StickyHeaderDelegate(
+                  isCollapsed: _isCollapsed,
                   product: loadedProduct,
+                  isDark: isDark,
                   onBack: () {
                     if (Navigator.canPop(context)) {
                       Navigator.pop(context);
@@ -250,47 +233,32 @@ Future<void> _addToCart(BuildContext context, {bool buyNow = false}) async {
                     }
                   },
                   onShare: () => _showShareWidget(loadedProduct),
+                  topPadding: MediaQuery.of(context).padding.top,
                 ),
-                // Overlapped info card
-                _buildOverlappedInfoCard(loadedProduct, isDark),
-                // BUSINESS-NETWORK-1: discovery link to the seller's business
-                // profile -- without this the feature has no entry point.
-                _buildSoldBySection(loadedProduct, isDark),
-                _buildSubscriptionOptions(loadedProduct, isDark),
-                // Similar Products section
-                _buildSimilarProducts(loadedProduct, isDark),
-                // Bottom padding for bottom bar
-                const SizedBox(height: 120),
-              ],
-            ),
+              ),
+              SliverToBoxAdapter(
+                child: Column(
+                  children: [
+                    ProductImageHero(product: loadedProduct),
+                    // Overlapped info card: delivery/rating, name, variants, details
+                    _buildOverlappedInfoCard(loadedProduct, isDark),
+                    // BUSINESS-NETWORK-1: discovery link to the seller's business
+                    // profile -- without this the feature has no entry point.
+                    _buildSoldBySection(loadedProduct, isDark),
+                    _buildSubscriptionOptions(loadedProduct, isDark),
+                    _buildReviewsSection(loadedProduct, isDark),
+                    // Similar Products section
+                    _buildSimilarProducts(loadedProduct, isDark),
+                    // Bottom padding for the sticky bottom bar
+                    const SizedBox(height: 120),
+                  ],
+                ),
+              ),
+            ],
           );
         },
       ),
       bottomNavigationBar: _buildBottomBar(),
-    );
-  }
-
-  Widget _buildSliverAppBar(ProductModel product, bool isDark) {
-    final accentColor = isDark ? AppColors.primaryLight : AppColors.primary;
-
-    return SliverPersistentHeader(
-      pinned: true,
-      delegate: _ProductDetailsSliverHeader(
-        isCollapsed: _isCollapsed,
-        product: product,
-        isDark: isDark,
-        accentColor: accentColor,
-        onBack: () {
-          // ✅ FIXED: Safe back navigation - go to home if can't pop
-          if (Navigator.canPop(context)) {
-            Navigator.pop(context);
-          } else {
-            Navigator.pushReplacementNamed(context, '/');
-          }
-        },
-        onShare: () => _showShareWidget(product),
-        topPadding: MediaQuery.of(context).padding.top,
-      ),
     );
   }
 
@@ -301,19 +269,6 @@ Future<void> _addToCart(BuildContext context, {bool buyNow = false}) async {
       isScrollControlled: true,
       backgroundColor: Colors.transparent,
       builder: (context) => ProductShareWidget(product: product),
-    );
-  }
-
-  Widget _buildProductShowcase(ProductModel product, bool isDark) {
-    // Clean product image without card wrapper - matches Blinkit/Zepto style
-    return Container(
-      color: isDark ? const Color(0xFF1A1A1A) : Colors.white,
-      padding: const EdgeInsets.symmetric(vertical: 20),
-      child: ProductImageCarousel(
-        images: product.images.isNotEmpty
-            ? product.images
-            : (product.imageUrl != null ? [product.imageUrl!] : []),
-      ),
     );
   }
 
@@ -344,7 +299,7 @@ Future<void> _addToCart(BuildContext context, {bool buyNow = false}) async {
               // Row 1: Delivery badge + Rating
               _buildDeliveryRatingInline(product, isDark, accentColor),
               const SizedBox(height: 16),
-              
+
               // Row 2: Product Name
               Text(
                 product.name,
@@ -355,8 +310,9 @@ Future<void> _addToCart(BuildContext context, {bool buyNow = false}) async {
                   height: 1.3,
                 ),
               ),
+              _buildProductBadges(product, isDark),
               const SizedBox(height: 16),
-              
+
               // Row 3: "Select Unit" label + Variant chips
               if (product.variants.isNotEmpty) ...[
                 Text(
@@ -371,10 +327,10 @@ Future<void> _addToCart(BuildContext context, {bool buyNow = false}) async {
                 _buildVariantChipsInline(product, isDark, accentColor),
                 const SizedBox(height: 16),
               ],
-              
+
               // Row 4: Divider
               Divider(color: isDark ? Colors.grey[800] : Colors.grey[200], height: 1),
-              
+
               // Row 5: View product details (expandable)
               _buildViewDetailsDropdown(product, isDark, accentColor),
             ],
@@ -384,14 +340,24 @@ Future<void> _addToCart(BuildContext context, {bool buyNow = false}) async {
     );
   }
 
+  // PDP-1 WS3: this badge previously hardcoded '30 MINS' unconditionally --
+  // wrong for a B2B/bulk-freight product, where home_app_bar.dart's own
+  // established copy (`isB2B ? 'Bulk Freight' : '30 minutes'`) already
+  // draws exactly this distinction elsewhere in this app. Mirrored here
+  // rather than invented. No pre-purchase minute-level ETA field exists
+  // anywhere in this codebase (grepped: the only `etaMinutes` machinery is
+  // live delivery-partner tracking for an order already placed, in
+  // delivery_tracking_service.dart/live_tracking_screen.dart -- not
+  // applicable pre-purchase); whether "30 minutes" itself is a verified
+  // operational SLA or aspirational copy is a real open question, disclosed
+  // in PRODUCT_DETAIL_CURRENT_STATE.md, not resolved by this phase.
   Widget _buildDeliveryRatingInline(ProductModel product, bool isDark, Color accentColor) {
-    // Use cached product data directly - no FutureBuilder for performance
     final rating = product.rating;
     final reviewCount = product.reviewCount;
+    final deliveryLabel = product.isB2BEnabled ? 'BULK FREIGHT' : '30 MINS';
 
     return Row(
       children: [
-        // Delivery badge
         Container(
           padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
           decoration: BoxDecoration(
@@ -401,10 +367,14 @@ Future<void> _addToCart(BuildContext context, {bool buyNow = false}) async {
           child: Row(
             mainAxisSize: MainAxisSize.min,
             children: [
-              Icon(Icons.access_time_filled, size: 12, color: accentColor),
+              Icon(
+                product.isB2BEnabled ? Icons.local_shipping_outlined : Icons.access_time_filled,
+                size: 12,
+                color: accentColor,
+              ),
               const SizedBox(width: 4),
               Text(
-                '30 MINS',
+                deliveryLabel,
                 style: TextStyle(
                   fontSize: 11,
                   fontWeight: FontWeight.w700,
@@ -415,7 +385,6 @@ Future<void> _addToCart(BuildContext context, {bool buyNow = false}) async {
           ),
         ),
         const SizedBox(width: 12),
-        // Star rating - use simple icons
         Row(
           children: [
             Icon(Icons.star, size: 14, color: Colors.amber),
@@ -442,11 +411,60 @@ Future<void> _addToCart(BuildContext context, {bool buyNow = false}) async {
     );
   }
 
+  /// PDP-1 WS3: data-driven trust badges off the product's own real boolean
+  /// fields -- replaces the unconditional, fabricated "Authentic" badge that
+  /// only ever existed in dead code (PRODUCT_DETAIL_CURRENT_STATE.md §5 item
+  /// 5). Capped to 2 so this never turns into a wall of pills (master-prompt
+  /// §137's own "1-3, not 7" guidance).
+  Widget _buildProductBadges(ProductModel product, bool isDark) {
+    final badges = <_ProductBadge>[
+      if (product.isVerified) const _ProductBadge('Verified Product', Icons.verified_rounded, Colors.blue),
+      if (product.isFeatured) const _ProductBadge('Featured', Icons.star_rounded, Colors.purple),
+      if (product.isTrending) const _ProductBadge('Trending', Icons.trending_up_rounded, Colors.deepOrange),
+      if (product.isNew) const _ProductBadge('New', Icons.fiber_new_rounded, Colors.teal),
+    ].take(2).toList();
+
+    if (badges.isEmpty) return const SizedBox.shrink();
+
+    return Padding(
+      padding: const EdgeInsets.only(top: 8),
+      child: Wrap(
+        spacing: 6,
+        runSpacing: 6,
+        children: badges.map((b) {
+          return Container(
+            padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
+            decoration: BoxDecoration(
+              color: isDark ? b.color.withValues(alpha: 0.18) : b.color.shade50,
+              border: Border.all(color: isDark ? b.color.shade300 : b.color.shade200),
+              borderRadius: BorderRadius.circular(6),
+            ),
+            child: Row(
+              mainAxisSize: MainAxisSize.min,
+              children: [
+                Icon(b.icon, size: 12, color: isDark ? b.color.shade200 : b.color.shade700),
+                const SizedBox(width: 4),
+                Text(
+                  b.label,
+                  style: TextStyle(
+                    fontSize: 10,
+                    fontWeight: FontWeight.w700,
+                    color: isDark ? b.color.shade200 : b.color.shade700,
+                  ),
+                ),
+              ],
+            ),
+          );
+        }).toList(),
+      ),
+    );
+  }
+
   Widget _buildVariantChipsInline(ProductModel product, bool isDark, Color accentColor) {
     return Consumer<ProductProvider>(
       builder: (context, productProvider, _) {
         final selectedVariant = productProvider.selectedVariant;
-        
+
         return SingleChildScrollView(
           scrollDirection: Axis.horizontal,
           physics: const BouncingScrollPhysics(),
@@ -455,8 +473,8 @@ Future<void> _addToCart(BuildContext context, {bool buyNow = false}) async {
               final index = entry.key;
               final variant = entry.value;
               final isSelected = selectedVariant?.name == variant.name;
-              final hasDiscount = variant.originalPrice != null && 
-                                  variant.originalPrice! > variant.salePrice;
+              final hasDiscount = variant.originalPrice != null &&
+                  variant.originalPrice! > variant.salePrice;
 
               return Padding(
                 padding: EdgeInsets.only(right: index < product.variants.length - 1 ? 10 : 0),
@@ -468,13 +486,13 @@ Future<void> _addToCart(BuildContext context, {bool buyNow = false}) async {
                   child: Container(
                     padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 10),
                     decoration: BoxDecoration(
-                      color: isSelected 
+                      color: isSelected
                           ? (isDark ? accentColor.withValues(alpha: 0.1) : Colors.white)
                           : (isDark ? const Color(0xFF2A2A2A) : Colors.grey[50]),
                       borderRadius: BorderRadius.circular(10),
                       border: Border.all(
-                        color: isSelected 
-                            ? accentColor 
+                        color: isSelected
+                            ? accentColor
                             : (isDark ? Colors.grey[700]! : Colors.grey[300]!),
                         width: isSelected ? 1.5 : 1,
                       ),
@@ -548,7 +566,6 @@ Future<void> _addToCart(BuildContext context, {bool buyNow = false}) async {
         ),
         trailing: Icon(Icons.keyboard_arrow_down, color: accentColor, size: 20),
         children: [
-          // Description
           if (product.description.isNotEmpty) ...[
             Align(
               alignment: Alignment.centerLeft,
@@ -563,358 +580,11 @@ Future<void> _addToCart(BuildContext context, {bool buyNow = false}) async {
             ),
             const SizedBox(height: 12),
           ],
-          // Specifications
           SpecificationList(
             specifications: _getSpecifications(product),
             isDark: isDark,
           ),
         ],
-      ),
-    );
-  }
-  
-  Widget _buildPremiumBadge(ProductModel product) {
-    final themeProvider = Provider.of<ThemeProvider>(context, listen: false);
-    final isDark = themeProvider.isDarkMode;
-
-    return SingleChildScrollView(
-      scrollDirection: Axis.horizontal,
-      child: Row(
-        children: [
-          if (product.discount > 0)
-            Container(
-              padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 5),
-              decoration: BoxDecoration(
-                color: isDark ? Colors.red.withValues(alpha: 0.15) : Colors.red[50],
-                border: Border.all(color: isDark ? Colors.red[700]! : Colors.red[300]!),
-                borderRadius: BorderRadius.circular(6),
-              ),
-              child: Row(
-                children: [
-                  Icon(Icons.local_offer, size: 14, color: isDark ? Colors.red[400] : Colors.red[600]),
-                  const SizedBox(width: 4),
-                  Text(
-                    '${product.discount}% OFF',
-                    style: TextStyle(
-                      fontWeight: FontWeight.bold,
-                      color: isDark ? Colors.red[400] : Colors.red[600],
-                      fontSize: 11,
-                    ),
-                  ),
-                ],
-              ),
-            ),
-          const SizedBox(width: 8),
-          Container(
-            padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 5),
-            decoration: BoxDecoration(
-              color: isDark ? Colors.orange.withValues(alpha: 0.15) : Colors.orange[50],
-              border: Border.all(color: isDark ? Colors.orange[700]! : Colors.orange[300]!),
-              borderRadius: BorderRadius.circular(6),
-            ),
-            child: Row(
-              children: [
-                Icon(Icons.verified_user, size: 14, color: isDark ? Colors.orange[400] : Colors.orange[700]),
-                const SizedBox(width: 4),
-                Text(
-                  'Authentic',
-                  style: TextStyle(
-                    fontWeight: FontWeight.bold,
-                    color: isDark ? Colors.orange[400] : Colors.orange[700],
-                    fontSize: 11,
-                  ),
-                ),
-              ],
-            ),
-          ),
-        ],
-      ),
-    );
-  }
-
-  Widget _buildProductHeaderCard(ProductModel product, bool isDark) {
-     final accentColor = isDark ? AppColors.primaryLight : AppColors.primary;
-
-    return Padding(
-      padding: const EdgeInsets.fromLTRB(16, 12, 16, 0),
-      child: _buildCardSection(
-        isDark: isDark,
-        padding: const EdgeInsets.all(16),
-        child: Column(
-          crossAxisAlignment: CrossAxisAlignment.start,
-          children: [
-             _buildPremiumBadge(product),
-              const SizedBox(height: 12),
-              Text(
-                product.name,
-                style: TextStyle(
-                  fontWeight: FontWeight.w800,
-                  fontSize: 22,
-                  height: 1.3,
-                  color: isDark ? Colors.white : Colors.black87
-                ),
-              ),
-              const SizedBox(height: 16),
-              _buildAdvancedPrice(product, isDark, accentColor),
-              const SizedBox(height: 16),
-              _buildRatingRow(product, isDark, accentColor),
-          ],
-        )
-      ),
-    );
-  }
-
-  Widget _buildAdvancedPrice(ProductModel product, bool isDark, Color accentColor) {
-    // ✅ Use Consumer to react to variant selection changes
-    return Consumer<ProductProvider>(
-      builder: (context, productProvider, _) {
-        final variant = productProvider.selectedVariant;
-        
-        // Use variant price if selected, otherwise base product price
-        final displayPrice = variant?.salePrice ?? product.salePrice;
-        final displayOriginal = variant?.originalPrice ?? product.originalPrice;
-        
-        return Row(
-          crossAxisAlignment: CrossAxisAlignment.baseline,
-          textBaseline: TextBaseline.alphabetic,
-          children: [
-            Text(
-              '₹${displayPrice.toStringAsFixed(2)}',
-              style: TextStyle(
-                fontSize: 32,
-                fontWeight: FontWeight.bold,
-                color: accentColor,
-              ),
-            ),
-            const SizedBox(width: 12),
-            if (displayOriginal != null && displayOriginal > displayPrice)
-              Text(
-                '₹${displayOriginal.toStringAsFixed(2)}',
-                style: TextStyle(
-                  fontSize: 16,
-                  decoration: TextDecoration.lineThrough,
-                  color: isDark ? Colors.grey[600] : Colors.grey[500],
-                  fontWeight: FontWeight.w500,
-                ),
-              ),
-          ],
-        );
-      },
-    );
-  }
-  
-  Widget _buildRatingRow(ProductModel product, bool isDark, Color accentColor) {
-    // Use cached product data - no FutureBuilder for performance
-    final rating = product.rating;
-    final reviewCount = product.reviewCount;
-
-    return Container(
-      padding: const EdgeInsets.all(12),
-      decoration: BoxDecoration(
-        color: accentColor.withValues(alpha: 0.1),
-        borderRadius: BorderRadius.circular(10),
-        border: Border.all(color: accentColor.withValues(alpha: 0.2)),
-      ),
-      child: Row(
-        children: [
-          Container(
-            padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 6),
-            decoration: BoxDecoration(
-              color: accentColor,
-              borderRadius: BorderRadius.circular(6),
-            ),
-            child: Row(
-              children: [
-                Text(
-                  rating.toStringAsFixed(1),
-                  style: TextStyle(
-                    color: isDark ? Colors.black : Colors.white,
-                    fontWeight: FontWeight.bold,
-                    fontSize: 14,
-                  ),
-                ),
-                const SizedBox(width: 4),
-                Icon(Icons.star, color: isDark ? Colors.black : Colors.white, size: 14),
-              ],
-            ),
-          ),
-          const SizedBox(width: 12),
-          Expanded(
-            child: Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                Text(
-                  'Highly Rated',
-                  style: TextStyle(
-                    fontSize: 12,
-                    fontWeight: FontWeight.bold,
-                    color: isDark ? Colors.white : Colors.black87,
-                  ),
-                ),
-                Text(
-                  '$reviewCount customer reviews',
-                  style: TextStyle(
-                    fontSize: 11,
-                    color: accentColor,
-                    fontWeight: FontWeight.w500,
-                  ),
-                ),
-              ],
-            ),
-          ),
-          Icon(Icons.arrow_forward_ios_rounded, size: 14, color: isDark ? Colors.grey[400] : Colors.grey[600])
-        ],
-      ),
-    );
-  }
-
-  Widget _buildKeyInfoCard(ProductModel product, bool isDark) {
-    // ✅ Use Consumer to react to variant selection changes  
-    return Consumer<ProductProvider>(
-      builder: (context, productProvider, _) {
-        final variant = productProvider.selectedVariant;
-        
-        // Use variant stock if selected, otherwise base product stock
-        final stock = variant?.stock ?? product.stock;
-        final bool inStock = stock > 0;
-        
-        return Padding(
-          padding: const EdgeInsets.fromLTRB(16, 12, 16, 0),
-          child: _buildCardSection(
-            isDark: isDark,
-            padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
-            child: Row(
-              mainAxisAlignment: MainAxisAlignment.spaceBetween,
-              children: [
-                Row(
-                  children: [
-                    Icon(
-                      inStock ? Icons.check_circle_rounded : Icons.cancel_rounded,
-                      color: inStock ? Colors.green[600] : Colors.red[600],
-                      size: 20,
-                    ),
-                    const SizedBox(width: 10),
-                    Text(
-                      inStock ? 'In Stock' : 'Out of Stock',
-                      style: TextStyle(
-                        fontWeight: FontWeight.bold,
-                        fontSize: 14,
-                        color: inStock ? Colors.green[600] : Colors.red[600],
-                      ),
-                    ),
-                  ],
-                ),
-
-                if (inStock && stock < 10)
-                  Text(
-                    'Only $stock left!',
-                    style: TextStyle(
-                      fontSize: 13,
-                      color: Colors.orange[700],
-                      fontWeight: FontWeight.w500,
-                    ),
-                  )
-                else if (inStock)
-                  Text(
-                    'Available',
-                    style: TextStyle(
-                      fontSize: 13,
-                      color: isDark ? Colors.grey[400] : Colors.grey[700],
-                      fontWeight: FontWeight.w500,
-                    ),
-                  )
-                else 
-                  const SizedBox(),
-              ],
-            )
-          ),
-        );
-      },
-    );
-  }
-
-  Widget _buildQuantitySelector(bool isDark) {
-    final accentColor = isDark ? AppColors.primaryLight : AppColors.primary;
-
-    return Padding(
-      padding: const EdgeInsets.fromLTRB(16, 12, 16, 0),
-      child: _buildCardSection(
-        isDark: isDark,
-        padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
-        child: Row(
-          mainAxisAlignment: MainAxisAlignment.spaceBetween,
-          children: [
-            Text(
-              'Quantity',
-              style: TextStyle(
-                fontSize: 14, 
-                fontWeight: FontWeight.w700,
-                color: isDark ? Colors.white : Colors.black87
-              ),
-            ),
-            Container(
-              decoration: BoxDecoration(
-                color: isDark ? const Color(0xFF2C2C2C) : Colors.grey[100],
-                borderRadius: BorderRadius.circular(8),
-                border: Border.all(color: isDark ? Colors.grey[700]! : Colors.grey[200]!)
-              ),
-              child: Row(
-                children: [
-                  _buildQuantityButton(
-                    icon: Icons.remove,
-                    onTap: () {
-                      if (_quantity > 1) {
-                        setState(() => _quantity--);
-                        HapticFeedback.selectionClick();
-                      }
-                    },
-                    isDark: isDark
-                  ),
-                  Container(
-                    width: 50,
-                    alignment: Alignment.center,
-                    child: Text(
-                      _quantity.toString(),
-                      style: TextStyle(
-                        fontSize: 16,
-                        fontWeight: FontWeight.bold,
-                        color: isDark ? Colors.white : Colors.black87,
-                      ),
-                    ),
-                  ),
-                  _buildQuantityButton(
-                    icon: Icons.add,
-                    onTap: () {
-                      setState(() => _quantity++);
-                      HapticFeedback.selectionClick();
-                    },
-                    isDark: isDark
-                  ),
-                ],
-              ),
-            ),
-          ],
-        ),
-      ),
-    );
-  }
-
-  Widget _buildQuantityButton({
-    required IconData icon,
-    required VoidCallback onTap,
-    required bool isDark,
-  }) {
-    return Material(
-      color: Colors.transparent,
-      child: InkWell(
-        onTap: onTap,
-        borderRadius: BorderRadius.circular(8),
-        child: Container(
-          width: 40,
-          height: 40,
-          alignment: Alignment.center,
-          child: Icon(icon, size: 18, color: isDark ? AppColors.primaryLight : AppColors.primary),
-        ),
       ),
     );
   }
@@ -957,13 +627,13 @@ Future<void> _addToCart(BuildContext context, {bool buyNow = false}) async {
                       fontSize: 16,
                       fontWeight: FontWeight.w800,
                       letterSpacing: -0.3,
-                      color: isDark ? Colors.white : Colors.black87
+                      color: isDark ? Colors.white : Colors.black87,
                     ),
                   ),
                 ],
               ),
             ),
-          if (title != null) 
+          if (title != null)
             Divider(color: isDark ? Colors.grey[800] : Colors.grey[200], height: 1),
           Padding(
             padding: padding ?? EdgeInsets.zero,
@@ -974,37 +644,6 @@ Future<void> _addToCart(BuildContext context, {bool buyNow = false}) async {
     );
   }
 
-  // ✅ NEW: Section header for inline layout
-  Widget _buildSectionHeader(String title, IconData icon, bool isDark) {
-    final accentColor = isDark ? AppColors.primaryLight : AppColors.primary;
-    return Padding(
-      padding: const EdgeInsets.fromLTRB(16, 20, 16, 8),
-      child: Row(
-        children: [
-          Container(
-            padding: const EdgeInsets.all(8),
-            decoration: BoxDecoration(
-              color: accentColor.withValues(alpha: 0.1),
-              borderRadius: BorderRadius.circular(8),
-            ),
-            child: Icon(icon, color: accentColor, size: 20),
-          ),
-          const SizedBox(width: 12),
-          Text(
-            title,
-            style: TextStyle(
-              fontSize: 18,
-              fontWeight: FontWeight.w800,
-              letterSpacing: -0.3,
-              color: isDark ? Colors.white : Colors.black87,
-            ),
-          ),
-        ],
-      ),
-    );
-  }
-
-  // ✅ NEW: Description section (inline)
   // BUSINESS-NETWORK-1 (slice 1): the only entry point into a seller's
   // business profile screen. `ProductModel` carries sellerId but not the
   // seller's display name, so this fetches sellers/{sellerId} directly
@@ -1030,6 +669,14 @@ Future<void> _addToCart(BuildContext context, {bool buyNow = false}) async {
           if (shopName == null || shopName.isEmpty) {
             return const SizedBox.shrink();
           }
+          // PDP-1 WS3: firestore.rules' ownerCannotApproveSellerStatus()
+          // makes self-approval impossible, so status == 'approved' is a
+          // genuine, rules-enforced verification signal -- not a
+          // self-reported claim. No seller rating is shown here: the
+          // reviews collection is product-scoped only (no sellerId field),
+          // so there is no real seller-level rating to show yet
+          // (PRODUCT_DETAIL_CURRENT_STATE.md §4 -- candidate SELLER-METRICS-1).
+          final isVerifiedSeller = data['status'] == 'approved';
           final accentColor = isDark ? AppColors.primaryLight : AppColors.primary;
 
           return InkWell(
@@ -1060,14 +707,36 @@ Future<void> _addToCart(BuildContext context, {bool buyNow = false}) async {
                             color: isDark ? Colors.grey[400] : Colors.grey[600],
                           ),
                         ),
-                        Text(
-                          shopName,
-                          style: TextStyle(
-                            fontSize: 15,
-                            fontWeight: FontWeight.w700,
-                            color: isDark ? Colors.white : Colors.black87,
-                          ),
+                        Row(
+                          children: [
+                            Flexible(
+                              child: Text(
+                                shopName,
+                                overflow: TextOverflow.ellipsis,
+                                style: TextStyle(
+                                  fontSize: 15,
+                                  fontWeight: FontWeight.w700,
+                                  color: isDark ? Colors.white : Colors.black87,
+                                ),
+                              ),
+                            ),
+                            if (isVerifiedSeller) ...[
+                              const SizedBox(width: 4),
+                              Icon(Icons.verified_rounded, size: 15, color: accentColor),
+                            ],
+                          ],
                         ),
+                        if (isVerifiedSeller) ...[
+                          const SizedBox(height: 2),
+                          Text(
+                            'Verified Seller',
+                            style: TextStyle(
+                              fontSize: 11,
+                              fontWeight: FontWeight.w600,
+                              color: accentColor,
+                            ),
+                          ),
+                        ],
                       ],
                     ),
                   ),
@@ -1080,412 +749,6 @@ Future<void> _addToCart(BuildContext context, {bool buyNow = false}) async {
             ),
           );
         },
-      ),
-    );
-  }
-
-  Widget _buildDescriptionSection(ProductModel product, bool isDark) {
-    return Padding(
-      padding: const EdgeInsets.symmetric(horizontal: 16),
-      child: _buildCardSection(
-        isDark: isDark,
-        padding: const EdgeInsets.all(16),
-        child: Text(
-          product.description.isNotEmpty 
-              ? product.description 
-              : 'No description available for this product.',
-          style: TextStyle(
-            fontSize: 14,
-            color: isDark ? Colors.grey[300] : Colors.grey[700],
-            height: 1.6,
-          ),
-        ),
-      ),
-    );
-  }
-  
-  // ✅ NEW: Specifications section (inline)
-  Widget _buildSpecificationsSection(ProductModel product, bool isDark) {
-    return Padding(
-      padding: const EdgeInsets.symmetric(horizontal: 16),
-      child: _buildCardSection(
-        isDark: isDark,
-        padding: const EdgeInsets.all(0),
-        child: SpecificationList(
-          specifications: _getSpecifications(product), 
-          isDark: isDark,
-        ),
-      ),
-    );
-  }
-
-  // ✅ NEW: Reviews section (inline, with fixed height)
-  Widget _buildReviewsSection(ProductModel product, bool isDark) {
-    return Padding(
-      padding: const EdgeInsets.symmetric(horizontal: 16),
-      child: _buildCardSection(
-        isDark: isDark,
-        padding: const EdgeInsets.all(16),
-        child: ReviewsSectionInline(
-          productId: product.id,
-          productName: product.name,
-          isDark: isDark,
-        ),
-      ),
-    );
-  }
-
-  Widget _buildBottomBar() {
-    final themeProvider = Provider.of<ThemeProvider>(context);
-    final isDark = themeProvider.isDarkMode;
-    final accentColor = isDark ? AppColors.primaryLight : AppColors.primary;
-
-    return Consumer<ProductProvider>(
-      builder: (context, productProvider, child) {
-        final product = productProvider.selectedProduct;
-        if (product == null) return const SizedBox.shrink();
-
-        final selectedVariant = productProvider.selectedVariant;
-        final displayPrice = selectedVariant?.salePrice ?? product.salePrice;
-        final displayOriginal = selectedVariant?.originalPrice ?? product.originalPrice;
-        final displayName = selectedVariant?.name ?? '';
-
-        return Container(
-          padding: EdgeInsets.fromLTRB(16, 12, 16, 12 + MediaQuery.of(context).padding.bottom),
-          decoration: BoxDecoration(
-            color: isDark ? const Color(0xFF1E1E1E) : Colors.white,
-            boxShadow: [
-              BoxShadow(
-                color: Colors.black.withValues(alpha: 0.08),
-                blurRadius: 8,
-                offset: const Offset(0, -2),
-              ),
-            ],
-            border: Border(top: BorderSide(color: isDark ? Colors.grey[800]! : Colors.grey[200]!)),
-          ),
-          child: Column(
-            mainAxisSize: MainAxisSize.min,
-            children: [
-              // Phase RFQ-2: a bulk-quote entry point for B2B-enabled
-              // products only — RFQ-1's createRfq already refuses any
-              // product where isB2BEnabled isn't true, so this mirrors that
-              // same gate client-side rather than showing a button that
-              // would always fail.
-              if (product.isB2BEnabled) ...[
-                SizedBox(
-                  width: double.infinity,
-                  child: OutlinedButton.icon(
-                    onPressed: () => _showRequestQuoteSheet(context, product, isDark),
-                    icon: const Icon(Icons.request_quote_outlined, size: 18),
-                    label: const Text('Request a Bulk Quote'),
-                    style: OutlinedButton.styleFrom(
-                      foregroundColor: accentColor,
-                      side: BorderSide(color: accentColor),
-                      padding: const EdgeInsets.symmetric(vertical: 10),
-                      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
-                    ),
-                  ),
-                ),
-                const SizedBox(height: 10),
-              ],
-              Row(
-                children: [
-                  // Left: Variant info + Price with MRP strikeout + Offer badge
-              Expanded(
-                child: Column(
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  mainAxisSize: MainAxisSize.min,
-                  children: [
-                    // Variant name
-                    if (displayName.isNotEmpty)
-                      Text(
-                        displayName,
-                        style: TextStyle(
-                          fontSize: 13,
-                          fontWeight: FontWeight.w600,
-                          color: isDark ? Colors.grey[300] : Colors.grey[700],
-                        ),
-                      ),
-                    const SizedBox(height: 4),
-                    // Price row with offer badge
-                    Row(
-                      crossAxisAlignment: CrossAxisAlignment.center,
-                      children: [
-                        // Sale Price
-                        Text(
-                          '₹${displayPrice.toStringAsFixed(0)}',
-                          style: TextStyle(
-                            fontSize: 20,
-                            fontWeight: FontWeight.w800,
-                            color: isDark ? Colors.white : Colors.black87,
-                          ),
-                        ),
-                        const SizedBox(width: 8),
-                        // Strikeout MRP
-                        if (displayOriginal != null && displayOriginal > displayPrice) ...[
-                          Text(
-                            '₹${displayOriginal.toStringAsFixed(0)}',
-                            style: TextStyle(
-                              fontSize: 13,
-                              fontWeight: FontWeight.w500,
-                              decoration: TextDecoration.lineThrough,
-                              color: isDark ? Colors.grey[500] : Colors.grey[500],
-                            ),
-                          ),
-                          const SizedBox(width: 8),
-                          // Offer badge
-                          Container(
-                            padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 3),
-                            decoration: BoxDecoration(
-                              color: Colors.green.shade50,
-                              borderRadius: BorderRadius.circular(4),
-                              border: Border.all(color: Colors.green.shade200),
-                            ),
-                            child: Text(
-                              '${((displayOriginal - displayPrice) / displayOriginal * 100).round()}% OFF',
-                              style: TextStyle(
-                                fontSize: 10,
-                                fontWeight: FontWeight.w800,
-                                color: Colors.green.shade700,
-                              ),
-                            ),
-                          ),
-                        ],
-                      ],
-                    ),
-                    const SizedBox(height: 2),
-                    Text(
-                      'Inclusive of all taxes',
-                      style: TextStyle(
-                        fontSize: 10,
-                        color: isDark ? Colors.grey[500] : Colors.grey[500],
-                      ),
-                    ),
-                  ],
-                ),
-              ),
-              const SizedBox(width: 12),
-              // Right: Add to Cart button
-              SizedBox(
-                width: 130,
-                child: ElevatedButton(
-                  key: _addToCartKey,
-                  onPressed: !product.inStock ? null : () => _addToCart(context, buyNow: false),
-                  style: ElevatedButton.styleFrom(
-                    backgroundColor: product.inStock ? accentColor : Colors.grey[400],
-                    foregroundColor: isDark ? Colors.black : Colors.white,
-                    padding: const EdgeInsets.symmetric(vertical: 14),
-                    shape: RoundedRectangleBorder(
-                      borderRadius: BorderRadius.circular(12),
-                    ),
-                    elevation: product.inStock ? 2 : 0,
-                    shadowColor: accentColor.withValues(alpha: 0.3),
-                  ),
-                  child: Text(
-                    product.inStock ? 'Add to cart' : 'Out of Stock',
-                    style: const TextStyle(
-                      fontSize: 14,
-                      fontWeight: FontWeight.w700,
-                    ),
-                  ),
-                ),
-              ),
-                ],
-              ),
-            ],
-          ),
-        );
-      },
-    );
-  }
-
-  void _showRequestQuoteSheet(BuildContext context, ProductModel product, bool isDark) {
-    showModalBottomSheet(
-      context: context,
-      isScrollControlled: true,
-      backgroundColor: isDark ? AppColors.surfaceDark : AppColors.surface,
-      shape: const RoundedRectangleBorder(
-        borderRadius: BorderRadius.vertical(top: Radius.circular(20)),
-      ),
-      builder: (_) => RequestQuoteSheet(
-        productId: product.id,
-        productName: product.name,
-        moq: product.b2bMoq ?? 1,
-        isDark: isDark,
-      ),
-    );
-  }
-
-  Map<String, String> _getSpecifications(ProductModel product) {
-    final specs = <String, String>{};
-    
-    // Add actual product specifications from database
-    if (product.specifications != null && product.specifications!.isNotEmpty) {
-      specs.addAll(Map<String, String>.from(product.specifications!));
-    }
-    
-    return specs;
-  }
-
-  // ✅ NEW: Delivery Badge + Rating Row (Blinkit style)
-  Widget _buildDeliveryRatingRow(ProductModel product, bool isDark) {
-    final accentColor = isDark ? AppColors.primaryLight : AppColors.primary;
-    final rating = product.rating;
-    final reviewCount = product.reviewCount;
-    
-    return Padding(
-      padding: const EdgeInsets.fromLTRB(16, 16, 16, 0),
-      child: Row(
-        children: [
-          // Delivery time badge
-          Container(
-            padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 6),
-            decoration: BoxDecoration(
-              color: accentColor.withValues(alpha: 0.1),
-              borderRadius: BorderRadius.circular(8),
-              border: Border.all(color: accentColor.withValues(alpha: 0.3)),
-            ),
-            child: Row(
-              mainAxisSize: MainAxisSize.min,
-              children: [
-                Icon(Icons.schedule, size: 14, color: accentColor),
-                const SizedBox(width: 4),
-                Text(
-                  '30 MIN',
-                  style: TextStyle(
-                    fontSize: 12,
-                    fontWeight: FontWeight.w700,
-                    color: accentColor,
-                  ),
-                ),
-              ],
-            ),
-          ),
-          const SizedBox(width: 12),
-          // Star rating - simplified, no FutureBuilder
-          Row(
-            children: [
-              Icon(Icons.star, size: 16, color: Colors.amber),
-              const SizedBox(width: 4),
-              Text(
-                rating.toStringAsFixed(1),
-                style: TextStyle(
-                  fontSize: 13,
-                  fontWeight: FontWeight.w600,
-                  color: isDark ? Colors.white : Colors.black87,
-                ),
-              ),
-              const SizedBox(width: 4),
-              Text(
-                '(${_formatCount(reviewCount)})',
-                style: TextStyle(
-                  fontSize: 12,
-                  color: isDark ? Colors.grey[400] : Colors.grey[600],
-                ),
-              ),
-            ],
-          ),
-        ],
-      ),
-    );
-  }
-
-  String _formatCount(int count) {
-    if (count >= 100000) return '${(count / 100000).toStringAsFixed(2)} lac';
-    if (count >= 1000) return '${(count / 1000).toStringAsFixed(1)}k';
-    return count.toString();
-  }
-
-  // ✅ NEW: Product Name + Price (simplified)
-  Widget _buildProductInfo(ProductModel product, bool isDark) {
-    final accentColor = isDark ? AppColors.primaryLight : AppColors.primary;
-    
-    return Consumer<ProductProvider>(
-      builder: (context, productProvider, _) {
-        final variant = productProvider.selectedVariant;
-        final displayPrice = variant?.salePrice ?? product.salePrice;
-        final displayOriginal = variant?.originalPrice ?? product.originalPrice;
-        
-        return Padding(
-          padding: const EdgeInsets.fromLTRB(16, 16, 16, 0),
-          child: Column(
-            crossAxisAlignment: CrossAxisAlignment.start,
-            children: [
-              // Product name
-              Text(
-                product.name,
-                style: TextStyle(
-                  fontSize: 20,
-                  fontWeight: FontWeight.w800,
-                  color: isDark ? Colors.white : Colors.black87,
-                  height: 1.3,
-                ),
-              ),
-            ],
-          ),
-        );
-      },
-    );
-  }
-
-  // ✅ NEW: Expandable Product Details
-  Widget _buildExpandableDetails(ProductModel product, bool isDark) {
-    return Padding(
-      padding: const EdgeInsets.fromLTRB(16, 20, 16, 0),
-      child: Theme(
-        data: Theme.of(context).copyWith(dividerColor: Colors.transparent),
-        child: ExpansionTile(
-          tilePadding: const EdgeInsets.symmetric(horizontal: 16, vertical: 4),
-          childrenPadding: const EdgeInsets.fromLTRB(16, 0, 16, 16),
-          collapsedBackgroundColor: isDark ? const Color(0xFF1E1E1E) : Colors.white,
-          backgroundColor: isDark ? const Color(0xFF1E1E1E) : Colors.white,
-          shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
-          collapsedShape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
-          leading: Icon(
-            Icons.info_outline_rounded,
-            color: isDark ? AppColors.primaryLight : AppColors.primary,
-            size: 20,
-          ),
-          title: Text(
-            'View product details',
-            style: TextStyle(
-              fontSize: 14,
-              fontWeight: FontWeight.w600,
-              color: isDark ? AppColors.primaryLight : AppColors.primary,
-            ),
-          ),
-          children: [
-            // Description
-            if (product.description.isNotEmpty) ...[
-              Align(
-                alignment: Alignment.centerLeft,
-                child: Text(
-                  'Description',
-                  style: TextStyle(
-                    fontSize: 13,
-                    fontWeight: FontWeight.w700,
-                    color: isDark ? Colors.white : Colors.black87,
-                  ),
-                ),
-              ),
-              const SizedBox(height: 8),
-              Text(
-                product.description,
-                style: TextStyle(
-                  fontSize: 13,
-                  color: isDark ? Colors.grey[400] : Colors.grey[600],
-                  height: 1.5,
-                ),
-              ),
-              const SizedBox(height: 16),
-            ],
-            // Specifications
-            SpecificationList(
-              specifications: _getSpecifications(product),
-              isDark: isDark,
-            ),
-          ],
-        ),
       ),
     );
   }
@@ -1559,32 +822,345 @@ Future<void> _addToCart(BuildContext context, {bool buyNow = false}) async {
     );
   }
 
-  // ✅ NEW: Similar Products horizontal scroll
+  // PDP-1 WS2: resurrected -- ReviewsSectionInline (stats bars, first-3
+  // reviews, Add Review dialog) was fully built but had no live call site
+  // anywhere on this screen (PRODUCT_DETAIL_CURRENT_STATE.md §3/§5 item 2).
+  Widget _buildReviewsSection(ProductModel product, bool isDark) {
+    return Padding(
+      padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
+      child: _buildCardSection(
+        isDark: isDark,
+        padding: const EdgeInsets.all(16),
+        child: ReviewsSectionInline(
+          productId: product.id,
+          productName: product.name,
+          isDark: isDark,
+        ),
+      ),
+    );
+  }
+
+  Widget _buildBottomBar() {
+    final themeProvider = Provider.of<ThemeProvider>(context);
+    final isDark = themeProvider.isDarkMode;
+    final accentColor = isDark ? AppColors.primaryLight : AppColors.primary;
+
+    return Consumer2<ProductProvider, CartProvider>(
+      builder: (context, productProvider, cartProvider, child) {
+        final product = productProvider.selectedProduct;
+        if (product == null) return const SizedBox.shrink();
+
+        final selectedVariant = productProvider.selectedVariant;
+        final displayPrice = selectedVariant?.salePrice ?? product.salePrice;
+        final displayOriginal = selectedVariant?.originalPrice ?? product.originalPrice;
+        final displayName = selectedVariant?.name ?? '';
+        // null when the product has no variants -- matches CartProvider's
+        // own null-variant branch (see cart_provider.dart's isInCart/getItemQuantity).
+        final variantKey = selectedVariant?.name;
+        final cartQuantity = cartProvider.getItemQuantity(product.id, variant: variantKey);
+        final inCart = cartQuantity > 0;
+
+        return Container(
+          padding: EdgeInsets.fromLTRB(16, 12, 16, 12 + MediaQuery.of(context).padding.bottom),
+          decoration: BoxDecoration(
+            color: isDark ? const Color(0xFF1E1E1E) : Colors.white,
+            boxShadow: [
+              BoxShadow(
+                color: Colors.black.withValues(alpha: 0.08),
+                blurRadius: 8,
+                offset: const Offset(0, -2),
+              ),
+            ],
+            border: Border(top: BorderSide(color: isDark ? Colors.grey[800]! : Colors.grey[200]!)),
+          ),
+          child: Column(
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              // Phase RFQ-2: a bulk-quote entry point for B2B-enabled
+              // products only -- RFQ-1's createRfq already refuses any
+              // product where isB2BEnabled isn't true, so this mirrors that
+              // same gate client-side rather than showing a button that
+              // would always fail.
+              if (product.isB2BEnabled) ...[
+                SizedBox(
+                  width: double.infinity,
+                  child: OutlinedButton.icon(
+                    onPressed: () => _showRequestQuoteSheet(context, product, isDark),
+                    icon: const Icon(Icons.request_quote_outlined, size: 18),
+                    label: const Text('Request a Bulk Quote'),
+                    style: OutlinedButton.styleFrom(
+                      foregroundColor: accentColor,
+                      side: BorderSide(color: accentColor),
+                      padding: const EdgeInsets.symmetric(vertical: 10),
+                      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+                    ),
+                  ),
+                ),
+                const SizedBox(height: 10),
+              ],
+              Row(
+                children: [
+                  // Left: Variant info + Price with MRP strikeout + Offer badge
+                  Expanded(
+                    child: Column(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      mainAxisSize: MainAxisSize.min,
+                      children: [
+                        if (displayName.isNotEmpty)
+                          Text(
+                            displayName,
+                            style: TextStyle(
+                              fontSize: 13,
+                              fontWeight: FontWeight.w600,
+                              color: isDark ? Colors.grey[300] : Colors.grey[700],
+                            ),
+                          ),
+                        const SizedBox(height: 4),
+                        Row(
+                          crossAxisAlignment: CrossAxisAlignment.center,
+                          children: [
+                            Text(
+                              '₹${displayPrice.toStringAsFixed(0)}',
+                              style: TextStyle(
+                                fontSize: 20,
+                                fontWeight: FontWeight.w800,
+                                color: isDark ? Colors.white : Colors.black87,
+                              ),
+                            ),
+                            const SizedBox(width: 8),
+                            if (displayOriginal != null && displayOriginal > displayPrice) ...[
+                              Text(
+                                '₹${displayOriginal.toStringAsFixed(0)}',
+                                style: TextStyle(
+                                  fontSize: 13,
+                                  fontWeight: FontWeight.w500,
+                                  decoration: TextDecoration.lineThrough,
+                                  color: isDark ? Colors.grey[500] : Colors.grey[500],
+                                ),
+                              ),
+                              const SizedBox(width: 8),
+                              Container(
+                                padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 3),
+                                decoration: BoxDecoration(
+                                  color: Colors.green.shade50,
+                                  borderRadius: BorderRadius.circular(4),
+                                  border: Border.all(color: Colors.green.shade200),
+                                ),
+                                child: Text(
+                                  '${((displayOriginal - displayPrice) / displayOriginal * 100).round()}% OFF',
+                                  style: TextStyle(
+                                    fontSize: 10,
+                                    fontWeight: FontWeight.w800,
+                                    color: Colors.green.shade700,
+                                  ),
+                                ),
+                              ),
+                            ],
+                          ],
+                        ),
+                        const SizedBox(height: 2),
+                        Text(
+                          'Inclusive of all taxes',
+                          style: TextStyle(
+                            fontSize: 10,
+                            color: isDark ? Colors.grey[500] : Colors.grey[500],
+                          ),
+                        ),
+                      ],
+                    ),
+                  ),
+                  const SizedBox(width: 12),
+                  // Right: Add to Cart, or a live quantity stepper once in cart
+                  SizedBox(
+                    key: _addToCartKey,
+                    width: 140,
+                    child: !product.inStock
+                        ? ElevatedButton(
+                            onPressed: null,
+                            style: ElevatedButton.styleFrom(
+                              backgroundColor: Colors.grey[400],
+                              padding: const EdgeInsets.symmetric(vertical: 14),
+                              shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+                            ),
+                            child: const Text(
+                              'Out of Stock',
+                              style: TextStyle(fontSize: 14, fontWeight: FontWeight.w700),
+                            ),
+                          )
+                        : inCart
+                            ? _buildQuantityStepper(
+                                isDark, accentColor, product, variantKey, cartQuantity, cartProvider)
+                            : ElevatedButton(
+                                onPressed: () => _addToCart(context),
+                                style: ElevatedButton.styleFrom(
+                                  backgroundColor: accentColor,
+                                  foregroundColor: isDark ? Colors.black : Colors.white,
+                                  padding: const EdgeInsets.symmetric(vertical: 14),
+                                  shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+                                  elevation: 2,
+                                  shadowColor: accentColor.withValues(alpha: 0.3),
+                                ),
+                                child: const Text(
+                                  'Add to cart',
+                                  style: TextStyle(fontSize: 14, fontWeight: FontWeight.w700),
+                                ),
+                              ),
+                  ),
+                ],
+              ),
+            ],
+          ),
+        );
+      },
+    );
+  }
+
+  /// `[-] N [+]` stepper replacing the Add-to-Cart button once this
+  /// (product, variant) pair is already in the cart -- master-prompt's own
+  /// "transform into quantity controls" requirement. Reads/writes go
+  /// straight through the existing CartProvider (optimistic local update,
+  /// no loading flicker); nothing new is introduced here.
+  Widget _buildQuantityStepper(
+    bool isDark,
+    Color accentColor,
+    ProductModel product,
+    String? variantKey,
+    int quantity,
+    CartProvider cartProvider,
+  ) {
+    return Container(
+      height: 48,
+      decoration: BoxDecoration(
+        color: accentColor,
+        borderRadius: BorderRadius.circular(12),
+      ),
+      child: Row(
+        mainAxisAlignment: MainAxisAlignment.spaceBetween,
+        children: [
+          _stepperButton(
+            icon: Icons.remove,
+            isDark: isDark,
+            onTap: () {
+              HapticFeedback.selectionClick();
+              cartProvider.decrementQuantity(product.id, variant: variantKey);
+            },
+          ),
+          Text(
+            '$quantity',
+            style: TextStyle(
+              fontSize: 15,
+              fontWeight: FontWeight.w800,
+              color: isDark ? Colors.black : Colors.white,
+            ),
+          ),
+          _stepperButton(
+            icon: Icons.add,
+            isDark: isDark,
+            onTap: () {
+              HapticFeedback.selectionClick();
+              cartProvider.incrementQuantity(product.id, variant: variantKey);
+            },
+          ),
+        ],
+      ),
+    );
+  }
+
+  Widget _stepperButton({required IconData icon, required bool isDark, required VoidCallback onTap}) {
+    return Material(
+      color: Colors.transparent,
+      child: InkWell(
+        onTap: onTap,
+        borderRadius: BorderRadius.circular(12),
+        child: SizedBox(
+          width: 44,
+          height: 48,
+          child: Icon(icon, size: 18, color: isDark ? Colors.black : Colors.white),
+        ),
+      ),
+    );
+  }
+
+  void _showRequestQuoteSheet(BuildContext context, ProductModel product, bool isDark) {
+    showModalBottomSheet(
+      context: context,
+      isScrollControlled: true,
+      backgroundColor: isDark ? AppColors.surfaceDark : AppColors.surface,
+      shape: const RoundedRectangleBorder(
+        borderRadius: BorderRadius.vertical(top: Radius.circular(20)),
+      ),
+      builder: (_) => RequestQuoteSheet(
+        productId: product.id,
+        productName: product.name,
+        moq: product.b2bMoq ?? 1,
+        isDark: isDark,
+      ),
+    );
+  }
+
+  Map<String, String> _getSpecifications(ProductModel product) {
+    final specs = <String, String>{};
+
+    if (product.specifications != null && product.specifications!.isNotEmpty) {
+      specs.addAll(Map<String, String>.from(product.specifications!));
+    }
+
+    return specs;
+  }
+
+  String _formatCount(int count) {
+    if (count >= 100000) return '${(count / 100000).toStringAsFixed(2)} lac';
+    if (count >= 1000) return '${(count / 1000).toStringAsFixed(1)}k';
+    return count.toString();
+  }
+
+  // Recommendations rail. PDP-1 WS4: prefer the curated
+  // product.relatedProductIds signal (admin/seller-set; product_provider.dart's
+  // loadProductById already resolves it into `relatedProducts` on every
+  // load) over the generic same-category fallback when it's populated --
+  // matches master-prompt's own ranking preference (curated over generic).
+  // Falls back to the same-category query, unchanged, when relatedProductIds
+  // is empty (still the common case today -- see
+  // PRODUCT_DETAIL_CURRENT_STATE.md §5 item 7 / §8).
   Widget _buildSimilarProducts(ProductModel product, bool isDark) {
     return Consumer2<ProductProvider, CategoryProvider>(
       builder: (context, productProvider, categoryProvider, _) {
-        final all = categoryProvider.categories;
-        CategoryModel? bucket;
-        try {
-          bucket = all.firstWhere((c) => c.id == product.categoryId);
-        } catch (_) {
-          try {
-            final nm = (product.categoryName ?? '').toLowerCase().trim();
-            if (nm.isNotEmpty) {
-              bucket = all.firstWhere((c) => c.name.toLowerCase().trim() == nm);
-            }
-          } catch (_) {
-            bucket = null;
-          }
-        }
+        final curated = productProvider.relatedProducts
+            .where((p) => p.id != product.id && p.isActive)
+            .take(6)
+            .toList();
 
-        final similarProducts = productProvider.products.where((p) {
-          if (p.id == product.id || !p.isActive) return false;
-          if (bucket != null) {
-            return productBelongsToCategory(p, bucket!, all);
+        List<ProductModel> similarProducts;
+        String sectionTitle;
+
+        if (curated.isNotEmpty) {
+          similarProducts = curated;
+          sectionTitle = 'You May Also Like';
+        } else {
+          final all = categoryProvider.categories;
+          CategoryModel? bucket;
+          try {
+            bucket = all.firstWhere((c) => c.id == product.categoryId);
+          } catch (_) {
+            try {
+              final nm = (product.categoryName ?? '').toLowerCase().trim();
+              if (nm.isNotEmpty) {
+                bucket = all.firstWhere((c) => c.name.toLowerCase().trim() == nm);
+              }
+            } catch (_) {
+              bucket = null;
+            }
           }
-          return p.categoryId == product.categoryId;
-        }).take(6).toList();
+
+          similarProducts = productProvider.products.where((p) {
+            if (p.id == product.id || !p.isActive) return false;
+            if (bucket != null) {
+              return productBelongsToCategory(p, bucket, all);
+            }
+            return p.categoryId == product.categoryId;
+          }).take(6).toList();
+          sectionTitle = 'Similar products';
+        }
 
         if (similarProducts.isEmpty) return const SizedBox.shrink();
 
@@ -1594,7 +1170,7 @@ Future<void> _addToCart(BuildContext context, {bool buyNow = false}) async {
             Padding(
               padding: const EdgeInsets.fromLTRB(16, 0, 16, 4),
               child: Text(
-                'Similar products',
+                sectionTitle,
                 style: TextStyle(
                   fontSize: 16,
                   fontWeight: FontWeight.w700,
@@ -1602,7 +1178,6 @@ Future<void> _addToCart(BuildContext context, {bool buyNow = false}) async {
                 ),
               ),
             ),
-            // ✅ Grid with simple inline cards - no gap
             Padding(
               padding: const EdgeInsets.symmetric(horizontal: 16),
               child: GridView.builder(
@@ -1629,7 +1204,7 @@ Future<void> _addToCart(BuildContext context, {bool buyNow = false}) async {
   Widget _buildSimilarProductCard(ProductModel product, bool isDark) {
     final accentColor = isDark ? AppColors.primaryLight : AppColors.primary;
     final hasDiscount = product.originalPrice != null && product.originalPrice! > product.salePrice;
-    
+
     return GestureDetector(
       onTap: () {
         HapticFeedback.lightImpact();
@@ -1646,7 +1221,6 @@ Future<void> _addToCart(BuildContext context, {bool buyNow = false}) async {
           mainAxisSize: MainAxisSize.max,
           crossAxisAlignment: CrossAxisAlignment.stretch,
           children: [
-            // Image section - fills from top
             Expanded(
               child: Container(
                 color: isDark ? Colors.grey[900] : Colors.grey[50],
@@ -1654,7 +1228,7 @@ Future<void> _addToCart(BuildContext context, {bool buyNow = false}) async {
                     ? Image.network(
                         product.imageUrl!,
                         fit: BoxFit.cover,
-                        alignment: Alignment.topCenter,  // ✅ Fill from top
+                        alignment: Alignment.topCenter,
                         errorBuilder: (_, __, ___) => Center(
                           child: Icon(
                             Icons.image_not_supported_outlined,
@@ -1668,14 +1242,12 @@ Future<void> _addToCart(BuildContext context, {bool buyNow = false}) async {
                       ),
               ),
             ),
-            // Info section - fixed height
             Container(
               padding: const EdgeInsets.all(6),
               child: Column(
                 crossAxisAlignment: CrossAxisAlignment.start,
                 mainAxisSize: MainAxisSize.min,
                 children: [
-                  // Product name
                   Text(
                     product.name,
                     maxLines: 2,
@@ -1688,7 +1260,6 @@ Future<void> _addToCart(BuildContext context, {bool buyNow = false}) async {
                     ),
                   ),
                   const SizedBox(height: 2),
-                  // Prices
                   Text(
                     '₹${product.salePrice.toStringAsFixed(0)}',
                     style: TextStyle(
@@ -1733,7 +1304,7 @@ Future<void> _addToCart(BuildContext context, {bool buyNow = false}) async {
               style: TextStyle(
                 color: isDark ? Colors.grey[400] : Colors.grey[600],
                 fontSize: 14,
-                fontWeight: FontWeight.w500
+                fontWeight: FontWeight.w500,
               ),
             ),
           ],
@@ -1799,20 +1370,25 @@ Future<void> _addToCart(BuildContext context, {bool buyNow = false}) async {
   }
 }
 
-class _ProductDetailsSliverHeader extends SliverPersistentHeaderDelegate {
+/// Pinned sticky app bar for the sliver scroll: back / search / wishlist /
+/// share, transparent-over-the-hero-image when expanded, solid with the
+/// product name fading in once scrolled (PDP-1 WS2). Adapted from the
+/// previously dead `_ProductDetailsSliverHeader` (same pinned-header
+/// pattern, folded forward rather than rebuilt) with a search icon added to
+/// match this screen's own top-navigation contract (back/search/wishlist/
+/// share) -- the original only had back/wishlist/share.
+class _StickyHeaderDelegate extends SliverPersistentHeaderDelegate {
   final bool isCollapsed;
   final ProductModel product;
   final bool isDark;
-  final Color accentColor;
   final VoidCallback onBack;
   final VoidCallback onShare;
   final double topPadding;
 
-  _ProductDetailsSliverHeader({
+  _StickyHeaderDelegate({
     required this.isCollapsed,
     required this.product,
     required this.isDark,
-    required this.accentColor,
     required this.onBack,
     required this.onShare,
     required this.topPadding,
@@ -1820,35 +1396,34 @@ class _ProductDetailsSliverHeader extends SliverPersistentHeaderDelegate {
 
   @override
   Widget build(BuildContext context, double shrinkOffset, bool overlapsContent) {
-    // Cleaner app bar - matches Blinkit style with transparent/white background
     final Color iconColor = isDark ? Colors.white : Colors.black87;
     final Color iconBgColor = isDark ? Colors.black.withValues(alpha: 0.3) : Colors.grey.withValues(alpha: 0.15);
 
     return Container(
       padding: EdgeInsets.fromLTRB(16, topPadding + 8, 16, 8),
       decoration: BoxDecoration(
-        // Transparent when expanded, solid when collapsed
-        color: isCollapsed 
-            ? (isDark ? const Color(0xFF1E1E1E) : Colors.white)
+        color: isCollapsed
+            ? (isDark ? AppColors.surfaceDark : Colors.white)
             : (isDark ? const Color(0xFF1A1A1A) : Colors.white),
-        boxShadow: isCollapsed ? [
-          BoxShadow(
-            color: Colors.black.withValues(alpha: isDark ? 0.2 : 0.08),
-            blurRadius: 4,
-            offset: const Offset(0, 2),
-          )
-        ] : null,
+        boxShadow: isCollapsed
+            ? [
+                BoxShadow(
+                  color: Colors.black.withValues(alpha: isDark ? 0.2 : 0.08),
+                  blurRadius: 4,
+                  offset: const Offset(0, 2),
+                ),
+              ]
+            : null,
       ),
       child: Row(
-        mainAxisAlignment: MainAxisAlignment.spaceBetween,
         children: [
-          _buildHeaderIcon(icon: Icons.arrow_back_rounded, color: iconColor, bgColor: iconBgColor, onTap: onBack),
+          _headerIcon(icon: Icons.arrow_back_rounded, color: iconColor, bgColor: iconBgColor, onTap: onBack),
           Expanded(
             child: AnimatedOpacity(
               duration: const Duration(milliseconds: 200),
               opacity: isCollapsed ? 1.0 : 0.0,
               child: Padding(
-                padding: const EdgeInsets.symmetric(horizontal: 16.0),
+                padding: const EdgeInsets.symmetric(horizontal: 8.0),
                 child: Text(
                   product.name,
                   style: TextStyle(
@@ -1863,36 +1438,45 @@ class _ProductDetailsSliverHeader extends SliverPersistentHeaderDelegate {
               ),
             ),
           ),
-          Row(
-            children: [
-              Consumer<WishlistProvider>(
-                builder: (context, wishlistProvider, child) {
-                  final isInWishlist = wishlistProvider.isInWishlist(product.id);
-                  return _buildHeaderIcon(
-                    icon: isInWishlist ? Icons.favorite_rounded : Icons.favorite_border_rounded,
-                    color: isInWishlist ? Colors.red : iconColor,
-                    bgColor: iconBgColor,
-                    onTap: () async {
-                      HapticFeedback.mediumImpact();
-                      if (isInWishlist) {
-                        await wishlistProvider.removeItem(product.id);
-                      } else {
-                        await wishlistProvider.addItem(product);
-                      }
-                    },
-                  );
+          _headerIcon(
+            icon: Icons.search_rounded,
+            color: iconColor,
+            bgColor: iconBgColor,
+            onTap: () => Navigator.pushNamed(context, AppRoutes.search),
+          ),
+          const SizedBox(width: 8),
+          Consumer<WishlistProvider>(
+            builder: (context, wishlistProvider, child) {
+              final isInWishlist = wishlistProvider.isInWishlist(product.id);
+              return _headerIcon(
+                icon: isInWishlist ? Icons.favorite_rounded : Icons.favorite_border_rounded,
+                color: isInWishlist ? Colors.red : iconColor,
+                bgColor: iconBgColor,
+                onTap: () async {
+                  HapticFeedback.mediumImpact();
+                  if (isInWishlist) {
+                    await wishlistProvider.removeItem(product.id);
+                    if (context.mounted) {
+                      SnackbarHelper.showInfo(context, 'Removed from wishlist');
+                    }
+                  } else {
+                    await wishlistProvider.addItem(product);
+                    if (context.mounted) {
+                      SnackbarHelper.showSuccess(context, 'Added to wishlist');
+                    }
+                  }
                 },
-              ),
-              const SizedBox(width: 8),
-              _buildHeaderIcon(icon: Icons.share_outlined, color: iconColor, bgColor: iconBgColor, onTap: onShare),
-            ],
-          )
+              );
+            },
+          ),
+          const SizedBox(width: 8),
+          _headerIcon(icon: Icons.share_outlined, color: iconColor, bgColor: iconBgColor, onTap: onShare),
         ],
       ),
     );
   }
 
-  Widget _buildHeaderIcon({required IconData icon, required Color color, required Color bgColor, required VoidCallback onTap}) {
+  Widget _headerIcon({required IconData icon, required Color color, required Color bgColor, required VoidCallback onTap}) {
     return Container(
       width: 40,
       height: 40,
@@ -1912,46 +1496,22 @@ class _ProductDetailsSliverHeader extends SliverPersistentHeaderDelegate {
   }
 
   @override
-  double get maxExtent => topPadding + 56; 
+  double get maxExtent => topPadding + 56;
   @override
   double get minExtent => topPadding + 56;
 
   @override
-  bool shouldRebuild(covariant _ProductDetailsSliverHeader oldDelegate) {
+  bool shouldRebuild(covariant _StickyHeaderDelegate oldDelegate) {
     return oldDelegate.isCollapsed != isCollapsed ||
-           oldDelegate.product != product ||
-           oldDelegate.isDark != isDark;
+        oldDelegate.product != product ||
+        oldDelegate.isDark != isDark;
   }
 }
 
-class _TabBarDelegate extends SliverPersistentHeaderDelegate {
-  final Widget child;
-
-  _TabBarDelegate({required this.child});
-
-  @override
-  double get minExtent => 60;
-
-  @override
-  double get maxExtent => 60;
-
-  @override
-  Widget build(
-    BuildContext context,
-    double shrinkOffset,
-    bool overlapsContent,
-  ) {
-    final themeProvider = Provider.of<ThemeProvider>(context);
-    final isDark = themeProvider.isDarkMode;
-    return Container(
-      color: isDark ? const Color(0xFF121212) : Colors.grey[50],
-      padding: const EdgeInsets.only(top: 12),
-      child: child,
-    );
-  }
-
-  @override
-  bool shouldRebuild(_TabBarDelegate oldDelegate) {
-    return oldDelegate.child != child;
-  }
+/// One data-driven trust badge (PDP-1 WS3) -- see _buildProductBadges.
+class _ProductBadge {
+  final String label;
+  final IconData icon;
+  final MaterialColor color;
+  const _ProductBadge(this.label, this.icon, this.color);
 }
