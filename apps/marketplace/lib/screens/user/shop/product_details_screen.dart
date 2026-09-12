@@ -9,6 +9,7 @@ import '../../../providers/product_provider.dart';
 import '../../../providers/category_provider.dart';
 import '../../../providers/cart_provider.dart';
 import '../../../providers/wishlist_provider.dart';
+import '../../../providers/address_provider.dart';
 import 'package:agrimore_core/agrimore_core.dart';
 import 'widgets/product_image_hero.dart';
 import 'widgets/specification_list.dart';
@@ -37,12 +38,22 @@ class _ProductDetailsScreenState extends State<ProductDetailsScreen> {
 
   bool _isCollapsed = false;
   /// `one_off`, `daily`, or `weekly` -- forwarded to checkout (auto-delivery).
+  /// Driven by `_subscribeChecked`: unchecked always means `one_off`;
+  /// checked keeps whichever of daily/weekly was last chosen (defaults to
+  /// daily the first time it's checked).
   String _subscriptionCadence = 'one_off';
+  bool _subscribeChecked = false;
 
   @override
   void initState() {
     super.initState();
     _loadProduct();
+    // Fire-and-forget, same pattern as CategoryProvider elsewhere on this
+    // screen tree: loadAddresses() is idempotent-safe and most navigations
+    // here arrive from a screen (home/checkout) that already loaded them.
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      if (mounted) context.read<AddressProvider>().loadAddresses();
+    });
 
     _scrollController.addListener(() {
       final isCollapsed = _scrollController.hasClients &&
@@ -240,12 +251,21 @@ class _ProductDetailsScreenState extends State<ProductDetailsScreen> {
                 child: Column(
                   children: [
                     ProductImageHero(product: loadedProduct),
-                    // Overlapped info card: delivery/rating, name, variants, details
-                    _buildOverlappedInfoCard(loadedProduct, isDark),
+                    // PDP-2: one unified card -- rating, name, short
+                    // description, price, variant picker -- replaces the
+                    // old split between this card (name/variants) and the
+                    // bottom bar (price only).
+                    _buildUnifiedInfoCard(loadedProduct, isDark),
+                    // PDP-2: delivery window + the user's own selected
+                    // address + subscription opt-in, as one card.
+                    _buildDeliverySubscriptionCard(loadedProduct, isDark),
                     // BUSINESS-NETWORK-1: discovery link to the seller's business
                     // profile -- without this the feature has no entry point.
                     _buildSoldBySection(loadedProduct, isDark),
-                    _buildSubscriptionOptions(loadedProduct, isDark),
+                    // PDP-2: the product's own real description + specs,
+                    // pulled out of the collapsible dropdown into a plain
+                    // visible section.
+                    _buildProductHighlights(loadedProduct, isDark),
                     _buildReviewsSection(loadedProduct, isDark),
                     // Similar Products section
                     _buildSimilarProducts(loadedProduct, isDark),
@@ -272,8 +292,13 @@ class _ProductDetailsScreenState extends State<ProductDetailsScreen> {
     );
   }
 
-  /// Blinkit-style overlapped info card with all product details
-  Widget _buildOverlappedInfoCard(ProductModel product, bool isDark) {
+  /// PDP-2: one unified card -- rating, name, short description, product
+  /// badges, price, variant picker. Replaces the old split between this
+  /// card (name/variants only) and the bottom bar (which owned price alone).
+  /// Price here is read the same variant-aware way the bottom bar already
+  /// does (`Consumer<ProductProvider>`, selectedVariant overrides the base
+  /// product price) so the two never disagree.
+  Widget _buildUnifiedInfoCard(ProductModel product, bool isDark) {
     final accentColor = isDark ? AppColors.primaryLight : AppColors.primary;
 
     return Transform.translate(
@@ -296,9 +321,9 @@ class _ProductDetailsScreenState extends State<ProductDetailsScreen> {
           child: Column(
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
-              // Row 1: Delivery badge + Rating
-              _buildDeliveryRatingInline(product, isDark, accentColor),
-              const SizedBox(height: 16),
+              // Row 1: Rating
+              _buildRatingInline(product, isDark),
+              const SizedBox(height: 10),
 
               // Row 2: Product Name
               Text(
@@ -310,10 +335,32 @@ class _ProductDetailsScreenState extends State<ProductDetailsScreen> {
                   height: 1.3,
                 ),
               ),
+
+              // Row 3: short description (real product.description,
+              // truncated -- not a separate/fabricated field, this codebase
+              // only ever had the one `description` field on ProductModel).
+              if (product.description.trim().isNotEmpty) ...[
+                const SizedBox(height: 4),
+                Text(
+                  product.description.trim(),
+                  maxLines: 2,
+                  overflow: TextOverflow.ellipsis,
+                  style: TextStyle(
+                    fontSize: 13,
+                    color: isDark ? Colors.grey[400] : Colors.grey[600],
+                    height: 1.35,
+                  ),
+                ),
+              ],
               _buildProductBadges(product, isDark),
+              const SizedBox(height: 14),
+
+              // Row 4: Price + sale price (variant-aware, same source as
+              // the bottom bar).
+              _buildPriceRow(isDark, accentColor),
               const SizedBox(height: 16),
 
-              // Row 3: "Select Unit" label + Variant chips
+              // Row 5: "Select Unit" label + Variant chips
               if (product.variants.isNotEmpty) ...[
                 Text(
                   'Select Unit',
@@ -325,14 +372,7 @@ class _ProductDetailsScreenState extends State<ProductDetailsScreen> {
                 ),
                 const SizedBox(height: 10),
                 _buildVariantChipsInline(product, isDark, accentColor),
-                const SizedBox(height: 16),
               ],
-
-              // Row 4: Divider
-              Divider(color: isDark ? Colors.grey[800] : Colors.grey[200], height: 1),
-
-              // Row 5: View product details (expandable)
-              _buildViewDetailsDropdown(product, isDark, accentColor),
             ],
           ),
         ),
@@ -340,76 +380,105 @@ class _ProductDetailsScreenState extends State<ProductDetailsScreen> {
     );
   }
 
-  // PDP-1 WS3: this badge previously hardcoded '30 MINS' unconditionally --
-  // wrong for a B2B/bulk-freight product, where home_app_bar.dart's own
-  // established copy (`isB2B ? 'Bulk Freight' : '30 minutes'`) already
-  // draws exactly this distinction elsewhere in this app. Mirrored here
-  // rather than invented. No pre-purchase minute-level ETA field exists
-  // anywhere in this codebase (grepped: the only `etaMinutes` machinery is
-  // live delivery-partner tracking for an order already placed, in
-  // delivery_tracking_service.dart/live_tracking_screen.dart -- not
-  // applicable pre-purchase); whether "30 minutes" itself is a verified
-  // operational SLA or aspirational copy is a real open question, disclosed
-  // in PRODUCT_DETAIL_CURRENT_STATE.md, not resolved by this phase.
-  Widget _buildDeliveryRatingInline(ProductModel product, bool isDark, Color accentColor) {
+  Widget _buildRatingInline(ProductModel product, bool isDark) {
     final rating = product.rating;
     final reviewCount = product.reviewCount;
-    final deliveryLabel = product.isB2BEnabled ? 'BULK FREIGHT' : '30 MINS';
 
     return Row(
       children: [
-        Container(
-          padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
-          decoration: BoxDecoration(
-            color: accentColor.withValues(alpha: 0.1),
-            borderRadius: BorderRadius.circular(6),
-          ),
-          child: Row(
-            mainAxisSize: MainAxisSize.min,
-            children: [
-              Icon(
-                product.isB2BEnabled ? Icons.local_shipping_outlined : Icons.access_time_filled,
-                size: 12,
-                color: accentColor,
-              ),
-              const SizedBox(width: 4),
-              Text(
-                deliveryLabel,
-                style: TextStyle(
-                  fontSize: 11,
-                  fontWeight: FontWeight.w700,
-                  color: accentColor,
-                ),
-              ),
-            ],
+        Icon(Icons.star, size: 14, color: Colors.amber),
+        const SizedBox(width: 3),
+        Text(
+          rating.toStringAsFixed(1),
+          style: TextStyle(
+            fontSize: 12,
+            fontWeight: FontWeight.w600,
+            color: isDark ? Colors.white : Colors.black87,
           ),
         ),
-        const SizedBox(width: 12),
-        Row(
-          children: [
-            Icon(Icons.star, size: 14, color: Colors.amber),
-            const SizedBox(width: 3),
-            Text(
-              rating.toStringAsFixed(1),
-              style: TextStyle(
-                fontSize: 12,
-                fontWeight: FontWeight.w600,
-                color: isDark ? Colors.white : Colors.black87,
-              ),
-            ),
-            const SizedBox(width: 4),
-            Text(
-              '(${_formatCount(reviewCount)})',
-              style: TextStyle(
-                fontSize: 11,
-                color: isDark ? Colors.grey[400] : Colors.grey[600],
-              ),
-            ),
-          ],
+        const SizedBox(width: 4),
+        Text(
+          '(${_formatCount(reviewCount)} ratings)',
+          style: TextStyle(
+            fontSize: 11,
+            color: isDark ? Colors.grey[400] : Colors.grey[600],
+          ),
         ),
       ],
     );
   }
+
+  /// Variant-aware price + sale price, reading the exact same
+  /// selectedVariant-overrides-product source the bottom bar already uses
+  /// (product_provider.dart), so the two can never show different numbers.
+  Widget _buildPriceRow(bool isDark, Color accentColor) {
+    return Consumer<ProductProvider>(
+      builder: (context, productProvider, _) {
+        final product = productProvider.selectedProduct;
+        if (product == null) return const SizedBox.shrink();
+        final selectedVariant = productProvider.selectedVariant;
+        final displayPrice = selectedVariant?.salePrice ?? product.salePrice;
+        final displayOriginal = selectedVariant?.originalPrice ?? product.originalPrice;
+        final hasDiscount = displayOriginal != null && displayOriginal > displayPrice;
+
+        return Row(
+          crossAxisAlignment: CrossAxisAlignment.center,
+          children: [
+            Text(
+              '₹${displayPrice.toStringAsFixed(0)}',
+              style: TextStyle(
+                fontSize: 22,
+                fontWeight: FontWeight.w800,
+                color: isDark ? Colors.white : Colors.black87,
+              ),
+            ),
+            if (hasDiscount) ...[
+              const SizedBox(width: 8),
+              Text(
+                '₹${displayOriginal.toStringAsFixed(0)}',
+                style: TextStyle(
+                  fontSize: 14,
+                  fontWeight: FontWeight.w500,
+                  decoration: TextDecoration.lineThrough,
+                  color: isDark ? Colors.grey[500] : Colors.grey[500],
+                ),
+              ),
+              const SizedBox(width: 8),
+              Container(
+                padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 3),
+                decoration: BoxDecoration(
+                  color: Colors.green.shade50,
+                  borderRadius: BorderRadius.circular(4),
+                  border: Border.all(color: Colors.green.shade200),
+                ),
+                child: Text(
+                  '${((displayOriginal - displayPrice) / displayOriginal * 100).round()}% OFF',
+                  style: TextStyle(
+                    fontSize: 11,
+                    fontWeight: FontWeight.w800,
+                    color: Colors.green.shade700,
+                  ),
+                ),
+              ),
+            ],
+          ],
+        );
+      },
+    );
+  }
+
+  // The real delivery-window label this codebase has ever established --
+  // home_app_bar.dart's own copy (`isB2B ? 'Bulk Freight' : '30 minutes'`),
+  // mirrored rather than inventing a new "10 minutes" quick-commerce claim
+  // with no backing capability anywhere in functions/src or this app (no
+  // dark-store/fast-delivery flag exists on ProductModel or sellers). No
+  // pre-purchase minute-level ETA field exists anywhere in this codebase
+  // (the only `etaMinutes` machinery is live delivery-partner tracking for
+  // an order already placed); whether "30 minutes" itself is a verified
+  // operational SLA or aspirational copy is a real open question, disclosed
+  // in PRODUCT_DETAIL_CURRENT_STATE.md, not resolved by this phase either.
+  String _deliveryWindowLabel(ProductModel product) =>
+      product.isB2BEnabled ? 'Bulk Freight' : '30 minutes';
 
   /// PDP-1 WS3: data-driven trust badges off the product's own real boolean
   /// fields -- replaces the unconditional, fabricated "Authentic" badge that
@@ -546,45 +615,43 @@ class _ProductDetailsScreenState extends State<ProductDetailsScreen> {
     );
   }
 
-  Widget _buildViewDetailsDropdown(ProductModel product, bool isDark, Color accentColor) {
-    return Theme(
-      data: Theme.of(context).copyWith(dividerColor: Colors.transparent),
-      child: ExpansionTile(
-        tilePadding: EdgeInsets.zero,
-        childrenPadding: const EdgeInsets.only(bottom: 8),
-        title: Row(
+  /// PDP-2: "Product Highlights" as the product's own real description +
+  /// specifications -- replaces the old collapsed-by-default "View product
+  /// details" ExpansionTile with a plainly visible section, and is no
+  /// longer duplicated inside the info card (short description there is
+  /// the same field, truncated). Real data only: `product.description`
+  /// (ProductModel's only description field -- there is no separate
+  /// "highlights" field anywhere in this codebase to draw fabricated
+  /// marketing bullets from) and `product.specifications`.
+  Widget _buildProductHighlights(ProductModel product, bool isDark) {
+    final specs = _getSpecifications(product);
+    if (product.description.trim().isEmpty && specs.isEmpty) {
+      return const SizedBox.shrink();
+    }
+    return Padding(
+      padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
+      child: _buildCardSection(
+        isDark: isDark,
+        title: 'Product Highlights',
+        icon: Icons.info_outline_rounded,
+        padding: const EdgeInsets.all(16),
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
           children: [
-            Text(
-              'View product details',
-              style: TextStyle(
-                fontSize: 13,
-                fontWeight: FontWeight.w600,
-                color: accentColor,
-              ),
-            ),
-          ],
-        ),
-        trailing: Icon(Icons.keyboard_arrow_down, color: accentColor, size: 20),
-        children: [
-          if (product.description.isNotEmpty) ...[
-            Align(
-              alignment: Alignment.centerLeft,
-              child: Text(
-                product.description,
+            if (product.description.trim().isNotEmpty) ...[
+              Text(
+                product.description.trim(),
                 style: TextStyle(
                   fontSize: 13,
                   color: isDark ? Colors.grey[400] : Colors.grey[600],
                   height: 1.5,
                 ),
               ),
-            ),
-            const SizedBox(height: 12),
+              if (specs.isNotEmpty) const SizedBox(height: 14),
+            ],
+            if (specs.isNotEmpty) SpecificationList(specifications: specs, isDark: isDark),
           ],
-          SpecificationList(
-            specifications: _getSpecifications(product),
-            isDark: isDark,
-          ),
-        ],
+        ),
       ),
     );
   }
@@ -753,8 +820,16 @@ class _ProductDetailsScreenState extends State<ProductDetailsScreen> {
     );
   }
 
-  Widget _buildSubscriptionOptions(ProductModel product, bool isDark) {
+  /// PDP-2: delivery window + the user's own real selected address +
+  /// subscription opt-in, as one card (replaces the old subscription-only
+  /// card). Address comes from AddressProvider.defaultAddress -- the same
+  /// provider the checkout flow already reads -- never fabricated; when the
+  /// user has none saved yet, this shows a real "Add address" prompt
+  /// instead of inventing a placeholder pin code.
+  Widget _buildDeliverySubscriptionCard(ProductModel product, bool isDark) {
     final accent = isDark ? AppColors.primaryLight : AppColors.primary;
+    final deliveryLabel = _deliveryWindowLabel(product);
+
     return Padding(
       padding: const EdgeInsets.fromLTRB(16, 16, 16, 0),
       child: Container(
@@ -768,14 +843,75 @@ class _ProductDetailsScreenState extends State<ProductDetailsScreen> {
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
+            // Delivery window
             Row(
               children: [
-                Icon(Icons.autorenew_rounded, size: 20, color: accent),
+                Icon(
+                  product.isB2BEnabled ? Icons.local_shipping_outlined : Icons.access_time_filled,
+                  size: 18,
+                  color: accent,
+                ),
                 const SizedBox(width: 8),
                 Text(
-                  'Subscription',
+                  'Get it in $deliveryLabel',
                   style: TextStyle(
-                    fontSize: 15,
+                    fontSize: 14,
+                    fontWeight: FontWeight.w700,
+                    color: isDark ? Colors.white : Colors.black87,
+                  ),
+                ),
+              ],
+            ),
+            const SizedBox(height: 10),
+            // Real selected/default delivery address
+            Consumer<AddressProvider>(
+              builder: (context, addressProvider, _) {
+                final address = addressProvider.defaultAddress;
+                return InkWell(
+                  onTap: () => Navigator.pushNamed(context, AppRoutes.savedAddresses),
+                  borderRadius: BorderRadius.circular(8),
+                  child: Row(
+                    children: [
+                      Icon(Icons.location_on_outlined,
+                          size: 16, color: isDark ? Colors.grey[400] : Colors.grey[600]),
+                      const SizedBox(width: 6),
+                      Expanded(
+                        child: Text(
+                          address != null
+                              ? 'Delivering to ${address.city}${address.zipcode.isNotEmpty ? ' - ${address.zipcode}' : ''}'
+                              : 'Add a delivery address',
+                          overflow: TextOverflow.ellipsis,
+                          style: TextStyle(
+                            fontSize: 12,
+                            color: isDark ? Colors.grey[400] : Colors.grey[600],
+                          ),
+                        ),
+                      ),
+                      Text(
+                        address != null ? 'Change' : 'Add',
+                        style: TextStyle(
+                          fontSize: 12,
+                          fontWeight: FontWeight.w700,
+                          color: accent,
+                        ),
+                      ),
+                    ],
+                  ),
+                );
+              },
+            ),
+            const SizedBox(height: 14),
+            Divider(color: isDark ? Colors.grey[800] : Colors.grey[200], height: 1),
+            const SizedBox(height: 14),
+            // Subscribe & Save opt-in
+            Row(
+              children: [
+                Icon(Icons.autorenew_rounded, size: 18, color: accent),
+                const SizedBox(width: 8),
+                Text(
+                  'Subscribe & Save',
+                  style: TextStyle(
+                    fontSize: 14,
                     fontWeight: FontWeight.w800,
                     color: isDark ? Colors.white : Colors.black87,
                   ),
@@ -784,37 +920,71 @@ class _ProductDetailsScreenState extends State<ProductDetailsScreen> {
             ),
             const SizedBox(height: 4),
             Text(
-              'Choose how often you want this on checkout (with auto-delivery).',
+              'Get fresh supplies automatically, on your own schedule.',
               style: TextStyle(
                 fontSize: 12,
                 color: isDark ? Colors.grey[400] : Colors.grey[600],
                 height: 1.35,
               ),
             ),
-            const SizedBox(height: 12),
-            Wrap(
-              spacing: 8,
-              runSpacing: 8,
-              children: [
-                ChoiceChip(
-                  label: const Text('One-time'),
-                  selected: _subscriptionCadence == 'one_off',
-                  onSelected: (_) => setState(() => _subscriptionCadence = 'one_off'),
-                  selectedColor: accent.withValues(alpha: 0.2),
-                ),
-                ChoiceChip(
-                  label: const Text('Daily'),
-                  selected: _subscriptionCadence == 'daily',
-                  onSelected: (_) => setState(() => _subscriptionCadence = 'daily'),
-                  selectedColor: accent.withValues(alpha: 0.2),
-                ),
-                ChoiceChip(
-                  label: const Text('Weekly'),
-                  selected: _subscriptionCadence == 'weekly',
-                  onSelected: (_) => setState(() => _subscriptionCadence = 'weekly'),
-                  selectedColor: accent.withValues(alpha: 0.2),
-                ),
-              ],
+            const SizedBox(height: 10),
+            InkWell(
+              onTap: () => setState(() {
+                _subscribeChecked = !_subscribeChecked;
+                _subscriptionCadence = _subscribeChecked ? 'daily' : 'one_off';
+              }),
+              borderRadius: BorderRadius.circular(8),
+              child: Row(
+                children: [
+                  Checkbox(
+                    value: _subscribeChecked,
+                    activeColor: accent,
+                    onChanged: (checked) => setState(() {
+                      _subscribeChecked = checked ?? false;
+                      _subscriptionCadence = _subscribeChecked ? 'daily' : 'one_off';
+                    }),
+                  ),
+                  Expanded(
+                    child: Text(
+                      'Add to subscription',
+                      style: TextStyle(
+                        fontSize: 13,
+                        fontWeight: FontWeight.w600,
+                        color: isDark ? Colors.white : Colors.black87,
+                      ),
+                    ),
+                  ),
+                ],
+              ),
+            ),
+            if (_subscribeChecked) ...[
+              const SizedBox(height: 8),
+              Wrap(
+                spacing: 8,
+                runSpacing: 8,
+                children: [
+                  ChoiceChip(
+                    label: const Text('Daily'),
+                    selected: _subscriptionCadence == 'daily',
+                    onSelected: (_) => setState(() => _subscriptionCadence = 'daily'),
+                    selectedColor: accent.withValues(alpha: 0.2),
+                  ),
+                  ChoiceChip(
+                    label: const Text('Weekly'),
+                    selected: _subscriptionCadence == 'weekly',
+                    onSelected: (_) => setState(() => _subscriptionCadence = 'weekly'),
+                    selectedColor: accent.withValues(alpha: 0.2),
+                  ),
+                ],
+              ),
+            ],
+            const SizedBox(height: 8),
+            Text(
+              'You can skip or cancel anytime from your orders.',
+              style: TextStyle(
+                fontSize: 11,
+                color: isDark ? Colors.grey[500] : Colors.grey[500],
+              ),
             ),
           ],
         ),
