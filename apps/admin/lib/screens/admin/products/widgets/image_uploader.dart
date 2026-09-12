@@ -13,10 +13,16 @@ class ImageUploader extends StatefulWidget {
   final List<String> imageUrls;
   final Function(List<String>) onImagesChanged;
 
+  /// Firebase Storage folder uploads are written under (`{storageFolder}/{fileName}`).
+  /// Defaults to `products`, the original hardcoded path, so every existing
+  /// caller (add/edit product, variant images) is unaffected by this parameter.
+  final String storageFolder;
+
   const ImageUploader({
     Key? key,
     required this.imageUrls,
     required this.onImagesChanged,
+    this.storageFolder = 'products',
   }) : super(key: key);
 
   @override
@@ -58,7 +64,7 @@ class _ImageUploaderState extends State<ImageUploader> {
       final String fileName = '${const Uuid().v4()}.jpg';
       final Reference storageRef = FirebaseStorage.instance
           .ref()
-          .child('products')
+          .child(widget.storageFolder)
           .child(fileName);
 
       UploadTask uploadTask;
@@ -125,7 +131,7 @@ class _ImageUploaderState extends State<ImageUploader> {
           final String fileName = '${const Uuid().v4()}.jpg';
           final Reference storageRef = FirebaseStorage.instance
               .ref()
-              .child('products')
+              .child(widget.storageFolder)
               .child(fileName);
 
           UploadTask uploadTask;

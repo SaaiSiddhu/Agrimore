@@ -73,6 +73,23 @@ service firebase.storage {
     }
 
     // ============================================
+    // SELLER PROFILE IMAGES (logo / cover) — Admin Only (Phase ADMIN-SELLER-CMS-1)
+    // ============================================
+    // Admin's new "Manage Sellers" edit screen uploads a seller's logo and
+    // cover image here via the shared ImageUploader (generalized in this
+    // phase to accept a storageFolder instead of its old hardcoded
+    // `products/`). Mirrors products/{fileName} above exactly — public
+    // read (the marketplace storefront shows these to logged-out
+    // visitors, same reasoning as sellers/{sellerId} in firestore.rules),
+    // admin-only write. Not seller-self-serve: no seller-facing code
+    // writes here today, matching FIX-11's own precedent for admin-only
+    // media paths with no owner-uid segment.
+    match /sellers/{sellerId}/{fileName} {
+      allow read: if true;
+      allow write: if isAdmin() && isValidFileSize() && isImage();
+    }
+
+    // ============================================
     // USER PROFILE IMAGES — Only owner can upload
     // ============================================
     match /profiles/{userId}/{fileName} {
