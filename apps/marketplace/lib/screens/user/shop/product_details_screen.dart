@@ -310,6 +310,7 @@ class _ProductDetailsScreenState extends State<ProductDetailsScreen> {
                   height: 1.3,
                 ),
               ),
+              _buildProductBadges(product, isDark),
               const SizedBox(height: 16),
 
               // Row 3: "Select Unit" label + Variant chips
@@ -339,12 +340,21 @@ class _ProductDetailsScreenState extends State<ProductDetailsScreen> {
     );
   }
 
-  // TODO(PDP-1 WS3): replace with a real ETA derived from
-  // product.shippingDays/expressDelivery/expressDeliveryDays instead of a
-  // hardcoded literal -- tracked in PRODUCT_DETAIL_CURRENT_STATE.md §5 item 4.
+  // PDP-1 WS3: this badge previously hardcoded '30 MINS' unconditionally --
+  // wrong for a B2B/bulk-freight product, where home_app_bar.dart's own
+  // established copy (`isB2B ? 'Bulk Freight' : '30 minutes'`) already
+  // draws exactly this distinction elsewhere in this app. Mirrored here
+  // rather than invented. No pre-purchase minute-level ETA field exists
+  // anywhere in this codebase (grepped: the only `etaMinutes` machinery is
+  // live delivery-partner tracking for an order already placed, in
+  // delivery_tracking_service.dart/live_tracking_screen.dart -- not
+  // applicable pre-purchase); whether "30 minutes" itself is a verified
+  // operational SLA or aspirational copy is a real open question, disclosed
+  // in PRODUCT_DETAIL_CURRENT_STATE.md, not resolved by this phase.
   Widget _buildDeliveryRatingInline(ProductModel product, bool isDark, Color accentColor) {
     final rating = product.rating;
     final reviewCount = product.reviewCount;
+    final deliveryLabel = product.isB2BEnabled ? 'BULK FREIGHT' : '30 MINS';
 
     return Row(
       children: [
@@ -357,10 +367,14 @@ class _ProductDetailsScreenState extends State<ProductDetailsScreen> {
           child: Row(
             mainAxisSize: MainAxisSize.min,
             children: [
-              Icon(Icons.access_time_filled, size: 12, color: accentColor),
+              Icon(
+                product.isB2BEnabled ? Icons.local_shipping_outlined : Icons.access_time_filled,
+                size: 12,
+                color: accentColor,
+              ),
               const SizedBox(width: 4),
               Text(
-                '30 MINS',
+                deliveryLabel,
                 style: TextStyle(
                   fontSize: 11,
                   fontWeight: FontWeight.w700,
@@ -394,6 +408,55 @@ class _ProductDetailsScreenState extends State<ProductDetailsScreen> {
           ],
         ),
       ],
+    );
+  }
+
+  /// PDP-1 WS3: data-driven trust badges off the product's own real boolean
+  /// fields -- replaces the unconditional, fabricated "Authentic" badge that
+  /// only ever existed in dead code (PRODUCT_DETAIL_CURRENT_STATE.md §5 item
+  /// 5). Capped to 2 so this never turns into a wall of pills (master-prompt
+  /// §137's own "1-3, not 7" guidance).
+  Widget _buildProductBadges(ProductModel product, bool isDark) {
+    final badges = <_ProductBadge>[
+      if (product.isVerified) const _ProductBadge('Verified Product', Icons.verified_rounded, Colors.blue),
+      if (product.isFeatured) const _ProductBadge('Featured', Icons.star_rounded, Colors.purple),
+      if (product.isTrending) const _ProductBadge('Trending', Icons.trending_up_rounded, Colors.deepOrange),
+      if (product.isNew) const _ProductBadge('New', Icons.fiber_new_rounded, Colors.teal),
+    ].take(2).toList();
+
+    if (badges.isEmpty) return const SizedBox.shrink();
+
+    return Padding(
+      padding: const EdgeInsets.only(top: 8),
+      child: Wrap(
+        spacing: 6,
+        runSpacing: 6,
+        children: badges.map((b) {
+          return Container(
+            padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
+            decoration: BoxDecoration(
+              color: isDark ? b.color.withValues(alpha: 0.18) : b.color.shade50,
+              border: Border.all(color: isDark ? b.color.shade300 : b.color.shade200),
+              borderRadius: BorderRadius.circular(6),
+            ),
+            child: Row(
+              mainAxisSize: MainAxisSize.min,
+              children: [
+                Icon(b.icon, size: 12, color: isDark ? b.color.shade200 : b.color.shade700),
+                const SizedBox(width: 4),
+                Text(
+                  b.label,
+                  style: TextStyle(
+                    fontSize: 10,
+                    fontWeight: FontWeight.w700,
+                    color: isDark ? b.color.shade200 : b.color.shade700,
+                  ),
+                ),
+              ],
+            ),
+          );
+        }).toList(),
+      ),
     );
   }
 
@@ -606,6 +669,14 @@ class _ProductDetailsScreenState extends State<ProductDetailsScreen> {
           if (shopName == null || shopName.isEmpty) {
             return const SizedBox.shrink();
           }
+          // PDP-1 WS3: firestore.rules' ownerCannotApproveSellerStatus()
+          // makes self-approval impossible, so status == 'approved' is a
+          // genuine, rules-enforced verification signal -- not a
+          // self-reported claim. No seller rating is shown here: the
+          // reviews collection is product-scoped only (no sellerId field),
+          // so there is no real seller-level rating to show yet
+          // (PRODUCT_DETAIL_CURRENT_STATE.md §4 -- candidate SELLER-METRICS-1).
+          final isVerifiedSeller = data['status'] == 'approved';
           final accentColor = isDark ? AppColors.primaryLight : AppColors.primary;
 
           return InkWell(
@@ -636,14 +707,36 @@ class _ProductDetailsScreenState extends State<ProductDetailsScreen> {
                             color: isDark ? Colors.grey[400] : Colors.grey[600],
                           ),
                         ),
-                        Text(
-                          shopName,
-                          style: TextStyle(
-                            fontSize: 15,
-                            fontWeight: FontWeight.w700,
-                            color: isDark ? Colors.white : Colors.black87,
-                          ),
+                        Row(
+                          children: [
+                            Flexible(
+                              child: Text(
+                                shopName,
+                                overflow: TextOverflow.ellipsis,
+                                style: TextStyle(
+                                  fontSize: 15,
+                                  fontWeight: FontWeight.w700,
+                                  color: isDark ? Colors.white : Colors.black87,
+                                ),
+                              ),
+                            ),
+                            if (isVerifiedSeller) ...[
+                              const SizedBox(width: 4),
+                              Icon(Icons.verified_rounded, size: 15, color: accentColor),
+                            ],
+                          ],
                         ),
+                        if (isVerifiedSeller) ...[
+                          const SizedBox(height: 2),
+                          Text(
+                            'Verified Seller',
+                            style: TextStyle(
+                              fontSize: 11,
+                              fontWeight: FontWeight.w600,
+                              color: accentColor,
+                            ),
+                          ),
+                        ],
                       ],
                     ),
                   ),
@@ -1389,4 +1482,12 @@ class _StickyHeaderDelegate extends SliverPersistentHeaderDelegate {
         oldDelegate.product != product ||
         oldDelegate.isDark != isDark;
   }
+}
+
+/// One data-driven trust badge (PDP-1 WS3) -- see _buildProductBadges.
+class _ProductBadge {
+  final String label;
+  final IconData icon;
+  final MaterialColor color;
+  const _ProductBadge(this.label, this.icon, this.color);
 }
