@@ -321,22 +321,6 @@ class AdminProvider with ChangeNotifier {
     }
   }
 
-  // TODO(CAT-5 WS3): delete once the screen's Move Up/Down buttons are
-  // removed in favor of drag-and-drop -- kept for now so this commit stays
-  // buildable against the still-unmodified screen file.
-  Future<void> moveCategoryOrder(CategoryModel category, {required bool up}) async {
-    final siblings = _categoryModels.where((c) => c.parentId == category.parentId).toList()
-      ..sort((a, b) {
-        final byOrder = a.displayOrder.compareTo(b.displayOrder);
-        return byOrder != 0 ? byOrder : a.id.compareTo(b.id);
-      });
-    final index = siblings.indexWhere((c) => c.id == category.id);
-    if (index == -1) return;
-    final swapIndex = up ? index - 1 : index + 1;
-    if (swapIndex < 0 || swapIndex >= siblings.length) return;
-    await reorderCategory(category, swapIndex);
-  }
-
   Future<void> deleteCategory(String categoryId) async {
     try {
       // Delete all children first (cascade)
