@@ -553,6 +553,12 @@ class AuthService {
   // Without a timeout, a stalled connection leaves the caller awaiting
   // forever — the UI would just sit on "Sending OTP" with no way out.
   static const Duration _requestTimeout = Duration(seconds: 12);
+  // verifyPhoneOTP's own three awaits get a longer budget than the shared
+  // _requestTimeout: a voice-channel OTP plus a cold Cloud Function call has
+  // been observed taking >12s server-side while still succeeding — the old
+  // 12s budget was firing a false "Network is too slow" before the actual
+  // sign-in completed.
+  static const Duration _phoneVerifyTimeout = Duration(seconds: 25);
 
   /// Requests an OTP for [phone] (10-digit Indian number or +91-prefixed),
   /// delivered via SMS by default or, when [channel] is `'voice'`, as a
@@ -639,7 +645,7 @@ class AuthService {
               if (name != null && name.trim().isNotEmpty) 'name': name.trim(),
             }),
           )
-          .timeout(_requestTimeout);
+          .timeout(_phoneVerifyTimeout);
 
       final data = jsonDecode(response.body) as Map<String, dynamic>;
 
@@ -650,13 +656,13 @@ class AuthService {
       final token = data['token'] as String;
       final isNewUser = data['isNewUser'] == true;
 
-      final result = await _auth.signInWithCustomToken(token).timeout(_requestTimeout);
+      final result = await _auth.signInWithCustomToken(token).timeout(_phoneVerifyTimeout);
       final user = result.user;
       if (user == null) throw AuthException('Sign in failed');
 
       debugPrint('✅ Firebase Auth sign-in via phone successful: ${user.uid}');
 
-      final userModel = await getUserData(user.uid).timeout(_requestTimeout);
+      final userModel = await getUserData(user.uid).timeout(_phoneVerifyTimeout);
       await _savePersistentSession(userModel);
 
       debugPrint('✅ Phone login complete!');
@@ -665,7 +671,10 @@ class AuthService {
       rethrow;
     } on TimeoutException {
       debugPrint('❌ Timed out verifying phone OTP');
-      throw AuthException('Network is too slow right now. Please try again.');
+      throw AuthException(
+        'Still verifying — this is taking longer than usual. Please wait a moment.',
+        code: 'TIMEOUT',
+      );
     } catch (e) {
       debugPrint('❌ Error verifying phone OTP: $e');
       throw AuthException('Failed to verify OTP: ${e.toString()}');

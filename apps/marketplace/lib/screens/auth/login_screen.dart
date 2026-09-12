@@ -327,14 +327,20 @@ class _LoginScreenState extends State<LoginScreen> {
     if (!mounted) return;
 
     if (!success) {
+      // A timeout isn't a confirmed wrong code — the verify call may still
+      // land in the background. Keep the entered code and avoid the scary
+      // "failed" framing instead of wiping the boxes on a guess.
+      final isTimeout = authProvider.errorCode == 'TIMEOUT';
       setState(() {
         _isVerifying = false;
         _otpErrorMessage = authProvider.error ?? 'Invalid OTP. Please try again.';
       });
-      for (final c in _otpControllers) {
-        c.clear();
+      if (!isTimeout) {
+        for (final c in _otpControllers) {
+          c.clear();
+        }
+        _otpFocusNodes.first.requestFocus();
       }
-      _otpFocusNodes.first.requestFocus();
       return;
     }
 
