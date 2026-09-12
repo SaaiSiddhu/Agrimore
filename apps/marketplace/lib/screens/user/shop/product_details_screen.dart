@@ -1114,35 +1114,53 @@ class _ProductDetailsScreenState extends State<ProductDetailsScreen> {
     return count.toString();
   }
 
-  // Similar Products (same category, in stock, excluding this product).
-  // TODO(PDP-1 WS4): prefer product.relatedProductIds when populated instead
-  // of always falling back to the same-category query -- tracked in
-  // PRODUCT_DETAIL_CURRENT_STATE.md §5 item 7.
+  // Recommendations rail. PDP-1 WS4: prefer the curated
+  // product.relatedProductIds signal (admin/seller-set; product_provider.dart's
+  // loadProductById already resolves it into `relatedProducts` on every
+  // load) over the generic same-category fallback when it's populated --
+  // matches master-prompt's own ranking preference (curated over generic).
+  // Falls back to the same-category query, unchanged, when relatedProductIds
+  // is empty (still the common case today -- see
+  // PRODUCT_DETAIL_CURRENT_STATE.md §5 item 7 / §8).
   Widget _buildSimilarProducts(ProductModel product, bool isDark) {
     return Consumer2<ProductProvider, CategoryProvider>(
       builder: (context, productProvider, categoryProvider, _) {
-        final all = categoryProvider.categories;
-        CategoryModel? bucket;
-        try {
-          bucket = all.firstWhere((c) => c.id == product.categoryId);
-        } catch (_) {
-          try {
-            final nm = (product.categoryName ?? '').toLowerCase().trim();
-            if (nm.isNotEmpty) {
-              bucket = all.firstWhere((c) => c.name.toLowerCase().trim() == nm);
-            }
-          } catch (_) {
-            bucket = null;
-          }
-        }
+        final curated = productProvider.relatedProducts
+            .where((p) => p.id != product.id && p.isActive)
+            .take(6)
+            .toList();
 
-        final similarProducts = productProvider.products.where((p) {
-          if (p.id == product.id || !p.isActive) return false;
-          if (bucket != null) {
-            return productBelongsToCategory(p, bucket, all);
+        List<ProductModel> similarProducts;
+        String sectionTitle;
+
+        if (curated.isNotEmpty) {
+          similarProducts = curated;
+          sectionTitle = 'You May Also Like';
+        } else {
+          final all = categoryProvider.categories;
+          CategoryModel? bucket;
+          try {
+            bucket = all.firstWhere((c) => c.id == product.categoryId);
+          } catch (_) {
+            try {
+              final nm = (product.categoryName ?? '').toLowerCase().trim();
+              if (nm.isNotEmpty) {
+                bucket = all.firstWhere((c) => c.name.toLowerCase().trim() == nm);
+              }
+            } catch (_) {
+              bucket = null;
+            }
           }
-          return p.categoryId == product.categoryId;
-        }).take(6).toList();
+
+          similarProducts = productProvider.products.where((p) {
+            if (p.id == product.id || !p.isActive) return false;
+            if (bucket != null) {
+              return productBelongsToCategory(p, bucket, all);
+            }
+            return p.categoryId == product.categoryId;
+          }).take(6).toList();
+          sectionTitle = 'Similar products';
+        }
 
         if (similarProducts.isEmpty) return const SizedBox.shrink();
 
@@ -1152,7 +1170,7 @@ class _ProductDetailsScreenState extends State<ProductDetailsScreen> {
             Padding(
               padding: const EdgeInsets.fromLTRB(16, 0, 16, 4),
               child: Text(
-                'Similar products',
+                sectionTitle,
                 style: TextStyle(
                   fontSize: 16,
                   fontWeight: FontWeight.w700,

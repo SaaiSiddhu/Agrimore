@@ -35,6 +35,92 @@ class _ReviewsSectionInlineState extends State<ReviewsSectionInline> {
     });
   }
 
+  /// PDP-1 WS4: this button previously had an empty onPressed
+  /// (`// Could navigate to full reviews page`) -- a real dead control.
+  /// A full-screen route would need its own route registration outside
+  /// this file's own scope, so this reuses the same ReviewProvider stream
+  /// and ReviewCard already imported here, in a scrollable sheet.
+  void _showAllReviews(BuildContext context) {
+    final reviewProvider = Provider.of<ReviewProvider>(context, listen: false);
+
+    showModalBottomSheet(
+      context: context,
+      isScrollControlled: true,
+      backgroundColor: Colors.transparent,
+      builder: (ctx) {
+        return DraggableScrollableSheet(
+          initialChildSize: 0.85,
+          minChildSize: 0.5,
+          maxChildSize: 0.95,
+          expand: false,
+          builder: (context, scrollController) {
+            return Container(
+              decoration: BoxDecoration(
+                color: widget.isDark ? const Color(0xFF1E1E1E) : Colors.white,
+                borderRadius: const BorderRadius.vertical(top: Radius.circular(20)),
+              ),
+              child: Column(
+                children: [
+                  Container(
+                    margin: const EdgeInsets.only(top: 10),
+                    width: 40,
+                    height: 4,
+                    decoration: BoxDecoration(
+                      color: widget.isDark ? Colors.grey[700] : Colors.grey[300],
+                      borderRadius: BorderRadius.circular(2),
+                    ),
+                  ),
+                  Padding(
+                    padding: const EdgeInsets.fromLTRB(20, 16, 20, 8),
+                    child: Row(
+                      mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                      children: [
+                        Text(
+                          'All Reviews',
+                          style: AppTextStyles.titleLarge.copyWith(
+                            fontWeight: FontWeight.bold,
+                            color: widget.isDark ? Colors.white : Colors.black87,
+                          ),
+                        ),
+                        IconButton(
+                          icon: Icon(Icons.close, color: widget.isDark ? Colors.grey[400] : Colors.grey[600]),
+                          onPressed: () => Navigator.pop(context),
+                        ),
+                      ],
+                    ),
+                  ),
+                  Expanded(
+                    child: StreamBuilder<List<ReviewModel>>(
+                      stream: reviewProvider.getReviewsStream(widget.productId),
+                      builder: (context, snapshot) {
+                        if (snapshot.connectionState == ConnectionState.waiting) {
+                          return const Center(child: CircularProgressIndicator());
+                        }
+                        final reviews = snapshot.data ?? [];
+                        if (reviews.isEmpty) {
+                          return _buildEmptyState();
+                        }
+                        return ListView.builder(
+                          controller: scrollController,
+                          padding: const EdgeInsets.fromLTRB(20, 0, 20, 20),
+                          itemCount: reviews.length,
+                          itemBuilder: (context, index) => Padding(
+                            padding: const EdgeInsets.only(bottom: 12),
+                            child: ReviewCard(review: reviews[index], isDark: widget.isDark),
+                          ),
+                        );
+                      },
+                    ),
+                  ),
+                ],
+              ),
+            );
+          },
+        );
+      },
+    );
+  }
+
   void _showAddReviewDialog() {
     showDialog(
       context: context,
@@ -120,9 +206,7 @@ class _ReviewsSectionInlineState extends State<ReviewsSectionInline> {
                 )),
                 if (reviews.length > 3)
                   TextButton(
-                    onPressed: () {
-                      // Could navigate to full reviews page
-                    },
+                    onPressed: () => _showAllReviews(context),
                     child: Text(
                       'View all ${reviews.length} reviews',
                       style: TextStyle(color: accentColor, fontWeight: FontWeight.bold),
