@@ -939,33 +939,6 @@ class _EditProfileScreenState extends State<EditProfileScreen>
     );
   }
 
-  // One card, N rows, dividers between (not after the last). Same
-  // card-level shadow/border every field used to carry individually.
-  Widget _buildCompactCard({required bool isDark, required List<Widget> rows}) {
-    return Container(
-      decoration: BoxDecoration(
-        color: isDark ? const Color(0xFF1E1E1E) : Colors.white,
-        borderRadius: BorderRadius.circular(16),
-        border: Border.all(color: isDark ? Colors.grey[800]! : Colors.grey.shade200),
-        boxShadow: [
-          BoxShadow(
-            color: Colors.black.withValues(alpha: isDark ? 0.3 : 0.02),
-            blurRadius: 8,
-            offset: const Offset(0, 2),
-          ),
-        ],
-      ),
-      child: Column(
-        children: [
-          for (var i = 0; i < rows.length; i++) ...[
-            rows[i],
-            if (i < rows.length - 1) _buildRowDivider(isDark),
-          ],
-        ],
-      ),
-    );
-  }
-
   Widget _buildCompactChangeButton(bool isDark, VoidCallback onTap) {
     final tileColor = isDark ? AppColors.primaryLight : const Color(0xFF2D7D3C);
     return Material(
@@ -1107,139 +1080,15 @@ class _EditProfileScreenState extends State<EditProfileScreen>
                         child: Column(
                           crossAxisAlignment: CrossAxisAlignment.start,
                           children: [
-                            _buildSectionHeader(
-                              icon: Icons.person_outline_rounded,
-                              title: 'Personal Information',
-                              subtitle: 'Manage your basic account details',
-                              isDark: isDark,
-                            ),
-                            _buildCompactCard(
-                              isDark: isDark,
-                              rows: [
-                                _buildCompactRow(
-                                  icon: Icons.person_outline_rounded,
-                                  isDark: isDark,
-                                  child: TextFormField(
-                                    controller: _nameController,
-                                    validator: _validateName,
-                                    style: TextStyle(
-                                      fontSize: 13,
-                                      fontWeight: FontWeight.w700,
-                                      color: isDark ? Colors.white : Colors.black87,
-                                    ),
-                                    decoration: InputDecoration(
-                                      labelText: 'Full Name',
-                                      labelStyle: TextStyle(
-                                        fontSize: 10.5,
-                                        color: isDark ? Colors.grey[400] : Colors.grey[600],
-                                        fontWeight: FontWeight.w500,
-                                      ),
-                                      border: InputBorder.none,
-                                      isDense: true,
-                                      contentPadding: EdgeInsets.zero,
-                                      errorStyle: const TextStyle(height: 0.1, fontSize: 9),
-                                    ),
-                                  ),
-                                ),
-                                _buildCompactRow(
-                                  icon: Icons.phone_outlined,
-                                  isDark: isDark,
-                                  label: 'Phone Number',
-                                  value: _phoneController.text,
-                                  placeholder: 'Add mobile number',
-                                  trailing: _buildCompactChangeButton(isDark, () async {
-                                    final newPhone = await Navigator.push<String>(
-                                      context,
-                                      MaterialPageRoute(
-                                        builder: (_) => ChangePhoneScreen(
-                                          currentPhone: _phoneController.text.trim(),
-                                        ),
-                                      ),
-                                    );
-                                    if (newPhone != null && newPhone.isNotEmpty && mounted) {
-                                      setState(() => _phoneController.text = newPhone);
-                                      _showToastMessage('Mobile number updated to $newPhone');
-                                    }
-                                  }),
-                                ),
-                                _buildCompactRow(
-                                  icon: Icons.email_outlined,
-                                  isDark: isDark,
-                                  label: 'Email Address',
-                                  value: _emailController.text,
-                                  placeholder: 'Add email address',
-                                  trailing: _buildCompactChangeButton(isDark, () async {
-                                    final newEmail = await Navigator.push<String>(
-                                      context,
-                                      MaterialPageRoute(
-                                        builder: (_) => ChangeEmailScreen(
-                                          currentEmail: _emailController.text.trim(),
-                                        ),
-                                      ),
-                                    );
-                                    if (newEmail != null && newEmail.isNotEmpty && mounted) {
-                                      setState(() => _emailController.text = newEmail);
-                                      _showToastMessage('Email updated to $newEmail');
-                                    }
-                                  }),
-                                ),
-                              ],
-                            ),
-                            const SizedBox(height: 14),
-
-                            _buildSectionHeader(
-                              icon: Icons.badge_outlined,
-                              title: 'Personal Details',
-                              subtitle: 'Collected when you completed your profile',
-                              isDark: isDark,
-                              trailingBadge: true,
-                            ),
-                            _buildCompactCard(
-                              isDark: isDark,
-                              rows: [
-                                _buildCompactRow(
-                                  icon: Icons.cake_outlined,
-                                  isDark: isDark,
-                                  label: 'Date of Birth',
-                                  value: _dateOfBirth != null ? _formatDate(_dateOfBirth!) : '',
-                                  placeholder: 'Add date of birth',
-                                  helperText: 'Tap to update your date of birth',
-                                  onTap: _isSavingDateOfBirth ? null : _pickDateOfBirth,
-                                  trailing: _isSavingDateOfBirth
-                                      ? SizedBox(
-                                          width: 14,
-                                          height: 14,
-                                          child: CircularProgressIndicator(
-                                            strokeWidth: 2,
-                                            color: isDark ? AppColors.primaryLight : const Color(0xFF2D7D3C),
-                                          ),
-                                        )
-                                      : Icon(Icons.chevron_right_rounded, size: 18, color: isDark ? Colors.grey[600] : Colors.grey[400]),
-                                ),
-                                _buildCompactRow(
-                                  icon: Icons.wc_rounded,
-                                  isDark: isDark,
-                                  label: 'Gender',
-                                  value: _genderLabel(_gender),
-                                  placeholder: 'Add gender',
-                                  helperText: 'Tap to update your gender',
-                                  onTap: () => _pickGender(isDark),
-                                  trailing: Icon(Icons.chevron_right_rounded, size: 18, color: isDark ? Colors.grey[600] : Colors.grey[400]),
-                                ),
-                              ],
-                            ),
-                            const SizedBox(height: 20),
-
-                            // PROFILE-16: wrapped in its own card frame (same
-                            // background/border/radius/shadow as the two
-                            // field cards above) so the button sits inset
-                            // with padding, matching the reference mockup's
-                            // own "Button" component state — not a bare
-                            // gradient pill directly in the screen's outer
-                            // padding. Pure visual wrap; _saveProfile and
-                            // every state check below are unchanged.
+                            // PROFILE-17: one single unified card for the
+                            // whole lower section — Personal Information
+                            // header+rows, Personal Details header+rows and
+                            // the Save button+disclaimer all share one
+                            // border/shadow/radius instead of three
+                            // separate stacked cards (PROFILE-15/16). Row
+                            // widgets and dividers are unchanged; only the
+                            // outer card boundaries were removed.
                             Container(
-                              padding: const EdgeInsets.all(14),
                               decoration: BoxDecoration(
                                 color: isDark ? const Color(0xFF1E1E1E) : Colors.white,
                                 borderRadius: BorderRadius.circular(16),
@@ -1254,68 +1103,197 @@ class _EditProfileScreenState extends State<EditProfileScreen>
                               ),
                               child: Column(
                                 children: [
-                                  Container(
-                                    decoration: BoxDecoration(
-                                      gradient: LinearGradient(
-                                        colors: [
-                                          (isDark ? AppColors.primaryLight : const Color(0xFF2D7D3C)).withValues(alpha: _isLoading || _isUploadingImage ? 0.7 : 1.0),
-                                          (isDark ? AppColors.primaryLight : const Color(0xFF2D7D3C)).withValues(alpha: _isLoading || _isUploadingImage ? 0.5 : 0.8),
-                                        ],
-                                      ),
-                                      borderRadius: BorderRadius.circular(14),
-                                      boxShadow: [
-                                        BoxShadow(
-                                          color: (isDark ? AppColors.primaryLight : const Color(0xFF2D7D3C)).withValues(alpha: 0.25),
-                                          blurRadius: 12,
-                                          offset: const Offset(0, 4),
-                                        ),
-                                      ],
+                                  Padding(
+                                    padding: const EdgeInsets.fromLTRB(14, 14, 14, 0),
+                                    child: _buildSectionHeader(
+                                      icon: Icons.person_outline_rounded,
+                                      title: 'Personal Information',
+                                      subtitle: 'Manage your basic account details',
+                                      isDark: isDark,
                                     ),
-                                    child: Material(
-                                      color: Colors.transparent,
-                                      child: InkWell(
-                                        onTap: (_isLoading || _isUploadingImage)
-                                            ? null
-                                            : _saveProfile,
-                                        borderRadius: BorderRadius.circular(14),
-                                        child: Padding(
-                                          padding: const EdgeInsets.symmetric(vertical: 14),
-                                          child: Row(
-                                            mainAxisAlignment: MainAxisAlignment.center,
-                                            children: [
-                                              Text(
-                                                _isUploadingImage ? 'Uploading...' : (_isLoading ? 'Saving...' : 'Save Changes'),
-                                                style: const TextStyle(
-                                                  color: Colors.white,
-                                                  fontSize: 15,
-                                                  fontWeight: FontWeight.w800,
-                                                ),
-                                              ),
-                                              const SizedBox(width: 8),
-
-                                              if (_isLoading || _isUploadingImage)
-                                                const SizedBox(
-                                                  width: 18,
-                                                  height: 18,
-                                                  child: CircularProgressIndicator(strokeWidth: 2, color: Colors.white)
-                                                )
-                                              else
-                                                const Icon(Icons.arrow_forward_rounded, color: Colors.white, size: 18),
-                                            ],
-                                          ),
+                                  ),
+                                  _buildCompactRow(
+                                    icon: Icons.person_outline_rounded,
+                                    isDark: isDark,
+                                    child: TextFormField(
+                                      controller: _nameController,
+                                      validator: _validateName,
+                                      style: TextStyle(
+                                        fontSize: 13,
+                                        fontWeight: FontWeight.w700,
+                                        color: isDark ? Colors.white : Colors.black87,
+                                      ),
+                                      decoration: InputDecoration(
+                                        labelText: 'Full Name',
+                                        labelStyle: TextStyle(
+                                          fontSize: 10.5,
+                                          color: isDark ? Colors.grey[400] : Colors.grey[600],
+                                          fontWeight: FontWeight.w500,
                                         ),
+                                        border: InputBorder.none,
+                                        isDense: true,
+                                        contentPadding: EdgeInsets.zero,
+                                        errorStyle: const TextStyle(height: 0.1, fontSize: 9),
                                       ),
                                     ),
                                   ),
-                                  const SizedBox(height: 10),
-                                  Text(
-                                    'Name and gender are saved when you tap Save Changes. '
-                                    'Phone, email, and date of birth update immediately and require verification.',
-                                    textAlign: TextAlign.center,
-                                    style: TextStyle(
-                                      fontSize: 11,
-                                      height: 1.4,
-                                      color: isDark ? Colors.grey[500] : Colors.grey[600],
+                                  _buildRowDivider(isDark),
+                                  _buildCompactRow(
+                                    icon: Icons.phone_outlined,
+                                    isDark: isDark,
+                                    label: 'Phone Number',
+                                    value: _phoneController.text,
+                                    placeholder: 'Add mobile number',
+                                    trailing: _buildCompactChangeButton(isDark, () async {
+                                      final newPhone = await Navigator.push<String>(
+                                        context,
+                                        MaterialPageRoute(
+                                          builder: (_) => ChangePhoneScreen(
+                                            currentPhone: _phoneController.text.trim(),
+                                          ),
+                                        ),
+                                      );
+                                      if (newPhone != null && newPhone.isNotEmpty && mounted) {
+                                        setState(() => _phoneController.text = newPhone);
+                                        _showToastMessage('Mobile number updated to $newPhone');
+                                      }
+                                    }),
+                                  ),
+                                  _buildRowDivider(isDark),
+                                  _buildCompactRow(
+                                    icon: Icons.email_outlined,
+                                    isDark: isDark,
+                                    label: 'Email Address',
+                                    value: _emailController.text,
+                                    placeholder: 'Add email address',
+                                    trailing: _buildCompactChangeButton(isDark, () async {
+                                      final newEmail = await Navigator.push<String>(
+                                        context,
+                                        MaterialPageRoute(
+                                          builder: (_) => ChangeEmailScreen(
+                                            currentEmail: _emailController.text.trim(),
+                                          ),
+                                        ),
+                                      );
+                                      if (newEmail != null && newEmail.isNotEmpty && mounted) {
+                                        setState(() => _emailController.text = newEmail);
+                                        _showToastMessage('Email updated to $newEmail');
+                                      }
+                                    }),
+                                  ),
+
+                                  _buildRowDivider(isDark),
+                                  Padding(
+                                    padding: const EdgeInsets.fromLTRB(14, 18, 14, 0),
+                                    child: _buildSectionHeader(
+                                      icon: Icons.badge_outlined,
+                                      title: 'Personal Details',
+                                      subtitle: 'Collected when you completed your profile',
+                                      isDark: isDark,
+                                      trailingBadge: true,
+                                    ),
+                                  ),
+                                  _buildCompactRow(
+                                    icon: Icons.cake_outlined,
+                                    isDark: isDark,
+                                    label: 'Date of Birth',
+                                    value: _dateOfBirth != null ? _formatDate(_dateOfBirth!) : '',
+                                    placeholder: 'Add date of birth',
+                                    helperText: 'Tap to update your date of birth',
+                                    onTap: _isSavingDateOfBirth ? null : _pickDateOfBirth,
+                                    trailing: _isSavingDateOfBirth
+                                        ? SizedBox(
+                                            width: 14,
+                                            height: 14,
+                                            child: CircularProgressIndicator(
+                                              strokeWidth: 2,
+                                              color: isDark ? AppColors.primaryLight : const Color(0xFF2D7D3C),
+                                            ),
+                                          )
+                                        : Icon(Icons.chevron_right_rounded, size: 18, color: isDark ? Colors.grey[600] : Colors.grey[400]),
+                                  ),
+                                  _buildRowDivider(isDark),
+                                  _buildCompactRow(
+                                    icon: Icons.wc_rounded,
+                                    isDark: isDark,
+                                    label: 'Gender',
+                                    value: _genderLabel(_gender),
+                                    placeholder: 'Add gender',
+                                    helperText: 'Tap to update your gender',
+                                    onTap: () => _pickGender(isDark),
+                                    trailing: Icon(Icons.chevron_right_rounded, size: 18, color: isDark ? Colors.grey[600] : Colors.grey[400]),
+                                  ),
+
+                                  _buildRowDivider(isDark),
+                                  Padding(
+                                    padding: const EdgeInsets.fromLTRB(14, 18, 14, 14),
+                                    child: Column(
+                                      children: [
+                                        Container(
+                                          decoration: BoxDecoration(
+                                            gradient: LinearGradient(
+                                              colors: [
+                                                (isDark ? AppColors.primaryLight : const Color(0xFF2D7D3C)).withValues(alpha: _isLoading || _isUploadingImage ? 0.7 : 1.0),
+                                                (isDark ? AppColors.primaryLight : const Color(0xFF2D7D3C)).withValues(alpha: _isLoading || _isUploadingImage ? 0.5 : 0.8),
+                                              ],
+                                            ),
+                                            borderRadius: BorderRadius.circular(14),
+                                            boxShadow: [
+                                              BoxShadow(
+                                                color: (isDark ? AppColors.primaryLight : const Color(0xFF2D7D3C)).withValues(alpha: 0.25),
+                                                blurRadius: 12,
+                                                offset: const Offset(0, 4),
+                                              ),
+                                            ],
+                                          ),
+                                          child: Material(
+                                            color: Colors.transparent,
+                                            child: InkWell(
+                                              onTap: (_isLoading || _isUploadingImage)
+                                                  ? null
+                                                  : _saveProfile,
+                                              borderRadius: BorderRadius.circular(14),
+                                              child: Padding(
+                                                padding: const EdgeInsets.symmetric(vertical: 14),
+                                                child: Row(
+                                                  mainAxisAlignment: MainAxisAlignment.center,
+                                                  children: [
+                                                    Text(
+                                                      _isUploadingImage ? 'Uploading...' : (_isLoading ? 'Saving...' : 'Save Changes'),
+                                                      style: const TextStyle(
+                                                        color: Colors.white,
+                                                        fontSize: 15,
+                                                        fontWeight: FontWeight.w800,
+                                                      ),
+                                                    ),
+                                                    const SizedBox(width: 8),
+
+                                                    if (_isLoading || _isUploadingImage)
+                                                      const SizedBox(
+                                                        width: 18,
+                                                        height: 18,
+                                                        child: CircularProgressIndicator(strokeWidth: 2, color: Colors.white)
+                                                      )
+                                                    else
+                                                      const Icon(Icons.arrow_forward_rounded, color: Colors.white, size: 18),
+                                                  ],
+                                                ),
+                                              ),
+                                            ),
+                                          ),
+                                        ),
+                                        const SizedBox(height: 10),
+                                        Text(
+                                          'Name and gender are saved when you tap Save Changes. '
+                                          'Phone, email, and date of birth update immediately and require verification.',
+                                          textAlign: TextAlign.center,
+                                          style: TextStyle(
+                                            fontSize: 11,
+                                            height: 1.4,
+                                            color: isDark ? Colors.grey[500] : Colors.grey[600],
+                                          ),
+                                        ),
+                                      ],
                                     ),
                                   ),
                                 ],
