@@ -24,6 +24,8 @@ class _EditCategorySectionScreenState extends State<EditCategorySectionScreen> {
   List<String?> _images = List.filled(8, null);
   Color _bgColor = const Color(0xFFFFF8E1);
   bool _isActive = true;
+  DateTime? _startsAt;
+  DateTime? _endsAt;
   bool _isSaving = false;
   final _imagePicker = ImagePicker();
 
@@ -48,6 +50,8 @@ class _EditCategorySectionScreenState extends State<EditCategorySectionScreen> {
         widget.section!.image7, widget.section!.image8,
       ];
       _isActive = widget.section!.isActive;
+      _startsAt = widget.section!.startsAt;
+      _endsAt = widget.section!.endsAt;
       if (widget.section!.bgColorHex != null) {
         try {
           _bgColor = Color(int.parse(widget.section!.bgColorHex!.replaceFirst('#', '0xFF')));
@@ -453,6 +457,125 @@ class _EditCategorySectionScreenState extends State<EditCategorySectionScreen> {
               ],
             ),
           ),
+
+          const SizedBox(height: 24),
+
+          // Schedule
+          const Text(
+            'Schedule (optional)',
+            style: TextStyle(fontWeight: FontWeight.w600, fontSize: 13),
+          ),
+          const SizedBox(height: 4),
+          Text(
+            'Leave both empty to show this section with no time limit',
+            style: TextStyle(fontSize: 12, color: Colors.grey[600]),
+          ),
+          const SizedBox(height: 12),
+          Row(
+            children: [
+              Expanded(
+                child: _datePickerField(
+                  'Starts',
+                  _startsAt,
+                  (d) => setState(() => _startsAt = d),
+                ),
+              ),
+              const SizedBox(width: 12),
+              Expanded(
+                child: _datePickerField(
+                  'Ends',
+                  _endsAt,
+                  (d) => setState(() => _endsAt = d),
+                ),
+              ),
+            ],
+          ),
+          const SizedBox(height: 12),
+          _buildSchedulePreviewChip(),
+        ],
+      ),
+    );
+  }
+
+  Widget _datePickerField(String label, DateTime? value, ValueChanged<DateTime?> onChanged) {
+    final text = value == null
+        ? 'Not set'
+        : '${value.year}-${value.month.toString().padLeft(2, '0')}-${value.day.toString().padLeft(2, '0')}';
+    return InkWell(
+      borderRadius: BorderRadius.circular(10),
+      onTap: () async {
+        final picked = await showDatePicker(
+          context: context,
+          initialDate: value ?? DateTime.now(),
+          firstDate: DateTime(2020),
+          lastDate: DateTime(2100),
+        );
+        if (picked != null) onChanged(picked);
+      },
+      child: InputDecorator(
+        decoration: InputDecoration(
+          labelText: label,
+          prefixIcon: const Icon(Icons.event_outlined, size: 20),
+          filled: true,
+          fillColor: Colors.grey[50],
+          border: OutlineInputBorder(
+            borderRadius: BorderRadius.circular(10),
+            borderSide: BorderSide(color: Colors.grey[200]!),
+          ),
+          enabledBorder: OutlineInputBorder(
+            borderRadius: BorderRadius.circular(10),
+            borderSide: BorderSide(color: Colors.grey[200]!),
+          ),
+          contentPadding: const EdgeInsets.symmetric(horizontal: 12, vertical: 14),
+          suffixIcon: value != null
+              ? IconButton(
+                  icon: const Icon(Icons.clear, size: 18),
+                  onPressed: () => onChanged(null),
+                )
+              : null,
+        ),
+        child: Text(text, style: const TextStyle(fontSize: 14)),
+      ),
+    );
+  }
+
+  Widget _buildSchedulePreviewChip() {
+    final status = CategorySectionSlotModel(
+      id: '',
+      position: 0,
+      sectionName: '',
+      isActive: _isActive,
+      startsAt: _startsAt,
+      endsAt: _endsAt,
+    ).scheduleStatus;
+    const colors = {
+      'Live': Colors.green,
+      'Scheduled': Colors.blue,
+      'Expired': Colors.grey,
+      'Disabled': Colors.orange,
+    };
+    const icons = {
+      'Live': Icons.check_circle,
+      'Scheduled': Icons.schedule,
+      'Expired': Icons.event_busy,
+      'Disabled': Icons.pause_circle_filled,
+    };
+    final color = colors[status] ?? Colors.grey;
+    return Container(
+      padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 5),
+      decoration: BoxDecoration(
+        color: color.withOpacity(0.1),
+        borderRadius: BorderRadius.circular(20),
+      ),
+      child: Row(
+        mainAxisSize: MainAxisSize.min,
+        children: [
+          Icon(icons[status] ?? Icons.help_outline, size: 14, color: color),
+          const SizedBox(width: 6),
+          Text(
+            status,
+            style: TextStyle(fontSize: 12, fontWeight: FontWeight.w600, color: color),
+          ),
         ],
       ),
     );
@@ -577,6 +700,13 @@ class _EditCategorySectionScreenState extends State<EditCategorySectionScreen> {
       return;
     }
 
+    if (_startsAt != null && _endsAt != null && !_endsAt!.isAfter(_startsAt!)) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(content: Text('End date must be after the start date')),
+      );
+      return;
+    }
+
     setState(() => _isSaving = true);
     HapticFeedback.mediumImpact();
 
@@ -597,10 +727,18 @@ class _EditCategorySectionScreenState extends State<EditCategorySectionScreen> {
         image7: _images[6], image8: _images[7],
         bgColorHex: colorHex,
         isActive: _isActive,
+        startsAt: _startsAt,
+        endsAt: _endsAt,
       );
       success = await provider.addSection(newSection);
     } else {
-      final updatedSection = widget.section!.copyWith(
+      // Built via the constructor rather than widget.section!.copyWith(...):
+      // copyWith's `field ?? this.field` merge can't express "clear this
+      // date back to null", which the schedule picker's own clear button
+      // needs to do.
+      final updatedSection = CategorySectionSlotModel(
+        id: widget.section!.id,
+        position: widget.section!.position,
         sectionName: _nameController.text.trim(),
         categoryIds: _selectedCategoryIds,
         image1: _images[0], image2: _images[1],
@@ -609,6 +747,8 @@ class _EditCategorySectionScreenState extends State<EditCategorySectionScreen> {
         image7: _images[6], image8: _images[7],
         bgColorHex: colorHex,
         isActive: _isActive,
+        startsAt: _startsAt,
+        endsAt: _endsAt,
       );
       success = await provider.updateSection(updatedSection);
     }
