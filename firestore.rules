@@ -1304,11 +1304,22 @@ service cloud.firestore {
     match /category_section_slots/{slotId} {
       // Public read - needed to display on marketplace home
       allow read: if true;
-      
+
       // Only admin can manage category sections
       allow write: if isAdmin();
     }
-    
+
+    // ============================================
+    // HOME PRODUCT SECTIONS (HOME-3) — which categories become a Home
+    // product-carousel section, their order/title/item cap. Same shape as
+    // banners/section_banners/category_section_slots directly above:
+    // public read (content, not user data), admin-only write.
+    // ============================================
+    match /home_product_sections/{sectionId} {
+      allow read: if true;
+      allow write: if isAdmin();
+    }
+
     // ============================================
     // AUTH LOGS (Login/Logout Tracking)
     // ============================================
