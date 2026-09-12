@@ -854,6 +854,7 @@ class _EditProfileScreenState extends State<EditProfileScreen>
   Widget _buildCompactRow({
     required IconData icon,
     required bool isDark,
+    String? iconAsset,
     String? label,
     String? value,
     String? placeholder,
@@ -876,7 +877,12 @@ class _EditProfileScreenState extends State<EditProfileScreen>
               color: tileColor.withValues(alpha: 0.1),
               borderRadius: BorderRadius.circular(9),
             ),
-            child: Icon(icon, color: tileColor, size: 16),
+            // PROFILE-20: the dedicated icon assets are already full-color
+            // 3D glyphs (not tintable line icons), so they render as-is,
+            // unlike the Material `Icon` fallback which is tinted `tileColor`.
+            child: iconAsset != null
+                ? Image.asset(iconAsset, width: 18, height: 18, fit: BoxFit.contain)
+                : Icon(icon, color: tileColor, size: 16),
           ),
           const SizedBox(width: 11),
           Expanded(
@@ -1013,6 +1019,7 @@ class _EditProfileScreenState extends State<EditProfileScreen>
     required String title,
     required String subtitle,
     required bool isDark,
+    String? iconAsset,
     bool trailingBadge = false,
   }) {
     final tileColor = isDark ? AppColors.primaryLight : const Color(0xFF2D7D3C);
@@ -1021,12 +1028,19 @@ class _EditProfileScreenState extends State<EditProfileScreen>
       child: Row(
         crossAxisAlignment: CrossAxisAlignment.center,
         children: [
-          Container(
-            width: 34,
-            height: 34,
-            decoration: BoxDecoration(color: tileColor, shape: BoxShape.circle),
-            child: Icon(icon, color: Colors.white, size: 17),
-          ),
+          // PROFILE-20: the dedicated section-header assets are already
+          // complete circular badges (their own backdrop + icon baked in),
+          // so they replace the tileColor circle entirely rather than
+          // sitting inside it. Sized up from the circle's own 34px since
+          // the asset carries transparent padding around its drawn circle.
+          iconAsset != null
+              ? Image.asset(iconAsset, width: 40, height: 40, fit: BoxFit.contain)
+              : Container(
+                  width: 34,
+                  height: 34,
+                  decoration: BoxDecoration(color: tileColor, shape: BoxShape.circle),
+                  child: Icon(icon, color: Colors.white, size: 17),
+                ),
           const SizedBox(width: 10),
           Expanded(
             child: Column(
@@ -1128,6 +1142,7 @@ class _EditProfileScreenState extends State<EditProfileScreen>
                             // bare treatment.
                             _buildSectionHeader(
                               icon: Icons.person_outline_rounded,
+                              iconAsset: 'assets/images/Profile/Personal_Information.png',
                               title: 'Personal Information',
                               subtitle: 'Manage your basic account details',
                               isDark: isDark,
@@ -1137,6 +1152,7 @@ class _EditProfileScreenState extends State<EditProfileScreen>
                               rows: [
                                 _buildCompactRow(
                                   icon: Icons.person_outline_rounded,
+                                  iconAsset: 'assets/images/Profile/Full-Name_Icon.png',
                                   isDark: isDark,
                                   child: TextFormField(
                                     controller: _nameController,
@@ -1162,6 +1178,7 @@ class _EditProfileScreenState extends State<EditProfileScreen>
                                 ),
                                 _buildCompactRow(
                                   icon: Icons.phone_outlined,
+                                  iconAsset: 'assets/images/Profile/Phone_Icon.png',
                                   isDark: isDark,
                                   label: 'Phone Number',
                                   value: _phoneController.text,
@@ -1183,6 +1200,7 @@ class _EditProfileScreenState extends State<EditProfileScreen>
                                 ),
                                 _buildCompactRow(
                                   icon: Icons.email_outlined,
+                                  iconAsset: 'assets/images/Profile/Mail_Icon.png',
                                   isDark: isDark,
                                   label: 'Email Address',
                                   value: _emailController.text,
@@ -1208,6 +1226,7 @@ class _EditProfileScreenState extends State<EditProfileScreen>
 
                             _buildSectionHeader(
                               icon: Icons.badge_outlined,
+                              iconAsset: 'assets/images/Profile/Personal_Details.png',
                               title: 'Personal Details',
                               subtitle: 'Collected when you completed your profile',
                               isDark: isDark,
@@ -1218,6 +1237,7 @@ class _EditProfileScreenState extends State<EditProfileScreen>
                               rows: [
                                 _buildCompactRow(
                                   icon: Icons.cake_outlined,
+                                  iconAsset: 'assets/images/Profile/DOB_Icon.png',
                                   isDark: isDark,
                                   label: 'Date of Birth',
                                   value: _dateOfBirth != null ? _formatDate(_dateOfBirth!) : '',
@@ -1237,6 +1257,7 @@ class _EditProfileScreenState extends State<EditProfileScreen>
                                 ),
                                 _buildCompactRow(
                                   icon: Icons.wc_rounded,
+                                  iconAsset: 'assets/images/Profile/Gender_Icon.png',
                                   isDark: isDark,
                                   label: 'Gender',
                                   value: _genderLabel(_gender),
