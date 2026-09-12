@@ -263,10 +263,14 @@ class _ProfileScreenState extends State<ProfileScreen> {
     );
     final launched = await launchUrl(uri);
     if (!launched && mounted) {
-      ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(
-          content: Text('No email app found. Reach us at support@agrimore.in'),
-        ),
+      // SnackbarHelper, not the raw ScaffoldMessenger call _buildShareIcon
+      // uses elsewhere in this file — this is a failure, and
+      // settings_screen.dart's own _reportBug() (the same mailto-launch-
+      // failed scenario) already established SnackbarHelper.showError as
+      // the pattern for exactly this case.
+      SnackbarHelper.showError(
+        context,
+        'No email app found. Reach us at support@agrimore.in',
       );
     }
   }
