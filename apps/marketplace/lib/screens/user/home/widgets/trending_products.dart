@@ -23,7 +23,7 @@ class TrendingProducts extends StatelessWidget {
       builder: (context, categoryProvider, productProvider, _) {
         // Get categories 7-14 (second group of 8)
         final allCategories = categoryProvider.categories
-            .where((c) => c.isActive)
+            .where((c) => c.isActive && c.isVisible)
             .toList();
         
         // Skip first 6 (used in Bestsellers), take next 8

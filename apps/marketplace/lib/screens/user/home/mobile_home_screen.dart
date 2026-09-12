@@ -591,8 +591,9 @@ class _MobileHomeScreenState extends State<MobileHomeScreen>
   // --- Product Sections by Category (Blinkit-style) ---
   Widget _buildProductSections(
       ProductProvider productProvider, CategoryProvider categoryProvider) {
-    final categories =
-        categoryProvider.categories.where((c) => c.isActive).toList();
+    final categories = categoryProvider.categories
+        .where((c) => c.isActive && c.isVisible)
+        .toList();
     final allProducts =
         productProvider.products.where((p) => p.isActive).toList();
 
