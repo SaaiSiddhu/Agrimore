@@ -13,6 +13,22 @@ class BannerModel {
   final DateTime createdAt;
   final DateTime? updatedAt;
 
+  /// Where this banner may appear. Every banner written before this field
+  /// existed has none in Firestore, and parses as 'HOME_HERO' (see
+  /// fromFirestore) — so the Home carousel keeps rendering exactly what it
+  /// always has, with no backfill required for correctness.
+  final String placement;
+
+  /// Required when [placement] is 'CATEGORY_HERO'; null = not category-scoped.
+  final String? categoryId;
+
+  /// Null on either side = unbounded on that side (always eligible).
+  final DateTime? startsAt;
+  final DateTime? endsAt;
+
+  static const String placementHomeHero = 'HOME_HERO';
+  static const String placementCategoryHero = 'CATEGORY_HERO';
+
   BannerModel({
     required this.id,
     required this.imageUrl,
@@ -25,7 +41,31 @@ class BannerModel {
     required this.priority,
     required this.createdAt,
     this.updatedAt,
+    this.placement = placementHomeHero,
+    this.categoryId,
+    this.startsAt,
+    this.endsAt,
   });
+
+  /// True when [at] (default: now) falls inside [startsAt, endsAt] — either
+  /// bound absent means unbounded on that side.
+  bool isWithinSchedule([DateTime? at]) {
+    final now = at ?? DateTime.now();
+    if (startsAt != null && now.isBefore(startsAt!)) return false;
+    if (endsAt != null && now.isAfter(endsAt!)) return false;
+    return true;
+  }
+
+  /// Draft/Scheduled/Live/Expired/Disabled, derived from isActive + the
+  /// schedule window rather than a separate stored status (spec: publication
+  /// state should never be redundant with the fields that already imply it).
+  String get scheduleStatus {
+    if (!isActive) return 'Disabled';
+    final now = DateTime.now();
+    if (startsAt != null && now.isBefore(startsAt!)) return 'Scheduled';
+    if (endsAt != null && now.isAfter(endsAt!)) return 'Expired';
+    return 'Live';
+  }
 
   // From Firestore (defensive parsing)
   factory BannerModel.fromFirestore(DocumentSnapshot doc) {
@@ -59,6 +99,12 @@ class BannerModel {
       updatedAt = null;
     }
 
+    DateTime? parseNullableTimestamp(dynamic raw) {
+      if (raw is Timestamp) return raw.toDate();
+      if (raw is DateTime) return raw;
+      return null;
+    }
+
     return BannerModel(
       id: doc.id,
       imageUrl: (data['imageUrl'] ?? '').toString(),
@@ -71,6 +117,10 @@ class BannerModel {
       priority: data['priority'] is int ? data['priority'] as int : int.tryParse((data['priority'] ?? '0').toString()) ?? 0,
       createdAt: createdAt,
       updatedAt: updatedAt,
+      placement: (data['placement'] ?? placementHomeHero).toString(),
+      categoryId: data['categoryId'] != null ? data['categoryId'].toString() : null,
+      startsAt: parseNullableTimestamp(data['startsAt']),
+      endsAt: parseNullableTimestamp(data['endsAt']),
     );
   }
 
@@ -87,6 +137,10 @@ class BannerModel {
       'priority': priority,
       'createdAt': Timestamp.fromDate(createdAt),
       'updatedAt': updatedAt != null ? Timestamp.fromDate(updatedAt!) : null,
+      'placement': placement,
+      'categoryId': categoryId,
+      'startsAt': startsAt != null ? Timestamp.fromDate(startsAt!) : null,
+      'endsAt': endsAt != null ? Timestamp.fromDate(endsAt!) : null,
     };
   }
 
@@ -102,6 +156,10 @@ class BannerModel {
     int? priority,
     DateTime? createdAt,
     DateTime? updatedAt,
+    String? placement,
+    String? categoryId,
+    DateTime? startsAt,
+    DateTime? endsAt,
   }) {
     return BannerModel(
       id: id ?? this.id,
@@ -115,6 +173,10 @@ class BannerModel {
       priority: priority ?? this.priority,
       createdAt: createdAt ?? this.createdAt,
       updatedAt: updatedAt ?? this.updatedAt,
+      placement: placement ?? this.placement,
+      categoryId: categoryId ?? this.categoryId,
+      startsAt: startsAt ?? this.startsAt,
+      endsAt: endsAt ?? this.endsAt,
     );
   }
 }
