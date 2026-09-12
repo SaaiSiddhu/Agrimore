@@ -92,19 +92,26 @@ mixin StickyHeaderCollapseMixin<T extends StatefulWidget> on State<T> {
   }
 
   void _onStickyHeaderScroll() {
-    // PROFILE-18: when a screen's content doesn't have 150px of scrollable
-    // range to begin with (short content on a tall device), dividing by the
-    // fixed distance left `headerCollapse` permanently stuck mid-fraction —
-    // the hero title and the pinned title both stayed partially visible at
-    // once, with no scroll position that resolved to a clean 0 or 1. Using
-    // whatever range actually exists (when it's smaller) means the bottom
-    // of the real scroll always lands on a clean, fully-collapsed 1.0.
+    // PROFILE-19: a proportional fade over `stickyHeaderCollapseDistance`
+    // only reads as an intentional animation when there's enough room for
+    // the user's scroll gesture to feel deliberate. When the actual
+    // scrollable range is smaller than that distance (short content on a
+    // tall device), PROFILE-18 tried clamping the divisor to the smaller
+    // range — but that made a tiny accidental scroll produce an even
+    // LARGER collapse fraction than before (a fixed offset over a smaller
+    // divisor), so the hero title and the pinned title still ended up both
+    // partially visible at once, worse than the original bug. The actual
+    // fix: don't fade at all over an insufficient range — snap cleanly to
+    // fully expanded at rest and fully collapsed the moment any scrolling
+    // happens, so there is never a position that renders both titles at
+    // once. Screens with the normal 150px+ of room (Profile screen; Edit
+    // Profile itself on a taller device) are unaffected — the condition
+    // only changes anything when maxScrollExtent is actually smaller.
     final maxExtent = stickyHeaderScrollController.position.maxScrollExtent;
-    final effectiveDistance = (maxExtent > 0 && maxExtent < stickyHeaderCollapseDistance)
-        ? maxExtent
-        : stickyHeaderCollapseDistance;
-    final progress = (stickyHeaderScrollController.offset / effectiveDistance)
-        .clamp(0.0, 1.0);
+    final offset = stickyHeaderScrollController.offset;
+    final progress = maxExtent < stickyHeaderCollapseDistance
+        ? (offset > 0 ? 1.0 : 0.0)
+        : (offset / stickyHeaderCollapseDistance).clamp(0.0, 1.0);
     if (progress != headerCollapse) {
       setState(() => headerCollapse = progress);
     }
