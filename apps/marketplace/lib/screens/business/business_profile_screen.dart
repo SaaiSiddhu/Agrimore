@@ -33,6 +33,7 @@ class BusinessProfileScreen extends StatefulWidget {
 class _BusinessProfileScreenState extends State<BusinessProfileScreen> {
   Map<String, dynamic>? _seller;
   List<ProductModel> _products = [];
+  int? _productCount;
   bool _loading = true;
   String? _error;
   final BusinessFollowProvider _followProvider = BusinessFollowProvider();
@@ -67,17 +68,19 @@ class _BusinessProfileScreenState extends State<BusinessProfileScreen> {
           .doc(widget.sellerId)
           .get();
 
-      final productsSnap = await FirebaseFirestore.instance
+      final productsQuery = FirebaseFirestore.instance
           .collection('products')
-          .where('sellerId', isEqualTo: widget.sellerId)
-          .limit(60)
-          .get();
+          .where('sellerId', isEqualTo: widget.sellerId);
+
+      final productsSnap = await productsQuery.limit(60).get();
+      final countSnap = await productsQuery.count().get();
 
       if (!mounted) return;
       setState(() {
         _seller = sellerDoc.exists ? sellerDoc.data() : null;
         _products =
             productsSnap.docs.map((d) => ProductModel.fromFirestore(d)).toList();
+        _productCount = countSnap.count;
         _loading = false;
       });
     } catch (e) {
@@ -149,6 +152,121 @@ class _BusinessProfileScreenState extends State<BusinessProfileScreen> {
     );
   }
 
+  // SELLER-STOREFRONT-1. `sellers/{uid}.createdAt` is a server timestamp set
+  // at approval (createSellerByAdmin.ts / the admin approval batch) -- a
+  // real signal, not derived from any client-controllable field.
+  String? _tenureLabel() {
+    final createdAt = _seller?['createdAt'];
+    if (createdAt is! Timestamp) return null;
+    final days = DateTime.now().difference(createdAt.toDate()).inDays;
+    if (days < 30) return 'New seller';
+    if (days < 365) {
+      final months = (days / 30).floor();
+      return '$months mo${months > 1 ? 's' : ''}';
+    }
+    final years = (days / 365).floor();
+    return '$years yr${years > 1 ? 's' : ''}';
+  }
+
+  Widget _buildMetricStat(String value, String label, bool isDark) {
+    return Column(
+      children: [
+        Text(
+          value,
+          style: TextStyle(
+            fontSize: 16,
+            fontWeight: FontWeight.w800,
+            color: isDark ? Colors.white : Colors.black87,
+          ),
+        ),
+        const SizedBox(height: 2),
+        Text(
+          label,
+          style: TextStyle(
+            fontSize: 11,
+            color: isDark ? Colors.grey[400] : Colors.grey[600],
+          ),
+        ),
+      ],
+    );
+  }
+
+  // Verified reflects `status == 'approved'`, rules-enforced
+  // (ownerCannotApproveSellerStatus() -- a seller can never self-approve).
+  // Not always true here: unlike ADMIN-SELLER-CMS-1's own admin list (which
+  // filters status=='approved'), this screen opens any sellerId directly,
+  // so a pending/rejected seller's profile is reachable and must not show
+  // this badge.
+  Widget _buildVerifiedBadge(bool isVerified) {
+    if (!isVerified) return const SizedBox.shrink();
+    return Container(
+      padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 4),
+      decoration: BoxDecoration(
+        color: AppColors.primary.withValues(alpha: 0.14),
+        borderRadius: BorderRadius.circular(20),
+        border: Border.all(color: AppColors.primary.withValues(alpha: 0.5)),
+      ),
+      child: Row(
+        mainAxisSize: MainAxisSize.min,
+        children: [
+          Icon(Icons.verified_rounded, size: 13, color: AppColors.primaryDark),
+          const SizedBox(width: 4),
+          Text(
+            'Verified Seller',
+            style: TextStyle(
+              color: AppColors.primaryDark,
+              fontSize: 11,
+              fontWeight: FontWeight.w700,
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+
+  Widget _buildMetricsRow(bool isDark) {
+    final tenure = _tenureLabel();
+    final isVerified = _seller?['status'] == 'approved';
+    if (_productCount == null && tenure == null && !isVerified) {
+      return const SizedBox.shrink();
+    }
+    return Padding(
+      padding: const EdgeInsets.only(top: 14),
+      child: Row(
+        children: [
+          if (_productCount != null)
+            _buildMetricStat('$_productCount', 'Products', isDark),
+          if (_productCount != null && tenure != null) const SizedBox(width: 24),
+          if (tenure != null) _buildMetricStat(tenure, 'On Agrimore', isDark),
+          if (isVerified) ...[
+            const Spacer(),
+            _buildVerifiedBadge(true),
+          ],
+        ],
+      ),
+    );
+  }
+
+  Widget _buildCoverBanner(bool isDark, Color accentColor, String? coverUrl) {
+    final hasCover = coverUrl != null && coverUrl.isNotEmpty;
+    return Container(
+      height: 120,
+      width: double.infinity,
+      decoration: BoxDecoration(
+        gradient: hasCover
+            ? null
+            : LinearGradient(
+                colors: [accentColor.withValues(alpha: 0.85), accentColor],
+                begin: Alignment.topLeft,
+                end: Alignment.bottomRight,
+              ),
+        image: hasCover
+            ? DecorationImage(image: NetworkImage(coverUrl), fit: BoxFit.cover)
+            : null,
+      ),
+    );
+  }
+
   @override
   Widget build(BuildContext context) {
     final themeProvider = Provider.of<ThemeProvider>(context);
@@ -156,6 +274,8 @@ class _BusinessProfileScreenState extends State<BusinessProfileScreen> {
     final accentColor = isDark ? AppColors.primaryLight : AppColors.primary;
     final shopName = (_seller?['shopName'] as String?)?.trim();
     final shopAddress = (_seller?['shopAddress'] as String?)?.trim();
+    final logoUrl = (_seller?['logoUrl'] as String?)?.trim();
+    final coverUrl = (_seller?['coverImageUrl'] as String?)?.trim();
 
     return Scaffold(
       backgroundColor: isDark ? AppColors.backgroundDark : Colors.grey[50],
@@ -192,6 +312,7 @@ class _BusinessProfileScreenState extends State<BusinessProfileScreen> {
                       onRefresh: _load,
                       child: ListView(
                         children: [
+                          _buildCoverBanner(isDark, accentColor, coverUrl),
                           Container(
                             width: double.infinity,
                             padding: const EdgeInsets.all(20),
@@ -204,7 +325,12 @@ class _BusinessProfileScreenState extends State<BusinessProfileScreen> {
                                     CircleAvatar(
                                       radius: 28,
                                       backgroundColor: accentColor.withValues(alpha: 0.1),
-                                      child: Icon(Icons.storefront, color: accentColor, size: 28),
+                                      backgroundImage: (logoUrl != null && logoUrl.isNotEmpty)
+                                          ? NetworkImage(logoUrl)
+                                          : null,
+                                      child: (logoUrl == null || logoUrl.isEmpty)
+                                          ? Icon(Icons.storefront, color: accentColor, size: 28)
+                                          : null,
                                     ),
                                     const SizedBox(width: 14),
                                     Expanded(
@@ -234,6 +360,7 @@ class _BusinessProfileScreenState extends State<BusinessProfileScreen> {
                                     ),
                                   ],
                                 ),
+                                _buildMetricsRow(isDark),
                                 const SizedBox(height: 14),
                                 _buildFollowButton(isDark, accentColor),
                               ],
