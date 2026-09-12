@@ -399,6 +399,23 @@ class _CategoryManagementScreenState extends State<CategoryManagementScreen> {
               // Action Buttons
               Row(
                 children: [
+                  Tooltip(
+                    message: 'Move up (swap with the previous sibling)',
+                    child: IconButton(
+                      icon: const Icon(Icons.arrow_upward_rounded),
+                      color: isDark ? Colors.grey[400] : Colors.grey[600],
+                      onPressed: () => _moveCategory(category, up: true),
+                    ),
+                  ),
+                  Tooltip(
+                    message: 'Move down (swap with the next sibling)',
+                    child: IconButton(
+                      icon: const Icon(Icons.arrow_downward_rounded),
+                      color: isDark ? Colors.grey[400] : Colors.grey[600],
+                      onPressed: () => _moveCategory(category, up: false),
+                    ),
+                  ),
+                  const SizedBox(width: 4),
                   if (category.canHaveChildren)
                     _buildActionButton(
                       icon: Icons.add_rounded,
@@ -639,11 +656,13 @@ class _CategoryManagementScreenState extends State<CategoryManagementScreen> {
   }
 
   void _showCategoryDialog({CategoryModel? categoryToEdit, CategoryModel? parentCategory}) {
+    final allCategories = Provider.of<AdminProvider>(context, listen: false).categories;
     showDialog(
       context: context,
       builder: (context) => _CategoryFormDialog(
         categoryToEdit: categoryToEdit,
         parentCategory: parentCategory,
+        allCategories: allCategories,
         onSave: (category) async {
           debugPrint('💾 Saving category: ${category.name}');
           debugPrint('   iconUrl: ${category.iconUrl}');
@@ -663,6 +682,20 @@ class _CategoryManagementScreenState extends State<CategoryManagementScreen> {
         },
       ),
     );
+  }
+
+  Future<void> _moveCategory(CategoryModel category, {required bool up}) async {
+    final adminProvider = Provider.of<AdminProvider>(context, listen: false);
+    try {
+      await adminProvider.moveCategoryOrder(category, up: up);
+      _loadCategories();
+    } catch (e) {
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(backgroundColor: Colors.redAccent, content: Text('Error: $e')),
+        );
+      }
+    }
   }
 
   void _confirmDelete(CategoryModel category, int childCount) {
@@ -728,11 +761,13 @@ class _CategoryManagementScreenState extends State<CategoryManagementScreen> {
 class _CategoryFormDialog extends StatefulWidget {
   final CategoryModel? categoryToEdit;
   final CategoryModel? parentCategory;
+  final List<CategoryModel> allCategories;
   final Function(CategoryModel) onSave;
 
   const _CategoryFormDialog({
     this.categoryToEdit,
     this.parentCategory,
+    this.allCategories = const [],
     required this.onSave,
   });
 
@@ -745,13 +780,19 @@ class _CategoryFormDialogState extends State<_CategoryFormDialog> {
   final _nameController = TextEditingController();
   final _descriptionController = TextEditingController();
   final _orderController = TextEditingController();
-  
+
   bool _isActive = true;
   String? _iconUrl;
   String? _bannerUrl;
   PlatformFile? _iconFile;  // ✅ Changed from XFile
   PlatformFile? _bannerFile;  // ✅ Changed from XFile
   bool _isLoading = false;
+
+  // Only editable when editing an existing category -- at creation time the
+  // parent is already fixed by which button the admin pressed ("Add Main
+  // Category" vs. "Add Sub" under a specific category), so a redundant
+  // picker there would just invite a mismatch with that choice.
+  String? _selectedParentId;
 
   @override
   void initState() {
@@ -763,7 +804,36 @@ class _CategoryFormDialogState extends State<_CategoryFormDialog> {
       _isActive = widget.categoryToEdit!.isActive;
       _iconUrl = widget.categoryToEdit!.iconUrl;
       _bannerUrl = widget.categoryToEdit!.bannerImageUrl;
+      _selectedParentId = widget.categoryToEdit!.parentId;
+    } else {
+      _selectedParentId = widget.parentCategory?.id;
     }
+  }
+
+  /// Descendants of [rootId] (children, grandchildren, ...) by walking
+  /// parentId forward through widget.allCategories -- used only to keep
+  /// invalid choices out of the dropdown; AdminProvider's own cycle check
+  /// (walking backward from the chosen candidate) is the actual guard.
+  Set<String> _descendantsOf(String rootId) {
+    final result = <String>{};
+    final queue = [rootId];
+    while (queue.isNotEmpty) {
+      final current = queue.removeLast();
+      for (final c in widget.allCategories) {
+        if (c.parentId == current && result.add(c.id)) {
+          queue.add(c.id);
+        }
+      }
+    }
+    return result;
+  }
+
+  List<CategoryModel> _validParentChoices() {
+    final editingId = widget.categoryToEdit?.id;
+    final excluded = editingId == null ? <String>{} : {editingId, ..._descendantsOf(editingId)};
+    return widget.allCategories
+        .where((c) => !excluded.contains(c.id) && c.canHaveChildren)
+        .toList();
   }
 
   @override
@@ -905,6 +975,26 @@ class _CategoryFormDialogState extends State<_CategoryFormDialog> {
                     border: OutlineInputBorder(borderRadius: BorderRadius.circular(12), borderSide: BorderSide.none),
                   ),
                 ),
+                if (widget.categoryToEdit != null) ...[
+                  const SizedBox(height: 16),
+                  DropdownButtonFormField<String?>(
+                    initialValue: _selectedParentId,
+                    isExpanded: true, // without this, the selected item's Text has no bounded width to ellipsize into and overflows instead
+                    decoration: InputDecoration(
+                      labelText: 'Parent Category',
+                      prefixIcon: const Icon(Icons.account_tree_outlined),
+                      filled: true,
+                      fillColor: isDark ? Colors.grey[850] : Colors.grey[50],
+                      border: OutlineInputBorder(borderRadius: BorderRadius.circular(12), borderSide: BorderSide.none),
+                    ),
+                    items: [
+                      const DropdownMenuItem<String?>(value: null, child: Text('None (main category)')),
+                      for (final c in _validParentChoices())
+                        DropdownMenuItem<String?>(value: c.id, child: Text(c.name, overflow: TextOverflow.ellipsis)),
+                    ],
+                    onChanged: (v) => setState(() => _selectedParentId = v),
+                  ),
+                ],
                 const SizedBox(height: 16),
                 // Order & Active Row
                 Row(
@@ -1115,7 +1205,17 @@ class _CategoryFormDialogState extends State<_CategoryFormDialog> {
         bannerUrl = await _uploadImage(_bannerFile!, 'banners', '${categorySlug}_$timestamp.jpg');
       }
 
-      final level = widget.parentCategory != null ? widget.parentCategory!.level + 1 : 0;
+      // Resolve level from the ACTUAL selected parent, not from
+      // widget.parentCategory -- that field is only ever set on the "Add
+      // Sub" creation path, so computing level from it unconditionally
+      // (the previous behavior) silently reset every edited subcategory's
+      // parentId and level back to top-level on every save, regardless of
+      // its real position. _selectedParentId reflects the real choice on
+      // both the edit and the add path.
+      final resolvedParent = _selectedParentId == null
+          ? null
+          : widget.allCategories.where((c) => c.id == _selectedParentId).firstOrNull;
+      final level = resolvedParent != null ? resolvedParent.level + 1 : 0;
 
       final category = CategoryModel(
         id: widget.categoryToEdit?.id ?? '',
@@ -1126,7 +1226,7 @@ class _CategoryFormDialogState extends State<_CategoryFormDialog> {
         displayOrder: int.tryParse(_orderController.text) ?? 0,
         isActive: _isActive,
         createdAt: widget.categoryToEdit?.createdAt ?? DateTime.now(),
-        parentId: widget.parentCategory?.id,
+        parentId: _selectedParentId,
         level: level,
         slug: categorySlug,
       );
