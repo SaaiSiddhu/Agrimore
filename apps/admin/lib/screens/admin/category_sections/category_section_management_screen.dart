@@ -556,24 +556,10 @@ class _PremiumSectionCard extends StatelessWidget {
                         ),
                       ),
                       
-                      // Status Badge
-                      Container(
-                        padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 4),
-                        decoration: BoxDecoration(
-                          color: section.isActive 
-                              ? Colors.green.withOpacity(0.1)
-                              : Colors.orange.withOpacity(0.1),
-                          borderRadius: BorderRadius.circular(20),
-                        ),
-                        child: Text(
-                          section.isActive ? 'Active' : 'Inactive',
-                          style: TextStyle(
-                            fontSize: 11,
-                            fontWeight: FontWeight.w600,
-                            color: section.isActive ? Colors.green[700] : Colors.orange[700],
-                          ),
-                        ),
-                      ),
+                      // Status Badge -- Live/Scheduled/Expired/Disabled,
+                      // derived from isActive + the schedule window
+                      // (mirrors BannerCard's own chip).
+                      _ScheduleStatusChip(status: section.scheduleStatus),
                     ],
                   ),
                   
@@ -731,13 +717,60 @@ class _ActionButton extends StatelessWidget {
               child: Icon(
                 icon,
                 size: 18,
-                color: onTap != null 
+                color: onTap != null
                     ? (iconColor ?? Colors.grey[600])
                     : Colors.grey[300],
               ),
             ),
           ),
         ),
+      ),
+    );
+  }
+}
+
+// ============================================
+// SCHEDULE STATUS CHIP -- mirrors BannerCard's own
+// Live/Scheduled/Expired/Disabled chip exactly.
+// ============================================
+class _ScheduleStatusChip extends StatelessWidget {
+  final String status;
+
+  const _ScheduleStatusChip({required this.status});
+
+  static const Map<String, Color> _colors = {
+    'Live': Colors.green,
+    'Scheduled': Colors.blue,
+    'Expired': Colors.grey,
+    'Disabled': Colors.orange,
+  };
+
+  static const Map<String, IconData> _icons = {
+    'Live': Icons.check_circle,
+    'Scheduled': Icons.schedule,
+    'Expired': Icons.event_busy,
+    'Disabled': Icons.pause_circle_filled,
+  };
+
+  @override
+  Widget build(BuildContext context) {
+    final color = _colors[status] ?? Colors.grey;
+    return Container(
+      padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 4),
+      decoration: BoxDecoration(
+        color: color.withOpacity(0.1),
+        borderRadius: BorderRadius.circular(20),
+      ),
+      child: Row(
+        mainAxisSize: MainAxisSize.min,
+        children: [
+          Icon(_icons[status] ?? Icons.help_outline, size: 12, color: color),
+          const SizedBox(width: 4),
+          Text(
+            status,
+            style: TextStyle(fontSize: 11, fontWeight: FontWeight.w600, color: color),
+          ),
+        ],
       ),
     );
   }
