@@ -10,6 +10,7 @@ import '../../../providers/cart_provider.dart';
 import '../../../providers/wishlist_provider.dart';
 import '../../../providers/category_section_provider.dart';
 import '../../../providers/home_product_section_config_provider.dart';
+import '../../../providers/home_grocery_strip_config_provider.dart';
 import 'package:agrimore_core/agrimore_core.dart';
 
 // --- WIDGET IMPORTS (FIXED & MERGED FROM MOBILE) ---
@@ -21,6 +22,7 @@ import 'widgets/dynamic_category_sections.dart';
 import 'widgets/recently_viewed_widget.dart'; // <-- ADDED FROM MOBILE
 import 'widgets/product_section_widget.dart'; // <-- HOME-6: admin-configured product sections
 import 'widgets/section_banner_carousel.dart'; // <-- HOME-6
+import 'widgets/grocery_kitchen_home_strip.dart'; // <-- HOME-7
 
 class WebHomeScreen extends StatefulWidget {
   const WebHomeScreen({Key? key}) : super(key: key);
@@ -81,6 +83,9 @@ class _WebHomeScreenState extends State<WebHomeScreen>
       final productSectionConfigProvider =
           Provider.of<HomeProductSectionConfigProvider>(context,
               listen: false);
+      final groceryStripConfigProvider =
+          Provider.of<HomeGroceryStripConfigProvider>(context,
+              listen: false);
 
       // Refresh all data including banners for admin changes
       bannerProvider.loadBanners();
@@ -90,6 +95,7 @@ class _WebHomeScreenState extends State<WebHomeScreen>
       wishlistProvider.loadWishlist();
       sectionProvider.loadSections();
       productSectionConfigProvider.loadSections();
+      groceryStripConfigProvider.loadConfig();
     });
   }
 
@@ -198,6 +204,20 @@ class _WebHomeScreenState extends State<WebHomeScreen>
                 padding: const EdgeInsets.symmetric(horizontal: 40),
                 child: _buildSectionWrapper(
                   child: const DealsForYou(), // Bestsellers
+                ),
+              ),
+            ),
+
+            const SliverToBoxAdapter(child: SizedBox(height: 50)),
+
+            // 4b. Grocery & Kitchen strip (HOME-7: admin-configurable,
+            // mirrors mobile_home_screen.dart's own relative position --
+            // right after Bestsellers)
+            SliverToBoxAdapter(
+              child: Padding(
+                padding: const EdgeInsets.symmetric(horizontal: 40),
+                child: _buildSectionWrapper(
+                  child: const GroceryKitchenHomeStrip(),
                 ),
               ),
             ),
