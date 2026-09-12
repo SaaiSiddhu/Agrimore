@@ -31,6 +31,8 @@ class BusinessProfileScreen extends StatefulWidget {
   State<BusinessProfileScreen> createState() => _BusinessProfileScreenState();
 }
 
+const _kProductsPageSize = 20;
+
 class _BusinessProfileScreenState extends State<BusinessProfileScreen> {
   Map<String, dynamic>? _seller;
   List<ProductModel> _products = [];
@@ -39,6 +41,9 @@ class _BusinessProfileScreenState extends State<BusinessProfileScreen> {
   String? _error;
   bool _descriptionExpanded = false;
   String? _selectedCategoryId;
+  DocumentSnapshot<Map<String, dynamic>>? _lastProductDoc;
+  bool _hasMoreProducts = true;
+  bool _loadingMoreProducts = false;
   final BusinessFollowProvider _followProvider = BusinessFollowProvider();
 
   List<ProductModel> get _filteredProducts {
@@ -94,7 +99,7 @@ class _BusinessProfileScreenState extends State<BusinessProfileScreen> {
           .collection('products')
           .where('sellerId', isEqualTo: widget.sellerId);
 
-      final productsSnap = await productsQuery.limit(60).get();
+      final productsSnap = await productsQuery.limit(_kProductsPageSize).get();
       final countSnap = await productsQuery.count().get();
 
       if (!mounted) return;
@@ -103,6 +108,8 @@ class _BusinessProfileScreenState extends State<BusinessProfileScreen> {
         _products =
             productsSnap.docs.map((d) => ProductModel.fromFirestore(d)).toList();
         _productCount = countSnap.count;
+        _lastProductDoc = productsSnap.docs.isNotEmpty ? productsSnap.docs.last : null;
+        _hasMoreProducts = productsSnap.docs.length == _kProductsPageSize;
         _loading = false;
       });
     } catch (e) {
@@ -112,6 +119,59 @@ class _BusinessProfileScreenState extends State<BusinessProfileScreen> {
         _loading = false;
       });
     }
+  }
+
+  // Real pagination (SELLER-STOREFRONT-1 WS3): a document cursor over the
+  // same sellerId query _load() already runs, replacing the old one-shot
+  // .limit(60) fetch. Category-chip filtering stays client-side over
+  // whatever pages are currently loaded (unchanged from WS2) rather than
+  // adding a server-side categoryId filter here -- that would need a new
+  // sellerId+categoryId composite index this phase has no way to verify
+  // safe without a live emulator seeded with realistic multi-category
+  // data, so it is left out rather than shipped unverified.
+  Future<void> _loadMoreProducts() async {
+    if (_loadingMoreProducts || !_hasMoreProducts || _lastProductDoc == null) return;
+    setState(() => _loadingMoreProducts = true);
+    try {
+      final snap = await FirebaseFirestore.instance
+          .collection('products')
+          .where('sellerId', isEqualTo: widget.sellerId)
+          .startAfterDocument(_lastProductDoc!)
+          .limit(_kProductsPageSize)
+          .get();
+
+      if (!mounted) return;
+      setState(() {
+        _products.addAll(snap.docs.map((d) => ProductModel.fromFirestore(d)));
+        _lastProductDoc = snap.docs.isNotEmpty ? snap.docs.last : _lastProductDoc;
+        _hasMoreProducts = snap.docs.length == _kProductsPageSize;
+        _loadingMoreProducts = false;
+      });
+    } catch (e) {
+      if (!mounted) return;
+      setState(() => _loadingMoreProducts = false);
+      SnackbarHelper.showError(context, 'Could not load more products. Please try again.');
+    }
+  }
+
+  Widget _buildLoadMoreControl(bool isDark, Color accentColor) {
+    if (_selectedCategoryId != null || !_hasMoreProducts) return const SizedBox.shrink();
+    return Padding(
+      padding: const EdgeInsets.symmetric(vertical: 16),
+      child: Center(
+        child: _loadingMoreProducts
+            ? const SizedBox(
+                width: 22,
+                height: 22,
+                child: CircularProgressIndicator(strokeWidth: 2),
+              )
+            : OutlinedButton(
+                onPressed: _loadMoreProducts,
+                style: OutlinedButton.styleFrom(foregroundColor: accentColor),
+                child: const Text('Load more'),
+              ),
+      ),
+    );
   }
 
   // Hidden for a signed-out viewer or the seller viewing their own profile
@@ -613,6 +673,7 @@ class _BusinessProfileScreenState extends State<BusinessProfileScreen> {
                             )
                           else
                             ProductGrid(products: _filteredProducts),
+                          _buildLoadMoreControl(isDark, accentColor),
                           const SizedBox(height: 24),
                         ],
                       ),

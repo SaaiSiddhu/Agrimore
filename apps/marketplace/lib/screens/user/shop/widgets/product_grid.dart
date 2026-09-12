@@ -14,7 +14,14 @@ class ProductGrid extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    // SELLER-STOREFRONT-1: this widget's only caller (business_profile_screen.dart)
+    // nests it inside an outer ListView. A bare GridView.builder there has
+    // unbounded height and throws at layout time -- shrinkWrap + disabling
+    // its own scrolling lets the outer ListView own the scroll position,
+    // the standard pattern for a grid embedded in another scrollable.
     return GridView.builder(
+      shrinkWrap: true,
+      physics: const NeverScrollableScrollPhysics(),
       padding: const EdgeInsets.all(16),
       gridDelegate: SliverGridDelegateWithFixedCrossAxisCount(
         crossAxisCount: crossAxisCount,
