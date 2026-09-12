@@ -139,94 +139,63 @@ class _LoginScreenState extends State<LoginScreen> {
 
   @override
   Widget build(BuildContext context) {
-    return Scaffold(
-      backgroundColor: Colors.black,
-      resizeToAvoidBottomInset: true,
-      body: GestureDetector(
-        onTap: () => FocusScope.of(context).unfocus(),
-        child: Column(
-          children: [
-            Expanded(flex: 6, child: _buildHeroHeader()),
-            Expanded(flex: 5, child: _buildPhoneSheet()),
-          ],
+    return AnnotatedRegion<SystemUiOverlayStyle>(
+      value: SystemUiOverlayStyle.dark,
+      child: Scaffold(
+        backgroundColor: Colors.white,
+        resizeToAvoidBottomInset: true,
+        // Stack, not a Column split into two adjacent regions: the hero
+        // image is the full-screen background and the sheet floats OVER
+        // its lower portion, overlapping — matching the reference
+        // composition ("the bottom sheet should visually feel like it is
+        // resting over the hero image", never a separate flat region with
+        // its own dead space below the photo). The sheet sizes itself to
+        // its own content (see _buildPhoneSheet) and is capped at 62% of
+        // the screen so it can grow for a taller state without ever
+        // swallowing the whole hero.
+        body: GestureDetector(
+          onTap: () => FocusScope.of(context).unfocus(),
+          child: LayoutBuilder(
+            builder: (context, constraints) {
+              return Stack(
+                children: [
+                  Positioned.fill(child: _buildHeroHeader()),
+                  Positioned(
+                    left: 0,
+                    right: 0,
+                    bottom: 0,
+                    child: ConstrainedBox(
+                      constraints: BoxConstraints(maxHeight: constraints.maxHeight * 0.62),
+                      child: _buildPhoneSheet(),
+                    ),
+                  ),
+                ],
+              );
+            },
+          ),
         ),
       ),
     );
   }
 
-  // Full-bleed image (edge-to-edge, no letterboxing) with the headline/ribbon
-  // overlaid on top via a Stack — this also makes the header immune to
-  // RenderFlex overflow on short viewports, since a Stack sizes its
-  // non-positioned children to their own natural size instead of demanding
-  // they all fit within a fixed-size Column.
+  // Full-bleed image (edge-to-edge, no letterboxing), top-aligned so the
+  // brand content baked into login_full_hero.png (wordmark, tagline, the
+  // three value-prop icons) stays in frame across aspect ratios. That
+  // content is part of the supplied image itself, not drawn here, so no
+  // overlay text is rendered on top of it — nothing to duplicate or
+  // compete with. Status bar icons are forced dark (see build()) since the
+  // image's top is bright sky/greenery, not the dark hero this replaces.
   Widget _buildHeroHeader() {
-    return Stack(
-      fit: StackFit.expand,
-      children: [
-        Image.asset(
-          'assets/images/login_hero.png',
-          fit: BoxFit.cover,
-          errorBuilder: (_, __, ___) => const ColoredBox(color: Colors.black),
-        ),
-        DecoratedBox(
-          decoration: BoxDecoration(
-            gradient: LinearGradient(
-              begin: Alignment.topCenter,
-              end: Alignment.bottomCenter,
-              colors: [Colors.black.withValues(alpha: 0.85), Colors.black.withValues(alpha: 0.35), Colors.transparent],
-              stops: const [0.0, 0.5, 0.85],
-            ),
-          ),
-        ),
-        SafeArea(
-          bottom: false,
-          child: Padding(
-            padding: const EdgeInsets.only(top: 20, left: 24, right: 24),
-            child: Column(
-              mainAxisSize: MainAxisSize.min,
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                Text(
-                  "INDIA'S FARM-TO-\nTABLE MARKETPLACE",
-                  style: TextStyle(
-                    color: Colors.white,
-                    fontSize: 28,
-                    fontWeight: FontWeight.w900,
-                    height: 1.15,
-                    letterSpacing: -0.5,
-                  ),
-                ),
-                const SizedBox(height: 16),
-                Center(
-                  child: Transform.rotate(
-                    angle: -0.04,
-                    child: Container(
-                      padding: const EdgeInsets.symmetric(horizontal: 22, vertical: 8),
-                      decoration: BoxDecoration(
-                        gradient: AppColors.primaryGradient,
-                        borderRadius: BorderRadius.circular(6),
-                        boxShadow: [
-                          BoxShadow(color: AppColors.primary.withValues(alpha: 0.4), blurRadius: 12, offset: const Offset(0, 4)),
-                        ],
-                      ),
-                      child: const Text(
-                        'AgriMore',
-                        style: TextStyle(
-                          color: Colors.white,
-                          fontSize: 22,
-                          fontWeight: FontWeight.w800,
-                          fontStyle: FontStyle.italic,
-                          letterSpacing: 0.5,
-                        ),
-                      ),
-                    ),
-                  ),
-                ),
-              ],
-            ),
-          ),
-        ),
-      ],
+    return Semantics(
+      label: 'AgriMore — Fresh from farms, faster to you',
+      image: true,
+      child: Image.asset(
+        'assets/images/login_full_hero.png',
+        fit: BoxFit.cover,
+        alignment: Alignment.topCenter,
+        excludeFromSemantics: true,
+        errorBuilder: (_, __, ___) => const ColoredBox(color: AppColors.primaryDark),
+      ),
     );
   }
 
@@ -240,9 +209,15 @@ class _LoginScreenState extends State<LoginScreen> {
         mainAxisSize: MainAxisSize.min,
         children: [
           const Text(
-            'Log in or sign up',
+            'Login / Sign in',
             textAlign: TextAlign.center,
-            style: TextStyle(fontSize: 18, fontWeight: FontWeight.w700, color: AppColors.textPrimary),
+            style: TextStyle(fontSize: 22, fontWeight: FontWeight.w800, color: AppColors.textPrimary),
+          ),
+          const SizedBox(height: 6),
+          const Text(
+            'Enter your mobile number to receive an OTP',
+            textAlign: TextAlign.center,
+            style: TextStyle(fontSize: 14, color: AppColors.textSecondary),
           ),
           const SizedBox(height: 20),
           Row(
@@ -350,24 +325,48 @@ class _LoginScreenState extends State<LoginScreen> {
       width: double.infinity,
       decoration: const BoxDecoration(
         color: Colors.white,
-        borderRadius: BorderRadius.vertical(top: Radius.circular(24)),
+        borderRadius: BorderRadius.vertical(top: Radius.circular(30)),
+        // A floating shadow, not a border — this sheet now sits ON TOP of
+        // the hero image (see build()'s Stack), so it needs to visually
+        // lift off the photo behind it rather than blend into an adjacent
+        // flat background.
+        boxShadow: [
+          BoxShadow(color: AppColors.shadowLight, blurRadius: 28, offset: Offset(0, -8)),
+        ],
       ),
-      // LayoutBuilder + ConstrainedBox(minHeight) + spaceBetween (not Expanded/
-      // Spacer, which would need bounded height) pushes the terms text down to
-      // just above the bottom edge when there's room, and — since the whole
-      // thing is wrapped in a SingleChildScrollView — degrades to a scrollable
-      // sheet instead of overflowing when the space is squeezed (small screens,
-      // keyboard open).
+      // Sized to its own content (mainAxisSize.min), not stretched to fill a
+      // fixed region — a short state (phone entry) overlaps only a little of
+      // the hero; a taller state (after AUTH-2 adds inline OTP entry) will
+      // naturally overlap more, exactly as the reference intends. Still
+      // wrapped in SingleChildScrollView so it degrades to a scrollable sheet
+      // rather than overflowing if content ever exceeds the maxHeight cap
+      // build() applies (heavy accessibility text scaling, a short device).
       child: SafeArea(
         top: false,
-        child: LayoutBuilder(
-          builder: (context, constraints) {
-            return SingleChildScrollView(
-              padding: const EdgeInsets.fromLTRB(24, 28, 24, 16),
-              child: ConstrainedBox(
-                constraints: BoxConstraints(minHeight: (constraints.maxHeight - 44).clamp(0.0, double.infinity)),
+        child: Column(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            // Decorative affordance matching the reference composition only —
+            // this sheet is a fixed part of the screen layout, not an actual
+            // drag-to-dismiss sheet, so it carries no gesture handler.
+            const Padding(
+              padding: EdgeInsets.only(top: 10, bottom: 4),
+              child: SizedBox(
+                width: 40,
+                height: 4,
+                child: DecoratedBox(
+                  decoration: BoxDecoration(
+                    color: AppColors.border,
+                    borderRadius: BorderRadius.all(Radius.circular(2)),
+                  ),
+                ),
+              ),
+            ),
+            Flexible(
+              child: SingleChildScrollView(
+                padding: const EdgeInsets.fromLTRB(24, 20, 24, 20),
                 child: Column(
-                  mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                  mainAxisSize: MainAxisSize.min,
                   children: [
                     topGroup,
                     const SizedBox(height: 16),
@@ -375,8 +374,8 @@ class _LoginScreenState extends State<LoginScreen> {
                   ],
                 ),
               ),
-            );
-          },
+            ),
+          ],
         ),
       ),
     );

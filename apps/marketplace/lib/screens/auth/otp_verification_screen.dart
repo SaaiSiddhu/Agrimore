@@ -219,6 +219,15 @@ class _OtpVerificationScreenState extends State<OtpVerificationScreen> {
     }
   }
 
+  // Masks the first half of the national number for display, matching the
+  // reference design ("+91 ••••• 43210") — cosmetic only; every request
+  // still uses the full, unmasked widget.phone value.
+  String _maskedPhone() {
+    final digits = widget.phone.replaceFirst('+91', '');
+    if (digits.length != 10) return widget.phone;
+    return '+91 ••••• ${digits.substring(5)}';
+  }
+
   @override
   Widget build(BuildContext context) {
     final topGroup = Column(
@@ -236,7 +245,7 @@ class _OtpVerificationScreenState extends State<OtpVerificationScreen> {
                     : 'We have sent a verification code to\n',
               ),
               TextSpan(
-                text: widget.phone,
+                text: _maskedPhone(),
                 style: const TextStyle(fontWeight: FontWeight.w700, color: AppColors.textPrimary),
               ),
             ],
