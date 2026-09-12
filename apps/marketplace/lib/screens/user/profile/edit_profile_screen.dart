@@ -23,7 +23,7 @@ class _EditProfileScreenState extends State<EditProfileScreen>
   final _formKey = GlobalKey<FormState>();
   final _nameController = TextEditingController();
   // Phone/email are shown read-only here, not free-text editable — see
-  // _buildVerifiedFieldCard below. Editing either now goes through
+  // _buildCompactRow's CHANGE-trailing rows below. Editing either now goes through
   // ChangePhoneScreen/ChangeEmailScreen, which require a fresh OTP verified
   // server-side (changePhoneNumber.ts / changeEmailAddress.ts). This
   // screen's Save button used to write _phoneController's text straight to
@@ -843,192 +843,109 @@ class _EditProfileScreenState extends State<EditProfileScreen>
       );
   }
 
-  Widget _buildTextFormCard({
-    required TextEditingController controller,
-    required String label,
+  // PROFILE-15: replaces _buildTextFormCard/_buildVerifiedFieldCard/
+  // _buildEditableFieldCard's three-separate-cards-per-field layout with
+  // one continuous card per section (Personal Information, Personal
+  // Details), each row sharing this same compact icon+content+trailing
+  // frame with a subtle inset divider between rows instead of a card gap
+  // + shadow per field. `child` overrides the label/value column entirely
+  // (used for Full Name's real TextFormField — every other row uses the
+  // plain label/value/helperText text column).
+  Widget _buildCompactRow({
     required IconData icon,
-    TextInputType keyboardType = TextInputType.text,
-    String? Function(String?)? validator,
     required bool isDark,
-  }) {
-    final tileColor = isDark ? AppColors.primaryLight : const Color(0xFF2D7D3C);
-
-    return Container(
-      margin: const EdgeInsets.only(bottom: 10),
-      decoration: BoxDecoration(
-        color: isDark ? const Color(0xFF1E1E1E) : Colors.white,
-        borderRadius: BorderRadius.circular(14),
-        border: Border.all(
-          color: isDark ? Colors.grey[800]! : Colors.grey.shade200,
-        ),
-        boxShadow: [
-          BoxShadow(
-            color: Colors.black.withValues(alpha: isDark ? 0.3 : 0.02),
-            blurRadius: 8,
-            offset: const Offset(0, 2),
-          ),
-        ],
-      ),
-      child: Padding(
-        padding: const EdgeInsets.fromLTRB(14, 8, 14, 8),
-        child: Row(
-          children: [
-            Container(
-              width: 44,
-              height: 44,
-              decoration: BoxDecoration(
-                color: tileColor.withValues(alpha: 0.1),
-                borderRadius: BorderRadius.circular(12),
-              ),
-              child: Icon(icon, color: tileColor, size: 22),
-            ),
-            const SizedBox(width: 14),
-            Expanded(
-              child: TextFormField(
-                controller: controller,
-                keyboardType: keyboardType,
-                validator: validator,
-                style: TextStyle(
-                  fontSize: 14,
-                  fontWeight: FontWeight.w700,
-                  color: isDark ? Colors.white : Colors.black87,
-                ),
-                decoration: InputDecoration(
-                  labelText: label,
-                  labelStyle: TextStyle(
-                    fontSize: 12,
-                    color: isDark ? Colors.grey[400] : Colors.grey[600],
-                    fontWeight: FontWeight.w500,
-                  ),
-                  border: InputBorder.none,
-                  contentPadding: const EdgeInsets.symmetric(vertical: 4),
-                  errorStyle: const TextStyle(height: 0.1, fontSize: 10),
-                ),
-              ),
-            ),
-          ],
-        ),
-      ),
-    );
-  }
-
-  // Read-only field + a CHANGE trigger, same card shape as
-  // _buildTextFormCard above. Used for phone/email specifically because
-  // both require a fresh, server-verified OTP to change (see
-  // ChangePhoneScreen/ChangeEmailScreen) — unlike name/photo, they cannot
-  // be a plain free-text field that silently saves on the next tap of Save.
-  Widget _buildVerifiedFieldCard({
-    required String label,
-    required IconData icon,
-    required String value,
-    required String placeholder,
-    required bool isDark,
-    required VoidCallback onChange,
-  }) {
-    final tileColor = isDark ? AppColors.primaryLight : const Color(0xFF2D7D3C);
-    final hasValue = value.trim().isNotEmpty;
-
-    return Container(
-      margin: const EdgeInsets.only(bottom: 10),
-      decoration: BoxDecoration(
-        color: isDark ? const Color(0xFF1E1E1E) : Colors.white,
-        borderRadius: BorderRadius.circular(14),
-        border: Border.all(color: isDark ? Colors.grey[800]! : Colors.grey.shade200),
-        boxShadow: [
-          BoxShadow(
-            color: Colors.black.withValues(alpha: isDark ? 0.3 : 0.02),
-            blurRadius: 8,
-            offset: const Offset(0, 2),
-          ),
-        ],
-      ),
-      child: Padding(
-        padding: const EdgeInsets.fromLTRB(14, 8, 14, 8),
-        child: Row(
-          children: [
-            Container(
-              width: 44,
-              height: 44,
-              decoration: BoxDecoration(
-                color: tileColor.withValues(alpha: 0.1),
-                borderRadius: BorderRadius.circular(12),
-              ),
-              child: Icon(icon, color: tileColor, size: 22),
-            ),
-            const SizedBox(width: 14),
-            Expanded(
-              child: Column(
-                crossAxisAlignment: CrossAxisAlignment.start,
-                children: [
-                  Text(
-                    label,
-                    style: TextStyle(
-                      fontSize: 12,
-                      color: isDark ? Colors.grey[400] : Colors.grey[600],
-                      fontWeight: FontWeight.w500,
-                    ),
-                  ),
-                  const SizedBox(height: 2),
-                  Text(
-                    hasValue ? value : placeholder,
-                    style: TextStyle(
-                      fontSize: 14,
-                      fontWeight: FontWeight.w700,
-                      color: hasValue
-                          ? (isDark ? Colors.white : Colors.black87)
-                          : (isDark ? Colors.grey[600] : Colors.grey[400]),
-                    ),
-                    maxLines: 1,
-                    overflow: TextOverflow.ellipsis,
-                  ),
-                ],
-              ),
-            ),
-            GestureDetector(
-              onTap: onChange,
-              child: Padding(
-                padding: const EdgeInsets.symmetric(horizontal: 4, vertical: 8),
-                child: Text(
-                  'CHANGE',
-                  style: TextStyle(
-                    fontSize: 12,
-                    fontWeight: FontWeight.w800,
-                    color: tileColor,
-                    letterSpacing: 0.5,
-                  ),
-                ),
-              ),
-            ),
-          ],
-        ),
-      ),
-    );
-  }
-
-  // PROFILE-8: same card shape again, for Date of Birth/Gender — both now
-  // genuinely editable (unlike the reference mockup's own lock-icon
-  // treatment, which described the state before this phase, not the ask).
-  // [isSaving] shows a small spinner in place of the CHANGE label for DOB's
-  // own immediate-save round trip; gender has no such state since it saves
-  // together with the rest of the form on the main Save button.
-  Widget _buildEditableFieldCard({
-    required String label,
-    required IconData icon,
-    required String value,
-    required String placeholder,
-    required bool isDark,
-    required VoidCallback onChange,
+    String? label,
+    String? value,
+    String? placeholder,
     String? helperText,
-    bool isSaving = false,
+    Widget? child,
+    Widget? trailing,
+    VoidCallback? onTap,
   }) {
     final tileColor = isDark ? AppColors.primaryLight : const Color(0xFF2D7D3C);
-    final hasValue = value.trim().isNotEmpty;
+    final hasValue = value != null && value.trim().isNotEmpty;
 
+    final content = Padding(
+      padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 9),
+      child: Row(
+        children: [
+          Container(
+            width: 32,
+            height: 32,
+            decoration: BoxDecoration(
+              color: tileColor.withValues(alpha: 0.1),
+              borderRadius: BorderRadius.circular(9),
+            ),
+            child: Icon(icon, color: tileColor, size: 16),
+          ),
+          const SizedBox(width: 11),
+          Expanded(
+            child: child ??
+                Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  mainAxisSize: MainAxisSize.min,
+                  children: [
+                    Text(
+                      label!,
+                      style: TextStyle(
+                        fontSize: 10.5,
+                        color: isDark ? Colors.grey[400] : Colors.grey[600],
+                        fontWeight: FontWeight.w500,
+                      ),
+                    ),
+                    Text(
+                      hasValue ? value : (placeholder ?? ''),
+                      style: TextStyle(
+                        fontSize: 13,
+                        fontWeight: FontWeight.w700,
+                        color: hasValue
+                            ? (isDark ? Colors.white : Colors.black87)
+                            : (isDark ? Colors.grey[600] : Colors.grey[400]),
+                      ),
+                      maxLines: 1,
+                      overflow: TextOverflow.ellipsis,
+                    ),
+                    if (helperText != null)
+                      Text(
+                        helperText,
+                        style: TextStyle(
+                          fontSize: 9.5,
+                          color: isDark ? Colors.grey[500] : Colors.grey[500],
+                        ),
+                      ),
+                  ],
+                ),
+          ),
+          if (trailing != null) ...[const SizedBox(width: 6), trailing],
+        ],
+      ),
+    );
+
+    return onTap != null
+        ? Material(
+            color: Colors.transparent,
+            child: InkWell(onTap: onTap, child: content),
+          )
+        : content;
+  }
+
+  // A thin inset divider between rows in the same compact card — indented
+  // to align with where each row's own label/value text starts (past the
+  // icon), not full-bleed, matching the "subtle dividers" ask.
+  Widget _buildRowDivider(bool isDark) {
+    return Padding(
+      padding: const EdgeInsets.only(left: 57),
+      child: Container(height: 1, color: isDark ? Colors.grey[800] : Colors.grey.shade200),
+    );
+  }
+
+  // One card, N rows, dividers between (not after the last). Same
+  // card-level shadow/border every field used to carry individually.
+  Widget _buildCompactCard({required bool isDark, required List<Widget> rows}) {
     return Container(
-      margin: const EdgeInsets.only(bottom: 10),
       decoration: BoxDecoration(
         color: isDark ? const Color(0xFF1E1E1E) : Colors.white,
-        borderRadius: BorderRadius.circular(14),
+        borderRadius: BorderRadius.circular(16),
         border: Border.all(color: isDark ? Colors.grey[800]! : Colors.grey.shade200),
         boxShadow: [
           BoxShadow(
@@ -1038,73 +955,33 @@ class _EditProfileScreenState extends State<EditProfileScreen>
           ),
         ],
       ),
-      child: Material(
-        color: Colors.transparent,
-        child: InkWell(
-          onTap: isSaving ? null : onChange,
-          borderRadius: BorderRadius.circular(14),
-          child: Padding(
-            padding: const EdgeInsets.fromLTRB(14, 8, 14, 8),
-            child: Row(
-              children: [
-                Container(
-                  width: 44,
-                  height: 44,
-                  decoration: BoxDecoration(
-                    color: tileColor.withValues(alpha: 0.1),
-                    borderRadius: BorderRadius.circular(12),
-                  ),
-                  child: Icon(icon, color: tileColor, size: 22),
-                ),
-                const SizedBox(width: 14),
-                Expanded(
-                  child: Column(
-                    crossAxisAlignment: CrossAxisAlignment.start,
-                    children: [
-                      Text(
-                        label,
-                        style: TextStyle(
-                          fontSize: 12,
-                          color: isDark ? Colors.grey[400] : Colors.grey[600],
-                          fontWeight: FontWeight.w500,
-                        ),
-                      ),
-                      const SizedBox(height: 2),
-                      Text(
-                        hasValue ? value : placeholder,
-                        style: TextStyle(
-                          fontSize: 14,
-                          fontWeight: FontWeight.w700,
-                          color: hasValue
-                              ? (isDark ? Colors.white : Colors.black87)
-                              : (isDark ? Colors.grey[600] : Colors.grey[400]),
-                        ),
-                        maxLines: 1,
-                        overflow: TextOverflow.ellipsis,
-                      ),
-                      if (helperText != null) ...[
-                        const SizedBox(height: 2),
-                        Text(
-                          helperText,
-                          style: TextStyle(
-                            fontSize: 10.5,
-                            color: isDark ? Colors.grey[500] : Colors.grey[500],
-                          ),
-                        ),
-                      ],
-                    ],
-                  ),
-                ),
-                if (isSaving)
-                  SizedBox(
-                    width: 16,
-                    height: 16,
-                    child: CircularProgressIndicator(strokeWidth: 2, color: tileColor),
-                  )
-                else
-                  Icon(Icons.chevron_right_rounded, color: isDark ? Colors.grey[600] : Colors.grey[400]),
-              ],
-            ),
+      child: Column(
+        children: [
+          for (var i = 0; i < rows.length; i++) ...[
+            rows[i],
+            if (i < rows.length - 1) _buildRowDivider(isDark),
+          ],
+        ],
+      ),
+    );
+  }
+
+  Widget _buildCompactChangeButton(bool isDark, VoidCallback onTap) {
+    final tileColor = isDark ? AppColors.primaryLight : const Color(0xFF2D7D3C);
+    return Material(
+      color: Colors.transparent,
+      child: InkWell(
+        onTap: onTap,
+        borderRadius: BorderRadius.circular(20),
+        child: Container(
+          padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 5),
+          decoration: BoxDecoration(
+            color: tileColor.withValues(alpha: 0.1),
+            borderRadius: BorderRadius.circular(20),
+          ),
+          child: Text(
+            'CHANGE',
+            style: TextStyle(fontSize: 10.5, fontWeight: FontWeight.w800, color: tileColor, letterSpacing: 0.3),
           ),
         ),
       ),
@@ -1138,17 +1015,17 @@ class _EditProfileScreenState extends State<EditProfileScreen>
   }) {
     final tileColor = isDark ? AppColors.primaryLight : const Color(0xFF2D7D3C);
     return Padding(
-      padding: const EdgeInsets.only(bottom: 12),
+      padding: const EdgeInsets.only(bottom: 10),
       child: Row(
         crossAxisAlignment: CrossAxisAlignment.center,
         children: [
           Container(
-            width: 40,
-            height: 40,
+            width: 34,
+            height: 34,
             decoration: BoxDecoration(color: tileColor, shape: BoxShape.circle),
-            child: Icon(icon, color: Colors.white, size: 20),
+            child: Icon(icon, color: Colors.white, size: 17),
           ),
-          const SizedBox(width: 12),
+          const SizedBox(width: 10),
           Expanded(
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.start,
@@ -1156,7 +1033,7 @@ class _EditProfileScreenState extends State<EditProfileScreen>
                 Text(
                   title,
                   style: TextStyle(
-                    fontSize: 15,
+                    fontSize: 14,
                     fontWeight: FontWeight.w800,
                     color: isDark ? Colors.white : Colors.black87,
                   ),
@@ -1164,7 +1041,7 @@ class _EditProfileScreenState extends State<EditProfileScreen>
                 Text(
                   subtitle,
                   style: TextStyle(
-                    fontSize: 11.5,
+                    fontSize: 10.5,
                     color: isDark ? Colors.grey[400] : Colors.grey[600],
                   ),
                 ),
@@ -1173,7 +1050,7 @@ class _EditProfileScreenState extends State<EditProfileScreen>
           ),
           if (trailingBadge)
             Container(
-              padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 5),
+              padding: const EdgeInsets.symmetric(horizontal: 9, vertical: 4),
               decoration: BoxDecoration(
                 color: tileColor.withValues(alpha: 0.12),
                 borderRadius: BorderRadius.circular(20),
@@ -1181,11 +1058,11 @@ class _EditProfileScreenState extends State<EditProfileScreen>
               child: Row(
                 mainAxisSize: MainAxisSize.min,
                 children: [
-                  Icon(Icons.verified_rounded, size: 14, color: tileColor),
+                  Icon(Icons.verified_rounded, size: 12.5, color: tileColor),
                   const SizedBox(width: 4),
                   Text(
                     'Verified',
-                    style: TextStyle(fontSize: 11.5, fontWeight: FontWeight.w800, color: tileColor),
+                    style: TextStyle(fontSize: 10.5, fontWeight: FontWeight.w800, color: tileColor),
                   ),
                 ],
               ),
@@ -1236,56 +1113,79 @@ class _EditProfileScreenState extends State<EditProfileScreen>
                               subtitle: 'Manage your basic account details',
                               isDark: isDark,
                             ),
-                            _buildTextFormCard(
-                              controller: _nameController,
-                              label: 'Full Name',
-                              icon: Icons.person_outline_rounded,
-                              validator: _validateName,
+                            _buildCompactCard(
                               isDark: isDark,
-                            ),
-                            _buildVerifiedFieldCard(
-                              label: 'Phone Number',
-                              icon: Icons.phone_outlined,
-                              value: _phoneController.text,
-                              placeholder: 'Add mobile number',
-                              isDark: isDark,
-                              onChange: () async {
-                                final newPhone = await Navigator.push<String>(
-                                  context,
-                                  MaterialPageRoute(
-                                    builder: (_) => ChangePhoneScreen(
-                                      currentPhone: _phoneController.text.trim(),
+                              rows: [
+                                _buildCompactRow(
+                                  icon: Icons.person_outline_rounded,
+                                  isDark: isDark,
+                                  child: TextFormField(
+                                    controller: _nameController,
+                                    validator: _validateName,
+                                    style: TextStyle(
+                                      fontSize: 13,
+                                      fontWeight: FontWeight.w700,
+                                      color: isDark ? Colors.white : Colors.black87,
+                                    ),
+                                    decoration: InputDecoration(
+                                      labelText: 'Full Name',
+                                      labelStyle: TextStyle(
+                                        fontSize: 10.5,
+                                        color: isDark ? Colors.grey[400] : Colors.grey[600],
+                                        fontWeight: FontWeight.w500,
+                                      ),
+                                      border: InputBorder.none,
+                                      isDense: true,
+                                      contentPadding: EdgeInsets.zero,
+                                      errorStyle: const TextStyle(height: 0.1, fontSize: 9),
                                     ),
                                   ),
-                                );
-                                if (newPhone != null && newPhone.isNotEmpty && mounted) {
-                                  setState(() => _phoneController.text = newPhone);
-                                  _showToastMessage('Mobile number updated to $newPhone');
-                                }
-                              },
+                                ),
+                                _buildCompactRow(
+                                  icon: Icons.phone_outlined,
+                                  isDark: isDark,
+                                  label: 'Phone Number',
+                                  value: _phoneController.text,
+                                  placeholder: 'Add mobile number',
+                                  trailing: _buildCompactChangeButton(isDark, () async {
+                                    final newPhone = await Navigator.push<String>(
+                                      context,
+                                      MaterialPageRoute(
+                                        builder: (_) => ChangePhoneScreen(
+                                          currentPhone: _phoneController.text.trim(),
+                                        ),
+                                      ),
+                                    );
+                                    if (newPhone != null && newPhone.isNotEmpty && mounted) {
+                                      setState(() => _phoneController.text = newPhone);
+                                      _showToastMessage('Mobile number updated to $newPhone');
+                                    }
+                                  }),
+                                ),
+                                _buildCompactRow(
+                                  icon: Icons.email_outlined,
+                                  isDark: isDark,
+                                  label: 'Email Address',
+                                  value: _emailController.text,
+                                  placeholder: 'Add email address',
+                                  trailing: _buildCompactChangeButton(isDark, () async {
+                                    final newEmail = await Navigator.push<String>(
+                                      context,
+                                      MaterialPageRoute(
+                                        builder: (_) => ChangeEmailScreen(
+                                          currentEmail: _emailController.text.trim(),
+                                        ),
+                                      ),
+                                    );
+                                    if (newEmail != null && newEmail.isNotEmpty && mounted) {
+                                      setState(() => _emailController.text = newEmail);
+                                      _showToastMessage('Email updated to $newEmail');
+                                    }
+                                  }),
+                                ),
+                              ],
                             ),
-                            _buildVerifiedFieldCard(
-                              label: 'Email Address',
-                              icon: Icons.email_outlined,
-                              value: _emailController.text,
-                              placeholder: 'Add email address',
-                              isDark: isDark,
-                              onChange: () async {
-                                final newEmail = await Navigator.push<String>(
-                                  context,
-                                  MaterialPageRoute(
-                                    builder: (_) => ChangeEmailScreen(
-                                      currentEmail: _emailController.text.trim(),
-                                    ),
-                                  ),
-                                );
-                                if (newEmail != null && newEmail.isNotEmpty && mounted) {
-                                  setState(() => _emailController.text = newEmail);
-                                  _showToastMessage('Email updated to $newEmail');
-                                }
-                              },
-                            ),
-                            const SizedBox(height: 16),
+                            const SizedBox(height: 14),
 
                             _buildSectionHeader(
                               icon: Icons.badge_outlined,
@@ -1294,26 +1194,41 @@ class _EditProfileScreenState extends State<EditProfileScreen>
                               isDark: isDark,
                               trailingBadge: true,
                             ),
-                            _buildEditableFieldCard(
-                              label: 'Date of Birth',
-                              icon: Icons.cake_outlined,
-                              value: _dateOfBirth != null ? _formatDate(_dateOfBirth!) : '',
-                              placeholder: 'Add date of birth',
-                              helperText: 'Tap to update your date of birth',
+                            _buildCompactCard(
                               isDark: isDark,
-                              isSaving: _isSavingDateOfBirth,
-                              onChange: _pickDateOfBirth,
+                              rows: [
+                                _buildCompactRow(
+                                  icon: Icons.cake_outlined,
+                                  isDark: isDark,
+                                  label: 'Date of Birth',
+                                  value: _dateOfBirth != null ? _formatDate(_dateOfBirth!) : '',
+                                  placeholder: 'Add date of birth',
+                                  helperText: 'Tap to update your date of birth',
+                                  onTap: _isSavingDateOfBirth ? null : _pickDateOfBirth,
+                                  trailing: _isSavingDateOfBirth
+                                      ? SizedBox(
+                                          width: 14,
+                                          height: 14,
+                                          child: CircularProgressIndicator(
+                                            strokeWidth: 2,
+                                            color: isDark ? AppColors.primaryLight : const Color(0xFF2D7D3C),
+                                          ),
+                                        )
+                                      : Icon(Icons.chevron_right_rounded, size: 18, color: isDark ? Colors.grey[600] : Colors.grey[400]),
+                                ),
+                                _buildCompactRow(
+                                  icon: Icons.wc_rounded,
+                                  isDark: isDark,
+                                  label: 'Gender',
+                                  value: _genderLabel(_gender),
+                                  placeholder: 'Add gender',
+                                  helperText: 'Tap to update your gender',
+                                  onTap: () => _pickGender(isDark),
+                                  trailing: Icon(Icons.chevron_right_rounded, size: 18, color: isDark ? Colors.grey[600] : Colors.grey[400]),
+                                ),
+                              ],
                             ),
-                            _buildEditableFieldCard(
-                              label: 'Gender',
-                              icon: Icons.wc_rounded,
-                              value: _genderLabel(_gender),
-                              placeholder: 'Add gender',
-                              helperText: 'Tap to update your gender',
-                              isDark: isDark,
-                              onChange: () => _pickGender(isDark),
-                            ),
-                            const SizedBox(height: 24),
+                            const SizedBox(height: 20),
 
                             // Save Button
                             Container(
