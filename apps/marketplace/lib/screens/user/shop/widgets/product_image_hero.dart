@@ -53,14 +53,73 @@ class _ProductImageHeroState extends State<ProductImageHero> {
       _currentIndex = 0;
     }
 
+    final displayPrice = selectedVariant?.salePrice ?? widget.product.salePrice;
+    final displayOriginal = selectedVariant?.originalPrice ?? widget.product.originalPrice;
+
     return Container(
       color: isDark ? const Color(0xFF1A1A1A) : Colors.white,
       child: Column(
         children: [
-          _buildImageCarousel(isDark, accentColor, images),
+          Stack(
+            children: [
+              _buildImageCarousel(isDark, accentColor, images),
+              // PDP-2: real discount badge only -- computed from the same
+              // salePrice/originalPrice fields the price row and bottom bar
+              // already use, never a fabricated percentage. No "Fresh"
+              // badge: no such boolean exists on ProductModel to back one.
+              if (displayOriginal != null && displayOriginal > displayPrice)
+                Positioned(
+                  top: 12,
+                  left: 12,
+                  child: _buildImageBadge(
+                    '${((displayOriginal - displayPrice) / displayOriginal * 100).round()}% OFF',
+                    Colors.red.shade600,
+                  ),
+                ),
+              // Same real "30 minutes" / "Bulk Freight" label the delivery
+              // card uses -- not a fabricated "10 minutes" quick-commerce claim.
+              Positioned(
+                top: 12,
+                right: 12,
+                child: _buildImageBadge(
+                  widget.product.isB2BEnabled ? 'Bulk Freight' : '30 mins',
+                  accentColor,
+                  icon: widget.product.isB2BEnabled
+                      ? Icons.local_shipping_outlined
+                      : Icons.bolt_rounded,
+                ),
+              ),
+            ],
+          ),
           const SizedBox(height: 10),
           _buildThumbnailStrip(isDark, accentColor, images),
           const SizedBox(height: 8),
+        ],
+      ),
+    );
+  }
+
+  Widget _buildImageBadge(String label, Color color, {IconData? icon}) {
+    return Container(
+      padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 5),
+      decoration: BoxDecoration(
+        color: color,
+        borderRadius: BorderRadius.circular(6),
+        boxShadow: [
+          BoxShadow(color: Colors.black.withValues(alpha: 0.15), blurRadius: 4, offset: const Offset(0, 1)),
+        ],
+      ),
+      child: Row(
+        mainAxisSize: MainAxisSize.min,
+        children: [
+          if (icon != null) ...[
+            Icon(icon, size: 11, color: Colors.white),
+            const SizedBox(width: 3),
+          ],
+          Text(
+            label,
+            style: const TextStyle(fontSize: 10, fontWeight: FontWeight.w800, color: Colors.white),
+          ),
         ],
       ),
     );
