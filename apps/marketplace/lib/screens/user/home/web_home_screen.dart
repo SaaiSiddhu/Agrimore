@@ -783,8 +783,9 @@ class _WebHomeScreenState extends State<WebHomeScreen>
   // ShopEntryProvider, which this screen does not use anywhere else.
   Widget _buildProductSections(
       ProductProvider productProvider, CategoryProvider categoryProvider) {
-    final categories =
-        categoryProvider.categories.where((c) => c.isActive).toList();
+    final categories = categoryProvider.categories
+        .where((c) => c.isActive && c.isVisible)
+        .toList();
     final allProducts =
         productProvider.products.where((p) => p.isActive).toList();
 

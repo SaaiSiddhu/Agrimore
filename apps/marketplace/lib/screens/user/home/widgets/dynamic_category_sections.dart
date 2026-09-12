@@ -47,8 +47,9 @@ class _DynamicCategorySectionsState extends State<DynamicCategorySections> {
         }
 
         final activeSlots = sectionProvider.activeSlots;
-        final allCategories =
-            categoryProvider.categories.where((c) => c.isActive).toList();
+        final allCategories = categoryProvider.categories
+            .where((c) => c.isActive && c.isVisible)
+            .toList();
 
         if (activeSlots.isEmpty) {
           // Fallback to old hardcoded behavior if no admin sections configured

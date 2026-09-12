@@ -34,7 +34,8 @@ class GroceryKitchenHomeStrip extends StatelessWidget {
   ) {
     if (configProvider.categoryIds.isNotEmpty) {
       final activeById = {
-        for (final c in categoryProvider.categories.where((c) => c.isActive))
+        for (final c in categoryProvider.categories
+            .where((c) => c.isActive && c.isVisible))
           c.id: c,
       };
       return configProvider.categoryIds
@@ -45,7 +46,7 @@ class GroceryKitchenHomeStrip extends StatelessWidget {
     }
 
     return categoryProvider.categories
-        .where((c) => c.isActive && _isGroceryOrKitchen(c))
+        .where((c) => c.isActive && c.isVisible && _isGroceryOrKitchen(c))
         .take(8)
         .toList();
   }

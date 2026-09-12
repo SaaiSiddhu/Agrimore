@@ -23,7 +23,7 @@ class FeaturedProducts extends StatelessWidget {
       builder: (context, categoryProvider, productProvider, _) {
         // Get categories 15-22 (third group of 8)
         final allCategories = categoryProvider.categories
-            .where((c) => c.isActive)
+            .where((c) => c.isActive && c.isVisible)
             .toList();
         
         // Skip first 14 (used in Bestsellers + Snacks), take next 8
