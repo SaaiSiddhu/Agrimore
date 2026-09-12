@@ -403,7 +403,7 @@ class _CategoryManagementScreenState extends State<CategoryManagementScreen> {
                     message: 'Move up (swap with the previous sibling)',
                     child: IconButton(
                       icon: const Icon(Icons.arrow_upward_rounded),
-                      color: isDark ? Colors.grey[400] : Colors.grey[700],
+                      color: isDark ? Colors.grey[400] : Colors.grey[600],
                       onPressed: () => _moveCategory(category, up: true),
                     ),
                   ),
@@ -411,7 +411,7 @@ class _CategoryManagementScreenState extends State<CategoryManagementScreen> {
                     message: 'Move down (swap with the next sibling)',
                     child: IconButton(
                       icon: const Icon(Icons.arrow_downward_rounded),
-                      color: isDark ? Colors.grey[400] : Colors.grey[700],
+                      color: isDark ? Colors.grey[400] : Colors.grey[600],
                       onPressed: () => _moveCategory(category, up: false),
                     ),
                   ),
