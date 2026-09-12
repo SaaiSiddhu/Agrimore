@@ -13,6 +13,7 @@ import '../../../providers/banner_provider.dart';
 import '../../../providers/category_section_provider.dart';
 import '../../../providers/section_banner_provider.dart';
 import '../../../providers/home_product_section_config_provider.dart';
+import '../../../providers/home_grocery_strip_config_provider.dart';
 import '../../../providers/theme_provider.dart';
 import '../../../providers/shop_entry_provider.dart';
 import '../../../providers/settings_provider.dart';
@@ -167,6 +168,8 @@ class _MobileHomeScreenState extends State<MobileHomeScreen>
           .loadBanners(forceRefresh: forceRefresh),
       Provider.of<HomeProductSectionConfigProvider>(context, listen: false)
           .loadSections(forceRefresh: forceRefresh),
+      Provider.of<HomeGroceryStripConfigProvider>(context, listen: false)
+          .loadConfig(forceRefresh: forceRefresh),
     ]).then((_) {
       if (mounted) {
         setState(() => _isRefreshing = false);
