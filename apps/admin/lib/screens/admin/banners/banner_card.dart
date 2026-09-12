@@ -18,9 +18,25 @@ class BannerCard extends StatelessWidget {
     required this.onToggle,
   }) : super(key: key);
 
+  static const Map<String, Color> _statusColors = {
+    'Live': Colors.green,
+    'Scheduled': Colors.blue,
+    'Expired': Colors.grey,
+    'Disabled': Colors.orange,
+  };
+
+  static const Map<String, IconData> _statusIcons = {
+    'Live': Icons.check_circle,
+    'Scheduled': Icons.schedule,
+    'Expired': Icons.event_busy,
+    'Disabled': Icons.pause_circle_filled,
+  };
+
   @override
   Widget build(BuildContext context) {
     final isActive = banner.isActive;
+    final status = banner.scheduleStatus;
+    final isCategoryHero = banner.placement == BannerModel.placementCategoryHero;
 
     return Container(
       decoration: BoxDecoration(
@@ -66,28 +82,57 @@ class BannerCard extends StatelessWidget {
                     ),
                   ),
                 ),
-                // Active status chip
+                // Publication status chip — Live/Scheduled/Expired/Disabled,
+                // derived from isActive + the schedule window rather than a
+                // separately-stored status.
                 Positioned(
                   top: 12,
                   right: 12,
                   child: Container(
                     padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 5),
                     decoration: BoxDecoration(
-                      color: isActive ? Colors.green.withOpacity(0.9) : Colors.orange.withValues(alpha: 0.9),
+                      color: (_statusColors[status] ?? Colors.grey).withValues(alpha: 0.9),
                       borderRadius: BorderRadius.circular(50),
                     ),
                     child: Row(
                       mainAxisSize: MainAxisSize.min,
                       children: [
                         Icon(
-                          isActive ? Icons.check_circle : Icons.pause_circle_filled,
+                          _statusIcons[status] ?? Icons.help_outline,
                           color: Colors.white,
                           size: 16,
                         ),
                         const SizedBox(width: 4),
                         Text(
-                          isActive ? 'Active' : 'Inactive',
+                          status,
                           style: const TextStyle(color: Colors.white, fontSize: 12, fontWeight: FontWeight.w600),
+                        ),
+                      ],
+                    ),
+                  ),
+                ),
+                // Placement chip — which surface this banner can appear on.
+                Positioned(
+                  top: 12,
+                  left: 12,
+                  child: Container(
+                    padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 5),
+                    decoration: BoxDecoration(
+                      color: Colors.black.withValues(alpha: 0.55),
+                      borderRadius: BorderRadius.circular(50),
+                    ),
+                    child: Row(
+                      mainAxisSize: MainAxisSize.min,
+                      children: [
+                        Icon(
+                          isCategoryHero ? Icons.category_outlined : Icons.home_outlined,
+                          color: Colors.white,
+                          size: 14,
+                        ),
+                        const SizedBox(width: 4),
+                        Text(
+                          isCategoryHero ? 'Category Hero' : 'Home Hero',
+                          style: const TextStyle(color: Colors.white, fontSize: 11, fontWeight: FontWeight.w600),
                         ),
                       ],
                     ),
