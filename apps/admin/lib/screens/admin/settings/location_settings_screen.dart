@@ -19,10 +19,31 @@ class _LocationSettingsScreenState extends State<LocationSettingsScreen> {
   List<String> _activeLocations = [];
   final _newLocationController = TextEditingController();
 
+  // HOME-2: the Home app bar's delivery-promise text, admin-editable
+  // instead of a hardcoded Dart string. cityEtaOverrides keys are
+  // lowercased on save so apps/marketplace's case-insensitive lookup
+  // always matches what's saved here.
+  final _defaultEtaTextController = TextEditingController(text: '10-15 mins');
+  final _unserviceableTextController =
+      TextEditingController(text: 'Not currently serviceable');
+  Map<String, String> _cityEtaOverrides = {};
+  final _overrideCityController = TextEditingController();
+  final _overrideEtaController = TextEditingController();
+
   @override
   void initState() {
     super.initState();
     _loadSettings();
+  }
+
+  @override
+  void dispose() {
+    _newLocationController.dispose();
+    _defaultEtaTextController.dispose();
+    _unserviceableTextController.dispose();
+    _overrideCityController.dispose();
+    _overrideEtaController.dispose();
+    super.dispose();
   }
 
   Future<void> _loadSettings() async {
@@ -38,6 +59,19 @@ class _LocationSettingsScreenState extends State<LocationSettingsScreen> {
           _isHyperlocalEnabled = data['isHyperlocalEnabled'] ?? true;
           _maxRadiusKm = (data['maxRadiusKm'] ?? 50.0).toDouble();
           _activeLocations = List<String>.from(data['activeLocations'] ?? []);
+          final rawEta = data['defaultEtaText'];
+          if (rawEta is String && rawEta.trim().isNotEmpty) {
+            _defaultEtaTextController.text = rawEta;
+          }
+          final rawUnserviceable = data['unserviceableText'];
+          if (rawUnserviceable is String && rawUnserviceable.trim().isNotEmpty) {
+            _unserviceableTextController.text = rawUnserviceable;
+          }
+          final rawOverrides = data['cityEtaOverrides'];
+          if (rawOverrides is Map) {
+            _cityEtaOverrides = rawOverrides
+                .map((key, value) => MapEntry(key.toString(), value.toString()));
+          }
         });
       }
     } catch (e) {
@@ -61,6 +95,9 @@ class _LocationSettingsScreenState extends State<LocationSettingsScreen> {
         'isHyperlocalEnabled': _isHyperlocalEnabled,
         'maxRadiusKm': _maxRadiusKm,
         'activeLocations': _activeLocations,
+        'defaultEtaText': _defaultEtaTextController.text.trim(),
+        'unserviceableText': _unserviceableTextController.text.trim(),
+        'cityEtaOverrides': _cityEtaOverrides,
         'updatedAt': FieldValue.serverTimestamp(),
       }, SetOptions(merge: true));
 
@@ -91,6 +128,23 @@ class _LocationSettingsScreenState extends State<LocationSettingsScreen> {
   void _removeLocation(String location) {
     setState(() {
       _activeLocations.remove(location);
+    });
+  }
+
+  void _addCityEtaOverride() {
+    final city = _overrideCityController.text.trim().toLowerCase();
+    final eta = _overrideEtaController.text.trim();
+    if (city.isEmpty || eta.isEmpty) return;
+    setState(() {
+      _cityEtaOverrides = {..._cityEtaOverrides, city: eta};
+      _overrideCityController.clear();
+      _overrideEtaController.clear();
+    });
+  }
+
+  void _removeCityEtaOverride(String city) {
+    setState(() {
+      _cityEtaOverrides = {..._cityEtaOverrides}..remove(city);
     });
   }
 
@@ -212,8 +266,102 @@ class _LocationSettingsScreenState extends State<LocationSettingsScreen> {
                     }).toList(),
                   ),
 
+                  const SizedBox(height: 32),
+
+                  // Delivery Promise (ETA) — HOME-2
+                  const Text(
+                    'Delivery Promise (Home screen)',
+                    style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold),
+                  ),
+                  const SizedBox(height: 8),
+                  const Text(
+                    'The delivery-time text shown in the Home app bar. Set a default, and '
+                    'optionally a different promise for specific active locations above.',
+                    style: TextStyle(color: Colors.grey),
+                  ),
+                  const SizedBox(height: 12),
+                  TextField(
+                    controller: _defaultEtaTextController,
+                    decoration: const InputDecoration(
+                      labelText: 'Default delivery promise',
+                      hintText: 'e.g. 10-15 mins',
+                      border: OutlineInputBorder(),
+                      isDense: true,
+                    ),
+                  ),
+                  const SizedBox(height: 12),
+                  TextField(
+                    controller: _unserviceableTextController,
+                    decoration: const InputDecoration(
+                      labelText: 'Message when not serviceable',
+                      hintText: 'e.g. Not currently serviceable',
+                      border: OutlineInputBorder(),
+                      isDense: true,
+                    ),
+                  ),
+                  const SizedBox(height: 20),
+                  const Text(
+                    'Per-location overrides',
+                    style: TextStyle(fontWeight: FontWeight.w600),
+                  ),
+                  const SizedBox(height: 8),
+                  Row(
+                    children: [
+                      Expanded(
+                        child: TextField(
+                          controller: _overrideCityController,
+                          decoration: const InputDecoration(
+                            hintText: 'Location (e.g. Chennai)',
+                            border: OutlineInputBorder(),
+                            isDense: true,
+                          ),
+                        ),
+                      ),
+                      const SizedBox(width: 8),
+                      Expanded(
+                        child: TextField(
+                          controller: _overrideEtaController,
+                          decoration: const InputDecoration(
+                            hintText: 'ETA (e.g. 15-20 mins)',
+                            border: OutlineInputBorder(),
+                            isDense: true,
+                          ),
+                          onSubmitted: (_) => _addCityEtaOverride(),
+                        ),
+                      ),
+                      const SizedBox(width: 8),
+                      ElevatedButton(
+                        onPressed: _addCityEtaOverride,
+                        child: const Text('Add'),
+                      ),
+                    ],
+                  ),
+                  const SizedBox(height: 12),
+                  if (_cityEtaOverrides.isEmpty)
+                    const Text(
+                      'No per-location overrides — the default promise above applies everywhere serviceable.',
+                      style: TextStyle(fontSize: 12, color: Colors.grey),
+                    )
+                  else
+                    Column(
+                      children: _cityEtaOverrides.entries.map((entry) {
+                        return Card(
+                          margin: const EdgeInsets.only(bottom: 8),
+                          child: ListTile(
+                            dense: true,
+                            title: Text(entry.key),
+                            subtitle: Text(entry.value),
+                            trailing: IconButton(
+                              icon: const Icon(Icons.close, size: 18),
+                              onPressed: () => _removeCityEtaOverride(entry.key),
+                            ),
+                          ),
+                        );
+                      }).toList(),
+                    ),
+
                   const SizedBox(height: 40),
-                  
+
                   SizedBox(
                     width: double.infinity,
                     height: 50,
