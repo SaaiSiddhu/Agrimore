@@ -151,7 +151,7 @@ class _ProductImageHeroState extends State<ProductImageHero> {
                   color: isActive ? accentColor : (isDark ? Colors.grey[700]! : Colors.grey[300]!),
                   width: isActive ? 2 : 1,
                 ),
-                color: isDark ? const Color(0xFF232323) : Colors.grey[50],
+                color: isDark ? AppColors.surfaceDarkContainer : Colors.grey[50],
               ),
               clipBehavior: Clip.antiAlias,
               child: kIsWeb

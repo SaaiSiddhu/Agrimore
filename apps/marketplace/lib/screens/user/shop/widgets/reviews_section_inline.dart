@@ -56,7 +56,7 @@ class _ReviewsSectionInlineState extends State<ReviewsSectionInline> {
           builder: (context, scrollController) {
             return Container(
               decoration: BoxDecoration(
-                color: widget.isDark ? const Color(0xFF1E1E1E) : Colors.white,
+                color: widget.isDark ? AppColors.surfaceDark : Colors.white,
                 borderRadius: const BorderRadius.vertical(top: Radius.circular(20)),
               ),
               child: Column(
