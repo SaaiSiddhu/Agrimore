@@ -321,22 +321,21 @@ class _ProfileScreenState extends State<ProfileScreen> {
             controller: _scrollController,
             physics: const ClampingScrollPhysics(),
             slivers: [
+              // PROFILE-5: the quick-action cards moved INSIDE this sliver's
+              // own Stack (Positioned, bottom-anchored, overlapping the
+              // photo) — see _buildHeaderSliver. Two separate-sliver
+              // approaches were tried and rejected first, live on-device:
+              // Transform.translate (PROFILE-4's approach) silently has no
+              // visual effect at any magnitude, because it only shifts
+              // paint, never this sliver's own reported geometry, and a
+              // `pinned` SliverAppBar's persistent region isn't something a
+              // later sibling sliver paints over; `SliverPadding` with a
+              // negative top inset — genuinely different, since
+              // `RenderSliverPadding` has no non-negative assertion, unlike
+              // box-level `RenderPadding` — crashed the framework instead
+              // ('_elements.contains(element)' assertion). Putting the
+              // overlap entirely inside ONE sliver sidesteps both problems.
               _buildHeaderSliver(user, isDark, _headerCollapse),
-
-              // Quick Action Cards — pulled up to float over the header
-              // gradient's fade zone (see _buildHeaderSliver), so there is
-              // no hard colour seam between the hero and the rest of the
-              // page; the cards' own shadow is what separates them, not a
-              // background-colour change. A real negative top margin (not
-              // Transform.translate, which only shifts pixels and would
-              // leave a dangling gap below) so the sliver's reported height
-              // shrinks to match — nothing after this needs compensating.
-              SliverToBoxAdapter(
-                child: Consumer<WalletProvider>(
-                  builder: (context, walletProvider, _) =>
-                      _buildQuickActions(isDark, walletProvider),
-                ),
-              ),
 
               // AgriMore Rewards band — real pending-scratch-card count,
               // never a fabricated points balance (see _loadUserStats).
@@ -575,10 +574,35 @@ class _ProfileScreenState extends State<ProfileScreen> {
       if (user?.dateOfBirth is DateTime) _formatDob(user.dateOfBirth as DateTime),
     ];
 
+    // PROFILE-5: the quick-action cards are now painted INSIDE this same
+    // Stack (Positioned, bottom-anchored) rather than as a separate sliver
+    // that tries to paint up into this one — verified live that a separate
+    // sliver cannot do this safely: Transform.translate silently has no
+    // visual effect at any magnitude (it shifts paint, not this sliver's
+    // own reported geometry, and a `pinned` SliverAppBar's persistent
+    // region isn't something a later sibling paints over), and
+    // SliverPadding with a negative top inset crashes the framework
+    // ('_elements.contains(element)' assertion, package:flutter/src/
+    // widgets/framework.dart). expandedHeight grows by (card height minus
+    // the intended overlap) to make room; the avatar/name block is pinned
+    // to the top via its own Positioned (see below) so it keeps its exact
+    // current size and position regardless of this taller Stack.
+    //
+    // Both numbers below are measured, not guessed: adb screencap + PIL at
+    // a deliberately huge expandedHeight (600) made the geometry
+    // unambiguous — card height is 301 device px at this device's 3.0 DPR
+    // = ~100 logical px; the avatar/name block's own content (independent
+    // of this Stack's total height, since it's top-anchored) ends around
+    // logical y=153. 24px of overlap puts the card top at 172 —
+    // comfortably clear of the avatar/name block, and enough past the
+    // cards' own 14px corner radius to read unambiguously as sitting on
+    // the photo, not just close to it.
+    const quickActionsOverlap = 24.0;
+    const quickActionsHeightEstimate = 100.0;
     return SliverAppBar(
       pinned: true,
       elevation: 0,
-      expandedHeight: 196,
+      expandedHeight: 196 + (quickActionsHeightEstimate - quickActionsOverlap),
       backgroundColor: pageBackground,
       surfaceTintColor: Colors.transparent,
       leading: Padding(
@@ -619,7 +643,16 @@ class _ProfileScreenState extends State<ProfileScreen> {
           children: [
             Image.asset('assets/images/Profile/profile_bg.png', fit: BoxFit.cover),
             if (isDark) Container(color: Colors.black.withValues(alpha: 0.55)),
-            SafeArea(
+            // Explicitly top-anchored (was an implicit, non-Positioned Stack
+            // child before PROFILE-5): this Stack's `fit: StackFit.expand`
+            // would otherwise force this content to stretch across the
+            // WHOLE taller Stack and re-center itself in the middle of it,
+            // now that the Stack has grown to make room for the cards below.
+            Positioned(
+              top: 0,
+              left: 0,
+              right: 0,
+              child: SafeArea(
               child: Padding(
                 // kToolbarHeight clears the pinned back/bell row above,
                 // which flexibleSpace's background renders underneath —
@@ -728,6 +761,16 @@ class _ProfileScreenState extends State<ProfileScreen> {
                     ),
                   ],
                 ),
+              ),
+            ),
+            ),
+            Positioned(
+              bottom: 0,
+              left: 0,
+              right: 0,
+              child: Consumer<WalletProvider>(
+                builder: (context, walletProvider, _) =>
+                    _buildQuickActions(isDark, walletProvider),
               ),
             ),
           ],
@@ -864,31 +907,14 @@ class _ProfileScreenState extends State<ProfileScreen> {
   }
 
   Widget _buildQuickActions(bool isDark, WalletProvider walletProvider) {
-    // Phase PROFILE-4: the cards now genuinely overlap the hero photo's
-    // bottom edge (~10%, per the owner's own cropped reference) via a
-    // paint-time Transform, not a negative inset — a NEGATIVE Padding here
-    // previously crashed at runtime (RenderPadding asserts
-    // padding.isNonNegative in shifted_box.dart; Padding's own constructor
-    // has no such check, so `flutter analyze` and a plain read of the
-    // widget tree don't catch it, only running the screen does), and
-    // Container.margin resolves to the same RenderPadding internally, so
-    // it carries the identical risk. Transform.translate has no such
-    // restriction (it's a paint-time matrix, not a layout inset) and still
-    // hit-tests correctly at the painted position by default. PROFILE-3's
-    // own version of this comment described a colour-match illusion from
-    // the old gradient fading to the exact page background at this exact
-    // boundary — that illusion doesn't exist for a static photo, so actual
-    // geometric overlap is what's doing the work now.
-    return Transform.translate(
-      offset: const Offset(0, -22),
-      child: Padding(
-        // Bottom inset trimmed 16->6 to compensate: the Transform shifts
-        // this whole block up without shrinking the space it occupies, so
-        // leaving it at 16 would visibly enlarge the gap before the
-        // rewards band below by the same 22px.
-        padding: const EdgeInsets.fromLTRB(16, 8, 16, 6),
-        child: Row(
-          children: [
+    // Phase PROFILE-5: the overlap itself is the caller's `SliverPadding`
+    // (negative top) around this widget's own sliver — see that call site's
+    // comment for why Transform.translate (PROFILE-4's approach) didn't
+    // actually work. This widget just lays out the row normally.
+    return Padding(
+      padding: const EdgeInsets.fromLTRB(16, 8, 16, 16),
+      child: Row(
+        children: [
             _buildQuickActionCard(
               iconAsset: 'assets/images/Profile/AI_Icon.png',
               label: 'AI Assistant',
@@ -941,10 +967,8 @@ class _ProfileScreenState extends State<ProfileScreen> {
             ),
           ],
         ),
-      ),
     );
   }
-
   // The four PNGs (AI/Wallet/Orders/Wishlist_Icon.png) are each a
   // self-contained 3D badge — icon plus its own coloured circular
   // background already baked into the image, transparent surround —
