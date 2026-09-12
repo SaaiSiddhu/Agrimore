@@ -29,6 +29,36 @@ class PhoneOtpSendResult {
   PhoneOtpSendResult({required this.userExists, required this.channel});
 }
 
+/// AUTH-3: a Google credential acquired but not yet used to sign in —
+/// held only in memory (never persisted to SharedPreferences, Hive,
+/// Firestore, secure storage, logs, or analytics) while the caller decides
+/// between the linked-returning path and the first-time-phone-verification
+/// path. Cleared by the caller on success, failure, cancellation, or the
+/// user backing out of the flow entirely.
+class PendingGoogleIdentity {
+  final AuthCredential credential;
+  final String idToken;
+  final String? email;
+  final String? displayName;
+  final String? photoUrl;
+  final DateTime createdAt;
+  PendingGoogleIdentity({
+    required this.credential,
+    required this.idToken,
+    this.email,
+    this.displayName,
+    this.photoUrl,
+  }) : createdAt = DateTime.now();
+}
+
+/// Result of asking resolveGoogleIdentity.ts whether a Google identity is
+/// already linked to an existing AgriMore Firebase user.
+class GoogleIdentityResolution {
+  final bool linked;
+  final String? expectedUid;
+  GoogleIdentityResolution({required this.linked, this.expectedUid});
+}
+
 class AuthService {
   static final AuthService _instance = AuthService._internal();
   static const String _googleWebClientId =
@@ -325,6 +355,193 @@ class AuthService {
     } catch (e) {
       debugPrint('❌ Google sign in error: $e');
       throw AuthException('Google sign in failed: ${e.toString()}');
+    }
+  }
+
+  // ============================================
+  // AUTH-3: GOOGLE AS A PHONE-VERIFICATION-GATED LINKED PROVIDER
+  // ============================================
+  // Additive to signInWithGoogle() above, which is left untouched for
+  // whatever else in the app still calls it directly. These methods back
+  // the marketplace auth sheet's "Continue with Google" button and never
+  // let a first-time Google identity reach a usable AgriMore session
+  // without a successful phone OTP verification in between — see
+  // docs/auth/AUTH_UI_REDESIGN.md for the full flow.
+
+  /// Acquires a Google credential WITHOUT completing a Firebase sign-in.
+  /// Returns null if the user cancelled the account picker.
+  ///
+  /// Mobile: google_sign_in's own flow never touches Firebase Auth by
+  /// itself — signIn() + .authentication only ever returns tokens; nothing
+  /// is "signed in" to Firebase until signInWithCredential/linkWithCredential
+  /// is called separately, so this already satisfies "acquire before sign
+  /// in" with no special handling needed.
+  ///
+  /// Web: this installed google_sign_in_web version has no token-only flow
+  /// — the only way to obtain a Google credential is Firebase Auth's own
+  /// signInWithPopup, which completes a sign-in as a side effect. Accepted
+  /// mitigation: complete the popup, capture the credential from the
+  /// result, then immediately sign out again before anything else runs —
+  /// no Firestore read or write happens in between, so no account or
+  /// document is ever created for an identity that turns out unlinked.
+  Future<PendingGoogleIdentity?> acquireGoogleCredential() async {
+    try {
+      if (kIsWeb) {
+        final googleProvider = GoogleAuthProvider();
+        googleProvider.addScope('email');
+        googleProvider.addScope('profile');
+        googleProvider.setCustomParameters({'prompt': 'select_account'});
+
+        final result = await _auth.signInWithPopup(googleProvider);
+        // UserCredential.credential is the documented way to recover the
+        // AuthCredential used for a sign-in result (there is no separate
+        // GoogleAuthProvider.credentialFromResult in this installed
+        // firebase_auth version — verified against the platform interface
+        // source before writing this, not guessed).
+        final credential = result.credential as OAuthCredential?;
+        final user = result.user;
+
+        // Immediately undo the sign-in this popup performed as a side
+        // effect — see this method's own doc comment for why.
+        await _auth.signOut();
+
+        if (credential == null || credential.idToken == null) {
+          throw AuthException('Google sign in failed: missing ID token.');
+        }
+
+        return PendingGoogleIdentity(
+          credential: credential,
+          idToken: credential.idToken!,
+          email: user?.email,
+          displayName: user?.displayName,
+          photoUrl: user?.photoURL,
+        );
+      }
+
+      final GoogleSignInAccount? googleUser = await _mobileGoogleSignIn.signIn();
+      if (googleUser == null) return null; // user cancelled — not an error
+
+      final GoogleSignInAuthentication googleAuth = await googleUser.authentication;
+      if (googleAuth.idToken == null || googleAuth.idToken!.isEmpty) {
+        throw AuthException(
+          'Google sign in failed: missing ID token. Check Firebase SHA keys.',
+        );
+      }
+
+      final credential = GoogleAuthProvider.credential(
+        accessToken: googleAuth.accessToken,
+        idToken: googleAuth.idToken,
+      );
+
+      return PendingGoogleIdentity(
+        credential: credential,
+        idToken: googleAuth.idToken!,
+        email: googleUser.email,
+        displayName: googleUser.displayName,
+        photoUrl: googleUser.photoUrl,
+      );
+    } on FirebaseAuthException catch (e) {
+      throw _handleAuthException(e);
+    } catch (e) {
+      if (e is AuthException) rethrow;
+      throw AuthException('Google sign in failed: ${e.toString()}');
+    }
+  }
+
+  /// Asks resolveGoogleIdentity.ts whether [pending]'s Google identity is
+  /// already linked to an existing AgriMore Firebase user. A pure lookup —
+  /// never creates a user, never writes Firestore, never signs anyone in.
+  Future<GoogleIdentityResolution> resolveGoogleIdentity(PendingGoogleIdentity pending) async {
+    try {
+      final response = await http
+          .post(
+            Uri.parse('$_functionsBaseUrl/resolveGoogleIdentity'),
+            headers: {'Content-Type': 'application/json'},
+            body: jsonEncode({'idToken': pending.idToken}),
+          )
+          .timeout(_requestTimeout);
+
+      final data = jsonDecode(response.body) as Map<String, dynamic>;
+      if (response.statusCode != 200 || data['success'] != true) {
+        throw AuthException(data['error']?.toString() ?? 'Could not verify Google account');
+      }
+      return GoogleIdentityResolution(
+        linked: data['linked'] == true,
+        expectedUid: data['expectedUid']?.toString(),
+      );
+    } on AuthException {
+      rethrow;
+    } on TimeoutException {
+      throw AuthException('Network is too slow right now. Please try again.');
+    } catch (e) {
+      throw AuthException('Could not verify Google account: ${e.toString()}');
+    }
+  }
+
+  /// Scenario A (returning, linked): signs in directly with the
+  /// credential. Firebase Auth resolves it to the SAME existing uid — no
+  /// new code needed for that resolution, it is native provider-linking
+  /// behaviour. If the resolver supplied an expectedUid, the result is
+  /// sanity-checked against it rather than trusted blindly.
+  Future<UserModel> signInWithLinkedGoogleCredential(
+    PendingGoogleIdentity pending, {
+    String? expectedUid,
+  }) async {
+    try {
+      final result = await _auth.signInWithCredential(pending.credential);
+      final user = result.user;
+      if (user == null) throw AuthException('Google sign in failed');
+
+      if (expectedUid != null && user.uid != expectedUid) {
+        // Firebase resolved this credential to a different uid than the
+        // resolver predicted — a race between the two calls. Fail safely
+        // rather than trust either side blindly.
+        throw AuthException('Google account details changed. Please try again.');
+      }
+
+      final userDoc = await _firestore.collection('users').doc(user.uid).get();
+      if (userDoc.exists) {
+        await _firestore.collection('users').doc(user.uid).update({
+          'lastLogin': FieldValue.serverTimestamp(),
+          'loginCount': FieldValue.increment(1),
+        });
+      }
+
+      final synced = await getUserData(user.uid);
+      await _savePersistentSession(synced);
+      return synced;
+    } on FirebaseAuthException catch (e) {
+      throw _handleAuthException(e);
+    } catch (e) {
+      if (e is AuthException) rethrow;
+      throw AuthException('Google sign in failed: ${e.toString()}');
+    }
+  }
+
+  /// Scenario B (first-time, called only after phone verification has
+  /// already succeeded): attaches [pending]'s Google credential to the
+  /// CURRENTLY signed-in (phone-verified) user. Never signs that user out
+  /// first, never signs in with Google first.
+  ///
+  /// Returns true on success. Returns false (not an exception) for
+  /// credential-already-in-use / provider-already-linked and any other
+  /// failure — the phone login has already succeeded by the time this is
+  /// called and must never be undone by a linking failure; the caller
+  /// keeps the phone session authenticated and may show a soft
+  /// "already connected to another account" message.
+  Future<bool> linkPendingGoogleCredential(PendingGoogleIdentity pending) async {
+    final user = currentUser;
+    if (user == null) throw UnauthorizedException();
+
+    try {
+      await user.linkWithCredential(pending.credential);
+      return true;
+    } on FirebaseAuthException catch (e) {
+      debugPrint('⚠️ Google link failed (${e.code}) — phone session remains authenticated');
+      return false;
+    } catch (e) {
+      debugPrint('⚠️ Google link failed: $e — phone session remains authenticated');
+      return false;
     }
   }
 
