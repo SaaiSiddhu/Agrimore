@@ -1456,8 +1456,14 @@ class _StickyHeaderDelegate extends SliverPersistentHeaderDelegate {
                   HapticFeedback.mediumImpact();
                   if (isInWishlist) {
                     await wishlistProvider.removeItem(product.id);
+                    if (context.mounted) {
+                      SnackbarHelper.showInfo(context, 'Removed from wishlist');
+                    }
                   } else {
                     await wishlistProvider.addItem(product);
+                    if (context.mounted) {
+                      SnackbarHelper.showSuccess(context, 'Added to wishlist');
+                    }
                   }
                 },
               );
