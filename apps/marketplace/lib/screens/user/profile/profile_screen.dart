@@ -45,6 +45,7 @@
 // which is a declared-but-unregistered route constant that 404s).
 
 import 'dart:async';
+import 'dart:convert';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:provider/provider.dart';
@@ -631,21 +632,7 @@ class _ProfileScreenState extends State<ProfileScreen> {
                       clipBehavior: Clip.none,
                       alignment: Alignment.bottomRight,
                       children: [
-                        ClipOval(
-                          child: user?.photoUrl != null
-                              ? Image.network(
-                                  user!.photoUrl!,
-                                  width: 72,
-                                  height: 72,
-                                  fit: BoxFit.cover,
-                                )
-                              : Image.asset(
-                                  'assets/images/Profile/Avatar_Icon.png',
-                                  width: 72,
-                                  height: 72,
-                                  fit: BoxFit.cover,
-                                ),
-                        ),
+                        ClipOval(child: _buildAvatarImage(user?.photoUrl)),
                         Positioned(
                           right: -2,
                           bottom: -2,
@@ -749,6 +736,60 @@ class _ProfileScreenState extends State<ProfileScreen> {
     );
   }
 
+  // Phase PROFILE-4: this account's own `photoUrl` turned out to be a
+  // base64 `data:image/...` URI, not an `https://` Storage download URL —
+  // discovered only by actually running this screen on the owner's real
+  // device with a real session (every prior preview in this Profile track
+  // had no session at all, so no photoUrl to trigger it). `Image.network`
+  // is backed by `NetworkImage`, which is HTTP-only and throws "No host
+  // specified in URI" on a data URI — caught by Flutter's image error
+  // handler so it didn't crash the app, but painted nothing where the
+  // avatar should be. No code anywhere in this repo writes a data URI into
+  // photoUrl (checked before assuming this needed a defensive fix rather
+  // than a writer-side one) — this is pre-existing Firestore data on a
+  // real account, so the read side has to tolerate it. Falls back to
+  // Avatar_Icon.png for null/empty, a malformed data URI, OR any other
+  // Image.network failure (expired token, dead URL, offline) — the
+  // errorBuilder is new defense-in-depth beyond just this one case.
+  Widget _buildAvatarImage(String? photoUrl) {
+    const size = 72.0;
+    if (photoUrl == null || photoUrl.isEmpty) {
+      return Image.asset(
+        'assets/images/Profile/Avatar_Icon.png',
+        width: size,
+        height: size,
+        fit: BoxFit.cover,
+      );
+    }
+    if (photoUrl.startsWith('data:image')) {
+      try {
+        final commaIndex = photoUrl.indexOf(',');
+        final bytes = base64Decode(photoUrl.substring(commaIndex + 1));
+        return Image.memory(bytes, width: size, height: size, fit: BoxFit.cover);
+      } catch (e) {
+        debugPrint('Error decoding data-URI avatar: $e');
+        return Image.asset(
+          'assets/images/Profile/Avatar_Icon.png',
+          width: size,
+          height: size,
+          fit: BoxFit.cover,
+        );
+      }
+    }
+    return Image.network(
+      photoUrl,
+      width: size,
+      height: size,
+      fit: BoxFit.cover,
+      errorBuilder: (context, error, stackTrace) => Image.asset(
+        'assets/images/Profile/Avatar_Icon.png',
+        width: size,
+        height: size,
+        fit: BoxFit.cover,
+      ),
+    );
+  }
+
   Widget _buildBackButton(bool isDark) {
     return GestureDetector(
       onTap: () {
@@ -823,65 +864,83 @@ class _ProfileScreenState extends State<ProfileScreen> {
   }
 
   Widget _buildQuickActions(bool isDark, WalletProvider walletProvider) {
-    return Padding(
-      // A NEGATIVE top inset here previously crashed at runtime —
-      // RenderPadding asserts padding.isNonNegative (shifted_box.dart);
-      // Padding's own constructor has no such check, so `flutter analyze`
-      // and a plain read of the widget tree don't catch it, only running
-      // the screen does. The header gradient already fades all the way to
-      // the exact page background colour by its own bottom edge (see
-      // _buildHeaderSliver), so there is no hard seam to hide with an
-      // overlap in the first place — a small ordinary gap is enough.
-      padding: const EdgeInsets.fromLTRB(16, 8, 16, 16),
-      child: Row(
-        children: [
-          _buildQuickActionCard(
-            iconAsset: 'assets/images/Profile/AI_Icon.png',
-            label: 'AI Assistant',
-            // Always "Ask anything" rather than a live value — whether a
-            // key is connected yet is the chat screen's own business
-            // (aiChatProxy already replies inline with how to connect one
-            // if not; see the file header comment), not something this
-            // card should try to summarize.
-            subtitle: 'Ask anything',
-            isDark: isDark,
-            onTap: () => _navigateTo(AppRoutes.support),
-            accentColor: AppColors.primaryDark,
-          ),
-          const SizedBox(width: 8),
-          _buildQuickActionCard(
-            iconAsset: 'assets/images/Profile/Wallet_Icon.png',
-            label: 'Wallet',
-            // The live balance, shown right on the profile screen instead of
-            // requiring a trip to the Wallet screen to find out.
-            subtitle: '₹${walletProvider.balance.toStringAsFixed(0)}',
-            isDark: isDark,
-            onTap: () => _navigateTo(AppRoutes.wallet),
-            accentColor: const Color(0xFFE65100),
-          ),
-          const SizedBox(width: 8),
-          _buildQuickActionCard(
-            iconAsset: 'assets/images/Profile/Orders_Icons.png',
-            label: 'Orders',
-            subtitle: _isLoadingStats
-                ? null
-                : (_activeOrdersCount > 0 ? '$_activeOrdersCount Active' : 'None active'),
-            isDark: isDark,
-            onTap: () => _navigateTo(AppRoutes.orders),
-            accentColor: const Color(0xFF8D6E63),
-          ),
-          const SizedBox(width: 8),
-          _buildQuickActionCard(
-            iconAsset: 'assets/images/Profile/Wishlist_Icon.png',
-            label: 'Wishlist',
-            subtitle: _isLoadingStats
-                ? null
-                : (_wishlistCount > 0 ? '$_wishlistCount Item${_wishlistCount == 1 ? '' : 's'}' : 'Empty'),
-            isDark: isDark,
-            onTap: () => _navigateTo(AppRoutes.wishlist),
-            accentColor: AppColors.favorite,
-          ),
-        ],
+    // Phase PROFILE-4: the cards now genuinely overlap the hero photo's
+    // bottom edge (~10%, per the owner's own cropped reference) via a
+    // paint-time Transform, not a negative inset — a NEGATIVE Padding here
+    // previously crashed at runtime (RenderPadding asserts
+    // padding.isNonNegative in shifted_box.dart; Padding's own constructor
+    // has no such check, so `flutter analyze` and a plain read of the
+    // widget tree don't catch it, only running the screen does), and
+    // Container.margin resolves to the same RenderPadding internally, so
+    // it carries the identical risk. Transform.translate has no such
+    // restriction (it's a paint-time matrix, not a layout inset) and still
+    // hit-tests correctly at the painted position by default. PROFILE-3's
+    // own version of this comment described a colour-match illusion from
+    // the old gradient fading to the exact page background at this exact
+    // boundary — that illusion doesn't exist for a static photo, so actual
+    // geometric overlap is what's doing the work now.
+    return Transform.translate(
+      offset: const Offset(0, -22),
+      child: Padding(
+        // Bottom inset trimmed 16->6 to compensate: the Transform shifts
+        // this whole block up without shrinking the space it occupies, so
+        // leaving it at 16 would visibly enlarge the gap before the
+        // rewards band below by the same 22px.
+        padding: const EdgeInsets.fromLTRB(16, 8, 16, 6),
+        child: Row(
+          children: [
+            _buildQuickActionCard(
+              iconAsset: 'assets/images/Profile/AI_Icon.png',
+              label: 'AI Assistant',
+              // Always "Ask anything" rather than a live value — whether a
+              // key is connected yet is the chat screen's own business
+              // (aiChatProxy already replies inline with how to connect one
+              // if not; see the file header comment), not something this
+              // card should try to summarize.
+              subtitle: 'Ask anything',
+              isDark: isDark,
+              onTap: () => _navigateTo(AppRoutes.support),
+              accentColor: AppColors.primaryDark,
+            ),
+            const SizedBox(width: 8),
+            _buildQuickActionCard(
+              iconAsset: 'assets/images/Profile/Wallet_Icon.png',
+              label: 'Wallet',
+              // The live balance, shown right on the profile screen instead
+              // of requiring a trip to the Wallet screen to find out.
+              subtitle: '₹${walletProvider.balance.toStringAsFixed(0)}',
+              isDark: isDark,
+              onTap: () => _navigateTo(AppRoutes.wallet),
+              accentColor: const Color(0xFFE65100),
+            ),
+            const SizedBox(width: 8),
+            _buildQuickActionCard(
+              iconAsset: 'assets/images/Profile/Orders_Icons.png',
+              label: 'Orders',
+              subtitle: _isLoadingStats
+                  ? null
+                  : (_activeOrdersCount > 0
+                        ? '$_activeOrdersCount Active'
+                        : 'None active'),
+              isDark: isDark,
+              onTap: () => _navigateTo(AppRoutes.orders),
+              accentColor: const Color(0xFF8D6E63),
+            ),
+            const SizedBox(width: 8),
+            _buildQuickActionCard(
+              iconAsset: 'assets/images/Profile/Wishlist_Icon.png',
+              label: 'Wishlist',
+              subtitle: _isLoadingStats
+                  ? null
+                  : (_wishlistCount > 0
+                        ? '$_wishlistCount Item${_wishlistCount == 1 ? '' : 's'}'
+                        : 'Empty'),
+              isDark: isDark,
+              onTap: () => _navigateTo(AppRoutes.wishlist),
+              accentColor: AppColors.favorite,
+            ),
+          ],
+        ),
       ),
     );
   }
