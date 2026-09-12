@@ -5,7 +5,6 @@ import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:provider/provider.dart';
 import '../../providers/shop_entry_provider.dart';
-import 'package:font_awesome_flutter/font_awesome_flutter.dart';
 
 import 'package:agrimore_ui/agrimore_ui.dart';
 import '../../providers/cart_provider.dart';
@@ -39,10 +38,8 @@ class MainScreen extends StatefulWidget {
 class _MainScreenState extends State<MainScreen>
     with TickerProviderStateMixin, WidgetsBindingObserver {
   late int _currentIndex;
-  late AnimationController _bottomBarAnimationController;
   late AnimationController _fadeAnimationController;
 
-  late Animation<Offset> _bottomBarSlideAnimation;
   late Animation<double> _fadeAnimation;
   bool _isNavigating = false;
   DateTime? _lastBackPressTime;
@@ -104,26 +101,9 @@ class _MainScreenState extends State<MainScreen>
 
     WidgetsBinding.instance.addObserver(this);
 
-    _bottomBarAnimationController = AnimationController(
-      vsync: this,
-      duration: const Duration(milliseconds: 700),
-    );
-
     _fadeAnimationController = AnimationController(
       vsync: this,
       duration: const Duration(milliseconds: 250),
-    );
-
-
-
-    _bottomBarSlideAnimation = Tween<Offset>(
-      begin: const Offset(0, 1),
-      end: Offset.zero,
-    ).animate(
-      CurvedAnimation(
-        parent: _bottomBarAnimationController,
-        curve: Curves.easeOutCubic,
-      ),
     );
 
     _fadeAnimation = Tween<double>(begin: 0.0, end: 1.0).animate(
@@ -147,7 +127,6 @@ class _MainScreenState extends State<MainScreen>
 
     Future.delayed(const Duration(milliseconds: 150), () {
       if (mounted) {
-        _bottomBarAnimationController.forward();
         _fadeAnimationController.forward();
       }
     });
@@ -324,7 +303,6 @@ class _MainScreenState extends State<MainScreen>
   void dispose() {
     _shopEntry.removeListener(_onShopEntryChanged);
     WidgetsBinding.instance.removeObserver(this);
-    _bottomBarAnimationController.dispose();
     _fadeAnimationController.dispose();
 
     for (var controller in _iconControllers.values) {
@@ -420,81 +398,84 @@ class _MainScreenState extends State<MainScreen>
 
 
   Widget _buildBottomNavigationBar(bool isDark) {
-    final primaryColor = isDark ? AppColors.primaryLight : AppColors.primary;
-    
-    // Removed SlideTransition - using AnimatedSlide wrapper instead
-    return Container(
-        // Flat rectangular design - no margin, no rounded corners
-        decoration: BoxDecoration(
-          color: isDark ? const Color(0xFF1A1A1A) : Colors.white,
-          boxShadow: [
-            BoxShadow(
-              color: Colors.black.withValues(alpha: isDark ? 0.3 : 0.08),
-              blurRadius: 12,
-              offset: const Offset(0, -2),
-              spreadRadius: 0,
-            ),
-          ],
-          border: Border(
-            top: BorderSide(
+    // Floating pill container: inset from both side edges and the viewport
+    // bottom (SafeArea's `minimum` guarantees the gap even on a device with
+    // no gesture-bar inset), rounded, elevated — replaces the previous flat
+    // edge-to-edge bar. The five destinations and their own animations
+    // (_buildMaterialNavItem / _buildCenterNavItem / _buildBadge) are
+    // unchanged; only the outer chrome they sit inside changed.
+    return SafeArea(
+      top: false,
+      minimum: const EdgeInsets.only(bottom: 8),
+      child: Padding(
+        padding: const EdgeInsets.fromLTRB(16, 0, 16, 8),
+        child: Container(
+          height: 68,
+          decoration: BoxDecoration(
+            color: isDark ? const Color(0xFF1A1A1A) : Colors.white,
+            borderRadius: BorderRadius.circular(28),
+            border: Border.all(
               color: isDark ? const Color(0xFF303030) : Colors.grey[200]!,
               width: 0.5,
             ),
-          ),
-        ),
-        child: SafeArea(
-          top: false,
-          child: SizedBox(
-            height: 68,
-            child: Padding(
-              padding: const EdgeInsets.symmetric(horizontal: 8),
-              child: Row(
-                mainAxisAlignment: MainAxisAlignment.spaceEvenly,
-                crossAxisAlignment: CrossAxisAlignment.center,
-                children: [
-                  // 0 - Home (Material Icon)
-                  _buildMaterialNavItem(
-                    activeIcon: Icons.home_rounded,
-                    inactiveIcon: Icons.home_outlined,
-                    label: 'Home',
-                    index: 0,
-                    isDark: isDark,
-                  ),
-                  // 1 - Shop (Material Icon)
-                  _buildMaterialNavItem(
-                    activeIcon: Icons.store_rounded,
-                    inactiveIcon: Icons.store_outlined,
-                    label: 'Shop',
-                    index: 1,
-                    isDark: isDark,
-                  ),
-                  // 2 - Category (CENTER - Special elevated button)
-                  Expanded(
-                    child: _buildCenterNavItem(isDark),
-                  ),
-                  // 3 - Cart (Material Icon)
-                  _buildMaterialNavItem(
-                    activeIcon: Icons.shopping_cart_rounded,
-                    inactiveIcon: Icons.shopping_cart_outlined,
-                    label: 'Cart',
-                    index: 3,
-                    showBadge: true,
-                    badgeProvider: 'cart',
-                    isDark: isDark,
-                  ),
-                  // 4 - Profile (Material Icon)
-                  _buildMaterialNavItem(
-                    activeIcon: Icons.person_rounded,
-                    inactiveIcon: Icons.person_outline_rounded,
-                    label: 'Profile',
-                    index: 4,
-                    isDark: isDark,
-                  ),
-                ],
+            boxShadow: [
+              BoxShadow(
+                color: Colors.black.withValues(alpha: isDark ? 0.35 : 0.12),
+                blurRadius: 20,
+                offset: const Offset(0, 8),
+                spreadRadius: 0,
               ),
+            ],
+          ),
+          child: Padding(
+            padding: const EdgeInsets.symmetric(horizontal: 8),
+            child: Row(
+              mainAxisAlignment: MainAxisAlignment.spaceEvenly,
+              crossAxisAlignment: CrossAxisAlignment.center,
+              children: [
+                // 0 - Home (Material Icon)
+                _buildMaterialNavItem(
+                  activeIcon: Icons.home_rounded,
+                  inactiveIcon: Icons.home_outlined,
+                  label: 'Home',
+                  index: 0,
+                  isDark: isDark,
+                ),
+                // 1 - Shop (Material Icon)
+                _buildMaterialNavItem(
+                  activeIcon: Icons.store_rounded,
+                  inactiveIcon: Icons.store_outlined,
+                  label: 'Shop',
+                  index: 1,
+                  isDark: isDark,
+                ),
+                // 2 - Category (CENTER - Special elevated button)
+                Expanded(
+                  child: _buildCenterNavItem(isDark),
+                ),
+                // 3 - Cart (Material Icon)
+                _buildMaterialNavItem(
+                  activeIcon: Icons.shopping_cart_rounded,
+                  inactiveIcon: Icons.shopping_cart_outlined,
+                  label: 'Cart',
+                  index: 3,
+                  showBadge: true,
+                  badgeProvider: 'cart',
+                  isDark: isDark,
+                ),
+                // 4 - Profile (Material Icon)
+                _buildMaterialNavItem(
+                  activeIcon: Icons.person_rounded,
+                  inactiveIcon: Icons.person_outline_rounded,
+                  label: 'Profile',
+                  index: 4,
+                  isDark: isDark,
+                ),
+              ],
             ),
           ),
         ),
+      ),
     );
   }
 
@@ -691,140 +672,6 @@ class _MainScreenState extends State<MainScreen>
                       fontWeight: isActive ? FontWeight.w700 : FontWeight.w500,
                       color: isActive
                           ? primaryColor
-                          : (isDark ? Colors.white70 : Colors.black87),
-                      letterSpacing: 0.2,
-                    ),
-                    child: Text(
-                      label,
-                      maxLines: 1,
-                      overflow: TextOverflow.ellipsis,
-                    ),
-                  ),
-                ],
-              ),
-            );
-          },
-        ),
-      ),
-    );
-  }
-
-  Widget _buildNavItem({
-    required FaIconData icon,
-    required String label,
-    required int index,
-    required bool isDark,
-    bool showBadge = false,
-    String? badgeProvider,
-    bool isSpecial = false,
-  }) {
-    final isActive = _currentIndex == index;
-
-    return Expanded(
-      child: GestureDetector(
-        onTap: () => _onTabTapped(index),
-        behavior: HitTestBehavior.opaque,
-        child: AnimatedBuilder(
-          animation: _iconBounceControllers[index]!,
-          builder: (context, child) {
-            final bounceValue = _iconBounceControllers[index]!.value;
-            final scale = 1.0 + (bounceValue * 0.2);
-
-            return Transform.scale(
-              scale: scale,
-              child: Column(
-                mainAxisSize: MainAxisSize.min,
-                mainAxisAlignment: MainAxisAlignment.center,
-                children: [
-                  Stack(
-                    clipBehavior: Clip.none,
-                    alignment: Alignment.center,
-                    children: [
-                      AnimatedContainer(
-                        duration: const Duration(milliseconds: 300),
-                        curve: Curves.easeOutCubic,
-                        padding: const EdgeInsets.all(10),
-                        decoration: BoxDecoration(
-                          gradient: isActive && isSpecial
-                              ? LinearGradient(
-                                  begin: Alignment.topLeft,
-                                  end: Alignment.bottomRight,
-                                  colors: [
-                                    Colors.purple.shade600,
-                                    Colors.blue.shade600,
-                                  ],
-                                )
-                              : null,
-                          color: isActive && !isSpecial
-                              ? (isDark
-                                  ? AppColors.primaryLight.withValues(alpha: 0.2)
-                                  : AppColors.primary.withValues(alpha: 0.15))
-                              : Colors.transparent,
-                          borderRadius: BorderRadius.circular(12),
-                          boxShadow: isActive
-                              ? [
-                                  BoxShadow(
-                                    color: (isSpecial
-                                            ? Colors.purple
-                                            : (isDark
-                                                ? AppColors.primaryLight
-                                                : AppColors.primary))
-                                        .withValues(alpha: 0.3),
-                                    blurRadius: 12,
-                                    offset: const Offset(0, 4),
-                                  ),
-                                ]
-                              : null,
-                        ),
-                        child: FaIcon(
-                          icon,
-                          color: isActive
-                              ? (isSpecial
-                                  ? Colors.white
-                                  : (isDark
-                                      ? AppColors.primaryLight
-                                      : AppColors.primary))
-                              : (isDark ? Colors.white70 : Colors.black87),
-                          size: 20,
-                        ),
-                      ),
-                      if (showBadge && badgeProvider != null)
-                        _buildBadge(badgeProvider),
-                      if (isActive && isSpecial)
-                        Positioned(
-                          right: 0,
-                          top: 0,
-                          child: Container(
-                            width: 6,
-                            height: 6,
-                            decoration: BoxDecoration(
-                              color: Colors.greenAccent,
-                              shape: BoxShape.circle,
-                              boxShadow: [
-                                BoxShadow(
-                                  color: Colors.greenAccent.withValues(alpha: 0.1),
-                                  blurRadius: 6,
-                                  spreadRadius: 1,
-                                ),
-                              ],
-                            ),
-                          ),
-                        ),
-                    ],
-                  ),
-                  const SizedBox(height: 4),
-                  AnimatedDefaultTextStyle(
-                    duration: const Duration(milliseconds: 300),
-                    curve: Curves.easeOutCubic,
-                    style: TextStyle(
-                      fontSize: isActive ? 11 : 10,
-                      fontWeight: isActive ? FontWeight.w800 : FontWeight.w600,
-                      color: isActive
-                          ? (isSpecial
-                              ? Colors.purple.shade600
-                              : (isDark
-                                  ? AppColors.primaryLight
-                                  : AppColors.primary))
                           : (isDark ? Colors.white70 : Colors.black87),
                       letterSpacing: 0.2,
                     ),
