@@ -8,6 +8,7 @@ import '../../../app/app_router.dart';
 import 'wallet_config_screen.dart';
 import 'location_settings_screen.dart';
 import '../home_sections/home_product_section_management_screen.dart';
+import 'home_grocery_strip_settings_screen.dart';
 
 class AdminSettingsScreen extends StatefulWidget {
   const AdminSettingsScreen({Key? key}) : super(key: key);
@@ -136,6 +137,20 @@ class _AdminSettingsScreenState extends State<AdminSettingsScreen> {
                     context,
                     MaterialPageRoute(
                       builder: (_) => const HomeProductSectionManagementScreen(),
+                    ),
+                  );
+                },
+              ),
+              _buildNavigationTile(
+                icon: Icons.storefront_rounded,
+                title: 'Grocery & Kitchen Strip',
+                subtitle: 'Title and categories for the Home Grocery & Kitchen strip',
+                color: const Color(0xFFF97316),
+                onTap: () {
+                  Navigator.push(
+                    context,
+                    MaterialPageRoute(
+                      builder: (_) => const HomeGroceryStripSettingsScreen(),
                     ),
                   );
                 },
