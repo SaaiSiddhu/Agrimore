@@ -291,13 +291,39 @@ class AdminProvider with ChangeNotifier {
     return false;
   }
 
-  /// Swaps [category] with its adjacent sibling (same parentId) in display
-  /// order, then re-persists sequential displayOrder values (0..N-1) across
-  /// the whole sibling group. Re-sequencing the whole group, rather than
-  /// swapping just the two raw values, stays correct even when existing
+  /// Moves [category] to [newIndex] among its siblings (same parentId --
+  /// dragging never changes which group a category belongs to, only its
+  /// position within it), then re-persists sequential displayOrder values
+  /// (0..N-1) across the whole sibling group. Re-sequencing the whole group,
+  /// rather than only the two endpoints, stays correct even when existing
   /// displayOrder values are duplicated or gapped -- the admin form has
   /// always been a free-text number with no uniqueness enforcement, so
   /// assuming today's values are already clean would be unsafe.
+  Future<void> reorderCategory(CategoryModel category, int newIndex) async {
+    final siblings = _categoryModels.where((c) => c.parentId == category.parentId).toList()
+      ..sort((a, b) {
+        final byOrder = a.displayOrder.compareTo(b.displayOrder);
+        return byOrder != 0 ? byOrder : a.id.compareTo(b.id);
+      });
+    final oldIndex = siblings.indexWhere((c) => c.id == category.id);
+    if (oldIndex == -1 || newIndex < 0 || newIndex >= siblings.length || oldIndex == newIndex) {
+      return;
+    }
+
+    final reordered = List<CategoryModel>.from(siblings);
+    final moved = reordered.removeAt(oldIndex);
+    reordered.insert(newIndex, moved);
+
+    for (var i = 0; i < reordered.length; i++) {
+      if (reordered[i].displayOrder != i) {
+        await _adminService.updateCategoryModel(reordered[i].copyWith(displayOrder: i));
+      }
+    }
+  }
+
+  // TODO(CAT-5 WS3): delete once the screen's Move Up/Down buttons are
+  // removed in favor of drag-and-drop -- kept for now so this commit stays
+  // buildable against the still-unmodified screen file.
   Future<void> moveCategoryOrder(CategoryModel category, {required bool up}) async {
     final siblings = _categoryModels.where((c) => c.parentId == category.parentId).toList()
       ..sort((a, b) {
@@ -308,16 +334,7 @@ class AdminProvider with ChangeNotifier {
     if (index == -1) return;
     final swapIndex = up ? index - 1 : index + 1;
     if (swapIndex < 0 || swapIndex >= siblings.length) return;
-
-    final reordered = List<CategoryModel>.from(siblings);
-    final moved = reordered.removeAt(index);
-    reordered.insert(swapIndex, moved);
-
-    for (var i = 0; i < reordered.length; i++) {
-      if (reordered[i].displayOrder != i) {
-        await _adminService.updateCategoryModel(reordered[i].copyWith(displayOrder: i));
-      }
-    }
+    await reorderCategory(category, swapIndex);
   }
 
   Future<void> deleteCategory(String categoryId) async {
