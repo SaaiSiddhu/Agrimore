@@ -864,29 +864,32 @@ class _ProfileScreenState extends State<ProfileScreen> {
   }
 
   Widget _buildQuickActions(bool isDark, WalletProvider walletProvider) {
-    // Phase PROFILE-4: the cards now genuinely overlap the hero photo's
-    // bottom edge (~10%, per the owner's own cropped reference) via a
-    // paint-time Transform, not a negative inset — a NEGATIVE Padding here
-    // previously crashed at runtime (RenderPadding asserts
+    // Phase PROFILE-4/5: the cards overlap the hero photo's bottom edge via
+    // a paint-time Transform, not a negative inset — a NEGATIVE Padding
+    // here previously crashed at runtime (RenderPadding asserts
     // padding.isNonNegative in shifted_box.dart; Padding's own constructor
     // has no such check, so `flutter analyze` and a plain read of the
     // widget tree don't catch it, only running the screen does), and
     // Container.margin resolves to the same RenderPadding internally, so
     // it carries the identical risk. Transform.translate has no such
     // restriction (it's a paint-time matrix, not a layout inset) and still
-    // hit-tests correctly at the painted position by default. PROFILE-3's
-    // own version of this comment described a colour-match illusion from
-    // the old gradient fading to the exact page background at this exact
-    // boundary — that illusion doesn't exist for a static photo, so actual
-    // geometric overlap is what's doing the work now.
+    // hit-tests correctly at the painted position by default.
+    //
+    // PROFILE-5: PROFILE-4 paired this translate with a top: 8 inset on the
+    // Padding below, so only (translateY - topInset) of the shift actually
+    // reached the image — 22-8=14px, visibly too subtle live on-device (the
+    // owner's own screenshot still read as "below the banner", not "on
+    // it"). Top inset is now 0, so translateY IS the overlap amount, with
+    // no hidden budget lost to it.
     return Transform.translate(
-      offset: const Offset(0, -22),
+      offset: const Offset(0, -32),
       child: Padding(
-        // Bottom inset trimmed 16->6 to compensate: the Transform shifts
-        // this whole block up without shrinking the space it occupies, so
-        // leaving it at 16 would visibly enlarge the gap before the
-        // rewards band below by the same 22px.
-        padding: const EdgeInsets.fromLTRB(16, 8, 16, 6),
+        // Bottom inset stays 6 (unaffected by top inset — the gap below the
+        // cards is topInset-independent, it's bottomInset + |translateY|
+        // either way); the modest resulting +10px vs PROFILE-4's own
+        // bottom gap is an accepted trade for the overlap actually reading
+        // as an overlap.
+        padding: const EdgeInsets.fromLTRB(16, 0, 16, 6),
         child: Row(
           children: [
             _buildQuickActionCard(
