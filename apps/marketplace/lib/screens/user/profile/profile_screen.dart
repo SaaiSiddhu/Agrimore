@@ -1010,7 +1010,7 @@ class _ProfileScreenState extends State<ProfileScreen>
   // from these same constants, not a second hand-tuned number, now minus
   // the badge-padding term the removed Container used to contribute.
   static const double _navRowHPad = 14;
-  static const double _navIconSize = 28;
+  static const double _navIconSize = 24;
   static const double _navIconTextGap = 10;
   static const double _navDividerIndent = _navRowHPad + _navIconSize + _navIconTextGap;
 

@@ -871,17 +871,17 @@ class _EditProfileScreenState extends State<EditProfileScreen>
       child: Row(
         children: [
           Container(
-            width: 32,
-            height: 32,
+            width: 28,
+            height: 28,
             decoration: BoxDecoration(
               color: tileColor.withValues(alpha: 0.1),
-              borderRadius: BorderRadius.circular(9),
+              borderRadius: BorderRadius.circular(8),
             ),
             // PROFILE-20: the dedicated icon assets are already full-color
             // 3D glyphs (not tintable line icons), so they render as-is,
             // unlike the Material `Icon` fallback which is tinted `tileColor`.
             child: iconAsset != null
-                ? Image.asset(iconAsset, width: 18, height: 18, fit: BoxFit.contain)
+                ? Image.asset(iconAsset, width: 15, height: 15, fit: BoxFit.contain)
                 : Icon(icon, color: tileColor, size: 16),
           ),
           const SizedBox(width: 11),
@@ -940,7 +940,7 @@ class _EditProfileScreenState extends State<EditProfileScreen>
   // icon), not full-bleed, matching the "subtle dividers" ask.
   Widget _buildRowDivider(bool isDark) {
     return Padding(
-      padding: const EdgeInsets.only(left: 57),
+      padding: const EdgeInsets.only(left: 53),
       child: Container(height: 1, color: isDark ? Colors.grey[800] : Colors.grey.shade200),
     );
   }
@@ -1119,12 +1119,12 @@ class _EditProfileScreenState extends State<EditProfileScreen>
 
                   SliverToBoxAdapter(
                     child: Padding(
-                      // PROFILE-13: top inset restored — the avatar/name
-                      // block that used to sit in its own sliver (with its
-                      // own vertical padding) now ends flush with the
-                      // hero's own expandedHeight, so this section needs
-                      // its own breathing room again.
-                      padding: const EdgeInsets.fromLTRB(16, 20, 16, 16),
+                      // PROFILE-21: top inset trimmed from 20 to 6 — the
+                      // hero's own heroContent already ends with 12px of
+                      // its own bottom padding, so the two stacked together
+                      // read as one continuous surface instead of a large
+                      // gap between the avatar and the first section header.
+                      padding: const EdgeInsets.fromLTRB(16, 6, 16, 16),
                       child: Form(
                         key: _formKey,
                         autovalidateMode: AutovalidateMode.onUserInteraction,
