@@ -87,7 +87,8 @@ class _CategoryManagementScreenState extends State<CategoryManagementScreen> {
           }
 
           final categories = adminProvider.categories;
-          final mainCategories = categories.where((c) => c.isMainCategory).toList();
+          final mainCategories = categories.where((c) => c.isMainCategory).toList()
+            ..sort(_compareSiblings);
 
           if (categories.isEmpty) {
             return _buildEmptyState(isDark, accentColor);
@@ -119,9 +120,12 @@ class _CategoryManagementScreenState extends State<CategoryManagementScreen> {
                     children: [
                       _buildTreeHeader(isDark, accentColor),
                       Expanded(
-                        child: ListView.builder(
+                        child: ReorderableListView.builder(
                           padding: const EdgeInsets.all(8),
+                          buildDefaultDragHandles: false,
                           itemCount: mainCategories.length,
+                          onReorderItem: (oldIndex, newIndex) =>
+                              _onReorderCategories(mainCategories, oldIndex, newIndex),
                           itemBuilder: (context, index) {
                             return _buildCategoryTreeItem(
                               mainCategories[index],
@@ -129,6 +133,7 @@ class _CategoryManagementScreenState extends State<CategoryManagementScreen> {
                               isDark,
                               accentColor,
                               0,
+                              index,
                             );
                           },
                         ),
@@ -161,9 +166,12 @@ class _CategoryManagementScreenState extends State<CategoryManagementScreen> {
       children: [
         _buildTreeHeader(isDark, accentColor),
         Expanded(
-          child: ListView.builder(
+          child: ReorderableListView.builder(
             padding: const EdgeInsets.all(12),
+            buildDefaultDragHandles: false,
             itemCount: mainCategories.length,
+            onReorderItem: (oldIndex, newIndex) =>
+                _onReorderCategories(mainCategories, oldIndex, newIndex),
             itemBuilder: (context, index) {
               return _buildCategoryTreeItem(
                 mainCategories[index],
@@ -171,6 +179,7 @@ class _CategoryManagementScreenState extends State<CategoryManagementScreen> {
                 isDark,
                 accentColor,
                 0,
+                index,
               );
             },
           ),
@@ -216,13 +225,16 @@ class _CategoryManagementScreenState extends State<CategoryManagementScreen> {
     bool isDark,
     Color accentColor,
     int depth,
+    int siblingIndex,
   ) {
-    final children = allCategories.where((c) => c.parentId == category.id).toList();
+    final children = allCategories.where((c) => c.parentId == category.id).toList()
+      ..sort(_compareSiblings);
     final hasChildren = children.isNotEmpty;
     final isExpanded = _expandedCategories.contains(category.id);
     final isSelected = _selectedCategory?.id == category.id;
 
     return Column(
+      key: ValueKey(category.id),
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
         GestureDetector(
@@ -329,21 +341,79 @@ class _CategoryManagementScreenState extends State<CategoryManagementScreen> {
                       style: TextStyle(fontSize: 9, color: Colors.orange, fontWeight: FontWeight.bold),
                     ),
                   ),
+                const SizedBox(width: 4),
+                // Drag handle -- grabbing this, not tapping the row or the
+                // chevron, is what starts a reorder (ReorderableDragStartListener
+                // needs this item's own index within its immediate
+                // ReorderableListView, which is siblingIndex, not depth).
+                ReorderableDragStartListener(
+                  index: siblingIndex,
+                  child: Icon(
+                    Icons.drag_indicator_rounded,
+                    size: 18,
+                    color: isDark ? Colors.grey[600] : Colors.grey[400],
+                  ),
+                ),
               ],
             ),
           ),
         ),
-        // Children
+        // Children -- a nested, non-scrolling ReorderableListView per expanded
+        // parent, not a plain Column spread: nesting one per sibling group is
+        // what makes a drag structurally unable to cross into a different
+        // parent (each level is its own separate ReorderableListView instance)
+        // and keeps _expandedCategories (keyed by id, not index) unaffected.
         if (hasChildren && isExpanded)
-          ...children.map((child) => _buildCategoryTreeItem(
-                child,
-                allCategories,
-                isDark,
-                accentColor,
-                depth + 1,
-              )),
+          ReorderableListView(
+            shrinkWrap: true,
+            physics: const NeverScrollableScrollPhysics(),
+            buildDefaultDragHandles: false,
+            onReorderItem: (oldIndex, newIndex) =>
+                _onReorderCategories(children, oldIndex, newIndex),
+            children: [
+              for (var i = 0; i < children.length; i++)
+                _buildCategoryTreeItem(
+                  children[i],
+                  allCategories,
+                  isDark,
+                  accentColor,
+                  depth + 1,
+                  i,
+                ),
+            ],
+          ),
       ],
     );
+  }
+
+  /// displayOrder-then-id -- must match AdminProvider.reorderCategory's own
+  /// sibling sort exactly, since the index a ReorderableListView reports in
+  /// onReorder is only meaningful if it refers to the same ordering
+  /// reorderCategory itself uses to resolve "index N" when resequencing.
+  int _compareSiblings(CategoryModel a, CategoryModel b) {
+    final byOrder = a.displayOrder.compareTo(b.displayOrder);
+    return byOrder != 0 ? byOrder : a.id.compareTo(b.id);
+  }
+
+  Future<void> _onReorderCategories(
+    List<CategoryModel> siblings,
+    int oldIndex,
+    int newIndex,
+  ) async {
+    // onReorderItem (unlike the deprecated onReorder) hands newIndex already
+    // adjusted for the removed item at oldIndex -- no manual +/-1 correction.
+    final category = siblings[oldIndex];
+    final adminProvider = Provider.of<AdminProvider>(context, listen: false);
+    try {
+      await adminProvider.reorderCategory(category, newIndex);
+      _loadCategories();
+    } catch (e) {
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(backgroundColor: Colors.redAccent, content: Text('Error: $e')),
+        );
+      }
+    }
   }
 
   Widget _buildCategoryDetails(
@@ -399,23 +469,6 @@ class _CategoryManagementScreenState extends State<CategoryManagementScreen> {
               // Action Buttons
               Row(
                 children: [
-                  Tooltip(
-                    message: 'Move up (swap with the previous sibling)',
-                    child: IconButton(
-                      icon: const Icon(Icons.arrow_upward_rounded),
-                      color: isDark ? Colors.grey[400] : Colors.grey[600],
-                      onPressed: () => _moveCategory(category, up: true),
-                    ),
-                  ),
-                  Tooltip(
-                    message: 'Move down (swap with the next sibling)',
-                    child: IconButton(
-                      icon: const Icon(Icons.arrow_downward_rounded),
-                      color: isDark ? Colors.grey[400] : Colors.grey[600],
-                      onPressed: () => _moveCategory(category, up: false),
-                    ),
-                  ),
-                  const SizedBox(width: 4),
                   if (category.canHaveChildren)
                     _buildActionButton(
                       icon: Icons.add_rounded,
@@ -682,20 +735,6 @@ class _CategoryManagementScreenState extends State<CategoryManagementScreen> {
         },
       ),
     );
-  }
-
-  Future<void> _moveCategory(CategoryModel category, {required bool up}) async {
-    final adminProvider = Provider.of<AdminProvider>(context, listen: false);
-    try {
-      await adminProvider.moveCategoryOrder(category, up: up);
-      _loadCategories();
-    } catch (e) {
-      if (mounted) {
-        ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(backgroundColor: Colors.redAccent, content: Text('Error: $e')),
-        );
-      }
-    }
   }
 
   void _confirmDelete(CategoryModel category, int childCount) {
