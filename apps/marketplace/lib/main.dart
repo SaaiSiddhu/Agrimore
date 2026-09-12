@@ -30,6 +30,7 @@ import 'providers/address_provider.dart';
 import 'providers/order_provider.dart';
 import 'providers/banner_provider.dart';
 import 'providers/location_settings_provider.dart';
+import 'providers/home_product_section_config_provider.dart';
 import 'providers/review_provider.dart';
 import 'providers/search_provider.dart';
 import 'providers/bestseller_provider.dart';
@@ -163,6 +164,7 @@ void main() async {
         ChangeNotifierProvider(create: (_) => OrderProvider()),
         ChangeNotifierProvider(create: (_) => BannerProvider()),
         ChangeNotifierProvider(create: (_) => LocationSettingsProvider()),
+        ChangeNotifierProvider(create: (_) => HomeProductSectionConfigProvider()),
         ChangeNotifierProvider(create: (_) => ReviewProvider()),
         ChangeNotifierProvider(create: (_) => SearchProvider()),
         ChangeNotifierProvider(create: (_) => BestsellerProvider()),

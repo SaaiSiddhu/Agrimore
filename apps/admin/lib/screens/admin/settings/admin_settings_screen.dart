@@ -7,6 +7,7 @@ import '../../../providers/auth_provider.dart';
 import '../../../app/app_router.dart';
 import 'wallet_config_screen.dart';
 import 'location_settings_screen.dart';
+import '../home_sections/home_product_section_management_screen.dart';
 
 class AdminSettingsScreen extends StatefulWidget {
   const AdminSettingsScreen({Key? key}) : super(key: key);
@@ -121,6 +122,20 @@ class _AdminSettingsScreenState extends State<AdminSettingsScreen> {
                     context,
                     MaterialPageRoute(
                       builder: (_) => const LocationSettingsScreen(),
+                    ),
+                  );
+                },
+              ),
+              _buildNavigationTile(
+                icon: Icons.view_carousel_rounded,
+                title: 'Home Product Sections',
+                subtitle: 'Choose which categories appear as Home sections, and their order',
+                color: const Color(0xFF14B8A6),
+                onTap: () {
+                  Navigator.push(
+                    context,
+                    MaterialPageRoute(
+                      builder: (_) => const HomeProductSectionManagementScreen(),
                     ),
                   );
                 },

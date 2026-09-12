@@ -12,6 +12,7 @@ import '../../../providers/category_provider.dart';
 import '../../../providers/banner_provider.dart';
 import '../../../providers/category_section_provider.dart';
 import '../../../providers/section_banner_provider.dart';
+import '../../../providers/home_product_section_config_provider.dart';
 import '../../../providers/theme_provider.dart';
 import '../../../providers/shop_entry_provider.dart';
 import '../../../providers/settings_provider.dart';
@@ -164,6 +165,8 @@ class _MobileHomeScreenState extends State<MobileHomeScreen>
           .loadSections(forceRefresh: forceRefresh),
       Provider.of<SectionBannerProvider>(context, listen: false)
           .loadBanners(forceRefresh: forceRefresh),
+      Provider.of<HomeProductSectionConfigProvider>(context, listen: false)
+          .loadSections(forceRefresh: forceRefresh),
     ]).then((_) {
       if (mounted) {
         setState(() => _isRefreshing = false);
@@ -590,7 +593,8 @@ class _MobileHomeScreenState extends State<MobileHomeScreen>
     final allProducts =
         productProvider.products.where((p) => p.isActive).toList();
 
-    // Group products by category
+    // Group products by category (shared by both the admin-configured path
+    // and the fallback path below)
     final Map<String, List<ProductModel>> productsByCategory = {};
     for (final product in allProducts) {
       CategoryModel? hit;
@@ -603,6 +607,65 @@ class _MobileHomeScreenState extends State<MobileHomeScreen>
       final key = hit?.id ?? product.categoryId;
       productsByCategory.putIfAbsent(key, () => []);
       productsByCategory[key]!.add(product);
+    }
+
+    // HOME-3: admin-configured section order/titles/caps, when the admin
+    // has set any up (docs/home/CURRENT_HOME_ARCHITECTURE.md). Falls back
+    // to the pre-existing loop-all-active-categories behaviour below when
+    // the config collection is empty or hasn't loaded yet — never a blank
+    // Home, and a fresh install behaves exactly as it always has.
+    final sectionConfigProvider =
+        context.watch<HomeProductSectionConfigProvider>();
+    if (sectionConfigProvider.hasConfiguredSections) {
+      final List<Widget> configuredSections = [];
+      int configuredCount = 0;
+      for (final config in sectionConfigProvider.activeSections) {
+        CategoryModel? category;
+        for (final c in categories) {
+          if (c.id == config.categoryId) {
+            category = c;
+            break;
+          }
+        }
+        // The configured category no longer exists or isn't active —
+        // skip this row silently rather than render a broken section;
+        // the admin screen still shows it so the gap is visible there.
+        if (category == null) continue;
+
+        final categoryProducts = productsByCategory[category.id] ?? [];
+        if (categoryProducts.isEmpty) continue;
+
+        configuredCount++;
+        final displayProducts =
+            categoryProducts.take(config.maxItems).toList();
+
+        configuredSections.add(
+          ProductSectionWidget(
+            sectionTitle: config.titleOverride ?? category.name,
+            products: displayProducts,
+            categoryId: category.id,
+            onSeeAll: () {
+              context.read<ShopEntryProvider>().openShopWithCategory(
+                    categoryId: category!.id,
+                    categoryName: category.name,
+                  );
+            },
+          ),
+        );
+
+        // Same "after the 5th section" placement as the fallback path, so
+        // switching between admin-configured and fallback never moves the
+        // promo banner to a jarringly different spot.
+        if (configuredCount == 5) {
+          configuredSections.add(const SectionBannerCarousel(afterSection: 5));
+        }
+      }
+      // Every configured section pointed at a since-deleted/emptied
+      // category — fall through to the pre-existing behaviour rather than
+      // show nothing.
+      if (configuredSections.isNotEmpty) {
+        return Column(children: configuredSections);
+      }
     }
 
     // Build sections for categories with products (max 8 sections)

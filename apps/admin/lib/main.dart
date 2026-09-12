@@ -24,6 +24,7 @@ import 'providers/user_provider.dart';
 import 'providers/settings_provider.dart';
 import 'providers/bestseller_provider.dart';
 import 'providers/category_section_provider.dart';
+import 'providers/home_product_section_provider.dart';
 import 'providers/wallet_config_provider.dart';
 import 'providers/section_banner_provider.dart';
 import 'providers/vendor_provider.dart';
@@ -119,6 +120,7 @@ void main() async {
         ChangeNotifierProvider(create: (_) => SettingsProvider()),
         ChangeNotifierProvider(create: (_) => BestsellerProvider()),
         ChangeNotifierProvider(create: (_) => CategorySectionProvider()),
+        ChangeNotifierProvider(create: (_) => HomeProductSectionProvider()),
         ChangeNotifierProvider(create: (_) => WalletConfigProvider()),
         ChangeNotifierProvider(create: (_) => SectionBannerProvider()),
         ChangeNotifierProvider(create: (_) => VendorProvider()),
