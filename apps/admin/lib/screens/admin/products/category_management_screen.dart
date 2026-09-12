@@ -1095,7 +1095,7 @@ class _CategoryFormDialogState extends State<_CategoryFormDialog> {
                         child: Row(
                           mainAxisAlignment: MainAxisAlignment.spaceBetween,
                           children: [
-                            Text('Visible to Customers', style: TextStyle(color: isDark ? Colors.grey[400] : Colors.grey[600])),
+                            Text('Visible', style: TextStyle(color: isDark ? Colors.grey[400] : Colors.grey[600])),
                             Switch(
                               value: _isVisible,
                               onChanged: (v) => setState(() => _isVisible = v),
