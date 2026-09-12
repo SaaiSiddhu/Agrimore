@@ -390,6 +390,7 @@ class _ProfileScreenState extends State<ProfileScreen> {
                   ),
                   _MenuItem(
                     icon: Icons.bolt_rounded,
+                    iconAsset: 'assets/images/Profile/Flash_Icon.png',
                     title: 'Flash Sale',
                     onTap: () => _navigateTo(AppRoutes.flashSale),
                     color: const Color(0xFFE64A19),
@@ -437,6 +438,7 @@ class _ProfileScreenState extends State<ProfileScreen> {
                   ),
                   _MenuItem(
                     icon: Icons.ios_share_rounded,
+                    iconAsset: 'assets/images/Profile/Share_Icon.png',
                     title: 'Share Agrimore',
                     onTap: () => _showShareBottomSheet(isDark),
                     color: const Color(0xFF00ACC1),
@@ -1244,15 +1246,61 @@ class _ProfileScreenState extends State<ProfileScreen> {
               ],
             ),
           ),
-          Switch.adaptive(
+          _buildCompactToggle(
             value: marketMode.isB2B,
+            isDark: isDark,
             onChanged: (value) {
               HapticFeedback.mediumImpact();
               marketMode.setB2B(value);
             },
-            activeThumbColor: isDark ? AppColors.primaryLight : AppColors.primary,
           ),
         ],
+      ),
+    );
+  }
+
+  // A compact pill-style toggle, replacing the stock Switch.adaptive (which
+  // reads as noticeably large/plain next to this row's own 13px label) with
+  // a smaller, custom track+thumb matching the rest of this screen's own
+  // polish level.
+  Widget _buildCompactToggle({
+    required bool value,
+    required bool isDark,
+    required ValueChanged<bool> onChanged,
+  }) {
+    final onColor = isDark ? AppColors.primaryLight : AppColors.primary;
+    return GestureDetector(
+      onTap: () => onChanged(!value),
+      child: AnimatedContainer(
+        duration: const Duration(milliseconds: 180),
+        curve: Curves.easeOut,
+        width: 38,
+        height: 21,
+        padding: const EdgeInsets.all(2),
+        decoration: BoxDecoration(
+          color: value ? onColor : (isDark ? Colors.grey[700] : Colors.grey[300]),
+          borderRadius: BorderRadius.circular(11),
+        ),
+        child: AnimatedAlign(
+          duration: const Duration(milliseconds: 180),
+          curve: Curves.easeOut,
+          alignment: value ? Alignment.centerRight : Alignment.centerLeft,
+          child: Container(
+            width: 17,
+            height: 17,
+            decoration: BoxDecoration(
+              color: Colors.white,
+              shape: BoxShape.circle,
+              boxShadow: [
+                BoxShadow(
+                  color: Colors.black.withValues(alpha: 0.25),
+                  blurRadius: 3,
+                  offset: const Offset(0, 1),
+                ),
+              ],
+            ),
+          ),
+        ),
       ),
     );
   }

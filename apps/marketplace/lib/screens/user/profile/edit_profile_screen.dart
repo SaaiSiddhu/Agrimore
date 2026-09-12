@@ -578,12 +578,11 @@ class _EditProfileScreenState extends State<EditProfileScreen>
 
   // --- New Widgets matching Profile Screen ---
 
-  // PROFILE-8: replaces the old green-gradient bar. Same photo (profile_bg
-  // .png) and floating circular back button Profile screen's own header
-  // uses (identical Container: 36dp, white @0.92 alpha, matching shadow) —
-  // no logo/wordmark baked in either, matching PROFILE-3's own "no
-  // logo/title in the header" decision for Profile, not the reference
-  // mockup's decorative script text and AgriMore wordmark literally.
+  // PROFILE-8 replaced the old green-gradient bar with this photo
+  // (profile_bg.png) + floating circular back button, matching Profile
+  // screen's own header. PROFILE-10 adds the reference mockup's own
+  // decorative touches literally (the "AgriMore" wordmark lockup) rather
+  // than the deliberately-plain PROFILE-3 reading of a prior pass.
   Widget _buildHeroHeader(bool isDark) {
     return SizedBox(
       height: 180,
@@ -599,26 +598,54 @@ class _EditProfileScreenState extends State<EditProfileScreen>
               child: Column(
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
-                  GestureDetector(
-                    onTap: (_isLoading || _isUploadingImage)
-                        ? null
-                        : () => Navigator.pop(context),
-                    child: Container(
-                      width: 36,
-                      height: 36,
-                      decoration: BoxDecoration(
-                        shape: BoxShape.circle,
-                        color: Colors.white.withValues(alpha: 0.92),
-                        boxShadow: [
-                          BoxShadow(
-                            color: Colors.black.withValues(alpha: 0.15),
-                            blurRadius: 6,
-                            offset: const Offset(0, 2),
+                  Row(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      GestureDetector(
+                        onTap: (_isLoading || _isUploadingImage)
+                            ? null
+                            : () => Navigator.pop(context),
+                        child: Container(
+                          width: 36,
+                          height: 36,
+                          decoration: BoxDecoration(
+                            shape: BoxShape.circle,
+                            color: Colors.white.withValues(alpha: 0.92),
+                            boxShadow: [
+                              BoxShadow(
+                                color: Colors.black.withValues(alpha: 0.15),
+                                blurRadius: 6,
+                                offset: const Offset(0, 2),
+                              ),
+                            ],
                           ),
-                        ],
+                          child: const Icon(Icons.arrow_back_rounded, size: 20, color: Colors.black87),
+                        ),
                       ),
-                      child: const Icon(Icons.arrow_back_rounded, size: 20, color: Colors.black87),
-                    ),
+                      const Spacer(),
+                      Container(
+                        padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 6),
+                        decoration: BoxDecoration(
+                          color: Colors.white.withValues(alpha: 0.85),
+                          borderRadius: BorderRadius.circular(20),
+                        ),
+                        child: Row(
+                          mainAxisSize: MainAxisSize.min,
+                          children: [
+                            Image.asset('assets/icons/logo_icon.png', width: 16, height: 16),
+                            const SizedBox(width: 6),
+                            const Text(
+                              'AgriMore',
+                              style: TextStyle(
+                                fontSize: 12.5,
+                                fontWeight: FontWeight.w800,
+                                color: Colors.black87,
+                              ),
+                            ),
+                          ],
+                        ),
+                      ),
+                    ],
                   ),
                   const Spacer(),
                   Text(
@@ -652,7 +679,59 @@ class _EditProfileScreenState extends State<EditProfileScreen>
       child: Center(
         child: Padding(
           padding: const EdgeInsets.symmetric(vertical: 20),
-          child: Stack(
+          child: Column(
+            children: [
+              _buildAvatarStack(isDark),
+              const SizedBox(height: 14),
+              Material(
+                color: Colors.transparent,
+                child: InkWell(
+                  onTap: (_isUploadingImage || _isLoading) ? null : () => _pickImage(isDark),
+                  borderRadius: BorderRadius.circular(20),
+                  child: Container(
+                    padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
+                    decoration: BoxDecoration(
+                      color: isDark ? const Color(0xFF1E1E1E) : Colors.white,
+                      borderRadius: BorderRadius.circular(20),
+                      border: Border.all(
+                        color: (isDark ? AppColors.primaryLight : const Color(0xFF2D7D3C)).withValues(alpha: 0.4),
+                      ),
+                    ),
+                    child: Row(
+                      mainAxisSize: MainAxisSize.min,
+                      children: [
+                        Icon(
+                          Icons.camera_alt_outlined,
+                          size: 16,
+                          color: isDark ? AppColors.primaryLight : const Color(0xFF2D7D3C),
+                        ),
+                        const SizedBox(width: 6),
+                        Text(
+                          'Change Photo',
+                          style: TextStyle(
+                            fontSize: 13,
+                            fontWeight: FontWeight.w700,
+                            color: isDark ? AppColors.primaryLight : const Color(0xFF2D7D3C),
+                          ),
+                        ),
+                      ],
+                    ),
+                  ),
+                ),
+              ),
+            ],
+          ),
+        ),
+      ),
+    );
+  }
+
+  Widget _buildAvatarStack(bool isDark) {
+    return Center(
+      child: SizedBox(
+        width: 120,
+        height: 120,
+        child: Stack(
             children: [
               Container(
                 width: 120,
@@ -757,8 +836,7 @@ class _EditProfileScreenState extends State<EditProfileScreen>
             ],
           ),
         ),
-      ),
-    );
+      );
   }
 
   Widget _buildTextFormCard({
@@ -936,6 +1014,7 @@ class _EditProfileScreenState extends State<EditProfileScreen>
     required String placeholder,
     required bool isDark,
     required VoidCallback onChange,
+    String? helperText,
     bool isSaving = false,
   }) {
     final tileColor = isDark ? AppColors.primaryLight : const Color(0xFF2D7D3C);
@@ -999,6 +1078,16 @@ class _EditProfileScreenState extends State<EditProfileScreen>
                         maxLines: 1,
                         overflow: TextOverflow.ellipsis,
                       ),
+                      if (helperText != null) ...[
+                        const SizedBox(height: 2),
+                        Text(
+                          helperText,
+                          style: TextStyle(
+                            fontSize: 10.5,
+                            color: isDark ? Colors.grey[500] : Colors.grey[500],
+                          ),
+                        ),
+                      ],
                     ],
                   ),
                 ),
@@ -1032,6 +1121,76 @@ class _EditProfileScreenState extends State<EditProfileScreen>
         .firstWhere((o) => o['value'] == value, orElse: () => const {'label': ''})['label']!;
   }
 
+  // Icon-in-circle + title + subtitle section header, matching the
+  // reference mockup's "Personal Information"/"Personal Details" cards.
+  // [trailingBadge] renders the mockup's "✓ Verified" pill on the second
+  // section only.
+  Widget _buildSectionHeader({
+    required IconData icon,
+    required String title,
+    required String subtitle,
+    required bool isDark,
+    bool trailingBadge = false,
+  }) {
+    final tileColor = isDark ? AppColors.primaryLight : const Color(0xFF2D7D3C);
+    return Padding(
+      padding: const EdgeInsets.only(bottom: 12),
+      child: Row(
+        crossAxisAlignment: CrossAxisAlignment.center,
+        children: [
+          Container(
+            width: 40,
+            height: 40,
+            decoration: BoxDecoration(color: tileColor, shape: BoxShape.circle),
+            child: Icon(icon, color: Colors.white, size: 20),
+          ),
+          const SizedBox(width: 12),
+          Expanded(
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Text(
+                  title,
+                  style: TextStyle(
+                    fontSize: 15,
+                    fontWeight: FontWeight.w800,
+                    color: isDark ? Colors.white : Colors.black87,
+                  ),
+                ),
+                Text(
+                  subtitle,
+                  style: TextStyle(
+                    fontSize: 11.5,
+                    color: isDark ? Colors.grey[400] : Colors.grey[600],
+                  ),
+                ),
+              ],
+            ),
+          ),
+          if (trailingBadge)
+            Container(
+              padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 5),
+              decoration: BoxDecoration(
+                color: tileColor.withValues(alpha: 0.12),
+                borderRadius: BorderRadius.circular(20),
+              ),
+              child: Row(
+                mainAxisSize: MainAxisSize.min,
+                children: [
+                  Icon(Icons.verified_rounded, size: 14, color: tileColor),
+                  const SizedBox(width: 4),
+                  Text(
+                    'Verified',
+                    style: TextStyle(fontSize: 11.5, fontWeight: FontWeight.w800, color: tileColor),
+                  ),
+                ],
+              ),
+            ),
+        ],
+      ),
+    );
+  }
+
   // --- End New Widgets ---
 
   @override
@@ -1063,16 +1222,12 @@ class _EditProfileScreenState extends State<EditProfileScreen>
                         child: Column(
                           crossAxisAlignment: CrossAxisAlignment.start,
                           children: [
-                            Text(
-                              'Personal Information',
-                              style: TextStyle(
-                                fontSize: 12,
-                                fontWeight: FontWeight.w800,
-                                color: isDark ? Colors.grey[400] : Colors.grey[700],
-                                letterSpacing: 0.5,
-                              ),
+                            _buildSectionHeader(
+                              icon: Icons.person_outline_rounded,
+                              title: 'Personal Information',
+                              subtitle: 'Manage your basic account details',
+                              isDark: isDark,
                             ),
-                            const SizedBox(height: 10),
                             _buildTextFormCard(
                               controller: _nameController,
                               label: 'Full Name',
@@ -1124,21 +1279,19 @@ class _EditProfileScreenState extends State<EditProfileScreen>
                             ),
                             const SizedBox(height: 16),
 
-                            Text(
-                              'Personal Details',
-                              style: TextStyle(
-                                fontSize: 12,
-                                fontWeight: FontWeight.w800,
-                                color: isDark ? Colors.grey[400] : Colors.grey[700],
-                                letterSpacing: 0.5,
-                              ),
+                            _buildSectionHeader(
+                              icon: Icons.badge_outlined,
+                              title: 'Personal Details',
+                              subtitle: 'Collected when you completed your profile',
+                              isDark: isDark,
+                              trailingBadge: true,
                             ),
-                            const SizedBox(height: 10),
                             _buildEditableFieldCard(
                               label: 'Date of Birth',
                               icon: Icons.cake_outlined,
                               value: _dateOfBirth != null ? _formatDate(_dateOfBirth!) : '',
                               placeholder: 'Add date of birth',
+                              helperText: 'Tap to update your date of birth',
                               isDark: isDark,
                               isSaving: _isSavingDateOfBirth,
                               onChange: _pickDateOfBirth,
@@ -1148,6 +1301,7 @@ class _EditProfileScreenState extends State<EditProfileScreen>
                               icon: Icons.wc_rounded,
                               value: _genderLabel(_gender),
                               placeholder: 'Add gender',
+                              helperText: 'Tap to update your gender',
                               isDark: isDark,
                               onChange: () => _pickGender(isDark),
                             ),
@@ -1183,17 +1337,6 @@ class _EditProfileScreenState extends State<EditProfileScreen>
                                     child: Row(
                                       mainAxisAlignment: MainAxisAlignment.center,
                                       children: [
-                                        if (_isLoading || _isUploadingImage)
-                                          const SizedBox(
-                                            width: 18,
-                                            height: 18,
-                                            child: CircularProgressIndicator(strokeWidth: 2, color: Colors.white)
-                                          )
-                                        else
-                                          const Icon(Icons.check_circle_outline_rounded, color: Colors.white, size: 18),
-
-                                        const SizedBox(width: 10),
-
                                         Text(
                                           _isUploadingImage ? 'Uploading...' : (_isLoading ? 'Saving...' : 'Save Changes'),
                                           style: const TextStyle(
@@ -1202,10 +1345,31 @@ class _EditProfileScreenState extends State<EditProfileScreen>
                                             fontWeight: FontWeight.w800,
                                           ),
                                         ),
+                                        const SizedBox(width: 8),
+
+                                        if (_isLoading || _isUploadingImage)
+                                          const SizedBox(
+                                            width: 18,
+                                            height: 18,
+                                            child: CircularProgressIndicator(strokeWidth: 2, color: Colors.white)
+                                          )
+                                        else
+                                          const Icon(Icons.arrow_forward_rounded, color: Colors.white, size: 18),
                                       ],
                                     ),
                                   ),
                                 ),
+                              ),
+                            ),
+                            const SizedBox(height: 10),
+                            Text(
+                              'Name and gender are saved when you tap Save Changes. '
+                              'Phone, email, and date of birth update immediately and require verification.',
+                              textAlign: TextAlign.center,
+                              style: TextStyle(
+                                fontSize: 11,
+                                height: 1.4,
+                                color: isDark ? Colors.grey[500] : Colors.grey[600],
                               ),
                             ),
                             const SizedBox(height: 12),
