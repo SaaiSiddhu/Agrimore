@@ -1,9 +1,6 @@
 import 'dart:async';
-import 'dart:typed_data';
-import 'dart:ui';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
-import 'package:flutter/foundation.dart' show kIsWeb;
 import 'package:provider/provider.dart';
 import 'package:image_picker/image_picker.dart';
 import 'package:firebase_storage/firebase_storage.dart';
@@ -35,6 +32,26 @@ class _EditProfileScreenState extends State<EditProfileScreen>
   // the primary Edit Profile screen every time it was opened.
   final _phoneController = TextEditingController();
   final _emailController = TextEditingController();
+
+  // PROFILE-8: date of birth and gender were collected once at profile
+  // completion (complete_profile_screen.dart) with no edit path anywhere in
+  // the app afterward. Gender mirrors that screen's own options list
+  // exactly (same values/labels) since firestore.rules already allows a
+  // plain owner write to it — no server change needed. Date of birth is
+  // different in kind: firestore.rules blanket-blocks any client write to
+  // it regardless of value (Phase 16 Workstream 5), so it saves immediately
+  // through the new changeDateOfBirth callable the moment a new date is
+  // picked, the same "changes on its own, not on the big Save button"
+  // pattern phone/email already use — not through _saveProfile below.
+  DateTime? _dateOfBirth;
+  String? _gender;
+  bool _isSavingDateOfBirth = false;
+  static const List<Map<String, String>> _genderOptions = [
+    {'value': 'male', 'label': 'Male'},
+    {'value': 'female', 'label': 'Female'},
+    {'value': 'non_binary', 'label': 'Non-binary'},
+    {'value': 'prefer_not_to_say', 'label': 'Prefer not to say'},
+  ];
 
   late AnimationController _animationController;
   late Animation<double> _fadeAnimation;
@@ -133,6 +150,8 @@ class _EditProfileScreenState extends State<EditProfileScreen>
       _phoneController.text = user.phone ?? '';
       _emailController.text = user.email ?? '';
       _photoUrl = user.photoUrl;
+      _dateOfBirth = user.dateOfBirth;
+      _gender = user.gender;
       debugPrint('✅ Loaded user data: ${user.name}');
     }
   }
@@ -245,11 +264,15 @@ class _EditProfileScreenState extends State<EditProfileScreen>
       final authProvider =
           Provider.of<app_auth.AuthProvider>(context, listen: false);
 
-      // phone is deliberately NOT sent here — it is read-only on this
-      // screen and can only change via ChangePhoneScreen's verified flow.
+      // phone/dateOfBirth are deliberately NOT sent here — phone is
+      // read-only on this screen (ChangePhoneScreen's verified flow only),
+      // and dateOfBirth saves immediately through its own picker (see
+      // _changeDateOfBirth) since firestore.rules blocks it from this
+      // plain profile-edit write regardless of value.
       final success = await authProvider.updateUserProfile(
         name: _nameController.text.trim(),
         photoUrl: photoUrl,
+        gender: _gender,
       );
 
       if (!mounted) return;
@@ -271,6 +294,109 @@ class _EditProfileScreenState extends State<EditProfileScreen>
         _showToastMessage('❌ Error: ${e.toString()}', isSuccess: false);
         setState(() => _isLoading = false);
       }
+    }
+  }
+
+  Future<void> _pickDateOfBirth() async {
+    final now = DateTime.now();
+    final picked = await showDatePicker(
+      context: context,
+      initialDate: _dateOfBirth ??
+          DateTime(now.year - kMinimumProfileAgeYears, now.month, now.day),
+      firstDate: DateTime(now.year - 120),
+      // Same 18+ bound complete_profile_screen.dart's own picker enforces,
+      // and changeDateOfBirth.ts re-checks server-side regardless.
+      lastDate: DateTime(now.year - kMinimumProfileAgeYears, now.month, now.day),
+      helpText: 'Select your date of birth',
+    );
+    if (picked == null || !mounted) return;
+    if (_dateOfBirth != null &&
+        picked.year == _dateOfBirth!.year &&
+        picked.month == _dateOfBirth!.month &&
+        picked.day == _dateOfBirth!.day) {
+      return;
+    }
+
+    setState(() => _isSavingDateOfBirth = true);
+    HapticFeedback.mediumImpact();
+
+    final authProvider = Provider.of<app_auth.AuthProvider>(context, listen: false);
+    final success = await authProvider.changeDateOfBirth(dateOfBirth: picked);
+
+    if (!mounted) return;
+    setState(() => _isSavingDateOfBirth = false);
+
+    if (success) {
+      setState(() => _dateOfBirth = picked);
+      _showToastMessage('✅ Date of birth updated');
+    } else {
+      _showToastMessage(
+        '❌ ${authProvider.error ?? 'Failed to update date of birth'}',
+        isSuccess: false,
+      );
+    }
+  }
+
+  Future<void> _pickGender(bool isDark) async {
+    final selected = await showModalBottomSheet<String>(
+      context: context,
+      backgroundColor: Colors.transparent,
+      isScrollControlled: true,
+      builder: (context) => Container(
+        decoration: BoxDecoration(
+          color: isDark ? const Color(0xFF1E1E1E) : Colors.white,
+          borderRadius: const BorderRadius.vertical(top: Radius.circular(20)),
+        ),
+        padding: const EdgeInsets.all(20),
+        child: SafeArea(
+          child: Column(
+            mainAxisSize: MainAxisSize.min,
+            crossAxisAlignment: CrossAxisAlignment.stretch,
+            children: [
+              Center(
+                child: Container(
+                  width: 40,
+                  height: 4,
+                  decoration: BoxDecoration(
+                    color: isDark ? Colors.grey[700] : Colors.grey[300],
+                    borderRadius: BorderRadius.circular(2),
+                  ),
+                ),
+              ),
+              const SizedBox(height: 20),
+              Text(
+                'Select Gender',
+                textAlign: TextAlign.center,
+                style: TextStyle(
+                  fontSize: 18,
+                  fontWeight: FontWeight.w800,
+                  color: isDark ? Colors.white : Colors.black87,
+                ),
+              ),
+              const SizedBox(height: 16),
+              for (final option in _genderOptions)
+                RadioListTile<String>(
+                  value: option['value']!,
+                  groupValue: _gender,
+                  onChanged: (value) => Navigator.pop(context, value),
+                  title: Text(
+                    option['label']!,
+                    style: TextStyle(
+                      fontSize: 14,
+                      fontWeight: FontWeight.w600,
+                      color: isDark ? Colors.white : Colors.black87,
+                    ),
+                  ),
+                  activeColor: isDark ? AppColors.primaryLight : const Color(0xFF2D7D3C),
+                  contentPadding: EdgeInsets.zero,
+                ),
+            ],
+          ),
+        ),
+      ),
+    );
+    if (selected != null && mounted) {
+      setState(() => _gender = selected);
     }
   }
 
@@ -378,7 +504,7 @@ class _EditProfileScreenState extends State<EditProfileScreen>
     required bool isDark
   }) {
     final color = isDark ? AppColors.primaryLight : const Color(0xFF2D7D3C);
-    
+
     return Container(
       decoration: BoxDecoration(
         color: isDark ? const Color(0xFF1E1E1E) : Colors.white,
@@ -452,61 +578,66 @@ class _EditProfileScreenState extends State<EditProfileScreen>
 
   // --- New Widgets matching Profile Screen ---
 
-  Widget _buildCompactHeader(bool isDark) {
-    final double topPadding = MediaQuery.of(context).padding.top;
-
-    return Container(
-      padding: EdgeInsets.fromLTRB(16, 16 + topPadding, 16, 16),
-      decoration: BoxDecoration(
-        gradient: LinearGradient(
-          begin: Alignment.topLeft,
-          end: Alignment.bottomRight,
-          colors: isDark
-              ? [
-                  const Color(0xFF1E1E1E),
-                  const Color(0xFF2D3A2D),
-                  const Color(0xFF3A4D3A),
-                ]
-              : [
-                  const Color(0xFF2D7D3C),
-                  const Color(0xFF3DA34E),
-                  const Color(0xFF4DB85F),
-                ],
-          stops: const [0.0, 0.5, 1.0],
-        ),
-      ),
-      child: Row(
+  // PROFILE-8: replaces the old green-gradient bar. Same photo (profile_bg
+  // .png) and floating circular back button Profile screen's own header
+  // uses (identical Container: 36dp, white @0.92 alpha, matching shadow) —
+  // no logo/wordmark baked in either, matching PROFILE-3's own "no
+  // logo/title in the header" decision for Profile, not the reference
+  // mockup's decorative script text and AgriMore wordmark literally.
+  Widget _buildHeroHeader(bool isDark) {
+    return SizedBox(
+      height: 180,
+      child: Stack(
+        fit: StackFit.expand,
         children: [
-          Container(
-            decoration: BoxDecoration(
-              color: Colors.white.withValues(alpha: 0.2),
-              borderRadius: BorderRadius.circular(10),
-            ),
-            child: Material(
-              color: Colors.transparent,
-              child: InkWell(
-                onTap: () {
-                  if (!_isLoading && !_isUploadingImage) {
-                    HapticFeedback.lightImpact();
-                    Navigator.pop(context);
-                  }
-                },
-                borderRadius: BorderRadius.circular(10),
-                child: const Padding(
-                  padding: EdgeInsets.all(10),
-                  child: Icon(Icons.arrow_back_rounded, color: Colors.white, size: 20),
-                ),
-              ),
-            ),
-          ),
-          const SizedBox(width: 16),
-          Expanded(
-            child: Text(
-              'Edit Profile',
-              style: const TextStyle(
-                color: Colors.white,
-                fontSize: 19,
-                fontWeight: FontWeight.w900,
+          Image.asset('assets/images/Profile/profile_bg.png', fit: BoxFit.cover),
+          if (isDark) Container(color: Colors.black.withValues(alpha: 0.55)),
+          SafeArea(
+            bottom: false,
+            child: Padding(
+              padding: const EdgeInsets.fromLTRB(16, 8, 16, 16),
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  GestureDetector(
+                    onTap: (_isLoading || _isUploadingImage)
+                        ? null
+                        : () => Navigator.pop(context),
+                    child: Container(
+                      width: 36,
+                      height: 36,
+                      decoration: BoxDecoration(
+                        shape: BoxShape.circle,
+                        color: Colors.white.withValues(alpha: 0.92),
+                        boxShadow: [
+                          BoxShadow(
+                            color: Colors.black.withValues(alpha: 0.15),
+                            blurRadius: 6,
+                            offset: const Offset(0, 2),
+                          ),
+                        ],
+                      ),
+                      child: const Icon(Icons.arrow_back_rounded, size: 20, color: Colors.black87),
+                    ),
+                  ),
+                  const Spacer(),
+                  Text(
+                    'Edit Profile',
+                    style: TextStyle(
+                      color: isDark ? Colors.white : Colors.black87,
+                      fontSize: 22,
+                      fontWeight: FontWeight.w800,
+                    ),
+                  ),
+                  const SizedBox(height: 2),
+                  Text(
+                    'Keep your information up to date',
+                    style: TextStyle(
+                      color: isDark ? Colors.white70 : Colors.black54,
+                      fontSize: 12.5,
+                    ),
+                  ),
+                ],
               ),
             ),
           ),
@@ -529,7 +660,7 @@ class _EditProfileScreenState extends State<EditProfileScreen>
                 decoration: BoxDecoration(
                   shape: BoxShape.circle,
                   border: Border.all(
-                    color: isDark ? AppColors.primaryLight.withValues(alpha: 0.5) : const Color(0xFF2D7D3C).withValues(alpha: 0.5), 
+                    color: isDark ? AppColors.primaryLight.withValues(alpha: 0.5) : const Color(0xFF2D7D3C).withValues(alpha: 0.5),
                     width: 2
                   ),
                   boxShadow: [
@@ -792,6 +923,115 @@ class _EditProfileScreenState extends State<EditProfileScreen>
     );
   }
 
+  // PROFILE-8: same card shape again, for Date of Birth/Gender — both now
+  // genuinely editable (unlike the reference mockup's own lock-icon
+  // treatment, which described the state before this phase, not the ask).
+  // [isSaving] shows a small spinner in place of the CHANGE label for DOB's
+  // own immediate-save round trip; gender has no such state since it saves
+  // together with the rest of the form on the main Save button.
+  Widget _buildEditableFieldCard({
+    required String label,
+    required IconData icon,
+    required String value,
+    required String placeholder,
+    required bool isDark,
+    required VoidCallback onChange,
+    bool isSaving = false,
+  }) {
+    final tileColor = isDark ? AppColors.primaryLight : const Color(0xFF2D7D3C);
+    final hasValue = value.trim().isNotEmpty;
+
+    return Container(
+      margin: const EdgeInsets.only(bottom: 10),
+      decoration: BoxDecoration(
+        color: isDark ? const Color(0xFF1E1E1E) : Colors.white,
+        borderRadius: BorderRadius.circular(14),
+        border: Border.all(color: isDark ? Colors.grey[800]! : Colors.grey.shade200),
+        boxShadow: [
+          BoxShadow(
+            color: Colors.black.withValues(alpha: isDark ? 0.3 : 0.02),
+            blurRadius: 8,
+            offset: const Offset(0, 2),
+          ),
+        ],
+      ),
+      child: Material(
+        color: Colors.transparent,
+        child: InkWell(
+          onTap: isSaving ? null : onChange,
+          borderRadius: BorderRadius.circular(14),
+          child: Padding(
+            padding: const EdgeInsets.fromLTRB(14, 8, 14, 8),
+            child: Row(
+              children: [
+                Container(
+                  width: 44,
+                  height: 44,
+                  decoration: BoxDecoration(
+                    color: tileColor.withValues(alpha: 0.1),
+                    borderRadius: BorderRadius.circular(12),
+                  ),
+                  child: Icon(icon, color: tileColor, size: 22),
+                ),
+                const SizedBox(width: 14),
+                Expanded(
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      Text(
+                        label,
+                        style: TextStyle(
+                          fontSize: 12,
+                          color: isDark ? Colors.grey[400] : Colors.grey[600],
+                          fontWeight: FontWeight.w500,
+                        ),
+                      ),
+                      const SizedBox(height: 2),
+                      Text(
+                        hasValue ? value : placeholder,
+                        style: TextStyle(
+                          fontSize: 14,
+                          fontWeight: FontWeight.w700,
+                          color: hasValue
+                              ? (isDark ? Colors.white : Colors.black87)
+                              : (isDark ? Colors.grey[600] : Colors.grey[400]),
+                        ),
+                        maxLines: 1,
+                        overflow: TextOverflow.ellipsis,
+                      ),
+                    ],
+                  ),
+                ),
+                if (isSaving)
+                  SizedBox(
+                    width: 16,
+                    height: 16,
+                    child: CircularProgressIndicator(strokeWidth: 2, color: tileColor),
+                  )
+                else
+                  Icon(Icons.chevron_right_rounded, color: isDark ? Colors.grey[600] : Colors.grey[400]),
+              ],
+            ),
+          ),
+        ),
+      ),
+    );
+  }
+
+  String _formatDate(DateTime d) {
+    const months = [
+      'January', 'February', 'March', 'April', 'May', 'June',
+      'July', 'August', 'September', 'October', 'November', 'December',
+    ];
+    return '${d.day} ${months[d.month - 1]} ${d.year}';
+  }
+
+  String _genderLabel(String? value) {
+    if (value == null) return '';
+    return _genderOptions
+        .firstWhere((o) => o['value'] == value, orElse: () => const {'label': ''})['label']!;
+  }
+
   // --- End New Widgets ---
 
   @override
@@ -800,7 +1040,7 @@ class _EditProfileScreenState extends State<EditProfileScreen>
     final isDark = themeProvider.isDarkMode;
 
     return Scaffold(
-      backgroundColor: isDark ? const Color(0xFF121212) : Colors.grey[50],
+      backgroundColor: isDark ? const Color(0xFF121212) : const Color(0xFFF5F5F5),
       body: Stack(
         children: [
           FadeTransition(
@@ -810,8 +1050,8 @@ class _EditProfileScreenState extends State<EditProfileScreen>
               child: CustomScrollView(
                 physics: const BouncingScrollPhysics(),
                 slivers: [
-                  SliverToBoxAdapter(child: _buildCompactHeader(isDark)),
-                  
+                  SliverToBoxAdapter(child: _buildHeroHeader(isDark)),
+
                   SliverToBoxAdapter(child: _buildAvatarSection(isDark)),
 
                   SliverToBoxAdapter(
@@ -824,7 +1064,7 @@ class _EditProfileScreenState extends State<EditProfileScreen>
                           crossAxisAlignment: CrossAxisAlignment.start,
                           children: [
                             Text(
-                              'Your Information',
+                              'Personal Information',
                               style: TextStyle(
                                 fontSize: 12,
                                 fontWeight: FontWeight.w800,
@@ -882,6 +1122,35 @@ class _EditProfileScreenState extends State<EditProfileScreen>
                                 }
                               },
                             ),
+                            const SizedBox(height: 16),
+
+                            Text(
+                              'Personal Details',
+                              style: TextStyle(
+                                fontSize: 12,
+                                fontWeight: FontWeight.w800,
+                                color: isDark ? Colors.grey[400] : Colors.grey[700],
+                                letterSpacing: 0.5,
+                              ),
+                            ),
+                            const SizedBox(height: 10),
+                            _buildEditableFieldCard(
+                              label: 'Date of Birth',
+                              icon: Icons.cake_outlined,
+                              value: _dateOfBirth != null ? _formatDate(_dateOfBirth!) : '',
+                              placeholder: 'Add date of birth',
+                              isDark: isDark,
+                              isSaving: _isSavingDateOfBirth,
+                              onChange: _pickDateOfBirth,
+                            ),
+                            _buildEditableFieldCard(
+                              label: 'Gender',
+                              icon: Icons.wc_rounded,
+                              value: _genderLabel(_gender),
+                              placeholder: 'Add gender',
+                              isDark: isDark,
+                              onChange: () => _pickGender(isDark),
+                            ),
                             const SizedBox(height: 24),
 
                             // Save Button
@@ -916,15 +1185,15 @@ class _EditProfileScreenState extends State<EditProfileScreen>
                                       children: [
                                         if (_isLoading || _isUploadingImage)
                                           const SizedBox(
-                                            width: 18, 
-                                            height: 18, 
+                                            width: 18,
+                                            height: 18,
                                             child: CircularProgressIndicator(strokeWidth: 2, color: Colors.white)
                                           )
                                         else
                                           const Icon(Icons.check_circle_outline_rounded, color: Colors.white, size: 18),
-                                        
+
                                         const SizedBox(width: 10),
-                                        
+
                                         Text(
                                           _isUploadingImage ? 'Uploading...' : (_isLoading ? 'Saving...' : 'Save Changes'),
                                           style: const TextStyle(

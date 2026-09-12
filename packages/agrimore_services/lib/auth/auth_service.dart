@@ -817,6 +817,34 @@ class AuthService {
     }
   }
 
+  /// Changes the caller's OWN date of birth via the changeDateOfBirth
+  /// callable. Unlike phone/email there is no OTP to prove a birthdate —
+  /// the server-side safeguard is re-validating the same 18+ age bound
+  /// completeUserProfile.ts enforces at signup, not a verification marker.
+  /// firestore.rules blanket-blocks a client from writing this field
+  /// directly at any value (Phase 16, Workstream 5) — this callable is the
+  /// one authorised, Admin-SDK path around that block. Returns the
+  /// refreshed UserModel on success.
+  Future<UserModel> changeDateOfBirth({required DateTime dateOfBirth}) async {
+    final user = currentUser;
+    if (user == null) throw UnauthorizedException();
+
+    try {
+      final callable = FirebaseFunctions.instance.httpsCallable('changeDateOfBirth');
+      await callable.call<Map<String, dynamic>>({
+        'dateOfBirth': dateOfBirth.toIso8601String(),
+      });
+
+      final updated = await getUserData(user.uid);
+      await _savePersistentSession(updated);
+      return updated;
+    } on FirebaseFunctionsException catch (e) {
+      throw AuthException(e.message ?? 'Failed to update date of birth');
+    } catch (e) {
+      throw AuthException('Failed to update date of birth: ${e.toString()}');
+    }
+  }
+
   /// Firestore `settings/access` field `adminEmails` (list of strings), lowercased.
   Future<Set<String>> _adminAllowlistEmailsLower() async {
     try {

@@ -570,6 +570,34 @@ class AuthProvider with ChangeNotifier {
     }
   }
 
+  /// PROFILE-8: dateOfBirth has no client-side write path — firestore.rules
+  /// blocks it outright regardless of value — so this goes through the
+  /// changeDateOfBirth callable (Admin SDK) rather than updateUserProfile's
+  /// plain Firestore write, unlike name/gender/photo below.
+  Future<bool> changeDateOfBirth({required DateTime dateOfBirth}) async {
+    try {
+      _isLoading = true;
+      _error = null;
+      notifyListeners();
+
+      _currentUser = await _authService.changeDateOfBirth(dateOfBirth: dateOfBirth);
+
+      _isLoading = false;
+      notifyListeners();
+      return true;
+    } on AuthException catch (e) {
+      _error = e.message;
+      _isLoading = false;
+      notifyListeners();
+      return false;
+    } catch (e) {
+      _error = e.toString().replaceAll('Exception: ', '');
+      _isLoading = false;
+      notifyListeners();
+      return false;
+    }
+  }
+
   // ============================================
   // SIGN IN WITH GOOGLE
   // ============================================
@@ -748,6 +776,10 @@ class AuthProvider with ChangeNotifier {
     String? name,
     String? phone,
     String? photoUrl,
+    // PROFILE-8: gender, unlike dateOfBirth, has no rules block — the
+    // plain full-object Firestore write below is a legitimate path for it
+    // (see firestore.rules' ownerCannotChangePrivilegedFields() comment).
+    String? gender,
   }) async {
     try {
       _isLoading = true;
@@ -768,6 +800,7 @@ class AuthProvider with ChangeNotifier {
         name: name ?? _currentUser!.name,
         phone: phone ?? _currentUser!.phone,
         photoUrl: photoUrl ?? _currentUser!.photoUrl,
+        gender: gender ?? _currentUser!.gender,
       );
 
       // Update in Firestore
