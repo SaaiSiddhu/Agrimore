@@ -111,25 +111,17 @@ class _DynamicCategorySectionsState extends State<DynamicCategorySections> {
       sections.add(categories.sublist(i, end));
     }
 
-    const fallbackTitles = [
-      'Grocery & Kitchen',
-      'Snacks & Drinks',
-      'Beauty & Personal Care',
-      'Household Essentials',
-      'Baby & Kids',
-      'More Categories',
-    ];
-
+    // HOME-8: this chunk's categories are a positional slice (skip, then
+    // group by 8) with no relationship to any specific theme, so every
+    // section gets the same honest, generic title -- the same default this
+    // code already used for any chunk past a fixed content-guessed list.
+    // Naming a chunk "Grocery & Kitchen" when it happens to contain
+    // Electronics/Toys/Books is exactly the hardcoded-false-content problem
+    // this whole Home-CMS programme exists to remove.
     return Column(
-      children: sections.asMap().entries.map((entry) {
-        final sectionIndex = entry.key;
-        final sectionCategories = entry.value;
-        final title = sectionIndex < fallbackTitles.length
-            ? fallbackTitles[sectionIndex]
-            : 'More Categories';
-
+      children: sections.map((sectionCategories) {
         return _FallbackCategorySection(
-          title: title,
+          title: 'More Categories',
           categories: sectionCategories,
           categoryTree: categoryTree,
           productProvider: productProvider,
