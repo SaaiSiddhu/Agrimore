@@ -926,7 +926,20 @@ class _ProfileScreenState extends State<ProfileScreen> {
             child: Column(
               mainAxisSize: MainAxisSize.min,
               children: [
-                Image.asset(iconAsset, width: 46, height: 46),
+                // ClipOval, not just Image.asset: Wishlist_Icon.png is the
+                // one PNG of the four saved without an alpha channel (`file`
+                // confirms RGB, its three siblings are all RGBA) — its
+                // corners are opaque white rather than transparent, which
+                // was invisible on white light-mode cards but showed as a
+                // stray white square on dark-mode cards. The clip is safe
+                // for all four regardless of alpha: each drawn circle sits
+                // well inside its own canvas with margin to spare, so the
+                // largest circle inscribed in the square can never cut into
+                // the artwork itself — confirmed by inspecting all four
+                // before relying on it.
+                ClipOval(
+                  child: Image.asset(iconAsset, width: 46, height: 46),
+                ),
                 const SizedBox(height: 6),
                 Text(
                   label,
