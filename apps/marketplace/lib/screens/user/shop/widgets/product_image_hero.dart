@@ -176,6 +176,11 @@ class _ProductImageHeroState extends State<ProductImageHero> {
               : CachedNetworkImage(
                   imageUrl: imageUrl,
                   fit: BoxFit.contain,
+                  // PERF-1: this is the full-bleed product hero image
+                  // (350dp tall, full device width) — without a decode-size
+                  // hint, the source decodes at its full native resolution,
+                  // often several MB straight off a seller's camera.
+                  memCacheWidth: 800,
                   placeholder: (context, url) => loaderWidget,
                   errorWidget: (context, url, error) => errorWidget,
                 ),
@@ -222,6 +227,8 @@ class _ProductImageHeroState extends State<ProductImageHero> {
                   : CachedNetworkImage(
                       imageUrl: images[index],
                       fit: BoxFit.contain,
+                      // PERF-1: this thumbnail is 56x56 logical px.
+                      memCacheWidth: 120,
                       errorWidget: (_, __, ___) => const Icon(Icons.broken_image_outlined, size: 18),
                     ),
             ),

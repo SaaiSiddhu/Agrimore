@@ -176,6 +176,9 @@ class _BannerItem extends StatelessWidget {
           CachedNetworkImage(
             imageUrl: banner.imageUrl,
             fit: BoxFit.cover,
+            // PERF-1: full-width mid-feed banner — see banner_slider.dart's
+            // identical fix for why this hint matters.
+            memCacheWidth: 800,
             placeholder: (_, __) => Container(
               color: isDark ? Colors.grey[900] : Colors.grey[200],
               child: const Center(

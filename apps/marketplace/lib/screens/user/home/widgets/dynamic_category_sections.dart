@@ -380,6 +380,10 @@ class _EnhancedCategoryTileState extends State<_EnhancedCategoryTile> {
                           fit: BoxFit.cover,
                           width: double.infinity,
                           height: double.infinity,
+                          // PERF-1: this is a small compact category tile;
+                          // without a decode-size hint, the source decodes
+                          // at full native resolution.
+                          memCacheWidth: 200,
                           placeholder: (context, url) => _buildLargeIcon(),
                           errorWidget: (context, url, error) =>
                               _buildLargeIcon(),
