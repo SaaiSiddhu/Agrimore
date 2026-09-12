@@ -279,9 +279,15 @@ class _MobileHomeScreenState extends State<MobileHomeScreen>
       }
       if (permission == LocationPermission.deniedForever) return;
 
+      // PERF-2: was `.high`/10s — this is a "which city" resolution (same
+      // job as HomeAppBar's own, faster `.low`/4s call), not turn-by-turn
+      // navigation; `.high` accuracy makes the OS work harder for a GPS fix
+      // this doesn't need, purely adding wait. This call itself never gates
+      // any visible UI (fire-and-forget from its own caller), but there is
+      // no reason for it to run any slower than the one that does.
       Position position = await Geolocator.getCurrentPosition(
-        desiredAccuracy: LocationAccuracy.high,
-        timeLimit: const Duration(seconds: 10),
+        desiredAccuracy: LocationAccuracy.low,
+        timeLimit: const Duration(seconds: 4),
       );
 
       List<Placemark> placemarks =

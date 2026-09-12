@@ -18,6 +18,18 @@ import '../../../../providers/auth_provider.dart' as app_auth;
 import '../../profile/profile_screen.dart';
 import 'address_bottom_sheet.dart';
 
+// PERF-2: was 10 seconds — a bare GPS-fix wait this long, with no fallback
+// already shown, is what produced "minimum 10 seconds" on Home: this runs
+// unconditionally on every Home mount whenever there's no cached last-known
+// position (fresh install, emulator/simulator, location just enabled), and
+// the app bar's own "Detecting location..."/"Checking delivery time..."
+// text — the first, most prominent thing on the screen — sits there for the
+// full wait. This is a "which city" check, not turn-by-turn navigation, so a
+// shorter cap trades a little location precision for a lot of perceived
+// speed; Geolocator.getLastKnownPosition() is still tried first and covers
+// the common case instantly regardless of this constant.
+const Duration _kLocationFixTimeout = Duration(seconds: 4);
+
 class HomeAppBar extends StatefulWidget {
   // 0.0 = fully expanded (top row + search bar), 1.0 = fully collapsed (only
   // the pinned search bar). Driven continuously by scroll offset via
@@ -103,7 +115,7 @@ class _HomeAppBarState extends State<HomeAppBar> {
       if (pos == null) {
         pos = await Geolocator.getCurrentPosition(
           desiredAccuracy: LocationAccuracy.low,
-          timeLimit: const Duration(seconds: 10),
+          timeLimit: _kLocationFixTimeout,
         );
       }
 
@@ -159,7 +171,7 @@ class _HomeAppBarState extends State<HomeAppBar> {
               'https://maps.googleapis.com/maps/api/geocode/json?latlng=${pos.latitude},${pos.longitude}&key=$apiKey&language=en';
           final response = await http
               .get(Uri.parse(url))
-              .timeout(const Duration(seconds: 10));
+              .timeout(_kLocationFixTimeout);
 
           if (response.statusCode == 200) {
             final data = jsonDecode(response.body);
