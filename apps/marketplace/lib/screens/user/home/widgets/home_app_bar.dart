@@ -11,6 +11,7 @@ import 'dart:convert';
 import '../../../../app/routes.dart';
 import '../../../../providers/theme_provider.dart';
 import '../../../../providers/address_provider.dart';
+import '../../../../providers/location_settings_provider.dart';
 import '../../../../providers/wallet_provider.dart';
 import '../../../../providers/market_mode_provider.dart';
 import '../../../../providers/auth_provider.dart' as app_auth;
@@ -33,6 +34,10 @@ class HomeAppBar extends StatefulWidget {
 class _HomeAppBarState extends State<HomeAppBar> {
   // Auto-location state (fallback only if no saved addresses)
   String _autoLocationText = '';
+  // Clean city only (no sub-locality), for matching against the admin's
+  // serviceable-location list — HOME-2. Kept separate from
+  // _autoLocationText, which is a combined display string.
+  String? _autoDetectedCity;
   bool _isLoadingAutoLocation = true;
   bool _isMounted = true;
 
@@ -43,6 +48,8 @@ class _HomeAppBarState extends State<HomeAppBar> {
     WidgetsBinding.instance.addPostFrameCallback((_) {
       if (mounted) {
         Provider.of<AddressProvider>(context, listen: false).loadAddresses();
+        Provider.of<LocationSettingsProvider>(context, listen: false)
+            .loadSettings();
       }
     });
     // Also get auto-location as fallback
@@ -126,6 +133,9 @@ class _HomeAppBarState extends State<HomeAppBar> {
 
           _safeSyncState(() {
             _autoLocationText = locationText;
+            _autoDetectedCity = locality.isNotEmpty
+                ? locality
+                : (district.isNotEmpty ? district : adminArea);
             _isLoadingAutoLocation = false;
           });
           await _saveLocationTargeting(
@@ -187,6 +197,8 @@ class _HomeAppBarState extends State<HomeAppBar> {
 
               _safeSyncState(() {
                 _autoLocationText = locationText;
+                _autoDetectedCity =
+                    locality.isNotEmpty ? locality : adminArea;
                 _isLoadingAutoLocation = false;
               });
               await _saveLocationTargeting(
@@ -302,71 +314,95 @@ class _HomeAppBarState extends State<HomeAppBar> {
         children: [
           // Left: "Agrimore in" / "30 minutes" / address
           Expanded(
-            child: Column(
-              mainAxisSize: MainAxisSize.min,
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                Text(
-                  isB2B ? 'Agrimore B2B in' : 'Agrimore in',
-                  style: TextStyle(
-                    fontSize: 11,
-                    fontWeight: FontWeight.w700,
-                    color: Colors.white.withValues(alpha: 0.85),
-                  ),
-                ),
-                const SizedBox(height: 1),
-                Text(
-                  isB2B ? 'Bulk Freight' : '30 minutes',
-                  style: const TextStyle(
-                    fontSize: 21,
-                    fontWeight: FontWeight.w900,
-                    color: Colors.white,
-                    letterSpacing: -0.5,
-                    height: 1.0,
-                  ),
-                ),
-                const SizedBox(height: 5),
-                // Location - Prioritizes saved address, falls back to auto-detected
-                Consumer<AddressProvider>(
-                  builder: (context, addressProvider, _) {
-                    final hasSavedAddress =
-                        addressProvider.addresses.isNotEmpty;
-                    final defaultAddress = hasSavedAddress
-                        ? addressProvider.addresses.firstWhere(
-                            (a) => a.isDefault,
-                            orElse: () => addressProvider.addresses.first,
-                          )
-                        : null;
+            child: Consumer<AddressProvider>(
+              builder: (context, addressProvider, _) {
+                final hasSavedAddress = addressProvider.addresses.isNotEmpty;
+                final defaultAddress = hasSavedAddress
+                    ? addressProvider.addresses.firstWhere(
+                        (a) => a.isDefault,
+                        orElse: () => addressProvider.addresses.first,
+                      )
+                    : null;
 
-                    // Priority: 1. Saved/Selected address, 2. Auto-detected, 3. Fallback
-                    String label;
-                    String addressText;
+                // Priority: 1. Saved/Selected address, 2. Auto-detected, 3. Fallback
+                String label;
+                String addressText;
 
-                    if (hasSavedAddress && defaultAddress != null) {
-                      final rawLabel = defaultAddress.addressType?.trim() ?? '';
-                      label = rawLabel.isNotEmpty ? rawLabel.toUpperCase() : 'SAVED';
-                      final parts = <String>[
-                        if (defaultAddress.addressLine1.isNotEmpty)
-                          defaultAddress.addressLine1,
-                        if (defaultAddress.addressLine2.isNotEmpty)
-                          defaultAddress.addressLine2,
-                        if (defaultAddress.city.isNotEmpty) defaultAddress.city,
-                      ];
-                      addressText = parts.isNotEmpty
-                          ? parts.join(', ')
-                          : defaultAddress.fullAddress;
-                    } else if (_autoLocationText.isNotEmpty) {
-                      label = 'CURRENT';
-                      addressText = _autoLocationText;
-                    } else if (_isLoadingAutoLocation) {
-                      label = '';
-                      addressText = 'Detecting location...';
-                    } else {
-                      label = '';
-                      addressText = 'Set delivery location';
-                    }
+                if (hasSavedAddress && defaultAddress != null) {
+                  final rawLabel = defaultAddress.addressType?.trim() ?? '';
+                  label = rawLabel.isNotEmpty ? rawLabel.toUpperCase() : 'SAVED';
+                  final parts = <String>[
+                    if (defaultAddress.addressLine1.isNotEmpty)
+                      defaultAddress.addressLine1,
+                    if (defaultAddress.addressLine2.isNotEmpty)
+                      defaultAddress.addressLine2,
+                    if (defaultAddress.city.isNotEmpty) defaultAddress.city,
+                  ];
+                  addressText = parts.isNotEmpty
+                      ? parts.join(', ')
+                      : defaultAddress.fullAddress;
+                } else if (_autoLocationText.isNotEmpty) {
+                  label = 'CURRENT';
+                  addressText = _autoLocationText;
+                } else if (_isLoadingAutoLocation) {
+                  label = '';
+                  addressText = 'Detecting location...';
+                } else {
+                  label = '';
+                  addressText = 'Set delivery location';
+                }
 
-                    return GestureDetector(
+                // Same resolution priority as the address text above:
+                // saved default address's city first, else the
+                // auto-detected clean city — HOME-2, replacing the
+                // hardcoded '30 minutes'.
+                final resolvedCity = (hasSavedAddress &&
+                        defaultAddress != null &&
+                        defaultAddress.city.isNotEmpty)
+                    ? defaultAddress.city
+                    : _autoDetectedCity;
+                final locationSettings =
+                    context.watch<LocationSettingsProvider>();
+                final String etaLine;
+                if (isB2B) {
+                  etaLine = 'Bulk Freight';
+                } else if (resolvedCity == null || resolvedCity.isEmpty) {
+                  etaLine = _isLoadingAutoLocation
+                      ? 'Checking delivery time...'
+                      : 'Select location';
+                } else if (locationSettings.isServiceable(resolvedCity)) {
+                  etaLine = locationSettings.etaTextFor(resolvedCity);
+                } else {
+                  etaLine = locationSettings.unserviceableText;
+                }
+
+                return Column(
+                  mainAxisSize: MainAxisSize.min,
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Text(
+                      isB2B ? 'Agrimore B2B in' : 'Agrimore in',
+                      style: TextStyle(
+                        fontSize: 11,
+                        fontWeight: FontWeight.w700,
+                        color: Colors.white.withValues(alpha: 0.85),
+                      ),
+                    ),
+                    const SizedBox(height: 1),
+                    Text(
+                      etaLine,
+                      maxLines: 1,
+                      overflow: TextOverflow.ellipsis,
+                      style: const TextStyle(
+                        fontSize: 21,
+                        fontWeight: FontWeight.w900,
+                        color: Colors.white,
+                        letterSpacing: -0.5,
+                        height: 1.0,
+                      ),
+                    ),
+                    const SizedBox(height: 5),
+                    GestureDetector(
                       onTap: () => AddressBottomSheet.show(context),
                       child: Row(
                         children: [
@@ -405,10 +441,10 @@ class _HomeAppBarState extends State<HomeAppBar> {
                           ),
                         ],
                       ),
-                    );
-                  },
-                ),
-              ],
+                    ),
+                  ],
+                );
+              },
             ),
           ),
           const SizedBox(width: 10),
