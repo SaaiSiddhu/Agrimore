@@ -331,7 +331,7 @@ class _LoginScreenState extends State<LoginScreen> {
         // lift off the photo behind it rather than blend into an adjacent
         // flat background.
         boxShadow: [
-          BoxShadow(color: Color(0x1F000000), blurRadius: 28, offset: Offset(0, -8)),
+          BoxShadow(color: AppColors.shadowLight, blurRadius: 28, offset: Offset(0, -8)),
         ],
       ),
       // Sized to its own content (mainAxisSize.min), not stretched to fill a
