@@ -90,7 +90,11 @@ class BannerProvider with ChangeNotifier {
           ai.iconName != bi.iconName ||
           ai.colorHex != bi.colorHex ||
           ai.isActive != bi.isActive ||
-          ai.priority != bi.priority) {
+          ai.priority != bi.priority ||
+          ai.placement != bi.placement ||
+          ai.categoryId != bi.categoryId ||
+          ai.startsAt != bi.startsAt ||
+          ai.endsAt != bi.endsAt) {
         return false;
       }
     }
@@ -140,6 +144,10 @@ class BannerProvider with ChangeNotifier {
     String? targetRoute,
     required String colorHex,
     required int priority,
+    String placement = BannerModel.placementHomeHero,
+    String? categoryId,
+    DateTime? startsAt,
+    DateTime? endsAt,
   }) async {
     try {
       final imageUrl = await uploadImageFile(imageFile);
@@ -154,6 +162,10 @@ class BannerProvider with ChangeNotifier {
         'isActive': true,
         'priority': priority,
         'createdAt': FieldValue.serverTimestamp(),
+        'placement': placement,
+        'categoryId': categoryId,
+        'startsAt': startsAt != null ? Timestamp.fromDate(startsAt) : null,
+        'endsAt': endsAt != null ? Timestamp.fromDate(endsAt) : null,
       });
     } catch (e) {
       debugPrint('Error creating banner: $e');
@@ -169,6 +181,10 @@ class BannerProvider with ChangeNotifier {
     String? targetRoute,
     required String colorHex,
     required int priority,
+    String placement = BannerModel.placementHomeHero,
+    String? categoryId,
+    DateTime? startsAt,
+    DateTime? endsAt,
   }) async {
     try {
       await _firestore.collection('banners').add({
@@ -181,6 +197,10 @@ class BannerProvider with ChangeNotifier {
         'isActive': true,
         'priority': priority,
         'createdAt': FieldValue.serverTimestamp(),
+        'placement': placement,
+        'categoryId': categoryId,
+        'startsAt': startsAt != null ? Timestamp.fromDate(startsAt) : null,
+        'endsAt': endsAt != null ? Timestamp.fromDate(endsAt) : null,
       });
     } catch (e) {
       debugPrint('Error creating banner: $e');
