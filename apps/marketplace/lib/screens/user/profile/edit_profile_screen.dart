@@ -59,6 +59,20 @@ class _EditProfileScreenState extends State<EditProfileScreen>
   late AnimationController _avatarController;
   late Animation<double> _avatarScale;
 
+  // PROFILE-11: same sticky-header mechanism as profile_screen.dart's own
+  // SliverAppBar(pinned: true) — a real pinned app bar driven by scroll
+  // offset, not a separate look-alike. The collapsed title fades in via
+  // this same (offset/150).clamp(0,1) math as the hero scrolls under it.
+  final ScrollController _scrollController = ScrollController();
+  double _headerCollapse = 0.0;
+
+  void _onScroll() {
+    final progress = (_scrollController.offset / 150).clamp(0.0, 1.0);
+    if (progress != _headerCollapse) {
+      setState(() => _headerCollapse = progress);
+    }
+  }
+
   XFile? _pickedImage;
   String? _photoUrl;
   bool _isLoading = false;
@@ -79,6 +93,7 @@ class _EditProfileScreenState extends State<EditProfileScreen>
   @override
   void initState() {
     super.initState();
+    _scrollController.addListener(_onScroll);
 
     _animationController = AnimationController(
       vsync: this,
@@ -180,6 +195,8 @@ class _EditProfileScreenState extends State<EditProfileScreen>
 
   @override
   void dispose() {
+    _scrollController.removeListener(_onScroll);
+    _scrollController.dispose();
     _nameController.dispose();
     _phoneController.dispose();
     _emailController.dispose();
@@ -578,97 +595,97 @@ class _EditProfileScreenState extends State<EditProfileScreen>
 
   // --- New Widgets matching Profile Screen ---
 
-  // PROFILE-8 replaced the old green-gradient bar with this photo
-  // (profile_bg.png) + floating circular back button, matching Profile
-  // screen's own header. PROFILE-10 adds the reference mockup's own
-  // decorative touches literally (the "AgriMore" wordmark lockup) rather
-  // than the deliberately-plain PROFILE-3 reading of a prior pass.
-  Widget _buildHeroHeader(bool isDark) {
-    return SizedBox(
-      height: 180,
-      child: Stack(
-        fit: StackFit.expand,
-        children: [
-          Image.asset('assets/images/Profile/profile_bg.png', fit: BoxFit.cover),
-          if (isDark) Container(color: Colors.black.withValues(alpha: 0.55)),
-          SafeArea(
-            bottom: false,
-            child: Padding(
-              padding: const EdgeInsets.fromLTRB(16, 8, 16, 16),
-              child: Column(
-                crossAxisAlignment: CrossAxisAlignment.start,
-                children: [
-                  Row(
+  // PROFILE-11: ported verbatim from profile_screen.dart's own
+  // _buildHeaderSliver — a real SliverAppBar(pinned: true) + FlexibleSpaceBar
+  // driven by _headerCollapse, not a look-alike. The back button stays
+  // pinned at a fixed size in `leading` (same 36dp translucent circle
+  // Profile uses) while the hero (photo + "Edit Profile" title/subtitle)
+  // lives in flexibleSpace and scrolls away underneath it; the collapsed
+  // title fades in via the same Opacity(opacity: headerCollapse) Profile
+  // uses, showing "Edit Profile" in the pinned bar exactly the way Profile
+  // shows "Profile". The AgriMore wordmark pill PROFILE-10 added is gone —
+  // Profile's own header carries no such lockup either (see that file's own
+  // PROFILE-3 comment: "the AgriMore wordmark is gone").
+  Widget _buildHeaderSliver(bool isDark) {
+    const heroHeight = 180.0;
+    return SliverAppBar(
+      pinned: true,
+      elevation: 0,
+      expandedHeight: heroHeight,
+      backgroundColor: isDark ? const Color(0xFF121212) : const Color(0xFFF5F5F5),
+      surfaceTintColor: Colors.transparent,
+      leading: Padding(
+        padding: const EdgeInsets.all(8),
+        child: GestureDetector(
+          onTap: (_isLoading || _isUploadingImage) ? null : () => Navigator.pop(context),
+          child: Container(
+            width: 36,
+            height: 36,
+            decoration: BoxDecoration(
+              shape: BoxShape.circle,
+              color: Colors.white.withValues(alpha: 0.92),
+              boxShadow: [
+                BoxShadow(color: Colors.black.withValues(alpha: 0.15), blurRadius: 6, offset: const Offset(0, 2)),
+              ],
+            ),
+            child: const Icon(Icons.arrow_back_rounded, size: 20, color: Colors.black87),
+          ),
+        ),
+      ),
+      centerTitle: false,
+      titleSpacing: 4,
+      title: Opacity(
+        opacity: _headerCollapse,
+        child: Text(
+          'Edit Profile',
+          style: TextStyle(
+            color: isDark ? Colors.white : Colors.black87,
+            fontSize: 18,
+            fontWeight: FontWeight.w700,
+          ),
+        ),
+      ),
+      flexibleSpace: FlexibleSpaceBar(
+        background: Stack(
+          fit: StackFit.expand,
+          children: [
+            Image.asset('assets/images/Profile/profile_bg.png', fit: BoxFit.cover),
+            if (isDark) Container(color: Colors.black.withValues(alpha: 0.55)),
+            Positioned(
+              top: 0,
+              left: 0,
+              right: 0,
+              child: SafeArea(
+                bottom: false,
+                child: Padding(
+                  padding: const EdgeInsets.fromLTRB(16, kToolbarHeight - 4, 16, 12),
+                  child: Column(
                     crossAxisAlignment: CrossAxisAlignment.start,
+                    mainAxisAlignment: MainAxisAlignment.end,
                     children: [
-                      GestureDetector(
-                        onTap: (_isLoading || _isUploadingImage)
-                            ? null
-                            : () => Navigator.pop(context),
-                        child: Container(
-                          width: 36,
-                          height: 36,
-                          decoration: BoxDecoration(
-                            shape: BoxShape.circle,
-                            color: Colors.white.withValues(alpha: 0.92),
-                            boxShadow: [
-                              BoxShadow(
-                                color: Colors.black.withValues(alpha: 0.15),
-                                blurRadius: 6,
-                                offset: const Offset(0, 2),
-                              ),
-                            ],
-                          ),
-                          child: const Icon(Icons.arrow_back_rounded, size: 20, color: Colors.black87),
+                      Text(
+                        'Edit Profile',
+                        style: TextStyle(
+                          color: isDark ? Colors.white : Colors.black87,
+                          fontSize: 22,
+                          fontWeight: FontWeight.w800,
                         ),
                       ),
-                      const Spacer(),
-                      Container(
-                        padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 6),
-                        decoration: BoxDecoration(
-                          color: Colors.white.withValues(alpha: 0.85),
-                          borderRadius: BorderRadius.circular(20),
-                        ),
-                        child: Row(
-                          mainAxisSize: MainAxisSize.min,
-                          children: [
-                            Image.asset('assets/icons/logo_icon.png', width: 16, height: 16),
-                            const SizedBox(width: 6),
-                            const Text(
-                              'AgriMore',
-                              style: TextStyle(
-                                fontSize: 12.5,
-                                fontWeight: FontWeight.w800,
-                                color: Colors.black87,
-                              ),
-                            ),
-                          ],
+                      const SizedBox(height: 2),
+                      Text(
+                        'Keep your information up to date',
+                        style: TextStyle(
+                          color: isDark ? Colors.white70 : Colors.black54,
+                          fontSize: 12.5,
                         ),
                       ),
                     ],
                   ),
-                  const Spacer(),
-                  Text(
-                    'Edit Profile',
-                    style: TextStyle(
-                      color: isDark ? Colors.white : Colors.black87,
-                      fontSize: 22,
-                      fontWeight: FontWeight.w800,
-                    ),
-                  ),
-                  const SizedBox(height: 2),
-                  Text(
-                    'Keep your information up to date',
-                    style: TextStyle(
-                      color: isDark ? Colors.white70 : Colors.black54,
-                      fontSize: 12.5,
-                    ),
-                  ),
-                ],
+                ),
               ),
             ),
-          ),
-        ],
+          ],
+        ),
       ),
     );
   }
@@ -1207,9 +1224,10 @@ class _EditProfileScreenState extends State<EditProfileScreen>
             child: SlideTransition(
               position: _slideAnimation,
               child: CustomScrollView(
-                physics: const BouncingScrollPhysics(),
+                controller: _scrollController,
+                physics: const ClampingScrollPhysics(),
                 slivers: [
-                  SliverToBoxAdapter(child: _buildHeroHeader(isDark)),
+                  _buildHeaderSliver(isDark),
 
                   SliverToBoxAdapter(child: _buildAvatarSection(isDark)),
 
