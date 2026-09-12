@@ -65,6 +65,10 @@ dependencies:
   # Image Handling
   image_picker: ^1.1.2
   image_picker_web: ^4.0.0
+  # Used directly by several screens (categories_screen.dart and its new
+  # widgets/, product/category cards elsewhere) but was only resolving
+  # transitively until now — same fix as the geolocator/geocoding move above.
+  cached_network_image: ^3.4.1
 
   # Sharing
   share_plus: ^10.1.2
