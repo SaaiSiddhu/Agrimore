@@ -12,10 +12,12 @@ import '../../../../providers/theme_provider.dart';
 
 class SectionBannerCarousel extends StatefulWidget {
   final int afterSection; // Which section this carousel appears after
-  
+  final String pageScope; // Which screen this carousel reads banners for
+
   const SectionBannerCarousel({
     super.key,
     required this.afterSection,
+    this.pageScope = SectionBannerModel.pageScopeHome,
   });
 
   @override
@@ -80,7 +82,10 @@ class _SectionBannerCarouselState extends State<SectionBannerCarousel> {
     
     return Consumer<SectionBannerProvider>(
       builder: (context, provider, _) {
-        final banners = provider.getBannersAfterSection(widget.afterSection);
+        final banners = provider.getBannersAfterSection(
+          widget.afterSection,
+          pageScope: widget.pageScope,
+        );
         
         if (banners.isEmpty) return const SizedBox.shrink();
         
