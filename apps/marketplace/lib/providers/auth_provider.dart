@@ -616,6 +616,121 @@ class AuthProvider with ChangeNotifier {
   }
 
   // ============================================
+  // AUTH-3: GOOGLE AS A PHONE-VERIFICATION-GATED LINKED PROVIDER
+  // ============================================
+  // Thin wrappers over AuthService's own additive methods, mirroring the
+  // existing signInWithGoogle()/verifyPhoneOTP() pattern above: set
+  // loading/error, delegate, update _currentUser, notify. The screen owns
+  // which sheet state to show (phone / OTP / google-needs-phone) — this
+  // provider only ever holds the RESULT of each step, never that UI state,
+  // matching how phone/OTP already divide the work between login_screen.dart
+  // and this class.
+
+  /// Acquires a Google credential without signing in yet. Returns null on
+  /// cancellation OR failure — [error] distinguishes them for the caller
+  /// (null with no [error] set means the user simply cancelled).
+  Future<PendingGoogleIdentity?> acquireGoogleCredential() async {
+    try {
+      _error = null;
+      final pending = await _authService.acquireGoogleCredential();
+      notifyListeners();
+      return pending;
+    } on AuthException catch (e) {
+      _error = e.message;
+      notifyListeners();
+      return null;
+    } catch (e) {
+      _error = e.toString().replaceAll('Exception: ', '');
+      notifyListeners();
+      return null;
+    }
+  }
+
+  /// Pure lookup — never creates a user, never signs in. Returns null only
+  /// on a genuine failure (network, server error); read [error] then.
+  Future<GoogleIdentityResolution?> resolveGoogleIdentity(PendingGoogleIdentity pending) async {
+    try {
+      _error = null;
+      final resolution = await _authService.resolveGoogleIdentity(pending);
+      notifyListeners();
+      return resolution;
+    } on AuthException catch (e) {
+      _error = e.message;
+      notifyListeners();
+      return null;
+    } catch (e) {
+      _error = e.toString().replaceAll('Exception: ', '');
+      notifyListeners();
+      return null;
+    }
+  }
+
+  /// Scenario A (returning, already linked): signs in directly, no OTP.
+  Future<bool> signInWithLinkedGoogle(PendingGoogleIdentity pending, {String? expectedUid}) async {
+    try {
+      if (isLocked) {
+        _error = 'Too many attempts. Please try again later.';
+        notifyListeners();
+        return false;
+      }
+
+      _isLoading = true;
+      _error = null;
+      notifyListeners();
+
+      _currentUser = await _authService.signInWithLinkedGoogleCredential(
+        pending,
+        expectedUid: expectedUid,
+      );
+
+      await _logAuthEvent('google_returning_signin_success', true, _currentUser?.email ?? 'unknown');
+      if (_currentUser != null) await _updateFCMToken(_currentUser!.uid);
+
+      _resetFailedAttempts();
+      _isLoading = false;
+      notifyListeners();
+      return true;
+    } on AuthException catch (e) {
+      _error = e.message;
+      _incrementFailedAttempts();
+      await _logAuthEvent('google_returning_signin_failed', false, 'unknown', error: e.message);
+      _isLoading = false;
+      notifyListeners();
+      return false;
+    } catch (e) {
+      _error = e.toString().replaceAll('Exception: ', '');
+      _incrementFailedAttempts();
+      await _logAuthEvent('google_returning_signin_failed', false, 'unknown', error: e.toString());
+      _isLoading = false;
+      notifyListeners();
+      return false;
+    }
+  }
+
+  /// Scenario B, final step — called only once verifyPhoneOTP has already
+  /// signed the caller in as the canonical phone-verified user. Attaches
+  /// the Google credential to THAT user; never signs anyone out, never
+  /// signs in with Google first. Returns whether the LINK itself succeeded
+  /// — the phone login this follows has already succeeded either way, so a
+  /// `false` here means "show a soft already-connected message", never
+  /// "the login failed".
+  Future<bool> linkGoogleToCurrentUser(PendingGoogleIdentity pending) async {
+    try {
+      final linked = await _authService.linkPendingGoogleCredential(pending);
+      await _logAuthEvent(
+        linked ? 'google_account_linked' : 'google_link_conflict',
+        linked,
+        _currentUser?.email ?? 'unknown',
+      );
+      notifyListeners();
+      return linked;
+    } catch (e) {
+      debugPrint('⚠️ Google link error: $e');
+      return false;
+    }
+  }
+
+  // ============================================
   // ✅ UPDATE USER PROFILE (FIXED - NEW METHOD)
   // ============================================
   Future<bool> updateUserProfile({
