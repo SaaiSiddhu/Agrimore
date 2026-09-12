@@ -84,6 +84,11 @@ export { verifyEmailForProfile } from "./customer/verifyEmailForProfile";
 // why neither reuses its corresponding login-purpose OTP endpoint.
 export { changeEmailAddress } from "./customer/changeEmailAddress";
 export { changePhoneNumber } from "./customer/changePhoneNumber";
+// PROFILE-8: dateOfBirth's own post-completion change path — firestore.rules
+// blanket-blocks a client write to this field regardless of value (Phase 16
+// Workstream 5), so unlike gender (a plain owner-writable field, no callable
+// needed) DOB needs this same Admin-SDK-bypasses-rules shape.
+export { changeDateOfBirth } from "./customer/changeDateOfBirth";
 export { verifyAssociateCode } from "./customer/verifyAssociateCode";
 // AUTH-3: looks up whether a Google identity is already linked to an
 // existing AgriMore account, with no Firebase Auth context required —
