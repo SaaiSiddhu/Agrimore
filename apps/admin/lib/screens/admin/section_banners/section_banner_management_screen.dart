@@ -309,6 +309,28 @@ class _SectionBannerCard extends StatelessWidget {
                               ),
                             ),
                           ),
+                          const SizedBox(width: 6),
+                          Container(
+                            padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 3),
+                            decoration: BoxDecoration(
+                              color: banner.pageScope == SectionBannerModel.pageScopeCategories
+                                  ? Colors.purple.withValues(alpha: 0.1)
+                                  : Colors.blue.withValues(alpha: 0.1),
+                              borderRadius: BorderRadius.circular(4),
+                            ),
+                            child: Text(
+                              banner.pageScope == SectionBannerModel.pageScopeCategories
+                                  ? 'Categories'
+                                  : 'Home',
+                              style: TextStyle(
+                                fontSize: 11,
+                                fontWeight: FontWeight.w600,
+                                color: banner.pageScope == SectionBannerModel.pageScopeCategories
+                                    ? Colors.purple
+                                    : Colors.blue,
+                              ),
+                            ),
+                          ),
                           if (banner.showAdBadge) ...[
                             const SizedBox(width: 6),
                             Container(
