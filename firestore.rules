@@ -1027,6 +1027,12 @@ service cloud.firestore {
     match /settings/location_settings {
       allow read: if isAuthenticated();
     }
+    // HOME-5: GroceryKitchenHomeStrip's title/categoryIds override, read
+    // from Home — same shape as location_settings directly above (not
+    // public, since Home itself is only reachable after phone-OTP login).
+    match /settings/home_grocery_strip_config {
+      allow read: if isAuthenticated();
+    }
     // Public read is a protected, tested contract for this one document —
     // phase16a_onboarding_rules_test.js's
     // 14_anyone_can_read_associate_onboarding_config — because a prospective
