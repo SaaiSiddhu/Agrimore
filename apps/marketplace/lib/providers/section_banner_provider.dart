@@ -15,17 +15,30 @@ class SectionBannerProvider extends ChangeNotifier {
   bool get isLoading => _isLoading;
   String? get error => _error;
 
-  /// Get banners for a specific position (after section N)
-  List<SectionBannerModel> getBannersAfterSection(int sectionIndex) {
+  /// Get banners for a specific position (after section N) on a given page.
+  /// Defaults to Home so every existing call site is unaffected.
+  List<SectionBannerModel> getBannersAfterSection(
+    int sectionIndex, {
+    String pageScope = SectionBannerModel.pageScopeHome,
+  }) {
     return _banners
-        .where((b) => b.isActive && b.displayAfterSection == sectionIndex)
+        .where((b) =>
+            b.isActive &&
+            b.displayAfterSection == sectionIndex &&
+            b.pageScope == pageScope)
         .toList()
       ..sort((a, b) => a.position.compareTo(b.position));
   }
 
-  /// Check if there are banners for a specific position
-  bool hasBannersAfterSection(int sectionIndex) {
-    return _banners.any((b) => b.isActive && b.displayAfterSection == sectionIndex);
+  /// Check if there are banners for a specific position on a given page.
+  bool hasBannersAfterSection(
+    int sectionIndex, {
+    String pageScope = SectionBannerModel.pageScopeHome,
+  }) {
+    return _banners.any((b) =>
+        b.isActive &&
+        b.displayAfterSection == sectionIndex &&
+        b.pageScope == pageScope);
   }
 
   /// Load all active section banners

@@ -60,6 +60,7 @@ class SectionBannerProvider extends ChangeNotifier {
     String? buttonText,
     required int position,
     required int displayAfterSection,
+    String pageScope = SectionBannerModel.pageScopeHome,
     bool isActive = true,
     bool showAdBadge = false,
   }) async {
@@ -74,6 +75,7 @@ class SectionBannerProvider extends ChangeNotifier {
         buttonText: buttonText,
         position: position,
         displayAfterSection: displayAfterSection,
+        pageScope: pageScope,
         isActive: isActive,
         showAdBadge: showAdBadge,
         createdAt: DateTime.now(),
@@ -97,6 +99,7 @@ class SectionBannerProvider extends ChangeNotifier {
     String? buttonText,
     int? position,
     int? displayAfterSection,
+    String? pageScope,
     bool? isActive,
     bool? showAdBadge,
   }) async {
@@ -104,7 +107,7 @@ class SectionBannerProvider extends ChangeNotifier {
       final updates = <String, dynamic>{
         'updatedAt': FieldValue.serverTimestamp(),
       };
-      
+
       if (imageUrl != null) updates['imageUrl'] = imageUrl;
       if (title != null) updates['title'] = title;
       if (subtitle != null) updates['subtitle'] = subtitle;
@@ -112,6 +115,7 @@ class SectionBannerProvider extends ChangeNotifier {
       if (buttonText != null) updates['buttonText'] = buttonText;
       if (position != null) updates['position'] = position;
       if (displayAfterSection != null) updates['displayAfterSection'] = displayAfterSection;
+      if (pageScope != null) updates['pageScope'] = pageScope;
       if (isActive != null) updates['isActive'] = isActive;
       if (showAdBadge != null) updates['showAdBadge'] = showAdBadge;
       

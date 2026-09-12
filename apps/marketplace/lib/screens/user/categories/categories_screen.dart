@@ -13,6 +13,7 @@ import '../../../providers/cart_provider.dart';
 import '../../../providers/banner_provider.dart';
 import '../../../providers/theme_provider.dart';
 import '../../../app/routes.dart';
+import '../home/widgets/section_banner_carousel.dart';
 import 'widgets/category_content_sections.dart';
 
 /// Premium Quick Commerce Style Categories Screen
@@ -452,6 +453,18 @@ class _CategoriesScreenState extends State<CategoriesScreen>
                 ),
               ),
             ),
+
+          // Secondary promo banner — admin-managed, Categories-scoped
+          // SectionBanner (CAT-4); renders nothing until admin creates one.
+          SliverToBoxAdapter(
+            child: Padding(
+              padding: const EdgeInsets.fromLTRB(10, 6, 10, 0),
+              child: SectionBannerCarousel(
+                afterSection: 1,
+                pageScope: SectionBannerModel.pageScopeCategories,
+              ),
+            ),
+          ),
 
           // Popular Picks — featured products in the current scope, falling
           // back to a short plain slice when none are marked featured yet.

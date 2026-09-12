@@ -27,6 +27,7 @@ class _AddEditSectionBannerDialogState extends State<AddEditSectionBannerDialog>
   late TextEditingController _positionController;
   
   int _displayAfterSection = 1;
+  String _pageScope = SectionBannerModel.pageScopeHome;
   bool _isActive = true;
   bool _showAdBadge = false;
   
@@ -49,6 +50,7 @@ class _AddEditSectionBannerDialogState extends State<AddEditSectionBannerDialog>
     _positionController = TextEditingController(text: (banner?.position ?? 0).toString());
     
     _displayAfterSection = banner?.displayAfterSection ?? 1;
+    _pageScope = banner?.pageScope ?? SectionBannerModel.pageScopeHome;
     _isActive = banner?.isActive ?? true;
     _showAdBadge = banner?.showAdBadge ?? false;
     _existingImageUrl = banner?.imageUrl;
@@ -112,6 +114,7 @@ class _AddEditSectionBannerDialogState extends State<AddEditSectionBannerDialog>
           buttonText: _buttonTextController.text.trim().isEmpty ? null : _buttonTextController.text.trim(),
           position: int.tryParse(_positionController.text) ?? 0,
           displayAfterSection: _displayAfterSection,
+          pageScope: _pageScope,
           isActive: _isActive,
           showAdBadge: _showAdBadge,
         );
@@ -125,6 +128,7 @@ class _AddEditSectionBannerDialogState extends State<AddEditSectionBannerDialog>
           buttonText: _buttonTextController.text.trim().isEmpty ? null : _buttonTextController.text.trim(),
           position: int.tryParse(_positionController.text) ?? 0,
           displayAfterSection: _displayAfterSection,
+          pageScope: _pageScope,
           isActive: _isActive,
           showAdBadge: _showAdBadge,
         );
@@ -298,7 +302,32 @@ class _AddEditSectionBannerDialogState extends State<AddEditSectionBannerDialog>
                       ),
                       
                       const SizedBox(height: 16),
-                      
+
+                      // Page (which screen this banner is eligible on)
+                      DropdownButtonFormField<String>(
+                        initialValue: _pageScope,
+                        decoration: const InputDecoration(
+                          labelText: 'Page',
+                          border: OutlineInputBorder(),
+                          prefixIcon: Icon(Icons.smartphone_outlined),
+                        ),
+                        items: const [
+                          DropdownMenuItem(
+                            value: SectionBannerModel.pageScopeHome,
+                            child: Text('Home'),
+                          ),
+                          DropdownMenuItem(
+                            value: SectionBannerModel.pageScopeCategories,
+                            child: Text('Categories'),
+                          ),
+                        ],
+                        onChanged: (v) => setState(
+                          () => _pageScope = v ?? SectionBannerModel.pageScopeHome,
+                        ),
+                      ),
+
+                      const SizedBox(height: 16),
+
                       // Position & Section
                       Row(
                         children: [
