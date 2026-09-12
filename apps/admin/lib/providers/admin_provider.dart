@@ -229,12 +229,94 @@ class AdminProvider with ChangeNotifier {
     }
   }
 
-  // ✅ NEW: Update category with full CategoryModel  
+  // ✅ NEW: Update category with full CategoryModel.
+  // Reparenting (a changed parentId) is refused if it would create a cycle,
+  // and otherwise keeps BOTH the old and new parent's subcategoryIds in sync
+  // -- addCategory only ever had to bookkeep one direction (a brand-new
+  // category has no old parent to detach from); reparenting needs both.
   Future<void> updateCategory(CategoryModel category) async {
     try {
+      final existing = _categoryModels.where((c) => c.id == category.id).firstOrNull;
+      final oldParentId = existing?.parentId;
+      final newParentId = category.parentId;
+      final isReparent = newParentId != oldParentId;
+
+      if (isReparent && _wouldCreateCategoryCycle(category.id, newParentId)) {
+        final candidateName =
+            _categoryModels.where((c) => c.id == newParentId).firstOrNull?.name ?? 'that category';
+        throw Exception(
+            'Cannot make "${category.name}" a subcategory of "$candidateName" — "$candidateName" is already inside "${category.name}", and that would create a circular hierarchy.');
+      }
+
       await _adminService.updateCategoryModel(category);
+
+      if (isReparent) {
+        if (oldParentId != null && oldParentId.isNotEmpty) {
+          final oldParent = _categoryModels.where((c) => c.id == oldParentId).firstOrNull;
+          if (oldParent != null) {
+            final updatedIds = oldParent.subcategoryIds.where((id) => id != category.id).toList();
+            await _adminService.updateCategoryModel(oldParent.copyWith(subcategoryIds: updatedIds));
+          }
+        }
+        if (newParentId != null && newParentId.isNotEmpty) {
+          final newParent = _categoryModels.where((c) => c.id == newParentId).firstOrNull;
+          if (newParent != null && !newParent.subcategoryIds.contains(category.id)) {
+            final updatedIds = [...newParent.subcategoryIds, category.id];
+            await _adminService.updateCategoryModel(newParent.copyWith(subcategoryIds: updatedIds));
+          }
+        }
+      }
     } catch (e) {
       rethrow;
+    }
+  }
+
+  /// True if setting [categoryId]'s parent to [candidateParentId] would
+  /// create a cycle -- either the category parenting itself, or parenting
+  /// onto one of its own descendants. Walks UP from the candidate via
+  /// parentId (not down through subcategoryIds) since every category's own
+  /// parentId is the single source of truth for its position; subcategoryIds
+  /// is bookkeeping derived from it, not the other way around.
+  bool _wouldCreateCategoryCycle(String categoryId, String? candidateParentId) {
+    if (candidateParentId == null || candidateParentId.isEmpty) return false;
+    if (candidateParentId == categoryId) return true;
+    String? currentId = candidateParentId;
+    final visited = <String>{};
+    while (currentId != null && currentId.isNotEmpty) {
+      if (currentId == categoryId) return true;
+      if (!visited.add(currentId)) break; // pre-existing corrupt cycle in the data -- stop, don't loop forever
+      final current = _categoryModels.where((c) => c.id == currentId).firstOrNull;
+      currentId = current?.parentId;
+    }
+    return false;
+  }
+
+  /// Swaps [category] with its adjacent sibling (same parentId) in display
+  /// order, then re-persists sequential displayOrder values (0..N-1) across
+  /// the whole sibling group. Re-sequencing the whole group, rather than
+  /// swapping just the two raw values, stays correct even when existing
+  /// displayOrder values are duplicated or gapped -- the admin form has
+  /// always been a free-text number with no uniqueness enforcement, so
+  /// assuming today's values are already clean would be unsafe.
+  Future<void> moveCategoryOrder(CategoryModel category, {required bool up}) async {
+    final siblings = _categoryModels.where((c) => c.parentId == category.parentId).toList()
+      ..sort((a, b) {
+        final byOrder = a.displayOrder.compareTo(b.displayOrder);
+        return byOrder != 0 ? byOrder : a.id.compareTo(b.id);
+      });
+    final index = siblings.indexWhere((c) => c.id == category.id);
+    if (index == -1) return;
+    final swapIndex = up ? index - 1 : index + 1;
+    if (swapIndex < 0 || swapIndex >= siblings.length) return;
+
+    final reordered = List<CategoryModel>.from(siblings);
+    final moved = reordered.removeAt(index);
+    reordered.insert(swapIndex, moved);
+
+    for (var i = 0; i < reordered.length; i++) {
+      if (reordered[i].displayOrder != i) {
+        await _adminService.updateCategoryModel(reordered[i].copyWith(displayOrder: i));
+      }
     }
   }
 
