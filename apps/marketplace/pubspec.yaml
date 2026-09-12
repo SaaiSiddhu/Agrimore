@@ -112,6 +112,7 @@ flutter:
   # same phase). Do not re-add it.
   assets:
     - assets/images/
+    - assets/images/Profile/
     - assets/icons/
     - assets/lottie/
     - assets/fonts/NotoSans-Regular.ttf
