@@ -25,6 +25,13 @@ class CategorySectionSlotModel {
   final bool isActive;
   final DateTime? updatedAt;
 
+  /// HOME-4: null on either side = unbounded on that side (always eligible)
+  /// — mirrors BannerModel's exact scheduling semantics. Every slot written
+  /// before this field existed has neither in Firestore, so it parses as
+  /// unbounded-on-both-sides and keeps rendering exactly as it always has.
+  final DateTime? startsAt;
+  final DateTime? endsAt;
+
   CategorySectionSlotModel({
     required this.id,
     required this.position,
@@ -41,7 +48,28 @@ class CategorySectionSlotModel {
     this.bgColorHex,
     this.isActive = true,
     this.updatedAt,
+    this.startsAt,
+    this.endsAt,
   });
+
+  /// True when [at] (default: now) falls inside [startsAt, endsAt] — either
+  /// bound absent means unbounded on that side. Mirrors BannerModel.
+  bool isWithinSchedule([DateTime? at]) {
+    final now = at ?? DateTime.now();
+    if (startsAt != null && now.isBefore(startsAt!)) return false;
+    if (endsAt != null && now.isAfter(endsAt!)) return false;
+    return true;
+  }
+
+  /// Scheduled/Live/Expired/Disabled, derived from isActive + the schedule
+  /// window rather than a separate stored status. Mirrors BannerModel.
+  String get scheduleStatus {
+    if (!isActive) return 'Disabled';
+    final now = DateTime.now();
+    if (startsAt != null && now.isBefore(startsAt!)) return 'Scheduled';
+    if (endsAt != null && now.isAfter(endsAt!)) return 'Expired';
+    return 'Live';
+  }
 
   /// Get all non-null images as a list
   List<String> get images {
@@ -103,6 +131,12 @@ class CategorySectionSlotModel {
       updatedAt: map['updatedAt'] != null
           ? (map['updatedAt'] as Timestamp).toDate()
           : null,
+      startsAt: map['startsAt'] is Timestamp
+          ? (map['startsAt'] as Timestamp).toDate()
+          : null,
+      endsAt: map['endsAt'] is Timestamp
+          ? (map['endsAt'] as Timestamp).toDate()
+          : null,
     );
   }
 
@@ -122,6 +156,8 @@ class CategorySectionSlotModel {
       'bgColorHex': bgColorHex,
       'isActive': isActive,
       'updatedAt': FieldValue.serverTimestamp(),
+      'startsAt': startsAt != null ? Timestamp.fromDate(startsAt!) : null,
+      'endsAt': endsAt != null ? Timestamp.fromDate(endsAt!) : null,
     };
   }
 
@@ -141,6 +177,8 @@ class CategorySectionSlotModel {
     String? bgColorHex,
     bool? isActive,
     DateTime? updatedAt,
+    DateTime? startsAt,
+    DateTime? endsAt,
   }) {
     return CategorySectionSlotModel(
       id: id ?? this.id,
@@ -158,6 +196,8 @@ class CategorySectionSlotModel {
       bgColorHex: bgColorHex ?? this.bgColorHex,
       isActive: isActive ?? this.isActive,
       updatedAt: updatedAt ?? this.updatedAt,
+      startsAt: startsAt ?? this.startsAt,
+      endsAt: endsAt ?? this.endsAt,
     );
   }
 
