@@ -61,6 +61,15 @@ class _EditProfileScreenState extends State<EditProfileScreen>
 
   XFile? _pickedImage;
   String? _photoUrl;
+  // PROFILE-13: mirrors how a newly-picked photo already stages locally
+  // until Save Changes — "Remove Photo" stages the same way rather than
+  // writing immediately. Needed as its own flag (not just null-checking
+  // _photoUrl) because updateUserProfile's photoUrl: photoUrl ??
+  // _currentUser!.photoUrl treats null as "no change, keep existing" —
+  // only an explicit empty string actually clears it, and _saveProfile
+  // has no other way to know "the user cleared it" versus "never touched
+  // it this session".
+  bool _photoRemoved = false;
   bool _isLoading = false;
   bool _isUploadingImage = false;
 
@@ -249,13 +258,17 @@ class _EditProfileScreenState extends State<EditProfileScreen>
     try {
       String? photoUrl;
 
-      // Step 1: Upload photo if selected
+      // Step 1: upload a newly-picked photo, or resolve a staged removal
+      // to an explicit empty string (see _photoRemoved's own comment for
+      // why null can't represent "cleared").
       if (_pickedImage != null) {
         photoUrl = await _uploadPhotoToFirebase(_pickedImage!);
         if (photoUrl == null) {
           setState(() => _isLoading = false);
           return;
         }
+      } else if (_photoRemoved) {
+        photoUrl = '';
       }
 
       if (!mounted) return;
@@ -278,6 +291,7 @@ class _EditProfileScreenState extends State<EditProfileScreen>
       if (!mounted) return;
 
       if (success) {
+        _photoRemoved = false;
         _showToastMessage('✅ Profile updated successfully!');
         Future.delayed(const Duration(milliseconds: 800), () {
           if (mounted) {
@@ -402,6 +416,8 @@ class _EditProfileScreenState extends State<EditProfileScreen>
 
   Future<void> _pickImage(bool isDark) async {
     final ImagePicker picker = ImagePicker();
+    final hasExistingPhoto =
+        _pickedImage != null || (_photoUrl != null && _photoUrl!.isNotEmpty);
     try {
       HapticFeedback.lightImpact();
 
@@ -486,6 +502,10 @@ class _EditProfileScreenState extends State<EditProfileScreen>
                     ),
                   ],
                 ),
+                if (hasExistingPhoto) ...[
+                  const SizedBox(height: 12),
+                  _buildRemovePhotoButton(isDark),
+                ],
               ],
             ),
           ),
@@ -495,6 +515,53 @@ class _EditProfileScreenState extends State<EditProfileScreen>
       _showToastMessage('❌ Error picking image', isSuccess: false);
       debugPrint('Image picker error: $e');
     }
+  }
+
+  // PROFILE-13: full-width, distinct from the two square Camera/Gallery
+  // tiles above since a destructive list-row reads better than a third
+  // square tile the same size as "take a new photo". Stages the removal
+  // the same way a newly-picked photo stages (see _photoRemoved) — nothing
+  // is actually cleared server-side until Save Changes.
+  Widget _buildRemovePhotoButton(bool isDark) {
+    return SizedBox(
+      width: double.infinity,
+      child: Material(
+        color: Colors.transparent,
+        child: InkWell(
+          onTap: () {
+            Navigator.pop(context);
+            setState(() {
+              _pickedImage = null;
+              _photoUrl = null;
+              _photoRemoved = true;
+            });
+          },
+          borderRadius: BorderRadius.circular(14),
+          child: Container(
+            padding: const EdgeInsets.symmetric(vertical: 14, horizontal: 16),
+            decoration: BoxDecoration(
+              color: isDark ? const Color(0xFF3B1E1E) : const Color(0xFFFEF2F2),
+              borderRadius: BorderRadius.circular(14),
+              border: Border.all(color: isDark ? const Color(0xFF7F1D1D) : const Color(0xFFFECACA)),
+            ),
+            child: Row(
+              children: [
+                Icon(Icons.delete_outline_rounded, size: 20, color: isDark ? const Color(0xFFFCA5A5) : const Color(0xFFDC2626)),
+                const SizedBox(width: 10),
+                Text(
+                  'Remove Photo',
+                  style: TextStyle(
+                    fontSize: 14,
+                    fontWeight: FontWeight.w700,
+                    color: isDark ? const Color(0xFFFCA5A5) : const Color(0xFFDC2626),
+                  ),
+                ),
+              ],
+            ),
+          ),
+        ),
+      ),
+    );
   }
 
   Widget _buildPhotoSourceButton({
@@ -555,45 +622,39 @@ class _EditProfileScreenState extends State<EditProfileScreen>
     );
   }
 
+  // PROFILE-13: was a generic person icon on a gradient; now the same
+  // Avatar_Icon.png fallback profile_screen.dart's own _buildAvatarImage
+  // already uses, so a signed-in user with no photo sees the same
+  // placeholder on both screens rather than two different ones.
   Widget _buildDefaultAvatar(bool isDark) {
-    return Container(
-      decoration: BoxDecoration(
-        gradient: LinearGradient(
-          begin: Alignment.topLeft,
-          end: Alignment.bottomRight,
-          colors: isDark
-              ? [const Color(0xFF2D3A2D), const Color(0xFF3A4D3A)]
-              : [const Color(0xFF2D7D3C), const Color(0xFF3DA34E)],
-        ),
-      ),
-      child: const Center(
-        child: Icon(
-          Icons.person_rounded,
-          size: 60,
-          color: Colors.white,
-        ),
-      ),
+    return Image.asset(
+      'assets/images/Profile/Avatar_Icon.png',
+      fit: BoxFit.cover,
     );
   }
 
   // --- New Widgets matching Profile Screen ---
 
-  // PROFILE-12: now a thin call into the canonical
-  // packages/agrimore_ui StickyPhotoHeaderSliver — the same widget
-  // profile_screen.dart's own header builds on. Only the hero content
-  // (title/subtitle column) and the collapsed title string are specific to
-  // this screen; the pinned SliverAppBar, back button and scroll-collapse
-  // math all live in the shared widget now.
+  // PROFILE-13: swapped the photo-hero background for the owner's new
+  // transparent leafy asset (profile-detail_bg.png, distinct from
+  // profile_bg.png — this one carries its own soft translucent circle,
+  // drawn specifically for an avatar to sit over) and folded the avatar +
+  // name into heroContent itself, so the whole "who you are, and how to
+  // change it" block is one compact unit instead of two separate slivers.
+  // Still the same canonical packages/agrimore_ui StickyPhotoHeaderSliver
+  // (PROFILE-12) underneath — only backgroundImage, expandedHeight and
+  // heroContent are this screen's own.
   Widget _buildHeaderSliver(bool isDark) {
     return StickyPhotoHeaderSliver(
       collapse: headerCollapse,
       collapsedTitle: 'Edit Profile',
-      backgroundImage: 'assets/images/Profile/profile_bg.png',
+      backgroundImage: 'assets/images/Profile/profile-detail_bg.png',
       isDark: isDark,
+      expandedHeight: 296,
       onBack: (_isLoading || _isUploadingImage) ? null : () => Navigator.pop(context),
       heroContent: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
-        mainAxisAlignment: MainAxisAlignment.end,
+        mainAxisSize: MainAxisSize.min,
         children: [
           Text(
             'Edit Profile',
@@ -611,60 +672,40 @@ class _EditProfileScreenState extends State<EditProfileScreen>
               fontSize: 12.5,
             ),
           ),
-        ],
-      ),
-    );
-  }
-
-  Widget _buildAvatarSection(bool isDark) {
-    return ScaleTransition(
-      scale: _avatarScale,
-      child: Center(
-        child: Padding(
-          padding: const EdgeInsets.symmetric(vertical: 20),
-          child: Column(
-            children: [
-              _buildAvatarStack(isDark),
-              const SizedBox(height: 14),
-              Material(
-                color: Colors.transparent,
-                child: InkWell(
-                  onTap: (_isUploadingImage || _isLoading) ? null : () => _pickImage(isDark),
-                  borderRadius: BorderRadius.circular(20),
-                  child: Container(
-                    padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
-                    decoration: BoxDecoration(
-                      color: isDark ? const Color(0xFF1E1E1E) : Colors.white,
-                      borderRadius: BorderRadius.circular(20),
-                      border: Border.all(
-                        color: (isDark ? AppColors.primaryLight : const Color(0xFF2D7D3C)).withValues(alpha: 0.4),
-                      ),
-                    ),
-                    child: Row(
-                      mainAxisSize: MainAxisSize.min,
-                      children: [
-                        Icon(
-                          Icons.camera_alt_outlined,
-                          size: 16,
-                          color: isDark ? AppColors.primaryLight : const Color(0xFF2D7D3C),
+          const SizedBox(height: 14),
+          Center(
+            child: ScaleTransition(
+              scale: _avatarScale,
+              child: Column(
+                mainAxisSize: MainAxisSize.min,
+                children: [
+                  _buildAvatarStack(isDark),
+                  const SizedBox(height: 10),
+                  // Live, not a snapshot: _nameController is the same
+                  // controller the Full Name field below edits, so typing
+                  // there updates this label immediately rather than only
+                  // after Save Changes.
+                  AnimatedBuilder(
+                    animation: _nameController,
+                    builder: (context, _) {
+                      final name = _nameController.text.trim();
+                      return Text(
+                        name.isEmpty ? 'Your Name' : name,
+                        style: TextStyle(
+                          fontSize: 16,
+                          fontWeight: FontWeight.w800,
+                          color: isDark ? Colors.white : Colors.black87,
                         ),
-                        const SizedBox(width: 6),
-                        Text(
-                          'Change Photo',
-                          style: TextStyle(
-                            fontSize: 13,
-                            fontWeight: FontWeight.w700,
-                            color: isDark ? AppColors.primaryLight : const Color(0xFF2D7D3C),
-                          ),
-                        ),
-                      ],
-                    ),
+                        maxLines: 1,
+                        overflow: TextOverflow.ellipsis,
+                      );
+                    },
                   ),
-                ),
+                ],
               ),
-            ],
+            ),
           ),
-        ),
+        ],
       ),
     );
   }
@@ -1155,11 +1196,14 @@ class _EditProfileScreenState extends State<EditProfileScreen>
                 slivers: [
                   _buildHeaderSliver(isDark),
 
-                  SliverToBoxAdapter(child: _buildAvatarSection(isDark)),
-
                   SliverToBoxAdapter(
                     child: Padding(
-                      padding: const EdgeInsets.fromLTRB(16, 0, 16, 16),
+                      // PROFILE-13: top inset restored — the avatar/name
+                      // block that used to sit in its own sliver (with its
+                      // own vertical padding) now ends flush with the
+                      // hero's own expandedHeight, so this section needs
+                      // its own breathing room again.
+                      padding: const EdgeInsets.fromLTRB(16, 20, 16, 16),
                       child: Form(
                         key: _formKey,
                         autovalidateMode: AutovalidateMode.onUserInteraction,
