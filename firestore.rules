@@ -1663,6 +1663,20 @@ service cloud.firestore {
     }
 
     // ============================================
+    // ONBOARDING WEB HANDOFF COLLECTION (Phase ONBOARD-1)
+    // ============================================
+    // Short-lived, single-use codes that let a signed-in mobile visitor
+    // resume the associate onboarding flow, already authenticated, in the
+    // phone's external browser. The document id IS the code -- the entire
+    // security boundary is possessing it, not any client read/write, so no
+    // client (not even an admin) ever needs to touch this collection
+    // directly. Only createOnboardingWebHandoff / redeemOnboardingWebHandoff
+    // (Admin SDK) ever read or write it.
+    match /onboarding_handoffs/{code} {
+      allow read, write: if false;
+    }
+
+    // ============================================
     // PAYMENT SECURITY LOGS COLLECTION
     // ============================================
     match /payment_security_logs/{logId} {
