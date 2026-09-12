@@ -636,7 +636,16 @@ class _LoginScreenState extends State<LoginScreen> {
                       border: Border.all(color: AppColors.border),
                       borderRadius: BorderRadius.circular(10),
                     ),
-                    child: const Text('🇮🇳', style: TextStyle(fontSize: 22)),
+                    child: Padding(
+                      padding: const EdgeInsets.all(6),
+                      child: ClipRRect(
+                        borderRadius: BorderRadius.circular(4),
+                        child: Image.asset(
+                          'assets/icons/Login/India_Flag.png',
+                          fit: BoxFit.contain,
+                        ),
+                      ),
+                    ),
                   ),
                   const SizedBox(width: 12),
                   Expanded(
