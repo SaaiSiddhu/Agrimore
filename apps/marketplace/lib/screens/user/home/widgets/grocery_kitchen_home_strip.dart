@@ -8,8 +8,14 @@ import '../../../../providers/shop_entry_provider.dart';
 import '../../../../providers/category_provider.dart';
 import '../../../../providers/product_provider.dart';
 import '../../../../providers/theme_provider.dart';
+import '../../../../providers/home_grocery_strip_config_provider.dart';
 
 /// Highlights Grocery & Kitchen categories under Bestsellers (admin categories + product thumbnails).
+///
+/// HOME-5: title and category selection are admin-editable via
+/// `HomeGroceryStripConfigProvider` (`settings/home_grocery_strip_config`).
+/// Unconfigured (no doc, or an empty `categoryIds`) falls back to the
+/// pre-HOME-5 hardcoded name/slug match below, unchanged.
 class GroceryKitchenHomeStrip extends StatelessWidget {
   const GroceryKitchenHomeStrip({Key? key}) : super(key: key);
 
@@ -22,16 +28,36 @@ class GroceryKitchenHomeStrip extends StatelessWidget {
         s.contains('kitchen');
   }
 
+  static List<CategoryModel> _resolveCategories(
+    CategoryProvider categoryProvider,
+    HomeGroceryStripConfigProvider configProvider,
+  ) {
+    if (configProvider.categoryIds.isNotEmpty) {
+      final activeById = {
+        for (final c in categoryProvider.categories.where((c) => c.isActive))
+          c.id: c,
+      };
+      return configProvider.categoryIds
+          .map((id) => activeById[id])
+          .whereType<CategoryModel>()
+          .take(8)
+          .toList();
+    }
+
+    return categoryProvider.categories
+        .where((c) => c.isActive && _isGroceryOrKitchen(c))
+        .take(8)
+        .toList();
+  }
+
   @override
   Widget build(BuildContext context) {
     final isDark = Provider.of<ThemeProvider>(context).isDarkMode;
 
-    return Consumer2<CategoryProvider, ProductProvider>(
-      builder: (context, categoryProvider, productProvider, _) {
-        final cats = categoryProvider.categories
-            .where((c) => c.isActive && _isGroceryOrKitchen(c))
-            .take(8)
-            .toList();
+    return Consumer3<CategoryProvider, ProductProvider,
+        HomeGroceryStripConfigProvider>(
+      builder: (context, categoryProvider, productProvider, configProvider, _) {
+        final cats = _resolveCategories(categoryProvider, configProvider);
 
         if (cats.isEmpty) return const SizedBox.shrink();
 
@@ -41,7 +67,7 @@ class GroceryKitchenHomeStrip extends StatelessWidget {
             Padding(
               padding: const EdgeInsets.fromLTRB(16, 8, 16, 4),
               child: Text(
-                'Grocery & Kitchen',
+                configProvider.effectiveTitle,
                 style: TextStyle(
                   fontSize: 16,
                   fontWeight: FontWeight.w700,
