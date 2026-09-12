@@ -248,6 +248,14 @@ class AdminProvider with ChangeNotifier {
             'Cannot make "${category.name}" a subcategory of "$candidateName" — "$candidateName" is already inside "${category.name}", and that would create a circular hierarchy.');
       }
 
+      // Descendants' own `level` values are computed once, relative to
+      // category's OWN pre-move level, before any write -- reading
+      // _categoryModels after the move started would see a mix of old and
+      // new levels once the loop below starts persisting them.
+      final levelDelta = isReparent && existing != null ? category.level - existing.level : 0;
+      final descendantsToRelevel =
+          levelDelta != 0 ? _descendantCategoriesOf(category.id) : const <CategoryModel>[];
+
       await _adminService.updateCategoryModel(category);
 
       if (isReparent) {
@@ -266,9 +274,60 @@ class AdminProvider with ChangeNotifier {
           }
         }
       }
+
+      // A reparent that changes category's own level (almost always, since
+      // level is derived from depth) leaves every transitive descendant's
+      // stored level stale by the same delta -- pre-existing since CAT-3's
+      // own edit-dialog reparent path (which has the identical gap), only
+      // fixed here because this shared method is both paths' single write
+      // site.
+      for (final descendant in descendantsToRelevel) {
+        await _adminService.updateCategoryModel(descendant.copyWith(level: descendant.level + levelDelta));
+      }
     } catch (e) {
       rethrow;
     }
+  }
+
+  /// True if setting [categoryId]'s parent to [candidateParentId] would
+  /// create a cycle. Public passthrough to the private cycle-walk below --
+  /// category_management_screen.dart is a separate library (file-private
+  /// members aren't visible across files in Dart) and needs this for live
+  /// drag-hover validation before a drop is even attempted.
+  bool wouldCreateCategoryCycle(String categoryId, String? candidateParentId) =>
+      _wouldCreateCategoryCycle(categoryId, candidateParentId);
+
+  /// Number of levels below [categoryId] in its current tree shape (0 for a
+  /// leaf). Used to reject a drag-reparent that would push some descendant
+  /// past CategoryModel's own documented 4-level cap (level 0..3) -- the
+  /// existing canHaveChildren check on the TARGET parent only ever bounded
+  /// the dragged category's own new level, never its own subtree's height.
+  int subtreeHeightOf(String categoryId) {
+    final children = _categoryModels.where((c) => c.parentId == categoryId);
+    var maxChildHeight = -1;
+    for (final child in children) {
+      final childHeight = subtreeHeightOf(child.id);
+      if (childHeight > maxChildHeight) maxChildHeight = childHeight;
+    }
+    return maxChildHeight + 1;
+  }
+
+  /// Every transitive descendant of [categoryId] (children, grandchildren,
+  /// ...), walked DOWN via parentId -- the reverse direction of
+  /// _wouldCreateCategoryCycle's own upward walk. Order is unspecified;
+  /// callers only need the set, not a particular traversal order.
+  List<CategoryModel> _descendantCategoriesOf(String categoryId) {
+    final result = <CategoryModel>[];
+    final frontier = <String>[categoryId];
+    while (frontier.isNotEmpty) {
+      final parentId = frontier.removeLast();
+      final children = _categoryModels.where((c) => c.parentId == parentId);
+      for (final child in children) {
+        result.add(child);
+        frontier.add(child.id);
+      }
+    }
+    return result;
   }
 
   /// True if setting [categoryId]'s parent to [candidateParentId] would
