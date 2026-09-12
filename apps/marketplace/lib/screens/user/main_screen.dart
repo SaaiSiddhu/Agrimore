@@ -55,6 +55,19 @@ class _MainScreenState extends State<MainScreen>
   late ShopEntryProvider _shopEntry;
   int _lastShopTabRequest = 0;
 
+  // PERF-3: which tabs have ever been selected -- IndexedStack's children
+  // list is built in full on every MainScreen build regardless of which
+  // index is showing, so without this every one of Shop/Categories/Cart/
+  // Profile's own initState() (their own provider loads, permission checks,
+  // network calls -- e.g. Profile's checkSellerStatus/refreshUserData/
+  // loadWallet) fired immediately on cold start, competing with Home's own
+  // critical-path loading for bandwidth and CPU even though the user is
+  // looking at Home and may never visit the other four tabs this session.
+  // A tab's real screen is only constructed the first time it's actually
+  // selected; IndexedStack still preserves its State on every build after
+  // that, exactly as it already did for the always-built HomeScreen.
+  late final Set<int> _builtTabs;
+
   // Every non-Home tab is a standalone screen with its own back button (see
   // _currentIndex != 0 below) — onBack switches THIS MainScreen's IndexedStack
   // back to Home rather than popping, since a tab switch never pushed a route
@@ -63,28 +76,37 @@ class _MainScreenState extends State<MainScreen>
   // push instead of as one of these tabs (e.g. ShopScreen(categoryId:...)
   // pushed directly from a /category/:id deep link in routes.dart).
   List<Widget> _buildScreens() => [
-        const HomeScreen(),
-        Consumer<ShopEntryProvider>(
-          builder: (context, se, _) {
-            final cid = widget.categoryId ?? se.categoryId;
-            final cname = widget.categoryName ?? se.categoryName;
-            return ShopScreen(
-              categoryId: cid,
-              categoryName: cname,
-              searchQuery: widget.searchQuery,
-              onBack: () => _onTabTapped(0),
-            );
-          },
-        ),
-        CategoriesScreen(onBack: () => _onTabTapped(0)),
-        CartScreen(onBack: () => _onTabTapped(0)),
-        ProfileScreen(onBack: () => _onTabTapped(0)),
+        _builtTabs.contains(0) ? const HomeScreen() : const SizedBox.shrink(),
+        _builtTabs.contains(1)
+            ? Consumer<ShopEntryProvider>(
+                builder: (context, se, _) {
+                  final cid = widget.categoryId ?? se.categoryId;
+                  final cname = widget.categoryName ?? se.categoryName;
+                  return ShopScreen(
+                    categoryId: cid,
+                    categoryName: cname,
+                    searchQuery: widget.searchQuery,
+                    onBack: () => _onTabTapped(0),
+                  );
+                },
+              )
+            : const SizedBox.shrink(),
+        _builtTabs.contains(2)
+            ? CategoriesScreen(onBack: () => _onTabTapped(0))
+            : const SizedBox.shrink(),
+        _builtTabs.contains(3)
+            ? CartScreen(onBack: () => _onTabTapped(0))
+            : const SizedBox.shrink(),
+        _builtTabs.contains(4)
+            ? ProfileScreen(onBack: () => _onTabTapped(0))
+            : const SizedBox.shrink(),
       ];
 
   @override
   void initState() {
     super.initState();
     _currentIndex = widget.initialIndex;
+    _builtTabs = {_currentIndex};
     _shopEntry = context.read<ShopEntryProvider>();
     _lastShopTabRequest = _shopEntry.shopTabRequestCount;
     _shopEntry.addListener(_onShopEntryChanged);
@@ -217,7 +239,10 @@ class _MainScreenState extends State<MainScreen>
     await _fadeAnimationController.reverse();
 
     if (mounted) {
-      setState(() => _currentIndex = index);
+      setState(() {
+        _currentIndex = index;
+        _builtTabs.add(index);
+      });
     }
 
     // ✅ Update browser URL on web (without full navigation/rebuild)
@@ -295,7 +320,10 @@ class _MainScreenState extends State<MainScreen>
     final n = _shopEntry.shopTabRequestCount;
     if (n > _lastShopTabRequest) {
       _lastShopTabRequest = n;
-      setState(() => _currentIndex = 1);
+      setState(() {
+        _currentIndex = 1;
+        _builtTabs.add(1);
+      });
     }
   }
 
