@@ -9,6 +9,7 @@ import '../../../providers/banner_provider.dart';
 import '../../../providers/cart_provider.dart';
 import '../../../providers/wishlist_provider.dart';
 import '../../../providers/category_section_provider.dart';
+import '../../../providers/home_product_section_config_provider.dart';
 import 'package:agrimore_core/agrimore_core.dart';
 
 // --- WIDGET IMPORTS (FIXED & MERGED FROM MOBILE) ---
@@ -18,6 +19,8 @@ import 'widgets/categories_grid.dart'; // <-- FIXED
 import 'widgets/bestsellers.dart'; // <-- RENAMED
 import 'widgets/dynamic_category_sections.dart';
 import 'widgets/recently_viewed_widget.dart'; // <-- ADDED FROM MOBILE
+import 'widgets/product_section_widget.dart'; // <-- HOME-6: admin-configured product sections
+import 'widgets/section_banner_carousel.dart'; // <-- HOME-6
 
 class WebHomeScreen extends StatefulWidget {
   const WebHomeScreen({Key? key}) : super(key: key);
@@ -75,6 +78,9 @@ class _WebHomeScreenState extends State<WebHomeScreen>
           Provider.of<WishlistProvider>(context, listen: false);
       final sectionProvider =
           Provider.of<CategorySectionProvider>(context, listen: false);
+      final productSectionConfigProvider =
+          Provider.of<HomeProductSectionConfigProvider>(context,
+              listen: false);
 
       // Refresh all data including banners for admin changes
       bannerProvider.loadBanners();
@@ -83,6 +89,7 @@ class _WebHomeScreenState extends State<WebHomeScreen>
       cartProvider.loadCart();
       wishlistProvider.loadWishlist();
       sectionProvider.loadSections();
+      productSectionConfigProvider.loadSections();
     });
   }
 
@@ -203,6 +210,24 @@ class _WebHomeScreenState extends State<WebHomeScreen>
                 padding: const EdgeInsets.symmetric(horizontal: 40),
                 child: _buildSectionWrapper(
                   child: const DynamicCategorySections(skipCount: 12),
+                ),
+              ),
+            ),
+
+            const SliverToBoxAdapter(child: SizedBox(height: 50)),
+
+            // 5b. Product Sections by Category (HOME-6: admin-configured,
+            // mirrors mobile_home_screen.dart's own _buildProductSections)
+            SliverToBoxAdapter(
+              child: Padding(
+                padding: const EdgeInsets.symmetric(horizontal: 40),
+                child: Consumer2<ProductProvider, CategoryProvider>(
+                  builder: (context, productProvider, categoryProvider, _) {
+                    return _buildSectionWrapper(
+                      child: _buildProductSections(
+                          productProvider, categoryProvider),
+                    );
+                  },
                 ),
               ),
             ),
@@ -728,6 +753,116 @@ class _WebHomeScreenState extends State<WebHomeScreen>
         ),
       ),
     );
+  }
+
+  // HOME-6: mirrors mobile_home_screen.dart's own _buildProductSections
+  // exactly (same admin-config gate, same fallback shape) so the web Home
+  // screen renders HOME-3's admin-configured per-category product sections
+  // too. onSeeAll uses AppRoutes.navigateToCategoryProducts (this screen's
+  // own established category-navigation pattern) instead of
+  // ShopEntryProvider, which this screen does not use anywhere else.
+  Widget _buildProductSections(
+      ProductProvider productProvider, CategoryProvider categoryProvider) {
+    final categories =
+        categoryProvider.categories.where((c) => c.isActive).toList();
+    final allProducts =
+        productProvider.products.where((p) => p.isActive).toList();
+
+    final Map<String, List<ProductModel>> productsByCategory = {};
+    for (final product in allProducts) {
+      CategoryModel? hit;
+      for (final category in categories) {
+        if (productBelongsToCategory(product, category, categories)) {
+          hit = category;
+          break;
+        }
+      }
+      final key = hit?.id ?? product.categoryId;
+      productsByCategory.putIfAbsent(key, () => []);
+      productsByCategory[key]!.add(product);
+    }
+
+    final sectionConfigProvider =
+        context.watch<HomeProductSectionConfigProvider>();
+    if (sectionConfigProvider.hasConfiguredSections) {
+      final List<Widget> configuredSections = [];
+      int configuredCount = 0;
+      for (final config in sectionConfigProvider.activeSections) {
+        CategoryModel? category;
+        for (final c in categories) {
+          if (c.id == config.categoryId) {
+            category = c;
+            break;
+          }
+        }
+        if (category == null) continue;
+
+        final categoryProducts = productsByCategory[category.id] ?? [];
+        if (categoryProducts.isEmpty) continue;
+
+        configuredCount++;
+        final displayProducts =
+            categoryProducts.take(config.maxItems).toList();
+        final sectionCategory = category;
+
+        configuredSections.add(
+          ProductSectionWidget(
+            sectionTitle: config.titleOverride ?? sectionCategory.name,
+            products: displayProducts,
+            categoryId: sectionCategory.id,
+            onSeeAll: () => AppRoutes.navigateToCategoryProducts(
+              context,
+              sectionCategory.id,
+              categoryName: sectionCategory.name,
+            ),
+          ),
+        );
+
+        if (configuredCount == 5) {
+          configuredSections.add(const SectionBannerCarousel(afterSection: 5));
+        }
+      }
+      if (configuredSections.isNotEmpty) {
+        return Column(children: configuredSections);
+      }
+    }
+
+    // Fallback: loop all active categories with products (max 8 sections) --
+    // identical shape to mobile_home_screen.dart's own fallback, so an
+    // unconfigured install behaves exactly as this screen already does today.
+    final List<Widget> sections = [];
+    int sectionCount = 0;
+    const int maxSections = 8;
+    const int productsPerSection = 10;
+
+    for (final category in categories) {
+      if (sectionCount >= maxSections) break;
+
+      final categoryProducts = productsByCategory[category.id] ?? [];
+      if (categoryProducts.isEmpty) continue;
+
+      sectionCount++;
+      final displayProducts = categoryProducts.take(productsPerSection).toList();
+
+      sections.add(
+        ProductSectionWidget(
+          sectionTitle: category.name,
+          products: displayProducts,
+          categoryId: category.id,
+          onSeeAll: () => AppRoutes.navigateToCategoryProducts(
+            context,
+            category.id,
+            categoryName: category.name,
+          ),
+        ),
+      );
+
+      if (sectionCount == 5) {
+        sections.add(const SectionBannerCarousel(afterSection: 5));
+      }
+    }
+
+    return Column(children: sections);
   }
 
   Widget _buildSectionHeader({
