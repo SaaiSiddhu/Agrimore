@@ -343,191 +343,158 @@ class _ProfileScreenState extends State<ProfileScreen> {
                 child: _buildRewardsBanner(isDark),
               ),
 
-              // Appearance Toggle
+              // PROFILE-6: every nav row — the four former section cards
+              // (Your information / Payment and rewards / Grow with
+              // Agrimore / Other information) plus the Appearance and B2B
+              // toggles — now lives in ONE card, one row after another, per
+              // the owner's reference image. Section title headers are
+              // dropped entirely (the reference has none); the real items,
+              // routes, live counts and toggle logic are all unchanged,
+              // only the grouping/chrome around them changed.
               SliverToBoxAdapter(
-                child: _buildAppearanceToggle(isDark, themeProvider),
-              ),
-
-              // B2B Ordering Mode Toggle
-              SliverToBoxAdapter(
-                child: Consumer<MarketModeProvider>(
-                  builder: (context, marketMode, _) => _buildB2BToggle(isDark, marketMode),
-                ),
-              ),
-
-              // Your Information Section
-              SliverToBoxAdapter(
-                child: _buildSection(
-                  title: 'Your information',
-                  isDark: isDark,
-                  items: [
-                    _MenuItem(
-                      icon: Icons.shopping_bag_rounded,
-                      title: 'My Orders',
-                      count: _isLoadingStats ? null : _ordersCount,
-                      onTap: () => _navigateTo(AppRoutes.orders),
-                      color: const Color(0xFF2E7D32),
-                    ),
-                    _MenuItem(
-                      icon: Icons.event_repeat_rounded,
-                      title: 'My Subscriptions',
-                      onTap: () => _navigateTo(AppRoutes.mySubscriptions),
-                      color: const Color(0xFF00897B),
-                    ),
-                    _MenuItem(
-                      icon: Icons.request_quote_outlined,
-                      title: 'My Quotes',
-                      onTap: () => _navigateTo(AppRoutes.myRfqs),
-                      color: const Color(0xFF3949AB),
-                    ),
-                    _MenuItem(
-                      icon: Icons.location_on_rounded,
-                      title: 'Delivery Addresses',
-                      count: _isLoadingStats ? null : _addressesCount,
-                      onTap: () => _navigateTo(AppRoutes.savedAddresses),
-                      color: const Color(0xFF1976D2),
-                    ),
-                    _MenuItem(
-                      icon: Icons.favorite_rounded,
-                      title: 'Your Wishlist',
-                      count: _isLoadingStats ? null : _wishlistCount,
-                      onTap: () => _navigateTo(AppRoutes.wishlist),
-                      color: AppColors.favorite,
-                    ),
-                  ],
-                ),
-              ),
-
-              // Payment & Rewards Section
-              SliverToBoxAdapter(
-                child: _buildSection(
-                  title: 'Payment and rewards',
-                  isDark: isDark,
-                  items: [
-                    _MenuItem(
-                      icon: Icons.account_balance_wallet_rounded,
-                      title: 'Agrimore Wallet',
-                      onTap: () => _navigateTo(AppRoutes.wallet),
-                      color: AppColors.wallet,
-                    ),
-                    _MenuItem(
-                      icon: Icons.card_giftcard_rounded,
-                      title: 'Rewards & Offers',
-                      onTap: () => _navigateTo(AppRoutes.rewards),
-                      color: const Color(0xFFF9A825),
-                    ),
-                    _MenuItem(
-                      icon: Icons.bolt_rounded,
-                      title: 'Flash Sale',
-                      onTap: () => _navigateTo(AppRoutes.flashSale),
-                      color: const Color(0xFFE64A19),
-                    ),
-                    _MenuItem(
-                      icon: Icons.group_add_rounded,
-                      title: 'Refer & Earn',
-                      onTap: () => _navigateTo(AppRoutes.referral),
-                      color: const Color(0xFFD81B60),
-                    ),
-                  ],
-                ),
-              ),
-
-              // Grow With Agrimore Section
-              if (!authProvider.isAdmin)
-                SliverToBoxAdapter(
-                  child: _buildSection(
-                    title: 'Grow with Agrimore',
-                    isDark: isDark,
-                    items: [
-                      if (sellerProvider.isApproved)
-                        _MenuItem(
-                          icon: Icons.storefront_rounded,
-                          title: 'Seller dashboard',
-                          onTap: () => _navigateTo(AppRoutes.sellerPanel),
-                          color: const Color(0xFF00796B),
-                        )
-                      else
-                        _MenuItem(
-                          icon: Icons.storefront_rounded,
-                          title: sellerProvider.isPending
-                              ? 'Seller application (pending)'
-                              : 'Seller registration',
-                          onTap: () => _navigateTo(AppRoutes.sellerApply),
-                          color: const Color(0xFF00796B),
-                        ),
-                      _MenuItem(
-                        icon: Icons.badge_rounded,
-                        title: 'Employee application',
-                        onTap: () => _navigateTo(AppRoutes.employeeApply),
-                        color: const Color(0xFF6D4C41),
-                      ),
-                      _MenuItem(
-                        icon: Icons.handshake_rounded,
-                        title: 'Become a Sales Associate',
-                        onTap: () => _navigateTo(AppRoutes.associateOnboarding),
-                        color: const Color(0xFF512DA8),
-                      ),
-                    ],
+                child: _buildUnifiedMenuCard(isDark, [
+                  _MenuItem(
+                    icon: Icons.shopping_bag_rounded,
+                    title: 'My Orders',
+                    count: _isLoadingStats ? null : _ordersCount,
+                    onTap: () => _navigateTo(AppRoutes.orders),
+                    color: const Color(0xFF2E7D32),
                   ),
-                ),
-
-              // Other Information Section
-              SliverToBoxAdapter(
-                child: _buildSection(
-                  title: 'Other information',
-                  isDark: isDark,
-                  items: [
+                  _MenuItem(
+                    icon: Icons.event_repeat_rounded,
+                    title: 'My Subscriptions',
+                    onTap: () => _navigateTo(AppRoutes.mySubscriptions),
+                    color: const Color(0xFF00897B),
+                  ),
+                  _MenuItem(
+                    icon: Icons.request_quote_outlined,
+                    title: 'My Quotes',
+                    onTap: () => _navigateTo(AppRoutes.myRfqs),
+                    color: const Color(0xFF3949AB),
+                  ),
+                  _MenuItem(
+                    icon: Icons.location_on_rounded,
+                    title: 'Delivery Addresses',
+                    count: _isLoadingStats ? null : _addressesCount,
+                    onTap: () => _navigateTo(AppRoutes.savedAddresses),
+                    color: const Color(0xFF1976D2),
+                  ),
+                  _MenuItem(
+                    icon: Icons.favorite_rounded,
+                    title: 'Your Wishlist',
+                    count: _isLoadingStats ? null : _wishlistCount,
+                    onTap: () => _navigateTo(AppRoutes.wishlist),
+                    color: AppColors.favorite,
+                  ),
+                  _MenuItem(
+                    icon: Icons.account_balance_wallet_rounded,
+                    title: 'Agrimore Wallet',
+                    onTap: () => _navigateTo(AppRoutes.wallet),
+                    color: AppColors.wallet,
+                  ),
+                  _MenuItem(
+                    icon: Icons.card_giftcard_rounded,
+                    title: 'Rewards & Offers',
+                    onTap: () => _navigateTo(AppRoutes.rewards),
+                    color: const Color(0xFFF9A825),
+                  ),
+                  _MenuItem(
+                    icon: Icons.bolt_rounded,
+                    title: 'Flash Sale',
+                    onTap: () => _navigateTo(AppRoutes.flashSale),
+                    color: const Color(0xFFE64A19),
+                  ),
+                  _MenuItem(
+                    icon: Icons.group_add_rounded,
+                    title: 'Refer & Earn',
+                    onTap: () => _navigateTo(AppRoutes.referral),
+                    color: const Color(0xFFD81B60),
+                  ),
+                  if (!authProvider.isAdmin)
+                    if (sellerProvider.isApproved)
+                      _MenuItem(
+                        icon: Icons.storefront_rounded,
+                        title: 'Seller dashboard',
+                        onTap: () => _navigateTo(AppRoutes.sellerPanel),
+                        color: const Color(0xFF00796B),
+                      )
+                    else
+                      _MenuItem(
+                        icon: Icons.storefront_rounded,
+                        title: sellerProvider.isPending
+                            ? 'Seller application (pending)'
+                            : 'Seller registration',
+                        onTap: () => _navigateTo(AppRoutes.sellerApply),
+                        color: const Color(0xFF00796B),
+                      ),
+                  if (!authProvider.isAdmin)
                     _MenuItem(
-                      icon: Icons.notifications_rounded,
-                      title: 'Notifications',
-                      count: _isLoadingStats || _unreadNotifications == 0
-                          ? null
-                          : _unreadNotifications,
-                      onTap: () => _navigateTo(AppRoutes.notifications),
-                      color: const Color(0xFFEF6C00),
+                      icon: Icons.badge_rounded,
+                      title: 'Employee application',
+                      onTap: () => _navigateTo(AppRoutes.employeeApply),
+                      color: const Color(0xFF6D4C41),
                     ),
+                  if (!authProvider.isAdmin)
                     _MenuItem(
-                      icon: Icons.support_agent_rounded,
-                      title: 'Help & Support',
-                      onTap: _contactSupport,
-                      color: const Color(0xFF1E88E5),
+                      icon: Icons.handshake_rounded,
+                      title: 'Become a Sales Associate',
+                      onTap: () => _navigateTo(AppRoutes.associateOnboarding),
+                      color: const Color(0xFF512DA8),
                     ),
-                    _MenuItem(
-                      icon: Icons.ios_share_rounded,
-                      title: 'Share Agrimore',
-                      onTap: () => _showShareBottomSheet(isDark),
-                      color: const Color(0xFF00ACC1),
-                    ),
-                    _MenuItem(
-                      icon: Icons.settings_rounded,
-                      title: 'Account Settings',
-                      onTap: () => _navigateTo(AppRoutes.appSettings),
-                      color: const Color(0xFF546E7A),
-                    ),
-                    _MenuItem(
-                      icon: Icons.logout_rounded,
-                      title: 'Log out',
-                      onTap: _logout,
-                      isDestructive: true,
-                    ),
-                    // Phase 17, Workstream 2: placed last — visually
-                    // subordinate to every other item in this section,
-                    // including Log out, for an action this app never had
-                    // a reachable path to before this phase.
-                    _MenuItem(
-                      icon: Icons.person_remove_outlined,
-                      title: 'Delete account',
-                      onTap: () {
-                        HapticFeedback.lightImpact();
-                        Navigator.push(
-                          context,
-                          MaterialPageRoute(builder: (_) => const DeleteAccountScreen()),
-                        );
-                      },
-                      isDestructive: true,
-                    ),
-                  ],
-                ),
+                  _MenuItem(
+                    icon: Icons.notifications_rounded,
+                    title: 'Notifications',
+                    count: _isLoadingStats || _unreadNotifications == 0
+                        ? null
+                        : _unreadNotifications,
+                    onTap: () => _navigateTo(AppRoutes.notifications),
+                    color: const Color(0xFFEF6C00),
+                  ),
+                  _MenuItem(
+                    icon: Icons.support_agent_rounded,
+                    title: 'Help & Support',
+                    onTap: _contactSupport,
+                    color: const Color(0xFF1E88E5),
+                  ),
+                  _MenuItem(
+                    icon: Icons.ios_share_rounded,
+                    title: 'Share Agrimore',
+                    onTap: () => _showShareBottomSheet(isDark),
+                    color: const Color(0xFF00ACC1),
+                  ),
+                  _MenuItem(
+                    icon: Icons.settings_rounded,
+                    title: 'Account Settings',
+                    onTap: () => _navigateTo(AppRoutes.appSettings),
+                    color: const Color(0xFF546E7A),
+                  ),
+                  _MenuItem(
+                    icon: Icons.logout_rounded,
+                    title: 'Log out',
+                    onTap: _logout,
+                    isDestructive: true,
+                  ),
+                  // Phase 17, Workstream 2: placed last among the real menu
+                  // items — visually subordinate to everything above it,
+                  // including Log out.
+                  _MenuItem(
+                    icon: Icons.person_remove_outlined,
+                    title: 'Delete account',
+                    onTap: () {
+                      HapticFeedback.lightImpact();
+                      Navigator.push(
+                        context,
+                        MaterialPageRoute(builder: (_) => const DeleteAccountScreen()),
+                      );
+                    },
+                    isDestructive: true,
+                  ),
+                ], leadingRows: [
+                  _buildAppearanceMenuRow(isDark, themeProvider),
+                  Consumer<MarketModeProvider>(
+                    builder: (context, marketMode, _) => _buildB2BMenuRow(isDark, marketMode),
+                  ),
+                ]),
               ),
 
               // Footer with Version
@@ -1012,16 +979,40 @@ class _ProfileScreenState extends State<ProfileScreen> {
                 // ClipOval, not just Image.asset: Wishlist_Icon.png is the
                 // one PNG of the four saved without an alpha channel (`file`
                 // confirms RGB, its three siblings are all RGBA) — its
-                // corners are opaque white rather than transparent, which
-                // was invisible on white light-mode cards but showed as a
-                // stray white square on dark-mode cards. The clip is safe
-                // for all four regardless of alpha: each drawn circle sits
-                // well inside its own canvas with margin to spare, so the
-                // largest circle inscribed in the square can never cut into
-                // the artwork itself — confirmed by inspecting all four
-                // before relying on it.
+                // margin is opaque white rather than transparent, which was
+                // invisible on white light-mode cards but showed as a stray
+                // white square on dark-mode cards (PROFILE-3). The clip is
+                // safe for all four regardless of alpha: each drawn circle
+                // sits well inside its own canvas, so the largest circle
+                // inscribed in the square can never cut into the artwork —
+                // confirmed by inspecting all four before relying on it.
+                //
+                // PROFILE-6: the clip alone only turned Wishlist's square
+                // artifact into a ring — measured with Python/PIL, all four
+                // PNGs draw their circle at the same ~79.5% of canvas width,
+                // so ClipOval's inscribed circle (100% of the square) still
+                // exposes a ~10% band of Wishlist's own opaque white margin
+                // all the way around, invisible on the other three only
+                // because their margin is transparent. Scaling Wishlist's
+                // image up by 1/0.795 before the clip — one specific
+                // measured constant for one specific asset, not a general
+                // rule for the other three — makes its own circle exactly
+                // fill the clip, cropping the white margin away entirely.
+                // Filling the full box this way reads visibly larger than
+                // the other three's own ~79.5%-filled circles sitting in
+                // their 46px box, so this box is smaller here too — first
+                // 40px, still too big per live owner feedback, now 34px
+                // (below the other three's own ~36.6px effective circle,
+                // deliberately, since a same-size fill still reads bigger
+                // than a partial one at a glance) — a plain size
+                // reduction, unrelated to the crop above it.
                 ClipOval(
-                  child: Image.asset(iconAsset, width: 46, height: 46),
+                  child: iconAsset.contains('Wishlist_Icon')
+                      ? Transform.scale(
+                          scale: 1.3,
+                          child: Image.asset(iconAsset, width: 34, height: 34),
+                        )
+                      : Image.asset(iconAsset, width: 46, height: 46),
                 ),
                 const SizedBox(height: 6),
                 Text(
@@ -1153,46 +1144,100 @@ class _ProfileScreenState extends State<ProfileScreen> {
     );
   }
 
-  Widget _buildAppearanceToggle(bool isDark, ThemeProvider themeProvider) {
+  // PROFILE-6: single card for every nav row (real menu items plus the
+  // Appearance/B2B toggles), matching the owner's reference image — one
+  // shared background/border, one divider style, no section titles.
+  // `leadingRows` (Appearance, B2B) render first per the owner's own
+  // re-ordering ask — settings-style toggles before the navigable list.
+  // They're pre-built widgets, not more _MenuItems, because neither fits
+  // _MenuItem's tap-to-navigate shape: Appearance opens a same-row control,
+  // B2B carries a live description line under its title. Every row and the
+  // divider indent were shrunk together (padding, badge, icon and text
+  // sizes all down a step) per the owner's "compact and smaller" ask —
+  // indent is derived from the same paddings the rows use, not a
+  // second hand-tuned number that could drift out of sync with them.
+  static const double _navRowHPad = 14;
+  static const double _navIconBadgePad = 7;
+  static const double _navIconSize = 17;
+  static const double _navIconTextGap = 10;
+  static const double _navDividerIndent =
+      _navRowHPad + _navIconBadgePad * 2 + _navIconSize + _navIconTextGap;
+
+  Widget _buildUnifiedMenuCard(
+    bool isDark,
+    List<_MenuItem> items, {
+    List<Widget> leadingRows = const [],
+  }) {
+    final rows = [
+      ...leadingRows,
+      for (final item in items) _buildMenuItem(item, isDark),
+    ];
     return Container(
       margin: const EdgeInsets.symmetric(horizontal: 16),
-      padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
       decoration: BoxDecoration(
         color: isDark ? const Color(0xFF1E1E1E) : Colors.white,
         borderRadius: BorderRadius.circular(14),
         border: Border.all(color: isDark ? Colors.grey[800]! : Colors.grey[200]!),
       ),
-      child: Row(
+      child: Column(
         children: [
-          Icon(
-            Icons.brightness_6_rounded,
-            size: 20,
-            color: isDark ? Colors.grey[400] : Colors.grey[600],
-          ),
-          const SizedBox(width: 12),
-          Text(
-            'Appearance',
-            style: TextStyle(
-              fontSize: 14,
-              fontWeight: FontWeight.w600,
-              color: isDark ? Colors.white : Colors.black87,
+          for (int i = 0; i < rows.length; i++) ...[
+            rows[i],
+            if (i != rows.length - 1)
+              Divider(
+                height: 1,
+                indent: _navDividerIndent,
+                color: isDark ? Colors.grey[800] : Colors.grey[200],
+              ),
+          ],
+        ],
+      ),
+    );
+  }
+
+  // Same badge-icon-plus-title row shape as _buildMenuItem (so the shared
+  // divider indent lines up), with the theme dropdown pill in place of a
+  // count or chevron.
+  Widget _buildAppearanceMenuRow(bool isDark, ThemeProvider themeProvider) {
+    const badgeColor = Color(0xFFFFA000);
+    return InkWell(
+      onTap: () => themeProvider.toggleTheme(),
+      child: Padding(
+        padding: const EdgeInsets.symmetric(horizontal: _navRowHPad, vertical: 10),
+        child: Row(
+          children: [
+            Container(
+              padding: const EdgeInsets.all(_navIconBadgePad),
+              decoration: BoxDecoration(
+                color: badgeColor.withValues(alpha: isDark ? 0.18 : 0.12),
+                borderRadius: BorderRadius.circular(10),
+              ),
+              child: const Icon(Icons.brightness_6_rounded, size: _navIconSize, color: badgeColor),
             ),
-          ),
-          const Spacer(),
-          GestureDetector(
-            onTap: () => themeProvider.toggleTheme(),
-            child: Container(
-              padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
+            const SizedBox(width: _navIconTextGap),
+            Expanded(
+              child: Text(
+                'Appearance',
+                style: TextStyle(
+                  fontSize: 13,
+                  fontWeight: FontWeight.w500,
+                  color: isDark ? Colors.white : Colors.black87,
+                ),
+              ),
+            ),
+            Container(
+              padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 5),
               decoration: BoxDecoration(
                 color: isDark ? Colors.grey[800] : Colors.grey[100],
                 borderRadius: BorderRadius.circular(8),
               ),
               child: Row(
+                mainAxisSize: MainAxisSize.min,
                 children: [
                   Text(
                     isDark ? 'DARK' : 'LIGHT',
                     style: TextStyle(
-                      fontSize: 12,
+                      fontSize: 11,
                       fontWeight: FontWeight.w700,
                       color: isDark ? AppColors.primaryLight : Colors.black87,
                     ),
@@ -1200,68 +1245,11 @@ class _ProfileScreenState extends State<ProfileScreen> {
                   const SizedBox(width: 4),
                   Icon(
                     Icons.keyboard_arrow_down_rounded,
-                    size: 18,
+                    size: 16,
                     color: isDark ? AppColors.primaryLight : Colors.black54,
                   ),
                 ],
               ),
-            ),
-          ),
-        ],
-      ),
-    );
-  }
-
-  Widget _buildB2BToggle(bool isDark, MarketModeProvider marketMode) {
-    return Padding(
-      padding: const EdgeInsets.fromLTRB(16, 10, 16, 0),
-      child: Container(
-        padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
-        decoration: BoxDecoration(
-          color: isDark ? const Color(0xFF1E1E1E) : Colors.white,
-          borderRadius: BorderRadius.circular(14),
-          border: Border.all(color: isDark ? Colors.grey[800]! : Colors.grey[200]!),
-        ),
-        child: Row(
-          children: [
-            Icon(
-              Icons.storefront_rounded,
-              size: 20,
-              color: isDark ? Colors.grey[400] : Colors.grey[600],
-            ),
-            const SizedBox(width: 12),
-            Expanded(
-              child: Column(
-                crossAxisAlignment: CrossAxisAlignment.start,
-                children: [
-                  Text(
-                    'B2B (Wholesale) Mode',
-                    style: TextStyle(
-                      fontSize: 14,
-                      fontWeight: FontWeight.w600,
-                      color: isDark ? Colors.white : Colors.black87,
-                    ),
-                  ),
-                  const SizedBox(height: 2),
-                  Text(
-                    marketMode.isB2B
-                        ? 'Showing wholesale pricing and MOQ'
-                        : 'Showing regular retail pricing',
-                    style: TextStyle(
-                      fontSize: 11.5,
-                      color: isDark ? Colors.grey[500] : Colors.grey[600],
-                    ),
-                  ),
-                ],
-              ),
-            ),
-            Switch.adaptive(
-              value: marketMode.isB2B,
-              onChanged: (value) {
-                HapticFeedback.mediumImpact();
-                marketMode.setB2B(value);
-              },
-              activeThumbColor: isDark ? AppColors.primaryLight : AppColors.primary,
             ),
           ],
         ),
@@ -1269,53 +1257,59 @@ class _ProfileScreenState extends State<ProfileScreen> {
     );
   }
 
-  Widget _buildSection({
-    required String title,
-    required bool isDark,
-    required List<_MenuItem> items,
-  }) {
-    return Column(
-      crossAxisAlignment: CrossAxisAlignment.start,
-      children: [
-        Padding(
-          padding: const EdgeInsets.fromLTRB(16, 20, 16, 8),
-          child: Text(
-            title,
-            style: TextStyle(
-              fontSize: 14,
-              fontWeight: FontWeight.w800,
-              color: isDark ? Colors.grey[400] : Colors.grey[700],
+  // Same badge-icon-plus-title row shape as _buildMenuItem, with a
+  // description line under the title (like the old standalone card had)
+  // and a live Switch in place of a count or chevron.
+  Widget _buildB2BMenuRow(bool isDark, MarketModeProvider marketMode) {
+    const badgeColor = Color(0xFF00796B);
+    return Padding(
+      padding: const EdgeInsets.symmetric(horizontal: _navRowHPad, vertical: 8),
+      child: Row(
+        children: [
+          Container(
+            padding: const EdgeInsets.all(_navIconBadgePad),
+            decoration: BoxDecoration(
+              color: badgeColor.withValues(alpha: isDark ? 0.18 : 0.12),
+              borderRadius: BorderRadius.circular(10),
+            ),
+            child: const Icon(Icons.storefront_rounded, size: _navIconSize, color: badgeColor),
+          ),
+          const SizedBox(width: _navIconTextGap),
+          Expanded(
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Text(
+                  'B2B (Wholesale) Mode',
+                  style: TextStyle(
+                    fontSize: 13,
+                    fontWeight: FontWeight.w500,
+                    color: isDark ? Colors.white : Colors.black87,
+                  ),
+                ),
+                const SizedBox(height: 2),
+                Text(
+                  marketMode.isB2B
+                      ? 'Showing wholesale pricing and MOQ'
+                      : 'Showing regular retail pricing',
+                  style: TextStyle(
+                    fontSize: 11,
+                    color: isDark ? Colors.grey[500] : Colors.grey[600],
+                  ),
+                ),
+              ],
             ),
           ),
-        ),
-        Container(
-          margin: const EdgeInsets.symmetric(horizontal: 16),
-          decoration: BoxDecoration(
-            color: isDark ? const Color(0xFF1E1E1E) : Colors.white,
-            borderRadius: BorderRadius.circular(14),
-            border: Border.all(color: isDark ? Colors.grey[800]! : Colors.grey[200]!),
+          Switch.adaptive(
+            value: marketMode.isB2B,
+            onChanged: (value) {
+              HapticFeedback.mediumImpact();
+              marketMode.setB2B(value);
+            },
+            activeThumbColor: isDark ? AppColors.primaryLight : AppColors.primary,
           ),
-          child: Column(
-            children: items.asMap().entries.map((entry) {
-              final index = entry.key;
-              final item = entry.value;
-              final isLast = index == items.length - 1;
-
-              return Column(
-                children: [
-                  _buildMenuItem(item, isDark),
-                  if (!isLast)
-                    Divider(
-                      height: 1,
-                      indent: 52,
-                      color: isDark ? Colors.grey[800] : Colors.grey[200],
-                    ),
-                ],
-              );
-            }).toList(),
-          ),
-        ),
-      ],
+        ],
+      ),
     );
   }
 
@@ -1327,23 +1321,23 @@ class _ProfileScreenState extends State<ProfileScreen> {
         onTap: item.onTap,
         borderRadius: BorderRadius.circular(14),
         child: Padding(
-          padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 14),
+          padding: const EdgeInsets.symmetric(horizontal: _navRowHPad, vertical: 10),
           child: Row(
             children: [
               Container(
-                padding: const EdgeInsets.all(9),
+                padding: const EdgeInsets.all(_navIconBadgePad),
                 decoration: BoxDecoration(
                   color: badgeColor.withValues(alpha: isDark ? 0.18 : 0.12),
-                  borderRadius: BorderRadius.circular(11),
+                  borderRadius: BorderRadius.circular(10),
                 ),
-                child: Icon(item.icon, size: 20, color: badgeColor),
+                child: Icon(item.icon, size: _navIconSize, color: badgeColor),
               ),
-              const SizedBox(width: 14),
+              const SizedBox(width: _navIconTextGap),
               Expanded(
                 child: Text(
                   item.title,
                   style: TextStyle(
-                    fontSize: 14,
+                    fontSize: 13,
                     fontWeight: FontWeight.w500,
                     color: item.isDestructive
                         ? Colors.red
@@ -1353,7 +1347,7 @@ class _ProfileScreenState extends State<ProfileScreen> {
               ),
               if (item.count != null)
                 Container(
-                  padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
+                  padding: const EdgeInsets.symmetric(horizontal: 7, vertical: 3),
                   decoration: BoxDecoration(
                     color: const Color(0xFF2E7D32),
                     borderRadius: BorderRadius.circular(6),
@@ -1362,7 +1356,7 @@ class _ProfileScreenState extends State<ProfileScreen> {
                     item.count.toString(),
                     style: const TextStyle(
                       color: Colors.white,
-                      fontSize: 11,
+                      fontSize: 10,
                       fontWeight: FontWeight.w700,
                     ),
                   ),
@@ -1370,7 +1364,7 @@ class _ProfileScreenState extends State<ProfileScreen> {
               else if (!item.isDestructive)
                 Icon(
                   Icons.chevron_right_rounded,
-                  size: 20,
+                  size: 18,
                   color: isDark ? Colors.grey[600] : Colors.grey[400],
                 ),
             ],
