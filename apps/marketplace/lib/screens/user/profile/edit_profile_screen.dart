@@ -644,10 +644,18 @@ class _EditProfileScreenState extends State<EditProfileScreen>
   // Still the same canonical packages/agrimore_ui StickyPhotoHeaderSliver
   // (PROFILE-12) underneath — only backgroundImage, expandedHeight and
   // heroContent are this screen's own.
+  //
+  // PROFILE-14: the hero's own title/subtitle now cross-fades OUT (fade +
+  // a small downward slide) as the header collapses, complementing the
+  // pinned title/subtitle fading IN via the same `collapse` value —
+  // there's never a moment with both fully visible. collapsedSubtitle is
+  // new on the shared widget (PROFILE-14 too); Profile screen doesn't pass
+  // it and keeps its own single-line collapsed title unchanged.
   Widget _buildHeaderSliver(bool isDark) {
     return StickyPhotoHeaderSliver(
       collapse: headerCollapse,
       collapsedTitle: 'Edit Profile',
+      collapsedSubtitle: 'Keep your information up to date',
       backgroundImage: 'assets/images/Profile/profile-detail_bg.png',
       isDark: isDark,
       expandedHeight: 296,
@@ -656,20 +664,32 @@ class _EditProfileScreenState extends State<EditProfileScreen>
         crossAxisAlignment: CrossAxisAlignment.start,
         mainAxisSize: MainAxisSize.min,
         children: [
-          Text(
-            'Edit Profile',
-            style: TextStyle(
-              color: isDark ? Colors.white : Colors.black87,
-              fontSize: 22,
-              fontWeight: FontWeight.w800,
-            ),
-          ),
-          const SizedBox(height: 2),
-          Text(
-            'Keep your information up to date',
-            style: TextStyle(
-              color: isDark ? Colors.white70 : Colors.black54,
-              fontSize: 12.5,
+          Opacity(
+            opacity: 1 - headerCollapse,
+            child: Transform.translate(
+              offset: Offset(0, headerCollapse * 6),
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                mainAxisSize: MainAxisSize.min,
+                children: [
+                  Text(
+                    'Edit Profile',
+                    style: TextStyle(
+                      color: isDark ? Colors.white : Colors.black87,
+                      fontSize: 22,
+                      fontWeight: FontWeight.w800,
+                    ),
+                  ),
+                  const SizedBox(height: 2),
+                  Text(
+                    'Keep your information up to date',
+                    style: TextStyle(
+                      color: isDark ? Colors.white70 : Colors.black54,
+                      fontSize: 12.5,
+                    ),
+                  ),
+                ],
+              ),
             ),
           ),
           const SizedBox(height: 14),

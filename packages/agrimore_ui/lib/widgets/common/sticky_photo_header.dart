@@ -18,6 +18,7 @@
 //         StickyPhotoHeaderSliver(
 //           collapse: headerCollapse,
 //           collapsedTitle: 'My Screen',
+//           collapsedSubtitle: 'Optional second line', // omit for one line
 //           backgroundImage: 'assets/images/Profile/profile_bg.png',
 //           isDark: isDark,
 //           onBack: () => Navigator.pop(context),
@@ -116,6 +117,11 @@ mixin StickyHeaderCollapseMixin<T extends StatefulWidget> on State<T> {
 class StickyPhotoHeaderSliver extends StatelessWidget {
   final double collapse;
   final String collapsedTitle;
+  // PROFILE-14: optional second line under the pinned title (Edit
+  // Profile's "Keep your information up to date"). Profile screen passes
+  // none and keeps its own established single-line "Profile" behaviour —
+  // this is additive, not a change to any existing call site.
+  final String? collapsedSubtitle;
   final String backgroundImage;
   final Widget heroContent;
   final bool isDark;
@@ -128,6 +134,7 @@ class StickyPhotoHeaderSliver extends StatelessWidget {
     super.key,
     required this.collapse,
     required this.collapsedTitle,
+    this.collapsedSubtitle,
     required this.backgroundImage,
     required this.heroContent,
     required this.isDark,
@@ -155,15 +162,38 @@ class StickyPhotoHeaderSliver extends StatelessWidget {
       // Only the collapsed toolbar strip is ever visible here (heroContent
       // lives in flexibleSpace's background) — opacity is driven by scroll
       // offset so it's invisible while the hero shows and fades in once
-      // the user has scrolled past it.
+      // the user has scrolled past it. A small upward slide rides along
+      // with the fade (settling into place as it appears) rather than a
+      // flat linear dissolve.
       title: Opacity(
         opacity: collapse,
-        child: Text(
-          collapsedTitle,
-          style: TextStyle(
-            color: isDark ? Colors.white : Colors.black87,
-            fontSize: 18,
-            fontWeight: FontWeight.w700,
+        child: Transform.translate(
+          offset: Offset(0, (1 - collapse) * 6),
+          child: Column(
+            mainAxisSize: MainAxisSize.min,
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              Text(
+                collapsedTitle,
+                style: TextStyle(
+                  color: isDark ? Colors.white : Colors.black87,
+                  fontSize: 18,
+                  fontWeight: FontWeight.w700,
+                ),
+                maxLines: 1,
+                overflow: TextOverflow.ellipsis,
+              ),
+              if (collapsedSubtitle != null)
+                Text(
+                  collapsedSubtitle!,
+                  style: TextStyle(
+                    color: isDark ? Colors.white70 : Colors.black54,
+                    fontSize: 10.5,
+                  ),
+                  maxLines: 1,
+                  overflow: TextOverflow.ellipsis,
+                ),
+            ],
           ),
         ),
       ),
