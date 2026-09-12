@@ -6,6 +6,7 @@ import 'package:agrimore_core/agrimore_core.dart';
 import 'package:agrimore_ui/agrimore_ui.dart';
 import '../../providers/theme_provider.dart';
 import '../../providers/business_follow_provider.dart';
+import '../../providers/category_provider.dart';
 import '../user/shop/widgets/product_grid.dart';
 
 /// BUSINESS-NETWORK-1 (slice 1 of 2): a customer-facing public profile for a
@@ -30,18 +31,45 @@ class BusinessProfileScreen extends StatefulWidget {
   State<BusinessProfileScreen> createState() => _BusinessProfileScreenState();
 }
 
+const _kProductsPageSize = 20;
+
 class _BusinessProfileScreenState extends State<BusinessProfileScreen> {
   Map<String, dynamic>? _seller;
   List<ProductModel> _products = [];
+  int? _productCount;
   bool _loading = true;
   String? _error;
+  bool _descriptionExpanded = false;
+  String? _selectedCategoryId;
+  DocumentSnapshot<Map<String, dynamic>>? _lastProductDoc;
+  bool _hasMoreProducts = true;
+  bool _loadingMoreProducts = false;
   final BusinessFollowProvider _followProvider = BusinessFollowProvider();
+
+  List<ProductModel> get _filteredProducts {
+    if (_selectedCategoryId == null) return _products;
+    return _products.where((p) => p.categoryId == _selectedCategoryId).toList();
+  }
+
+  List<String> get _categoryIdsInProducts {
+    final seen = <String>{};
+    final ordered = <String>[];
+    for (final p in _products) {
+      if (seen.add(p.categoryId)) ordered.add(p.categoryId);
+    }
+    return ordered;
+  }
 
   @override
   void initState() {
     super.initState();
     _followProvider.addListener(_onFollowChanged);
     _followProvider.checkFollowing(widget.sellerId);
+    // Fire-and-forget: category chips are a secondary enhancement, not
+    // load-bearing for the primary content below. loadCategories() already
+    // no-ops on a warm cache (most navigations here arrive from a screen
+    // that loaded categories already).
+    context.read<CategoryProvider>().loadCategories();
     _load();
   }
 
@@ -67,17 +95,21 @@ class _BusinessProfileScreenState extends State<BusinessProfileScreen> {
           .doc(widget.sellerId)
           .get();
 
-      final productsSnap = await FirebaseFirestore.instance
+      final productsQuery = FirebaseFirestore.instance
           .collection('products')
-          .where('sellerId', isEqualTo: widget.sellerId)
-          .limit(60)
-          .get();
+          .where('sellerId', isEqualTo: widget.sellerId);
+
+      final productsSnap = await productsQuery.limit(_kProductsPageSize).get();
+      final countSnap = await productsQuery.count().get();
 
       if (!mounted) return;
       setState(() {
         _seller = sellerDoc.exists ? sellerDoc.data() : null;
         _products =
             productsSnap.docs.map((d) => ProductModel.fromFirestore(d)).toList();
+        _productCount = countSnap.count;
+        _lastProductDoc = productsSnap.docs.isNotEmpty ? productsSnap.docs.last : null;
+        _hasMoreProducts = productsSnap.docs.length == _kProductsPageSize;
         _loading = false;
       });
     } catch (e) {
@@ -87,6 +119,59 @@ class _BusinessProfileScreenState extends State<BusinessProfileScreen> {
         _loading = false;
       });
     }
+  }
+
+  // Real pagination (SELLER-STOREFRONT-1 WS3): a document cursor over the
+  // same sellerId query _load() already runs, replacing the old one-shot
+  // .limit(60) fetch. Category-chip filtering stays client-side over
+  // whatever pages are currently loaded (unchanged from WS2) rather than
+  // adding a server-side categoryId filter here -- that would need a new
+  // sellerId+categoryId composite index this phase has no way to verify
+  // safe without a live emulator seeded with realistic multi-category
+  // data, so it is left out rather than shipped unverified.
+  Future<void> _loadMoreProducts() async {
+    if (_loadingMoreProducts || !_hasMoreProducts || _lastProductDoc == null) return;
+    setState(() => _loadingMoreProducts = true);
+    try {
+      final snap = await FirebaseFirestore.instance
+          .collection('products')
+          .where('sellerId', isEqualTo: widget.sellerId)
+          .startAfterDocument(_lastProductDoc!)
+          .limit(_kProductsPageSize)
+          .get();
+
+      if (!mounted) return;
+      setState(() {
+        _products.addAll(snap.docs.map((d) => ProductModel.fromFirestore(d)));
+        _lastProductDoc = snap.docs.isNotEmpty ? snap.docs.last : _lastProductDoc;
+        _hasMoreProducts = snap.docs.length == _kProductsPageSize;
+        _loadingMoreProducts = false;
+      });
+    } catch (e) {
+      if (!mounted) return;
+      setState(() => _loadingMoreProducts = false);
+      SnackbarHelper.showError(context, 'Could not load more products. Please try again.');
+    }
+  }
+
+  Widget _buildLoadMoreControl(bool isDark, Color accentColor) {
+    if (_selectedCategoryId != null || !_hasMoreProducts) return const SizedBox.shrink();
+    return Padding(
+      padding: const EdgeInsets.symmetric(vertical: 16),
+      child: Center(
+        child: _loadingMoreProducts
+            ? const SizedBox(
+                width: 22,
+                height: 22,
+                child: CircularProgressIndicator(strokeWidth: 2),
+              )
+            : OutlinedButton(
+                onPressed: _loadMoreProducts,
+                style: OutlinedButton.styleFrom(foregroundColor: accentColor),
+                child: const Text('Load more'),
+              ),
+      ),
+    );
   }
 
   // Hidden for a signed-out viewer or the seller viewing their own profile
@@ -149,13 +234,330 @@ class _BusinessProfileScreenState extends State<BusinessProfileScreen> {
     );
   }
 
+  // SELLER-STOREFRONT-1. `sellers/{uid}.createdAt` is a server timestamp set
+  // at approval (createSellerByAdmin.ts / the admin approval batch) -- a
+  // real signal, not derived from any client-controllable field.
+  String? _tenureLabel() {
+    final createdAt = _seller?['createdAt'];
+    if (createdAt is! Timestamp) return null;
+    final days = DateTime.now().difference(createdAt.toDate()).inDays;
+    if (days < 30) return 'New seller';
+    if (days < 365) {
+      final months = (days / 30).floor();
+      return '$months mo${months > 1 ? 's' : ''}';
+    }
+    final years = (days / 365).floor();
+    return '$years yr${years > 1 ? 's' : ''}';
+  }
+
+  Widget _buildMetricStat(String value, String label, bool isDark) {
+    return Column(
+      children: [
+        Text(
+          value,
+          style: TextStyle(
+            fontSize: 16,
+            fontWeight: FontWeight.w800,
+            color: isDark ? Colors.white : Colors.black87,
+          ),
+        ),
+        const SizedBox(height: 2),
+        Text(
+          label,
+          style: TextStyle(
+            fontSize: 11,
+            color: isDark ? Colors.grey[400] : Colors.grey[600],
+          ),
+        ),
+      ],
+    );
+  }
+
+  // Verified reflects `status == 'approved'`, rules-enforced
+  // (ownerCannotApproveSellerStatus() -- a seller can never self-approve).
+  // Not always true here: unlike ADMIN-SELLER-CMS-1's own admin list (which
+  // filters status=='approved'), this screen opens any sellerId directly,
+  // so a pending/rejected seller's profile is reachable and must not show
+  // this badge.
+  Widget _buildVerifiedBadge(bool isVerified) {
+    if (!isVerified) return const SizedBox.shrink();
+    return Container(
+      padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 4),
+      decoration: BoxDecoration(
+        color: AppColors.primary.withValues(alpha: 0.14),
+        borderRadius: BorderRadius.circular(20),
+        border: Border.all(color: AppColors.primary.withValues(alpha: 0.5)),
+      ),
+      child: Row(
+        mainAxisSize: MainAxisSize.min,
+        children: [
+          Icon(Icons.verified_rounded, size: 13, color: AppColors.primaryDark),
+          const SizedBox(width: 4),
+          Text(
+            'Verified Seller',
+            style: TextStyle(
+              color: AppColors.primaryDark,
+              fontSize: 11,
+              fontWeight: FontWeight.w700,
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+
+  Widget _buildMetricsRow(bool isDark) {
+    final tenure = _tenureLabel();
+    final isVerified = _seller?['status'] == 'approved';
+    if (_productCount == null && tenure == null && !isVerified) {
+      return const SizedBox.shrink();
+    }
+    return Padding(
+      padding: const EdgeInsets.only(top: 14),
+      child: Row(
+        children: [
+          if (_productCount != null)
+            _buildMetricStat('$_productCount', 'Products', isDark),
+          if (_productCount != null && tenure != null) const SizedBox(width: 24),
+          if (tenure != null) _buildMetricStat(tenure, 'On Agrimore', isDark),
+          if (isVerified) ...[
+            const Spacer(),
+            _buildVerifiedBadge(true),
+          ],
+        ],
+      ),
+    );
+  }
+
+  Widget _buildCoverBanner(bool isDark, Color accentColor, String? coverUrl) {
+    final hasCover = coverUrl != null && coverUrl.isNotEmpty;
+    return Container(
+      height: 120,
+      width: double.infinity,
+      decoration: BoxDecoration(
+        gradient: hasCover
+            ? null
+            : LinearGradient(
+                colors: [accentColor.withValues(alpha: 0.85), accentColor],
+                begin: Alignment.topLeft,
+                end: Alignment.bottomRight,
+              ),
+        image: hasCover
+            ? DecorationImage(image: NetworkImage(coverUrl), fit: BoxFit.cover)
+            : null,
+      ),
+    );
+  }
+
+  // "About Seller" -- description (new, ADMIN-SELLER-CMS-1) + the full
+  // shopAddress (already shown compact in the header; repeated here for a
+  // seller whose address is too long for that single line). Renders
+  // nothing when the seller has set neither, matching the "no broken
+  // layout for a seller with none of the new fields" invariant.
+  Widget _buildAboutSection(bool isDark, String? description, String? shopAddress) {
+    final hasDescription = description != null && description.isNotEmpty;
+    final hasAddress = shopAddress != null && shopAddress.isNotEmpty;
+    if (!hasDescription && !hasAddress) return const SizedBox.shrink();
+
+    const collapsedLines = 3;
+    return Container(
+      margin: const EdgeInsets.only(top: 12),
+      width: double.infinity,
+      padding: const EdgeInsets.all(16),
+      color: isDark ? AppColors.surfaceDark : Colors.white,
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Text(
+            'About Seller',
+            style: TextStyle(
+              fontSize: 14,
+              fontWeight: FontWeight.w700,
+              color: isDark ? Colors.white : Colors.black87,
+            ),
+          ),
+          if (hasDescription) ...[
+            const SizedBox(height: 8),
+            Text(
+              description,
+              maxLines: _descriptionExpanded ? null : collapsedLines,
+              overflow: _descriptionExpanded ? TextOverflow.visible : TextOverflow.ellipsis,
+              style: TextStyle(
+                fontSize: 13,
+                height: 1.4,
+                color: isDark ? Colors.grey[300] : Colors.grey[800],
+              ),
+            ),
+            GestureDetector(
+              onTap: () => setState(() => _descriptionExpanded = !_descriptionExpanded),
+              child: Padding(
+                padding: const EdgeInsets.only(top: 4),
+                child: Text(
+                  _descriptionExpanded ? 'Show less' : 'Read more',
+                  style: TextStyle(
+                    fontSize: 12,
+                    fontWeight: FontWeight.w700,
+                    color: isDark ? AppColors.primaryLight : AppColors.primary,
+                  ),
+                ),
+              ),
+            ),
+          ],
+          if (hasAddress) ...[
+            SizedBox(height: hasDescription ? 10 : 8),
+            Row(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Icon(Icons.location_on_outlined,
+                    size: 15, color: isDark ? Colors.grey[400] : Colors.grey[600]),
+                const SizedBox(width: 6),
+                Expanded(
+                  child: Text(
+                    shopAddress,
+                    style: TextStyle(
+                      fontSize: 13,
+                      color: isDark ? Colors.grey[400] : Colors.grey[600],
+                    ),
+                  ),
+                ),
+              ],
+            ),
+          ],
+        ],
+      ),
+    );
+  }
+
+  // Only platform-backed claims: Verified reflects the same rules-enforced
+  // status this screen's own metrics-row badge uses; Secure Payments is a
+  // platform-wide fact (Razorpay HMAC + live-status verification applies
+  // to every order regardless of seller, security.md invariant I5) --
+  // mirrors landing_screen.dart's own trust-badge copy/icons exactly, since
+  // both are the same true claim in a different context. Deliberately NOT
+  // included: any delivery-speed or return-rate claim -- no per-seller
+  // fulfilment-metric data exists anywhere in this codebase to back one.
+  Widget _buildTrustStrip(bool isDark, bool isVerified) {
+    Widget badge(IconData icon, String label) {
+      return Row(
+        mainAxisSize: MainAxisSize.min,
+        children: [
+          Icon(icon, size: 15, color: isDark ? AppColors.primaryLight : AppColors.primary),
+          const SizedBox(width: 5),
+          Text(
+            label,
+            style: TextStyle(
+              fontSize: 12,
+              fontWeight: FontWeight.w500,
+              color: isDark ? Colors.grey[300] : Colors.grey[700],
+            ),
+          ),
+        ],
+      );
+    }
+
+    return Padding(
+      padding: const EdgeInsets.fromLTRB(16, 10, 16, 0),
+      child: Wrap(
+        spacing: 18,
+        runSpacing: 6,
+        children: [
+          if (isVerified) badge(Icons.verified_user_rounded, 'Verified Seller'),
+          badge(Icons.shield_rounded, 'Secure Payments'),
+        ],
+      ),
+    );
+  }
+
+  Widget _buildCategoryChip({
+    required String label,
+    required bool isActive,
+    required VoidCallback onTap,
+    required bool isDark,
+    required Color accentColor,
+  }) {
+    return GestureDetector(
+      onTap: onTap,
+      child: Container(
+        padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 6),
+        decoration: BoxDecoration(
+          color: isActive
+              ? accentColor.withValues(alpha: 0.1)
+              : (isDark ? const Color(0xFF2A2A2A) : Colors.white),
+          borderRadius: BorderRadius.circular(20),
+          border: Border.all(
+            color: isActive ? accentColor : (isDark ? Colors.grey[700]! : Colors.grey[300]!),
+            width: isActive ? 1.5 : 1,
+          ),
+        ),
+        child: Text(
+          label,
+          style: TextStyle(
+            fontSize: 12,
+            fontWeight: isActive ? FontWeight.w700 : FontWeight.w500,
+            color: isActive ? accentColor : (isDark ? Colors.white : Colors.black87),
+          ),
+        ),
+      ),
+    );
+  }
+
+  // Derived from this seller's own products' categoryId (ProductModel,
+  // required field) -- no schema change. Resolves a display name via the
+  // app-wide CategoryProvider already registered in main.dart; falls back
+  // to the raw id only in the (expected to be rare) case a category was
+  // deleted after a product referenced it.
+  Widget _buildCategoryChips(bool isDark, Color accentColor, CategoryProvider categoryProvider) {
+    final ids = _categoryIdsInProducts;
+    if (ids.length < 2) return const SizedBox.shrink();
+
+    return Padding(
+      padding: const EdgeInsets.only(top: 10),
+      child: SizedBox(
+        height: 36,
+        child: ListView.separated(
+          scrollDirection: Axis.horizontal,
+          padding: const EdgeInsets.symmetric(horizontal: 16),
+          itemCount: ids.length + 1,
+          separatorBuilder: (_, __) => const SizedBox(width: 8),
+          itemBuilder: (context, index) {
+            if (index == 0) {
+              return _buildCategoryChip(
+                label: 'All',
+                isActive: _selectedCategoryId == null,
+                onTap: () => setState(() => _selectedCategoryId = null),
+                isDark: isDark,
+                accentColor: accentColor,
+              );
+            }
+            final id = ids[index - 1];
+            final name = categoryProvider.getCategoryById(id)?.name ?? id;
+            return _buildCategoryChip(
+              label: name,
+              isActive: _selectedCategoryId == id,
+              onTap: () => setState(
+                () => _selectedCategoryId = _selectedCategoryId == id ? null : id,
+              ),
+              isDark: isDark,
+              accentColor: accentColor,
+            );
+          },
+        ),
+      ),
+    );
+  }
+
   @override
   Widget build(BuildContext context) {
     final themeProvider = Provider.of<ThemeProvider>(context);
+    final categoryProvider = context.watch<CategoryProvider>();
     final isDark = themeProvider.isDarkMode;
     final accentColor = isDark ? AppColors.primaryLight : AppColors.primary;
     final shopName = (_seller?['shopName'] as String?)?.trim();
     final shopAddress = (_seller?['shopAddress'] as String?)?.trim();
+    final logoUrl = (_seller?['logoUrl'] as String?)?.trim();
+    final coverUrl = (_seller?['coverImageUrl'] as String?)?.trim();
+    final description = (_seller?['description'] as String?)?.trim();
+    final isVerified = _seller?['status'] == 'approved';
 
     return Scaffold(
       backgroundColor: isDark ? AppColors.backgroundDark : Colors.grey[50],
@@ -192,6 +594,7 @@ class _BusinessProfileScreenState extends State<BusinessProfileScreen> {
                       onRefresh: _load,
                       child: ListView(
                         children: [
+                          _buildCoverBanner(isDark, accentColor, coverUrl),
                           Container(
                             width: double.infinity,
                             padding: const EdgeInsets.all(20),
@@ -204,7 +607,12 @@ class _BusinessProfileScreenState extends State<BusinessProfileScreen> {
                                     CircleAvatar(
                                       radius: 28,
                                       backgroundColor: accentColor.withValues(alpha: 0.1),
-                                      child: Icon(Icons.storefront, color: accentColor, size: 28),
+                                      backgroundImage: (logoUrl != null && logoUrl.isNotEmpty)
+                                          ? NetworkImage(logoUrl)
+                                          : null,
+                                      child: (logoUrl == null || logoUrl.isEmpty)
+                                          ? Icon(Icons.storefront, color: accentColor, size: 28)
+                                          : null,
                                     ),
                                     const SizedBox(width: 14),
                                     Expanded(
@@ -234,16 +642,19 @@ class _BusinessProfileScreenState extends State<BusinessProfileScreen> {
                                     ),
                                   ],
                                 ),
+                                _buildMetricsRow(isDark),
                                 const SizedBox(height: 14),
                                 _buildFollowButton(isDark, accentColor),
                               ],
                             ),
                           ),
-                          const SizedBox(height: 12),
+                          _buildAboutSection(isDark, description, shopAddress),
+                          _buildTrustStrip(isDark, isVerified),
+                          const SizedBox(height: 8),
                           Padding(
                             padding: const EdgeInsets.symmetric(horizontal: 16),
                             child: Text(
-                              'Products (${_products.length})',
+                              'Products (${_productCount ?? _products.length})',
                               style: TextStyle(
                                 fontSize: 15,
                                 fontWeight: FontWeight.w700,
@@ -251,14 +662,18 @@ class _BusinessProfileScreenState extends State<BusinessProfileScreen> {
                               ),
                             ),
                           ),
-                          if (_products.isEmpty)
-                            const EmptyState(
+                          _buildCategoryChips(isDark, accentColor, categoryProvider),
+                          if (_filteredProducts.isEmpty)
+                            EmptyState(
                               icon: Icons.inventory_2_outlined,
-                              title: 'No products yet',
-                              message: 'This seller has not listed any products yet.',
+                              title: _products.isEmpty ? 'No products yet' : 'No products in this category',
+                              message: _products.isEmpty
+                                  ? 'This seller has not listed any products yet.'
+                                  : 'Try a different category.',
                             )
                           else
-                            ProductGrid(products: _products),
+                            ProductGrid(products: _filteredProducts),
+                          _buildLoadMoreControl(isDark, accentColor),
                           const SizedBox(height: 24),
                         ],
                       ),
