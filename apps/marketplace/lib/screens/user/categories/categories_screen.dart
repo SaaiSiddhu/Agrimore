@@ -93,6 +93,15 @@ class _CategoriesScreenState extends State<CategoriesScreen>
     });
   }
 
+  // Shared by every place that lists categories/subcategories AS categories
+  // to browse (the sidebar rail, its own tap-handler lookup below, and the
+  // Shop-by-Category grid) -- a single predicate so all three can never
+  // drift out of sync with each other. isActive is CAT-3-era and already
+  // meant "usable at all"; isVisible is this phase's own, narrower
+  // "currently shown to customers" -- a category can stay active (editable,
+  // keeps its products) while temporarily hidden, or vice versa.
+  static bool _isBrowsable(CategoryModel c) => c.isActive && c.isVisible;
+
   void _onCategorySelected(int index) {
     if (_selectedIndex != index) {
       HapticFeedback.selectionClick();
@@ -106,8 +115,9 @@ class _CategoriesScreenState extends State<CategoriesScreen>
       _staggerController.forward(from: 0.0);
       final categoryProvider =
           Provider.of<CategoryProvider>(context, listen: false);
-      final mainCategories =
-          categoryProvider.categories.where((c) => c.isMainCategory).toList();
+      final mainCategories = categoryProvider.categories
+          .where((c) => c.isMainCategory && _isBrowsable(c))
+          .toList();
       if (index < mainCategories.length) {
         _analytics.logCustomEvent(
           name: 'category_selected',
@@ -164,8 +174,9 @@ class _CategoriesScreenState extends State<CategoriesScreen>
           }
 
           final allCategories = categoryProvider.categories;
-          final mainCategories =
-              allCategories.where((c) => c.isMainCategory).toList();
+          final mainCategories = allCategories
+              .where((c) => c.isMainCategory && _isBrowsable(c))
+              .toList();
 
           return Row(
             children: [
@@ -363,8 +374,9 @@ class _CategoriesScreenState extends State<CategoriesScreen>
     bool isDark,
     Color accentColor,
   ) {
-    final subcategories =
-        allCategories.where((c) => c.parentId == category.id).toList();
+    final subcategories = allCategories
+        .where((c) => c.parentId == category.id && _isBrowsable(c))
+        .toList();
 
     return RefreshIndicator(
       onRefresh: () async {
@@ -1356,61 +1368,89 @@ class _SubcategoryImageCardState extends State<_SubcategoryImageCard> {
           scale: _isPressed ? 0.96 : 1.0,
           duration: const Duration(milliseconds: 120),
           curve: Curves.easeOut,
-          child: Container(
-            padding: const EdgeInsets.fromLTRB(8, 8, 8, 7),
-            decoration: BoxDecoration(
-              color: widget.isDark ? const Color(0xFF252525) : Colors.white,
-              borderRadius: BorderRadius.circular(8),
-              border: Border.all(
-                color:
-                    widget.isDark ? Colors.grey[800]! : const Color(0xFFE7E7E7),
-                width: 0.8,
-              ),
-              boxShadow: [
-                BoxShadow(
-                  color: Colors.black.withValues(alpha: widget.isDark ? 0.16 : 0.04),
-                  blurRadius: 8,
-                  offset: const Offset(0, 2),
-                ),
-              ],
-            ),
-            child: Column(
-              children: [
-                Expanded(
-                  child: ClipRRect(
-                    borderRadius: BorderRadius.circular(7),
-                    child: imageUrl.isNotEmpty &&
-                            _CategoriesScreenState._showCategoryImages
-                        ? CachedNetworkImage(
-                            imageUrl: imageUrl,
-                            width: double.infinity,
-                            fit: BoxFit.cover,
-                            placeholder: (_, __) => _buildFallbackImage(),
-                            errorWidget: (_, __, ___) => _buildFallbackImage(),
-                          )
-                        : _buildFallbackImage(),
+          child: Stack(
+            children: [
+              Container(
+                padding: const EdgeInsets.fromLTRB(8, 8, 8, 7),
+                decoration: BoxDecoration(
+                  color: widget.isDark ? const Color(0xFF252525) : Colors.white,
+                  borderRadius: BorderRadius.circular(8),
+                  border: Border.all(
+                    color: widget.isDark
+                        ? Colors.grey[800]!
+                        : const Color(0xFFE7E7E7),
+                    width: 0.8,
                   ),
+                  boxShadow: [
+                    BoxShadow(
+                      color: Colors.black
+                          .withValues(alpha: widget.isDark ? 0.16 : 0.04),
+                      blurRadius: 8,
+                      offset: const Offset(0, 2),
+                    ),
+                  ],
                 ),
-                const SizedBox(height: 7),
-                SizedBox(
-                  height: 30,
-                  child: Center(
-                    child: Text(
-                      widget.category.name,
-                      textAlign: TextAlign.center,
-                      maxLines: 2,
-                      overflow: TextOverflow.ellipsis,
-                      style: TextStyle(
-                        color: widget.isDark ? Colors.white : Colors.black87,
-                        fontSize: 11,
-                        fontWeight: FontWeight.w700,
-                        height: 1.15,
+                child: Column(
+                  children: [
+                    Expanded(
+                      child: ClipRRect(
+                        borderRadius: BorderRadius.circular(7),
+                        child: imageUrl.isNotEmpty &&
+                                _CategoriesScreenState._showCategoryImages
+                            ? CachedNetworkImage(
+                                imageUrl: imageUrl,
+                                width: double.infinity,
+                                fit: BoxFit.cover,
+                                placeholder: (_, __) => _buildFallbackImage(),
+                                errorWidget: (_, __, ___) => _buildFallbackImage(),
+                              )
+                            : _buildFallbackImage(),
                       ),
                     ),
+                    const SizedBox(height: 7),
+                    SizedBox(
+                      height: 30,
+                      child: Center(
+                        child: Text(
+                          widget.category.name,
+                          textAlign: TextAlign.center,
+                          maxLines: 2,
+                          overflow: TextOverflow.ellipsis,
+                          style: TextStyle(
+                            color: widget.isDark ? Colors.white : Colors.black87,
+                            fontSize: 11,
+                            fontWeight: FontWeight.w700,
+                            height: 1.15,
+                          ),
+                        ),
+                      ),
+                    ),
+                  ],
+                ),
+              ),
+              // Featured badge -- mirrors ProductModel.isFeatured's own
+              // Popular Picks precedent (CAT-1): a promotional highlight
+              // with a real, observable consequence, not a write-only flag.
+              if (widget.category.isFeatured)
+                Positioned(
+                  top: 4,
+                  right: 4,
+                  child: Container(
+                    padding: const EdgeInsets.all(3),
+                    decoration: BoxDecoration(
+                      color: Colors.amber.shade600,
+                      shape: BoxShape.circle,
+                      boxShadow: [
+                        BoxShadow(
+                          color: Colors.black.withValues(alpha: 0.25),
+                          blurRadius: 3,
+                        ),
+                      ],
+                    ),
+                    child: const Icon(Icons.star_rounded, size: 11, color: Colors.white),
                   ),
                 ),
-              ],
-            ),
+            ],
           ),
         ),
       ),
