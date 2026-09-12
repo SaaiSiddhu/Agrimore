@@ -114,6 +114,7 @@ flutter:
     - assets/images/
     - assets/images/Profile/
     - assets/icons/
+    - assets/icons/Login/
     - assets/lottie/
     - assets/fonts/NotoSans-Regular.ttf
     - assets/map_styles/dark_map.json
