@@ -85,6 +85,10 @@ export { verifyEmailForProfile } from "./customer/verifyEmailForProfile";
 export { changeEmailAddress } from "./customer/changeEmailAddress";
 export { changePhoneNumber } from "./customer/changePhoneNumber";
 export { verifyAssociateCode } from "./customer/verifyAssociateCode";
+// AUTH-3: looks up whether a Google identity is already linked to an
+// existing AgriMore account, with no Firebase Auth context required —
+// see the file's own header comment for why this must be unauthenticated.
+export { resolveGoogleIdentity } from "./customer/resolveGoogleIdentity";
 
 // ============================================
 // INVENTORY & STOCK ALERTS
