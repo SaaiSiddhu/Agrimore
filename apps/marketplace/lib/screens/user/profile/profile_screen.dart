@@ -3,6 +3,12 @@
 // (Phase PROFILE-1) toward a supplied visual reference: a 4-up quick-action
 // row, a rewards band, and a grouped menu, all wired to real data — no
 // reference-image sample value (name/phone/balances/counts) is hard-coded.
+// Phase PROFILE-2 closed the remaining visual gap against that same
+// reference: every menu row now carries its own coloured icon badge
+// (_MenuItem.color, derived into a pastel circle by _buildMenuItem — the
+// same single-colour derivation the now-deleted profile_menu_item.dart
+// widget used), and the header title cross-fades an "AgriMore" wordmark
+// with the collapsed "Profile" label instead of showing only the latter.
 //
 // The header is a real SliverAppBar(pinned: true) + FlexibleSpaceBar, not a
 // scroll listener faking it: Flutter collapses the hero (avatar/name) into
@@ -351,28 +357,33 @@ class _ProfileScreenState extends State<ProfileScreen> {
                       title: 'My Orders',
                       count: _isLoadingStats ? null : _ordersCount,
                       onTap: () => _navigateTo(AppRoutes.orders),
+                      color: const Color(0xFF2E7D32),
                     ),
                     _MenuItem(
                       icon: Icons.event_repeat_rounded,
                       title: 'My Subscriptions',
                       onTap: () => _navigateTo(AppRoutes.mySubscriptions),
+                      color: const Color(0xFF00897B),
                     ),
                     _MenuItem(
                       icon: Icons.request_quote_outlined,
                       title: 'My Quotes',
                       onTap: () => _navigateTo(AppRoutes.myRfqs),
+                      color: const Color(0xFF3949AB),
                     ),
                     _MenuItem(
                       icon: Icons.location_on_rounded,
                       title: 'Delivery Addresses',
                       count: _isLoadingStats ? null : _addressesCount,
                       onTap: () => _navigateTo(AppRoutes.savedAddresses),
+                      color: const Color(0xFF1976D2),
                     ),
                     _MenuItem(
                       icon: Icons.favorite_rounded,
                       title: 'Your Wishlist',
                       count: _isLoadingStats ? null : _wishlistCount,
                       onTap: () => _navigateTo(AppRoutes.wishlist),
+                      color: AppColors.favorite,
                     ),
                   ],
                 ),
@@ -388,21 +399,25 @@ class _ProfileScreenState extends State<ProfileScreen> {
                       icon: Icons.account_balance_wallet_rounded,
                       title: 'Agrimore Wallet',
                       onTap: () => _navigateTo(AppRoutes.wallet),
+                      color: AppColors.wallet,
                     ),
                     _MenuItem(
                       icon: Icons.card_giftcard_rounded,
                       title: 'Rewards & Offers',
                       onTap: () => _navigateTo(AppRoutes.rewards),
+                      color: const Color(0xFFF9A825),
                     ),
                     _MenuItem(
                       icon: Icons.bolt_rounded,
                       title: 'Flash Sale',
                       onTap: () => _navigateTo(AppRoutes.flashSale),
+                      color: const Color(0xFFE64A19),
                     ),
                     _MenuItem(
                       icon: Icons.group_add_rounded,
                       title: 'Refer & Earn',
                       onTap: () => _navigateTo(AppRoutes.referral),
+                      color: const Color(0xFFD81B60),
                     ),
                   ],
                 ),
@@ -420,6 +435,7 @@ class _ProfileScreenState extends State<ProfileScreen> {
                           icon: Icons.storefront_rounded,
                           title: 'Seller dashboard',
                           onTap: () => _navigateTo(AppRoutes.sellerPanel),
+                          color: const Color(0xFF00796B),
                         )
                       else
                         _MenuItem(
@@ -428,16 +444,19 @@ class _ProfileScreenState extends State<ProfileScreen> {
                               ? 'Seller application (pending)'
                               : 'Seller registration',
                           onTap: () => _navigateTo(AppRoutes.sellerApply),
+                          color: const Color(0xFF00796B),
                         ),
                       _MenuItem(
                         icon: Icons.badge_rounded,
                         title: 'Employee application',
                         onTap: () => _navigateTo(AppRoutes.employeeApply),
+                        color: const Color(0xFF6D4C41),
                       ),
                       _MenuItem(
                         icon: Icons.handshake_rounded,
                         title: 'Become a Sales Associate',
                         onTap: () => _navigateTo(AppRoutes.associateOnboarding),
+                        color: const Color(0xFF512DA8),
                       ),
                     ],
                   ),
@@ -456,21 +475,25 @@ class _ProfileScreenState extends State<ProfileScreen> {
                           ? null
                           : _unreadNotifications,
                       onTap: () => _navigateTo(AppRoutes.notifications),
+                      color: const Color(0xFFEF6C00),
                     ),
                     _MenuItem(
                       icon: Icons.support_agent_rounded,
                       title: 'Help & Support',
                       onTap: _contactSupport,
+                      color: const Color(0xFF1E88E5),
                     ),
                     _MenuItem(
                       icon: Icons.ios_share_rounded,
                       title: 'Share Agrimore',
                       onTap: () => _showShareBottomSheet(isDark),
+                      color: const Color(0xFF00ACC1),
                     ),
                     _MenuItem(
                       icon: Icons.settings_rounded,
                       title: 'Account Settings',
                       onTap: () => _navigateTo(AppRoutes.appSettings),
+                      color: const Color(0xFF546E7A),
                     ),
                     _MenuItem(
                       icon: Icons.logout_rounded,
@@ -554,20 +577,45 @@ class _ProfileScreenState extends State<ProfileScreen> {
       ],
       centerTitle: false,
       titleSpacing: 4,
-      // Only the collapsed toolbar strip is ever visible here (the hero's
-      // name/avatar live in flexibleSpace's background below) — opacity is
-      // driven by scroll offset so it's invisible while the hero shows and
-      // fades in once the user has scrolled past it.
-      title: Opacity(
-        opacity: headerCollapse,
-        child: Text(
-          'Profile',
-          style: TextStyle(
-            color: isDark ? Colors.white : Colors.black87,
-            fontSize: 18,
-            fontWeight: FontWeight.w700,
+      // Two labels cross-fade on the same inverse-opacity mechanic already
+      // driving the collapse (no new controller): the "AgriMore" wordmark
+      // (Phase PROFILE-2 — the reference image's own brand row) is full
+      // opacity while expanded, over the green gradient, so it's white;
+      // "Profile" fades in as that gradient scrolls out from behind the
+      // toolbar and the background turns solid, exactly as before.
+      title: Stack(
+        alignment: Alignment.centerLeft,
+        children: [
+          Opacity(
+            opacity: 1 - headerCollapse,
+            child: Row(
+              mainAxisSize: MainAxisSize.min,
+              children: const [
+                Icon(Icons.eco_rounded, color: Colors.white, size: 20),
+                SizedBox(width: 6),
+                Text(
+                  'AgriMore',
+                  style: TextStyle(
+                    color: Colors.white,
+                    fontSize: 18,
+                    fontWeight: FontWeight.w800,
+                  ),
+                ),
+              ],
+            ),
           ),
-        ),
+          Opacity(
+            opacity: headerCollapse,
+            child: Text(
+              'Profile',
+              style: TextStyle(
+                color: isDark ? Colors.white : Colors.black87,
+                fontSize: 18,
+                fontWeight: FontWeight.w700,
+              ),
+            ),
+          ),
+        ],
       ),
       flexibleSpace: FlexibleSpaceBar(
         background: Container(
@@ -1165,6 +1213,7 @@ class _ProfileScreenState extends State<ProfileScreen> {
   }
 
   Widget _buildMenuItem(_MenuItem item, bool isDark) {
+    final badgeColor = item.isDestructive ? Colors.red : item.color;
     return Material(
       color: Colors.transparent,
       child: InkWell(
@@ -1174,12 +1223,13 @@ class _ProfileScreenState extends State<ProfileScreen> {
           padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 14),
           child: Row(
             children: [
-              Icon(
-                item.icon,
-                size: 22,
-                color: item.isDestructive
-                    ? Colors.red
-                    : (isDark ? Colors.grey[400] : Colors.grey[700]),
+              Container(
+                padding: const EdgeInsets.all(9),
+                decoration: BoxDecoration(
+                  color: badgeColor.withValues(alpha: isDark ? 0.18 : 0.12),
+                  borderRadius: BorderRadius.circular(11),
+                ),
+                child: Icon(item.icon, size: 20, color: badgeColor),
               ),
               const SizedBox(width: 14),
               Expanded(
@@ -1312,6 +1362,12 @@ class _MenuItem {
   final int? count;
   final VoidCallback onTap;
   final bool isDestructive;
+  // Base colour for this row's icon badge — _buildMenuItem derives both the
+  // pastel circle (alpha 0.12) and the icon tint from it, the same
+  // single-colour derivation the now-deleted profile_menu_item.dart widget
+  // used. isDestructive rows ignore this and always render red, matching
+  // their text colour.
+  final Color color;
 
   _MenuItem({
     required this.icon,
@@ -1319,6 +1375,7 @@ class _MenuItem {
     this.count,
     required this.onTap,
     this.isDestructive = false,
+    this.color = const Color(0xFF757575),
   });
 }
 
