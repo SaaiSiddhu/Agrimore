@@ -10,6 +10,7 @@ import 'package:agrimore_services/agrimore_services.dart';
 import '../../../providers/category_provider.dart';
 import '../../../providers/product_provider.dart';
 import '../../../providers/cart_provider.dart';
+import '../../../providers/banner_provider.dart';
 import '../../../providers/theme_provider.dart';
 import '../../../app/routes.dart';
 import 'widgets/category_content_sections.dart';
@@ -392,24 +393,31 @@ class _CategoriesScreenState extends State<CategoriesScreen>
             ),
           ),
 
-          // Hero banner — admin-controlled (category.bannerImageUrl); renders
-          // nothing when the category has none configured.
+          // Hero banner — prefers admin-managed, scheduled CATEGORY_HERO
+          // banners (CAT-2) over category.bannerImageUrl's static fallback
+          // (CAT-1); renders nothing when neither exists.
           SliverToBoxAdapter(
             child: Padding(
               padding: const EdgeInsets.fromLTRB(10, 10, 10, 0),
-              child: CategoryHeroBanner(
-                category: category,
-                isDark: isDark,
-                accentColor: accentColor,
-                onShopNow: () {
-                  _analytics.logCustomEvent(
-                    name: 'category_banner_clicked',
-                    parameters: {'category_id': category.id},
-                  );
-                  AppRoutes.navigateToCategoryProducts(
-                    context,
-                    category.id,
-                    categoryName: category.name,
+              child: Consumer<BannerProvider>(
+                builder: (context, bannerProvider, _) {
+                  final eligible = bannerProvider.categoryHeroBanners(category.id);
+                  return CategoryHeroBanner(
+                    category: category,
+                    bannerImageUrls: eligible.map((b) => b.imageUrl).toList(),
+                    isDark: isDark,
+                    accentColor: accentColor,
+                    onShopNow: () {
+                      _analytics.logCustomEvent(
+                        name: 'category_banner_clicked',
+                        parameters: {'category_id': category.id},
+                      );
+                      AppRoutes.navigateToCategoryProducts(
+                        context,
+                        category.id,
+                        categoryName: category.name,
+                      );
+                    },
                   );
                 },
               ),
