@@ -38,9 +38,34 @@ class BannerProvider with ChangeNotifier {
   bool get isLoading => _isLoading;
   String? get error => _error;
 
-  // activeBanners filtered & sorted locally (works with subscription updates)
+  // activeBanners filtered & sorted locally (works with subscription updates).
+  // Scoped to the Home placement so a CATEGORY_HERO banner never leaks onto
+  // Home — every banner written before `placement` existed parses as
+  // HOME_HERO (BannerModel.fromFirestore's own default), so this is not a
+  // behavior change for any banner that exists today.
   List<BannerModel> get activeBanners {
-    final list = _banners.where((banner) => banner.isActive).toList();
+    final list = _banners
+        .where((banner) =>
+            banner.isActive && banner.placement == BannerModel.placementHomeHero)
+        .toList();
+    list.sort((a, b) => a.priority.compareTo(b.priority));
+    return list;
+  }
+
+  /// Eligible CATEGORY_HERO banners for [categoryId]: active, targeted at
+  /// this category, and currently within their schedule window (unset bounds
+  /// = unbounded on that side). Sorted by priority for a carousel's page
+  /// order. Filters the same already-subscribed list `activeBanners` reads —
+  /// no separate Firestore query or index.
+  List<BannerModel> categoryHeroBanners(String categoryId) {
+    final now = DateTime.now();
+    final list = _banners
+        .where((banner) =>
+            banner.isActive &&
+            banner.placement == BannerModel.placementCategoryHero &&
+            banner.categoryId == categoryId &&
+            banner.isWithinSchedule(now))
+        .toList();
     list.sort((a, b) => a.priority.compareTo(b.priority));
     return list;
   }
@@ -125,6 +150,10 @@ class BannerProvider with ChangeNotifier {
           priority: map['priority'] ?? 0,
           createdAt: DateTime.tryParse(map['createdAt'] ?? '') ?? DateTime.now(),
           updatedAt: map['updatedAt'] != null ? DateTime.tryParse(map['updatedAt']) : null,
+          placement: map['placement'] ?? BannerModel.placementHomeHero,
+          categoryId: map['categoryId'],
+          startsAt: map['startsAt'] != null ? DateTime.tryParse(map['startsAt']) : null,
+          endsAt: map['endsAt'] != null ? DateTime.tryParse(map['endsAt']) : null,
         );
       }).toList();
     } catch (e) {
@@ -148,6 +177,10 @@ class BannerProvider with ChangeNotifier {
         'priority': b.priority,
         'createdAt': b.createdAt.toIso8601String(),
         'updatedAt': b.updatedAt?.toIso8601String(),
+        'placement': b.placement,
+        'categoryId': b.categoryId,
+        'startsAt': b.startsAt?.toIso8601String(),
+        'endsAt': b.endsAt?.toIso8601String(),
       }).toList();
       await prefs.setString(_kBannersCacheKey, jsonEncode(jsonList));
       await prefs.setString(_kBannersCacheTimeKey, DateTime.now().toIso8601String());
@@ -198,7 +231,11 @@ class BannerProvider with ChangeNotifier {
           ai.iconName != bi.iconName ||
           ai.colorHex != bi.colorHex ||
           ai.isActive != bi.isActive ||
-          ai.priority != bi.priority) {
+          ai.priority != bi.priority ||
+          ai.placement != bi.placement ||
+          ai.categoryId != bi.categoryId ||
+          ai.startsAt != bi.startsAt ||
+          ai.endsAt != bi.endsAt) {
         return false;
       }
     }

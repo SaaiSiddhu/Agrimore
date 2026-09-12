@@ -2,14 +2,17 @@ import 'package:flutter/material.dart';
 import 'package:cached_network_image/cached_network_image.dart';
 import 'package:agrimore_core/agrimore_core.dart';
 
-/// Category hero banner — renders [CategoryModel.bannerImageUrl] (the field
-/// the admin Category form already uploads to, see
-/// category_management_screen.dart's "Banner (1920x400)" upload) as an
-/// overlay hero. Collapses to nothing when the category has no banner
-/// configured — presentation only, the name/description/CTA are real
-/// category data, never invented copy.
-class CategoryHeroBanner extends StatelessWidget {
+/// Category hero banner. Image source, in priority order: (1) eligible
+/// admin-managed CATEGORY_HERO banners for this category (CAT-2 —
+/// BannerProvider.categoryHeroBanners, active + in-schedule), rendered as a
+/// swipeable carousel with page indicators when there is more than one; (2)
+/// [CategoryModel.bannerImageUrl] (CAT-1's static fallback, still uploaded
+/// via category_management_screen.dart's "Banner" field) when no banner is
+/// eligible. Collapses to nothing when neither exists — presentation only,
+/// the name/description/CTA are real category data, never invented copy.
+class CategoryHeroBanner extends StatefulWidget {
   final CategoryModel category;
+  final List<String> bannerImageUrls;
   final bool isDark;
   final Color accentColor;
   final VoidCallback onShopNow;
@@ -17,15 +20,38 @@ class CategoryHeroBanner extends StatelessWidget {
   const CategoryHeroBanner({
     super.key,
     required this.category,
+    this.bannerImageUrls = const [],
     required this.isDark,
     required this.accentColor,
     required this.onShopNow,
   });
 
   @override
+  State<CategoryHeroBanner> createState() => _CategoryHeroBannerState();
+}
+
+class _CategoryHeroBannerState extends State<CategoryHeroBanner> {
+  final PageController _pageController = PageController();
+  int _currentPage = 0;
+
+  @override
+  void dispose() {
+    _pageController.dispose();
+    super.dispose();
+  }
+
+  List<String> get _images {
+    final eligible = widget.bannerImageUrls.where((u) => u.trim().isNotEmpty).toList();
+    if (eligible.isNotEmpty) return eligible;
+    final fallback = (widget.category.bannerImageUrl ?? '').trim();
+    return fallback.isEmpty ? const [] : [fallback];
+  }
+
+  @override
   Widget build(BuildContext context) {
-    final bannerUrl = (category.bannerImageUrl ?? '').trim();
-    if (bannerUrl.isEmpty) return const SizedBox.shrink();
+    final images = _images;
+    if (images.isEmpty) return const SizedBox.shrink();
+    if (_currentPage >= images.length) _currentPage = 0;
 
     return ClipRRect(
       borderRadius: BorderRadius.circular(18),
@@ -34,16 +60,14 @@ class CategoryHeroBanner extends StatelessWidget {
         child: Stack(
           fit: StackFit.expand,
           children: [
-            CachedNetworkImage(
-              imageUrl: bannerUrl,
-              fit: BoxFit.cover,
-              placeholder: (_, __) => Container(
-                color: accentColor.withValues(alpha: isDark ? 0.18 : 0.10),
-              ),
-              errorWidget: (_, __, ___) => Container(
-                color: accentColor.withValues(alpha: isDark ? 0.18 : 0.10),
-              ),
-            ),
+            images.length == 1
+                ? _bannerImage(images.first)
+                : PageView.builder(
+                    controller: _pageController,
+                    itemCount: images.length,
+                    onPageChanged: (i) => setState(() => _currentPage = i),
+                    itemBuilder: (_, i) => _bannerImage(images[i]),
+                  ),
             DecoratedBox(
               decoration: BoxDecoration(
                 gradient: LinearGradient(
@@ -62,13 +86,13 @@ class CategoryHeroBanner extends StatelessWidget {
               right: 18,
               bottom: 18,
               child: Semantics(
-                label: '${category.name} banner',
+                label: '${widget.category.name} banner',
                 child: Column(
                   crossAxisAlignment: CrossAxisAlignment.start,
                   mainAxisSize: MainAxisSize.min,
                   children: [
                     Text(
-                      category.name,
+                      widget.category.name,
                       maxLines: 1,
                       overflow: TextOverflow.ellipsis,
                       style: const TextStyle(
@@ -78,10 +102,10 @@ class CategoryHeroBanner extends StatelessWidget {
                         letterSpacing: -0.3,
                       ),
                     ),
-                    if (category.description.isNotEmpty) ...[
+                    if (widget.category.description.isNotEmpty) ...[
                       const SizedBox(height: 3),
                       Text(
-                        category.description,
+                        widget.category.description,
                         maxLines: 2,
                         overflow: TextOverflow.ellipsis,
                         style: TextStyle(
@@ -93,32 +117,55 @@ class CategoryHeroBanner extends StatelessWidget {
                       ),
                     ],
                     const SizedBox(height: 10),
-                    GestureDetector(
-                      onTap: onShopNow,
-                      child: Container(
-                        padding:
-                            const EdgeInsets.symmetric(horizontal: 14, vertical: 7),
-                        decoration: BoxDecoration(
-                          color: Colors.white,
-                          borderRadius: BorderRadius.circular(18),
+                    Row(
+                      children: [
+                        GestureDetector(
+                          onTap: widget.onShopNow,
+                          child: Container(
+                            padding: const EdgeInsets.symmetric(
+                                horizontal: 14, vertical: 7),
+                            decoration: BoxDecoration(
+                              color: Colors.white,
+                              borderRadius: BorderRadius.circular(18),
+                            ),
+                            child: Row(
+                              mainAxisSize: MainAxisSize.min,
+                              children: [
+                                Text(
+                                  'Shop Now',
+                                  style: TextStyle(
+                                    color: widget.accentColor,
+                                    fontSize: 12,
+                                    fontWeight: FontWeight.w800,
+                                  ),
+                                ),
+                                const SizedBox(width: 4),
+                                Icon(Icons.arrow_forward_rounded,
+                                    color: widget.accentColor, size: 14),
+                              ],
+                            ),
+                          ),
                         ),
-                        child: Row(
-                          mainAxisSize: MainAxisSize.min,
-                          children: [
-                            Text(
-                              'Shop Now',
-                              style: TextStyle(
-                                color: accentColor,
-                                fontSize: 12,
-                                fontWeight: FontWeight.w800,
+                        if (images.length > 1) ...[
+                          const Spacer(),
+                          Row(
+                            children: List.generate(
+                              images.length,
+                              (i) => AnimatedContainer(
+                                duration: const Duration(milliseconds: 200),
+                                width: _currentPage == i ? 16 : 6,
+                                height: 6,
+                                margin: const EdgeInsets.only(left: 4),
+                                decoration: BoxDecoration(
+                                  color: Colors.white
+                                      .withValues(alpha: _currentPage == i ? 0.95 : 0.5),
+                                  borderRadius: BorderRadius.circular(3),
+                                ),
                               ),
                             ),
-                            const SizedBox(width: 4),
-                            Icon(Icons.arrow_forward_rounded,
-                                color: accentColor, size: 14),
-                          ],
-                        ),
-                      ),
+                          ),
+                        ],
+                      ],
                     ),
                   ],
                 ),
@@ -126,6 +173,19 @@ class CategoryHeroBanner extends StatelessWidget {
             ),
           ],
         ),
+      ),
+    );
+  }
+
+  Widget _bannerImage(String url) {
+    return CachedNetworkImage(
+      imageUrl: url,
+      fit: BoxFit.cover,
+      placeholder: (_, __) => Container(
+        color: widget.accentColor.withValues(alpha: widget.isDark ? 0.18 : 0.10),
+      ),
+      errorWidget: (_, __, ___) => Container(
+        color: widget.accentColor.withValues(alpha: widget.isDark ? 0.18 : 0.10),
       ),
     );
   }

@@ -6,8 +6,10 @@ import 'package:flutter/material.dart';
 import 'package:image_picker/image_picker.dart';
 import 'package:provider/provider.dart';
 import 'package:firebase_storage/firebase_storage.dart';
+import 'package:cloud_firestore/cloud_firestore.dart' show Timestamp;
 import 'package:agrimore_core/agrimore_core.dart';
 import '../../../providers/banner_provider.dart';
+import '../../../providers/admin_provider.dart';
 
 class AddEditBannerDialog extends StatefulWidget {
   final BannerModel? banner;
@@ -34,6 +36,11 @@ class _AddEditBannerDialogState extends State<AddEditBannerDialog> {
 
   String? _selectedIcon;
   String _selectedColor = '#4CAF50';
+
+  String _placement = BannerModel.placementHomeHero;
+  String? _selectedCategoryId;
+  DateTime? _startsAt;
+  DateTime? _endsAt;
 
   final List<String?> _iconOptions = [
     null, // No Icon
@@ -66,10 +73,20 @@ class _AddEditBannerDialogState extends State<AddEditBannerDialog> {
     _priorityController = TextEditingController(text: widget.banner?.priority.toString() ?? '0');
     _selectedIcon = widget.banner?.iconName.isNotEmpty == true ? widget.banner!.iconName : null;
     _selectedColor = widget.banner?.colorHex ?? '#4CAF50';
+    _placement = widget.banner?.placement ?? BannerModel.placementHomeHero;
+    _selectedCategoryId = widget.banner?.categoryId;
+    _startsAt = widget.banner?.startsAt;
+    _endsAt = widget.banner?.endsAt;
     // If an existing banner has an imageUrl, default to URL mode
     if (widget.banner != null && (widget.banner!.imageUrl.isNotEmpty)) {
       _useUrl = true;
     }
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      final adminProvider = Provider.of<AdminProvider>(context, listen: false);
+      if (adminProvider.categories.isEmpty) {
+        adminProvider.loadCategories();
+      }
+    });
   }
 
   @override
@@ -116,6 +133,20 @@ class _AddEditBannerDialogState extends State<AddEditBannerDialog> {
 
   Future<void> _saveBanner() async {
     if (!_formKey.currentState!.validate()) return;
+
+    if (_placement == BannerModel.placementCategoryHero && _selectedCategoryId == null) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(backgroundColor: Colors.redAccent, content: Text('Choose a target category for a Category Hero banner')),
+      );
+      return;
+    }
+    if (_startsAt != null && _endsAt != null && !_endsAt!.isAfter(_startsAt!)) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(backgroundColor: Colors.redAccent, content: Text('End date must be after the start date')),
+      );
+      return;
+    }
+
     setState(() => _isUploading = true);
 
     try {
@@ -138,8 +169,15 @@ class _AddEditBannerDialogState extends State<AddEditBannerDialog> {
         }
       }
 
-      // Use empty defaults for simplified banner (image-only)
+      // Title/subtitle/icon/color stay empty — this is a deliberately
+      // image-only banner form (pre-dates this phase); CategoryHeroBanner's
+      // own text overlay comes from the target category's name/description,
+      // not from the banner document, so a CATEGORY_HERO banner needs none
+      // of those fields either.
       final priority = int.tryParse(_priorityController.text.trim()) ?? 0;
+      final isCategoryHero = _placement == BannerModel.placementCategoryHero;
+      final targetRoute = isCategoryHero ? '/category/$_selectedCategoryId' : null;
+      final categoryId = isCategoryHero ? _selectedCategoryId : null;
 
       if (widget.banner == null) {
         await provider.createBannerWithUrl(
@@ -147,9 +185,13 @@ class _AddEditBannerDialogState extends State<AddEditBannerDialog> {
           title: '',  // No title needed
           subtitle: '',  // No subtitle needed
           iconName: '',  // No icon needed
-          targetRoute: null,  // No target route by default
+          targetRoute: targetRoute,
           colorHex: '#4CAF50',  // Default color
           priority: priority,
+          placement: _placement,
+          categoryId: categoryId,
+          startsAt: _startsAt,
+          endsAt: _endsAt,
         );
       } else {
         await provider.updateBanner(widget.banner!.id, {
@@ -157,9 +199,13 @@ class _AddEditBannerDialogState extends State<AddEditBannerDialog> {
           'title': '',
           'subtitle': '',
           'iconName': '',
-          'targetRoute': null,
+          'targetRoute': targetRoute,
           'colorHex': '#4CAF50',
           'priority': priority,
+          'placement': _placement,
+          'categoryId': categoryId,
+          'startsAt': _startsAt != null ? Timestamp.fromDate(_startsAt!) : null,
+          'endsAt': _endsAt != null ? Timestamp.fromDate(_endsAt!) : null,
         });
       }
 
@@ -210,6 +256,16 @@ class _AddEditBannerDialogState extends State<AddEditBannerDialog> {
                       duration: const Duration(milliseconds: 300),
                       child: _useUrl ? _urlInput() : _imageUploader(),
                     ),
+                    const SizedBox(height: 24),
+                    Text('Placement', style: _labelStyle()),
+                    const SizedBox(height: 8),
+                    _placementToggle(),
+                    if (_placement == BannerModel.placementCategoryHero) ...[
+                      const SizedBox(height: 16),
+                      _categoryDropdown(),
+                      const SizedBox(height: 16),
+                      _scheduleRow(),
+                    ],
                     const SizedBox(height: 24),
                     // Optional: Priority field for ordering banners
                     _buildTextField(_priorityController, 'Display Order (optional)', Icons.sort, inputType: TextInputType.number),
@@ -283,6 +339,74 @@ class _AddEditBannerDialogState extends State<AddEditBannerDialog> {
       ],
       selected: {_useUrl},
       onSelectionChanged: (v) => setState(() => _useUrl = v.first),
+    );
+  }
+
+  Widget _placementToggle() {
+    return SegmentedButton<String>(
+      segments: const [
+        ButtonSegment(value: BannerModel.placementHomeHero, label: Text('Home Hero')),
+        ButtonSegment(value: BannerModel.placementCategoryHero, label: Text('Category Hero')),
+      ],
+      selected: {_placement},
+      onSelectionChanged: (v) => setState(() => _placement = v.first),
+    );
+  }
+
+  Widget _categoryDropdown() {
+    return Consumer<AdminProvider>(
+      builder: (context, adminProvider, _) {
+        final categories = adminProvider.categories;
+        final validSelection =
+            categories.any((c) => c.id == _selectedCategoryId) ? _selectedCategoryId : null;
+        return DropdownButtonFormField<String>(
+          initialValue: validSelection,
+          decoration: _inputDecoration('Target Category', Icons.category_outlined),
+          hint: Text(categories.isEmpty ? 'Loading categories…' : 'Choose a category'),
+          items: categories
+              .map((c) => DropdownMenuItem(value: c.id, child: Text(c.name, overflow: TextOverflow.ellipsis)))
+              .toList(),
+          onChanged: (v) => setState(() => _selectedCategoryId = v),
+        );
+      },
+    );
+  }
+
+  Widget _scheduleRow() {
+    return Row(
+      children: [
+        Expanded(child: _datePickerField('Starts (optional)', _startsAt, (d) => setState(() => _startsAt = d))),
+        const SizedBox(width: 12),
+        Expanded(child: _datePickerField('Ends (optional)', _endsAt, (d) => setState(() => _endsAt = d))),
+      ],
+    );
+  }
+
+  Widget _datePickerField(String label, DateTime? value, ValueChanged<DateTime?> onChanged) {
+    final text = value == null
+        ? 'Not set'
+        : '${value.year}-${value.month.toString().padLeft(2, '0')}-${value.day.toString().padLeft(2, '0')}';
+    return InkWell(
+      onTap: () async {
+        final picked = await showDatePicker(
+          context: context,
+          initialDate: value ?? DateTime.now(),
+          firstDate: DateTime(2020),
+          lastDate: DateTime(2100),
+        );
+        if (picked != null) onChanged(picked);
+      },
+      child: InputDecorator(
+        decoration: _inputDecoration(label, Icons.event_outlined).copyWith(
+          suffixIcon: value != null
+              ? IconButton(
+                  icon: const Icon(Icons.clear, size: 18),
+                  onPressed: () => onChanged(null),
+                )
+              : null,
+        ),
+        child: Text(text),
+      ),
     );
   }
 
