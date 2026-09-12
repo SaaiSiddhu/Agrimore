@@ -23,9 +23,18 @@ class CategorySectionProvider extends ChangeNotifier {
   bool _isCacheLoaded = false; // the on-disk cache preview has been shown
 
   List<CategorySectionSlotModel> get sections => _sections;
-  List<CategorySectionSlotModel> get activeSections => 
-      _sections.where((s) => s.isActive && s.categoryIds.isNotEmpty).toList();
-  
+
+  /// isActive + non-empty + currently within its schedule window (an unset
+  /// bound is unbounded on that side). isWithinSchedule() is re-evaluated
+  /// against DateTime.now() on every read rather than baked into the cached
+  /// `_sections` list -- mirrors BannerProvider.categoryHeroBanners -- so a
+  /// section scheduled to start/end becomes eligible/ineligible without
+  /// waiting on the next network reload.
+  List<CategorySectionSlotModel> get activeSections =>
+      _sections
+          .where((s) => s.isActive && s.categoryIds.isNotEmpty && s.isWithinSchedule())
+          .toList();
+
   // Alias for widget compatibility
   List<CategorySectionSlotModel> get activeSlots => activeSections;
   
