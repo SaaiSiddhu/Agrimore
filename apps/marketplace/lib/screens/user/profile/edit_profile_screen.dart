@@ -1230,69 +1230,95 @@ class _EditProfileScreenState extends State<EditProfileScreen>
                             ),
                             const SizedBox(height: 20),
 
-                            // Save Button
+                            // PROFILE-16: wrapped in its own card frame (same
+                            // background/border/radius/shadow as the two
+                            // field cards above) so the button sits inset
+                            // with padding, matching the reference mockup's
+                            // own "Button" component state — not a bare
+                            // gradient pill directly in the screen's outer
+                            // padding. Pure visual wrap; _saveProfile and
+                            // every state check below are unchanged.
                             Container(
+                              padding: const EdgeInsets.all(14),
                               decoration: BoxDecoration(
-                                gradient: LinearGradient(
-                                  colors: [
-                                    (isDark ? AppColors.primaryLight : const Color(0xFF2D7D3C)).withValues(alpha: _isLoading || _isUploadingImage ? 0.7 : 1.0),
-                                    (isDark ? AppColors.primaryLight : const Color(0xFF2D7D3C)).withValues(alpha: _isLoading || _isUploadingImage ? 0.5 : 0.8),
-                                  ],
-                                ),
-                                borderRadius: BorderRadius.circular(14),
+                                color: isDark ? const Color(0xFF1E1E1E) : Colors.white,
+                                borderRadius: BorderRadius.circular(16),
+                                border: Border.all(color: isDark ? Colors.grey[800]! : Colors.grey.shade200),
                                 boxShadow: [
                                   BoxShadow(
-                                    color: (isDark ? AppColors.primaryLight : const Color(0xFF2D7D3C)).withValues(alpha: 0.25),
-                                    blurRadius: 12,
-                                    offset: const Offset(0, 4),
+                                    color: Colors.black.withValues(alpha: isDark ? 0.3 : 0.02),
+                                    blurRadius: 8,
+                                    offset: const Offset(0, 2),
                                   ),
                                 ],
                               ),
-                              child: Material(
-                                color: Colors.transparent,
-                                child: InkWell(
-                                  onTap: (_isLoading || _isUploadingImage)
-                                      ? null
-                                      : _saveProfile,
-                                  borderRadius: BorderRadius.circular(14),
-                                  child: Padding(
-                                    padding: const EdgeInsets.symmetric(vertical: 14),
-                                    child: Row(
-                                      mainAxisAlignment: MainAxisAlignment.center,
-                                      children: [
-                                        Text(
-                                          _isUploadingImage ? 'Uploading...' : (_isLoading ? 'Saving...' : 'Save Changes'),
-                                          style: const TextStyle(
-                                            color: Colors.white,
-                                            fontSize: 15,
-                                            fontWeight: FontWeight.w800,
-                                          ),
+                              child: Column(
+                                children: [
+                                  Container(
+                                    decoration: BoxDecoration(
+                                      gradient: LinearGradient(
+                                        colors: [
+                                          (isDark ? AppColors.primaryLight : const Color(0xFF2D7D3C)).withValues(alpha: _isLoading || _isUploadingImage ? 0.7 : 1.0),
+                                          (isDark ? AppColors.primaryLight : const Color(0xFF2D7D3C)).withValues(alpha: _isLoading || _isUploadingImage ? 0.5 : 0.8),
+                                        ],
+                                      ),
+                                      borderRadius: BorderRadius.circular(14),
+                                      boxShadow: [
+                                        BoxShadow(
+                                          color: (isDark ? AppColors.primaryLight : const Color(0xFF2D7D3C)).withValues(alpha: 0.25),
+                                          blurRadius: 12,
+                                          offset: const Offset(0, 4),
                                         ),
-                                        const SizedBox(width: 8),
-
-                                        if (_isLoading || _isUploadingImage)
-                                          const SizedBox(
-                                            width: 18,
-                                            height: 18,
-                                            child: CircularProgressIndicator(strokeWidth: 2, color: Colors.white)
-                                          )
-                                        else
-                                          const Icon(Icons.arrow_forward_rounded, color: Colors.white, size: 18),
                                       ],
                                     ),
+                                    child: Material(
+                                      color: Colors.transparent,
+                                      child: InkWell(
+                                        onTap: (_isLoading || _isUploadingImage)
+                                            ? null
+                                            : _saveProfile,
+                                        borderRadius: BorderRadius.circular(14),
+                                        child: Padding(
+                                          padding: const EdgeInsets.symmetric(vertical: 14),
+                                          child: Row(
+                                            mainAxisAlignment: MainAxisAlignment.center,
+                                            children: [
+                                              Text(
+                                                _isUploadingImage ? 'Uploading...' : (_isLoading ? 'Saving...' : 'Save Changes'),
+                                                style: const TextStyle(
+                                                  color: Colors.white,
+                                                  fontSize: 15,
+                                                  fontWeight: FontWeight.w800,
+                                                ),
+                                              ),
+                                              const SizedBox(width: 8),
+
+                                              if (_isLoading || _isUploadingImage)
+                                                const SizedBox(
+                                                  width: 18,
+                                                  height: 18,
+                                                  child: CircularProgressIndicator(strokeWidth: 2, color: Colors.white)
+                                                )
+                                              else
+                                                const Icon(Icons.arrow_forward_rounded, color: Colors.white, size: 18),
+                                            ],
+                                          ),
+                                        ),
+                                      ),
+                                    ),
                                   ),
-                                ),
-                              ),
-                            ),
-                            const SizedBox(height: 10),
-                            Text(
-                              'Name and gender are saved when you tap Save Changes. '
-                              'Phone, email, and date of birth update immediately and require verification.',
-                              textAlign: TextAlign.center,
-                              style: TextStyle(
-                                fontSize: 11,
-                                height: 1.4,
-                                color: isDark ? Colors.grey[500] : Colors.grey[600],
+                                  const SizedBox(height: 10),
+                                  Text(
+                                    'Name and gender are saved when you tap Save Changes. '
+                                    'Phone, email, and date of birth update immediately and require verification.',
+                                    textAlign: TextAlign.center,
+                                    style: TextStyle(
+                                      fontSize: 11,
+                                      height: 1.4,
+                                      color: isDark ? Colors.grey[500] : Colors.grey[600],
+                                    ),
+                                  ),
+                                ],
                               ),
                             ),
                             const SizedBox(height: 12),
