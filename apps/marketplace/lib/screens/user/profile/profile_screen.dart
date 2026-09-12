@@ -81,7 +81,8 @@ class ProfileScreen extends StatefulWidget {
   State<ProfileScreen> createState() => _ProfileScreenState();
 }
 
-class _ProfileScreenState extends State<ProfileScreen> {
+class _ProfileScreenState extends State<ProfileScreen>
+    with StickyHeaderCollapseMixin<ProfileScreen> {
   bool _isCheckingAuth = true;
   int _activeOrdersCount = 0; // not yet in a terminal state — shown on the Orders quick action
   int _wishlistCount = 0;
@@ -90,32 +91,10 @@ class _ProfileScreenState extends State<ProfileScreen> {
   int _pendingRewardsCount = 0; // unscratched scratch cards (users/{uid}/scratchCards)
   bool _isLoadingStats = true;
 
-  // Drives the collapsed-header "Profile" label: invisible while the hero
-  // (avatar/name) is expanded, fades in next to the back button only once
-  // scrolled far enough that the hero itself has scrolled out of view — so
-  // there's never a moment with both the hero name AND this label showing.
-  final ScrollController _scrollController = ScrollController();
-  double _headerCollapse = 0.0;
-
   @override
   void initState() {
     super.initState();
-    _scrollController.addListener(_onScroll);
     _checkAuthAndLoadData();
-  }
-
-  void _onScroll() {
-    final progress = (_scrollController.offset / 150).clamp(0.0, 1.0);
-    if (progress != _headerCollapse) {
-      setState(() => _headerCollapse = progress);
-    }
-  }
-
-  @override
-  void dispose() {
-    _scrollController.removeListener(_onScroll);
-    _scrollController.dispose();
-    super.dispose();
   }
 
   Future<void> _checkAuthAndLoadData() async {
@@ -316,7 +295,7 @@ class _ProfileScreenState extends State<ProfileScreen> {
           final user = authProvider.currentUser;
 
           return CustomScrollView(
-            controller: _scrollController,
+            controller: stickyHeaderScrollController,
             physics: const ClampingScrollPhysics(),
             slivers: [
               // PROFILE-5: the quick-action cards moved INSIDE this sliver's
@@ -333,7 +312,7 @@ class _ProfileScreenState extends State<ProfileScreen> {
               // box-level `RenderPadding` — crashed the framework instead
               // ('_elements.contains(element)' assertion). Putting the
               // overlap entirely inside ONE sliver sidesteps both problems.
-              _buildHeaderSliver(user, isDark, _headerCollapse),
+              _buildHeaderSliver(user, isDark, headerCollapse),
 
               // AgriMore Rewards band — real pending-scratch-card count,
               // never a fabricated points balance (see _loadUserStats).
@@ -492,26 +471,15 @@ class _ProfileScreenState extends State<ProfileScreen> {
     );
   }
 
-  // Sticky header: SliverAppBar(pinned: true) keeps the back button pinned
-  // as the hero (avatar/name/phone·DOB) scrolls away underneath it — no
-  // title text takes its place; a floating back arrow over whatever is
-  // currently under it is all the top bar needs once the page has its own
-  // section headers doing the labelling.
-  //
-  // Phase PROFILE-3: background switched from a green LinearGradient to
-  // profile_bg.png (a bright sky-and-field illustration, viewed in full
-  // before wiring it in — brightest in exactly the upper-left region the
-  // avatar/text row occupies), hero made compact, layout switched from a
-  // centered column to a left-aligned avatar+text row, and the header
-  // actions reduced to notifications only — both per explicit owner
-  // instruction, both reversing decisions this same file made one phase
-  // earlier: the PROFILE-2 "AgriMore" wordmark is gone ("No AgriMore
-  // logo/title") and the PROFILE-1 settings shortcut is gone ("Back button
-  // on left, Bell/Notifications button on right" — no third icon named).
-  // Settings itself is unaffected — still one tap away via the "Account
-  // Settings" row in Other Information, below.
+  // PROFILE-12: now a thin call into the canonical
+  // packages/agrimore_ui StickyPhotoHeaderSliver (the pinned SliverAppBar,
+  // back button and scroll-collapse math all live there now — this file is
+  // its original reference implementation). heroContent is the avatar/name
+  // row; extraStackChildren carries the quick-action cards, which still
+  // have to live INSIDE this same Stack, not a separate sliver — see
+  // PROFILE-5's own note in sticky_photo_header.dart's `extraStackChildren`
+  // doc comment for why a second sliver cannot paint over a pinned one.
   Widget _buildHeaderSliver(dynamic user, bool isDark, double headerCollapse) {
-    final pageBackground = isDark ? const Color(0xFF121212) : const Color(0xFFF5F5F5);
     // The photo itself never changes with the app theme, so dark mode dims
     // it with a scrim rather than trying to reskin a fixed illustration —
     // and flips hero text to white to read against that scrim, mirroring
@@ -525,20 +493,6 @@ class _ProfileScreenState extends State<ProfileScreen> {
       if (user?.dateOfBirth is DateTime) _formatDob(user.dateOfBirth as DateTime),
     ];
 
-    // PROFILE-5: the quick-action cards are now painted INSIDE this same
-    // Stack (Positioned, bottom-anchored) rather than as a separate sliver
-    // that tries to paint up into this one — verified live that a separate
-    // sliver cannot do this safely: Transform.translate silently has no
-    // visual effect at any magnitude (it shifts paint, not this sliver's
-    // own reported geometry, and a `pinned` SliverAppBar's persistent
-    // region isn't something a later sibling paints over), and
-    // SliverPadding with a negative top inset crashes the framework
-    // ('_elements.contains(element)' assertion, package:flutter/src/
-    // widgets/framework.dart). expandedHeight grows by (card height minus
-    // the intended overlap) to make room; the avatar/name block is pinned
-    // to the top via its own Positioned (see below) so it keeps its exact
-    // current size and position regardless of this taller Stack.
-    //
     // Both numbers below are measured, not guessed: adb screencap + PIL at
     // a deliberately huge expandedHeight (600) made the geometry
     // unambiguous — card height is 301 device px at this device's 3.0 DPR
@@ -550,16 +504,20 @@ class _ProfileScreenState extends State<ProfileScreen> {
     // the photo, not just close to it.
     const quickActionsOverlap = 24.0;
     const quickActionsHeightEstimate = 100.0;
-    return SliverAppBar(
-      pinned: true,
-      elevation: 0,
+
+    return StickyPhotoHeaderSliver(
+      collapse: headerCollapse,
+      collapsedTitle: 'Profile',
+      backgroundImage: 'assets/images/Profile/profile_bg.png',
+      isDark: isDark,
       expandedHeight: 196 + (quickActionsHeightEstimate - quickActionsOverlap),
-      backgroundColor: pageBackground,
-      surfaceTintColor: Colors.transparent,
-      leading: Padding(
-        padding: const EdgeInsets.all(8),
-        child: _buildBackButton(isDark),
-      ),
+      onBack: () {
+        if (widget.onBack != null) {
+          widget.onBack!();
+        } else {
+          Navigator.pop(context);
+        }
+      },
       actions: [
         Padding(
           padding: const EdgeInsets.only(right: 12),
@@ -571,162 +529,118 @@ class _ProfileScreenState extends State<ProfileScreen> {
           ),
         ),
       ],
-      centerTitle: false,
-      titleSpacing: 4,
-      // Only the collapsed toolbar strip is ever visible here (the hero's
-      // name/avatar live in flexibleSpace's background below) — opacity is
-      // driven by scroll offset so it's invisible while the hero shows and
-      // fades in once the user has scrolled past it.
-      title: Opacity(
-        opacity: headerCollapse,
-        child: Text(
-          'Profile',
-          style: TextStyle(
-            color: isDark ? Colors.white : Colors.black87,
-            fontSize: 18,
-            fontWeight: FontWeight.w700,
+      heroContent: Row(
+        crossAxisAlignment: CrossAxisAlignment.center,
+        children: [
+          Stack(
+            clipBehavior: Clip.none,
+            alignment: Alignment.bottomRight,
+            children: [
+              ClipOval(child: _buildAvatarImage(user?.photoUrl)),
+              Positioned(
+                right: -2,
+                bottom: -2,
+                child: GestureDetector(
+                  onTap: () => _navigateTo(AppRoutes.editProfile),
+                  child: Container(
+                    padding: const EdgeInsets.all(5),
+                    decoration: BoxDecoration(
+                      shape: BoxShape.circle,
+                      color: Colors.white,
+                      border: Border.all(color: Colors.grey.shade300, width: 1),
+                      boxShadow: [
+                        BoxShadow(
+                          color: Colors.black.withValues(alpha: 0.15),
+                          blurRadius: 4,
+                          offset: const Offset(0, 1),
+                        ),
+                      ],
+                    ),
+                    child: Icon(Icons.edit_rounded, size: 13, color: AppColors.primaryDark),
+                  ),
+                ),
+              ),
+            ],
           ),
-        ),
-      ),
-      flexibleSpace: FlexibleSpaceBar(
-        background: Stack(
-          fit: StackFit.expand,
-          children: [
-            Image.asset('assets/images/Profile/profile_bg.png', fit: BoxFit.cover),
-            if (isDark) Container(color: Colors.black.withValues(alpha: 0.55)),
-            // Explicitly top-anchored (was an implicit, non-Positioned Stack
-            // child before PROFILE-5): this Stack's `fit: StackFit.expand`
-            // would otherwise force this content to stretch across the
-            // WHOLE taller Stack and re-center itself in the middle of it,
-            // now that the Stack has grown to make room for the cards below.
-            Positioned(
-              top: 0,
-              left: 0,
-              right: 0,
-              child: SafeArea(
-              child: Padding(
-                // kToolbarHeight clears the pinned back/bell row above,
-                // which flexibleSpace's background renders underneath —
-                // without this the avatar would sit behind those buttons.
-                padding: const EdgeInsets.fromLTRB(16, kToolbarHeight - 4, 16, 12),
-                child: Row(
-                  crossAxisAlignment: CrossAxisAlignment.center,
-                  children: [
-                    Stack(
-                      clipBehavior: Clip.none,
-                      alignment: Alignment.bottomRight,
+          const SizedBox(width: 14),
+          Expanded(
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              mainAxisSize: MainAxisSize.min,
+              children: [
+                Text(
+                  'Hello,',
+                  style: TextStyle(fontSize: 13, color: heroTextSecondary),
+                ),
+                Text(
+                  user?.name ?? 'User',
+                  style: TextStyle(
+                    fontSize: 19,
+                    fontWeight: FontWeight.w800,
+                    color: heroTextPrimary,
+                  ),
+                  maxLines: 1,
+                  overflow: TextOverflow.ellipsis,
+                ),
+                if (subtitleParts.isNotEmpty) ...[
+                  const SizedBox(height: 2),
+                  Text(
+                    subtitleParts.join(' • '),
+                    style: TextStyle(fontSize: 12.5, color: heroTextSecondary),
+                    maxLines: 1,
+                    overflow: TextOverflow.ellipsis,
+                  ),
+                ],
+                // Real signal, not a fabricated paid-membership badge:
+                // still no membership/tier concept anywhere in this
+                // codebase (re-checked fresh against UserModel this phase
+                // too). Firebase Auth's own phoneNumber is set only after
+                // a completed phone-OTP verification — this app's primary
+                // sign-in method — and is a more reliable signal than
+                // Firestore's `phoneVerified` flag, which predates most
+                // existing accounts and was never backfilled.
+                if (FirebaseAuth.instance.currentUser?.phoneNumber != null) ...[
+                  const SizedBox(height: 6),
+                  Container(
+                    padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 4),
+                    decoration: BoxDecoration(
+                      color: AppColors.primary.withValues(alpha: 0.14),
+                      borderRadius: BorderRadius.circular(20),
+                      border: Border.all(color: AppColors.primary.withValues(alpha: 0.5)),
+                    ),
+                    child: Row(
+                      mainAxisSize: MainAxisSize.min,
                       children: [
-                        ClipOval(child: _buildAvatarImage(user?.photoUrl)),
-                        Positioned(
-                          right: -2,
-                          bottom: -2,
-                          child: GestureDetector(
-                            onTap: () => _navigateTo(AppRoutes.editProfile),
-                            child: Container(
-                              padding: const EdgeInsets.all(5),
-                              decoration: BoxDecoration(
-                                shape: BoxShape.circle,
-                                color: Colors.white,
-                                border: Border.all(color: Colors.grey.shade300, width: 1),
-                                boxShadow: [
-                                  BoxShadow(
-                                    color: Colors.black.withValues(alpha: 0.15),
-                                    blurRadius: 4,
-                                    offset: const Offset(0, 1),
-                                  ),
-                                ],
-                              ),
-                              child: Icon(Icons.edit_rounded, size: 13, color: AppColors.primaryDark),
-                            ),
+                        Icon(Icons.verified_rounded, size: 13, color: AppColors.primaryDark),
+                        const SizedBox(width: 4),
+                        Text(
+                          'Verified',
+                          style: TextStyle(
+                            color: AppColors.primaryDark,
+                            fontSize: 11,
+                            fontWeight: FontWeight.w700,
                           ),
                         ),
                       ],
                     ),
-                    const SizedBox(width: 14),
-                    Expanded(
-                      child: Column(
-                        crossAxisAlignment: CrossAxisAlignment.start,
-                        mainAxisSize: MainAxisSize.min,
-                        children: [
-                          Text(
-                            'Hello,',
-                            style: TextStyle(fontSize: 13, color: heroTextSecondary),
-                          ),
-                          Text(
-                            user?.name ?? 'User',
-                            style: TextStyle(
-                              fontSize: 19,
-                              fontWeight: FontWeight.w800,
-                              color: heroTextPrimary,
-                            ),
-                            maxLines: 1,
-                            overflow: TextOverflow.ellipsis,
-                          ),
-                          if (subtitleParts.isNotEmpty) ...[
-                            const SizedBox(height: 2),
-                            Text(
-                              subtitleParts.join(' • '),
-                              style: TextStyle(fontSize: 12.5, color: heroTextSecondary),
-                              maxLines: 1,
-                              overflow: TextOverflow.ellipsis,
-                            ),
-                          ],
-                          // Real signal, not a fabricated paid-membership
-                          // badge: still no membership/tier concept
-                          // anywhere in this codebase (re-checked fresh
-                          // against UserModel this phase too). Firebase
-                          // Auth's own phoneNumber is set only after a
-                          // completed phone-OTP verification — this app's
-                          // primary sign-in method — and is a more
-                          // reliable signal than Firestore's
-                          // `phoneVerified` flag, which predates most
-                          // existing accounts and was never backfilled.
-                          if (FirebaseAuth.instance.currentUser?.phoneNumber != null) ...[
-                            const SizedBox(height: 6),
-                            Container(
-                              padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 4),
-                              decoration: BoxDecoration(
-                                color: AppColors.primary.withValues(alpha: 0.14),
-                                borderRadius: BorderRadius.circular(20),
-                                border: Border.all(color: AppColors.primary.withValues(alpha: 0.5)),
-                              ),
-                              child: Row(
-                                mainAxisSize: MainAxisSize.min,
-                                children: [
-                                  Icon(Icons.verified_rounded, size: 13, color: AppColors.primaryDark),
-                                  const SizedBox(width: 4),
-                                  Text(
-                                    'Verified',
-                                    style: TextStyle(
-                                      color: AppColors.primaryDark,
-                                      fontSize: 11,
-                                      fontWeight: FontWeight.w700,
-                                    ),
-                                  ),
-                                ],
-                              ),
-                            ),
-                          ],
-                        ],
-                      ),
-                    ),
-                  ],
-                ),
-              ),
+                  ),
+                ],
+              ],
             ),
-            ),
-            Positioned(
-              bottom: 0,
-              left: 0,
-              right: 0,
-              child: Consumer<WalletProvider>(
-                builder: (context, walletProvider, _) =>
-                    _buildQuickActions(isDark, walletProvider),
-              ),
-            ),
-          ],
-        ),
+          ),
+        ],
       ),
+      extraStackChildren: [
+        Positioned(
+          bottom: 0,
+          left: 0,
+          right: 0,
+          child: Consumer<WalletProvider>(
+            builder: (context, walletProvider, _) =>
+                _buildQuickActions(isDark, walletProvider),
+          ),
+        ),
+      ],
     );
   }
 
@@ -784,33 +698,10 @@ class _ProfileScreenState extends State<ProfileScreen> {
     );
   }
 
-  Widget _buildBackButton(bool isDark) {
-    return GestureDetector(
-      onTap: () {
-        if (widget.onBack != null) {
-          widget.onBack!();
-        } else {
-          Navigator.pop(context);
-        }
-      },
-      child: Container(
-        width: 36,
-        height: 36,
-        decoration: BoxDecoration(
-          shape: BoxShape.circle,
-          color: Colors.white.withValues(alpha: 0.92),
-          boxShadow: [
-            BoxShadow(color: Colors.black.withValues(alpha: 0.15), blurRadius: 6, offset: const Offset(0, 2)),
-          ],
-        ),
-        child: const Icon(Icons.arrow_back_rounded, size: 20, color: Colors.black87),
-      ),
-    );
-  }
-
-  // Same 36dp translucent-white circle as _buildBackButton, so the header's
-  // two icon affordances (back, notifications) read as one consistent
-  // language rather than two different button styles.
+  // Same 36dp translucent-white circle as packages/agrimore_ui's
+  // StickyHeaderBackButton, so the header's two icon affordances (back,
+  // notifications) read as one consistent language rather than two
+  // different button styles.
   Widget _buildHeaderIconButton({
     required IconData icon,
     required String tooltip,
