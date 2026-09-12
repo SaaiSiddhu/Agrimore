@@ -7,8 +7,17 @@
 // reference: every menu row now carries its own coloured icon badge
 // (_MenuItem.color, derived into a pastel circle by _buildMenuItem — the
 // same single-colour derivation the now-deleted profile_menu_item.dart
-// widget used), and the header title cross-fades an "AgriMore" wordmark
-// with the collapsed "Profile" label instead of showing only the latter.
+// widget used).
+// Phase PROFILE-3 redid the hero against a third, more specific owner
+// reference: a compact photo-background hero (assets/images/Profile/
+// profile_bg.png) with a left-aligned avatar+identity row, back+bell only
+// in the top bar, and the four quick-action cards now use the owner's own
+// AI/Wallet/Orders/Wishlist_Icon.png badges instead of Material icons.
+// This explicitly reverses two PROFILE-2/PROFILE-1 decisions per the
+// owner's own new instructions: the "AgriMore" wordmark is gone (no
+// logo/title in the top bar) and so is the header's settings shortcut
+// (only back + bell are named) — Settings stays fully reachable via the
+// "Account Settings" row below, unaffected.
 //
 // The header is a real SliverAppBar(pinned: true) + FlexibleSpaceBar, not a
 // scroll listener faking it: Flutter collapses the hero (avatar/name) into
@@ -537,11 +546,27 @@ class _ProfileScreenState extends State<ProfileScreen> {
   // title text takes its place; a floating back arrow over whatever is
   // currently under it is all the top bar needs once the page has its own
   // section headers doing the labelling.
+  //
+  // Phase PROFILE-3: background switched from a green LinearGradient to
+  // profile_bg.png (a bright sky-and-field illustration, viewed in full
+  // before wiring it in — brightest in exactly the upper-left region the
+  // avatar/text row occupies), hero made compact, layout switched from a
+  // centered column to a left-aligned avatar+text row, and the header
+  // actions reduced to notifications only — both per explicit owner
+  // instruction, both reversing decisions this same file made one phase
+  // earlier: the PROFILE-2 "AgriMore" wordmark is gone ("No AgriMore
+  // logo/title") and the PROFILE-1 settings shortcut is gone ("Back button
+  // on left, Bell/Notifications button on right" — no third icon named).
+  // Settings itself is unaffected — still one tap away via the "Account
+  // Settings" row in Other Information, below.
   Widget _buildHeaderSliver(dynamic user, bool isDark, double headerCollapse) {
     final pageBackground = isDark ? const Color(0xFF121212) : const Color(0xFFF5F5F5);
-    final heroDark = isDark ? const Color(0xFF14251B) : const Color(0xFF1B5E20);
-    final heroLight = isDark ? const Color(0xFF1A1A2E) : const Color(0xFF2E7D32);
-    final gradientColors = [heroDark, heroLight, pageBackground];
+    // The photo itself never changes with the app theme, so dark mode dims
+    // it with a scrim rather than trying to reskin a fixed illustration —
+    // and flips hero text to white to read against that scrim, mirroring
+    // how every other surface in this file already branches on isDark.
+    final heroTextPrimary = isDark ? Colors.white : Colors.black87;
+    final heroTextSecondary = isDark ? Colors.white70 : Colors.black54;
 
     final subtitleParts = <String>[
       if (user?.phone != null && user.phone.toString().trim().isNotEmpty)
@@ -552,7 +577,7 @@ class _ProfileScreenState extends State<ProfileScreen> {
     return SliverAppBar(
       pinned: true,
       elevation: 0,
-      expandedHeight: 236,
+      expandedHeight: 196,
       backgroundColor: pageBackground,
       surfaceTintColor: Colors.transparent,
       leading: Padding(
@@ -560,174 +585,165 @@ class _ProfileScreenState extends State<ProfileScreen> {
         child: _buildBackButton(isDark),
       ),
       actions: [
-        _buildHeaderIconButton(
-          icon: Icons.notifications_none_rounded,
-          tooltip: 'Open notifications',
-          showDot: !_isLoadingStats && _unreadNotifications > 0,
-          onTap: () => _navigateTo(AppRoutes.notifications),
+        Padding(
+          padding: const EdgeInsets.only(right: 12),
+          child: _buildHeaderIconButton(
+            icon: Icons.notifications_none_rounded,
+            tooltip: 'Open notifications',
+            showDot: !_isLoadingStats && _unreadNotifications > 0,
+            onTap: () => _navigateTo(AppRoutes.notifications),
+          ),
         ),
-        const SizedBox(width: 8),
-        _buildHeaderIconButton(
-          icon: Icons.settings_outlined,
-          tooltip: 'Open settings',
-          showDot: false,
-          onTap: () => _navigateTo(AppRoutes.appSettings),
-        ),
-        const SizedBox(width: 12),
       ],
       centerTitle: false,
       titleSpacing: 4,
-      // Two labels cross-fade on the same inverse-opacity mechanic already
-      // driving the collapse (no new controller): the "AgriMore" wordmark
-      // (Phase PROFILE-2 — the reference image's own brand row) is full
-      // opacity while expanded, over the green gradient, so it's white;
-      // "Profile" fades in as that gradient scrolls out from behind the
-      // toolbar and the background turns solid, exactly as before.
-      title: Stack(
-        alignment: Alignment.centerLeft,
-        children: [
-          Opacity(
-            opacity: 1 - headerCollapse,
-            child: Row(
-              mainAxisSize: MainAxisSize.min,
-              children: const [
-                Icon(Icons.eco_rounded, color: Colors.white, size: 20),
-                SizedBox(width: 6),
-                Text(
-                  'AgriMore',
-                  style: TextStyle(
-                    color: Colors.white,
-                    fontSize: 18,
-                    fontWeight: FontWeight.w800,
-                  ),
-                ),
-              ],
-            ),
+      // Only the collapsed toolbar strip is ever visible here (the hero's
+      // name/avatar live in flexibleSpace's background below) — opacity is
+      // driven by scroll offset so it's invisible while the hero shows and
+      // fades in once the user has scrolled past it.
+      title: Opacity(
+        opacity: headerCollapse,
+        child: Text(
+          'Profile',
+          style: TextStyle(
+            color: isDark ? Colors.white : Colors.black87,
+            fontSize: 18,
+            fontWeight: FontWeight.w700,
           ),
-          Opacity(
-            opacity: headerCollapse,
-            child: Text(
-              'Profile',
-              style: TextStyle(
-                color: isDark ? Colors.white : Colors.black87,
-                fontSize: 18,
-                fontWeight: FontWeight.w700,
-              ),
-            ),
-          ),
-        ],
+        ),
       ),
       flexibleSpace: FlexibleSpaceBar(
-        background: Container(
-          decoration: BoxDecoration(
-            // Fades all the way to the page's own background colour by the
-            // bottom of the header — no hard colour seam where this sliver
-            // ends and the scrollable body begins. The quick-action cards
-            // right below (see _buildQuickActions) are pulled up with a
-            // negative top margin into this fade zone, so they read as
-            // floating across the boundary rather than starting fresh
-            // below a line.
-            gradient: LinearGradient(
-              begin: Alignment.topCenter,
-              end: Alignment.bottomCenter,
-              colors: gradientColors,
-              stops: const [0.0, 0.5, 1.0],
-            ),
-          ),
-          child: SafeArea(
-            child: Center(
-              child: Column(
-                mainAxisSize: MainAxisSize.min,
-                children: [
-                  Stack(
-                    alignment: Alignment.bottomRight,
-                    children: [
-                      Container(
-                        width: 84,
-                        height: 84,
-                        decoration: BoxDecoration(
-                          shape: BoxShape.circle,
-                          color: Colors.white.withValues(alpha: 0.15),
-                          border: Border.all(color: Colors.white, width: 2.5),
-                          boxShadow: [
-                            BoxShadow(
-                              color: Colors.black.withValues(alpha: 0.2),
-                              blurRadius: 12,
-                              offset: const Offset(0, 4),
-                            ),
-                          ],
-                        ),
-                        child: ClipOval(
+        background: Stack(
+          fit: StackFit.expand,
+          children: [
+            Image.asset('assets/images/Profile/profile_bg.png', fit: BoxFit.cover),
+            if (isDark) Container(color: Colors.black.withValues(alpha: 0.55)),
+            SafeArea(
+              child: Padding(
+                // kToolbarHeight clears the pinned back/bell row above,
+                // which flexibleSpace's background renders underneath —
+                // without this the avatar would sit behind those buttons.
+                padding: const EdgeInsets.fromLTRB(16, kToolbarHeight - 4, 16, 12),
+                child: Row(
+                  crossAxisAlignment: CrossAxisAlignment.center,
+                  children: [
+                    Stack(
+                      clipBehavior: Clip.none,
+                      alignment: Alignment.bottomRight,
+                      children: [
+                        ClipOval(
                           child: user?.photoUrl != null
-                              ? Image.network(user!.photoUrl!, fit: BoxFit.cover)
-                              : const Icon(Icons.person_rounded, size: 44, color: Colors.white),
+                              ? Image.network(
+                                  user!.photoUrl!,
+                                  width: 72,
+                                  height: 72,
+                                  fit: BoxFit.cover,
+                                )
+                              : Image.asset(
+                                  'assets/images/Profile/Avatar_Icon.png',
+                                  width: 72,
+                                  height: 72,
+                                  fit: BoxFit.cover,
+                                ),
                         ),
-                      ),
-                      GestureDetector(
-                        onTap: () => _navigateTo(AppRoutes.editProfile),
-                        child: Container(
-                          padding: const EdgeInsets.all(6),
-                          decoration: BoxDecoration(
-                            shape: BoxShape.circle,
-                            color: Colors.white,
-                            border: Border.all(color: heroDark, width: 1.5),
+                        Positioned(
+                          right: -2,
+                          bottom: -2,
+                          child: GestureDetector(
+                            onTap: () => _navigateTo(AppRoutes.editProfile),
+                            child: Container(
+                              padding: const EdgeInsets.all(5),
+                              decoration: BoxDecoration(
+                                shape: BoxShape.circle,
+                                color: Colors.white,
+                                border: Border.all(color: Colors.grey.shade300, width: 1),
+                                boxShadow: [
+                                  BoxShadow(
+                                    color: Colors.black.withValues(alpha: 0.15),
+                                    blurRadius: 4,
+                                    offset: const Offset(0, 1),
+                                  ),
+                                ],
+                              ),
+                              child: Icon(Icons.edit_rounded, size: 13, color: AppColors.primaryDark),
+                            ),
                           ),
-                          child: Icon(Icons.edit_rounded, size: 14, color: heroLight),
                         ),
-                      ),
-                    ],
-                  ),
-                  const SizedBox(height: 12),
-                  Text(
-                    user?.name ?? 'User',
-                    style: const TextStyle(
-                      fontSize: 20,
-                      fontWeight: FontWeight.w800,
-                      color: Colors.white,
+                      ],
                     ),
-                  ),
-                  if (subtitleParts.isNotEmpty) ...[
-                    const SizedBox(height: 4),
-                    Text(
-                      subtitleParts.join(' • '),
-                      style: TextStyle(fontSize: 12.5, color: Colors.white.withValues(alpha: 0.85)),
-                    ),
-                  ],
-                  // Real signal, not a fabricated paid-membership badge: no
-                  // membership/tier concept exists anywhere in this
-                  // codebase (checked UserModel and every wallet/loyalty
-                  // model). Firebase Auth's own phoneNumber is set only
-                  // after a completed phone-OTP verification — this app's
-                  // primary sign-in method — and is a more reliable signal
-                  // than Firestore's `phoneVerified` flag, which predates
-                  // most existing accounts and was never backfilled for
-                  // them.
-                  if (FirebaseAuth.instance.currentUser?.phoneNumber != null) ...[
-                    const SizedBox(height: 8),
-                    Container(
-                      padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 4),
-                      decoration: BoxDecoration(
-                        color: Colors.white.withValues(alpha: 0.18),
-                        borderRadius: BorderRadius.circular(20),
-                        border: Border.all(color: Colors.white.withValues(alpha: 0.4)),
-                      ),
-                      child: const Row(
+                    const SizedBox(width: 14),
+                    Expanded(
+                      child: Column(
+                        crossAxisAlignment: CrossAxisAlignment.start,
                         mainAxisSize: MainAxisSize.min,
                         children: [
-                          Icon(Icons.verified_rounded, size: 13, color: Colors.white),
-                          SizedBox(width: 4),
                           Text(
-                            'Verified',
-                            style: TextStyle(color: Colors.white, fontSize: 11, fontWeight: FontWeight.w700),
+                            'Hello,',
+                            style: TextStyle(fontSize: 13, color: heroTextSecondary),
                           ),
+                          Text(
+                            user?.name ?? 'User',
+                            style: TextStyle(
+                              fontSize: 19,
+                              fontWeight: FontWeight.w800,
+                              color: heroTextPrimary,
+                            ),
+                            maxLines: 1,
+                            overflow: TextOverflow.ellipsis,
+                          ),
+                          if (subtitleParts.isNotEmpty) ...[
+                            const SizedBox(height: 2),
+                            Text(
+                              subtitleParts.join(' • '),
+                              style: TextStyle(fontSize: 12.5, color: heroTextSecondary),
+                              maxLines: 1,
+                              overflow: TextOverflow.ellipsis,
+                            ),
+                          ],
+                          // Real signal, not a fabricated paid-membership
+                          // badge: still no membership/tier concept
+                          // anywhere in this codebase (re-checked fresh
+                          // against UserModel this phase too). Firebase
+                          // Auth's own phoneNumber is set only after a
+                          // completed phone-OTP verification — this app's
+                          // primary sign-in method — and is a more
+                          // reliable signal than Firestore's
+                          // `phoneVerified` flag, which predates most
+                          // existing accounts and was never backfilled.
+                          if (FirebaseAuth.instance.currentUser?.phoneNumber != null) ...[
+                            const SizedBox(height: 6),
+                            Container(
+                              padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 4),
+                              decoration: BoxDecoration(
+                                color: AppColors.primary.withValues(alpha: 0.14),
+                                borderRadius: BorderRadius.circular(20),
+                                border: Border.all(color: AppColors.primary.withValues(alpha: 0.5)),
+                              ),
+                              child: Row(
+                                mainAxisSize: MainAxisSize.min,
+                                children: [
+                                  Icon(Icons.verified_rounded, size: 13, color: AppColors.primaryDark),
+                                  const SizedBox(width: 4),
+                                  Text(
+                                    'Verified',
+                                    style: TextStyle(
+                                      color: AppColors.primaryDark,
+                                      fontSize: 11,
+                                      fontWeight: FontWeight.w700,
+                                    ),
+                                  ),
+                                ],
+                              ),
+                            ),
+                          ],
                         ],
                       ),
                     ),
                   ],
-                ],
+                ),
               ),
             ),
-          ),
+          ],
         ),
       ),
     );
@@ -758,8 +774,8 @@ class _ProfileScreenState extends State<ProfileScreen> {
   }
 
   // Same 36dp translucent-white circle as _buildBackButton, so the header's
-  // three icon affordances (back, notifications, settings) read as one
-  // consistent language rather than two different button styles.
+  // two icon affordances (back, notifications) read as one consistent
+  // language rather than two different button styles.
   Widget _buildHeaderIconButton({
     required IconData icon,
     required String tooltip,
@@ -820,7 +836,7 @@ class _ProfileScreenState extends State<ProfileScreen> {
       child: Row(
         children: [
           _buildQuickActionCard(
-            icon: Icons.smart_toy_outlined,
+            iconAsset: 'assets/images/Profile/AI_Icon.png',
             label: 'AI Assistant',
             // Always "Ask anything" rather than a live value — whether a
             // key is connected yet is the chat screen's own business
@@ -830,58 +846,60 @@ class _ProfileScreenState extends State<ProfileScreen> {
             subtitle: 'Ask anything',
             isDark: isDark,
             onTap: () => _navigateTo(AppRoutes.support),
-            color: const Color(0xFFF3E5F5),
-            iconColor: Colors.purple.shade700,
+            accentColor: AppColors.primaryDark,
           ),
           const SizedBox(width: 8),
           _buildQuickActionCard(
-            icon: Icons.account_balance_wallet_rounded,
+            iconAsset: 'assets/images/Profile/Wallet_Icon.png',
             label: 'Wallet',
             // The live balance, shown right on the profile screen instead of
             // requiring a trip to the Wallet screen to find out.
             subtitle: '₹${walletProvider.balance.toStringAsFixed(0)}',
             isDark: isDark,
             onTap: () => _navigateTo(AppRoutes.wallet),
-            color: const Color(0xFFFFF3E0),
-            iconColor: const Color(0xFFE65100),
+            accentColor: const Color(0xFFE65100),
           ),
           const SizedBox(width: 8),
           _buildQuickActionCard(
-            icon: Icons.shopping_bag_rounded,
+            iconAsset: 'assets/images/Profile/Orders_Icons.png',
             label: 'Orders',
             subtitle: _isLoadingStats
                 ? null
                 : (_activeOrdersCount > 0 ? '$_activeOrdersCount Active' : 'None active'),
             isDark: isDark,
             onTap: () => _navigateTo(AppRoutes.orders),
-            color: const Color(0xFFE8F5E9),
-            iconColor: const Color(0xFF2E7D32),
+            accentColor: const Color(0xFF8D6E63),
           ),
           const SizedBox(width: 8),
           _buildQuickActionCard(
-            icon: Icons.favorite_rounded,
+            iconAsset: 'assets/images/Profile/Wishlist_Icon.png',
             label: 'Wishlist',
             subtitle: _isLoadingStats
                 ? null
                 : (_wishlistCount > 0 ? '$_wishlistCount Item${_wishlistCount == 1 ? '' : 's'}' : 'Empty'),
             isDark: isDark,
             onTap: () => _navigateTo(AppRoutes.wishlist),
-            color: const Color(0xFFFCE4EC),
-            iconColor: AppColors.favorite,
+            accentColor: AppColors.favorite,
           ),
         ],
       ),
     );
   }
 
+  // The four PNGs (AI/Wallet/Orders/Wishlist_Icon.png) are each a
+  // self-contained 3D badge — icon plus its own coloured circular
+  // background already baked into the image, transparent surround —
+  // confirmed by inspecting all four before wiring them in. They render
+  // directly with no extra coloured-circle Container wrapping them (that
+  // would draw a second, mismatched circle behind an image that already
+  // has one); accentColor now only tints the subtitle text.
   Widget _buildQuickActionCard({
-    required IconData icon,
+    required String iconAsset,
     required String label,
     String? subtitle,
     required bool isDark,
     required VoidCallback onTap,
-    required Color color,
-    required Color iconColor,
+    required Color accentColor,
   }) {
     return Expanded(
       child: Semantics(
@@ -908,15 +926,8 @@ class _ProfileScreenState extends State<ProfileScreen> {
             child: Column(
               mainAxisSize: MainAxisSize.min,
               children: [
-                Container(
-                  padding: const EdgeInsets.all(10),
-                  decoration: BoxDecoration(
-                    color: isDark ? iconColor.withValues(alpha: 0.15) : color,
-                    borderRadius: BorderRadius.circular(12),
-                  ),
-                  child: Icon(icon, color: iconColor, size: 21),
-                ),
-                const SizedBox(height: 8),
+                Image.asset(iconAsset, width: 46, height: 46),
+                const SizedBox(height: 6),
                 Text(
                   label,
                   style: TextStyle(
@@ -935,7 +946,7 @@ class _ProfileScreenState extends State<ProfileScreen> {
                     style: TextStyle(
                       fontSize: 11,
                       fontWeight: FontWeight.w800,
-                      color: iconColor,
+                      color: accentColor,
                     ),
                     textAlign: TextAlign.center,
                     maxLines: 1,
