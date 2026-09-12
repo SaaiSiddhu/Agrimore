@@ -105,6 +105,14 @@ class ProductCardCompact extends StatelessWidget {
                               ? CachedNetworkImage(
                                   imageUrl: product.imageUrl!,
                                   fit: BoxFit.cover,
+                                  // PERF-1: this tile renders at well under
+                                  // 200 logical px; without a decode-size
+                                  // hint, cached_network_image decodes the
+                                  // source at its full native resolution —
+                                  // matches the memCacheWidth already used
+                                  // for a similarly-sized tile in
+                                  // bestsellers.dart.
+                                  memCacheWidth: 300,
                                   placeholder: (_, __) => Center(
                                     child: SizedBox(
                                       width: 24, height: 24,

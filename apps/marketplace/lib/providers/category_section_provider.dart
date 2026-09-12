@@ -1,16 +1,26 @@
 // lib/providers/category_section_provider.dart
+import 'dart:convert';
+
 import 'package:flutter/material.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
+import 'package:shared_preferences/shared_preferences.dart';
 import 'package:agrimore_core/agrimore_core.dart';
+
+// PERF-1: on-disk cache so this section (Grocery & Kitchen strip) shows
+// something instantly on a cold app start instead of blocking on network
+// like every other Home data source used to — mirrors
+// ProductProvider/CategoryProvider/BannerProvider's identical pattern.
+const String _kCategorySectionsCacheKey = 'cached_category_sections_v1';
 
 /// Provider for fetching Category Sections in Marketplace app
 class CategorySectionProvider extends ChangeNotifier {
   final FirebaseFirestore _firestore = FirebaseFirestore.instance;
-  
+
   List<CategorySectionSlotModel> _sections = [];
   bool _isLoading = false;
   String? _error;
   bool _isLoaded = false;  // ✅ Cache flag
+  bool _isCacheLoaded = false; // the on-disk cache preview has been shown
 
   List<CategorySectionSlotModel> get sections => _sections;
   List<CategorySectionSlotModel> get activeSections => 
@@ -34,15 +44,28 @@ class CategorySectionProvider extends ChangeNotifier {
     // ✅ If forceRefresh, reset cache flag
     if (forceRefresh) {
       _isLoaded = false;
+      _isCacheLoaded = false;
       debugPrint('🔄 Force refreshing category sections from Firebase...');
     }
-    
+
     // ✅ Skip if already loaded (in-memory cache)
     if (_isLoaded && !forceRefresh) {
       debugPrint('📂 Category sections in-memory cached, skipping...');
       return;
     }
-    
+
+    // STEP 1: INSTANT — show the on-disk cache while the network call is
+    // still in flight below, same "cache-first" shape as ProductProvider.
+    if (!_isCacheLoaded) {
+      final cached = await _loadFromCache();
+      if (cached.isNotEmpty) {
+        _sections = cached;
+        _isCacheLoaded = true;
+        debugPrint('⚡ INSTANT: Loaded ${_sections.length} category sections from cache');
+        notifyListeners();
+      }
+    }
+
     _isLoading = true;
     _error = null;
     notifyListeners();
@@ -101,6 +124,7 @@ class CategorySectionProvider extends ChangeNotifier {
       }
 
       debugPrint('✅ Loaded ${_sections.length} active category sections');
+      await _saveToCache(_sections);
       _isLoaded = true;
       _isLoading = false;
       notifyListeners();
@@ -109,6 +133,50 @@ class CategorySectionProvider extends ChangeNotifier {
       _error = e.toString();
       _isLoading = false;
       notifyListeners();
+    }
+  }
+
+  // ============================================
+  // CACHE HELPERS
+  // ============================================
+  Future<List<CategorySectionSlotModel>> _loadFromCache() async {
+    try {
+      final prefs = await SharedPreferences.getInstance();
+      final cachedJson = prefs.getString(_kCategorySectionsCacheKey);
+      if (cachedJson == null || cachedJson.isEmpty) return [];
+
+      final List<dynamic> decoded = jsonDecode(cachedJson);
+      return decoded
+          .map((json) => CategorySectionSlotModel.fromMap(
+              json as Map<String, dynamic>, json['id'] ?? ''))
+          .where((s) => s.isActive && s.categoryIds.isNotEmpty)
+          .toList()
+        ..sort((a, b) => a.position.compareTo(b.position));
+    } catch (e) {
+      debugPrint('⚠️ Category sections cache load error: $e');
+      return [];
+    }
+  }
+
+  Future<void> _saveToCache(List<CategorySectionSlotModel> sections) async {
+    try {
+      final prefs = await SharedPreferences.getInstance();
+      // toMap()'s own 'updatedAt' is FieldValue.serverTimestamp() — a
+      // write-only sentinel, not a real value, and not JSON-serializable.
+      // Dropped from the cached copy the same way category_provider's
+      // sibling CategoryProvider drops its own problematic date field:
+      // fromMap's ternary already treats an absent 'updatedAt' as null, and
+      // nothing in this app reads a cached section's updatedAt
+      // (grep-confirmed), so this is a lossless round-trip for everything
+      // actually used.
+      final jsonList = sections.map((s) {
+        final map = {...s.toMap(), 'id': s.id}..remove('updatedAt');
+        return map;
+      }).toList();
+      await prefs.setString(_kCategorySectionsCacheKey, jsonEncode(jsonList));
+      debugPrint('💾 Saved ${sections.length} category sections to cache');
+    } catch (e) {
+      debugPrint('⚠️ Category sections cache save error: $e');
     }
   }
 

@@ -103,6 +103,13 @@ class _BannerSliderState extends State<BannerSlider> {
               CachedNetworkImage(
                 imageUrl: banner.imageUrl,
                 fit: BoxFit.cover,
+                // PERF-1: this is the first image on Home and renders at
+                // full device width — without a decode-size hint,
+                // cached_network_image decodes the source at its full
+                // native resolution (often several MB straight off a
+                // camera), which is wasted bandwidth/CPU for a card this
+                // size. 800 covers full-width at a healthy DPR.
+                memCacheWidth: 800,
                 placeholder: (context, url) => Container(
                   decoration: BoxDecoration(
                     gradient: LinearGradient(

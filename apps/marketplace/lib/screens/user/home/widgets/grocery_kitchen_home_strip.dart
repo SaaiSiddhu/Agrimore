@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:provider/provider.dart';
+import 'package:cached_network_image/cached_network_image.dart';
 import 'package:agrimore_ui/agrimore_ui.dart';
 import 'package:agrimore_core/agrimore_core.dart';
 import '../../../../providers/shop_entry_provider.dart';
@@ -133,10 +134,15 @@ class _Tile extends StatelessWidget {
                 child: ClipRRect(
                   borderRadius: const BorderRadius.vertical(top: Radius.circular(11)),
                   child: imageUrl != null && imageUrl!.isNotEmpty
-                      ? Image.network(
-                          imageUrl!,
+                      ? CachedNetworkImage(
+                          imageUrl: imageUrl!,
                           fit: BoxFit.cover,
-                          errorBuilder: (_, __, ___) => ColoredBox(
+                          // PERF-1: was Image.network — no persistent disk
+                          // cache, so this re-downloaded on every fresh
+                          // Home load. This 96px-wide tile also never
+                          // needs a full-resolution decode.
+                          memCacheWidth: 200,
+                          errorWidget: (_, __, ___) => ColoredBox(
                             color: accent.withValues(alpha: 0.12),
                             child: Icon(Icons.storefront, color: accent),
                           ),

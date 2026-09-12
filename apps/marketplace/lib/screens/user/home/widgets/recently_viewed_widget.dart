@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:provider/provider.dart';
+import 'package:cached_network_image/cached_network_image.dart';
 import '../../../../providers/product_provider.dart';
 import 'package:agrimore_ui/agrimore_ui.dart';
 import '../../../../app/routes.dart';
@@ -194,10 +195,16 @@ class RecentlyViewedWidget extends StatelessWidget {
                   borderRadius: const BorderRadius.vertical(top: Radius.circular(12)),
                   child: AspectRatio(
                     aspectRatio: 1,
-                    child: Image.network(
-                      product.images.isNotEmpty ? product.images.first : '',
+                    child: CachedNetworkImage(
+                      imageUrl:
+                          product.images.isNotEmpty ? product.images.first : '',
                       fit: BoxFit.cover,
-                      errorBuilder: (_, __, ___) => Container(
+                      // PERF-1: was Image.network — no persistent disk
+                      // cache, so a product's thumbnail re-downloaded every
+                      // time it resurfaced in Recently Viewed. This 120px
+                      // card also never needs a full-resolution decode.
+                      memCacheWidth: 240,
+                      errorWidget: (_, __, ___) => Container(
                         color: isDark ? Colors.grey[800] : Colors.grey[200],
                         child: Icon(
                           Icons.image_not_supported_outlined,

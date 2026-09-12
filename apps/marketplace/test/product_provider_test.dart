@@ -15,6 +15,7 @@
 // every method DatabaseService exposes and never touches that field.
 import 'dart:async';
 import 'dart:convert';
+import 'dart:io';
 
 import 'package:firebase_core/firebase_core.dart';
 import 'package:firebase_core_platform_interface/test.dart';
@@ -286,6 +287,99 @@ void main() {
           _fakeProduct('p2', createdAt: fixedCreatedAt),
         ]);
         await freshLoad;
+      },
+    );
+  });
+
+  // A behavioral test of loadProductById itself (proving it resolves
+  // without waiting on addToRecentlyViewed) was attempted here and removed:
+  // addToRecentlyViewed unconditionally reads FirebaseAuth.instance.
+  // currentUser, and this suite's Firebase mocking (setupFirebaseCoreMocks()
+  // only, matching every other test in this file) does not stub the Auth
+  // plugin's method channel — touching .currentUser throws a
+  // PlatformException from inside the Auth plugin's own internal listener
+  // registration, on a detached Future that addToRecentlyViewed's own
+  // try/catch cannot reach (the throw happens outside its synchronous call
+  // stack), which then surfaces as a spurious failure on whichever test
+  // happens to be running when it lands — corrupting the source-shape
+  // guards below, not exercising a real defect in the fix. Reproducing this
+  // properly needs Auth-specific test mocking (e.g. a MethodChannel mock
+  // for firebase_auth_platform_interface) or a fake_cloud_firestore-style
+  // dependency, deliberately not added in this phase (see PERF-1's ledger
+  // row: no packages/agrimore_core change, no new test dependency — kept
+  // this phase's footprint to exactly the reported latency fixes). The two
+  // guards below cover the same regression textually instead.
+  group('PERF-1 source-shape guards', () {
+    // These two assert a textual/structural property directly against the
+    // committed source rather than an observed runtime timing (which proved
+    // unreliable to assert deterministically in a unit test — both the
+    // fixed and pre-fix shapes finish within the same test tick here, since
+    // SharedPreferences' test mock and the unauthenticated
+    // addToRecentlyViewed path are both effectively synchronous in this
+    // harness). A textual guard is a weaker proof than a timing-based one,
+    // but it is exact, deterministic, and will fail loudly if either
+    // property is ever silently reverted — which a written PR description
+    // alone would not catch (this repo's own standing lesson: a written
+    // claim is not evidence).
+    test(
+      'main.dart: AppCheckService.activate() must not be awaited before runApp(',
+      () async {
+        final source = await File(
+          '${Directory.current.path}/lib/main.dart',
+        ).readAsString();
+
+        final runAppIndex = source.indexOf('runApp(');
+        final activateIndex = source.indexOf('AppCheckService.activate()');
+
+        expect(runAppIndex, greaterThan(-1),
+            reason: 'runApp( not found in main.dart — has it moved/renamed?');
+        expect(activateIndex, greaterThan(-1),
+            reason: 'AppCheckService.activate() not found in main.dart — '
+                'has it moved/renamed?');
+
+        // The historical bug: `await AppCheckService.activate();` sequenced
+        // before runApp() held the app's very first frame behind a Play
+        // Integrity/App Attest network round-trip. Guard both halves of
+        // the fix: it must now come AFTER runApp(, and it must not be
+        // awaited at its (new) call site.
+        expect(
+          activateIndex,
+          greaterThan(runAppIndex),
+          reason: 'AppCheckService.activate() is sequenced before runApp() '
+              'again — this blocks the first frame behind an App Check '
+              'network round-trip (PERF-1 regression).',
+        );
+        expect(
+          source.contains('await AppCheckService.activate()'),
+          isFalse,
+          reason: 'AppCheckService.activate() is awaited again somewhere — '
+              'it must stay fire-and-forget (PERF-1 regression).',
+        );
+      },
+    );
+
+    test(
+      'product_provider.dart: addToRecentlyViewed(...) must not be awaited '
+      'inside loadProductById',
+      () async {
+        final source = await File(
+          '${Directory.current.path}/lib/providers/product_provider.dart',
+        ).readAsString();
+
+        expect(
+          source.contains('await addToRecentlyViewed('),
+          isFalse,
+          reason: 'addToRecentlyViewed is awaited again inside '
+              'loadProductById — this holds the product page\'s own '
+              'loading/shimmer state hostage to "recently viewed" '
+              'bookkeeping again (PERF-1 regression).',
+        );
+        expect(
+          source.contains('addToRecentlyViewed(_selectedProduct!);'),
+          isTrue,
+          reason: 'the expected fire-and-forget call site is missing — has '
+              'loadProductById been restructured?',
+        );
       },
     );
   });

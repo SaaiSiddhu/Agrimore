@@ -14,6 +14,14 @@ const String _kProductsCacheKey = 'cached_products_v1';
 const String _kProductsCacheTimeKey = 'cached_products_time';
 const int _kCacheTTLMinutes = 10; // Cache valid for 10 minutes
 
+// PERF-1: bound on the "recently viewed" overflow-cleanup scan in
+// addToRecentlyViewed (kept only the most recent 20). A shopper viewing
+// distinct products one at a time will almost never produce more than a
+// handful of new overflow docs between two page opens, so one pass at this
+// size drains any backlog in one or two visits without ever reading the
+// whole subcollection unbounded the way the pre-PERF-1 code did.
+const int _kRecentlyViewedCleanupScanLimit = 40;
+
 class ProductProvider with ChangeNotifier {
   final DatabaseService _databaseService;
   // Lazily initialized — neither is touched anywhere in the loadProducts
@@ -378,7 +386,13 @@ class ProductProvider with ChangeNotifier {
           _selectedOptions = {};
         }
 
-        await addToRecentlyViewed(_selectedProduct!);
+        // PERF-1: fire-and-forget, matching _loadRelatedProducts below.
+        // This used to be awaited here, which meant the product page's own
+        // _isLoading flag (and its shimmer) stayed up until "recently
+        // viewed" bookkeeping finished — work unrelated to displaying the
+        // product. addToRecentlyViewed already catches and swallows its own
+        // errors internally, so nothing here needs a .catchError.
+        addToRecentlyViewed(_selectedProduct!);
 
         _loadRelatedProducts(_selectedProduct!.relatedProductIds);
       }
@@ -553,29 +567,34 @@ class ProductProvider with ChangeNotifier {
       final user = _auth.currentUser;
 
       if (user != null) {
-        // Save to Firestore for authenticated users
-        await _firestore
+        final recentlyViewedRef = _firestore
             .collection('users')
             .doc(user.uid)
-            .collection('recently_viewed')
-            .doc(product.id)
-            .set({
+            .collection('recently_viewed');
+
+        // Save to Firestore for authenticated users
+        await recentlyViewedRef.doc(product.id).set({
           'productId': product.id,
           'viewedAt': FieldValue.serverTimestamp(),
         });
 
-        // Cleanup: Keep only last 20 items
-        final oldDocs = await _firestore
-            .collection('users')
-            .doc(user.uid)
-            .collection('recently_viewed')
+        // PERF-1: Cleanup: keep only the most recent 20. This used to be an
+        // UNBOUNDED orderBy().get() (reading the entire subcollection just
+        // to count it) followed by a loop of individually-awaited sequential
+        // .delete() calls — one network round trip per overflow doc, every
+        // single product view once a shopper had viewed more than 20
+        // distinct products. Bounded scan + one batched delete instead.
+        final overflowScan = await recentlyViewedRef
             .orderBy('viewedAt', descending: true)
+            .limit(_kRecentlyViewedCleanupScanLimit)
             .get();
 
-        if (oldDocs.docs.length > 20) {
-          for (int i = 20; i < oldDocs.docs.length; i++) {
-            await oldDocs.docs[i].reference.delete();
+        if (overflowScan.docs.length > 20) {
+          final batch = _firestore.batch();
+          for (final doc in overflowScan.docs.skip(20)) {
+            batch.delete(doc.reference);
           }
+          await batch.commit();
         }
       }
 

@@ -24,8 +24,15 @@ class _DealsForYouState extends State<DealsForYou> {
   void initState() {
     super.initState();
     WidgetsBinding.instance.addPostFrameCallback((_) {
-      // Force refresh to get latest admin config
-      context.read<BestsellerProvider>().refresh();
+      // PERF-1: was .refresh(), which unconditionally forces a fresh
+      // network fetch on every mount, discarding even the in-memory cache
+      // (and, once this phase's on-disk cache lands below, the instant
+      // preview too). loadSlots() already no-ops once loaded. Note this
+      // provider isn't wired into mobile_home_screen.dart's pull-to-refresh
+      // Future.wait at all (pre-existing, out of this phase's scope) — an
+      // admin editing bestseller slots today needs a cold app restart to
+      // see the change reflected here either way; unchanged by this fix.
+      context.read<BestsellerProvider>().loadSlots();
     });
   }
 
