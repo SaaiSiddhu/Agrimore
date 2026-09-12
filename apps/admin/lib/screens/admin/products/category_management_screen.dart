@@ -25,6 +25,10 @@ class _CategoryManagementScreenState extends State<CategoryManagementScreen> {
   CategoryModel? _selectedCategory;
   final Set<String> _expandedCategories = {};
   bool _isLoading = false;
+  // Set only while a reparent drag (the new Icons.open_with_rounded handle)
+  // is in flight -- lets the tree header show a "drop here for top level"
+  // hint without needing the header itself to be the active drop target.
+  CategoryModel? _draggingCategory;
 
   @override
   void initState() {
@@ -118,7 +122,7 @@ class _CategoryManagementScreenState extends State<CategoryManagementScreen> {
                   child: Column(
                     crossAxisAlignment: CrossAxisAlignment.start,
                     children: [
-                      _buildTreeHeader(isDark, accentColor),
+                      _buildTreeHeader(isDark, accentColor, categories),
                       Expanded(
                         child: ReorderableListView.builder(
                           padding: const EdgeInsets.all(8),
@@ -164,7 +168,7 @@ class _CategoryManagementScreenState extends State<CategoryManagementScreen> {
   ) {
     return Column(
       children: [
-        _buildTreeHeader(isDark, accentColor),
+        _buildTreeHeader(isDark, accentColor, allCategories),
         Expanded(
           child: ReorderableListView.builder(
             padding: const EdgeInsets.all(12),
@@ -188,34 +192,55 @@ class _CategoryManagementScreenState extends State<CategoryManagementScreen> {
     );
   }
 
-  Widget _buildTreeHeader(bool isDark, Color accentColor) {
-    return Container(
-      padding: const EdgeInsets.all(16),
-      decoration: BoxDecoration(
-        border: Border(
-          bottom: BorderSide(color: isDark ? Colors.grey[800]! : Colors.grey[200]!),
-        ),
-      ),
-      child: Row(
-        children: [
-          Icon(Icons.account_tree_rounded, color: accentColor, size: 20),
-          const SizedBox(width: 8),
-          Text(
-            'Category Tree',
-            style: TextStyle(
-              fontSize: 16,
-              fontWeight: FontWeight.bold,
-              color: isDark ? Colors.white : Colors.black87,
+  // Doubles as the top-level drop target for the reparent-drag handle: any
+  // category dropped here moves to parentId: null / level: 0. The header's
+  // own title text hints "drop here" for the whole duration of a reparent
+  // drag (_draggingCategory, set/cleared by the row's LongPressDraggable),
+  // while the border/background only highlight while actually hovering.
+  Widget _buildTreeHeader(bool isDark, Color accentColor, List<CategoryModel> allCategories) {
+    return DragTarget<CategoryModel>(
+      onWillAcceptWithDetails: (details) {
+        if (_isNoOpReparent(details.data, null)) return false;
+        final adminProvider = Provider.of<AdminProvider>(context, listen: false);
+        return _reparentRejectionReason(details.data, null, allCategories, adminProvider) == null;
+      },
+      onAcceptWithDetails: (details) => _reparentCategory(details.data, null, allCategories),
+      builder: (context, candidateData, rejectedData) {
+        final isDropTarget = candidateData.isNotEmpty;
+        return Container(
+          padding: const EdgeInsets.all(16),
+          decoration: BoxDecoration(
+            color: isDropTarget ? accentColor.withOpacity(0.12) : null,
+            border: Border(
+              bottom: BorderSide(
+                color: isDropTarget ? accentColor : (isDark ? Colors.grey[800]! : Colors.grey[200]!),
+                width: isDropTarget ? 2 : 1,
+              ),
             ),
           ),
-          const Spacer(),
-          IconButton(
-            icon: Icon(Icons.refresh_rounded, color: isDark ? Colors.grey[400] : Colors.grey[600], size: 20),
-            onPressed: _loadCategories,
-            tooltip: 'Refresh',
+          child: Row(
+            children: [
+              Icon(Icons.account_tree_rounded, color: accentColor, size: 20),
+              const SizedBox(width: 8),
+              Text(
+                _draggingCategory != null ? 'Drop here to move to top level' : 'Category Tree',
+                style: TextStyle(
+                  fontSize: 16,
+                  fontWeight: FontWeight.bold,
+                  color: isDark ? Colors.white : Colors.black87,
+                ),
+              ),
+              const Spacer(),
+              IconButton(
+                icon:
+                    Icon(Icons.refresh_rounded, color: isDark ? Colors.grey[400] : Colors.grey[600], size: 20),
+                onPressed: _loadCategories,
+                tooltip: 'Refresh',
+              ),
+            ],
           ),
-        ],
-      ),
+        );
+      },
     );
   }
 
@@ -237,126 +262,203 @@ class _CategoryManagementScreenState extends State<CategoryManagementScreen> {
       key: ValueKey(category.id),
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
-        GestureDetector(
-          onTap: () => setState(() => _selectedCategory = category),
-          child: Container(
-            margin: EdgeInsets.only(left: depth * 16.0, bottom: 4),
-            padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 10),
-            decoration: BoxDecoration(
-              color: isSelected
-                  ? accentColor.withOpacity(0.15)
-                  : (isDark ? Colors.grey[850] : Colors.grey[50]),
-              borderRadius: BorderRadius.circular(8),
-              border: Border.all(
-                color: isSelected ? accentColor : Colors.transparent,
-                width: 1.5,
-              ),
-            ),
-            child: Row(
-              children: [
-                // Expand/Collapse Icon
-                if (hasChildren)
-                  GestureDetector(
-                    onTap: () {
-                      setState(() {
-                        if (isExpanded) {
-                          _expandedCategories.remove(category.id);
-                        } else {
-                          _expandedCategories.add(category.id);
-                        }
-                      });
-                    },
-                    child: Icon(
-                      isExpanded ? Icons.expand_more : Icons.chevron_right,
-                      size: 20,
-                      color: isDark ? Colors.grey[400] : Colors.grey[600],
-                    ),
-                  )
-                else
-                  const SizedBox(width: 20),
-                const SizedBox(width: 8),
-                // Category Icon
-                Container(
-                  width: 32,
-                  height: 32,
-                  decoration: BoxDecoration(
-                    color: _getLevelColor(category.level).withOpacity(0.15),
-                    borderRadius: BorderRadius.circular(6),
+        DragTarget<CategoryModel>(
+          onWillAcceptWithDetails: (details) {
+            if (_isNoOpReparent(details.data, category.id)) return false;
+            final adminProvider = Provider.of<AdminProvider>(context, listen: false);
+            return _reparentRejectionReason(details.data, category.id, allCategories, adminProvider) ==
+                null;
+          },
+          onAcceptWithDetails: (details) =>
+              _reparentCategory(details.data, category.id, allCategories),
+          builder: (context, candidateData, rejectedData) {
+            final isDropTarget = candidateData.isNotEmpty;
+            return GestureDetector(
+              onTap: () => setState(() => _selectedCategory = category),
+              child: Container(
+                margin: EdgeInsets.only(left: depth * 16.0, bottom: 4),
+                padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 10),
+                decoration: BoxDecoration(
+                  color: isDropTarget
+                      ? accentColor.withOpacity(0.25)
+                      : (isSelected
+                          ? accentColor.withOpacity(0.15)
+                          : (isDark ? Colors.grey[850] : Colors.grey[50])),
+                  borderRadius: BorderRadius.circular(8),
+                  border: Border.all(
+                    color: isDropTarget ? accentColor : (isSelected ? accentColor : Colors.transparent),
+                    width: isDropTarget ? 2 : 1.5,
                   ),
-                  child: category.iconUrl != null && category.iconUrl!.isNotEmpty
-                      ? ClipRRect(
-                          borderRadius: BorderRadius.circular(6),
-                          child: CachedNetworkImage(
-                            imageUrl: category.iconUrl!,
-                            fit: BoxFit.cover,
-                            errorWidget: (_, __, ___) => Icon(
+                ),
+                child: Row(
+                  children: [
+                    // Expand/Collapse Icon
+                    if (hasChildren)
+                      GestureDetector(
+                        onTap: () {
+                          setState(() {
+                            if (isExpanded) {
+                              _expandedCategories.remove(category.id);
+                            } else {
+                              _expandedCategories.add(category.id);
+                            }
+                          });
+                        },
+                        child: Icon(
+                          isExpanded ? Icons.expand_more : Icons.chevron_right,
+                          size: 20,
+                          color: isDark ? Colors.grey[400] : Colors.grey[600],
+                        ),
+                      )
+                    else
+                      const SizedBox(width: 20),
+                    const SizedBox(width: 8),
+                    // Category Icon
+                    Container(
+                      width: 32,
+                      height: 32,
+                      decoration: BoxDecoration(
+                        color: _getLevelColor(category.level).withOpacity(0.15),
+                        borderRadius: BorderRadius.circular(6),
+                      ),
+                      child: category.iconUrl != null && category.iconUrl!.isNotEmpty
+                          ? ClipRRect(
+                              borderRadius: BorderRadius.circular(6),
+                              child: CachedNetworkImage(
+                                imageUrl: category.iconUrl!,
+                                fit: BoxFit.cover,
+                                errorWidget: (_, __, ___) => Icon(
+                                  _getLevelIcon(category.level),
+                                  size: 16,
+                                  color: _getLevelColor(category.level),
+                                ),
+                              ),
+                            )
+                          : Icon(
                               _getLevelIcon(category.level),
                               size: 16,
                               color: _getLevelColor(category.level),
                             ),
+                    ),
+                    const SizedBox(width: 10),
+                    // Category Name
+                    Expanded(
+                      child: Column(
+                        crossAxisAlignment: CrossAxisAlignment.start,
+                        children: [
+                          Text(
+                            category.name,
+                            style: TextStyle(
+                              fontSize: 13,
+                              fontWeight: isSelected ? FontWeight.bold : FontWeight.w500,
+                              color: isDark ? Colors.white : Colors.black87,
+                            ),
+                            maxLines: 1,
+                            overflow: TextOverflow.ellipsis,
                           ),
-                        )
-                      : Icon(
-                          _getLevelIcon(category.level),
-                          size: 16,
-                          color: _getLevelColor(category.level),
-                        ),
-                ),
-                const SizedBox(width: 10),
-                // Category Name
-                Expanded(
-                  child: Column(
-                    crossAxisAlignment: CrossAxisAlignment.start,
-                    children: [
-                      Text(
-                        category.name,
-                        style: TextStyle(
-                          fontSize: 13,
-                          fontWeight: isSelected ? FontWeight.bold : FontWeight.w500,
-                          color: isDark ? Colors.white : Colors.black87,
-                        ),
-                        maxLines: 1,
-                        overflow: TextOverflow.ellipsis,
+                          Text(
+                            category.levelName,
+                            style: TextStyle(
+                              fontSize: 10,
+                              color: _getLevelColor(category.level),
+                            ),
+                          ),
+                        ],
                       ),
-                      Text(
-                        category.levelName,
-                        style: TextStyle(
-                          fontSize: 10,
-                          color: _getLevelColor(category.level),
+                    ),
+                    // Status Badge
+                    if (!category.isActive)
+                      Container(
+                        padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 2),
+                        decoration: BoxDecoration(
+                          color: Colors.orange.withOpacity(0.2),
+                          borderRadius: BorderRadius.circular(4),
+                        ),
+                        child: const Text(
+                          'Inactive',
+                          style: TextStyle(fontSize: 9, color: Colors.orange, fontWeight: FontWeight.bold),
                         ),
                       ),
-                    ],
-                  ),
-                ),
-                // Status Badge
-                if (!category.isActive)
-                  Container(
-                    padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 2),
-                    decoration: BoxDecoration(
-                      color: Colors.orange.withOpacity(0.2),
-                      borderRadius: BorderRadius.circular(4),
+                    const SizedBox(width: 4),
+                    // Reparent handle -- a SECOND, independent drag affordance
+                    // (own hit-test region, own Draggable/DragTarget pair)
+                    // from the reorder handle below: dragging THIS icon onto
+                    // another row (or the tree header, for top level) crosses
+                    // sibling groups; the plain drag_indicator_rounded handle
+                    // below still only reorders within the current
+                    // ReorderableListView (CAT-5, unchanged). No Tooltip
+                    // wrapper: a bare Tooltip's own long-press-to-show
+                    // recognizer would contend with LongPressDraggable's
+                    // long-press-to-drag on a touch device -- the existing
+                    // reorder handle beside it is also tooltip-less.
+                    LongPressDraggable<CategoryModel>(
+                      data: category,
+                      feedback: Material(
+                        elevation: 4,
+                        borderRadius: BorderRadius.circular(8),
+                        color: isDark ? AdminColors.cardBackgroundDark : Colors.white,
+                        child: Container(
+                          padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
+                          decoration: BoxDecoration(
+                            borderRadius: BorderRadius.circular(8),
+                            border: Border.all(color: accentColor, width: 1.5),
+                          ),
+                          child: Row(
+                            mainAxisSize: MainAxisSize.min,
+                            children: [
+                              Icon(
+                                _getLevelIcon(category.level),
+                                size: 16,
+                                color: _getLevelColor(category.level),
+                              ),
+                              const SizedBox(width: 8),
+                              Text(
+                                category.name,
+                                style: TextStyle(
+                                  fontSize: 13,
+                                  fontWeight: FontWeight.w600,
+                                  color: isDark ? Colors.white : Colors.black87,
+                                ),
+                              ),
+                            ],
+                          ),
+                        ),
+                      ),
+                      childWhenDragging: Opacity(
+                        opacity: 0.3,
+                        child: Icon(
+                          Icons.open_with_rounded,
+                          size: 18,
+                          color: isDark ? Colors.grey[600] : Colors.grey[400],
+                        ),
+                      ),
+                      onDragStarted: () => setState(() => _draggingCategory = category),
+                      onDragEnd: (_) => setState(() => _draggingCategory = null),
+                      onDraggableCanceled: (_, __) => setState(() => _draggingCategory = null),
+                      child: Icon(
+                        Icons.open_with_rounded,
+                        size: 18,
+                        color: isDark ? Colors.grey[600] : Colors.grey[400],
+                      ),
                     ),
-                    child: const Text(
-                      'Inactive',
-                      style: TextStyle(fontSize: 9, color: Colors.orange, fontWeight: FontWeight.bold),
+                    const SizedBox(width: 4),
+                    // Drag handle -- grabbing this, not tapping the row or the
+                    // chevron, is what starts a reorder (ReorderableDragStartListener
+                    // needs this item's own index within its immediate
+                    // ReorderableListView, which is siblingIndex, not depth).
+                    ReorderableDragStartListener(
+                      index: siblingIndex,
+                      child: Icon(
+                        Icons.drag_indicator_rounded,
+                        size: 18,
+                        color: isDark ? Colors.grey[600] : Colors.grey[400],
+                      ),
                     ),
-                  ),
-                const SizedBox(width: 4),
-                // Drag handle -- grabbing this, not tapping the row or the
-                // chevron, is what starts a reorder (ReorderableDragStartListener
-                // needs this item's own index within its immediate
-                // ReorderableListView, which is siblingIndex, not depth).
-                ReorderableDragStartListener(
-                  index: siblingIndex,
-                  child: Icon(
-                    Icons.drag_indicator_rounded,
-                    size: 18,
-                    color: isDark ? Colors.grey[600] : Colors.grey[400],
-                  ),
+                  ],
                 ),
-              ],
-            ),
-          ),
+              ),
+            );
+          },
         ),
         // Children -- a nested, non-scrolling ReorderableListView per expanded
         // parent, not a plain Column spread: nesting one per sibling group is
@@ -407,6 +509,88 @@ class _CategoryManagementScreenState extends State<CategoryManagementScreen> {
     try {
       await adminProvider.reorderCategory(category, newIndex);
       _loadCategories();
+    } catch (e) {
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(backgroundColor: Colors.redAccent, content: Text('Error: $e')),
+        );
+      }
+    }
+  }
+
+  /// True if dropping [dragged] onto [targetParentId] (null = top level)
+  /// would not actually change anything -- dragged is already there. Kept
+  /// separate from [_reparentRejectionReason] so a drop target can decline
+  /// the "no-op" case silently (no highlight, no snackbar) rather than
+  /// showing it as a rejection.
+  bool _isNoOpReparent(CategoryModel dragged, String? targetParentId) =>
+      dragged.parentId == targetParentId;
+
+  /// Null if dropping [dragged] onto [targetParentId] (null = top level) is
+  /// a valid reparent; otherwise the user-facing reason it is rejected.
+  /// Checked live during drag-hover (DragTarget.onWillAcceptWithDetails, for
+  /// the highlight) and again just before writing (onAcceptWithDetails, for
+  /// the error message) -- allCategories can shift between the two moments
+  /// via the realtime listener, so both checks matter.
+  String? _reparentRejectionReason(
+    CategoryModel dragged,
+    String? targetParentId,
+    List<CategoryModel> allCategories,
+    AdminProvider adminProvider,
+  ) {
+    // wouldCreateCategoryCycle already covers targetParentId == dragged.id
+    // (a category "parented onto itself"), so there is no separate check
+    // for that here.
+    if (adminProvider.wouldCreateCategoryCycle(dragged.id, targetParentId)) {
+      final targetName =
+          allCategories.where((c) => c.id == targetParentId).firstOrNull?.name ?? 'that category';
+      return 'Cannot make "${dragged.name}" a subcategory of "$targetName" — "$targetName" is already inside "${dragged.name}".';
+    }
+    if (targetParentId != null) {
+      final targetLevel = allCategories.where((c) => c.id == targetParentId).firstOrNull?.level ?? 0;
+      if (targetLevel + 1 + adminProvider.subtreeHeightOf(dragged.id) > 3) {
+        return 'Moving "${dragged.name}" here would push its own subcategories past the maximum nesting depth.';
+      }
+    }
+    return null;
+  }
+
+  Future<void> _reparentCategory(
+    CategoryModel dragged,
+    String? targetParentId,
+    List<CategoryModel> allCategories,
+  ) async {
+    if (_isNoOpReparent(dragged, targetParentId)) return;
+    final adminProvider = Provider.of<AdminProvider>(context, listen: false);
+    final rejection = _reparentRejectionReason(dragged, targetParentId, allCategories, adminProvider);
+    if (rejection != null) {
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(backgroundColor: Colors.redAccent, content: Text(rejection)),
+        );
+      }
+      return;
+    }
+    final newLevel = targetParentId == null
+        ? 0
+        : (allCategories.where((c) => c.id == targetParentId).firstOrNull?.level ?? 0) + 1;
+    try {
+      await adminProvider.updateCategory(dragged.copyWith(parentId: targetParentId, level: newLevel));
+      if (targetParentId != null) {
+        _expandedCategories.add(targetParentId);
+      }
+      _loadCategories();
+      if (mounted) {
+        final destinationName = targetParentId == null
+            ? 'top level'
+            : (allCategories.where((c) => c.id == targetParentId).firstOrNull?.name ?? 'that category');
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(
+            backgroundColor: Colors.green,
+            content: Text('Moved "${dragged.name}" to $destinationName'),
+          ),
+        );
+      }
     } catch (e) {
       if (mounted) {
         ScaffoldMessenger.of(context).showSnackBar(

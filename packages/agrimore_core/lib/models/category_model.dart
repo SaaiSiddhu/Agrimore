@@ -133,6 +133,8 @@ class CategoryModel {
     };
   }
 
+  static const Object _unset = Object();
+
   CategoryModel copyWith({
     String? id,
     String? name,
@@ -148,7 +150,15 @@ class CategoryModel {
     DateTime? createdAt,
     int? productCount,
     // Hierarchy
-    String? parentId,
+    // parentId defaults to a sentinel (not null) so omitting it preserves
+    // the existing value, matching every other field here -- but an
+    // explicit `copyWith(parentId: null)` (reparenting to top level) still
+    // takes effect instead of silently falling back to `this.parentId` the
+    // way a plain `parentId ?? this.parentId` would (CAT-7 found this: a
+    // root-level drag-drop reparent -- the only caller anywhere that has
+    // ever passed an explicit null here -- persisted the new level but left
+    // the old parentId in place).
+    Object? parentId = _unset,
     int? level,
     List<String>? subcategoryIds,
     String? slug,
@@ -169,7 +179,7 @@ class CategoryModel {
       createdAt: createdAt ?? this.createdAt,
       productCount: productCount ?? this.productCount,
       // Hierarchy
-      parentId: parentId ?? this.parentId,
+      parentId: identical(parentId, _unset) ? this.parentId : parentId as String?,
       level: level ?? this.level,
       subcategoryIds: subcategoryIds ?? this.subcategoryIds,
       slug: slug ?? this.slug,
