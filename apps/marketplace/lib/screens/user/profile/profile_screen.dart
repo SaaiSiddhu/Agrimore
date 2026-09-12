@@ -83,7 +83,6 @@ class ProfileScreen extends StatefulWidget {
 
 class _ProfileScreenState extends State<ProfileScreen> {
   bool _isCheckingAuth = true;
-  int _ordersCount = 0; // total orders ever placed — shown on the "My Orders" menu row
   int _activeOrdersCount = 0; // not yet in a terminal state — shown on the Orders quick action
   int _wishlistCount = 0;
   int _addressesCount = 0;
@@ -229,7 +228,6 @@ class _ProfileScreenState extends State<ProfileScreen> {
 
       if (mounted) {
         setState(() {
-          _ordersCount = ordersSnapshot.docs.length;
           _activeOrdersCount = activeOrders;
           _wishlistCount = wishlistCount;
           _addressesCount = addressesSnapshot.docs.length;
@@ -351,52 +349,44 @@ class _ProfileScreenState extends State<ProfileScreen> {
               // dropped entirely (the reference has none); the real items,
               // routes, live counts and toggle logic are all unchanged,
               // only the grouping/chrome around them changed.
+              //
+              // PROFILE-7: owner asked to drop 6 rows outright — My Orders,
+              // Your Wishlist, Agrimore Wallet, Rewards & Offers, Employee
+              // application, Notifications. Four of the six stayed fully
+              // reachable through an existing, separate control the row
+              // only duplicated: My Orders/Your Wishlist/Agrimore Wallet
+              // via their own quick-action card above, Notifications via
+              // the header's own bell icon. Rewards & Offers routed to the
+              // exact same `AppRoutes.rewards` the AgriMore Rewards banner
+              // already opens — same destination, not just a similar one.
+              // Employee application has no other path left in this screen
+              // after this row — the owner's own call, not one this phase
+              // second-guessed or patched around. `_ordersCount` (only ever
+              // read by the row just removed) is deleted with it rather
+              // than left computed and unread.
               SliverToBoxAdapter(
                 child: _buildUnifiedMenuCard(isDark, [
                   _MenuItem(
-                    icon: Icons.shopping_bag_rounded,
-                    title: 'My Orders',
-                    count: _isLoadingStats ? null : _ordersCount,
-                    onTap: () => _navigateTo(AppRoutes.orders),
-                    color: const Color(0xFF2E7D32),
-                  ),
-                  _MenuItem(
                     icon: Icons.event_repeat_rounded,
+                    iconAsset: 'assets/images/Profile/Subscriptions_Icon.png',
                     title: 'My Subscriptions',
                     onTap: () => _navigateTo(AppRoutes.mySubscriptions),
                     color: const Color(0xFF00897B),
                   ),
                   _MenuItem(
                     icon: Icons.request_quote_outlined,
+                    iconAsset: 'assets/images/Profile/Quotes.png',
                     title: 'My Quotes',
                     onTap: () => _navigateTo(AppRoutes.myRfqs),
                     color: const Color(0xFF3949AB),
                   ),
                   _MenuItem(
                     icon: Icons.location_on_rounded,
+                    iconAsset: 'assets/images/Profile/Adress_Icon.png',
                     title: 'Delivery Addresses',
                     count: _isLoadingStats ? null : _addressesCount,
                     onTap: () => _navigateTo(AppRoutes.savedAddresses),
                     color: const Color(0xFF1976D2),
-                  ),
-                  _MenuItem(
-                    icon: Icons.favorite_rounded,
-                    title: 'Your Wishlist',
-                    count: _isLoadingStats ? null : _wishlistCount,
-                    onTap: () => _navigateTo(AppRoutes.wishlist),
-                    color: AppColors.favorite,
-                  ),
-                  _MenuItem(
-                    icon: Icons.account_balance_wallet_rounded,
-                    title: 'Agrimore Wallet',
-                    onTap: () => _navigateTo(AppRoutes.wallet),
-                    color: AppColors.wallet,
-                  ),
-                  _MenuItem(
-                    icon: Icons.card_giftcard_rounded,
-                    title: 'Rewards & Offers',
-                    onTap: () => _navigateTo(AppRoutes.rewards),
-                    color: const Color(0xFFF9A825),
                   ),
                   _MenuItem(
                     icon: Icons.bolt_rounded,
@@ -406,6 +396,7 @@ class _ProfileScreenState extends State<ProfileScreen> {
                   ),
                   _MenuItem(
                     icon: Icons.group_add_rounded,
+                    iconAsset: 'assets/images/Profile/Refer_Icon.png',
                     title: 'Refer & Earn',
                     onTap: () => _navigateTo(AppRoutes.referral),
                     color: const Color(0xFFD81B60),
@@ -414,6 +405,7 @@ class _ProfileScreenState extends State<ProfileScreen> {
                     if (sellerProvider.isApproved)
                       _MenuItem(
                         icon: Icons.storefront_rounded,
+                        iconAsset: 'assets/images/Profile/Seller-Registration_Icon.png',
                         title: 'Seller dashboard',
                         onTap: () => _navigateTo(AppRoutes.sellerPanel),
                         color: const Color(0xFF00796B),
@@ -421,6 +413,7 @@ class _ProfileScreenState extends State<ProfileScreen> {
                     else
                       _MenuItem(
                         icon: Icons.storefront_rounded,
+                        iconAsset: 'assets/images/Profile/Seller-Registration_Icon.png',
                         title: sellerProvider.isPending
                             ? 'Seller application (pending)'
                             : 'Seller registration',
@@ -429,29 +422,15 @@ class _ProfileScreenState extends State<ProfileScreen> {
                       ),
                   if (!authProvider.isAdmin)
                     _MenuItem(
-                      icon: Icons.badge_rounded,
-                      title: 'Employee application',
-                      onTap: () => _navigateTo(AppRoutes.employeeApply),
-                      color: const Color(0xFF6D4C41),
-                    ),
-                  if (!authProvider.isAdmin)
-                    _MenuItem(
                       icon: Icons.handshake_rounded,
+                      iconAsset: 'assets/images/Profile/Sales-Associate_Icon.png',
                       title: 'Become a Sales Associate',
                       onTap: () => _navigateTo(AppRoutes.associateOnboarding),
                       color: const Color(0xFF512DA8),
                     ),
                   _MenuItem(
-                    icon: Icons.notifications_rounded,
-                    title: 'Notifications',
-                    count: _isLoadingStats || _unreadNotifications == 0
-                        ? null
-                        : _unreadNotifications,
-                    onTap: () => _navigateTo(AppRoutes.notifications),
-                    color: const Color(0xFFEF6C00),
-                  ),
-                  _MenuItem(
                     icon: Icons.support_agent_rounded,
+                    iconAsset: 'assets/images/Profile/Support_Icon.png',
                     title: 'Help & Support',
                     onTap: _contactSupport,
                     color: const Color(0xFF1E88E5),
@@ -464,12 +443,14 @@ class _ProfileScreenState extends State<ProfileScreen> {
                   ),
                   _MenuItem(
                     icon: Icons.settings_rounded,
+                    iconAsset: 'assets/images/Profile/Settings_Icons.png',
                     title: 'Account Settings',
                     onTap: () => _navigateTo(AppRoutes.appSettings),
                     color: const Color(0xFF546E7A),
                   ),
                   _MenuItem(
                     icon: Icons.logout_rounded,
+                    iconAsset: 'assets/images/Profile/Logout_Icon.png',
                     title: 'Log out',
                     onTap: _logout,
                     isDestructive: true,
@@ -479,6 +460,7 @@ class _ProfileScreenState extends State<ProfileScreen> {
                   // including Log out.
                   _MenuItem(
                     icon: Icons.person_remove_outlined,
+                    iconAsset: 'assets/images/Profile/Delete-Account_Icon.png',
                     title: 'Delete account',
                     onTap: () {
                       HapticFeedback.lightImpact();
@@ -1053,10 +1035,21 @@ class _ProfileScreenState extends State<ProfileScreen> {
   // rewards system is a scratch-card cashback game that credits the real
   // wallet balance, see rewards_screen.dart/claimScratchCard). Shows a real
   // pending-card count instead of inventing a points balance.
+  // PROFILE-7: the owner's own banner graphic (View Rewards / Shop / Earn /
+  // Redeem all baked into the art) replaces the hand-built gradient+text
+  // card. The PNG has no alpha (`file` confirms RGB) and is a rounded-rect
+  // graphic on a black canvas with a real corner radius baked in (measured:
+  // ~87px at 2048 width ≈ 11.3% of the banner's own height) — ClipRRect at
+  // radius 16 crops that black away regardless of the render width, since
+  // 16 is already past where this image's own corner curve would land at
+  // any width a phone screen renders it. The live pending-scratch-card
+  // count — real data, not something the static art can show — survives as
+  // a small badge overlaid in the corner, only when there is one to show,
+  // rather than being silently dropped along with the old hand-built card.
   Widget _buildRewardsBanner(bool isDark) {
     final hasPending = !_isLoadingStats && _pendingRewardsCount > 0;
     return Padding(
-      padding: const EdgeInsets.fromLTRB(16, 0, 16, 16),
+      padding: const EdgeInsets.fromLTRB(16, 10, 16, 16),
       child: Semantics(
         button: true,
         label: hasPending
@@ -1064,80 +1057,38 @@ class _ProfileScreenState extends State<ProfileScreen> {
             : 'AgriMore Rewards, play a scratch card on every order',
         child: GestureDetector(
           onTap: () => _navigateTo(AppRoutes.rewards),
-          child: Container(
-            padding: const EdgeInsets.all(16),
-            decoration: BoxDecoration(
-              gradient: LinearGradient(
-                colors: isDark
-                    ? [const Color(0xFF14251B), const Color(0xFF1B5E20)]
-                    : [const Color(0xFFE8F5E9), const Color(0xFFC8E6C9)],
-                begin: Alignment.topLeft,
-                end: Alignment.bottomRight,
+          child: Stack(
+            children: [
+              ClipRRect(
+                borderRadius: BorderRadius.circular(16),
+                child: AspectRatio(
+                  aspectRatio: 2048 / 768,
+                  child: Image.asset(
+                    'assets/images/Profile/Rewards_Banner.png',
+                    fit: BoxFit.cover,
+                  ),
+                ),
               ),
-              borderRadius: BorderRadius.circular(16),
-            ),
-            child: Row(
-              children: [
-                Container(
-                  padding: const EdgeInsets.all(10),
-                  decoration: BoxDecoration(
-                    color: isDark ? Colors.white.withValues(alpha: 0.1) : Colors.white.withValues(alpha: 0.6),
-                    borderRadius: BorderRadius.circular(12),
-                  ),
-                  child: Icon(
-                    Icons.eco_rounded,
-                    color: isDark ? AppColors.primaryLight : const Color(0xFF2E7D32),
-                    size: 24,
-                  ),
-                ),
-                const SizedBox(width: 14),
-                Expanded(
-                  child: Column(
-                    crossAxisAlignment: CrossAxisAlignment.start,
-                    children: [
-                      Text(
-                        'AgriMore Rewards',
-                        style: TextStyle(
-                          fontSize: 15,
-                          fontWeight: FontWeight.w800,
-                          color: isDark ? Colors.white : Colors.black87,
-                        ),
-                      ),
-                      const SizedBox(height: 3),
-                      Text(
-                        hasPending
-                            ? '$_pendingRewardsCount reward${_pendingRewardsCount == 1 ? '' : 's'} waiting to be opened'
-                            : 'Play a scratch card on every order',
-                        style: TextStyle(
-                          fontSize: 12,
-                          color: isDark ? Colors.grey[400] : Colors.grey[700],
-                        ),
-                        maxLines: 1,
-                        overflow: TextOverflow.ellipsis,
-                      ),
-                    ],
-                  ),
-                ),
-                if (hasPending) ...[
-                  Container(
+              if (hasPending)
+                Positioned(
+                  top: 10,
+                  right: 10,
+                  child: Container(
                     padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 5),
                     decoration: BoxDecoration(
                       color: const Color(0xFF2E7D32),
                       borderRadius: BorderRadius.circular(20),
+                      boxShadow: [
+                        BoxShadow(color: Colors.black.withValues(alpha: 0.25), blurRadius: 6),
+                      ],
                     ),
                     child: Text(
                       '$_pendingRewardsCount',
                       style: const TextStyle(color: Colors.white, fontWeight: FontWeight.w800, fontSize: 13),
                     ),
                   ),
-                  const SizedBox(width: 6),
-                ],
-                Icon(
-                  Icons.chevron_right_rounded,
-                  color: isDark ? Colors.grey[600] : Colors.grey[500],
                 ),
-              ],
-            ),
+            ],
           ),
         ),
       ),
@@ -1151,17 +1102,18 @@ class _ProfileScreenState extends State<ProfileScreen> {
   // re-ordering ask — settings-style toggles before the navigable list.
   // They're pre-built widgets, not more _MenuItems, because neither fits
   // _MenuItem's tap-to-navigate shape: Appearance opens a same-row control,
-  // B2B carries a live description line under its title. Every row and the
-  // divider indent were shrunk together (padding, badge, icon and text
-  // sizes all down a step) per the owner's "compact and smaller" ask —
-  // indent is derived from the same paddings the rows use, not a
-  // second hand-tuned number that could drift out of sync with them.
+  // B2B carries a live description line under its title.
+  //
+  // PROFILE-7: the pastel badge circle behind every row's icon is gone —
+  // owner's own call, "remove the bg cards from the nav items icons" — and
+  // the icon itself sized up to compensate, since without a badge behind it
+  // the same size read as lost/lonely in the row. Indent is still derived
+  // from these same constants, not a second hand-tuned number, now minus
+  // the badge-padding term the removed Container used to contribute.
   static const double _navRowHPad = 14;
-  static const double _navIconBadgePad = 7;
-  static const double _navIconSize = 17;
+  static const double _navIconSize = 28;
   static const double _navIconTextGap = 10;
-  static const double _navDividerIndent =
-      _navRowHPad + _navIconBadgePad * 2 + _navIconSize + _navIconTextGap;
+  static const double _navDividerIndent = _navRowHPad + _navIconSize + _navIconTextGap;
 
   Widget _buildUnifiedMenuCard(
     bool isDark,
@@ -1195,24 +1147,20 @@ class _ProfileScreenState extends State<ProfileScreen> {
     );
   }
 
-  // Same badge-icon-plus-title row shape as _buildMenuItem (so the shared
-  // divider indent lines up), with the theme dropdown pill in place of a
-  // count or chevron.
+  // Same icon-plus-title row shape as _buildMenuItem (so the shared divider
+  // indent lines up), with the theme dropdown pill in place of a count or
+  // chevron.
   Widget _buildAppearanceMenuRow(bool isDark, ThemeProvider themeProvider) {
-    const badgeColor = Color(0xFFFFA000);
     return InkWell(
       onTap: () => themeProvider.toggleTheme(),
       child: Padding(
         padding: const EdgeInsets.symmetric(horizontal: _navRowHPad, vertical: 10),
         child: Row(
           children: [
-            Container(
-              padding: const EdgeInsets.all(_navIconBadgePad),
-              decoration: BoxDecoration(
-                color: badgeColor.withValues(alpha: isDark ? 0.18 : 0.12),
-                borderRadius: BorderRadius.circular(10),
-              ),
-              child: const Icon(Icons.brightness_6_rounded, size: _navIconSize, color: badgeColor),
+            Image.asset(
+              'assets/images/Profile/Appearance.png',
+              width: _navIconSize,
+              height: _navIconSize,
             ),
             const SizedBox(width: _navIconTextGap),
             Expanded(
@@ -1257,22 +1205,18 @@ class _ProfileScreenState extends State<ProfileScreen> {
     );
   }
 
-  // Same badge-icon-plus-title row shape as _buildMenuItem, with a
-  // description line under the title (like the old standalone card had)
-  // and a live Switch in place of a count or chevron.
+  // Same icon-plus-title row shape as _buildMenuItem, with a description
+  // line under the title (like the old standalone card had) and a live
+  // Switch in place of a count or chevron.
   Widget _buildB2BMenuRow(bool isDark, MarketModeProvider marketMode) {
-    const badgeColor = Color(0xFF00796B);
     return Padding(
       padding: const EdgeInsets.symmetric(horizontal: _navRowHPad, vertical: 8),
       child: Row(
         children: [
-          Container(
-            padding: const EdgeInsets.all(_navIconBadgePad),
-            decoration: BoxDecoration(
-              color: badgeColor.withValues(alpha: isDark ? 0.18 : 0.12),
-              borderRadius: BorderRadius.circular(10),
-            ),
-            child: const Icon(Icons.storefront_rounded, size: _navIconSize, color: badgeColor),
+          Image.asset(
+            'assets/images/Profile/B2B_Icon.png',
+            width: _navIconSize,
+            height: _navIconSize,
           ),
           const SizedBox(width: _navIconTextGap),
           Expanded(
@@ -1324,14 +1268,9 @@ class _ProfileScreenState extends State<ProfileScreen> {
           padding: const EdgeInsets.symmetric(horizontal: _navRowHPad, vertical: 10),
           child: Row(
             children: [
-              Container(
-                padding: const EdgeInsets.all(_navIconBadgePad),
-                decoration: BoxDecoration(
-                  color: badgeColor.withValues(alpha: isDark ? 0.18 : 0.12),
-                  borderRadius: BorderRadius.circular(10),
-                ),
-                child: Icon(item.icon, size: _navIconSize, color: badgeColor),
-              ),
+              item.iconAsset != null
+                  ? Image.asset(item.iconAsset!, width: _navIconSize, height: _navIconSize)
+                  : Icon(item.icon, size: _navIconSize, color: badgeColor),
               const SizedBox(width: _navIconTextGap),
               Expanded(
                 child: Text(
@@ -1459,6 +1398,12 @@ class _ProfileScreenState extends State<ProfileScreen> {
 
 class _MenuItem {
   final IconData icon;
+  // PROFILE-7: the owner's own PNG for this row (Profile/*.png), drawn
+  // inside the same pastel badge circle in place of `icon` when set — every
+  // row that got one of the newly-added PNGs uses this; `icon` still has to
+  // be supplied for the (few) rows the owner did not hand a PNG for, so it
+  // stays required rather than becoming dead weight on those rows.
+  final String? iconAsset;
   final String title;
   final int? count;
   final VoidCallback onTap;
@@ -1467,11 +1412,15 @@ class _MenuItem {
   // pastel circle (alpha 0.12) and the icon tint from it, the same
   // single-colour derivation the now-deleted profile_menu_item.dart widget
   // used. isDestructive rows ignore this and always render red, matching
-  // their text colour.
+  // their text colour. Rows using `iconAsset` still get this as their
+  // badge's background tint — the PNGs are flat multi-colour glyphs with no
+  // circle baked in (unlike the quick-action cards' own icon set), not a
+  // self-contained badge to render on their own.
   final Color color;
 
   _MenuItem({
     required this.icon,
+    this.iconAsset,
     required this.title,
     this.count,
     required this.onTap,
