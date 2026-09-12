@@ -15,6 +15,8 @@ class CategoryModel {
   final String? iconName;         // Material icon name fallback
   final int displayOrder;
   final bool isActive;
+  final bool isVisible;   // Customer-facing visibility, independent of isActive
+  final bool isFeatured;  // Promotional highlight (mirrors ProductModel.isFeatured)
   final DateTime createdAt;
   final int productCount;
   
@@ -35,6 +37,8 @@ class CategoryModel {
     this.iconName,
     this.displayOrder = 0,
     this.isActive = true,
+    this.isVisible = true,
+    this.isFeatured = false,
     required this.createdAt,
     this.productCount = 0,
     // Hierarchy
@@ -93,6 +97,8 @@ class CategoryModel {
       iconName: map['iconName'],
       displayOrder: map['displayOrder'] ?? 0,
       isActive: map['isActive'] ?? true,
+      isVisible: map['isVisible'] ?? true,
+      isFeatured: map['isFeatured'] ?? false,
       createdAt: createdAtDate,
       productCount: map['productCount'] ?? 0,
       // Hierarchy
@@ -114,6 +120,8 @@ class CategoryModel {
       'iconName': iconName,
       'displayOrder': displayOrder,
       'isActive': isActive,
+      'isVisible': isVisible,
+      'isFeatured': isFeatured,
       'createdAt': Timestamp.fromDate(createdAt),
       'productCount': productCount,
       // Hierarchy
@@ -135,6 +143,8 @@ class CategoryModel {
     String? iconName,
     int? displayOrder,
     bool? isActive,
+    bool? isVisible,
+    bool? isFeatured,
     DateTime? createdAt,
     int? productCount,
     // Hierarchy
@@ -154,6 +164,8 @@ class CategoryModel {
       iconName: iconName ?? this.iconName,
       displayOrder: displayOrder ?? this.displayOrder,
       isActive: isActive ?? this.isActive,
+      isVisible: isVisible ?? this.isVisible,
+      isFeatured: isFeatured ?? this.isFeatured,
       createdAt: createdAt ?? this.createdAt,
       productCount: productCount ?? this.productCount,
       // Hierarchy

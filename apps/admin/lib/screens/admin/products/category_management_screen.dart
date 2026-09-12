@@ -581,6 +581,8 @@ class _CategoryManagementScreenState extends State<CategoryManagementScreen> {
           const SizedBox(height: 16),
           _buildDetailRow('Description', category.description.isNotEmpty ? category.description : 'No description', isDark),
           _buildDetailRow('Status', category.isActive ? 'Active' : 'Inactive', isDark, valueColor: category.isActive ? Colors.green : Colors.orange),
+          _buildDetailRow('Visible to Customers', category.isVisible ? 'Yes' : 'No', isDark, valueColor: category.isVisible ? Colors.green : Colors.orange),
+          _buildDetailRow('Featured', category.isFeatured ? 'Yes' : 'No', isDark, valueColor: category.isFeatured ? Colors.blue : null),
           _buildDetailRow('Display Order', category.displayOrder.toString(), isDark),
           if (parent != null)
             _buildDetailRow('Parent Category', parent.name, isDark),
@@ -821,6 +823,8 @@ class _CategoryFormDialogState extends State<_CategoryFormDialog> {
   final _orderController = TextEditingController();
 
   bool _isActive = true;
+  bool _isVisible = true;
+  bool _isFeatured = false;
   String? _iconUrl;
   String? _bannerUrl;
   PlatformFile? _iconFile;  // ✅ Changed from XFile
@@ -841,6 +845,8 @@ class _CategoryFormDialogState extends State<_CategoryFormDialog> {
       _descriptionController.text = widget.categoryToEdit!.description;
       _orderController.text = widget.categoryToEdit!.displayOrder.toString();
       _isActive = widget.categoryToEdit!.isActive;
+      _isVisible = widget.categoryToEdit!.isVisible;
+      _isFeatured = widget.categoryToEdit!.isFeatured;
       _iconUrl = widget.categoryToEdit!.iconUrl;
       _bannerUrl = widget.categoryToEdit!.bannerImageUrl;
       _selectedParentId = widget.categoryToEdit!.parentId;
@@ -1073,6 +1079,55 @@ class _CategoryFormDialogState extends State<_CategoryFormDialog> {
                     ),
                   ],
                 ),
+                const SizedBox(height: 16),
+                // Visible & Featured Row -- independent of Active: a category
+                // can stay active (manageable, keeps its products) while
+                // temporarily hidden from customers, or vice versa.
+                Row(
+                  children: [
+                    Expanded(
+                      child: Container(
+                        padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
+                        decoration: BoxDecoration(
+                          color: isDark ? Colors.grey[850] : Colors.grey[50],
+                          borderRadius: BorderRadius.circular(12),
+                        ),
+                        child: Row(
+                          mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                          children: [
+                            Text('Visible', style: TextStyle(color: isDark ? Colors.grey[400] : Colors.grey[600])),
+                            Switch(
+                              value: _isVisible,
+                              onChanged: (v) => setState(() => _isVisible = v),
+                              activeThumbColor: accentColor,
+                            ),
+                          ],
+                        ),
+                      ),
+                    ),
+                    const SizedBox(width: 16),
+                    Expanded(
+                      child: Container(
+                        padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
+                        decoration: BoxDecoration(
+                          color: isDark ? Colors.grey[850] : Colors.grey[50],
+                          borderRadius: BorderRadius.circular(12),
+                        ),
+                        child: Row(
+                          mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                          children: [
+                            Text('Featured', style: TextStyle(color: isDark ? Colors.grey[400] : Colors.grey[600])),
+                            Switch(
+                              value: _isFeatured,
+                              onChanged: (v) => setState(() => _isFeatured = v),
+                              activeThumbColor: accentColor,
+                            ),
+                          ],
+                        ),
+                      ),
+                    ),
+                  ],
+                ),
                 const SizedBox(height: 24),
                 // Actions
                 Row(
@@ -1264,7 +1319,19 @@ class _CategoryFormDialogState extends State<_CategoryFormDialog> {
         bannerImageUrl: bannerUrl,
         displayOrder: int.tryParse(_orderController.text) ?? 0,
         isActive: _isActive,
+        isVisible: _isVisible,
+        isFeatured: _isFeatured,
         createdAt: widget.categoryToEdit?.createdAt ?? DateTime.now(),
+        // Neither field has a form control of its own -- productCount is
+        // computed elsewhere and subcategoryIds is bookkept by AdminProvider's
+        // own add/update/delete logic (admin_provider.dart), never by this
+        // dialog. Carrying the existing category's values forward on edit
+        // (rather than defaulting to 0/[]) avoids silently discarding them --
+        // updateCategoryModel does a Firestore .update() with this object's
+        // FULL toMap(), so an omitted value here is a real overwrite, not a
+        // no-op.
+        productCount: widget.categoryToEdit?.productCount ?? 0,
+        subcategoryIds: widget.categoryToEdit?.subcategoryIds ?? const [],
         parentId: _selectedParentId,
         level: level,
         slug: categorySlug,
