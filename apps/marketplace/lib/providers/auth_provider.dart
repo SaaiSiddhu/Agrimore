@@ -392,6 +392,7 @@ class AuthProvider with ChangeNotifier {
 
       _isLoading = true;
       _error = null;
+      _errorCode = null;
       notifyListeners();
 
       debugPrint('🔐 Verifying OTP for: $phone');
@@ -417,7 +418,11 @@ class AuthProvider with ChangeNotifier {
     } on AuthException catch (e) {
       debugPrint('❌ Verify OTP error: ${e.message}');
       _error = e.message;
-      _incrementFailedAttempts();
+      _errorCode = e.code;
+      // A client-side timeout isn't evidence of a wrong code — the request
+      // may still be completing server-side (observed: sign-in landing tens
+      // of seconds after the client gave up). Don't count it toward lockout.
+      if (e.code != 'TIMEOUT') _incrementFailedAttempts();
       await _logAuthEvent('phone_login', false, phone, error: e.message);
       _isLoading = false;
       notifyListeners();
@@ -425,6 +430,7 @@ class AuthProvider with ChangeNotifier {
     } catch (e) {
       debugPrint('❌ Verify OTP error: $e');
       _error = e.toString().replaceAll('Exception: ', '');
+      _errorCode = null;
       _incrementFailedAttempts();
       await _logAuthEvent('phone_login', false, phone, error: e.toString());
       _isLoading = false;
