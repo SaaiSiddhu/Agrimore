@@ -26,6 +26,7 @@ import '../screens/admin/settings/admin_settings_screen.dart';
 import '../screens/admin/settings/delivery_time_slots_management_screen.dart';
 import '../screens/admin/sellers/seller_requests_management_screen.dart';
 import '../screens/admin/sellers/add_seller_screen.dart';
+import '../screens/admin/sellers/manage_sellers_screen.dart';
 import '../screens/admin/section_banners/section_banner_management_screen.dart';
 import '../screens/admin/vendors/vendors_list_screen.dart';
 import '../screens/admin/subscriptions/subscription_management_screen.dart';
@@ -97,6 +98,12 @@ class AdminRoutes {
 
   /// Admin creates an approved seller (callable `createSellerByAdmin`).
   static const String addSeller = '/add-seller';
+
+  /// Browse approved sellers and edit an existing one's profile
+  /// (ADMIN-SELLER-CMS-1). Appended near sellerRequests/addSeller for
+  /// readability; the _navItems entry itself is appended at the end of
+  /// admin_shell.dart's list, mirroring D5's index-stability rule.
+  static const String manageSellers = '/manage-sellers';
 
   static const String employees = '/employees';
 
@@ -433,6 +440,13 @@ class AppRouter {
               name: 'add-seller',
               pageBuilder: (context, state) =>
                   _buildPage(const AddSellerScreen(), state),
+            ),
+
+            GoRoute(
+              path: AdminRoutes.manageSellers,
+              name: 'manage-sellers',
+              pageBuilder: (context, state) =>
+                  _buildPage(const ManageSellersScreen(), state),
             ),
 
             GoRoute(
