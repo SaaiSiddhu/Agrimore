@@ -98,6 +98,14 @@ class _AdminShellState extends State<AdminShell> {
       'Benefit Feature Flags',
       AdminRoutes.benefitFeatureFlags,
     ),
+    // ADMIN-SELLER-CMS-1. Appended at the end for the same reason as
+    // Employees/Benefit Compliance above: inserting mid-list would shift
+    // the indices _getSubtitle() and _buildBottomNav() hardcode.
+    _NavItem(
+      Icons.store_rounded,
+      'Manage Sellers',
+      AdminRoutes.manageSellers,
+    ),
   ];
 
   int get _currentIndex {
