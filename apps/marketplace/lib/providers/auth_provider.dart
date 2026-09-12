@@ -682,6 +682,11 @@ class AuthProvider with ChangeNotifier {
         pending,
         expectedUid: expectedUid,
       );
+      // A returning, already-linked Google identity is never a new
+      // customer by definition — unlike verifyPhoneOTP(), this path has no
+      // server-reported isNewUser to read, so it must be stated explicitly
+      // rather than left at whatever _isNewUser last held.
+      _isNewUser = false;
 
       await _logAuthEvent('google_returning_signin_success', true, _currentUser?.email ?? 'unknown');
       if (_currentUser != null) await _updateFCMToken(_currentUser!.uid);

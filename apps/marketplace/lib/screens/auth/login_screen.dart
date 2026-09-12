@@ -13,6 +13,7 @@ import 'dart:convert';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:agrimore_ui/agrimore_ui.dart';
+import 'package:agrimore_services/agrimore_services.dart' show PendingGoogleIdentity;
 import 'package:provider/provider.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 import '../../providers/auth_provider.dart';
@@ -59,6 +60,16 @@ class _LoginScreenState extends State<LoginScreen> {
   // required constructor argument.
   String _pendingPhone = '';
   bool get _isVoiceChannel => _channel == 'voice';
+
+  // ── AUTH-3: Google as a phone-verification-gated linked provider ──
+  // Non-null only between "Google returned an unlinked identity" and
+  // "phone verification for that identity finished (or was cancelled)".
+  // Ephemeral — never persisted; cleared on link, cancel, or dispose.
+  // Its presence is what turns the SAME phone/OTP states above into the
+  // "verify your mobile to connect Google" framing, per this screen's own
+  // build() — no separate sheet state needed, only the copy changes.
+  PendingGoogleIdentity? _pendingGoogleIdentity;
+  bool _isGoogleLoading = false;
 
   @override
   void initState() {
@@ -180,6 +191,86 @@ class _LoginScreenState extends State<LoginScreen> {
     });
   }
 
+  // AUTH-3: "Continue with Google" — acquires a credential, asks
+  // resolveGoogleIdentity whether it is already linked, and only ever
+  // takes ONE of two paths: sign straight in (Scenario A) or require phone
+  // verification first (Scenario B). Never creates a session or a
+  // Firestore document before one of those two paths is decided.
+  Future<void> _handleGoogleSignIn() async {
+    if (_isGoogleLoading) return;
+    HapticFeedback.mediumImpact();
+    FocusScope.of(context).unfocus();
+
+    final authProvider = context.read<AuthProvider>();
+    setState(() => _isGoogleLoading = true);
+
+    final pending = await authProvider.acquireGoogleCredential();
+    if (!mounted) return;
+
+    if (pending == null) {
+      setState(() => _isGoogleLoading = false);
+      // A null pending with no error means the user closed the account
+      // picker themselves — a cancellation, not a failure, so no toast.
+      if (authProvider.error != null) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(content: Text(authProvider.error ?? "Couldn't sign in with Google. Please try again.")),
+        );
+      }
+      return;
+    }
+
+    final resolution = await authProvider.resolveGoogleIdentity(pending);
+    if (!mounted) return;
+
+    if (resolution == null) {
+      setState(() => _isGoogleLoading = false);
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(content: Text(authProvider.error ?? "Couldn't sign in with Google. Please try again.")),
+      );
+      return;
+    }
+
+    if (resolution.linked) {
+      // Scenario A: already linked — sign straight in, no OTP.
+      final success = await authProvider.signInWithLinkedGoogle(
+        pending,
+        expectedUid: resolution.expectedUid,
+      );
+      if (!mounted) return;
+      setState(() => _isGoogleLoading = false);
+
+      if (!success) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(content: Text(authProvider.error ?? "Couldn't sign in with Google. Please try again.")),
+        );
+        return;
+      }
+      await _proceedAfterLogin(isNewUser: authProvider.isNewUser);
+      return;
+    }
+
+    // Scenario B: unlinked — hold the credential and switch this same
+    // phone-entry content into "verify your mobile to connect Google"
+    // framing (see _buildPhoneContent). Existing sendPhoneOTP/verifyPhoneOTP
+    // handle everything from here; _handleVerify() links Google once the
+    // OTP itself succeeds.
+    setState(() {
+      _isGoogleLoading = false;
+      _pendingGoogleIdentity = pending;
+    });
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      if (mounted) _phoneFocusNode.requestFocus();
+    });
+  }
+
+  // Lets the customer back out of the Google-linking detour into a normal
+  // phone login, per the reference's own "safe method to return... back to
+  // normal login" requirement — never leaves stale pending Google state
+  // behind (the whole point of holding the credential only in memory).
+  void _handleCancelGoogleLink() {
+    setState(() => _pendingGoogleIdentity = null);
+  }
+
   // "Change number" (and the system/OS back gesture while on the OTP step,
   // see build()'s PopScope) — returns to phone entry, keeping the typed
   // number so the customer doesn't retype it, and discards in-progress OTP
@@ -248,6 +339,25 @@ class _LoginScreenState extends State<LoginScreen> {
     }
 
     await _rememberPhoneNumber();
+
+    // AUTH-3, Scenario B's final step: the phone OTP above just
+    // authenticated the canonical account — now attach the held Google
+    // credential to THAT account. A link failure (already-in-use, expired,
+    // network) never undoes this already-successful login; it only means
+    // the Google shortcut isn't set up for next time.
+    final pendingGoogle = _pendingGoogleIdentity;
+    if (pendingGoogle != null) {
+      _pendingGoogleIdentity = null;
+      final linked = await authProvider.linkGoogleToCurrentUser(pendingGoogle);
+      if (mounted && !linked) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(
+            content: Text('This Google account is already connected to another AgriMore account.'),
+          ),
+        );
+      }
+    }
+
     await _proceedAfterLogin(isNewUser: authProvider.isNewUser);
   }
 
@@ -482,6 +592,7 @@ class _LoginScreenState extends State<LoginScreen> {
   }
 
   Widget _buildPhoneContent({required Key key}) {
+    final isGoogleLinking = _pendingGoogleIdentity != null;
     return Column(
       key: key,
       crossAxisAlignment: CrossAxisAlignment.stretch,
@@ -493,16 +604,18 @@ class _LoginScreenState extends State<LoginScreen> {
             crossAxisAlignment: CrossAxisAlignment.stretch,
             mainAxisSize: MainAxisSize.min,
             children: [
-              const Text(
-                'Login / Sign in',
+              Text(
+                isGoogleLinking ? 'Verify your mobile number' : 'Login / Sign in',
                 textAlign: TextAlign.center,
-                style: TextStyle(fontSize: 22, fontWeight: FontWeight.w800, color: AppColors.textPrimary),
+                style: const TextStyle(fontSize: 22, fontWeight: FontWeight.w800, color: AppColors.textPrimary),
               ),
               const SizedBox(height: 6),
-              const Text(
-                'Enter your mobile number to receive an OTP',
+              Text(
+                isGoogleLinking
+                    ? 'To keep your AgriMore account secure and connect your orders, verify your mobile number once.'
+                    : 'Enter your mobile number to receive an OTP',
                 textAlign: TextAlign.center,
-                style: TextStyle(fontSize: 14, color: AppColors.textSecondary),
+                style: const TextStyle(fontSize: 14, color: AppColors.textSecondary),
               ),
               const SizedBox(height: 20),
               Row(
@@ -582,12 +695,75 @@ class _LoginScreenState extends State<LoginScreen> {
                       : const Text('Continue', style: TextStyle(fontSize: 16, fontWeight: FontWeight.w700)),
                 ),
               ),
+              if (isGoogleLinking) ...[
+                const SizedBox(height: 14),
+                Center(
+                  child: TextButton(
+                    onPressed: _handleCancelGoogleLink,
+                    child: const Text('Not now',
+                        style: TextStyle(color: AppColors.textSecondary, fontWeight: FontWeight.w600, fontSize: 13)),
+                  ),
+                ),
+              ],
             ],
           ),
         ),
+        if (!isGoogleLinking) ...[
+          const SizedBox(height: 20),
+          _buildGoogleDivider(),
+          const SizedBox(height: 16),
+          _buildGoogleButton(),
+        ],
         const SizedBox(height: 16),
         _buildTermsText(),
       ],
+    );
+  }
+
+  Widget _buildGoogleDivider() {
+    return const Row(
+      children: [
+        Expanded(child: Divider(color: AppColors.border)),
+        Padding(
+          padding: EdgeInsets.symmetric(horizontal: 12),
+          child: Text('or continue with', style: TextStyle(fontSize: 12, color: AppColors.textTertiary)),
+        ),
+        Expanded(child: Divider(color: AppColors.border)),
+      ],
+    );
+  }
+
+  // Secondary to the primary phone CTA by design: white surface, soft
+  // border, the official multicolor Google "G" rather than a recolored or
+  // hand-drawn substitute (Google's own brand guidelines require this).
+  Widget _buildGoogleButton() {
+    return SizedBox(
+      height: _fieldHeight,
+      child: OutlinedButton(
+        onPressed: _isGoogleLoading ? null : _handleGoogleSignIn,
+        style: OutlinedButton.styleFrom(
+          backgroundColor: Colors.white,
+          side: const BorderSide(color: AppColors.border),
+          shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+        ),
+        child: _isGoogleLoading
+            ? const SizedBox(
+                width: 20,
+                height: 20,
+                child: CircularProgressIndicator(strokeWidth: 2.5, color: AppColors.primary),
+              )
+            : Row(
+                mainAxisAlignment: MainAxisAlignment.center,
+                children: [
+                  _GoogleLogo(size: 20),
+                  const SizedBox(width: 12),
+                  Text(
+                    'Continue with Google',
+                    style: TextStyle(fontSize: 15, fontWeight: FontWeight.w600, color: AppColors.textPrimary),
+                  ),
+                ],
+              ),
+      ),
     );
   }
 
@@ -789,4 +965,91 @@ class _AutofillNumberSheet extends StatelessWidget {
       ),
     );
   }
+}
+
+// The official multicolor Google "G" mark, drawn from the standard 18x18
+// path data Google publishes for exactly this purpose (Sign-In button
+// branding guidelines require the unmodified mark — never recolored,
+// never a substitute). No new asset/package dependency: apps/marketplace
+// has neither flutter_svg nor font_awesome_flutter as a direct dependency
+// today, and adding one for a single icon was judged disproportionate.
+class _GoogleLogo extends StatelessWidget {
+  final double size;
+  const _GoogleLogo({this.size = 20});
+
+  @override
+  Widget build(BuildContext context) {
+    return SizedBox(
+      width: size,
+      height: size,
+      child: CustomPaint(painter: _GoogleLogoPainter()),
+    );
+  }
+}
+
+class _GoogleLogoPainter extends CustomPainter {
+  @override
+  void paint(Canvas canvas, Size size) {
+    final scale = size.width / 18.0;
+    canvas.save();
+    canvas.scale(scale, scale);
+
+    final blue = Paint()..color = const Color(0xFF4285F4);
+    final green = Paint()..color = const Color(0xFF34A853);
+    final yellow = Paint()..color = const Color(0xFFFBBC05);
+    final red = Paint()..color = const Color(0xFFEA4335);
+
+    final bluePath = Path()
+      ..moveTo(17.64, 9.2045)
+      ..cubicTo(17.64, 8.5664, 17.5827, 7.9527, 17.4764, 7.3636)
+      ..lineTo(9, 7.3636)
+      ..lineTo(9, 10.845)
+      ..lineTo(13.8436, 10.845)
+      ..cubicTo(13.635, 11.97, 13.0009, 12.9232, 12.0477, 13.5614)
+      ..lineTo(12.0477, 15.8195)
+      ..lineTo(14.9564, 15.8195)
+      ..cubicTo(16.6582, 14.2527, 17.64, 11.9455, 17.64, 9.2045)
+      ..close();
+    canvas.drawPath(bluePath, blue);
+
+    final greenPath = Path()
+      ..moveTo(9, 18)
+      ..cubicTo(11.43, 18, 13.4673, 17.1941, 14.9564, 15.8195)
+      ..lineTo(12.0477, 13.5614)
+      ..cubicTo(11.2418, 14.1014, 10.2109, 14.4205, 9, 14.4205)
+      ..cubicTo(6.6564, 14.4205, 4.6718, 12.8373, 3.964, 10.71)
+      ..lineTo(0.9573, 10.71)
+      ..lineTo(0.9573, 13.0418)
+      ..cubicTo(2.4382, 15.9832, 5.4818, 18, 9, 18)
+      ..close();
+    canvas.drawPath(greenPath, green);
+
+    final yellowPath = Path()
+      ..moveTo(3.964, 10.71)
+      ..cubicTo(3.784, 10.17, 3.6818, 9.5932, 3.6818, 9)
+      ..cubicTo(3.6818, 8.4068, 3.784, 7.83, 3.964, 7.29)
+      ..lineTo(3.964, 4.9582)
+      ..lineTo(0.9573, 4.9582)
+      ..cubicTo(0.3477, 6.1732, 0, 7.5477, 0, 9)
+      ..cubicTo(0, 10.4523, 0.3477, 11.8268, 0.9573, 13.0418)
+      ..lineTo(3.964, 10.71)
+      ..close();
+    canvas.drawPath(yellowPath, yellow);
+
+    final redPath = Path()
+      ..moveTo(9, 3.5795)
+      ..cubicTo(10.3214, 3.5795, 11.5077, 4.0336, 12.4405, 4.9255)
+      ..lineTo(15.0218, 2.3441)
+      ..cubicTo(13.4636, 0.891, 11.4259, 0, 9, 0)
+      ..cubicTo(5.4818, 0, 2.4382, 2.0168, 0.9573, 4.9582)
+      ..lineTo(3.964, 7.2895)
+      ..cubicTo(4.6718, 5.1636, 6.6564, 3.5795, 9, 3.5795)
+      ..close();
+    canvas.drawPath(redPath, red);
+
+    canvas.restore();
+  }
+
+  @override
+  bool shouldRepaint(covariant CustomPainter oldDelegate) => false;
 }
