@@ -3,6 +3,7 @@ import 'package:flutter/services.dart';
 import 'package:uuid/uuid.dart';
 import 'package:agrimore_core/agrimore_core.dart';
 import '../../../../app/themes/admin_colors.dart';
+import 'image_uploader.dart';
 
 /// Premium Variant Form with AdminColors theme
 class VariantForm extends StatefulWidget {
@@ -139,7 +140,7 @@ class _VariantFormState extends State<VariantForm> {
     widget.onVariantsChanged(_currentOptions, _currentVariants);
   }
 
-  void _updateVariant(int index, {double? price, int? stock}) {
+  void _updateVariant(int index, {double? price, int? stock, List<String>? images}) {
     final variant = _currentVariants[index];
     _currentVariants[index] = ProductVariant(
       id: variant.id,
@@ -148,10 +149,95 @@ class _VariantFormState extends State<VariantForm> {
       salePrice: price ?? variant.salePrice,
       stock: stock ?? variant.stock,
       sku: variant.sku,
-      images: variant.images,
+      images: images ?? variant.images,
       originalPrice: variant.originalPrice
     );
     _notifyParent();
+  }
+
+  /// ADMIN-VARIANT-IMAGES-1: opens the existing, already-working `ImageUploader`
+  /// (image_picker -> FirebaseStorage `products/{fileName}` -> URL, same flat
+  /// path the base-product Images tab already uses -- no new storage.rules
+  /// block needed) scoped to one variant's own images. `ImageUploader` reads
+  /// `widget.imageUrls` fresh on every internal mutation (add/remove/reorder),
+  /// so this sheet keeps its own local copy via StatefulBuilder and pushes
+  /// each change back into both places: the sheet's own local state (so the
+  /// NEXT operation in this same session starts from the right list, not a
+  /// stale closure-captured one) and this form's `_currentVariants` (so the
+  /// change survives after the sheet closes).
+  void _openVariantImages(int index) {
+    final variant = _currentVariants[index];
+    showModalBottomSheet(
+      context: context,
+      isScrollControlled: true,
+      backgroundColor: Colors.transparent,
+      builder: (sheetContext) {
+        List<String> localImages = List<String>.from(variant.images);
+        return StatefulBuilder(
+          builder: (context, setSheetState) {
+            return DraggableScrollableSheet(
+              initialChildSize: 0.9,
+              minChildSize: 0.5,
+              maxChildSize: 0.95,
+              expand: false,
+              builder: (context, scrollController) {
+                return Container(
+                  decoration: const BoxDecoration(
+                    color: Colors.white,
+                    borderRadius: BorderRadius.vertical(top: Radius.circular(20)),
+                  ),
+                  child: Column(
+                    children: [
+                      Container(
+                        margin: const EdgeInsets.only(top: 10),
+                        width: 40,
+                        height: 4,
+                        decoration: BoxDecoration(
+                          color: Colors.grey.shade300,
+                          borderRadius: BorderRadius.circular(2),
+                        ),
+                      ),
+                      Padding(
+                        padding: const EdgeInsets.fromLTRB(20, 16, 20, 0),
+                        child: Row(
+                          mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                          children: [
+                            Expanded(
+                              child: Text(
+                                'Images for ${variant.name}',
+                                style: TextStyle(
+                                  fontSize: 16,
+                                  fontWeight: FontWeight.w700,
+                                  color: AdminColors.textPrimary,
+                                ),
+                                overflow: TextOverflow.ellipsis,
+                              ),
+                            ),
+                            IconButton(
+                              icon: Icon(Icons.close_rounded, color: AdminColors.textSecondary),
+                              onPressed: () => Navigator.pop(context),
+                            ),
+                          ],
+                        ),
+                      ),
+                      Expanded(
+                        child: ImageUploader(
+                          imageUrls: localImages,
+                          onImagesChanged: (urls) {
+                            setSheetState(() => localImages = urls);
+                            _updateVariant(index, images: urls);
+                          },
+                        ),
+                      ),
+                    ],
+                  ),
+                );
+              },
+            );
+          },
+        );
+      },
+    );
   }
 
   @override
@@ -650,7 +736,66 @@ class _VariantFormState extends State<VariantForm> {
               ),
             ],
           ),
+          const SizedBox(height: 12),
+          _buildVariantImagesRow(index, variant),
         ],
+      ),
+    );
+  }
+
+  /// ADMIN-VARIANT-IMAGES-1: the entry point into _openVariantImages -- shows
+  /// how many images this variant already has (real count, not a guess) and
+  /// opens the image manager on tap.
+  Widget _buildVariantImagesRow(int index, ProductVariant variant) {
+    final count = variant.images.length;
+    return InkWell(
+      onTap: () => _openVariantImages(index),
+      borderRadius: BorderRadius.circular(10),
+      child: Container(
+        padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 10),
+        decoration: BoxDecoration(
+          color: const Color(0xFFF8FAFC),
+          borderRadius: BorderRadius.circular(10),
+          border: Border.all(color: Colors.grey.shade200),
+        ),
+        child: Row(
+          children: [
+            if (count > 0)
+              ClipRRect(
+                borderRadius: BorderRadius.circular(6),
+                child: Image.network(
+                  variant.images.first,
+                  width: 32,
+                  height: 32,
+                  fit: BoxFit.cover,
+                  errorBuilder: (_, __, ___) => Icon(
+                    Icons.broken_image_outlined,
+                    size: 18,
+                    color: Colors.grey.shade400,
+                  ),
+                ),
+              )
+            else
+              Icon(Icons.photo_library_outlined, size: 18, color: AdminColors.primary),
+            const SizedBox(width: 10),
+            Expanded(
+              child: Text(
+                count == 0 ? 'No images for this variant' : '$count image${count > 1 ? 's' : ''}',
+                style: TextStyle(
+                  fontSize: 13,
+                  fontWeight: FontWeight.w600,
+                  color: AdminColors.textPrimary,
+                ),
+              ),
+            ),
+            Text(
+              'Manage',
+              style: TextStyle(fontSize: 12, fontWeight: FontWeight.w600, color: AdminColors.primary),
+            ),
+            const SizedBox(width: 2),
+            Icon(Icons.chevron_right_rounded, size: 16, color: AdminColors.primary),
+          ],
+        ),
       ),
     );
   }
