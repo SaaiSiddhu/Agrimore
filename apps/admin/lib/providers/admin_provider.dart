@@ -289,11 +289,18 @@ class AdminProvider with ChangeNotifier {
     }
   }
 
-  /// Live count of products currently assigned to [categoryId] -- see
-  /// AdminService.countProductsInCategory's own doc comment for why
-  /// CategoryModel.productCount itself can't be trusted for this.
-  Future<int> countProductsInCategory(String categoryId) =>
-      _adminService.countProductsInCategory(categoryId);
+  /// Live count of products currently assigned to [categoryId] OR any of its
+  /// descendants -- see AdminService.countProductsInCategory's own doc
+  /// comment for why CategoryModel.productCount itself can't be trusted for
+  /// this, and for why descendants must be included (a product filed under a
+  /// subcategory still counts toward its parent everywhere else in the app).
+  /// Reuses _descendantCategoriesOf, the same descendant walker CAT-7's own
+  /// level-cascade already trusts, rather than a second implementation.
+  Future<int> countProductsInCategory(String categoryId) => _adminService
+      .countProductsInCategory([
+        categoryId,
+        ..._descendantCategoriesOf(categoryId).map((c) => c.id),
+      ]);
 
   /// True if setting [categoryId]'s parent to [candidateParentId] would
   /// create a cycle. Public passthrough to the private cycle-walk below --
