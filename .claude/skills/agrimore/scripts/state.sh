@@ -24,6 +24,15 @@ const save = (s) => fs.writeFileSync(FILE, JSON.stringify(s, null, 2) + "\n");
 const getPath = (o, p) => p.split(".").reduce((a, k) => (a == null ? undefined : a[k]), o);
 const setPath = (o, p, v) => { const ks = p.split("."); let c = o; for (const k of ks.slice(0, -1)) { if (typeof c[k] !== "object" || c[k] === null) c[k] = {}; c = c[k]; } c[ks.at(-1)] = v; };
 const parse = (v) => { try { return JSON.parse(v); } catch { return v; } };
+// stop is normally { at, reason } (written by the dedicated `stop` command below), but the
+// generic `set` command can legitimately write any shape to it (e.g. a bare string) -- render
+// whatever is actually there rather than assuming the object shape unconditionally.
+const stopText = (stop) => {
+  if (!stop) return null;
+  if (typeof stop === "string") return stop;
+  if (typeof stop === "object" && "reason" in stop) return stop.at ? `${stop.reason} (${stop.at})` : stop.reason;
+  return String(stop);
+};
 if (cmd === "init") {
   if (fs.existsSync(FILE)) { console.error(`exists: ${FILE}`); process.exit(1); }
   fs.mkdirSync(path.join(DIR, "logs"), { recursive: true });
@@ -35,7 +44,7 @@ if (cmd === "init") {
 const s = load();
 switch (cmd) {
   case "show": {
-    console.log(`${s.programme}  ticks=${s.ticks}  started=${s.started || "-"}  stop=${s.stop ? s.stop.reason : "-"}  base_develop=${s.base_develop || "-"}  push_develop=${s.config.push_develop}`);
+    console.log(`${s.programme}  ticks=${s.ticks}  started=${s.started || "-"}  stop=${stopText(s.stop) || "-"}  base_develop=${s.base_develop || "-"}  push_develop=${s.config.push_develop}`);
     for (const p of s.phases) console.log(`  ${p.id.padEnd(8)} ${String(p.state).padEnd(15)} step=${p.step || "-"} ticks=${p.ticks || 0} branch=${p.branch || "-"} deploy=${p.deploy_consequence || "?"}${p.blocked_reason ? "  BLOCKED: " + p.blocked_reason : ""}`);
     if (s.tick_log.length) { console.log("  last ticks:"); for (const t of s.tick_log.slice(-5)) console.log(`    ${t.t} ${t.phase} ${t.step} → ${t.result}`); }
     break; }
@@ -54,7 +63,7 @@ switch (cmd) {
     const elapsedH = s.started ? ((Date.now() - Date.parse(s.started)) / 36e5).toFixed(1) : "0";
     const cur = s.phases.find(p => !["MERGED_DEVELOP", "E2E_DEVELOP", "STOPPED", "BLOCKED"].includes(p.state));
     const lines = [`# ${s.programme} — STATUS`, ``, `updated: ${now()}  ·  ticks: ${s.ticks}/${s.config.max_ticks}  ·  elapsed: ${elapsedH}h/${s.config.max_hours}h  ·  base develop: ${s.base_develop || "-"}`,
-      `stop: ${s.stop ? s.stop.reason + " (" + s.stop.at + ")" : "none"}`, ``, `## Current`, cur ? `${cur.id} — ${cur.title}: **${cur.state}**, next step \`${cur.step}\`, ticks ${cur.ticks || 0}` : "no active phase", ``,
+      `stop: ${stopText(s.stop) || "none"}`, ``, `## Current`, cur ? `${cur.id} — ${cur.title}: **${cur.state}**, next step \`${cur.step}\`, ticks ${cur.ticks || 0}` : "no active phase", ``,
       `## Phases`, `| id | title | state | step | ticks | branch | deploy consequence | blocked |`, `|---|---|---|---|---|---|---|---|`,
       ...s.phases.map(p => `| ${p.id} | ${p.title} | ${p.state} | ${p.step || ""} | ${p.ticks || 0} | ${p.branch || ""} | ${p.deploy_consequence || ""} | ${p.blocked_reason || ""} |`), ``,
       `## Deploy handover for the owner (never run by the loop)`, ...(s.deploy_handover.length ? s.deploy_handover.map(x => `- ${x}`) : ["- none yet"]), ``,
