@@ -7,6 +7,19 @@ import '../../../providers/bestseller_provider.dart';
 import '../../../providers/category_provider.dart';
 import '../../../app/themes/admin_colors.dart';
 
+/// Resolves a stored categoryId against the live category list for use as a
+/// DropdownButtonFormField `value:`. Returns [categoryId] unchanged when it
+/// still matches a live category; returns null otherwise (e.g. the category
+/// was deleted after this slot was configured), so the field falls back to
+/// its `hint` instead of tripping the framework's "exactly one item must
+/// match value" assertion.
+String? resolveDropdownCategoryId(
+    String categoryId, List<CategoryModel> categories) {
+  if (categoryId.isEmpty) return null;
+  final stillExists = categories.any((c) => c.id == categoryId);
+  return stillExists ? categoryId : null;
+}
+
 class EditBestsellerSlotDialog extends StatefulWidget {
   final BestsellerSlotModel slot;
 
@@ -114,7 +127,8 @@ class _EditBestsellerSlotDialogState extends State<EditBestsellerSlotDialog> {
                     ),
                     const SizedBox(height: 8),
                     DropdownButtonFormField<String>(
-                      value: _selectedCategoryId.isEmpty ? null : _selectedCategoryId,
+                      value: resolveDropdownCategoryId(
+                          _selectedCategoryId, categories),
                       decoration: InputDecoration(
                         border: OutlineInputBorder(
                           borderRadius: BorderRadius.circular(8),
