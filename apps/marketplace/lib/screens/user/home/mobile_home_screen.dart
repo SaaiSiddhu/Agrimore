@@ -14,6 +14,7 @@ import '../../../providers/category_section_provider.dart';
 import '../../../providers/section_banner_provider.dart';
 import '../../../providers/home_product_section_config_provider.dart';
 import '../../../providers/home_grocery_strip_config_provider.dart';
+import '../../../providers/home_section_order_provider.dart';
 import '../../../providers/theme_provider.dart';
 import '../../../providers/shop_entry_provider.dart';
 import '../../../providers/settings_provider.dart';
@@ -170,6 +171,8 @@ class _MobileHomeScreenState extends State<MobileHomeScreen>
           .loadSections(forceRefresh: forceRefresh),
       Provider.of<HomeGroceryStripConfigProvider>(context, listen: false)
           .loadConfig(forceRefresh: forceRefresh),
+      Provider.of<HomeSectionOrderProvider>(context, listen: false)
+          .loadSettings(forceRefresh: forceRefresh),
     ]).then((_) {
       if (mounted) {
         setState(() => _isRefreshing = false);
@@ -399,75 +402,85 @@ class _MobileHomeScreenState extends State<MobileHomeScreen>
             backgroundColor: isDark ? const Color(0xFF1E1E1E) : Colors.white,
             strokeWidth: 3.0,
             displacement: 60,
-            child: CustomScrollView(
-              controller: _scrollController,
-              physics: const ClampingScrollPhysics(
-                parent: AlwaysScrollableScrollPhysics(),
-              ),
-              slivers: [
-                // 1. Banner Slider
-                SliverToBoxAdapter(
-                  child: _buildAnimatedBoxWrapper(
-                    index: 0,
-                    child: const BannerSlider(),
-                  ),
-                ),
+            child: Consumer<HomeSectionOrderProvider>(
+              builder: (context, sectionOrderProvider, child) {
+                // HOME-9: the 5 reorderable sections render in the admin's
+                // own configured order (falls back to today's exact order --
+                // defaultMobileOrder -- when unconfigured), with FRESH
+                // sequential animation indices recomputed from each
+                // section's final rendered position rather than the old
+                // literal per-widget index -- BannerSlider stays fixed at
+                // index 0, Footer's index is always the last one.
+                final mobileOrder = sectionOrderProvider.mobileOrder;
 
-                // 2. Bestsellers (admin-controlled)
-                SliverToBoxAdapter(
-                  child: _buildAnimatedBoxWrapper(
-                    index: 2,
-                    child: const DealsForYou(),
+                return CustomScrollView(
+                  controller: _scrollController,
+                  physics: const ClampingScrollPhysics(
+                    parent: AlwaysScrollableScrollPhysics(),
                   ),
-                ),
+                  slivers: [
+                    // Banner Slider (fixed, always first)
+                    SliverToBoxAdapter(
+                      child: _buildAnimatedBoxWrapper(
+                        index: 0,
+                        child: const BannerSlider(),
+                      ),
+                    ),
 
-                // 2b. Grocery & Kitchen strip
-                SliverToBoxAdapter(
-                  child: _buildAnimatedBoxWrapper(
-                    index: 3,
-                    child: const GroceryKitchenHomeStrip(),
-                  ),
-                ),
+                    // Reorderable sections, admin-configured order
+                    for (int i = 0; i < mobileOrder.length; i++)
+                      SliverToBoxAdapter(
+                        child: _buildAnimatedBoxWrapper(
+                          index: i + 1,
+                          child: _buildSectionByIdentifier(
+                            mobileOrder[i],
+                            productProvider,
+                            categoryProvider,
+                          ),
+                        ),
+                      ),
 
-                // 3. Recently Viewed
-                SliverToBoxAdapter(
-                  child: _buildAnimatedBoxWrapper(
-                    index: 4,
-                    child: const RecentlyViewedWidget(),
-                  ),
-                ),
-
-                // 6. Dynamic Category Sections (covers all remaining categories)
-                SliverToBoxAdapter(
-                  child: _buildAnimatedBoxWrapper(
-                    index: 5,
-                    child: const DynamicCategorySections(skipCount: 9),
-                  ),
-                ),
-
-                // 9. Product Sections by Category (Blinkit-style horizontal scroll)
-                SliverToBoxAdapter(
-                  child: _buildAnimatedBoxWrapper(
-                    index: 8,
-                    child: _buildProductSections(
-                        productProvider, categoryProvider),
-                  ),
-                ),
-
-                // 10. Simple Footer (Kept at the end for good UX)
-                SliverToBoxAdapter(
-                  child: _buildAnimatedBoxWrapper(
-                    index: 9,
-                    child: _buildSimpleFooter(isDark),
-                  ),
-                ),
-              ],
+                    // Simple Footer (fixed, always last)
+                    SliverToBoxAdapter(
+                      child: _buildAnimatedBoxWrapper(
+                        index: mobileOrder.length + 1,
+                        child: _buildSimpleFooter(isDark),
+                      ),
+                    ),
+                  ],
+                );
+              },
             ),
           );
         },
       ),
       floatingActionButton: _buildFloatingActionButton(isDark),
     );
+  }
+
+  // --- HOME-9: identifier -> reorderable section widget ---
+  Widget _buildSectionByIdentifier(
+    String identifier,
+    ProductProvider productProvider,
+    CategoryProvider categoryProvider,
+  ) {
+    switch (identifier) {
+      case 'bestsellers':
+        return const DealsForYou();
+      case 'grocery_kitchen_strip':
+        return const GroceryKitchenHomeStrip();
+      case 'recently_viewed':
+        return const RecentlyViewedWidget();
+      case 'dynamic_category_sections':
+        return const DynamicCategorySections(skipCount: 9);
+      case 'product_sections':
+        return _buildProductSections(productProvider, categoryProvider);
+      default:
+        // HomeSectionOrderProvider's own permutation validation already
+        // guarantees this never happens with a valid admin config -- render
+        // nothing rather than crash if it somehow does.
+        return const SizedBox.shrink();
+    }
   }
 
   // --- Staggered Animation Wrapper for BOX widgets ---

@@ -1033,6 +1033,15 @@ service cloud.firestore {
     match /settings/home_grocery_strip_config {
       allow read: if isAuthenticated();
     }
+    // HOME-9: the admin-configured Home section order (mobileOrder/
+    // webOrder), read from Home on both platforms -- same shape as
+    // location_settings/home_grocery_strip_config directly above (not
+    // public, since Home itself is only reachable after phone-OTP login).
+    // Write stays covered by the settings/{docId} floor's isAdmin() below --
+    // no separate write rule needed.
+    match /settings/home_section_order {
+      allow read: if isAuthenticated();
+    }
     // Public read is a protected, tested contract for this one document —
     // phase16a_onboarding_rules_test.js's
     // 14_anyone_can_read_associate_onboarding_config — because a prospective
