@@ -951,17 +951,56 @@ class _CategoryManagementScreenState extends State<CategoryManagementScreen> {
   void _confirmDelete(CategoryModel category, int childCount) {
     final themeProvider = Provider.of<ThemeProvider>(context, listen: false);
     final isDark = themeProvider.isDarkMode;
+    final textColor = isDark ? Colors.grey[400] : Colors.grey[600];
 
     showDialog(
       context: context,
       builder: (context) => AlertDialog(
         backgroundColor: isDark ? AdminColors.cardBackgroundDark : Colors.white,
         title: Text('Delete Category?', style: TextStyle(color: isDark ? Colors.white : Colors.black87)),
-        content: Text(
-          childCount > 0
-              ? 'This category has $childCount subcategories. Deleting it will also delete all subcategories.'
-              : 'Are you sure you want to delete "${category.name}"?',
-          style: TextStyle(color: isDark ? Colors.grey[400] : Colors.grey[600]),
+        // CAT-18: deleteCategory (admin_provider.dart) cascades through every
+        // descendant category but never touches the products collection --
+        // a product whose categoryId points at the deleted category (or any
+        // deleted descendant) survives, unchanged, but becomes unreachable
+        // via every category-scoped browse in the marketplace app. This
+        // dialog previously warned only about subcategories; it now also
+        // shows the real, descendant-inclusive product count (the same
+        // already-built, already-correct query the details panel itself
+        // uses, CAT-12/CAT-14) so the admin sees the actual consequence
+        // before confirming -- deletion itself is still not blocked, the
+        // same deliberate choice CAT-10/CAT-12 already established for this
+        // screen (make the true state visible, don't add a stricter
+        // guarantee nothing asked for).
+        content: FutureBuilder<int>(
+          future: Provider.of<AdminProvider>(context, listen: false)
+              .countProductsInCategory(category.id),
+          builder: (context, snapshot) {
+            final lines = <Widget>[
+              Text(
+                childCount > 0
+                    ? 'This category has $childCount subcategories. Deleting it will also delete all subcategories.'
+                    : 'Are you sure you want to delete "${category.name}"?',
+                style: TextStyle(color: textColor),
+              ),
+            ];
+            if (snapshot.connectionState == ConnectionState.waiting) {
+              lines.add(const SizedBox(height: 8));
+              lines.add(Text('Checking assigned products…', style: TextStyle(color: textColor)));
+            } else if (snapshot.hasError) {
+              lines.add(const SizedBox(height: 8));
+              lines.add(Text(
+                'Could not check assigned products — proceed with caution.',
+                style: TextStyle(color: textColor),
+              ));
+            } else if ((snapshot.data ?? 0) > 0) {
+              lines.add(const SizedBox(height: 8));
+              lines.add(Text(
+                '${snapshot.data} product(s) are currently assigned to this category (including any subcategories) and will no longer be discoverable by category after deletion.',
+                style: TextStyle(color: Colors.red[isDark ? 300 : 700], fontWeight: FontWeight.w600),
+              ));
+            }
+            return Column(mainAxisSize: MainAxisSize.min, crossAxisAlignment: CrossAxisAlignment.start, children: lines);
+          },
         ),
         actions: [
           TextButton(
