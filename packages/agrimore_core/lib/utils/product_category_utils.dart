@@ -25,19 +25,15 @@ List<String> categoryIdsIncludingDescendants(
   return result.toList();
 }
 
-bool productBelongsToCategory(
-  ProductModel product,
-  CategoryModel category,
-  List<CategoryModel> allCategories,
-) {
-  final ids = categoryIdsIncludingDescendants(category.id, allCategories)
-      .map((e) => e.toLowerCase().trim())
-      .toSet();
-  final pCat = product.categoryId.toLowerCase().trim();
-  if (pCat.isNotEmpty && ids.contains(pCat)) return true;
+/// True if [product]'s legacy name-shaped category tag (its `categoryId` or
+/// `categoryName` holding a NAME rather than a real id -- see
+/// `ProductModel.parseCategoryId`'s own fallback chain) matches [c]'s own
+/// name or slug.
+bool _matchesLegacyName(ProductModel product, CategoryModel c) {
+  final cName = c.name.toLowerCase().trim();
+  final cSlug = c.slug?.toLowerCase().trim() ?? '';
 
-  final cName = category.name.toLowerCase().trim();
-  final cSlug = category.slug?.toLowerCase().trim() ?? '';
+  final pCat = product.categoryId.toLowerCase().trim();
   if (pCat.isNotEmpty) {
     if (pCat == cName || (cSlug.isNotEmpty && pCat == cSlug)) return true;
     if (pCat.contains(cName.split('/').first.trim())) return true;
@@ -47,6 +43,30 @@ bool productBelongsToCategory(
   final pname = product.categoryName?.toLowerCase().trim();
   if (pname != null && pname.isNotEmpty) {
     if (pname == cName || (cSlug.isNotEmpty && pname == cSlug)) return true;
+  }
+  return false;
+}
+
+bool productBelongsToCategory(
+  ProductModel product,
+  CategoryModel category,
+  List<CategoryModel> allCategories,
+) {
+  final descendantIds = categoryIdsIncludingDescendants(category.id, allCategories)
+      .map((e) => e.toLowerCase().trim())
+      .toSet();
+  final pCat = product.categoryId.toLowerCase().trim();
+  if (pCat.isNotEmpty && descendantIds.contains(pCat)) return true;
+
+  // The id-based check above already covers the whole descendant subtree.
+  // A legacy product tagged by NAME instead of a real id needs the same
+  // subtree covered here, or it becomes invisible under an ancestor while
+  // an equivalent real-id product in the same subcategory is found fine.
+  if (_matchesLegacyName(product, category)) return true;
+  for (final c in allCategories) {
+    if (c.id == category.id) continue;
+    if (!descendantIds.contains(c.id.toLowerCase().trim())) continue;
+    if (_matchesLegacyName(product, c)) return true;
   }
   return false;
 }
