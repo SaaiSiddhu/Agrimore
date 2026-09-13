@@ -306,12 +306,16 @@ class ProductCardCompact extends StatelessWidget {
                             ),
                           ),
                           const SizedBox(width: 4),
-                          Text(
-                            product.unit!,
-                            style: TextStyle(
-                              fontSize: 9,
-                              color: AppColors.primary,
-                              fontWeight: FontWeight.w600,
+                          Flexible(
+                            child: Text(
+                              product.unit!,
+                              maxLines: 1,
+                              overflow: TextOverflow.ellipsis,
+                              style: TextStyle(
+                                fontSize: 9,
+                                color: AppColors.primary,
+                                fontWeight: FontWeight.w600,
+                              ),
                             ),
                           ),
                         ],
@@ -363,29 +367,39 @@ class ProductCardCompact extends StatelessWidget {
                         ),
                       ),
                       const SizedBox(width: 6),
-                      // Delivery badge
-                      Container(
-                        padding: const EdgeInsets.symmetric(horizontal: 5, vertical: 2),
-                        decoration: BoxDecoration(
-                          color: AppColors.primary.withValues(alpha: 0.1),
-                          borderRadius: BorderRadius.circular(4),
-                        ),
-                        child: Row(
-                          mainAxisSize: MainAxisSize.min,
-                          children: [
-                            Icon(Icons.bolt_rounded, size: 10, color: AppColors.primary),
-                            const SizedBox(width: 2),
-                            Text(
-                              product.expressDelivery == true 
-                                  ? (product.expressDeliveryDays ?? '20 MIN')
-                                  : '30 MIN',
-                              style: TextStyle(
-                                fontSize: 8,
-                                fontWeight: FontWeight.w700,
-                                color: AppColors.primary,
+                      // Delivery badge -- Flexible at this level guards
+                      // against the combined width of this badge plus the
+                      // rating badge above exceeding the row's own space
+                      // (HOME-13); the inner Flexible+ellipsis guards
+                      // against a long value even in isolation.
+                      Flexible(
+                        child: Container(
+                          padding: const EdgeInsets.symmetric(horizontal: 5, vertical: 2),
+                          decoration: BoxDecoration(
+                            color: AppColors.primary.withValues(alpha: 0.1),
+                            borderRadius: BorderRadius.circular(4),
+                          ),
+                          child: Row(
+                            mainAxisSize: MainAxisSize.min,
+                            children: [
+                              Icon(Icons.bolt_rounded, size: 10, color: AppColors.primary),
+                              const SizedBox(width: 2),
+                              Flexible(
+                                child: Text(
+                                  product.expressDelivery == true
+                                      ? (product.expressDeliveryDays ?? '20 MIN')
+                                      : '30 MIN',
+                                  maxLines: 1,
+                                  overflow: TextOverflow.ellipsis,
+                                  style: TextStyle(
+                                    fontSize: 8,
+                                    fontWeight: FontWeight.w700,
+                                    color: AppColors.primary,
+                                  ),
+                                ),
                               ),
-                            ),
-                          ],
+                            ],
+                          ),
                         ),
                       ),
                     ],
