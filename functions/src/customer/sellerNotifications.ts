@@ -5,6 +5,7 @@
 import * as functions from "firebase-functions/v1";
 import * as admin from "firebase-admin";
 import { FieldValue } from "firebase-admin/firestore";
+import { resolveProductCategoryId } from "../common/productCategory";
 
 /**
  * Trigger: Fires when a new order is created in the orders collection.
@@ -237,6 +238,16 @@ export const calculateSellerPayout = functions.firestore
         // D-PAYOUT-MIXED-CATEGORY — a weighted average across items, not the
         // first item's category alone). A missing product now degrades that
         // one item to the default rate instead of dropping the line.
+        //
+        // CAT-17: resolveProductCategoryId (functions/src/common/
+        // productCategory.ts) replaces a bare `.categoryId` property read,
+        // which returned undefined for any product whose categoryId isn't a
+        // top-level string — a legacy-shaped `category` map/string or
+        // `categoryName` product silently fell to the default rate here even
+        // though its real category (and a specific rate for it) was
+        // resolvable, matching CAT-16's own finding for the Product Credit
+        // path. Same conservative fallback either way: unresolved -> the
+        // default rate, unchanged.
         const sellerId = typeof item.sellerId === "string" ? item.sellerId : "";
         if (!sellerId) {
           console.warn(
@@ -248,7 +259,7 @@ export const calculateSellerPayout = functions.firestore
         let categoryId: string | undefined;
         try {
           const productDoc = await admin.firestore().collection("products").doc(item.productId).get();
-          categoryId = productDoc.data()?.categoryId;
+          categoryId = resolveProductCategoryId(productDoc.data() ?? {}) ?? undefined;
         } catch (e) {
           console.warn(`⚠️ Could not read product ${item.productId} for its category — using the default rate`);
         }

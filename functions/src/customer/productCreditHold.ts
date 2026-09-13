@@ -26,6 +26,7 @@ import { appendLedgerEntry, toProjectionFields } from "./productCreditLedger";
 import { computeOrderPricing, normalizeOrderItems, OrderPricingItemInput } from "./orderPricing";
 import { computeRedeemableAmount } from "./redemptionRules";
 import { DeliveryFeeSchedule, parseDeliveryFeeSchedule } from "./deliveryFeeSchedule";
+import { resolveProductCategoryId } from "../common/productCategory";
 
 // 30 minutes: long enough to cover a real Razorpay checkout flow, short
 // enough that an abandoned cart doesn't lock a customer's credit for long —
@@ -61,31 +62,6 @@ export function computeCartFingerprint(
     .sort((a, b) => a.productId.localeCompare(b.productId));
   const payload = JSON.stringify({ items: sorted, orderMode, couponCode: couponCode ?? null });
   return crypto.createHash("sha256").update(payload).digest("hex");
-}
-
-// Exported (CAT-16) so this resolution logic can be exercised directly by
-// functions/scripts/phaseC_hold_test.js, the same way this file's own
-// computeCartFingerprint already is.
-export function resolveCategoryId(product: FirebaseFirestore.DocumentData): string | null {
-  // Mirrors ProductModel.parseCategoryId's full fallback chain
-  // (packages/agrimore_core/lib/models/product_model.dart): canonical
-  // `categoryId` string, then legacy `category` as either a map with its
-  // own `id` or a plain string, then `categoryName` -- CAT-16 added the
-  // last two; a product resolved by the ORIGINAL two checks resolves to the
-  // exact same value as before, so this is a pure widening, not a redesign.
-  // Deliberately still returns null (not Dart's own 'general' display
-  // fallback) when nothing matches: this function feeds a redemption
-  // ALLOW-LIST check below, where null already means "exclude", the
-  // conservative default for a money decision -- 'general' would flip an
-  // unresolvable product to conditionally-included if an admin's allow-list
-  // happened to contain that literal string, a real behavior change with no
-  // clear justification, not a safe widening.
-  if (typeof product.categoryId === "string" && product.categoryId) return product.categoryId;
-  const cat = product.category;
-  if (cat && typeof cat === "object" && typeof cat.id === "string" && cat.id) return cat.id;
-  if (typeof cat === "string" && cat) return cat;
-  if (typeof product.categoryName === "string" && product.categoryName) return product.categoryName;
-  return null;
 }
 
 interface QuoteOrderWithCreditData {
@@ -286,7 +262,7 @@ export const quoteOrderWithCredit = onCall(
         for (let i = 0; i < items.length; i++) {
           const productSnap = productSnaps[i];
           if (!productSnap.exists) continue; // computeOrderPricing already threw for this — unreachable
-          const categoryId = resolveCategoryId(productSnap.data()!);
+          const categoryId = resolveProductCategoryId(productSnap.data()!);
           const validated = pricing.validatedItems.find((v) => v.productId === items[i].productId);
           const lineTotal = validated ? validated.price * validated.quantity : 0;
           if (!redeemableCategoryIds || (categoryId && redeemableCategoryIds.includes(categoryId))) {
