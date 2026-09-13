@@ -259,23 +259,31 @@ class RecentlyViewedWidget extends StatelessWidget {
                     ),
                     Row(
                       children: [
-                        Text(
-                          '₹${displayPrice.toStringAsFixed(0)}',
-                          style: TextStyle(
-                            fontSize: 13,
-                            fontWeight: FontWeight.w800,
-                            color: accentColor,
+                        Flexible(
+                          child: Text(
+                            '₹${displayPrice.toStringAsFixed(0)}',
+                            maxLines: 1,
+                            overflow: TextOverflow.ellipsis,
+                            style: TextStyle(
+                              fontSize: 13,
+                              fontWeight: FontWeight.w800,
+                              color: accentColor,
+                            ),
                           ),
                         ),
                         if (hasDiscount) ...[
                           const SizedBox(width: 4),
-                          Text(
-                            '₹${originalPrice.toStringAsFixed(0)}',
-                            style: TextStyle(
-                              fontSize: 10,
-                              fontWeight: FontWeight.w500,
-                              color: isDark ? Colors.grey[500] : Colors.grey[500],
-                              decoration: TextDecoration.lineThrough,
+                          Flexible(
+                            child: Text(
+                              '₹${originalPrice.toStringAsFixed(0)}',
+                              maxLines: 1,
+                              overflow: TextOverflow.ellipsis,
+                              style: TextStyle(
+                                fontSize: 10,
+                                fontWeight: FontWeight.w500,
+                                color: isDark ? Colors.grey[500] : Colors.grey[500],
+                                decoration: TextDecoration.lineThrough,
+                              ),
                             ),
                           ),
                         ],
