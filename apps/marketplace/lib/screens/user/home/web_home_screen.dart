@@ -622,22 +622,30 @@ class _WebHomeScreenState extends State<WebHomeScreen>
                           Row(
                             crossAxisAlignment: CrossAxisAlignment.center,
                             children: [
-                              Text(
-                                '₹${product.price.toStringAsFixed(2)}',
-                                style: AppTextStyles.titleLarge.copyWith(
-                                  fontWeight: FontWeight.bold,
-                                  color: AppColors.primary,
+                              Flexible(
+                                child: Text(
+                                  '₹${product.price.toStringAsFixed(2)}',
+                                  maxLines: 1,
+                                  overflow: TextOverflow.ellipsis,
+                                  style: AppTextStyles.titleLarge.copyWith(
+                                    fontWeight: FontWeight.bold,
+                                    color: AppColors.primary,
+                                  ),
                                 ),
                               ),
                               if (product.originalPrice != null &&
                                   product.originalPrice! > product.price)
-                                Padding(
-                                  padding: const EdgeInsets.only(left: 8),
-                                  child: Text(
-                                    '₹${product.originalPrice!.toStringAsFixed(2)}',
-                                    style: AppTextStyles.bodyMedium.copyWith(
-                                      decoration: TextDecoration.lineThrough,
-                                      color: AppColors.textSecondary,
+                                Flexible(
+                                  child: Padding(
+                                    padding: const EdgeInsets.only(left: 8),
+                                    child: Text(
+                                      '₹${product.originalPrice!.toStringAsFixed(2)}',
+                                      maxLines: 1,
+                                      overflow: TextOverflow.ellipsis,
+                                      style: AppTextStyles.bodyMedium.copyWith(
+                                        decoration: TextDecoration.lineThrough,
+                                        color: AppColors.textSecondary,
+                                      ),
                                     ),
                                   ),
                                 ),
