@@ -13,6 +13,40 @@ import '../../../../providers/theme_provider.dart';
 import '../../../../providers/category_section_provider.dart';
 import '../../../../providers/shop_entry_provider.dart';
 
+/// Resolves a category section's rendered category list in the ADMIN'S OWN
+/// configured order (`categoryIds`), not a re-sorted one. `getImageForSlot`
+/// (`CategorySectionSlotModel`) is a purely positional `image1..image8`
+/// lookup keyed to that exact order -- the order the admin uploaded images
+/// against in `edit_category_section_screen.dart`. Re-sorting the category
+/// list (e.g. by `CategoryModel.compareSiblingOrder`) before pairing it with
+/// that positional lookup silently pairs each category with a DIFFERENT
+/// category's own uploaded image whenever the admin's selection order
+/// diverges from the sort order -- which it does whenever the admin's own
+/// chip-picker order (alphabetical by name) differs from displayOrder,
+/// i.e. on effectively every multi-category section (CAT-21).
+///
+/// A category id no longer present in [liveCategories] (deleted, deactivated,
+/// or hidden) is skipped, matching the existing degradation for a deleted
+/// category (CAT-18/CAT-20). [alreadyShown] is shared across sibling
+/// sections on the same page so the same category never renders twice
+/// across two different admin-configured sections -- callers pass the same
+/// mutable set across successive calls, one per slot.
+List<CategoryModel> resolveOrderedSectionCategories(
+  List<String> categoryIds,
+  List<CategoryModel> liveCategories,
+  Set<String> alreadyShown,
+) {
+  final byId = {for (final c in liveCategories) c.id: c};
+  final result = <CategoryModel>[];
+  for (final id in categoryIds) {
+    final category = byId[id];
+    if (category != null && alreadyShown.add(id)) {
+      result.add(category);
+    }
+  }
+  return result;
+}
+
 /// Displays admin-configured category sections from Firestore
 class DynamicCategorySections extends StatefulWidget {
   final int skipCount;
@@ -113,12 +147,14 @@ class _DynamicCategorySectionsState extends State<DynamicCategorySections> {
         return Column(
           mainAxisSize: MainAxisSize.min,
           children: activeSlots.map((slot) {
-            // Get categories for this section
-            final sectionCategories = allCategories
-                .where((c) =>
-                    slot.categoryIds.contains(c.id) &&
-                    shownCategoryIds.add(c.id))
-                .toList();
+            // Get categories for this section, in the ADMIN'S OWN configured
+            // order -- see resolveOrderedSectionCategories's own doc comment
+            // for why this must not be re-sorted (CAT-21).
+            final sectionCategories = resolveOrderedSectionCategories(
+              slot.categoryIds,
+              allCategories,
+              shownCategoryIds,
+            );
 
             if (sectionCategories.isEmpty) return const SizedBox.shrink();
 
