@@ -753,7 +753,8 @@ class _WebHomeScreenState extends State<WebHomeScreen>
       ProductProvider productProvider, CategoryProvider categoryProvider) {
     final categories = categoryProvider.categories
         .where((c) => c.isActive && c.isVisible)
-        .toList();
+        .toList()
+      ..sort(CategoryModel.compareSiblingOrder);
     final allProducts =
         productProvider.products.where((p) => p.isActive).toList();
 
