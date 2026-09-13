@@ -35,30 +35,30 @@ void main() {
     test('neither bound set -- always eligible (every pre-existing slot)', () {
       final slot = _slot();
       expect(slot.isWithinSchedule(now), isTrue);
-      expect(slot.scheduleStatus, 'Live');
+      expect(slot.scheduleStatus(now), 'Live');
     });
 
     test('startsAt in the future -- not yet eligible', () {
       final slot = _slot(startsAt: future);
       expect(slot.isWithinSchedule(now), isFalse);
-      expect(slot.scheduleStatus, 'Scheduled');
+      expect(slot.scheduleStatus(now), 'Scheduled');
     });
 
     test('endsAt in the past -- no longer eligible', () {
       final slot = _slot(endsAt: past);
       expect(slot.isWithinSchedule(now), isFalse);
-      expect(slot.scheduleStatus, 'Expired');
+      expect(slot.scheduleStatus(now), 'Expired');
     });
 
     test('now between startsAt and endsAt -- eligible', () {
       final slot = _slot(startsAt: past, endsAt: future);
       expect(slot.isWithinSchedule(now), isTrue);
-      expect(slot.scheduleStatus, 'Live');
+      expect(slot.scheduleStatus(now), 'Live');
     });
 
     test('isActive false -- Disabled regardless of an eligible window', () {
       final slot = _slot(isActive: false, startsAt: past, endsAt: future);
-      expect(slot.scheduleStatus, 'Disabled');
+      expect(slot.scheduleStatus(now), 'Disabled');
     });
   });
 }

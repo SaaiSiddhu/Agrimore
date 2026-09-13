@@ -559,7 +559,7 @@ class _PremiumSectionCard extends StatelessWidget {
                       // Status Badge -- Live/Scheduled/Expired/Disabled,
                       // derived from isActive + the schedule window
                       // (mirrors BannerCard's own chip).
-                      _ScheduleStatusChip(status: section.scheduleStatus),
+                      _ScheduleStatusChip(status: section.scheduleStatus()),
                     ],
                   ),
                   
