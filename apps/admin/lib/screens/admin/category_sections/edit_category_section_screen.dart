@@ -227,8 +227,14 @@ class _EditCategorySectionScreenState extends State<EditCategorySectionScreen> {
   }
 
   Widget _buildCategoriesCard(List<CategoryModel> categories) {
+    // A section's stored categoryIds can outlive a category that was later
+    // deleted (AdminProvider.deleteCategory never scrubs this reference --
+    // CAT-18's own finding for `products`, the same gap here). Counting and
+    // numbering off the raw list would silently occupy a slot for a category
+    // no chip below can ever show, blocking or misnumbering real selections.
+    final liveSelectedIds = liveSelectedCategoryIds(_selectedCategoryIds, categories);
     return _PremiumCard(
-      title: 'Categories (${_selectedCategoryIds.length}/8)',
+      title: 'Categories (${liveSelectedIds.length}/8)',
       icon: Icons.category_rounded,
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
@@ -253,8 +259,8 @@ class _EditCategorySectionScreenState extends State<EditCategorySectionScreen> {
               itemBuilder: (context, index) {
                 final category = categories[index];
                 final isSelected = _selectedCategoryIds.contains(category.id);
-                final canSelect = isSelected || _selectedCategoryIds.length < 8;
-                
+                final canSelect = isSelected || liveSelectedIds.length < 8;
+
                 return Material(
                   color: isSelected ? AdminColors.primary.withOpacity(0.05) : Colors.transparent,
                   child: InkWell(
@@ -263,7 +269,7 @@ class _EditCategorySectionScreenState extends State<EditCategorySectionScreen> {
                       setState(() {
                         if (isSelected) {
                           _selectedCategoryIds.remove(category.id);
-                        } else if (_selectedCategoryIds.length < 8) {
+                        } else if (liveSelectedIds.length < 8) {
                           _selectedCategoryIds.add(category.id);
                         }
                       });
@@ -306,7 +312,7 @@ class _EditCategorySectionScreenState extends State<EditCategorySectionScreen> {
                                 borderRadius: BorderRadius.circular(12),
                               ),
                               child: Text(
-                                '#${_selectedCategoryIds.indexOf(category.id) + 1}',
+                                '#${liveSelectedIds.indexOf(category.id) + 1}',
                                 style: TextStyle(
                                   fontSize: 11,
                                   fontWeight: FontWeight.w700,

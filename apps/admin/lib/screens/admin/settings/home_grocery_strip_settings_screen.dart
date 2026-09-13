@@ -96,6 +96,11 @@ class _HomeGroceryStripSettingsScreenState
         .categories
         .where((c) => c.isActive)
         .toList();
+    // See edit_category_section_screen.dart's identical comment: a deleted
+    // category's id can outlive it in _categoryIds (AdminProvider.deleteCategory
+    // never scrubs this reference), so counting/numbering off the raw list
+    // would occupy a slot no chip below can ever show.
+    final liveCategoryIds = liveSelectedCategoryIds(_categoryIds, categories);
 
     return Scaffold(
       backgroundColor: Colors.grey.shade50,
@@ -133,7 +138,7 @@ class _HomeGroceryStripSettingsScreenState
                   ),
                   const SizedBox(height: 24),
                   Text(
-                    'Categories (${_categoryIds.length}/8)',
+                    'Categories (${liveCategoryIds.length}/8)',
                     style: const TextStyle(fontWeight: FontWeight.w600),
                   ),
                   const SizedBox(height: 4),
@@ -167,7 +172,7 @@ class _HomeGroceryStripSettingsScreenState
                               final isSelected =
                                   _categoryIds.contains(category.id);
                               final canSelect =
-                                  isSelected || _categoryIds.length < 8;
+                                  isSelected || liveCategoryIds.length < 8;
 
                               return Material(
                                 color: isSelected
@@ -180,7 +185,7 @@ class _HomeGroceryStripSettingsScreenState
                                           setState(() {
                                             if (isSelected) {
                                               _categoryIds.remove(category.id);
-                                            } else if (_categoryIds.length <
+                                            } else if (liveCategoryIds.length <
                                                 8) {
                                               _categoryIds.add(category.id);
                                             }
@@ -242,7 +247,7 @@ class _HomeGroceryStripSettingsScreenState
                                                   BorderRadius.circular(12),
                                             ),
                                             child: Text(
-                                              '#${_categoryIds.indexOf(category.id) + 1}',
+                                              '#${liveCategoryIds.indexOf(category.id) + 1}',
                                               style: TextStyle(
                                                 fontSize: 11,
                                                 fontWeight: FontWeight.w700,

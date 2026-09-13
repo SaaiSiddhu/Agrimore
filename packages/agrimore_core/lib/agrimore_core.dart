@@ -69,6 +69,7 @@ export 'utils/date_formatter.dart';
 export 'utils/price_formatter.dart';
 export 'utils/ad_helper.dart';
 export 'utils/product_category_utils.dart';
+export 'utils/category_selection_utils.dart';
 export 'utils/global_error_handler.dart';
 export 'utils/retry_helper.dart';
 
