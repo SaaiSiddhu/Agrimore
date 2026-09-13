@@ -15,6 +15,7 @@ import '../../../providers/section_banner_provider.dart';
 import '../../../providers/home_product_section_config_provider.dart';
 import '../../../providers/home_grocery_strip_config_provider.dart';
 import '../../../providers/home_section_order_provider.dart';
+import '../../../providers/sponsored_banner_provider.dart';
 import '../../../providers/theme_provider.dart';
 import '../../../providers/shop_entry_provider.dart';
 import '../../../providers/settings_provider.dart';
@@ -26,6 +27,7 @@ import 'widgets/bestsellers.dart';
 import 'widgets/dynamic_category_sections.dart';
 import 'widgets/grocery_kitchen_home_strip.dart';
 import 'widgets/section_banner_carousel.dart';
+import 'widgets/sponsored_banner_strip.dart';
 
 class MobileHomeScreen extends StatefulWidget {
   const MobileHomeScreen({Key? key}) : super(key: key);
@@ -173,6 +175,8 @@ class _MobileHomeScreenState extends State<MobileHomeScreen>
           .loadConfig(forceRefresh: forceRefresh),
       Provider.of<HomeSectionOrderProvider>(context, listen: false)
           .loadSettings(forceRefresh: forceRefresh),
+      Provider.of<SponsoredBannerProvider>(context, listen: false)
+          .loadSponsoredBanners(forceRefresh: forceRefresh),
     ]).then((_) {
       if (mounted) {
         setState(() => _isRefreshing = false);
@@ -427,11 +431,22 @@ class _MobileHomeScreenState extends State<MobileHomeScreen>
                       ),
                     ),
 
+                    // HOME-10: Sponsored Banners (fixed, always second --
+                    // not one of HomeSectionOrderProvider's own reorderable
+                    // identifiers; renders nothing when there are no active
+                    // sponsored banners).
+                    SliverToBoxAdapter(
+                      child: _buildAnimatedBoxWrapper(
+                        index: 1,
+                        child: const SponsoredBannerStrip(),
+                      ),
+                    ),
+
                     // Reorderable sections, admin-configured order
                     for (int i = 0; i < mobileOrder.length; i++)
                       SliverToBoxAdapter(
                         child: _buildAnimatedBoxWrapper(
-                          index: i + 1,
+                          index: i + 2,
                           child: _buildSectionByIdentifier(
                             mobileOrder[i],
                             productProvider,
@@ -443,7 +458,7 @@ class _MobileHomeScreenState extends State<MobileHomeScreen>
                     // Simple Footer (fixed, always last)
                     SliverToBoxAdapter(
                       child: _buildAnimatedBoxWrapper(
-                        index: mobileOrder.length + 1,
+                        index: mobileOrder.length + 2,
                         child: _buildSimpleFooter(isDark),
                       ),
                     ),
