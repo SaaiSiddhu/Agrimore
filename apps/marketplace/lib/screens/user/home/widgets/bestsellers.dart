@@ -4,6 +4,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:provider/provider.dart';
 import 'package:cached_network_image/cached_network_image.dart';
+import 'package:shimmer/shimmer.dart';
 import 'package:agrimore_ui/agrimore_ui.dart';
 import 'package:agrimore_core/agrimore_core.dart';
 import '../../../../providers/product_provider.dart';
@@ -66,9 +67,56 @@ class _DealsForYouState extends State<DealsForYou> {
     return Consumer3<BestsellerProvider, CategoryProvider, ProductProvider>(
       builder:
           (context, bestsellerProvider, categoryProvider, productProvider, _) {
-        // If still loading, show nothing
+        // If still loading, show a shimmer skeleton matching this
+        // section's own real header + 3-column grid shape, instead of a
+        // blank gap -- mirrors mobile_home_screen.dart's own established
+        // Shimmer.fromColors color scheme (HOME-17).
         if (bestsellerProvider.isLoading) {
-          return const SizedBox.shrink();
+          return Shimmer.fromColors(
+            baseColor: isDark ? const Color(0xFF303030) : Colors.grey[300]!,
+            highlightColor: isDark ? Colors.grey[800]! : Colors.grey[100]!,
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Padding(
+                  padding: const EdgeInsets.fromLTRB(14, 4, 14, 4),
+                  child: Container(
+                    height: 16,
+                    width: 120,
+                    decoration: BoxDecoration(
+                      color: Colors.grey,
+                      borderRadius: BorderRadius.circular(4),
+                    ),
+                  ),
+                ),
+                MediaQuery.removePadding(
+                  context: context,
+                  removeTop: true,
+                  removeBottom: true,
+                  child: GridView.builder(
+                    padding: EdgeInsets.zero,
+                    shrinkWrap: true,
+                    physics: const NeverScrollableScrollPhysics(),
+                    gridDelegate:
+                        const SliverGridDelegateWithFixedCrossAxisCount(
+                      crossAxisCount: 3,
+                      mainAxisSpacing: 2,
+                      crossAxisSpacing: 4,
+                      childAspectRatio: 0.85,
+                    ),
+                    itemCount: 9,
+                    itemBuilder: (context, index) => Container(
+                      margin: const EdgeInsets.all(4),
+                      decoration: BoxDecoration(
+                        color: Colors.grey,
+                        borderRadius: BorderRadius.circular(12),
+                      ),
+                    ),
+                  ),
+                ),
+              ],
+            ),
+          );
         }
 
         final adminSlots = bestsellerProvider.activeSlots;
