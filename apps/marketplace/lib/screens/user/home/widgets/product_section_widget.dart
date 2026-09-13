@@ -174,14 +174,21 @@ class ProductSectionWidget extends StatelessWidget {
                                 border:
                                     Border.all(color: Colors.white, width: 1.5),
                                 color: Colors.grey[300],
-                                image: displayProducts[i].imageUrl != null
-                                    ? DecorationImage(
-                                        image: NetworkImage(
-                                            displayProducts[i].imageUrl!),
-                                        fit: BoxFit.cover,
-                                      )
-                                    : null,
                               ),
+                              child: displayProducts[i].imageUrl != null &&
+                                      displayProducts[i].imageUrl!.isNotEmpty
+                                  ? ClipOval(
+                                      child: Image.network(
+                                        displayProducts[i].imageUrl!,
+                                        fit: BoxFit.cover,
+                                        // HOME-14: a broken/dead URL falls
+                                        // back to the plain grey circle
+                                        // instead of an uncaught exception.
+                                        errorBuilder: (_, __, ___) =>
+                                            const SizedBox.shrink(),
+                                      ),
+                                    )
+                                  : null,
                             ),
                           ),
                         ),
