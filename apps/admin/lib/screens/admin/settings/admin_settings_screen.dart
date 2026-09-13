@@ -9,6 +9,7 @@ import 'wallet_config_screen.dart';
 import 'location_settings_screen.dart';
 import '../home_sections/home_product_section_management_screen.dart';
 import 'home_grocery_strip_settings_screen.dart';
+import 'home_section_order_settings_screen.dart';
 
 class AdminSettingsScreen extends StatefulWidget {
   const AdminSettingsScreen({Key? key}) : super(key: key);
@@ -151,6 +152,20 @@ class _AdminSettingsScreenState extends State<AdminSettingsScreen> {
                     context,
                     MaterialPageRoute(
                       builder: (_) => const HomeGroceryStripSettingsScreen(),
+                    ),
+                  );
+                },
+              ),
+              _buildNavigationTile(
+                icon: Icons.swap_vert_rounded,
+                title: 'Home Section Order',
+                subtitle: 'Reorder Home screen sections, independently for mobile and web',
+                color: const Color(0xFF7C3AED),
+                onTap: () {
+                  Navigator.push(
+                    context,
+                    MaterialPageRoute(
+                      builder: (_) => const HomeSectionOrderSettingsScreen(),
                     ),
                   );
                 },
