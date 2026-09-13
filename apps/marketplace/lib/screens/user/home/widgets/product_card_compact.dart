@@ -411,24 +411,32 @@ class ProductCardCompact extends StatelessWidget {
                   Row(
                     crossAxisAlignment: CrossAxisAlignment.center,
                     children: [
-                      Text(
-                        '₹${product.salePrice.toStringAsFixed(0)}',
-                        style: TextStyle(
-                          fontSize: 15,
-                          fontWeight: FontWeight.w900,
-                          color: isDark ? Colors.white : const Color(0xFF1A1A1A),
-                          letterSpacing: -0.5,
+                      Flexible(
+                        child: Text(
+                          '₹${product.salePrice.toStringAsFixed(0)}',
+                          maxLines: 1,
+                          overflow: TextOverflow.ellipsis,
+                          style: TextStyle(
+                            fontSize: 15,
+                            fontWeight: FontWeight.w900,
+                            color: isDark ? Colors.white : const Color(0xFF1A1A1A),
+                            letterSpacing: -0.5,
+                          ),
                         ),
                       ),
                       if (product.originalPrice != null && product.originalPrice! > product.salePrice) ...[
                         const SizedBox(width: 6),
-                        Text(
-                          '₹${product.originalPrice!.toStringAsFixed(0)}',
-                          style: TextStyle(
-                            fontSize: 10,
-                            color: Colors.grey[500],
-                            decoration: TextDecoration.lineThrough,
-                            decorationColor: Colors.grey[400],
+                        Flexible(
+                          child: Text(
+                            '₹${product.originalPrice!.toStringAsFixed(0)}',
+                            maxLines: 1,
+                            overflow: TextOverflow.ellipsis,
+                            style: TextStyle(
+                              fontSize: 10,
+                              color: Colors.grey[500],
+                              decoration: TextDecoration.lineThrough,
+                              decorationColor: Colors.grey[400],
+                            ),
                           ),
                         ),
                       ],
