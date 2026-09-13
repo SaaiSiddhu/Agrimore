@@ -41,7 +41,10 @@ class _CategoriesGridState extends State<CategoriesGrid>
 
     return Consumer<CategoryProvider>(
       builder: (context, categoryProvider, child) {
-        final categories = categoryProvider.categories;
+        final categories = categoryProvider.categories
+            .where((c) => c.isActive && c.isVisible)
+            .toList()
+          ..sort(CategoryModel.compareSiblingOrder);
 
         if (categories.isEmpty) {
           return const SizedBox.shrink();
