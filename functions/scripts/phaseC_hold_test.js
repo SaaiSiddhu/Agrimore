@@ -330,6 +330,65 @@ async function main() {
     if (!pass) allPassed = false;
   }
 
+  // Scenario 9 (CAT-16): a category-restricted program must still credit a
+  // product whose categoryId is missing but whose legacy `category` field is
+  // a map with its own `id` — resolveCategoryId's own added fallback.
+  {
+    const customerId = "phaseC-cat16-c9";
+    await db.collection("products").doc("phaseC-cat16-p9").set({
+      name: "Product phaseC-cat16-p9",
+      salePrice: 1000,
+      sellerId: "seller9",
+      images: [],
+      isB2BEnabled: false,
+      category: { id: "phaseC-cat16-realcat", name: "Test Category" },
+    });
+    await seedProgram("phaseC-cat16-prog9", { redeemableCategoryIds: ["phaseC-cat16-realcat"] });
+    await seedEnrollment("phaseC-cat16-enroll9", customerId, "phaseC-cat16-prog9");
+    await approveComplianceAndFlags({ redemptionEnabled: true });
+    await seedBalance(customerId, 500);
+
+    const r = await callAndCapture(
+      wrappedQuote,
+      { items: [{ productId: "phaseC-cat16-p9", quantity: 1 }], orderMode: "B2C" },
+      auth(customerId)
+    );
+    const pass = r.ok && r.result.creditApplied === 500;
+    results.scenario9_category_as_map_resolves_for_restricted_program = pass
+      ? `PASSED — a category-restricted program credited a legacy category-as-map product in full (creditApplied=${r.result.creditApplied})`
+      : `FAILED — ${JSON.stringify(r)}`;
+    if (!pass) allPassed = false;
+  }
+
+  // Scenario 10 (CAT-16): same as 9, but the product has neither categoryId
+  // nor a category field at all — only the legacy categoryName fallback.
+  {
+    const customerId = "phaseC-cat16-c10";
+    await db.collection("products").doc("phaseC-cat16-p10").set({
+      name: "Product phaseC-cat16-p10",
+      salePrice: 800,
+      sellerId: "seller10",
+      images: [],
+      isB2BEnabled: false,
+      categoryName: "phaseC-cat16-realcat2",
+    });
+    await seedProgram("phaseC-cat16-prog10", { redeemableCategoryIds: ["phaseC-cat16-realcat2"] });
+    await seedEnrollment("phaseC-cat16-enroll10", customerId, "phaseC-cat16-prog10");
+    await approveComplianceAndFlags({ redemptionEnabled: true });
+    await seedBalance(customerId, 300);
+
+    const r = await callAndCapture(
+      wrappedQuote,
+      { items: [{ productId: "phaseC-cat16-p10", quantity: 1 }], orderMode: "B2C" },
+      auth(customerId)
+    );
+    const pass = r.ok && r.result.creditApplied === 300;
+    results.scenario10_categoryName_fallback_resolves_for_restricted_program = pass
+      ? `PASSED — a category-restricted program credited a categoryName-only product in full (creditApplied=${r.result.creditApplied})`
+      : `FAILED — ${JSON.stringify(r)}`;
+    if (!pass) allPassed = false;
+  }
+
   console.log("=== PHASE C — QUOTE/HOLD/RELEASE LIFECYCLE TEST ===");
   for (const [k, v] of Object.entries(results)) console.log(`${k}:`, v);
   console.log(allPassed ? "\nALL PASSED" : "\nSOME FAILED");

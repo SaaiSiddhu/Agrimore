@@ -63,12 +63,28 @@ export function computeCartFingerprint(
   return crypto.createHash("sha256").update(payload).digest("hex");
 }
 
-function resolveCategoryId(product: FirebaseFirestore.DocumentData): string | null {
-  // Mirrors ProductModel.parseCategoryId's fallback
-  // (packages/agrimore_core/lib/models/product_model.dart): prefer the
-  // canonical `categoryId`, fall back to the legacy `category` field.
+// Exported (CAT-16) so this resolution logic can be exercised directly by
+// functions/scripts/phaseC_hold_test.js, the same way this file's own
+// computeCartFingerprint already is.
+export function resolveCategoryId(product: FirebaseFirestore.DocumentData): string | null {
+  // Mirrors ProductModel.parseCategoryId's full fallback chain
+  // (packages/agrimore_core/lib/models/product_model.dart): canonical
+  // `categoryId` string, then legacy `category` as either a map with its
+  // own `id` or a plain string, then `categoryName` -- CAT-16 added the
+  // last two; a product resolved by the ORIGINAL two checks resolves to the
+  // exact same value as before, so this is a pure widening, not a redesign.
+  // Deliberately still returns null (not Dart's own 'general' display
+  // fallback) when nothing matches: this function feeds a redemption
+  // ALLOW-LIST check below, where null already means "exclude", the
+  // conservative default for a money decision -- 'general' would flip an
+  // unresolvable product to conditionally-included if an admin's allow-list
+  // happened to contain that literal string, a real behavior change with no
+  // clear justification, not a safe widening.
   if (typeof product.categoryId === "string" && product.categoryId) return product.categoryId;
-  if (typeof product.category === "string" && product.category) return product.category;
+  const cat = product.category;
+  if (cat && typeof cat === "object" && typeof cat.id === "string" && cat.id) return cat.id;
+  if (typeof cat === "string" && cat) return cat;
+  if (typeof product.categoryName === "string" && product.categoryName) return product.categoryName;
   return null;
 }
 
