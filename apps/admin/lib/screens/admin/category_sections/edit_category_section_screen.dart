@@ -547,7 +547,7 @@ class _EditCategorySectionScreenState extends State<EditCategorySectionScreen> {
       isActive: _isActive,
       startsAt: _startsAt,
       endsAt: _endsAt,
-    ).scheduleStatus;
+    ).scheduleStatus();
     const colors = {
       'Live': Colors.green,
       'Scheduled': Colors.blue,

@@ -63,9 +63,13 @@ class CategorySectionSlotModel {
 
   /// Scheduled/Live/Expired/Disabled, derived from isActive + the schedule
   /// window rather than a separate stored status. Mirrors BannerModel.
-  String get scheduleStatus {
+  /// FIX-SCHEDULE-1: takes the same optional [at] isWithinSchedule already
+  /// does (default: now) -- the two must agree on what "now" means, or a
+  /// caller (or a test fixing "now") reading both can see them disagree the
+  /// instant real time crosses a schedule boundary between the two reads.
+  String scheduleStatus([DateTime? at]) {
     if (!isActive) return 'Disabled';
-    final now = DateTime.now();
+    final now = at ?? DateTime.now();
     if (startsAt != null && now.isBefore(startsAt!)) return 'Scheduled';
     if (endsAt != null && now.isAfter(endsAt!)) return 'Expired';
     return 'Live';

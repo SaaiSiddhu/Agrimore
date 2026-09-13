@@ -35,7 +35,7 @@ class BannerCard extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final isActive = banner.isActive;
-    final status = banner.scheduleStatus;
+    final status = banner.scheduleStatus();
     final isCategoryHero = banner.placement == BannerModel.placementCategoryHero;
 
     return Container(
