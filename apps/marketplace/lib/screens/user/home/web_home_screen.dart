@@ -411,23 +411,33 @@ class _WebHomeScreenState extends State<WebHomeScreen>
                             borderRadius: const BorderRadius.vertical(
                               top: Radius.circular(20),
                             ),
-                            image: product.imageUrl != null
-                                ? DecorationImage(
-                                    image: NetworkImage(product.imageUrl!),
-                                    fit: BoxFit.cover,
-                                  )
-                                : null,
                           ),
-                          child: product.imageUrl == null
-                              ? const Center(
-                                  child: Icon(
-                                    Icons.shopping_bag_outlined,
-                                    size: 64,
-                                    color: Colors.grey,
-                                  ),
-                                )
-                              : null,
+                          child: const Center(
+                            child: Icon(
+                              Icons.shopping_bag_outlined,
+                              size: 64,
+                              color: Colors.grey,
+                            ),
+                          ),
                         ),
+                        if (product.imageUrl != null &&
+                            product.imageUrl!.isNotEmpty)
+                          Positioned.fill(
+                            child: ClipRRect(
+                              borderRadius: const BorderRadius.vertical(
+                                top: Radius.circular(20),
+                              ),
+                              child: Image.network(
+                                product.imageUrl!,
+                                fit: BoxFit.cover,
+                                // HOME-14: a broken/dead URL falls back to
+                                // the grey+icon base layer beneath instead
+                                // of an uncaught image-loading exception.
+                                errorBuilder: (_, __, ___) =>
+                                    const SizedBox.shrink(),
+                              ),
+                            ),
+                          ),
 
                         // Discount Badge
                         if (product.discount != null && product.discount! > 0)
