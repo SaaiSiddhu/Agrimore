@@ -289,6 +289,12 @@ class AdminProvider with ChangeNotifier {
     }
   }
 
+  /// Live count of products currently assigned to [categoryId] -- see
+  /// AdminService.countProductsInCategory's own doc comment for why
+  /// CategoryModel.productCount itself can't be trusted for this.
+  Future<int> countProductsInCategory(String categoryId) =>
+      _adminService.countProductsInCategory(categoryId);
+
   /// True if setting [categoryId]'s parent to [candidateParentId] would
   /// create a cycle. Public passthrough to the private cycle-walk below --
   /// category_management_screen.dart is a separate library (file-private
