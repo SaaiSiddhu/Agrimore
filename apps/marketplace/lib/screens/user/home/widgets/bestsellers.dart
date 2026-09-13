@@ -74,7 +74,8 @@ class _DealsForYouState extends State<DealsForYou> {
         final adminSlots = bestsellerProvider.activeSlots;
         final categories = categoryProvider.categories
             .where((c) => c.isActive && c.isVisible)
-            .toList();
+            .toList()
+          ..sort(CategoryModel.compareSiblingOrder);
 
         // Build display items - 9 slots
         final displayItems = <_DisplayItem>[];

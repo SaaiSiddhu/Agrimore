@@ -45,8 +45,10 @@ class GroceryKitchenHomeStrip extends StatelessWidget {
           .toList();
     }
 
-    return categoryProvider.categories
-        .where((c) => c.isActive && c.isVisible && _isGroceryOrKitchen(c))
+    return (categoryProvider.categories
+            .where((c) => c.isActive && c.isVisible && _isGroceryOrKitchen(c))
+            .toList()
+          ..sort(CategoryModel.compareSiblingOrder))
         .take(8)
         .toList();
   }

@@ -24,7 +24,8 @@ class FeaturedProducts extends StatelessWidget {
         // Get categories 15-22 (third group of 8)
         final allCategories = categoryProvider.categories
             .where((c) => c.isActive && c.isVisible)
-            .toList();
+            .toList()
+          ..sort(CategoryModel.compareSiblingOrder);
         
         // Skip first 14 (used in Bestsellers + Snacks), take next 8
         final categories = allCategories.skip(14).take(8).toList();
