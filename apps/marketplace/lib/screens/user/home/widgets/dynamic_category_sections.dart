@@ -4,6 +4,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:provider/provider.dart';
 import 'package:cached_network_image/cached_network_image.dart';
+import 'package:shimmer/shimmer.dart';
 import 'package:agrimore_ui/agrimore_ui.dart';
 import 'package:agrimore_core/agrimore_core.dart';
 import '../../../../providers/category_provider.dart';
@@ -41,9 +42,54 @@ class _DynamicCategorySectionsState extends State<DynamicCategorySections> {
         ProductProvider>(
       builder:
           (context, sectionProvider, categoryProvider, productProvider, _) {
-        // If loading, show nothing
+        // If loading, show a shimmer skeleton matching this section's
+        // own real header + 4-column grid shape, instead of a blank gap
+        // -- mirrors mobile_home_screen.dart's own established
+        // Shimmer.fromColors color scheme (HOME-17).
         if (sectionProvider.isLoading) {
-          return const SizedBox.shrink();
+          return Shimmer.fromColors(
+            baseColor: isDark ? const Color(0xFF303030) : Colors.grey[300]!,
+            highlightColor: isDark ? Colors.grey[800]! : Colors.grey[100]!,
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Padding(
+                  padding: const EdgeInsets.fromLTRB(16, 2, 16, 0),
+                  child: Container(
+                    height: 16,
+                    width: 140,
+                    decoration: BoxDecoration(
+                      color: Colors.grey,
+                      borderRadius: BorderRadius.circular(4),
+                    ),
+                  ),
+                ),
+                Padding(
+                  padding: const EdgeInsets.symmetric(horizontal: 10),
+                  child: GridView.builder(
+                    padding: EdgeInsets.zero,
+                    shrinkWrap: true,
+                    physics: const NeverScrollableScrollPhysics(),
+                    gridDelegate:
+                        const SliverGridDelegateWithFixedCrossAxisCount(
+                      crossAxisCount: 4,
+                      mainAxisSpacing: 2,
+                      crossAxisSpacing: 4,
+                      childAspectRatio: 1.05,
+                    ),
+                    itemCount: 8,
+                    itemBuilder: (context, index) => Container(
+                      margin: const EdgeInsets.all(4),
+                      decoration: BoxDecoration(
+                        color: Colors.grey,
+                        borderRadius: BorderRadius.circular(10),
+                      ),
+                    ),
+                  ),
+                ),
+              ],
+            ),
+          );
         }
 
         final activeSlots = sectionProvider.activeSlots;

@@ -70,6 +70,12 @@ dependencies:
   # transitively until now — same fix as the geolocator/geocoding move above.
   cached_network_image: ^3.4.1
 
+  # HOME-17: shimmer is used directly by mobile_home_screen.dart's own
+  # loading placeholder (and now bestsellers.dart/dynamic_category_sections.dart)
+  # but was only resolving transitively until now — same fix as
+  # cached_network_image/geolocator/geocoding above.
+  shimmer: ^3.0.0
+
   # Sharing
   share_plus: ^10.1.2
 
