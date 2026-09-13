@@ -341,20 +341,37 @@ class AdminService {
     }
   }
 
-  /// Live count of products currently assigned to [categoryId] --
+  /// Live count of products currently assigned to any of [categoryIds] --
   /// CategoryModel's own `productCount` field is never incremented,
   /// decremented, or recomputed anywhere (every category is created with it
   /// defaulted to 0 and nothing ever changes it afterward), so it cannot be
-  /// trusted for display. A count aggregation query is cheap (no documents
-  /// are actually fetched) and always correct.
-  Future<int> countProductsInCategory(String categoryId) async {
+  /// trusted for display. [categoryIds] is expected to be a category plus
+  /// every one of its descendants (see AdminProvider.countProductsInCategory)
+  /// -- a real product filed under a subcategory must still count toward its
+  /// parent, the same way `productBelongsToCategory` already treats it as
+  /// belonging to the parent everywhere else in the app. Chunked at 30
+  /// (Firestore's own `whereIn` cap) so correctness never depends on how many
+  /// descendants a category happens to have. Count aggregation queries are
+  /// cheap (no documents are actually fetched); this does NOT match the
+  /// legacy name-based `categoryId` values `productBelongsToCategory` also
+  /// falls back to (`whereIn` is exact-match only) -- a disclosed, narrower
+  /// gap than the parent/descendant undercount this fixes.
+  Future<int> countProductsInCategory(List<String> categoryIds) async {
     try {
-      final snapshot = await _firestore
-          .collection('products')
-          .where('categoryId', isEqualTo: categoryId)
-          .count()
-          .get();
-      return snapshot.count ?? 0;
+      var total = 0;
+      for (var i = 0; i < categoryIds.length; i += 30) {
+        final chunk = categoryIds.sublist(
+          i,
+          i + 30 > categoryIds.length ? categoryIds.length : i + 30,
+        );
+        final snapshot = await _firestore
+            .collection('products')
+            .where('categoryId', whereIn: chunk)
+            .count()
+            .get();
+        total += snapshot.count ?? 0;
+      }
+      return total;
     } catch (e) {
       debugPrint('Error counting products in category: $e');
       throw Exception('Failed to count products in category: $e');
