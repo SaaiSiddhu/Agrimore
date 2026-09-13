@@ -11,6 +11,7 @@ import '../../../providers/wishlist_provider.dart';
 import '../../../providers/category_section_provider.dart';
 import '../../../providers/home_product_section_config_provider.dart';
 import '../../../providers/home_grocery_strip_config_provider.dart';
+import '../../../providers/home_section_order_provider.dart';
 import 'package:agrimore_core/agrimore_core.dart';
 
 // --- WIDGET IMPORTS (FIXED & MERGED FROM MOBILE) ---
@@ -86,6 +87,8 @@ class _WebHomeScreenState extends State<WebHomeScreen>
       final groceryStripConfigProvider =
           Provider.of<HomeGroceryStripConfigProvider>(context,
               listen: false);
+      final sectionOrderProvider =
+          Provider.of<HomeSectionOrderProvider>(context, listen: false);
 
       // Refresh all data including banners for admin changes
       bannerProvider.loadBanners();
@@ -96,6 +99,7 @@ class _WebHomeScreenState extends State<WebHomeScreen>
       sectionProvider.loadSections();
       productSectionConfigProvider.loadSections();
       groceryStripConfigProvider.loadConfig();
+      sectionOrderProvider.loadSettings();
     });
   }
 
@@ -119,6 +123,12 @@ class _WebHomeScreenState extends State<WebHomeScreen>
     final screenWidth = MediaQuery.of(context).size.width;
     final crossAxisCount =
         screenWidth > 1400 ? 5 : (screenWidth > 1200 ? 4 : 3);
+    // HOME-9: the 6 reorderable sections render in the admin's own
+    // configured order (falls back to today's exact order --
+    // defaultWebOrder -- when unconfigured). _buildSectionWrapper takes no
+    // index (a uniform fade), so no animation-order recomputation is
+    // needed here, unlike mobile_home_screen.dart's own stagger.
+    final webOrder = context.watch<HomeSectionOrderProvider>().webOrder;
 
     return Scaffold(
       backgroundColor: AppColors.background,
@@ -172,89 +182,20 @@ class _WebHomeScreenState extends State<WebHomeScreen>
 
             const SliverToBoxAdapter(child: SizedBox(height: 40)),
 
-            // --- REORDERED & FIXED SECTION (matches mobile layout) ---
-
-            // 1. Recently Viewed (from mobile)
-            SliverToBoxAdapter(
-              child: Padding(
-                padding: const EdgeInsets.symmetric(horizontal: 40),
-                child: _buildSectionWrapper(
-                  child: const RecentlyViewedWidget(),
+            // --- REORDERABLE SECTION (HOME-9: admin-configured order,
+            // defaultWebOrder as the unconfigured fallback) ---
+            for (final identifier in webOrder) ...[
+              SliverToBoxAdapter(
+                child: Padding(
+                  padding: const EdgeInsets.symmetric(horizontal: 40),
+                  child: _buildSectionWrapper(
+                    child: _buildWebSectionByIdentifier(identifier),
+                  ),
                 ),
               ),
-            ),
-
-            const SliverToBoxAdapter(child: SizedBox(height: 50)),
-
-            // 2. Categories Section (fixed)
-            SliverToBoxAdapter(
-              child: Padding(
-                padding: const EdgeInsets.symmetric(horizontal: 40),
-                child: _buildSectionWrapper(
-                  child: const CategoriesGrid(), // <-- FIXED
-                ),
-              ),
-            ),
-
-            const SliverToBoxAdapter(child: SizedBox(height: 50)),
-
-            // 4. Bestsellers Section (fixed)
-            SliverToBoxAdapter(
-              child: Padding(
-                padding: const EdgeInsets.symmetric(horizontal: 40),
-                child: _buildSectionWrapper(
-                  child: const DealsForYou(), // Bestsellers
-                ),
-              ),
-            ),
-
-            const SliverToBoxAdapter(child: SizedBox(height: 50)),
-
-            // 4b. Grocery & Kitchen strip (HOME-7: admin-configurable,
-            // mirrors mobile_home_screen.dart's own relative position --
-            // right after Bestsellers)
-            SliverToBoxAdapter(
-              child: Padding(
-                padding: const EdgeInsets.symmetric(horizontal: 40),
-                child: _buildSectionWrapper(
-                  child: const GroceryKitchenHomeStrip(),
-                ),
-              ),
-            ),
-
-            const SliverToBoxAdapter(child: SizedBox(height: 50)),
-
-            // 5. Dynamic Category Sections (replaces trending/featured)
-            SliverToBoxAdapter(
-              child: Padding(
-                padding: const EdgeInsets.symmetric(horizontal: 40),
-                child: _buildSectionWrapper(
-                  child: const DynamicCategorySections(skipCount: 12),
-                ),
-              ),
-            ),
-
-            const SliverToBoxAdapter(child: SizedBox(height: 50)),
-
-            // 5b. Product Sections by Category (HOME-6: admin-configured,
-            // mirrors mobile_home_screen.dart's own _buildProductSections)
-            SliverToBoxAdapter(
-              child: Padding(
-                padding: const EdgeInsets.symmetric(horizontal: 40),
-                child: Consumer2<ProductProvider, CategoryProvider>(
-                  builder: (context, productProvider, categoryProvider, _) {
-                    return _buildSectionWrapper(
-                      child: _buildProductSections(
-                          productProvider, categoryProvider),
-                    );
-                  },
-                ),
-              ),
-            ),
-
-            const SliverToBoxAdapter(child: SizedBox(height: 50)),
-
-            // --- END OF REORDERED SECTION ---
+              const SliverToBoxAdapter(child: SizedBox(height: 50)),
+            ],
+            // --- END OF REORDERABLE SECTION ---
 
             // All Products Header
             SliverToBoxAdapter(
@@ -773,6 +714,33 @@ class _WebHomeScreenState extends State<WebHomeScreen>
         ),
       ),
     );
+  }
+
+  // --- HOME-9: identifier -> reorderable section widget ---
+  Widget _buildWebSectionByIdentifier(String identifier) {
+    switch (identifier) {
+      case 'recently_viewed':
+        return const RecentlyViewedWidget();
+      case 'categories_grid':
+        return const CategoriesGrid();
+      case 'bestsellers':
+        return const DealsForYou();
+      case 'grocery_kitchen_strip':
+        return const GroceryKitchenHomeStrip();
+      case 'dynamic_category_sections':
+        return const DynamicCategorySections(skipCount: 12);
+      case 'product_sections':
+        return Consumer2<ProductProvider, CategoryProvider>(
+          builder: (context, productProvider, categoryProvider, _) {
+            return _buildProductSections(productProvider, categoryProvider);
+          },
+        );
+      default:
+        // HomeSectionOrderProvider's own permutation validation already
+        // guarantees this never happens with a valid admin config -- render
+        // nothing rather than crash if it somehow does.
+        return const SizedBox.shrink();
+    }
   }
 
   // HOME-6: mirrors mobile_home_screen.dart's own _buildProductSections
