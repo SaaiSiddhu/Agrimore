@@ -341,6 +341,26 @@ class AdminService {
     }
   }
 
+  /// Live count of products currently assigned to [categoryId] --
+  /// CategoryModel's own `productCount` field is never incremented,
+  /// decremented, or recomputed anywhere (every category is created with it
+  /// defaulted to 0 and nothing ever changes it afterward), so it cannot be
+  /// trusted for display. A count aggregation query is cheap (no documents
+  /// are actually fetched) and always correct.
+  Future<int> countProductsInCategory(String categoryId) async {
+    try {
+      final snapshot = await _firestore
+          .collection('products')
+          .where('categoryId', isEqualTo: categoryId)
+          .count()
+          .get();
+      return snapshot.count ?? 0;
+    } catch (e) {
+      debugPrint('Error counting products in category: $e');
+      throw Exception('Failed to count products in category: $e');
+    }
+  }
+
   // ============================================
   // COUPONS
   // ============================================

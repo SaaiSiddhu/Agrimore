@@ -30,6 +30,23 @@ class _CategoryManagementScreenState extends State<CategoryManagementScreen> {
   // hint without needing the header itself to be the active drop target.
   CategoryModel? _draggingCategory;
 
+  // Caches the live product-count query's own Future by category id so an
+  // unrelated rebuild of this screen (e.g. the categories stream ticking)
+  // doesn't re-fire the query -- only an actual change of which category is
+  // selected does. category.productCount itself is never trusted for this
+  // (see AdminService.countProductsInCategory's own doc comment for why).
+  String? _productCountCategoryId;
+  Future<int>? _productCountFuture;
+
+  Future<int> _productCountFor(CategoryModel category) {
+    if (_productCountCategoryId != category.id) {
+      _productCountCategoryId = category.id;
+      _productCountFuture =
+          Provider.of<AdminProvider>(context, listen: false).countProductsInCategory(category.id);
+    }
+    return _productCountFuture!;
+  }
+
   @override
   void initState() {
     super.initState();
@@ -770,7 +787,15 @@ class _CategoryManagementScreenState extends State<CategoryManagementScreen> {
           _buildDetailRow('Display Order', category.displayOrder.toString(), isDark),
           if (parent != null)
             _buildDetailRow('Parent Category', parent.name, isDark),
-          _buildDetailRow('Products', '${category.productCount} products', isDark),
+          FutureBuilder<int>(
+            future: _productCountFor(category),
+            builder: (context, snapshot) {
+              final display = snapshot.hasData
+                  ? '${snapshot.data} products'
+                  : (snapshot.hasError ? 'Unavailable' : 'Loading…');
+              return _buildDetailRow('Products', display, isDark);
+            },
+          ),
           _buildDetailRow('Created', '${category.createdAt.day}/${category.createdAt.month}/${category.createdAt.year}', isDark),
         ],
       ),
