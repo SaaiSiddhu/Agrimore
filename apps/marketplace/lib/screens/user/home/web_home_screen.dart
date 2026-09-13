@@ -12,6 +12,7 @@ import '../../../providers/category_section_provider.dart';
 import '../../../providers/home_product_section_config_provider.dart';
 import '../../../providers/home_grocery_strip_config_provider.dart';
 import '../../../providers/home_section_order_provider.dart';
+import '../../../providers/sponsored_banner_provider.dart';
 import 'package:agrimore_core/agrimore_core.dart';
 
 // --- WIDGET IMPORTS (FIXED & MERGED FROM MOBILE) ---
@@ -24,6 +25,7 @@ import 'widgets/recently_viewed_widget.dart'; // <-- ADDED FROM MOBILE
 import 'widgets/product_section_widget.dart'; // <-- HOME-6: admin-configured product sections
 import 'widgets/section_banner_carousel.dart'; // <-- HOME-6
 import 'widgets/grocery_kitchen_home_strip.dart'; // <-- HOME-7
+import 'widgets/sponsored_banner_strip.dart'; // <-- HOME-10
 
 class WebHomeScreen extends StatefulWidget {
   const WebHomeScreen({Key? key}) : super(key: key);
@@ -89,6 +91,8 @@ class _WebHomeScreenState extends State<WebHomeScreen>
               listen: false);
       final sectionOrderProvider =
           Provider.of<HomeSectionOrderProvider>(context, listen: false);
+      final sponsoredBannerProvider =
+          Provider.of<SponsoredBannerProvider>(context, listen: false);
 
       // Refresh all data including banners for admin changes
       bannerProvider.loadBanners();
@@ -100,6 +104,7 @@ class _WebHomeScreenState extends State<WebHomeScreen>
       productSectionConfigProvider.loadSections();
       groceryStripConfigProvider.loadConfig();
       sectionOrderProvider.loadSettings();
+      sponsoredBannerProvider.loadSponsoredBanners();
     });
   }
 
@@ -129,6 +134,16 @@ class _WebHomeScreenState extends State<WebHomeScreen>
     // index (a uniform fade), so no animation-order recomputation is
     // needed here, unlike mobile_home_screen.dart's own stagger.
     final webOrder = context.watch<HomeSectionOrderProvider>().webOrder;
+    // HOME-10: whether to render the Sponsored Banners section AND its own
+    // trailing spacer at all -- unlike the reorderable sections above (each
+    // already followed by an unconditional spacer even when empty, an
+    // existing, pre-HOME-10 codebase characteristic), this phase's own
+    // invariant requires a true no-op render when there are no active
+    // banners, so both the section and its spacer are gated together here.
+    final hasSponsoredBanners = context
+        .watch<SponsoredBannerProvider>()
+        .activeSponsoredBanners
+        .isNotEmpty;
 
     return Scaffold(
       backgroundColor: AppColors.background,
@@ -181,6 +196,22 @@ class _WebHomeScreenState extends State<WebHomeScreen>
             ),
 
             const SliverToBoxAdapter(child: SizedBox(height: 40)),
+
+            // HOME-10: Sponsored Banners (fixed, always here -- not one of
+            // HomeSectionOrderProvider's own reorderable identifiers). Both
+            // the section and its own trailing spacer are gated together so
+            // an install with zero active banners renders no gap at all.
+            if (hasSponsoredBanners) ...[
+              SliverToBoxAdapter(
+                child: Padding(
+                  padding: const EdgeInsets.symmetric(horizontal: 40),
+                  child: _buildSectionWrapper(
+                    child: const SponsoredBannerStrip(),
+                  ),
+                ),
+              ),
+              const SliverToBoxAdapter(child: SizedBox(height: 50)),
+            ],
 
             // --- REORDERABLE SECTION (HOME-9: admin-configured order,
             // defaultWebOrder as the unconfigured fallback) ---
