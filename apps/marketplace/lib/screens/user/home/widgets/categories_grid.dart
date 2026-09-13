@@ -132,75 +132,100 @@ class _CategoriesGridState extends State<CategoriesGrid>
           categoryName: category.name,
         );
       },
-      child: Container(
-        width: 80,  // <-- Compact width
-        height: 85, // <-- Reduced height to fix overflow
-        margin: const EdgeInsets.all(3),  // <-- Reduced margin
-        decoration: BoxDecoration(
-          color: Colors.white,
-          borderRadius: BorderRadius.circular(16),
-          boxShadow: [
-            BoxShadow(
-              color: Colors.black.withValues(alpha: 0.05),
-              blurRadius: 10,
-              offset: const Offset(0, 2),
+      child: Stack(
+        children: [
+          Container(
+            width: 80,  // <-- Compact width
+            height: 85, // <-- Reduced height to fix overflow
+            margin: const EdgeInsets.all(3),  // <-- Reduced margin
+            decoration: BoxDecoration(
+              color: Colors.white,
+              borderRadius: BorderRadius.circular(16),
+              boxShadow: [
+                BoxShadow(
+                  color: Colors.black.withValues(alpha: 0.05),
+                  blurRadius: 10,
+                  offset: const Offset(0, 2),
+                ),
+              ],
             ),
-          ],
-        ),
-        child: Column(
-          mainAxisAlignment: MainAxisAlignment.center,
-          children: [
-            Container(
-              width: 40,  // <-- Smaller icon
-              height: 40, // <-- Smaller icon
-              decoration: BoxDecoration(
-                color: AppColors.primary.withValues(alpha: 0.1),
-                shape: BoxShape.circle,
-              ),
-              // --- THIS IS THE CRASH FIX ---
-              child: category.imageUrl != null && category.imageUrl!.isNotEmpty
-                  ? ClipOval(
-                      child: CachedNetworkImage(
-                        imageUrl: category.imageUrl!, // <-- Was category.iconUrl
-                        width: 40,
-                        height: 40,
-                        fit: BoxFit.cover,
-                        placeholder: (context, url) => Center(
-                          child: CircularProgressIndicator(
-                            color: AppColors.primary,
-                            strokeWidth: 2,
+            child: Column(
+              mainAxisAlignment: MainAxisAlignment.center,
+              children: [
+                Container(
+                  width: 40,  // <-- Smaller icon
+                  height: 40, // <-- Smaller icon
+                  decoration: BoxDecoration(
+                    color: AppColors.primary.withValues(alpha: 0.1),
+                    shape: BoxShape.circle,
+                  ),
+                  // --- THIS IS THE CRASH FIX ---
+                  child: category.imageUrl != null && category.imageUrl!.isNotEmpty
+                      ? ClipOval(
+                          child: CachedNetworkImage(
+                            imageUrl: category.imageUrl!, // <-- Was category.iconUrl
+                            width: 40,
+                            height: 40,
+                            fit: BoxFit.cover,
+                            placeholder: (context, url) => Center(
+                              child: CircularProgressIndicator(
+                                color: AppColors.primary,
+                                strokeWidth: 2,
+                              ),
+                            ),
+                            errorWidget: (context, url, error) => Icon(
+                              Icons.category_rounded,
+                              color: AppColors.primary,
+                              size: 22, // <-- Smaller icon
+                            ),
                           ),
-                        ),
-                        errorWidget: (context, url, error) => Icon(
+                        )
+                      : Icon(
                           Icons.category_rounded,
                           color: AppColors.primary,
                           size: 22, // <-- Smaller icon
                         ),
-                      ),
-                    )
-                  : Icon(
-                      Icons.category_rounded,
-                      color: AppColors.primary,
-                      size: 22, // <-- Smaller icon
-                    ),
-              // --- END OF FIX ---
-            ),
-            const SizedBox(height: 6), // <-- Reduced space
-            Padding(
-              padding: const EdgeInsets.symmetric(horizontal: 4),
-              child: Text(
-                category.name,
-                textAlign: TextAlign.center,
-                maxLines: 1,
-                overflow: TextOverflow.ellipsis,
-                style: AppTextStyles.caption.copyWith(
-                  fontWeight: FontWeight.w600,
-                  fontSize: 10, // <-- Smaller text
+                  // --- END OF FIX ---
                 ),
+                const SizedBox(height: 6), // <-- Reduced space
+                Padding(
+                  padding: const EdgeInsets.symmetric(horizontal: 4),
+                  child: Text(
+                    category.name,
+                    textAlign: TextAlign.center,
+                    maxLines: 1,
+                    overflow: TextOverflow.ellipsis,
+                    style: AppTextStyles.caption.copyWith(
+                      fontWeight: FontWeight.w600,
+                      fontSize: 10, // <-- Smaller text
+                    ),
+                  ),
+                ),
+              ],
+            ),
+          ),
+          // Featured badge -- mirrors categories_screen.dart's own
+          // CategoryModel.isFeatured precedent byte-for-byte (HOME-12).
+          if (category.isFeatured)
+            Positioned(
+              top: 4,
+              right: 4,
+              child: Container(
+                padding: const EdgeInsets.all(3),
+                decoration: BoxDecoration(
+                  color: Colors.amber.shade600,
+                  shape: BoxShape.circle,
+                  boxShadow: [
+                    BoxShadow(
+                      color: Colors.black.withValues(alpha: 0.25),
+                      blurRadius: 3,
+                    ),
+                  ],
+                ),
+                child: const Icon(Icons.star_rounded, size: 11, color: Colors.white),
               ),
             ),
-          ],
-        ),
+        ],
       ),
     );
   }
