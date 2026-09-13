@@ -172,6 +172,52 @@ async function main() {
   }
 
   // ==========================================================
+  // CAT-17: a legacy-shaped product (no top-level categoryId, only a
+  // `category` map) must still resolve to its own configured category rate,
+  // not silently fall back to the default rate.
+  // ==========================================================
+  {
+    await db.collection("settings").doc("commission").set({
+      defaultRate: 8,
+      categoryRates: { "p44-cat-fruit": 5, "p44-cat-electronics": 15, "p44-cat-legacy": 20 },
+    });
+    await db.collection("products").doc("p44-prod-legacy").set({
+      category: { id: "p44-cat-legacy", name: "Legacy Category" },
+    });
+
+    const orderId = "p44-cat17-order";
+    const sellerId = "p44-cat17-seller";
+    const before = {
+      userId: "p44-cat17-customer",
+      orderNumber: "ORD-P44-CAT17",
+      items: [{ productId: "p44-prod-legacy", sellerId, price: 1000, quantity: 1 }],
+      total: 1000,
+      orderStatus: "pending",
+      status: "pending",
+    };
+    const after = { ...before, orderStatus: "delivered", status: "delivered" };
+    await db.collection("orders").doc(orderId).set(before);
+    await fireTransition(wrappedPayout, orderId, before, after);
+
+    const payoutSnap = await db.collection("seller_payouts").doc(`${orderId}_${sellerId}`).get();
+    const payout = payoutSnap.data();
+    // Pre-CAT-17 bug: a bare `.categoryId` read returns undefined for this
+    // legacy-shaped product, so this would silently use defaultRate (8%) ->
+    // commissionAmount 80. Fixed: resolveProductCategoryId recovers
+    // "p44-cat-legacy" from the `category` map, applying its own 20% rate.
+    check(
+      "CAT-17: a legacy-shaped (category-as-map) product pays its OWN category rate (20% of 1000 = 200), not the default rate (80)",
+      Math.abs(payout.commissionAmount - 200) < 0.01 && Math.abs(payout.commissionRate - 20) < 0.01,
+      payout
+    );
+    check(
+      "CAT-17: netAmount reflects the real category rate (1000 - 200 = 800)",
+      Math.abs(payout.netAmount - 800) < 0.01,
+      payout
+    );
+  }
+
+  // ==========================================================
   // WS3 (N-9, D-COMMISSION-REVERSAL): claw back on cancellation.
   // ==========================================================
   {
