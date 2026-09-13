@@ -3,11 +3,37 @@ import 'dart:typed_data';
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 import 'package:agrimore_ui/agrimore_ui.dart';
+import 'package:agrimore_services/agrimore_services.dart';
 import 'package:firebase_storage/firebase_storage.dart';
 import 'package:geolocator/geolocator.dart';
 import 'package:image_picker/image_picker.dart';
 import '../../providers/seller_auth_provider.dart';
 import '../../providers/seller_product_provider.dart';
+
+/// The real category, if any, whose name exactly matches [typed]
+/// (case-insensitive, trimmed) -- CAT-15's own resolution rule, kept as a
+/// standalone function so it is unit-testable without a widget tree or
+/// Firebase. Returns null for free text that doesn't match a real category,
+/// which callers should then fall back to storing as-is: a seller is never
+/// blocked from creating a product because the category they need doesn't
+/// exist yet in the admin-managed tree.
+CategoryModel? matchCategoryByName(String typed, List<CategoryModel> categories) {
+  final needle = typed.trim().toLowerCase();
+  if (needle.isEmpty) return null;
+  for (final c in categories) {
+    if (c.name.trim().toLowerCase() == needle) return c;
+  }
+  return null;
+}
+
+/// Up to 6 real categories whose name contains [typed] (case-insensitive) --
+/// the seller's own suggestion list as they type. A standalone function for
+/// the same testability reason as [matchCategoryByName].
+List<CategoryModel> categorySuggestionsFor(String typed, List<CategoryModel> categories) {
+  final needle = typed.trim().toLowerCase();
+  if (needle.isEmpty) return const [];
+  return categories.where((c) => c.name.toLowerCase().contains(needle)).take(6).toList();
+}
 
 class AddProductScreen extends StatefulWidget {
   final ProductModel? existingProduct;
@@ -41,6 +67,8 @@ class _AddProductScreenState extends State<AddProductScreen> {
   List<Map<String, dynamic>> _centers = [];
   Map<String, dynamic>? _selectedMasterProduct;
   Map<String, dynamic>? _selectedCenter;
+  List<CategoryModel> _allCategories = [];
+  List<CategoryModel> _categorySuggestions = [];
   bool _isSaving = false;
   bool _isSearchingMasterProducts = false;
   bool _isLoadingCenters = false;
@@ -138,6 +166,35 @@ class _AddProductScreenState extends State<AddProductScreen> {
     }
     _priceController.addListener(_handleManualPriceEdit);
     WidgetsBinding.instance.addPostFrameCallback((_) => _loadCenters());
+    _loadCategories();
+  }
+
+  /// Loads the real category list once for the suggestion panel, and -- when
+  /// editing an existing product -- resolves its stored `categoryId` to a
+  /// human-readable name if it happens to be a real category's own id (an
+  /// admin-linked product), so the field never shows a raw internal id
+  /// string. A seller-typed name that doesn't match anything keeps showing
+  /// exactly as stored, unchanged. Best-effort: if this fails, the field
+  /// still works exactly as a plain free-text field, same as before CAT-15.
+  Future<void> _loadCategories() async {
+    try {
+      final categories = await DatabaseService().getAllCategories();
+      if (!mounted) return;
+      setState(() {
+        _allCategories = categories;
+        if (isEditing) {
+          final rawId = widget.existingProduct!.categoryId;
+          for (final c in categories) {
+            if (c.id == rawId) {
+              _categoryController.text = c.name;
+              break;
+            }
+          }
+        }
+      });
+    } catch (_) {
+      // Suggestions are a UI aid only.
+    }
   }
 
   @override
@@ -206,14 +263,24 @@ class _AddProductScreenState extends State<AddProductScreen> {
             product['price'] ??
             product['mrp']) as num?)
         ?.toDouble();
+    final rawCategory =
+        (product['categoryId'] ?? product['category'] ?? 'general').toString();
+    // The master product's own categoryId may be a real category id (show
+    // its name, same reasoning as _loadCategories' own edit-time
+    // resolution) or a plain name/legacy value (show it as-is, unchanged).
+    var resolvedCategoryName = rawCategory;
+    for (final c in _allCategories) {
+      if (c.id == rawCategory) {
+        resolvedCategoryName = c.name;
+        break;
+      }
+    }
     setState(() {
       _selectedMasterProduct = product;
       _masterSuggestions = [];
       _nameController.text = (product['name'] ?? '').toString();
       _descriptionController.text = (product['description'] ?? '').toString();
-      _categoryController.text =
-          (product['categoryId'] ?? product['category'] ?? 'general')
-              .toString();
+      _categoryController.text = resolvedCategoryName;
       _originalPriceController.text =
           ((product['mrp'] ?? product['originalPrice'] ?? basePrice) ?? '')
               .toString();
@@ -227,6 +294,27 @@ class _AddProductScreenState extends State<AddProductScreen> {
     });
     if (basePrice != null) _setEffectivePrice(basePrice, 'default');
     await _applyCenterPrice();
+  }
+
+  void _onCategoryTextChanged(String value) {
+    setState(() => _categorySuggestions = categorySuggestionsFor(value, _allCategories));
+  }
+
+  void _selectCategorySuggestion(CategoryModel category) {
+    setState(() {
+      _categoryController.text = category.name;
+      _categorySuggestions = [];
+    });
+  }
+
+  /// What to save as `categoryId`: a real category's own id when the typed
+  /// text exactly matches one, otherwise the raw typed text (today's
+  /// existing behaviour, unchanged) so a seller is never blocked from saving
+  /// by the category system's own incompleteness.
+  String _resolveCategoryId() {
+    final typed = _categoryController.text.trim();
+    if (typed.isEmpty) return 'general';
+    return matchCategoryByName(typed, _allCategories)?.id ?? typed;
   }
 
   Future<void> _selectCenter(Map<String, dynamic>? center) async {
@@ -471,9 +559,7 @@ class _AddProductScreenState extends State<AddProductScreen> {
         salePrice: salePrice,
         originalPrice: originalPrice,
         stock: stock,
-        categoryId: _categoryController.text.trim().isEmpty
-            ? 'general'
-            : _categoryController.text.trim(),
+        categoryId: _resolveCategoryId(),
         images: updatedImages,
         lowStockThreshold: lowThreshold,
         masterProductRef: _selectedMasterProduct?['id']?.toString(),
@@ -521,9 +607,7 @@ class _AddProductScreenState extends State<AddProductScreen> {
         salePrice: salePrice,
         originalPrice: originalPrice,
         stock: stock,
-        categoryId: _categoryController.text.trim().isEmpty
-            ? 'general'
-            : _categoryController.text.trim(),
+        categoryId: _resolveCategoryId(),
         sellerId: sellerId,
         location: _coverageLabel(),
         locationType: _locationType,
@@ -688,6 +772,35 @@ class _AddProductScreenState extends State<AddProductScreen> {
               overflow: TextOverflow.ellipsis,
             ),
             onTap: () => _selectMasterProduct(product),
+          );
+        }).toList(),
+      ),
+    );
+  }
+
+  Widget _buildCategorySuggestions() {
+    if (_categorySuggestions.isEmpty) return const SizedBox.shrink();
+
+    return Container(
+      margin: const EdgeInsets.only(top: 8),
+      decoration: BoxDecoration(
+        color: Theme.of(context).colorScheme.surface,
+        borderRadius: BorderRadius.circular(12),
+        border: Border.all(color: Colors.grey.withValues(alpha: 0.25)),
+        boxShadow: [
+          BoxShadow(
+            color: Colors.black.withValues(alpha: 0.06),
+            blurRadius: 12,
+            offset: const Offset(0, 5),
+          ),
+        ],
+      ),
+      child: Column(
+        children: _categorySuggestions.map((category) {
+          return ListTile(
+            leading: const Icon(Icons.category_outlined),
+            title: Text(category.name, maxLines: 1, overflow: TextOverflow.ellipsis),
+            onTap: () => _selectCategorySuggestion(category),
           );
         }).toList(),
       ),
@@ -1201,7 +1314,9 @@ class _AddProductScreenState extends State<AddProductScreen> {
                   border: OutlineInputBorder(),
                   prefixIcon: Icon(Icons.category_outlined),
                 ),
+                onChanged: _onCategoryTextChanged,
               ),
+              _buildCategorySuggestions(),
 
               const SizedBox(height: 16),
               _buildCoverageSection(theme),
