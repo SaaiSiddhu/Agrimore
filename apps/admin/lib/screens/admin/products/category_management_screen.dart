@@ -1057,11 +1057,26 @@ class _CategoryFormDialogState extends State<_CategoryFormDialog> {
     return result;
   }
 
+  /// Candidate parents for the dropdown: excludes the category itself and
+  /// its own descendants (cycle-safety, backstopped by AdminProvider's own
+  /// upward cycle-walk on save), and excludes any candidate whose own level
+  /// would push the deepest node in the category's CURRENT subtree past the
+  /// model's documented 4-level cap. `c.level + 1 + ownSubtreeHeight <= 3`
+  /// subsumes the simpler `c.canHaveChildren` (level < 3) this replaced --
+  /// the two are identical whenever the category being edited is a leaf
+  /// (ownSubtreeHeight == 0) and only the new check is stricter once it has
+  /// descendants of its own, which `canHaveChildren` alone never accounted
+  /// for (CAT-7 added this exact guard to the tree's drag-and-drop reparent
+  /// path but, disclosed there as deferred, never to this dropdown -- the
+  /// two reparent paths could disagree on the same move until now).
   List<CategoryModel> _validParentChoices() {
     final editingId = widget.categoryToEdit?.id;
     final excluded = editingId == null ? <String>{} : {editingId, ..._descendantsOf(editingId)};
+    final ownSubtreeHeight = editingId == null
+        ? 0
+        : Provider.of<AdminProvider>(context, listen: false).subtreeHeightOf(editingId);
     return widget.allCategories
-        .where((c) => !excluded.contains(c.id) && c.canHaveChildren)
+        .where((c) => !excluded.contains(c.id) && c.level + 1 + ownSubtreeHeight <= 3)
         .toList();
   }
 
