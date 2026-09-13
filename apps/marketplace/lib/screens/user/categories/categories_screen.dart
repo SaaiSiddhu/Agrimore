@@ -117,7 +117,8 @@ class _CategoriesScreenState extends State<CategoriesScreen>
           Provider.of<CategoryProvider>(context, listen: false);
       final mainCategories = categoryProvider.categories
           .where((c) => c.isMainCategory && _isBrowsable(c))
-          .toList();
+          .toList()
+        ..sort(CategoryModel.compareSiblingOrder);
       if (index < mainCategories.length) {
         _analytics.logCustomEvent(
           name: 'category_selected',
@@ -176,7 +177,8 @@ class _CategoriesScreenState extends State<CategoriesScreen>
           final allCategories = categoryProvider.categories;
           final mainCategories = allCategories
               .where((c) => c.isMainCategory && _isBrowsable(c))
-              .toList();
+              .toList()
+            ..sort(CategoryModel.compareSiblingOrder);
 
           return Row(
             children: [
@@ -376,7 +378,8 @@ class _CategoriesScreenState extends State<CategoriesScreen>
   ) {
     final subcategories = allCategories
         .where((c) => c.parentId == category.id && _isBrowsable(c))
-        .toList();
+        .toList()
+      ..sort(CategoryModel.compareSiblingOrder);
 
     return RefreshIndicator(
       onRefresh: () async {

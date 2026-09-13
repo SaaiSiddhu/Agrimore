@@ -24,7 +24,8 @@ class TrendingProducts extends StatelessWidget {
         // Get categories 7-14 (second group of 8)
         final allCategories = categoryProvider.categories
             .where((c) => c.isActive && c.isVisible)
-            .toList();
+            .toList()
+          ..sort(CategoryModel.compareSiblingOrder);
         
         // Skip first 6 (used in Bestsellers), take next 8
         final categories = allCategories.skip(6).take(8).toList();

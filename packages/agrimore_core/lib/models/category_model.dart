@@ -51,6 +51,20 @@ class CategoryModel {
 
   /// Check if this is a main (root) category
   bool get isMainCategory => parentId == null || parentId!.isEmpty;
+
+  /// Orders two categories the same way the admin category tree already
+  /// does (`displayOrder`, then `id` as a stable tie-break for duplicate or
+  /// never-set `displayOrder` values) -- only meaningful WITHIN one sibling
+  /// group (categories that already share the same `parentId`), the same
+  /// precondition the admin tree's own equivalent comparator relies on.
+  /// Callers that fetch categories from Firestore get them back in
+  /// whatever order the query itself returned (e.g. by name), not this
+  /// order -- sort with this after filtering to a sibling group, don't
+  /// assume the source list already satisfies it.
+  static int compareSiblingOrder(CategoryModel a, CategoryModel b) {
+    final byOrder = a.displayOrder.compareTo(b.displayOrder);
+    return byOrder != 0 ? byOrder : a.id.compareTo(b.id);
+  }
   
   /// Check if this category can have children (max 4 levels: 0,1,2,3)
   bool get canHaveChildren => level < 3;
