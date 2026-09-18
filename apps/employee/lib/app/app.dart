@@ -47,28 +47,7 @@ class App extends StatelessWidget {
         useMaterial3: true,
       ),
       themeMode: ThemeMode.system,
-      home: const _EmployeeSplashWrapper(),
-    );
-  }
-}
-
-class _EmployeeSplashWrapper extends StatelessWidget {
-  const _EmployeeSplashWrapper();
-
-  @override
-  Widget build(BuildContext context) {
-    return PremiumSplashScreen(
-      appName: 'Agrimore',
-      tagline: 'Sales Associate',
-      // Reusing admin_logo.png as internal staff branding
-      logoPath: 'packages/agrimore_ui/assets/icons/admin_logo.png',
-      animationType: SplashAnimationType.admin,
-      onNavigation: (ctx) async {
-        if (!ctx.mounted) return;
-        Navigator.of(ctx).pushReplacement(
-          MaterialPageRoute(builder: (_) => const _AuthGate()),
-        );
-      },
+      home: const _AuthGate(),
     );
   }
 }

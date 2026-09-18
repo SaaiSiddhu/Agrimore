@@ -43,21 +43,37 @@ dependencies:
   # agrimore_core/agrimore_services/agrimore_ui, which would push it onto
   # the four apps that have no use for it.
   share_plus: ^10.1.2
+  flutter_native_splash: ^2.4.4
 
 dev_dependencies:
   flutter_test:
     sdk: flutter
   flutter_lints: ^5.0.0
-  flutter_launcher_icons: ^0.13.1
+  flutter_launcher_icons: ^0.14.4
   firebase_core_platform_interface: any
 
+# Regenerate with: dart run flutter_launcher_icons
 flutter_launcher_icons:
   android: "launcher_icon"
-  ios: false
-  image_path: "assets/images/logo.png"
+  ios: true
+  image_path: "assets/app_icon.png"
+  adaptive_icon_background: "#000000"
+  adaptive_icon_foreground: "assets/app_icon.png"
+  remove_alpha_ios: true
+
+# Regenerate with: dart run flutter_native_splash:create
+flutter_native_splash:
+  color: "#000000"
+  image: "assets/app_icon.png"
+  android: true
+  ios: true
+  android_12:
+    color: "#000000"
+    image: "assets/app_icon.png"
 
 flutter:
   uses-material-design: true
 
   assets:
     - assets/images/
+    - assets/app_icon.png

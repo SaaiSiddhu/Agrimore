@@ -7,6 +7,7 @@ import 'package:firebase_auth/firebase_auth.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:cloud_functions/cloud_functions.dart';
 import 'package:provider/provider.dart';
+import 'package:flutter_native_splash/flutter_native_splash.dart';
 import 'package:agrimore_core/agrimore_core.dart';
 import 'package:agrimore_services/agrimore_services.dart'
     hide DefaultFirebaseOptions;
@@ -37,48 +38,63 @@ const int _functionsEmulatorPort =
     int.fromEnvironment('FUNCTIONS_EMULATOR_PORT', defaultValue: 5001);
 
 void main() async {
-  WidgetsFlutterBinding.ensureInitialized();
+  final widgetsBinding = WidgetsFlutterBinding.ensureInitialized();
+  FlutterNativeSplash.preserve(widgetsBinding: widgetsBinding);
+  final stopwatch = Stopwatch()..start();
 
-  if (kIsWeb) {
-    await Firebase.initializeApp(
-        options: DefaultFirebaseOptions.currentPlatform);
-  } else {
-    await Firebase.initializeApp();
+  try {
+    if (kIsWeb) {
+      await Firebase.initializeApp(
+          options: DefaultFirebaseOptions.currentPlatform);
+    } else {
+      await Firebase.initializeApp();
+    }
+    // Phase 16C, Workstream 0: opt-in only, see the constants above. Placed
+    // here — after Firebase.initializeApp, before runApp and its provider
+    // constructors — so emulator config is guaranteed to be in effect before
+    // anything can grab a FirebaseFirestore/FirebaseAuth/FirebaseFunctions
+    // singleton.
+    if (_useFirebaseEmulator) {
+      debugPrint(
+          '🧪 USE_FIREBASE_EMULATOR=true — pointing Auth/Firestore/Functions at $_firebaseEmulatorHost');
+      await FirebaseAuth.instance
+          .useAuthEmulator(_firebaseEmulatorHost, _authEmulatorPort);
+      FirebaseFirestore.instance
+          .useFirestoreEmulator(_firebaseEmulatorHost, _firestoreEmulatorPort);
+      FirebaseFunctions.instance
+          .useFunctionsEmulator(_firebaseEmulatorHost, _functionsEmulatorPort);
+    }
+    // Phase 17, Workstream 2: monitoring mode only — see
+    // AppCheckService's header comment. Never blocks startup (activate()
+    // swallows its own errors internally).
+    await AppCheckService.activate();
+    await NotificationService.initialize();
+    // Phase 21, Workstream 1: share this app's global navigatorKey with
+    // NotificationService so a tapped notification has a real BuildContext to
+    // navigate from — mirrors apps/marketplace/lib/main.dart's identical
+    // assignment. Without this, handleNotificationNavigation's
+    // navigatorKey.currentContext is always null, and it retries forever,
+    // silently, once per second, doing nothing.
+    NotificationService.navigatorKey = navigatorKey;
+
+    // Force portrait orientation
+    await SystemChrome.setPreferredOrientations([
+      DeviceOrientation.portraitUp,
+      DeviceOrientation.portraitDown,
+    ]);
+  } catch (e, st) {
+    debugPrint('Startup initialization error: $e\n$st');
+  } finally {
+    runApp(const EmployeeApp());
+
+    // Maintain native splash visibility for ~1 second minimum when startup
+    // finishes faster than that, avoiding any white flash while Flutter renders.
+    final elapsedMs = stopwatch.elapsedMilliseconds;
+    if (elapsedMs < 1000) {
+      await Future.delayed(Duration(milliseconds: 1000 - elapsedMs));
+    }
+    FlutterNativeSplash.remove();
   }
-  // Phase 16C, Workstream 0: opt-in only, see the constants above. Placed
-  // here — after Firebase.initializeApp, before runApp and its provider
-  // constructors — so emulator config is guaranteed to be in effect before
-  // anything can grab a FirebaseFirestore/FirebaseAuth/FirebaseFunctions
-  // singleton.
-  if (_useFirebaseEmulator) {
-    debugPrint(
-        '🧪 USE_FIREBASE_EMULATOR=true — pointing Auth/Firestore/Functions at $_firebaseEmulatorHost');
-    await FirebaseAuth.instance.useAuthEmulator(_firebaseEmulatorHost, _authEmulatorPort);
-    FirebaseFirestore.instance
-        .useFirestoreEmulator(_firebaseEmulatorHost, _firestoreEmulatorPort);
-    FirebaseFunctions.instance
-        .useFunctionsEmulator(_firebaseEmulatorHost, _functionsEmulatorPort);
-  }
-  // Phase 17, Workstream 2: monitoring mode only — see
-  // AppCheckService's header comment. Never blocks startup (activate()
-  // swallows its own errors internally).
-  await AppCheckService.activate();
-  await NotificationService.initialize();
-  // Phase 21, Workstream 1: share this app's global navigatorKey with
-  // NotificationService so a tapped notification has a real BuildContext to
-  // navigate from — mirrors apps/marketplace/lib/main.dart's identical
-  // assignment. Without this, handleNotificationNavigation's
-  // navigatorKey.currentContext is always null, and it retries forever,
-  // silently, once per second, doing nothing.
-  NotificationService.navigatorKey = navigatorKey;
-
-  // Force portrait orientation
-  await SystemChrome.setPreferredOrientations([
-    DeviceOrientation.portraitUp,
-    DeviceOrientation.portraitDown,
-  ]);
-
-  runApp(const EmployeeApp());
 }
 
 class EmployeeApp extends StatelessWidget {
