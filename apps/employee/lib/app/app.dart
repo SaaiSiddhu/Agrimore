@@ -39,17 +39,7 @@ class App extends StatelessWidget {
       // possible current state, not just a generic fallback.
       onUnknownRoute: (settings) =>
           MaterialPageRoute(builder: (_) => const _AuthGate()),
-      theme: ThemeData(
-        colorScheme: ColorScheme.fromSeed(
-          seedColor: const Color(0xFF2D7D3C),
-          brightness: Brightness.light,
-        ),
-        useMaterial3: true,
-        appBarTheme: const AppBarTheme(
-          centerTitle: true,
-          elevation: 0,
-        ),
-      ),
+      theme: SalesAssociateTheme.lightTheme,
       darkTheme: ThemeData(
         colorScheme: ColorScheme.fromSeed(
           seedColor: const Color(0xFF4DB85F),
