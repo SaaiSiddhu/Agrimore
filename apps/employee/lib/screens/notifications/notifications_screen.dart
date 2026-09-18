@@ -9,7 +9,14 @@ import '../../utils/sa_formatters.dart';
 /// Streams notifications from `users/{uid}/notifications` ordered by `createdAt` desc.
 /// Permitted by firestore.rules (`match /users/{userId}/notifications/{notificationId}`).
 class NotificationsScreen extends StatelessWidget {
-  const NotificationsScreen({super.key});
+  final String? employeeUid;
+  final Stream<QuerySnapshot<Map<String, dynamic>>>? notificationsStream;
+
+  const NotificationsScreen({
+    super.key,
+    this.employeeUid,
+    this.notificationsStream,
+  });
 
   Future<void> _markAllAsRead(BuildContext context, String uid) async {
     try {
@@ -51,7 +58,7 @@ class NotificationsScreen extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final uid = FirebaseAuth.instance.currentUser?.uid;
+    final uid = employeeUid ?? FirebaseAuth.instance.currentUser?.uid;
 
     if (uid == null) {
       return const Scaffold(
@@ -82,10 +89,11 @@ class NotificationsScreen extends StatelessWidget {
         ],
       ),
       body: StreamBuilder<QuerySnapshot<Map<String, dynamic>>>(
-        stream: notificationsRef
-            .orderBy('createdAt', descending: true)
-            .limit(50)
-            .snapshots(),
+        stream: notificationsStream ??
+            notificationsRef
+                .orderBy('createdAt', descending: true)
+                .limit(50)
+                .snapshots(),
         builder: (context, snap) {
           if (snap.hasError) {
             return Center(

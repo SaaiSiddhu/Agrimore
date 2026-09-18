@@ -134,11 +134,11 @@ class HelpSupportScreen extends StatelessWidget {
     required String actionLabel,
     required VoidCallback onTap,
   }) {
-    return Container(
-      decoration: BoxDecoration(
-        color: SaTokens.surface,
+    return Material(
+      color: SaTokens.surface,
+      shape: RoundedRectangleBorder(
         borderRadius: BorderRadius.circular(SaTokens.radiusCard),
-        border: Border.all(color: SaTokens.divider),
+        side: const BorderSide(color: SaTokens.divider),
       ),
       child: ListTile(
         contentPadding: const EdgeInsets.symmetric(
@@ -234,14 +234,16 @@ class HelpSupportScreen extends StatelessWidget {
   }) {
     return Container(
       margin: const EdgeInsets.only(bottom: SaTokens.space8),
-      decoration: BoxDecoration(
+      child: Material(
         color: SaTokens.surface,
-        borderRadius: BorderRadius.circular(SaTokens.radiusCard),
-        border: Border.all(color: SaTokens.divider),
-      ),
-      child: Theme(
-        data: Theme.of(context).copyWith(dividerColor: Colors.transparent),
-        child: ExpansionTile(
+        shape: RoundedRectangleBorder(
+          borderRadius: BorderRadius.circular(SaTokens.radiusCard),
+          side: const BorderSide(color: SaTokens.divider),
+        ),
+        clipBehavior: Clip.antiAlias,
+        child: Theme(
+          data: Theme.of(context).copyWith(dividerColor: Colors.transparent),
+          child: ExpansionTile(
           iconColor: SaTokens.primary,
           collapsedIconColor: SaTokens.textSecondary,
           tilePadding: const EdgeInsets.symmetric(
@@ -273,6 +275,7 @@ class HelpSupportScreen extends StatelessWidget {
           ],
         ),
       ),
-    );
-  }
+    ),
+  );
+}
 }

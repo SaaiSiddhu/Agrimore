@@ -19,11 +19,18 @@ import '../support/help_support_screen.dart';
 /// - Navigation tiles to Payout Account, Onboarding Status, Notifications, and Support.
 /// - Confirmed sign-out action.
 class ProfileScreen extends StatelessWidget {
-  const ProfileScreen({super.key});
+  final String? employeeUid;
+  final Stream<DocumentSnapshot<Map<String, dynamic>>>? employeeStream;
+
+  const ProfileScreen({
+    super.key,
+    this.employeeUid,
+    this.employeeStream,
+  });
 
   @override
   Widget build(BuildContext context) {
-    final uid = FirebaseAuth.instance.currentUser?.uid;
+    final uid = employeeUid ?? FirebaseAuth.instance.currentUser?.uid;
 
     if (uid == null) {
       return const Scaffold(
@@ -38,10 +45,11 @@ class ProfileScreen extends StatelessWidget {
         title: const Text('My Profile'),
       ),
       body: StreamBuilder<DocumentSnapshot<Map<String, dynamic>>>(
-        stream: FirebaseFirestore.instance
-            .collection('employees')
-            .doc(uid)
-            .snapshots(),
+        stream: employeeStream ??
+            FirebaseFirestore.instance
+                .collection('employees')
+                .doc(uid)
+                .snapshots(),
         builder: (context, snap) {
           if (snap.hasError) {
             return const Center(
@@ -255,11 +263,11 @@ class ProfileScreen extends StatelessWidget {
   }
 
   Widget _buildNavigationSection(BuildContext context) {
-    return Container(
-      decoration: BoxDecoration(
-        color: SaTokens.surface,
+    return Material(
+      color: SaTokens.surface,
+      shape: RoundedRectangleBorder(
         borderRadius: BorderRadius.circular(SaTokens.radiusCard),
-        border: Border.all(color: SaTokens.divider),
+        side: const BorderSide(color: SaTokens.divider),
       ),
       child: Column(
         children: [

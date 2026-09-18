@@ -264,6 +264,7 @@ class _LoginScreenState extends State<LoginScreen> {
           ),
           child: Row(
             mainAxisAlignment: MainAxisAlignment.center,
+            mainAxisSize: MainAxisSize.min,
             children: [
               Icon(
                 icon,
@@ -271,12 +272,16 @@ class _LoginScreenState extends State<LoginScreen> {
                 color: selected ? SaTokens.primary : SaTokens.textSecondary,
               ),
               const SizedBox(width: 6),
-              Text(
-                label,
-                style: TextStyle(
-                  fontSize: SaTokens.fsLabel,
-                  fontWeight: selected ? FontWeight.w600 : FontWeight.w500,
-                  color: selected ? SaTokens.primary : SaTokens.textSecondary,
+              Flexible(
+                child: Text(
+                  label,
+                  maxLines: 1,
+                  overflow: TextOverflow.ellipsis,
+                  style: TextStyle(
+                    fontSize: SaTokens.fsLabel,
+                    fontWeight: selected ? FontWeight.w600 : FontWeight.w500,
+                    color: selected ? SaTokens.primary : SaTokens.textSecondary,
+                  ),
                 ),
               ),
             ],

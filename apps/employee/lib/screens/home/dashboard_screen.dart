@@ -18,11 +18,24 @@ import '../shell/employee_shell_screen.dart';
 /// - Commission & wallet metrics row (tap switches to Wallet tab).
 /// - Recent attributed orders preview (tap switches to Orders tab / opens [OrderDetailScreen]).
 class DashboardScreen extends StatelessWidget {
-  const DashboardScreen({super.key});
+  final String? employeeUid;
+  final Stream<DocumentSnapshot<Map<String, dynamic>>>? employeeStream;
+  final Stream<DocumentSnapshot<Map<String, dynamic>>>? walletStream;
+  final Stream<QuerySnapshot<Map<String, dynamic>>>? recentOrdersStream;
+  final Stream<QuerySnapshot<Map<String, dynamic>>>? notificationsStream;
+
+  const DashboardScreen({
+    super.key,
+    this.employeeUid,
+    this.employeeStream,
+    this.walletStream,
+    this.recentOrdersStream,
+    this.notificationsStream,
+  });
 
   @override
   Widget build(BuildContext context) {
-    final uid = FirebaseAuth.instance.currentUser?.uid;
+    final uid = employeeUid ?? FirebaseAuth.instance.currentUser?.uid;
 
     if (uid == null) {
       return const Scaffold(
@@ -55,7 +68,7 @@ class DashboardScreen extends StatelessWidget {
           ],
         ),
         actions: [
-          _NotificationBellButton(uid: uid),
+          _NotificationBellButton(uid: uid, stream: notificationsStream),
         ],
       ),
       body: ListView(
@@ -80,7 +93,7 @@ class DashboardScreen extends StatelessWidget {
 
   Widget _buildAssociateSection(String uid) {
     return StreamBuilder<DocumentSnapshot<Map<String, dynamic>>>(
-      stream:
+      stream: employeeStream ??
           FirebaseFirestore.instance.collection('employees').doc(uid).snapshots(),
       builder: (context, snap) {
         return Column(
@@ -96,7 +109,8 @@ class DashboardScreen extends StatelessWidget {
 
   Widget _buildCommissionSummary(BuildContext context, String uid) {
     return StreamBuilder<DocumentSnapshot<Map<String, dynamic>>>(
-      stream: FirebaseFirestore.instance.collection('wallets').doc(uid).snapshots(),
+      stream: walletStream ??
+          FirebaseFirestore.instance.collection('wallets').doc(uid).snapshots(),
       builder: (context, snap) {
         final data = snap.data?.data();
         final balance = (data?['balance'] as num?)?.toDouble() ?? 0.0;
@@ -154,12 +168,13 @@ class DashboardScreen extends StatelessWidget {
 
   Widget _buildOrdersList(BuildContext context, String uid) {
     return StreamBuilder<QuerySnapshot<Map<String, dynamic>>>(
-      stream: FirebaseFirestore.instance
-          .collection('orders')
-          .where('employeeUid', isEqualTo: uid)
-          .orderBy('createdAt', descending: true)
-          .limit(5)
-          .snapshots(),
+      stream: recentOrdersStream ??
+          FirebaseFirestore.instance
+              .collection('orders')
+              .where('employeeUid', isEqualTo: uid)
+              .orderBy('createdAt', descending: true)
+              .limit(5)
+              .snapshots(),
       builder: (context, snap) {
         if (snap.hasError) {
           return Center(
@@ -312,19 +327,21 @@ class DashboardScreen extends StatelessWidget {
 
 class _NotificationBellButton extends StatelessWidget {
   final String uid;
+  final Stream<QuerySnapshot<Map<String, dynamic>>>? stream;
 
-  const _NotificationBellButton({required this.uid});
+  const _NotificationBellButton({required this.uid, this.stream});
 
   @override
   Widget build(BuildContext context) {
     return StreamBuilder<QuerySnapshot<Map<String, dynamic>>>(
-      stream: FirebaseFirestore.instance
-          .collection('users')
-          .doc(uid)
-          .collection('notifications')
-          .where('read', isEqualTo: false)
-          .limit(1)
-          .snapshots(),
+      stream: stream ??
+          FirebaseFirestore.instance
+              .collection('users')
+              .doc(uid)
+              .collection('notifications')
+              .where('read', isEqualTo: false)
+              .limit(1)
+              .snapshots(),
       builder: (context, snap) {
         final hasUnread = snap.data?.docs.isNotEmpty ?? false;
 

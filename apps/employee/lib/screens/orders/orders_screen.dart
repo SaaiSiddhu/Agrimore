@@ -13,7 +13,14 @@ enum _OrderModeFilter { all, b2b, retail }
 /// ordered by `createdAt` descending, bounded by `_pageSize` pagination.
 /// Supports search filtering and mode filtering (All, B2B, Retail).
 class OrdersScreen extends StatefulWidget {
-  const OrdersScreen({super.key});
+  final String? employeeUid;
+  final Stream<QuerySnapshot<Map<String, dynamic>>>? ordersStream;
+
+  const OrdersScreen({
+    super.key,
+    this.employeeUid,
+    this.ordersStream,
+  });
 
   @override
   State<OrdersScreen> createState() => _OrdersScreenState();
@@ -44,7 +51,7 @@ class _OrdersScreenState extends State<OrdersScreen> {
 
   @override
   Widget build(BuildContext context) {
-    final uid = FirebaseAuth.instance.currentUser?.uid;
+    final uid = widget.employeeUid ?? FirebaseAuth.instance.currentUser?.uid;
 
     if (uid == null) {
       return const Scaffold(
@@ -110,12 +117,13 @@ class _OrdersScreenState extends State<OrdersScreen> {
           // Orders Stream
           Expanded(
             child: StreamBuilder<QuerySnapshot<Map<String, dynamic>>>(
-              stream: FirebaseFirestore.instance
-                  .collection('orders')
-                  .where('employeeUid', isEqualTo: uid)
-                  .orderBy('createdAt', descending: true)
-                  .limit(_pageSize)
-                  .snapshots(),
+              stream: widget.ordersStream ??
+                  FirebaseFirestore.instance
+                      .collection('orders')
+                      .where('employeeUid', isEqualTo: uid)
+                      .orderBy('createdAt', descending: true)
+                      .limit(_pageSize)
+                      .snapshots(),
               builder: (context, snap) {
                 if (snap.hasError) {
                   return Center(

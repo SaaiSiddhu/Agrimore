@@ -13,7 +13,14 @@ enum _AccountType { bank, upi }
 /// Writes directly to `employees/{uid}` per firestore.rules:
 /// allow update: if isAuthenticated() && (isOwner(employeeId) || isAdmin());
 class PayoutAccountScreen extends StatefulWidget {
-  const PayoutAccountScreen({super.key});
+  final String? employeeUid;
+  final Stream<DocumentSnapshot<Map<String, dynamic>>>? employeeStream;
+
+  const PayoutAccountScreen({
+    super.key,
+    this.employeeUid,
+    this.employeeStream,
+  });
 
   @override
   State<PayoutAccountScreen> createState() => _PayoutAccountScreenState();
@@ -147,7 +154,7 @@ class _PayoutAccountScreenState extends State<PayoutAccountScreen> {
 
   @override
   Widget build(BuildContext context) {
-    final uid = FirebaseAuth.instance.currentUser?.uid;
+    final uid = widget.employeeUid ?? FirebaseAuth.instance.currentUser?.uid;
 
     if (uid == null) {
       return const Scaffold(
@@ -166,10 +173,11 @@ class _PayoutAccountScreenState extends State<PayoutAccountScreen> {
         ),
       ),
       body: StreamBuilder<DocumentSnapshot<Map<String, dynamic>>>(
-        stream: FirebaseFirestore.instance
-            .collection('employees')
-            .doc(uid)
-            .snapshots(),
+        stream: widget.employeeStream ??
+            FirebaseFirestore.instance
+                .collection('employees')
+                .doc(uid)
+                .snapshots(),
         builder: (context, snap) {
           if (!snap.hasData) {
             return const Center(child: CircularProgressIndicator());

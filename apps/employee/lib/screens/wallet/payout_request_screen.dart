@@ -12,7 +12,16 @@ import 'payout_review_screen.dart';
 /// Validates amount against available balance, ensures a registered payout account
 /// exists, and navigates to [PayoutReviewScreen] without making mutations directly.
 class PayoutRequestScreen extends StatefulWidget {
-  const PayoutRequestScreen({super.key});
+  final String? employeeUid;
+  final Stream<DocumentSnapshot<Map<String, dynamic>>>? walletStream;
+  final Stream<DocumentSnapshot<Map<String, dynamic>>>? employeeStream;
+
+  const PayoutRequestScreen({
+    super.key,
+    this.employeeUid,
+    this.walletStream,
+    this.employeeStream,
+  });
 
   @override
   State<PayoutRequestScreen> createState() => _PayoutRequestScreenState();
@@ -48,7 +57,7 @@ class _PayoutRequestScreenState extends State<PayoutRequestScreen> {
 
   @override
   Widget build(BuildContext context) {
-    final uid = FirebaseAuth.instance.currentUser?.uid;
+    final uid = widget.employeeUid ?? FirebaseAuth.instance.currentUser?.uid;
 
     if (uid == null) {
       return const Scaffold(
@@ -67,10 +76,11 @@ class _PayoutRequestScreenState extends State<PayoutRequestScreen> {
         ),
       ),
       body: StreamBuilder<DocumentSnapshot<Map<String, dynamic>>>(
-        stream: FirebaseFirestore.instance
-            .collection('wallets')
-            .doc(uid)
-            .snapshots(),
+        stream: widget.walletStream ??
+            FirebaseFirestore.instance
+                .collection('wallets')
+                .doc(uid)
+                .snapshots(),
         builder: (context, walletSnap) {
           if (!walletSnap.hasData) {
             return const Center(child: CircularProgressIndicator());
@@ -81,10 +91,11 @@ class _PayoutRequestScreenState extends State<PayoutRequestScreen> {
               (walletData?['balance'] as num?)?.toDouble() ?? 0.0;
 
           return StreamBuilder<DocumentSnapshot<Map<String, dynamic>>>(
-            stream: FirebaseFirestore.instance
-                .collection('employees')
-                .doc(uid)
-                .snapshots(),
+            stream: widget.employeeStream ??
+                FirebaseFirestore.instance
+                    .collection('employees')
+                    .doc(uid)
+                    .snapshots(),
             builder: (context, employeeSnap) {
               final employeeData = employeeSnap.data?.data();
               final method =

@@ -158,7 +158,7 @@ Tabs include:
 
 ---
 
-## 9. Future Screen Implementation Guide
+## 9. Screen Implementation Guide
 
 When refactoring or authoring screens in `apps/employee/lib/screens/`:
 
@@ -176,3 +176,43 @@ When refactoring or authoring screens in `apps/employee/lib/screens/`:
 5. **Icons**: Use `SaIcons.<iconName>` with standard sizes (16, 20, 24 px).
 6. **Cards**: Use standard `Card` widget (which inherits 16px radius, flat elevation, and `#E2E8F0` border from `SalesAssociateTheme`).
 7. **Text**: Use `Theme.of(context).textTheme.<style>` to ensure full compatibility with system text scaling.
+
+---
+
+## 10. Canonical Screen Implementation Map (Phase EMP-2)
+
+Phase EMP-2 implemented complete canonical design system consumption across all 18 numbered screen groups (20 canonical visual surfaces):
+
+| # | Screen Group / Canonical Board | Implementation File | Key Features & Backend Grounding |
+| :- | :--- | :--- | :--- |
+| **01** | `01_login_phone` | `screens/auth/login_screen.dart` | Phone OTP segmented tab, 10-digit validation, `EmployeeAuthProvider.signInWithPhone()`. |
+| **02** | `02_login_otp_sms` | `screens/auth/associate_otp_screen.dart` | 6-digit matrix, masked phone, SMS resend countdown cooldown, `verifyOtp()`. |
+| **03** | `03_login_otp_voice_call` | `screens/auth/associate_otp_screen.dart` | Seamless voice call fallback channel toggle, `requestVoiceOtp()`. |
+| **04** | `04_login_email_password` | `screens/auth/login_screen.dart` | Segmented email/password sign-in with password visibility toggle and validation. |
+| **05** | `05_forgot_password` | `screens/auth/forgot_password_screen.dart` | Email reset link dispatch with info banner for phone-based associates. |
+| **06** | `06_pending_approval` | `screens/auth/pending_approval_screen.dart` | Application pending warning state, 3-step timeline, direct support links. |
+| **07** | `07_account_suspended` | `screens/auth/suspended_screen.dart` | Explicit suspension notice, paused attribution notice, support channels. |
+| **08** | `08_home_dashboard` | `screens/home/dashboard_screen.dart` | Referral share card, active code copy, earnings summary, recent orders list. |
+| **09** | `09_orders_list` | `screens/orders/orders_screen.dart` | Attributed orders stream (`orders.employeeUid == uid`), search, B2B/Retail filters. |
+| **10** | `10_order_detail` | `screens/orders/order_detail_screen.dart` | Order summary, B2B/B2C status badges, commission pending card, itemized lines. |
+| **11** | `11_wallet_overview` | `screens/wallet/wallet_screen.dart` | Display balance (`₹XX,XXX.00`), quick action payouts, recent settlements list. |
+| **12** | `12_payout_request_amount` | `screens/wallet/payout_request_screen.dart` | Balance deduction preview, max amount shortcut, available funds validation. |
+| **13** | `13_payout_review` | `screens/wallet/payout_review_screen.dart` | Final confirmation card, destination summary, Cloud Function `requestEmployeePayout`. |
+| **14** | `14_payout_history` | `screens/wallet/payout_history_screen.dart` | Payout requests stream (`payout_requests.employeeId == uid`), status pills. |
+| **15** | `15_payout_details` | `screens/wallet/payout_details_screen.dart` | Request tracking, reference ID, timestamps, destination breakdown. |
+| **16** | `16_payout_account` | `screens/wallet/payout_account_screen.dart` | Bank account (IFSC, account #) vs UPI ID destination form stored to `employees/{uid}`. |
+| **17** | `17_profile_account` | `screens/profile/profile_screen.dart` | Associate ID card, department, KYC summary, sign-out dialog. |
+| **18** | `18_onboarding_status` | `screens/profile/onboarding_status_screen.dart` | ₹500 fee gate status card, B2B vs Retail attribution rules explanation. |
+| **19** | `19_help_support` | `screens/support/help_support_screen.dart` | Direct phone & email cards with one-tap clipboard copy, security notice, FAQs. |
+| **20** | `20_notifications` | `screens/notifications/notifications_screen.dart` | Inbox stream (`users/{uid}/notifications`), unread indicators, mark-all-as-read batch. |
+| **—** | `Shell Architecture` | `screens/shell/employee_shell_screen.dart` | 4 persistent tabs (Home, Orders, Wallet, Profile) with `EmployeeShellController`. |
+
+### Test Verification
+Screen tests located in `apps/employee/test/screens/`:
+- `auth_screens_test.dart` (Login, OTP, Pending Approval, Suspended, Forgot Password)
+- `shell_and_sales_screens_test.dart` (Shell navigation, Dashboard metrics, Onboarding Status)
+- `wallet_screens_test.dart` (Payout Request, Payout Account, Payout Review)
+- `orders_and_support_screens_test.dart` (Orders List, Order Detail, Notifications, Support, Profile)
+- `catalogue_test.dart` (Catalogue navigation, components, text scale stress tests)
+Total: 33 tests, 100% passing.
+

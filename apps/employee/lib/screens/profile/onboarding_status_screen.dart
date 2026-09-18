@@ -8,11 +8,18 @@ import '../../utils/sa_formatters.dart';
 ///
 /// Reads directly from `employees/{uid}` without mutating state.
 class OnboardingStatusScreen extends StatelessWidget {
-  const OnboardingStatusScreen({super.key});
+  final String? employeeUid;
+  final Stream<DocumentSnapshot<Map<String, dynamic>>>? employeeStream;
+
+  const OnboardingStatusScreen({
+    super.key,
+    this.employeeUid,
+    this.employeeStream,
+  });
 
   @override
   Widget build(BuildContext context) {
-    final uid = FirebaseAuth.instance.currentUser?.uid;
+    final uid = employeeUid ?? FirebaseAuth.instance.currentUser?.uid;
 
     if (uid == null) {
       return const Scaffold(
@@ -31,10 +38,11 @@ class OnboardingStatusScreen extends StatelessWidget {
         ),
       ),
       body: StreamBuilder<DocumentSnapshot<Map<String, dynamic>>>(
-        stream: FirebaseFirestore.instance
-            .collection('employees')
-            .doc(uid)
-            .snapshots(),
+        stream: employeeStream ??
+            FirebaseFirestore.instance
+                .collection('employees')
+                .doc(uid)
+                .snapshots(),
         builder: (context, snap) {
           if (snap.hasError) {
             return Center(
