@@ -1,4 +1,4 @@
-package com.agrimore.employee
+package com.agrimore.salesassociate
 
 import io.flutter.embedding.android.FlutterActivity
 

@@ -22,8 +22,10 @@
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:provider/provider.dart';
+import 'package:agrimore_ui/agrimore_ui.dart';
 import '../../providers/auth_provider.dart';
 import 'associate_otp_screen.dart';
+import 'forgot_password_screen.dart';
 
 enum _LoginMode { phone, email }
 
@@ -54,8 +56,7 @@ class _LoginScreenState extends State<LoginScreen> {
 
   void _switchMode(_LoginMode mode) {
     if (_mode == mode) return;
-    // Clear any error from the other path — leaving "wrong password" visible
-    // above a mobile-number field would be nonsense.
+    // Clear any error from the other path
     context.read<EmployeeAuthProvider>().clearError();
     FocusScope.of(context).unfocus();
     setState(() => _mode = mode);
@@ -63,157 +64,146 @@ class _LoginScreenState extends State<LoginScreen> {
 
   @override
   Widget build(BuildContext context) {
-    final theme = Theme.of(context);
-    final colorScheme = theme.colorScheme;
+    final textTheme = Theme.of(context).textTheme;
 
     return Scaffold(
-      body: Container(
-        decoration: BoxDecoration(
-          gradient: LinearGradient(
-            begin: Alignment.topLeft,
-            end: Alignment.bottomRight,
-            colors: [
-              colorScheme.primary,
-              colorScheme.primary.withValues(alpha: 0.8),
-              colorScheme.primaryContainer,
-            ],
-          ),
-        ),
-        child: SafeArea(
+      backgroundColor: SaTokens.pageBackground,
+      body: SafeArea(
+        child: Center(
           child: SingleChildScrollView(
-            padding: const EdgeInsets.all(24),
-            child: Column(
-              crossAxisAlignment: CrossAxisAlignment.stretch,
-              children: [
-                const SizedBox(height: 48),
-
-                // Logo & Title
-                Image.asset(
-                  'assets/images/logo.png',
-                  width: 80,
-                  height: 80,
-                ),
-                const SizedBox(height: 24),
-                const Text(
-                  'Agrimore',
-                  textAlign: TextAlign.center,
-                  style: TextStyle(
-                    fontSize: 32,
-                    fontWeight: FontWeight.w900,
-                    color: Colors.white,
-                    letterSpacing: -1,
-                  ),
-                ),
-                Text(
-                  'Sales Associate',
-                  textAlign: TextAlign.center,
-                  style: TextStyle(
-                    fontSize: 16,
-                    fontWeight: FontWeight.w500,
-                    color: Colors.white.withValues(alpha: 0.8),
-                  ),
-                ),
-
-                const SizedBox(height: 40),
-
-                // Login Card
-                Container(
-                  padding: const EdgeInsets.all(24),
-                  decoration: BoxDecoration(
-                    color: Colors.white,
-                    borderRadius: BorderRadius.circular(24),
-                    boxShadow: [
-                      BoxShadow(
-                        color: Colors.black.withValues(alpha: 0.15),
-                        blurRadius: 30,
-                        offset: const Offset(0, 10),
+            padding: const EdgeInsets.symmetric(
+              horizontal: SaTokens.space24,
+              vertical: SaTokens.space32,
+            ),
+            child: ConstrainedBox(
+              constraints: const BoxConstraints(maxWidth: 440),
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.stretch,
+                children: [
+                  // App branding
+                  Center(
+                    child: Container(
+                      width: 64,
+                      height: 64,
+                      decoration: BoxDecoration(
+                        color: SaTokens.primarySubtle,
+                        borderRadius: BorderRadius.circular(SaTokens.radiusCard),
                       ),
-                    ],
-                  ),
-                  child: Column(
-                    crossAxisAlignment: CrossAxisAlignment.stretch,
-                    children: [
-                      Text(
-                        'Sign In',
-                        style: TextStyle(
-                          fontSize: 24,
-                          fontWeight: FontWeight.w800,
-                          color: colorScheme.onSurface,
+                      child: ClipRRect(
+                        borderRadius: BorderRadius.circular(SaTokens.radiusCard),
+                        child: Image.asset(
+                          'assets/images/logo.png',
+                          width: 48,
+                          height: 48,
+                          errorBuilder: (_, __, ___) => const Icon(
+                            SaIcons.shoppingBag,
+                            size: 32,
+                            color: SaTokens.primary,
+                          ),
                         ),
                       ),
-                      const SizedBox(height: 8),
-                      Text(
-                        _mode == _LoginMode.phone
-                            ? 'Use the mobile number registered with your associate account'
-                            : 'Enter the email and password your administrator gave you',
-                        style: TextStyle(
-                          fontSize: 14,
-                          color: colorScheme.onSurfaceVariant,
+                    ),
+                  ),
+                  const SizedBox(height: SaTokens.space16),
+                  Text(
+                    'AgriMore',
+                    textAlign: TextAlign.center,
+                    style: textTheme.headlineMedium?.copyWith(
+                      fontWeight: FontWeight.w800,
+                      letterSpacing: -0.5,
+                    ),
+                  ),
+                  const SizedBox(height: SaTokens.space4),
+                  Text(
+                    'Sales Associate Portal',
+                    textAlign: TextAlign.center,
+                    style: textTheme.bodyMedium?.copyWith(
+                      color: SaTokens.textSecondary,
+                      fontWeight: FontWeight.w500,
+                    ),
+                  ),
+                  const SizedBox(height: SaTokens.space32),
+
+                  // Login Surface Card
+                  Container(
+                    padding: const EdgeInsets.all(SaTokens.space24),
+                    decoration: BoxDecoration(
+                      color: SaTokens.surface,
+                      borderRadius: BorderRadius.circular(SaTokens.radiusCard),
+                      border: Border.all(color: SaTokens.divider),
+                      boxShadow: [
+                        BoxShadow(
+                          color: Colors.black.withValues(alpha: 0.04),
+                          blurRadius: 16,
+                          offset: const Offset(0, 4),
                         ),
-                      ),
-                      const SizedBox(height: 20),
+                      ],
+                    ),
+                    child: Column(
+                      crossAxisAlignment: CrossAxisAlignment.stretch,
+                      children: [
+                        Text(
+                          'Sign In',
+                          style: textTheme.titleMedium?.copyWith(
+                            fontSize: 20,
+                            fontWeight: FontWeight.w700,
+                          ),
+                        ),
+                        const SizedBox(height: SaTokens.space4),
+                        Text(
+                          _mode == _LoginMode.phone
+                              ? 'Enter the mobile number registered with your associate account'
+                              : 'Enter the email and password provided by your administrator',
+                          style: textTheme.bodySmall?.copyWith(
+                            color: SaTokens.textSecondary,
+                            height: 1.4,
+                          ),
+                        ),
+                        const SizedBox(height: SaTokens.space24),
 
-                      _buildModeToggle(colorScheme),
-                      const SizedBox(height: 20),
+                        _buildModeToggle(),
+                        const SizedBox(height: SaTokens.space24),
 
-                      // Shared error banner — both paths report through the
-                      // provider's single `error`.
-                      Consumer<EmployeeAuthProvider>(
-                        builder: (context, auth, _) {
-                          if (auth.error == null) {
-                            return const SizedBox.shrink();
-                          }
-                          return Container(
-                            padding: const EdgeInsets.all(12),
-                            margin: const EdgeInsets.only(bottom: 16),
-                            decoration: BoxDecoration(
-                              color: Colors.red.withValues(alpha: 0.1),
-                              borderRadius: BorderRadius.circular(8),
-                            ),
-                            child: Row(
-                              crossAxisAlignment: CrossAxisAlignment.start,
-                              children: [
-                                const Icon(Icons.error_outline,
-                                    color: Colors.red, size: 20),
-                                const SizedBox(width: 8),
-                                Expanded(
-                                  child: Text(
-                                    auth.error!,
-                                    style: const TextStyle(
-                                      color: Colors.red,
-                                      fontSize: 13,
-                                      height: 1.4,
-                                    ),
-                                  ),
-                                ),
-                              ],
-                            ),
-                          );
-                        },
-                      ),
+                        // Shared error banner
+                        Consumer<EmployeeAuthProvider>(
+                          builder: (context, auth, _) {
+                            if (auth.error == null) {
+                              return const SizedBox.shrink();
+                            }
+                            return Padding(
+                              padding: const EdgeInsets.only(
+                                bottom: SaTokens.space16,
+                              ),
+                              child: SaInfoBanner(
+                                title: 'Sign in failed',
+                                message: auth.error!,
+                                variant: SaBannerVariant.error,
+                              ),
+                            );
+                          },
+                        ),
 
-                      if (_mode == _LoginMode.phone)
-                        _buildPhoneForm(colorScheme)
-                      else
-                        _buildEmailForm(colorScheme),
-                    ],
+                        if (_mode == _LoginMode.phone)
+                          _buildPhoneForm()
+                        else
+                          _buildEmailForm(),
+                      ],
+                    ),
                   ),
-                ),
 
-                const SizedBox(height: 24),
+                  const SizedBox(height: SaTokens.space32),
 
-                // Self-apply happens in the Agrimore customer app, not here.
-                Text(
-                  'New associate? Apply for an account from the\nAgrimore customer app under Profile.',
-                  textAlign: TextAlign.center,
-                  style: TextStyle(
-                    fontSize: 13,
-                    color: Colors.white.withValues(alpha: 0.85),
-                    height: 1.4,
+                  // Footer info
+                  Text(
+                    'New associate? Apply for an account from the\nAgriMore customer app under Profile.',
+                    textAlign: TextAlign.center,
+                    style: textTheme.bodySmall?.copyWith(
+                      color: SaTokens.textSecondary,
+                      height: 1.5,
+                    ),
                   ),
-                ),
-                const SizedBox(height: 16),
-              ],
+                ],
+              ),
             ),
           ),
         ),
@@ -221,34 +211,35 @@ class _LoginScreenState extends State<LoginScreen> {
     );
   }
 
-  Widget _buildModeToggle(ColorScheme colorScheme) {
+  Widget _buildModeToggle() {
     return Container(
       padding: const EdgeInsets.all(4),
       decoration: BoxDecoration(
-        color: colorScheme.surfaceContainerHighest,
-        borderRadius: BorderRadius.circular(12),
+        color: SaTokens.pageBackground,
+        borderRadius: BorderRadius.circular(SaTokens.radiusInput),
+        border: Border.all(color: SaTokens.divider),
       ),
       child: Row(
         children: [
           _buildModeTab(
-            colorScheme,
             label: 'Mobile number',
             mode: _LoginMode.phone,
+            icon: SaIcons.phone,
           ),
           _buildModeTab(
-            colorScheme,
             label: 'Email',
             mode: _LoginMode.email,
+            icon: SaIcons.mail,
           ),
         ],
       ),
     );
   }
 
-  Widget _buildModeTab(
-    ColorScheme colorScheme, {
+  Widget _buildModeTab({
     required String label,
     required _LoginMode mode,
+    required IconData icon,
   }) {
     final selected = _mode == mode;
     return Expanded(
@@ -259,18 +250,41 @@ class _LoginScreenState extends State<LoginScreen> {
           duration: const Duration(milliseconds: 150),
           padding: const EdgeInsets.symmetric(vertical: 10),
           decoration: BoxDecoration(
-            color: selected ? colorScheme.primary : Colors.transparent,
-            borderRadius: BorderRadius.circular(9),
+            color: selected ? SaTokens.surface : Colors.transparent,
+            borderRadius: BorderRadius.circular(SaTokens.radiusInput - 3),
+            boxShadow: selected
+                ? [
+                    BoxShadow(
+                      color: Colors.black.withValues(alpha: 0.06),
+                      blurRadius: 4,
+                      offset: const Offset(0, 1),
+                    ),
+                  ]
+                : null,
           ),
-          child: Text(
-            label,
-            textAlign: TextAlign.center,
-            style: TextStyle(
-              fontSize: 13,
-              fontWeight: FontWeight.w700,
-              color:
-                  selected ? colorScheme.onPrimary : colorScheme.onSurfaceVariant,
-            ),
+          child: Row(
+            mainAxisAlignment: MainAxisAlignment.center,
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              Icon(
+                icon,
+                size: 15,
+                color: selected ? SaTokens.primary : SaTokens.textSecondary,
+              ),
+              const SizedBox(width: 6),
+              Flexible(
+                child: Text(
+                  label,
+                  maxLines: 1,
+                  overflow: TextOverflow.ellipsis,
+                  style: TextStyle(
+                    fontSize: SaTokens.fsLabel,
+                    fontWeight: selected ? FontWeight.w600 : FontWeight.w500,
+                    color: selected ? SaTokens.primary : SaTokens.textSecondary,
+                  ),
+                ),
+              ),
+            ],
           ),
         ),
       ),
@@ -281,30 +295,30 @@ class _LoginScreenState extends State<LoginScreen> {
   // PHONE + OTP
   // ============================================
 
-  Widget _buildPhoneForm(ColorScheme colorScheme) {
+  Widget _buildPhoneForm() {
     return Form(
       key: _phoneFormKey,
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.stretch,
         children: [
+          Text(
+            'Mobile number',
+            style: Theme.of(context).textTheme.labelLarge,
+          ),
+          const SizedBox(height: SaTokens.space4),
           TextFormField(
             controller: _phoneController,
             keyboardType: TextInputType.phone,
             maxLength: 10,
             inputFormatters: [FilteringTextInputFormatter.digitsOnly],
-            decoration: InputDecoration(
-              labelText: 'Mobile number',
+            textInputAction: TextInputAction.done,
+            onFieldSubmitted: (_) => _handleSendOtp(),
+            decoration: const InputDecoration(
+              hintText: '98765 43210',
               counterText: '',
-              prefixIcon: const Icon(Icons.phone_outlined),
+              prefixIcon: Icon(SaIcons.phone),
               prefixText: '+91 ',
-              filled: true,
-              border: OutlineInputBorder(
-                borderRadius: BorderRadius.circular(12),
-                borderSide: BorderSide.none,
-              ),
             ),
-            // Mirrors apps/marketplace's _validatePhone exactly, so the two
-            // apps accept precisely the same set of numbers.
             validator: (value) {
               final v = value?.trim() ?? '';
               if (v.isEmpty) return 'Enter your mobile number';
@@ -317,29 +331,11 @@ class _LoginScreenState extends State<LoginScreen> {
               return null;
             },
           ),
-          const SizedBox(height: 20),
-          FilledButton(
-            onPressed: _isSendingOtp ? null : _handleSendOtp,
-            style: FilledButton.styleFrom(
-              padding: const EdgeInsets.symmetric(vertical: 16),
-              shape: RoundedRectangleBorder(
-                borderRadius: BorderRadius.circular(12),
-              ),
-            ),
-            child: _isSendingOtp
-                ? const SizedBox(
-                    height: 20,
-                    width: 20,
-                    child: CircularProgressIndicator(
-                      strokeWidth: 2,
-                      color: Colors.white,
-                    ),
-                  )
-                : const Text(
-                    'Send code',
-                    style:
-                        TextStyle(fontSize: 16, fontWeight: FontWeight.w700),
-                  ),
+          const SizedBox(height: SaTokens.space24),
+          SaLoadingButton(
+            text: 'Send code',
+            isLoading: _isSendingOtp,
+            onPressed: _handleSendOtp,
           ),
         ],
       ),
@@ -363,12 +359,9 @@ class _LoginScreenState extends State<LoginScreen> {
     setState(() => _isSendingOtp = false);
 
     if (result == null) {
-      // auth.error is already set and rendered by the banner above; a
-      // SnackBar as well makes the failure impossible to miss.
       ScaffoldMessenger.of(context).showSnackBar(
         SnackBar(
-          content:
-              Text(auth.error ?? 'Failed to send OTP. Please try again.'),
+          content: Text(auth.error ?? 'Failed to send OTP. Please try again.'),
         ),
       );
       return;
@@ -386,26 +379,29 @@ class _LoginScreenState extends State<LoginScreen> {
   // EMAIL + PASSWORD
   // ============================================
 
-  Widget _buildEmailForm(ColorScheme colorScheme) {
+  Widget _buildEmailForm() {
+    final auth = context.watch<EmployeeAuthProvider>();
+
     return Form(
       key: _emailFormKey,
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.stretch,
         children: [
+          Text(
+            'Email address',
+            style: Theme.of(context).textTheme.labelLarge,
+          ),
+          const SizedBox(height: SaTokens.space4),
           TextFormField(
             controller: _emailController,
             keyboardType: TextInputType.emailAddress,
-            decoration: InputDecoration(
-              labelText: 'Email',
-              prefixIcon: const Icon(Icons.email_outlined),
-              filled: true,
-              border: OutlineInputBorder(
-                borderRadius: BorderRadius.circular(12),
-                borderSide: BorderSide.none,
-              ),
+            textInputAction: TextInputAction.next,
+            decoration: const InputDecoration(
+              hintText: 'name@agrimore.in',
+              prefixIcon: Icon(SaIcons.mail),
             ),
             validator: (value) {
-              if (value == null || value.isEmpty) {
+              if (value == null || value.trim().isEmpty) {
                 return 'Please enter your email';
               }
               if (!value.contains('@')) {
@@ -414,25 +410,29 @@ class _LoginScreenState extends State<LoginScreen> {
               return null;
             },
           ),
-          const SizedBox(height: 16),
+          const SizedBox(height: SaTokens.space16),
+          Text(
+            'Password',
+            style: Theme.of(context).textTheme.labelLarge,
+          ),
+          const SizedBox(height: SaTokens.space4),
           TextFormField(
             controller: _passwordController,
             obscureText: _obscurePassword,
+            textInputAction: TextInputAction.done,
+            onFieldSubmitted: (_) => _handleLogin(),
             decoration: InputDecoration(
-              labelText: 'Password',
-              prefixIcon: const Icon(Icons.lock_outline),
+              hintText: 'Enter your password',
+              prefixIcon: const Icon(SaIcons.lockKeyhole),
               suffixIcon: IconButton(
                 icon: Icon(
-                  _obscurePassword ? Icons.visibility_off : Icons.visibility,
+                  _obscurePassword ? SaIcons.eyeOff : SaIcons.eye,
+                  size: 20,
+                  color: SaTokens.textSecondary,
                 ),
                 onPressed: () {
                   setState(() => _obscurePassword = !_obscurePassword);
                 },
-              ),
-              filled: true,
-              border: OutlineInputBorder(
-                borderRadius: BorderRadius.circular(12),
-                borderSide: BorderSide.none,
               ),
             ),
             validator: (value) {
@@ -442,62 +442,39 @@ class _LoginScreenState extends State<LoginScreen> {
               return null;
             },
           ),
-          const SizedBox(height: 8),
-          // Phase 21, Workstream 3: only reachable on this tab. A
-          // self-applied associate signs in by phone OTP and has never had
-          // a password to forget — this deliberately has no phone-tab
-          // equivalent. Own Consumer (not the button's) so it shares the
-          // exact same auth.isLoading guard the Sign In button already
-          // uses, rather than a second, separate loading flag.
-          Consumer<EmployeeAuthProvider>(
-            builder: (context, auth, _) {
-              return Align(
-                alignment: Alignment.centerRight,
-                child: GestureDetector(
-                  onTap: auth.isLoading ? null : _handleForgotPassword,
-                  child: Text(
-                    'Forgot password?',
-                    style: TextStyle(
-                      fontSize: 13,
-                      fontWeight: FontWeight.w700,
-                      color: auth.isLoading
-                          ? colorScheme.onSurfaceVariant.withValues(alpha: 0.5)
-                          : colorScheme.primary,
-                    ),
+          const SizedBox(height: SaTokens.space8),
+          Align(
+            alignment: Alignment.centerRight,
+            child: GestureDetector(
+              onTap: auth.isLoading
+                  ? null
+                  : () {
+                      Navigator.of(context).push(
+                        MaterialPageRoute(
+                          builder: (_) => const ForgotPasswordScreen(),
+                        ),
+                      );
+                    },
+              child: Padding(
+                padding: const EdgeInsets.symmetric(vertical: 4),
+                child: Text(
+                  'Forgot password?',
+                  style: TextStyle(
+                    fontSize: SaTokens.fsCaption,
+                    fontWeight: FontWeight.w600,
+                    color: auth.isLoading
+                        ? SaTokens.disabledContent
+                        : SaTokens.primary,
                   ),
                 ),
-              );
-            },
+              ),
+            ),
           ),
-          const SizedBox(height: 16),
-          Consumer<EmployeeAuthProvider>(
-            builder: (context, auth, _) {
-              return FilledButton(
-                onPressed: auth.isLoading ? null : _handleLogin,
-                style: FilledButton.styleFrom(
-                  padding: const EdgeInsets.symmetric(vertical: 16),
-                  shape: RoundedRectangleBorder(
-                    borderRadius: BorderRadius.circular(12),
-                  ),
-                ),
-                child: auth.isLoading
-                    ? const SizedBox(
-                        height: 20,
-                        width: 20,
-                        child: CircularProgressIndicator(
-                          strokeWidth: 2,
-                          color: Colors.white,
-                        ),
-                      )
-                    : const Text(
-                        'Sign In',
-                        style: TextStyle(
-                          fontSize: 16,
-                          fontWeight: FontWeight.w700,
-                        ),
-                      ),
-              );
-            },
+          const SizedBox(height: SaTokens.space24),
+          SaLoadingButton(
+            text: 'Sign In',
+            isLoading: auth.isLoading,
+            onPressed: _handleLogin,
           ),
         ],
       ),
@@ -512,38 +489,6 @@ class _LoginScreenState extends State<LoginScreen> {
       await auth.signIn(
         _emailController.text.trim(),
         _passwordController.text,
-      );
-    }
-  }
-
-  Future<void> _handleForgotPassword() async {
-    final email = _emailController.text.trim();
-    if (email.isEmpty) {
-      ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(content: Text('Please enter your email first')),
-      );
-      return;
-    }
-
-    HapticFeedback.lightImpact();
-    final auth = context.read<EmployeeAuthProvider>();
-    auth.clearError();
-    final sent = await auth.sendPasswordReset(email);
-
-    if (!mounted) return;
-
-    if (sent) {
-      ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(content: Text('Password reset link sent to $email')),
-      );
-    } else {
-      // auth.error is already set and rendered by the banner above; a
-      // SnackBar as well makes the failure impossible to miss.
-      ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(
-          content: Text(
-              auth.error ?? 'Failed to send reset email. Please try again.'),
-        ),
       );
     }
   }

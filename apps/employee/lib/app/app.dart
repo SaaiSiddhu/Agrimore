@@ -1,13 +1,12 @@
 // lib/app/app.dart
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
+import 'package:agrimore_ui/agrimore_ui.dart';
 import '../providers/auth_provider.dart';
 import '../screens/auth/login_screen.dart';
 import '../screens/auth/pending_approval_screen.dart';
 import '../screens/auth/suspended_screen.dart';
-import '../screens/home/dashboard_screen.dart';
-
-import 'package:agrimore_ui/agrimore_ui.dart';
+import '../screens/shell/employee_shell_screen.dart';
 
 // Phase 21, Workstream 1: shared with NotificationService (see main.dart)
 // so a tapped notification has a real BuildContext to navigate from —
@@ -22,7 +21,7 @@ class App extends StatelessWidget {
   Widget build(BuildContext context) {
     return MaterialApp(
       navigatorKey: navigatorKey,
-      title: 'Agrimore Sales Associate',
+      title: 'Sales Associate',
       debugShowCheckedModeBanner: false,
       // Phase 21, Workstream 1: this app has no routes: map and no
       // onGenerateRoute anywhere — every screen transition is a direct
@@ -34,56 +33,21 @@ class App extends StatelessWidget {
       // Without this, wiring navigatorKey above would turn a silently
       // no-op notification tap into a visible crash. _AuthGate is already
       // the single source of truth for "what should be showing right now"
-      // (dashboard/suspended/pending/login, based on live auth state), so
+      // (shell/suspended/pending/login, based on live auth state), so
       // routing every unresolved pushNamed here is correct for any
       // possible current state, not just a generic fallback.
       onUnknownRoute: (settings) =>
           MaterialPageRoute(builder: (_) => const _AuthGate()),
-      theme: ThemeData(
-        colorScheme: ColorScheme.fromSeed(
-          seedColor: const Color(0xFF2D7D3C),
-          brightness: Brightness.light,
-        ),
-        useMaterial3: true,
-        appBarTheme: const AppBarTheme(
-          centerTitle: true,
-          elevation: 0,
-        ),
-      ),
+      theme: SalesAssociateTheme.lightTheme,
       darkTheme: ThemeData(
         colorScheme: ColorScheme.fromSeed(
-          seedColor: const Color(0xFF4DB85F),
+          seedColor: SaTokens.primary,
           brightness: Brightness.dark,
         ),
         useMaterial3: true,
       ),
       themeMode: ThemeMode.system,
-      home: const _EmployeeSplashWrapper(),
-    );
-  }
-}
-
-class _EmployeeSplashWrapper extends StatelessWidget {
-  const _EmployeeSplashWrapper();
-
-  @override
-  Widget build(BuildContext context) {
-    return PremiumSplashScreen(
-      appName: 'Agrimore',
-      tagline: 'Sales Associate',
-      // No employee-specific package icon exists yet (agrimore_ui only ships
-      // customer/seller/delivery/admin logos) — reusing admin_logo.png as the
-      // closest fit since employees are internal staff, not customer-facing
-      // like sellers. Adding a dedicated asset would touch packages/agrimore_ui,
-      // out of this phase's scope.
-      logoPath: 'packages/agrimore_ui/assets/icons/admin_logo.png',
-      animationType: SplashAnimationType.admin,
-      onNavigation: (ctx) async {
-        if (!ctx.mounted) return;
-        Navigator.of(ctx).pushReplacement(
-          MaterialPageRoute(builder: (_) => const _AuthGate()),
-        );
-      },
+      home: const _AuthGate(),
     );
   }
 }
@@ -97,13 +61,14 @@ class _AuthGate extends StatelessWidget {
       builder: (context, authProvider, _) {
         if (authProvider.isLoading) {
           return const Scaffold(
+            backgroundColor: SaTokens.pageBackground,
             body: Center(child: CircularProgressIndicator()),
           );
         }
 
-        // Fully authenticated and approved employee
+        // Fully authenticated and approved employee -> 4-tab shell
         if (authProvider.isAuthenticated && authProvider.isEmployee) {
-          return const DashboardScreen();
+          return const EmployeeShellScreen();
         }
 
         // Phase 16C, Workstream 5: checked BEFORE the pending branch below

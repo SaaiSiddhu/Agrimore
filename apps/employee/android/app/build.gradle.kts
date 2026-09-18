@@ -26,7 +26,7 @@ plugins {
 }
 
 android {
-    namespace = "com.agrimore.employee"
+    namespace = "com.agrimore.salesassociate"
     compileSdk = flutter.compileSdkVersion
     ndkVersion = flutter.ndkVersion
 
@@ -41,7 +41,7 @@ android {
     }
 
     defaultConfig {
-        applicationId = "com.agrimore.employee"
+        applicationId = "com.agrimore.salesassociate"
         minSdk = 24
         targetSdk = 35
         versionCode = flutter.versionCode
@@ -60,7 +60,11 @@ android {
 
     buildTypes {
         release {
-            signingConfig = signingConfigs.getByName("release")
+            signingConfig = if (keystorePropertiesFile.exists() && keystoreProperties["storeFile"] != null) {
+                signingConfigs.getByName("release")
+            } else {
+                signingConfigs.getByName("debug")
+            }
             proguardFiles(
                 getDefaultProguardFile("proguard-android-optimize.txt"),
                 "proguard-rules.pro"

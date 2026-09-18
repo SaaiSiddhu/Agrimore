@@ -41,8 +41,8 @@ class AppConstants {
   static const String dateTimeFormat = 'dd MMM yyyy, hh:mm a';
   
   // Support
-  static const String supportEmail = 'support@agrimore.com';
-  static const String supportPhone = '+91 9876543210';
+  static const String supportEmail = 'agrimorein@gmail.com';
+  static const String supportPhone = '+91 7094826586';
   
   // Social Media
   static const String facebookUrl = 'https://facebook.com/agrimore';

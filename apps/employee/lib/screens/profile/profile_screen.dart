@@ -1,220 +1,457 @@
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:firebase_auth/firebase_auth.dart';
 import 'package:flutter/material.dart';
+import 'package:flutter/services.dart';
 import 'package:provider/provider.dart';
 import 'package:agrimore_ui/agrimore_ui.dart';
 import '../../providers/auth_provider.dart';
+import '../../utils/sa_formatters.dart';
+import '../wallet/payout_account_screen.dart';
+import 'onboarding_status_screen.dart';
+import '../notifications/notifications_screen.dart';
+import '../support/help_support_screen.dart';
 
-/// Phase 16C, Workstream 2 — the associate's own account/profile screen.
+/// The associate's own account and profile hub screen.
 ///
-/// Until this phase this app had no profile screen at all: an associate
-/// could not see their own registered name/phone/email, could not find a
-/// support contact, and could only sign out via an unlabelled app-bar icon.
-///
-/// Sourced entirely from employees/{uid} — that single document already
-/// carries name, email, phone, employeeCode AND status (see EmployeeModel),
-/// so this screen needs exactly one read, no second document, and writes
-/// nothing anywhere.
+/// Features:
+/// - Associate identity card with initials avatar and copyable associate code.
+/// - KYC and registered account details card.
+/// - Navigation tiles to Payout Account, Onboarding Status, Notifications, and Support.
+/// - Confirmed sign-out action.
 class ProfileScreen extends StatelessWidget {
-  const ProfileScreen({super.key});
+  final String? employeeUid;
+  final Stream<DocumentSnapshot<Map<String, dynamic>>>? employeeStream;
+
+  const ProfileScreen({
+    super.key,
+    this.employeeUid,
+    this.employeeStream,
+  });
 
   @override
   Widget build(BuildContext context) {
-    final uid = FirebaseAuth.instance.currentUser?.uid;
+    final uid = employeeUid ?? FirebaseAuth.instance.currentUser?.uid;
+
+    if (uid == null) {
+      return const Scaffold(
+        backgroundColor: SaTokens.pageBackground,
+        body: Center(child: CircularProgressIndicator()),
+      );
+    }
 
     return Scaffold(
-      backgroundColor: const Color(0xFFF8FAFC),
-      appBar: AppBar(title: const Text('My Profile')),
-      body: uid == null
-          ? const Center(child: CircularProgressIndicator())
-          : StreamBuilder<DocumentSnapshot<Map<String, dynamic>>>(
-              stream: FirebaseFirestore.instance
-                  .collection('employees')
-                  .doc(uid)
-                  .snapshots(),
-              builder: (context, snap) {
-                if (snap.hasError) {
-                  return const Center(
-                    child: Padding(
-                      padding: EdgeInsets.all(24),
-                      child: Text('Could not load your profile right now.'),
-                    ),
-                  );
-                }
-                if (!snap.hasData) {
-                  return const Center(child: CircularProgressIndicator());
-                }
-                final doc = snap.data!;
-                if (!doc.exists || doc.data() == null) {
-                  return const Center(
-                    child: Padding(
-                      padding: EdgeInsets.all(24),
-                      child: Text(
-                        'We could not find your associate profile. Please '
-                        'sign out and sign in again, or contact support.',
-                      ),
-                    ),
-                  );
-                }
+      backgroundColor: SaTokens.pageBackground,
+      appBar: AppBar(
+        title: const Text('My Profile'),
+      ),
+      body: StreamBuilder<DocumentSnapshot<Map<String, dynamic>>>(
+        stream: employeeStream ??
+            FirebaseFirestore.instance
+                .collection('employees')
+                .doc(uid)
+                .snapshots(),
+        builder: (context, snap) {
+          if (snap.hasError) {
+            return const Center(
+              child: Padding(
+                padding: EdgeInsets.all(SaTokens.space24),
+                child: Text('Could not load profile right now.'),
+              ),
+            );
+          }
+          if (!snap.hasData) {
+            return const Center(child: CircularProgressIndicator());
+          }
 
-                final employee = EmployeeModel.fromMap(doc.data()!, doc.id);
+          final doc = snap.data!;
+          if (!doc.exists || doc.data() == null) {
+            return const Center(
+              child: Padding(
+                padding: EdgeInsets.all(SaTokens.space24),
+                child: Text('Associate profile record not found.'),
+              ),
+            );
+          }
 
-                return ListView(
-                  padding: const EdgeInsets.all(16),
-                  children: [
-                    _ProfileHeader(name: employee.name),
-                    const SizedBox(height: 20),
-                    _InfoCard(
-                      title: 'Account Details',
-                      rows: [
-                        _InfoRow(
-                            icon: Icons.phone_outlined,
-                            label: 'Phone',
-                            value: employee.phone.isNotEmpty
-                                ? employee.phone
-                                : 'Not on file'),
-                        _InfoRow(
-                            icon: Icons.email_outlined,
-                            label: 'Email',
-                            value: employee.email.isNotEmpty
-                                ? employee.email
-                                : 'Not on file'),
-                        _InfoRow(
-                            icon: Icons.badge_outlined,
-                            label: 'Associate Code',
-                            value: employee.employeeCode.isNotEmpty
-                                ? employee.employeeCode
-                                : 'Not yet assigned'),
-                        _InfoRow(
-                          icon: Icons.verified_user_outlined,
-                          label: 'Approval Status',
-                          value: _statusLabel(employee.status),
-                        ),
-                      ],
-                    ),
-                    const SizedBox(height: 16),
-                    _SupportCard(),
-                    const SizedBox(height: 24),
-                    _SignOutButton(),
-                  ],
-                );
-              },
-            ),
+          final employee = EmployeeModel.fromMap(doc.data()!, doc.id);
+
+          return ListView(
+            padding: const EdgeInsets.all(SaTokens.space16),
+            children: [
+              // 1. Identity Hero Card
+              _buildIdentityCard(context, employee),
+              const SizedBox(height: SaTokens.space16),
+
+              // 2. Navigation Actions Section
+              _buildNavigationSection(context),
+              const SizedBox(height: SaTokens.space16),
+
+              // 3. Account Details Card
+              _buildAccountDetailsCard(context, employee),
+              const SizedBox(height: SaTokens.space24),
+
+              // 4. Sign Out Button
+              _buildSignOutButton(context),
+              const SizedBox(height: SaTokens.space24),
+            ],
+          );
+        },
+      ),
     );
   }
 
-  // Plain status vocabulary, kept separate from any onboarding-fee wording
-  // (locked decision 4 — clearing the fee gate is not approval).
-  String _statusLabel(String status) {
-    switch (status) {
-      case 'approved':
-        return 'Approved';
-      case 'suspended':
-        return 'Suspended';
-      case 'pending':
-        return 'Pending Approval';
-      default:
-        return status;
+  Widget _buildIdentityCard(BuildContext context, EmployeeModel employee) {
+    final name = employee.name.trim();
+    final initials = name.isNotEmpty
+        ? name
+            .split(' ')
+            .take(2)
+            .map((part) => part.isNotEmpty ? part[0] : '')
+            .join()
+            .toUpperCase()
+        : 'SA';
+
+    final status = employee.status.toLowerCase();
+    final isApproved = status == 'approved';
+    final isSuspended = status == 'suspended';
+
+    Color statusBg = SaTokens.warningBg;
+    Color statusFg = SaTokens.warningFg;
+    String statusText = 'Pending Approval';
+
+    if (isApproved) {
+      statusBg = SaTokens.successBg;
+      statusFg = SaTokens.successFg;
+      statusText = 'Active Associate';
+    } else if (isSuspended) {
+      statusBg = SaTokens.errorBg;
+      statusFg = SaTokens.errorFg;
+      statusText = 'Suspended';
     }
-  }
-}
 
-class _ProfileHeader extends StatelessWidget {
-  final String name;
-
-  const _ProfileHeader({required this.name});
-
-  @override
-  Widget build(BuildContext context) {
-    return Column(
-      children: [
-        Container(
-          width: 72,
-          height: 72,
-          decoration: const BoxDecoration(
-            color: AppColors.primary,
-            shape: BoxShape.circle,
-          ),
-          child: const Icon(Icons.person_rounded, color: Colors.white, size: 36),
-        ),
-        const SizedBox(height: 12),
-        Text(
-          name.isNotEmpty ? name : 'Sales Associate',
-          style: const TextStyle(fontSize: 18, fontWeight: FontWeight.w800),
-        ),
-      ],
-    );
-  }
-}
-
-class _InfoCard extends StatelessWidget {
-  final String title;
-  final List<_InfoRow> rows;
-
-  const _InfoCard({required this.title, required this.rows});
-
-  @override
-  Widget build(BuildContext context) {
     return Container(
-      padding: const EdgeInsets.all(16),
+      padding: const EdgeInsets.all(SaTokens.space24),
       decoration: BoxDecoration(
-        color: Colors.white,
-        borderRadius: BorderRadius.circular(16),
-        boxShadow: [
-          BoxShadow(
-            color: Colors.black.withValues(alpha: 0.05),
-            blurRadius: 12,
-            offset: const Offset(0, 4),
-          ),
-        ],
+        color: SaTokens.surface,
+        borderRadius: BorderRadius.circular(SaTokens.radiusCard),
+        border: Border.all(color: SaTokens.divider),
       ),
       child: Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          Text(
-            title,
-            style: const TextStyle(fontSize: 14, fontWeight: FontWeight.w800),
+          Row(
+            children: [
+              // Initials Avatar
+              Container(
+                width: 56,
+                height: 56,
+                alignment: Alignment.center,
+                decoration: BoxDecoration(
+                  color: SaTokens.primarySubtle,
+                  shape: BoxShape.circle,
+                  border: Border.all(color: SaTokens.primary.withValues(alpha: 0.2)),
+                ),
+                child: Text(
+                  initials,
+                  style: const TextStyle(
+                    fontSize: 20,
+                    fontWeight: FontWeight.w800,
+                    color: SaTokens.primary,
+                  ),
+                ),
+              ),
+              const SizedBox(width: SaTokens.space16),
+
+              // Name & Role
+              Expanded(
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Text(
+                      name.isNotEmpty ? name : 'Sales Associate',
+                      style: const TextStyle(
+                        fontSize: 18,
+                        fontWeight: FontWeight.w800,
+                        color: SaTokens.textPrimary,
+                      ),
+                    ),
+                    const SizedBox(height: 2),
+                    const Text(
+                      'Sales Associate',
+                      style: TextStyle(
+                        fontSize: SaTokens.fsCaption,
+                        color: SaTokens.textSecondary,
+                        fontWeight: FontWeight.w500,
+                      ),
+                    ),
+                    const SizedBox(height: 6),
+                    Container(
+                      padding:
+                          const EdgeInsets.symmetric(horizontal: 8, vertical: 2),
+                      decoration: BoxDecoration(
+                        color: statusBg,
+                        borderRadius: BorderRadius.circular(4),
+                      ),
+                      child: Text(
+                        statusText,
+                        style: TextStyle(
+                          fontSize: 10.5,
+                          fontWeight: FontWeight.w700,
+                          color: statusFg,
+                        ),
+                      ),
+                    ),
+                  ],
+                ),
+              ),
+            ],
           ),
-          const SizedBox(height: 12),
-          for (var i = 0; i < rows.length; i++) ...[
-            rows[i],
-            if (i != rows.length - 1) const Divider(height: 20),
+
+          if (employee.employeeCode.isNotEmpty) ...[
+            const SizedBox(height: SaTokens.space16),
+            const Divider(color: SaTokens.divider),
+            const SizedBox(height: SaTokens.space8),
+            Row(
+              mainAxisAlignment: MainAxisAlignment.spaceBetween,
+              children: [
+                Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    const Text(
+                      'Associate Referral Code',
+                      style: TextStyle(
+                        fontSize: SaTokens.fsCaption,
+                        color: SaTokens.textSecondary,
+                      ),
+                    ),
+                    const SizedBox(height: 2),
+                    Text(
+                      employee.employeeCode,
+                      style: const TextStyle(
+                        fontSize: 16,
+                        fontWeight: FontWeight.w800,
+                        letterSpacing: 1.5,
+                        color: SaTokens.textPrimary,
+                      ),
+                    ),
+                  ],
+                ),
+                TextButton.icon(
+                  onPressed: () {
+                    Clipboard.setData(
+                      ClipboardData(text: employee.employeeCode),
+                    );
+                    HapticFeedback.lightImpact();
+                    ScaffoldMessenger.of(context).showSnackBar(
+                      SnackBar(
+                        content: Text(
+                          'Code ${employee.employeeCode} copied to clipboard',
+                        ),
+                        behavior: SnackBarBehavior.floating,
+                        duration: const Duration(seconds: 2),
+                      ),
+                    );
+                  },
+                  icon: const Icon(SaIcons.copy, size: 16),
+                  label: const Text('Copy'),
+                ),
+              ],
+            ),
           ],
         ],
       ),
     );
   }
-}
 
-class _InfoRow extends StatelessWidget {
-  final IconData icon;
-  final String label;
-  final String value;
+  Widget _buildNavigationSection(BuildContext context) {
+    return Material(
+      color: SaTokens.surface,
+      shape: RoundedRectangleBorder(
+        borderRadius: BorderRadius.circular(SaTokens.radiusCard),
+        side: const BorderSide(color: SaTokens.divider),
+      ),
+      child: Column(
+        children: [
+          _buildNavTile(
+            context,
+            icon: Icons.account_balance_outlined,
+            title: 'Payout Account',
+            subtitle: 'Bank account & UPI destination',
+            onTap: () {
+              Navigator.of(context).push(
+                MaterialPageRoute(
+                  builder: (_) => const PayoutAccountScreen(),
+                ),
+              );
+            },
+          ),
+          const Divider(height: 1, color: SaTokens.divider),
+          _buildNavTile(
+            context,
+            icon: SaIcons.circleCheck,
+            title: 'Onboarding Status',
+            subtitle: 'Attribution & registration rules',
+            onTap: () {
+              Navigator.of(context).push(
+                MaterialPageRoute(
+                  builder: (_) => const OnboardingStatusScreen(),
+                ),
+              );
+            },
+          ),
+          const Divider(height: 1, color: SaTokens.divider),
+          _buildNavTile(
+            context,
+            icon: SaIcons.bell,
+            title: 'Notifications',
+            subtitle: 'Order & settlement updates',
+            onTap: () {
+              Navigator.of(context).push(
+                MaterialPageRoute(
+                  builder: (_) => const NotificationsScreen(),
+                ),
+              );
+            },
+          ),
+          const Divider(height: 1, color: SaTokens.divider),
+          _buildNavTile(
+            context,
+            icon: SaIcons.headphones,
+            title: 'Help & Support',
+            subtitle: 'FAQs, contact desk & operating hours',
+            onTap: () {
+              Navigator.of(context).push(
+                MaterialPageRoute(
+                  builder: (_) => const HelpSupportScreen(),
+                ),
+              );
+            },
+          ),
+        ],
+      ),
+    );
+  }
 
-  const _InfoRow({required this.icon, required this.label, required this.value});
+  Widget _buildNavTile(
+    BuildContext context, {
+    required IconData icon,
+    required String title,
+    required String subtitle,
+    required VoidCallback onTap,
+  }) {
+    return ListTile(
+      onTap: onTap,
+      contentPadding: const EdgeInsets.symmetric(
+        horizontal: SaTokens.space16,
+        vertical: 4,
+      ),
+      leading: Container(
+        width: 38,
+        height: 38,
+        decoration: BoxDecoration(
+          color: SaTokens.primarySubtle,
+          borderRadius: BorderRadius.circular(8),
+        ),
+        child: Icon(icon, color: SaTokens.primary, size: 18),
+      ),
+      title: Text(
+        title,
+        style: const TextStyle(
+          fontSize: SaTokens.fsBody,
+          fontWeight: FontWeight.w600,
+          color: SaTokens.textPrimary,
+        ),
+      ),
+      subtitle: Text(
+        subtitle,
+        style: const TextStyle(
+          fontSize: SaTokens.fsCaption,
+          color: SaTokens.textSecondary,
+        ),
+      ),
+      trailing: const Icon(
+        Icons.chevron_right_rounded,
+        color: SaTokens.textSecondary,
+        size: 20,
+      ),
+    );
+  }
 
-  @override
-  Widget build(BuildContext context) {
+  Widget _buildAccountDetailsCard(
+    BuildContext context,
+    EmployeeModel employee,
+  ) {
+    final maskedPhone = employee.phone.isNotEmpty
+        ? SaFormatters.formatMaskedPhone(employee.phone)
+        : 'Not on file';
+
+    return Container(
+      padding: const EdgeInsets.all(SaTokens.space16),
+      decoration: BoxDecoration(
+        color: SaTokens.surface,
+        borderRadius: BorderRadius.circular(SaTokens.radiusCard),
+        border: Border.all(color: SaTokens.divider),
+      ),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Text(
+            'Account Details',
+            style: Theme.of(context).textTheme.titleMedium,
+          ),
+          const SizedBox(height: SaTokens.space12),
+          _buildInfoRow(
+            icon: SaIcons.phone,
+            label: 'Phone Number',
+            value: maskedPhone,
+          ),
+          const Divider(height: 16, color: SaTokens.divider),
+          _buildInfoRow(
+            icon: SaIcons.mail,
+            label: 'Email Address',
+            value: employee.email.isNotEmpty ? employee.email : 'Not on file',
+          ),
+          const Divider(height: 16, color: SaTokens.divider),
+          _buildInfoRow(
+            icon: Icons.percent_rounded,
+            label: 'Default Commission Rate',
+            value: employee.commissionRate > 0
+                ? '${employee.commissionRate.toStringAsFixed(1)}%'
+                : 'Standard programme rate',
+          ),
+        ],
+      ),
+    );
+  }
+
+  Widget _buildInfoRow({
+    required IconData icon,
+    required String label,
+    required String value,
+  }) {
     return Row(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
-        Icon(icon, size: 18, color: Colors.grey.shade600),
-        const SizedBox(width: 10),
+        Icon(icon, size: 16, color: SaTokens.textSecondary),
+        const SizedBox(width: SaTokens.space12),
         Expanded(
           child: Column(
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
               Text(
                 label,
-                style: TextStyle(fontSize: 11, color: Colors.grey.shade600),
+                style: const TextStyle(
+                  fontSize: 11,
+                  color: SaTokens.textSecondary,
+                ),
               ),
               const SizedBox(height: 2),
-              // SelectableText — an associate reading their own phone/email
-              // off the screen to relay it (e.g. to support) is exactly the
-              // kind of thing that shouldn't require retyping.
               SelectableText(
                 value,
-                style: const TextStyle(fontSize: 14, fontWeight: FontWeight.w700),
+                style: const TextStyle(
+                  fontSize: SaTokens.fsBody,
+                  fontWeight: FontWeight.w600,
+                  color: SaTokens.textPrimary,
+                ),
               ),
             ],
           ),
@@ -222,99 +459,28 @@ class _InfoRow extends StatelessWidget {
       ],
     );
   }
-}
 
-/// Plain, selectable contact details only — no url_launcher, no mailto:/
-/// tel: link, no dependency added (locked decision 2 keeps this app's
-/// outbound surface deliberately narrow). AppConstants.supportEmail/
-/// supportPhone are the same values already shown elsewhere in this
-/// product (e.g. apps/marketplace's help screen) — not invented here.
-class _SupportCard extends StatelessWidget {
-  @override
-  Widget build(BuildContext context) {
-    return Container(
-      padding: const EdgeInsets.all(16),
-      decoration: BoxDecoration(
-        color: Colors.white,
-        borderRadius: BorderRadius.circular(16),
-        boxShadow: [
-          BoxShadow(
-            color: Colors.black.withValues(alpha: 0.05),
-            blurRadius: 12,
-            offset: const Offset(0, 4),
-          ),
-        ],
-      ),
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
-          const Text(
-            'Need Help?',
-            style: TextStyle(fontSize: 14, fontWeight: FontWeight.w800),
-          ),
-          const SizedBox(height: 4),
-          Text(
-            'Contact support with any questions about your account, your '
-            'onboarding fee, or your commission.',
-            style: TextStyle(fontSize: 12, color: Colors.grey.shade600, height: 1.4),
-          ),
-          const SizedBox(height: 12),
-          _InfoRow(
-            icon: Icons.email_outlined,
-            label: 'Support Email',
-            value: AppConstants.supportEmail,
-          ),
-          const Divider(height: 20),
-          _InfoRow(
-            icon: Icons.phone_outlined,
-            label: 'Support Phone',
-            value: AppConstants.supportPhone,
-          ),
-        ],
-      ),
-    );
-  }
-}
-
-class _SignOutButton extends StatelessWidget {
-  @override
-  Widget build(BuildContext context) {
-    return SizedBox(
-      width: double.infinity,
-      child: OutlinedButton.icon(
-        style: OutlinedButton.styleFrom(
-          foregroundColor: Colors.red.shade700,
-          side: BorderSide(color: Colors.red.shade200),
-          padding: const EdgeInsets.symmetric(vertical: 14),
-          shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
-        ),
-        icon: const Icon(Icons.logout_rounded),
-        label: const Text('Sign Out', style: TextStyle(fontWeight: FontWeight.w700)),
-        onPressed: () async {
-          final confirmed = await DialogHelper.showConfirmation(
-            context,
-            title: 'Sign Out',
-            message: 'Are you sure you want to sign out of your associate account?',
-            confirmText: 'Sign Out',
-            isDangerous: true,
-          );
-          if (confirmed == true && context.mounted) {
-            final navigator = Navigator.of(context);
-            await context.read<EmployeeAuthProvider>().signOut();
-            // ProfileScreen is a PUSHED route on top of the dashboard.
-            // Signing out swaps what _AuthGate renders at the base of the
-            // stack (LoginScreen instead of DashboardScreen), but does not
-            // by itself pop THIS pushed route — without this, the associate
-            // is left stranded on a broken, now-erroring Profile screen
-            // instead of landing back on the login screen. popUntil(first)
-            // rather than a single pop() so this is correct even if more
-            // than one route is ever pushed on top of the dashboard later.
-            if (navigator.mounted) {
-              navigator.popUntil((route) => route.isFirst);
-            }
+  Widget _buildSignOutButton(BuildContext context) {
+    return SaLoadingButton(
+      text: 'Sign Out',
+      variant: SaButtonVariant.outlined,
+      onPressed: () async {
+        final confirmed = await DialogHelper.showConfirmation(
+          context,
+          title: 'Sign Out',
+          message:
+              'Are you sure you want to sign out of your associate account?',
+          confirmText: 'Sign Out',
+          isDangerous: true,
+        );
+        if (confirmed == true && context.mounted) {
+          final navigator = Navigator.of(context);
+          await context.read<EmployeeAuthProvider>().signOut();
+          if (navigator.mounted) {
+            navigator.popUntil((route) => route.isFirst);
           }
-        },
-      ),
+        }
+      },
     );
   }
 }
