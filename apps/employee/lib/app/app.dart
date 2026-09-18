@@ -21,7 +21,7 @@ class App extends StatelessWidget {
   Widget build(BuildContext context) {
     return MaterialApp(
       navigatorKey: navigatorKey,
-      title: 'Agrimore Sales Associate',
+      title: 'Sales Associate',
       debugShowCheckedModeBanner: false,
       // Phase 21, Workstream 1: this app has no routes: map and no
       // onGenerateRoute anywhere — every screen transition is a direct
