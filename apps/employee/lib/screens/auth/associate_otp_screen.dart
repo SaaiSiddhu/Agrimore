@@ -8,16 +8,14 @@
 // fallback offered only once the cooldown elapses. Deliberately consistent
 // with the app an associate already uses as a customer, rather than a second
 // invented OTP interaction.
-//
-// What it does NOT carry over, because none of it applies here: the recent-
-// phone-number cache, the notifications priming screen, and PostAuthRouter
-// (this app routes purely through _AuthGate).
 
 import 'dart:async';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:provider/provider.dart';
+import 'package:agrimore_ui/agrimore_ui.dart';
 import '../../providers/auth_provider.dart';
+import '../../utils/sa_formatters.dart';
 
 const int _kOtpLength = 6;
 const int _kResendCooldownSeconds = 30;
@@ -27,10 +25,7 @@ class AssociateOtpScreen extends StatefulWidget {
   final String phone;
 
   /// The EFFECTIVE channel the initial send actually used, threaded straight
-  /// through from PhoneOtpSendResult.channel. Never guessed, never
-  /// re-queried. In production today SMS is disabled and this arrives as
-  /// 'voice' — the copy below must say what really happened, not assume a
-  /// text message the user will never receive.
+  /// through from PhoneOtpSendResult.channel.
   final String channel;
 
   const AssociateOtpScreen({
@@ -93,12 +88,37 @@ class _AssociateOtpScreenState extends State<AssociateOtpScreen> {
   }
 
   void _onDigitChanged(int index, String value) {
-    if (value.isNotEmpty && index < _kOtpLength - 1) {
-      _focusNodes[index + 1].requestFocus();
+    if (value.isNotEmpty) {
+      if (value.length > 1) {
+        _handlePaste(value);
+        return;
+      }
+      if (index < _kOtpLength - 1) {
+        _focusNodes[index + 1].requestFocus();
+      }
+    } else if (value.isEmpty && index > 0) {
+      _focusNodes[index - 1].requestFocus();
     }
+
     final code = _controllers.map((c) => c.text).join();
     if (code.length == _kOtpLength && !code.contains(RegExp(r'\D'))) {
       _handleVerify();
+    }
+  }
+
+  void _handlePaste(String pastedText) {
+    final digits = pastedText.replaceAll(RegExp(r'\D'), '');
+    for (int i = 0; i < _kOtpLength; i++) {
+      if (i < digits.length) {
+        _controllers[i].text = digits[i];
+      }
+    }
+    if (digits.length >= _kOtpLength) {
+      _focusNodes.last.unfocus();
+      _handleVerify();
+    } else if (digits.isNotEmpty) {
+      final nextIndex = digits.length.clamp(0, _kOtpLength - 1);
+      _focusNodes[nextIndex].requestFocus();
     }
   }
 
@@ -122,11 +142,9 @@ class _AssociateOtpScreenState extends State<AssociateOtpScreen> {
     if (!mounted) return;
 
     if (!verified) {
-      // The code itself was wrong / the request failed. Stay here so the
-      // associate can retype or resend.
       setState(() {
         _isVerifying = false;
-        _errorMessage = auth.error ?? 'Invalid OTP. Please try again.';
+        _errorMessage = auth.error ?? 'Invalid OTP. Please check the code and try again.';
       });
       for (final c in _controllers) {
         c.clear();
@@ -135,12 +153,6 @@ class _AssociateOtpScreenState extends State<AssociateOtpScreen> {
       return;
     }
 
-    // The OTP verified. Whether this person turned out to be an approved
-    // associate, a pending one, a suspended one, or not an associate at all
-    // is _AuthGate's decision — it is already rebuilding on the provider's
-    // state. Close this screen and let it route. Popping even when the gate
-    // rejected is intentional: the explanation lives on the login screen's
-    // error banner, and staying here would strand them with a correct code.
     Navigator.of(context).pop();
   }
 
@@ -171,9 +183,6 @@ class _AssociateOtpScreenState extends State<AssociateOtpScreen> {
     }
   }
 
-  /// Offered only once the cooldown has elapsed, and hidden entirely when
-  /// voice is already the effective channel — "call me instead" is
-  /// meaningless when every code is already delivered by call.
   Future<void> _handleVoiceResend() async {
     if (_resendSecondsLeft > 0 || _isRequestingVoice) return;
 
@@ -202,164 +211,157 @@ class _AssociateOtpScreenState extends State<AssociateOtpScreen> {
 
   @override
   Widget build(BuildContext context) {
-    final colorScheme = Theme.of(context).colorScheme;
+    final maskedPhone = SaFormatters.formatMaskedPhone(widget.phone);
 
     return Scaffold(
+      backgroundColor: SaTokens.pageBackground,
       appBar: AppBar(
-        title: const Text('Verify your number'),
+        title: const Text('Verify mobile number'),
+        leading: IconButton(
+          icon: const Icon(SaIcons.arrowLeft),
+          onPressed: () => Navigator.of(context).pop(),
+        ),
       ),
       body: SafeArea(
-        child: LayoutBuilder(
-          builder: (context, constraints) {
-            return SingleChildScrollView(
-              padding:
-                  const EdgeInsets.symmetric(horizontal: 24, vertical: 32),
-              child: ConstrainedBox(
-                constraints: BoxConstraints(
-                  minHeight: (constraints.maxHeight - 64)
-                      .clamp(0.0, double.infinity),
-                ),
-                child: Column(
-                  mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                  children: [
-                    _buildTopGroup(colorScheme),
-                    _buildBottomGroup(colorScheme),
+        child: Center(
+          child: SingleChildScrollView(
+            padding: const EdgeInsets.symmetric(
+              horizontal: SaTokens.space24,
+              vertical: SaTokens.space32,
+            ),
+            child: ConstrainedBox(
+              constraints: const BoxConstraints(maxWidth: 440),
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.stretch,
+                children: [
+                  Text(
+                    'Enter verification code',
+                    style: Theme.of(context).textTheme.headlineMedium,
+                  ),
+                  const SizedBox(height: SaTokens.space8),
+                  Text.rich(
+                    TextSpan(
+                      style: Theme.of(context).textTheme.bodyMedium?.copyWith(
+                            color: SaTokens.textSecondary,
+                            height: 1.5,
+                          ),
+                      children: [
+                        TextSpan(
+                          text: _isVoiceChannel
+                              ? "We are calling you with a 6-digit code on\n"
+                              : 'We have sent a 6-digit verification code to\n',
+                        ),
+                        TextSpan(
+                          text: maskedPhone,
+                          style: const TextStyle(
+                            fontWeight: FontWeight.w700,
+                            color: SaTokens.textPrimary,
+                          ),
+                        ),
+                      ],
+                    ),
+                  ),
+                  const SizedBox(height: SaTokens.space24),
+
+                  if (_errorMessage != null) ...[
+                    SaInfoBanner(
+                      title: 'Verification failed',
+                      message: _errorMessage!,
+                      variant: SaBannerVariant.error,
+                    ),
+                    const SizedBox(height: SaTokens.space24),
                   ],
-                ),
+
+                  // 6-box OTP entry row
+                  Row(
+                    children: List.generate(
+                      _kOtpLength,
+                      (index) => Expanded(
+                        child: Padding(
+                          padding: const EdgeInsets.symmetric(horizontal: 4),
+                          child: _buildDigitBox(index),
+                        ),
+                      ),
+                    ),
+                  ),
+                  const SizedBox(height: SaTokens.space32),
+
+                  SaLoadingButton(
+                    text: 'Verify code',
+                    isLoading: _isVerifying,
+                    onPressed: _handleVerify,
+                  ),
+                  const SizedBox(height: SaTokens.space24),
+
+                  // Resend countdown and triggers
+                  Center(
+                    child: GestureDetector(
+                      onTap: _resendSecondsLeft == 0 ? _handleResend : null,
+                      child: Padding(
+                        padding: const EdgeInsets.symmetric(vertical: 4),
+                        child: Text.rich(
+                          TextSpan(
+                            style: Theme.of(context).textTheme.bodySmall,
+                            children: [
+                              const TextSpan(text: "Didn't receive the code? "),
+                              TextSpan(
+                                text: _resendSecondsLeft > 0
+                                    ? 'Resend in ${_resendSecondsLeft}s'
+                                    : (_isResending
+                                        ? 'Resending...'
+                                        : 'Resend ${_isVoiceChannel ? 'call' : 'code'}'),
+                                style: TextStyle(
+                                  color: _resendSecondsLeft > 0
+                                      ? SaTokens.disabledContent
+                                      : SaTokens.primary,
+                                  fontWeight: FontWeight.w700,
+                                ),
+                              ),
+                            ],
+                          ),
+                        ),
+                      ),
+                    ),
+                  ),
+
+                  if (_resendSecondsLeft == 0 && !_isVoiceChannel) ...[
+                    const SizedBox(height: SaTokens.space8),
+                    Center(
+                      child: GestureDetector(
+                        onTap: _isRequestingVoice ? null : _handleVoiceResend,
+                        child: const Padding(
+                          padding: EdgeInsets.symmetric(vertical: 4),
+                          child: Text(
+                            'Call me instead',
+                            style: TextStyle(
+                              fontSize: SaTokens.fsCaption,
+                              color: SaTokens.primary,
+                              fontWeight: FontWeight.w700,
+                            ),
+                          ),
+                        ),
+                      ),
+                    ),
+                  ],
+
+                  const SizedBox(height: SaTokens.space24),
+                  Center(
+                    child: TextButton.icon(
+                      onPressed: () => Navigator.of(context).pop(),
+                      icon: const Icon(SaIcons.arrowLeft, size: 16),
+                      label: const Text('Use a different number'),
+                    ),
+                  ),
+                ],
               ),
-            );
-          },
+            ),
+          ),
         ),
       ),
     );
   }
 
-  Widget _buildTopGroup(ColorScheme colorScheme) {
-    return Column(
-      mainAxisSize: MainAxisSize.min,
-      children: [
-        Text.rich(
-          TextSpan(
-            style: TextStyle(
-              fontSize: 14,
-              color: colorScheme.onSurfaceVariant,
-            ),
-            children: [
-              // Say what actually happened — a call, not a text — whenever
-              // the effective channel is voice.
-              TextSpan(
-                text: _isVoiceChannel
-                    ? "We're calling you now with your code, on\n"
-                    : 'We have sent a verification code to\n',
-              ),
-              TextSpan(
-                text: widget.phone,
-                style: TextStyle(
-                  fontWeight: FontWeight.w700,
-                  color: colorScheme.onSurface,
-                ),
-              ),
-            ],
-          ),
-          textAlign: TextAlign.center,
-        ),
-        const SizedBox(height: 32),
-        // Expanded per box (not a fixed width) so the row always fits within
-        // the screen width on any device — no overflow possible.
-        Row(
-          children: List.generate(
-            _kOtpLength,
-            (index) => Expanded(
-              child: Padding(
-                padding: const EdgeInsets.symmetric(horizontal: 4),
-                child: _buildDigitBox(index, colorScheme),
-              ),
-            ),
-          ),
-        ),
-        if (_errorMessage != null) ...[
-          const SizedBox(height: 16),
-          Text(
-            _errorMessage!,
-            style: TextStyle(color: colorScheme.error, fontSize: 13),
-            textAlign: TextAlign.center,
-          ),
-        ],
-        const SizedBox(height: 28),
-        GestureDetector(
-          onTap: _handleResend,
-          child: Text.rich(
-            TextSpan(
-              style: TextStyle(
-                fontSize: 14,
-                color: colorScheme.onSurfaceVariant,
-              ),
-              children: [
-                const TextSpan(text: "Didn't get the code? "),
-                TextSpan(
-                  text: _resendSecondsLeft > 0
-                      ? 'Resend ${_isVoiceChannel ? 'call' : 'SMS'} in ${_resendSecondsLeft}s'
-                      : (_isResending
-                          ? 'Resending...'
-                          : 'Resend ${_isVoiceChannel ? 'call' : 'SMS'}'),
-                  style: TextStyle(
-                    color: _resendSecondsLeft > 0
-                        ? colorScheme.onSurfaceVariant.withValues(alpha: 0.5)
-                        : colorScheme.primary,
-                    fontWeight: FontWeight.w700,
-                  ),
-                ),
-              ],
-            ),
-          ),
-        ),
-        if (_resendSecondsLeft == 0 && !_isVoiceChannel) ...[
-          const SizedBox(height: 12),
-          GestureDetector(
-            onTap: _handleVoiceResend,
-            child: Text(
-              _isRequestingVoice ? 'Calling you...' : 'Call me instead',
-              style: TextStyle(
-                fontSize: 13,
-                color: colorScheme.primary,
-                fontWeight: FontWeight.w700,
-              ),
-            ),
-          ),
-        ],
-      ],
-    );
-  }
-
-  Widget _buildBottomGroup(ColorScheme colorScheme) {
-    return Column(
-      mainAxisSize: MainAxisSize.min,
-      children: [
-        TextButton(
-          onPressed: () => Navigator.of(context).pop(),
-          child: Text(
-            'Use a different number',
-            style: TextStyle(
-              color: colorScheme.primary,
-              fontWeight: FontWeight.w700,
-              fontSize: 14,
-            ),
-          ),
-        ),
-        if (_isVerifying) ...[
-          const SizedBox(height: 8),
-          const SizedBox(
-            width: 22,
-            height: 22,
-            child: CircularProgressIndicator(strokeWidth: 2.5),
-          ),
-          const SizedBox(height: 16),
-        ],
-      ],
-    );
-  }
-
-  Widget _buildDigitBox(int index, ColorScheme colorScheme) {
+  Widget _buildDigitBox(int index) {
     return SizedBox(
       height: 56,
       child: TextField(
@@ -368,24 +370,28 @@ class _AssociateOtpScreenState extends State<AssociateOtpScreen> {
         textAlign: TextAlign.center,
         keyboardType: TextInputType.number,
         maxLength: 1,
-        style: const TextStyle(fontSize: 20, fontWeight: FontWeight.w700),
+        style: const TextStyle(
+          fontSize: 22,
+          fontWeight: FontWeight.w700,
+          color: SaTokens.textPrimary,
+        ),
         inputFormatters: [FilteringTextInputFormatter.digitsOnly],
         decoration: InputDecoration(
           counterText: '',
           contentPadding: EdgeInsets.zero,
           filled: true,
-          fillColor: colorScheme.surfaceContainerHighest,
+          fillColor: SaTokens.surface,
           border: OutlineInputBorder(
-            borderRadius: BorderRadius.circular(10),
-            borderSide: BorderSide(color: colorScheme.outline, width: 1.4),
+            borderRadius: BorderRadius.circular(SaTokens.radiusInput),
+            borderSide: const BorderSide(color: SaTokens.inputBorder, width: 1),
           ),
           enabledBorder: OutlineInputBorder(
-            borderRadius: BorderRadius.circular(10),
-            borderSide: BorderSide(color: colorScheme.outline, width: 1.4),
+            borderRadius: BorderRadius.circular(SaTokens.radiusInput),
+            borderSide: const BorderSide(color: SaTokens.inputBorder, width: 1),
           ),
           focusedBorder: OutlineInputBorder(
-            borderRadius: BorderRadius.circular(10),
-            borderSide: BorderSide(color: colorScheme.primary, width: 2),
+            borderRadius: BorderRadius.circular(SaTokens.radiusInput),
+            borderSide: const BorderSide(color: SaTokens.primary, width: 2),
           ),
         ),
         onChanged: (value) => _onDigitChanged(index, value),
