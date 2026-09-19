@@ -2,6 +2,7 @@
 
 import 'package:flutter/material.dart';
 import '../../themes/sales_associate_icons.dart';
+import '../../themes/sales_associate_theme_extension.dart';
 import '../../themes/sales_associate_tokens.dart';
 
 /// Banner severity kind.
@@ -64,30 +65,39 @@ class SaInfoBanner extends StatelessWidget {
         SaBannerVariant.success => SaIcons.circleCheck,
       };
 
-  Color get _surfaceColor => switch (variant) {
-        SaBannerVariant.info => SaTokens.primarySubtle,
-        SaBannerVariant.warning => SaTokens.warningBg,
-        SaBannerVariant.error => SaTokens.errorBg,
-        SaBannerVariant.success => SaTokens.successBg,
-      };
-
-  Color get _foregroundAccent => switch (variant) {
-        SaBannerVariant.info => SaTokens.primary,
-        SaBannerVariant.warning => SaTokens.warningFg,
-        SaBannerVariant.error => SaTokens.errorFg,
-        SaBannerVariant.success => SaTokens.successFg,
-      };
-
-  Color get _borderColor => switch (variant) {
-        SaBannerVariant.info => const Color(0xFFBFDBFE), // blue-200
-        SaBannerVariant.warning => const Color(0xFFFDE68A), // amber-200
-        SaBannerVariant.error => const Color(0xFFFECACA), // red-200
-        SaBannerVariant.success => const Color(0xFFBBF7D0), // green-200
-      };
-
   @override
   Widget build(BuildContext context) {
+    final tokens = context.saTokens;
+    final isDark = Theme.of(context).brightness == Brightness.dark;
     final effectiveIcon = icon ?? _defaultIcon;
+
+    final surfaceColor = switch (variant) {
+      SaBannerVariant.info => tokens.primarySubtle,
+      SaBannerVariant.warning => tokens.warningBg,
+      SaBannerVariant.error => tokens.errorBg,
+      SaBannerVariant.success => tokens.successBg,
+    };
+
+    final foregroundAccent = switch (variant) {
+      SaBannerVariant.info => tokens.primary,
+      SaBannerVariant.warning => tokens.warningFg,
+      SaBannerVariant.error => tokens.errorFg,
+      SaBannerVariant.success => tokens.successFg,
+    };
+
+    final borderColor = isDark
+        ? switch (variant) {
+            SaBannerVariant.info => const Color(0xFF1E40AF), // blue-800
+            SaBannerVariant.warning => const Color(0xFF92400E), // amber-800
+            SaBannerVariant.error => const Color(0xFF991B1B), // red-800
+            SaBannerVariant.success => const Color(0xFF166534), // green-800
+          }
+        : switch (variant) {
+            SaBannerVariant.info => const Color(0xFFBFDBFE), // blue-200
+            SaBannerVariant.warning => const Color(0xFFFDE68A), // amber-200
+            SaBannerVariant.error => const Color(0xFFFECACA), // red-200
+            SaBannerVariant.success => const Color(0xFFBBF7D0), // green-200
+          };
 
     return Semantics(
       container: true,
@@ -96,9 +106,9 @@ class SaInfoBanner extends StatelessWidget {
         width: double.infinity,
         padding: const EdgeInsets.all(SaTokens.space12),
         decoration: BoxDecoration(
-          color: _surfaceColor,
+          color: surfaceColor,
           borderRadius: BorderRadius.circular(SaTokens.radiusInput),
-          border: Border.all(color: _borderColor, width: 1),
+          border: Border.all(color: borderColor, width: 1),
         ),
         child: Row(
           crossAxisAlignment: CrossAxisAlignment.start,
@@ -106,7 +116,7 @@ class SaInfoBanner extends StatelessWidget {
             Icon(
               effectiveIcon,
               size: SaTokens.iconControl,
-              color: _foregroundAccent,
+              color: foregroundAccent,
             ),
             const SizedBox(width: SaTokens.space12),
             Expanded(
@@ -120,7 +130,7 @@ class SaInfoBanner extends StatelessWidget {
                       style: TextStyle(
                         fontSize: SaTokens.fsLabel,
                         fontWeight: FontWeight.w600,
-                        color: _foregroundAccent,
+                        color: foregroundAccent,
                       ),
                     ),
                     const SizedBox(height: SaTokens.space4),
@@ -129,8 +139,9 @@ class SaInfoBanner extends StatelessWidget {
                     message,
                     style: TextStyle(
                       fontSize: SaTokens.fsLabel,
-                      color: SaTokens.textPrimary,
-                      height: 1.4,
+                      height: SaTokens.lhLabel / SaTokens.fsLabel,
+                      fontWeight: FontWeight.w400,
+                      color: tokens.textPrimary,
                     ),
                   ),
                   if (actionLabel != null && onAction != null) ...[
@@ -142,7 +153,7 @@ class SaInfoBanner extends StatelessWidget {
                         style: TextStyle(
                           fontSize: SaTokens.fsLabel,
                           fontWeight: FontWeight.w600,
-                          color: _foregroundAccent,
+                          color: foregroundAccent,
                           decoration: TextDecoration.underline,
                         ),
                       ),
