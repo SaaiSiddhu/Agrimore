@@ -40,7 +40,8 @@ void main() {
       expect(find.text('Sign In'), findsOneWidget);
 
       // Verify segmented mode options
-      expect(find.text('Mobile number'), findsNWidgets(2)); // Tab + input label
+      expect(find.text('Mobile'), findsOneWidget); // Tab
+      expect(find.text('Mobile number'), findsOneWidget); // input label
       expect(find.text('Email'), findsOneWidget);
       expect(find.text('Send code'), findsOneWidget);
 

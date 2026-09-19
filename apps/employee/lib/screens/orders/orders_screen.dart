@@ -327,16 +327,19 @@ class _OrdersScreenState extends State<OrdersScreen> {
             children: [
               // Header row: order number + status badge
               Row(
-                mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                crossAxisAlignment: CrossAxisAlignment.center,
                 children: [
-                  Text(
-                    '#$orderNumber',
-                    style: TextStyle(
-                      fontSize: SaTokens.fsBody,
-                      fontWeight: FontWeight.w700,
-                      color: tokens.textPrimary,
+                  Expanded(
+                    child: Text(
+                      '#$orderNumber',
+                      style: TextStyle(
+                        fontSize: SaTokens.fsBody,
+                        fontWeight: FontWeight.w700,
+                        color: tokens.textPrimary,
+                      ),
                     ),
                   ),
+                  const SizedBox(width: SaTokens.space8),
                   _buildStatusBadge(context, status, isDelivered, isCancelled),
                 ],
               ),
@@ -344,49 +347,53 @@ class _OrdersScreenState extends State<OrdersScreen> {
 
               // Details row: Mode + Date + Total
               Row(
-                mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                crossAxisAlignment: CrossAxisAlignment.center,
                 children: [
-                  Row(
-                    children: [
-                      if (normMode != null) ...[
-                        Container(
-                          padding: const EdgeInsets.symmetric(
-                            horizontal: 8,
-                            vertical: 3,
-                          ),
-                          decoration: BoxDecoration(
-                            color: normMode == 'B2B'
-                                ? tokens.primarySubtle
-                                : (Theme.of(context).brightness == Brightness.dark
-                                    ? const Color(0xFF3B0764)
-                                    : Colors.purple.shade50),
-                            borderRadius: BorderRadius.circular(6),
-                          ),
-                          child: Text(
-                            normMode == 'B2B' ? 'B2B' : 'Retail',
-                            style: TextStyle(
-                              fontSize: 11,
-                              fontWeight: FontWeight.w700,
+                  Expanded(
+                    child: Wrap(
+                      crossAxisAlignment: WrapCrossAlignment.center,
+                      spacing: SaTokens.space8,
+                      runSpacing: 4,
+                      children: [
+                        if (normMode != null)
+                          Container(
+                            padding: const EdgeInsets.symmetric(
+                              horizontal: 8,
+                              vertical: 3,
+                            ),
+                            decoration: BoxDecoration(
                               color: normMode == 'B2B'
-                                  ? tokens.primary
+                                  ? tokens.primarySubtle
                                   : (Theme.of(context).brightness == Brightness.dark
-                                      ? const Color(0xFFC084FC)
-                                      : Colors.purple.shade700),
+                                      ? const Color(0xFF3B0764)
+                                      : Colors.purple.shade50),
+                              borderRadius: BorderRadius.circular(6),
+                            ),
+                            child: Text(
+                              normMode == 'B2B' ? 'B2B' : 'Retail',
+                              style: TextStyle(
+                                fontSize: 11,
+                                fontWeight: FontWeight.w700,
+                                color: normMode == 'B2B'
+                                    ? tokens.primary
+                                    : (Theme.of(context).brightness == Brightness.dark
+                                        ? const Color(0xFFC084FC)
+                                        : Colors.purple.shade700),
+                              ),
                             ),
                           ),
-                        ),
-                        const SizedBox(width: SaTokens.space8),
-                      ],
-                      if (createdAt != null)
-                        Text(
-                          SaFormatters.formatDate(createdAt),
-                          style: TextStyle(
-                            fontSize: SaTokens.fsCaption,
-                            color: tokens.textSecondary,
+                        if (createdAt != null)
+                          Text(
+                            SaFormatters.formatDate(createdAt),
+                            style: TextStyle(
+                              fontSize: SaTokens.fsCaption,
+                              color: tokens.textSecondary,
+                            ),
                           ),
-                        ),
-                    ],
+                      ],
+                    ),
                   ),
+                  const SizedBox(width: SaTokens.space8),
                   Text(
                     SaFormatters.formatCurrency(total),
                     style: TextStyle(
@@ -424,18 +431,20 @@ class _OrdersScreenState extends State<OrdersScreen> {
                           : tokens.textSecondary,
                     ),
                     const SizedBox(width: 4),
-                    Text(
-                      commissionPaid && commissionAmount != null
-                          ? 'Commission ${SaFormatters.formatCurrency(commissionAmount)} credited'
-                          : (isDelivered
-                              ? 'Commission processing'
-                              : 'Commission pending delivery'),
-                      style: TextStyle(
-                        fontSize: 11,
-                        fontWeight: FontWeight.w600,
-                        color: commissionPaid
-                            ? tokens.successFg
-                            : tokens.textSecondary,
+                    Flexible(
+                      child: Text(
+                        commissionPaid && commissionAmount != null
+                            ? 'Commission ${SaFormatters.formatCurrency(commissionAmount)} credited'
+                            : (isDelivered
+                                ? 'Commission processing'
+                                : 'Commission pending delivery'),
+                        style: TextStyle(
+                          fontSize: 11,
+                          fontWeight: FontWeight.w600,
+                          color: commissionPaid
+                              ? tokens.successFg
+                              : tokens.textSecondary,
+                        ),
                       ),
                     ),
                   ],

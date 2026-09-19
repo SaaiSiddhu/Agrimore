@@ -99,7 +99,7 @@ class _EmployeeShellScreenState extends State<EmployeeShellScreen>
             backgroundColor: tokens.surface,
             indicatorColor: Colors.transparent,
             elevation: 0,
-            height: 64,
+            height: MediaQuery.textScalerOf(context).scale(1.0) > 1.2 ? 72 : 64,
             labelBehavior: NavigationDestinationLabelBehavior.alwaysShow,
             destinations: [
               NavigationDestination(

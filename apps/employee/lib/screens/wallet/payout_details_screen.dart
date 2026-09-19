@@ -182,12 +182,15 @@ class PayoutDetailsScreen extends StatelessWidget {
             ),
           ),
           const SizedBox(height: SaTokens.space12),
-          Text(
-            SaFormatters.formatCurrency(amount),
-            style: TextStyle(
-              fontSize: 32,
-              fontWeight: FontWeight.w900,
-              color: tokens.textPrimary,
+          FittedBox(
+            fit: BoxFit.scaleDown,
+            child: Text(
+              SaFormatters.formatCurrency(amount),
+              style: TextStyle(
+                fontSize: 32,
+                fontWeight: FontWeight.w900,
+                color: tokens.textPrimary,
+              ),
             ),
           ),
           const SizedBox(height: SaTokens.space4),
@@ -384,21 +387,27 @@ class PayoutDetailsScreen extends StatelessWidget {
     return Padding(
       padding: const EdgeInsets.symmetric(vertical: 4),
       child: Row(
-        mainAxisAlignment: MainAxisAlignment.spaceBetween,
+        crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          Text(
-            label,
-            style: TextStyle(
-              fontSize: SaTokens.fsLabel,
-              color: tokens.textSecondary,
+          Expanded(
+            child: Text(
+              label,
+              style: TextStyle(
+                fontSize: SaTokens.fsLabel,
+                color: tokens.textSecondary,
+              ),
             ),
           ),
-          Text(
-            value,
-            style: TextStyle(
-              fontSize: SaTokens.fsLabel,
-              fontWeight: FontWeight.w600,
-              color: tokens.textPrimary,
+          const SizedBox(width: SaTokens.space8),
+          Flexible(
+            child: Text(
+              value,
+              textAlign: TextAlign.end,
+              style: TextStyle(
+                fontSize: SaTokens.fsLabel,
+                fontWeight: FontWeight.w600,
+                color: tokens.textPrimary,
+              ),
             ),
           ),
         ],

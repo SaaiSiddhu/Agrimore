@@ -284,16 +284,19 @@ class _PayoutHistoryScreenState extends State<PayoutHistoryScreen> {
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
               Row(
-                mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                crossAxisAlignment: CrossAxisAlignment.center,
                 children: [
-                  Text(
-                    SaFormatters.formatCurrency(amount),
-                    style: TextStyle(
-                      fontSize: 18,
-                      fontWeight: FontWeight.w800,
-                      color: tokens.textPrimary,
+                  Expanded(
+                    child: Text(
+                      SaFormatters.formatCurrency(amount),
+                      style: TextStyle(
+                        fontSize: 18,
+                        fontWeight: FontWeight.w800,
+                        color: tokens.textPrimary,
+                      ),
                     ),
                   ),
+                  const SizedBox(width: SaTokens.space8),
                   Container(
                     padding: const EdgeInsets.symmetric(
                       horizontal: 8,
@@ -317,39 +320,44 @@ class _PayoutHistoryScreenState extends State<PayoutHistoryScreen> {
               const SizedBox(height: SaTokens.space8),
 
               Row(
-                mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                crossAxisAlignment: CrossAxisAlignment.center,
                 children: [
-                  Row(
-                    children: [
-                      Container(
-                        padding: const EdgeInsets.symmetric(
-                          horizontal: 6,
-                          vertical: 2,
-                        ),
-                        decoration: BoxDecoration(
-                          color: tokens.primarySubtle,
-                          borderRadius: BorderRadius.circular(4),
-                        ),
-                        child: Text(
-                          method,
-                          style: TextStyle(
-                            fontSize: 10,
-                            fontWeight: FontWeight.w700,
-                            color: tokens.primary,
+                  Expanded(
+                    child: Wrap(
+                      crossAxisAlignment: WrapCrossAlignment.center,
+                      spacing: SaTokens.space8,
+                      runSpacing: 4,
+                      children: [
+                        Container(
+                          padding: const EdgeInsets.symmetric(
+                            horizontal: 6,
+                            vertical: 2,
+                          ),
+                          decoration: BoxDecoration(
+                            color: tokens.primarySubtle,
+                            borderRadius: BorderRadius.circular(4),
+                          ),
+                          child: Text(
+                            method,
+                            style: TextStyle(
+                              fontSize: 10,
+                              fontWeight: FontWeight.w700,
+                              color: tokens.primary,
+                            ),
                           ),
                         ),
-                      ),
-                      const SizedBox(width: SaTokens.space8),
-                      if (createdAt != null)
-                        Text(
-                          SaFormatters.formatDate(createdAt),
-                          style: TextStyle(
-                            fontSize: SaTokens.fsCaption,
-                            color: tokens.textSecondary,
+                        if (createdAt != null)
+                          Text(
+                            SaFormatters.formatDate(createdAt),
+                            style: TextStyle(
+                              fontSize: SaTokens.fsCaption,
+                              color: tokens.textSecondary,
+                            ),
                           ),
-                        ),
-                    ],
+                      ],
+                    ),
                   ),
+                  const SizedBox(width: SaTokens.space8),
                   Icon(
                     Icons.chevron_right_rounded,
                     size: 20,

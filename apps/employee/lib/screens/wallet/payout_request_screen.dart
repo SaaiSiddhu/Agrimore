@@ -498,22 +498,28 @@ class _PayoutRequestScreenState extends State<PayoutRequestScreen> {
     return Padding(
       padding: const EdgeInsets.symmetric(vertical: 3),
       child: Row(
-        mainAxisAlignment: MainAxisAlignment.spaceBetween,
+        crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          Text(
-            label,
-            style: TextStyle(
-              fontSize: SaTokens.fsLabel,
-              color: isBold ? tokens.textPrimary : tokens.textSecondary,
-              fontWeight: isBold ? FontWeight.w700 : FontWeight.w400,
+          Expanded(
+            child: Text(
+              label,
+              style: TextStyle(
+                fontSize: SaTokens.fsLabel,
+                color: isBold ? tokens.textPrimary : tokens.textSecondary,
+                fontWeight: isBold ? FontWeight.w700 : FontWeight.w400,
+              ),
             ),
           ),
-          Text(
-            value,
-            style: TextStyle(
-              fontSize: SaTokens.fsLabel,
-              fontWeight: isBold ? FontWeight.w700 : FontWeight.w600,
-              color: tokens.textPrimary,
+          const SizedBox(width: SaTokens.space8),
+          Flexible(
+            child: Text(
+              value,
+              textAlign: TextAlign.end,
+              style: TextStyle(
+                fontSize: SaTokens.fsLabel,
+                fontWeight: isBold ? FontWeight.w700 : FontWeight.w600,
+                color: tokens.textPrimary,
+              ),
             ),
           ),
         ],

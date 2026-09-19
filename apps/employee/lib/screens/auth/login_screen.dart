@@ -236,7 +236,7 @@ class _LoginScreenState extends State<LoginScreen> {
         children: [
           _buildModeTab(
             tokens: tokens,
-            label: 'Mobile number',
+            label: 'Mobile',
             mode: _LoginMode.phone,
             icon: SaIcons.phone,
           ),

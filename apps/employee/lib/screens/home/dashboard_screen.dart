@@ -154,10 +154,14 @@ class DashboardScreen extends StatelessWidget {
     return Row(
       mainAxisAlignment: MainAxisAlignment.spaceBetween,
       children: [
-        Text(
-          'Recent Orders',
-          style: Theme.of(context).textTheme.titleMedium,
+        Expanded(
+          child: Text(
+            'Recent Orders',
+            style: Theme.of(context).textTheme.titleMedium,
+            overflow: TextOverflow.ellipsis,
+          ),
         ),
+        const SizedBox(width: SaTokens.space8),
         TextButton(
           onPressed: () {
             EmployeeShellController.of(context)?.switchTab(1);
@@ -192,7 +196,7 @@ class DashboardScreen extends StatelessWidget {
         }
         if (!snap.hasData) {
           return Container(
-            height: 72,
+            constraints: const BoxConstraints(minHeight: 72),
             padding: const EdgeInsets.all(SaTokens.space16),
             decoration: BoxDecoration(
               color: tokens.surface,
@@ -207,11 +211,14 @@ class DashboardScreen extends StatelessWidget {
                   size: 20,
                 ),
                 const SizedBox(width: SaTokens.space12),
-                Text(
-                  'Loading orders...',
-                  style: TextStyle(
-                    color: tokens.textSecondary,
-                    fontSize: SaTokens.fsLabel,
+                Expanded(
+                  child: Text(
+                    'Loading orders...',
+                    overflow: TextOverflow.ellipsis,
+                    style: TextStyle(
+                      color: tokens.textSecondary,
+                      fontSize: SaTokens.fsLabel,
+                    ),
                   ),
                 ),
               ],
@@ -281,12 +288,15 @@ class DashboardScreen extends StatelessWidget {
                 ),
                 title: Row(
                   children: [
-                    Text(
-                      '#$orderNumber',
-                      style: TextStyle(
-                        fontSize: SaTokens.fsBody,
-                        fontWeight: FontWeight.w700,
-                        color: tokens.textPrimary,
+                    Flexible(
+                      child: Text(
+                        '#$orderNumber',
+                        style: TextStyle(
+                          fontSize: SaTokens.fsBody,
+                          fontWeight: FontWeight.w700,
+                          color: tokens.textPrimary,
+                        ),
+                        overflow: TextOverflow.ellipsis,
                       ),
                     ),
                     if (normMode != null) ...[
@@ -460,15 +470,18 @@ class _MetricCard extends StatelessWidget {
               ],
             ),
             const SizedBox(height: SaTokens.space8),
-            Text(
-              value,
-              style: TextStyle(
-                fontSize: 18,
-                fontWeight: FontWeight.w800,
-                color: tokens.textPrimary,
+            FittedBox(
+              fit: BoxFit.scaleDown,
+              alignment: Alignment.centerLeft,
+              child: Text(
+                value,
+                style: TextStyle(
+                  fontSize: 18,
+                  fontWeight: FontWeight.w800,
+                  color: tokens.textPrimary,
+                ),
+                maxLines: 1,
               ),
-              maxLines: 1,
-              overflow: TextOverflow.ellipsis,
             ),
           ],
         ),
@@ -601,33 +614,36 @@ class _AssociateCodeCard extends StatelessWidget {
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
           Row(
-            mainAxisAlignment: MainAxisAlignment.spaceBetween,
             children: [
-              Row(
-                children: [
-                  Container(
-                    width: 32,
-                    height: 32,
-                    decoration: BoxDecoration(
-                      color: tokens.primarySubtle,
-                      borderRadius: BorderRadius.circular(6),
+              Expanded(
+                child: Row(
+                  children: [
+                    Container(
+                      width: 32,
+                      height: 32,
+                      decoration: BoxDecoration(
+                        color: tokens.primarySubtle,
+                        borderRadius: BorderRadius.circular(6),
+                      ),
+                      child: Icon(
+                        SaIcons.shoppingBag,
+                        color: tokens.primary,
+                        size: 16,
+                      ),
                     ),
-                    child: Icon(
-                      SaIcons.shoppingBag,
-                      color: tokens.primary,
-                      size: 16,
+                    const SizedBox(width: SaTokens.space8),
+                    Expanded(
+                      child: Text(
+                        'Your Associate Code',
+                        style: TextStyle(
+                          fontSize: SaTokens.fsBody,
+                          fontWeight: FontWeight.w700,
+                          color: tokens.textPrimary,
+                        ),
+                      ),
                     ),
-                  ),
-                  const SizedBox(width: SaTokens.space8),
-                  Text(
-                    'Your Associate Code',
-                    style: TextStyle(
-                      fontSize: SaTokens.fsBody,
-                      fontWeight: FontWeight.w700,
-                      color: tokens.textPrimary,
-                    ),
-                  ),
-                ],
+                  ],
+                ),
               ),
               IconButton(
                 icon: Icon(SaIcons.share2, color: tokens.primary, size: 20),
@@ -655,29 +671,36 @@ class _AssociateCodeCard extends StatelessWidget {
               child: Row(
                 mainAxisAlignment: MainAxisAlignment.spaceBetween,
                 children: [
-                  Column(
-                    crossAxisAlignment: CrossAxisAlignment.start,
-                    children: [
-                      Text(
-                        code,
-                        style: TextStyle(
-                          fontSize: 24,
-                          fontWeight: FontWeight.w900,
-                          letterSpacing: 2,
-                          color: tokens.textPrimary,
+                  Expanded(
+                    child: Column(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [
+                        FittedBox(
+                          fit: BoxFit.scaleDown,
+                          alignment: Alignment.centerLeft,
+                          child: Text(
+                            code,
+                            style: TextStyle(
+                              fontSize: 24,
+                              fontWeight: FontWeight.w900,
+                              letterSpacing: 2,
+                              color: tokens.textPrimary,
+                            ),
+                          ),
                         ),
-                      ),
-                      const SizedBox(height: 2),
-                      Text(
-                        'Tap to copy code',
-                        style: TextStyle(
-                          fontSize: 11,
-                          fontWeight: FontWeight.w500,
-                          color: tokens.textSecondary,
+                        const SizedBox(height: 2),
+                        Text(
+                          'Tap to copy code',
+                          style: TextStyle(
+                            fontSize: 11,
+                            fontWeight: FontWeight.w500,
+                            color: tokens.textSecondary,
+                          ),
                         ),
-                      ),
-                    ],
+                      ],
+                    ),
                   ),
+                  const SizedBox(width: SaTokens.space8),
                   Container(
                     padding: const EdgeInsets.all(8),
                     decoration: BoxDecoration(
@@ -767,40 +790,11 @@ class _OnboardingFeeStatusCard extends StatelessWidget {
           borderRadius: BorderRadius.circular(SaTokens.radiusCard),
           border: Border.all(color: tokens.divider),
         ),
-        child: Row(
-          children: [
-            Icon(
-              isCleared ? SaIcons.circleCheck : SaIcons.triangleAlert,
-              color: badgeFg,
-              size: 18,
-            ),
-            const SizedBox(width: SaTokens.space12),
-            Expanded(
-              child: Column(
-                crossAxisAlignment: CrossAxisAlignment.start,
-                children: [
-                  Text(
-                    'Onboarding Status',
-                    style: TextStyle(
-                      fontSize: SaTokens.fsBody,
-                      fontWeight: FontWeight.w600,
-                      color: tokens.textPrimary,
-                    ),
-                  ),
-                  const SizedBox(height: 2),
-                  Text(
-                    isCleared
-                        ? 'Retail & B2B attribution active'
-                        : 'Complete fee for retail attribution',
-                    style: TextStyle(
-                      fontSize: SaTokens.fsCaption,
-                      color: tokens.textSecondary,
-                    ),
-                  ),
-                ],
-              ),
-            ),
-            Container(
+        child: LayoutBuilder(
+          builder: (context, constraints) {
+            final textScale = MediaQuery.textScalerOf(context).scale(1.0);
+            final isStacked = constraints.maxWidth < 320 || textScale > 1.15;
+            final badgeWidget = Container(
               padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
               decoration: BoxDecoration(
                 color: badgeBg,
@@ -814,14 +808,99 @@ class _OnboardingFeeStatusCard extends StatelessWidget {
                   color: badgeFg,
                 ),
               ),
-            ),
-            const SizedBox(width: 4),
-            Icon(
-              Icons.chevron_right_rounded,
-              color: tokens.textSecondary,
-              size: 20,
-            ),
-          ],
+            );
+
+            if (isStacked) {
+              return Row(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  Icon(
+                    isCleared ? SaIcons.circleCheck : SaIcons.triangleAlert,
+                    color: badgeFg,
+                    size: 18,
+                  ),
+                  const SizedBox(width: SaTokens.space12),
+                  Expanded(
+                    child: Column(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [
+                        Text(
+                          'Onboarding Status',
+                          style: TextStyle(
+                            fontSize: SaTokens.fsBody,
+                            fontWeight: FontWeight.w600,
+                            color: tokens.textPrimary,
+                          ),
+                        ),
+                        const SizedBox(height: 2),
+                        Text(
+                          isCleared
+                              ? 'Retail & B2B attribution active'
+                              : 'Complete fee for retail attribution',
+                          style: TextStyle(
+                            fontSize: SaTokens.fsCaption,
+                            color: tokens.textSecondary,
+                          ),
+                        ),
+                        const SizedBox(height: SaTokens.space8),
+                        badgeWidget,
+                      ],
+                    ),
+                  ),
+                  const SizedBox(width: 4),
+                  Icon(
+                    Icons.chevron_right_rounded,
+                    color: tokens.textSecondary,
+                    size: 20,
+                  ),
+                ],
+              );
+            }
+
+            return Row(
+              children: [
+                Icon(
+                  isCleared ? SaIcons.circleCheck : SaIcons.triangleAlert,
+                  color: badgeFg,
+                  size: 18,
+                ),
+                const SizedBox(width: SaTokens.space12),
+                Expanded(
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      Text(
+                        'Onboarding Status',
+                        style: TextStyle(
+                          fontSize: SaTokens.fsBody,
+                          fontWeight: FontWeight.w600,
+                          color: tokens.textPrimary,
+                        ),
+                      ),
+                      const SizedBox(height: 2),
+                      Text(
+                        isCleared
+                            ? 'Retail & B2B attribution active'
+                            : 'Complete fee for retail attribution',
+                        style: TextStyle(
+                          fontSize: SaTokens.fsCaption,
+                          color: tokens.textSecondary,
+                        ),
+                      ),
+                    ],
+                  ),
+                ),
+                const SizedBox(width: SaTokens.space8),
+                badgeWidget,
+                const SizedBox(width: 4),
+                Icon(
+                  Icons.chevron_right_rounded,
+                  color: tokens.textSecondary,
+                  size: 20,
+                ),
+              ],
+            );
+          },
         ),
       ),
     );

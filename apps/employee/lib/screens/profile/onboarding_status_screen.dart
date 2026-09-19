@@ -280,18 +280,11 @@ class OnboardingStatusScreen extends StatelessWidget {
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          Row(
-            mainAxisAlignment: MainAxisAlignment.spaceBetween,
-            children: [
-              Text(
-                title,
-                style: TextStyle(
-                  fontSize: SaTokens.fsBody,
-                  fontWeight: FontWeight.w700,
-                  color: tokens.textPrimary,
-                ),
-              ),
-              Container(
+          LayoutBuilder(
+            builder: (context, constraints) {
+              final textScale = MediaQuery.textScalerOf(context).scale(1.0);
+              final isStacked = constraints.maxWidth < 320 || textScale > 1.15;
+              final badgeWidget = Container(
                 padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 3),
                 decoration: BoxDecoration(
                   color: isUnlocked ? tokens.successBg : tokens.warningBg,
@@ -305,8 +298,44 @@ class OnboardingStatusScreen extends StatelessWidget {
                     color: isUnlocked ? tokens.successFg : tokens.warningFg,
                   ),
                 ),
-              ),
-            ],
+              );
+
+              if (isStacked) {
+                return Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Text(
+                      title,
+                      style: TextStyle(
+                        fontSize: SaTokens.fsBody,
+                        fontWeight: FontWeight.w700,
+                        color: tokens.textPrimary,
+                      ),
+                    ),
+                    const SizedBox(height: SaTokens.space8),
+                    badgeWidget,
+                  ],
+                );
+              }
+
+              return Row(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  Expanded(
+                    child: Text(
+                      title,
+                      style: TextStyle(
+                        fontSize: SaTokens.fsBody,
+                        fontWeight: FontWeight.w700,
+                        color: tokens.textPrimary,
+                      ),
+                    ),
+                  ),
+                  const SizedBox(width: SaTokens.space8),
+                  badgeWidget,
+                ],
+              );
+            },
           ),
           const SizedBox(height: SaTokens.space8),
           Text(

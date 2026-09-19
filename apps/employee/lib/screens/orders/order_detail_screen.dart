@@ -118,14 +118,17 @@ class OrderDetailScreen extends StatelessWidget {
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
           Row(
-            mainAxisAlignment: MainAxisAlignment.spaceBetween,
+            crossAxisAlignment: CrossAxisAlignment.center,
             children: [
-              Text(
-                'Order Summary',
-                style: Theme.of(context).textTheme.titleMedium?.copyWith(
-                      color: tokens.textPrimary,
-                    ),
+              Expanded(
+                child: Text(
+                  'Order Summary',
+                  style: Theme.of(context).textTheme.titleMedium?.copyWith(
+                        color: tokens.textPrimary,
+                      ),
+                ),
               ),
+              const SizedBox(width: 8),
               Container(
                 padding: const EdgeInsets.symmetric(
                   horizontal: 8,
@@ -234,23 +237,29 @@ class OrderDetailScreen extends StatelessWidget {
               children: [
                 Icon(SaIcons.circleCheck, color: tokens.successFg, size: 20),
                 const SizedBox(width: SaTokens.space8),
-                Text(
-                  'Commission Credited',
-                  style: TextStyle(
-                    fontSize: SaTokens.fsBody,
-                    fontWeight: FontWeight.w700,
-                    color: tokens.successFg,
+                Expanded(
+                  child: Text(
+                    'Commission Credited',
+                    style: TextStyle(
+                      fontSize: SaTokens.fsBody,
+                      fontWeight: FontWeight.w700,
+                      color: tokens.successFg,
+                    ),
                   ),
                 ),
               ],
             ),
             const SizedBox(height: SaTokens.space12),
-            Text(
-              SaFormatters.formatCurrency(commissionAmount),
-              style: TextStyle(
-                fontSize: 26,
-                fontWeight: FontWeight.w900,
-                color: tokens.successFg,
+            FittedBox(
+              fit: BoxFit.scaleDown,
+              alignment: Alignment.centerLeft,
+              child: Text(
+                SaFormatters.formatCurrency(commissionAmount),
+                style: TextStyle(
+                  fontSize: 26,
+                  fontWeight: FontWeight.w900,
+                  color: tokens.successFg,
+                ),
               ),
             ),
             const SizedBox(height: SaTokens.space4),
@@ -286,12 +295,14 @@ class OrderDetailScreen extends StatelessWidget {
                 size: 20,
               ),
               const SizedBox(width: SaTokens.space8),
-              Text(
-                'Commission Pending',
-                style: TextStyle(
-                  fontSize: SaTokens.fsBody,
-                  fontWeight: FontWeight.w700,
-                  color: tokens.textPrimary,
+              Expanded(
+                child: Text(
+                  'Commission Pending',
+                  style: TextStyle(
+                    fontSize: SaTokens.fsBody,
+                    fontWeight: FontWeight.w700,
+                    color: tokens.textPrimary,
+                  ),
                 ),
               ),
             ],
@@ -335,7 +346,7 @@ class OrderDetailScreen extends StatelessWidget {
           const SizedBox(height: SaTokens.space12),
           ...itemList.whereType<Map>().map((raw) {
             final item = Map<String, dynamic>.from(raw);
-            final name = (item['productName'] ?? item['title'] ?? 'Product').toString();
+            final name = (item['productName'] ?? item['title'] ?? item['name'] ?? 'Product').toString();
             final quantity = (item['quantity'] as num?)?.toInt() ?? 1;
             final price = (item['price'] as num?)?.toDouble() ?? 0.0;
             final lineTotal = price * quantity;
@@ -367,12 +378,16 @@ class OrderDetailScreen extends StatelessWidget {
                       ],
                     ),
                   ),
-                  Text(
-                    SaFormatters.formatCurrency(lineTotal),
-                    style: TextStyle(
-                      fontSize: SaTokens.fsBody,
-                      fontWeight: FontWeight.w700,
-                      color: tokens.textPrimary,
+                  const SizedBox(width: SaTokens.space8),
+                  Flexible(
+                    child: Text(
+                      SaFormatters.formatCurrency(lineTotal),
+                      textAlign: TextAlign.end,
+                      style: TextStyle(
+                        fontSize: SaTokens.fsBody,
+                        fontWeight: FontWeight.w700,
+                        color: tokens.textPrimary,
+                      ),
                     ),
                   ),
                 ],
@@ -393,22 +408,28 @@ class OrderDetailScreen extends StatelessWidget {
     return Padding(
       padding: const EdgeInsets.symmetric(vertical: 4),
       child: Row(
-        mainAxisAlignment: MainAxisAlignment.spaceBetween,
+        crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          Text(
-            label,
-            style: TextStyle(
-              fontSize: SaTokens.fsLabel,
-              color: isBold ? tokens.textPrimary : tokens.textSecondary,
-              fontWeight: isBold ? FontWeight.w700 : FontWeight.w400,
+          Expanded(
+            child: Text(
+              label,
+              style: TextStyle(
+                fontSize: SaTokens.fsLabel,
+                color: isBold ? tokens.textPrimary : tokens.textSecondary,
+                fontWeight: isBold ? FontWeight.w700 : FontWeight.w400,
+              ),
             ),
           ),
-          Text(
-            value,
-            style: TextStyle(
-              fontSize: SaTokens.fsLabel,
-              color: tokens.textPrimary,
-              fontWeight: isBold ? FontWeight.w700 : FontWeight.w600,
+          const SizedBox(width: SaTokens.space8),
+          Flexible(
+            child: Text(
+              value,
+              textAlign: TextAlign.end,
+              style: TextStyle(
+                fontSize: SaTokens.fsLabel,
+                color: tokens.textPrimary,
+                fontWeight: isBold ? FontWeight.w700 : FontWeight.w600,
+              ),
             ),
           ),
         ],

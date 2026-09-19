@@ -119,16 +119,19 @@ class _WalletScreenState extends State<WalletScreen> {
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
               Row(
-                mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                crossAxisAlignment: CrossAxisAlignment.center,
                 children: [
-                  Text(
-                    'Available Balance',
-                    style: TextStyle(
-                      fontSize: SaTokens.fsCaption,
-                      fontWeight: FontWeight.w600,
-                      color: tokens.textSecondary,
+                  Expanded(
+                    child: Text(
+                      'Available Balance',
+                      style: TextStyle(
+                        fontSize: SaTokens.fsCaption,
+                        fontWeight: FontWeight.w600,
+                        color: tokens.textSecondary,
+                      ),
                     ),
                   ),
+                  const SizedBox(width: SaTokens.space8),
                   Container(
                     padding: const EdgeInsets.symmetric(
                       horizontal: 8,
@@ -150,28 +153,35 @@ class _WalletScreenState extends State<WalletScreen> {
                 ],
               ),
               const SizedBox(height: SaTokens.space4),
-              Text(
-                SaFormatters.formatCurrency(balance),
-                style: TextStyle(
-                  fontSize: 32,
-                  fontWeight: FontWeight.w900,
-                  color: tokens.textPrimary,
-                  letterSpacing: -0.5,
+              FittedBox(
+                fit: BoxFit.scaleDown,
+                alignment: Alignment.centerLeft,
+                child: Text(
+                  SaFormatters.formatCurrency(balance),
+                  style: TextStyle(
+                    fontSize: 32,
+                    fontWeight: FontWeight.w900,
+                    color: tokens.textPrimary,
+                    letterSpacing: -0.5,
+                  ),
                 ),
               ),
               const SizedBox(height: SaTokens.space12),
               Divider(color: tokens.divider),
               const SizedBox(height: SaTokens.space8),
               Row(
-                mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                crossAxisAlignment: CrossAxisAlignment.center,
                 children: [
-                  Text(
-                    'Lifetime Commission',
-                    style: TextStyle(
-                      fontSize: SaTokens.fsCaption,
-                      color: tokens.textSecondary,
+                  Expanded(
+                    child: Text(
+                      'Lifetime Commission',
+                      style: TextStyle(
+                        fontSize: SaTokens.fsCaption,
+                        color: tokens.textSecondary,
+                      ),
                     ),
                   ),
+                  const SizedBox(width: SaTokens.space8),
                   Text(
                     SaFormatters.formatCurrency(lifetimeEarnings),
                     style: TextStyle(
@@ -495,7 +505,7 @@ class _ActionTile extends StatelessWidget {
                 fontWeight: FontWeight.w700,
                 color: isPrimary ? Colors.white : tokens.textPrimary,
               ),
-              maxLines: 1,
+              maxLines: 2,
               overflow: TextOverflow.ellipsis,
             ),
           ],

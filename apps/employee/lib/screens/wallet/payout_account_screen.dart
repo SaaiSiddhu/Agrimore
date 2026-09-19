@@ -301,12 +301,14 @@ class _PayoutAccountScreenState extends State<PayoutAccountScreen> {
             children: [
               Icon(SaIcons.circleCheck, color: tokens.successFg, size: 20),
               const SizedBox(width: SaTokens.space8),
-              Text(
-                'Active Payout Destination',
-                style: TextStyle(
-                  fontSize: SaTokens.fsBody,
-                  fontWeight: FontWeight.w700,
-                  color: tokens.successFg,
+              Expanded(
+                child: Text(
+                  'Active Payout Destination',
+                  style: TextStyle(
+                    fontSize: SaTokens.fsBody,
+                    fontWeight: FontWeight.w700,
+                    color: tokens.successFg,
+                  ),
                 ),
               ),
             ],
@@ -400,12 +402,16 @@ class _PayoutAccountScreenState extends State<PayoutAccountScreen> {
                 color: selected ? tokens.primary : tokens.textSecondary,
               ),
               const SizedBox(width: 6),
-              Text(
-                label,
-                style: TextStyle(
-                  fontSize: SaTokens.fsLabel,
-                  fontWeight: selected ? FontWeight.w700 : FontWeight.w500,
-                  color: selected ? tokens.primary : tokens.textSecondary,
+              Flexible(
+                child: Text(
+                  label,
+                  maxLines: 1,
+                  overflow: TextOverflow.ellipsis,
+                  style: TextStyle(
+                    fontSize: SaTokens.fsLabel,
+                    fontWeight: selected ? FontWeight.w700 : FontWeight.w500,
+                    color: selected ? tokens.primary : tokens.textSecondary,
+                  ),
                 ),
               ),
             ],

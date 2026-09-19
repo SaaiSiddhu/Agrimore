@@ -226,28 +226,31 @@ class ProfileScreen extends StatelessWidget {
             Row(
               mainAxisAlignment: MainAxisAlignment.spaceBetween,
               children: [
-                Column(
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  children: [
-                    Text(
-                      'Associate Referral Code',
-                      style: TextStyle(
-                        fontSize: SaTokens.fsCaption,
-                        color: tokens.textSecondary,
+                Expanded(
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      Text(
+                        'Associate Referral Code',
+                        style: TextStyle(
+                          fontSize: SaTokens.fsCaption,
+                          color: tokens.textSecondary,
+                        ),
                       ),
-                    ),
-                    const SizedBox(height: 2),
-                    Text(
-                      employee.employeeCode,
-                      style: TextStyle(
-                        fontSize: 16,
-                        fontWeight: FontWeight.w800,
-                        letterSpacing: 1.5,
-                        color: tokens.textPrimary,
+                      const SizedBox(height: 2),
+                      Text(
+                        employee.employeeCode,
+                        style: TextStyle(
+                          fontSize: 16,
+                          fontWeight: FontWeight.w800,
+                          letterSpacing: 1.5,
+                          color: tokens.textPrimary,
+                        ),
                       ),
-                    ),
-                  ],
+                    ],
+                  ),
                 ),
+                const SizedBox(width: SaTokens.space8),
                 TextButton.icon(
                   onPressed: () {
                     Clipboard.setData(
