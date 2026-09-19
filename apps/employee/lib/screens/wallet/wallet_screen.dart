@@ -29,17 +29,18 @@ class _WalletScreenState extends State<WalletScreen> {
 
   @override
   Widget build(BuildContext context) {
+    final tokens = context.saTokens;
     final uid = FirebaseAuth.instance.currentUser?.uid;
 
     if (uid == null) {
-      return const Scaffold(
-        backgroundColor: SaTokens.pageBackground,
-        body: Center(child: CircularProgressIndicator()),
+      return Scaffold(
+        backgroundColor: tokens.pageBackground,
+        body: const SizedBox.shrink(),
       );
     }
 
     return Scaffold(
-      backgroundColor: SaTokens.pageBackground,
+      backgroundColor: tokens.pageBackground,
       appBar: AppBar(
         title: const Text('Commission Wallet'),
       ),
@@ -47,7 +48,7 @@ class _WalletScreenState extends State<WalletScreen> {
         padding: const EdgeInsets.all(SaTokens.space16),
         children: [
           // 1. Balance Hero Card
-          _buildBalanceHero(uid),
+          _buildBalanceHero(context, uid),
           const SizedBox(height: SaTokens.space16),
 
           // 2. Quick Action Buttons
@@ -70,24 +71,25 @@ class _WalletScreenState extends State<WalletScreen> {
             scrollDirection: Axis.horizontal,
             child: Row(
               children: [
-                _buildFilterChip('All Transactions', _TransactionFilter.all),
+                _buildFilterChip(context, 'All Transactions', _TransactionFilter.all),
                 const SizedBox(width: SaTokens.space8),
-                _buildFilterChip('Credits', _TransactionFilter.credits),
+                _buildFilterChip(context, 'Credits', _TransactionFilter.credits),
                 const SizedBox(width: SaTokens.space8),
-                _buildFilterChip('Debits / Payouts', _TransactionFilter.debits),
+                _buildFilterChip(context, 'Debits / Payouts', _TransactionFilter.debits),
               ],
             ),
           ),
           const SizedBox(height: SaTokens.space12),
 
           // 4. Ledger Transaction List
-          _buildTransactionsList(uid),
+          _buildTransactionsList(context, uid),
         ],
       ),
     );
   }
 
-  Widget _buildBalanceHero(String uid) {
+  Widget _buildBalanceHero(BuildContext context, String uid) {
+    final tokens = context.saTokens;
     return StreamBuilder<DocumentSnapshot<Map<String, dynamic>>>(
       stream: FirebaseFirestore.instance
           .collection('wallets')
@@ -102,12 +104,12 @@ class _WalletScreenState extends State<WalletScreen> {
         return Container(
           padding: const EdgeInsets.all(SaTokens.space24),
           decoration: BoxDecoration(
-            color: SaTokens.surface,
+            color: tokens.surface,
             borderRadius: BorderRadius.circular(SaTokens.radiusCard),
-            border: Border.all(color: SaTokens.primary, width: 1.5),
+            border: Border.all(color: tokens.primary, width: 1.5),
             boxShadow: [
               BoxShadow(
-                color: SaTokens.primary.withValues(alpha: 0.08),
+                color: tokens.primary.withValues(alpha: 0.08),
                 blurRadius: 16,
                 offset: const Offset(0, 4),
               ),
@@ -119,12 +121,12 @@ class _WalletScreenState extends State<WalletScreen> {
               Row(
                 mainAxisAlignment: MainAxisAlignment.spaceBetween,
                 children: [
-                  const Text(
+                  Text(
                     'Available Balance',
                     style: TextStyle(
                       fontSize: SaTokens.fsCaption,
                       fontWeight: FontWeight.w600,
-                      color: SaTokens.textSecondary,
+                      color: tokens.textSecondary,
                     ),
                   ),
                   Container(
@@ -133,15 +135,15 @@ class _WalletScreenState extends State<WalletScreen> {
                       vertical: 3,
                     ),
                     decoration: BoxDecoration(
-                      color: SaTokens.primarySubtle,
+                      color: tokens.primarySubtle,
                       borderRadius: BorderRadius.circular(6),
                     ),
-                    child: const Text(
+                    child: Text(
                       'Ready for Payout',
                       style: TextStyle(
                         fontSize: 10.5,
                         fontWeight: FontWeight.w700,
-                        color: SaTokens.primary,
+                        color: tokens.primary,
                       ),
                     ),
                   ),
@@ -150,32 +152,32 @@ class _WalletScreenState extends State<WalletScreen> {
               const SizedBox(height: SaTokens.space4),
               Text(
                 SaFormatters.formatCurrency(balance),
-                style: const TextStyle(
+                style: TextStyle(
                   fontSize: 32,
                   fontWeight: FontWeight.w900,
-                  color: SaTokens.textPrimary,
+                  color: tokens.textPrimary,
                   letterSpacing: -0.5,
                 ),
               ),
               const SizedBox(height: SaTokens.space12),
-              const Divider(color: SaTokens.divider),
+              Divider(color: tokens.divider),
               const SizedBox(height: SaTokens.space8),
               Row(
                 mainAxisAlignment: MainAxisAlignment.spaceBetween,
                 children: [
-                  const Text(
+                  Text(
                     'Lifetime Commission',
                     style: TextStyle(
                       fontSize: SaTokens.fsCaption,
-                      color: SaTokens.textSecondary,
+                      color: tokens.textSecondary,
                     ),
                   ),
                   Text(
                     SaFormatters.formatCurrency(lifetimeEarnings),
-                    style: const TextStyle(
+                    style: TextStyle(
                       fontSize: SaTokens.fsBody,
                       fontWeight: FontWeight.w700,
-                      color: SaTokens.primary,
+                      color: tokens.primary,
                     ),
                   ),
                 ],
@@ -240,7 +242,8 @@ class _WalletScreenState extends State<WalletScreen> {
     );
   }
 
-  Widget _buildFilterChip(String label, _TransactionFilter filter) {
+  Widget _buildFilterChip(BuildContext context, String label, _TransactionFilter filter) {
+    final tokens = context.saTokens;
     final selected = _filter == filter;
     return ChoiceChip(
       label: Text(label),
@@ -248,15 +251,15 @@ class _WalletScreenState extends State<WalletScreen> {
       onSelected: (val) {
         if (val) setState(() => _filter = filter);
       },
-      selectedColor: SaTokens.primarySubtle,
-      backgroundColor: SaTokens.surface,
+      selectedColor: tokens.primarySubtle,
+      backgroundColor: tokens.surface,
       labelStyle: TextStyle(
         fontSize: SaTokens.fsLabel,
         fontWeight: selected ? FontWeight.w600 : FontWeight.w500,
-        color: selected ? SaTokens.primary : SaTokens.textSecondary,
+        color: selected ? tokens.primary : tokens.textSecondary,
       ),
       side: BorderSide(
-        color: selected ? SaTokens.primary : SaTokens.divider,
+        color: selected ? tokens.primary : tokens.divider,
       ),
       shape: RoundedRectangleBorder(
         borderRadius: BorderRadius.circular(SaTokens.radiusInput),
@@ -264,7 +267,8 @@ class _WalletScreenState extends State<WalletScreen> {
     );
   }
 
-  Widget _buildTransactionsList(String uid) {
+  Widget _buildTransactionsList(BuildContext context, String uid) {
+    final tokens = context.saTokens;
     return StreamBuilder<QuerySnapshot<Map<String, dynamic>>>(
       stream: FirebaseFirestore.instance
           .collection('wallet_transactions')
@@ -277,17 +281,15 @@ class _WalletScreenState extends State<WalletScreen> {
           return Center(
             child: Padding(
               padding: const EdgeInsets.all(SaTokens.space16),
-              child: Text('Error: ${snap.error}'),
+              child: Text(
+                'Error: ${snap.error}',
+                style: TextStyle(color: tokens.textSecondary),
+              ),
             ),
           );
         }
         if (!snap.hasData) {
-          return const Center(
-            child: Padding(
-              padding: EdgeInsets.all(SaTokens.space24),
-              child: CircularProgressIndicator(),
-            ),
-          );
+          return const SizedBox.shrink();
         }
 
         final allDocs = snap.data!.docs;
@@ -306,23 +308,23 @@ class _WalletScreenState extends State<WalletScreen> {
           return Container(
             padding: const EdgeInsets.all(SaTokens.space32),
             decoration: BoxDecoration(
-              color: SaTokens.surface,
+              color: tokens.surface,
               borderRadius: BorderRadius.circular(SaTokens.radiusCard),
-              border: Border.all(color: SaTokens.divider),
+              border: Border.all(color: tokens.divider),
             ),
             child: Center(
               child: Column(
                 children: [
-                  const Icon(
+                  Icon(
                     SaIcons.wallet,
                     size: 32,
-                    color: SaTokens.textSecondary,
+                    color: tokens.textSecondary,
                   ),
                   const SizedBox(height: SaTokens.space8),
                   Text(
                     'No transactions recorded',
                     style: Theme.of(context).textTheme.bodyMedium?.copyWith(
-                          color: SaTokens.textSecondary,
+                          color: tokens.textSecondary,
                         ),
                   ),
                 ],
@@ -337,7 +339,7 @@ class _WalletScreenState extends State<WalletScreen> {
           children: [
             ...filteredDocs.map((doc) {
               final d = doc.data();
-              return _buildTransactionCard(d);
+              return _buildTransactionCard(context, d);
             }),
             if (reachedPageLimit) ...[
               const SizedBox(height: SaTokens.space8),
@@ -354,7 +356,8 @@ class _WalletScreenState extends State<WalletScreen> {
     );
   }
 
-  Widget _buildTransactionCard(Map<String, dynamic> d) {
+  Widget _buildTransactionCard(BuildContext context, Map<String, dynamic> d) {
+    final tokens = context.saTokens;
     final amount = (d['amount'] as num?)?.toDouble() ?? 0.0;
     final type = (d['type'] ?? 'credit').toString().toLowerCase();
     final isCredit = type == 'credit';
@@ -371,9 +374,9 @@ class _WalletScreenState extends State<WalletScreen> {
     return Container(
       margin: const EdgeInsets.only(bottom: SaTokens.space8),
       decoration: BoxDecoration(
-        color: SaTokens.surface,
+        color: tokens.surface,
         borderRadius: BorderRadius.circular(SaTokens.radiusCard),
-        border: Border.all(color: SaTokens.divider),
+        border: Border.all(color: tokens.divider),
       ),
       child: ListTile(
         contentPadding: const EdgeInsets.symmetric(
@@ -384,21 +387,21 @@ class _WalletScreenState extends State<WalletScreen> {
           width: 38,
           height: 38,
           decoration: BoxDecoration(
-            color: isCredit ? SaTokens.successBg : SaTokens.pageBackground,
+            color: isCredit ? tokens.successBg : tokens.pageBackground,
             shape: BoxShape.circle,
           ),
           child: Icon(
             isCredit ? Icons.arrow_downward_rounded : Icons.arrow_upward_rounded,
             size: 18,
-            color: isCredit ? SaTokens.successFg : SaTokens.textSecondary,
+            color: isCredit ? tokens.successFg : tokens.textSecondary,
           ),
         ),
         title: Text(
           description,
-          style: const TextStyle(
+          style: TextStyle(
             fontSize: SaTokens.fsBody,
             fontWeight: FontWeight.w600,
-            color: SaTokens.textPrimary,
+            color: tokens.textPrimary,
           ),
         ),
         subtitle: Row(
@@ -406,15 +409,15 @@ class _WalletScreenState extends State<WalletScreen> {
             Container(
               padding: const EdgeInsets.symmetric(horizontal: 5, vertical: 2),
               decoration: BoxDecoration(
-                color: SaTokens.pageBackground,
+                color: tokens.pageBackground,
                 borderRadius: BorderRadius.circular(4),
               ),
               child: Text(
                 source.toUpperCase(),
-                style: const TextStyle(
+                style: TextStyle(
                   fontSize: 9.5,
                   fontWeight: FontWeight.w700,
-                  color: SaTokens.textSecondary,
+                  color: tokens.textSecondary,
                 ),
               ),
             ),
@@ -422,9 +425,9 @@ class _WalletScreenState extends State<WalletScreen> {
             if (createdAt != null)
               Text(
                 SaFormatters.formatDate(createdAt),
-                style: const TextStyle(
+                style: TextStyle(
                   fontSize: SaTokens.fsCaption,
-                  color: SaTokens.textSecondary,
+                  color: tokens.textSecondary,
                 ),
               ),
           ],
@@ -434,7 +437,7 @@ class _WalletScreenState extends State<WalletScreen> {
           style: TextStyle(
             fontSize: SaTokens.fsBody,
             fontWeight: FontWeight.w800,
-            color: isCredit ? SaTokens.successFg : SaTokens.textPrimary,
+            color: isCredit ? tokens.successFg : tokens.textPrimary,
           ),
         ),
       ),
@@ -459,6 +462,7 @@ class _ActionTile extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final tokens = context.saTokens;
     return InkWell(
       onTap: onTap,
       borderRadius: BorderRadius.circular(SaTokens.radiusInput),
@@ -468,10 +472,10 @@ class _ActionTile extends StatelessWidget {
           vertical: SaTokens.space12,
         ),
         decoration: BoxDecoration(
-          color: isPrimary ? SaTokens.primary : SaTokens.surface,
+          color: isPrimary ? tokens.primary : tokens.surface,
           borderRadius: BorderRadius.circular(SaTokens.radiusInput),
           border: Border.all(
-            color: isPrimary ? SaTokens.primary : SaTokens.divider,
+            color: isPrimary ? tokens.primary : tokens.divider,
           ),
         ),
         child: Column(
@@ -480,7 +484,7 @@ class _ActionTile extends StatelessWidget {
                 Icon(
                   icon,
                   size: 20,
-                  color: isPrimary ? Colors.white : SaTokens.primary,
+                  color: isPrimary ? Colors.white : tokens.primary,
                 ),
             const SizedBox(height: 6),
             Text(
@@ -489,7 +493,7 @@ class _ActionTile extends StatelessWidget {
               style: TextStyle(
                 fontSize: 11,
                 fontWeight: FontWeight.w700,
-                color: isPrimary ? Colors.white : SaTokens.textPrimary,
+                color: isPrimary ? Colors.white : tokens.textPrimary,
               ),
               maxLines: 1,
               overflow: TextOverflow.ellipsis,

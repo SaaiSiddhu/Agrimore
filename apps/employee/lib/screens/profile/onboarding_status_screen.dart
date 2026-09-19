@@ -19,17 +19,23 @@ class OnboardingStatusScreen extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final tokens = context.saTokens;
     final uid = employeeUid ?? FirebaseAuth.instance.currentUser?.uid;
 
     if (uid == null) {
-      return const Scaffold(
-        backgroundColor: SaTokens.pageBackground,
-        body: Center(child: CircularProgressIndicator()),
+      return Scaffold(
+        backgroundColor: tokens.pageBackground,
+        body: Center(
+          child: Text(
+            'Sign in to view onboarding status',
+            style: TextStyle(color: tokens.textSecondary),
+          ),
+        ),
       );
     }
 
     return Scaffold(
-      backgroundColor: SaTokens.pageBackground,
+      backgroundColor: tokens.pageBackground,
       appBar: AppBar(
         title: const Text('Onboarding Status'),
         leading: IconButton(
@@ -48,20 +54,38 @@ class OnboardingStatusScreen extends StatelessWidget {
             return Center(
               child: Padding(
                 padding: const EdgeInsets.all(SaTokens.space24),
-                child: Text('Error loading status: ${snap.error}'),
+                child: Text(
+                  'Error loading status: ${snap.error}',
+                  style: TextStyle(color: tokens.errorFg),
+                ),
               ),
             );
           }
           if (!snap.hasData) {
-            return const Center(child: CircularProgressIndicator());
+            return ListView(
+              padding: const EdgeInsets.all(SaTokens.space24),
+              children: [
+                Container(
+                  height: 120,
+                  decoration: BoxDecoration(
+                    color: tokens.surface,
+                    borderRadius: BorderRadius.circular(SaTokens.radiusCard),
+                    border: Border.all(color: tokens.divider),
+                  ),
+                ),
+              ],
+            );
           }
 
           final doc = snap.data!;
           if (!doc.exists || doc.data() == null) {
-            return const Center(
+            return Center(
               child: Padding(
-                padding: EdgeInsets.all(SaTokens.space24),
-                child: Text('Associate record not found'),
+                padding: const EdgeInsets.all(SaTokens.space24),
+                child: Text(
+                  'Associate record not found',
+                  style: TextStyle(color: tokens.textSecondary),
+                ),
               ),
             );
           }
@@ -75,18 +99,21 @@ class OnboardingStatusScreen extends StatelessWidget {
             padding: const EdgeInsets.all(SaTokens.space24),
             children: [
               // Status Hero Card
-              _buildStatusCard(context, employee, isCleared, isWaived, isPaid),
+              _buildStatusCard(context, tokens, employee, isCleared, isWaived, isPaid),
               const SizedBox(height: SaTokens.space24),
 
               // Attribution Rules Explanation
               Text(
                 'Attribution & Commission Rules',
-                style: Theme.of(context).textTheme.titleMedium,
+                style: Theme.of(context).textTheme.titleMedium?.copyWith(
+                      color: tokens.textPrimary,
+                    ),
               ),
               const SizedBox(height: SaTokens.space12),
 
               _buildRuleCard(
                 context,
+                tokens: tokens,
                 title: 'B2B Wholesale Orders',
                 statusLabel: 'Active & Unrestricted',
                 isUnlocked: true,
@@ -97,6 +124,7 @@ class OnboardingStatusScreen extends StatelessWidget {
 
               _buildRuleCard(
                 context,
+                tokens: tokens,
                 title: 'Retail (B2C) Orders',
                 statusLabel: isCleared ? 'Active & Unrestricted' : 'Locked — Fee Required',
                 isUnlocked: isCleared,
@@ -121,25 +149,26 @@ class OnboardingStatusScreen extends StatelessWidget {
               Container(
                 padding: const EdgeInsets.all(SaTokens.space16),
                 decoration: BoxDecoration(
-                  color: SaTokens.surface,
+                  color: tokens.surface,
                   borderRadius: BorderRadius.circular(SaTokens.radiusCard),
-                  border: Border.all(color: SaTokens.divider),
+                  border: Border.all(color: tokens.divider),
                 ),
                 child: Column(
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
-                    const Text(
+                    Text(
                       'Programme Integrity',
                       style: TextStyle(
                         fontSize: SaTokens.fsBody,
                         fontWeight: FontWeight.w600,
-                        color: SaTokens.textPrimary,
+                        color: tokens.textPrimary,
                       ),
                     ),
                     const SizedBox(height: SaTokens.space4),
                     Text(
                       'The one-time fee covers KYC identity verification and onboarding setup for self-applied associates. Associate status is non-transferable and subject to AgriMore terms of service.',
                       style: Theme.of(context).textTheme.bodySmall?.copyWith(
+                            color: tokens.textSecondary,
                             height: 1.5,
                           ),
                     ),
@@ -155,6 +184,7 @@ class OnboardingStatusScreen extends StatelessWidget {
 
   Widget _buildStatusCard(
     BuildContext context,
+    SalesAssociateTokens tokens,
     EmployeeModel employee,
     bool isCleared,
     bool isWaived,
@@ -175,10 +205,10 @@ class OnboardingStatusScreen extends StatelessWidget {
     return Container(
       padding: const EdgeInsets.all(SaTokens.space24),
       decoration: BoxDecoration(
-        color: isCleared ? SaTokens.successBg : SaTokens.warningBg,
+        color: isCleared ? tokens.successBg : tokens.warningBg,
         borderRadius: BorderRadius.circular(SaTokens.radiusCard),
         border: Border.all(
-          color: isCleared ? SaTokens.successFg : SaTokens.warningFg,
+          color: isCleared ? tokens.successFg : tokens.warningFg,
           width: 1.2,
         ),
       ),
@@ -189,7 +219,7 @@ class OnboardingStatusScreen extends StatelessWidget {
             children: [
               Icon(
                 isCleared ? SaIcons.circleCheck : SaIcons.triangleAlert,
-                color: isCleared ? SaTokens.successFg : SaTokens.warningFg,
+                color: isCleared ? tokens.successFg : tokens.warningFg,
                 size: 24,
               ),
               const SizedBox(width: SaTokens.space12),
@@ -199,7 +229,7 @@ class OnboardingStatusScreen extends StatelessWidget {
                   style: TextStyle(
                     fontSize: SaTokens.fsSectionHeading,
                     fontWeight: FontWeight.w700,
-                    color: isCleared ? SaTokens.successFg : SaTokens.warningFg,
+                    color: isCleared ? tokens.successFg : tokens.warningFg,
                   ),
                 ),
               ),
@@ -211,8 +241,8 @@ class OnboardingStatusScreen extends StatelessWidget {
             style: TextStyle(
               fontSize: SaTokens.fsBody,
               color: isCleared
-                  ? SaTokens.successFg.withValues(alpha: 0.9)
-                  : SaTokens.warningFg.withValues(alpha: 0.9),
+                  ? tokens.successFg.withValues(alpha: 0.9)
+                  : tokens.warningFg.withValues(alpha: 0.9),
               height: 1.4,
             ),
           ),
@@ -223,7 +253,7 @@ class OnboardingStatusScreen extends StatelessWidget {
               style: TextStyle(
                 fontSize: SaTokens.fsCaption,
                 fontWeight: FontWeight.w600,
-                color: isCleared ? SaTokens.successFg : SaTokens.warningFg,
+                color: isCleared ? tokens.successFg : tokens.warningFg,
               ),
             ),
           ],
@@ -234,6 +264,7 @@ class OnboardingStatusScreen extends StatelessWidget {
 
   Widget _buildRuleCard(
     BuildContext context, {
+    required SalesAssociateTokens tokens,
     required String title,
     required String statusLabel,
     required bool isUnlocked,
@@ -242,9 +273,9 @@ class OnboardingStatusScreen extends StatelessWidget {
     return Container(
       padding: const EdgeInsets.all(SaTokens.space16),
       decoration: BoxDecoration(
-        color: SaTokens.surface,
+        color: tokens.surface,
         borderRadius: BorderRadius.circular(SaTokens.radiusCard),
-        border: Border.all(color: SaTokens.divider),
+        border: Border.all(color: tokens.divider),
       ),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
@@ -254,16 +285,16 @@ class OnboardingStatusScreen extends StatelessWidget {
             children: [
               Text(
                 title,
-                style: const TextStyle(
+                style: TextStyle(
                   fontSize: SaTokens.fsBody,
                   fontWeight: FontWeight.w700,
-                  color: SaTokens.textPrimary,
+                  color: tokens.textPrimary,
                 ),
               ),
               Container(
                 padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 3),
                 decoration: BoxDecoration(
-                  color: isUnlocked ? SaTokens.successBg : SaTokens.warningBg,
+                  color: isUnlocked ? tokens.successBg : tokens.warningBg,
                   borderRadius: BorderRadius.circular(6),
                 ),
                 child: Text(
@@ -271,7 +302,7 @@ class OnboardingStatusScreen extends StatelessWidget {
                   style: TextStyle(
                     fontSize: 11,
                     fontWeight: FontWeight.w700,
-                    color: isUnlocked ? SaTokens.successFg : SaTokens.warningFg,
+                    color: isUnlocked ? tokens.successFg : tokens.warningFg,
                   ),
                 ),
               ),
@@ -280,7 +311,10 @@ class OnboardingStatusScreen extends StatelessWidget {
           const SizedBox(height: SaTokens.space8),
           Text(
             description,
-            style: Theme.of(context).textTheme.bodySmall?.copyWith(height: 1.45),
+            style: Theme.of(context).textTheme.bodySmall?.copyWith(
+                  color: tokens.textSecondary,
+                  height: 1.45,
+                ),
           ),
         ],
       ),

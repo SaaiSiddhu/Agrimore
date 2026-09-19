@@ -2,6 +2,7 @@ import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:cloud_functions/cloud_functions.dart';
 import 'package:firebase_auth/firebase_auth.dart';
 import 'package:flutter/material.dart';
+import 'package:agrimore_ui/agrimore_ui.dart';
 
 class PayoutScreen extends StatefulWidget {
   const PayoutScreen({super.key});
@@ -80,42 +81,47 @@ class _PayoutScreenState extends State<PayoutScreen> {
 
   @override
   Widget build(BuildContext context) {
+    final tokens = context.saTokens;
     final uid = FirebaseAuth.instance.currentUser?.uid;
 
     return Scaffold(
-      backgroundColor: const Color(0xFFF8FAFC),
+      backgroundColor: tokens.pageBackground,
       appBar: AppBar(title: const Text('Request Payout')),
       body: uid == null
-          ? const Center(child: CircularProgressIndicator())
+          ? Center(
+              child: Text(
+                'Associate session unavailable',
+                style: TextStyle(color: tokens.textSecondary),
+              ),
+            )
           : ListView(
               padding: const EdgeInsets.all(16),
               children: [
                 Container(
                   padding: const EdgeInsets.all(16),
                   decoration: BoxDecoration(
-                    color: Colors.white,
+                    color: tokens.surface,
                     borderRadius: BorderRadius.circular(16),
-                    boxShadow: [
-                      BoxShadow(
-                        color: Colors.black.withValues(alpha: 0.05),
-                        blurRadius: 12,
-                        offset: const Offset(0, 4),
-                      ),
-                    ],
+                    border: Border.all(color: tokens.divider),
                   ),
                   child: Column(
                     crossAxisAlignment: CrossAxisAlignment.start,
                     children: [
-                      const Text(
+                      Text(
                         'Request a Payout',
-                        style:
-                            TextStyle(fontSize: 16, fontWeight: FontWeight.w800),
+                        style: TextStyle(
+                          fontSize: 16,
+                          fontWeight: FontWeight.w800,
+                          color: tokens.textPrimary,
+                        ),
                       ),
                       const SizedBox(height: 4),
                       Text(
                         'The requested amount is deducted from your wallet immediately.',
                         style: TextStyle(
-                            fontSize: 12, color: Colors.grey.shade600),
+                          fontSize: 12,
+                          color: tokens.textSecondary,
+                        ),
                       ),
                       const SizedBox(height: 16),
                       TextField(
@@ -147,27 +153,23 @@ class _PayoutScreenState extends State<PayoutScreen> {
                   ),
                 ),
                 const SizedBox(height: 20),
-                const Text(
+                Text(
                   'Payout History',
-                  style: TextStyle(fontSize: 16, fontWeight: FontWeight.w800),
+                  style: TextStyle(
+                    fontSize: 16,
+                    fontWeight: FontWeight.w800,
+                    color: tokens.textPrimary,
+                  ),
                 ),
                 const SizedBox(height: 8),
-                _buildHistory(uid),
+                _buildHistory(uid, tokens),
               ],
             ),
     );
   }
 
-  Widget _buildHistory(String uid) {
+  Widget _buildHistory(String uid, SalesAssociateTokens tokens) {
     return StreamBuilder<QuerySnapshot<Map<String, dynamic>>>(
-      // Phase 20: bounded by _pageSize (see field comment), mirroring
-      // wallet_screen.dart's _buildTransactionsList and dashboard_screen.dart's
-      // _buildOrdersList (Phase 19) exactly. orderBy + limit rather than the
-      // previous unbounded .where(...) stream — sorting client-side after an
-      // unbounded fetch was the old shape; sorting server-side lets the limit
-      // actually bound the read. Requires the new
-      // employee_payouts(employeeId ASC, createdAt DESC) composite index
-      // added in this same phase — see firestore.indexes.json.
       stream: FirebaseFirestore.instance
           .collection('employee_payouts')
           .where('employeeId', isEqualTo: uid)
@@ -178,23 +180,39 @@ class _PayoutScreenState extends State<PayoutScreen> {
         if (snap.hasError) {
           return Padding(
             padding: const EdgeInsets.all(16),
-            child: Text('Error: ${snap.error}'),
+            child: Text(
+              'Error: ${snap.error}',
+              style: TextStyle(color: tokens.textSecondary),
+            ),
           );
         }
         if (!snap.hasData) {
-          return const Padding(
-            padding: EdgeInsets.all(24),
-            child: Center(child: CircularProgressIndicator()),
+          return Column(
+            children: List.generate(
+              3,
+              (index) => Container(
+                height: 64,
+                margin: const EdgeInsets.only(bottom: 8),
+                decoration: BoxDecoration(
+                  color: tokens.surface,
+                  borderRadius: BorderRadius.circular(12),
+                  border: Border.all(color: tokens.divider),
+                ),
+              ),
+            ),
           );
         }
-        // Already ordered by the query itself (createdAt desc) — no
-        // client-side re-sort needed.
         final docs = snap.data!.docs;
 
         if (docs.isEmpty) {
-          return const Padding(
-            padding: EdgeInsets.all(24),
-            child: Center(child: Text('No payout requests yet')),
+          return Padding(
+            padding: const EdgeInsets.all(24),
+            child: Center(
+              child: Text(
+                'No payout requests yet',
+                style: TextStyle(color: tokens.textSecondary),
+              ),
+            ),
           );
         }
 
@@ -203,36 +221,45 @@ class _PayoutScreenState extends State<PayoutScreen> {
         return Column(
           children: [
             ...docs.map((doc) {
-            final d = doc.data();
-            final amount = (d['amount'] as num?)?.toDouble() ?? 0.0;
-            final status = (d['status'] ?? 'requested').toString();
+              final d = doc.data();
+              final amount = (d['amount'] as num?)?.toDouble() ?? 0.0;
+              final status = (d['status'] ?? 'requested').toString().toLowerCase();
+              final isPaid = status == 'paid';
 
-            return Card(
-              margin: const EdgeInsets.only(bottom: 8),
-              child: ListTile(
-                title: Text(_formatMoney(amount)),
-                trailing: Container(
-                  padding:
-                      const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
-                  decoration: BoxDecoration(
-                    color: status == 'paid'
-                        ? Colors.green.shade50
-                        : Colors.amber.shade50,
-                    borderRadius: BorderRadius.circular(8),
-                  ),
-                  child: Text(
-                    status.toUpperCase(),
+              return Card(
+                margin: const EdgeInsets.only(bottom: 8),
+                color: tokens.surface,
+                elevation: 0,
+                shape: RoundedRectangleBorder(
+                  borderRadius: BorderRadius.circular(12),
+                  side: BorderSide(color: tokens.divider),
+                ),
+                child: ListTile(
+                  title: Text(
+                    _formatMoney(amount),
                     style: TextStyle(
-                      fontSize: 11,
-                      fontWeight: FontWeight.w800,
-                      color: status == 'paid'
-                          ? Colors.green.shade800
-                          : Colors.amber.shade900,
+                      fontWeight: FontWeight.w700,
+                      color: tokens.textPrimary,
+                    ),
+                  ),
+                  trailing: Container(
+                    padding:
+                        const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
+                    decoration: BoxDecoration(
+                      color: isPaid ? tokens.successBg : tokens.warningBg,
+                      borderRadius: BorderRadius.circular(8),
+                    ),
+                    child: Text(
+                      status.toUpperCase(),
+                      style: TextStyle(
+                        fontSize: 11,
+                        fontWeight: FontWeight.w800,
+                        color: isPaid ? tokens.successFg : tokens.warningFg,
+                      ),
                     ),
                   ),
                 ),
-              ),
-            );
+              );
             }),
             if (reachedPageLimit) ...[
               const SizedBox(height: 8),

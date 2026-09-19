@@ -86,6 +86,7 @@ class _PayoutReviewScreenState extends State<PayoutReviewScreen> {
 
   @override
   Widget build(BuildContext context) {
+    final tokens = context.saTokens;
     final balanceAfter = widget.availableBalance - widget.requestedAmount;
     final method = widget.destinationData['payoutMethod']?.toString().toLowerCase();
     final isBank = method == 'bank';
@@ -95,7 +96,7 @@ class _PayoutReviewScreenState extends State<PayoutReviewScreen> {
     final holderName = widget.destinationData['accountHolderName']?.toString() ?? '';
 
     return Scaffold(
-      backgroundColor: SaTokens.pageBackground,
+      backgroundColor: tokens.pageBackground,
       appBar: AppBar(
         title: const Text('Review Payout'),
         leading: IconButton(
@@ -133,26 +134,26 @@ class _PayoutReviewScreenState extends State<PayoutReviewScreen> {
               Container(
                 padding: const EdgeInsets.all(SaTokens.space24),
                 decoration: BoxDecoration(
-                  color: SaTokens.surface,
+                  color: tokens.surface,
                   borderRadius: BorderRadius.circular(SaTokens.radiusCard),
-                  border: Border.all(color: SaTokens.primary, width: 1.5),
+                  border: Border.all(color: tokens.primary, width: 1.5),
                 ),
                 child: Column(
                   children: [
-                    const Text(
+                    Text(
                       'Requested Payout Amount',
                       style: TextStyle(
                         fontSize: SaTokens.fsCaption,
-                        color: SaTokens.textSecondary,
+                        color: tokens.textSecondary,
                       ),
                     ),
                     const SizedBox(height: SaTokens.space4),
                     Text(
                       SaFormatters.formatCurrency(widget.requestedAmount),
-                      style: const TextStyle(
+                      style: TextStyle(
                         fontSize: 32,
                         fontWeight: FontWeight.w900,
-                        color: SaTokens.primary,
+                        color: tokens.primary,
                       ),
                     ),
                   ],
@@ -164,9 +165,9 @@ class _PayoutReviewScreenState extends State<PayoutReviewScreen> {
               Container(
                 padding: const EdgeInsets.all(SaTokens.space16),
                 decoration: BoxDecoration(
-                  color: SaTokens.surface,
+                  color: tokens.surface,
                   borderRadius: BorderRadius.circular(SaTokens.radiusCard),
-                  border: Border.all(color: SaTokens.divider),
+                  border: Border.all(color: tokens.divider),
                 ),
                 child: Column(
                   crossAxisAlignment: CrossAxisAlignment.start,
@@ -182,12 +183,12 @@ class _PayoutReviewScreenState extends State<PayoutReviewScreen> {
                           width: 40,
                           height: 40,
                           decoration: BoxDecoration(
-                            color: SaTokens.primarySubtle,
+                            color: tokens.primarySubtle,
                             borderRadius: BorderRadius.circular(8),
                           ),
                           child: Icon(
                             isBank ? Icons.account_balance : Icons.qr_code,
-                            color: SaTokens.primary,
+                            color: tokens.primary,
                             size: 20,
                           ),
                         ),
@@ -198,27 +199,27 @@ class _PayoutReviewScreenState extends State<PayoutReviewScreen> {
                             children: [
                               Text(
                                 isBank ? bankName : 'UPI ID',
-                                style: const TextStyle(
+                                style: TextStyle(
                                   fontSize: SaTokens.fsBody,
                                   fontWeight: FontWeight.w700,
-                                  color: SaTokens.textPrimary,
+                                  color: tokens.textPrimary,
                                 ),
                               ),
                               Text(
                                 isBank
                                     ? SaFormatters.formatMaskedAccount(accNum)
                                     : upiId,
-                                style: const TextStyle(
+                                style: TextStyle(
                                   fontSize: SaTokens.fsLabel,
-                                  color: SaTokens.textSecondary,
+                                  color: tokens.textSecondary,
                                 ),
                               ),
                               if (holderName.isNotEmpty)
                                 Text(
                                   'Holder: $holderName',
-                                  style: const TextStyle(
+                                  style: TextStyle(
                                     fontSize: SaTokens.fsCaption,
-                                    color: SaTokens.textSecondary,
+                                    color: tokens.textSecondary,
                                   ),
                                 ),
                             ],
@@ -235,9 +236,9 @@ class _PayoutReviewScreenState extends State<PayoutReviewScreen> {
               Container(
                 padding: const EdgeInsets.all(SaTokens.space16),
                 decoration: BoxDecoration(
-                  color: SaTokens.surface,
+                  color: tokens.surface,
                   borderRadius: BorderRadius.circular(SaTokens.radiusCard),
-                  border: Border.all(color: SaTokens.divider),
+                  border: Border.all(color: tokens.divider),
                 ),
                 child: Column(
                   crossAxisAlignment: CrossAxisAlignment.start,
@@ -250,16 +251,19 @@ class _PayoutReviewScreenState extends State<PayoutReviewScreen> {
                     _buildRow(
                       'Available Balance',
                       SaFormatters.formatCurrency(widget.availableBalance),
+                      tokens,
                     ),
                     _buildRow(
                       'Deduction Amount',
                       '- ${SaFormatters.formatCurrency(widget.requestedAmount)}',
-                      valueColor: SaTokens.errorFg,
+                      tokens,
+                      valueColor: tokens.errorFg,
                     ),
-                    const Divider(height: 20, color: SaTokens.divider),
+                    Divider(height: 20, color: tokens.divider),
                     _buildRow(
                       'Remaining Balance',
                       SaFormatters.formatCurrency(balanceAfter),
+                      tokens,
                       isBold: true,
                     ),
                   ],
@@ -301,7 +305,8 @@ class _PayoutReviewScreenState extends State<PayoutReviewScreen> {
 
   Widget _buildRow(
     String label,
-    String value, {
+    String value,
+    SalesAssociateTokens tokens, {
     Color? valueColor,
     bool isBold = false,
   }) {
@@ -314,7 +319,7 @@ class _PayoutReviewScreenState extends State<PayoutReviewScreen> {
             label,
             style: TextStyle(
               fontSize: SaTokens.fsLabel,
-              color: isBold ? SaTokens.textPrimary : SaTokens.textSecondary,
+              color: isBold ? tokens.textPrimary : tokens.textSecondary,
               fontWeight: isBold ? FontWeight.w700 : FontWeight.w400,
             ),
           ),
@@ -323,7 +328,7 @@ class _PayoutReviewScreenState extends State<PayoutReviewScreen> {
             style: TextStyle(
               fontSize: SaTokens.fsLabel,
               fontWeight: isBold ? FontWeight.w700 : FontWeight.w600,
-              color: valueColor ?? SaTokens.textPrimary,
+              color: valueColor ?? tokens.textPrimary,
             ),
           ),
         ],

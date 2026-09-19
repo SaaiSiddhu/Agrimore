@@ -77,48 +77,49 @@ class _EmployeeShellScreenState extends State<EmployeeShellScreen>
 
   @override
   Widget build(BuildContext context) {
+    final tokens = context.saTokens;
     return _ShellScope(
       controller: this,
       currentIndex: _currentIndex,
       child: Scaffold(
-        backgroundColor: SaTokens.pageBackground,
+        backgroundColor: tokens.pageBackground,
         body: IndexedStack(
           index: _currentIndex,
           children: _tabs,
         ),
         bottomNavigationBar: Container(
-          decoration: const BoxDecoration(
+          decoration: BoxDecoration(
             border: Border(
-              top: BorderSide(color: SaTokens.divider, width: 1),
+              top: BorderSide(color: tokens.divider, width: 1),
             ),
           ),
           child: NavigationBar(
             selectedIndex: _currentIndex,
             onDestinationSelected: switchTab,
-            backgroundColor: SaTokens.surface,
-            indicatorColor: SaTokens.primarySubtle,
+            backgroundColor: tokens.surface,
+            indicatorColor: tokens.primarySubtle,
             elevation: 0,
             height: 64,
             labelBehavior: NavigationDestinationLabelBehavior.alwaysShow,
-            destinations: const [
+            destinations: [
               NavigationDestination(
-                icon: Icon(Icons.home_outlined),
-                selectedIcon: Icon(Icons.home, color: SaTokens.primary),
+                icon: Icon(Icons.home_outlined, color: tokens.textSecondary),
+                selectedIcon: Icon(Icons.home, color: tokens.primary),
                 label: 'Home',
               ),
               NavigationDestination(
-                icon: Icon(SaIcons.shoppingBag),
-                selectedIcon: Icon(SaIcons.shoppingBag, color: SaTokens.primary),
+                icon: Icon(SaIcons.shoppingBag, color: tokens.textSecondary),
+                selectedIcon: Icon(SaIcons.shoppingBag, color: tokens.primary),
                 label: 'Orders',
               ),
               NavigationDestination(
-                icon: Icon(SaIcons.wallet),
-                selectedIcon: Icon(SaIcons.wallet, color: SaTokens.primary),
+                icon: Icon(SaIcons.wallet, color: tokens.textSecondary),
+                selectedIcon: Icon(SaIcons.wallet, color: tokens.primary),
                 label: 'Wallet',
               ),
               NavigationDestination(
-                icon: Icon(SaIcons.user),
-                selectedIcon: Icon(SaIcons.user, color: SaTokens.primary),
+                icon: Icon(SaIcons.user, color: tokens.textSecondary),
+                selectedIcon: Icon(SaIcons.user, color: tokens.primary),
                 label: 'Profile',
               ),
             ],

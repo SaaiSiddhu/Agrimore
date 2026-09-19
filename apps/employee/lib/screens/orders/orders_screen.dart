@@ -51,17 +51,18 @@ class _OrdersScreenState extends State<OrdersScreen> {
 
   @override
   Widget build(BuildContext context) {
+    final tokens = context.saTokens;
     final uid = widget.employeeUid ?? FirebaseAuth.instance.currentUser?.uid;
 
     if (uid == null) {
-      return const Scaffold(
-        backgroundColor: SaTokens.pageBackground,
-        body: Center(child: CircularProgressIndicator()),
+      return Scaffold(
+        backgroundColor: tokens.pageBackground,
+        body: const SizedBox.shrink(),
       );
     }
 
     return Scaffold(
-      backgroundColor: SaTokens.pageBackground,
+      backgroundColor: tokens.pageBackground,
       appBar: AppBar(
         title: const Text('Attributed Orders'),
       ),
@@ -69,7 +70,7 @@ class _OrdersScreenState extends State<OrdersScreen> {
         children: [
           // Search & Filter header
           Container(
-            color: SaTokens.surface,
+            color: tokens.surface,
             padding: const EdgeInsets.symmetric(
               horizontal: SaTokens.space16,
               vertical: SaTokens.space12,
@@ -112,7 +113,7 @@ class _OrdersScreenState extends State<OrdersScreen> {
               ],
             ),
           ),
-          const Divider(height: 1, color: SaTokens.divider),
+          Divider(height: 1, color: tokens.divider),
 
           // Orders Stream
           Expanded(
@@ -129,12 +130,15 @@ class _OrdersScreenState extends State<OrdersScreen> {
                   return Center(
                     child: Padding(
                       padding: const EdgeInsets.all(SaTokens.space24),
-                      child: Text('Error loading orders: ${snap.error}'),
+                      child: Text(
+                        'Error loading orders: ${snap.error}',
+                        style: TextStyle(color: tokens.textSecondary),
+                      ),
                     ),
                   );
                 }
                 if (!snap.hasData) {
-                  return const Center(child: CircularProgressIndicator());
+                  return const SizedBox.shrink();
                 }
 
                 final allDocs = snap.data!.docs;
@@ -176,14 +180,14 @@ class _OrdersScreenState extends State<OrdersScreen> {
                           Container(
                             width: 64,
                             height: 64,
-                            decoration: const BoxDecoration(
-                              color: SaTokens.primarySubtle,
+                            decoration: BoxDecoration(
+                              color: tokens.primarySubtle,
                               shape: BoxShape.circle,
                             ),
-                            child: const Icon(
+                            child: Icon(
                               SaIcons.shoppingBag,
                               size: 32,
-                              color: SaTokens.primary,
+                              color: tokens.primary,
                             ),
                           ),
                           const SizedBox(height: SaTokens.space16),
@@ -191,13 +195,17 @@ class _OrdersScreenState extends State<OrdersScreen> {
                             _searchQuery.isNotEmpty
                                 ? 'No orders match "$_searchQuery"'
                                 : 'No attributed orders found',
-                            style: Theme.of(context).textTheme.titleMedium,
+                            style: Theme.of(context).textTheme.titleMedium?.copyWith(
+                                  color: tokens.textPrimary,
+                                ),
                           ),
                           const SizedBox(height: SaTokens.space4),
                           Text(
                             'Orders placed with your associate code will appear here.',
                             textAlign: TextAlign.center,
-                            style: Theme.of(context).textTheme.bodySmall,
+                            style: Theme.of(context).textTheme.bodySmall?.copyWith(
+                                  color: tokens.textSecondary,
+                                ),
                           ),
                         ],
                       ),
@@ -240,6 +248,7 @@ class _OrdersScreenState extends State<OrdersScreen> {
   }
 
   Widget _buildFilterChip(String label, _OrderModeFilter filter) {
+    final tokens = context.saTokens;
     final selected = _modeFilter == filter;
     return ChoiceChip(
       label: Text(label),
@@ -247,15 +256,15 @@ class _OrdersScreenState extends State<OrdersScreen> {
       onSelected: (val) {
         if (val) setState(() => _modeFilter = filter);
       },
-      selectedColor: SaTokens.primarySubtle,
-      backgroundColor: SaTokens.surface,
+      selectedColor: tokens.primarySubtle,
+      backgroundColor: tokens.surface,
       labelStyle: TextStyle(
         fontSize: SaTokens.fsLabel,
         fontWeight: selected ? FontWeight.w600 : FontWeight.w500,
-        color: selected ? SaTokens.primary : SaTokens.textSecondary,
+        color: selected ? tokens.primary : tokens.textSecondary,
       ),
       side: BorderSide(
-        color: selected ? SaTokens.primary : SaTokens.divider,
+        color: selected ? tokens.primary : tokens.divider,
       ),
       shape: RoundedRectangleBorder(
         borderRadius: BorderRadius.circular(SaTokens.radiusInput),
@@ -268,6 +277,7 @@ class _OrdersScreenState extends State<OrdersScreen> {
     String docId,
     Map<String, dynamic> data,
   ) {
+    final tokens = context.saTokens;
     final orderNumber = data['orderNumber']?.toString() ?? docId;
     final total = (data['total'] as num?)?.toDouble() ?? 0.0;
     final status = (data['orderStatus'] ?? 'pending').toString().toLowerCase();
@@ -288,9 +298,9 @@ class _OrdersScreenState extends State<OrdersScreen> {
     return Container(
       margin: const EdgeInsets.only(bottom: SaTokens.space12),
       decoration: BoxDecoration(
-        color: SaTokens.surface,
+        color: tokens.surface,
         borderRadius: BorderRadius.circular(SaTokens.radiusCard),
-        border: Border.all(color: SaTokens.divider),
+        border: Border.all(color: tokens.divider),
       ),
       child: InkWell(
         onTap: () {
@@ -315,13 +325,13 @@ class _OrdersScreenState extends State<OrdersScreen> {
                 children: [
                   Text(
                     '#$orderNumber',
-                    style: const TextStyle(
+                    style: TextStyle(
                       fontSize: SaTokens.fsBody,
                       fontWeight: FontWeight.w700,
-                      color: SaTokens.textPrimary,
+                      color: tokens.textPrimary,
                     ),
                   ),
-                  _buildStatusBadge(status, isDelivered, isCancelled),
+                  _buildStatusBadge(context, status, isDelivered, isCancelled),
                 ],
               ),
               const SizedBox(height: SaTokens.space8),
@@ -340,8 +350,10 @@ class _OrdersScreenState extends State<OrdersScreen> {
                           ),
                           decoration: BoxDecoration(
                             color: normMode == 'B2B'
-                                ? SaTokens.primarySubtle
-                                : Colors.purple.shade50,
+                                ? tokens.primarySubtle
+                                : (Theme.of(context).brightness == Brightness.dark
+                                    ? const Color(0xFF3B0764)
+                                    : Colors.purple.shade50),
                             borderRadius: BorderRadius.circular(6),
                           ),
                           child: Text(
@@ -350,8 +362,10 @@ class _OrdersScreenState extends State<OrdersScreen> {
                               fontSize: 11,
                               fontWeight: FontWeight.w700,
                               color: normMode == 'B2B'
-                                  ? SaTokens.primary
-                                  : Colors.purple.shade700,
+                                  ? tokens.primary
+                                  : (Theme.of(context).brightness == Brightness.dark
+                                      ? const Color(0xFFC084FC)
+                                      : Colors.purple.shade700),
                             ),
                           ),
                         ),
@@ -360,19 +374,19 @@ class _OrdersScreenState extends State<OrdersScreen> {
                       if (createdAt != null)
                         Text(
                           SaFormatters.formatDate(createdAt),
-                          style: const TextStyle(
+                          style: TextStyle(
                             fontSize: SaTokens.fsCaption,
-                            color: SaTokens.textSecondary,
+                            color: tokens.textSecondary,
                           ),
                         ),
                     ],
                   ),
                   Text(
                     SaFormatters.formatCurrency(total),
-                    style: const TextStyle(
+                    style: TextStyle(
                       fontSize: SaTokens.fsBody,
                       fontWeight: FontWeight.w700,
-                      color: SaTokens.textPrimary,
+                      color: tokens.textPrimary,
                     ),
                   ),
                 ],
@@ -387,8 +401,8 @@ class _OrdersScreenState extends State<OrdersScreen> {
                 ),
                 decoration: BoxDecoration(
                   color: commissionPaid
-                      ? SaTokens.successBg
-                      : SaTokens.pageBackground,
+                      ? tokens.successBg
+                      : tokens.pageBackground,
                   borderRadius: BorderRadius.circular(6),
                 ),
                 child: Row(
@@ -400,8 +414,8 @@ class _OrdersScreenState extends State<OrdersScreen> {
                           : Icons.schedule_rounded,
                       size: 13,
                       color: commissionPaid
-                          ? SaTokens.successFg
-                          : SaTokens.textSecondary,
+                          ? tokens.successFg
+                          : tokens.textSecondary,
                     ),
                     const SizedBox(width: 4),
                     Text(
@@ -414,8 +428,8 @@ class _OrdersScreenState extends State<OrdersScreen> {
                         fontSize: 11,
                         fontWeight: FontWeight.w600,
                         color: commissionPaid
-                            ? SaTokens.successFg
-                            : SaTokens.textSecondary,
+                            ? tokens.successFg
+                            : tokens.textSecondary,
                       ),
                     ),
                   ],
@@ -429,19 +443,21 @@ class _OrdersScreenState extends State<OrdersScreen> {
   }
 
   Widget _buildStatusBadge(
+    BuildContext context,
     String status,
     bool isDelivered,
     bool isCancelled,
   ) {
-    Color bg = SaTokens.warningBg;
-    Color fg = SaTokens.warningFg;
+    final tokens = context.saTokens;
+    Color bg = tokens.warningBg;
+    Color fg = tokens.warningFg;
 
     if (isDelivered) {
-      bg = SaTokens.successBg;
-      fg = SaTokens.successFg;
+      bg = tokens.successBg;
+      fg = tokens.successFg;
     } else if (isCancelled) {
-      bg = SaTokens.errorBg;
-      fg = SaTokens.errorFg;
+      bg = tokens.errorBg;
+      fg = tokens.errorFg;
     }
 
     return Container(

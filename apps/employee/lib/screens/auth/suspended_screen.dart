@@ -13,8 +13,10 @@ class SuspendedScreen extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final tokens = context.saTokens;
+
     return Scaffold(
-      backgroundColor: SaTokens.pageBackground,
+      backgroundColor: tokens.pageBackground,
       body: SafeArea(
         child: Center(
           child: SingleChildScrollView(
@@ -31,14 +33,14 @@ class SuspendedScreen extends StatelessWidget {
                     child: Container(
                       width: 80,
                       height: 80,
-                      decoration: const BoxDecoration(
-                        color: SaTokens.errorBg,
+                      decoration: BoxDecoration(
+                        color: tokens.errorBg,
                         shape: BoxShape.circle,
                       ),
-                      child: const Icon(
+                      child: Icon(
                         SaIcons.circleAlert,
                         size: 40,
-                        color: SaTokens.errorFg,
+                        color: tokens.errorFg,
                       ),
                     ),
                   ),
@@ -54,7 +56,7 @@ class SuspendedScreen extends StatelessWidget {
                     'Your Sales Associate account has been suspended by an administrator. Attribution of new orders has been paused.',
                     textAlign: TextAlign.center,
                     style: Theme.of(context).textTheme.bodyMedium?.copyWith(
-                          color: SaTokens.textSecondary,
+                          color: tokens.textSecondary,
                           height: 1.5,
                         ),
                   ),
@@ -64,9 +66,9 @@ class SuspendedScreen extends StatelessWidget {
                   Container(
                     padding: const EdgeInsets.all(SaTokens.space24),
                     decoration: BoxDecoration(
-                      color: SaTokens.surface,
+                      color: tokens.surface,
                       borderRadius: BorderRadius.circular(SaTokens.radiusCard),
-                      border: Border.all(color: SaTokens.divider),
+                      border: Border.all(color: tokens.divider),
                     ),
                     child: Column(
                       crossAxisAlignment: CrossAxisAlignment.start,
@@ -79,7 +81,7 @@ class SuspendedScreen extends StatelessWidget {
                         Text(
                           'If you believe this suspension is in error, please contact the AgriMore associate operations desk:',
                           style: Theme.of(context).textTheme.bodyMedium?.copyWith(
-                                color: SaTokens.textSecondary,
+                                color: tokens.textSecondary,
                               ),
                         ),
                         const SizedBox(height: SaTokens.space16),
@@ -87,12 +89,14 @@ class SuspendedScreen extends StatelessWidget {
                           icon: SaIcons.mail,
                           label: 'Email Support',
                           value: AppConstants.supportEmail,
+                          tokens: tokens,
                         ),
                         const SizedBox(height: SaTokens.space8),
                         _buildContactRow(
                           icon: SaIcons.phone,
                           label: 'Phone Support',
                           value: AppConstants.supportPhone,
+                          tokens: tokens,
                         ),
                       ],
                     ),
@@ -132,18 +136,19 @@ class SuspendedScreen extends StatelessWidget {
     required IconData icon,
     required String label,
     required String value,
+    required SalesAssociateTokens tokens,
   }) {
     return Row(
       children: [
-        Icon(icon, size: 18, color: SaTokens.primary),
+        Icon(icon, size: 18, color: tokens.primary),
         const SizedBox(width: SaTokens.space8),
         Expanded(
           child: Text(
             '$label: $value',
-            style: const TextStyle(
+            style: TextStyle(
               fontSize: SaTokens.fsBody,
               fontWeight: FontWeight.w600,
-              color: SaTokens.textPrimary,
+              color: tokens.textPrimary,
             ),
           ),
         ),

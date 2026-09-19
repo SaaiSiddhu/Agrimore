@@ -24,17 +24,23 @@ class _PayoutHistoryScreenState extends State<PayoutHistoryScreen> {
 
   @override
   Widget build(BuildContext context) {
+    final tokens = context.saTokens;
     final uid = FirebaseAuth.instance.currentUser?.uid;
 
     if (uid == null) {
-      return const Scaffold(
-        backgroundColor: SaTokens.pageBackground,
-        body: Center(child: CircularProgressIndicator()),
+      return Scaffold(
+        backgroundColor: tokens.pageBackground,
+        body: const Center(
+          child: Text(
+            'Associate session unavailable',
+            style: TextStyle(color: Colors.grey),
+          ),
+        ),
       );
     }
 
     return Scaffold(
-      backgroundColor: SaTokens.pageBackground,
+      backgroundColor: tokens.pageBackground,
       appBar: AppBar(
         title: const Text('Payout History'),
         leading: IconButton(
@@ -46,7 +52,7 @@ class _PayoutHistoryScreenState extends State<PayoutHistoryScreen> {
         children: [
           // Filter Chips Row
           Container(
-            color: SaTokens.surface,
+            color: tokens.surface,
             padding: const EdgeInsets.symmetric(
               horizontal: SaTokens.space16,
               vertical: SaTokens.space12,
@@ -55,16 +61,16 @@ class _PayoutHistoryScreenState extends State<PayoutHistoryScreen> {
               scrollDirection: Axis.horizontal,
               child: Row(
                 children: [
-                  _buildFilterChip('All Payouts', _PayoutStatusFilter.all),
+                  _buildFilterChip('All Payouts', _PayoutStatusFilter.all, tokens),
                   const SizedBox(width: SaTokens.space8),
-                  _buildFilterChip('Requested', _PayoutStatusFilter.requested),
+                  _buildFilterChip('Requested', _PayoutStatusFilter.requested, tokens),
                   const SizedBox(width: SaTokens.space8),
-                  _buildFilterChip('Paid / Settled', _PayoutStatusFilter.paid),
+                  _buildFilterChip('Paid / Settled', _PayoutStatusFilter.paid, tokens),
                 ],
               ),
             ),
           ),
-          const Divider(height: 1, color: SaTokens.divider),
+          Divider(height: 1, color: tokens.divider),
 
           // Payouts stream
           Expanded(
@@ -80,12 +86,27 @@ class _PayoutHistoryScreenState extends State<PayoutHistoryScreen> {
                   return Center(
                     child: Padding(
                       padding: const EdgeInsets.all(SaTokens.space24),
-                      child: Text('Error loading payouts: ${snap.error}'),
+                      child: Text(
+                        'Error loading payouts: ${snap.error}',
+                        style: TextStyle(color: tokens.textSecondary),
+                      ),
                     ),
                   );
                 }
                 if (!snap.hasData) {
-                  return const Center(child: CircularProgressIndicator());
+                  return ListView.builder(
+                    padding: const EdgeInsets.all(SaTokens.space16),
+                    itemCount: 4,
+                    itemBuilder: (_, __) => Container(
+                      height: 72,
+                      margin: const EdgeInsets.only(bottom: SaTokens.space12),
+                      decoration: BoxDecoration(
+                        color: tokens.surface,
+                        borderRadius: BorderRadius.circular(SaTokens.radiusCard),
+                        border: Border.all(color: tokens.divider),
+                      ),
+                    ),
+                  );
                 }
 
                 final allDocs = snap.data!.docs;
@@ -116,14 +137,14 @@ class _PayoutHistoryScreenState extends State<PayoutHistoryScreen> {
                           Container(
                             width: 64,
                             height: 64,
-                            decoration: const BoxDecoration(
-                              color: SaTokens.primarySubtle,
+                            decoration: BoxDecoration(
+                              color: tokens.primarySubtle,
                               shape: BoxShape.circle,
                             ),
-                            child: const Icon(
+                            child: Icon(
                               SaIcons.wallet,
                               size: 32,
-                              color: SaTokens.primary,
+                              color: tokens.primary,
                             ),
                           ),
                           const SizedBox(height: SaTokens.space16),
@@ -166,7 +187,7 @@ class _PayoutHistoryScreenState extends State<PayoutHistoryScreen> {
 
                     final doc = filteredDocs[index];
                     final d = doc.data();
-                    return _buildPayoutCard(context, doc.id, d);
+                    return _buildPayoutCard(context, doc.id, d, tokens);
                   },
                 );
               },
@@ -177,7 +198,11 @@ class _PayoutHistoryScreenState extends State<PayoutHistoryScreen> {
     );
   }
 
-  Widget _buildFilterChip(String label, _PayoutStatusFilter filter) {
+  Widget _buildFilterChip(
+    String label,
+    _PayoutStatusFilter filter,
+    SalesAssociateTokens tokens,
+  ) {
     final selected = _statusFilter == filter;
     return ChoiceChip(
       label: Text(label),
@@ -185,15 +210,15 @@ class _PayoutHistoryScreenState extends State<PayoutHistoryScreen> {
       onSelected: (val) {
         if (val) setState(() => _statusFilter = filter);
       },
-      selectedColor: SaTokens.primarySubtle,
-      backgroundColor: SaTokens.surface,
+      selectedColor: tokens.primarySubtle,
+      backgroundColor: tokens.surface,
       labelStyle: TextStyle(
         fontSize: SaTokens.fsLabel,
         fontWeight: selected ? FontWeight.w600 : FontWeight.w500,
-        color: selected ? SaTokens.primary : SaTokens.textSecondary,
+        color: selected ? tokens.primary : tokens.textSecondary,
       ),
       side: BorderSide(
-        color: selected ? SaTokens.primary : SaTokens.divider,
+        color: selected ? tokens.primary : tokens.divider,
       ),
       shape: RoundedRectangleBorder(
         borderRadius: BorderRadius.circular(SaTokens.radiusInput),
@@ -205,6 +230,7 @@ class _PayoutHistoryScreenState extends State<PayoutHistoryScreen> {
     BuildContext context,
     String docId,
     Map<String, dynamic> data,
+    SalesAssociateTokens tokens,
   ) {
     final amount = (data['amount'] as num?)?.toDouble() ?? 0.0;
     final status = (data['status'] ?? 'requested').toString().toLowerCase();
@@ -219,23 +245,23 @@ class _PayoutHistoryScreenState extends State<PayoutHistoryScreen> {
 
     final method = data['payoutMethod']?.toString().toUpperCase() ?? 'BANK';
 
-    Color statusBg = SaTokens.warningBg;
-    Color statusFg = SaTokens.warningFg;
+    Color statusBg = tokens.warningBg;
+    Color statusFg = tokens.warningFg;
 
     if (isPaid) {
-      statusBg = SaTokens.successBg;
-      statusFg = SaTokens.successFg;
+      statusBg = tokens.successBg;
+      statusFg = tokens.successFg;
     } else if (isFailed) {
-      statusBg = SaTokens.errorBg;
-      statusFg = SaTokens.errorFg;
+      statusBg = tokens.errorBg;
+      statusFg = tokens.errorFg;
     }
 
     return Container(
       margin: const EdgeInsets.only(bottom: SaTokens.space12),
       decoration: BoxDecoration(
-        color: SaTokens.surface,
+        color: tokens.surface,
         borderRadius: BorderRadius.circular(SaTokens.radiusCard),
-        border: Border.all(color: SaTokens.divider),
+        border: Border.all(color: tokens.divider),
       ),
       child: InkWell(
         onTap: () {
@@ -259,10 +285,10 @@ class _PayoutHistoryScreenState extends State<PayoutHistoryScreen> {
                 children: [
                   Text(
                     SaFormatters.formatCurrency(amount),
-                    style: const TextStyle(
+                    style: TextStyle(
                       fontSize: 18,
                       fontWeight: FontWeight.w800,
-                      color: SaTokens.textPrimary,
+                      color: tokens.textPrimary,
                     ),
                   ),
                   Container(
@@ -298,15 +324,15 @@ class _PayoutHistoryScreenState extends State<PayoutHistoryScreen> {
                           vertical: 2,
                         ),
                         decoration: BoxDecoration(
-                          color: SaTokens.primarySubtle,
+                          color: tokens.primarySubtle,
                           borderRadius: BorderRadius.circular(4),
                         ),
                         child: Text(
                           method,
-                          style: const TextStyle(
+                          style: TextStyle(
                             fontSize: 10,
                             fontWeight: FontWeight.w700,
-                            color: SaTokens.primary,
+                            color: tokens.primary,
                           ),
                         ),
                       ),
@@ -314,17 +340,17 @@ class _PayoutHistoryScreenState extends State<PayoutHistoryScreen> {
                       if (createdAt != null)
                         Text(
                           SaFormatters.formatDate(createdAt),
-                          style: const TextStyle(
+                          style: TextStyle(
                             fontSize: SaTokens.fsCaption,
-                            color: SaTokens.textSecondary,
+                            color: tokens.textSecondary,
                           ),
                         ),
                     ],
                   ),
-                  const Icon(
+                  Icon(
                     Icons.chevron_right_rounded,
                     size: 20,
-                    color: SaTokens.textSecondary,
+                    color: tokens.textSecondary,
                   ),
                 ],
               ),

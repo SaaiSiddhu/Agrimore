@@ -23,8 +23,10 @@ class HelpSupportScreen extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final tokens = context.saTokens;
+
     return Scaffold(
-      backgroundColor: SaTokens.pageBackground,
+      backgroundColor: tokens.pageBackground,
       appBar: AppBar(
         title: const Text('Help & Support'),
         leading: IconButton(
@@ -37,18 +39,23 @@ class HelpSupportScreen extends StatelessWidget {
         children: [
           Text(
             'How can we help you?',
-            style: Theme.of(context).textTheme.headlineMedium,
+            style: Theme.of(context).textTheme.headlineMedium?.copyWith(
+                  color: tokens.textPrimary,
+                ),
           ),
           const SizedBox(height: SaTokens.space4),
           Text(
             'Contact our associate operations team or find answers to frequently asked questions below.',
-            style: Theme.of(context).textTheme.bodyMedium,
+            style: Theme.of(context).textTheme.bodyMedium?.copyWith(
+                  color: tokens.textSecondary,
+                ),
           ),
           const SizedBox(height: SaTokens.space24),
 
           // Contact Cards
           _buildContactCard(
             context,
+            tokens: tokens,
             icon: SaIcons.phone,
             title: 'Call Support',
             subtitle: AppConstants.supportPhone,
@@ -62,6 +69,7 @@ class HelpSupportScreen extends StatelessWidget {
           const SizedBox(height: SaTokens.space16),
           _buildContactCard(
             context,
+            tokens: tokens,
             icon: SaIcons.mail,
             title: 'Email Support',
             subtitle: AppConstants.supportEmail,
@@ -73,7 +81,7 @@ class HelpSupportScreen extends StatelessWidget {
             ),
           ),
           const SizedBox(height: SaTokens.space16),
-          _buildHoursCard(context),
+          _buildHoursCard(context, tokens),
           const SizedBox(height: SaTokens.space32),
 
           // Security Notice
@@ -87,35 +95,42 @@ class HelpSupportScreen extends StatelessWidget {
 
           Text(
             'Frequently Asked Questions',
-            style: Theme.of(context).textTheme.titleMedium,
+            style: Theme.of(context).textTheme.titleMedium?.copyWith(
+                  color: tokens.textPrimary,
+                ),
           ),
           const SizedBox(height: SaTokens.space16),
           _buildFaqTile(
             context,
+            tokens: tokens,
             question: 'How do I earn commission?',
             answer:
                 'Share your unique associate code with buyers. When customers or businesses apply your code at checkout, those orders are attributed to your account. Commission is awarded on eligible completed orders.',
           ),
           _buildFaqTile(
             context,
+            tokens: tokens,
             question: 'When is commission credited to my wallet?',
             answer:
                 'Commission is credited directly to your wallet once an attributed order reaches "Delivered" or "Completed" status. Orders that are cancelled or returned do not accrue commission.',
           ),
           _buildFaqTile(
             context,
+            tokens: tokens,
             question: 'How do payouts work?',
             answer:
                 'You can request a payout of your available wallet balance at any time. When you submit a request, the balance is deducted immediately and queued for settlement to your registered bank account or UPI ID.',
           ),
           _buildFaqTile(
             context,
+            tokens: tokens,
             question: 'What is the ₹500 onboarding fee?',
             answer:
                 'Self-applied associates must clear a one-time ₹500 onboarding fee to unlock retail order attribution. B2B orders attribute regardless of fee status. Admin-created associates have this fee waived.',
           ),
           _buildFaqTile(
             context,
+            tokens: tokens,
             question: 'How do I update my payout bank account or UPI ID?',
             answer:
                 'Go to your Profile tab, tap "Payout Account", and update your bank account or UPI details. Ensure the legal name matches your KYC documents to prevent transfer delays.',
@@ -128,6 +143,7 @@ class HelpSupportScreen extends StatelessWidget {
 
   Widget _buildContactCard(
     BuildContext context, {
+    required SalesAssociateTokens tokens,
     required IconData icon,
     required String title,
     required String subtitle,
@@ -135,10 +151,10 @@ class HelpSupportScreen extends StatelessWidget {
     required VoidCallback onTap,
   }) {
     return Material(
-      color: SaTokens.surface,
+      color: tokens.surface,
       shape: RoundedRectangleBorder(
         borderRadius: BorderRadius.circular(SaTokens.radiusCard),
-        side: const BorderSide(color: SaTokens.divider),
+        side: BorderSide(color: tokens.divider),
       ),
       child: ListTile(
         contentPadding: const EdgeInsets.symmetric(
@@ -149,24 +165,24 @@ class HelpSupportScreen extends StatelessWidget {
           width: 44,
           height: 44,
           decoration: BoxDecoration(
-            color: SaTokens.primarySubtle,
+            color: tokens.primarySubtle,
             borderRadius: BorderRadius.circular(SaTokens.radiusInput),
           ),
-          child: Icon(icon, color: SaTokens.primary, size: 22),
+          child: Icon(icon, color: tokens.primary, size: 22),
         ),
         title: Text(
           title,
-          style: const TextStyle(
+          style: TextStyle(
             fontSize: SaTokens.fsBody,
             fontWeight: FontWeight.w600,
-            color: SaTokens.textPrimary,
+            color: tokens.textPrimary,
           ),
         ),
         subtitle: Text(
           subtitle,
-          style: const TextStyle(
+          style: TextStyle(
             fontSize: SaTokens.fsLabel,
-            color: SaTokens.textSecondary,
+            color: tokens.textSecondary,
           ),
         ),
         trailing: TextButton.icon(
@@ -178,13 +194,13 @@ class HelpSupportScreen extends StatelessWidget {
     );
   }
 
-  Widget _buildHoursCard(BuildContext context) {
+  Widget _buildHoursCard(BuildContext context, SalesAssociateTokens tokens) {
     return Container(
       padding: const EdgeInsets.all(SaTokens.space16),
       decoration: BoxDecoration(
-        color: SaTokens.surface,
+        color: tokens.surface,
         borderRadius: BorderRadius.circular(SaTokens.radiusCard),
-        border: Border.all(color: SaTokens.divider),
+        border: Border.all(color: tokens.divider),
       ),
       child: Row(
         children: [
@@ -192,12 +208,12 @@ class HelpSupportScreen extends StatelessWidget {
             width: 44,
             height: 44,
             decoration: BoxDecoration(
-              color: SaTokens.pageBackground,
+              color: tokens.pageBackground,
               borderRadius: BorderRadius.circular(SaTokens.radiusInput),
             ),
-            child: const Icon(
+            child: Icon(
               Icons.schedule_rounded,
-              color: SaTokens.textSecondary,
+              color: tokens.textSecondary,
               size: 22,
             ),
           ),
@@ -206,18 +222,20 @@ class HelpSupportScreen extends StatelessWidget {
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
-                const Text(
+                Text(
                   'Support Operating Hours',
                   style: TextStyle(
                     fontSize: SaTokens.fsBody,
                     fontWeight: FontWeight.w600,
-                    color: SaTokens.textPrimary,
+                    color: tokens.textPrimary,
                   ),
                 ),
                 const SizedBox(height: 2),
                 Text(
                   'Monday – Saturday, 9:00 AM – 6:00 PM IST',
-                  style: Theme.of(context).textTheme.bodySmall,
+                  style: Theme.of(context).textTheme.bodySmall?.copyWith(
+                        color: tokens.textSecondary,
+                      ),
                 ),
               ],
             ),
@@ -229,53 +247,54 @@ class HelpSupportScreen extends StatelessWidget {
 
   Widget _buildFaqTile(
     BuildContext context, {
+    required SalesAssociateTokens tokens,
     required String question,
     required String answer,
   }) {
     return Container(
       margin: const EdgeInsets.only(bottom: SaTokens.space8),
       child: Material(
-        color: SaTokens.surface,
+        color: tokens.surface,
         shape: RoundedRectangleBorder(
           borderRadius: BorderRadius.circular(SaTokens.radiusCard),
-          side: const BorderSide(color: SaTokens.divider),
+          side: BorderSide(color: tokens.divider),
         ),
         clipBehavior: Clip.antiAlias,
         child: Theme(
           data: Theme.of(context).copyWith(dividerColor: Colors.transparent),
           child: ExpansionTile(
-          iconColor: SaTokens.primary,
-          collapsedIconColor: SaTokens.textSecondary,
-          tilePadding: const EdgeInsets.symmetric(
-            horizontal: SaTokens.space16,
-            vertical: 4,
-          ),
-          childrenPadding: const EdgeInsets.only(
-            left: SaTokens.space16,
-            right: SaTokens.space16,
-            bottom: SaTokens.space16,
-          ),
-          title: Text(
-            question,
-            style: const TextStyle(
-              fontSize: SaTokens.fsBody,
-              fontWeight: FontWeight.w600,
-              color: SaTokens.textPrimary,
+            iconColor: tokens.primary,
+            collapsedIconColor: tokens.textSecondary,
+            tilePadding: const EdgeInsets.symmetric(
+              horizontal: SaTokens.space16,
+              vertical: 4,
             ),
-          ),
-          children: [
-            Text(
-              answer,
-              style: const TextStyle(
-                fontSize: SaTokens.fsLabel,
-                color: SaTokens.textSecondary,
-                height: 1.5,
+            childrenPadding: const EdgeInsets.only(
+              left: SaTokens.space16,
+              right: SaTokens.space16,
+              bottom: SaTokens.space16,
+            ),
+            title: Text(
+              question,
+              style: TextStyle(
+                fontSize: SaTokens.fsBody,
+                fontWeight: FontWeight.w600,
+                color: tokens.textPrimary,
               ),
             ),
-          ],
+            children: [
+              Text(
+                answer,
+                style: TextStyle(
+                  fontSize: SaTokens.fsLabel,
+                  color: tokens.textSecondary,
+                  height: 1.5,
+                ),
+              ),
+            ],
+          ),
         ),
       ),
-    ),
-  );
-}
+    );
+  }
 }

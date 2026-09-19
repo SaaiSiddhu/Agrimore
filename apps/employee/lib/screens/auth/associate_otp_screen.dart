@@ -211,10 +211,11 @@ class _AssociateOtpScreenState extends State<AssociateOtpScreen> {
 
   @override
   Widget build(BuildContext context) {
+    final tokens = context.saTokens;
     final maskedPhone = SaFormatters.formatMaskedPhone(widget.phone);
 
     return Scaffold(
-      backgroundColor: SaTokens.pageBackground,
+      backgroundColor: tokens.pageBackground,
       appBar: AppBar(
         title: const Text('Verify mobile number'),
         leading: IconButton(
@@ -236,13 +237,15 @@ class _AssociateOtpScreenState extends State<AssociateOtpScreen> {
                 children: [
                   Text(
                     'Enter verification code',
-                    style: Theme.of(context).textTheme.headlineMedium,
+                    style: Theme.of(context).textTheme.headlineMedium?.copyWith(
+                          color: tokens.textPrimary,
+                        ),
                   ),
                   const SizedBox(height: SaTokens.space8),
                   Text.rich(
                     TextSpan(
                       style: Theme.of(context).textTheme.bodyMedium?.copyWith(
-                            color: SaTokens.textSecondary,
+                            color: tokens.textSecondary,
                             height: 1.5,
                           ),
                       children: [
@@ -253,9 +256,9 @@ class _AssociateOtpScreenState extends State<AssociateOtpScreen> {
                         ),
                         TextSpan(
                           text: maskedPhone,
-                          style: const TextStyle(
+                          style: TextStyle(
                             fontWeight: FontWeight.w700,
-                            color: SaTokens.textPrimary,
+                            color: tokens.textPrimary,
                           ),
                         ),
                       ],
@@ -279,7 +282,7 @@ class _AssociateOtpScreenState extends State<AssociateOtpScreen> {
                       (index) => Expanded(
                         child: Padding(
                           padding: const EdgeInsets.symmetric(horizontal: 4),
-                          child: _buildDigitBox(index),
+                          child: _buildDigitBox(index, tokens),
                         ),
                       ),
                     ),
@@ -301,7 +304,9 @@ class _AssociateOtpScreenState extends State<AssociateOtpScreen> {
                         padding: const EdgeInsets.symmetric(vertical: 4),
                         child: Text.rich(
                           TextSpan(
-                            style: Theme.of(context).textTheme.bodySmall,
+                            style: Theme.of(context).textTheme.bodySmall?.copyWith(
+                                  color: tokens.textSecondary,
+                                ),
                             children: [
                               const TextSpan(text: "Didn't receive the code? "),
                               TextSpan(
@@ -312,8 +317,8 @@ class _AssociateOtpScreenState extends State<AssociateOtpScreen> {
                                         : 'Resend ${_isVoiceChannel ? 'call' : 'code'}'),
                                 style: TextStyle(
                                   color: _resendSecondsLeft > 0
-                                      ? SaTokens.disabledContent
-                                      : SaTokens.primary,
+                                      ? tokens.disabledContent
+                                      : tokens.primary,
                                   fontWeight: FontWeight.w700,
                                 ),
                               ),
@@ -329,13 +334,13 @@ class _AssociateOtpScreenState extends State<AssociateOtpScreen> {
                     Center(
                       child: GestureDetector(
                         onTap: _isRequestingVoice ? null : _handleVoiceResend,
-                        child: const Padding(
-                          padding: EdgeInsets.symmetric(vertical: 4),
+                        child: Padding(
+                          padding: const EdgeInsets.symmetric(vertical: 4),
                           child: Text(
                             'Call me instead',
                             style: TextStyle(
                               fontSize: SaTokens.fsCaption,
-                              color: SaTokens.primary,
+                              color: tokens.primary,
                               fontWeight: FontWeight.w700,
                             ),
                           ),
@@ -361,7 +366,7 @@ class _AssociateOtpScreenState extends State<AssociateOtpScreen> {
     );
   }
 
-  Widget _buildDigitBox(int index) {
+  Widget _buildDigitBox(int index, SalesAssociateTokens tokens) {
     return SizedBox(
       height: 56,
       child: TextField(
@@ -370,28 +375,28 @@ class _AssociateOtpScreenState extends State<AssociateOtpScreen> {
         textAlign: TextAlign.center,
         keyboardType: TextInputType.number,
         maxLength: 1,
-        style: const TextStyle(
+        style: TextStyle(
           fontSize: 22,
           fontWeight: FontWeight.w700,
-          color: SaTokens.textPrimary,
+          color: tokens.textPrimary,
         ),
         inputFormatters: [FilteringTextInputFormatter.digitsOnly],
         decoration: InputDecoration(
           counterText: '',
           contentPadding: EdgeInsets.zero,
           filled: true,
-          fillColor: SaTokens.surface,
+          fillColor: tokens.surface,
           border: OutlineInputBorder(
             borderRadius: BorderRadius.circular(SaTokens.radiusInput),
-            borderSide: const BorderSide(color: SaTokens.inputBorder, width: 1),
+            borderSide: BorderSide(color: tokens.inputBorder, width: 1),
           ),
           enabledBorder: OutlineInputBorder(
             borderRadius: BorderRadius.circular(SaTokens.radiusInput),
-            borderSide: const BorderSide(color: SaTokens.inputBorder, width: 1),
+            borderSide: BorderSide(color: tokens.inputBorder, width: 1),
           ),
           focusedBorder: OutlineInputBorder(
             borderRadius: BorderRadius.circular(SaTokens.radiusInput),
-            borderSide: const BorderSide(color: SaTokens.primary, width: 2),
+            borderSide: BorderSide(color: tokens.primary, width: 2),
           ),
         ),
         onChanged: (value) => _onDigitChanged(index, value),

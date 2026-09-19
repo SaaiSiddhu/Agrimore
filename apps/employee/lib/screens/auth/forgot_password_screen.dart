@@ -51,8 +51,10 @@ class _ForgotPasswordScreenState extends State<ForgotPasswordScreen> {
 
   @override
   Widget build(BuildContext context) {
+    final tokens = context.saTokens;
+
     return Scaffold(
-      backgroundColor: SaTokens.pageBackground,
+      backgroundColor: tokens.pageBackground,
       appBar: AppBar(
         title: const Text('Reset password'),
         leading: IconButton(
@@ -63,13 +65,13 @@ class _ForgotPasswordScreenState extends State<ForgotPasswordScreen> {
       body: SafeArea(
         child: SingleChildScrollView(
           padding: const EdgeInsets.all(SaTokens.space24),
-          child: _isSuccess ? _buildSuccessView() : _buildFormView(),
+          child: _isSuccess ? _buildSuccessView(tokens) : _buildFormView(tokens),
         ),
       ),
     );
   }
 
-  Widget _buildFormView() {
+  Widget _buildFormView(SalesAssociateTokens tokens) {
     final auth = context.watch<EmployeeAuthProvider>();
 
     return Form(
@@ -85,7 +87,9 @@ class _ForgotPasswordScreenState extends State<ForgotPasswordScreen> {
           const SizedBox(height: SaTokens.space8),
           Text(
             'Enter the email associated with your administrator-issued account and we will send you a password reset link.',
-            style: Theme.of(context).textTheme.bodyMedium,
+            style: Theme.of(context).textTheme.bodyMedium?.copyWith(
+                  color: tokens.textSecondary,
+                ),
           ),
           const SizedBox(height: SaTokens.space24),
 
@@ -151,7 +155,7 @@ class _ForgotPasswordScreenState extends State<ForgotPasswordScreen> {
     );
   }
 
-  Widget _buildSuccessView() {
+  Widget _buildSuccessView(SalesAssociateTokens tokens) {
     return Column(
       crossAxisAlignment: CrossAxisAlignment.stretch,
       children: [
@@ -160,13 +164,13 @@ class _ForgotPasswordScreenState extends State<ForgotPasswordScreen> {
           child: Container(
             width: 64,
             height: 64,
-            decoration: const BoxDecoration(
-              color: SaTokens.successBg,
+            decoration: BoxDecoration(
+              color: tokens.successBg,
               shape: BoxShape.circle,
             ),
-            child: const Icon(
+            child: Icon(
               SaIcons.circleCheck,
-              color: SaTokens.successFg,
+              color: tokens.successFg,
               size: 32,
             ),
           ),
@@ -181,7 +185,9 @@ class _ForgotPasswordScreenState extends State<ForgotPasswordScreen> {
         Text(
           'We have sent password reset instructions to\n${_sentEmail ?? "your email"}.',
           textAlign: TextAlign.center,
-          style: Theme.of(context).textTheme.bodyMedium,
+          style: Theme.of(context).textTheme.bodyMedium?.copyWith(
+                color: tokens.textSecondary,
+              ),
         ),
         const SizedBox(height: SaTokens.space32),
         const SaInfoBanner(
