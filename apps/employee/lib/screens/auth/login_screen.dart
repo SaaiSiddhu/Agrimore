@@ -84,22 +84,32 @@ class _LoginScreenState extends State<LoginScreen> {
                   // App branding
                   Center(
                     child: Container(
-                      width: 64,
-                      height: 64,
+                      width: 72,
+                      height: 72,
                       decoration: BoxDecoration(
-                        color: tokens.primarySubtle,
-                        borderRadius: BorderRadius.circular(SaTokens.radiusCard),
+                        borderRadius: BorderRadius.circular(16),
+                        boxShadow: [
+                          BoxShadow(
+                            color: tokens.primary.withValues(alpha: 0.2),
+                            blurRadius: 16,
+                            offset: const Offset(0, 4),
+                          ),
+                        ],
                       ),
                       child: ClipRRect(
-                        borderRadius: BorderRadius.circular(SaTokens.radiusCard),
+                        borderRadius: BorderRadius.circular(16),
                         child: Image.asset(
-                          'assets/images/logo.png',
-                          width: 48,
-                          height: 48,
-                          errorBuilder: (_, __, ___) => Icon(
-                            SaIcons.shoppingBag,
-                            size: 32,
-                            color: tokens.primary,
+                          'assets/app_icon.png',
+                          width: 72,
+                          height: 72,
+                          fit: BoxFit.cover,
+                          errorBuilder: (_, __, ___) => Container(
+                            color: tokens.primarySubtle,
+                            child: Icon(
+                              SaIcons.shoppingBag,
+                              size: 36,
+                              color: tokens.primary,
+                            ),
                           ),
                         ),
                       ),

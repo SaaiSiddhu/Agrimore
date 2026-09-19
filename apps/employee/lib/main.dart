@@ -1,4 +1,5 @@
 // lib/main.dart
+import 'dart:async';
 import 'package:flutter/material.dart';
 import 'package:flutter/foundation.dart' show kIsWeb;
 import 'package:flutter/services.dart';
@@ -40,7 +41,6 @@ const int _functionsEmulatorPort =
 void main() async {
   final widgetsBinding = WidgetsFlutterBinding.ensureInitialized();
   FlutterNativeSplash.preserve(widgetsBinding: widgetsBinding);
-  final stopwatch = Stopwatch()..start();
 
   try {
     if (kIsWeb) {
@@ -49,11 +49,6 @@ void main() async {
     } else {
       await Firebase.initializeApp();
     }
-    // Phase 16C, Workstream 0: opt-in only, see the constants above. Placed
-    // here — after Firebase.initializeApp, before runApp and its provider
-    // constructors — so emulator config is guaranteed to be in effect before
-    // anything can grab a FirebaseFirestore/FirebaseAuth/FirebaseFunctions
-    // singleton.
     if (_useFirebaseEmulator) {
       debugPrint(
           '🧪 USE_FIREBASE_EMULATOR=true — pointing Auth/Firestore/Functions at $_firebaseEmulatorHost');
@@ -64,37 +59,35 @@ void main() async {
       FirebaseFunctions.instance
           .useFunctionsEmulator(_firebaseEmulatorHost, _functionsEmulatorPort);
     }
-    // Phase 17, Workstream 2: monitoring mode only — see
-    // AppCheckService's header comment. Never blocks startup (activate()
-    // swallows its own errors internally).
-    await AppCheckService.activate();
-    await NotificationService.initialize();
-    // Phase 21, Workstream 1: share this app's global navigatorKey with
-    // NotificationService so a tapped notification has a real BuildContext to
-    // navigate from — mirrors apps/marketplace/lib/main.dart's identical
-    // assignment. Without this, handleNotificationNavigation's
-    // navigatorKey.currentContext is always null, and it retries forever,
-    // silently, once per second, doing nothing.
+
+    // Connect notification navigation key synchronously
     NotificationService.navigatorKey = navigatorKey;
 
-    // Force portrait orientation
-    await SystemChrome.setPreferredOrientations([
+    // Fast-path background initializations: AppCheck, FCM notifications,
+    // and device orientation run asynchronously without blocking first frame render
+    // or keeping the native splash screen on screen.
+    unawaited(AppCheckService.activate().catchError((e) {
+      debugPrint('AppCheckService activation error: $e');
+    }));
+    unawaited(NotificationService.initialize().catchError((e) {
+      debugPrint('NotificationService initialization error: $e');
+    }));
+    unawaited(SystemChrome.setPreferredOrientations([
       DeviceOrientation.portraitUp,
       DeviceOrientation.portraitDown,
-    ]);
+    ]).catchError((e) {
+      debugPrint('Orientation error: $e');
+    }));
   } catch (e, st) {
     debugPrint('Startup initialization error: $e\n$st');
-  } finally {
-    runApp(const EmployeeApp());
-
-    // Maintain native splash visibility for ~1 second minimum when startup
-    // finishes faster than that, avoiding any white flash while Flutter renders.
-    final elapsedMs = stopwatch.elapsedMilliseconds;
-    if (elapsedMs < 1000) {
-      await Future.delayed(Duration(milliseconds: 1000 - elapsedMs));
-    }
-    FlutterNativeSplash.remove();
   }
+
+  runApp(const EmployeeApp());
+
+  // Remove native splash immediately as soon as the very first Flutter frame renders
+  widgetsBinding.addPostFrameCallback((_) {
+    FlutterNativeSplash.remove();
+  });
 }
 
 class EmployeeApp extends StatelessWidget {
