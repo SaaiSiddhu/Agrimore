@@ -14,6 +14,7 @@ import 'package:agrimore_services/agrimore_services.dart'
     hide DefaultFirebaseOptions;
 import 'app/app.dart';
 import 'providers/auth_provider.dart';
+import 'providers/theme_provider.dart';
 
 // ============================================
 // Phase 16C, Workstream 0 — OPT-IN Firebase emulator wiring.
@@ -98,6 +99,7 @@ class EmployeeApp extends StatelessWidget {
     return MultiProvider(
       providers: [
         ChangeNotifierProvider(create: (_) => EmployeeAuthProvider()),
+        ChangeNotifierProvider(create: (_) => EmployeeThemeProvider()),
       ],
       child: const App(),
     );

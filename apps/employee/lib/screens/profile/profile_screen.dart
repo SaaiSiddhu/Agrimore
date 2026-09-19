@@ -5,6 +5,7 @@ import 'package:flutter/services.dart';
 import 'package:provider/provider.dart';
 import 'package:agrimore_ui/agrimore_ui.dart';
 import '../../providers/auth_provider.dart';
+import '../../providers/theme_provider.dart';
 import '../../utils/sa_formatters.dart';
 import '../wallet/payout_account_screen.dart';
 import 'onboarding_status_screen.dart';
@@ -89,15 +90,19 @@ class ProfileScreen extends StatelessWidget {
               _buildIdentityCard(context, employee),
               const SizedBox(height: SaTokens.space16),
 
-              // 2. Navigation Actions Section
+              // 2. Appearance & Theme Settings
+              _buildAppearanceSection(context),
+              const SizedBox(height: SaTokens.space16),
+
+              // 3. Navigation Actions Section
               _buildNavigationSection(context),
               const SizedBox(height: SaTokens.space16),
 
-              // 3. Account Details Card
+              // 4. Account Details Card
               _buildAccountDetailsCard(context, employee),
               const SizedBox(height: SaTokens.space24),
 
-              // 4. Sign Out Button
+              // 5. Sign Out Button
               _buildSignOutButton(context),
               const SizedBox(height: SaTokens.space24),
             ],
@@ -266,6 +271,81 @@ class ProfileScreen extends StatelessWidget {
             ),
           ],
         ],
+      ),
+    );
+  }
+
+  Widget _buildAppearanceSection(BuildContext context) {
+    final tokens = context.saTokens;
+    final themeProvider = Provider.of<EmployeeThemeProvider?>(context);
+    if (themeProvider == null) {
+      return const SizedBox.shrink();
+    }
+
+    final isDark = themeProvider.isDarkMode ||
+        (themeProvider.isSystem &&
+            MediaQuery.platformBrightnessOf(context) == Brightness.dark);
+
+    return Material(
+      color: tokens.surface,
+      shape: RoundedRectangleBorder(
+        borderRadius: BorderRadius.circular(SaTokens.radiusCard),
+        side: BorderSide(color: tokens.divider),
+      ),
+      child: Padding(
+        padding: const EdgeInsets.symmetric(
+          horizontal: SaTokens.space16,
+          vertical: SaTokens.space12,
+        ),
+        child: Row(
+          children: [
+            Container(
+              width: 40,
+              height: 40,
+              decoration: BoxDecoration(
+                color: tokens.primarySubtle,
+                borderRadius: BorderRadius.circular(SaTokens.radiusInput),
+              ),
+              child: Icon(
+                isDark ? Icons.dark_mode_rounded : Icons.light_mode_rounded,
+                size: 20,
+                color: tokens.primary,
+              ),
+            ),
+            const SizedBox(width: SaTokens.space12),
+            Expanded(
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  Text(
+                    'Dark Mode',
+                    style: TextStyle(
+                      fontSize: 15,
+                      fontWeight: FontWeight.w700,
+                      color: tokens.textPrimary,
+                    ),
+                  ),
+                  const SizedBox(height: 2),
+                  Text(
+                    isDark ? 'Dark theme active' : 'Light theme active',
+                    style: TextStyle(
+                      fontSize: SaTokens.fsCaption,
+                      color: tokens.textSecondary,
+                    ),
+                  ),
+                ],
+              ),
+            ),
+            Switch.adaptive(
+              value: isDark,
+              activeTrackColor: tokens.primary,
+              onChanged: (_) {
+                HapticFeedback.lightImpact();
+                themeProvider.toggleTheme(context);
+              },
+            ),
+          ],
+        ),
       ),
     );
   }

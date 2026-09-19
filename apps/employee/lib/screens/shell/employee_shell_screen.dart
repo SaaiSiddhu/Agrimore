@@ -97,7 +97,7 @@ class _EmployeeShellScreenState extends State<EmployeeShellScreen>
             selectedIndex: _currentIndex,
             onDestinationSelected: switchTab,
             backgroundColor: tokens.surface,
-            indicatorColor: tokens.primarySubtle,
+            indicatorColor: Colors.transparent,
             elevation: 0,
             height: 64,
             labelBehavior: NavigationDestinationLabelBehavior.alwaysShow,

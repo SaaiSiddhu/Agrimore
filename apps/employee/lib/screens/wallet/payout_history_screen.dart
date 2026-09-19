@@ -49,9 +49,12 @@ class _PayoutHistoryScreenState extends State<PayoutHistoryScreen> {
         ),
       ),
       body: Column(
+        crossAxisAlignment: CrossAxisAlignment.stretch,
         children: [
           // Filter Chips Row
           Container(
+            width: double.infinity,
+            alignment: Alignment.centerLeft,
             color: tokens.surface,
             padding: const EdgeInsets.symmetric(
               horizontal: SaTokens.space16,

@@ -3,6 +3,7 @@ import 'package:firebase_auth/firebase_auth.dart';
 import 'package:provider/provider.dart';
 import 'package:agrimore_ui/agrimore_ui.dart';
 import '../providers/auth_provider.dart';
+import '../providers/theme_provider.dart';
 import '../screens/auth/login_screen.dart';
 import '../screens/auth/pending_approval_screen.dart';
 import '../screens/auth/suspended_screen.dart';
@@ -19,6 +20,9 @@ class App extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final themeProvider = Provider.of<EmployeeThemeProvider?>(context);
+    final themeMode = themeProvider?.themeMode ?? ThemeMode.system;
+
     return MaterialApp(
       navigatorKey: navigatorKey,
       title: 'Sales Associate',
@@ -40,7 +44,7 @@ class App extends StatelessWidget {
           MaterialPageRoute(builder: (_) => const _AuthGate()),
       theme: SalesAssociateTheme.lightTheme,
       darkTheme: SalesAssociateTheme.darkTheme,
-      themeMode: ThemeMode.system,
+      themeMode: themeMode,
       home: const _AuthGate(),
     );
   }

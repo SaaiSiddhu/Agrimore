@@ -67,15 +67,18 @@ class _OrdersScreenState extends State<OrdersScreen> {
         title: const Text('Attributed Orders'),
       ),
       body: Column(
+        crossAxisAlignment: CrossAxisAlignment.stretch,
         children: [
           // Search & Filter header
           Container(
+            width: double.infinity,
             color: tokens.surface,
             padding: const EdgeInsets.symmetric(
               horizontal: SaTokens.space16,
               vertical: SaTokens.space12,
             ),
             child: Column(
+              crossAxisAlignment: CrossAxisAlignment.stretch,
               children: [
                 // Search bar
                 TextField(
@@ -97,17 +100,20 @@ class _OrdersScreenState extends State<OrdersScreen> {
                 ),
                 const SizedBox(height: SaTokens.space8),
 
-                // Mode Filter chips
-                SingleChildScrollView(
-                  scrollDirection: Axis.horizontal,
-                  child: Row(
-                    children: [
-                      _buildFilterChip('All Orders', _OrderModeFilter.all),
-                      const SizedBox(width: SaTokens.space8),
-                      _buildFilterChip('B2B Orders', _OrderModeFilter.b2b),
-                      const SizedBox(width: SaTokens.space8),
-                      _buildFilterChip('Retail Orders', _OrderModeFilter.retail),
-                    ],
+                // Mode Filter chips (left-aligned)
+                Align(
+                  alignment: Alignment.centerLeft,
+                  child: SingleChildScrollView(
+                    scrollDirection: Axis.horizontal,
+                    child: Row(
+                      children: [
+                        _buildFilterChip('All Orders', _OrderModeFilter.all),
+                        const SizedBox(width: SaTokens.space8),
+                        _buildFilterChip('B2B Orders', _OrderModeFilter.b2b),
+                        const SizedBox(width: SaTokens.space8),
+                        _buildFilterChip('Retail Orders', _OrderModeFilter.retail),
+                      ],
+                    ),
                   ),
                 ),
               ],
