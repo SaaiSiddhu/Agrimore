@@ -58,6 +58,27 @@ class SalesAssociateTokens extends ThemeExtension<SalesAssociateTokens> {
     disabledContent: SaTokens.disabledContent,
   );
 
+  /// Dark-theme canonical instance wired to [SaTokens] dark constants.
+  static const SalesAssociateTokens dark = SalesAssociateTokens(
+    primary: SaTokens.darkPrimary,
+    primaryPressed: SaTokens.darkPrimaryPressed,
+    primarySubtle: SaTokens.darkPrimarySubtle,
+    pageBackground: SaTokens.darkPageBackground,
+    surface: SaTokens.darkSurface,
+    textPrimary: SaTokens.darkTextPrimary,
+    textSecondary: SaTokens.darkTextSecondary,
+    divider: SaTokens.darkDivider,
+    inputBorder: SaTokens.darkInputBorder,
+    successFg: SaTokens.darkSuccessFg,
+    successBg: SaTokens.darkSuccessBg,
+    warningFg: SaTokens.darkWarningFg,
+    warningBg: SaTokens.darkWarningBg,
+    errorFg: SaTokens.darkErrorFg,
+    errorBg: SaTokens.darkErrorBg,
+    disabledContainer: SaTokens.darkDisabledContainer,
+    disabledContent: SaTokens.darkDisabledContent,
+  );
+
   final Color primary;
   final Color primaryPressed;
   final Color primarySubtle;
@@ -142,3 +163,17 @@ class SalesAssociateTokens extends ThemeExtension<SalesAssociateTokens> {
     );
   }
 }
+
+/// Extension on [BuildContext] for ergonomic access to Sales Associate design tokens.
+extension SalesAssociateThemeContext on BuildContext {
+  /// Access active [SalesAssociateTokens], dynamically resolving between light and dark
+  /// based on the ambient [ThemeData.brightness].
+  SalesAssociateTokens get saTokens {
+    final ext = Theme.of(this).extension<SalesAssociateTokens>();
+    if (ext != null) return ext;
+    return Theme.of(this).brightness == Brightness.dark
+        ? SalesAssociateTokens.dark
+        : SalesAssociateTokens.light;
+  }
+}
+

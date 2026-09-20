@@ -27,7 +27,7 @@ plugins {
 
 android {
     namespace = "com.agrimore.salesassociate"
-    compileSdk = flutter.compileSdkVersion
+    compileSdk = 36
     ndkVersion = flutter.ndkVersion
 
     compileOptions {
@@ -43,7 +43,7 @@ android {
     defaultConfig {
         applicationId = "com.agrimore.salesassociate"
         minSdk = 24
-        targetSdk = 35
+        targetSdk = 36
         versionCode = flutter.versionCode
         versionName = flutter.versionName
         multiDexEnabled = true
@@ -51,7 +51,10 @@ android {
 
     signingConfigs {
         create("release") {
-            storeFile = (keystoreProperties["storeFile"] as String?)?.let { file(it) }
+            storeFile = (keystoreProperties["storeFile"] as String?)?.let { path ->
+                val f = file(path)
+                if (f.exists()) f else rootProject.file(path.removePrefix("../"))
+            }
             storePassword = keystoreProperties["storePassword"] as String?
             keyAlias = keystoreProperties["keyAlias"] as String?
             keyPassword = keystoreProperties["keyPassword"] as String?

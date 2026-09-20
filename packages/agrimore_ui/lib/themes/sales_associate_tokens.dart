@@ -84,6 +84,64 @@ abstract final class SaTokens {
   static const Color disabledContent = Color(0xFF94A3B8);
 
   // ──────────────────────────────────────────────────────────────────────────
+  // Dark mode foundations (slate-900 / slate-800 scale)
+  // ──────────────────────────────────────────────────────────────────────────
+
+  /// Dark page background — #0F172A (slate-900).
+  static const Color darkPageBackground = Color(0xFF0F172A);
+
+  /// Dark card / surface — #1E293B (slate-800).
+  static const Color darkSurface = Color(0xFF1E293B);
+
+  /// Dark elevated surface — #334155 (slate-700).
+  static const Color darkSurfaceElevated = Color(0xFF334155);
+
+  /// Dark primary text — #F8FAFC (slate-50).
+  static const Color darkTextPrimary = Color(0xFFF8FAFC);
+
+  /// Dark secondary text — #94A3B8 (slate-400).
+  static const Color darkTextSecondary = Color(0xFF94A3B8);
+
+  /// Dark divider — #334155 (slate-700).
+  static const Color darkDivider = Color(0xFF334155);
+
+  /// Dark input / control boundary — #475569 (slate-600).
+  static const Color darkInputBorder = Color(0xFF475569);
+
+  /// Dark primary subtle container — #172554 (blue-950).
+  static const Color darkPrimarySubtle = Color(0xFF172554);
+
+  /// Dark primary accent (high contrast on dark surfaces) — #3B82F6.
+  static const Color darkPrimary = Color(0xFF3B82F6);
+
+  /// Dark primary pressed — #60A5FA.
+  static const Color darkPrimaryPressed = Color(0xFF60A5FA);
+
+  /// Dark success foreground — #4ADE80.
+  static const Color darkSuccessFg = Color(0xFF4ADE80);
+
+  /// Dark success surface — #052E16.
+  static const Color darkSuccessBg = Color(0xFF052E16);
+
+  /// Dark warning foreground — #FBBF24.
+  static const Color darkWarningFg = Color(0xFFFBBF24);
+
+  /// Dark warning surface — #451A03.
+  static const Color darkWarningBg = Color(0xFF451A03);
+
+  /// Dark error foreground — #F87171.
+  static const Color darkErrorFg = Color(0xFFF87171);
+
+  /// Dark error surface — #450A0A.
+  static const Color darkErrorBg = Color(0xFF450A0A);
+
+  /// Dark disabled container — #334155.
+  static const Color darkDisabledContainer = Color(0xFF334155);
+
+  /// Dark disabled content — #64748B.
+  static const Color darkDisabledContent = Color(0xFF64748B);
+
+  // ──────────────────────────────────────────────────────────────────────────
   // Spacing scale (logical pixels)
   // ──────────────────────────────────────────────────────────────────────────
 

@@ -1,8 +1,9 @@
-// lib/app/app.dart
 import 'package:flutter/material.dart';
+import 'package:firebase_auth/firebase_auth.dart';
 import 'package:provider/provider.dart';
 import 'package:agrimore_ui/agrimore_ui.dart';
 import '../providers/auth_provider.dart';
+import '../providers/theme_provider.dart';
 import '../screens/auth/login_screen.dart';
 import '../screens/auth/pending_approval_screen.dart';
 import '../screens/auth/suspended_screen.dart';
@@ -19,6 +20,9 @@ class App extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final themeProvider = Provider.of<EmployeeThemeProvider?>(context);
+    final themeMode = themeProvider?.themeMode ?? ThemeMode.system;
+
     return MaterialApp(
       navigatorKey: navigatorKey,
       title: 'Sales Associate',
@@ -39,14 +43,8 @@ class App extends StatelessWidget {
       onUnknownRoute: (settings) =>
           MaterialPageRoute(builder: (_) => const _AuthGate()),
       theme: SalesAssociateTheme.lightTheme,
-      darkTheme: ThemeData(
-        colorScheme: ColorScheme.fromSeed(
-          seedColor: SaTokens.primary,
-          brightness: Brightness.dark,
-        ),
-        useMaterial3: true,
-      ),
-      themeMode: ThemeMode.system,
+      darkTheme: SalesAssociateTheme.darkTheme,
+      themeMode: themeMode,
       home: const _AuthGate(),
     );
   }
@@ -59,13 +57,6 @@ class _AuthGate extends StatelessWidget {
   Widget build(BuildContext context) {
     return Consumer<EmployeeAuthProvider>(
       builder: (context, authProvider, _) {
-        if (authProvider.isLoading) {
-          return const Scaffold(
-            backgroundColor: SaTokens.pageBackground,
-            body: Center(child: CircularProgressIndicator()),
-          );
-        }
-
         // Fully authenticated and approved employee -> 4-tab shell
         if (authProvider.isAuthenticated && authProvider.isEmployee) {
           return const EmployeeShellScreen();
@@ -87,9 +78,17 @@ class _AuthGate extends StatelessWidget {
           return const EmployeePendingApprovalScreen();
         }
 
-        // Not logged in
+        // Phase EMP-3: Fast-path zero delay startup.
+        // If an authenticated session exists in FirebaseAuth on cold start / reopen,
+        // mount EmployeeShellScreen immediately without showing a blocking loading spinner.
+        if (FirebaseAuth.instance.currentUser != null) {
+          return const EmployeeShellScreen();
+        }
+
+        // Not logged in -> LoginScreen
         return const LoginScreen();
       },
     );
   }
 }
+

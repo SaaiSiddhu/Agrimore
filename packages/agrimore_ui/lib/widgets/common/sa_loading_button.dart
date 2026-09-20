@@ -1,6 +1,7 @@
 // ignore_for_file: public_member_api_docs
 
 import 'package:flutter/material.dart';
+import '../../themes/sales_associate_theme_extension.dart';
 import '../../themes/sales_associate_tokens.dart';
 
 /// Button visual variant.
@@ -61,6 +62,7 @@ class SaLoadingButton extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final tokens = context.saTokens;
     final effectiveLoadingText = loadingText ?? text;
 
     final Widget content = Row(
@@ -76,7 +78,7 @@ class SaLoadingButton extends StatelessWidget {
               valueColor: AlwaysStoppedAnimation<Color>(
                 variant == SaButtonVariant.primary
                     ? Colors.white
-                    : SaTokens.primary,
+                    : tokens.primary,
               ),
             ),
           ),
@@ -113,10 +115,10 @@ class SaLoadingButton extends StatelessWidget {
             fullWidth ? double.infinity : 120,
             SaTokens.controlHeight,
           ),
-          backgroundColor: SaTokens.primary,
+          backgroundColor: tokens.primary,
           foregroundColor: Colors.white,
-          disabledBackgroundColor: SaTokens.disabledContainer,
-          disabledForegroundColor: SaTokens.disabledContent,
+          disabledBackgroundColor: tokens.disabledContainer,
+          disabledForegroundColor: tokens.disabledContent,
           elevation: 0,
           shape: RoundedRectangleBorder(
             borderRadius: BorderRadius.circular(SaTokens.radiusInput),
@@ -127,10 +129,10 @@ class SaLoadingButton extends StatelessWidget {
             fullWidth ? double.infinity : 120,
             SaTokens.controlHeight,
           ),
-          foregroundColor: SaTokens.primary,
-          disabledForegroundColor: SaTokens.disabledContent,
+          foregroundColor: tokens.primary,
+          disabledForegroundColor: tokens.disabledContent,
           side: BorderSide(
-            color: _isEnabled ? SaTokens.primary : SaTokens.disabledContainer,
+            color: _isEnabled ? tokens.primary : tokens.disabledContainer,
             width: 1.5,
           ),
           shape: RoundedRectangleBorder(
@@ -138,6 +140,7 @@ class SaLoadingButton extends StatelessWidget {
           ),
         ),
     };
+
 
     final Widget button = switch (variant) {
       SaButtonVariant.primary => ElevatedButton(

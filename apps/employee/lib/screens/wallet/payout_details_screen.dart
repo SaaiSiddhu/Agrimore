@@ -20,8 +20,10 @@ class PayoutDetailsScreen extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final tokens = context.saTokens;
+
     return Scaffold(
-      backgroundColor: SaTokens.pageBackground,
+      backgroundColor: tokens.pageBackground,
       appBar: AppBar(
         title: const Text('Payout Details'),
         leading: IconButton(
@@ -39,12 +41,36 @@ class PayoutDetailsScreen extends StatelessWidget {
 
           if (data == null) {
             if (snap.connectionState == ConnectionState.waiting) {
-              return const Center(child: CircularProgressIndicator());
+              return ListView(
+                padding: const EdgeInsets.all(SaTokens.space16),
+                children: [
+                  Container(
+                    height: 140,
+                    decoration: BoxDecoration(
+                      color: tokens.surface,
+                      borderRadius: BorderRadius.circular(SaTokens.radiusCard),
+                      border: Border.all(color: tokens.divider),
+                    ),
+                  ),
+                  const SizedBox(height: SaTokens.space16),
+                  Container(
+                    height: 120,
+                    decoration: BoxDecoration(
+                      color: tokens.surface,
+                      borderRadius: BorderRadius.circular(SaTokens.radiusCard),
+                      border: Border.all(color: tokens.divider),
+                    ),
+                  ),
+                ],
+              );
             }
-            return const Center(
+            return Center(
               child: Padding(
-                padding: EdgeInsets.all(SaTokens.space24),
-                child: Text('Payout details not found'),
+                padding: const EdgeInsets.all(SaTokens.space24),
+                child: Text(
+                  'Payout details not found',
+                  style: TextStyle(color: tokens.textSecondary),
+                ),
               ),
             );
           }
@@ -70,15 +96,15 @@ class PayoutDetailsScreen extends StatelessWidget {
             padding: const EdgeInsets.all(SaTokens.space16),
             children: [
               // Hero Amount Card
-              _buildAmountHero(amount, status, isPaid, isFailed),
+              _buildAmountHero(amount, status, isPaid, isFailed, tokens),
               const SizedBox(height: SaTokens.space16),
 
               // Timeline Progression Card
-              _buildTimelineCard(context, createdAt, paidAt, isPaid, isFailed),
+              _buildTimelineCard(context, createdAt, paidAt, isPaid, isFailed, tokens),
               const SizedBox(height: SaTokens.space16),
 
               // Summary Details Card
-              _buildSummaryCard(context, referenceId, data),
+              _buildSummaryCard(context, referenceId, data, tokens),
               const SizedBox(height: SaTokens.space24),
 
               // Help & Support Link
@@ -108,27 +134,28 @@ class PayoutDetailsScreen extends StatelessWidget {
     String status,
     bool isPaid,
     bool isFailed,
+    SalesAssociateTokens tokens,
   ) {
-    Color bg = SaTokens.warningBg;
-    Color fg = SaTokens.warningFg;
+    Color bg = tokens.warningBg;
+    Color fg = tokens.warningFg;
     IconData icon = Icons.schedule_rounded;
 
     if (isPaid) {
-      bg = SaTokens.successBg;
-      fg = SaTokens.successFg;
+      bg = tokens.successBg;
+      fg = tokens.successFg;
       icon = SaIcons.circleCheck;
     } else if (isFailed) {
-      bg = SaTokens.errorBg;
-      fg = SaTokens.errorFg;
+      bg = tokens.errorBg;
+      fg = tokens.errorFg;
       icon = SaIcons.circleAlert;
     }
 
     return Container(
       padding: const EdgeInsets.all(SaTokens.space24),
       decoration: BoxDecoration(
-        color: SaTokens.surface,
+        color: tokens.surface,
         borderRadius: BorderRadius.circular(SaTokens.radiusCard),
-        border: Border.all(color: SaTokens.divider),
+        border: Border.all(color: tokens.divider),
       ),
       child: Column(
         children: [
@@ -155,20 +182,23 @@ class PayoutDetailsScreen extends StatelessWidget {
             ),
           ),
           const SizedBox(height: SaTokens.space12),
-          Text(
-            SaFormatters.formatCurrency(amount),
-            style: const TextStyle(
-              fontSize: 32,
-              fontWeight: FontWeight.w900,
-              color: SaTokens.textPrimary,
+          FittedBox(
+            fit: BoxFit.scaleDown,
+            child: Text(
+              SaFormatters.formatCurrency(amount),
+              style: TextStyle(
+                fontSize: 32,
+                fontWeight: FontWeight.w900,
+                color: tokens.textPrimary,
+              ),
             ),
           ),
           const SizedBox(height: SaTokens.space4),
-          const Text(
+          Text(
             'Requested Payout Amount',
             style: TextStyle(
               fontSize: SaTokens.fsCaption,
-              color: SaTokens.textSecondary,
+              color: tokens.textSecondary,
             ),
           ),
         ],
@@ -182,13 +212,14 @@ class PayoutDetailsScreen extends StatelessWidget {
     DateTime? paidAt,
     bool isPaid,
     bool isFailed,
+    SalesAssociateTokens tokens,
   ) {
     return Container(
       padding: const EdgeInsets.all(SaTokens.space16),
       decoration: BoxDecoration(
-        color: SaTokens.surface,
+        color: tokens.surface,
         borderRadius: BorderRadius.circular(SaTokens.radiusCard),
-        border: Border.all(color: SaTokens.divider),
+        border: Border.all(color: tokens.divider),
       ),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
@@ -201,6 +232,7 @@ class PayoutDetailsScreen extends StatelessWidget {
 
           // Step 1: Requested
           _buildTimelineStep(
+            tokens: tokens,
             isDone: true,
             isCurrent: !isPaid && !isFailed,
             title: 'Payout request submitted',
@@ -212,6 +244,7 @@ class PayoutDetailsScreen extends StatelessWidget {
 
           // Step 2: Settlement
           _buildTimelineStep(
+            tokens: tokens,
             isDone: isPaid,
             isCurrent: isPaid,
             isError: isFailed,
@@ -233,6 +266,7 @@ class PayoutDetailsScreen extends StatelessWidget {
   }
 
   Widget _buildTimelineStep({
+    required SalesAssociateTokens tokens,
     required bool isDone,
     required bool isCurrent,
     required String title,
@@ -240,18 +274,18 @@ class PayoutDetailsScreen extends StatelessWidget {
     bool isError = false,
     bool isLast = false,
   }) {
-    Color iconBg = SaTokens.pageBackground;
-    Color iconFg = SaTokens.textSecondary;
+    Color iconBg = tokens.pageBackground;
+    Color iconFg = tokens.textSecondary;
 
     if (isError) {
-      iconBg = SaTokens.errorBg;
-      iconFg = SaTokens.errorFg;
+      iconBg = tokens.errorBg;
+      iconFg = tokens.errorFg;
     } else if (isDone) {
-      iconBg = SaTokens.successBg;
-      iconFg = SaTokens.successFg;
+      iconBg = tokens.successBg;
+      iconFg = tokens.successFg;
     } else if (isCurrent) {
-      iconBg = SaTokens.primarySubtle;
-      iconFg = SaTokens.primary;
+      iconBg = tokens.primarySubtle;
+      iconFg = tokens.primary;
     }
 
     return Row(
@@ -280,7 +314,7 @@ class PayoutDetailsScreen extends StatelessWidget {
               Container(
                 width: 2,
                 height: 32,
-                color: isDone ? SaTokens.successFg : SaTokens.divider,
+                color: isDone ? tokens.successFg : tokens.divider,
               ),
           ],
         ),
@@ -291,18 +325,18 @@ class PayoutDetailsScreen extends StatelessWidget {
             children: [
               Text(
                 title,
-                style: const TextStyle(
+                style: TextStyle(
                   fontSize: SaTokens.fsBody,
                   fontWeight: FontWeight.w600,
-                  color: SaTokens.textPrimary,
+                  color: tokens.textPrimary,
                 ),
               ),
               const SizedBox(height: 2),
               Text(
                 subtitle,
-                style: const TextStyle(
+                style: TextStyle(
                   fontSize: SaTokens.fsCaption,
-                  color: SaTokens.textSecondary,
+                  color: tokens.textSecondary,
                 ),
               ),
             ],
@@ -316,6 +350,7 @@ class PayoutDetailsScreen extends StatelessWidget {
     BuildContext context,
     String referenceId,
     Map<String, dynamic> data,
+    SalesAssociateTokens tokens,
   ) {
     final method = data['payoutMethod']?.toString().toUpperCase() ?? 'BANK';
     final destination = data['destination']?.toString() ??
@@ -326,9 +361,9 @@ class PayoutDetailsScreen extends StatelessWidget {
     return Container(
       padding: const EdgeInsets.all(SaTokens.space16),
       decoration: BoxDecoration(
-        color: SaTokens.surface,
+        color: tokens.surface,
         borderRadius: BorderRadius.circular(SaTokens.radiusCard),
-        border: Border.all(color: SaTokens.divider),
+        border: Border.all(color: tokens.divider),
       ),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
@@ -338,35 +373,41 @@ class PayoutDetailsScreen extends StatelessWidget {
             style: Theme.of(context).textTheme.titleMedium,
           ),
           const SizedBox(height: SaTokens.space12),
-          _buildInfoRow('Reference ID', referenceId),
-          _buildInfoRow('Payout Method', method),
-          _buildInfoRow('Destination', destination),
+          _buildInfoRow('Reference ID', referenceId, tokens),
+          _buildInfoRow('Payout Method', method, tokens),
+          _buildInfoRow('Destination', destination, tokens),
           if (data['notes'] != null && data['notes'].toString().isNotEmpty)
-            _buildInfoRow('Notes', data['notes'].toString()),
+            _buildInfoRow('Notes', data['notes'].toString(), tokens),
         ],
       ),
     );
   }
 
-  Widget _buildInfoRow(String label, String value) {
+  Widget _buildInfoRow(String label, String value, SalesAssociateTokens tokens) {
     return Padding(
       padding: const EdgeInsets.symmetric(vertical: 4),
       child: Row(
-        mainAxisAlignment: MainAxisAlignment.spaceBetween,
+        crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          Text(
-            label,
-            style: const TextStyle(
-              fontSize: SaTokens.fsLabel,
-              color: SaTokens.textSecondary,
+          Expanded(
+            child: Text(
+              label,
+              style: TextStyle(
+                fontSize: SaTokens.fsLabel,
+                color: tokens.textSecondary,
+              ),
             ),
           ),
-          Text(
-            value,
-            style: const TextStyle(
-              fontSize: SaTokens.fsLabel,
-              fontWeight: FontWeight.w600,
-              color: SaTokens.textPrimary,
+          const SizedBox(width: SaTokens.space8),
+          Flexible(
+            child: Text(
+              value,
+              textAlign: TextAlign.end,
+              style: TextStyle(
+                fontSize: SaTokens.fsLabel,
+                fontWeight: FontWeight.w600,
+                color: tokens.textPrimary,
+              ),
             ),
           ),
         ],

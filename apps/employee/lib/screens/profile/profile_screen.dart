@@ -5,6 +5,7 @@ import 'package:flutter/services.dart';
 import 'package:provider/provider.dart';
 import 'package:agrimore_ui/agrimore_ui.dart';
 import '../../providers/auth_provider.dart';
+import '../../providers/theme_provider.dart';
 import '../../utils/sa_formatters.dart';
 import '../wallet/payout_account_screen.dart';
 import 'onboarding_status_screen.dart';
@@ -30,17 +31,18 @@ class ProfileScreen extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final tokens = context.saTokens;
     final uid = employeeUid ?? FirebaseAuth.instance.currentUser?.uid;
 
     if (uid == null) {
-      return const Scaffold(
-        backgroundColor: SaTokens.pageBackground,
-        body: Center(child: CircularProgressIndicator()),
+      return Scaffold(
+        backgroundColor: tokens.pageBackground,
+        body: const SizedBox.shrink(),
       );
     }
 
     return Scaffold(
-      backgroundColor: SaTokens.pageBackground,
+      backgroundColor: tokens.pageBackground,
       appBar: AppBar(
         title: const Text('My Profile'),
       ),
@@ -52,23 +54,29 @@ class ProfileScreen extends StatelessWidget {
                 .snapshots(),
         builder: (context, snap) {
           if (snap.hasError) {
-            return const Center(
+            return Center(
               child: Padding(
-                padding: EdgeInsets.all(SaTokens.space24),
-                child: Text('Could not load profile right now.'),
+                padding: const EdgeInsets.all(SaTokens.space24),
+                child: Text(
+                  'Could not load profile right now.',
+                  style: TextStyle(color: tokens.textSecondary),
+                ),
               ),
             );
           }
           if (!snap.hasData) {
-            return const Center(child: CircularProgressIndicator());
+            return const SizedBox.shrink();
           }
 
           final doc = snap.data!;
           if (!doc.exists || doc.data() == null) {
-            return const Center(
+            return Center(
               child: Padding(
-                padding: EdgeInsets.all(SaTokens.space24),
-                child: Text('Associate profile record not found.'),
+                padding: const EdgeInsets.all(SaTokens.space24),
+                child: Text(
+                  'Associate profile record not found.',
+                  style: TextStyle(color: tokens.textSecondary),
+                ),
               ),
             );
           }
@@ -82,15 +90,19 @@ class ProfileScreen extends StatelessWidget {
               _buildIdentityCard(context, employee),
               const SizedBox(height: SaTokens.space16),
 
-              // 2. Navigation Actions Section
+              // 2. Appearance & Theme Settings
+              _buildAppearanceSection(context),
+              const SizedBox(height: SaTokens.space16),
+
+              // 3. Navigation Actions Section
               _buildNavigationSection(context),
               const SizedBox(height: SaTokens.space16),
 
-              // 3. Account Details Card
+              // 4. Account Details Card
               _buildAccountDetailsCard(context, employee),
               const SizedBox(height: SaTokens.space24),
 
-              // 4. Sign Out Button
+              // 5. Sign Out Button
               _buildSignOutButton(context),
               const SizedBox(height: SaTokens.space24),
             ],
@@ -101,6 +113,7 @@ class ProfileScreen extends StatelessWidget {
   }
 
   Widget _buildIdentityCard(BuildContext context, EmployeeModel employee) {
+    final tokens = context.saTokens;
     final name = employee.name.trim();
     final initials = name.isNotEmpty
         ? name
@@ -115,26 +128,26 @@ class ProfileScreen extends StatelessWidget {
     final isApproved = status == 'approved';
     final isSuspended = status == 'suspended';
 
-    Color statusBg = SaTokens.warningBg;
-    Color statusFg = SaTokens.warningFg;
+    Color statusBg = tokens.warningBg;
+    Color statusFg = tokens.warningFg;
     String statusText = 'Pending Approval';
 
     if (isApproved) {
-      statusBg = SaTokens.successBg;
-      statusFg = SaTokens.successFg;
+      statusBg = tokens.successBg;
+      statusFg = tokens.successFg;
       statusText = 'Active Associate';
     } else if (isSuspended) {
-      statusBg = SaTokens.errorBg;
-      statusFg = SaTokens.errorFg;
+      statusBg = tokens.errorBg;
+      statusFg = tokens.errorFg;
       statusText = 'Suspended';
     }
 
     return Container(
       padding: const EdgeInsets.all(SaTokens.space24),
       decoration: BoxDecoration(
-        color: SaTokens.surface,
+        color: tokens.surface,
         borderRadius: BorderRadius.circular(SaTokens.radiusCard),
-        border: Border.all(color: SaTokens.divider),
+        border: Border.all(color: tokens.divider),
       ),
       child: Column(
         children: [
@@ -146,16 +159,16 @@ class ProfileScreen extends StatelessWidget {
                 height: 56,
                 alignment: Alignment.center,
                 decoration: BoxDecoration(
-                  color: SaTokens.primarySubtle,
+                  color: tokens.primarySubtle,
                   shape: BoxShape.circle,
-                  border: Border.all(color: SaTokens.primary.withValues(alpha: 0.2)),
+                  border: Border.all(color: tokens.primary.withValues(alpha: 0.2)),
                 ),
                 child: Text(
                   initials,
-                  style: const TextStyle(
+                  style: TextStyle(
                     fontSize: 20,
                     fontWeight: FontWeight.w800,
-                    color: SaTokens.primary,
+                    color: tokens.primary,
                   ),
                 ),
               ),
@@ -168,18 +181,18 @@ class ProfileScreen extends StatelessWidget {
                   children: [
                     Text(
                       name.isNotEmpty ? name : 'Sales Associate',
-                      style: const TextStyle(
+                      style: TextStyle(
                         fontSize: 18,
                         fontWeight: FontWeight.w800,
-                        color: SaTokens.textPrimary,
+                        color: tokens.textPrimary,
                       ),
                     ),
                     const SizedBox(height: 2),
-                    const Text(
+                    Text(
                       'Sales Associate',
                       style: TextStyle(
                         fontSize: SaTokens.fsCaption,
-                        color: SaTokens.textSecondary,
+                        color: tokens.textSecondary,
                         fontWeight: FontWeight.w500,
                       ),
                     ),
@@ -208,33 +221,36 @@ class ProfileScreen extends StatelessWidget {
 
           if (employee.employeeCode.isNotEmpty) ...[
             const SizedBox(height: SaTokens.space16),
-            const Divider(color: SaTokens.divider),
+            Divider(color: tokens.divider),
             const SizedBox(height: SaTokens.space8),
             Row(
               mainAxisAlignment: MainAxisAlignment.spaceBetween,
               children: [
-                Column(
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  children: [
-                    const Text(
-                      'Associate Referral Code',
-                      style: TextStyle(
-                        fontSize: SaTokens.fsCaption,
-                        color: SaTokens.textSecondary,
+                Expanded(
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      Text(
+                        'Associate Referral Code',
+                        style: TextStyle(
+                          fontSize: SaTokens.fsCaption,
+                          color: tokens.textSecondary,
+                        ),
                       ),
-                    ),
-                    const SizedBox(height: 2),
-                    Text(
-                      employee.employeeCode,
-                      style: const TextStyle(
-                        fontSize: 16,
-                        fontWeight: FontWeight.w800,
-                        letterSpacing: 1.5,
-                        color: SaTokens.textPrimary,
+                      const SizedBox(height: 2),
+                      Text(
+                        employee.employeeCode,
+                        style: TextStyle(
+                          fontSize: 16,
+                          fontWeight: FontWeight.w800,
+                          letterSpacing: 1.5,
+                          color: tokens.textPrimary,
+                        ),
                       ),
-                    ),
-                  ],
+                    ],
+                  ),
                 ),
+                const SizedBox(width: SaTokens.space8),
                 TextButton.icon(
                   onPressed: () {
                     Clipboard.setData(
@@ -262,12 +278,88 @@ class ProfileScreen extends StatelessWidget {
     );
   }
 
-  Widget _buildNavigationSection(BuildContext context) {
+  Widget _buildAppearanceSection(BuildContext context) {
+    final tokens = context.saTokens;
+    final themeProvider = Provider.of<EmployeeThemeProvider?>(context);
+    if (themeProvider == null) {
+      return const SizedBox.shrink();
+    }
+
+    final isDark = themeProvider.isDarkMode ||
+        (themeProvider.isSystem &&
+            MediaQuery.platformBrightnessOf(context) == Brightness.dark);
+
     return Material(
-      color: SaTokens.surface,
+      color: tokens.surface,
       shape: RoundedRectangleBorder(
         borderRadius: BorderRadius.circular(SaTokens.radiusCard),
-        side: const BorderSide(color: SaTokens.divider),
+        side: BorderSide(color: tokens.divider),
+      ),
+      child: Padding(
+        padding: const EdgeInsets.symmetric(
+          horizontal: SaTokens.space16,
+          vertical: SaTokens.space12,
+        ),
+        child: Row(
+          children: [
+            Container(
+              width: 40,
+              height: 40,
+              decoration: BoxDecoration(
+                color: tokens.primarySubtle,
+                borderRadius: BorderRadius.circular(SaTokens.radiusInput),
+              ),
+              child: Icon(
+                isDark ? Icons.dark_mode_rounded : Icons.light_mode_rounded,
+                size: 20,
+                color: tokens.primary,
+              ),
+            ),
+            const SizedBox(width: SaTokens.space12),
+            Expanded(
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  Text(
+                    'Dark Mode',
+                    style: TextStyle(
+                      fontSize: 15,
+                      fontWeight: FontWeight.w700,
+                      color: tokens.textPrimary,
+                    ),
+                  ),
+                  const SizedBox(height: 2),
+                  Text(
+                    isDark ? 'Dark theme active' : 'Light theme active',
+                    style: TextStyle(
+                      fontSize: SaTokens.fsCaption,
+                      color: tokens.textSecondary,
+                    ),
+                  ),
+                ],
+              ),
+            ),
+            Switch.adaptive(
+              value: isDark,
+              activeTrackColor: tokens.primary,
+              onChanged: (_) {
+                HapticFeedback.lightImpact();
+                themeProvider.toggleTheme(context);
+              },
+            ),
+          ],
+        ),
+      ),
+    );
+  }
+
+  Widget _buildNavigationSection(BuildContext context) {
+    final tokens = context.saTokens;
+    return Material(
+      color: tokens.surface,
+      shape: RoundedRectangleBorder(
+        borderRadius: BorderRadius.circular(SaTokens.radiusCard),
+        side: BorderSide(color: tokens.divider),
       ),
       child: Column(
         children: [
@@ -284,7 +376,7 @@ class ProfileScreen extends StatelessWidget {
               );
             },
           ),
-          const Divider(height: 1, color: SaTokens.divider),
+          Divider(height: 1, color: tokens.divider),
           _buildNavTile(
             context,
             icon: SaIcons.circleCheck,
@@ -298,7 +390,7 @@ class ProfileScreen extends StatelessWidget {
               );
             },
           ),
-          const Divider(height: 1, color: SaTokens.divider),
+          Divider(height: 1, color: tokens.divider),
           _buildNavTile(
             context,
             icon: SaIcons.bell,
@@ -312,7 +404,7 @@ class ProfileScreen extends StatelessWidget {
               );
             },
           ),
-          const Divider(height: 1, color: SaTokens.divider),
+          Divider(height: 1, color: tokens.divider),
           _buildNavTile(
             context,
             icon: SaIcons.headphones,
@@ -338,6 +430,7 @@ class ProfileScreen extends StatelessWidget {
     required String subtitle,
     required VoidCallback onTap,
   }) {
+    final tokens = context.saTokens;
     return ListTile(
       onTap: onTap,
       contentPadding: const EdgeInsets.symmetric(
@@ -348,29 +441,29 @@ class ProfileScreen extends StatelessWidget {
         width: 38,
         height: 38,
         decoration: BoxDecoration(
-          color: SaTokens.primarySubtle,
+          color: tokens.primarySubtle,
           borderRadius: BorderRadius.circular(8),
         ),
-        child: Icon(icon, color: SaTokens.primary, size: 18),
+        child: Icon(icon, color: tokens.primary, size: 18),
       ),
       title: Text(
         title,
-        style: const TextStyle(
+        style: TextStyle(
           fontSize: SaTokens.fsBody,
           fontWeight: FontWeight.w600,
-          color: SaTokens.textPrimary,
+          color: tokens.textPrimary,
         ),
       ),
       subtitle: Text(
         subtitle,
-        style: const TextStyle(
+        style: TextStyle(
           fontSize: SaTokens.fsCaption,
-          color: SaTokens.textSecondary,
+          color: tokens.textSecondary,
         ),
       ),
-      trailing: const Icon(
+      trailing: Icon(
         Icons.chevron_right_rounded,
-        color: SaTokens.textSecondary,
+        color: tokens.textSecondary,
         size: 20,
       ),
     );
@@ -380,6 +473,7 @@ class ProfileScreen extends StatelessWidget {
     BuildContext context,
     EmployeeModel employee,
   ) {
+    final tokens = context.saTokens;
     final maskedPhone = employee.phone.isNotEmpty
         ? SaFormatters.formatMaskedPhone(employee.phone)
         : 'Not on file';
@@ -387,31 +481,36 @@ class ProfileScreen extends StatelessWidget {
     return Container(
       padding: const EdgeInsets.all(SaTokens.space16),
       decoration: BoxDecoration(
-        color: SaTokens.surface,
+        color: tokens.surface,
         borderRadius: BorderRadius.circular(SaTokens.radiusCard),
-        border: Border.all(color: SaTokens.divider),
+        border: Border.all(color: tokens.divider),
       ),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
           Text(
             'Account Details',
-            style: Theme.of(context).textTheme.titleMedium,
+            style: Theme.of(context).textTheme.titleMedium?.copyWith(
+                  color: tokens.textPrimary,
+                ),
           ),
           const SizedBox(height: SaTokens.space12),
           _buildInfoRow(
+            context,
             icon: SaIcons.phone,
             label: 'Phone Number',
             value: maskedPhone,
           ),
-          const Divider(height: 16, color: SaTokens.divider),
+          Divider(height: 16, color: tokens.divider),
           _buildInfoRow(
+            context,
             icon: SaIcons.mail,
             label: 'Email Address',
             value: employee.email.isNotEmpty ? employee.email : 'Not on file',
           ),
-          const Divider(height: 16, color: SaTokens.divider),
+          Divider(height: 16, color: tokens.divider),
           _buildInfoRow(
+            context,
             icon: Icons.percent_rounded,
             label: 'Default Commission Rate',
             value: employee.commissionRate > 0
@@ -423,15 +522,17 @@ class ProfileScreen extends StatelessWidget {
     );
   }
 
-  Widget _buildInfoRow({
+  Widget _buildInfoRow(
+    BuildContext context, {
     required IconData icon,
     required String label,
     required String value,
   }) {
+    final tokens = context.saTokens;
     return Row(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
-        Icon(icon, size: 16, color: SaTokens.textSecondary),
+        Icon(icon, size: 16, color: tokens.textSecondary),
         const SizedBox(width: SaTokens.space12),
         Expanded(
           child: Column(
@@ -439,18 +540,18 @@ class ProfileScreen extends StatelessWidget {
             children: [
               Text(
                 label,
-                style: const TextStyle(
+                style: TextStyle(
                   fontSize: 11,
-                  color: SaTokens.textSecondary,
+                  color: tokens.textSecondary,
                 ),
               ),
               const SizedBox(height: 2),
               SelectableText(
                 value,
-                style: const TextStyle(
+                style: TextStyle(
                   fontSize: SaTokens.fsBody,
                   fontWeight: FontWeight.w600,
-                  color: SaTokens.textPrimary,
+                  color: tokens.textPrimary,
                 ),
               ),
             ],

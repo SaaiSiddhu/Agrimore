@@ -72,7 +72,51 @@ class EmployeeAuthProvider extends ChangeNotifier {
     if (_auth.currentUser?.uid != uid) return;
     try {
       _error = null;
-      final doc = await _firestore.collection('users').doc(uid).get();
+
+      // Phase EMP-3: Fast-path instant cache resolution (<30ms).
+      // Eliminates startup delay on app resume/reopen.
+      DocumentSnapshot<Map<String, dynamic>>? cachedUserDoc;
+      try {
+        cachedUserDoc = await _firestore
+            .collection('users')
+            .doc(uid)
+            .get(const GetOptions(source: Source.cache));
+      } catch (_) {}
+
+      if (_auth.currentUser?.uid != uid) return;
+
+      if (cachedUserDoc != null && cachedUserDoc.exists) {
+        _user = UserModel.fromFirestore(cachedUserDoc);
+        DocumentSnapshot<Map<String, dynamic>>? cachedEmpDoc;
+        try {
+          cachedEmpDoc = await _firestore
+              .collection('employees')
+              .doc(uid)
+              .get(const GetOptions(source: Source.cache));
+        } catch (_) {}
+
+        if (cachedEmpDoc != null && cachedEmpDoc.exists) {
+          final status = cachedEmpDoc.data()?['status'] ?? 'pending';
+          if (status == 'approved') {
+            _isLoading = false;
+            notifyListeners();
+          }
+        }
+      }
+
+      // Phase EMP-3: Network sync with 2500ms timeout falling back to cache.
+      final doc = await _firestore
+          .collection('users')
+          .doc(uid)
+          .get()
+          .timeout(
+            const Duration(milliseconds: 2500),
+            onTimeout: () => _firestore
+                .collection('users')
+                .doc(uid)
+                .get(const GetOptions(source: Source.cache)),
+          );
+
       if (_auth.currentUser?.uid != uid) return;
       if (doc.exists) {
         _user = UserModel.fromFirestore(doc);
@@ -91,8 +135,13 @@ class EmployeeAuthProvider extends ChangeNotifier {
       // land here, and it is not a load failure worth reporting — see the
       // guard note above.
       if (_auth.currentUser?.uid != uid) return;
-      _error = 'Failed to load user data';
+      if (_user == null) {
+        _error = 'Failed to load user data';
+      }
       debugPrint('Error loading user: $e');
+    } finally {
+      _isLoading = false;
+      notifyListeners();
     }
   }
 
@@ -113,7 +162,17 @@ class EmployeeAuthProvider extends ChangeNotifier {
       return;
     }
 
-    final employeeDoc = await _firestore.collection('employees').doc(uid).get();
+    final employeeDoc = await _firestore
+        .collection('employees')
+        .doc(uid)
+        .get()
+        .timeout(
+          const Duration(milliseconds: 2500),
+          onTimeout: () => _firestore
+              .collection('employees')
+              .doc(uid)
+              .get(const GetOptions(source: Source.cache)),
+        );
     // Same overlapping-pass guard as _loadUserData — a concurrent pass may
     // have signed this user out while the read above was in flight.
     if (_auth.currentUser?.uid != uid) return;

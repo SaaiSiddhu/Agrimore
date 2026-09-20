@@ -34,6 +34,32 @@ void main() {
       expect(ext.errorBg, equals(const Color(0xFFFEF2F2)));
     });
 
+    test('SalesAssociateTheme.darkTheme provides slate foundations and dark tokens', () {
+      final saDarkTheme = SalesAssociateTheme.darkTheme;
+
+      expect(saDarkTheme.brightness, equals(Brightness.dark));
+      expect(saDarkTheme.scaffoldBackgroundColor, equals(const Color(0xFF0F172A)));
+      expect(saDarkTheme.colorScheme.primary, equals(const Color(0xFF3B82F6)));
+
+      final ext = saDarkTheme.extension<SalesAssociateTokens>();
+      expect(ext, isNotNull);
+      expect(ext!.primary, equals(const Color(0xFF3B82F6)));
+      expect(ext.primaryPressed, equals(const Color(0xFF60A5FA)));
+      expect(ext.primarySubtle, equals(const Color(0xFF172554)));
+      expect(ext.pageBackground, equals(const Color(0xFF0F172A)));
+      expect(ext.surface, equals(const Color(0xFF1E293B)));
+      expect(ext.textPrimary, equals(const Color(0xFFF8FAFC)));
+      expect(ext.textSecondary, equals(const Color(0xFF94A3B8)));
+      expect(ext.divider, equals(const Color(0xFF334155)));
+      expect(ext.inputBorder, equals(const Color(0xFF475569)));
+      expect(ext.successFg, equals(const Color(0xFF4ADE80)));
+      expect(ext.successBg, equals(const Color(0xFF052E16)));
+      expect(ext.warningFg, equals(const Color(0xFFFBBF24)));
+      expect(ext.warningBg, equals(const Color(0xFF451A03)));
+      expect(ext.errorFg, equals(const Color(0xFFF87171)));
+      expect(ext.errorBg, equals(const Color(0xFF450A0A)));
+    });
+
     test('INVARIANT: AppTheme.lightTheme remains emerald green and unaffected', () {
       final sharedTheme = AppTheme.lightTheme;
 

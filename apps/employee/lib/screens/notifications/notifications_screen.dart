@@ -58,12 +58,18 @@ class NotificationsScreen extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final tokens = context.saTokens;
     final uid = employeeUid ?? FirebaseAuth.instance.currentUser?.uid;
 
     if (uid == null) {
-      return const Scaffold(
-        backgroundColor: SaTokens.pageBackground,
-        body: Center(child: CircularProgressIndicator()),
+      return Scaffold(
+        backgroundColor: tokens.pageBackground,
+        body: Center(
+          child: Text(
+            'Sign in to view notifications',
+            style: TextStyle(color: tokens.textSecondary),
+          ),
+        ),
       );
     }
 
@@ -73,7 +79,7 @@ class NotificationsScreen extends StatelessWidget {
         .collection('notifications');
 
     return Scaffold(
-      backgroundColor: SaTokens.pageBackground,
+      backgroundColor: tokens.pageBackground,
       appBar: AppBar(
         title: const Text('Notifications'),
         leading: IconButton(
@@ -99,12 +105,27 @@ class NotificationsScreen extends StatelessWidget {
             return Center(
               child: Padding(
                 padding: const EdgeInsets.all(SaTokens.space24),
-                child: Text('Error loading notifications: ${snap.error}'),
+                child: Text(
+                  'Error loading notifications: ${snap.error}',
+                  style: TextStyle(color: tokens.errorFg),
+                ),
               ),
             );
           }
           if (!snap.hasData) {
-            return const Center(child: CircularProgressIndicator());
+            return ListView.separated(
+              padding: const EdgeInsets.all(SaTokens.space16),
+              itemCount: 3,
+              separatorBuilder: (_, __) => const SizedBox(height: SaTokens.space12),
+              itemBuilder: (_, __) => Container(
+                height: 72,
+                decoration: BoxDecoration(
+                  color: tokens.surface,
+                  borderRadius: BorderRadius.circular(SaTokens.radiusCard),
+                  border: Border.all(color: tokens.divider),
+                ),
+              ),
+            );
           }
 
           final docs = snap.data!.docs;
@@ -119,26 +140,30 @@ class NotificationsScreen extends StatelessWidget {
                     Container(
                       width: 64,
                       height: 64,
-                      decoration: const BoxDecoration(
-                        color: SaTokens.primarySubtle,
+                      decoration: BoxDecoration(
+                        color: tokens.primarySubtle,
                         shape: BoxShape.circle,
                       ),
-                      child: const Icon(
+                      child: Icon(
                         SaIcons.bell,
                         size: 32,
-                        color: SaTokens.primary,
+                        color: tokens.primary,
                       ),
                     ),
                     const SizedBox(height: SaTokens.space16),
                     Text(
                       'No notifications yet',
-                      style: Theme.of(context).textTheme.titleMedium,
+                      style: Theme.of(context).textTheme.titleMedium?.copyWith(
+                            color: tokens.textPrimary,
+                          ),
                     ),
                     const SizedBox(height: SaTokens.space4),
                     Text(
                       'Updates on attributed orders and payouts will appear here.',
                       textAlign: TextAlign.center,
-                      style: Theme.of(context).textTheme.bodySmall,
+                      style: Theme.of(context).textTheme.bodySmall?.copyWith(
+                            color: tokens.textSecondary,
+                          ),
                     ),
                   ],
                 ),
@@ -167,10 +192,12 @@ class NotificationsScreen extends StatelessWidget {
 
               return Container(
                 decoration: BoxDecoration(
-                  color: isRead ? SaTokens.surface : SaTokens.primarySubtle,
+                  color: isRead ? tokens.surface : tokens.primarySubtle,
                   borderRadius: BorderRadius.circular(SaTokens.radiusCard),
                   border: Border.all(
-                    color: isRead ? SaTokens.divider : SaTokens.primary.withValues(alpha: 0.3),
+                    color: isRead
+                        ? tokens.divider
+                        : tokens.primary.withValues(alpha: 0.3),
                   ),
                 ),
                 child: ListTile(
@@ -187,13 +214,13 @@ class NotificationsScreen extends StatelessWidget {
                     width: 40,
                     height: 40,
                     decoration: BoxDecoration(
-                      color: isRead ? SaTokens.pageBackground : SaTokens.surface,
+                      color: isRead ? tokens.pageBackground : tokens.surface,
                       shape: BoxShape.circle,
                     ),
                     child: Icon(
                       SaIcons.bell,
                       size: 20,
-                      color: isRead ? SaTokens.textSecondary : SaTokens.primary,
+                      color: isRead ? tokens.textSecondary : tokens.primary,
                     ),
                   ),
                   title: Row(
@@ -204,7 +231,7 @@ class NotificationsScreen extends StatelessWidget {
                           style: TextStyle(
                             fontSize: SaTokens.fsBody,
                             fontWeight: isRead ? FontWeight.w600 : FontWeight.w700,
-                            color: SaTokens.textPrimary,
+                            color: tokens.textPrimary,
                           ),
                         ),
                       ),
@@ -213,8 +240,8 @@ class NotificationsScreen extends StatelessWidget {
                           width: 8,
                           height: 8,
                           margin: const EdgeInsets.only(left: 6),
-                          decoration: const BoxDecoration(
-                            color: SaTokens.primary,
+                          decoration: BoxDecoration(
+                            color: tokens.primary,
                             shape: BoxShape.circle,
                           ),
                         ),
@@ -227,7 +254,7 @@ class NotificationsScreen extends StatelessWidget {
                       Text(
                         message,
                         style: Theme.of(context).textTheme.bodySmall?.copyWith(
-                              color: SaTokens.textSecondary,
+                              color: tokens.textSecondary,
                               height: 1.4,
                             ),
                       ),
@@ -237,7 +264,7 @@ class NotificationsScreen extends StatelessWidget {
                           SaFormatters.formatDate(createdAt),
                           style: TextStyle(
                             fontSize: 11,
-                            color: SaTokens.textSecondary.withValues(alpha: 0.8),
+                            color: tokens.textSecondary.withValues(alpha: 0.8),
                           ),
                         ),
                       ],

@@ -57,17 +57,23 @@ class _PayoutRequestScreenState extends State<PayoutRequestScreen> {
 
   @override
   Widget build(BuildContext context) {
+    final tokens = context.saTokens;
     final uid = widget.employeeUid ?? FirebaseAuth.instance.currentUser?.uid;
 
     if (uid == null) {
-      return const Scaffold(
-        backgroundColor: SaTokens.pageBackground,
-        body: Center(child: CircularProgressIndicator()),
+      return Scaffold(
+        backgroundColor: tokens.pageBackground,
+        body: const Center(
+          child: Text(
+            'Associate session unavailable',
+            style: TextStyle(color: Colors.grey),
+          ),
+        ),
       );
     }
 
     return Scaffold(
-      backgroundColor: SaTokens.pageBackground,
+      backgroundColor: tokens.pageBackground,
       appBar: AppBar(
         title: const Text('Request Payout'),
         leading: IconButton(
@@ -83,7 +89,30 @@ class _PayoutRequestScreenState extends State<PayoutRequestScreen> {
                 .snapshots(),
         builder: (context, walletSnap) {
           if (!walletSnap.hasData) {
-            return const Center(child: CircularProgressIndicator());
+            return SingleChildScrollView(
+              padding: const EdgeInsets.all(SaTokens.space16),
+              child: Column(
+                children: [
+                  Container(
+                    height: 96,
+                    decoration: BoxDecoration(
+                      color: tokens.surface,
+                      borderRadius: BorderRadius.circular(SaTokens.radiusCard),
+                      border: Border.all(color: tokens.divider),
+                    ),
+                  ),
+                  const SizedBox(height: SaTokens.space24),
+                  Container(
+                    height: 110,
+                    decoration: BoxDecoration(
+                      color: tokens.surface,
+                      borderRadius: BorderRadius.circular(SaTokens.radiusCard),
+                      border: Border.all(color: tokens.divider),
+                    ),
+                  ),
+                ],
+              ),
+            );
           }
 
           final walletData = walletSnap.data?.data();
@@ -118,12 +147,13 @@ class _PayoutRequestScreenState extends State<PayoutRequestScreen> {
                     crossAxisAlignment: CrossAxisAlignment.stretch,
                     children: [
                       // Available Balance Header Card
-                      _buildBalanceHeader(availableBalance),
+                      _buildBalanceHeader(availableBalance, tokens),
                       const SizedBox(height: SaTokens.space24),
 
                       // Destination Card
                       _buildDestinationCard(
                         context,
+                        tokens: tokens,
                         hasAccount: hasAccount,
                         employeeData: employeeData,
                       ),
@@ -143,10 +173,10 @@ class _PayoutRequestScreenState extends State<PayoutRequestScreen> {
                       Container(
                         padding: const EdgeInsets.all(SaTokens.space16),
                         decoration: BoxDecoration(
-                          color: SaTokens.surface,
+                          color: tokens.surface,
                           borderRadius:
                               BorderRadius.circular(SaTokens.radiusCard),
-                          border: Border.all(color: SaTokens.divider),
+                          border: Border.all(color: tokens.divider),
                         ),
                         child: Column(
                           crossAxisAlignment: CrossAxisAlignment.start,
@@ -182,11 +212,11 @@ class _PayoutRequestScreenState extends State<PayoutRequestScreen> {
                             const SizedBox(height: SaTokens.space16),
 
                             // Quick amount presets
-                            const Text(
+                            Text(
                               'Quick Presets',
                               style: TextStyle(
                                 fontSize: SaTokens.fsCaption,
-                                color: SaTokens.textSecondary,
+                                color: tokens.textSecondary,
                                 fontWeight: FontWeight.w600,
                               ),
                             ),
@@ -194,13 +224,13 @@ class _PayoutRequestScreenState extends State<PayoutRequestScreen> {
                             Row(
                               children: [
                                 _buildPresetButton(
-                                    1000, availableBalance, hasAccount),
+                                    1000, availableBalance, hasAccount, tokens),
                                 const SizedBox(width: SaTokens.space8),
                                 _buildPresetButton(
-                                    2500, availableBalance, hasAccount),
+                                    2500, availableBalance, hasAccount, tokens),
                                 const SizedBox(width: SaTokens.space8),
                                 _buildPresetButton(
-                                    5000, availableBalance, hasAccount),
+                                    5000, availableBalance, hasAccount, tokens),
                               ],
                             ),
                           ],
@@ -213,10 +243,10 @@ class _PayoutRequestScreenState extends State<PayoutRequestScreen> {
                         Container(
                           padding: const EdgeInsets.all(SaTokens.space16),
                           decoration: BoxDecoration(
-                            color: SaTokens.surface,
+                            color: tokens.surface,
                             borderRadius:
                                 BorderRadius.circular(SaTokens.radiusCard),
-                            border: Border.all(color: SaTokens.divider),
+                            border: Border.all(color: tokens.divider),
                           ),
                           child: Column(
                             crossAxisAlignment: CrossAxisAlignment.start,
@@ -227,16 +257,17 @@ class _PayoutRequestScreenState extends State<PayoutRequestScreen> {
                               ),
                               const SizedBox(height: SaTokens.space8),
                               _buildSummaryRow('Available Balance',
-                                  SaFormatters.formatCurrency(availableBalance)),
+                                  SaFormatters.formatCurrency(availableBalance), tokens),
                               _buildSummaryRow('Requested Amount',
-                                  '- ${SaFormatters.formatCurrency(_enteredAmount)}'),
-                              const Divider(height: 16, color: SaTokens.divider),
+                                  '- ${SaFormatters.formatCurrency(_enteredAmount)}', tokens),
+                              Divider(height: 16, color: tokens.divider),
                               _buildSummaryRow(
                                 'Remaining Balance',
                                 SaFormatters.formatCurrency(
                                   (availableBalance - _enteredAmount)
                                       .clamp(0.0, double.infinity),
                                 ),
+                                tokens,
                                 isBold: true,
                               ),
                             ],
@@ -258,9 +289,9 @@ class _PayoutRequestScreenState extends State<PayoutRequestScreen> {
                       SaLoadingButton(
                         text: 'Review Payout Request',
                         onPressed: (!hasAccount ||
-                                availableBalance <= 0 ||
-                                _enteredAmount <= 0 ||
-                                _enteredAmount > availableBalance)
+                                 availableBalance <= 0 ||
+                                 _enteredAmount <= 0 ||
+                                 _enteredAmount > availableBalance)
                             ? null
                             : () {
                                 if (!_formKey.currentState!.validate()) return;
@@ -287,32 +318,32 @@ class _PayoutRequestScreenState extends State<PayoutRequestScreen> {
     );
   }
 
-  Widget _buildBalanceHeader(double balance) {
+  Widget _buildBalanceHeader(double balance, SalesAssociateTokens tokens) {
     return Container(
       padding: const EdgeInsets.all(SaTokens.space24),
       decoration: BoxDecoration(
-        color: SaTokens.surface,
+        color: tokens.surface,
         borderRadius: BorderRadius.circular(SaTokens.radiusCard),
-        border: Border.all(color: SaTokens.divider),
+        border: Border.all(color: tokens.divider),
       ),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          const Text(
+          Text(
             'Available for Payout',
             style: TextStyle(
               fontSize: SaTokens.fsCaption,
-              color: SaTokens.textSecondary,
+              color: tokens.textSecondary,
               fontWeight: FontWeight.w600,
             ),
           ),
           const SizedBox(height: SaTokens.space4),
           Text(
             SaFormatters.formatCurrency(balance),
-            style: const TextStyle(
+            style: TextStyle(
               fontSize: 32,
               fontWeight: FontWeight.w900,
-              color: SaTokens.textPrimary,
+              color: tokens.textPrimary,
             ),
           ),
         ],
@@ -322,6 +353,7 @@ class _PayoutRequestScreenState extends State<PayoutRequestScreen> {
 
   Widget _buildDestinationCard(
     BuildContext context, {
+    required SalesAssociateTokens tokens,
     required bool hasAccount,
     required Map<String, dynamic>? employeeData,
   }) {
@@ -334,9 +366,9 @@ class _PayoutRequestScreenState extends State<PayoutRequestScreen> {
     return Container(
       padding: const EdgeInsets.all(SaTokens.space16),
       decoration: BoxDecoration(
-        color: SaTokens.surface,
+        color: tokens.surface,
         borderRadius: BorderRadius.circular(SaTokens.radiusCard),
-        border: Border.all(color: SaTokens.divider),
+        border: Border.all(color: tokens.divider),
       ),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
@@ -368,12 +400,12 @@ class _PayoutRequestScreenState extends State<PayoutRequestScreen> {
                   width: 36,
                   height: 36,
                   decoration: BoxDecoration(
-                    color: SaTokens.primarySubtle,
+                    color: tokens.primarySubtle,
                     borderRadius: BorderRadius.circular(8),
                   ),
                   child: Icon(
                     isBank ? Icons.account_balance : Icons.qr_code,
-                    color: SaTokens.primary,
+                    color: tokens.primary,
                     size: 18,
                   ),
                 ),
@@ -384,19 +416,19 @@ class _PayoutRequestScreenState extends State<PayoutRequestScreen> {
                     children: [
                       Text(
                         isBank ? bankName : 'UPI ID',
-                        style: const TextStyle(
+                        style: TextStyle(
                           fontSize: SaTokens.fsBody,
                           fontWeight: FontWeight.w700,
-                          color: SaTokens.textPrimary,
+                          color: tokens.textPrimary,
                         ),
                       ),
                       Text(
                         isBank
                             ? SaFormatters.formatMaskedAccount(accNum)
                             : upiId,
-                        style: const TextStyle(
+                        style: TextStyle(
                           fontSize: SaTokens.fsLabel,
-                          color: SaTokens.textSecondary,
+                          color: tokens.textSecondary,
                         ),
                       ),
                     ],
@@ -405,11 +437,11 @@ class _PayoutRequestScreenState extends State<PayoutRequestScreen> {
               ],
             ),
           ] else ...[
-            const Text(
+            Text(
               'No payout account linked yet.',
               style: TextStyle(
                 fontSize: SaTokens.fsLabel,
-                color: SaTokens.textSecondary,
+                color: tokens.textSecondary,
               ),
             ),
           ],
@@ -422,6 +454,7 @@ class _PayoutRequestScreenState extends State<PayoutRequestScreen> {
     double amount,
     double availableBalance,
     bool hasAccount,
+    SalesAssociateTokens tokens,
   ) {
     final disabled = !hasAccount || amount > availableBalance;
     final isSelected = _enteredAmount == amount;
@@ -432,9 +465,9 @@ class _PayoutRequestScreenState extends State<PayoutRequestScreen> {
         style: OutlinedButton.styleFrom(
           padding: const EdgeInsets.symmetric(vertical: 10),
           backgroundColor:
-              isSelected ? SaTokens.primarySubtle : Colors.transparent,
+              isSelected ? tokens.primarySubtle : Colors.transparent,
           side: BorderSide(
-            color: isSelected ? SaTokens.primary : SaTokens.divider,
+            color: isSelected ? tokens.primary : tokens.divider,
           ),
           shape: RoundedRectangleBorder(
             borderRadius: BorderRadius.circular(SaTokens.radiusInput),
@@ -446,10 +479,10 @@ class _PayoutRequestScreenState extends State<PayoutRequestScreen> {
             fontSize: SaTokens.fsLabel,
             fontWeight: isSelected ? FontWeight.w700 : FontWeight.w500,
             color: isSelected
-                ? SaTokens.primary
+                ? tokens.primary
                 : (disabled
-                    ? SaTokens.disabledContent
-                    : SaTokens.textPrimary),
+                    ? tokens.disabledContent
+                    : tokens.textPrimary),
           ),
         ),
       ),
@@ -458,28 +491,35 @@ class _PayoutRequestScreenState extends State<PayoutRequestScreen> {
 
   Widget _buildSummaryRow(
     String label,
-    String value, {
+    String value,
+    SalesAssociateTokens tokens, {
     bool isBold = false,
   }) {
     return Padding(
       padding: const EdgeInsets.symmetric(vertical: 3),
       child: Row(
-        mainAxisAlignment: MainAxisAlignment.spaceBetween,
+        crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          Text(
-            label,
-            style: TextStyle(
-              fontSize: SaTokens.fsLabel,
-              color: isBold ? SaTokens.textPrimary : SaTokens.textSecondary,
-              fontWeight: isBold ? FontWeight.w700 : FontWeight.w400,
+          Expanded(
+            child: Text(
+              label,
+              style: TextStyle(
+                fontSize: SaTokens.fsLabel,
+                color: isBold ? tokens.textPrimary : tokens.textSecondary,
+                fontWeight: isBold ? FontWeight.w700 : FontWeight.w400,
+              ),
             ),
           ),
-          Text(
-            value,
-            style: TextStyle(
-              fontSize: SaTokens.fsLabel,
-              fontWeight: isBold ? FontWeight.w700 : FontWeight.w600,
-              color: SaTokens.textPrimary,
+          const SizedBox(width: SaTokens.space8),
+          Flexible(
+            child: Text(
+              value,
+              textAlign: TextAlign.end,
+              style: TextStyle(
+                fontSize: SaTokens.fsLabel,
+                fontWeight: isBold ? FontWeight.w700 : FontWeight.w600,
+                color: tokens.textPrimary,
+              ),
             ),
           ),
         ],

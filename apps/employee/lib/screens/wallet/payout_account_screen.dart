@@ -154,17 +154,23 @@ class _PayoutAccountScreenState extends State<PayoutAccountScreen> {
 
   @override
   Widget build(BuildContext context) {
+    final tokens = context.saTokens;
     final uid = widget.employeeUid ?? FirebaseAuth.instance.currentUser?.uid;
 
     if (uid == null) {
-      return const Scaffold(
-        backgroundColor: SaTokens.pageBackground,
-        body: Center(child: CircularProgressIndicator()),
+      return Scaffold(
+        backgroundColor: tokens.pageBackground,
+        body: Center(
+          child: Text(
+            'Sign in to manage payout account',
+            style: TextStyle(color: tokens.textSecondary),
+          ),
+        ),
       );
     }
 
     return Scaffold(
-      backgroundColor: SaTokens.pageBackground,
+      backgroundColor: tokens.pageBackground,
       appBar: AppBar(
         title: const Text('Payout Account'),
         leading: IconButton(
@@ -180,7 +186,19 @@ class _PayoutAccountScreenState extends State<PayoutAccountScreen> {
                 .snapshots(),
         builder: (context, snap) {
           if (!snap.hasData) {
-            return const Center(child: CircularProgressIndicator());
+            return ListView(
+              padding: const EdgeInsets.all(SaTokens.space16),
+              children: [
+                Container(
+                  height: 140,
+                  decoration: BoxDecoration(
+                    color: tokens.surface,
+                    borderRadius: BorderRadius.circular(SaTokens.radiusCard),
+                    border: Border.all(color: tokens.divider),
+                  ),
+                ),
+              ],
+            );
           }
 
           final data = snap.data?.data();
@@ -199,32 +217,36 @@ class _PayoutAccountScreenState extends State<PayoutAccountScreen> {
               children: [
                 // Active Account Card if already registered
                 if (hasSavedBank || hasSavedUpi) ...[
-                  _buildRegisteredCard(data!),
+                  _buildRegisteredCard(tokens, data!),
                   const SizedBox(height: SaTokens.space24),
                 ],
 
                 Text(
                   'Payout Destination',
-                  style: Theme.of(context).textTheme.titleMedium,
+                  style: Theme.of(context).textTheme.titleMedium?.copyWith(
+                        color: tokens.textPrimary,
+                      ),
                 ),
                 const SizedBox(height: SaTokens.space4),
                 Text(
                   'Select your preferred payout method. Payouts requested from your wallet will be sent here.',
-                  style: Theme.of(context).textTheme.bodySmall,
+                  style: Theme.of(context).textTheme.bodySmall?.copyWith(
+                        color: tokens.textSecondary,
+                      ),
                 ),
                 const SizedBox(height: SaTokens.space16),
 
                 // Method Selector Toggle
-                _buildMethodToggle(),
+                _buildMethodToggle(tokens),
                 const SizedBox(height: SaTokens.space24),
 
                 // Form Container
                 Container(
                   padding: const EdgeInsets.all(SaTokens.space16),
                   decoration: BoxDecoration(
-                    color: SaTokens.surface,
+                    color: tokens.surface,
                     borderRadius: BorderRadius.circular(SaTokens.radiusCard),
-                    border: Border.all(color: SaTokens.divider),
+                    border: Border.all(color: tokens.divider),
                   ),
                   child: _accountType == _AccountType.bank
                       ? _buildBankForm(uid)
@@ -257,7 +279,7 @@ class _PayoutAccountScreenState extends State<PayoutAccountScreen> {
     );
   }
 
-  Widget _buildRegisteredCard(Map<String, dynamic> data) {
+  Widget _buildRegisteredCard(SalesAssociateTokens tokens, Map<String, dynamic> data) {
     final method = data['payoutMethod']?.toString().toLowerCase();
     final isBank = method == 'bank';
     final holder = data['accountHolderName']?.toString() ?? 'Associate';
@@ -268,23 +290,25 @@ class _PayoutAccountScreenState extends State<PayoutAccountScreen> {
     return Container(
       padding: const EdgeInsets.all(SaTokens.space16),
       decoration: BoxDecoration(
-        color: SaTokens.successBg,
+        color: tokens.successBg,
         borderRadius: BorderRadius.circular(SaTokens.radiusCard),
-        border: Border.all(color: SaTokens.successFg.withValues(alpha: 0.3)),
+        border: Border.all(color: tokens.successFg.withValues(alpha: 0.3)),
       ),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
           Row(
             children: [
-              const Icon(SaIcons.circleCheck, color: SaTokens.successFg, size: 20),
+              Icon(SaIcons.circleCheck, color: tokens.successFg, size: 20),
               const SizedBox(width: SaTokens.space8),
-              const Text(
-                'Active Payout Destination',
-                style: TextStyle(
-                  fontSize: SaTokens.fsBody,
-                  fontWeight: FontWeight.w700,
-                  color: SaTokens.successFg,
+              Expanded(
+                child: Text(
+                  'Active Payout Destination',
+                  style: TextStyle(
+                    fontSize: SaTokens.fsBody,
+                    fontWeight: FontWeight.w700,
+                    color: tokens.successFg,
+                  ),
                 ),
               ),
             ],
@@ -292,10 +316,10 @@ class _PayoutAccountScreenState extends State<PayoutAccountScreen> {
           const SizedBox(height: SaTokens.space12),
           Text(
             isBank ? bankName : 'UPI ID',
-            style: const TextStyle(
+            style: TextStyle(
               fontSize: SaTokens.fsSectionHeading,
               fontWeight: FontWeight.w800,
-              color: SaTokens.textPrimary,
+              color: tokens.textPrimary,
             ),
           ),
           const SizedBox(height: 2),
@@ -303,18 +327,18 @@ class _PayoutAccountScreenState extends State<PayoutAccountScreen> {
             isBank
                 ? SaFormatters.formatMaskedAccount(accNum)
                 : upi,
-            style: const TextStyle(
+            style: TextStyle(
               fontSize: SaTokens.fsBody,
               fontWeight: FontWeight.w600,
-              color: SaTokens.textSecondary,
+              color: tokens.textSecondary,
             ),
           ),
           const SizedBox(height: 2),
           Text(
             'Name: $holder',
-            style: const TextStyle(
+            style: TextStyle(
               fontSize: SaTokens.fsCaption,
-              color: SaTokens.textSecondary,
+              color: tokens.textSecondary,
             ),
           ),
         ],
@@ -322,22 +346,24 @@ class _PayoutAccountScreenState extends State<PayoutAccountScreen> {
     );
   }
 
-  Widget _buildMethodToggle() {
+  Widget _buildMethodToggle(SalesAssociateTokens tokens) {
     return Container(
       padding: const EdgeInsets.all(4),
       decoration: BoxDecoration(
-        color: SaTokens.surface,
+        color: tokens.surface,
         borderRadius: BorderRadius.circular(SaTokens.radiusInput),
-        border: Border.all(color: SaTokens.divider),
+        border: Border.all(color: tokens.divider),
       ),
       child: Row(
         children: [
           _buildMethodTab(
+            tokens: tokens,
             label: 'Bank Account',
             type: _AccountType.bank,
             icon: Icons.account_balance_outlined,
           ),
           _buildMethodTab(
+            tokens: tokens,
             label: 'UPI ID',
             type: _AccountType.upi,
             icon: Icons.qr_code_rounded,
@@ -348,6 +374,7 @@ class _PayoutAccountScreenState extends State<PayoutAccountScreen> {
   }
 
   Widget _buildMethodTab({
+    required SalesAssociateTokens tokens,
     required String label,
     required _AccountType type,
     required IconData icon,
@@ -363,7 +390,7 @@ class _PayoutAccountScreenState extends State<PayoutAccountScreen> {
           duration: const Duration(milliseconds: 150),
           padding: const EdgeInsets.symmetric(vertical: 10),
           decoration: BoxDecoration(
-            color: selected ? SaTokens.primarySubtle : Colors.transparent,
+            color: selected ? tokens.primarySubtle : Colors.transparent,
             borderRadius: BorderRadius.circular(SaTokens.radiusInput - 3),
           ),
           child: Row(
@@ -372,15 +399,19 @@ class _PayoutAccountScreenState extends State<PayoutAccountScreen> {
               Icon(
                 icon,
                 size: 16,
-                color: selected ? SaTokens.primary : SaTokens.textSecondary,
+                color: selected ? tokens.primary : tokens.textSecondary,
               ),
               const SizedBox(width: 6),
-              Text(
-                label,
-                style: TextStyle(
-                  fontSize: SaTokens.fsLabel,
-                  fontWeight: selected ? FontWeight.w700 : FontWeight.w500,
-                  color: selected ? SaTokens.primary : SaTokens.textSecondary,
+              Flexible(
+                child: Text(
+                  label,
+                  maxLines: 1,
+                  overflow: TextOverflow.ellipsis,
+                  style: TextStyle(
+                    fontSize: SaTokens.fsLabel,
+                    fontWeight: selected ? FontWeight.w700 : FontWeight.w500,
+                    color: selected ? tokens.primary : tokens.textSecondary,
+                  ),
                 ),
               ),
             ],

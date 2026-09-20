@@ -65,9 +65,10 @@ class _LoginScreenState extends State<LoginScreen> {
   @override
   Widget build(BuildContext context) {
     final textTheme = Theme.of(context).textTheme;
+    final tokens = context.saTokens;
 
     return Scaffold(
-      backgroundColor: SaTokens.pageBackground,
+      backgroundColor: tokens.pageBackground,
       body: SafeArea(
         child: Center(
           child: SingleChildScrollView(
@@ -83,22 +84,32 @@ class _LoginScreenState extends State<LoginScreen> {
                   // App branding
                   Center(
                     child: Container(
-                      width: 64,
-                      height: 64,
+                      width: 72,
+                      height: 72,
                       decoration: BoxDecoration(
-                        color: SaTokens.primarySubtle,
-                        borderRadius: BorderRadius.circular(SaTokens.radiusCard),
+                        borderRadius: BorderRadius.circular(16),
+                        boxShadow: [
+                          BoxShadow(
+                            color: tokens.primary.withValues(alpha: 0.2),
+                            blurRadius: 16,
+                            offset: const Offset(0, 4),
+                          ),
+                        ],
                       ),
                       child: ClipRRect(
-                        borderRadius: BorderRadius.circular(SaTokens.radiusCard),
+                        borderRadius: BorderRadius.circular(16),
                         child: Image.asset(
-                          'assets/images/logo.png',
-                          width: 48,
-                          height: 48,
-                          errorBuilder: (_, __, ___) => const Icon(
-                            SaIcons.shoppingBag,
-                            size: 32,
-                            color: SaTokens.primary,
+                          'assets/app_icon.png',
+                          width: 72,
+                          height: 72,
+                          fit: BoxFit.cover,
+                          errorBuilder: (_, __, ___) => Container(
+                            color: tokens.primarySubtle,
+                            child: Icon(
+                              SaIcons.shoppingBag,
+                              size: 36,
+                              color: tokens.primary,
+                            ),
                           ),
                         ),
                       ),
@@ -111,6 +122,7 @@ class _LoginScreenState extends State<LoginScreen> {
                     style: textTheme.headlineMedium?.copyWith(
                       fontWeight: FontWeight.w800,
                       letterSpacing: -0.5,
+                      color: tokens.textPrimary,
                     ),
                   ),
                   const SizedBox(height: SaTokens.space4),
@@ -118,7 +130,7 @@ class _LoginScreenState extends State<LoginScreen> {
                     'Sales Associate Portal',
                     textAlign: TextAlign.center,
                     style: textTheme.bodyMedium?.copyWith(
-                      color: SaTokens.textSecondary,
+                      color: tokens.textSecondary,
                       fontWeight: FontWeight.w500,
                     ),
                   ),
@@ -128,9 +140,9 @@ class _LoginScreenState extends State<LoginScreen> {
                   Container(
                     padding: const EdgeInsets.all(SaTokens.space24),
                     decoration: BoxDecoration(
-                      color: SaTokens.surface,
+                      color: tokens.surface,
                       borderRadius: BorderRadius.circular(SaTokens.radiusCard),
-                      border: Border.all(color: SaTokens.divider),
+                      border: Border.all(color: tokens.divider),
                       boxShadow: [
                         BoxShadow(
                           color: Colors.black.withValues(alpha: 0.04),
@@ -147,6 +159,7 @@ class _LoginScreenState extends State<LoginScreen> {
                           style: textTheme.titleMedium?.copyWith(
                             fontSize: 20,
                             fontWeight: FontWeight.w700,
+                            color: tokens.textPrimary,
                           ),
                         ),
                         const SizedBox(height: SaTokens.space4),
@@ -155,13 +168,13 @@ class _LoginScreenState extends State<LoginScreen> {
                               ? 'Enter the mobile number registered with your associate account'
                               : 'Enter the email and password provided by your administrator',
                           style: textTheme.bodySmall?.copyWith(
-                            color: SaTokens.textSecondary,
+                            color: tokens.textSecondary,
                             height: 1.4,
                           ),
                         ),
                         const SizedBox(height: SaTokens.space24),
 
-                        _buildModeToggle(),
+                        _buildModeToggle(tokens),
                         const SizedBox(height: SaTokens.space24),
 
                         // Shared error banner
@@ -198,7 +211,7 @@ class _LoginScreenState extends State<LoginScreen> {
                     'New associate? Apply for an account from the\nAgriMore customer app under Profile.',
                     textAlign: TextAlign.center,
                     style: textTheme.bodySmall?.copyWith(
-                      color: SaTokens.textSecondary,
+                      color: tokens.textSecondary,
                       height: 1.5,
                     ),
                   ),
@@ -211,22 +224,24 @@ class _LoginScreenState extends State<LoginScreen> {
     );
   }
 
-  Widget _buildModeToggle() {
+  Widget _buildModeToggle(SalesAssociateTokens tokens) {
     return Container(
       padding: const EdgeInsets.all(4),
       decoration: BoxDecoration(
-        color: SaTokens.pageBackground,
+        color: tokens.pageBackground,
         borderRadius: BorderRadius.circular(SaTokens.radiusInput),
-        border: Border.all(color: SaTokens.divider),
+        border: Border.all(color: tokens.divider),
       ),
       child: Row(
         children: [
           _buildModeTab(
-            label: 'Mobile number',
+            tokens: tokens,
+            label: 'Mobile',
             mode: _LoginMode.phone,
             icon: SaIcons.phone,
           ),
           _buildModeTab(
+            tokens: tokens,
             label: 'Email',
             mode: _LoginMode.email,
             icon: SaIcons.mail,
@@ -237,6 +252,7 @@ class _LoginScreenState extends State<LoginScreen> {
   }
 
   Widget _buildModeTab({
+    required SalesAssociateTokens tokens,
     required String label,
     required _LoginMode mode,
     required IconData icon,
@@ -250,7 +266,7 @@ class _LoginScreenState extends State<LoginScreen> {
           duration: const Duration(milliseconds: 150),
           padding: const EdgeInsets.symmetric(vertical: 10),
           decoration: BoxDecoration(
-            color: selected ? SaTokens.surface : Colors.transparent,
+            color: selected ? tokens.surface : Colors.transparent,
             borderRadius: BorderRadius.circular(SaTokens.radiusInput - 3),
             boxShadow: selected
                 ? [
@@ -269,7 +285,7 @@ class _LoginScreenState extends State<LoginScreen> {
               Icon(
                 icon,
                 size: 15,
-                color: selected ? SaTokens.primary : SaTokens.textSecondary,
+                color: selected ? tokens.primary : tokens.textSecondary,
               ),
               const SizedBox(width: 6),
               Flexible(
@@ -280,7 +296,7 @@ class _LoginScreenState extends State<LoginScreen> {
                   style: TextStyle(
                     fontSize: SaTokens.fsLabel,
                     fontWeight: selected ? FontWeight.w600 : FontWeight.w500,
-                    color: selected ? SaTokens.primary : SaTokens.textSecondary,
+                    color: selected ? tokens.primary : tokens.textSecondary,
                   ),
                 ),
               ),
@@ -381,6 +397,7 @@ class _LoginScreenState extends State<LoginScreen> {
 
   Widget _buildEmailForm() {
     final auth = context.watch<EmployeeAuthProvider>();
+    final tokens = context.saTokens;
 
     return Form(
       key: _emailFormKey,
@@ -428,7 +445,7 @@ class _LoginScreenState extends State<LoginScreen> {
                 icon: Icon(
                   _obscurePassword ? SaIcons.eyeOff : SaIcons.eye,
                   size: 20,
-                  color: SaTokens.textSecondary,
+                  color: tokens.textSecondary,
                 ),
                 onPressed: () {
                   setState(() => _obscurePassword = !_obscurePassword);
@@ -463,8 +480,8 @@ class _LoginScreenState extends State<LoginScreen> {
                     fontSize: SaTokens.fsCaption,
                     fontWeight: FontWeight.w600,
                     color: auth.isLoading
-                        ? SaTokens.disabledContent
-                        : SaTokens.primary,
+                        ? tokens.disabledContent
+                        : tokens.primary,
                   ),
                 ),
               ),

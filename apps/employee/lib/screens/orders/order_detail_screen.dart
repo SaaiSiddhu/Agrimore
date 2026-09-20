@@ -40,12 +40,13 @@ class OrderDetailScreen extends StatelessWidget {
 
     final isDelivered = status == 'delivered' || status == 'completed';
     final isCancelled = status == 'cancelled';
+    final tokens = context.saTokens;
 
     final items = d['items'];
     final itemList = items is List ? items : const [];
 
     return Scaffold(
-      backgroundColor: SaTokens.pageBackground,
+      backgroundColor: tokens.pageBackground,
       appBar: AppBar(
         title: Text('Order #$orderNumber'),
         leading: IconButton(
@@ -59,6 +60,7 @@ class OrderDetailScreen extends StatelessWidget {
           // 1. Order Summary Card
           _buildSummaryCard(
             context,
+            tokens: tokens,
             orderNumber: orderNumber,
             placedAt: placedAt,
             status: status,
@@ -70,12 +72,12 @@ class OrderDetailScreen extends StatelessWidget {
           const SizedBox(height: SaTokens.space16),
 
           // 2. Commission Card
-          _buildCommissionCard(context, d, isDelivered, isCancelled),
+          _buildCommissionCard(context, tokens, d, isDelivered, isCancelled),
           const SizedBox(height: SaTokens.space16),
 
           // 3. Line Items Card
           if (itemList.isNotEmpty) ...[
-            _buildItemsCard(context, itemList),
+            _buildItemsCard(context, tokens, itemList),
             const SizedBox(height: SaTokens.space16),
           ],
         ],
@@ -85,6 +87,7 @@ class OrderDetailScreen extends StatelessWidget {
 
   Widget _buildSummaryCard(
     BuildContext context, {
+    required SalesAssociateTokens tokens,
     required String orderNumber,
     required DateTime? placedAt,
     required String status,
@@ -93,34 +96,39 @@ class OrderDetailScreen extends StatelessWidget {
     required String modeLabel,
     required double total,
   }) {
-    Color statusBg = SaTokens.warningBg;
-    Color statusFg = SaTokens.warningFg;
+    Color statusBg = tokens.warningBg;
+    Color statusFg = tokens.warningFg;
 
     if (isDelivered) {
-      statusBg = SaTokens.successBg;
-      statusFg = SaTokens.successFg;
+      statusBg = tokens.successBg;
+      statusFg = tokens.successFg;
     } else if (isCancelled) {
-      statusBg = SaTokens.errorBg;
-      statusFg = SaTokens.errorFg;
+      statusBg = tokens.errorBg;
+      statusFg = tokens.errorFg;
     }
 
     return Container(
       padding: const EdgeInsets.all(SaTokens.space16),
       decoration: BoxDecoration(
-        color: SaTokens.surface,
+        color: tokens.surface,
         borderRadius: BorderRadius.circular(SaTokens.radiusCard),
-        border: Border.all(color: SaTokens.divider),
+        border: Border.all(color: tokens.divider),
       ),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
           Row(
-            mainAxisAlignment: MainAxisAlignment.spaceBetween,
+            crossAxisAlignment: CrossAxisAlignment.center,
             children: [
-              Text(
-                'Order Summary',
-                style: Theme.of(context).textTheme.titleMedium,
+              Expanded(
+                child: Text(
+                  'Order Summary',
+                  style: Theme.of(context).textTheme.titleMedium?.copyWith(
+                        color: tokens.textPrimary,
+                      ),
+                ),
               ),
+              const SizedBox(width: 8),
               Container(
                 padding: const EdgeInsets.symmetric(
                   horizontal: 8,
@@ -142,12 +150,13 @@ class OrderDetailScreen extends StatelessWidget {
             ],
           ),
           const SizedBox(height: SaTokens.space16),
-          _buildDetailRow('Order Number', '#$orderNumber'),
+          _buildDetailRow(tokens, 'Order Number', '#$orderNumber'),
           if (placedAt != null)
-            _buildDetailRow('Placed on', SaFormatters.formatDate(placedAt)),
-          _buildDetailRow('Order Channel', modeLabel),
-          const Divider(height: 24, color: SaTokens.divider),
+            _buildDetailRow(tokens, 'Placed on', SaFormatters.formatDate(placedAt)),
+          _buildDetailRow(tokens, 'Order Channel', modeLabel),
+          Divider(height: 24, color: tokens.divider),
           _buildDetailRow(
+            tokens,
             'Order Total',
             SaFormatters.formatCurrency(total),
             isBold: true,
@@ -159,6 +168,7 @@ class OrderDetailScreen extends StatelessWidget {
 
   Widget _buildCommissionCard(
     BuildContext context,
+    SalesAssociateTokens tokens,
     Map<String, dynamic> data,
     bool isDelivered,
     bool isCancelled,
@@ -176,24 +186,24 @@ class OrderDetailScreen extends StatelessWidget {
       return Container(
         padding: const EdgeInsets.all(SaTokens.space16),
         decoration: BoxDecoration(
-          color: SaTokens.errorBg,
+          color: tokens.errorBg,
           borderRadius: BorderRadius.circular(SaTokens.radiusCard),
-          border: Border.all(color: SaTokens.errorFg.withValues(alpha: 0.3)),
+          border: Border.all(color: tokens.errorFg.withValues(alpha: 0.3)),
         ),
         child: Row(
           children: [
-            const Icon(SaIcons.circleAlert, color: SaTokens.errorFg, size: 20),
+            Icon(SaIcons.circleAlert, color: tokens.errorFg, size: 20),
             const SizedBox(width: SaTokens.space12),
             Expanded(
               child: Column(
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
-                  const Text(
+                  Text(
                     'No Commission Applicable',
                     style: TextStyle(
                       fontSize: SaTokens.fsBody,
                       fontWeight: FontWeight.w700,
-                      color: SaTokens.errorFg,
+                      color: tokens.errorFg,
                     ),
                   ),
                   const SizedBox(height: 2),
@@ -201,7 +211,7 @@ class OrderDetailScreen extends StatelessWidget {
                     'This order was cancelled and did not accrue sales commission.',
                     style: TextStyle(
                       fontSize: SaTokens.fsLabel,
-                      color: SaTokens.errorFg.withValues(alpha: 0.9),
+                      color: tokens.errorFg.withValues(alpha: 0.9),
                     ),
                   ),
                 ],
@@ -216,34 +226,40 @@ class OrderDetailScreen extends StatelessWidget {
       return Container(
         padding: const EdgeInsets.all(SaTokens.space16),
         decoration: BoxDecoration(
-          color: SaTokens.successBg,
+          color: tokens.successBg,
           borderRadius: BorderRadius.circular(SaTokens.radiusCard),
-          border: Border.all(color: SaTokens.successFg.withValues(alpha: 0.3)),
+          border: Border.all(color: tokens.successFg.withValues(alpha: 0.3)),
         ),
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
             Row(
               children: [
-                const Icon(SaIcons.circleCheck, color: SaTokens.successFg, size: 20),
+                Icon(SaIcons.circleCheck, color: tokens.successFg, size: 20),
                 const SizedBox(width: SaTokens.space8),
-                const Text(
-                  'Commission Credited',
-                  style: TextStyle(
-                    fontSize: SaTokens.fsBody,
-                    fontWeight: FontWeight.w700,
-                    color: SaTokens.successFg,
+                Expanded(
+                  child: Text(
+                    'Commission Credited',
+                    style: TextStyle(
+                      fontSize: SaTokens.fsBody,
+                      fontWeight: FontWeight.w700,
+                      color: tokens.successFg,
+                    ),
                   ),
                 ),
               ],
             ),
             const SizedBox(height: SaTokens.space12),
-            Text(
-              SaFormatters.formatCurrency(commissionAmount),
-              style: const TextStyle(
-                fontSize: 26,
-                fontWeight: FontWeight.w900,
-                color: SaTokens.successFg,
+            FittedBox(
+              fit: BoxFit.scaleDown,
+              alignment: Alignment.centerLeft,
+              child: Text(
+                SaFormatters.formatCurrency(commissionAmount),
+                style: TextStyle(
+                  fontSize: 26,
+                  fontWeight: FontWeight.w900,
+                  color: tokens.successFg,
+                ),
               ),
             ),
             const SizedBox(height: SaTokens.space4),
@@ -253,7 +269,7 @@ class OrderDetailScreen extends StatelessWidget {
                   : 'Credited directly to your wallet balance',
               style: TextStyle(
                 fontSize: SaTokens.fsCaption,
-                color: SaTokens.successFg.withValues(alpha: 0.9),
+                color: tokens.successFg.withValues(alpha: 0.9),
               ),
             ),
           ],
@@ -264,27 +280,29 @@ class OrderDetailScreen extends StatelessWidget {
     return Container(
       padding: const EdgeInsets.all(SaTokens.space16),
       decoration: BoxDecoration(
-        color: SaTokens.surface,
+        color: tokens.surface,
         borderRadius: BorderRadius.circular(SaTokens.radiusCard),
-        border: Border.all(color: SaTokens.divider),
+        border: Border.all(color: tokens.divider),
       ),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
           Row(
             children: [
-              const Icon(
+              Icon(
                 Icons.schedule_rounded,
-                color: SaTokens.primary,
+                color: tokens.primary,
                 size: 20,
               ),
               const SizedBox(width: SaTokens.space8),
-              const Text(
-                'Commission Pending',
-                style: TextStyle(
-                  fontSize: SaTokens.fsBody,
-                  fontWeight: FontWeight.w700,
-                  color: SaTokens.textPrimary,
+              Expanded(
+                child: Text(
+                  'Commission Pending',
+                  style: TextStyle(
+                    fontSize: SaTokens.fsBody,
+                    fontWeight: FontWeight.w700,
+                    color: tokens.textPrimary,
+                  ),
                 ),
               ),
             ],
@@ -295,7 +313,7 @@ class OrderDetailScreen extends StatelessWidget {
                 ? 'The order is marked delivered. Commission processing will complete shortly.'
                 : 'Commission is automatically calculated and credited to your wallet once this order is marked delivered.',
             style: Theme.of(context).textTheme.bodySmall?.copyWith(
-                  color: SaTokens.textSecondary,
+                  color: tokens.textSecondary,
                   height: 1.4,
                 ),
           ),
@@ -304,25 +322,31 @@ class OrderDetailScreen extends StatelessWidget {
     );
   }
 
-  Widget _buildItemsCard(BuildContext context, List itemList) {
+  Widget _buildItemsCard(
+    BuildContext context,
+    SalesAssociateTokens tokens,
+    List itemList,
+  ) {
     return Container(
       padding: const EdgeInsets.all(SaTokens.space16),
       decoration: BoxDecoration(
-        color: SaTokens.surface,
+        color: tokens.surface,
         borderRadius: BorderRadius.circular(SaTokens.radiusCard),
-        border: Border.all(color: SaTokens.divider),
+        border: Border.all(color: tokens.divider),
       ),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
           Text(
             'Order Items (${itemList.length})',
-            style: Theme.of(context).textTheme.titleMedium,
+            style: Theme.of(context).textTheme.titleMedium?.copyWith(
+                  color: tokens.textPrimary,
+                ),
           ),
           const SizedBox(height: SaTokens.space12),
           ...itemList.whereType<Map>().map((raw) {
             final item = Map<String, dynamic>.from(raw);
-            final name = (item['productName'] ?? item['title'] ?? 'Product').toString();
+            final name = (item['productName'] ?? item['title'] ?? item['name'] ?? 'Product').toString();
             final quantity = (item['quantity'] as num?)?.toInt() ?? 1;
             final price = (item['price'] as num?)?.toDouble() ?? 0.0;
             final lineTotal = price * quantity;
@@ -337,29 +361,33 @@ class OrderDetailScreen extends StatelessWidget {
                       children: [
                         Text(
                           name,
-                          style: const TextStyle(
+                          style: TextStyle(
                             fontSize: SaTokens.fsBody,
                             fontWeight: FontWeight.w600,
-                            color: SaTokens.textPrimary,
+                            color: tokens.textPrimary,
                           ),
                         ),
                         const SizedBox(height: 2),
                         Text(
                           '${SaFormatters.formatCurrency(price)} × $quantity',
-                          style: const TextStyle(
+                          style: TextStyle(
                             fontSize: SaTokens.fsCaption,
-                            color: SaTokens.textSecondary,
+                            color: tokens.textSecondary,
                           ),
                         ),
                       ],
                     ),
                   ),
-                  Text(
-                    SaFormatters.formatCurrency(lineTotal),
-                    style: const TextStyle(
-                      fontSize: SaTokens.fsBody,
-                      fontWeight: FontWeight.w700,
-                      color: SaTokens.textPrimary,
+                  const SizedBox(width: SaTokens.space8),
+                  Flexible(
+                    child: Text(
+                      SaFormatters.formatCurrency(lineTotal),
+                      textAlign: TextAlign.end,
+                      style: TextStyle(
+                        fontSize: SaTokens.fsBody,
+                        fontWeight: FontWeight.w700,
+                        color: tokens.textPrimary,
+                      ),
                     ),
                   ),
                 ],
@@ -372,6 +400,7 @@ class OrderDetailScreen extends StatelessWidget {
   }
 
   Widget _buildDetailRow(
+    SalesAssociateTokens tokens,
     String label,
     String value, {
     bool isBold = false,
@@ -379,22 +408,28 @@ class OrderDetailScreen extends StatelessWidget {
     return Padding(
       padding: const EdgeInsets.symmetric(vertical: 4),
       child: Row(
-        mainAxisAlignment: MainAxisAlignment.spaceBetween,
+        crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          Text(
-            label,
-            style: TextStyle(
-              fontSize: SaTokens.fsLabel,
-              color: isBold ? SaTokens.textPrimary : SaTokens.textSecondary,
-              fontWeight: isBold ? FontWeight.w700 : FontWeight.w400,
+          Expanded(
+            child: Text(
+              label,
+              style: TextStyle(
+                fontSize: SaTokens.fsLabel,
+                color: isBold ? tokens.textPrimary : tokens.textSecondary,
+                fontWeight: isBold ? FontWeight.w700 : FontWeight.w400,
+              ),
             ),
           ),
-          Text(
-            value,
-            style: TextStyle(
-              fontSize: SaTokens.fsLabel,
-              color: SaTokens.textPrimary,
-              fontWeight: isBold ? FontWeight.w700 : FontWeight.w600,
+          const SizedBox(width: SaTokens.space8),
+          Flexible(
+            child: Text(
+              value,
+              textAlign: TextAlign.end,
+              style: TextStyle(
+                fontSize: SaTokens.fsLabel,
+                color: tokens.textPrimary,
+                fontWeight: isBold ? FontWeight.w700 : FontWeight.w600,
+              ),
             ),
           ),
         ],

@@ -35,17 +35,18 @@ class DashboardScreen extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final tokens = context.saTokens;
     final uid = employeeUid ?? FirebaseAuth.instance.currentUser?.uid;
 
     if (uid == null) {
-      return const Scaffold(
-        backgroundColor: SaTokens.pageBackground,
-        body: Center(child: CircularProgressIndicator()),
+      return Scaffold(
+        backgroundColor: tokens.pageBackground,
+        body: const SizedBox.shrink(),
       );
     }
 
     return Scaffold(
-      backgroundColor: SaTokens.pageBackground,
+      backgroundColor: tokens.pageBackground,
       appBar: AppBar(
         title: Column(
           crossAxisAlignment: CrossAxisAlignment.start,
@@ -55,14 +56,15 @@ class DashboardScreen extends StatelessWidget {
               style: Theme.of(context).textTheme.headlineMedium?.copyWith(
                     fontSize: 20,
                     fontWeight: FontWeight.w800,
+                    color: tokens.textPrimary,
                   ),
             ),
-            const Text(
+            Text(
               'Sales Associate',
               style: TextStyle(
                 fontSize: SaTokens.fsCaption,
                 fontWeight: FontWeight.w500,
-                color: SaTokens.textSecondary,
+                color: tokens.textSecondary,
               ),
             ),
           ],
@@ -152,10 +154,14 @@ class DashboardScreen extends StatelessWidget {
     return Row(
       mainAxisAlignment: MainAxisAlignment.spaceBetween,
       children: [
-        Text(
-          'Recent Orders',
-          style: Theme.of(context).textTheme.titleMedium,
+        Expanded(
+          child: Text(
+            'Recent Orders',
+            style: Theme.of(context).textTheme.titleMedium,
+            overflow: TextOverflow.ellipsis,
+          ),
         ),
+        const SizedBox(width: SaTokens.space8),
         TextButton(
           onPressed: () {
             EmployeeShellController.of(context)?.switchTab(1);
@@ -167,6 +173,7 @@ class DashboardScreen extends StatelessWidget {
   }
 
   Widget _buildOrdersList(BuildContext context, String uid) {
+    final tokens = context.saTokens;
     return StreamBuilder<QuerySnapshot<Map<String, dynamic>>>(
       stream: recentOrdersStream ??
           FirebaseFirestore.instance
@@ -180,15 +187,41 @@ class DashboardScreen extends StatelessWidget {
           return Center(
             child: Padding(
               padding: const EdgeInsets.all(SaTokens.space16),
-              child: Text('Error loading orders: ${snap.error}'),
+              child: Text(
+                'Error loading orders: ${snap.error}',
+                style: TextStyle(color: tokens.textSecondary),
+              ),
             ),
           );
         }
         if (!snap.hasData) {
-          return const Center(
-            child: Padding(
-              padding: EdgeInsets.all(SaTokens.space24),
-              child: CircularProgressIndicator(),
+          return Container(
+            constraints: const BoxConstraints(minHeight: 72),
+            padding: const EdgeInsets.all(SaTokens.space16),
+            decoration: BoxDecoration(
+              color: tokens.surface,
+              borderRadius: BorderRadius.circular(SaTokens.radiusCard),
+              border: Border.all(color: tokens.divider),
+            ),
+            child: Row(
+              children: [
+                Icon(
+                  SaIcons.shoppingBag,
+                  color: tokens.textSecondary.withValues(alpha: 0.5),
+                  size: 20,
+                ),
+                const SizedBox(width: SaTokens.space12),
+                Expanded(
+                  child: Text(
+                    'Loading orders...',
+                    overflow: TextOverflow.ellipsis,
+                    style: TextStyle(
+                      color: tokens.textSecondary,
+                      fontSize: SaTokens.fsLabel,
+                    ),
+                  ),
+                ),
+              ],
             ),
           );
         }
@@ -199,23 +232,23 @@ class DashboardScreen extends StatelessWidget {
           return Container(
             padding: const EdgeInsets.all(SaTokens.space24),
             decoration: BoxDecoration(
-              color: SaTokens.surface,
+              color: tokens.surface,
               borderRadius: BorderRadius.circular(SaTokens.radiusCard),
-              border: Border.all(color: SaTokens.divider),
+              border: Border.all(color: tokens.divider),
             ),
             child: Center(
               child: Column(
                 children: [
-                  const Icon(
+                  Icon(
                     SaIcons.shoppingBag,
                     size: 32,
-                    color: SaTokens.textSecondary,
+                    color: tokens.textSecondary,
                   ),
                   const SizedBox(height: SaTokens.space8),
                   Text(
                     'No orders attributed yet',
                     style: Theme.of(context).textTheme.bodyMedium?.copyWith(
-                          color: SaTokens.textSecondary,
+                          color: tokens.textSecondary,
                         ),
                   ),
                 ],
@@ -238,9 +271,9 @@ class DashboardScreen extends StatelessWidget {
             return Container(
               margin: const EdgeInsets.only(bottom: SaTokens.space8),
               decoration: BoxDecoration(
-                color: SaTokens.surface,
+                color: tokens.surface,
                 borderRadius: BorderRadius.circular(SaTokens.radiusCard),
-                border: Border.all(color: SaTokens.divider),
+                border: Border.all(color: tokens.divider),
               ),
               child: ListTile(
                 onTap: () => Navigator.of(context).push(
@@ -255,12 +288,15 @@ class DashboardScreen extends StatelessWidget {
                 ),
                 title: Row(
                   children: [
-                    Text(
-                      '#$orderNumber',
-                      style: const TextStyle(
-                        fontSize: SaTokens.fsBody,
-                        fontWeight: FontWeight.w700,
-                        color: SaTokens.textPrimary,
+                    Flexible(
+                      child: Text(
+                        '#$orderNumber',
+                        style: TextStyle(
+                          fontSize: SaTokens.fsBody,
+                          fontWeight: FontWeight.w700,
+                          color: tokens.textPrimary,
+                        ),
+                        overflow: TextOverflow.ellipsis,
                       ),
                     ),
                     if (normMode != null) ...[
@@ -272,8 +308,10 @@ class DashboardScreen extends StatelessWidget {
                         ),
                         decoration: BoxDecoration(
                           color: normMode == 'B2B'
-                              ? SaTokens.primarySubtle
-                              : Colors.purple.shade50,
+                              ? tokens.primarySubtle
+                              : (Theme.of(context).brightness == Brightness.dark
+                                  ? const Color(0xFF3B0764)
+                                  : Colors.purple.shade50),
                           borderRadius: BorderRadius.circular(4),
                         ),
                         child: Text(
@@ -282,8 +320,10 @@ class DashboardScreen extends StatelessWidget {
                             fontSize: 10,
                             fontWeight: FontWeight.w700,
                             color: normMode == 'B2B'
-                                ? SaTokens.primary
-                                : Colors.purple.shade700,
+                                ? tokens.primary
+                                : (Theme.of(context).brightness == Brightness.dark
+                                    ? const Color(0xFFC084FC)
+                                    : Colors.purple.shade700),
                           ),
                         ),
                       ),
@@ -294,17 +334,17 @@ class DashboardScreen extends StatelessWidget {
                   padding: const EdgeInsets.only(top: 4),
                   child: Text(
                     SaFormatters.formatCurrency(total),
-                    style: const TextStyle(
+                    style: TextStyle(
                       fontSize: SaTokens.fsLabel,
                       fontWeight: FontWeight.w600,
-                      color: SaTokens.textSecondary,
+                      color: tokens.textSecondary,
                     ),
                   ),
                 ),
                 trailing: Container(
                   padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 3),
                   decoration: BoxDecoration(
-                    color: isDelivered ? SaTokens.successBg : SaTokens.warningBg,
+                    color: isDelivered ? tokens.successBg : tokens.warningBg,
                     borderRadius: BorderRadius.circular(6),
                   ),
                   child: Text(
@@ -312,7 +352,7 @@ class DashboardScreen extends StatelessWidget {
                     style: TextStyle(
                       fontSize: 10.5,
                       fontWeight: FontWeight.w700,
-                      color: isDelivered ? SaTokens.successFg : SaTokens.warningFg,
+                      color: isDelivered ? tokens.successFg : tokens.warningFg,
                     ),
                   ),
                 ),
@@ -333,6 +373,7 @@ class _NotificationBellButton extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final tokens = context.saTokens;
     return StreamBuilder<QuerySnapshot<Map<String, dynamic>>>(
       stream: stream ??
           FirebaseFirestore.instance
@@ -357,8 +398,8 @@ class _NotificationBellButton extends StatelessWidget {
                   child: Container(
                     width: 8,
                     height: 8,
-                    decoration: const BoxDecoration(
-                      color: SaTokens.primary,
+                    decoration: BoxDecoration(
+                      color: tokens.primary,
                       shape: BoxShape.circle,
                     ),
                   ),
@@ -396,15 +437,16 @@ class _MetricCard extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final tokens = context.saTokens;
     return InkWell(
       onTap: onTap,
       borderRadius: BorderRadius.circular(SaTokens.radiusCard),
       child: Container(
         padding: const EdgeInsets.all(SaTokens.space16),
         decoration: BoxDecoration(
-          color: SaTokens.surface,
+          color: tokens.surface,
           borderRadius: BorderRadius.circular(SaTokens.radiusCard),
-          border: Border.all(color: SaTokens.divider),
+          border: Border.all(color: tokens.divider),
         ),
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.start,
@@ -416,10 +458,10 @@ class _MetricCard extends StatelessWidget {
                 Expanded(
                   child: Text(
                     label,
-                    style: const TextStyle(
+                    style: TextStyle(
                       fontSize: SaTokens.fsCaption,
                       fontWeight: FontWeight.w600,
-                      color: SaTokens.textSecondary,
+                      color: tokens.textSecondary,
                     ),
                     maxLines: 1,
                     overflow: TextOverflow.ellipsis,
@@ -428,15 +470,18 @@ class _MetricCard extends StatelessWidget {
               ],
             ),
             const SizedBox(height: SaTokens.space8),
-            Text(
-              value,
-              style: const TextStyle(
-                fontSize: 18,
-                fontWeight: FontWeight.w800,
-                color: SaTokens.textPrimary,
+            FittedBox(
+              fit: BoxFit.scaleDown,
+              alignment: Alignment.centerLeft,
+              child: Text(
+                value,
+                style: TextStyle(
+                  fontSize: 18,
+                  fontWeight: FontWeight.w800,
+                  color: tokens.textPrimary,
+                ),
+                maxLines: 1,
               ),
-              maxLines: 1,
-              overflow: TextOverflow.ellipsis,
             ),
           ],
         ),
@@ -472,21 +517,56 @@ class _AssociateCodeCard extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final tokens = context.saTokens;
     if (snapshot.hasError) {
       return _cardShell(
-        child: const Text(
+        context,
+        child: Text(
           'Could not load associate code right now.',
-          style: TextStyle(color: SaTokens.textSecondary),
+          style: TextStyle(color: tokens.textSecondary),
         ),
       );
     }
     if (!snapshot.hasData) {
       return _cardShell(
-        child: const Center(
-          child: Padding(
-            padding: EdgeInsets.all(SaTokens.space16),
-            child: CircularProgressIndicator(),
-          ),
+        context,
+        child: Row(
+          children: [
+            Container(
+              width: 36,
+              height: 36,
+              decoration: BoxDecoration(
+                color: tokens.primarySubtle,
+                borderRadius: BorderRadius.circular(8),
+              ),
+              child: Icon(Icons.qr_code_2_rounded, color: tokens.primary, size: 20),
+            ),
+            const SizedBox(width: SaTokens.space12),
+            Expanded(
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  Text(
+                    'Associate Code',
+                    style: TextStyle(
+                      fontSize: SaTokens.fsCaption,
+                      fontWeight: FontWeight.w600,
+                      color: tokens.textSecondary,
+                    ),
+                  ),
+                  const SizedBox(height: 2),
+                  Text(
+                    'Loading code...',
+                    style: TextStyle(
+                      fontSize: 16,
+                      fontWeight: FontWeight.w700,
+                      color: tokens.textPrimary,
+                    ),
+                  ),
+                ],
+              ),
+            ),
+          ],
         ),
       );
     }
@@ -494,7 +574,11 @@ class _AssociateCodeCard extends StatelessWidget {
     final doc = snapshot.data!;
     if (!doc.exists || doc.data() == null) {
       return _cardShell(
-        child: const Text('Associate profile not found.'),
+        context,
+        child: Text(
+          'Associate profile not found.',
+          style: TextStyle(color: tokens.textSecondary),
+        ),
       );
     }
 
@@ -503,7 +587,11 @@ class _AssociateCodeCard extends StatelessWidget {
 
     if (code.isEmpty) {
       return _cardShell(
-        child: const Text('No associate code assigned yet.'),
+        context,
+        child: Text(
+          'No associate code assigned yet.',
+          style: TextStyle(color: tokens.textSecondary),
+        ),
       );
     }
 
@@ -511,12 +599,12 @@ class _AssociateCodeCard extends StatelessWidget {
       width: double.infinity,
       padding: const EdgeInsets.all(SaTokens.pagePadding),
       decoration: BoxDecoration(
-        color: SaTokens.surface,
+        color: tokens.surface,
         borderRadius: BorderRadius.circular(SaTokens.radiusCard),
-        border: Border.all(color: SaTokens.primary, width: 1.5),
+        border: Border.all(color: tokens.primary, width: 1.5),
         boxShadow: [
           BoxShadow(
-            color: SaTokens.primary.withValues(alpha: 0.08),
+            color: tokens.primary.withValues(alpha: 0.08),
             blurRadius: 12,
             offset: const Offset(0, 4),
           ),
@@ -526,36 +614,39 @@ class _AssociateCodeCard extends StatelessWidget {
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
           Row(
-            mainAxisAlignment: MainAxisAlignment.spaceBetween,
             children: [
-              Row(
-                children: [
-                  Container(
-                    width: 32,
-                    height: 32,
-                    decoration: BoxDecoration(
-                      color: SaTokens.primarySubtle,
-                      borderRadius: BorderRadius.circular(6),
+              Expanded(
+                child: Row(
+                  children: [
+                    Container(
+                      width: 32,
+                      height: 32,
+                      decoration: BoxDecoration(
+                        color: tokens.primarySubtle,
+                        borderRadius: BorderRadius.circular(6),
+                      ),
+                      child: Icon(
+                        SaIcons.shoppingBag,
+                        color: tokens.primary,
+                        size: 16,
+                      ),
                     ),
-                    child: const Icon(
-                      SaIcons.shoppingBag,
-                      color: SaTokens.primary,
-                      size: 16,
+                    const SizedBox(width: SaTokens.space8),
+                    Expanded(
+                      child: Text(
+                        'Your Associate Code',
+                        style: TextStyle(
+                          fontSize: SaTokens.fsBody,
+                          fontWeight: FontWeight.w700,
+                          color: tokens.textPrimary,
+                        ),
+                      ),
                     ),
-                  ),
-                  const SizedBox(width: SaTokens.space8),
-                  const Text(
-                    'Your Associate Code',
-                    style: TextStyle(
-                      fontSize: SaTokens.fsBody,
-                      fontWeight: FontWeight.w700,
-                      color: SaTokens.textPrimary,
-                    ),
-                  ),
-                ],
+                  ],
+                ),
               ),
               IconButton(
-                icon: const Icon(SaIcons.share2, color: SaTokens.primary, size: 20),
+                icon: Icon(SaIcons.share2, color: tokens.primary, size: 20),
                 tooltip: 'Share code',
                 onPressed: () => _share(code),
               ),
@@ -573,45 +664,52 @@ class _AssociateCodeCard extends StatelessWidget {
                 vertical: SaTokens.space12,
               ),
               decoration: BoxDecoration(
-                color: SaTokens.pageBackground,
+                color: tokens.pageBackground,
                 borderRadius: BorderRadius.circular(SaTokens.radiusInput),
-                border: Border.all(color: SaTokens.divider),
+                border: Border.all(color: tokens.divider),
               ),
               child: Row(
                 mainAxisAlignment: MainAxisAlignment.spaceBetween,
                 children: [
-                  Column(
-                    crossAxisAlignment: CrossAxisAlignment.start,
-                    children: [
-                      Text(
-                        code,
-                        style: const TextStyle(
-                          fontSize: 24,
-                          fontWeight: FontWeight.w900,
-                          letterSpacing: 2,
-                          color: SaTokens.textPrimary,
+                  Expanded(
+                    child: Column(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [
+                        FittedBox(
+                          fit: BoxFit.scaleDown,
+                          alignment: Alignment.centerLeft,
+                          child: Text(
+                            code,
+                            style: TextStyle(
+                              fontSize: 24,
+                              fontWeight: FontWeight.w900,
+                              letterSpacing: 2,
+                              color: tokens.textPrimary,
+                            ),
+                          ),
                         ),
-                      ),
-                      const SizedBox(height: 2),
-                      const Text(
-                        'Tap to copy code',
-                        style: TextStyle(
-                          fontSize: 11,
-                          fontWeight: FontWeight.w500,
-                          color: SaTokens.textSecondary,
+                        const SizedBox(height: 2),
+                        Text(
+                          'Tap to copy code',
+                          style: TextStyle(
+                            fontSize: 11,
+                            fontWeight: FontWeight.w500,
+                            color: tokens.textSecondary,
+                          ),
                         ),
-                      ),
-                    ],
+                      ],
+                    ),
                   ),
+                  const SizedBox(width: SaTokens.space8),
                   Container(
                     padding: const EdgeInsets.all(8),
                     decoration: BoxDecoration(
-                      color: SaTokens.primarySubtle,
+                      color: tokens.primarySubtle,
                       borderRadius: BorderRadius.circular(8),
                     ),
-                    child: const Icon(
+                    child: Icon(
                       SaIcons.copy,
-                      color: SaTokens.primary,
+                      color: tokens.primary,
                       size: 18,
                     ),
                   ),
@@ -624,7 +722,7 @@ class _AssociateCodeCard extends StatelessWidget {
           Text(
             'Share this code with your customers. When applied at checkout, attributed orders earn you commission.',
             style: Theme.of(context).textTheme.bodySmall?.copyWith(
-                  color: SaTokens.textSecondary,
+                  color: tokens.textSecondary,
                   height: 1.4,
                 ),
           ),
@@ -633,14 +731,15 @@ class _AssociateCodeCard extends StatelessWidget {
     );
   }
 
-  Widget _cardShell({required Widget child}) {
+  Widget _cardShell(BuildContext context, {required Widget child}) {
+    final tokens = context.saTokens;
     return Container(
       width: double.infinity,
       padding: const EdgeInsets.all(SaTokens.space16),
       decoration: BoxDecoration(
-        color: SaTokens.surface,
+        color: tokens.surface,
         borderRadius: BorderRadius.circular(SaTokens.radiusCard),
-        border: Border.all(color: SaTokens.divider),
+        border: Border.all(color: tokens.divider),
       ),
       child: child,
     );
@@ -658,6 +757,7 @@ class _OnboardingFeeStatusCard extends StatelessWidget {
     final doc = snapshot.data!;
     if (!doc.exists || doc.data() == null) return const SizedBox.shrink();
 
+    final tokens = context.saTokens;
     final employee = EmployeeModel.fromMap(doc.data()!, doc.id);
     final isCleared = employee.hasClearedOnboardingGate;
     final isWaived = employee.onboardingWaived;
@@ -668,8 +768,8 @@ class _OnboardingFeeStatusCard extends StatelessWidget {
             ? 'Fee Paid (₹500)'
             : 'Payment Due (₹500)';
 
-    final Color badgeBg = isCleared ? SaTokens.successBg : SaTokens.warningBg;
-    final Color badgeFg = isCleared ? SaTokens.successFg : SaTokens.warningFg;
+    final Color badgeBg = isCleared ? tokens.successBg : tokens.warningBg;
+    final Color badgeFg = isCleared ? tokens.successFg : tokens.warningFg;
 
     return InkWell(
       onTap: () {
@@ -686,44 +786,15 @@ class _OnboardingFeeStatusCard extends StatelessWidget {
           vertical: SaTokens.space12,
         ),
         decoration: BoxDecoration(
-          color: SaTokens.surface,
+          color: tokens.surface,
           borderRadius: BorderRadius.circular(SaTokens.radiusCard),
-          border: Border.all(color: SaTokens.divider),
+          border: Border.all(color: tokens.divider),
         ),
-        child: Row(
-          children: [
-            Icon(
-              isCleared ? SaIcons.circleCheck : SaIcons.triangleAlert,
-              color: badgeFg,
-              size: 18,
-            ),
-            const SizedBox(width: SaTokens.space12),
-            Expanded(
-              child: Column(
-                crossAxisAlignment: CrossAxisAlignment.start,
-                children: [
-                  const Text(
-                    'Onboarding Status',
-                    style: TextStyle(
-                      fontSize: SaTokens.fsBody,
-                      fontWeight: FontWeight.w600,
-                      color: SaTokens.textPrimary,
-                    ),
-                  ),
-                  const SizedBox(height: 2),
-                  Text(
-                    isCleared
-                        ? 'Retail & B2B attribution active'
-                        : 'Complete fee for retail attribution',
-                    style: TextStyle(
-                      fontSize: SaTokens.fsCaption,
-                      color: SaTokens.textSecondary,
-                    ),
-                  ),
-                ],
-              ),
-            ),
-            Container(
+        child: LayoutBuilder(
+          builder: (context, constraints) {
+            final textScale = MediaQuery.textScalerOf(context).scale(1.0);
+            final isStacked = constraints.maxWidth < 320 || textScale > 1.15;
+            final badgeWidget = Container(
               padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
               decoration: BoxDecoration(
                 color: badgeBg,
@@ -737,14 +808,99 @@ class _OnboardingFeeStatusCard extends StatelessWidget {
                   color: badgeFg,
                 ),
               ),
-            ),
-            const SizedBox(width: 4),
-            const Icon(
-              Icons.chevron_right_rounded,
-              color: SaTokens.textSecondary,
-              size: 20,
-            ),
-          ],
+            );
+
+            if (isStacked) {
+              return Row(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  Icon(
+                    isCleared ? SaIcons.circleCheck : SaIcons.triangleAlert,
+                    color: badgeFg,
+                    size: 18,
+                  ),
+                  const SizedBox(width: SaTokens.space12),
+                  Expanded(
+                    child: Column(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [
+                        Text(
+                          'Onboarding Status',
+                          style: TextStyle(
+                            fontSize: SaTokens.fsBody,
+                            fontWeight: FontWeight.w600,
+                            color: tokens.textPrimary,
+                          ),
+                        ),
+                        const SizedBox(height: 2),
+                        Text(
+                          isCleared
+                              ? 'Retail & B2B attribution active'
+                              : 'Complete fee for retail attribution',
+                          style: TextStyle(
+                            fontSize: SaTokens.fsCaption,
+                            color: tokens.textSecondary,
+                          ),
+                        ),
+                        const SizedBox(height: SaTokens.space8),
+                        badgeWidget,
+                      ],
+                    ),
+                  ),
+                  const SizedBox(width: 4),
+                  Icon(
+                    Icons.chevron_right_rounded,
+                    color: tokens.textSecondary,
+                    size: 20,
+                  ),
+                ],
+              );
+            }
+
+            return Row(
+              children: [
+                Icon(
+                  isCleared ? SaIcons.circleCheck : SaIcons.triangleAlert,
+                  color: badgeFg,
+                  size: 18,
+                ),
+                const SizedBox(width: SaTokens.space12),
+                Expanded(
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      Text(
+                        'Onboarding Status',
+                        style: TextStyle(
+                          fontSize: SaTokens.fsBody,
+                          fontWeight: FontWeight.w600,
+                          color: tokens.textPrimary,
+                        ),
+                      ),
+                      const SizedBox(height: 2),
+                      Text(
+                        isCleared
+                            ? 'Retail & B2B attribution active'
+                            : 'Complete fee for retail attribution',
+                        style: TextStyle(
+                          fontSize: SaTokens.fsCaption,
+                          color: tokens.textSecondary,
+                        ),
+                      ),
+                    ],
+                  ),
+                ),
+                const SizedBox(width: SaTokens.space8),
+                badgeWidget,
+                const SizedBox(width: 4),
+                Icon(
+                  Icons.chevron_right_rounded,
+                  color: tokens.textSecondary,
+                  size: 20,
+                ),
+              ],
+            );
+          },
         ),
       ),
     );

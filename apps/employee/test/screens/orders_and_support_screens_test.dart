@@ -8,6 +8,9 @@ import 'package:employee/screens/orders/order_detail_screen.dart';
 import 'package:employee/screens/notifications/notifications_screen.dart';
 import 'package:employee/screens/support/help_support_screen.dart';
 import 'package:employee/screens/profile/profile_screen.dart';
+import 'package:employee/providers/theme_provider.dart';
+import 'package:provider/provider.dart';
+import 'package:shared_preferences/shared_preferences.dart';
 import 'package:agrimore_ui/agrimore_ui.dart';
 import 'test_harness.dart';
 
@@ -150,6 +153,54 @@ void main() {
       expect(find.text('Payout Account'), findsOneWidget);
       expect(find.text('Onboarding Status'), findsOneWidget);
       expect(find.text('Sign Out'), findsOneWidget);
+    });
+
+    testWidgets('ProfileScreen renders Appearance section and switches theme mode', (tester) async {
+      SharedPreferences.setMockInitialValues({});
+      tester.view.physicalSize = const Size(800, 1400);
+      tester.view.devicePixelRatio = 1.0;
+      addTearDown(tester.view.resetPhysicalSize);
+      addTearDown(tester.view.resetDevicePixelRatio);
+
+      final employeeSnap = FakeDocumentSnapshot({
+        'employeeCode': 'AGRI-EMP-001',
+        'name': 'Sunil Kumar',
+        'email': 'sunil.kumar@agrimore.in',
+        'phone': '+919876543210',
+        'department': 'Sales & Field Operations',
+        'role': 'Associate',
+        'status': 'active',
+        'createdAt': Timestamp.now(),
+      });
+
+      final themeProvider = EmployeeThemeProvider();
+
+      await tester.pumpWidget(
+        ChangeNotifierProvider<EmployeeThemeProvider>.value(
+          value: themeProvider,
+          child: MaterialApp(
+            theme: SalesAssociateTheme.lightTheme,
+            darkTheme: SalesAssociateTheme.darkTheme,
+            themeMode: themeProvider.themeMode,
+            home: ProfileScreen(
+              employeeUid: 'test-associate-uid',
+              employeeStream: Stream.value(employeeSnap),
+            ),
+          ),
+        ),
+      );
+      await tester.pump();
+      await tester.pump();
+
+      expect(find.text('Dark Mode'), findsOneWidget);
+      expect(find.byType(Switch), findsOneWidget);
+
+      // Tap the Dark Mode switch
+      await tester.tap(find.byType(Switch));
+      await tester.pumpAndSettle();
+
+      expect(themeProvider.themeMode, ThemeMode.dark);
+      expect(themeProvider.isDarkMode, isTrue);
     });
   });
 }

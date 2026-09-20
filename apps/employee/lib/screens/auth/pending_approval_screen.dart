@@ -10,8 +10,10 @@ class EmployeePendingApprovalScreen extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final tokens = context.saTokens;
+
     return Scaffold(
-      backgroundColor: SaTokens.pageBackground,
+      backgroundColor: tokens.pageBackground,
       body: SafeArea(
         child: Center(
           child: SingleChildScrollView(
@@ -29,14 +31,14 @@ class EmployeePendingApprovalScreen extends StatelessWidget {
                     child: Container(
                       width: 80,
                       height: 80,
-                      decoration: const BoxDecoration(
-                        color: SaTokens.warningBg,
+                      decoration: BoxDecoration(
+                        color: tokens.warningBg,
                         shape: BoxShape.circle,
                       ),
-                      child: const Icon(
+                      child: Icon(
                         SaIcons.triangleAlert,
                         size: 40,
-                        color: SaTokens.warningFg,
+                        color: tokens.warningFg,
                       ),
                     ),
                   ),
@@ -52,7 +54,7 @@ class EmployeePendingApprovalScreen extends StatelessWidget {
                     'Your Sales Associate registration has been submitted and is currently being reviewed by the AgriMore administration team.',
                     textAlign: TextAlign.center,
                     style: Theme.of(context).textTheme.bodyMedium?.copyWith(
-                          color: SaTokens.textSecondary,
+                          color: tokens.textSecondary,
                           height: 1.5,
                         ),
                   ),
@@ -62,9 +64,9 @@ class EmployeePendingApprovalScreen extends StatelessWidget {
                   Container(
                     padding: const EdgeInsets.all(SaTokens.space24),
                     decoration: BoxDecoration(
-                      color: SaTokens.surface,
+                      color: tokens.surface,
                       borderRadius: BorderRadius.circular(SaTokens.radiusCard),
-                      border: Border.all(color: SaTokens.divider),
+                      border: Border.all(color: tokens.divider),
                     ),
                     child: Column(
                       crossAxisAlignment: CrossAxisAlignment.start,
@@ -76,6 +78,7 @@ class EmployeePendingApprovalScreen extends StatelessWidget {
                         const SizedBox(height: SaTokens.space16),
                         _buildStepRow(
                           context,
+                          tokens: tokens,
                           number: '1',
                           title: 'Verification',
                           subtitle:
@@ -84,6 +87,7 @@ class EmployeePendingApprovalScreen extends StatelessWidget {
                         const SizedBox(height: SaTokens.space16),
                         _buildStepRow(
                           context,
+                          tokens: tokens,
                           number: '2',
                           title: 'Activation',
                           subtitle:
@@ -92,6 +96,7 @@ class EmployeePendingApprovalScreen extends StatelessWidget {
                         const SizedBox(height: SaTokens.space16),
                         _buildStepRow(
                           context,
+                          tokens: tokens,
                           number: '3',
                           title: 'Start Earning',
                           subtitle:
@@ -134,6 +139,7 @@ class EmployeePendingApprovalScreen extends StatelessWidget {
 
   Widget _buildStepRow(
     BuildContext context, {
+    required SalesAssociateTokens tokens,
     required String number,
     required String title,
     required String subtitle,
@@ -145,16 +151,16 @@ class EmployeePendingApprovalScreen extends StatelessWidget {
           width: 28,
           height: 28,
           alignment: Alignment.center,
-          decoration: const BoxDecoration(
-            color: SaTokens.primarySubtle,
+          decoration: BoxDecoration(
+            color: tokens.primarySubtle,
             shape: BoxShape.circle,
           ),
           child: Text(
             number,
-            style: const TextStyle(
+            style: TextStyle(
               fontSize: SaTokens.fsCaption,
               fontWeight: FontWeight.w700,
-              color: SaTokens.primary,
+              color: tokens.primary,
             ),
           ),
         ),
@@ -165,18 +171,18 @@ class EmployeePendingApprovalScreen extends StatelessWidget {
             children: [
               Text(
                 title,
-                style: const TextStyle(
+                style: TextStyle(
                   fontSize: SaTokens.fsBody,
                   fontWeight: FontWeight.w600,
-                  color: SaTokens.textPrimary,
+                  color: tokens.textPrimary,
                 ),
               ),
               const SizedBox(height: 2),
               Text(
                 subtitle,
-                style: const TextStyle(
+                style: TextStyle(
                   fontSize: SaTokens.fsLabel,
-                  color: SaTokens.textSecondary,
+                  color: tokens.textSecondary,
                   height: 1.4,
                 ),
               ),
