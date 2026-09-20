@@ -25,6 +25,12 @@ import { fileURLToPath } from "node:url";
 const ROOT = resolve(dirname(fileURLToPath(import.meta.url)), "../..");
 const LEDGER = "docs/active/BRANCH_DISPOSITIONS.md";
 const ENV_BRANCHES = ["develop", "staging", "main"];
+// GOV-5: statuses after which the branch ref is expected to be deleted, so its absence is correct
+// rather than a finding. Anything NOT listed here is treated as in-flight.
+const TERMINAL_STATUSES = [
+  "MERGED_DEVELOP", "E2E_DEVELOP", "MERGED", "CLOSED", "ABANDONED", "SUPERSEDED",
+  "PROMOTED_STAGING", "PROMOTED_MAIN", "PRESERVED_REFERENCE", "ENVIRONMENT",
+];
 
 function git(args) {
   return execFileSync("git", args, { cwd: ROOT, encoding: "utf8" }).trim();
@@ -80,7 +86,17 @@ if (src === null) {
   }
   for (const r of rows) {
     const tip = live.get(r.branch);
-    if (tip === undefined) { warnings.push(`${LEDGER}:${r.line} records "${r.branch}", which no longer exists locally.`); continue; }
+    if (tip === undefined) {
+      // GOV-5: a branch that reached a TERMINAL status is SUPPOSED to be gone — deleting it is the
+      // last step of the merge protocol. Warning on those buried the real signal: after the
+      // 2026-09-20 consolidation deleted 136 merged branches this check alone emitted 137 warnings,
+      // pushing the one finding that mattered (PROMOTION ORDER) to the bottom of the list.
+      // A missing branch is only worth reporting when the row claims the phase is still in flight.
+      if (!TERMINAL_STATUSES.includes(r.status)) {
+        warnings.push(`${LEDGER}:${r.line} records "${r.branch}" as ${r.status || "(no status)"}, but the branch no longer exists locally — an in-flight phase must not lose its branch. Close the row or restore the ref.`);
+      }
+      continue;
+    }
     const isEnv = r.status === "ENVIRONMENT" || ENV_BRANCHES.includes(r.branch);
     if (!isEnv && r.status !== "ACTIVE" && r.sha && !tip.startsWith(r.sha) && !r.sha.startsWith(tip)) {
       warnings.push(`${LEDGER}:${r.line} records "${r.branch}" at ${r.sha}, live tip is ${tip.slice(0, 9)} — stale row (update your own row; flag someone else's).`);
