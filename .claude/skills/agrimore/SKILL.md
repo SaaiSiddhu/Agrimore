@@ -41,8 +41,10 @@ wins and this Skill needs a fix. Documentation starts at `docs/README.md`
 3. **Non-destructive.** Never `reset --hard`, `checkout --`, `restore`, `stash`, `clean`, `worktree
    prune` blindly, `rm -rf` a worktree, `git update-ref refs/heads/*`, or `git add -A` (the shared
    index swept 43 files into a false commit once — `agrimore-concurrency-incidents`). Attribute every
-   unexpected diff before touching it. The primary checkout `Projects/Clients/Agrimore` holds `main`:
-   never build, merge or commit there — phases live in their own worktree.
+   unexpected diff before touching it. **Since 2026-09-20 `Projects/Clients/Agrimore` is the only
+   worktree, is checked out on `develop`, and permanently carries the owner's uncommitted WIP** — a
+   dirty tree there is the expected state, not a finding, and never something to clear. Never build,
+   gate or commit while `main` or `staging` is checked out anywhere; `gate.sh` refuses on the branch.
 4. **NEVER `firebase deploy`, in whole or in part. NEVER `firebase functions:delete`. NEVER write to
    `agrimore-66a4e`** (no Admin-SDK scripts with `--apply`, no console-equivalent writes). The project
    is live with real users. Deploy-ready changes plus the exact `firebase deploy --only …` command —
@@ -79,7 +81,8 @@ wins and this Skill needs a fix. Documentation starts at `docs/README.md`
 ## 1. Mode router — pick the primary mode, then attach lanes
 
 **Routing step 0, every request:** confirm which Agrimore. `pwd` → `git rev-parse --show-toplevel`
-must print `/Users/saai_siddharth/Projects/Clients/Agrimore` or a sibling `Agrimore-<slug>` worktree,
+must print `/Users/saai_siddharth/Projects/Clients/Agrimore` (the only worktree since 2026-09-20) or,
+if you created one for the current phase, a sibling `Agrimore-<slug>` worktree,
 and `git remote get-url origin` must contain `SRIESWARAN01/Agrimore-Full-Project`. Anything under
 `Projects/Ecommerce/LetBuyy/`, `Projects/Clients/Clone/`, or a Supabase/Cloudflare tree → **stop and say
 so**; never carry a finding, gate or decision across.
@@ -175,10 +178,18 @@ A contract never says "fix the issues above". It stands alone for a fresh reader
 
 | Branch | Role | How it moves |
 |---|---|---|
-| `agrimore/<id>-<slug>` | one bounded phase | commits by the Worker in `../Agrimore-<slug>`; claim row first |
-| `develop` | **integration + local end-to-end (emulator suite)** | `--no-ff` merges of phase branches inside `../Agrimore-develop`; ledger bookkeeping commits only |
+| `agrimore/<id>-<slug>` | one bounded phase | branched from `develop`; claim row first. Build it in the single folder, or in a per-phase `../Agrimore-<slug>` worktree you remove at merge |
+| `develop` | **integration + local end-to-end (emulator suite)** | `--no-ff` merges of phase branches in whichever worktree holds `develop` (normally the single folder); ledger bookkeeping commits only |
 | `staging` | **pre-production** | `git fetch . develop:staging` after `gate.sh --full --emulator` on that SHA; owner's word to push; **never points at `agrimore-66a4e`** |
 | `main` | **production (renamed from `master` 2026-09-04)** | `git fetch . staging:main`; owner's word; never a merge commit, never a direct commit |
+
+**Layout (OWNER_DECISION 2026-09-20, D-ONEFOLDER).** The repository is ONE folder with ONE worktree on
+`develop` and exactly three branches; 136 merged phase branches and the `Agrimore-develop` /
+`Agrimore-<slug>` worktrees were removed ahead of a machine move. A per-phase worktree is still the
+cleanest isolation and is still supported — `git worktree add ../Agrimore-<slug> -b agrimore/<id>-<slug>
+develop`, then `npm ci` in `functions/` (skip it and `functions:build` exits **127**) — but it is no
+longer mandatory, and none is permanent. The single folder carries uncommitted WIP by design: before any
+merge, check that no incoming file overlaps a dirty path (`merge-develop.sh` does this for you).
 
 Fast-forward-only promotion means **the SHA you tested is the SHA that ships**. Hotfixes take the same
 path, faster. `CURRENT` (2026-09-04): no second Firebase project, no CI, no hooks. A promotion is a git
@@ -193,19 +204,21 @@ One tick = one bounded step of the current phase, then write state, then schedul
 State and heartbeat live in `~/.agrimore/run/<programme>/` (`state.json`, `STATUS.md`), never in the
 repository. Every tick re-derives truth from `state.json` + `git` + `gate.sh`, never from context.
 **The loop never pushes, never deploys, never runs `functions:delete`, never writes to
-`agrimore-66a4e`, never starts an emulator on a held port, never triggers a real OTP, never touches
-the primary checkout.** Hard stops, deny-list, budgets and permissions: `references/run.md`.
+`agrimore-66a4e`, never starts an emulator on a held port, never triggers a real OTP, never clears the
+single folder's standing WIP, and never gates on `main`/`staging`.** Hard stops, deny-list, budgets and
+permissions: `references/run.md`.
 
 ---
 
 ## 5. Repository facts every mode needs (measured 2026-09-04 at `main` = `c8f6f30`; re-measure)
 
 ```
-Root       /Users/saai_siddharth/Projects/Clients/Agrimore   (flat since c8f6f30; holds main; never build here)
-Worktrees  ../Agrimore-develop [develop] · phase worktrees ../Agrimore-<slug> · no stale records (re-measure with
-           `git worktree list`). The old `claude/bold-spence-01813b` record (→ the pre-flattening nested path) was
-           pruned on 2026-09-04 as a side effect of the SEC-1 merge disposition; its BRANCH ref survives at 0ea1e53
-           and deleting it is still open (D-PRUNE).
+Root       /Users/saai_siddharth/Projects/Clients/Agrimore   (flat since c8f6f30; since 2026-09-20 the ONLY worktree,
+           checked out on develop, carrying ~30 files of standing owner WIP — dirty is normal here, never clear it)
+Worktrees  ONE (re-measure with `git worktree list`). ../Agrimore-develop and ../Agrimore-<slug> were removed in the
+           2026-09-20 consolidation (D-ONEFOLDER); a per-phase worktree is optional and temporary. Branches: exactly
+           develop · main · staging — 136 merged agrimore/* were deleted with `-d`, each verified an ancestor of
+           develop. That included `claude/bold-spence-01813b` at 0ea1e53, which CLOSES D-PRUNE.
 Remote     https://github.com/SRIESWARAN01/Agrimore-Full-Project (PUBLIC; only `master` at 0ea1e53, 64 behind)
            machine credential = gh Edynox-hq (no write access) → the owner pushes
 Apps       apps/marketplace (187 dart / 78.7k LOC · android ios web · Play 1.0.7 live, 1.0.8+2026090102 unreleased)
@@ -266,7 +279,7 @@ Ledger     docs/active/BRANCH_DISPOSITIONS.md — the ONLY branch-disposition au
 | `references/decisions.md` | before writing any contract: locked decisions, superseded assumptions, open decisions |
 | `references/hazards.md` | before running gates, grepping for a metric, merging, installing, or starting an emulator |
 
-Scripts (run from a worktree root, never from the primary checkout):
+Scripts (run from a worktree root; `gate.sh` refuses while `main`/`staging` is checked out):
 `scripts/gate.sh` · `scripts/surface.sh` · `scripts/state.sh` · `scripts/merge-develop.sh` · `scripts/promote.sh`
 
 ---

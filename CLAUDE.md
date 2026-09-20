@@ -6,10 +6,14 @@ every AI coding tool that opens this repository reads and follows it.
 
 ## 1. Where you are
 
-- **Git root = project root = `/Users/saai_siddharth/Projects/Clients/Agrimore`**, flat. The old
-  nested layout (`Agrimore-Full-Project/Agrimore-main/…`) was flattened by the owner on
-  2026-09-04 (`c8f6f30`); paths never carry an `Agrimore-main/` segment any more. Copies under
-  `Projects/Clients/Clone/` are history — never edit or cite them.
+- **Git root = project root = `/Users/saai_siddharth/Projects/Clients/Agrimore`**, flat, and since
+  2026-09-20 the **only** worktree — it is checked out on `develop` and carries uncommitted
+  work-in-progress by the owner's decision, so a dirty tree here is normal, not a finding.
+  Attribute it; do not clear it. The old nested layout (`Agrimore-Full-Project/Agrimore-main/…`)
+  was flattened on 2026-09-04 (`c8f6f30`); paths never carry an `Agrimore-main/` segment any more.
+  Sibling `Agrimore-develop` / `Agrimore-<slug>` folders no longer exist; a reference to one is
+  stale documentation, not a missing directory. Copies under `Projects/Clients/Clone/` are
+  history — never edit or cite them.
 - Five Flutter apps (`apps/marketplace` · `admin` · `seller` · `delivery` · `employee`), three
   shared packages (`packages/agrimore_core` · `agrimore_services` · `agrimore_ui`), TypeScript
   Cloud Functions in `functions/`, `firestore.rules` / `storage.rules` / `firestore.indexes.json`
@@ -27,9 +31,13 @@ every AI coding tool that opens this repository reads and follows it.
    changes plus the exact `firebase deploy --only …` command (functions always by explicit name)
    are the deliverable; the owner runs it.
 3. **Branch model: `develop` → `staging` → `main`, fast-forward only.** Phase branches
-   (`agrimore/<id>-<slug>`) are built in their own worktree (`../Agrimore-<slug>`) and merged into
-   `develop` inside the `../Agrimore-develop` worktree. Nothing merges into `main` directly.
-   **Never push `staging` or `main`; the owner pushes** — the skill prints the command.
+   (`agrimore/<id>-<slug>`) branch from `develop` and merge back into it `--no-ff`. Nothing merges
+   into `main` directly. **Never push `staging` or `main`; the owner pushes** — the skill prints
+   the command. **Layout (OWNER_DECISION 2026-09-20):** one folder, one worktree, checked out on
+   `develop`; the `../Agrimore-develop` and `../Agrimore-<slug>` worktrees were consolidated away
+   ahead of a machine move. A phase worktree is still supported and still the cleanest way to
+   isolate a build — create it per phase and remove it at merge — but it is no longer mandatory.
+   Never build or gate while `main` or `staging` is checked out; `gate.sh` enforces this.
 4. **Commit identity: `Agrimore <agrimorein@gmail.com>`, author and committer, no
    `Co-Authored-By` trailer** (OWNER_DECISION D-ID, 2026-09-04). Repo-local `git config`; verify
    after the first commit in any new worktree.
