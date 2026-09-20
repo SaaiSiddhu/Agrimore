@@ -19,8 +19,12 @@ commit they were measured at. **Not a substitute for measuring again.**
 
 ## Worktrees and checkouts
 
-- The primary checkout `Projects/Clients/Agrimore` holds `main`. Never build, merge, commit or run
-  gates there; phases live in `../Agrimore-<slug>`, integration in `../Agrimore-develop`.
+- **Since 2026-09-20 there is ONE worktree**, `Projects/Clients/Agrimore`, on `develop`. Building,
+  merging and gating there is normal. What is forbidden is doing any of it while `main` or `staging`
+  is checked out — `gate.sh` refuses on the branch (`AGRIMORE_ALLOW_PROTECTED=1` overrides).
+- That folder permanently carries ~30 files of the owner's uncommitted WIP. **A dirty tree here is
+  the expected state, not a finding.** Never `restore`, `clean` or `stash` it. Before any merge,
+  confirm no incoming file overlaps a dirty path; `merge-develop.sh` enforces exactly that.
 - A fresh worktree has no `node_modules`, no `.dart_tool`, no `functions/lib`, no `functions/.env`,
   no `.secret.local`, no `google-services.json`, no `debug.keystore`. `npm ci` + `flutter pub get`
   ×8 first (~1 GB); the emulator needs the two env files copied in (never committed, never printed);
@@ -145,5 +149,5 @@ commit they were measured at. **Not a substitute for measuring again.**
 The ledger row is a lock, but **a row on an unmerged branch is invisible from `develop`** — check
 `git worktree list` + `git branch --list 'agrimore/*'` + the `ACTIVE` rows, read for topic overlap,
 before scoping. Run ONE phase at a time on this machine; commit between phases; the concurrency
-incidents all came from parallel sessions on one checkout, which worktrees now prevent — provided
-nobody works in the primary checkout.
+incidents all came from parallel sessions on one checkout. With the single-folder layout that
+protection is gone: if two sessions may run, give each its own per-phase worktree.

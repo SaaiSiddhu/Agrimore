@@ -1,9 +1,9 @@
 # `merge` mode — integrate a VERIFIED phase into `develop`
 
 `develop` is the only merge target for phase branches. `staging` and `main` never receive merge
-commits (`promote.md`). Every merge happens **inside the worktree that holds `develop`**
-(`/Users/saai_siddharth/Projects/Clients/Agrimore-develop`), never by moving a ref from outside, never
-in the primary checkout (`Projects/Clients/Agrimore`, which holds `main`).
+commits (`promote.md`). Every merge happens **inside the worktree that holds `develop`** — since
+2026-09-20 that is the single folder `/Users/saai_siddharth/Projects/Clients/Agrimore` — never by
+moving a ref from outside, and never with `main` or `staging` checked out.
 
 ## 1. Preconditions (all verified by command, none by memory)
 
@@ -11,10 +11,18 @@ in the primary checkout (`Projects/Clients/Agrimore`, which holds `main`).
    analyze if `packages/**` moved); every attached lane `PASS`/`PASS_WITH_FINDINGS`; no `BLOCKING`.
 2. The ledger row exists on the branch with `Status` = `ACTIVE` and a `Why` that matches what was
    built. Its `SHA` cell will be filled in the bookkeeping commit — never leave `N/A — pending` behind.
-3. `git -C ../Agrimore-develop status --porcelain | wc -l` = 0 and
-   `git -C ../Agrimore-develop ls-files --others --exclude-standard | wc -l` = 0.
-4. `git -C ../Agrimore-develop rev-parse --abbrev-ref HEAD` = `develop` and `git worktree list` shows
-   exactly one `[develop]`.
+3. **No incoming file may have uncommitted local changes.** The old rule was "the develop worktree
+   must be spotless"; that is unsatisfiable now that the single folder carries standing WIP, and it
+   was always a proxy for this narrower property. Check it, do not assume it:
+   ```
+   comm -12 <(git diff --name-only $(git merge-base develop <branch>)..<branch> | sort -u) \
+            <(git status --porcelain | sed 's/^...//; s/.* -> //' | sort -u)
+   ```
+   Non-empty → STOP; commit, move aside or attribute those paths first. `merge-develop.sh` runs this
+   for you and names the offending files. `AGRIMORE_STRICT_CLEAN=1` restores the all-or-nothing check.
+4. `git rev-parse --abbrev-ref HEAD` = `develop` and `git worktree list` shows exactly one
+   `[develop]`. After the merge, re-verify the untouched dirty paths still match — checksum them
+   beforehand if they matter.
 5. Collision re-check: another `ACTIVE` row or branch with the same scope merged since the base?
    `git log --oneline <base>..develop` read in full.
 6. Deploy consequence of the phase is written in the ledger `Why` (functions by name / rules /
@@ -23,7 +31,7 @@ in the primary checkout (`Projects/Clients/Agrimore`, which holds `main`).
 ## 2. Procedure (`scripts/merge-develop.sh <branch>` does steps 1–7 and stops before commit)
 
 ```
-1  D=../Agrimore-develop; PRE=$(git -C "$D" rev-parse HEAD)                      # pin the pre-merge tip
+1  D=$(git rev-parse --show-toplevel); PRE=$(git -C "$D" rev-parse HEAD)         # pin the pre-merge tip
 2  BASE=$(git -C "$D" merge-base develop <branch>)
    comm -12 <(git -C "$D" diff --name-only "$BASE"..develop | sort) \
            <(git -C "$D" diff --name-only "$BASE".."<branch>" | sort)            # overlap → suites must run on the RESULT
@@ -81,8 +89,9 @@ git worktree remove <wt>                                 # never rm -rf; refusin
                                                          # a bare `git worktree prune` (see below)
 ```
 `df -h /` before and after (a worktree with `node_modules` + five `.dart_tool`s is ~1 GB). Never
-delete the merged branch ref. Never remove the primary checkout, `Agrimore-develop`, or any worktree
-holding an in-flight phase. A merge phase that leaves its worktree standing is `PARTIAL`.
+delete the merged branch ref during a phase (the 2026-09-20 consolidation deleted 136 of them at
+once, deliberately, with `-d`). Never remove the single folder itself, or any worktree holding an
+in-flight phase. A merge phase that leaves its worktree standing is `PARTIAL`.
 
 **Why there is no `git worktree prune` in that command** (changed by SEC-2, 2026-09-04): `git worktree
 remove` already deletes the record for the worktree it removes, so a chained `prune` can only ever

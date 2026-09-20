@@ -25,16 +25,28 @@
 #   --apps      restrict analyze to a comma list (five is the rule whenever packages/** moved — say so if you restrict)
 #
 # Rules encoded here (see references/hazards.md):
-#  - runs from a git worktree root; refuses the primary checkout (holds main) unless AGRIMORE_ALLOW_PRIMARY=1
+#  - runs from a git worktree root; refuses whenever `main` or `staging` is the checked-out branch
+#    (they are promotion targets, never build surfaces) unless AGRIMORE_ALLOW_PROTECTED=1
 #  - never deploys, never deletes a function, never writes to agrimore-66a4e, never starts an emulator on a held port
 #  - exit code = number of failed checks (0 = all green); ambient reds still count — attribute them in the report
 set -uo pipefail
 ROOT="$(git rev-parse --show-toplevel 2>/dev/null || true)"
 [ -n "$ROOT" ] || { echo "gate.sh: not inside a git worktree" >&2; exit 2; }
-PRIMARY="/Users/saai_siddharth/Projects/Clients/Agrimore"
-if [ "$ROOT" = "$PRIMARY" ] && [ "${AGRIMORE_ALLOW_PRIMARY:-0}" != "1" ]; then
-  echo "gate.sh: refusing to run in the primary checkout ($PRIMARY holds main) — use a phase or develop worktree (AGRIMORE_ALLOW_PRIMARY=1 overrides)" >&2; exit 2
-fi
+# GOV-5: the guard is on the CHECKED-OUT BRANCH, not on a path. Before the 2026-09-20 single-folder
+# consolidation this refused one hard-coded directory because that directory held `main`; the repo is
+# one worktree now and that folder holds `develop`, so the path check refused every legitimate gate.
+# The property actually worth protecting never changed: `main` and `staging` are promotion targets that
+# move only by fast-forward, so nothing should be built, tested or mutated while one of them is out.
+GATE_BRANCH="$(git rev-parse --abbrev-ref HEAD 2>/dev/null || echo DETACHED)"
+case "$GATE_BRANCH" in
+  main|staging)
+    if [ "${AGRIMORE_ALLOW_PROTECTED:-${AGRIMORE_ALLOW_PRIMARY:-0}}" != "1" ]; then
+      echo "gate.sh: refusing to run with '$GATE_BRANCH' checked out — main/staging are promotion targets, never build surfaces." >&2
+      echo "         switch to develop or a phase branch, or set AGRIMORE_ALLOW_PROTECTED=1 to override." >&2
+      exit 2
+    fi
+    echo "gate.sh: WARNING — running with protected branch '$GATE_BRANCH' checked out (override in effect)" >&2;;
+esac
 cd "$ROOT"
 MODE=default; EMU=0; SECRETS=0; APPS="marketplace admin seller delivery employee"; SUITES=""
 while [ $# -gt 0 ]; do case "$1" in

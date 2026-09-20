@@ -20,7 +20,7 @@ base, and the repository read fresh. Load `decisions.md` before planning anythin
 2. **Pin the state.** `pwd` first (cwd resets between calls). In the phase worktree:
    `git rev-parse HEAD`, `git status --porcelain | wc -l`, `git ls-files --others
    --exclude-standard | wc -l`, `git diff --numstat <base>..HEAD | wc -l`, and
-   `git -C ../Agrimore-develop rev-parse develop` (did `develop` move since the base?). Pin `SHA=`
+   `git rev-parse develop` (did `develop` move since the base?). Pin `SHA=`
    and run every check against it.
 3. **Read every materially referenced file in full** — whole functions, whole rule blocks, whole
    `pubspec.yaml`. A missing referenced path is a contradiction. A "created" document that is
@@ -104,7 +104,7 @@ NOT_TESTED`.
 | `UI_CONSISTENCY` / `FEEDBACK_COMPLIANCE` | lane reports (`uiux.md`, `feedback.md`) |
 | `DOCS_AND_LEDGER` | ledger row correct; `validate-branch-dispositions.mjs` warnings read |
 | `WORKTREE_DISPOSITION` | `merge.md` §4 preconditions 4/4 |
-| `DEVELOP_INTEGRATION` | merge inside `Agrimore-develop`, first-parent diff ⊆ phase files, resurrection 0 |
+| `DEVELOP_INTEGRATION` | merge inside the worktree holding `develop` (normally the single folder), first-parent diff ⊆ phase files, resurrection 0, no incoming file overlapping a dirty path |
 | `LOCAL_E2E` | `gate.sh --emulator` on the `develop` tip (fresh emulator), web run for screens |
 | `FUNCTIONS_DEPLOY_READINESS` | `node scripts/verify_secrets.js` exit 0 · `firebase functions:list` reconciled (orphans listed, generations known) · the exact `--only functions:<names>` command · never bare |
 | `INDEX_SYNC` | `firebase firestore:indexes` diffed against `firestore.indexes.json`: 0 would-delete |

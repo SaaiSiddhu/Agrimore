@@ -13,7 +13,8 @@ the repository                            branches, ledger rows, commits — the
 ```
 
 Every tick **starts** with `pwd`, `scripts/state.sh show <programme>`, `git -C <worktree> status
---porcelain | wc -l`, `git -C <worktree> log -1`, and `git -C ../Agrimore-develop rev-parse develop`.
+--porcelain | wc -l`, `git -C <worktree> log -1`, and `git rev-parse develop`. In the single folder the
+porcelain count is never 0 — the standing WIP is expected; compare it against the known dirty set.
 If the conversation and the disk disagree, the disk wins. Context compaction is expected; it must
 never change what happens next.
 
@@ -61,7 +62,7 @@ work is done, not how often the loop interrupts real work.
 | SELF_GATED | one lane per tick (`security` → `uiux` → `feedback`), each writing its report to `logs/` → `LANES_PASSED` (any `BLOCKING` → fix in ≤ 2 ticks or `BLOCKED`) |
 | LANES_PASSED | VERIFY per `cto.md` §2 with fresh evidence (revert-and-watch, may_write diff, emulator probes for rules/functions) → `VERIFIED` or back to `BUILT` with findings |
 | VERIFIED | `merge-develop.sh` → inspect → `--commit` → checks → ledger bookkeeping → worktree removal → `MERGED_DEVELOP` |
-| MERGED_DEVELOP | from `Agrimore-develop`: `gate.sh --emulator` (fresh emulator, ports free) for a rules/functions phase; `flutter run -d web-server` (`.claude/launch.json` marketplace-web) or the AVD for a screen phase, when `allow_device_run`; record what was seen and not seen → `E2E_DEVELOP` |
+| MERGED_DEVELOP | from the worktree holding `develop`: `gate.sh --emulator` (fresh emulator, ports free) for a rules/functions phase; `flutter run -d web-server` (`.claude/launch.json` marketplace-web) or the AVD for a screen phase, when `allow_device_run`; record what was seen and not seen → `E2E_DEVELOP` |
 
 ## 4. Hard stop conditions (write the reason to `STATUS.md`, set `stop`, end the loop)
 
@@ -88,13 +89,14 @@ reason, move on if something independent remains.
 ## 5. What the loop may and may never do
 
 **May:** create/remove phase worktrees (porcelain commands only) · commit on phase branches · merge
-into `develop` inside `Agrimore-develop` · run `flutter analyze` / `flutter test` / `flutter build`
+into `develop` inside the worktree holding it · run `flutter analyze` / `flutter test` / `flutter build`
 (debug) / `npm run build` / the Node suites / `firebase emulators:exec` on free ports · read the cloud
 with `firebase functions:list`, `firebase firestore:indexes`, `node scripts/verify_secrets.js` ·
 open the browser preview · write under `~/.agrimore/run/` and the phase worktree.
 
 **Never:** `firebase deploy` (any target) · `firebase functions:delete` · any write to
-`agrimore-66a4e` · push anything · touch the primary checkout `Projects/Clients/Agrimore` ·
+`agrimore-66a4e` · push anything · gate or commit while `main`/`staging` is checked out · clear the
+single folder's standing WIP ·
 `rm -rf` a worktree, `git clean`, `reset --hard`, `update-ref`, delete a branch · stop or restart an
 emulator it did not start · send a real OTP (the client base URL is production) · run
 `functions/scripts/phase16_profile_backfill.js` or any migration with `--apply` · install or

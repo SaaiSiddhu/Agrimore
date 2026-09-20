@@ -5,7 +5,16 @@
 # Usage: bash .claude/skills/agrimore/scripts/merge-develop.sh <branch> [--commit] [--develop-worktree <path>]
 set -uo pipefail
 BRANCH="${1:-}"; [ -n "$BRANCH" ] || { sed -n '2,5p' "$0"; exit 2; }; shift
-COMMIT=0; D="${AGRIMORE_DEVELOP_WORKTREE:-/Users/saai_siddharth/Projects/Clients/Agrimore-develop}"
+# GOV-5: since the 2026-09-20 single-folder consolidation there is normally ONE worktree and it holds
+# `develop`, so resolve to whichever worktree actually has develop out and fall back to the repo root.
+# The legacy ../Agrimore-develop path still wins when it exists; AGRIMORE_DEVELOP_WORKTREE wins over both.
+COMMIT=0
+if [ -n "${AGRIMORE_DEVELOP_WORKTREE:-}" ]; then D="$AGRIMORE_DEVELOP_WORKTREE"
+elif [ -d "/Users/saai_siddharth/Projects/Clients/Agrimore-develop" ]; then D="/Users/saai_siddharth/Projects/Clients/Agrimore-develop"
+else
+  D="$(git worktree list --porcelain 2>/dev/null | awk '/^worktree /{w=substr($0,10)} /^branch refs\/heads\/develop$/{print w; exit}')"
+  [ -n "$D" ] || D="$(git rev-parse --show-toplevel 2>/dev/null)"
+fi
 while [ $# -gt 0 ]; do case "$1" in --commit) COMMIT=1;; --develop-worktree) D="$2"; shift;; *) echo "unknown flag $1" >&2; exit 2;; esac; shift; done
 fail() { echo "ABORT: $*" >&2; exit 1; }
 RETIRED='^(Agrimore-main/|legacy_archive/|apk-output/|\.firebase/|functions/src/customer/cartSplitting\.ts$|functions/(scripts/)?fix_admin\.js$|packages/agrimore_core/lib/config/(env_config|razorpay_config)\.dart$)'
@@ -18,8 +27,25 @@ if MH="$(git -C "$D" rev-parse -q --verify MERGE_HEAD 2>/dev/null)"; then
   [ "$MH" = "$(git -C "$D" rev-parse "$BRANCH")" ] || fail "a merge of a DIFFERENT commit ($MH) is in progress in $D — finish or abort it first"
   RESUME=1; echo "resuming the open inspection window for $BRANCH"
 else
-  [ "$(git -C "$D" status --porcelain | wc -l | tr -d ' ')" = "0" ] || fail "develop worktree is dirty — attribute it first"
-  [ "$(git -C "$D" ls-files --others --exclude-standard | wc -l | tr -d ' ')" = "0" ] || fail "develop worktree has untracked files"
+  # GOV-5: this used to demand a spotless worktree. That is unsatisfiable now — the single folder
+  # carries owner-sanctioned WIP indefinitely — and it was always a proxy for the property that
+  # actually matters: the merge must not touch a file with uncommitted local changes. Git itself
+  # refuses that case, but failing HERE names the offending paths instead of leaving a half-merge.
+  # Untracked paths count too: an incoming file that already exists untracked would be clobbered.
+  MB="$(git -C "$D" merge-base develop "$BRANCH")" || fail "cannot compute merge-base of develop and $BRANCH"
+  git -C "$D" diff --name-only "$MB".."$BRANCH" | sort -u > /tmp/agrimore-merge-incoming.txt
+  git -C "$D" status --porcelain | sed 's/^...//; s/.* -> //' | sort -u > /tmp/agrimore-merge-dirty.txt
+  CLASH="$(comm -12 /tmp/agrimore-merge-incoming.txt /tmp/agrimore-merge-dirty.txt)"
+  if [ -n "$CLASH" ]; then
+    echo "--- files this merge touches that also have uncommitted local changes:" >&2
+    echo "$CLASH" | sed 's/^/    /' >&2
+    fail "commit, move aside or attribute the paths above before merging (AGRIMORE_STRICT_CLEAN=1 restores the old all-or-nothing check)"
+  fi
+  if [ "${AGRIMORE_STRICT_CLEAN:-0}" = "1" ]; then
+    [ "$(git -C "$D" status --porcelain | wc -l | tr -d ' ')" = "0" ] || fail "AGRIMORE_STRICT_CLEAN=1 and $D is dirty"
+  fi
+  DIRTY_N="$(git -C "$D" status --porcelain | wc -l | tr -d ' ')"
+  [ "$DIRTY_N" = "0" ] || echo "note: $DIRTY_N uncommitted path(s) present, NONE overlapping this merge — they are left untouched (verify after: git status)"
 fi
 if git -C "$D" merge-base --is-ancestor "$BRANCH" develop; then echo "note: $BRANCH is already contained in develop"; exit 0; fi
 PRE="$(git -C "$D" rev-parse HEAD)"; BASE="$(git -C "$D" merge-base develop "$BRANCH")"   # with a merge in progress HEAD is still the pre-merge tip
