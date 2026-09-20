@@ -5,13 +5,17 @@ and show it; a described problem without a request to change is `status`, not `w
 
 ## 1. Preflight (all of it, every phase)
 
-1. `pwd`. **Which Agrimore** (SKILL §1 step 0). Never work in the primary checkout
-   (`Projects/Clients/Agrimore` holds `main`).
-2. **Re-read the integration tip**: `git -C ../Agrimore-develop rev-parse --short develop` and compare
-   with the contract's `base`. If it moved, rebase the plan, not the branch — note the delta.
+1. `pwd`. **Which Agrimore** (SKILL §1 step 0). Since 2026-09-20 `Projects/Clients/Agrimore` is the
+   only worktree and holds `develop`; it is a legitimate place to work. Never work with `main` or
+   `staging` checked out — `gate.sh` refuses on the branch.
+2. **Re-read the integration tip**: `git rev-parse --short develop` (add `-C <worktree>` only if you
+   made one) and compare with the contract's `base`. If it moved, rebase the plan, not the branch —
+   note the delta.
 3. **Collision check**: `git worktree list`, `git branch --list 'agrimore/*'`, ledger `ACTIVE` rows read
    for topic overlap. Overlap → STOP and report.
-4. **Worktree is mandatory.** `git -C <root> worktree add ../Agrimore-<slug> -b agrimore/<id>-<slug>
+4. **Worktree is optional but recommended** (it keeps the single folder's standing WIP out of your
+   build). If you skip it, create the branch in place and keep the phase's files disjoint from the
+   dirty paths. To make one: `git -C <root> worktree add ../Agrimore-<slug> -b agrimore/<id>-<slug>
    <base>` (never send its output to `/dev/null`; use `git -C`, never `cd`-then-trust). Then:
    `cd functions && npm ci --no-audit --no-fund` · `flutter pub get` in `packages/agrimore_core`,
    `agrimore_services`, `agrimore_ui`, `apps/marketplace`, `admin`, `seller`, `delivery`, `employee`.
@@ -31,7 +35,7 @@ and show it; a described problem without a request to change is `status`, not `w
 9. Local run needs that git does not carry (`hazards.md` §Run): `apps/<app>/android/app/google-services.json`
    (reconstruct per app, package name must match `applicationId`), `apps/<app>/android/app/debug.keystore`
    (copy of `~/.android/debug.keystore`), `functions/.env` + `functions/.secret.local` for the emulator
-   (copy from the primary checkout, never commit, never print).
+   (copy from the single folder at `Projects/Clients/Agrimore`, never commit, never print).
 
 ## 2. Implementation discipline
 
