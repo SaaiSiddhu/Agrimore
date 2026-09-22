@@ -54,6 +54,7 @@ import 'package:firebase_auth/firebase_auth.dart';
 import 'package:url_launcher/url_launcher.dart';
 
 import 'package:agrimore_ui/agrimore_ui.dart';
+import 'package:package_info_plus/package_info_plus.dart';
 import '../../../app/routes.dart';
 import '../../../providers/auth_provider.dart' as app_auth;
 import 'delete_account_screen.dart';
@@ -63,7 +64,7 @@ import '../../../providers/seller_provider.dart';
 import '../../../providers/market_mode_provider.dart';
 import '../../../providers/wallet_provider.dart';
 
-const _kAppVersion = '1.0.7'; // mirrors pubspec.yaml's version: line
+const _kAppVersion = '1.0.9'; // mirrors pubspec.yaml's version: line
 
 class ProfileScreen extends StatefulWidget {
   // Non-null when embedded as MainScreen's Profile tab (see
@@ -90,11 +91,24 @@ class _ProfileScreenState extends State<ProfileScreen>
   int _unreadNotifications = 0;
   int _pendingRewardsCount = 0; // unscratched scratch cards (users/{uid}/scratchCards)
   bool _isLoadingStats = true;
+  String _appVersion = _kAppVersion;
 
   @override
   void initState() {
     super.initState();
+    _loadAppVersion();
     _checkAuthAndLoadData();
+  }
+
+  Future<void> _loadAppVersion() async {
+    try {
+      final info = await PackageInfo.fromPlatform();
+      if (mounted && info.version.isNotEmpty) {
+        setState(() {
+          _appVersion = info.version;
+        });
+      }
+    } catch (_) {}
   }
 
   Future<void> _checkAuthAndLoadData() async {
@@ -1338,7 +1352,7 @@ class _ProfileScreenState extends State<ProfileScreen>
           ),
           const SizedBox(height: 4),
           Text(
-            'v$_kAppVersion',
+            'v$_appVersion',
             style: TextStyle(
               fontSize: 12,
               color: isDark ? Colors.grey[700] : Colors.grey[500],

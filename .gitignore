@@ -98,3 +98,4 @@ key.properties
 # `git add -A` away from being committed forever.
 /_env
 *.cache
+.kotlin/
