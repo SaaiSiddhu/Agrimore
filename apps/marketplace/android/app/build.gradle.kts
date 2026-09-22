@@ -120,6 +120,10 @@ android {
             
             signingConfig = signingConfigs.getByName("release")
 
+            ndk {
+                debugSymbolLevel = "FULL"
+            }
+
             // Phase M2: this native BuildConfig constant is informational only — Flutter
             // code cannot read Android BuildConfig fields without a platform channel, so
             // it is NOT what actually gates Crashlytics reporting. The real gate is

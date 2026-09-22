@@ -42,22 +42,9 @@
     <!-- Foreground Service (For Background Tasks) -->
     <uses-permission android:name="android.permission.FOREGROUND_SERVICE"/>
 
-    <!-- Phase M3: this app declares no ad-tracking permission itself, but the
-         native Firebase Analytics SDK (firebase-analytics-ktx, pulled in via
-         play-services-measurement/-impl/-api) injects these three into the
-         merged manifest regardless — confirmed via
-         build/app/intermediates/manifest_merge_blame_file/release/
-         processReleaseMainManifest/manifest-merger-blame-release-report.txt.
-         There is no ads SDK anywhere in this app; explicitly excluding them
-         from the final merge is the standard AGP mechanism for this, and does
-         not touch Firebase Analytics/Crashlytics functionality — advertising
-         ID is unrelated to session tracking or crash reporting. -->
-    <uses-permission android:name="com.google.android.gms.permission.AD_ID"
-        tools:node="remove"/>
-    <uses-permission android:name="android.permission.ACCESS_ADSERVICES_AD_ID"
-        tools:node="remove"/>
-    <uses-permission android:name="android.permission.ACCESS_ADSERVICES_ATTRIBUTION"
-        tools:node="remove"/>
+    <!-- Advertising ID Permission (Required by Play Console advertising ID declaration) -->
+    <uses-permission android:name="com.google.android.gms.permission.AD_ID"/>
+
 
     <!-- ========================================
          FEATURES
