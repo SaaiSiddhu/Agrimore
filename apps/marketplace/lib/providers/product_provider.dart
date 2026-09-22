@@ -420,7 +420,7 @@ class ProductProvider with ChangeNotifier {
           _selectedOptions = {};
         }
 
-        addToRecentlyViewed(fresh);
+        addToRecentlyViewed(_selectedProduct!);
         _loadRelatedProducts(fresh.relatedProductIds);
       }
 
