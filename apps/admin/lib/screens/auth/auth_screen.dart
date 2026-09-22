@@ -167,24 +167,10 @@ class _AuthScreenState extends State<AuthScreen>
     final password = _passwordController.text.trim();
     
     try {
-      bool userExists = await auth.checkUserExists(email);
-      bool ok = false;
-      bool isNewUser = false;
-
-      if (!userExists) {
-        // Register user if they don't exist
-        ok = await auth.registerWithEmail(
-          email: email, 
-          password: password, 
-          name: 'New Seller'
-        );
-        isNewUser = true;
-      } else {
-        ok = await auth.signInWithEmail(
-          email: email,
-          password: password,
-        );
-      }
+      final ok = await auth.signInWithEmail(
+        email: email,
+        password: password,
+      );
 
       if (!mounted) return;
 
@@ -271,7 +257,7 @@ class _AuthScreenState extends State<AuthScreen>
                       ],
                     )
                   : _buildMobileLayout(isDark),
-              if (auth.isLoading)
+              if (auth.isLoading && _isLoading)
                 Container(
                   color: Colors.black.withOpacity(0.5),
                   child: const Center(

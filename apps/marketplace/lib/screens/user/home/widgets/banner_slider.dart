@@ -22,10 +22,6 @@ class _BannerSliderState extends State<BannerSlider> {
   Widget build(BuildContext context) {
     return Consumer<BannerProvider>(
       builder: (context, bannerProvider, child) {
-        if (bannerProvider.isLoading) {
-          return _buildLoadingSkeleton();
-        }
-
         final List<BannerModel> banners = bannerProvider.activeBanners;
 
         if (banners.isEmpty) {

@@ -180,6 +180,27 @@ function main() {
     if (!pass) allPassed = false;
   }
 
+  // --- Scenario E: catalog product with price field instead of salePrice (e.g. MW6v5c2v173fxOwQtLu1) ---
+  {
+    const productSnaps = [
+      mockProductSnap({ name: "Egg", price: 7, discountPrice: 6, sellerId: "sellerA", images: [] }),
+    ];
+    const pricing = computeOrderPricing({
+      items: [{ productId: "MW6v5c2v173fxOwQtLu1", quantity: 2 }],
+      productSnaps,
+      orderMode: "B2C",
+      uid: "test-uid",
+      couponSnap: null,
+      deliveryCharge: 0,
+      tax: 0,
+    });
+    const pass = pricing.cartSubtotal === 14 && pricing.grandTotal === 14;
+    results.scenarioE_catalog_price_fallback = pass
+      ? `PASSED — cartSubtotal=${pricing.cartSubtotal}, grandTotal=${pricing.grandTotal}`
+      : `FAILED — ${JSON.stringify(pricing)}`;
+    if (!pass) allPassed = false;
+  }
+
   console.log("=== PHASE C — PRICING EXTRACTION PARITY TEST ===");
   for (const [k, v] of Object.entries(results)) console.log(`${k}:`, v);
   console.log(allPassed ? "\nALL PASSED" : "\nSOME FAILED");

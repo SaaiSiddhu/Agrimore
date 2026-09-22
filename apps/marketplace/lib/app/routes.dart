@@ -1,6 +1,6 @@
 import 'package:flutter/material.dart';
 
-// Splash & Onboarding
+import '../screens/splash/splash_screen.dart';
 import '../screens/auth/auth_wrapper.dart';
 import '../screens/auth/auth_guard.dart';
 import '../screens/onboarding/onboarding_screen.dart';
@@ -331,12 +331,11 @@ class AppRoutes {
 
       // ✅ STATIC ROUTES
       switch (settings.name) {
-        // ✅ ROOT ROUTE - AuthWrapper for all platforms.
-        // `splash` IS '/', so a separate `case '/'` here was dead — the analyzer
-        // flagged it as unreachable_switch_case.
+        // ✅ ROOT ROUTE - Instant start directly into Home screen.
+        // Bypasses the redundant Flutter splash screen and delay, opening Home instantly.
         case splash:
-          // AuthWrapper handles auth persistence and redirects
-          return _buildRoute(const AuthWrapper(), settings);
+          return _buildRoute(
+              const AuthGuard(child: MainScreen(initialIndex: 0)), settings);
 
         // Main Navigation - Protected Routes
         case main:

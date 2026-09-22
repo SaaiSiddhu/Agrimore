@@ -3,6 +3,7 @@ import 'package:provider/provider.dart';
 import 'package:flutter/services.dart';
 import 'package:agrimore_ui/agrimore_ui.dart';
 import '../../../../providers/product_provider.dart';
+import '../../../../providers/market_mode_provider.dart';
 import 'package:agrimore_core/agrimore_core.dart';
 import 'widgets/search_bar_widget.dart';
 import 'widgets/search_filters.dart';
@@ -48,7 +49,9 @@ class _SearchResultsScreenState extends State<SearchResultsScreen> {
       // phase, but the exact same pattern).
       await productProvider.fetchProducts(limit: 100);
 
-      final products = productProvider.products ?? [];
+      final isB2B =
+          Provider.of<MarketModeProvider>(context, listen: false).isB2B;
+      final products = productProvider.displayProducts(isB2B);
       final query = _searchController.text.toLowerCase().trim();
 
       _filteredProducts = products.where((product) {
@@ -106,7 +109,9 @@ class _SearchResultsScreenState extends State<SearchResultsScreen> {
 
   void _applyFilters() {
     final productProvider = Provider.of<ProductProvider>(context, listen: false);
-    final products = productProvider.products ?? [];
+    final isB2B =
+        Provider.of<MarketModeProvider>(context, listen: false).isB2B;
+    final products = productProvider.displayProducts(isB2B);
     final query = _searchController.text.toLowerCase().trim();
 
     _filteredProducts = products.where((product) {
@@ -116,11 +121,14 @@ class _SearchResultsScreenState extends State<SearchResultsScreen> {
       if (!nameMatch && !categoryMatch) return false;
 
       // Price filter
+      final price = (isB2B && product.isB2BEnabled && product.b2bPrice != null)
+          ? product.b2bPrice!
+          : product.price;
       if (_filters.containsKey('minPrice')) {
-        if (product.price < _filters['minPrice']) return false;
+        if (price < _filters['minPrice']) return false;
       }
       if (_filters.containsKey('maxPrice')) {
-        if (product.price > _filters['maxPrice']) return false;
+        if (price > _filters['maxPrice']) return false;
       }
 
       // Rating filter

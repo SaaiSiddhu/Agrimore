@@ -12,6 +12,7 @@ import '../../../../providers/category_provider.dart';
 import '../../../../providers/theme_provider.dart';
 import '../../../../providers/bestseller_provider.dart';
 import '../../../../providers/shop_entry_provider.dart';
+import '../../../../providers/market_mode_provider.dart';
 
 class DealsForYou extends StatefulWidget {
   const DealsForYou({Key? key}) : super(key: key);
@@ -67,56 +68,12 @@ class _DealsForYouState extends State<DealsForYou> {
     return Consumer3<BestsellerProvider, CategoryProvider, ProductProvider>(
       builder:
           (context, bestsellerProvider, categoryProvider, productProvider, _) {
-        // If still loading, show a shimmer skeleton matching this
-        // section's own real header + 3-column grid shape, instead of a
-        // blank gap -- mirrors mobile_home_screen.dart's own established
-        // Shimmer.fromColors color scheme (HOME-17).
-        if (bestsellerProvider.isLoading) {
-          return Shimmer.fromColors(
-            baseColor: isDark ? const Color(0xFF303030) : Colors.grey[300]!,
-            highlightColor: isDark ? Colors.grey[800]! : Colors.grey[100]!,
-            child: Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                Padding(
-                  padding: const EdgeInsets.fromLTRB(14, 4, 14, 4),
-                  child: Container(
-                    height: 16,
-                    width: 120,
-                    decoration: BoxDecoration(
-                      color: Colors.grey,
-                      borderRadius: BorderRadius.circular(4),
-                    ),
-                  ),
-                ),
-                MediaQuery.removePadding(
-                  context: context,
-                  removeTop: true,
-                  removeBottom: true,
-                  child: GridView.builder(
-                    padding: EdgeInsets.zero,
-                    shrinkWrap: true,
-                    physics: const NeverScrollableScrollPhysics(),
-                    gridDelegate:
-                        const SliverGridDelegateWithFixedCrossAxisCount(
-                      crossAxisCount: 3,
-                      mainAxisSpacing: 2,
-                      crossAxisSpacing: 4,
-                      childAspectRatio: 0.85,
-                    ),
-                    itemCount: 9,
-                    itemBuilder: (context, index) => Container(
-                      margin: const EdgeInsets.all(4),
-                      decoration: BoxDecoration(
-                        color: Colors.grey,
-                        borderRadius: BorderRadius.circular(12),
-                      ),
-                    ),
-                  ),
-                ),
-              ],
-            ),
-          );
+        // If still loading and there are no slots or categories to show yet,
+        // return SizedBox.shrink() so Home screen displays instantly without shimmers.
+        if (bestsellerProvider.isLoading &&
+            bestsellerProvider.slots.isEmpty &&
+            categoryProvider.categories.isEmpty) {
+          return const SizedBox.shrink();
         }
 
         final adminSlots = bestsellerProvider.activeSlots;
@@ -139,8 +96,9 @@ class _DealsForYouState extends State<DealsForYou> {
           } else if (i < categories.length) {
             // Fallback to category
             final category = categories[i];
+            final isB2B = context.watch<MarketModeProvider>().isB2B;
             final matchingProducts = _uniqueProducts(
-              productProvider.products.where((p) =>
+              productProvider.displayProducts(isB2B).where((p) =>
                   p.isActive &&
                   productBelongsToCategory(
                       p, category, categoryProvider.categories)),
@@ -176,7 +134,7 @@ class _DealsForYouState extends State<DealsForYou> {
                   crossAxisCount: 3,
                   mainAxisSpacing: 2,
                   crossAxisSpacing: 4,
-                  childAspectRatio: 0.85, // Slightly taller to prevent overflow
+                  childAspectRatio: 0.72, // Proportional height to prevent bottom overflow
                 ),
                 itemCount: displayItems.length,
                 itemBuilder: (context, index) {

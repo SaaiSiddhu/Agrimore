@@ -13,6 +13,7 @@ import '../../../providers/theme_provider.dart';
 import '../../../providers/address_provider.dart';
 import '../../../providers/wallet_provider.dart';
 import '../../../providers/wishlist_provider.dart';
+import '../../../providers/market_mode_provider.dart';
 import 'package:agrimore_core/agrimore_core.dart';
 import 'widgets/empty_cart.dart';
 import 'blinkit_coupon_screen.dart';
@@ -23,6 +24,7 @@ import 'package:record/record.dart';
 import 'package:audioplayers/audioplayers.dart';
 import 'package:path_provider/path_provider.dart';
 import '../../../services/razorpay_service.dart';
+import '../../auth/login_screen.dart';
 
 class ShippingFeeInfo {
   final double standardFee;
@@ -160,6 +162,7 @@ class _MobileCartScreenState extends State<MobileCartScreen>
     _audioPlayer.dispose();
     _recordTimer?.cancel();
     _employeeCodeController.dispose();
+    _razorpayService?.dispose();
     super.dispose();
   }
 
@@ -752,6 +755,12 @@ class _MobileCartScreenState extends State<MobileCartScreen>
     void Function()? onRemove,
     void Function(int)? onQuantityChanged,
   }) {
+    final cartProvider = context.read<CartProvider>();
+    final isB2B = cartProvider.cartMode == 'B2B' ||
+        (cartProvider.cartMode == null &&
+            context.read<MarketModeProvider>().isB2B);
+    final minQty = (isB2B && (product?.b2bMoq ?? 0) > 0) ? product!.b2bMoq! : 1;
+
     return Column(
       children: [
         Container(
@@ -839,6 +848,29 @@ class _MobileCartScreenState extends State<MobileCartScreen>
                           ),
                         ),
                       ),
+                    if (isB2B && (product?.b2bMoq ?? 0) > 0) ...[
+                      const SizedBox(height: 3),
+                      Container(
+                        padding: const EdgeInsets.symmetric(
+                            horizontal: 6, vertical: 2),
+                        decoration: BoxDecoration(
+                          color: Colors.blue.withValues(alpha: 0.1),
+                          borderRadius: BorderRadius.circular(4),
+                          border: Border.all(
+                            color: Colors.blue.withValues(alpha: 0.3),
+                            width: 0.8,
+                          ),
+                        ),
+                        child: Text(
+                          'Wholesale | Min: ${product!.b2bMoq}',
+                          style: const TextStyle(
+                            fontSize: 10,
+                            fontWeight: FontWeight.w600,
+                            color: Colors.blue,
+                          ),
+                        ),
+                      ),
+                    ],
                     const SizedBox(height: 5),
                     GestureDetector(
                       onTap: () {
@@ -869,14 +901,17 @@ class _MobileCartScreenState extends State<MobileCartScreen>
                           Icon(Icons.favorite_border_rounded,
                               size: 12, color: Colors.grey[500]),
                           const SizedBox(width: 4),
-                          Text(
-                            'Move to wishlist',
-                            style: TextStyle(
-                              fontSize: 11,
-                              color:
-                                  isDark ? Colors.grey[500] : Colors.grey[500],
-                              decoration: TextDecoration.underline,
-                              decorationStyle: TextDecorationStyle.dotted,
+                          Flexible(
+                            child: Text(
+                              'Move to wishlist',
+                              overflow: TextOverflow.ellipsis,
+                              style: TextStyle(
+                                fontSize: 11,
+                                color:
+                                    isDark ? Colors.grey[500] : Colors.grey[500],
+                                decoration: TextDecoration.underline,
+                                decorationStyle: TextDecorationStyle.dotted,
+                              ),
                             ),
                           ),
                         ],
@@ -913,7 +948,7 @@ class _MobileCartScreenState extends State<MobileCartScreen>
                         GestureDetector(
                           onTap: () {
                             HapticFeedback.mediumImpact();
-                            if (item.quantity > 1) {
+                            if (item.quantity > minQty) {
                               onQuantityChanged?.call(item.quantity - 1);
                             } else {
                               onRemove?.call();
@@ -1086,7 +1121,7 @@ class _MobileCartScreenState extends State<MobileCartScreen>
                       : const Color(0xFFF8F8F8),
                   borderRadius: BorderRadius.circular(10),
                   border: Border.all(
-                    color: isDark ? Colors.grey[750]! : Colors.grey[200]!,
+                    color: isDark ? Colors.grey[700]! : Colors.grey[200]!,
                   ),
                 ),
                 child: Row(
@@ -2773,12 +2808,14 @@ class _MobileCartScreenState extends State<MobileCartScreen>
                       color: Colors.white, size: 20),
                 ),
                 const SizedBox(width: 12),
-                Text(
-                  'Select Payment Method',
-                  style: TextStyle(
-                    fontSize: 18,
-                    fontWeight: FontWeight.w800,
-                    color: isDark ? Colors.white : Colors.black87,
+                Expanded(
+                  child: Text(
+                    'Select Payment Method',
+                    style: TextStyle(
+                      fontSize: 18,
+                      fontWeight: FontWeight.w800,
+                      color: isDark ? Colors.white : Colors.black87,
+                    ),
                   ),
                 ),
               ],
@@ -2832,12 +2869,16 @@ class _MobileCartScreenState extends State<MobileCartScreen>
                             children: [
                               Row(
                                 children: [
-                                  Text(
-                                    method['name'] as String,
-                                    style: TextStyle(
-                                      fontSize: 14,
-                                      fontWeight: FontWeight.w700,
-                                      color: isDark ? Colors.white : Colors.black87,
+                                  Flexible(
+                                    child: Text(
+                                      method['name'] as String,
+                                      maxLines: 1,
+                                      overflow: TextOverflow.ellipsis,
+                                      style: TextStyle(
+                                        fontSize: 14,
+                                        fontWeight: FontWeight.w700,
+                                        color: isDark ? Colors.white : Colors.black87,
+                                      ),
                                     ),
                                   ),
                                   if (method['recommended'] as bool) ...[
@@ -3004,7 +3045,9 @@ class _MobileCartScreenState extends State<MobileCartScreen>
         throw Exception('Cart is empty');
       }
 
-      final isB2B = cartProvider.cartMode == 'B2B';
+      final isB2B = cartProvider.cartMode == 'B2B' ||
+          (cartProvider.cartMode == null &&
+              context.read<MarketModeProvider>().isB2B);
       final employeeCode = _employeeCodeController.text.trim();
       if (isB2B && employeeCode.isEmpty) {
         throw Exception('Employee ID is required for B2B orders');
@@ -3035,7 +3078,10 @@ class _MobileCartScreenState extends State<MobileCartScreen>
       // "Razorpay payment details are required for non-COD orders".
       final normalizedPaymentMethod = _selectedPaymentMethod.toLowerCase();
 
-      final callable = FirebaseFunctions.instance.httpsCallable('createOrder');
+      final callable = FirebaseFunctions.instance.httpsCallable(
+        'createOrder',
+        options: HttpsCallableOptions(timeout: const Duration(seconds: 25)),
+      );
       final result = await callable.call<Map<String, dynamic>>({
         'items': cartProvider.items
             .map((item) => {
@@ -3056,7 +3102,7 @@ class _MobileCartScreenState extends State<MobileCartScreen>
           'employeeCode': employeeCode
         else if (employeeCode.isNotEmpty)
           'employeeCode': employeeCode,
-        'deliveryAddress': address.toMap(),
+        'deliveryAddress': address.toOrderMap(),
         'paymentMethod': normalizedPaymentMethod,
         if (razorpayOrderId != null) 'razorpayOrderId': razorpayOrderId,
         if (razorpayPaymentId != null) 'razorpayPaymentId': razorpayPaymentId,
@@ -3080,18 +3126,61 @@ class _MobileCartScreenState extends State<MobileCartScreen>
         throw Exception('Failed to create order');
       }
 
-      final createdRefs = (data['orders'] as List).cast<Map<dynamic, dynamic>>();
+      final createdRefs =
+          (data['orders'] as List).cast<Map<dynamic, dynamic>>();
       final db = FirebaseFirestore.instance;
       final createdOrders = <OrderModel>[];
-      for (final ref in createdRefs) {
+      await Future.wait(createdRefs.map((ref) async {
         final orderId = ref['orderId'] as String;
-        final doc = await db.collection('orders').doc(orderId).get();
-        if (doc.exists) {
-          createdOrders.add(OrderModel.fromMap(doc.data()!, doc.id));
+        try {
+          final doc = await db
+              .collection('orders')
+              .doc(orderId)
+              .get()
+              .timeout(const Duration(seconds: 3));
+          if (doc.exists && doc.data() != null) {
+            createdOrders.add(OrderModel.fromMap(doc.data()!, doc.id));
+          }
+        } catch (e) {
+          debugPrint('⚠️ Error fetching created order doc: $e');
         }
-      }
+      }));
 
-      if (createdOrders.isEmpty) {
+      final OrderModel finalOrder;
+      if (createdOrders.isNotEmpty) {
+        finalOrder = createdOrders.first;
+      } else if (createdRefs.isNotEmpty) {
+        final firstRef = createdRefs.first;
+        final orderId = firstRef['orderId']?.toString() ?? 'unknown';
+        final orderNumber = firstRef['orderNumber']?.toString() ??
+            'ORD-${DateTime.now().millisecondsSinceEpoch}';
+        final subtotal = pricing['subtotal'] ?? cartProvider.subtotal;
+        final couponDiscount = pricing['couponDiscount'] ?? 0.0;
+        final grandTotal = subtotal - couponDiscount + deliveryCharge;
+        finalOrder = OrderModel(
+          id: orderId,
+          userId: userId,
+          orderNumber: orderNumber,
+          items: cartProvider.items,
+          deliveryAddress: address,
+          subtotal: subtotal,
+          discount: couponDiscount,
+          deliveryCharge: deliveryCharge,
+          tax: 0.0,
+          total: grandTotal,
+          paymentMethod: normalizedPaymentMethod,
+          paymentStatus: paymentStatus,
+          orderStatus: 'pending',
+          orderMode: isB2B ? 'B2B' : 'B2C',
+          employeeCode: employeeCode.isNotEmpty ? employeeCode : null,
+          razorpayOrderId: razorpayOrderId,
+          razorpayPaymentId: razorpayPaymentId,
+          razorpaySignature: razorpaySignature,
+          couponCode: couponProvider.appliedCoupon?.code,
+          notes: _deliveryNote.trim().isNotEmpty ? _deliveryNote.trim() : null,
+          createdAt: DateTime.now(),
+        );
+      } else {
         throw Exception('Order creation failed');
       }
 
@@ -3106,7 +3195,7 @@ class _MobileCartScreenState extends State<MobileCartScreen>
       Navigator.pushAndRemoveUntil(
         context,
         MaterialPageRoute(
-          builder: (_) => OrderSuccessScreen(order: createdOrders.first),
+          builder: (_) => OrderSuccessScreen(order: finalOrder),
         ),
         (route) => route.isFirst,
       );
@@ -3692,7 +3781,8 @@ class _MobileCartScreenState extends State<MobileCartScreen>
     // and reloaded a persisted cart from Firestore (loadCart() never
     // restores cartMode — it's in-memory-only) — see the completion report
     // for this phase for why null is treated as B2C here rather than fixed.
-    final isB2B = cartMode == 'B2B';
+    final isB2B = cartMode == 'B2B' ||
+        (cartMode == null && context.read<MarketModeProvider>().isB2B);
     return Consumer<AddressProvider>(
       builder: (context, addressProvider, _) {
         final address = addressProvider.hasAddresses
@@ -3722,6 +3812,17 @@ class _MobileCartScreenState extends State<MobileCartScreen>
                 GestureDetector(
                   onTap: () {
                     HapticFeedback.lightImpact();
+                    final user = FirebaseAuth.instance.currentUser;
+                    if (user == null) {
+                      _showSnackBar(
+                          'Please sign in to manage delivery addresses',
+                          isError: true);
+                      Navigator.push(
+                        context,
+                        MaterialPageRoute(builder: (_) => LoginScreen()),
+                      );
+                      return;
+                    }
                     Navigator.pushNamed(context, '/profile/addresses');
                   },
                   child: Container(
@@ -3773,16 +3874,19 @@ class _MobileCartScreenState extends State<MobileCartScreen>
                             children: [
                               Row(
                                 children: [
-                                  Text(
-                                    hasAddress
-                                        ? 'Delivering to ${address.addressType ?? 'Home'}'
-                                        : 'Add delivery address',
-                                    style: TextStyle(
-                                      fontSize: 12,
-                                      fontWeight: FontWeight.w700,
-                                      color: isDark
-                                          ? Colors.white
-                                          : Colors.black87,
+                                  Flexible(
+                                    child: Text(
+                                      hasAddress
+                                          ? 'Delivering to ${address.addressType ?? 'Home'}'
+                                          : 'Add delivery address',
+                                      style: TextStyle(
+                                        fontSize: 12,
+                                        fontWeight: FontWeight.w700,
+                                        color: isDark
+                                            ? Colors.white
+                                            : Colors.black87,
+                                      ),
+                                      overflow: TextOverflow.ellipsis,
                                     ),
                                   ),
                                   const SizedBox(width: 4),
@@ -3841,20 +3945,12 @@ class _MobileCartScreenState extends State<MobileCartScreen>
                 ),
                 if (isB2B) ...[
                   const SizedBox(height: 10),
-                  TextField(
+                  AssociateCodeField(
                     controller: _employeeCodeController,
-                    decoration: InputDecoration(
-                      labelText: 'Employee ID *',
-                      hintText: 'Enter the sales employee code',
-                      isDense: true,
-                      prefixIcon: const Icon(Icons.badge_outlined, size: 20),
-                      border: OutlineInputBorder(
-                        borderRadius: BorderRadius.circular(10),
-                      ),
-                      filled: true,
-                      fillColor:
-                          isDark ? const Color(0xFF252525) : Colors.white,
-                    ),
+                    isDark: isDark,
+                    accentColor: accentColor,
+                    dense: true,
+                    isB2B: true,
                   ),
                 ] else ...[
                   // Phase 16B, Workstream 1a — the optional B2C Sales
@@ -3958,9 +4054,29 @@ class _MobileCartScreenState extends State<MobileCartScreen>
                     Expanded(
                       flex: 2,
                       child: ElevatedButton(
-                        onPressed: _isPlacingOrder || !hasAddress
+                        onPressed: _isPlacingOrder
                             ? null
                             : () {
+                                final user = FirebaseAuth.instance.currentUser;
+                                if (user == null) {
+                                  _showSnackBar(
+                                      'Please sign in to complete your order',
+                                      isError: true);
+                                  Navigator.push(
+                                    context,
+                                    MaterialPageRoute(
+                                        builder: (_) => LoginScreen()),
+                                  );
+                                  return;
+                                }
+                                if (!hasAddress || address == null) {
+                                  _showSnackBar(
+                                      'Please select or add a delivery address',
+                                      isError: true);
+                                  Navigator.pushNamed(
+                                      context, '/profile/addresses');
+                                  return;
+                                }
                                 if (isB2B &&
                                     _employeeCodeController.text
                                         .trim()
@@ -3978,7 +4094,7 @@ class _MobileCartScreenState extends State<MobileCartScreen>
                                 // the Razorpay-captured amount diverge from
                                 // createOrder's server-computed grandTotal,
                                 // failing payment verification.
-                                _placeOrder(total, address!);
+                                _placeOrder(total, address);
                               },
                         style: ElevatedButton.styleFrom(
                           backgroundColor: accentColor,

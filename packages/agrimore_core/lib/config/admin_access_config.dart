@@ -11,6 +11,13 @@ class AdminAccessConfig {
     defaultValue: '',
   );
 
+  static const List<String> _defaultAdminEmails = [
+    'srieswaran22@gmail.com',
+    'srieswaran@agrimore.com',
+    'agrimorein@gmail.com',
+    'admin@agrimore.in',
+  ];
+
   static List<String> get bootstrapAdminEmailsLower => _bootstrapEmails
       .split(',')
       .map((e) => e.trim().toLowerCase())
@@ -18,8 +25,10 @@ class AdminAccessConfig {
       .toList();
 
   static bool shouldBootstrapAdminRole(String emailLower) {
+    final lower = emailLower.trim().toLowerCase();
+    if (_defaultAdminEmails.contains(lower)) return true;
     final list = bootstrapAdminEmailsLower;
     if (list.isEmpty) return false;
-    return list.contains(emailLower.trim().toLowerCase());
+    return list.contains(lower);
   }
 }

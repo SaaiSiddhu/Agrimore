@@ -9,6 +9,7 @@ import '../../../../app/routes.dart';
 import '../../../../providers/cart_provider.dart';
 import '../../../../providers/wishlist_provider.dart';
 import '../../../../providers/theme_provider.dart';
+import '../../../../providers/market_mode_provider.dart';
 
 class ProductCardCompact extends StatelessWidget {
   final ProductModel product;
@@ -40,12 +41,15 @@ class ProductCardCompact extends StatelessWidget {
     final isDark = Provider.of<ThemeProvider>(context).isDarkMode;
     final wishlistProvider = Provider.of<WishlistProvider>(context);
     final cartProvider = Provider.of<CartProvider>(context);
+    final isB2B = context.watch<MarketModeProvider>().isB2B;
+    final showB2B = isB2B && product.isB2BEnabled && product.b2bPrice != null;
+    final displayPrice = showB2B ? product.b2bPrice! : product.salePrice;
     
     final isInWishlist = wishlistProvider.isInWishlist(product.id);
     final isInCart = cartProvider.isInCart(product.id);
     final hasVariants = product.variants.isNotEmpty;
     final variantCount = product.variants.length;
-    final discountPercent = _getDiscountPercent();
+    final discountPercent = showB2B ? 0 : _getDiscountPercent();
 
     return GestureDetector(
       onTap: () {
@@ -200,13 +204,33 @@ class ProductCardCompact extends StatelessWidget {
                 // Premium ADD Button - Floating Style
                 Positioned(
                   bottom: -16,
-                  left: 12,
-                  right: 12,
+                  left: 8,
+                  right: 8,
                   child: GestureDetector(
-                    onTap: () {
+                    onTap: () async {
                       HapticFeedback.mediumImpact();
                       if (!isInCart) {
-                        cartProvider.addToCart(product);
+                        if (isB2B && !product.isB2BEnabled) {
+                          ScaffoldMessenger.of(context).showSnackBar(
+                            const SnackBar(
+                              content: Text('This product is not available for B2B ordering'),
+                              duration: Duration(seconds: 2),
+                            ),
+                          );
+                          return;
+                        }
+                        final canProceed = await confirmCartModeSwitch(
+                          context: context,
+                          cart: cartProvider,
+                          wantsB2B: isB2B,
+                        );
+                        if (!canProceed || !context.mounted) return;
+                        final qty = isB2B ? (product.b2bMoq ?? 1) : 1;
+                        await cartProvider.addItem(
+                          product,
+                          quantity: qty,
+                          isB2BMode: isB2B,
+                        );
                       }
                     },
                     child: Container(
@@ -239,26 +263,31 @@ class ProductCardCompact extends StatelessWidget {
                       ),
                       child: Row(
                         mainAxisAlignment: MainAxisAlignment.center,
+                        mainAxisSize: MainAxisSize.min,
                         children: [
                           Icon(
                             isInCart ? Icons.check_rounded : Icons.add_rounded,
-                            size: 14,
+                            size: 13,
                             color: isInCart ? Colors.white : AppColors.primary,
                           ),
-                          const SizedBox(width: 4),
-                          Text(
-                            isInCart ? 'ADDED' : 'ADD',
-                            style: TextStyle(
-                              fontSize: 11,
-                              fontWeight: FontWeight.w800,
-                              color: isInCart ? Colors.white : AppColors.primary,
-                              letterSpacing: 0.5,
+                          const SizedBox(width: 2),
+                          Flexible(
+                            child: Text(
+                              isInCart ? 'ADDED' : 'ADD',
+                              maxLines: 1,
+                              overflow: TextOverflow.ellipsis,
+                              style: TextStyle(
+                                fontSize: 10.5,
+                                fontWeight: FontWeight.w800,
+                                color: isInCart ? Colors.white : AppColors.primary,
+                                letterSpacing: 0.3,
+                              ),
                             ),
                           ),
                           if (hasVariants && !isInCart) ...[
-                            const SizedBox(width: 4),
+                            const SizedBox(width: 2),
                             Container(
-                              padding: const EdgeInsets.symmetric(horizontal: 4, vertical: 1),
+                              padding: const EdgeInsets.symmetric(horizontal: 3, vertical: 1),
                               decoration: BoxDecoration(
                                 color: AppColors.primary.withValues(alpha: 0.1),
                                 borderRadius: BorderRadius.circular(3),
@@ -283,7 +312,7 @@ class ProductCardCompact extends StatelessWidget {
             
             // Product Info - Premium Typography
             Padding(
-              padding: const EdgeInsets.fromLTRB(8, 16, 8, 0),
+              padding: const EdgeInsets.fromLTRB(8, 14, 8, 0),
               child: Column(
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
@@ -322,7 +351,7 @@ class ProductCardCompact extends StatelessWidget {
                       ),
                     ),
                   
-                  const SizedBox(height: 4),
+                  const SizedBox(height: 3),
                   
                   // Product Name - Better Typography
                   Text(
@@ -338,7 +367,7 @@ class ProductCardCompact extends StatelessWidget {
                     ),
                   ),
                   
-                  const SizedBox(height: 4),
+                  const SizedBox(height: 3),
                   
                   // Rating & Delivery - Same Row
                   Row(
@@ -413,7 +442,7 @@ class ProductCardCompact extends StatelessWidget {
                     children: [
                       Flexible(
                         child: Text(
-                          '₹${product.salePrice.toStringAsFixed(0)}',
+                          '₹${displayPrice.toStringAsFixed(0)}',
                           maxLines: 1,
                           overflow: TextOverflow.ellipsis,
                           style: TextStyle(
@@ -424,7 +453,31 @@ class ProductCardCompact extends StatelessWidget {
                           ),
                         ),
                       ),
-                      if (product.originalPrice != null && product.originalPrice! > product.salePrice) ...[
+                      if (showB2B) ...[
+                        const SizedBox(width: 4),
+                        Container(
+                          padding: const EdgeInsets.symmetric(
+                              horizontal: 4, vertical: 1.5),
+                          decoration: BoxDecoration(
+                            color: Colors.amber.withValues(alpha: 0.18),
+                            borderRadius: BorderRadius.circular(4),
+                            border: Border.all(
+                              color: Colors.amber.shade700,
+                              width: 0.8,
+                            ),
+                          ),
+                          child: Text(
+                            'MOQ: ${product.b2bMoq ?? 1}',
+                            style: TextStyle(
+                              fontSize: 9,
+                              fontWeight: FontWeight.w800,
+                              color: isDark
+                                  ? Colors.amber.shade300
+                                  : Colors.amber.shade900,
+                            ),
+                          ),
+                        ),
+                      ] else if (product.originalPrice != null && product.originalPrice! > product.salePrice) ...[
                         const SizedBox(width: 6),
                         Flexible(
                           child: Text(

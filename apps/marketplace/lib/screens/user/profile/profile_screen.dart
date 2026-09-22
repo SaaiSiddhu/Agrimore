@@ -102,7 +102,11 @@ class _ProfileScreenState extends State<ProfileScreen>
     if (user == null) {
       if (mounted) {
         setState(() => _isCheckingAuth = false);
-        Navigator.of(context).pushReplacementNamed(AppRoutes.login);
+        WidgetsBinding.instance.addPostFrameCallback((_) {
+          if (mounted) {
+            Navigator.of(context).pushReplacementNamed(AppRoutes.login);
+          }
+        });
       }
       return;
     }
@@ -508,6 +512,7 @@ class _ProfileScreenState extends State<ProfileScreen>
     // comfortably clear of the avatar/name block, and enough past the
     // cards' own 14px corner radius to read unambiguously as sitting on
     // the photo, not just close to it.
+    final topPadding = MediaQuery.paddingOf(context).top;
     const quickActionsOverlap = 24.0;
     const quickActionsHeightEstimate = 100.0;
 
@@ -516,7 +521,7 @@ class _ProfileScreenState extends State<ProfileScreen>
       collapsedTitle: 'Profile',
       backgroundImage: 'assets/images/Profile/profile_bg.png',
       isDark: isDark,
-      expandedHeight: 196 + (quickActionsHeightEstimate - quickActionsOverlap),
+      expandedHeight: 196 + topPadding + (quickActionsHeightEstimate - quickActionsOverlap),
       onBack: () {
         if (widget.onBack != null) {
           widget.onBack!();

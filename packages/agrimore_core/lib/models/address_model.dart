@@ -188,6 +188,8 @@ class AddressModel {
   // ============================================
   // TO MAP
   // ============================================
+  // TO MAP (For Firestore writes)
+  // ============================================
   Map<String, dynamic> toMap() {
     return {
       'id': id,
@@ -210,9 +212,33 @@ class AddressModel {
   }
 
   // ============================================
-  // TO JSON (Alias for toMap)
+  // TO ORDER MAP / JSON (Pure primitives for Cloud Functions and JSON)
   // ============================================
-  Map<String, dynamic> toJson() => toMap();
+  Map<String, dynamic> toOrderMap() {
+    return {
+      'id': id,
+      'userId': userId,
+      'name': name,
+      'phone': phone,
+      'addressLine1': addressLine1,
+      'addressLine2': addressLine2,
+      'city': city,
+      'state': state,
+      'zipcode': zipcode,
+      'country': country,
+      if (latitude != null) 'latitude': latitude,
+      if (longitude != null) 'longitude': longitude,
+      'isDefault': isDefault,
+      if (addressType != null) 'addressType': addressType,
+      if (landmark != null) 'landmark': landmark,
+      'createdAt': createdAt.toIso8601String(),
+    };
+  }
+
+  // ============================================
+  // TO JSON (Safe for jsonEncode and Cloud Functions)
+  // ============================================
+  Map<String, dynamic> toJson() => toOrderMap();
 
   // ============================================
   // GET FULL ADDRESS STRING

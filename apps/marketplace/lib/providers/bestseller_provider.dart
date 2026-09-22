@@ -43,8 +43,8 @@ class BestsellerProvider extends ChangeNotifier {
       }
     }
 
-    _isLoading = true;
-    notifyListeners();
+    _isLoading = !_isCacheLoaded;
+    if (!_isCacheLoaded) notifyListeners();
 
     try {
       // Simple query - just order by position, filter active client-side

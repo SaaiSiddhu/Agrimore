@@ -75,9 +75,9 @@ class CategorySectionProvider extends ChangeNotifier {
       }
     }
 
-    _isLoading = true;
+    _isLoading = !_isCacheLoaded;
     _error = null;
-    notifyListeners();
+    if (!_isCacheLoaded) notifyListeners();
 
     try {
       final snapshot = await _collection.get();
@@ -88,49 +88,6 @@ class CategorySectionProvider extends ChangeNotifier {
           .where((s) => s.isActive && s.categoryIds.isNotEmpty)
           .toList();
       _sections.sort((a, b) => a.position.compareTo(b.position));
-
-      if (snapshot.docs.isEmpty) {
-        debugPrint('⚠️ No category sections found. Seeding default sections...');
-        final defaultSections = [
-          {
-            'title': 'Fresh Arrivals',
-            'subtitle': 'Newly added products',
-            'position': 1,
-            'isActive': true,
-            'categoryIds': ['general', 'dairy', 'bakery'],
-            'createdAt': FieldValue.serverTimestamp(),
-            'updatedAt': FieldValue.serverTimestamp(),
-            'displayStyle': 'list',
-          },
-          {
-            'title': 'Trending Now',
-            'subtitle': 'Most popular items',
-            'position': 2,
-            'isActive': true,
-            'categoryIds': ['general', 'offers'],
-            'createdAt': FieldValue.serverTimestamp(),
-            'updatedAt': FieldValue.serverTimestamp(),
-            'displayStyle': 'grid',
-          }
-        ];
-        
-        for (var section in defaultSections) {
-          try {
-            await _collection.add(section);
-          } catch (e) {
-             debugPrint('Failed to seed section: $e');
-          }
-        }
-        
-        // Reload after seeding
-        final newSnapshot = await _collection.get();
-        _sections = newSnapshot.docs
-            .map((doc) => CategorySectionSlotModel.fromMap(
-                doc.data() as Map<String, dynamic>, doc.id))
-            .where((s) => s.isActive && s.categoryIds.isNotEmpty)
-            .toList();
-        _sections.sort((a, b) => a.position.compareTo(b.position));
-      }
 
       debugPrint('✅ Loaded ${_sections.length} active category sections');
       await _saveToCache(_sections);

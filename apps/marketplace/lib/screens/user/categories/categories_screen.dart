@@ -166,7 +166,7 @@ class _CategoriesScreenState extends State<CategoriesScreen>
       appBar: _buildAppBar(isDark, accentColor),
       body: Consumer<CategoryProvider>(
         builder: (context, categoryProvider, child) {
-          if (categoryProvider.isLoading) {
+          if (categoryProvider.isLoading && categoryProvider.categories.isEmpty) {
             return _buildShimmerLoading(isDark);
           }
 
@@ -591,7 +591,7 @@ class _CategoriesScreenState extends State<CategoriesScreen>
             sliver: SliverGrid(
               gridDelegate: const SliverGridDelegateWithFixedCrossAxisCount(
                 crossAxisCount: 3,
-                mainAxisExtent: 195,
+                mainAxisExtent: 226,
                 crossAxisSpacing: 6,
                 mainAxisSpacing: 8,
               ),
@@ -623,7 +623,7 @@ class _CategoriesScreenState extends State<CategoriesScreen>
         return SliverGrid(
           gridDelegate: const SliverGridDelegateWithFixedCrossAxisCount(
             crossAxisCount: 3,
-            mainAxisExtent: 195,
+            mainAxisExtent: 226,
             crossAxisSpacing: 6,
             mainAxisSpacing: 8,
           ),
@@ -745,7 +745,7 @@ class _CategoriesScreenState extends State<CategoriesScreen>
                       gridDelegate:
                           const SliverGridDelegateWithFixedCrossAxisCount(
                         crossAxisCount: 3,
-                        mainAxisExtent: 195,
+                        mainAxisExtent: 226,
                         crossAxisSpacing: 6,
                         mainAxisSpacing: 8,
                       ),
@@ -1630,7 +1630,7 @@ class _AdvancedProductCardState extends State<_AdvancedProductCard> {
                   Expanded(
                     flex: 4,
                     child: Padding(
-                      padding: const EdgeInsets.fromLTRB(8, 5, 8, 5),
+                      padding: const EdgeInsets.fromLTRB(6, 4, 6, 4),
                       child: Column(
                         crossAxisAlignment: CrossAxisAlignment.start,
                         children: [
@@ -1718,7 +1718,7 @@ class _AdvancedProductCardState extends State<_AdvancedProductCard> {
     if (isInCart && quantity > 0) {
       // Quantity Controls
       return Container(
-        height: 25,
+        height: 24,
         decoration: BoxDecoration(
           color: widget.accentColor,
           borderRadius: BorderRadius.circular(6),
@@ -1790,7 +1790,7 @@ class _AdvancedProductCardState extends State<_AdvancedProductCard> {
         cartProvider.addItem(widget.product, quantity: 1);
       },
       child: Container(
-        height: 25,
+        height: 24,
         decoration: BoxDecoration(
           color: widget.isDark
               ? widget.accentColor.withValues(alpha: 0.15)

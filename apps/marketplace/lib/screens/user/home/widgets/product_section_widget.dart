@@ -120,7 +120,7 @@ class ProductSectionWidget extends StatelessWidget {
                 crossAxisCount: 3,
                 mainAxisSpacing: 6,
                 crossAxisSpacing: 6,
-                childAspectRatio: 0.52, // Taller cards to prevent overflow
+                childAspectRatio: 0.36, // Taller cards to prevent overflow
               ),
               itemCount: displayProducts.length,
               itemBuilder: (context, index) {

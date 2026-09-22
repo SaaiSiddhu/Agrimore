@@ -5,6 +5,7 @@ import 'package:agrimore_ui/agrimore_ui.dart';
 import '../../../../providers/product_provider.dart';
 import '../../../../providers/shop_entry_provider.dart';
 import '../../../../providers/theme_provider.dart';
+import '../../../../providers/market_mode_provider.dart';
 import '../../../../widgets/product/unified_product_card.dart';
 
 class AllProductsGrid extends StatefulWidget {
@@ -40,7 +41,8 @@ class _AllProductsGridState extends State<AllProductsGrid>
 
     return Consumer<ProductProvider>(
       builder: (context, productProvider, child) {
-        final products = productProvider.products;
+        final isB2B = context.watch<MarketModeProvider>().isB2B;
+        final products = productProvider.displayProducts(isB2B);
 
         if (products.isEmpty) {
           return const SliverToBoxAdapter(

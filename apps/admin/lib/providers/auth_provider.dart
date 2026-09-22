@@ -62,7 +62,7 @@ class AuthProvider with ChangeNotifier {
       if (user != null) {
         try {
           debugPrint('🔐 Firebase user detected: ${user.uid}');
-          _currentUser = await _authService.getUserData(user.uid);
+          _currentUser = await _authService.getUserData(user.uid).timeout(const Duration(seconds: 6));
           
           // STRICT ROLE CHECK FOR ADMIN APP
           if (_currentUser != null && _currentUser!.role != 'admin') {
@@ -70,13 +70,17 @@ class AuthProvider with ChangeNotifier {
             await _firebaseAuth.signOut();
             _currentUser = null;
             _error = 'Access denied. You are not an admin.';
+            _isLoading = false;
           } else if (_currentUser != null) {
-            await _updateLastLogin(user.uid);
+            await _updateLastLogin(user.uid).timeout(const Duration(seconds: 3)).catchError((e) {
+              debugPrint('⚠️ Error updating last login: $e');
+            });
             debugPrint('✅ User loaded: ${_currentUser?.email}');
           }
         } catch (e) {
           debugPrint('❌ Error loading user data: $e');
           _error = e.toString();
+          _isLoading = false;
         }
       } else {
         debugPrint('👤 No Firebase user logged in');
@@ -338,6 +342,9 @@ class AuthProvider with ChangeNotifier {
       _isLoading = false;
       notifyListeners();
       return false;
+    } finally {
+      _isLoading = false;
+      notifyListeners();
     }
   }
 

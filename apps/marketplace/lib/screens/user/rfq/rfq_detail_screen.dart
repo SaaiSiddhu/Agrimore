@@ -139,7 +139,7 @@ class _RfqDetailScreenState extends State<RfqDetailScreen> {
             rfqId: rfq.id,
             productId: rfq.productId,
             quantity: rfq.finalQuantity ?? 0,
-            deliveryAddress: address.toMap(),
+            deliveryAddress: address.toOrderMap(),
           );
       if (mounted) {
         SnackbarHelper.showSuccess(context, 'Order placed');

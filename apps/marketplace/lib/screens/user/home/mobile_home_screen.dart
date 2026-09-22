@@ -3,7 +3,6 @@ import 'package:flutter/services.dart';
 import 'package:geolocator/geolocator.dart';
 import 'package:geocoding/geocoding.dart';
 import 'package:provider/provider.dart';
-import 'package:shimmer/shimmer.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 import 'package:agrimore_ui/agrimore_ui.dart';
 import 'package:agrimore_core/agrimore_core.dart';
@@ -19,6 +18,7 @@ import '../../../providers/sponsored_banner_provider.dart';
 import '../../../providers/theme_provider.dart';
 import '../../../providers/shop_entry_provider.dart';
 import '../../../providers/settings_provider.dart';
+import '../../../providers/market_mode_provider.dart';
 import 'widgets/home_app_bar.dart';
 import 'widgets/banner_slider.dart';
 import 'widgets/recently_viewed_widget.dart';
@@ -42,7 +42,7 @@ class _MobileHomeScreenState extends State<MobileHomeScreen>
   // used) for HomeAppBar's expanded/collapsed states — kept as named
   // constants since both the sliver header below and the snackbar
   // positioning need to agree on them.
-  static const double _kAppBarExpandedContent = 138;
+  static const double _kAppBarExpandedContent = 168;
   static const double _kAppBarCollapsedContent = 60;
 
   late ScrollController _scrollController;
@@ -51,6 +51,7 @@ class _MobileHomeScreenState extends State<MobileHomeScreen>
 
   bool _showBackToTop = false;
   bool _isRefreshing = false;
+  bool _hasAttemptedAutoLocation = false;
   DateTime? _lastRefreshTime;
 
   // 0.0..1.0, updated continuously from scroll offset (see _onScroll) so the
@@ -77,7 +78,8 @@ class _MobileHomeScreenState extends State<MobileHomeScreen>
 
     _staggerAnimationController = AnimationController(
       vsync: this,
-      duration: const Duration(milliseconds: 1000),
+      duration: const Duration(milliseconds: 600),
+      value: 1.0, // Instant visibility, no fade-in lag
     );
   }
 
@@ -131,23 +133,18 @@ class _MobileHomeScreenState extends State<MobileHomeScreen>
           Provider.of<ProductProvider>(context, listen: false);
       final categoryProvider =
           Provider.of<CategoryProvider>(context, listen: false);
-      final bannerProvider =
-          Provider.of<BannerProvider>(context, listen: false);
 
-      if (productProvider.hasProducts &&
-          (categoryProvider.hasCategories ||
-              categoryProvider.categories.isNotEmpty) &&
-          bannerProvider.banners.isNotEmpty) {
+      if (productProvider.hasProducts ||
+          categoryProvider.hasCategories ||
+          categoryProvider.categories.isNotEmpty) {
         debugPrint('📦 Home data already cached, skipping reload...');
-        // Still trigger animations if first time showing
-        if (_staggerAnimationController.status == AnimationStatus.dismissed) {
-          _staggerAnimationController.forward();
-        }
         return;
       }
     }
 
-    setState(() => _isRefreshing = true);
+    if (forceRefresh) {
+      setState(() => _isRefreshing = true);
+    }
     _lastRefreshTime = DateTime.now();
 
     // Load all providers in parallel - don't block UI
@@ -177,17 +174,20 @@ class _MobileHomeScreenState extends State<MobileHomeScreen>
           .loadSettings(forceRefresh: forceRefresh),
       Provider.of<SponsoredBannerProvider>(context, listen: false)
           .loadSponsoredBanners(forceRefresh: forceRefresh),
-    ]).then((_) {
+    ]).timeout(const Duration(seconds: 8)).then((_) {
       if (mounted) {
-        setState(() => _isRefreshing = false);
-        _staggerAnimationController.forward(from: 0.0);
+        if (_isRefreshing) {
+          setState(() => _isRefreshing = false);
+        }
         if (showIndicator && forceRefresh) _showSuccessIndicator();
       }
     }).catchError((e) {
       debugPrint('Error loading data: $e');
       if (mounted) {
-        setState(() => _isRefreshing = false);
-        if (showIndicator) _showErrorSnackBar();
+        if (_isRefreshing) {
+          setState(() => _isRefreshing = false);
+        }
+        if (showIndicator && forceRefresh) _showErrorSnackBar();
       }
     });
   }
@@ -322,9 +322,6 @@ class _MobileHomeScreenState extends State<MobileHomeScreen>
         final displayLocation = exactLocation.isNotEmpty ? exactLocation : city;
 
         await settingsProvider.changeLocation(displayLocation);
-        if (mounted) {
-          _loadData(forceRefresh: true);
-        }
       }
     } catch (e) {
       debugPrint('Silent location detection failed: $e');
@@ -373,29 +370,25 @@ class _MobileHomeScreenState extends State<MobileHomeScreen>
       ),
       body: Consumer2<ProductProvider, CategoryProvider>(
         builder: (context, productProvider, categoryProvider, child) {
-          // ✅ ENHANCED: Skip shimmer if we have cached products
-          // Only show shimmer on first load with NO data
-          final hasContent =
-              productProvider.hasProducts || categoryProvider.hasCategories;
-          if (productProvider.isLoading && !_isRefreshing && !hasContent) {
-            return _buildShimmerLoading(isDark);
-          }
-
-          // ✅ Start animations immediately if we have cached content
-          if (hasContent &&
-              _staggerAnimationController.status == AnimationStatus.dismissed) {
+          // Never block Home screen with full-page shimmer. The Home screen
+          // scaffold and CustomScrollView render immediately right after splash.
+          if (_staggerAnimationController.status == AnimationStatus.dismissed) {
             _staggerAnimationController.forward();
           }
 
-          // ✅ Show location selector if no location is set
-          WidgetsBinding.instance.addPostFrameCallback((_) {
-            final settingsProvider =
-                Provider.of<SettingsProvider>(context, listen: false);
-            if (settingsProvider.selectedLocation == null ||
-                settingsProvider.selectedLocation!.isEmpty) {
-              _autoDetectLocationSilently(settingsProvider);
-            }
-          });
+          // Auto-detect location at most once per session on cold start
+          if (!_hasAttemptedAutoLocation) {
+            _hasAttemptedAutoLocation = true;
+            WidgetsBinding.instance.addPostFrameCallback((_) {
+              if (!mounted) return;
+              final settingsProvider =
+                  Provider.of<SettingsProvider>(context, listen: false);
+              if (settingsProvider.selectedLocation == null ||
+                  settingsProvider.selectedLocation!.isEmpty) {
+                _autoDetectLocationSilently(settingsProvider);
+              }
+            });
+          }
 
           return RefreshIndicator(
             onRefresh: () async {
@@ -544,78 +537,6 @@ class _MobileHomeScreenState extends State<MobileHomeScreen>
     );
   }
 
-  // --- Shimmer Loading Placeholder ---
-  Widget _buildShimmerLoading(bool isDark) {
-    return Shimmer.fromColors(
-      baseColor: isDark ? const Color(0xFF303030) : Colors.grey[300]!,
-      highlightColor: isDark ? Colors.grey[800]! : Colors.grey[100]!,
-      child: ListView(
-        physics: const NeverScrollableScrollPhysics(),
-        children: [
-          // Banner
-          Container(
-            height: 180,
-            margin: const EdgeInsets.fromLTRB(16, 16, 16, 24),
-            decoration: BoxDecoration(
-              color: Colors.grey,
-              borderRadius: BorderRadius.circular(16),
-            ),
-          ),
-          // Categories
-          Padding(
-            padding: const EdgeInsets.symmetric(horizontal: 16.0),
-            child: GridView.builder(
-              physics: const NeverScrollableScrollPhysics(),
-              shrinkWrap: true,
-              itemCount: 4,
-              gridDelegate: const SliverGridDelegateWithFixedCrossAxisCount(
-                crossAxisCount: 4,
-                crossAxisSpacing: 12,
-                mainAxisSpacing: 12,
-              ),
-              itemBuilder: (context, index) => Container(
-                decoration: BoxDecoration(
-                  color: Colors.grey,
-                  borderRadius: BorderRadius.circular(16),
-                ),
-              ),
-            ),
-          ),
-          // Product List
-          Container(
-            height: 220,
-            margin: const EdgeInsets.fromLTRB(16, 24, 16, 24),
-            decoration: BoxDecoration(
-              color: Colors.grey,
-              borderRadius: BorderRadius.circular(16),
-            ),
-          ),
-          // Product Grid
-          Padding(
-            padding: const EdgeInsets.symmetric(horizontal: 16.0),
-            child: GridView.builder(
-              physics: const NeverScrollableScrollPhysics(),
-              shrinkWrap: true,
-              itemCount: 4,
-              gridDelegate: const SliverGridDelegateWithFixedCrossAxisCount(
-                crossAxisCount: 2,
-                crossAxisSpacing: 16,
-                mainAxisSpacing: 16,
-                childAspectRatio: 0.7,
-              ),
-              itemBuilder: (context, index) => Container(
-                decoration: BoxDecoration(
-                  color: Colors.grey,
-                  borderRadius: BorderRadius.circular(16),
-                ),
-              ),
-            ),
-          ),
-        ],
-      ),
-    );
-  }
-
   // --- Product Sections by Category (Blinkit-style) ---
   Widget _buildProductSections(
       ProductProvider productProvider, CategoryProvider categoryProvider) {
@@ -623,8 +544,9 @@ class _MobileHomeScreenState extends State<MobileHomeScreen>
         .where((c) => c.isActive && c.isVisible)
         .toList()
       ..sort(CategoryModel.compareSiblingOrder);
+    final isB2B = context.watch<MarketModeProvider>().isB2B;
     final allProducts =
-        productProvider.products.where((p) => p.isActive).toList();
+        productProvider.displayProducts(isB2B).where((p) => p.isActive).toList();
 
     // Group products by category (shared by both the admin-configured path
     // and the fallback path below)
@@ -746,30 +668,32 @@ class _MobileHomeScreenState extends State<MobileHomeScreen>
   Widget _buildSimpleFooter(bool isDark) {
     return Padding(
       // Extra padding at bottom to account for bottom navigation bar (extendBody: true)
-      padding: const EdgeInsets.only(top: 48.0, bottom: 120.0),
+      padding: const EdgeInsets.symmetric(horizontal: 24.0).copyWith(top: 48.0, bottom: 120.0),
       child: Row(
         mainAxisAlignment: MainAxisAlignment.center,
         children: [
-          Container(
-            height: 1,
-            width: 60,
-            color: isDark ? Colors.grey[800] : Colors.grey[300],
+          Expanded(
+            child: Container(
+              height: 1,
+              color: isDark ? Colors.grey[800] : Colors.grey[300],
+            ),
           ),
           Padding(
-            padding: const EdgeInsets.symmetric(horizontal: 16.0),
+            padding: const EdgeInsets.symmetric(horizontal: 12.0),
             child: Text(
               "You're all caught up!",
               style: TextStyle(
-                fontSize: 14,
+                fontSize: 13,
                 fontWeight: FontWeight.w600,
                 color: isDark ? Colors.grey[600] : Colors.grey[500],
               ),
             ),
           ),
-          Container(
-            height: 1,
-            width: 60,
-            color: isDark ? Colors.grey[800] : Colors.grey[300],
+          Expanded(
+            child: Container(
+              height: 1,
+              color: isDark ? Colors.grey[800] : Colors.grey[300],
+            ),
           ),
         ],
       ),

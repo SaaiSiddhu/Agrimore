@@ -1,3 +1,4 @@
+import 'dart:async';
 import 'package:flutter/material.dart';
 import 'package:uuid/uuid.dart';
 import 'package:agrimore_core/agrimore_core.dart';
@@ -17,12 +18,31 @@ class CartProvider with ChangeNotifier {
   String? _checkoutOrderType;
   String? _checkoutAutoFrequency;
 
-  /// In-memory cart mode hint ('B2C' or 'B2B'), mirroring the pattern above —
-  /// not stored on the cart document. Set on the first addItem call, cleared
-  /// on clearCart(). Used by confirmCartModeSwitch (market_mode_provider.dart)
-  /// to detect and guard against mixing B2C and B2B items in one cart.
+  static const String _cartModeKey = 'cart_mode_state';
+
+  /// Cart mode hint ('B2C' or 'B2B'). Persisted via SharedPreferencesService
+  /// so that app reloads / restarts retain the B2B mode for items in the cart.
+  /// Set on addItem, cleared on clearCart() or when cart becomes empty.
   String? _cartMode;
-  String? get cartMode => _cartMode;
+  String? get cartMode {
+    if (_cartMode != null) return _cartMode;
+    if (_cart == null || _cart!.items.isEmpty) return null;
+    final saved = SharedPreferencesService.getString(_cartModeKey);
+    if (saved != null && saved.isNotEmpty) {
+      _cartMode = saved;
+      return saved;
+    }
+    return null;
+  }
+
+  void _setCartMode(String? mode) {
+    _cartMode = mode;
+    if (mode == null) {
+      SharedPreferencesService.remove(_cartModeKey);
+    } else {
+      SharedPreferencesService.setString(_cartModeKey, mode);
+    }
+  }
 
   String? get checkoutOrderType => _checkoutOrderType;
   String? get checkoutAutoFrequency => _checkoutAutoFrequency;
@@ -57,8 +77,14 @@ class CartProvider with ChangeNotifier {
 
     final userId = _authService.currentUserId;
     if (userId == null) {
-      debugPrint('❌ CartProvider.loadCart: No user logged in');
-      _error = 'Please login';
+      debugPrint('ℹ️ CartProvider.loadCart: Guest user, maintaining in-memory cart');
+      _cart ??= CartModel(
+        id: 'guest_cart',
+        userId: 'guest_user',
+        items: [],
+        updatedAt: DateTime.now(),
+      );
+      _error = null;
       notifyListeners();
       return;
     }
@@ -72,6 +98,11 @@ class CartProvider with ChangeNotifier {
           debugPrint(
               '✅ CartProvider.loadCart: Cart loaded with ${cart.items.length} items');
           _cart = cart;
+          if (cart.items.isEmpty) {
+            _setCartMode(null);
+          } else if (_cartMode == null) {
+            _cartMode = SharedPreferencesService.getString(_cartModeKey);
+          }
         } else {
           debugPrint(
               '✅ CartProvider.loadCart: Cart is empty, initializing new cart');
@@ -81,6 +112,7 @@ class CartProvider with ChangeNotifier {
             items: [],
             updatedAt: DateTime.now(),
           );
+          _setCartMode(null);
         }
         _error = null;
         notifyListeners();
@@ -105,11 +137,7 @@ class CartProvider with ChangeNotifier {
   }) async {
     try {
       final userId = _authService.currentUserId;
-      if (userId == null) {
-        _error = 'Please login to add items to cart';
-        notifyListeners();
-        return false;
-      }
+      final effectiveUserId = userId ?? 'guest_user';
 
       int effectiveQuantity = quantity;
       double effectivePrice;
@@ -131,9 +159,6 @@ class CartProvider with ChangeNotifier {
         effectiveOriginalPrice = variantOriginalPrice ?? product.originalPrice;
       }
 
-      _isLoading = true;
-      notifyListeners();
-
       // Extract variant image if variant name is provided
       String effectiveImage = product.primaryImage;
       if (variant != null && variant.isNotEmpty) {
@@ -154,7 +179,7 @@ class CartProvider with ChangeNotifier {
         productImage: effectiveImage,
         price: effectivePrice,
         quantity: effectiveQuantity,
-        userId: userId,
+        userId: effectiveUserId,
         sellerId: product.sellerId,
         addedAt: DateTime.now(),
         variant: variant,
@@ -188,20 +213,26 @@ class CartProvider with ChangeNotifier {
         debugPrint('✅ Added new item to cart');
       }
 
-      _cartMode = isB2BMode ? 'B2B' : 'B2C';
+      _setCartMode(isB2BMode ? 'B2B' : 'B2C');
 
       final updatedCart = CartModel(
-        id: userId,
-        userId: userId,
+        id: effectiveUserId,
+        userId: effectiveUserId,
         items: updatedItems,
         updatedAt: DateTime.now(),
       );
 
-      await _databaseService.updateCart(userId, updatedCart);
-
+      // Instant 0ms local state update
+      _cart = updatedCart;
       _isLoading = false;
       _error = null;
       notifyListeners();
+
+      // Sync with database non-blockingly if authenticated
+      if (userId != null) {
+        unawaited(_databaseService.updateCart(userId, updatedCart));
+      }
+
       return true;
     } catch (e) {
       debugPrint('❌ addItem error: $e');
@@ -344,13 +375,14 @@ class CartProvider with ChangeNotifier {
     }
   }
 
-  // ✅ UPDATED: addToCart now supports variant with prices
+  // ✅ UPDATED: addToCart now supports variant with prices and B2B mode
   Future<void> addToCart(
     ProductModel product, {
     int quantity = 1,
     String? variant,
     double? variantPrice,
     double? variantOriginalPrice,
+    bool isB2BMode = false,
   }) async {
     await addItem(
       product,
@@ -358,6 +390,7 @@ class CartProvider with ChangeNotifier {
       variant: variant,
       variantPrice: variantPrice,
       variantOriginalPrice: variantOriginalPrice,
+      isB2BMode: isB2BMode,
     );
   }
 
@@ -365,7 +398,7 @@ class CartProvider with ChangeNotifier {
   Future<bool> removeItem(String productId, {String? variant}) async {
     try {
       final userId = _authService.currentUserId;
-      if (userId == null) return false;
+      final effectiveUserId = userId ?? 'guest_user';
 
       // ✅ Immediate local update (no shimmer)
       List<CartItemModel> updatedItems = List.from(_cart?.items ?? []);
@@ -384,11 +417,15 @@ class CartProvider with ChangeNotifier {
       }
 
       final updatedCart = CartModel(
-        id: userId,
-        userId: userId,
+        id: effectiveUserId,
+        userId: effectiveUserId,
         items: updatedItems,
         updatedAt: DateTime.now(),
       );
+
+      if (updatedItems.isEmpty) {
+        _setCartMode(null);
+      }
 
       // ✅ Update local state immediately
       _cart = updatedCart;
@@ -396,7 +433,9 @@ class CartProvider with ChangeNotifier {
       notifyListeners();
 
       // ✅ Sync with database in background
-      await _databaseService.updateCart(userId, updatedCart);
+      if (userId != null) {
+        unawaited(_databaseService.updateCart(userId, updatedCart));
+      }
 
       return true;
     } catch (e) {
@@ -412,7 +451,7 @@ class CartProvider with ChangeNotifier {
       {String? variant}) async {
     try {
       final userId = _authService.currentUserId;
-      if (userId == null) return false;
+      final effectiveUserId = userId ?? 'guest_user';
 
       if (quantity <= 0) {
         return await removeItem(productId, variant: variant);
@@ -440,8 +479,8 @@ class CartProvider with ChangeNotifier {
       }
 
       final updatedCart = CartModel(
-        id: userId,
-        userId: userId,
+        id: effectiveUserId,
+        userId: effectiveUserId,
         items: updatedItems,
         updatedAt: DateTime.now(),
       );
@@ -452,7 +491,9 @@ class CartProvider with ChangeNotifier {
       notifyListeners();
 
       // ✅ Sync with database in background
-      await _databaseService.updateCart(userId, updatedCart);
+      if (userId != null) {
+        unawaited(_databaseService.updateCart(userId, updatedCart));
+      }
 
       return true;
     } catch (e) {
@@ -483,18 +524,15 @@ class CartProvider with ChangeNotifier {
   Future<bool> clearCart() async {
     try {
       final userId = _authService.currentUserId;
-      if (userId == null) return false;
-
-      _isLoading = true;
-      notifyListeners();
-
-      await _databaseService.clearCart(userId);
-
       _cart = null;
-      _cartMode = null;
+      _setCartMode(null);
       _isLoading = false;
       _error = null;
       notifyListeners();
+
+      if (userId != null) {
+        unawaited(_databaseService.clearCart(userId));
+      }
       return true;
     } catch (e) {
       debugPrint('❌ clearCart error: $e');
@@ -594,7 +632,7 @@ class CartProvider with ChangeNotifier {
     _error = null;
     _checkoutOrderType = null;
     _checkoutAutoFrequency = null;
-    _cartMode = null;
+    _setCartMode(null);
     notifyListeners();
   }
 

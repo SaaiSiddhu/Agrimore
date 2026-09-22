@@ -41,7 +41,7 @@ export const verifyAssociateCode = onCall(
       .get();
 
     if (snap.empty) {
-      return { valid: false };
+      return { valid: false, reason: "not_found" };
     }
 
     const candidate = snap.docs[0];
@@ -49,7 +49,7 @@ export const verifyAssociateCode = onCall(
       // Self-attribution never counts (mirrors createOrder.ts) — reported
       // as invalid rather than valid so the customer isn't told their own
       // code "works" when it will never actually attribute an order.
-      return { valid: false };
+      return { valid: false, reason: "self" };
     }
 
     const data = candidate.data();
@@ -57,6 +57,9 @@ export const verifyAssociateCode = onCall(
       (data.onboardingPaid === true || data.onboardingWaived === true) &&
       !data.onboardingRefundedAt;
 
-    return { valid: gateCleared };
+    return {
+      valid: gateCleared,
+      reason: gateCleared ? undefined : "not_active",
+    };
   }
 );

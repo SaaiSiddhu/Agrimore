@@ -107,6 +107,25 @@ class _UnifiedProductCardState extends State<UnifiedProductCard>
   }
 
   @override
+  void didUpdateWidget(covariant UnifiedProductCard oldWidget) {
+    super.didUpdateWidget(oldWidget);
+    if (widget.product.id != oldWidget.product.id ||
+        widget.product.variants != oldWidget.product.variants) {
+      if (widget.product.variants.isNotEmpty) {
+        final matches = widget.product.variants.where(
+          (v) => v.id == _selectedVariant?.id,
+        );
+        _selectedVariant = matches.isNotEmpty
+            ? matches.first
+            : widget.product.variants.first;
+      } else {
+        _selectedVariant = null;
+      }
+      _updateStatus();
+    }
+  }
+
+  @override
   void dispose() {
     _scaleController.dispose();
     _cartJumpController.dispose();
@@ -171,10 +190,13 @@ class _UnifiedProductCardState extends State<UnifiedProductCard>
     setState(() => _isProcessing = true);
     HapticFeedback.mediumImpact();
 
+    final initialQty =
+        (isB2B && (widget.product.b2bMoq ?? 0) > 0) ? widget.product.b2bMoq! : 1;
+
     try {
       await cartProvider.addItem(
         widget.product,
-        quantity: 1,
+        quantity: initialQty,
         variant: _selectedVariant?.name,
         variantPrice: _selectedVariant?.salePrice,
         variantOriginalPrice: _selectedVariant?.originalPrice,
@@ -810,13 +832,19 @@ class _UnifiedProductCardState extends State<UnifiedProductCard>
                                           cart: cartProvider,
                                           wantsB2B: isB2B,
                                         );
-                                        if (canProceed) {
-                                          await cartProvider.addItem(
-                                            widget.product,
-                                            quantity: 1,
-                                            isB2BMode: isB2B,
-                                          );
-                                        }
+                                         if (canProceed) {
+                                           final initialQty = (isB2B &&
+                                                   (widget.product.b2bMoq ??
+                                                           0) >
+                                                       0)
+                                               ? widget.product.b2bMoq!
+                                               : 1;
+                                           await cartProvider.addItem(
+                                             widget.product,
+                                             quantity: initialQty,
+                                             isB2BMode: isB2B,
+                                           );
+                                         }
                                       }
                                       if (mounted) {
                                         Navigator.pushNamed(context, '/cart');
@@ -1068,44 +1096,49 @@ class _UnifiedProductCardState extends State<UnifiedProductCard>
                           if (displayOriginalPrice != null &&
                               displayOriginalPrice > displayPrice) ...[
                             const SizedBox(width: 4),
-                            Text(
-                              '₹${displayOriginalPrice.toStringAsFixed(0)}',
-                              style: TextStyle(
-                                fontSize: 10,
-                                color: Colors.grey[500],
-                                decoration: TextDecoration.lineThrough,
-                                decorationColor: Colors.grey[500],
+                            Flexible(
+                              child: Text(
+                                '₹${displayOriginalPrice.toStringAsFixed(0)}',
+                                maxLines: 1,
+                                overflow: TextOverflow.ellipsis,
+                                style: TextStyle(
+                                  fontSize: 10,
+                                  color: Colors.grey[500],
+                                  decoration: TextDecoration.lineThrough,
+                                  decorationColor: Colors.grey[500],
+                                ),
                               ),
                             ),
                           ],
-                          const Spacer(),
-                        // Rating pill
-                        if (widget.showRating && widget.product.rating > 0)
-                          Container(
-                            padding: const EdgeInsets.symmetric(
-                                horizontal: 5, vertical: 2),
-                            decoration: BoxDecoration(
-                              color: isDark ? Colors.grey[800] : Colors.grey[100],
-                              borderRadius: BorderRadius.circular(4),
-                            ),
-                            child: Row(
-                              mainAxisSize: MainAxisSize.min,
-                              children: [
-                                Icon(Icons.star_rounded,
-                                    size: 11, color: Colors.amber[700]),
-                                const SizedBox(width: 2),
-                                Text(
-                                  widget.product.rating.toStringAsFixed(1),
-                                  style: TextStyle(
-                                    fontSize: 10,
-                                    fontWeight: FontWeight.w700,
-                                    color:
-                                        isDark ? Colors.white70 : Colors.black87,
+                          // Rating pill
+                          if (widget.showRating && widget.product.rating > 0) ...[
+                            const Spacer(),
+                            Container(
+                              padding: const EdgeInsets.symmetric(
+                                  horizontal: 5, vertical: 2),
+                              decoration: BoxDecoration(
+                                color: isDark ? Colors.grey[800] : Colors.grey[100],
+                                borderRadius: BorderRadius.circular(4),
+                              ),
+                              child: Row(
+                                mainAxisSize: MainAxisSize.min,
+                                children: [
+                                  Icon(Icons.star_rounded,
+                                      size: 11, color: Colors.amber[700]),
+                                  const SizedBox(width: 2),
+                                  Text(
+                                    widget.product.rating.toStringAsFixed(1),
+                                    style: TextStyle(
+                                      fontSize: 10,
+                                      fontWeight: FontWeight.w700,
+                                      color:
+                                          isDark ? Colors.white70 : Colors.black87,
+                                    ),
                                   ),
-                                ),
-                              ],
+                                ],
+                              ),
                             ),
-                          ),
+                          ],
                         ],
                       );
                     }),
@@ -1152,12 +1185,16 @@ class _UnifiedProductCardState extends State<UnifiedProductCard>
                           if (isVerified && widget.showBadges && hasFreeDelivery && widget.showDeliveryInfo)
                             const SizedBox(width: 6),
                           if (hasFreeDelivery && widget.showDeliveryInfo)
-                            Text(
-                              'Free Delivery',
-                              style: TextStyle(
-                                fontSize: 9,
-                                fontWeight: FontWeight.w600,
-                                color: const Color(0xFF00C853),
+                            Flexible(
+                              child: Text(
+                                'Free Delivery',
+                                maxLines: 1,
+                                overflow: TextOverflow.ellipsis,
+                                style: TextStyle(
+                                  fontSize: 9,
+                                  fontWeight: FontWeight.w600,
+                                  color: const Color(0xFF00C853),
+                                ),
                               ),
                             ),
                         ],
@@ -1217,20 +1254,24 @@ class _UnifiedProductCardState extends State<UnifiedProductCard>
                                                     ? Icons.check_circle_rounded
                                                     : Icons.add_shopping_cart_rounded,
                                             color: Colors.white,
-                                            size: 15,
+                                            size: 13,
                                           ),
-                                          const SizedBox(width: 4),
-                                          Text(
-                                            isOutOfStock
-                                                ? 'Sold Out'
-                                                : _isInCart
-                                                    ? 'In Cart ✓'
-                                                    : 'Add to Cart',
-                                            style: const TextStyle(
-                                              color: Colors.white,
-                                              fontSize: 11,
-                                              fontWeight: FontWeight.w800,
-                                              letterSpacing: 0.3,
+                                          const SizedBox(width: 3),
+                                          Flexible(
+                                            child: Text(
+                                              isOutOfStock
+                                                  ? 'Sold Out'
+                                                  : _isInCart
+                                                      ? 'In Cart'
+                                                      : 'Add',
+                                              maxLines: 1,
+                                              overflow: TextOverflow.ellipsis,
+                                              style: const TextStyle(
+                                                color: Colors.white,
+                                                fontSize: 11,
+                                                fontWeight: FontWeight.w800,
+                                                letterSpacing: 0.2,
+                                              ),
                                             ),
                                           ),
                                         ],
@@ -1736,6 +1777,10 @@ class _UnifiedProductCardState extends State<UnifiedProductCard>
   Widget _buildVariantDropdown(bool isDark) {
     if (widget.product.variants.isEmpty) return const SizedBox.shrink();
 
+    final safeSelectedVariant = widget.product.variants.any((v) => v.id == _selectedVariant?.id || v == _selectedVariant)
+        ? widget.product.variants.firstWhere((v) => v.id == _selectedVariant?.id || v == _selectedVariant)
+        : widget.product.variants.first;
+
     return Container(
       height: 28,
       padding: const EdgeInsets.symmetric(horizontal: 8),
@@ -1749,7 +1794,7 @@ class _UnifiedProductCardState extends State<UnifiedProductCard>
       ),
       child: DropdownButtonHideUnderline(
         child: DropdownButton<ProductVariant>(
-          value: _selectedVariant,
+          value: safeSelectedVariant,
           isExpanded: true,
           icon: Icon(Icons.keyboard_arrow_down,
               size: 16, color: isDark ? Colors.grey[400] : Colors.grey[600]),

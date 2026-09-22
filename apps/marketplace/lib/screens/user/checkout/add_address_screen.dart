@@ -14,8 +14,8 @@ import 'package:http/http.dart' as http;
 
 import 'package:agrimore_ui/agrimore_ui.dart';
 import 'package:agrimore_core/agrimore_core.dart';
-import 'package:agrimore_core/agrimore_core.dart';
 import '../../../providers/theme_provider.dart';
+import '../../auth/login_screen.dart';
 
 class AddAddressScreen extends StatefulWidget {
   final AddressModel? existingAddress;
@@ -849,11 +849,18 @@ class _AddAddressScreenState extends State<AddAddressScreen> {
       return;
     }
 
-    setState(() => _isSaving = true);
-
     try {
       final userId = FirebaseAuth.instance.currentUser?.uid;
-      if (userId == null) throw Exception('User not logged in');
+      if (userId == null) {
+        _showSnackBar('Please sign in to save your delivery address',
+            isError: true);
+        Navigator.push(
+          context,
+          MaterialPageRoute(builder: (_) => LoginScreen()),
+        );
+        return;
+      }
+      setState(() => _isSaving = true);
 
       final addressId = widget.existingAddress?.id ??
           FirebaseFirestore.instance.collection('addresses').doc().id;
@@ -1360,23 +1367,26 @@ class _AddAddressScreenState extends State<AddAddressScreen> {
                           ),
                           const SizedBox(height: 8),
 
-                          // Header Row (Title + Address Type inline)
+                          // Header Row (Title)
+                          Align(
+                            alignment: Alignment.centerLeft,
+                            child: Text(
+                              'Complete Address',
+                              style: TextStyle(
+                                fontSize: 16,
+                                fontWeight: FontWeight.w800,
+                                color: isDark ? Colors.white : Colors.black87,
+                              ),
+                            ),
+                          ),
+                          const SizedBox(height: 6),
+                          // Address Type Chips
                           Row(
                             children: [
-                              Expanded(
-                                child: Text(
-                                  'Complete Address',
-                                  style: TextStyle(
-                                    fontSize: 15,
-                                    fontWeight: FontWeight.w800,
-                                    color: isDark ? Colors.white : Colors.black87,
-                                  ),
-                                ),
-                              ),
                               _buildMiniTypeChip('Home', Icons.home_rounded, isDark, accentColor),
-                              const SizedBox(width: 4),
+                              const SizedBox(width: 6),
                               _buildMiniTypeChip('Office', Icons.work_rounded, isDark, accentColor),
-                              const SizedBox(width: 4),
+                              const SizedBox(width: 6),
                               _buildMiniTypeChip('Other', Icons.location_on_rounded, isDark, accentColor),
                             ],
                           ),

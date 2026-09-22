@@ -1,5 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
+import 'package:firebase_auth/firebase_auth.dart';
+import 'package:cloud_firestore/cloud_firestore.dart';
 import '../../../../services/associate_application_service.dart' as service;
 
 /// Phase 16B, Workstream 1 — the OPTIONAL "Associate Code" input.
@@ -46,24 +48,39 @@ class AssociateCodeField extends StatefulWidget {
   /// screen uses the roomier layout with the longer explanation.
   final bool dense;
 
+  /// When true, configures the field as a required Employee ID field for B2B
+  /// orders with an Apply button and B2B-specific feedback.
+  final bool isB2B;
+
   const AssociateCodeField({
     super.key,
     required this.controller,
     required this.isDark,
     required this.accentColor,
     this.dense = false,
+    this.isB2B = false,
   });
 
   static const String label = 'Associate Code (optional)';
   static const String hint = 'e.g. RAME07';
+
+  static const String b2bLabel = 'Employee ID *';
+  static const String b2bHint = 'Enter sales employee code';
 
   static const String longHelper =
       'Helped by an AgriMore Sales Associate? Enter their code and tap Apply '
       'so this order is recorded against them. Leave it blank if not — your '
       'order and your total are the same either way.';
 
+  static const String b2bLongHelper =
+      'Wholesale orders require a verified Sales Employee Code. Enter the code '
+      'and tap Apply to verify and attribute this bulk order.';
+
   static const String shortHelper =
       'Optional — records this order against your Sales Associate.';
+
+  static const String b2bShortHelper =
+      'Required for wholesale / bulk orders.';
 
   /// Generated codes are 6 characters (`EmployeeModel.generateEmployeeCode`:
   /// a 4-letter name prefix + a 2-digit sequence). 20 leaves generous room
@@ -96,7 +113,16 @@ class AssociateCodeField extends StatefulWidget {
   State<AssociateCodeField> createState() => _AssociateCodeFieldState();
 }
 
-enum _CheckState { idle, checking, valid, notRecognized, checkFailed }
+enum _CheckState {
+  idle,
+  checking,
+  valid,
+  notRecognized,
+  selfCode,
+  notActive,
+  checkFailed,
+  unauthenticated,
+}
 
 class _AssociateCodeFieldState extends State<AssociateCodeField> {
   _CheckState _state = _CheckState.idle;
@@ -134,10 +160,59 @@ class _AssociateCodeFieldState extends State<AssociateCodeField> {
     setState(() => _state = _CheckState.checking);
 
     try {
-      final valid = await service.verifyAssociateCode(code);
+      // 1. Check if the code is the current logged-in user's own associate code
+      final currentUser = FirebaseAuth.instance.currentUser;
+      if (currentUser != null) {
+        try {
+          final employeeDoc = await FirebaseFirestore.instance
+              .collection('employees')
+              .doc(currentUser.uid)
+              .get(const GetOptions(source: Source.cache))
+              .timeout(const Duration(seconds: 1));
+          if (employeeDoc.exists) {
+            final myCode = employeeDoc
+                .data()?['employeeCode']
+                ?.toString()
+                .toUpperCase();
+            if (myCode != null && myCode.isNotEmpty && myCode == code.toUpperCase()) {
+              if (!mounted) return;
+              _lastCheckedCode = code;
+              setState(() => _state = _CheckState.selfCode);
+              HapticFeedback.selectionClick();
+              return;
+            }
+          }
+        } catch (_) {
+          // Non-critical, fall back to backend callable check
+        }
+      }
+
+      final details = await service.verifyAssociateCodeDetails(code);
       if (!mounted) return;
       _lastCheckedCode = code;
-      setState(() => _state = valid ? _CheckState.valid : _CheckState.notRecognized);
+      if (details.valid) {
+        setState(() => _state = _CheckState.valid);
+      } else if (details.reason == 'self') {
+        setState(() => _state = _CheckState.selfCode);
+      } else if (details.reason == 'not_active') {
+        // In B2B mode, status == 'approved' is all that createOrder.ts requires
+        // (onboarding fee is B2C only). Since verifyAssociateCode matched
+        // status == 'approved', it's valid for B2B.
+        if (widget.isB2B) {
+          setState(() => _state = _CheckState.valid);
+        } else {
+          setState(() => _state = _CheckState.notActive);
+        }
+      } else if (details.reason == 'error') {
+        final currentUser = FirebaseAuth.instance.currentUser;
+        if (currentUser == null) {
+          setState(() => _state = _CheckState.unauthenticated);
+        } else {
+          setState(() => _state = _CheckState.checkFailed);
+        }
+      } else {
+        setState(() => _state = _CheckState.notRecognized);
+      }
       HapticFeedback.selectionClick();
     } catch (_) {
       // Network/auth hiccup — never presented as "invalid". The order can
@@ -166,8 +241,8 @@ class _AssociateCodeFieldState extends State<AssociateCodeField> {
         color: isDark ? Colors.white : Colors.black87,
       ),
       decoration: InputDecoration(
-        labelText: AssociateCodeField.label,
-        hintText: AssociateCodeField.hint,
+        labelText: widget.isB2B ? AssociateCodeField.b2bLabel : AssociateCodeField.label,
+        hintText: widget.isB2B ? AssociateCodeField.b2bHint : AssociateCodeField.hint,
         isDense: widget.dense,
         prefixIcon: Icon(Icons.badge_outlined, size: widget.dense ? 20 : 22),
         filled: true,
@@ -214,7 +289,9 @@ class _AssociateCodeFieldState extends State<AssociateCodeField> {
             Padding(
               padding: const EdgeInsets.only(left: 4),
               child: Text(
-                AssociateCodeField.shortHelper,
+                widget.isB2B
+                    ? AssociateCodeField.b2bShortHelper
+                    : AssociateCodeField.shortHelper,
                 style: TextStyle(
                   fontSize: 11,
                   color: isDark ? Colors.grey[500] : Colors.grey[600],
@@ -230,7 +307,9 @@ class _AssociateCodeFieldState extends State<AssociateCodeField> {
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
         Text(
-          AssociateCodeField.longHelper,
+          widget.isB2B
+              ? AssociateCodeField.b2bLongHelper
+              : AssociateCodeField.longHelper,
           style: TextStyle(
             fontSize: 12,
             height: 1.4,
@@ -289,19 +368,47 @@ class _AssociateCodeFieldState extends State<AssociateCodeField> {
         return _FeedbackChip(
           icon: Icons.check_circle_rounded,
           color: Colors.green.shade600,
-          text: 'Code applied — this order will support your Sales Associate.',
+          text: widget.isB2B
+              ? 'Employee ID applied successfully.'
+              : 'Code applied — this order will support your Sales Associate.',
+        );
+      case _CheckState.selfCode:
+        return _FeedbackChip(
+          icon: Icons.error_outline_rounded,
+          color: Colors.red.shade700,
+          text: widget.isB2B
+              ? 'You cannot attribute a B2B order to your own Employee ID.'
+              : 'This is your own Associate Code. Self-attribution is not eligible for commission, but you can still place your order.',
+        );
+      case _CheckState.notActive:
+        return _FeedbackChip(
+          icon: Icons.info_outline_rounded,
+          color: Colors.orange.shade700,
+          text: widget.isB2B
+              ? 'Employee is not active yet.'
+              : 'Associate is not active yet — you can still place your order.',
         );
       case _CheckState.notRecognized:
         return _FeedbackChip(
-          icon: Icons.info_outline_rounded,
-          color: isDark ? Colors.grey[400]! : Colors.grey[600]!,
-          text: "Code not recognised — you can still place your order.",
+          icon: widget.isB2B ? Icons.cancel_outlined : Icons.info_outline_rounded,
+          color: widget.isB2B ? Colors.red.shade700 : (isDark ? Colors.grey[400]! : Colors.grey[600]!),
+          text: widget.isB2B
+              ? 'Employee ID not recognised or not approved.'
+              : 'Code not recognised — you can still place your order.',
         );
       case _CheckState.checkFailed:
         return _FeedbackChip(
           icon: Icons.wifi_off_rounded,
           color: isDark ? Colors.grey[400]! : Colors.grey[600]!,
-          text: "Couldn't check right now — you can still place your order.",
+          text: widget.isB2B
+              ? "Couldn't verify employee code right now. You can still proceed if the code is correct."
+              : "Couldn't check right now — you can still place your order.",
+        );
+      case _CheckState.unauthenticated:
+        return _FeedbackChip(
+          icon: Icons.info_outline_rounded,
+          color: Colors.orange.shade700,
+          text: 'Please sign in to verify this code.',
         );
       case _CheckState.idle:
       case _CheckState.checking:

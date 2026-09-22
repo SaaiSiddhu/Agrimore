@@ -301,13 +301,32 @@ export function computeOrderPricing(params: ComputeOrderPricingParams): OrderPri
       }
       price = product.b2bPrice;
     } else {
-      if (typeof product.salePrice !== "number") {
+      // B2C pricing: resolve the active price with parity to agrimore_core's
+      // ProductModel.fromMap and ProductVariant.fromMap, which fall back to
+      // `price` / `discountPrice` when `salePrice` is absent (61 of 65
+      // catalog products in production use `price`).
+      let candidatePrice: number | null = null;
+      if (typeof product.salePrice === "number" && Number.isFinite(product.salePrice) && product.salePrice > 0) {
+        candidatePrice = product.salePrice;
+      } else if (typeof product.price === "number" && Number.isFinite(product.price) && product.price > 0) {
+        candidatePrice = product.price;
+      } else if (typeof product.discountPrice === "number" && Number.isFinite(product.discountPrice) && product.discountPrice > 0) {
+        candidatePrice = product.discountPrice;
+      } else if (typeof product.discountedPrice === "number" && Number.isFinite(product.discountedPrice) && product.discountedPrice > 0) {
+        candidatePrice = product.discountedPrice;
+      } else if (typeof product.salePrice === "string" && !isNaN(Number(product.salePrice)) && Number(product.salePrice) > 0) {
+        candidatePrice = Number(product.salePrice);
+      } else if (typeof product.price === "string" && !isNaN(Number(product.price)) && Number(product.price) > 0) {
+        candidatePrice = Number(product.price);
+      }
+
+      if (candidatePrice === null) {
         throw new HttpsError(
           "failed-precondition",
           `Product ${item.productId} has no price configured`
         );
       }
-      price = product.salePrice;
+      price = candidatePrice;
     }
 
     // Stock validation. Fail-OPEN (with a logged warning) when `stock` is

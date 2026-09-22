@@ -113,9 +113,12 @@ class RazorpayService {
     try {
       debugPrint('💳 Creating Razorpay order via Cloud Function (Mobile)...');
 
-      // Call Cloud Function to create order
+      // Call Cloud Function to create order with 15s timeout
       final functions = FirebaseFunctions.instance;
-      final callable = functions.httpsCallable('createRazorpayOrder');
+      final callable = functions.httpsCallable(
+        'createRazorpayOrder',
+        options: HttpsCallableOptions(timeout: const Duration(seconds: 15)),
+      );
 
       final result = await callable.call<Map<String, dynamic>>({
         'amount': amount,
@@ -126,7 +129,7 @@ class RazorpayService {
           'customer_email': userEmail,
           'source': 'agrimore_app',
         },
-      });
+      }).timeout(const Duration(seconds: 16));
 
       final data = result.data;
 
@@ -246,13 +249,15 @@ class RazorpayService {
     }
 
     try {
-      final callable =
-          FirebaseFunctions.instance.httpsCallable('verifyRazorpayPayment');
+      final callable = FirebaseFunctions.instance.httpsCallable(
+        'verifyRazorpayPayment',
+        options: HttpsCallableOptions(timeout: const Duration(seconds: 15)),
+      );
       final result = await callable.call<Map<String, dynamic>>({
         'paymentId': paymentId,
         'orderId': orderId,
         'signature': signature,
-      });
+      }).timeout(const Duration(seconds: 16));
       final verified = result.data['verified'] == true;
       debugPrint(verified
           ? 'Razorpay payment verified: $paymentId'

@@ -12,6 +12,7 @@ import '../../../../providers/product_provider.dart';
 import '../../../../providers/theme_provider.dart';
 import '../../../../providers/category_section_provider.dart';
 import '../../../../providers/shop_entry_provider.dart';
+import '../../../../providers/market_mode_provider.dart';
 
 /// Resolves a category section's rendered category list in the ADMIN'S OWN
 /// configured order (`categoryIds`), not a re-sorted one. `getImageForSlot`
@@ -77,53 +78,12 @@ class _DynamicCategorySectionsState extends State<DynamicCategorySections> {
       builder:
           (context, sectionProvider, categoryProvider, productProvider, _) {
         // If loading, show a shimmer skeleton matching this section's
-        // own real header + 4-column grid shape, instead of a blank gap
-        // -- mirrors mobile_home_screen.dart's own established
-        // Shimmer.fromColors color scheme (HOME-17).
-        if (sectionProvider.isLoading) {
-          return Shimmer.fromColors(
-            baseColor: isDark ? const Color(0xFF303030) : Colors.grey[300]!,
-            highlightColor: isDark ? Colors.grey[800]! : Colors.grey[100]!,
-            child: Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                Padding(
-                  padding: const EdgeInsets.fromLTRB(16, 2, 16, 0),
-                  child: Container(
-                    height: 16,
-                    width: 140,
-                    decoration: BoxDecoration(
-                      color: Colors.grey,
-                      borderRadius: BorderRadius.circular(4),
-                    ),
-                  ),
-                ),
-                Padding(
-                  padding: const EdgeInsets.symmetric(horizontal: 10),
-                  child: GridView.builder(
-                    padding: EdgeInsets.zero,
-                    shrinkWrap: true,
-                    physics: const NeverScrollableScrollPhysics(),
-                    gridDelegate:
-                        const SliverGridDelegateWithFixedCrossAxisCount(
-                      crossAxisCount: 4,
-                      mainAxisSpacing: 2,
-                      crossAxisSpacing: 4,
-                      childAspectRatio: 1.05,
-                    ),
-                    itemCount: 8,
-                    itemBuilder: (context, index) => Container(
-                      margin: const EdgeInsets.all(4),
-                      decoration: BoxDecoration(
-                        color: Colors.grey,
-                        borderRadius: BorderRadius.circular(10),
-                      ),
-                    ),
-                  ),
-                ),
-              ],
-            ),
-          );
+        // If still loading and there are no slots or categories to show yet,
+        // return SizedBox.shrink() so Home screen displays instantly without shimmers.
+        if (sectionProvider.isLoading &&
+            sectionProvider.sections.isEmpty &&
+            categoryProvider.categories.isEmpty) {
+          return const SizedBox.shrink();
         }
 
         final activeSlots = sectionProvider.activeSlots;
@@ -278,7 +238,8 @@ class _AdminCategorySection extends StatelessWidget {
                 // Fallback to product image if no slot image
                 String imageUrl = slotImage ?? '';
                 if (imageUrl.isEmpty) {
-                  final categoryProduct = productProvider.products
+                  final isB2B = context.watch<MarketModeProvider>().isB2B;
+                  final categoryProduct = productProvider.displayProducts(isB2B)
                       .where((p) =>
                           p.isActive &&
                           productBelongsToCategory(p, category, categoryTree))
@@ -367,7 +328,8 @@ class _FallbackCategorySection extends StatelessWidget {
               itemCount: categories.length,
               itemBuilder: (context, index) {
                 final category = categories[index];
-                final categoryProduct = productProvider.products
+                final isB2B = context.watch<MarketModeProvider>().isB2B;
+                final categoryProduct = productProvider.displayProducts(isB2B)
                     .where((p) =>
                         p.isActive &&
                         productBelongsToCategory(p, category, categoryTree))

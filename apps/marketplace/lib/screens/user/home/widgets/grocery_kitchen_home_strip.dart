@@ -9,6 +9,7 @@ import '../../../../providers/category_provider.dart';
 import '../../../../providers/product_provider.dart';
 import '../../../../providers/theme_provider.dart';
 import '../../../../providers/home_grocery_strip_config_provider.dart';
+import '../../../../providers/market_mode_provider.dart';
 
 /// Highlights Grocery & Kitchen categories under Bestsellers (admin categories + product thumbnails).
 ///
@@ -89,7 +90,8 @@ class GroceryKitchenHomeStrip extends StatelessWidget {
                 itemBuilder: (context, i) {
                   final c = cats[i];
                   String? thumb;
-                  for (final p in productProvider.products) {
+                  final isB2B = context.watch<MarketModeProvider>().isB2B;
+                  for (final p in productProvider.displayProducts(isB2B)) {
                     if (!p.isActive) continue;
                     if (!productBelongsToCategory(
                       p,

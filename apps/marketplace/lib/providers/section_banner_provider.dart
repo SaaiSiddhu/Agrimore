@@ -85,9 +85,9 @@ class SectionBannerProvider extends ChangeNotifier {
       }
     }
 
-    _isLoading = true;
+    _isLoading = !_isCacheLoaded;
     _error = null;
-    notifyListeners();
+    if (!_isCacheLoaded) notifyListeners();
 
     try {
       // Fetch all banners and filter locally to avoid composite index requirement

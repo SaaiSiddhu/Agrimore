@@ -10,6 +10,7 @@ import '../../../providers/product_provider.dart';
 import '../../../providers/category_provider.dart';
 import '../../../providers/cart_provider.dart';
 import '../../../providers/theme_provider.dart';
+import '../../../providers/market_mode_provider.dart';
 import 'widgets/filter_drawer.dart';
 import 'widgets/product_card.dart';
 import 'widgets/shop_app_bar.dart';
@@ -328,8 +329,9 @@ class _MobileShopScreenState extends State<MobileShopScreen>
                 Expanded(
                   child: Consumer2<ProductProvider, CategoryProvider>(
                     builder: (context, productProvider, categoryProvider, _) {
-                      if ((productProvider.isLoading && !_isRefreshing) ||
-                          _isSearching) {
+                      if (((productProvider.isLoading && !productProvider.hasProducts) &&
+                              !_isRefreshing) ||
+                          (_isSearching && productProvider.products.isEmpty)) {
                         return _buildShimmerLoading(isDark);
                       }
 
@@ -1032,7 +1034,7 @@ class _MobileShopScreenState extends State<MobileShopScreen>
       padding: const EdgeInsets.only(bottom: 100),
       gridDelegate: const SliverGridDelegateWithFixedCrossAxisCount(
         crossAxisCount: 3, // 3 columns for clear product visibility
-        childAspectRatio: 0.54, // Compact cards with image + info + button
+        mainAxisExtent: 268, // Exact height prevents bottom overflow
         crossAxisSpacing: 8,
         mainAxisSpacing: 8,
       ),
@@ -1066,7 +1068,7 @@ class _MobileShopScreenState extends State<MobileShopScreen>
       physics: const AlwaysScrollableScrollPhysics(),
       gridDelegate: const SliverGridDelegateWithFixedCrossAxisCount(
         crossAxisCount: 3, // 3 columns for clear product visibility
-        childAspectRatio: 0.54, // Compact cards with image + info + button
+        mainAxisExtent: 268, // Exact height accommodates title, price and Add button cleanly
         crossAxisSpacing: 8, // Clean spacing between cards
         mainAxisSpacing: 8, // Clean spacing between rows
       ),
@@ -1359,7 +1361,8 @@ class _MobileShopScreenState extends State<MobileShopScreen>
 
   // ✅ FIXED: This is the main filtering logic, now fully updated
   List<ProductModel> _getFilteredProducts(ProductProvider provider) {
-    var products = List<ProductModel>.from(provider.products);
+    final isB2B = context.watch<MarketModeProvider>().isB2B;
+    var products = List<ProductModel>.from(provider.displayProducts(isB2B));
 
     if (_searchQuery.isNotEmpty) {
       products = products.where((p) {
@@ -1397,9 +1400,11 @@ class _MobileShopScreenState extends State<MobileShopScreen>
       if (priceRange != null &&
           (priceRange.start != 0 || priceRange.end != 10000)) {
         products = products
-            .where((p) =>
-                p.salePrice >= priceRange.start &&
-                p.salePrice <= priceRange.end)
+            .where((p) {
+              final price =
+                  (isB2B && p.b2bPrice != null) ? p.b2bPrice! : p.salePrice;
+              return price >= priceRange.start && price <= priceRange.end;
+            })
             .toList();
       }
       // ⬆️ --- END OF FIX 3 --- ⬆️

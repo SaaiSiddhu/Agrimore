@@ -1,23 +1,28 @@
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:flutter/material.dart';
 import 'package:agrimore_ui/agrimore_ui.dart';
+import 'employee_payout_detail_screen.dart';
 
-/// Lists `employee_payouts` documents (mirrors `seller_payouts`' shape per
-/// Phase 1). Nothing writes to this collection yet — commission is currently
-/// paid directly into `wallets`/`wallet_transactions` by
-/// `payEmployeeCommissionOnDelivery`. This screen is deploy-ready ahead of
-/// Phase 4 (the employee app), which is expected to introduce a payout-
-/// request flow that populates it.
-class EmployeePayoutsScreen extends StatelessWidget {
-  const EmployeePayoutsScreen({Key? key}) : super(key: key);
+/// Lists `employee_payouts` documents with real-time status, payment mode
+/// badges (UPI/Bank), search/filter chips, and one-tap navigation to the
+/// full payout detail screen with copyable payment credentials.
+class EmployeePayoutsScreen extends StatefulWidget {
+  const EmployeePayoutsScreen({super.key});
 
+  @override
+  State<EmployeePayoutsScreen> createState() => _EmployeePayoutsScreenState();
+}
+
+class _EmployeePayoutsScreenState extends State<EmployeePayoutsScreen> {
   static final FirebaseFirestore _firestore = FirebaseFirestore.instance;
+  String _selectedFilter = 'all'; // all, pending, paid, rejected
 
   Future<void> _markPaid(BuildContext context, String payoutId) async {
     try {
       await _firestore.collection('employee_payouts').doc(payoutId).update({
         'status': 'paid',
         'paidAt': FieldValue.serverTimestamp(),
+        'updatedAt': FieldValue.serverTimestamp(),
       });
       if (context.mounted) {
         SnackbarHelper.showSuccess(context, 'Payout marked as paid');
@@ -28,11 +33,40 @@ class EmployeePayoutsScreen extends StatelessWidget {
   }
 
   static double _amountOf(Map<String, dynamic> d) {
-    final raw = d['amount'] ?? d['netAmount'] ?? d['commissionAmount'] ?? d['grossAmount'];
+    final raw = d['amount'] ??
+        d['netAmount'] ??
+        d['commissionAmount'] ??
+        d['grossAmount'];
     return (raw as num?)?.toDouble() ?? 0.0;
   }
 
-  static String _formatMoney(double value) => 'Rs ${value.toStringAsFixed(0)}';
+  static String _formatMoney(double value) {
+    return '₹${value.toStringAsFixed(value.truncateToDouble() == value ? 0 : 2)}';
+  }
+
+  static String _formatDate(dynamic ts) {
+    if (ts == null) return '';
+    DateTime dt;
+    if (ts is Timestamp) {
+      dt = ts.toDate();
+    } else if (ts is DateTime) {
+      dt = ts;
+    } else {
+      return '';
+    }
+    return '${dt.day.toString().padLeft(2, '0')}/${dt.month.toString().padLeft(2, '0')}/${dt.year}';
+  }
+
+  void _openDetail(String payoutId, Map<String, dynamic> data) {
+    Navigator.of(context).push(
+      MaterialPageRoute(
+        builder: (_) => EmployeePayoutDetailScreen(
+          payoutId: payoutId,
+          initialData: data,
+        ),
+      ),
+    );
+  }
 
   @override
   Widget build(BuildContext context) {
@@ -44,108 +78,351 @@ class EmployeePayoutsScreen extends StatelessWidget {
         foregroundColor: Colors.white,
         elevation: 0,
       ),
-      body: StreamBuilder<QuerySnapshot<Map<String, dynamic>>>(
-        stream: _firestore
-            .collection('employee_payouts')
-            .orderBy('createdAt', descending: true)
-            .snapshots(),
-        builder: (context, snapshot) {
-          if (snapshot.connectionState == ConnectionState.waiting) {
-            return const Center(child: CircularProgressIndicator());
-          }
+      body: Column(
+        children: [
+          // Filter Chips
+          Container(
+            padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
+            color: Colors.white,
+            child: SingleChildScrollView(
+              scrollDirection: Axis.horizontal,
+              child: Row(
+                children: [
+                  _buildFilterChip('all', 'All Payouts'),
+                  const SizedBox(width: 8),
+                  _buildFilterChip('pending', 'Pending / Requested'),
+                  const SizedBox(width: 8),
+                  _buildFilterChip('paid', 'Paid'),
+                  const SizedBox(width: 8),
+                  _buildFilterChip('rejected', 'Rejected'),
+                ],
+              ),
+            ),
+          ),
+          const Divider(height: 1),
 
-          if (snapshot.hasError) {
-            return _MessageState(
-              icon: Icons.error_outline_rounded,
-              title: 'Unable to load employee payouts',
-              subtitle: snapshot.error.toString(),
-            );
-          }
+          // Payouts Stream List
+          Expanded(
+            child: StreamBuilder<QuerySnapshot<Map<String, dynamic>>>(
+              stream: _firestore
+                  .collection('employee_payouts')
+                  .orderBy('createdAt', descending: true)
+                  .snapshots(),
+              builder: (context, snapshot) {
+                if (snapshot.connectionState == ConnectionState.waiting) {
+                  return const Center(child: CircularProgressIndicator());
+                }
 
-          final docs = snapshot.data?.docs ?? [];
+                if (snapshot.hasError) {
+                  return _MessageState(
+                    icon: Icons.error_outline_rounded,
+                    title: 'Unable to load employee payouts',
+                    subtitle: snapshot.error.toString(),
+                  );
+                }
 
-          if (docs.isEmpty) {
-            return const _MessageState(
-              icon: Icons.payments_outlined,
-              title: 'No employee payouts yet',
-              subtitle:
-                  'Payout requests will appear here once the employee app is live.',
-            );
-          }
+                final allDocs = snapshot.data?.docs ?? [];
 
-          return ListView.separated(
-            padding: const EdgeInsets.all(20),
-            itemCount: docs.length,
-            separatorBuilder: (_, __) => const SizedBox(height: 8),
-            itemBuilder: (context, i) {
-              final doc = docs[i];
-              final d = doc.data();
-              final status = (d['status'] ?? 'pending').toString();
-              final amount = _amountOf(d);
+                // Apply client-side filter
+                final docs = allDocs.where((doc) {
+                  final status = (doc.data()['status'] ?? 'pending')
+                      .toString()
+                      .toLowerCase();
+                  if (_selectedFilter == 'pending') {
+                    return status == 'pending' ||
+                        status == 'requested' ||
+                        status == 'processing';
+                  } else if (_selectedFilter == 'paid') {
+                    return status == 'paid';
+                  } else if (_selectedFilter == 'rejected') {
+                    return status == 'rejected' || status == 'failed';
+                  }
+                  return true;
+                }).toList();
 
-              return Card(
-                child: Padding(
-                  padding: const EdgeInsets.all(14),
-                  child: Row(
-                    children: [
-                      Expanded(
-                        child: Column(
-                          crossAxisAlignment: CrossAxisAlignment.start,
-                          children: [
-                            Text(
-                              _formatMoney(amount),
-                              style: const TextStyle(
-                                fontWeight: FontWeight.w800,
-                                fontSize: 16,
-                                color: Color(0xFF15803D),
+                if (docs.isEmpty) {
+                  return _MessageState(
+                    icon: Icons.payments_outlined,
+                    title: _selectedFilter == 'all'
+                        ? 'No employee payouts yet'
+                        : 'No ${_selectedFilter.toUpperCase()} payouts found',
+                    subtitle: _selectedFilter == 'all'
+                        ? 'Payout requests from sales associates will appear here.'
+                        : 'Try selecting a different filter.',
+                  );
+                }
+
+                return ListView.separated(
+                  padding: const EdgeInsets.all(16),
+                  itemCount: docs.length,
+                  separatorBuilder: (_, __) => const SizedBox(height: 10),
+                  itemBuilder: (context, i) {
+                    final doc = docs[i];
+                    final d = doc.data();
+                    final status = (d['status'] ?? 'pending')
+                        .toString()
+                        .toLowerCase();
+                    final amount = _amountOf(d);
+                    final employeeId = (d['employeeId'] ?? '').toString();
+                    final dateStr = _formatDate(d['createdAt']);
+
+                    final isPaid = status == 'paid';
+                    final isRejected =
+                        status == 'rejected' || status == 'failed';
+
+                    Color statusBg = Colors.amber.shade50;
+                    Color statusFg = Colors.amber.shade900;
+                    if (isPaid) {
+                      statusBg = Colors.green.shade50;
+                      statusFg = const Color(0xFF15803D);
+                    } else if (isRejected) {
+                      statusBg = Colors.red.shade50;
+                      statusFg = Colors.red.shade800;
+                    }
+
+                    return Material(
+                      color: Colors.white,
+                      borderRadius: BorderRadius.circular(16),
+                      elevation: 0,
+                      child: InkWell(
+                        onTap: () => _openDetail(doc.id, d),
+                        borderRadius: BorderRadius.circular(16),
+                        child: Container(
+                          padding: const EdgeInsets.all(16),
+                          decoration: BoxDecoration(
+                            borderRadius: BorderRadius.circular(16),
+                            border: Border.all(color: Colors.grey.shade200),
+                          ),
+                          child: Column(
+                            crossAxisAlignment: CrossAxisAlignment.start,
+                            children: [
+                              Row(
+                                crossAxisAlignment: CrossAxisAlignment.start,
+                                children: [
+                                  // Amount & Date
+                                  Expanded(
+                                    child: Column(
+                                      crossAxisAlignment:
+                                          CrossAxisAlignment.start,
+                                      children: [
+                                        Text(
+                                          _formatMoney(amount),
+                                          style: const TextStyle(
+                                            fontWeight: FontWeight.w900,
+                                            fontSize: 20,
+                                            color: Color(0xFF0F172A),
+                                          ),
+                                        ),
+                                        if (dateStr.isNotEmpty) ...[
+                                          const SizedBox(height: 2),
+                                          Text(
+                                            'Requested on $dateStr',
+                                            style: TextStyle(
+                                              color: Colors.grey.shade500,
+                                              fontSize: 12,
+                                            ),
+                                          ),
+                                        ],
+                                      ],
+                                    ),
+                                  ),
+
+                                  // Status Badge
+                                  Container(
+                                    padding: const EdgeInsets.symmetric(
+                                        horizontal: 10, vertical: 4),
+                                    decoration: BoxDecoration(
+                                      color: statusBg,
+                                      borderRadius: BorderRadius.circular(8),
+                                    ),
+                                    child: Text(
+                                      status.toUpperCase(),
+                                      style: TextStyle(
+                                        fontSize: 11,
+                                        fontWeight: FontWeight.w800,
+                                        color: statusFg,
+                                      ),
+                                    ),
+                                  ),
+                                ],
                               ),
-                            ),
-                            const SizedBox(height: 4),
-                            Text(
-                              'Employee: ${d['employeeId'] ?? '-'}',
-                              style: TextStyle(
-                                  color: Colors.grey.shade700, fontSize: 13),
-                            ),
-                          ],
-                        ),
-                      ),
-                      Container(
-                        padding: const EdgeInsets.symmetric(
-                            horizontal: 8, vertical: 4),
-                        decoration: BoxDecoration(
-                          color: status == 'paid'
-                              ? Colors.green.shade50
-                              : Colors.amber.shade50,
-                          borderRadius: BorderRadius.circular(8),
-                        ),
-                        child: Text(
-                          status.toUpperCase(),
-                          style: TextStyle(
-                            fontSize: 11,
-                            fontWeight: FontWeight.w800,
-                            color: status == 'paid'
-                                ? Colors.green.shade800
-                                : Colors.amber.shade900,
+                              const SizedBox(height: 12),
+                              const Divider(height: 1),
+                              const SizedBox(height: 12),
+
+                              // Employee Details & Destination resolver
+                              _EmployeeSummaryRow(
+                                employeeId: employeeId,
+                                payoutData: d,
+                              ),
+                              const SizedBox(height: 12),
+
+                              // Card Footer: Actions and "View Details" hint
+                              Row(
+                                mainAxisAlignment:
+                                    MainAxisAlignment.spaceBetween,
+                                children: [
+                                  Text(
+                                    'Tap for payment details & copy',
+                                    style: TextStyle(
+                                      fontSize: 12,
+                                      color: AppColors.primary,
+                                      fontWeight: FontWeight.w600,
+                                    ),
+                                  ),
+                                  Row(
+                                    mainAxisSize: MainAxisSize.min,
+                                    children: [
+                                      if (!isPaid && !isRejected) ...[
+                                        FilledButton(
+                                          onPressed: () =>
+                                              _markPaid(context, doc.id),
+                                          style: FilledButton.styleFrom(
+                                            backgroundColor:
+                                                const Color(0xFF15803D),
+                                            padding: const EdgeInsets.symmetric(
+                                                horizontal: 14, vertical: 8),
+                                            visualDensity:
+                                                VisualDensity.compact,
+                                          ),
+                                          child: const Text('Mark Paid'),
+                                        ),
+                                        const SizedBox(width: 8),
+                                      ],
+                                      const Icon(
+                                        Icons.chevron_right_rounded,
+                                        color: Colors.grey,
+                                      ),
+                                    ],
+                                  ),
+                                ],
+                              ),
+                            ],
                           ),
                         ),
                       ),
-                      if (status != 'paid') ...[
-                        const SizedBox(width: 10),
-                        FilledButton(
-                          onPressed: () => _markPaid(context, doc.id),
-                          style: FilledButton.styleFrom(
-                              backgroundColor: Colors.green.shade700),
-                          child: const Text('Mark Paid'),
-                        ),
-                      ],
-                    ],
-                  ),
-                ),
-              );
-            },
-          );
-        },
+                    );
+                  },
+                );
+              },
+            ),
+          ),
+        ],
       ),
+    );
+  }
+
+  Widget _buildFilterChip(String key, String label) {
+    final isSelected = _selectedFilter == key;
+    return ChoiceChip(
+      label: Text(label),
+      selected: isSelected,
+      onSelected: (selected) {
+        if (selected) setState(() => _selectedFilter = key);
+      },
+      selectedColor: AppColors.primary.withValues(alpha: 0.12),
+      labelStyle: TextStyle(
+        fontSize: 13,
+        fontWeight: isSelected ? FontWeight.w700 : FontWeight.w500,
+        color: isSelected ? AppColors.primary : Colors.grey.shade700,
+      ),
+      backgroundColor: Colors.grey.shade100,
+      side: BorderSide(
+        color: isSelected ? AppColors.primary : Colors.transparent,
+      ),
+    );
+  }
+}
+
+/// Helper row that resolves the employee's name and payment method badge
+class _EmployeeSummaryRow extends StatelessWidget {
+  final String employeeId;
+  final Map<String, dynamic> payoutData;
+
+  const _EmployeeSummaryRow({
+    required this.employeeId,
+    required this.payoutData,
+  });
+
+  @override
+  Widget build(BuildContext context) {
+    if (employeeId.isEmpty) {
+      return Text(
+        'Employee: -',
+        style: TextStyle(color: Colors.grey.shade600, fontSize: 13),
+      );
+    }
+
+    return StreamBuilder<DocumentSnapshot<Map<String, dynamic>>>(
+      stream: FirebaseFirestore.instance
+          .collection('employees')
+          .doc(employeeId)
+          .snapshots(),
+      builder: (context, snap) {
+        final emp = snap.data?.data() ?? <String, dynamic>{};
+        final name = (emp['name'] ?? emp['accountHolderName'] ?? '').toString();
+        final method = (payoutData['payoutMethod'] ??
+                emp['payoutMethod'] ??
+                (emp.containsKey('upiId') &&
+                        emp['upiId'] != null &&
+                        emp['upiId'].toString().isNotEmpty
+                    ? 'upi'
+                    : 'bank'))
+            .toString()
+            .toLowerCase();
+        final isUpi = method == 'upi';
+
+        return Row(
+          children: [
+            Icon(
+              Icons.badge_outlined,
+              size: 16,
+              color: Colors.grey.shade600,
+            ),
+            const SizedBox(width: 6),
+            Expanded(
+              child: Text(
+                name.isNotEmpty ? '$name (${emp['employeeCode'] ?? employeeId})' : employeeId,
+                style: TextStyle(
+                  color: Colors.grey.shade800,
+                  fontSize: 13,
+                  fontWeight: FontWeight.w600,
+                ),
+                maxLines: 1,
+                overflow: TextOverflow.ellipsis,
+              ),
+            ),
+            Container(
+              padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 2),
+              decoration: BoxDecoration(
+                color: isUpi
+                    ? Colors.deepPurple.shade50
+                    : Colors.blue.shade50,
+                borderRadius: BorderRadius.circular(6),
+              ),
+              child: Row(
+                mainAxisSize: MainAxisSize.min,
+                children: [
+                  Icon(
+                    isUpi ? Icons.qr_code_scanner : Icons.account_balance,
+                    size: 12,
+                    color: isUpi ? Colors.deepPurple : Colors.blue.shade800,
+                  ),
+                  const SizedBox(width: 4),
+                  Text(
+                    isUpi ? 'UPI' : 'BANK',
+                    style: TextStyle(
+                      fontSize: 10,
+                      fontWeight: FontWeight.w800,
+                      color: isUpi ? Colors.deepPurple : Colors.blue.shade800,
+                    ),
+                  ),
+                ],
+              ),
+            ),
+          ],
+        );
+      },
     );
   }
 }
@@ -170,11 +447,12 @@ class _MessageState extends StatelessWidget {
         decoration: BoxDecoration(
           color: Colors.white,
           borderRadius: BorderRadius.circular(16),
+          border: Border.all(color: Colors.grey.shade200),
         ),
         child: Column(
           mainAxisSize: MainAxisSize.min,
           children: [
-            Icon(icon, size: 48, color: Colors.grey[400]),
+            Icon(icon, size: 48, color: Colors.grey.shade400),
             const SizedBox(height: 14),
             Text(
               title,
@@ -184,7 +462,7 @@ class _MessageState extends StatelessWidget {
             const SizedBox(height: 8),
             Text(
               subtitle,
-              style: TextStyle(color: Colors.grey[600]),
+              style: TextStyle(color: Colors.grey.shade600),
               textAlign: TextAlign.center,
             ),
           ],

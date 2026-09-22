@@ -192,13 +192,16 @@ class ProductProvider with ChangeNotifier {
       if (categoryId != null &&
           categoryId != 'all' &&
           categoryId != 'uncategorized') {
-        freshProducts = await _databaseService.getProductsByCategory(categoryId,
-            location: activeLocation);
+        freshProducts = await _databaseService
+            .getProductsByCategory(categoryId, location: activeLocation)
+            .timeout(const Duration(seconds: 8));
       } else {
-        freshProducts = await _databaseService.getAllProducts(
-          location: activeLocation,
-          limit: limit,
-        );
+        freshProducts = await _databaseService
+            .getAllProducts(
+              location: activeLocation,
+              limit: limit,
+            )
+            .timeout(const Duration(seconds: 8));
       }
       freshProducts = await _filterProductsForUserLocation(
         _dedupeProducts(freshProducts),
@@ -368,33 +371,57 @@ class ProductProvider with ChangeNotifier {
     }
   }
 
+  void selectProduct(ProductModel product) {
+    _selectedProduct = product;
+    if (product.variants.isNotEmpty) {
+      _selectedVariant = product.variants.first;
+      _selectedOptions = Map.from(_selectedVariant!.options);
+    } else {
+      _selectedVariant = null;
+      _selectedOptions = {};
+    }
+    _isLoading = false;
+    _notifySafely();
+    unawaited(addToRecentlyViewed(product));
+    unawaited(_loadRelatedProducts(product.relatedProductIds));
+  }
+
+  ProductModel? _findProductInMemory(String productId) {
+    for (final p in _products) {
+      if (p.id == productId) return p;
+    }
+    for (final p in _recentlyViewedProducts) {
+      if (p.id == productId) return p;
+    }
+    return null;
+  }
+
   Future<void> loadProductById(String productId) async {
     try {
-      _isLoading = true;
-      _notifySafely();
+      final cached = _findProductInMemory(productId);
+      if (cached != null) {
+        // Instant 0ms hydration from memory — no blank spinner screen!
+        selectProduct(cached);
+      } else {
+        _isLoading = true;
+        clearSelectedProduct();
+        _notifySafely();
+      }
 
-      clearSelectedProduct();
+      final fresh = await _databaseService.getProductById(productId);
 
-      _selectedProduct = await _databaseService.getProductById(productId);
-
-      if (_selectedProduct != null) {
-        if (_selectedProduct!.variants.isNotEmpty) {
-          _selectedVariant = _selectedProduct!.variants.first;
+      if (fresh != null) {
+        _selectedProduct = fresh;
+        if (fresh.variants.isNotEmpty && _selectedVariant == null) {
+          _selectedVariant = fresh.variants.first;
           _selectedOptions = Map.from(_selectedVariant!.options);
-        } else {
+        } else if (fresh.variants.isEmpty) {
           _selectedVariant = null;
           _selectedOptions = {};
         }
 
-        // PERF-1: fire-and-forget, matching _loadRelatedProducts below.
-        // This used to be awaited here, which meant the product page's own
-        // _isLoading flag (and its shimmer) stayed up until "recently
-        // viewed" bookkeeping finished — work unrelated to displaying the
-        // product. addToRecentlyViewed already catches and swallows its own
-        // errors internally, so nothing here needs a .catchError.
-        addToRecentlyViewed(_selectedProduct!);
-
-        _loadRelatedProducts(_selectedProduct!.relatedProductIds);
+        addToRecentlyViewed(fresh);
+        _loadRelatedProducts(fresh.relatedProductIds);
       }
 
       _isLoading = false;
@@ -727,7 +754,7 @@ class ProductProvider with ChangeNotifier {
     final userLat = prefs.getDouble('selected_latitude');
     final userLng = prefs.getDouble('selected_longitude');
 
-    return products.where((product) {
+    final filtered = products.where((product) {
       final type = product.locationType.toLowerCase().trim();
       if (type.isEmpty || type == 'state') {
         final state = (product.state ?? 'Tamil Nadu').toLowerCase();
@@ -761,6 +788,14 @@ class ProductProvider with ChangeNotifier {
 
       return true;
     }).toList();
+
+    // Fallback: If location filtering wiped out all products, never display an empty catalog.
+    if (filtered.isEmpty && products.isNotEmpty) {
+      debugPrint('📍 Location filter produced 0 products; falling back to all ${products.length} products');
+      return products;
+    }
+
+    return filtered;
   }
 
   String _extractState(String selectedLocation) {

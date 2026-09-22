@@ -234,7 +234,10 @@ class _PaymentMethodScreenState extends State<PaymentMethodScreen> {
     // here since orderType still travels through to the created order doc.
     final effectiveOrderType = isB2B ? 'One Time' : _orderType;
 
-    final callable = FirebaseFunctions.instance.httpsCallable('createOrder');
+    final callable = FirebaseFunctions.instance.httpsCallable(
+      'createOrder',
+      options: HttpsCallableOptions(timeout: const Duration(seconds: 25)),
+    );
     final result = await callable.call<Map<String, dynamic>>({
       'items': cartProvider.items
           .map((item) => {
@@ -262,7 +265,7 @@ class _PaymentMethodScreenState extends State<PaymentMethodScreen> {
         'employeeCode': trimmedAssociateCode
       else if (trimmedAssociateCode.isNotEmpty)
         'employeeCode': trimmedAssociateCode,
-      'deliveryAddress': widget.selectedAddress.toMap(),
+      'deliveryAddress': widget.selectedAddress.toOrderMap(),
       'paymentMethod': _selectedPaymentMethod,
       if (razorpayOrderId != null) 'razorpayOrderId': razorpayOrderId,
       if (razorpayPaymentId != null) 'razorpayPaymentId': razorpayPaymentId,
@@ -285,16 +288,66 @@ class _PaymentMethodScreenState extends State<PaymentMethodScreen> {
     final createdRefs = (data['orders'] as List).cast<Map<dynamic, dynamic>>();
     final db = FirebaseFirestore.instance;
     final orders = <OrderModel>[];
-    for (final ref in createdRefs) {
+    await Future.wait(createdRefs.map((ref) async {
       final orderId = ref['orderId'] as String;
-      final doc = await db.collection('orders').doc(orderId).get();
-      if (doc.exists) {
-        orders.add(OrderModel.fromMap(doc.data()!, doc.id));
+      try {
+        final doc = await db
+            .collection('orders')
+            .doc(orderId)
+            .get()
+            .timeout(const Duration(seconds: 3));
+        if (doc.exists && doc.data() != null) {
+          orders.add(OrderModel.fromMap(doc.data()!, doc.id));
+        }
+      } catch (e) {
+        debugPrint('⚠️ Error fetching created order doc: $e');
       }
-    }
+    }));
 
     if (orders.isEmpty) {
-      throw Exception('Order creation failed');
+      if (createdRefs.isNotEmpty) {
+        final firstRef = createdRefs.first;
+        final orderId = firstRef['orderId']?.toString() ?? 'unknown';
+        final orderNumber = firstRef['orderNumber']?.toString() ??
+            'ORD-${DateTime.now().millisecondsSinceEpoch}';
+        final finalTotal = cartProvider.calculateTotal(
+          discount: discount,
+          deliveryCharge: widget.deliveryCharge,
+          tax: widget.tax,
+        );
+        orders.add(OrderModel(
+          id: orderId,
+          userId: userId,
+          orderNumber: orderNumber,
+          items: cartProvider.items,
+          deliveryAddress: widget.selectedAddress,
+          subtotal: cartProvider.subtotal,
+          discount: discount,
+          deliveryCharge: widget.deliveryCharge,
+          tax: widget.tax,
+          total: finalTotal,
+          paymentMethod: _selectedPaymentMethod,
+          paymentStatus: _selectedPaymentMethod == 'cod' ? 'pending' : 'paid',
+          orderStatus: 'pending',
+          orderMode: isB2B ? 'B2B' : 'B2C',
+          employeeCode:
+              trimmedAssociateCode.isNotEmpty ? trimmedAssociateCode : null,
+          razorpayOrderId: razorpayOrderId,
+          razorpayPaymentId: razorpayPaymentId,
+          razorpaySignature: razorpaySignature,
+          couponCode: couponCode,
+          notes: _notesController.text.trim().isNotEmpty
+              ? _notesController.text.trim()
+              : null,
+          orderType: effectiveOrderType,
+          autoFrequency:
+              effectiveOrderType == 'Auto Delivery' ? _autoFrequency : null,
+          deliverySlot: deliverySlotLabel,
+          createdAt: DateTime.now(),
+        ));
+      } else {
+        throw Exception('Order creation failed');
+      }
     }
 
     // Auto Delivery subscription writing stays client-side, unchanged —
@@ -1624,16 +1677,12 @@ class _PaymentMethodScreenState extends State<PaymentMethodScreen> {
       child: Column(
         children: [
           if (isB2B) ...[
-            TextFormField(
+            AssociateCodeField(
               controller: _employeeCodeController,
-              decoration: InputDecoration(
-                labelText: 'Employee ID *',
-                hintText: 'Enter the sales employee code',
-                border: OutlineInputBorder(
-                  borderRadius: BorderRadius.circular(10),
-                ),
-                prefixIcon: const Icon(Icons.badge_outlined),
-              ),
+              isDark: isDark,
+              accentColor: accentColor,
+              dense: false,
+              isB2B: true,
             ),
             const SizedBox(height: 12),
           ],

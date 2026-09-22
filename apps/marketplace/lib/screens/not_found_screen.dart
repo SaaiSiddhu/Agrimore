@@ -535,7 +535,7 @@ class _NotFoundScreenState extends State<NotFoundScreen>
                   crossAxisCount: 3,
                   mainAxisSpacing: 10,
                   crossAxisSpacing: 10,
-                  childAspectRatio: 0.50, // Fixed overflow
+                  childAspectRatio: 0.36, // Fixed overflow
                 ),
                 itemCount: trendingProducts.length,
                 itemBuilder: (context, index) {

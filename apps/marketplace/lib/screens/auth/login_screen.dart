@@ -54,6 +54,7 @@ class _LoginScreenState extends State<LoginScreen> {
   bool _isResending = false;
   bool _isRequestingVoice = false;
   String? _otpErrorMessage;
+  String? _activeMockOtp;
   String _channel = 'sms';
   // The phone number the current/last OTP was sent to — set once
   // sendPhoneOTP succeeds, replacing the old OtpVerificationScreen's
@@ -170,25 +171,42 @@ class _LoginScreenState extends State<LoginScreen> {
     }
 
     _pendingPhone = phone;
-    _enterOtpState(result.channel);
+    _enterOtpState(result.channel, autofillOtp: result.mockOtp);
   }
 
-  void _enterOtpState(String channel) {
+  void _enterOtpState(String channel, {String? autofillOtp}) {
     for (final c in _otpControllers) {
       c.clear();
     }
     setState(() {
       _channel = channel;
+      _activeMockOtp = autofillOtp;
       _otpErrorMessage = null;
       _sheetState = _AuthSheetState.otpEntry;
     });
     _startResendCountdown();
-    // Auto-focus the first OTP cell once the transition has had a frame to
-    // mount the new content — matches the previous screen's own behavior
-    // (autofocus was implicit there because the whole screen was fresh).
-    WidgetsBinding.instance.addPostFrameCallback((_) {
-      if (mounted) _otpFocusNodes.first.requestFocus();
-    });
+
+    if (autofillOtp != null && autofillOtp.length == _kOtpLength) {
+      for (int i = 0; i < _kOtpLength; i++) {
+        _otpControllers[i].text = autofillOtp[i];
+      }
+      WidgetsBinding.instance.addPostFrameCallback((_) {
+        if (!mounted) return;
+        _otpFocusNodes.last.requestFocus();
+        Future.delayed(const Duration(milliseconds: 350), () {
+          if (mounted && _sheetState == _AuthSheetState.otpEntry) {
+            _handleVerify();
+          }
+        });
+      });
+    } else {
+      // Auto-focus the first OTP cell once the transition has had a frame to
+      // mount the new content — matches the previous screen's own behavior
+      // (autofocus was implicit there because the whole screen was fresh).
+      WidgetsBinding.instance.addPostFrameCallback((_) {
+        if (mounted) _otpFocusNodes.first.requestFocus();
+      });
+    }
   }
 
   // AUTH-3: "Continue with Google" — acquires a credential, asks
@@ -279,6 +297,7 @@ class _LoginScreenState extends State<LoginScreen> {
     _resendTimer?.cancel();
     setState(() {
       _sheetState = _AuthSheetState.phoneEntry;
+      _activeMockOtp = null;
       _otpErrorMessage = null;
     });
     WidgetsBinding.instance.addPostFrameCallback((_) {
@@ -416,11 +435,29 @@ class _LoginScreenState extends State<LoginScreen> {
     setState(() => _isResending = false);
 
     if (result != null) {
-      setState(() => _channel = result.channel);
+      setState(() {
+        _channel = result.channel;
+        _activeMockOtp = result.mockOtp;
+      });
       for (final c in _otpControllers) {
         c.clear();
       }
-      _otpFocusNodes.first.requestFocus();
+      if (result.mockOtp != null && result.mockOtp!.length == _kOtpLength) {
+        for (int i = 0; i < _kOtpLength; i++) {
+          _otpControllers[i].text = result.mockOtp![i];
+        }
+        WidgetsBinding.instance.addPostFrameCallback((_) {
+          if (!mounted) return;
+          _otpFocusNodes.last.requestFocus();
+          Future.delayed(const Duration(milliseconds: 350), () {
+            if (mounted && _sheetState == _AuthSheetState.otpEntry) {
+              _handleVerify();
+            }
+          });
+        });
+      } else {
+        _otpFocusNodes.first.requestFocus();
+      }
       _startResendCountdown();
     } else {
       ScaffoldMessenger.of(context).showSnackBar(
@@ -826,7 +863,25 @@ class _LoginScreenState extends State<LoginScreen> {
           ),
           textAlign: TextAlign.center,
         ),
-        const SizedBox(height: 24),
+        if (_activeMockOtp != null) ...[
+          const SizedBox(height: 8),
+          Container(
+            padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 4),
+            decoration: BoxDecoration(
+              color: AppColors.primary.withValues(alpha: 0.1),
+              borderRadius: BorderRadius.circular(8),
+            ),
+            child: Text(
+              'Mock OTP: $_activeMockOtp (Autofilled)',
+              style: const TextStyle(
+                fontSize: 12,
+                fontWeight: FontWeight.w600,
+                color: AppColors.primary,
+              ),
+            ),
+          ),
+        ],
+        const SizedBox(height: 20),
         // Expanded per box (not a fixed width) so the row always fits exactly
         // within the screen width, on any device — no overflow possible.
         Row(

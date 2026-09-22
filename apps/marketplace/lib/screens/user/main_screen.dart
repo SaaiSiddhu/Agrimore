@@ -10,6 +10,9 @@ import 'package:agrimore_ui/agrimore_ui.dart';
 import '../../providers/cart_provider.dart';
 import '../../providers/wishlist_provider.dart';
 import '../../providers/theme_provider.dart';
+import '../../providers/auth_provider.dart' as app_auth;
+import '../../providers/address_provider.dart';
+import '../../providers/seller_provider.dart';
 import '../../utils/web_url_helper.dart';
 import 'home/home_screen.dart';
 import 'categories/categories_screen.dart';  // ✅ NEW
@@ -126,6 +129,7 @@ class _MainScreenState extends State<MainScreen>
     _fadeAnimationController = AnimationController(
       vsync: this,
       duration: const Duration(milliseconds: 250),
+      value: 1.0, // Instant visibility on the very first frame
     );
 
     _fadeAnimation = Tween<double>(begin: 0.0, end: 1.0).animate(
@@ -147,12 +151,6 @@ class _MainScreenState extends State<MainScreen>
       );
     }
 
-    Future.delayed(const Duration(milliseconds: 150), () {
-      if (mounted) {
-        _fadeAnimationController.forward();
-      }
-    });
-
     _initializeData();
 
 
@@ -173,9 +171,16 @@ class _MainScreenState extends State<MainScreen>
         final cartProvider = Provider.of<CartProvider>(context, listen: false);
         final wishlistProvider =
             Provider.of<WishlistProvider>(context, listen: false);
+        final authProvider =
+            Provider.of<app_auth.AuthProvider>(context, listen: false);
 
         cartProvider.loadCart();
         wishlistProvider.loadWishlist();
+
+        if (authProvider.isLoggedIn) {
+          context.read<AddressProvider>().loadAddresses();
+          context.read<SellerProvider>().checkSellerStatus();
+        }
       } catch (e) {
         debugPrint('❌ Error initializing data: $e');
       }

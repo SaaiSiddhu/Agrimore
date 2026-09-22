@@ -104,7 +104,9 @@ class CategoryProvider with ChangeNotifier {
       _error = null;
       if (!_isCacheLoaded) _notifySafely();
 
-      final freshCategories = await _databaseService.getAllCategories();
+      final freshCategories = await _databaseService
+          .getAllCategories()
+          .timeout(const Duration(seconds: 8));
       
       // ============================================
       // STEP 3: UPDATE - Only refresh UI if data changed

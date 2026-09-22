@@ -10,6 +10,7 @@ import '../../../providers/category_provider.dart';
 import '../../../providers/cart_provider.dart';
 import '../../../providers/wishlist_provider.dart';
 import '../../../providers/address_provider.dart';
+import '../../../providers/market_mode_provider.dart';
 import 'package:agrimore_core/agrimore_core.dart';
 import 'widgets/product_image_hero.dart';
 import 'widgets/specification_list.dart';
@@ -47,6 +48,14 @@ class _ProductDetailsScreenState extends State<ProductDetailsScreen> {
   @override
   void initState() {
     super.initState();
+    // Immediate synchronous hydration from in-memory products if available
+    final provider = Provider.of<ProductProvider>(context, listen: false);
+    for (final p in provider.products) {
+      if (p.id == widget.productId) {
+        provider.selectProduct(p);
+        break;
+      }
+    }
     _loadProduct();
     // Fire-and-forget, same pattern as CategoryProvider elsewhere on this
     // screen tree: loadAddresses() is idempotent-safe and most navigations
@@ -141,12 +150,36 @@ class _ProductDetailsScreenState extends State<ProductDetailsScreen> {
       }
     }
 
+    final marketMode = Provider.of<MarketModeProvider>(context, listen: false);
+    final isB2B = marketMode.isB2B;
+
+    if (isB2B && !product.isB2BEnabled) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(
+          content: Text('This product is not available for B2B ordering'),
+          backgroundColor: Colors.red,
+          duration: Duration(seconds: 2),
+        ),
+      );
+      return;
+    }
+
+    final canProceed = await confirmCartModeSwitch(
+      context: context,
+      cart: cartProvider,
+      wantsB2B: isB2B,
+    );
+    if (!canProceed || !context.mounted) return;
+
+    final initialQty = isB2B ? (product.b2bMoq ?? 1) : 1;
+
     await cartProvider.addItem(
       product,
-      quantity: 1,
+      quantity: initialQty,
       variant: variantName,
       variantPrice: variantPrice,
       variantOriginalPrice: variantOriginalPrice,
+      isB2BMode: isB2B,
     );
 
     // `context` is this method's own parameter, not necessarily the State's
@@ -412,13 +445,15 @@ class _ProductDetailsScreenState extends State<ProductDetailsScreen> {
   /// selectedVariant-overrides-product source the bottom bar already uses
   /// (product_provider.dart), so the two can never show different numbers.
   Widget _buildPriceRow(bool isDark, Color accentColor) {
-    return Consumer<ProductProvider>(
-      builder: (context, productProvider, _) {
+    return Consumer2<ProductProvider, MarketModeProvider>(
+      builder: (context, productProvider, marketMode, _) {
         final product = productProvider.selectedProduct;
         if (product == null) return const SizedBox.shrink();
         final selectedVariant = productProvider.selectedVariant;
-        final displayPrice = selectedVariant?.salePrice ?? product.salePrice;
-        final displayOriginal = selectedVariant?.originalPrice ?? product.originalPrice;
+        final isB2B = marketMode.isB2B;
+        final showB2B = isB2B && product.isB2BEnabled && product.b2bPrice != null;
+        final displayPrice = showB2B ? product.b2bPrice! : (selectedVariant?.salePrice ?? product.salePrice);
+        final displayOriginal = showB2B ? null : (selectedVariant?.originalPrice ?? product.originalPrice);
         final hasDiscount = displayOriginal != null && displayOriginal > displayPrice;
 
         return Row(
@@ -432,7 +467,25 @@ class _ProductDetailsScreenState extends State<ProductDetailsScreen> {
                 color: isDark ? Colors.white : Colors.black87,
               ),
             ),
-            if (hasDiscount) ...[
+            if (showB2B) ...[
+              const SizedBox(width: 8),
+              Container(
+                padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 3),
+                decoration: BoxDecoration(
+                  color: Colors.amber.withValues(alpha: 0.2),
+                  borderRadius: BorderRadius.circular(6),
+                  border: Border.all(color: Colors.amber.shade700),
+                ),
+                child: Text(
+                  'Wholesale | MOQ: ${product.b2bMoq ?? 1}',
+                  style: TextStyle(
+                    fontSize: 11,
+                    fontWeight: FontWeight.w700,
+                    color: isDark ? Colors.amber.shade300 : Colors.amber.shade900,
+                  ),
+                ),
+              ),
+            ] else if (hasDiscount) ...[
               const SizedBox(width: 8),
               Text(
                 '₹${displayOriginal.toStringAsFixed(0)}',
@@ -455,8 +508,26 @@ class _ProductDetailsScreenState extends State<ProductDetailsScreen> {
                   '${((displayOriginal - displayPrice) / displayOriginal * 100).round()}% OFF',
                   style: TextStyle(
                     fontSize: 11,
-                    fontWeight: FontWeight.w800,
+                    fontWeight: FontWeight.w700,
                     color: Colors.green.shade700,
+                  ),
+                ),
+              ),
+            ],
+            if (isB2B && !product.isB2BEnabled) ...[
+              const SizedBox(width: 8),
+              Container(
+                padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 3),
+                decoration: BoxDecoration(
+                  color: Colors.grey.withValues(alpha: 0.15),
+                  borderRadius: BorderRadius.circular(6),
+                ),
+                child: Text(
+                  'Retail Only',
+                  style: TextStyle(
+                    fontSize: 11,
+                    fontWeight: FontWeight.w600,
+                    color: isDark ? Colors.grey[400] : Colors.grey[600],
                   ),
                 ),
               ),
@@ -1015,14 +1086,16 @@ class _ProductDetailsScreenState extends State<ProductDetailsScreen> {
     final isDark = themeProvider.isDarkMode;
     final accentColor = isDark ? AppColors.primaryLight : AppColors.primary;
 
-    return Consumer2<ProductProvider, CartProvider>(
-      builder: (context, productProvider, cartProvider, child) {
+    return Consumer3<ProductProvider, CartProvider, MarketModeProvider>(
+      builder: (context, productProvider, cartProvider, marketMode, child) {
         final product = productProvider.selectedProduct;
         if (product == null) return const SizedBox.shrink();
 
         final selectedVariant = productProvider.selectedVariant;
-        final displayPrice = selectedVariant?.salePrice ?? product.salePrice;
-        final displayOriginal = selectedVariant?.originalPrice ?? product.originalPrice;
+        final isB2B = marketMode.isB2B;
+        final showB2B = isB2B && product.isB2BEnabled && product.b2bPrice != null;
+        final displayPrice = showB2B ? product.b2bPrice! : (selectedVariant?.salePrice ?? product.salePrice);
+        final displayOriginal = showB2B ? null : (selectedVariant?.originalPrice ?? product.originalPrice);
         final displayName = selectedVariant?.name ?? '';
         // null when the product has no variants -- matches CartProvider's
         // own null-variant branch (see cart_provider.dart's isInCart/getItemQuantity).
@@ -1097,8 +1170,26 @@ class _ProductDetailsScreenState extends State<ProductDetailsScreen> {
                                 color: isDark ? Colors.white : Colors.black87,
                               ),
                             ),
-                            const SizedBox(width: 8),
-                            if (displayOriginal != null && displayOriginal > displayPrice) ...[
+                            if (showB2B) ...[
+                              const SizedBox(width: 6),
+                              Container(
+                                padding: const EdgeInsets.symmetric(horizontal: 5, vertical: 2),
+                                decoration: BoxDecoration(
+                                  color: Colors.amber.withValues(alpha: 0.18),
+                                  borderRadius: BorderRadius.circular(4),
+                                  border: Border.all(color: Colors.amber.shade700, width: 0.8),
+                                ),
+                                child: Text(
+                                  'MOQ: ${product.b2bMoq ?? 1}',
+                                  style: TextStyle(
+                                    fontSize: 9,
+                                    fontWeight: FontWeight.w800,
+                                    color: isDark ? Colors.amber.shade300 : Colors.amber.shade900,
+                                  ),
+                                ),
+                              ),
+                            ] else if (displayOriginal != null && displayOriginal > displayPrice) ...[
+                              const SizedBox(width: 8),
                               Text(
                                 '₹${displayOriginal.toStringAsFixed(0)}',
                                 style: TextStyle(
@@ -1144,7 +1235,7 @@ class _ProductDetailsScreenState extends State<ProductDetailsScreen> {
                   SizedBox(
                     key: _addToCartKey,
                     width: 140,
-                    child: !product.inStock
+                    child: (isB2B && !product.isB2BEnabled)
                         ? ElevatedButton(
                             onPressed: null,
                             style: ElevatedButton.styleFrom(
@@ -1153,28 +1244,41 @@ class _ProductDetailsScreenState extends State<ProductDetailsScreen> {
                               shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
                             ),
                             child: const Text(
-                              'Out of Stock',
-                              style: TextStyle(fontSize: 14, fontWeight: FontWeight.w700),
+                              'B2C Only',
+                              style: TextStyle(fontSize: 13, fontWeight: FontWeight.w700),
                             ),
                           )
-                        : inCart
-                            ? _buildQuantityStepper(
-                                isDark, accentColor, product, variantKey, cartQuantity, cartProvider)
-                            : ElevatedButton(
-                                onPressed: () => _addToCart(context),
+                        : !product.inStock
+                            ? ElevatedButton(
+                                onPressed: null,
                                 style: ElevatedButton.styleFrom(
-                                  backgroundColor: accentColor,
-                                  foregroundColor: isDark ? Colors.black : Colors.white,
+                                  backgroundColor: Colors.grey[400],
                                   padding: const EdgeInsets.symmetric(vertical: 14),
                                   shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
-                                  elevation: 2,
-                                  shadowColor: accentColor.withValues(alpha: 0.3),
                                 ),
                                 child: const Text(
-                                  'Add to cart',
+                                  'Out of Stock',
                                   style: TextStyle(fontSize: 14, fontWeight: FontWeight.w700),
                                 ),
-                              ),
+                              )
+                            : inCart
+                                ? _buildQuantityStepper(
+                                    isDark, accentColor, product, variantKey, cartQuantity, cartProvider)
+                                : ElevatedButton(
+                                    onPressed: () => _addToCart(context),
+                                    style: ElevatedButton.styleFrom(
+                                      backgroundColor: accentColor,
+                                      foregroundColor: isDark ? Colors.black : Colors.white,
+                                      padding: const EdgeInsets.symmetric(vertical: 14),
+                                      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+                                      elevation: 2,
+                                      shadowColor: accentColor.withValues(alpha: 0.3),
+                                    ),
+                                    child: const Text(
+                                      'Add to cart',
+                                      style: TextStyle(fontSize: 14, fontWeight: FontWeight.w700),
+                                    ),
+                                  ),
                   ),
                 ],
               ),
@@ -1185,10 +1289,9 @@ class _ProductDetailsScreenState extends State<ProductDetailsScreen> {
     );
   }
 
-  /// `[-] N [+]` stepper replacing the Add-to-Cart button once this
-  /// (product, variant) pair is already in the cart -- master-prompt's own
-  /// "transform into quantity controls" requirement. Reads/writes go
-  /// straight through the existing CartProvider (optimistic local update,
+  /// In-place quantity stepper replacing the "Add to cart" button when the
+  /// selected item is already in the cart. Reuses CartProvider's optimistic
+  /// decrement/increment (0ms local state update, background sync,
   /// no loading flicker); nothing new is introduced here.
   Widget _buildQuantityStepper(
     bool isDark,
@@ -1198,6 +1301,10 @@ class _ProductDetailsScreenState extends State<ProductDetailsScreen> {
     int quantity,
     CartProvider cartProvider,
   ) {
+    final isB2B = cartProvider.cartMode == 'B2B' ||
+        (cartProvider.cartMode == null && context.read<MarketModeProvider>().isB2B);
+    final minQty = (isB2B && (product.b2bMoq ?? 0) > 0) ? product.b2bMoq! : 1;
+
     return Container(
       height: 48,
       decoration: BoxDecoration(
@@ -1212,7 +1319,11 @@ class _ProductDetailsScreenState extends State<ProductDetailsScreen> {
             isDark: isDark,
             onTap: () {
               HapticFeedback.selectionClick();
-              cartProvider.decrementQuantity(product.id, variant: variantKey);
+              if (quantity <= minQty) {
+                cartProvider.removeItem(product.id, variant: variantKey);
+              } else {
+                cartProvider.decrementQuantity(product.id, variant: variantKey);
+              }
             },
           ),
           Text(
