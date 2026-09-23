@@ -501,6 +501,20 @@ service cloud.firestore {
     // the trigger itself to re-derive the amount from the transaction
     // snapshot rather than `after`, but that is defence-in-depth, not a
     // substitute for closing the write path here.
+    // SELLER-ORDERS-1 (ADR-S13): a seller changes an order's status ONLY
+    // through the sellerTransitionOrder callable (state machine, ownership,
+    // stock restore, refund flag). Before this, the seller branch below
+    // could write any orderStatus — including 'delivered', which fires
+    // commission payouts. The delivery-partner branch is unchanged here
+    // (its direct 'delivered' write is FIX-5B, blocked on a delivery release).
+    function sellerCannotChangeOrderLifecycle() {
+      return !request.resource.data.diff(resource.data).affectedKeys().hasAny([
+        'orderStatus', 'status', 'sellerDecision', 'acceptedAt', 'packingStartedAt',
+        'readyForPickupAt', 'cancelledBy', 'cancelledAt', 'cancellationReason',
+        'cancellationNote', 'stockRestored', 'refundStatus', 'inventoryDeducted'
+      ]);
+    }
+
     function orderFulfilmentCannotChangeProtectedFields() {
       // Phase FIX-4B (N-9): commissionReversed added alongside
       // commissionPaid/commissionAmount — a seller could otherwise pre-set
@@ -615,7 +629,8 @@ service cloud.firestore {
           ownerCannotChangeOrderFinancials() &&
           ownerOrderStatusChangeIsValid()) ||
          (isSeller() && resource.data.sellerId == request.auth.uid &&
-          orderFulfilmentCannotChangeProtectedFields()) ||
+          orderFulfilmentCannotChangeProtectedFields() &&
+          sellerCannotChangeOrderLifecycle()) ||
          (isDeliveryPartner() && resource.data.deliveryPartnerId == request.auth.uid &&
           orderFulfilmentCannotChangeProtectedFields()) ||
          (isDeliveryPartner() &&
