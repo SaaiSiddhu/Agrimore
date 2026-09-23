@@ -79,6 +79,13 @@ async function main() {
   record("e06_no_rider_skipped", (await M.recordDeliveryEarningCore(db, o4, THU, RATES)).reason === "no_rider", "");
   const o5 = await deliveredOrder("r1", { paymentMethod: "cod", paymentStatus: "paid" });
   record("e07_cod_already_paid_online_holds_no_cash", (await M.recordDeliveryEarningCore(db, o5, BEFORE_CUTOFF + 70 * MIN, RATES)).cod === 0, "");
+  // No task yet and no pickup on the order: the seller's store location is used.
+  await db.doc("sellers/geo-seller").set({ storeLat: STORE.lat, storeLng: STORE.lng });
+  await db.doc("orders/dlv4a-notask").set({ userId: "c", sellerId: "geo-seller", total: 480, paymentMethod: "razorpay", paymentStatus: "paid",
+    orderStatus: "delivered", status: "delivered", deliveryPartnerId: "r-geo", deliveryAddress: { latitude: HOME.lat, longitude: HOME.lng } });
+  await M.recordDeliveryEarningCore(db, "dlv4a-notask", THU, RATES);
+  const eg = await get("rider_earnings/dlv4a-notask");
+  record("e08_no_task_uses_the_sellers_store", eg.kmSource === "straight_line" && eg.km > 3.9 && eg.total > 45, JSON.stringify(eg));
   // A delivery after the cutoff (this week) — must NOT be in last week's statement.
   const o6 = await deliveredOrder("r1", { paymentMethod: "razorpay", paymentStatus: "paid" });
   await M.recordDeliveryEarningCore(db, o6, THU, RATES);

@@ -34,7 +34,7 @@ import { onSchedule } from "firebase-functions/v2/scheduler";
 import * as admin from "firebase-admin";
 import { FieldValue, Timestamp } from "firebase-admin/firestore";
 import { taskStatusFromOrder } from "./states";
-import { dropPoint, orderPickupPoint } from "./syncDeliveryTask";
+import { dropPoint, orderPickupPoint, sellerPickupPoint } from "./syncDeliveryTask";
 import { isCashOnDelivery, isPaid } from "../seller/sellerTransitionOrder";
 import { resolveIsAdmin } from "../admin/complianceGate";
 import {
@@ -79,11 +79,17 @@ export async function recordDeliveryEarningCore(db: Db, orderId: string, nowMs: 
     if (!riderId) return { kind: "skipped", reason: "no_rider" };
 
     const task = taskSnap.exists ? taskSnap.data()! : {};
-    const trip = tripKm({
-      pickup: task.pickup ?? orderPickupPoint(o),
-      drop: task.drop ?? dropPoint(o),
-      route: task.route,
-    });
+    // The store: the task's point, else the order's own, else the seller's
+    // store location — the task may not exist yet when the delivered write
+    // is the order's first update since syncDeliveryTask was deployed, or
+    // is still being written in parallel (phaseDLV4A_trigger_test t01 paid
+    // base only, 0 km, before this fallback).
+    let pickup = task.pickup ?? orderPickupPoint(o);
+    if (!pickup && typeof o.sellerId === "string" && o.sellerId) {
+      const seller = await tx.get(db.collection("sellers").doc(o.sellerId));
+      pickup = sellerPickupPoint(seller.exists ? seller.data() : undefined);
+    }
+    const trip = tripKm({ pickup, drop: task.drop ?? dropPoint(o), route: task.route });
     const stepAt = (task.stepAt ?? {}) as Record<string, unknown>;
     const wait = billableWaitMinutes(
       millis(o.arrivedAtStoreAt) ?? millis(stepAt.at_pickup),
