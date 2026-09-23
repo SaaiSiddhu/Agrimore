@@ -3,6 +3,7 @@ import 'package:flutter/material.dart';
 import 'package:firebase_core/firebase_core.dart';
 import 'package:firebase_auth/firebase_auth.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
+import 'package:agrimore_core/agrimore_core.dart';
 import '../../../app/themes/admin_colors.dart';
 
 class AddDeliveryPartnerDialog extends StatefulWidget {
@@ -267,6 +268,13 @@ class _AddDeliveryPartnerDialogState extends State<AddDeliveryPartnerDialog> {
         'currentLng': null,
         'currentOrderId': null,
         'lastLocationUpdate': null,
+        // Phase DLV-1B: an admin-created partner is approved by the admin who
+        // created it. Without `status` the delivery app treated the account as
+        // pending and roleClaims.ts never minted the delivery_partner claim, so
+        // admin-created partners could not work at all.
+        'status': RiderKycStatus.approved.wire,
+        'reviewedBy': currentUser?.uid,
+        'reviewedAt': FieldValue.serverTimestamp(),
         'createdAt': FieldValue.serverTimestamp(),
       });
       

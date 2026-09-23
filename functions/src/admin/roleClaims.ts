@@ -15,8 +15,12 @@ function normalizeRole(role: unknown): Role {
   return "customer";
 }
 
+// SEC-STATUSCASE: EXACT match, the same definition every firestore.rules
+// guard uses (they block an owner writing the literal 'approved'). This used
+// to trim + lower-case, so an owner-writable variant such as "Approved" —
+// which the rules allow — re-granted the role claim to a suspended account.
 function isApprovedStatus(value: unknown): boolean {
-  return String(value || "").trim().toLowerCase() === "approved";
+  return value === "approved";
 }
 
 async function getUserData(uid: string): Promise<admin.firestore.DocumentData | null> {
@@ -24,7 +28,8 @@ async function getUserData(uid: string): Promise<admin.firestore.DocumentData | 
   return snap.exists ? snap.data() || null : null;
 }
 
-async function buildClaims(uid: string): Promise<Record<string, unknown> | null> {
+// Exported for phaseSECSTATUS_claims_test (read-only; never calls Auth).
+export async function buildClaims(uid: string): Promise<Record<string, unknown> | null> {
   const userData = await getUserData(uid);
   if (!userData) return null;
 
