@@ -27,8 +27,9 @@ RULES="COLOR SPACING RADIUS TYPE MOTION ICONS SHADOW STRINGS FORMAT THEME FEEDBA
 pattern() {
   case "$1" in
     COLOR)    echo 'Color\(0x|Colors\.[a-zA-Z]' ;;
-    SPACING)  echo 'EdgeInsets\.[a-zA-Z]+\([^)]*[1-9]|SizedBox\((height|width): *[1-9]|Gap\([1-9]' ;;
-    RADIUS)   echo 'BorderRadius\.(circular|all)\([^)]*[1-9]|Radius\.circular\([1-9]' ;;
+    # a literal is a number standing alone (after ( , : or space) — never the digits inside a token name like WsSpace.s16
+    SPACING)  echo 'EdgeInsets\.[a-zA-Z]+\([^)]*[(,: ][0-9]*[1-9][0-9.]*[,) ]|EdgeInsets\.[a-zA-Z]+\([0-9]*[1-9]|SizedBox\((height|width): *[0-9]*[1-9]|Gap\([0-9]*[1-9]' ;;
+    RADIUS)   echo 'BorderRadius\.(circular|all)\([0-9]*[1-9]|Radius\.circular\([0-9]*[1-9]' ;;
     TYPE)     echo 'TextStyle\(|fontSize: *[0-9]|fontWeight: *FontWeight\.|letterSpacing: *-?[0-9]' ;;
     MOTION)   echo 'Duration\((milli)?seconds: *[1-9]|Curves\.' ;;
     ICONS)    echo '(^|[^A-Za-z])Icons\.|FontAwesomeIcons\.|CupertinoIcons\.' ;;
