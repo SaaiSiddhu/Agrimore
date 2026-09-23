@@ -276,6 +276,18 @@ Recents, OS reclaim) — the plugin disposes its stream when its Flutter engine 
 phase (a native location service independent of the Flutter screen) **before the Play release**. Meanwhile a
 swipe-away fails safe: the server takes the rider offline after 15 min and pushes them.
 
+### D-DLV-NATIVE-LOC · D-DLV-BGLOC-ALWAYS · D-DLV-BATTERY — OWNER_DECISION 2026-09-23 (AskUserQuestion, plan DLV-3A2)
+
+- **D-DLV-NATIVE-LOC** — location while online is sent by a **native Kotlin foreground service** (fused location,
+  writes Firestore as the signed-in rider), not a Flutter background plugin. Independent of the Flutter screen.
+- **D-DLV-BGLOC-ALWAYS** — riders are asked for **"Allow all the time"** (ACCESS_BACKGROUND_LOCATION) so the service
+  restarts after Android kills the app. The owner accepts the Play background-location declaration, demo video and
+  review risk. (Chosen over the recommended while-in-use-only.) A rider who declines can still go online.
+- **D-DLV-BATTERY** — a **one-time guide** that opens the phone's settings for the app (battery / autostart); no
+  REQUEST_IGNORE_BATTERY_OPTIMIZATIONS permission.
+
+Implemented by DLV-3A2 (RiderLocationService.kt).
+
 ## 6. Open owner decisions (do not resolve silently)
 
 | ID | Question | Safe default while open |
