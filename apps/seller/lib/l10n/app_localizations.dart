@@ -4185,6 +4185,192 @@ abstract class AppLocalizations {
   /// In en, this message translates to:
   /// **'Couldn\'t publish your post. Try again.'**
   String get postFailed;
+
+  /// No description provided for @insightsTitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Insights'**
+  String get insightsTitle;
+
+  /// No description provided for @insightsHint.
+  ///
+  /// In en, this message translates to:
+  /// **'Sales trends, orders and best sellers'**
+  String get insightsHint;
+
+  /// No description provided for @insightsDays.
+  ///
+  /// In en, this message translates to:
+  /// **'{days} days'**
+  String insightsDays(int days);
+
+  /// No description provided for @insightsVsPrevious.
+  ///
+  /// In en, this message translates to:
+  /// **'{delta} vs {previous} in the previous period'**
+  String insightsVsPrevious(String delta, String previous);
+
+  /// No description provided for @insightsChartSummary.
+  ///
+  /// In en, this message translates to:
+  /// **'Sales {current} in the last {days} days, against {previous} in the {days} days before.'**
+  String insightsChartSummary(String current, String previous, int days);
+
+  /// No description provided for @insightsThisPeriod.
+  ///
+  /// In en, this message translates to:
+  /// **'This period'**
+  String get insightsThisPeriod;
+
+  /// No description provided for @insightsPreviousPeriod.
+  ///
+  /// In en, this message translates to:
+  /// **'Previous period'**
+  String get insightsPreviousPeriod;
+
+  /// No description provided for @insightsB2bShare.
+  ///
+  /// In en, this message translates to:
+  /// **'{share} of sales came from business (B2B) orders'**
+  String insightsB2bShare(String share);
+
+  /// No description provided for @insightsOrdersByStage.
+  ///
+  /// In en, this message translates to:
+  /// **'Orders by stage'**
+  String get insightsOrdersByStage;
+
+  /// No description provided for @insightsTopProducts.
+  ///
+  /// In en, this message translates to:
+  /// **'Best sellers'**
+  String get insightsTopProducts;
+
+  /// No description provided for @insightsNoOrders.
+  ///
+  /// In en, this message translates to:
+  /// **'No orders in this period yet.'**
+  String get insightsNoOrders;
+
+  /// No description provided for @healthTitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Account health'**
+  String get healthTitle;
+
+  /// No description provided for @healthNotEnoughData.
+  ///
+  /// In en, this message translates to:
+  /// **'Not enough activity yet to score your account. It appears after a few orders, reviews or quotes.'**
+  String get healthNotEnoughData;
+
+  /// No description provided for @healthNotEnoughDataShort.
+  ///
+  /// In en, this message translates to:
+  /// **'Shown after a few orders'**
+  String get healthNotEnoughDataShort;
+
+  /// No description provided for @healthExplainer.
+  ///
+  /// In en, this message translates to:
+  /// **'Calculated from the last 30 days. Only measures with enough data count.'**
+  String get healthExplainer;
+
+  /// No description provided for @healthScoreLabel.
+  ///
+  /// In en, this message translates to:
+  /// **'Account health {score} out of 100'**
+  String healthScoreLabel(int score);
+
+  /// No description provided for @healthGood.
+  ///
+  /// In en, this message translates to:
+  /// **'Good'**
+  String get healthGood;
+
+  /// No description provided for @healthFair.
+  ///
+  /// In en, this message translates to:
+  /// **'Needs attention'**
+  String get healthFair;
+
+  /// No description provided for @healthPoor.
+  ///
+  /// In en, this message translates to:
+  /// **'At risk'**
+  String get healthPoor;
+
+  /// No description provided for @healthFulfilment.
+  ///
+  /// In en, this message translates to:
+  /// **'Orders delivered'**
+  String get healthFulfilment;
+
+  /// No description provided for @healthCancellations.
+  ///
+  /// In en, this message translates to:
+  /// **'Cancellations'**
+  String get healthCancellations;
+
+  /// No description provided for @healthRating.
+  ///
+  /// In en, this message translates to:
+  /// **'Buyer rating'**
+  String get healthRating;
+
+  /// No description provided for @healthListings.
+  ///
+  /// In en, this message translates to:
+  /// **'Complete listings'**
+  String get healthListings;
+
+  /// No description provided for @healthQuotes.
+  ///
+  /// In en, this message translates to:
+  /// **'Quotes answered within a day'**
+  String get healthQuotes;
+
+  /// No description provided for @healthTargetAtLeast.
+  ///
+  /// In en, this message translates to:
+  /// **'Target: at least {value}'**
+  String healthTargetAtLeast(String value);
+
+  /// No description provided for @healthTargetAtMost.
+  ///
+  /// In en, this message translates to:
+  /// **'Target: at most {value}'**
+  String healthTargetAtMost(String value);
+
+  /// No description provided for @healthTipFulfilment.
+  ///
+  /// In en, this message translates to:
+  /// **'Accept only what you can deliver, and mark orders ready on time.'**
+  String get healthTipFulfilment;
+
+  /// No description provided for @healthTipCancellations.
+  ///
+  /// In en, this message translates to:
+  /// **'Keep stock accurate so you don\'t have to cancel accepted orders.'**
+  String get healthTipCancellations;
+
+  /// No description provided for @healthTipRating.
+  ///
+  /// In en, this message translates to:
+  /// **'Reply to reviews and pack carefully — buyers rate the whole experience.'**
+  String get healthTipRating;
+
+  /// No description provided for @healthTipListings.
+  ///
+  /// In en, this message translates to:
+  /// **'Add a photo, a description and the HSN code with GST rate to every live product.'**
+  String get healthTipListings;
+
+  /// No description provided for @healthTipQuotes.
+  ///
+  /// In en, this message translates to:
+  /// **'Answer quote requests within a day — counter, accept or decline.'**
+  String get healthTipQuotes;
 }
 
 class _AppLocalizationsDelegate

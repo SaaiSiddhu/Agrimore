@@ -2386,4 +2386,118 @@ class AppLocalizationsEn extends AppLocalizations {
 
   @override
   String get postFailed => 'Couldn\'t publish your post. Try again.';
+
+  @override
+  String get insightsTitle => 'Insights';
+
+  @override
+  String get insightsHint => 'Sales trends, orders and best sellers';
+
+  @override
+  String insightsDays(int days) {
+    return '$days days';
+  }
+
+  @override
+  String insightsVsPrevious(String delta, String previous) {
+    return '$delta vs $previous in the previous period';
+  }
+
+  @override
+  String insightsChartSummary(String current, String previous, int days) {
+    return 'Sales $current in the last $days days, against $previous in the $days days before.';
+  }
+
+  @override
+  String get insightsThisPeriod => 'This period';
+
+  @override
+  String get insightsPreviousPeriod => 'Previous period';
+
+  @override
+  String insightsB2bShare(String share) {
+    return '$share of sales came from business (B2B) orders';
+  }
+
+  @override
+  String get insightsOrdersByStage => 'Orders by stage';
+
+  @override
+  String get insightsTopProducts => 'Best sellers';
+
+  @override
+  String get insightsNoOrders => 'No orders in this period yet.';
+
+  @override
+  String get healthTitle => 'Account health';
+
+  @override
+  String get healthNotEnoughData =>
+      'Not enough activity yet to score your account. It appears after a few orders, reviews or quotes.';
+
+  @override
+  String get healthNotEnoughDataShort => 'Shown after a few orders';
+
+  @override
+  String get healthExplainer =>
+      'Calculated from the last 30 days. Only measures with enough data count.';
+
+  @override
+  String healthScoreLabel(int score) {
+    return 'Account health $score out of 100';
+  }
+
+  @override
+  String get healthGood => 'Good';
+
+  @override
+  String get healthFair => 'Needs attention';
+
+  @override
+  String get healthPoor => 'At risk';
+
+  @override
+  String get healthFulfilment => 'Orders delivered';
+
+  @override
+  String get healthCancellations => 'Cancellations';
+
+  @override
+  String get healthRating => 'Buyer rating';
+
+  @override
+  String get healthListings => 'Complete listings';
+
+  @override
+  String get healthQuotes => 'Quotes answered within a day';
+
+  @override
+  String healthTargetAtLeast(String value) {
+    return 'Target: at least $value';
+  }
+
+  @override
+  String healthTargetAtMost(String value) {
+    return 'Target: at most $value';
+  }
+
+  @override
+  String get healthTipFulfilment =>
+      'Accept only what you can deliver, and mark orders ready on time.';
+
+  @override
+  String get healthTipCancellations =>
+      'Keep stock accurate so you don\'t have to cancel accepted orders.';
+
+  @override
+  String get healthTipRating =>
+      'Reply to reviews and pack carefully — buyers rate the whole experience.';
+
+  @override
+  String get healthTipListings =>
+      'Add a photo, a description and the HSN code with GST rate to every live product.';
+
+  @override
+  String get healthTipQuotes =>
+      'Answer quote requests within a day — counter, accept or decline.';
 }
