@@ -890,6 +890,22 @@ service cloud.firestore {
         request.resource.data.status != 'approved';
     }
 
+    // Fields a seller may edit on their own public sellers/{uid} document
+    // (apps/seller profile + storefront editor + delivery fee sheet).
+    function ownerEditsOnlyStorefrontFields() {
+      let d = request.resource.data;
+      return d.diff(resource.data).affectedKeys().hasOnly([
+          'name', 'businessName', 'shopName', 'businessCategory',
+          'description', 'highlights', 'logoUrl', 'coverImageUrl',
+          'shopAddress', 'city', 'state', 'pincode', 'latitude', 'longitude',
+          'phone', 'gstNumber', 'gstin',
+          'openingTime', 'closingTime', 'deliveryRadiusKm', 'deliveryFeeSchedule',
+          'updatedAt'
+        ]) &&
+        (!('description' in d) || d.description == null || (d.description is string && d.description.size() <= 500)) &&
+        (!('highlights' in d) || d.highlights == null || (d.highlights is list && d.highlights.size() <= 3));
+    }
+
     match /sellers/{sellerId} {
       // Public read for seller profiles
       allow read: if true;
@@ -899,9 +915,13 @@ service cloud.firestore {
         (isOwner(sellerId) &&
          (!('status' in request.resource.data) || request.resource.data.status != 'approved'));
 
-      // Seller can update own profile but not self-approve, admin can manage all
+      // SELLER-STOREFRONT-EDIT-1: the owner may change ONLY their own
+      // profile / storefront fields. Before, any key except an exact
+      // `status: 'approved'` was owner-writable on this PUBLIC document —
+      // status (any other value), createdAt, statsRebuiltAt, and any future
+      // server-owned field (ratings, verification, commission) included.
       allow update: if isAdmin() ||
-        (isOwner(sellerId) && ownerCannotApproveSellerStatus());
+        (isOwner(sellerId) && ownerCannotApproveSellerStatus() && ownerEditsOnlyStorefrontFields());
       allow delete: if isAdmin();
 
       // Seller products subcollection
