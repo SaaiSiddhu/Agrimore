@@ -149,6 +149,14 @@ class ProductModel {
   final bool manualPriceOverride;
   final String priceSource;
   final bool isB2BEnabled;
+
+  // SELLER-CATALOGUE-1: tax data for GST invoices (ORDERS-2). hsnCode is the
+  // HSN/SAC code as typed; gstRate is a percentage (0, 5, 12, 18 or 28) —
+  // null means not declared. isDraft = saved by the seller but never
+  // published (always stored with isActive: false).
+  final String? hsnCode;
+  final double? gstRate;
+  final bool isDraft;
   final double? b2bPrice;
   final int? b2bMoq;
 
@@ -201,6 +209,9 @@ class ProductModel {
     this.manualPriceOverride = false,
     this.priceSource = 'default',
     this.isB2BEnabled = false,
+    this.hsnCode,
+    this.gstRate,
+    this.isDraft = false,
     this.b2bPrice,
     this.b2bMoq,
   });
@@ -339,6 +350,9 @@ class ProductModel {
       'manualPriceOverride': manualPriceOverride,
       'priceSource': priceSource,
       'isB2BEnabled': isB2BEnabled,
+      'hsnCode': hsnCode,
+      'gstRate': gstRate,
+      'isDraft': isDraft,
       'b2bPrice': b2bPrice,
       'b2bMoq': b2bMoq,
     };
@@ -439,6 +453,9 @@ class ProductModel {
       manualPriceOverride: map['manualPriceOverride'] == true,
       priceSource: map['priceSource']?.toString() ?? 'default',
       isB2BEnabled: (map['isB2BEnabled'] as bool?) ?? false,
+      hsnCode: (map['hsnCode'] as String?)?.trim().isEmpty ?? true ? null : (map['hsnCode'] as String).trim(),
+      gstRate: (map['gstRate'] as num?)?.toDouble(),
+      isDraft: map['isDraft'] == true,
       b2bPrice: (map['b2bPrice'] as num?)?.toDouble(),
       b2bMoq: (map['b2bMoq'] as num?)?.toInt(),
     );
@@ -499,6 +516,9 @@ class ProductModel {
     bool? manualPriceOverride,
     String? priceSource,
     bool? isB2BEnabled,
+    String? hsnCode,
+    double? gstRate,
+    bool? isDraft,
     double? b2bPrice,
     int? b2bMoq,
     bool clearDistrict = false,
@@ -558,6 +578,9 @@ class ProductModel {
       priceSource:
           priceSource ?? (clearCenterPricing ? 'default' : this.priceSource),
       isB2BEnabled: isB2BEnabled ?? this.isB2BEnabled,
+      hsnCode: hsnCode ?? this.hsnCode,
+      gstRate: gstRate ?? this.gstRate,
+      isDraft: isDraft ?? this.isDraft,
       b2bPrice: b2bPrice ?? this.b2bPrice,
       b2bMoq: b2bMoq ?? this.b2bMoq,
     );

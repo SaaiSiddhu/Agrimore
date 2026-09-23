@@ -1149,6 +1149,144 @@ abstract class AppLocalizations {
   /// In en, this message translates to:
   /// **'Chat with the buyer is ready'**
   String get chatReady;
+
+  /// No description provided for @taxSectionTitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Tax details (for invoices)'**
+  String get taxSectionTitle;
+
+  /// No description provided for @taxSectionHelp.
+  ///
+  /// In en, this message translates to:
+  /// **'Optional. Add them if you\'re GST-registered so your invoices show the right tax.'**
+  String get taxSectionHelp;
+
+  /// No description provided for @fieldHsn.
+  ///
+  /// In en, this message translates to:
+  /// **'HSN code'**
+  String get fieldHsn;
+
+  /// No description provided for @fieldGstRate.
+  ///
+  /// In en, this message translates to:
+  /// **'GST rate'**
+  String get fieldGstRate;
+
+  /// No description provided for @gstNotDeclared.
+  ///
+  /// In en, this message translates to:
+  /// **'Not declared'**
+  String get gstNotDeclared;
+
+  /// No description provided for @gstRatePercent.
+  ///
+  /// In en, this message translates to:
+  /// **'{rate}%'**
+  String gstRatePercent(int rate);
+
+  /// No description provided for @errHsn.
+  ///
+  /// In en, this message translates to:
+  /// **'HSN codes are 4, 6 or 8 digits'**
+  String get errHsn;
+
+  /// No description provided for @saveDraftCta.
+  ///
+  /// In en, this message translates to:
+  /// **'Save as draft'**
+  String get saveDraftCta;
+
+  /// No description provided for @draftSaved.
+  ///
+  /// In en, this message translates to:
+  /// **'Saved as a draft. Publish it when you\'re ready.'**
+  String get draftSaved;
+
+  /// No description provided for @draftNeedsName.
+  ///
+  /// In en, this message translates to:
+  /// **'Add a product name to save a draft'**
+  String get draftNeedsName;
+
+  /// No description provided for @filterAll.
+  ///
+  /// In en, this message translates to:
+  /// **'All'**
+  String get filterAll;
+
+  /// No description provided for @filterActive.
+  ///
+  /// In en, this message translates to:
+  /// **'Active'**
+  String get filterActive;
+
+  /// No description provided for @filterDraft.
+  ///
+  /// In en, this message translates to:
+  /// **'Drafts'**
+  String get filterDraft;
+
+  /// No description provided for @filterOutOfStock.
+  ///
+  /// In en, this message translates to:
+  /// **'Out of stock'**
+  String get filterOutOfStock;
+
+  /// No description provided for @filterInactive.
+  ///
+  /// In en, this message translates to:
+  /// **'Inactive'**
+  String get filterInactive;
+
+  /// No description provided for @selectedCount.
+  ///
+  /// In en, this message translates to:
+  /// **'{count} selected'**
+  String selectedCount(int count);
+
+  /// No description provided for @bulkActivate.
+  ///
+  /// In en, this message translates to:
+  /// **'Publish'**
+  String get bulkActivate;
+
+  /// No description provided for @bulkDeactivate.
+  ///
+  /// In en, this message translates to:
+  /// **'Hide'**
+  String get bulkDeactivate;
+
+  /// No description provided for @bulkClear.
+  ///
+  /// In en, this message translates to:
+  /// **'Clear selection'**
+  String get bulkClear;
+
+  /// No description provided for @bulkDone.
+  ///
+  /// In en, this message translates to:
+  /// **'{count} products updated'**
+  String bulkDone(int count);
+
+  /// No description provided for @bulkFailed.
+  ///
+  /// In en, this message translates to:
+  /// **'Couldn\'t update the products. Please try again.'**
+  String get bulkFailed;
+
+  /// No description provided for @draftBadge.
+  ///
+  /// In en, this message translates to:
+  /// **'Draft'**
+  String get draftBadge;
+
+  /// No description provided for @filterWithCount.
+  ///
+  /// In en, this message translates to:
+  /// **'{label} · {count}'**
+  String filterWithCount(String label, String count);
 }
 
 class _AppLocalizationsDelegate
