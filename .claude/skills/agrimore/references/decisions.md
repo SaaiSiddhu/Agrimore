@@ -298,6 +298,10 @@ then ~$3 per 1,000). **Partly supersedes D-DLV-ETA**: when a fresh route matches
 traffic-aware duration down; the free straight-line estimate remains the fallback. Owner action: enable the Routes
 API, create a server key restricted to it, `firebase functions:secrets:set GOOGLE_ROUTES_API_KEY`. Also asked: the map
 disappears once delivered (a receipt view instead).
+Extended the same day (owner: the rider must get the route too, 'exactly like Zomato/Swiggy'): the **rider app draws
+the same `delivery_tasks/{id}.route`** on its active-order screen and hands turn-by-turn to **Google Maps in
+two-wheeler mode** (`google.navigation:q=lat,lng&mode=l`) — Agrimore does not build its own voice navigation.
+The rider app's Maps SDK key comes from `key.properties` (`mapsApiKey`), never tracked.
 
 ## 6. Open owner decisions (do not resolve silently)
 
