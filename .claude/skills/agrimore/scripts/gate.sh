@@ -86,12 +86,17 @@ if [ "$MODE" != quick ]; then
   run guard:secret-bindings    bash -c 'cd functions && node scripts/phase18_secret_binding_test.js'
   run guard:fee-truthfulness   bash -c 'cd functions && node scripts/phase16b4_fee_truthfulness_test.js'
   run guard:deploy-bundle      bash -c 'cd functions && node scripts/phase23_deploy_bundle_guard_test.js'
+  # UI-TEAL-0: zero-literal ratchet (ADR §6) — literal debt may shrink, never grow
+  run canon:seller             bash .claude/skills/agrimore/scripts/canon_check.sh --ratchet apps/seller/lib
+  run canon:employee           bash .claude/skills/agrimore/scripts/canon_check.sh --ratchet apps/employee/lib
   # the validator always exits 0 — count its warnings as the signal
   VLOG="$OUT/ledger_validator.log"; node scripts/governance/validate-branch-dispositions.mjs >"$VLOG" 2>&1; VW=$(grep -c '•' "$VLOG" || true)
   row "ledger:validate" "0" "0" "warnings=$VW$( [ "$VW" -gt 0 ] && echo " — $(grep -m1 '•' "$VLOG" | cut -c1-100)" )"
 fi
 if [ "$MODE" = full ]; then
   run test:marketplace         bash -c 'cd apps/marketplace && flutter test'
+  run test:agrimore_ui         bash -c 'cd packages/agrimore_ui && flutter test'
+  run test:employee            bash -c 'cd apps/employee && flutter test'
 fi
 if [ $SECRETS = 1 ]; then
   run secrets:verify           bash -c 'cd functions && node scripts/verify_secrets.js'
