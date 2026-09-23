@@ -1523,4 +1523,123 @@ class AppLocalizationsEn extends AppLocalizations {
   @override
   String get reviewReplyFailed =>
       'Couldn\'t post your reply. Check your connection and try again.';
+
+  @override
+  String get prefTitle => 'Notifications';
+
+  @override
+  String get prefIntro =>
+      'Choose which alerts reach your phone. Everything still appears in your in-app notifications.';
+
+  @override
+  String get prefOrders => 'New orders and order updates';
+
+  @override
+  String get prefQuotes => 'Quote requests and offers';
+
+  @override
+  String get prefPayments => 'Payments';
+
+  @override
+  String get prefStock => 'Stock alerts';
+
+  @override
+  String get prefReviews => 'Reviews';
+
+  @override
+  String get prefAnnouncements => 'AgriMore announcements';
+
+  @override
+  String get prefQuietHours => 'Quiet hours';
+
+  @override
+  String get prefQuietHoursHint => 'No alerts on your phone during these hours';
+
+  @override
+  String get prefQuietFrom => 'From';
+
+  @override
+  String get prefQuietUntil => 'Until';
+
+  @override
+  String get prefSaveFailed =>
+      'Couldn\'t save your choice. Check your connection and try again.';
+
+  @override
+  String get helpTitle => 'Help & support';
+
+  @override
+  String get helpSearch => 'Search help';
+
+  @override
+  String get helpFaqTitle => 'Common questions';
+
+  @override
+  String get helpNoMatch => 'No answers match. Contact us below.';
+
+  @override
+  String get helpContactTitle => 'Contact AgriMore';
+
+  @override
+  String get faqPayoutQ => 'When do I get paid?';
+
+  @override
+  String get faqPayoutA =>
+      'A settlement is created when an order is delivered. AgriMore pays it to your bank account or UPI and shows the payment reference under Payments.';
+
+  @override
+  String get faqOrderQ => 'How fast should I accept an order?';
+
+  @override
+  String get faqOrderA =>
+      'Accept or reject new orders as soon as you can — buyers see the status change immediately. Rejecting needs a reason, and prepaid buyers are refunded.';
+
+  @override
+  String get faqQuoteQ => 'How do quotes work?';
+
+  @override
+  String get faqQuoteA =>
+      'Business buyers request a price for a quantity. Counter with your price and how long it is valid, accept their offer, or decline with a reason. Once accepted, the buyer can place the order at that price.';
+
+  @override
+  String get faqInvoiceQ => 'Why is my invoice a bill of supply?';
+
+  @override
+  String get faqInvoiceA =>
+      'A tax invoice needs your GSTIN and an HSN code and GST rate on every product. Add them in Business details and in each product\'s tax section.';
+
+  @override
+  String get faqReviewQ => 'Can I reply to a review?';
+
+  @override
+  String get faqReviewA =>
+      'Yes — one public reply per review, which you can edit for 24 hours. Ratings are calculated by AgriMore and cannot be changed.';
+
+  @override
+  String get faqStorefrontQ => 'How do I change my storefront?';
+
+  @override
+  String get faqStorefrontA =>
+      'Go to Account → Storefront to change your cover photo, logo, description and highlights, and preview how buyers see it.';
+
+  @override
+  String get settingsTitle => 'Settings';
+
+  @override
+  String get settingsMenuSubtitle => 'Theme, notifications, help';
+
+  @override
+  String get settingsTheme => 'Theme';
+
+  @override
+  String get settingsThemeSystem => 'System';
+
+  @override
+  String get settingsThemeLight => 'Light';
+
+  @override
+  String get settingsThemeDark => 'Dark';
+
+  @override
+  String get settingsLicences => 'Open-source licences';
 }

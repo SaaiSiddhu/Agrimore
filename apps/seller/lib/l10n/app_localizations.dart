@@ -2643,6 +2643,228 @@ abstract class AppLocalizations {
   /// In en, this message translates to:
   /// **'Couldn\'t post your reply. Check your connection and try again.'**
   String get reviewReplyFailed;
+
+  /// No description provided for @prefTitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Notifications'**
+  String get prefTitle;
+
+  /// No description provided for @prefIntro.
+  ///
+  /// In en, this message translates to:
+  /// **'Choose which alerts reach your phone. Everything still appears in your in-app notifications.'**
+  String get prefIntro;
+
+  /// No description provided for @prefOrders.
+  ///
+  /// In en, this message translates to:
+  /// **'New orders and order updates'**
+  String get prefOrders;
+
+  /// No description provided for @prefQuotes.
+  ///
+  /// In en, this message translates to:
+  /// **'Quote requests and offers'**
+  String get prefQuotes;
+
+  /// No description provided for @prefPayments.
+  ///
+  /// In en, this message translates to:
+  /// **'Payments'**
+  String get prefPayments;
+
+  /// No description provided for @prefStock.
+  ///
+  /// In en, this message translates to:
+  /// **'Stock alerts'**
+  String get prefStock;
+
+  /// No description provided for @prefReviews.
+  ///
+  /// In en, this message translates to:
+  /// **'Reviews'**
+  String get prefReviews;
+
+  /// No description provided for @prefAnnouncements.
+  ///
+  /// In en, this message translates to:
+  /// **'AgriMore announcements'**
+  String get prefAnnouncements;
+
+  /// No description provided for @prefQuietHours.
+  ///
+  /// In en, this message translates to:
+  /// **'Quiet hours'**
+  String get prefQuietHours;
+
+  /// No description provided for @prefQuietHoursHint.
+  ///
+  /// In en, this message translates to:
+  /// **'No alerts on your phone during these hours'**
+  String get prefQuietHoursHint;
+
+  /// No description provided for @prefQuietFrom.
+  ///
+  /// In en, this message translates to:
+  /// **'From'**
+  String get prefQuietFrom;
+
+  /// No description provided for @prefQuietUntil.
+  ///
+  /// In en, this message translates to:
+  /// **'Until'**
+  String get prefQuietUntil;
+
+  /// No description provided for @prefSaveFailed.
+  ///
+  /// In en, this message translates to:
+  /// **'Couldn\'t save your choice. Check your connection and try again.'**
+  String get prefSaveFailed;
+
+  /// No description provided for @helpTitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Help & support'**
+  String get helpTitle;
+
+  /// No description provided for @helpSearch.
+  ///
+  /// In en, this message translates to:
+  /// **'Search help'**
+  String get helpSearch;
+
+  /// No description provided for @helpFaqTitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Common questions'**
+  String get helpFaqTitle;
+
+  /// No description provided for @helpNoMatch.
+  ///
+  /// In en, this message translates to:
+  /// **'No answers match. Contact us below.'**
+  String get helpNoMatch;
+
+  /// No description provided for @helpContactTitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Contact AgriMore'**
+  String get helpContactTitle;
+
+  /// No description provided for @faqPayoutQ.
+  ///
+  /// In en, this message translates to:
+  /// **'When do I get paid?'**
+  String get faqPayoutQ;
+
+  /// No description provided for @faqPayoutA.
+  ///
+  /// In en, this message translates to:
+  /// **'A settlement is created when an order is delivered. AgriMore pays it to your bank account or UPI and shows the payment reference under Payments.'**
+  String get faqPayoutA;
+
+  /// No description provided for @faqOrderQ.
+  ///
+  /// In en, this message translates to:
+  /// **'How fast should I accept an order?'**
+  String get faqOrderQ;
+
+  /// No description provided for @faqOrderA.
+  ///
+  /// In en, this message translates to:
+  /// **'Accept or reject new orders as soon as you can — buyers see the status change immediately. Rejecting needs a reason, and prepaid buyers are refunded.'**
+  String get faqOrderA;
+
+  /// No description provided for @faqQuoteQ.
+  ///
+  /// In en, this message translates to:
+  /// **'How do quotes work?'**
+  String get faqQuoteQ;
+
+  /// No description provided for @faqQuoteA.
+  ///
+  /// In en, this message translates to:
+  /// **'Business buyers request a price for a quantity. Counter with your price and how long it is valid, accept their offer, or decline with a reason. Once accepted, the buyer can place the order at that price.'**
+  String get faqQuoteA;
+
+  /// No description provided for @faqInvoiceQ.
+  ///
+  /// In en, this message translates to:
+  /// **'Why is my invoice a bill of supply?'**
+  String get faqInvoiceQ;
+
+  /// No description provided for @faqInvoiceA.
+  ///
+  /// In en, this message translates to:
+  /// **'A tax invoice needs your GSTIN and an HSN code and GST rate on every product. Add them in Business details and in each product\'s tax section.'**
+  String get faqInvoiceA;
+
+  /// No description provided for @faqReviewQ.
+  ///
+  /// In en, this message translates to:
+  /// **'Can I reply to a review?'**
+  String get faqReviewQ;
+
+  /// No description provided for @faqReviewA.
+  ///
+  /// In en, this message translates to:
+  /// **'Yes — one public reply per review, which you can edit for 24 hours. Ratings are calculated by AgriMore and cannot be changed.'**
+  String get faqReviewA;
+
+  /// No description provided for @faqStorefrontQ.
+  ///
+  /// In en, this message translates to:
+  /// **'How do I change my storefront?'**
+  String get faqStorefrontQ;
+
+  /// No description provided for @faqStorefrontA.
+  ///
+  /// In en, this message translates to:
+  /// **'Go to Account → Storefront to change your cover photo, logo, description and highlights, and preview how buyers see it.'**
+  String get faqStorefrontA;
+
+  /// No description provided for @settingsTitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Settings'**
+  String get settingsTitle;
+
+  /// No description provided for @settingsMenuSubtitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Theme, notifications, help'**
+  String get settingsMenuSubtitle;
+
+  /// No description provided for @settingsTheme.
+  ///
+  /// In en, this message translates to:
+  /// **'Theme'**
+  String get settingsTheme;
+
+  /// No description provided for @settingsThemeSystem.
+  ///
+  /// In en, this message translates to:
+  /// **'System'**
+  String get settingsThemeSystem;
+
+  /// No description provided for @settingsThemeLight.
+  ///
+  /// In en, this message translates to:
+  /// **'Light'**
+  String get settingsThemeLight;
+
+  /// No description provided for @settingsThemeDark.
+  ///
+  /// In en, this message translates to:
+  /// **'Dark'**
+  String get settingsThemeDark;
+
+  /// No description provided for @settingsLicences.
+  ///
+  /// In en, this message translates to:
+  /// **'Open-source licences'**
+  String get settingsLicences;
 }
 
 class _AppLocalizationsDelegate

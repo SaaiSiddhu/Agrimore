@@ -6,6 +6,7 @@ import 'package:provider/provider.dart';
 
 import '../l10n/app_localizations.dart';
 import '../providers/seller_auth_provider.dart';
+import '../providers/seller_settings_provider.dart';
 import '../screens/auth/account_restricted_screen.dart';
 import '../screens/auth/application_status_screen.dart';
 import '../screens/auth/seller_sign_in_screen.dart';
@@ -25,7 +26,7 @@ class App extends StatelessWidget {
       debugShowCheckedModeBanner: false,
       theme: WorkspaceTheme.build(WorkspaceBrand.seller, Brightness.light),
       darkTheme: WorkspaceTheme.build(WorkspaceBrand.seller, Brightness.dark),
-      themeMode: ThemeMode.system,
+      themeMode: context.watch<SellerSettingsProvider>().themeMode,
       localizationsDelegates: const [
         AppLocalizations.delegate,
         GlobalMaterialLocalizations.delegate,

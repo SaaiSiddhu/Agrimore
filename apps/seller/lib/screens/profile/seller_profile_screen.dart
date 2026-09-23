@@ -14,6 +14,7 @@ import 'seller_ai_integration_screen.dart';
 import '../onboarding/application_rules.dart';
 import '../storefront/storefront_editor_screen.dart';
 import '../reviews/reviews_screen.dart';
+import '../account/settings_screen.dart';
 import '../../l10n/app_localizations.dart';
 
 class SellerProfileScreen extends StatefulWidget {
@@ -315,6 +316,14 @@ class _SellerProfileScreenState extends State<SellerProfileScreen> {
               Navigator.push(
                 context,
                 MaterialPageRoute(builder: (_) => const SellerReviewsScreen()),
+              );
+            }),
+            _buildDivider(isDark),
+            _buildMenuItem(AgIcons.settings, AppLocalizations.of(context).settingsTitle,
+                AppLocalizations.of(context).settingsMenuSubtitle, isDark, () {
+              Navigator.push(
+                context,
+                MaterialPageRoute(builder: (_) => const SellerSettingsScreen()),
               );
             }),
             _buildDivider(isDark),
