@@ -139,8 +139,12 @@ if [ $EMU = 1 ]; then
       # SELLER-ORDERS-1 amendment: phaseSAUTH1B_submit_application_test checks
       # that KYC photos really exist in Storage (bucket.file().exists()) — it
       # needs both emulators; without storage it fails with ECONNREFUSED 9199.
+      #
+      # SELLER-STOREFRONT-EDIT-1 amendment: phaseSSTORE1_storefront_rules_test
+      # drives firestore.rules (sellers/{uid} allow-list) and storage.rules
+      # (sellers/{uid}/storefront/{file}) in one suite.
       case "$s" in
-        phase24_storage_rules_test|phase48_business_posts_test|phaseSAUTH1B_submit_application_test) EMU_ONLY="storage,firestore";;
+        phase24_storage_rules_test|phase48_business_posts_test|phaseSAUTH1B_submit_application_test|phaseSSTORE1_storefront_rules_test) EMU_ONLY="storage,firestore";;
         *storage*)                                              EMU_ONLY="storage";;
         *)                                                       EMU_ONLY="firestore,functions,auth";;
       esac
