@@ -92,6 +92,11 @@ const REQUIRED_SECRETS = [
     name: "AI_KEY_ENCRYPTION_SECRET",
     neededBy: ["connectAiProvider"],
   },
+  {
+    // Phase DLV-3B (D-DLV-ROUTES): the Google Routes API key, server-side only.
+    name: "GOOGLE_ROUTES_API_KEY",
+    neededBy: ["refreshDeliveryRoute"],
+  },
 ];
 
 function checkOneSecret(name) {

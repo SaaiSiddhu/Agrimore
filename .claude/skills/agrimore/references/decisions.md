@@ -288,6 +288,21 @@ swipe-away fails safe: the server takes the rider offline after 15 min and pushe
 
 Implemented by DLV-3A2 (RiderLocationService.kt).
 
+### D-DLV-ROUTES — OWNER_DECISION 2026-09-23 (AskUserQuestion, during DLV-3B)
+
+The owner asked for road-following routes and a Zomato/Swiggy-style tracking screen. Chosen: **Google Routes API**
+(two-wheeler, traffic-aware), called **only from the server** (`refreshDeliveryRoute`, key in the
+`GOOGLE_ROUTES_API_KEY` secret) — re-routed on the first fix, at pickup, when the rider strays > 150 m, or every
+5 min, never within 20 s, at most 30 per order (~6–10 calls per order; 35,000 free calls/month on the India Pro tier,
+then ~$3 per 1,000). **Partly supersedes D-DLV-ETA**: when a fresh route matches the stage the ETA counts its
+traffic-aware duration down; the free straight-line estimate remains the fallback. Owner action: enable the Routes
+API, create a server key restricted to it, `firebase functions:secrets:set GOOGLE_ROUTES_API_KEY`. Also asked: the map
+disappears once delivered (a receipt view instead).
+Extended the same day (owner: the rider must get the route too, 'exactly like Zomato/Swiggy'): the **rider app draws
+the same `delivery_tasks/{id}.route`** on its active-order screen and hands turn-by-turn to **Google Maps in
+two-wheeler mode** (`google.navigation:q=lat,lng&mode=l`) — Agrimore does not build its own voice navigation.
+The rider app's Maps SDK key comes from `key.properties` (`mapsApiKey`), never tracked.
+
 ## 6. Open owner decisions (do not resolve silently)
 
 | ID | Question | Safe default while open |

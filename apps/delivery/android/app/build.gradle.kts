@@ -47,6 +47,11 @@ android {
         versionCode = flutter.versionCode
         versionName = flutter.versionName
         multiDexEnabled = true
+        // Phase DLV-3B: the rider's route map (google_maps_flutter). The key
+        // comes from key.properties (`mapsApiKey`, gitignored), exactly as in
+        // apps/marketplace (FIX-7, N-37); empty → the build still compiles and
+        // only the map tiles fail, Navigate still opens Google Maps.
+        manifestPlaceholders["mapsApiKey"] = keystoreProperties["mapsApiKey"] as String? ?: ""
     }
 
     signingConfigs {

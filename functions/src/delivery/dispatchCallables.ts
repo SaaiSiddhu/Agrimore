@@ -97,6 +97,11 @@ export async function acceptOfferCore(db: FirebaseFirestore.Firestore, uid: stri
       status: "delivery_accepted",
       deliveryAcceptedAt: FieldValue.serverTimestamp(),
       deliveryAcceptedVia: "acceptDeliveryOffer",
+      // Phase DLV-3B: the rider card the customer's tracking screen shows
+      // (order_model.dart deliveryPartner) — the same copy the admin
+      // assignment writes. Without it an offer-accepted order showed no
+      // rider. Position is NOT copied: it lives in delivery_tasks/{id}/live.
+      deliveryPartner: riderDisplayCopy(uid, p),
       updatedAt: FieldValue.serverTimestamp(),
     });
     const timeline = orderRef.collection("timeline").doc();
@@ -121,6 +126,21 @@ export async function acceptOfferCore(db: FirebaseFirestore.Firestore, uid: stri
   // onOrderStatusChanged calls it again on delivery_accepted.
   await closeDispatch(db, orderId, uid, nowMs, "accepted");
   return verdict;
+}
+
+/** The rider details an order carries for the customer (DLV-3B). */
+export function riderDisplayCopy(uid: string, p: FirebaseFirestore.DocumentData) {
+  const str = (v: unknown) => (typeof v === "string" && v.trim() ? v.trim() : null);
+  return {
+    id: uid,
+    name: str(p.name) ?? "Delivery partner",
+    phone: str(p.phone),
+    vehicleType: str(p.vehicleType),
+    vehicleNumber: str(p.vehicleNumber),
+    // photoUrl only — never the KYC selfie or any other KYC/bank field.
+    photoUrl: str(p.photoUrl),
+    rating: typeof p.rating === "number" ? p.rating : null,
+  };
 }
 
 export const acceptDeliveryOffer = onCall({ minInstances: 0, memory: "256MiB" }, async (request) => {

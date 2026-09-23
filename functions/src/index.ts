@@ -246,3 +246,5 @@ export { syncDeliveryTask } from "./delivery/syncDeliveryTask";
 // See delivery/dispatch.ts. onOrderStatusChanged starts a dispatch.
 export { acceptDeliveryOffer, declineDeliveryOffer } from "./delivery/dispatchCallables";
 export { advanceDeliveryDispatch } from "./delivery/advanceDeliveryDispatch";
+// Phase DLV-3B: road route for the customer's live tracking (Google Routes, server-side key).
+export { refreshDeliveryRoute } from "./delivery/deliveryRoute";

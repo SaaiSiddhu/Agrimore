@@ -104,6 +104,8 @@ if [ "$MODE" = full ]; then
   run test:agrimore_core       bash -c 'cd packages/agrimore_core && flutter test'
   run test:delivery            bash -c 'cd apps/delivery && flutter test'
   run test:admin               bash -c 'cd apps/admin && flutter test'
+  # DLV-3B: the route decoder once worked on the VM and broke on web (`~` is unsigned 32-bit there).
+  run test:agrimore_core-web   bash -c 'cd packages/agrimore_core && flutter test --platform chrome test/delivery/delivery_eta_test.dart'
 fi
 if [ $SECRETS = 1 ]; then
   run secrets:verify           bash -c 'cd functions && node scripts/verify_secrets.js'
