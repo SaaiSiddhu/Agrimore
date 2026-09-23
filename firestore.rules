@@ -27,9 +27,14 @@ service cloud.firestore {
         (
           request.auth.token.admin == true ||
           hasRole('admin') ||
+          // Phase SEC-P0: an email only proves identity once it is verified —
+          // email/password sign-up is enabled, so an unverified token email
+          // is whatever the caller typed. Prefer the admin custom claim; this
+          // list is a stopgap until every listed account carries it.
           (
             'email' in request.auth.token &&
             request.auth.token.email != null &&
+            request.auth.token.get('email_verified', false) == true &&
             request.auth.token.email.lower() in [
               'srieswaran22@gmail.com',
               'admin@agrimore.in',
@@ -1257,6 +1262,16 @@ service cloud.firestore {
     // ============================================
     match /phone_otp_codes/{phone} {
       // Only cloud functions can access
+      allow read, write: if false;
+    }
+
+    // Phase SEC-P0: phone-OTP test mode (sendPhoneOTP.ts). Deliberately NOT
+    // under settings/ (admin-writable there): whoever can write this doc can
+    // sign in as any allow-listed number, so it is Console / Admin SDK only.
+    match /auth_test_mode/{docId} {
+      allow read, write: if false;
+    }
+    match /auth_test_mode_log/{logId} {
       allow read, write: if false;
     }
 
