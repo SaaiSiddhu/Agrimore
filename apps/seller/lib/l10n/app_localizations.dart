@@ -62,7 +62,7 @@ import 'app_localizations_en.dart';
 /// property.
 abstract class AppLocalizations {
   AppLocalizations(String locale)
-      : localeName = intl.Intl.canonicalizedLocale(locale.toString());
+    : localeName = intl.Intl.canonicalizedLocale(locale.toString());
 
   final String localeName;
 
@@ -85,11 +85,11 @@ abstract class AppLocalizations {
   /// of delegates is preferred or required.
   static const List<LocalizationsDelegate<dynamic>> localizationsDelegates =
       <LocalizationsDelegate<dynamic>>[
-    delegate,
-    GlobalMaterialLocalizations.delegate,
-    GlobalCupertinoLocalizations.delegate,
-    GlobalWidgetsLocalizations.delegate,
-  ];
+        delegate,
+        GlobalMaterialLocalizations.delegate,
+        GlobalCupertinoLocalizations.delegate,
+        GlobalWidgetsLocalizations.delegate,
+      ];
 
   /// A list of this localizations delegate's supported locales.
   static const List<Locale> supportedLocales = <Locale>[Locale('en')];
@@ -4557,6 +4557,78 @@ abstract class AppLocalizations {
   /// In en, this message translates to:
   /// **'Post deleted'**
   String get postsDeleted;
+
+  /// No description provided for @periodAll.
+  ///
+  /// In en, this message translates to:
+  /// **'All time'**
+  String get periodAll;
+
+  /// No description provided for @ordersB2bOnly.
+  ///
+  /// In en, this message translates to:
+  /// **'Business (B2B)'**
+  String get ordersB2bOnly;
+
+  /// No description provided for @productStatsTitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Last 30 days'**
+  String get productStatsTitle;
+
+  /// No description provided for @productStatsUnits.
+  ///
+  /// In en, this message translates to:
+  /// **'Units sold'**
+  String get productStatsUnits;
+
+  /// No description provided for @productStatsNeverSold.
+  ///
+  /// In en, this message translates to:
+  /// **'Not sold yet'**
+  String get productStatsNeverSold;
+
+  /// No description provided for @productStatsLastSold.
+  ///
+  /// In en, this message translates to:
+  /// **'Last sold {date}'**
+  String productStatsLastSold(String date);
+
+  /// No description provided for @statementsTitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Monthly statements'**
+  String get statementsTitle;
+
+  /// No description provided for @statementHeading.
+  ///
+  /// In en, this message translates to:
+  /// **'Statement — {month}'**
+  String statementHeading(String month);
+
+  /// No description provided for @statementTotals.
+  ///
+  /// In en, this message translates to:
+  /// **'Order value {gross} · commission {commission} · you receive {net}'**
+  String statementTotals(String gross, String commission, String net);
+
+  /// No description provided for @statementLine.
+  ///
+  /// In en, this message translates to:
+  /// **'{date}  Order {order}  {net}  {status}'**
+  String statementLine(String date, String order, String net, String status);
+
+  /// No description provided for @statementCopy.
+  ///
+  /// In en, this message translates to:
+  /// **'Copy statement'**
+  String get statementCopy;
+
+  /// No description provided for @statementCopied.
+  ///
+  /// In en, this message translates to:
+  /// **'Statement copied'**
+  String get statementCopied;
 }
 
 class _AppLocalizationsDelegate
@@ -4584,8 +4656,9 @@ AppLocalizations lookupAppLocalizations(Locale locale) {
   }
 
   throw FlutterError(
-      'AppLocalizations.delegate failed to load unsupported locale "$locale". This is likely '
-      'an issue with the localizations generation tool. Please file an issue '
-      'on GitHub with a reproducible sample app and the gen-l10n configuration '
-      'that was used.');
+    'AppLocalizations.delegate failed to load unsupported locale "$locale". This is likely '
+    'an issue with the localizations generation tool. Please file an issue '
+    'on GitHub with a reproducible sample app and the gen-l10n configuration '
+    'that was used.',
+  );
 }

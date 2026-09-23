@@ -57,6 +57,9 @@ abstract final class AgFormat {
   /// `26 Sep 2026`
   static String date(DateTime d) => DateFormat('d MMM y').format(d);
 
+  /// `September 2026`
+  static String monthYear(DateTime d) => DateFormat('MMMM y').format(d);
+
   /// `10:02 am`
   static String time(DateTime d) => DateFormat('h:mm a').format(d).toLowerCase();
 

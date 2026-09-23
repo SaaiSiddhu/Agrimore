@@ -5,6 +5,7 @@ import 'package:provider/provider.dart';
 
 import '../../l10n/app_localizations.dart';
 import '../../providers/seller_auth_provider.dart';
+import 'statements.dart';
 
 /// One settlement row from `seller_payouts` (written by the server when an
 /// order is delivered; marked paid by an admin with a UTR reference).
@@ -185,6 +186,24 @@ class _PaymentsBody extends StatelessWidget {
         if (details == null) ...[
           const SizedBox(height: WsSpace.s8),
           SaInfoBanner(variant: SaBannerVariant.warning, message: l10n.payoutAccountMissingHelp),
+        ],
+        if (MonthlyStatement.of(entries).isNotEmpty) ...[
+          const SizedBox(height: WsSpace.s24),
+          Text(l10n.statementsTitle, style: text.titleMedium),
+          const SizedBox(height: WsSpace.s8),
+          Card(
+            clipBehavior: Clip.antiAlias,
+            child: Column(children: [
+              for (final s in MonthlyStatement.of(entries))
+                ListTile(
+                  leading: Icon(AgIcons.document, color: t.primary),
+                  title: Text(monthLabel(s.month), style: text.bodyLarge),
+                  subtitle: Text(l10n.ordersItems(s.entries.length), style: text.bodySmall),
+                  trailing: Text(AgFormat.rupees(s.net), style: text.titleSmall!.copyWith(fontFeatures: WsType.tabularFigures)),
+                  onTap: () => Navigator.of(context).push(MaterialPageRoute<void>(builder: (_) => StatementScreen(statement: s))),
+                ),
+            ]),
+          ),
         ],
         const SizedBox(height: WsSpace.s24),
         Text(l10n.paymentsHistory, style: text.titleMedium),

@@ -57,6 +57,8 @@ class SellerOrdersScreen extends StatefulWidget {
 
 class _SellerOrdersScreenState extends State<SellerOrdersScreen> {
   final _query = TextEditingController();
+  OrderPeriod _period = OrderPeriod.all;
+  bool _b2bOnly = false;
 
   @override
   void initState() {
@@ -92,6 +94,8 @@ class _SellerOrdersScreenState extends State<SellerOrdersScreen> {
     final shown = all
         .where((o) => selected == null || orderStageOf(o.orderStatus) == selected)
         .where((o) => orderMatches(o, _query.text))
+        .where((o) => inPeriod(o, _period, DateTime.now()))
+        .where((o) => !_b2bOnly || isB2bOrder(o))
         .toList()
       ..sort((a, b) => b.createdAt.compareTo(a.createdAt));
 
@@ -131,6 +135,26 @@ class _SellerOrdersScreenState extends State<SellerOrdersScreen> {
                     onSelected: (_) => provider.setFilter(key),
                   ),
                 ),
+            ],
+          ),
+        ),
+        SizedBox(
+          height: WsSize.chipHeight + WsSpace.s8,
+          child: ListView(
+            scrollDirection: Axis.horizontal,
+            padding: const EdgeInsets.fromLTRB(WsSpace.page, 0, WsSpace.page, WsSpace.s8),
+            children: [
+              for (final (p, label) in [
+                (OrderPeriod.all, l10n.periodAll),
+                (OrderPeriod.today, l10n.periodToday),
+                (OrderPeriod.days7, l10n.period7d),
+                (OrderPeriod.days30, l10n.period30d),
+              ])
+                Padding(
+                  padding: const EdgeInsets.only(right: WsSpace.s8),
+                  child: ChoiceChip(label: Text(label), selected: _period == p, onSelected: (_) => setState(() => _period = p)),
+                ),
+              FilterChip(label: Text(l10n.ordersB2bOnly), selected: _b2bOnly, onSelected: (v) => setState(() => _b2bOnly = v)),
             ],
           ),
         ),

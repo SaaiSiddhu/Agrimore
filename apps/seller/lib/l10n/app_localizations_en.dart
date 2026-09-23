@@ -2617,4 +2617,48 @@ class AppLocalizationsEn extends AppLocalizations {
 
   @override
   String get postsDeleted => 'Post deleted';
+
+  @override
+  String get periodAll => 'All time';
+
+  @override
+  String get ordersB2bOnly => 'Business (B2B)';
+
+  @override
+  String get productStatsTitle => 'Last 30 days';
+
+  @override
+  String get productStatsUnits => 'Units sold';
+
+  @override
+  String get productStatsNeverSold => 'Not sold yet';
+
+  @override
+  String productStatsLastSold(String date) {
+    return 'Last sold $date';
+  }
+
+  @override
+  String get statementsTitle => 'Monthly statements';
+
+  @override
+  String statementHeading(String month) {
+    return 'Statement — $month';
+  }
+
+  @override
+  String statementTotals(String gross, String commission, String net) {
+    return 'Order value $gross · commission $commission · you receive $net';
+  }
+
+  @override
+  String statementLine(String date, String order, String net, String status) {
+    return '$date  Order $order  $net  $status';
+  }
+
+  @override
+  String get statementCopy => 'Copy statement';
+
+  @override
+  String get statementCopied => 'Statement copied';
 }
