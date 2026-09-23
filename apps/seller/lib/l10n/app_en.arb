@@ -258,5 +258,59 @@
   "orderActionFailed": "Couldn't update the order. Please try again.",
   "orderAlreadyMoved": "This order was already updated. Pull to refresh.",
   "orderUnpaid": "Payment for this order isn't complete yet.",
-  "chatReady": "Chat with the buyer is ready"
+  "chatReady": "Chat with the buyer is ready",
+  "taxSectionTitle": "Tax details (for invoices)",
+  "taxSectionHelp": "Optional. Add them if you're GST-registered so your invoices show the right tax.",
+  "fieldHsn": "HSN code",
+  "fieldGstRate": "GST rate",
+  "gstNotDeclared": "Not declared",
+  "gstRatePercent": "{rate}%",
+  "@gstRatePercent": {
+    "placeholders": {
+      "rate": {
+        "type": "int"
+      }
+    }
+  },
+  "errHsn": "HSN codes are 4, 6 or 8 digits",
+  "saveDraftCta": "Save as draft",
+  "draftSaved": "Saved as a draft. Publish it when you're ready.",
+  "draftNeedsName": "Add a product name to save a draft",
+  "filterAll": "All",
+  "filterActive": "Active",
+  "filterDraft": "Drafts",
+  "filterOutOfStock": "Out of stock",
+  "filterInactive": "Inactive",
+  "selectedCount": "{count} selected",
+  "@selectedCount": {
+    "placeholders": {
+      "count": {
+        "type": "int"
+      }
+    }
+  },
+  "bulkActivate": "Publish",
+  "bulkDeactivate": "Hide",
+  "bulkClear": "Clear selection",
+  "bulkDone": "{count} products updated",
+  "@bulkDone": {
+    "placeholders": {
+      "count": {
+        "type": "int"
+      }
+    }
+  },
+  "bulkFailed": "Couldn't update the products. Please try again.",
+  "draftBadge": "Draft",
+  "filterWithCount": "{label} · {count}",
+  "@filterWithCount": {
+    "placeholders": {
+      "label": {
+        "type": "String"
+      },
+      "count": {
+        "type": "String"
+      }
+    }
+  }
 }

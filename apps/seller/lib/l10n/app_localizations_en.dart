@@ -579,4 +579,82 @@ class AppLocalizationsEn extends AppLocalizations {
 
   @override
   String get chatReady => 'Chat with the buyer is ready';
+
+  @override
+  String get taxSectionTitle => 'Tax details (for invoices)';
+
+  @override
+  String get taxSectionHelp =>
+      'Optional. Add them if you\'re GST-registered so your invoices show the right tax.';
+
+  @override
+  String get fieldHsn => 'HSN code';
+
+  @override
+  String get fieldGstRate => 'GST rate';
+
+  @override
+  String get gstNotDeclared => 'Not declared';
+
+  @override
+  String gstRatePercent(int rate) {
+    return '$rate%';
+  }
+
+  @override
+  String get errHsn => 'HSN codes are 4, 6 or 8 digits';
+
+  @override
+  String get saveDraftCta => 'Save as draft';
+
+  @override
+  String get draftSaved => 'Saved as a draft. Publish it when you\'re ready.';
+
+  @override
+  String get draftNeedsName => 'Add a product name to save a draft';
+
+  @override
+  String get filterAll => 'All';
+
+  @override
+  String get filterActive => 'Active';
+
+  @override
+  String get filterDraft => 'Drafts';
+
+  @override
+  String get filterOutOfStock => 'Out of stock';
+
+  @override
+  String get filterInactive => 'Inactive';
+
+  @override
+  String selectedCount(int count) {
+    return '$count selected';
+  }
+
+  @override
+  String get bulkActivate => 'Publish';
+
+  @override
+  String get bulkDeactivate => 'Hide';
+
+  @override
+  String get bulkClear => 'Clear selection';
+
+  @override
+  String bulkDone(int count) {
+    return '$count products updated';
+  }
+
+  @override
+  String get bulkFailed => 'Couldn\'t update the products. Please try again.';
+
+  @override
+  String get draftBadge => 'Draft';
+
+  @override
+  String filterWithCount(String label, String count) {
+    return '$label · $count';
+  }
 }

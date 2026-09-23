@@ -3,11 +3,14 @@ import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:provider/provider.dart';
 import 'package:agrimore_core/agrimore_core.dart';
+import 'package:agrimore_ui/agrimore_ui.dart';
 import 'package:cached_network_image/cached_network_image.dart';
 import '../../providers/seller_auth_provider.dart';
 import '../../providers/seller_product_provider.dart';
 import '../home/add_product_screen.dart';
 import '../posts/create_post_screen.dart';
+import '../../l10n/app_localizations.dart';
+import 'widgets/product_list_controls.dart';
 
 class SellerProductsScreen extends StatefulWidget {
   const SellerProductsScreen({super.key});
@@ -18,6 +21,26 @@ class SellerProductsScreen extends StatefulWidget {
 
 class _SellerProductsScreenState extends State<SellerProductsScreen> {
   final _searchController = TextEditingController();
+  // SELLER-CATALOGUE-1: long-press multi-select for bulk publish / hide.
+  final Set<String> _selected = {};
+  bool _bulkBusy = false;
+
+  void _toggle(String id) => setState(() => _selected.contains(id) ? _selected.remove(id) : _selected.add(id));
+
+  Future<void> _bulk(SellerProductProvider provider, bool publish) async {
+    final l10n = AppLocalizations.of(context);
+    final count = _selected.length;
+    setState(() => _bulkBusy = true);
+    final ok = await provider.bulkSetActive({..._selected}, publish);
+    if (!mounted) return;
+    setState(() {
+      _bulkBusy = false;
+      if (ok) _selected.clear();
+    });
+    ScaffoldMessenger.of(context).showSnackBar(
+      SnackBar(content: Text(ok ? l10n.bulkDone(count) : l10n.bulkFailed)),
+    );
+  }
 
   @override
   void initState() {
@@ -41,6 +64,15 @@ class _SellerProductsScreenState extends State<SellerProductsScreen> {
     final isDark = Theme.of(context).brightness == Brightness.dark;
 
     return Scaffold(
+      bottomNavigationBar: _selected.isEmpty
+          ? null
+          : ProductBulkBar(
+              count: _selected.length,
+              busy: _bulkBusy,
+              onPublish: () => _bulk(context.read<SellerProductProvider>(), true),
+              onHide: () => _bulk(context.read<SellerProductProvider>(), false),
+              onClear: () => setState(_selected.clear),
+            ),
       backgroundColor: isDark ? const Color(0xFF121212) : const Color(0xFFF5F7FA),
       appBar: AppBar(
         elevation: 0,
@@ -84,10 +116,10 @@ class _SellerProductsScreenState extends State<SellerProductsScreen> {
             children: [
               // Stats row
               _buildStatsRow(provider, isDark),
-              const SizedBox(height: 12),
+              const SizedBox(height: WsSpace.s12),
               // Search bar
               _buildSearchBar(provider, isDark),
-              const SizedBox(height: 8),
+              ProductFilterBar(provider: provider),
               // Products list
               Expanded(
                 child: provider.isLoading
@@ -97,7 +129,16 @@ class _SellerProductsScreenState extends State<SellerProductsScreen> {
                         : ListView.builder(
                             padding: const EdgeInsets.symmetric(horizontal: 16),
                             itemCount: provider.products.length,
-                            itemBuilder: (context, index) => _buildProductCard(provider.products[index], provider, isDark),
+                            itemBuilder: (context, index) {
+                              final product = provider.products[index];
+                              return ProductSelectionFrame(
+                                selected: _selected.contains(product.id),
+                                selecting: _selected.isNotEmpty,
+                                isDraft: product.isDraft,
+                                onToggle: () => _toggle(product.id),
+                                child: _buildProductCard(product, provider, isDark),
+                              );
+                            },
                           ),
               ),
             ],
@@ -113,11 +154,11 @@ class _SellerProductsScreenState extends State<SellerProductsScreen> {
       child: Row(
         children: [
           _buildStatChip('Total', provider.totalProducts.toString(), Icons.inventory_2, Colors.blue, isDark),
-          const SizedBox(width: 8),
+          const SizedBox(width: WsSpace.s8),
           _buildStatChip('Active', provider.activeProducts.toString(), Icons.check_circle, Colors.green, isDark),
-          const SizedBox(width: 8),
+          const SizedBox(width: WsSpace.s8),
           _buildStatChip('Low', provider.lowStockProducts.toString(), Icons.warning_amber, Colors.orange, isDark),
-          const SizedBox(width: 8),
+          const SizedBox(width: WsSpace.s8),
           _buildStatChip('Out', provider.outOfStockProducts.toString(), Icons.cancel, Colors.red, isDark),
         ],
       ),
@@ -136,7 +177,7 @@ class _SellerProductsScreenState extends State<SellerProductsScreen> {
         child: Column(
           children: [
             Icon(icon, color: color, size: 18),
-            const SizedBox(height: 4),
+            const SizedBox(height: WsSpace.s4),
             Text(value, style: TextStyle(fontWeight: FontWeight.bold, fontSize: 16, color: color)),
             Text(label, style: TextStyle(fontSize: 10, color: Colors.grey[500])),
           ],
@@ -215,7 +256,7 @@ class _SellerProductsScreenState extends State<SellerProductsScreen> {
                   ? const Icon(Icons.image, color: Colors.grey)
                   : null,
             ),
-            const SizedBox(width: 12),
+            const SizedBox(width: WsSpace.s12),
             // Product details
             Expanded(
               child: Column(
@@ -245,7 +286,7 @@ class _SellerProductsScreenState extends State<SellerProductsScreen> {
                       ),
                     ],
                   ),
-                  const SizedBox(height: 4),
+                  const SizedBox(height: WsSpace.s4),
                   Row(
                     children: [
                       Text(
@@ -276,7 +317,7 @@ class _SellerProductsScreenState extends State<SellerProductsScreen> {
                               size: 12,
                               color: stockColor,
                             ),
-                            const SizedBox(width: 4),
+                            const SizedBox(width: WsSpace.s4),
                             Text(
                               product.stock == 0 ? 'Out of Stock' : '${product.stock} in stock',
                               style: TextStyle(fontSize: 11, fontWeight: FontWeight.w600, color: stockColor),
@@ -286,20 +327,20 @@ class _SellerProductsScreenState extends State<SellerProductsScreen> {
                       ),
                     ],
                   ),
-                  const SizedBox(height: 8),
+                  const SizedBox(height: WsSpace.s8),
                   // Action buttons
                   Row(
                     children: [
                       // Edit Stock
                       _buildActionChip('Stock', Icons.edit, Colors.blue, () => _showStockDialog(product, provider, sellerId)),
-                      const SizedBox(width: 8),
+                      const SizedBox(width: WsSpace.s8),
                       // Edit Product
                       _buildActionChip('Edit', Icons.edit_outlined, Colors.orange, () {
                         Navigator.push(context, MaterialPageRoute(
                           builder: (_) => AddProductScreen(existingProduct: product),
                         ));
                       }),
-                      const SizedBox(width: 8),
+                      const SizedBox(width: WsSpace.s8),
                       // Delete
                       _buildActionChip('Delete', Icons.delete_outline, Colors.red, () => _confirmDelete(product, provider, sellerId)),
                     ],
@@ -327,7 +368,7 @@ class _SellerProductsScreenState extends State<SellerProductsScreen> {
           mainAxisSize: MainAxisSize.min,
           children: [
             Icon(icon, size: 12, color: color),
-            const SizedBox(width: 4),
+            const SizedBox(width: WsSpace.s4),
             Text(label, style: TextStyle(fontSize: 11, color: color, fontWeight: FontWeight.w600)),
           ],
         ),
@@ -395,9 +436,9 @@ class _SellerProductsScreenState extends State<SellerProductsScreen> {
         mainAxisAlignment: MainAxisAlignment.center,
         children: [
           Icon(Icons.inventory_2_outlined, size: 64, color: Colors.grey[400]),
-          const SizedBox(height: 16),
+          const SizedBox(height: WsSpace.s16),
           Text('No products yet', style: TextStyle(fontSize: 16, fontWeight: FontWeight.w600, color: Colors.grey[600])),
-          const SizedBox(height: 8),
+          const SizedBox(height: WsSpace.s8),
           Text('Tap the + button to add your first product', style: TextStyle(fontSize: 13, color: Colors.grey[500])),
         ],
       ),

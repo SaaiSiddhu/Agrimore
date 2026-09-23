@@ -3,6 +3,9 @@ import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:agrimore_core/agrimore_core.dart';
 import 'package:agrimore_services/agrimore_services.dart';
 
+/// Listing tabs (ADR §10.4 C-01, SELLER-CATALOGUE-1).
+enum ProductListFilter { all, active, draft, outOfStock, inactive }
+
 class SellerProductProvider with ChangeNotifier {
   final FirebaseFirestore _firestore = FirebaseFirestore.instance;
 
@@ -10,6 +13,33 @@ class SellerProductProvider with ChangeNotifier {
   bool _isLoading = false;
   String? _error;
   String _searchQuery = '';
+  ProductListFilter _filter = ProductListFilter.all;
+
+  ProductListFilter get filter => _filter;
+
+  void setFilter(ProductListFilter value) {
+    _filter = value;
+    notifyListeners();
+  }
+
+  /// Pure: which tab a product belongs to. Drafts are only "draft"; an
+  /// out-of-stock product that is live counts as out of stock.
+  static bool matchesFilter(ProductModel p, ProductListFilter f) {
+    switch (f) {
+      case ProductListFilter.all:
+        return true;
+      case ProductListFilter.draft:
+        return p.isDraft;
+      case ProductListFilter.active:
+        return !p.isDraft && p.isActive && p.stock > 0;
+      case ProductListFilter.outOfStock:
+        return !p.isDraft && p.isActive && p.stock <= 0;
+      case ProductListFilter.inactive:
+        return !p.isDraft && !p.isActive;
+    }
+  }
+
+  int countFor(ProductListFilter f) => _products.where((p) => matchesFilter(p, f)).length;
 
   List<ProductModel> get products => _filteredProducts;
   List<ProductModel> get allProducts => _products;
@@ -25,9 +55,10 @@ class SellerProductProvider with ChangeNotifier {
       _products.where((p) => p.stock > 0 && p.stock < 10).length;
 
   List<ProductModel> get _filteredProducts {
-    if (_searchQuery.isEmpty) return _products;
+    final q = _searchQuery.toLowerCase();
     return _products
-        .where((p) => p.name.toLowerCase().contains(_searchQuery.toLowerCase()))
+        .where((p) => matchesFilter(p, _filter))
+        .where((p) => q.isEmpty || p.name.toLowerCase().contains(q))
         .toList();
   }
 
@@ -122,17 +153,56 @@ class SellerProductProvider with ChangeNotifier {
     try {
       await _firestore.collection('products').doc(productId).update({
         'isActive': isActive,
+        // Publishing a draft makes it a normal listing.
+        if (isActive) 'isDraft': false,
         'updatedAt': FieldValue.serverTimestamp(),
       });
       // Update local state immediately
       final index = _products.indexWhere((p) => p.id == productId);
       if (index != -1) {
-        _products[index] = _products[index].copyWith(isActive: isActive);
+        _products[index] = _products[index].copyWith(
+          isActive: isActive,
+          isDraft: isActive ? false : null,
+        );
         notifyListeners();
       }
       return true;
     } catch (e) {
       _error = 'Failed to update: $e';
+      notifyListeners();
+      return false;
+    }
+  }
+
+  /// Bulk publish / hide (SELLER-CATALOGUE-1). One batched write, at most
+  /// [_batchLimit] products per batch (Firestore's limit is 500).
+  static const int _batchLimit = 450;
+
+  Future<bool> bulkSetActive(Set<String> productIds, bool isActive) async {
+    if (productIds.isEmpty) return true;
+    try {
+      final ids = productIds.toList();
+      for (var start = 0; start < ids.length; start += _batchLimit) {
+        final batch = _firestore.batch();
+        for (final id in ids.skip(start).take(_batchLimit)) {
+          batch.update(_firestore.collection('products').doc(id), {
+            'isActive': isActive,
+            if (isActive) 'isDraft': false,
+            'updatedAt': FieldValue.serverTimestamp(),
+          });
+        }
+        await batch.commit();
+      }
+      _products = [
+        for (final p in _products)
+          productIds.contains(p.id)
+              ? p.copyWith(isActive: isActive, isDraft: isActive ? false : null)
+              : p,
+      ];
+      notifyListeners();
+      return true;
+    } catch (e) {
+      _error = 'Failed to update products: $e';
       notifyListeners();
       return false;
     }

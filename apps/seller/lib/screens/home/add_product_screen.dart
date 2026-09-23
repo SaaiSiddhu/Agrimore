@@ -9,6 +9,8 @@ import 'package:geolocator/geolocator.dart';
 import 'package:image_picker/image_picker.dart';
 import '../../providers/seller_auth_provider.dart';
 import '../../providers/seller_product_provider.dart';
+import '../../l10n/app_localizations.dart';
+import '../products/widgets/product_tax_section.dart';
 
 /// The real category, if any, whose name exactly matches [typed]
 /// (case-insensitive, trimmed) -- CAT-15's own resolution rule, kept as a
@@ -58,6 +60,9 @@ class _AddProductScreenState extends State<AddProductScreen> {
   final _lngController = TextEditingController();
   final _b2bPriceController = TextEditingController();
   final _b2bMoqController = TextEditingController();
+  // SELLER-CATALOGUE-1: tax data for GST invoices.
+  final _hsnController = TextEditingController();
+  double? _gstRate;
 
   final ImagePicker _imagePicker = ImagePicker();
   XFile? _selectedImage;
@@ -154,6 +159,8 @@ class _AddProductScreenState extends State<AddProductScreen> {
       _isB2BEnabled = p.isB2BEnabled;
       _b2bPriceController.text = p.b2bPrice?.toStringAsFixed(0) ?? '';
       _b2bMoqController.text = p.b2bMoq?.toString() ?? '';
+      _hsnController.text = p.hsnCode ?? '';
+      _gstRate = p.gstRate;
       if (p.masterProductRef != null && p.masterProductRef!.isNotEmpty) {
         _selectedMasterProduct = {'id': p.masterProductRef, 'name': p.name};
       }
@@ -211,6 +218,7 @@ class _AddProductScreenState extends State<AddProductScreen> {
     _lngController.dispose();
     _b2bPriceController.dispose();
     _b2bMoqController.dispose();
+    _hsnController.dispose();
     super.dispose();
   }
 
@@ -503,10 +511,20 @@ class _AddProductScreenState extends State<AddProductScreen> {
     return ref.getDownloadURL();
   }
 
-  Future<void> _saveProduct() async {
-    if (!_formKey.currentState!.validate()) return;
-    if (!_validateCoverage()) return;
-    if (!_validateB2B()) return;
+  /// [asDraft]: save without publishing (isActive false, isDraft true). A
+  /// draft only needs a name; publishing runs every validation.
+  Future<void> _saveProduct({bool asDraft = false}) async {
+    if (asDraft) {
+      if (_nameController.text.trim().isEmpty) {
+        SnackbarHelper.showError(context, AppLocalizations.of(context).draftNeedsName);
+        return;
+      }
+    } else {
+      if (!_formKey.currentState!.validate()) return;
+      if (!_validateCoverage()) return;
+      if (!_validateB2B()) return;
+    }
+    final hsn = _hsnController.text.trim();
 
     final auth = context.read<SellerAuthProvider>();
     if (auth.currentUser == null) return;
@@ -586,6 +604,10 @@ class _AddProductScreenState extends State<AddProductScreen> {
         b2bMoq: _isB2BEnabled
             ? int.tryParse(_b2bMoqController.text.trim())
             : null,
+        hsnCode: hsn,
+        gstRate: _gstRate,
+        isDraft: asDraft,
+        isActive: asDraft ? false : null,
         updatedAt: DateTime.now(),
       );
 
@@ -595,7 +617,8 @@ class _AddProductScreenState extends State<AddProductScreen> {
       setState(() => _isSaving = false);
 
       if (success) {
-        SnackbarHelper.showSuccess(context, 'Product updated successfully!');
+        SnackbarHelper.showSuccess(
+            context, asDraft ? AppLocalizations.of(context).draftSaved : 'Product updated successfully!');
         Navigator.pop(context);
       }
     } else {
@@ -617,7 +640,10 @@ class _AddProductScreenState extends State<AddProductScreen> {
         lng: coverageLng,
         radiusKm: coverageRadius,
         isVerified: false,
-        isActive: true,
+        isActive: !asDraft,
+        isDraft: asDraft,
+        hsnCode: hsn.isEmpty ? null : hsn,
+        gstRate: _gstRate,
         images: uploadedImageUrl == null
             ? _masterImages
             : [
@@ -650,7 +676,10 @@ class _AddProductScreenState extends State<AddProductScreen> {
 
       if (success) {
         SnackbarHelper.showSuccess(
-            context, 'Product added successfully! Waiting for admin approval.');
+            context,
+            asDraft
+                ? AppLocalizations.of(context).draftSaved
+                : 'Product added successfully! Waiting for admin approval.');
         Navigator.pop(context);
       }
     }
@@ -685,7 +714,7 @@ class _AddProductScreenState extends State<AddProductScreen> {
                 mainAxisAlignment: MainAxisAlignment.center,
                 children: [
                   Icon(Icons.add_a_photo, size: 40, color: Colors.grey),
-                  SizedBox(height: 8),
+                  SizedBox(height: WsSpace.s8),
                   Text(
                     'Upload Product Image',
                     style: TextStyle(color: Colors.grey),
@@ -863,7 +892,7 @@ class _AddProductScreenState extends State<AddProductScreen> {
               _selectCenter(center);
             },
           ),
-          const SizedBox(height: 12),
+          const SizedBox(height: WsSpace.s12),
           Wrap(
             spacing: 8,
             runSpacing: 8,
@@ -937,7 +966,7 @@ class _AddProductScreenState extends State<AddProductScreen> {
                   color: Color(0xFF2D7D3C),
                 ),
               ),
-              const SizedBox(width: 12),
+              const SizedBox(width: WsSpace.s12),
               const Expanded(
                 child: Column(
                   crossAxisAlignment: CrossAxisAlignment.start,
@@ -959,7 +988,7 @@ class _AddProductScreenState extends State<AddProductScreen> {
               ),
             ],
           ),
-          const SizedBox(height: 16),
+          const SizedBox(height: WsSpace.s16),
           Wrap(
             spacing: 8,
             runSpacing: 8,
@@ -981,7 +1010,7 @@ class _AddProductScreenState extends State<AddProductScreen> {
               ),
             ],
           ),
-          const SizedBox(height: 16),
+          const SizedBox(height: WsSpace.s16),
           DropdownButtonFormField<String>(
             initialValue: _selectedState,
             decoration: const InputDecoration(
@@ -1001,7 +1030,7 @@ class _AddProductScreenState extends State<AddProductScreen> {
             },
           ),
           if (_locationType == 'district') ...[
-            const SizedBox(height: 16),
+            const SizedBox(height: WsSpace.s16),
             DropdownButtonFormField<String>(
               initialValue: districtValue,
               decoration: const InputDecoration(
@@ -1026,7 +1055,7 @@ class _AddProductScreenState extends State<AddProductScreen> {
             ),
           ],
           if (_locationType == 'radius') ...[
-            const SizedBox(height: 16),
+            const SizedBox(height: WsSpace.s16),
             Row(
               children: [
                 Expanded(
@@ -1041,7 +1070,7 @@ class _AddProductScreenState extends State<AddProductScreen> {
                     ),
                   ),
                 ),
-                const SizedBox(width: 12),
+                const SizedBox(width: WsSpace.s12),
                 Expanded(
                   child: TextFormField(
                     controller: _lngController,
@@ -1056,7 +1085,7 @@ class _AddProductScreenState extends State<AddProductScreen> {
                 ),
               ],
             ),
-            const SizedBox(height: 12),
+            const SizedBox(height: WsSpace.s12),
             OutlinedButton.icon(
               onPressed: _isDetectingCoverageLocation
                   ? null
@@ -1074,7 +1103,7 @@ class _AddProductScreenState extends State<AddProductScreen> {
                     : 'Use Current Location',
               ),
             ),
-            const SizedBox(height: 12),
+            const SizedBox(height: WsSpace.s12),
             Text(
               'Radius: ${_radiusKm.round()} km',
               style: const TextStyle(fontWeight: FontWeight.w700),
@@ -1125,7 +1154,7 @@ class _AddProductScreenState extends State<AddProductScreen> {
                   color: Color(0xFF2D7D3C),
                 ),
               ),
-              const SizedBox(width: 12),
+              const SizedBox(width: WsSpace.s12),
               const Expanded(
                 child: Column(
                   crossAxisAlignment: CrossAxisAlignment.start,
@@ -1154,7 +1183,7 @@ class _AddProductScreenState extends State<AddProductScreen> {
             ],
           ),
           if (_isB2BEnabled) ...[
-            const SizedBox(height: 16),
+            const SizedBox(height: WsSpace.s16),
             Row(
               children: [
                 Expanded(
@@ -1168,7 +1197,7 @@ class _AddProductScreenState extends State<AddProductScreen> {
                     ),
                   ),
                 ),
-                const SizedBox(width: 12),
+                const SizedBox(width: WsSpace.s12),
                 Expanded(
                   child: TextFormField(
                     controller: _b2bMoqController,
@@ -1182,7 +1211,7 @@ class _AddProductScreenState extends State<AddProductScreen> {
                 ),
               ],
             ),
-            const SizedBox(height: 8),
+            const SizedBox(height: WsSpace.s8),
             const Text(
               'Must be lower than your normal sale price.',
               style: TextStyle(fontSize: 12, color: Colors.grey),
@@ -1211,7 +1240,7 @@ class _AddProductScreenState extends State<AddProductScreen> {
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
               _buildImagePicker(),
-              const SizedBox(height: 24),
+              const SizedBox(height: WsSpace.s24),
 
               TextFormField(
                 controller: _nameController,
@@ -1224,10 +1253,10 @@ class _AddProductScreenState extends State<AddProductScreen> {
                 validator: (v) => v!.isEmpty ? 'Required' : null,
               ),
               _buildMasterSuggestions(),
-              const SizedBox(height: 16),
+              const SizedBox(height: WsSpace.s16),
 
               _buildSelectorPricingSection(theme),
-              const SizedBox(height: 16),
+              const SizedBox(height: WsSpace.s16),
 
               // AI Description Field
               TextFormField(
@@ -1240,7 +1269,7 @@ class _AddProductScreenState extends State<AddProductScreen> {
                 ),
                 validator: (v) => v!.isEmpty ? 'Required' : null,
               ),
-              const SizedBox(height: 16),
+              const SizedBox(height: WsSpace.s16),
 
               Row(
                 children: [
@@ -1256,7 +1285,7 @@ class _AddProductScreenState extends State<AddProductScreen> {
                       validator: (v) => v!.isEmpty ? 'Required' : null,
                     ),
                   ),
-                  const SizedBox(width: 16),
+                  const SizedBox(width: WsSpace.s16),
                   Expanded(
                     child: TextFormField(
                       controller: _originalPriceController,
@@ -1270,9 +1299,9 @@ class _AddProductScreenState extends State<AddProductScreen> {
                   ),
                 ],
               ),
-              const SizedBox(height: 16),
+              const SizedBox(height: WsSpace.s16),
               _buildB2BSection(theme),
-              const SizedBox(height: 16),
+              const SizedBox(height: WsSpace.s16),
 
               // Stock + Low Stock Threshold
               Row(
@@ -1289,7 +1318,7 @@ class _AddProductScreenState extends State<AddProductScreen> {
                       validator: (v) => v!.isEmpty ? 'Required' : null,
                     ),
                   ),
-                  const SizedBox(width: 16),
+                  const SizedBox(width: WsSpace.s16),
                   Expanded(
                     child: TextFormField(
                       controller: _lowStockThresholdController,
@@ -1305,7 +1334,7 @@ class _AddProductScreenState extends State<AddProductScreen> {
                   ),
                 ],
               ),
-              const SizedBox(height: 16),
+              const SizedBox(height: WsSpace.s16),
 
               TextFormField(
                 controller: _categoryController,
@@ -1318,7 +1347,13 @@ class _AddProductScreenState extends State<AddProductScreen> {
               ),
               _buildCategorySuggestions(),
 
-              const SizedBox(height: 16),
+              const SizedBox(height: WsSpace.s16),
+              ProductTaxSection(
+                hsnController: _hsnController,
+                gstRate: _gstRate,
+                onGstRateChanged: (v) => setState(() => _gstRate = v),
+              ),
+              const SizedBox(height: WsSpace.s16),
               _buildCoverageSection(theme),
 
               const SizedBox(height: 40),
@@ -1326,7 +1361,7 @@ class _AddProductScreenState extends State<AddProductScreen> {
                 width: double.infinity,
                 height: 54,
                 child: FilledButton.icon(
-                  onPressed: _isSaving ? null : _saveProduct,
+                  onPressed: _isSaving ? null : () => _saveProduct(),
                   icon: _isSaving
                       ? const SizedBox(
                           width: 20,
@@ -1347,6 +1382,13 @@ class _AddProductScreenState extends State<AddProductScreen> {
                         borderRadius: BorderRadius.circular(12)),
                   ),
                 ),
+              ),
+              const SizedBox(height: WsSpace.s12),
+              SaLoadingButton(
+                text: AppLocalizations.of(context).saveDraftCta,
+                variant: SaButtonVariant.outlined,
+                icon: AgIcons.document,
+                onPressed: _isSaving ? null : () => _saveProduct(asDraft: true),
               ),
             ],
           ),
