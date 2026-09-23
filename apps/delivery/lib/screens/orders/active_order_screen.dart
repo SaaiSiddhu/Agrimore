@@ -916,6 +916,20 @@ class _ActiveOrderScreenState extends State<ActiveOrderScreen> {
               ? 'This order is no longer active and cannot be marked delivered.'
               : 'Verification is not available for this order. Please contact support.';
           break;
+        case 'resource-exhausted':
+          // Phase DLV-0: five wrong codes lock this order for 15 minutes on
+          // the server. Tell the partner how long, and that the customer's
+          // code is what to check — retrying sooner is refused even with the
+          // right code.
+          final retryAfter = (e.details is Map)
+              ? (e.details as Map)['retryAfterSec']
+              : null;
+          final minutes = retryAfter is num
+              ? (retryAfter / 60).ceil().clamp(1, 60)
+              : 15;
+          errorMessage =
+              'Too many incorrect codes. Check the code with the customer and try again in $minutes min.';
+          break;
         default:
           errorMessage = 'Could not confirm delivery. Please try again.';
       }
