@@ -43,6 +43,41 @@ const MAX_NOTES_LENGTH = 500; // FIX-16 precedent: bound every client string
 const MAX_QUANTITY = 1_000_000; // generous engineering ceiling, not a business limit
 const MAX_PRICE = 100_000_000; // ₹10 crore; same class of generous ceiling
 
+// SELLER-RFQ-2 (ADR Q-02/Q-03): every open offer carries a validity window.
+// Accepting an expired offer is refused; countering always stays possible
+// (a counter is a fresh offer with its own window). RFQs written before
+// this phase have no expiresAt and never expire.
+export const DEFAULT_VALID_DAYS = 7;
+export const MAX_VALID_DAYS = 30;
+const DAY_MS = 24 * 60 * 60 * 1000;
+
+function validateValidDays(days: unknown): number {
+  if (days === undefined || days === null) return DEFAULT_VALID_DAYS;
+  if (typeof days !== "number" || !Number.isInteger(days) || days < 1 || days > MAX_VALID_DAYS) {
+    throw new HttpsError("invalid-argument", `validForDays must be a whole number from 1 to ${MAX_VALID_DAYS}`);
+  }
+  return days;
+}
+
+function expiryFrom(now: admin.firestore.Timestamp, days: number): admin.firestore.Timestamp {
+  return admin.firestore.Timestamp.fromMillis(now.toMillis() + days * DAY_MS);
+}
+
+/** Display-only snapshot so both inboxes can render a quote without reading
+ * the product or the buyer's private profile. Never used for pricing —
+ * createOrderFromRfq re-reads the product. */
+function productSnapshot(p: Record<string, unknown>): Record<string, unknown> {
+  const images = Array.isArray(p.images) ? p.images : [];
+  const num = (v: unknown) => (typeof v === "number" && Number.isFinite(v) ? v : null);
+  return {
+    name: typeof p.name === "string" ? p.name.slice(0, 200) : "",
+    imageUrl: typeof images[0] === "string" ? images[0] : typeof p.imageUrl === "string" ? p.imageUrl : null,
+    unit: typeof p.unit === "string" ? p.unit.slice(0, 40) : null,
+    b2bPrice: num(p.b2bPrice),
+    b2bMoq: num(p.b2bMoq),
+  };
+}
+
 type RfqRole = "buyer" | "seller";
 
 interface RfqHistoryEntry {
@@ -103,6 +138,7 @@ interface CreateRfqData {
   quantity?: number;
   proposedPrice?: number;
   notes?: string;
+  validForDays?: number;
 }
 
 export const createRfq = onCall(
@@ -120,6 +156,7 @@ export const createRfq = onCall(
     const quantity = validateQuantity(data.quantity);
     const proposedPrice = data.proposedPrice !== undefined ? validatePrice(data.proposedPrice) : null;
     const notes = validateNotes(data.notes);
+    const validDays = validateValidDays(data.validForDays);
 
     const db = admin.firestore();
     const productSnap = await db.collection("products").doc(data.productId).get();
@@ -144,8 +181,15 @@ export const createRfq = onCall(
       throw new HttpsError("invalid-argument", "You cannot request a quote on your own product");
     }
 
+    const buyerSnap = await db.collection("users").doc(uid).get();
+    const buyerData = (buyerSnap.data() ?? {}) as Record<string, unknown>;
+    const str = (v: unknown) => (typeof v === "string" && v.trim() ? v.trim().slice(0, 120) : null);
+    // Name and business only — never phone, email or address.
+    const buyer = { name: str(buyerData.name), businessName: str(buyerData.businessName) };
+
     const rfqRef = db.collection("rfqs").doc();
     const now = admin.firestore.Timestamp.now();
+    const expiresAt = proposedPrice !== null ? expiryFrom(now, validDays) : null;
     const historyEntry: RfqHistoryEntry = {
       actor: "buyer",
       action: "create",
@@ -163,7 +207,9 @@ export const createRfq = onCall(
       status: "pending",
       awaitingResponseFrom: "seller",
       lastOffer:
-        proposedPrice !== null ? { price: proposedPrice, quantity, by: "buyer", notes } : null,
+        proposedPrice !== null ? { price: proposedPrice, quantity, by: "buyer", notes, expiresAt } : null,
+      product: productSnapshot(productSnap.data() as Record<string, unknown>),
+      buyer,
       finalPrice: null,
       finalQuantity: null,
       createdAt: admin.firestore.FieldValue.serverTimestamp(),
@@ -182,6 +228,7 @@ interface SubmitRfqOfferData {
   price?: number;
   quantity?: number;
   notes?: string;
+  validForDays?: number;
 }
 
 export const submitRfqOffer = onCall(
@@ -199,6 +246,7 @@ export const submitRfqOffer = onCall(
     const price = validatePrice(data.price);
     const quantity = validateQuantity(data.quantity);
     const notes = validateNotes(data.notes);
+    const validDays = validateValidDays(data.validForDays);
 
     const db = admin.firestore();
     const rfqRef = db.collection("rfqs").doc(data.rfqId);
@@ -236,7 +284,7 @@ export const submitRfqOffer = onCall(
       tx.update(rfqRef, {
         status: "negotiating",
         awaitingResponseFrom: otherRole(role),
-        lastOffer: { price, quantity, by: role, notes },
+        lastOffer: { price, quantity, by: role, notes, expiresAt: expiryFrom(now, validDays) },
         updatedAt: admin.firestore.FieldValue.serverTimestamp(),
         history: admin.firestore.FieldValue.arrayUnion(historyEntry),
       });
@@ -249,6 +297,7 @@ export const submitRfqOffer = onCall(
 interface RespondToRfqOfferData {
   rfqId?: string;
   action?: "accept" | "reject";
+  reason?: string;
 }
 
 export const respondToRfqOffer = onCall(
@@ -267,6 +316,7 @@ export const respondToRfqOffer = onCall(
       throw new HttpsError("invalid-argument", "rfqId is required");
     }
     const action = data.action;
+    const reason = action === "reject" ? validateNotes(data.reason) : null;
 
     const db = admin.firestore();
     const rfqRef = db.collection("rfqs").doc(data.rfqId);
@@ -281,7 +331,13 @@ export const respondToRfqOffer = onCall(
         sellerId: string;
         status: string;
         awaitingResponseFrom: RfqRole | null;
-        lastOffer: { price: number; quantity: number; by: RfqRole; notes: string | null } | null;
+        lastOffer: {
+          price: number;
+          quantity: number;
+          by: RfqRole;
+          notes: string | null;
+          expiresAt?: admin.firestore.Timestamp | null;
+        } | null;
       };
       const role = roleOf(uid, rfq);
 
@@ -299,6 +355,13 @@ export const respondToRfqOffer = onCall(
           throw new HttpsError(
             "failed-precondition",
             "There is no offer to accept yet — submit a price first"
+          );
+        }
+        const expiresAt = rfq.lastOffer.expiresAt;
+        if (expiresAt && expiresAt.toMillis() < now.toMillis()) {
+          throw new HttpsError(
+            "failed-precondition",
+            "This offer has expired — send a new offer instead"
           );
         }
         const historyEntry: RfqHistoryEntry = {
@@ -324,7 +387,7 @@ export const respondToRfqOffer = onCall(
           action: "reject",
           price: null,
           quantity: null,
-          notes: null,
+          notes: reason,
           at: now,
         };
         tx.update(rfqRef, {

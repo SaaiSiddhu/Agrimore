@@ -5,105 +5,118 @@ import 'package:firebase_auth/firebase_auth.dart';
 import 'package:cloud_functions/cloud_functions.dart';
 import 'package:agrimore_core/agrimore_core.dart';
 
-/// Provider for the seller side of the RFQ negotiation (Phase RFQ-2B).
-/// Mirrors apps/marketplace's RfqProvider (Phase RFQ-2) exactly, except:
-/// no createRfq (a seller never originates an RFQ — only a buyer does, via
-/// the marketplace app) and the live query is scoped by sellerId instead of
-/// buyerId. submitRfqOffer/respondToRfqOffer are the SAME two callables a
-/// buyer calls — role is derived server-side from rfq.buyerId/rfq.sellerId
-/// (rfq.ts's own roleOf()), never client-asserted, so reusing them here for
-/// the seller side is correct by construction, not a shortcut.
-class RfqProvider with ChangeNotifier {
-  final FirebaseFirestore _firestore = FirebaseFirestore.instance;
-  final FirebaseAuth _auth = FirebaseAuth.instance;
+/// Why a quote action failed — mapped to copy by the screen, never shown raw.
+enum QuoteActionError { expired, notYourTurn, closed, generic }
 
+/// Seller side of the RFQ negotiation. submitRfqOffer / respondToRfqOffer
+/// are the same callables the buyer uses — the role is derived server-side
+/// from rfq.buyerId / rfq.sellerId, never client-asserted.
+class RfqProvider with ChangeNotifier {
+  RfqProvider() : _preview = false;
+
+  /// Test constructor: a fixed list, no Firebase.
+  @visibleForTesting
+  RfqProvider.preview(List<RfqModel> quotes) : _preview = true {
+    _myRfqs = quotes;
+  }
+
+  final bool _preview;
   StreamSubscription<QuerySnapshot>? _myRfqsSubscription;
   List<RfqModel> _myRfqs = [];
   bool _isLoading = false;
   bool _isSubmitting = false;
-  String? _error;
+  bool _loadFailed = false;
+  QuoteActionError? _lastError;
 
   List<RfqModel> get myRfqs => _myRfqs;
   bool get isLoading => _isLoading;
   bool get isSubmitting => _isSubmitting;
-  String? get error => _error;
+  bool get loadFailed => _loadFailed;
+  QuoteActionError? get lastError => _lastError;
 
-  /// Starts (or restarts) listening to the caller's own RFQs as a seller.
-  /// Safe to call repeatedly (e.g. every time the Quote Requests inbox opens).
+  RfqModel? byId(String id) {
+    for (final q in _myRfqs) {
+      if (q.id == id) return q;
+    }
+    return null;
+  }
+
+  /// Starts (or restarts) listening to this seller's RFQs.
   void loadMyRfqs() {
-    final uid = _auth.currentUser?.uid;
+    if (_preview) return;
+    final uid = FirebaseAuth.instance.currentUser?.uid;
     if (uid == null) return;
-
     _isLoading = true;
+    _loadFailed = false;
     notifyListeners();
-
     _myRfqsSubscription?.cancel();
-    _myRfqsSubscription = _firestore
+    _myRfqsSubscription = FirebaseFirestore.instance
         .collection('rfqs')
         .where('sellerId', isEqualTo: uid)
         .snapshots()
         .listen((snap) {
-      final rfqs = snap.docs.map((d) => RfqModel.fromFirestore(d)).toList()
+      _myRfqs = snap.docs.map(RfqModel.fromFirestore).toList()
         ..sort((a, b) => b.updatedAt.compareTo(a.updatedAt));
-      _myRfqs = rfqs;
       _isLoading = false;
       notifyListeners();
-    }, onError: (e) {
+    }, onError: (Object e) {
       debugPrint('RfqProvider.loadMyRfqs stream error: $e');
-      _error = 'Failed to load your quote requests';
+      _loadFailed = true;
       _isLoading = false;
       notifyListeners();
     });
   }
 
-  /// Submits a counter-offer via submitRfqOffer. Only valid when it is the
-  /// caller's turn (rfq.canActNow(uid)) — the server re-checks this
-  /// unconditionally regardless of what the UI allowed.
-  Future<void> submitOffer({
+  /// Counter-offer with its own validity window.
+  Future<bool> submitOffer({
     required String rfqId,
     required double price,
     required int quantity,
+    required int validForDays,
     String? notes,
-  }) async {
-    _isSubmitting = true;
-    _error = null;
-    notifyListeners();
-
-    try {
-      final callable = FirebaseFunctions.instance.httpsCallable('submitRfqOffer');
-      await callable.call<Map<String, dynamic>>({
+  }) =>
+      _call('submitRfqOffer', {
         'rfqId': rfqId,
         'price': price,
         'quantity': quantity,
+        'validForDays': validForDays,
         if (notes != null && notes.trim().isNotEmpty) 'notes': notes.trim(),
       });
+
+  Future<bool> accept(String rfqId) => _call('respondToRfqOffer', {'rfqId': rfqId, 'action': 'accept'});
+
+  Future<bool> decline(String rfqId, {required String reason}) =>
+      _call('respondToRfqOffer', {'rfqId': rfqId, 'action': 'reject', 'reason': reason});
+
+  Future<bool> _call(String name, Map<String, dynamic> payload) async {
+    _isSubmitting = true;
+    _lastError = null;
+    notifyListeners();
+    try {
+      await FirebaseFunctions.instance.httpsCallable(name).call<Map<String, dynamic>>(payload);
+      return true;
     } on FirebaseFunctionsException catch (e) {
-      _error = e.message ?? 'Failed to submit your offer';
-      rethrow;
+      debugPrint('$name failed: ${e.code} ${e.message}');
+      _lastError = errorFor(e.code, e.message);
+      return false;
+    } catch (e) {
+      debugPrint('$name failed: $e');
+      _lastError = QuoteActionError.generic;
+      return false;
     } finally {
       _isSubmitting = false;
       notifyListeners();
     }
   }
 
-  /// Accepts or rejects the other party's last offer via
-  /// respondToRfqOffer.
-  Future<void> respond({required String rfqId, required String action}) async {
-    assert(action == 'accept' || action == 'reject');
-    _isSubmitting = true;
-    _error = null;
-    notifyListeners();
-
-    try {
-      final callable = FirebaseFunctions.instance.httpsCallable('respondToRfqOffer');
-      await callable.call<Map<String, dynamic>>({'rfqId': rfqId, 'action': action});
-    } on FirebaseFunctionsException catch (e) {
-      _error = e.message ?? 'Failed to respond to this quote';
-      rethrow;
-    } finally {
-      _isSubmitting = false;
-      notifyListeners();
-    }
+  /// Maps a callable failure to a user-facing category (rfq.ts messages).
+  static QuoteActionError errorFor(String code, String? message) {
+    if (code != 'failed-precondition') return QuoteActionError.generic;
+    final m = (message ?? '').toLowerCase();
+    if (m.contains('expired')) return QuoteActionError.expired;
+    if (m.contains('waiting for the other party')) return QuoteActionError.notYourTurn;
+    if (m.contains('no longer open')) return QuoteActionError.closed;
+    return QuoteActionError.generic;
   }
 
   @override

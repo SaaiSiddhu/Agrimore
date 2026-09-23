@@ -1,335 +1,306 @@
+import 'package:agrimore_core/agrimore_core.dart';
+import 'package:agrimore_ui/agrimore_ui.dart';
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
-import 'package:cloud_firestore/cloud_firestore.dart';
-import 'package:firebase_auth/firebase_auth.dart';
-import 'package:agrimore_ui/agrimore_ui.dart' show SnackbarHelper, DialogHelper;
-import 'package:agrimore_core/agrimore_core.dart';
+
+import '../../l10n/app_localizations.dart';
 import '../../providers/rfq_provider.dart';
+import '../../providers/seller_order_provider.dart';
+import '../orders/seller_order_detail_screen.dart';
+import 'widgets/quote_copy.dart';
+import 'widgets/quote_counter_sheet.dart';
+import 'widgets/quote_decline_sheet.dart';
 
-const _kAccentColor = Color(0xFF2D7D3C);
-
-/// The negotiation thread for a single RFQ, seller side (Phase RFQ-2B).
-/// Mirrors apps/marketplace's RfqDetailScreen (Phase RFQ-2) in structure and
-/// behaviour — same history rendering, same canActNow-gated action bar —
-/// restyled to apps/seller's own inline-color convention. SnackbarHelper/
-/// DialogHelper (agrimore_ui) are reused as-is: apps/seller already uses
-/// them elsewhere (add_product_screen.dart) — they are the feedback-canon
-/// helpers, not the theme-token system this app's own convention avoids.
-class SellerRfqDetailScreen extends StatefulWidget {
+/// Q-02 Quote thread (ADR §10.4, SELLER-RFQ-2): what the buyer asked for,
+/// every offer in order, the offer on the table with its expiry, and —
+/// when it is the seller's turn — Counter · Accept · Decline.
+class SellerRfqDetailScreen extends StatelessWidget {
+  const SellerRfqDetailScreen({super.key, required this.rfqId, this.now});
   final String rfqId;
-
-  const SellerRfqDetailScreen({super.key, required this.rfqId});
-
-  @override
-  State<SellerRfqDetailScreen> createState() => _SellerRfqDetailScreenState();
-}
-
-class _SellerRfqDetailScreenState extends State<SellerRfqDetailScreen> {
-  final _priceController = TextEditingController();
-  final _quantityController = TextEditingController();
-  final _notesController = TextEditingController();
-
-  @override
-  void dispose() {
-    _priceController.dispose();
-    _quantityController.dispose();
-    _notesController.dispose();
-    super.dispose();
-  }
-
-  Future<void> _submitCounter(RfqModel rfq) async {
-    final price = double.tryParse(_priceController.text.trim());
-    final quantity = int.tryParse(_quantityController.text.trim());
-    if (price == null || price <= 0) {
-      SnackbarHelper.showWarning(context, 'Enter a valid price');
-      return;
-    }
-    if (quantity == null || quantity <= 0) {
-      SnackbarHelper.showWarning(context, 'Enter a valid quantity');
-      return;
-    }
-    try {
-      await context.read<RfqProvider>().submitOffer(
-            rfqId: rfq.id,
-            price: price,
-            quantity: quantity,
-            notes: _notesController.text,
-          );
-      if (mounted) {
-        _priceController.clear();
-        _quantityController.clear();
-        _notesController.clear();
-        SnackbarHelper.showSuccess(context, 'Offer sent');
-      }
-    } catch (_) {
-      if (mounted) {
-        SnackbarHelper.showError(context, context.read<RfqProvider>().error ?? 'Failed to send your offer');
-      }
-    }
-  }
-
-  Future<void> _respond(RfqModel rfq, String action) async {
-    if (action == 'accept') {
-      final confirmed = await DialogHelper.showConfirmation(
-        context,
-        title: 'Accept this offer?',
-        message: rfq.lastOffer != null
-            ? 'You are agreeing to ${PriceFormatter.formatPriceInt(rfq.lastOffer!.price)} for ${rfq.lastOffer!.quantity} units. This cannot be undone.'
-            : 'This cannot be undone.',
-        confirmText: 'Accept',
-      );
-      if (confirmed != true) return;
-    } else {
-      final confirmed = await DialogHelper.showConfirmation(
-        context,
-        title: 'Reject this quote request?',
-        message: 'This ends the negotiation. The buyer will be notified.',
-        confirmText: 'Reject',
-        isDangerous: true,
-      );
-      if (confirmed != true) return;
-    }
-    try {
-      await context.read<RfqProvider>().respond(rfqId: rfq.id, action: action);
-      if (mounted) {
-        SnackbarHelper.showSuccess(context, action == 'accept' ? 'Offer accepted' : 'Quote request rejected');
-      }
-    } catch (_) {
-      if (mounted) {
-        SnackbarHelper.showError(context, context.read<RfqProvider>().error ?? 'Failed to respond');
-      }
-    }
-  }
+  final DateTime? now;
 
   @override
   Widget build(BuildContext context) {
-    final isDark = Theme.of(context).brightness == Brightness.dark;
-    final uid = FirebaseAuth.instance.currentUser?.uid ?? '';
-
+    final l10n = AppLocalizations.of(context);
+    final quote = context.watch<RfqProvider>().byId(rfqId);
     return Scaffold(
-      backgroundColor: isDark ? const Color(0xFF121212) : Colors.grey[50],
       appBar: AppBar(
-        title: const Text('Quote Request'),
-        backgroundColor: isDark ? const Color(0xFF1A1A1A) : Colors.white,
-        foregroundColor: isDark ? Colors.white : Colors.black87,
-        elevation: 0,
+        leading: IconButton(
+          tooltip: l10n.back,
+          icon: const Icon(AgIcons.arrowLeft),
+          onPressed: () => Navigator.of(context).maybePop(),
+        ),
+        title: Text(quote == null ? l10n.quoteDetailTitle : l10n.productOf(quote)),
       ),
-      body: StreamBuilder<DocumentSnapshot>(
-        stream: FirebaseFirestore.instance.collection('rfqs').doc(widget.rfqId).snapshots(),
-        builder: (context, snapshot) {
-          if (snapshot.connectionState == ConnectionState.waiting) {
-            return const Center(child: CircularProgressIndicator(color: _kAccentColor));
-          }
-          if (!snapshot.hasData || !snapshot.data!.exists) {
-            return Center(
-              child: Column(
-                mainAxisAlignment: MainAxisAlignment.center,
-                children: [
-                  Icon(Icons.error_outline, size: 64, color: Colors.grey[400]),
-                  const SizedBox(height: 16),
-                  Text(
-                    'Quote request not found',
-                    style: TextStyle(fontSize: 16, fontWeight: FontWeight.w600, color: Colors.grey[600]),
-                  ),
-                  const SizedBox(height: 8),
-                  Text(
-                    'This quote request may have been removed.',
-                    style: TextStyle(fontSize: 13, color: Colors.grey[500]),
-                  ),
-                ],
-              ),
-            );
-          }
-          final rfq = RfqModel.fromFirestore(snapshot.data!);
-          final canAct = rfq.canActNow(uid);
-
-          return Column(
-            children: [
-              Expanded(
-                child: ListView(
-                  padding: const EdgeInsets.all(16),
-                  children: [
-                    for (final entry in rfq.history) _HistoryTile(entry: entry, isDark: isDark),
-                  ],
-                ),
-              ),
-              if (canAct)
-                _ActionBar(
-                  rfq: rfq,
-                  isDark: isDark,
-                  priceController: _priceController,
-                  quantityController: _quantityController,
-                  notesController: _notesController,
-                  onSubmitCounter: () => _submitCounter(rfq),
-                  onAccept: () => _respond(rfq, 'accept'),
-                  onReject: () => _respond(rfq, 'reject'),
-                )
-              else
-                Padding(
-                  padding: const EdgeInsets.all(16),
-                  child: Text(
-                    rfq.status == RfqStatus.accepted
-                        ? 'Accepted — locked at ${rfq.finalPrice != null ? PriceFormatter.formatPriceInt(rfq.finalPrice!) : ''} x ${rfq.finalQuantity ?? ''}'
-                        : rfq.status == RfqStatus.rejected
-                            ? 'This quote request was rejected.'
-                            : 'Waiting for the buyer to respond.',
-                    style: TextStyle(fontSize: 14, color: isDark ? Colors.grey[300] : Colors.grey[700]),
-                    textAlign: TextAlign.center,
-                  ),
-                ),
-            ],
-          );
-        },
-      ),
+      body: quote == null
+          ? Padding(
+              padding: const EdgeInsets.all(WsSpace.page),
+              child: SaInfoBanner(variant: SaBannerVariant.info, message: l10n.quoteNotFound),
+            )
+          : _QuoteBody(quote: quote, now: now ?? DateTime.now()),
     );
   }
 }
 
-class _HistoryTile extends StatelessWidget {
-  final RfqHistoryEntry entry;
-  final bool isDark;
+class _QuoteBody extends StatelessWidget {
+  const _QuoteBody({required this.quote, required this.now});
+  final RfqModel quote;
+  final DateTime now;
 
-  const _HistoryTile({required this.entry, required this.isDark});
+  bool get _myTurn =>
+      (quote.status == RfqStatus.pending || quote.status == RfqStatus.negotiating) &&
+      quote.awaitingResponseFrom == RfqRole.seller;
 
-  String _label() {
-    final who = entry.actor == RfqRole.seller ? 'You' : 'Buyer';
-    switch (entry.action) {
-      case 'create':
-        return '$who requested a quote${entry.price != null ? ' at ${PriceFormatter.formatPriceInt(entry.price!)}' : ''} for ${entry.quantity} units';
-      case 'offer':
-        return '$who offered ${PriceFormatter.formatPriceInt(entry.price ?? 0)} for ${entry.quantity} units';
-      case 'accept':
-        return '$who accepted ${PriceFormatter.formatPriceInt(entry.price ?? 0)} for ${entry.quantity} units';
-      case 'reject':
-        return '$who rejected the quote request';
-      default:
-        return who;
+  Future<void> _counter(BuildContext context) async {
+    final offer = await showQuoteCounterSheet(context, quote);
+    if (offer == null || !context.mounted) return;
+    final provider = context.read<RfqProvider>();
+    final ok = await provider.submitOffer(
+      rfqId: quote.id,
+      price: offer.price,
+      quantity: offer.quantity,
+      validForDays: offer.validForDays,
+      notes: offer.note,
+    );
+    if (context.mounted) _toast(context, ok, AppLocalizations.of(context).quoteSent, provider.lastError);
+  }
+
+  Future<void> _accept(BuildContext context) async {
+    final l10n = AppLocalizations.of(context);
+    final offer = quote.lastOffer!;
+    final yes = await showDialog<bool>(
+      context: context,
+      builder: (ctx) => AlertDialog(
+        title: Text(l10n.quoteAcceptTitle),
+        content: Text(l10n.quoteAcceptBody(
+          AgFormat.count(offer.quantity),
+          AgFormat.rupees(offer.price),
+          AgFormat.rupees(offer.total),
+        )),
+        actions: [
+          TextButton(onPressed: () => Navigator.pop(ctx, false), child: Text(l10n.cancel)),
+          FilledButton(onPressed: () => Navigator.pop(ctx, true), child: Text(l10n.quoteAccept)),
+        ],
+      ),
+    );
+    if (yes != true || !context.mounted) return;
+    final provider = context.read<RfqProvider>();
+    final ok = await provider.accept(quote.id);
+    if (context.mounted) _toast(context, ok, l10n.quoteAcceptedToast, provider.lastError);
+  }
+
+  Future<void> _decline(BuildContext context) async {
+    final reason = await showQuoteDeclineSheet(context);
+    if (reason == null || !context.mounted) return;
+    final l10n = AppLocalizations.of(context);
+    final provider = context.read<RfqProvider>();
+    final ok = await provider.decline(quote.id, reason: reason);
+    if (context.mounted) _toast(context, ok, l10n.quoteDeclinedToast, provider.lastError);
+  }
+
+  void _toast(BuildContext context, bool ok, String success, QuoteActionError? error) {
+    final l10n = AppLocalizations.of(context);
+    ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text(ok ? success : l10n.quoteError(error))));
+  }
+
+  void _openOrder(BuildContext context, String orderId) {
+    OrderModel? order;
+    for (final o in context.read<SellerOrderProvider>().allOrders) {
+      if (o.id == orderId) order = o;
     }
+    if (order == null) return;
+    final found = order;
+    Navigator.of(context).push(MaterialPageRoute<void>(builder: (_) => SellerOrderDetailScreen(order: found)));
   }
 
   @override
   Widget build(BuildContext context) {
-    return Container(
-      margin: const EdgeInsets.only(bottom: 10),
-      padding: const EdgeInsets.all(12),
-      decoration: BoxDecoration(
-        color: isDark ? Colors.grey[900] : Colors.white,
-        borderRadius: BorderRadius.circular(12),
-        border: Border.all(color: isDark ? Colors.grey[800]! : Colors.grey.shade200),
-      ),
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
-          Text(
-            _label(),
-            style: TextStyle(
-              fontWeight: FontWeight.w600,
-              fontSize: 14,
-              color: isDark ? Colors.white : Colors.black87,
+    final l10n = AppLocalizations.of(context);
+    final t = context.ws;
+    final text = context.wsText;
+    final offer = quote.lastOffer;
+    final expired = offer?.isExpired(now) ?? false;
+    final submitting = context.watch<RfqProvider>().isSubmitting;
+    final orderId = quote.consumedByOrderId;
+
+    return Column(children: [
+      Expanded(
+        child: ListView(
+          padding: const EdgeInsets.all(WsSpace.page),
+          children: [
+            // Header: what was asked, by whom, against the listed B2B terms.
+            Card(
+              child: Padding(
+                padding: const EdgeInsets.all(WsSpace.s16),
+                child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
+                  Row(children: [
+                    Expanded(child: Text(l10n.buyerOf(quote), style: text.titleSmall)),
+                    QuoteStatusPill(quote: quote, now: now),
+                  ]),
+                  const SizedBox(height: WsSpace.s4),
+                  Text(l10n.quoteRequested(AgFormat.date(quote.createdAt)),
+                      style: text.bodySmall!.copyWith(color: t.textSecondary)),
+                  if (quote.listedB2bPrice != null || quote.listedB2bMoq != null) ...[
+                    const SizedBox(height: WsSpace.s8),
+                    Wrap(spacing: WsSpace.s16, children: [
+                      if (quote.listedB2bPrice != null)
+                        Text(l10n.quoteListedB2b(AgFormat.rupees(quote.listedB2bPrice!)), style: text.bodyMedium),
+                      if (quote.listedB2bMoq != null)
+                        Text(l10n.quoteMoq(AgFormat.count(quote.listedB2bMoq!)), style: text.bodyMedium),
+                    ]),
+                  ],
+                ]),
+              ),
             ),
-          ),
-          if (entry.notes != null && entry.notes!.isNotEmpty) ...[
-            const SizedBox(height: 4),
-            Text(entry.notes!, style: TextStyle(fontSize: 12, color: isDark ? Colors.grey[400] : Colors.grey[600])),
+            if (offer != null) ...[
+              const SizedBox(height: WsSpace.s12),
+              _CurrentOffer(quote: quote, offer: offer, now: now),
+            ],
+            const SizedBox(height: WsSpace.s12),
+            if (quote.status == RfqStatus.accepted)
+              SaInfoBanner(
+                variant: SaBannerVariant.success,
+                message: orderId != null
+                    ? l10n.quoteOrderedBanner
+                    : l10n.quoteAcceptedBanner(
+                        AgFormat.rupees(quote.finalPrice ?? 0), AgFormat.count(quote.finalQuantity ?? 0)),
+                actionLabel: orderId != null ? l10n.quoteViewOrder : null,
+                onAction: orderId != null ? () => _openOrder(context, orderId) : null,
+              )
+            else if (quote.status == RfqStatus.rejected)
+              SaInfoBanner(variant: SaBannerVariant.info, message: l10n.quoteDeclinedBanner)
+            else if (!_myTurn)
+              SaInfoBanner(variant: SaBannerVariant.info, message: l10n.quoteWaitingBanner)
+            else if (expired)
+              SaInfoBanner(variant: SaBannerVariant.warning, message: l10n.quoteAcceptExpiredHint),
+            const SizedBox(height: WsSpace.s24),
+            Text(l10n.quoteHistoryTitle, style: text.titleMedium),
+            const SizedBox(height: WsSpace.s8),
+            for (final h in quote.history) _HistoryEntry(entry: h),
           ],
-        ],
+        ),
+      ),
+      if (_myTurn)
+        SafeArea(
+          top: false,
+          child: Padding(
+            padding: const EdgeInsets.fromLTRB(WsSpace.page, WsSpace.s8, WsSpace.page, WsSpace.s12),
+            child: Row(children: [
+              Expanded(
+                child: OutlinedButton(
+                  onPressed: submitting ? null : () => _decline(context),
+                  child: Text(l10n.quoteDecline),
+                ),
+              ),
+              const SizedBox(width: WsSpace.s8),
+              Expanded(
+                child: OutlinedButton(
+                  onPressed: submitting ? null : () => _counter(context),
+                  child: Text(l10n.quoteCounter),
+                ),
+              ),
+              const SizedBox(width: WsSpace.s8),
+              Expanded(
+                child: FilledButton(
+                  onPressed: submitting || offer == null || expired ? null : () => _accept(context),
+                  child: Text(l10n.quoteAccept),
+                ),
+              ),
+            ]),
+          ),
+        ),
+    ]);
+  }
+}
+
+class _CurrentOffer extends StatelessWidget {
+  const _CurrentOffer({required this.quote, required this.offer, required this.now});
+  final RfqModel quote;
+  final RfqOffer offer;
+  final DateTime now;
+
+  @override
+  Widget build(BuildContext context) {
+    final l10n = AppLocalizations.of(context);
+    final t = context.ws;
+    final text = context.wsText;
+    final open = quote.status == RfqStatus.pending || quote.status == RfqStatus.negotiating;
+    final vs = l10n.vsListed(offer.price, quote.listedB2bPrice);
+    return Card(
+      child: Padding(
+        padding: const EdgeInsets.all(WsSpace.s16),
+        child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
+          Text(open ? l10n.quoteCurrentOffer : l10n.quoteAgreedTerms, style: text.labelLarge),
+          const SizedBox(height: WsSpace.s8),
+          Text(
+            AgFormat.rupees(offer.total),
+            style: text.headlineMedium!.copyWith(fontFeatures: WsType.tabularFigures, color: t.primary),
+          ),
+          const SizedBox(height: WsSpace.s4),
+          Text(l10n.quoteQtyAtPrice(AgFormat.count(offer.quantity), AgFormat.rupees(offer.price)),
+              style: text.bodyMedium!.copyWith(fontFeatures: WsType.tabularFigures)),
+          if (vs != null) ...[
+            const SizedBox(height: WsSpace.s4),
+            Text(vs, style: text.bodySmall!.copyWith(color: t.textSecondary)),
+          ],
+          if (open) ...[
+            const SizedBox(height: WsSpace.s8),
+            QuoteExpiryText(offer: offer, now: now),
+          ],
+        ]),
       ),
     );
   }
 }
 
-class _ActionBar extends StatelessWidget {
-  final RfqModel rfq;
-  final bool isDark;
-  final TextEditingController priceController;
-  final TextEditingController quantityController;
-  final TextEditingController notesController;
-  final VoidCallback onSubmitCounter;
-  final VoidCallback onAccept;
-  final VoidCallback onReject;
-
-  const _ActionBar({
-    required this.rfq,
-    required this.isDark,
-    required this.priceController,
-    required this.quantityController,
-    required this.notesController,
-    required this.onSubmitCounter,
-    required this.onAccept,
-    required this.onReject,
-  });
+class _HistoryEntry extends StatelessWidget {
+  const _HistoryEntry({required this.entry});
+  final RfqHistoryEntry entry;
 
   @override
   Widget build(BuildContext context) {
-    final hasOffer = rfq.lastOffer != null;
-    return Container(
-      padding: const EdgeInsets.all(16),
-      decoration: BoxDecoration(
-        color: isDark ? Colors.grey[900] : Colors.white,
-        boxShadow: [BoxShadow(color: Colors.black.withOpacity(0.06), blurRadius: 8, offset: const Offset(0, -2))],
-      ),
-      child: Column(
-        mainAxisSize: MainAxisSize.min,
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
-          if (hasOffer)
-            Row(
-              children: [
-                Expanded(
-                  child: ElevatedButton(
-                    onPressed: onAccept,
-                    style: ElevatedButton.styleFrom(backgroundColor: Colors.green, foregroundColor: Colors.white),
-                    child: const Text('Accept'),
-                  ),
-                ),
-                const SizedBox(width: 8),
-                Expanded(
-                  child: OutlinedButton(
-                    onPressed: onReject,
-                    style: OutlinedButton.styleFrom(foregroundColor: Colors.red),
-                    child: const Text('Reject'),
-                  ),
-                ),
-              ],
-            ),
-          const SizedBox(height: 8),
-          Row(
-            children: [
-              Expanded(
-                child: TextField(
-                  controller: priceController,
-                  keyboardType: const TextInputType.numberWithOptions(decimal: true),
-                  decoration: const InputDecoration(labelText: 'Your price', isDense: true),
-                ),
-              ),
-              const SizedBox(width: 8),
-              Expanded(
-                child: TextField(
-                  controller: quantityController,
-                  keyboardType: TextInputType.number,
-                  decoration: const InputDecoration(labelText: 'Quantity', isDense: true),
-                ),
+    final l10n = AppLocalizations.of(context);
+    final t = context.ws;
+    final text = context.wsText;
+    final mine = entry.actor == RfqRole.seller;
+    final action = switch (entry.action) {
+      'create' => l10n.quoteActionCreate,
+      'offer' => l10n.quoteActionOffer,
+      'accept' => l10n.quoteActionAccept,
+      'reject' => l10n.quoteActionReject,
+      _ => entry.action,
+    };
+    final price = entry.price;
+    final qty = entry.quantity;
+    final notes = entry.notes;
+    return Align(
+      alignment: mine ? Alignment.centerRight : Alignment.centerLeft,
+      child: ConstrainedBox(
+        constraints: const BoxConstraints(maxWidth: WsSize.formMaxWidth),
+        child: Container(
+          margin: const EdgeInsets.only(bottom: WsSpace.s8),
+          padding: const EdgeInsets.all(WsSpace.s12),
+          decoration: BoxDecoration(
+            color: mine ? t.primarySubtle : t.surfaceSunken,
+            borderRadius: BorderRadius.circular(WsRadius.card),
+          ),
+          child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
+            Text(l10n.quoteHistoryHeader(mine ? l10n.quoteByYou : l10n.quoteByBuyer, action), style: text.labelMedium),
+            if (price != null && qty != null) ...[
+              const SizedBox(height: WsSpace.s4),
+              Text(
+                '${l10n.quoteQtyAtPrice(AgFormat.count(qty), AgFormat.rupees(price))}  ·  ${AgFormat.rupees(price * qty)}',
+                style: text.bodyMedium!.copyWith(fontFeatures: WsType.tabularFigures),
               ),
             ],
-          ),
-          const SizedBox(height: 8),
-          TextField(
-            controller: notesController,
-            decoration: const InputDecoration(labelText: 'Notes (optional)', isDense: true),
-          ),
-          const SizedBox(height: 8),
-          SizedBox(
-            width: double.infinity,
-            child: ElevatedButton(
-              onPressed: onSubmitCounter,
-              style: ElevatedButton.styleFrom(
-                backgroundColor: _kAccentColor,
-                foregroundColor: Colors.white,
-              ),
-              child: Text(hasOffer ? 'Send Counter-Offer' : 'Send Price'),
-            ),
-          ),
-        ],
+            if (notes != null && notes.isNotEmpty) ...[
+              const SizedBox(height: WsSpace.s4),
+              Text(notes, style: text.bodyMedium),
+            ],
+            const SizedBox(height: WsSpace.s4),
+            Text(AgFormat.dateTime(entry.at), style: text.bodySmall!.copyWith(color: t.textTertiary)),
+          ]),
+        ),
       ),
     );
   }
