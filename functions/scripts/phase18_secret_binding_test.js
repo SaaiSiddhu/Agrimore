@@ -282,6 +282,30 @@ function main() {
     );
   }
 
+  // ---------------------------------------------------------------
+  // deliveryRoute.ts — Phase DLV-3B's Google Routes key (D-DLV-ROUTES):
+  // bound to the one function that calls Google, read only via .value().
+  // ---------------------------------------------------------------
+  {
+    const src = read("delivery/deliveryRoute.ts");
+    check(
+      "deliveryRoute.ts declares GOOGLE_ROUTES_API_KEY via defineSecret",
+      /export const GOOGLE_ROUTES_API_KEY\s*=\s*defineSecret\(\s*["']GOOGLE_ROUTES_API_KEY["']\s*\)/.test(src),
+      'expected `export const GOOGLE_ROUTES_API_KEY = defineSecret("GOOGLE_ROUTES_API_KEY")`'
+    );
+    const opts = src.slice(src.indexOf("export const refreshDeliveryRoute"), src.indexOf("async (event)"));
+    check(
+      "deliveryRoute.ts: refreshDeliveryRoute declares secrets: [GOOGLE_ROUTES_API_KEY]",
+      /secrets:\s*\[[^\]]*GOOGLE_ROUTES_API_KEY[^\]]*\]/.test(opts),
+      `options were: ${opts.replace(/\s+/g, " ").slice(0, 200)}`
+    );
+    check(
+      "deliveryRoute.ts never reads the key from process.env (only the bound secret)",
+      !/process\.env\.GOOGLE_ROUTES_API_KEY/.test(src),
+      "found process.env.GOOGLE_ROUTES_API_KEY"
+    );
+  }
+
   console.log("");
   for (const r of results) {
     console.log(`${r.pass ? "PASSED" : "FAILED"} — ${r.label}${r.pass ? "" : ` :: ${r.detail || ""}`}`);
