@@ -1,6 +1,5 @@
 import 'dart:async';
 import 'dart:convert';
-import 'dart:math' as math;
 import 'package:firebase_auth/firebase_auth.dart';
 import 'package:google_sign_in/google_sign_in.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
@@ -27,11 +26,13 @@ class PhoneAuthResult {
 class PhoneOtpSendResult {
   final bool userExists;
   final String channel; // 'sms' or 'voice'
-  final String? mockOtp; // populated when mock OTP is active
+  /// Set only when the server's phone-OTP test mode is active for this
+  /// number (sendPhoneOTP.ts, Phase SEC-P0); null for every real delivery.
+  final String? testOtp;
   PhoneOtpSendResult({
     required this.userExists,
     required this.channel,
-    this.mockOtp,
+    this.testOtp,
   });
 }
 
@@ -67,13 +68,6 @@ class GoogleIdentityResolution {
 
 class AuthService {
   static final AuthService _instance = AuthService._internal();
-
-  /// When true, enables temporary development mock OTP mode:
-  /// Generates a random 6-digit OTP, autofills it into the UI,
-  /// and authenticates with Firebase Auth + Firestore without SMS gateway dependencies.
-  /// Set to false to restore the real Cloud Function + 2Factor SMS/Voice pipeline.
-  static const bool kDevMockPhoneOtp = true;
-  static final Map<String, String> _devMockOtpStore = {};
 
   static const String _googleWebClientId =
       '1082819024270-0rmfnpcfjbmd12mq3h4qbffp67jri89a.apps.googleusercontent.com';
@@ -468,14 +462,6 @@ class AuthService {
   /// never creates a user, never writes Firestore, never signs anyone in.
   Future<GoogleIdentityResolution> resolveGoogleIdentity(PendingGoogleIdentity pending) async {
     try {
-      if (kDevMockPhoneOtp && pending.email?.trim().toLowerCase() == 'edynoxhq@gmail.com') {
-        debugPrint('🛠️ [DEV MOCK] Recognized edynoxhq@gmail.com as linked to 5DFExpngryXwyMu9cTkssx8xjgb2');
-        return GoogleIdentityResolution(
-          linked: true,
-          expectedUid: '5DFExpngryXwyMu9cTkssx8xjgb2',
-        );
-      }
-
       final response = await http
           .post(
             Uri.parse('$_functionsBaseUrl/resolveGoogleIdentity'),
@@ -493,31 +479,10 @@ class AuthService {
         expectedUid: data['expectedUid']?.toString(),
       );
     } on AuthException {
-      if (kDevMockPhoneOtp) {
-        if (pending.email?.trim().toLowerCase() == 'edynoxhq@gmail.com') {
-          return GoogleIdentityResolution(linked: true, expectedUid: '5DFExpngryXwyMu9cTkssx8xjgb2');
-        }
-        debugPrint('⚠️ [DEV MOCK] resolveGoogleIdentity AuthException, falling back to unlinked Scenario B');
-        return GoogleIdentityResolution(linked: false);
-      }
       rethrow;
     } on TimeoutException {
-      if (kDevMockPhoneOtp) {
-        if (pending.email?.trim().toLowerCase() == 'edynoxhq@gmail.com') {
-          return GoogleIdentityResolution(linked: true, expectedUid: '5DFExpngryXwyMu9cTkssx8xjgb2');
-        }
-        debugPrint('⚠️ [DEV MOCK] resolveGoogleIdentity TimeoutException, falling back to unlinked Scenario B');
-        return GoogleIdentityResolution(linked: false);
-      }
       throw AuthException('Network is too slow right now. Please try again.');
     } catch (e) {
-      if (kDevMockPhoneOtp) {
-        if (pending.email?.trim().toLowerCase() == 'edynoxhq@gmail.com') {
-          return GoogleIdentityResolution(linked: true, expectedUid: '5DFExpngryXwyMu9cTkssx8xjgb2');
-        }
-        debugPrint('⚠️ [DEV MOCK] resolveGoogleIdentity error, falling back to unlinked Scenario B: $e');
-        return GoogleIdentityResolution(linked: false);
-      }
       throw AuthException('Could not verify Google account: ${e.toString()}');
     }
   }
@@ -626,37 +591,6 @@ class AuthService {
     try {
       debugPrint('🔥 Requesting phone OTP for: $phone (channel: $channel)');
 
-      if (kDevMockPhoneOtp) {
-        final digits = phone.replaceAll(RegExp(r'\D'), '');
-        final national = digits.length >= 10 ? digits.substring(digits.length - 10) : digits;
-        final normalizedPhone = '+91$national';
-
-        final randomOtp = (100000 + math.Random().nextInt(900000)).toString();
-        _devMockOtpStore[normalizedPhone] = randomOtp;
-        debugPrint('🛠️ [DEV MOCK] Generated random 6-digit OTP for $normalizedPhone: $randomOtp');
-
-        bool userExists = (normalizedPhone == '+918610787151');
-        if (!userExists) {
-          try {
-            final query = await _firestore
-                .collection('users')
-                .where('phone', isEqualTo: normalizedPhone)
-                .limit(1)
-                .get()
-                .timeout(const Duration(seconds: 4));
-            userExists = query.docs.isNotEmpty;
-          } catch (e) {
-            debugPrint('⚠️ [DEV MOCK] Could not check user existence: $e');
-          }
-        }
-
-        return PhoneOtpSendResult(
-          userExists: userExists,
-          channel: channel,
-          mockOtp: randomOtp,
-        );
-      }
-
       final response = await http
           .post(
             Uri.parse('$_functionsBaseUrl/sendPhoneOTP'),
@@ -684,9 +618,13 @@ class AuthService {
 
       final effectiveChannel = data['channel']?.toString() ?? channel;
       debugPrint('✅ Phone OTP requested successfully (channel: $effectiveChannel)');
+      // Phase SEC-P0: the server returns the code only in its allow-listed,
+      // expiring test mode (sendPhoneOTP.ts) — never generated on the device.
+      final testOtp = data['testMode'] == true ? data['testOtp']?.toString() : null;
       return PhoneOtpSendResult(
         userExists: data['userExists'] == true,
         channel: effectiveChannel,
+        testOtp: testOtp,
       );
     } on AuthException {
       rethrow;
@@ -709,106 +647,6 @@ class AuthService {
   }) async {
     try {
       debugPrint('🔥 Verifying phone OTP for: $phone');
-
-      if (kDevMockPhoneOtp) {
-        final digits = phone.replaceAll(RegExp(r'\D'), '');
-        final national = digits.length >= 10 ? digits.substring(digits.length - 10) : digits;
-        final normalizedPhone = '+91$national';
-
-        final expectedOtp = _devMockOtpStore[normalizedPhone];
-        debugPrint('🛠️ [DEV MOCK] Verifying OTP: submitted=$otp, expected=$expectedOtp');
-        if (expectedOtp != null && otp != expectedOtp) {
-          throw AuthException('Invalid OTP. Please try again.');
-        }
-
-        final cleanDigits = national;
-        final devEmail = (normalizedPhone == '+918610787151')
-            ? 'edynoxhq@gmail.com'
-            : 'phone_${cleanDigits}@phone.agrimore.com';
-        final devPassword = 'AgrimorePhone#${cleanDigits}!2026';
-
-        UserCredential cred;
-        try {
-          cred = await _auth.signInWithEmailAndPassword(
-            email: devEmail,
-            password: devPassword,
-          );
-        } on FirebaseAuthException catch (e) {
-          if (e.code == 'user-not-found' ||
-              e.code == 'invalid-credential' ||
-              e.code == 'wrong-password' ||
-              e.code == 'user-disabled') {
-            cred = await _auth.createUserWithEmailAndPassword(
-              email: devEmail,
-              password: devPassword,
-            );
-          } else {
-            rethrow;
-          }
-        }
-
-        final user = cred.user;
-        if (user == null) throw AuthException('Sign in failed');
-
-        debugPrint('✅ [DEV MOCK] Firebase Auth user ready: ${user.uid}');
-
-        final userDoc = await _firestore.collection('users').doc(user.uid).get();
-        bool isNewUser = false;
-
-        if (!userDoc.exists) {
-          isNewUser = true;
-          String userName = (name != null && name.trim().isNotEmpty) ? name.trim() : 'AgriMore User';
-          try {
-            final existingUsers = await _firestore
-                .collection('users')
-                .where('phone', isEqualTo: normalizedPhone)
-                .limit(1)
-                .get();
-            if (existingUsers.docs.isNotEmpty) {
-              final existingData = existingUsers.docs.first.data();
-              if (existingData['name'] != null && existingData['name'].toString().isNotEmpty) {
-                userName = existingData['name'].toString();
-              }
-            }
-          } catch (_) {}
-
-          final userModel = UserModel(
-            uid: user.uid,
-            email: devEmail,
-            name: userName,
-            phone: normalizedPhone,
-            role: 'user',
-            createdAt: DateTime.now(),
-            lastLogin: DateTime.now(),
-          );
-
-          await _firestore.collection('users').doc(user.uid).set({
-            ...userModel.toMap(),
-            'isActive': true,
-            'phoneVerified': false,
-            'loginCount': 1,
-          });
-          debugPrint('✅ [DEV MOCK] New user document created in Firestore: ${user.uid}');
-        } else {
-          final updateData = <String, dynamic>{
-            'lastLogin': FieldValue.serverTimestamp(),
-            'loginCount': FieldValue.increment(1),
-          };
-          if (name != null && name.trim().isNotEmpty) {
-            updateData['name'] = name.trim();
-          }
-          await _firestore.collection('users').doc(user.uid).update(updateData);
-          debugPrint('✅ [DEV MOCK] Existing user document updated in Firestore: ${user.uid}');
-        }
-
-        final userModel = await getUserData(user.uid).timeout(_phoneVerifyTimeout);
-        await _savePersistentSession(userModel);
-
-        _devMockOtpStore.remove(normalizedPhone);
-
-        debugPrint('✅ [DEV MOCK] Phone login complete!');
-        return PhoneAuthResult(user: userModel, isNewUser: isNewUser);
-      }
 
       final response = await http
           .post(

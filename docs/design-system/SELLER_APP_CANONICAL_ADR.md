@@ -439,11 +439,11 @@ Deep links from push notifications open the exact route (e.g. `orders/:id`).
 `TARGET_IMPLEMENTATION` (phase SEC-P0):
 
 - Delete `AuthService.kDevMockPhoneOtp`, `_devMockOtpStore`, the derived-password sign-in and the hardcoded personal mapping from `packages/agrimore_services/lib/auth/auth_service.dart`.
-- New admin-only config doc `settings/auth_test_mode`: `{ enabled: bool, allowlist: [E.164], expiresAt: Timestamp, updatedBy, updatedAt }`. Rules: read/write `isAdmin()` only (admin defined by custom claim — see §12.3).
+- Config doc `auth_test_mode/config`: `{ enabled: true, allowlist: [E.164], expiresAt: Timestamp }`. Rules: `allow read, write: if false` for every client, admins included — edited only in the Firebase Console / Admin SDK, because whoever can write it can sign in as any allow-listed number (implemented in SEC-P0; deliberately stricter than an admin-writable `settings/` doc). The window may not exceed 7 days; there is no "allow everyone" switch.
 - `sendPhoneOTP`: generates and stores the OTP hash **exactly as the real path**; if `enabled && now < expiresAt && phone ∈ allowlist`, skips the SMS/voice provider and returns `{ testOtp: "123456", testMode: true }` in the response. Otherwise unchanged.
 - `verifyPhoneOTP`: **unchanged** — verification, UID resolution and custom token are identical in test and real mode, so there are no duplicate accounts and no passwords.
 - Client: when `testMode` is true, `WsOtpInput` autofills and `WsTestModeRibbon` is shown for the session. Works in release builds only for allow-listed numbers during the window.
-- Audit: each test-mode send writes `auth_test_mode_log/{id}` (phone masked, uid, at).
+- Audit: each test-mode send writes `auth_test_mode_log/{id}` (`phoneMasked`, `channel`, `createdAt` — never the code), closed to all clients.
 
 ### ADR-S12 · One onboarding path
 
@@ -825,7 +825,7 @@ Owner actions — the programme prepares, **never runs** them.
 | E1 | **Functions deploy** — always by explicit name | RFQ: `createRfq`, `submitRfqOffer`, `respondToRfqOffer`, `createOrderFromRfq` · AI: `createSellerAiActivationOrder`, `connectSellerAiProvider`, `sellerAiChatProxy`, `disconnectAiProvider` · Orders: `confirmDelivery`, `quoteOrderWithCredit` · Auth: `sendPhoneOTP`, `verifyPhoneOTP` (test mode) · New ones from §12.1 as each phase lands. Never `--only functions` bare (6 live orphans). |
 | E2 | **Node 22** | 25 live `nodejs20` functions redeployed by name before **2026-10-30** (SEC-4 prepared). |
 | E3 | **Rules & indexes** | `firestore:rules` (SEC-P0 admin fix, §12.2 seller scope), `storage:rules` (KYC, storefront media), `firestore:indexes` (orders `sellerId+orderStatus+createdAt`, products `sellerId+isActive+categoryId`, rfqs `sellerId+status+expiresAt`, notifications). |
-| E4 | **Config docs** | `settings/auth_test_mode`, `settings/seller_onboarding`, `settings/app_versions`, seller fee/commission settings. |
+| E4 | **Config docs** | `auth_test_mode/config` (Console only), `settings/seller_onboarding`, `settings/app_versions`, seller fee/commission settings. |
 | E5 | **Google sign-in** | Register SHA-1/SHA-256 for `com.agrimore.seller` (release key **and** the debug keystore the build actually uses), re-download `google-services.json`, full rebuild. |
 | E6 | **FIX-2 migration** | Move existing `sellers/*` bank fields to `seller_payout_details` (script dry-run → owner `--apply`). |
 | E7 | **Credential rotation** | Keystore passwords, Maps keys, admin password (open since SEC-1/FIX-7). |
@@ -881,7 +881,7 @@ Every phase: claim row in `docs/active/BRANCH_DISPOSITIONS.md` first; branch `ag
 | D-SELLER-GST | Is GSTIN mandatory for all sellers or only above a turnover / for B2B? | Optional; invoices show GSTIN when present |
 | D-RETURNS | Do returns exist for perishables, and who decides (seller vs admin)? | Cancellation only; O-05 hidden |
 | D-SELLER-FEES | Platform fee / commission rates shown in earnings breakdown — source of truth doc? | Show only fields the server writes on `seller_payouts` |
-| D-TEST-MODE-WINDOW | Max test-mode window and who may enable it | 24 h, admin claim only |
+| D-TEST-MODE-WINDOW | Which numbers go on the test allowlist, and for how long | Code caps the window at 7 days; Console-only; no numbers listed until the owner adds them |
 | D-LANGUAGES | Which languages ship first after English | English only; strings externalised from day one |
 | D-SELLER-WEB-HOSTING | Host the seller web build (4 hosting sites exist) and on which domain | Not hosted; web used for development |
 | D-ACCOUNT-HEALTH | Which inputs and thresholds define the health score | Show individual metrics, no composite score |
@@ -940,3 +940,4 @@ Scope `apps/seller/lib/**`, excluding `lib/l10n/**`. Output `path:line RULE`; ex
 | Date | Change |
 |---|---|
 | 2026-09-23 | Initial ADR — owner approved plan A–D; system = Sales Associate, UX bar = tier-1 seller platform, brand = teal. |
+| 2026-09-23 | SEC-P0: test-mode config moved to Console-only `auth_test_mode/config` (7-day cap, allowlist only); §9, §14 E4, §17 updated. |

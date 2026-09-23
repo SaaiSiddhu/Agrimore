@@ -209,6 +209,57 @@ export function normalizePhone(raw: string): string | null {
 }
 
 // ============================================
+// TEST MODE (Phase SEC-P0)
+// ============================================
+// Replaces the client-side mock OTP that commit 9e77189 shipped in the
+// shared AuthService (code generated on the device, a derivable password
+// per phone, a second Auth account per real user). Test mode changes ONE
+// thing: for an allow-listed number inside an expiring window, the code is
+// returned in this response instead of being delivered by the provider.
+// Generation, hashing, storage, cooldown and caps are the real path, and
+// verifyPhoneOTP.ts is untouched — so a test sign-in mints a custom token
+// for the phone's REAL uid, exactly like a delivered code would.
+//
+// Config lives at auth_test_mode/config, which firestore.rules closes to
+// every client (admins included): it is edited only in the Firebase Console
+// or with the Admin SDK. Shape:
+//   { enabled: true, allowlist: ["+91XXXXXXXXXX", ...], expiresAt: Timestamp }
+// Fails closed on anything else: a non-boolean `enabled`, a missing or
+// past `expiresAt`, a window longer than TEST_MODE_MAX_WINDOW_MS, a number
+// not in `allowlist`, or any read error. There is deliberately no
+// "everyone" switch — that would be the mock-OTP account takeover again.
+const TEST_MODE_MAX_WINDOW_MS = 7 * DAY_MS;
+
+function toMillis(value: unknown): number | null {
+  if (value instanceof admin.firestore.Timestamp) return value.toMillis();
+  if (typeof value === "number" && Number.isFinite(value)) return value;
+  return null;
+}
+
+async function isTestModeNumber(normalizedPhone: string, now: number): Promise<boolean> {
+  try {
+    const snap = await db.collection("auth_test_mode").doc("config").get();
+    if (!snap.exists) return false;
+    const cfg = snap.data()!;
+    if (cfg.enabled !== true) return false;
+    const expiresAt = toMillis(cfg.expiresAt);
+    if (expiresAt === null || now >= expiresAt) return false;
+    if (expiresAt - now > TEST_MODE_MAX_WINDOW_MS) return false;
+    if (!Array.isArray(cfg.allowlist)) return false;
+    return cfg.allowlist.some(
+      (entry: unknown) => typeof entry === "string" && normalizePhone(entry) === normalizedPhone
+    );
+  } catch (e) {
+    console.error("auth_test_mode read failed; treating as disabled", e);
+    return false;
+  }
+}
+
+function maskPhone(normalizedPhone: string): string {
+  return `${normalizedPhone.slice(0, 3)}******${normalizedPhone.slice(-3)}`;
+}
+
+// ============================================
 // SEND PHONE OTP FUNCTION
 // ============================================
 // Phase 18, Workstream 2: v1 secret binding uses secret NAMES (strings),
@@ -396,8 +447,12 @@ export const sendPhoneOTP = functions
       otp = crypto.randomInt(100000, 1000000).toString();
     }
 
+    const testMode = await isTestModeNumber(normalizedPhone, now);
+
     try {
-      if (channel === "voice") {
+      if (testMode) {
+        // Phase SEC-P0: no provider call; the code goes back in the response.
+      } else if (channel === "voice") {
         await sendVoiceOtp(normalizedPhone, otp!);
       } else {
         await sendSmsOtp(normalizedPhone, otp!);
@@ -455,7 +510,18 @@ export const sendPhoneOTP = functions
     // semantics as the per-number counter above — not on a mere attempt.
     await ipLimitRef.set({ sendCount: ipSendCount + 1, sendWindowStart: ipSendWindowStart }, { merge: true });
 
-    console.log(`✅ OTP ${isReusedCode ? "redelivered" : "issued"} for ${normalizedPhone} via ${channel}`);
+    if (testMode) {
+      // Audit trail: masked number only, never the code.
+      await db.collection("auth_test_mode_log").add({
+        phoneMasked: maskPhone(normalizedPhone),
+        channel,
+        createdAt: admin.firestore.FieldValue.serverTimestamp(),
+      });
+    }
+
+    console.log(
+      `✅ OTP ${isReusedCode ? "redelivered" : "issued"} for ${maskPhone(normalizedPhone)} via ${testMode ? "test mode" : channel}`
+    );
 
     // Check if user already exists (so client can tailor copy if needed)
     let userExists = false;
@@ -471,6 +537,7 @@ export const sendPhoneOTP = functions
       message: "OTP sent successfully",
       userExists,
       channel,
+      ...(testMode ? { testMode: true, testOtp: otp } : {}),
     });
   } catch (error: any) {
     console.error("❌ Error sending phone OTP:", error);
