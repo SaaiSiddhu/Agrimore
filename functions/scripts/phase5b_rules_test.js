@@ -4,7 +4,7 @@
 // running on 127.0.0.1:8080 — see firebase emulators:start --only firestore,functions)
 const fs = require("fs");
 const path = require("path");
-const { initializeTestEnvironment, assertSucceeds } = require("@firebase/rules-unit-testing");
+const { initializeTestEnvironment, assertSucceeds, assertFails } = require("@firebase/rules-unit-testing");
 
 async function main() {
   const rules = fs.readFileSync(path.join(__dirname, "..", "..", "firestore.rules"), "utf8");

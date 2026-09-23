@@ -11,7 +11,7 @@
 // emulator must be running on 127.0.0.1:8080)
 const fs = require("fs");
 const path = require("path");
-const { initializeTestEnvironment, assertSucceeds } = require("@firebase/rules-unit-testing");
+const { initializeTestEnvironment, assertSucceeds, assertFails } = require("@firebase/rules-unit-testing");
 
 function unprivilegedClaims(email) {
   return {
