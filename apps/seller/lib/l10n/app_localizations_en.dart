@@ -1932,4 +1932,252 @@ class AppLocalizationsEn extends AppLocalizations {
     );
     return '$_temp0';
   }
+
+  @override
+  String get productNewPost => 'New post';
+
+  @override
+  String get productSearchHint => 'Search your products';
+
+  @override
+  String get productsLoadFailed =>
+      'Couldn\'t load your products. Check your connection and try again.';
+
+  @override
+  String get productsEmpty =>
+      'No products yet. Add your first product to start selling.';
+
+  @override
+  String get productsNoneMatch => 'No products match.';
+
+  @override
+  String get productOutOfStock => 'Out of stock';
+
+  @override
+  String productLowStock(String stock) {
+    return 'Only $stock left';
+  }
+
+  @override
+  String get productLive => 'Visible to buyers';
+
+  @override
+  String get productHidden => 'Hidden from buyers';
+
+  @override
+  String get productStock => 'Stock';
+
+  @override
+  String get productEdit => 'Edit';
+
+  @override
+  String get productDelete => 'Delete';
+
+  @override
+  String get productDeleteTitle => 'Delete this product?';
+
+  @override
+  String productDeleteBody(String name) {
+    return '“$name” will be removed from your catalogue. This can\'t be undone.';
+  }
+
+  @override
+  String get productDeleted => 'Product deleted';
+
+  @override
+  String get productStockTitle => 'Update stock';
+
+  @override
+  String get productStockLabel => 'Units in stock';
+
+  @override
+  String get productStockSaved => 'Stock updated';
+
+  @override
+  String get productActionFailed =>
+      'Couldn\'t update this product. Check your connection and try again.';
+
+  @override
+  String get editorNewTitle => 'Add product';
+
+  @override
+  String get editorEditTitle => 'Edit product';
+
+  @override
+  String get editorAddPhoto => 'Add a product photo';
+
+  @override
+  String get editorChangePhoto => 'Change photo';
+
+  @override
+  String get editorSeparator => ' · ';
+
+  @override
+  String get editorName => 'Product name';
+
+  @override
+  String get editorDescription => 'Description';
+
+  @override
+  String get editorDescriptionHint =>
+      'What it is, quantity, quality, how it\'s packed';
+
+  @override
+  String get editorSalePrice => 'Selling price (₹)';
+
+  @override
+  String get editorMrp => 'MRP (₹, optional)';
+
+  @override
+  String get editorStock => 'Units in stock';
+
+  @override
+  String get editorLowStock => 'Low-stock alert at';
+
+  @override
+  String get editorLowStockHelp => 'You\'ll be alerted below this many units';
+
+  @override
+  String get editorCategory => 'Category';
+
+  @override
+  String get editorCategoryHint => 'e.g. Vegetables';
+
+  @override
+  String get editorRequired => 'Required';
+
+  @override
+  String get editorCenterPricing => 'Centre / area pricing';
+
+  @override
+  String get editorCenter => 'Centre';
+
+  @override
+  String get editorLoadingCenters => 'Loading centres…';
+
+  @override
+  String get editorPriceManual => 'Manual price';
+
+  @override
+  String get editorPriceArea => 'Area price';
+
+  @override
+  String get editorPriceDefault => 'Default price';
+
+  @override
+  String get editorPriceCurrent => 'Current';
+
+  @override
+  String editorPriceChip(String label, String price) {
+    return '$label: $price';
+  }
+
+  @override
+  String get editorNoValue => '—';
+
+  @override
+  String get editorResetPrice => 'Use the mapped price';
+
+  @override
+  String get editorCoverage => 'Delivery coverage';
+
+  @override
+  String get editorCoverageHint =>
+      'The whole state by default. Use a radius for local delivery.';
+
+  @override
+  String get editorCoverageState => 'Whole state';
+
+  @override
+  String get editorCoverageDistrict => 'District';
+
+  @override
+  String get editorCoverageRadius => 'Radius';
+
+  @override
+  String get editorLatitude => 'Latitude';
+
+  @override
+  String get editorLongitude => 'Longitude';
+
+  @override
+  String get editorUseLocation => 'Use my current location';
+
+  @override
+  String get editorDetecting => 'Detecting…';
+
+  @override
+  String editorRadiusValue(int km) {
+    return 'Radius: $km km';
+  }
+
+  @override
+  String get editorB2b => 'Wholesale (B2B)';
+
+  @override
+  String get editorB2bHint =>
+      'Offer a bulk price with a minimum order quantity.';
+
+  @override
+  String get editorB2bPrice => 'B2B price (₹)';
+
+  @override
+  String get editorB2bMoq => 'Minimum order quantity';
+
+  @override
+  String get editorB2bRule => 'Must be lower than your selling price.';
+
+  @override
+  String get editorUpdate => 'Update product';
+
+  @override
+  String get editorSave => 'Save product';
+
+  @override
+  String get editorSaving => 'Saving…';
+
+  @override
+  String get editorUpdated => 'Product updated';
+
+  @override
+  String get editorAdded =>
+      'Product added. It goes live once AgriMore approves it.';
+
+  @override
+  String get editorSaveFailed =>
+      'Couldn\'t save this product. Check your connection and try again.';
+
+  @override
+  String get editorUploadFailed => 'Couldn\'t upload the photo. Try again.';
+
+  @override
+  String get editorPhotoFailed => 'Couldn\'t open that photo. Try another one.';
+
+  @override
+  String get editorNeedDistrict => 'Choose a delivery district.';
+
+  @override
+  String get editorNeedCoordinates =>
+      'Enter a latitude and longitude for radius delivery.';
+
+  @override
+  String get editorNeedB2bPrice => 'Enter a valid B2B price.';
+
+  @override
+  String editorB2bTooHigh(String b2b, String sale) {
+    return 'The B2B price ($b2b) must be lower than the selling price ($sale).';
+  }
+
+  @override
+  String get editorNeedMoq => 'Enter a valid minimum order quantity.';
+
+  @override
+  String get editorLocationOff =>
+      'Turn on location services to use your current location.';
+
+  @override
+  String get editorLocationDenied => 'Location permission was denied.';
+
+  @override
+  String get editorLocationFailed => 'Couldn\'t find your current location.';
 }

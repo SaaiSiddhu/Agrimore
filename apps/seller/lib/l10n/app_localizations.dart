@@ -3357,6 +3357,462 @@ abstract class AppLocalizations {
   /// In en, this message translates to:
   /// **'{count, plural, =1{1 accepted order to pack} other{{count} accepted orders to pack}}'**
   String homeOrdersToPack(int count);
+
+  /// No description provided for @productNewPost.
+  ///
+  /// In en, this message translates to:
+  /// **'New post'**
+  String get productNewPost;
+
+  /// No description provided for @productSearchHint.
+  ///
+  /// In en, this message translates to:
+  /// **'Search your products'**
+  String get productSearchHint;
+
+  /// No description provided for @productsLoadFailed.
+  ///
+  /// In en, this message translates to:
+  /// **'Couldn\'t load your products. Check your connection and try again.'**
+  String get productsLoadFailed;
+
+  /// No description provided for @productsEmpty.
+  ///
+  /// In en, this message translates to:
+  /// **'No products yet. Add your first product to start selling.'**
+  String get productsEmpty;
+
+  /// No description provided for @productsNoneMatch.
+  ///
+  /// In en, this message translates to:
+  /// **'No products match.'**
+  String get productsNoneMatch;
+
+  /// No description provided for @productOutOfStock.
+  ///
+  /// In en, this message translates to:
+  /// **'Out of stock'**
+  String get productOutOfStock;
+
+  /// No description provided for @productLowStock.
+  ///
+  /// In en, this message translates to:
+  /// **'Only {stock} left'**
+  String productLowStock(String stock);
+
+  /// No description provided for @productLive.
+  ///
+  /// In en, this message translates to:
+  /// **'Visible to buyers'**
+  String get productLive;
+
+  /// No description provided for @productHidden.
+  ///
+  /// In en, this message translates to:
+  /// **'Hidden from buyers'**
+  String get productHidden;
+
+  /// No description provided for @productStock.
+  ///
+  /// In en, this message translates to:
+  /// **'Stock'**
+  String get productStock;
+
+  /// No description provided for @productEdit.
+  ///
+  /// In en, this message translates to:
+  /// **'Edit'**
+  String get productEdit;
+
+  /// No description provided for @productDelete.
+  ///
+  /// In en, this message translates to:
+  /// **'Delete'**
+  String get productDelete;
+
+  /// No description provided for @productDeleteTitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Delete this product?'**
+  String get productDeleteTitle;
+
+  /// No description provided for @productDeleteBody.
+  ///
+  /// In en, this message translates to:
+  /// **'“{name}” will be removed from your catalogue. This can\'t be undone.'**
+  String productDeleteBody(String name);
+
+  /// No description provided for @productDeleted.
+  ///
+  /// In en, this message translates to:
+  /// **'Product deleted'**
+  String get productDeleted;
+
+  /// No description provided for @productStockTitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Update stock'**
+  String get productStockTitle;
+
+  /// No description provided for @productStockLabel.
+  ///
+  /// In en, this message translates to:
+  /// **'Units in stock'**
+  String get productStockLabel;
+
+  /// No description provided for @productStockSaved.
+  ///
+  /// In en, this message translates to:
+  /// **'Stock updated'**
+  String get productStockSaved;
+
+  /// No description provided for @productActionFailed.
+  ///
+  /// In en, this message translates to:
+  /// **'Couldn\'t update this product. Check your connection and try again.'**
+  String get productActionFailed;
+
+  /// No description provided for @editorNewTitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Add product'**
+  String get editorNewTitle;
+
+  /// No description provided for @editorEditTitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Edit product'**
+  String get editorEditTitle;
+
+  /// No description provided for @editorAddPhoto.
+  ///
+  /// In en, this message translates to:
+  /// **'Add a product photo'**
+  String get editorAddPhoto;
+
+  /// No description provided for @editorChangePhoto.
+  ///
+  /// In en, this message translates to:
+  /// **'Change photo'**
+  String get editorChangePhoto;
+
+  /// No description provided for @editorSeparator.
+  ///
+  /// In en, this message translates to:
+  /// **' · '**
+  String get editorSeparator;
+
+  /// No description provided for @editorName.
+  ///
+  /// In en, this message translates to:
+  /// **'Product name'**
+  String get editorName;
+
+  /// No description provided for @editorDescription.
+  ///
+  /// In en, this message translates to:
+  /// **'Description'**
+  String get editorDescription;
+
+  /// No description provided for @editorDescriptionHint.
+  ///
+  /// In en, this message translates to:
+  /// **'What it is, quantity, quality, how it\'s packed'**
+  String get editorDescriptionHint;
+
+  /// No description provided for @editorSalePrice.
+  ///
+  /// In en, this message translates to:
+  /// **'Selling price (₹)'**
+  String get editorSalePrice;
+
+  /// No description provided for @editorMrp.
+  ///
+  /// In en, this message translates to:
+  /// **'MRP (₹, optional)'**
+  String get editorMrp;
+
+  /// No description provided for @editorStock.
+  ///
+  /// In en, this message translates to:
+  /// **'Units in stock'**
+  String get editorStock;
+
+  /// No description provided for @editorLowStock.
+  ///
+  /// In en, this message translates to:
+  /// **'Low-stock alert at'**
+  String get editorLowStock;
+
+  /// No description provided for @editorLowStockHelp.
+  ///
+  /// In en, this message translates to:
+  /// **'You\'ll be alerted below this many units'**
+  String get editorLowStockHelp;
+
+  /// No description provided for @editorCategory.
+  ///
+  /// In en, this message translates to:
+  /// **'Category'**
+  String get editorCategory;
+
+  /// No description provided for @editorCategoryHint.
+  ///
+  /// In en, this message translates to:
+  /// **'e.g. Vegetables'**
+  String get editorCategoryHint;
+
+  /// No description provided for @editorRequired.
+  ///
+  /// In en, this message translates to:
+  /// **'Required'**
+  String get editorRequired;
+
+  /// No description provided for @editorCenterPricing.
+  ///
+  /// In en, this message translates to:
+  /// **'Centre / area pricing'**
+  String get editorCenterPricing;
+
+  /// No description provided for @editorCenter.
+  ///
+  /// In en, this message translates to:
+  /// **'Centre'**
+  String get editorCenter;
+
+  /// No description provided for @editorLoadingCenters.
+  ///
+  /// In en, this message translates to:
+  /// **'Loading centres…'**
+  String get editorLoadingCenters;
+
+  /// No description provided for @editorPriceManual.
+  ///
+  /// In en, this message translates to:
+  /// **'Manual price'**
+  String get editorPriceManual;
+
+  /// No description provided for @editorPriceArea.
+  ///
+  /// In en, this message translates to:
+  /// **'Area price'**
+  String get editorPriceArea;
+
+  /// No description provided for @editorPriceDefault.
+  ///
+  /// In en, this message translates to:
+  /// **'Default price'**
+  String get editorPriceDefault;
+
+  /// No description provided for @editorPriceCurrent.
+  ///
+  /// In en, this message translates to:
+  /// **'Current'**
+  String get editorPriceCurrent;
+
+  /// No description provided for @editorPriceChip.
+  ///
+  /// In en, this message translates to:
+  /// **'{label}: {price}'**
+  String editorPriceChip(String label, String price);
+
+  /// No description provided for @editorNoValue.
+  ///
+  /// In en, this message translates to:
+  /// **'—'**
+  String get editorNoValue;
+
+  /// No description provided for @editorResetPrice.
+  ///
+  /// In en, this message translates to:
+  /// **'Use the mapped price'**
+  String get editorResetPrice;
+
+  /// No description provided for @editorCoverage.
+  ///
+  /// In en, this message translates to:
+  /// **'Delivery coverage'**
+  String get editorCoverage;
+
+  /// No description provided for @editorCoverageHint.
+  ///
+  /// In en, this message translates to:
+  /// **'The whole state by default. Use a radius for local delivery.'**
+  String get editorCoverageHint;
+
+  /// No description provided for @editorCoverageState.
+  ///
+  /// In en, this message translates to:
+  /// **'Whole state'**
+  String get editorCoverageState;
+
+  /// No description provided for @editorCoverageDistrict.
+  ///
+  /// In en, this message translates to:
+  /// **'District'**
+  String get editorCoverageDistrict;
+
+  /// No description provided for @editorCoverageRadius.
+  ///
+  /// In en, this message translates to:
+  /// **'Radius'**
+  String get editorCoverageRadius;
+
+  /// No description provided for @editorLatitude.
+  ///
+  /// In en, this message translates to:
+  /// **'Latitude'**
+  String get editorLatitude;
+
+  /// No description provided for @editorLongitude.
+  ///
+  /// In en, this message translates to:
+  /// **'Longitude'**
+  String get editorLongitude;
+
+  /// No description provided for @editorUseLocation.
+  ///
+  /// In en, this message translates to:
+  /// **'Use my current location'**
+  String get editorUseLocation;
+
+  /// No description provided for @editorDetecting.
+  ///
+  /// In en, this message translates to:
+  /// **'Detecting…'**
+  String get editorDetecting;
+
+  /// No description provided for @editorRadiusValue.
+  ///
+  /// In en, this message translates to:
+  /// **'Radius: {km} km'**
+  String editorRadiusValue(int km);
+
+  /// No description provided for @editorB2b.
+  ///
+  /// In en, this message translates to:
+  /// **'Wholesale (B2B)'**
+  String get editorB2b;
+
+  /// No description provided for @editorB2bHint.
+  ///
+  /// In en, this message translates to:
+  /// **'Offer a bulk price with a minimum order quantity.'**
+  String get editorB2bHint;
+
+  /// No description provided for @editorB2bPrice.
+  ///
+  /// In en, this message translates to:
+  /// **'B2B price (₹)'**
+  String get editorB2bPrice;
+
+  /// No description provided for @editorB2bMoq.
+  ///
+  /// In en, this message translates to:
+  /// **'Minimum order quantity'**
+  String get editorB2bMoq;
+
+  /// No description provided for @editorB2bRule.
+  ///
+  /// In en, this message translates to:
+  /// **'Must be lower than your selling price.'**
+  String get editorB2bRule;
+
+  /// No description provided for @editorUpdate.
+  ///
+  /// In en, this message translates to:
+  /// **'Update product'**
+  String get editorUpdate;
+
+  /// No description provided for @editorSave.
+  ///
+  /// In en, this message translates to:
+  /// **'Save product'**
+  String get editorSave;
+
+  /// No description provided for @editorSaving.
+  ///
+  /// In en, this message translates to:
+  /// **'Saving…'**
+  String get editorSaving;
+
+  /// No description provided for @editorUpdated.
+  ///
+  /// In en, this message translates to:
+  /// **'Product updated'**
+  String get editorUpdated;
+
+  /// No description provided for @editorAdded.
+  ///
+  /// In en, this message translates to:
+  /// **'Product added. It goes live once AgriMore approves it.'**
+  String get editorAdded;
+
+  /// No description provided for @editorSaveFailed.
+  ///
+  /// In en, this message translates to:
+  /// **'Couldn\'t save this product. Check your connection and try again.'**
+  String get editorSaveFailed;
+
+  /// No description provided for @editorUploadFailed.
+  ///
+  /// In en, this message translates to:
+  /// **'Couldn\'t upload the photo. Try again.'**
+  String get editorUploadFailed;
+
+  /// No description provided for @editorPhotoFailed.
+  ///
+  /// In en, this message translates to:
+  /// **'Couldn\'t open that photo. Try another one.'**
+  String get editorPhotoFailed;
+
+  /// No description provided for @editorNeedDistrict.
+  ///
+  /// In en, this message translates to:
+  /// **'Choose a delivery district.'**
+  String get editorNeedDistrict;
+
+  /// No description provided for @editorNeedCoordinates.
+  ///
+  /// In en, this message translates to:
+  /// **'Enter a latitude and longitude for radius delivery.'**
+  String get editorNeedCoordinates;
+
+  /// No description provided for @editorNeedB2bPrice.
+  ///
+  /// In en, this message translates to:
+  /// **'Enter a valid B2B price.'**
+  String get editorNeedB2bPrice;
+
+  /// No description provided for @editorB2bTooHigh.
+  ///
+  /// In en, this message translates to:
+  /// **'The B2B price ({b2b}) must be lower than the selling price ({sale}).'**
+  String editorB2bTooHigh(String b2b, String sale);
+
+  /// No description provided for @editorNeedMoq.
+  ///
+  /// In en, this message translates to:
+  /// **'Enter a valid minimum order quantity.'**
+  String get editorNeedMoq;
+
+  /// No description provided for @editorLocationOff.
+  ///
+  /// In en, this message translates to:
+  /// **'Turn on location services to use your current location.'**
+  String get editorLocationOff;
+
+  /// No description provided for @editorLocationDenied.
+  ///
+  /// In en, this message translates to:
+  /// **'Location permission was denied.'**
+  String get editorLocationDenied;
+
+  /// No description provided for @editorLocationFailed.
+  ///
+  /// In en, this message translates to:
+  /// **'Couldn\'t find your current location.'**
+  String get editorLocationFailed;
 }
 
 class _AppLocalizationsDelegate
