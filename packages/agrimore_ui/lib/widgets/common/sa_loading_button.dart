@@ -84,11 +84,18 @@ class SaLoadingButton extends StatelessWidget {
             ),
           ),
           const SizedBox(width: SaTokens.space12),
-          Text(
-            effectiveLoadingText,
-            style: const TextStyle(
-              fontSize: SaTokens.fsBody,
-              fontWeight: FontWeight.w600,
+          // SELLER-AUTH-1a: Flexible + wrap, so a long label or large text
+          // scale wraps instead of overflowing (identical layout when it fits).
+          Flexible(
+            child: Text(
+              effectiveLoadingText,
+              textAlign: TextAlign.center,
+              maxLines: 2,
+              overflow: TextOverflow.ellipsis,
+              style: const TextStyle(
+                fontSize: SaTokens.fsBody,
+                fontWeight: FontWeight.w600,
+              ),
             ),
           ),
         ] else ...[
@@ -99,11 +106,18 @@ class SaLoadingButton extends StatelessWidget {
             ),
             const SizedBox(width: SaTokens.space8),
           ],
-          Text(
-            text,
-            style: const TextStyle(
-              fontSize: SaTokens.fsBody,
-              fontWeight: FontWeight.w600,
+          // SELLER-AUTH-1a: Flexible + wrap, so a long label or large text
+          // scale wraps instead of overflowing (identical layout when it fits).
+          Flexible(
+            child: Text(
+              text,
+              textAlign: TextAlign.center,
+              maxLines: 2,
+              overflow: TextOverflow.ellipsis,
+              style: const TextStyle(
+                fontSize: SaTokens.fsBody,
+                fontWeight: FontWeight.w600,
+              ),
             ),
           ),
         ],
