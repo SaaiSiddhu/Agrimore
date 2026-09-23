@@ -1,95 +1,91 @@
 // lib/app/app.dart
+import 'package:agrimore_ui/agrimore_ui.dart';
 import 'package:flutter/material.dart';
+import 'package:flutter_localizations/flutter_localizations.dart';
 import 'package:provider/provider.dart';
+
+import '../l10n/app_localizations.dart';
 import '../providers/seller_auth_provider.dart';
-import '../screens/auth/login_screen.dart';
-import '../screens/auth/pending_approval_screen.dart';
+import '../screens/auth/account_restricted_screen.dart';
+import '../screens/auth/application_status_screen.dart';
+import '../screens/auth/seller_sign_in_screen.dart';
+import '../screens/auth/widgets/auth_brand_panel.dart';
 import '../screens/shell/seller_shell.dart';
 
-import 'package:agrimore_ui/agrimore_ui.dart';
-
+/// AgriMore Seller — Workspace theme, seller (teal) brand (ADR-S02/S03).
 class App extends StatelessWidget {
   const App({super.key});
 
   @override
   Widget build(BuildContext context) {
     return MaterialApp(
-      title: 'Agrimore Seller',
+      onGenerateTitle: (context) => AppLocalizations.of(context).appName,
       debugShowCheckedModeBanner: false,
-      theme: ThemeData(
-        colorScheme: ColorScheme.fromSeed(
-          seedColor: const Color(0xFF1A365D), // Professional Navy Blue
-          secondary: const Color(0xFFF59E0B), // Amber Accent
-          brightness: Brightness.light,
-        ),
-        useMaterial3: true,
-        appBarTheme: const AppBarTheme(
-          centerTitle: true,
-          elevation: 0,
-          backgroundColor: Color(0xFF1A365D),
-          foregroundColor: Colors.white,
-        ),
-      ),
-      darkTheme: ThemeData(
-        colorScheme: ColorScheme.fromSeed(
-          seedColor: const Color(0xFF2B6CB0), // Lighter Blue for Dark Mode
-          secondary: const Color(0xFFFBBF24), // Amber Accent
-          brightness: Brightness.dark,
-        ),
-        useMaterial3: true,
-      ),
+      theme: WorkspaceTheme.build(WorkspaceBrand.seller, Brightness.light),
+      darkTheme: WorkspaceTheme.build(WorkspaceBrand.seller, Brightness.dark),
       themeMode: ThemeMode.system,
-      home: const _SellerSplashWrapper(),
+      localizationsDelegates: const [
+        AppLocalizations.delegate,
+        GlobalMaterialLocalizations.delegate,
+        GlobalWidgetsLocalizations.delegate,
+        GlobalCupertinoLocalizations.delegate,
+      ],
+      supportedLocales: AppLocalizations.supportedLocales,
+      home: const SellerAuthGate(),
     );
   }
 }
 
-class _SellerSplashWrapper extends StatelessWidget {
-  const _SellerSplashWrapper({super.key});
+/// Routes on [SellerAccess] only (ADR §9 "Auth gate states").
+class SellerAuthGate extends StatelessWidget {
+  const SellerAuthGate({super.key});
 
   @override
   Widget build(BuildContext context) {
-    return PremiumSplashScreen(
-      appName: 'Agrimore Seller',
-      tagline: 'Seller Dashboard',
-      logoPath: 'packages/agrimore_ui/assets/icons/seller_logo.png',
-      animationType: SplashAnimationType.seller,
-      onNavigation: (ctx) async {
-        if (!ctx.mounted) return;
-        Navigator.of(ctx).pushReplacement(
-          MaterialPageRoute(builder: (_) => const _AuthGate()),
-        );
-      },
+    final access = context.watch<SellerAuthProvider>().access;
+    return AnimatedSwitcher(
+      duration: WsMotion.standard,
+      switchInCurve: WsMotion.curveEnter,
+      switchOutCurve: WsMotion.curveExit,
+      child: KeyedSubtree(
+        key: ValueKey(access),
+        child: switch (access) {
+          SellerAccess.loading => const _LoadingAccount(),
+          SellerAccess.signedOut => const SellerSignInScreen(),
+          SellerAccess.noApplication => const AccountRestrictedScreen(reason: RestrictionReason.noAccount),
+          SellerAccess.pending => const ApplicationStatusScreen(),
+          SellerAccess.rejected => const AccountRestrictedScreen(reason: RestrictionReason.rejected),
+          SellerAccess.suspended => const AccountRestrictedScreen(reason: RestrictionReason.suspended),
+          SellerAccess.approved => const SellerShell(),
+        },
+      ),
     );
   }
 }
 
-class _AuthGate extends StatelessWidget {
-  const _AuthGate({super.key});
+class _LoadingAccount extends StatelessWidget {
+  const _LoadingAccount();
 
   @override
   Widget build(BuildContext context) {
-    return Consumer<SellerAuthProvider>(
-      builder: (context, authProvider, _) {
-        if (authProvider.isLoading) {
-          return const Scaffold(
-            body: Center(child: CircularProgressIndicator()),
-          );
-        }
-        
-        // Fully authenticated and approved seller → show shell with bottom nav
-        if (authProvider.isAuthenticated) {
-          return const SellerShell();
-        }
-        
-        // Seller is logged in but pending approval
-        if (authProvider.isPendingApproval) {
-          return const PendingApprovalScreen();
-        }
-        
-        // Not logged in or not a seller
-        return const LoginScreen();
-      },
+    final l10n = AppLocalizations.of(context);
+    return Scaffold(
+      body: Center(
+        child: Semantics(
+          label: l10n.loadingAccount,
+          child: const Column(
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              AuthWordmark(),
+              SizedBox(height: WsSpace.s24),
+              SizedBox(
+                width: WsSize.railWidthExpanded / 2,
+                child: LinearProgressIndicator(),
+              ),
+            ],
+          ),
+        ),
+      ),
     );
   }
 }

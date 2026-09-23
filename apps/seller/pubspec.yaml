@@ -9,6 +9,8 @@ environment:
 dependencies:
   flutter:
     sdk: flutter
+  flutter_localizations:
+    sdk: flutter
   
   # Shared Packages
   agrimore_core:
@@ -58,6 +60,8 @@ flutter_launcher_icons:
 
 flutter:
   uses-material-design: true
+  # SELLER-AUTH-1a: all user-visible copy lives in lib/l10n/*.arb (ADR-S16).
+  generate: true
 
   # Phase 19: `.env` is deliberately NOT an asset here. Flutter copies assets
   # verbatim into the APK/AAB, and the project `.env` carries server-only
