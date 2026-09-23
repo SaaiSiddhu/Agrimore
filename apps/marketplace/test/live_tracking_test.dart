@@ -1,7 +1,10 @@
 // Phase DLV-3B — what the customer is told while an order is on its way.
 import 'package:agrimore_marketplace/services/delivery_tracking_service.dart';
 import 'package:agrimore_core/agrimore_core.dart';
+import 'package:agrimore_marketplace/screens/user/orders/live_tracking_screen.dart' show fitZoom;
+import 'package:agrimore_marketplace/screens/user/orders/widgets/tracking_sections.dart';
 import 'package:flutter_test/flutter_test.dart';
+import 'package:google_maps_flutter/google_maps_flutter.dart';
 
 void main() {
   group('trackable orders', () {
@@ -55,5 +58,45 @@ void main() {
     expect(locationAgeMessage(const Duration(seconds: 30)), 'Location updated just now');
     expect(locationAgeMessage(const Duration(minutes: 4)), 'Location updated 4 min ago');
     expect(locationAgeMessage(const Duration(hours: 2)), 'Location updated over an hour ago');
+  });
+
+  group('camera fit (web left it at a broken zoom before)', () {
+    LatLngBounds b(double s, double w, double n, double e) =>
+        LatLngBounds(southwest: LatLng(s, w), northeast: LatLng(n, e));
+
+    test('a 2-3 km city trip fits at street level', () {
+      final z = fitZoom(b(9.898, 78.115, 9.943, 78.124), widthPx: 279, heightPx: 175);
+      expect(z, inInclusiveRange(12.0, 14.0));
+    });
+
+    test('a smaller band or a longer trip zooms out', () {
+      final big = fitZoom(b(9.90, 78.11, 9.92, 78.13), widthPx: 300, heightPx: 400);
+      final small = fitZoom(b(9.90, 78.11, 9.92, 78.13), widthPx: 300, heightPx: 150);
+      final longer = fitZoom(b(9.80, 78.11, 9.92, 78.13), widthPx: 300, heightPx: 400);
+      expect(small, lessThan(big));
+      expect(longer, lessThan(big));
+    });
+
+    test('degenerate or silly input stays in 3-17', () {
+      expect(fitZoom(b(9.9, 78.1, 9.9, 78.1), widthPx: 300, heightPx: 300), 17);
+      expect(fitZoom(b(-80, -170, 80, 170), widthPx: 300, heightPx: 300), 3);
+      expect(fitZoom(b(9.9, 78.1, 9.95, 78.2), widthPx: -5, heightPx: 0), inInclusiveRange(3.0, 17.0));
+    });
+  });
+
+  test('stepper stage from the rider leg, else the order status', () {
+    expect(TrackingStepper.currentStep(null, 'pending'), 0);
+    expect(TrackingStepper.currentStep(DeliveryTaskStatus.searching, 'ready_for_pickup'), 1);
+    expect(TrackingStepper.currentStep(DeliveryTaskStatus.atPickup, 'arrived_at_store'), 1);
+    expect(TrackingStepper.currentStep(DeliveryTaskStatus.enRoute, 'picked_up'), 2);
+    expect(TrackingStepper.currentStep(DeliveryTaskStatus.delivered, 'delivered'), 3);
+    expect(TrackingStepper.currentStep(null, 'out_for_delivery'), 2);
+  });
+
+  test('cash on delivery and money labels', () {
+    expect(isCashOnDelivery('COD'), isTrue);
+    expect(isCashOnDelivery('razorpay'), isFalse);
+    expect(rupees(480), '₹480');
+    expect(rupees(99.5), '₹99.50');
   });
 }
