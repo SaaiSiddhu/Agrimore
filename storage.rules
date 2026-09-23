@@ -89,6 +89,15 @@ service firebase.storage {
       allow write: if isAdmin() && isValidFileSize() && isImage();
     }
 
+    // SELLER-STOREFRONT-EDIT-1: the seller's own storefront logo / cover.
+    // Public read (the storefront is public); the owner writes images only.
+    match /sellers/{sellerId}/storefront/{fileName} {
+      allow read: if true;
+      allow write: if (isAdmin() || (isAuthenticated() && request.auth.uid == sellerId))
+                   && isValidFileSize() && isImage();
+      allow delete: if isAdmin() || (isAuthenticated() && request.auth.uid == sellerId);
+    }
+
     // ============================================
     // USER PROFILE IMAGES — Only owner can upload
     // ============================================

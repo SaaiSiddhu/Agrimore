@@ -22,7 +22,7 @@ const fs = require("fs");
 const path = require("path");
 const admin = require("firebase-admin");
 admin.initializeApp({ projectId: "agrimore-66a4e" });
-const { initializeTestEnvironment, assertSucceeds } = require("@firebase/rules-unit-testing");
+const { initializeTestEnvironment, assertSucceeds, assertFails } = require("@firebase/rules-unit-testing");
 const { buildClaims } = require("../lib/admin/roleClaims");
 
 async function main() {
@@ -51,12 +51,21 @@ async function main() {
     });
     const as = (uid) => testEnv.authenticatedContext(uid).firestore();
 
-    await check("c1_rules_let_an_owner_write_a_case_variant", async () => {
-      // Documents why the server must be exact: this write is (and may stay) allowed.
+    await check("c1_rules_let_an_owner_write_a_case_variant_on_users", async () => {
+      // Documents why the server must be exact: these users/* writes are allowed.
       await assertSucceeds(as("sus1").doc("users/sus1").update({ sellerStatus: "Approved" }));
-      await assertSucceeds(as("sus2").doc("sellers/sus2").update({ status: " APPROVED " }));
       await assertSucceeds(as("rider1").doc("users/rider1").update({ deliveryStatus: "Approved" }));
       await assertSucceeds(as("emp1").doc("users/emp1").update({ employeeStatus: "approved " }));
+    });
+
+    await check("c1b_sellers_status_is_no_longer_owner_writable", async () => {
+      // SELLER-STOREFRONT-EDIT-1's allow-list removed status from the owner's
+      // sellers/{uid} keys, so this variant write is now denied outright.
+      await assertFails(as("sus2").doc("sellers/sus2").update({ status: " APPROVED " }));
+      // Seed the variant directly so c3 still proves the server ignores it.
+      await testEnv.withSecurityRulesDisabled(async (ctx) => {
+        await ctx.firestore().doc("sellers/sus2").update({ status: " APPROVED " });
+      });
     });
 
     await check("c2_user_doc_variant_grants_no_seller_claim", async () => {

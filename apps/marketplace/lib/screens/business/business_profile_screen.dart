@@ -8,6 +8,7 @@ import '../../providers/theme_provider.dart';
 import '../../providers/business_follow_provider.dart';
 import '../../providers/category_provider.dart';
 import '../user/shop/widgets/product_grid.dart';
+import 'storefront_visibility.dart';
 
 /// BUSINESS-NETWORK-1 (slice 1 of 2): a customer-facing public profile for a
 /// seller -- name/shop details + their product list + a follow button. The
@@ -32,6 +33,7 @@ class BusinessProfileScreen extends StatefulWidget {
 }
 
 const _kProductsPageSize = 20;
+const _kCategoryPageSize = 60;
 
 class _BusinessProfileScreenState extends State<BusinessProfileScreen> {
   Map<String, dynamic>? _seller;
@@ -46,9 +48,39 @@ class _BusinessProfileScreenState extends State<BusinessProfileScreen> {
   bool _loadingMoreProducts = false;
   final BusinessFollowProvider _followProvider = BusinessFollowProvider();
 
+  // SELLER-STOREFRONT-EDIT-1: a selected category is fetched from the server
+  // (sellerId + categoryId, equality-only — no composite index), so products
+  // beyond the pages already loaded are not missed.
+  final Map<String, List<ProductModel>> _categoryProducts = {};
+  String? _loadingCategoryId;
+
   List<ProductModel> get _filteredProducts {
-    if (_selectedCategoryId == null) return _products;
-    return _products.where((p) => p.categoryId == _selectedCategoryId).toList();
+    final id = _selectedCategoryId;
+    if (id == null) return _products;
+    return _categoryProducts[id] ?? _products.where((p) => p.categoryId == id).toList();
+  }
+
+  Future<void> _selectCategory(String? id) async {
+    setState(() => _selectedCategoryId = id);
+    if (id == null || _categoryProducts.containsKey(id)) return;
+    setState(() => _loadingCategoryId = id);
+    try {
+      final snap = await FirebaseFirestore.instance
+          .collection('products')
+          .where('sellerId', isEqualTo: widget.sellerId)
+          .where('categoryId', isEqualTo: id)
+          .limit(_kCategoryPageSize)
+          .get();
+      if (!mounted) return;
+      setState(() {
+        _categoryProducts[id] =
+            snap.docs.map((d) => ProductModel.fromFirestore(d)).where(isVisibleOnStorefront).toList();
+      });
+    } catch (e) {
+      debugPrint('Storefront category load failed: $e');
+    } finally {
+      if (mounted) setState(() => _loadingCategoryId = null);
+    }
   }
 
   List<String> get _categoryIdsInProducts {
@@ -100,13 +132,18 @@ class _BusinessProfileScreenState extends State<BusinessProfileScreen> {
           .where('sellerId', isEqualTo: widget.sellerId);
 
       final productsSnap = await productsQuery.limit(_kProductsPageSize).get();
-      final countSnap = await productsQuery.count().get();
+      // Count only what a buyer can see (hidden/draft products are stored
+      // with isActive: false).
+      final countSnap = await productsQuery.where('isActive', isEqualTo: true).count().get();
 
       if (!mounted) return;
       setState(() {
         _seller = sellerDoc.exists ? sellerDoc.data() : null;
-        _products =
-            productsSnap.docs.map((d) => ProductModel.fromFirestore(d)).toList();
+        _products = productsSnap.docs
+            .map((d) => ProductModel.fromFirestore(d))
+            .where(isVisibleOnStorefront)
+            .toList();
+        _categoryProducts.clear();
         _productCount = countSnap.count;
         _lastProductDoc = productsSnap.docs.isNotEmpty ? productsSnap.docs.last : null;
         _hasMoreProducts = productsSnap.docs.length == _kProductsPageSize;
@@ -142,7 +179,7 @@ class _BusinessProfileScreenState extends State<BusinessProfileScreen> {
 
       if (!mounted) return;
       setState(() {
-        _products.addAll(snap.docs.map((d) => ProductModel.fromFirestore(d)));
+        _products.addAll(snap.docs.map((d) => ProductModel.fromFirestore(d)).where(isVisibleOnStorefront));
         _lastProductDoc = snap.docs.isNotEmpty ? snap.docs.last : _lastProductDoc;
         _hasMoreProducts = snap.docs.length == _kProductsPageSize;
         _loadingMoreProducts = false;
@@ -524,7 +561,7 @@ class _BusinessProfileScreenState extends State<BusinessProfileScreen> {
               return _buildCategoryChip(
                 label: 'All',
                 isActive: _selectedCategoryId == null,
-                onTap: () => setState(() => _selectedCategoryId = null),
+                onTap: () => _selectCategory(null),
                 isDark: isDark,
                 accentColor: accentColor,
               );
@@ -534,9 +571,7 @@ class _BusinessProfileScreenState extends State<BusinessProfileScreen> {
             return _buildCategoryChip(
               label: name,
               isActive: _selectedCategoryId == id,
-              onTap: () => setState(
-                () => _selectedCategoryId = _selectedCategoryId == id ? null : id,
-              ),
+              onTap: () => _selectCategory(_selectedCategoryId == id ? null : id),
               isDark: isDark,
               accentColor: accentColor,
             );
@@ -643,6 +678,21 @@ class _BusinessProfileScreenState extends State<BusinessProfileScreen> {
                                   ],
                                 ),
                                 _buildMetricsRow(isDark),
+                                if (storefrontHighlights(_seller).isNotEmpty) ...[
+                                  const SizedBox(height: 12),
+                                  Wrap(
+                                    spacing: 8,
+                                    runSpacing: 8,
+                                    children: [
+                                      for (final h in storefrontHighlights(_seller))
+                                        Chip(
+                                          avatar: Icon(Icons.check_circle, size: 16, color: accentColor),
+                                          label: Text(h),
+                                          visualDensity: VisualDensity.compact,
+                                        ),
+                                    ],
+                                  ),
+                                ],
                                 const SizedBox(height: 14),
                                 _buildFollowButton(isDark, accentColor),
                               ],
@@ -663,7 +713,12 @@ class _BusinessProfileScreenState extends State<BusinessProfileScreen> {
                             ),
                           ),
                           _buildCategoryChips(isDark, accentColor, categoryProvider),
-                          if (_filteredProducts.isEmpty)
+                          if (_loadingCategoryId != null && _loadingCategoryId == _selectedCategoryId)
+                            const Padding(
+                              padding: EdgeInsets.all(24),
+                              child: Center(child: CircularProgressIndicator()),
+                            )
+                          else if (_filteredProducts.isEmpty)
                             EmptyState(
                               icon: Icons.inventory_2_outlined,
                               title: _products.isEmpty ? 'No products yet' : 'No products in this category',
