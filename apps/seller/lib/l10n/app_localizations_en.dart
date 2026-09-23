@@ -2574,4 +2574,47 @@ class AppLocalizationsEn extends AppLocalizations {
 
   @override
   String get storePausedToast => 'Your store is paused';
+
+  @override
+  String get followersTitle => 'Followers & posts';
+
+  @override
+  String get followersMenuSubtitle => 'Who follows your store, and your posts';
+
+  @override
+  String get followersCount => 'Followers';
+
+  @override
+  String followersNew(int count) {
+    String _temp0 = intl.Intl.pluralLogic(
+      count,
+      locale: localeName,
+      other: '+$count in the last 30 days',
+      one: '+1 in the last 30 days',
+    );
+    return '$_temp0';
+  }
+
+  @override
+  String get followersLoadFailed =>
+      'Couldn\'t load this. Check your connection and open the screen again.';
+
+  @override
+  String get postsTitle => 'Your posts';
+
+  @override
+  String get postsEmpty =>
+      'No posts yet. Posts reach everyone who follows your store.';
+
+  @override
+  String get postsNoText => 'Photo post';
+
+  @override
+  String get postsDeleteTitle => 'Delete this post?';
+
+  @override
+  String get postsDeleteBody => 'Followers will no longer see it.';
+
+  @override
+  String get postsDeleted => 'Post deleted';
 }

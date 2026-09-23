@@ -951,5 +951,17 @@
   "@storePausedUntil": {"placeholders": {"date": {"type": "String"}}},
   "storeResume": "Resume",
   "storeResumed": "Your store is taking orders again",
-  "storePausedToast": "Your store is paused"
+  "storePausedToast": "Your store is paused",
+  "followersTitle": "Followers & posts",
+  "followersMenuSubtitle": "Who follows your store, and your posts",
+  "followersCount": "Followers",
+  "followersNew": "{count, plural, =1{+1 in the last 30 days} other{+{count} in the last 30 days}}",
+  "@followersNew": {"placeholders": {"count": {"type": "int"}}},
+  "followersLoadFailed": "Couldn't load this. Check your connection and open the screen again.",
+  "postsTitle": "Your posts",
+  "postsEmpty": "No posts yet. Posts reach everyone who follows your store.",
+  "postsNoText": "Photo post",
+  "postsDeleteTitle": "Delete this post?",
+  "postsDeleteBody": "Followers will no longer see it.",
+  "postsDeleted": "Post deleted"
 }

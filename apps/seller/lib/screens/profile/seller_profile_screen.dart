@@ -12,6 +12,7 @@ import '../account/notification_settings_screen.dart';
 import '../account/settings_screen.dart';
 import '../ai/seller_ai_chat_screen.dart';
 import '../reviews/reviews_screen.dart';
+import '../posts/followers_screen.dart';
 import '../rfq/seller_rfq_inbox_screen.dart';
 import '../storefront/storefront_editor_screen.dart';
 import '../account/store_status.dart';
@@ -345,6 +346,7 @@ class _SellerProfileScreenState extends State<SellerProfileScreen> {
                   section(l10n.accountSectionSelling, [
                     tile(AgIcons.quote, l10n.quotesTitle, null, () => _push(const SellerRfqInboxScreen())),
                     tile(AgIcons.star, l10n.reviewsMenu, l10n.reviewsMenuSubtitle, () => _push(const SellerReviewsScreen())),
+                    tile(AgIcons.users, l10n.followersTitle, l10n.followersMenuSubtitle, () => _push(const FollowersScreen())),
                     tile(AgIcons.bank, l10n.payoutAccountTitle, l10n.accountPayoutHint, _showPayout),
                   ]),
                   section(l10n.accountSectionAi, [
