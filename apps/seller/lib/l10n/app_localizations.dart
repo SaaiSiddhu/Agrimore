@@ -4371,6 +4371,18 @@ abstract class AppLocalizations {
   /// In en, this message translates to:
   /// **'Answer quote requests within a day — counter, accept or decline.'**
   String get healthTipQuotes;
+
+  /// No description provided for @settingsVersion.
+  ///
+  /// In en, this message translates to:
+  /// **'Version'**
+  String get settingsVersion;
+
+  /// No description provided for @settingsVersionValue.
+  ///
+  /// In en, this message translates to:
+  /// **'{version} ({build})'**
+  String settingsVersionValue(String version, String build);
 }
 
 class _AppLocalizationsDelegate

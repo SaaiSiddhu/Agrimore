@@ -2500,4 +2500,12 @@ class AppLocalizationsEn extends AppLocalizations {
   @override
   String get healthTipQuotes =>
       'Answer quote requests within a day — counter, accept or decline.';
+
+  @override
+  String get settingsVersion => 'Version';
+
+  @override
+  String settingsVersionValue(String version, String build) {
+    return '$version ($build)';
+  }
 }

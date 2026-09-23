@@ -928,5 +928,8 @@
   "healthTipCancellations": "Keep stock accurate so you don't have to cancel accepted orders.",
   "healthTipRating": "Reply to reviews and pack carefully — buyers rate the whole experience.",
   "healthTipListings": "Add a photo, a description and the HSN code with GST rate to every live product.",
-  "healthTipQuotes": "Answer quote requests within a day — counter, accept or decline."
+  "healthTipQuotes": "Answer quote requests within a day — counter, accept or decline.",
+  "settingsVersion": "Version",
+  "settingsVersionValue": "{version} ({build})",
+  "@settingsVersionValue": {"placeholders": {"version": {"type": "String"}, "build": {"type": "String"}}}
 }
