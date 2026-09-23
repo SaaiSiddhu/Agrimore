@@ -3,6 +3,7 @@ import 'dart:async';
 import 'package:flutter/material.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:agrimore_core/agrimore_core.dart';
+import '../delivery/rider_steps.dart' as steps;
 
 // Phase DLV-2B: the platform-wide "available orders" list, the client-side
 // deny and the client-side accept transaction are gone. Riders see only
@@ -62,112 +63,37 @@ class DeliveryOrderProvider extends ChangeNotifier {
       )
       .fold(0.0, (total, o) => total + o.total);
 
-  Future<bool> updateOrderStatus(
-    String orderId,
-    String status,
-    String description,
-  ) async {
+  /// Phase DLV-3C: a rider step (arrived_at_store, picked_up,
+  /// out_for_delivery) goes through the advanceDeliveryStep callable, which
+  /// checks it against the delivery state table, writes the status, its
+  /// timestamp and the timeline, and records where the rider was. This app
+  /// no longer writes an order status itself. Returns null on success, or a
+  /// sentence to show the rider.
+  Future<String?> advanceStep(String orderId, String status, Map<String, dynamic> fix) async {
     try {
-      final update = <String, dynamic>{
-        'orderStatus': status,
-        'status': status,
-        'updatedAt': FieldValue.serverTimestamp(),
-        ..._statusTimestamp(status),
-      };
-      if (status == 'delivered') {
-        update['deliveredAt'] = FieldValue.serverTimestamp();
-        update['codSettlementStatus'] = 'pending';
-      }
-
-      await _firestore.collection('orders').doc(orderId).update(update);
-
-      await _firestore
-          .collection('orders')
-          .doc(orderId)
-          .collection('timeline')
-          .add({
-        'status': status,
-        'title': _getStatusTitle(status),
-        'description': description,
-        'timestamp': FieldValue.serverTimestamp(),
-      });
-
-      if (status == 'delivered') {
-        _activeOrder = null;
-      }
-
+      await steps.advanceDeliveryStep(orderId, status, fix);
       notifyListeners();
-      return true;
-    } catch (e) {
-      debugPrint('Error updating delivery status: $e');
-      _error = 'Failed to update status';
+      return null;
+    } on steps.RiderStepException catch (e) {
+      _error = e.message;
       notifyListeners();
-      return false;
+      return e.message;
     }
   }
 
-  Future<bool> releaseOrder(
-    String orderId,
-    String partnerId, {
-    required String reason,
-  }) async {
+  /// Phase DLV-3C: "Seller not ready" through releaseDeliveryOrder. The old
+  /// direct write removed deliveryPartnerId, which the rules protect for the
+  /// assigned rider, so every release failed. Before pickup only.
+  Future<String?> releaseOrder(String orderId, {required String reason}) async {
     try {
-      final orderRef = _firestore.collection('orders').doc(orderId);
-      await orderRef.update({
-        'deliveryPartnerId': FieldValue.delete(),
-        'orderStatus': 'ready_for_pickup',
-        'status': 'ready_for_pickup',
-        'deliveryIssue': reason,
-        'deliveryIssueAt': FieldValue.serverTimestamp(),
-        'updatedAt': FieldValue.serverTimestamp(),
-      });
-
-      await orderRef.collection('timeline').add({
-        'status': 'delivery_released',
-        'title': 'Delivery Released',
-        'description': reason,
-        'timestamp': FieldValue.serverTimestamp(),
-        'partnerId': partnerId,
-      });
-
+      await steps.releaseDeliveryOrder(orderId, reason: reason);
       _activeOrder = null;
       notifyListeners();
-      return true;
-    } catch (e) {
-      debugPrint('Error releasing delivery order: $e');
-      _error = 'Failed to release order';
+      return null;
+    } on steps.RiderStepException catch (e) {
+      _error = e.message;
       notifyListeners();
-      return false;
-    }
-  }
-
-  String _getStatusTitle(String status) {
-    switch (status) {
-      case 'delivery_accepted':
-        return 'Delivery Accepted';
-      case 'arrived_at_store':
-        return 'Arrived at Store';
-      case 'picked_up':
-        return 'Picked Up';
-      case 'out_for_delivery':
-        return 'Out for Delivery';
-      case 'delivered':
-        return 'Delivered';
-      default:
-        return status;
-    }
-  }
-
-  Map<String, dynamic> _statusTimestamp(String status) {
-    switch (status) {
-      case 'arrived_at_store':
-        return {'arrivedAtStoreAt': FieldValue.serverTimestamp()};
-      case 'picked_up':
-        return {'pickedUpAt': FieldValue.serverTimestamp()};
-      case 'out_for_delivery':
-        return {'outForDeliveryAt': FieldValue.serverTimestamp()};
-      default:
-        return {};
+      return e.message;
     }
   }
 

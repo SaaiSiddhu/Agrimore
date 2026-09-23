@@ -18,6 +18,7 @@ import 'package:path_provider/path_provider.dart';
 import 'package:agrimore_ui/agrimore_ui.dart';
 import '../../../app/themes/admin_colors.dart';
 import '../../../providers/order_provider.dart';
+import '../delivery/delivery_flags.dart';
 import '../delivery/order_assignment_screen.dart';
 
 import 'widgets/order_status_updater.dart';
@@ -91,6 +92,9 @@ class _AdminOrderDetailsScreenState extends State<AdminOrderDetailsScreen> {
                       // Quick stats row
                       _buildQuickStats(order),
                       const SizedBox(height: 16),
+                      // Phase DLV-3C: rider location at each step; flagged
+                      // steps (> 300 m, mocked, none) stand out.
+                      DeliveryFlagsCard(orderId: order.id),
                       // Customer & Delivery section
                       _buildSectionTitle('Customer & Delivery', Icons.person_rounded),
                       const SizedBox(height: 12),

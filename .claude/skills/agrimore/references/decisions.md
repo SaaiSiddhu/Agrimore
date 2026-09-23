@@ -303,6 +303,14 @@ the same `delivery_tasks/{id}.route`** on its active-order screen and hands turn
 two-wheeler mode** (`google.navigation:q=lat,lng&mode=l`) — Agrimore does not build its own voice navigation.
 The rider app's Maps SDK key comes from `key.properties` (`mapsApiKey`), never tracked.
 
+### D-DLV-RIDERALLOW — OWNER_DECISION 2026-09-23 (AskUserQuestion, plan DLV-3C)
+
+A rider may no longer set `cancelled` or move an order backwards — closed NOW in DLV-3C with a rules allow-list
+(forward rider steps only; nothing on a finished order), because the released rider app never writes either. The
+direct `delivered` write stays until DLV-3D (D-DLV-OTPLOCK). Rider steps and "Seller not ready" go through
+`advanceDeliveryStep` / `releaseDeliveryOrder`; a step more than 300 m from its place, on a mocked location or with
+no location is flagged for admin, never refused (D-DLV-GEOFENCE).
+
 ## 6. Open owner decisions (do not resolve silently)
 
 | ID | Question | Safe default while open |

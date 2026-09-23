@@ -154,7 +154,14 @@ if [ $EMU = 1 ]; then
         *storage*)                                              EMU_ONLY="storage";;
         *)                                                       EMU_ONLY="firestore,functions,auth";;
       esac
-      run "emu:$s" bash -c "firebase emulators:exec --only $EMU_ONLY --project agrimore-66a4e \"cd functions && node scripts/$s.js\""
+      # DLV-3C amendment: a suite that refuses a non-demo project (it drives
+      # real triggers/callables through the functions emulator, where any
+      # non-emulated service would reach the live project — CAT-10's
+      # near-miss) runs under a demo- project id instead of failing with
+      # REFUSING (phaseDLV2A_trigger_test, phaseDLV3C_dispatch_test).
+      EMU_PROJECT=agrimore-66a4e
+      grep -q 'is not a demo- project' "functions/scripts/$s.js" && EMU_PROJECT="demo-agrimore-gate"
+      run "emu:$s" bash -c "firebase emulators:exec --only $EMU_ONLY --project $EMU_PROJECT \"cd functions && node scripts/$s.js\""
     done
   fi
 fi
