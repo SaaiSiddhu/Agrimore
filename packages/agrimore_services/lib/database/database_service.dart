@@ -738,6 +738,7 @@ class DatabaseService {
         return snapshot.docs
             .map((doc) =>
                 ReviewModel.fromMap(doc.data() as Map<String, dynamic>, doc.id))
+            .where((r) => !r.isSuperseded)
             .toList();
       });
     } catch (e) {
@@ -767,15 +768,15 @@ class DatabaseService {
 
   Future<String> addReview(ReviewModel review) async {
     try {
+      // REVIEW-UNIQUE-1: one review per buyer per product — the id is the
+      // buyer's uid, so reviewing again edits the earlier review.
       final reviewRef = _firestore
           .collection('products')
           .doc(review.productId)
           .collection('reviews')
-          .doc();
-
-      // Use copyWith to set the new reviewId
-      final finalReview = review.copyWith(reviewId: reviewRef.id);
-      await reviewRef.set(finalReview.toMap());
+          .doc(review.userId);
+      final exists = (await reviewRef.get()).exists;
+      await reviewRef.set(reviewContentMap(review, isNew: !exists), SetOptions(merge: true));
 
       await _updateReviewStats(review.productId);
 

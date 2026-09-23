@@ -1496,5 +1496,11 @@
         "type": "String"
       }
     }
-  }
+  },
+  "sortTitle": "Sort",
+  "sortNewest": "Newest first",
+  "sortNameAz": "Name A–Z",
+  "sortPriceLow": "Price: low to high",
+  "sortPriceHigh": "Price: high to low",
+  "sortStockLow": "Stock: lowest first"
 }

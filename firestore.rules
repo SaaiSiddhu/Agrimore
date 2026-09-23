@@ -410,7 +410,7 @@ service cloud.firestore {
         // overwritten with the truth by onProductReviewWrite.
         allow create: if isAuthenticated() && request.resource.data.userId == request.auth.uid &&
           reviewRatingInRange() &&
-          !request.resource.data.keys().hasAny(['sellerReply', 'sellerId', 'productName']);
+          !request.resource.data.keys().hasAny(['sellerReply', 'sellerId', 'productName', 'supersededBy']);
         
         // Users can update their own reviews. Phase FIX-6, Workstream 3 fix:
         // this checked only the EXISTING document's userId, not whether the
@@ -420,7 +420,7 @@ service cloud.firestore {
         allow update: if isAuthenticated() && resource.data.userId == request.auth.uid &&
           request.resource.data.userId == resource.data.userId &&
           reviewRatingInRange() &&
-          !request.resource.data.diff(resource.data).affectedKeys().hasAny(['sellerReply', 'sellerId', 'productName']);
+          !request.resource.data.diff(resource.data).affectedKeys().hasAny(['sellerReply', 'sellerId', 'productName', 'supersededBy']);
         
         // Users can delete their own reviews, admins can delete any
         allow delete: if isAuthenticated() && 

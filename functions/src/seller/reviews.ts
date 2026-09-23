@@ -52,6 +52,51 @@ export async function hasDeliveredPurchase(db: admin.firestore.Firestore, userId
   });
 }
 
+type ReviewDoc = { id: string; data: Record<string, unknown> };
+
+function stampMillis(v: unknown): number {
+  if (v instanceof admin.firestore.Timestamp) return v.toMillis();
+  if (v instanceof Date) return v.getTime();
+  if (typeof v === "string") {
+    const t = Date.parse(v);
+    return Number.isFinite(t) ? t : 0;
+  }
+  return 0;
+}
+
+/**
+ * REVIEW-UNIQUE-1: one review per buyer per product. The buyer's review
+ * whose id is their uid (what the apps write now) wins; otherwise their
+ * latest. Returns the winners and, for every other review, its winner's id.
+ * Reviews without a userId each stand alone. Exported for tests.
+ */
+export function latestPerUser(docs: ReviewDoc[]): { kept: ReviewDoc[]; supersededBy: Map<string, string> } {
+  const best = new Map<string, ReviewDoc>();
+  const rank = (d: ReviewDoc) => {
+    const uid = typeof d.data.userId === "string" ? d.data.userId : "";
+    return [uid !== "" && d.id === uid ? 1 : 0, stampMillis(d.data.updatedAt ?? d.data.createdAt)] as const;
+  };
+  const better = (a: ReviewDoc, b: ReviewDoc) => {
+    const [ra, rb] = [rank(a), rank(b)];
+    if (ra[0] !== rb[0]) return ra[0] > rb[0];
+    if (ra[1] !== rb[1]) return ra[1] > rb[1];
+    return a.id > b.id;
+  };
+  for (const d of docs) {
+    const uid = typeof d.data.userId === "string" && d.data.userId ? d.data.userId : `\u0000${d.id}`;
+    const cur = best.get(uid);
+    if (!cur || better(d, cur)) best.set(uid, d);
+  }
+  const kept = [...best.values()];
+  const keptIds = new Set(kept.map((d) => d.id));
+  const supersededBy = new Map<string, string>();
+  for (const d of docs) {
+    if (keptIds.has(d.id)) continue;
+    supersededBy.set(d.id, best.get(String(d.data.userId))!.id);
+  }
+  return { kept, supersededBy };
+}
+
 /** Recompute everything derived from one product's reviews. Exported for tests. */
 export async function refreshProductReviews(
   db: admin.firestore.Firestore,
@@ -63,10 +108,18 @@ export async function refreshProductReviews(
   const product = productSnap.data() ?? {};
   const sellerId = typeof product.sellerId === "string" ? product.sellerId : "";
   const productName = typeof product.name === "string" ? product.name : "";
-  const s = summarise(reviewsSnap.docs.map((d) => d.data().rating));
+  const { kept, supersededBy } = latestPerUser(reviewsSnap.docs.map((d) => ({ id: d.id, data: d.data() })));
+  const s = summarise(kept.map((d) => d.data.rating));
   const now = admin.firestore.FieldValue.serverTimestamp();
 
   const batch = db.batch();
+  // Stamp (or clear) supersededBy wherever it differs from the truth.
+  for (const d of reviewsSnap.docs) {
+    const want = supersededBy.get(d.id) ?? null;
+    const have = d.data().supersededBy ?? null;
+    if (want === have) continue;
+    batch.update(d.ref, { supersededBy: want === null ? admin.firestore.FieldValue.delete() : want });
+  }
   batch.set(productRef.collection("reviewStats").doc("stats"), {
     averageRating: s.average,
     totalReviews: s.total,
@@ -125,7 +178,7 @@ export async function refreshSellerRating(db: admin.firestore.Firestore, sellerI
 
 /** Fields the trigger itself writes on a review — a change touching only
  * these is our own write and needs no recompute. */
-const SERVER_REVIEW_FIELDS = new Set(["isVerifiedPurchase", "sellerId", "productName", "sellerReply"]);
+const SERVER_REVIEW_FIELDS = new Set(["isVerifiedPurchase", "sellerId", "productName", "sellerReply", "supersededBy"]);
 
 function onlyServerFieldsChanged(before: Record<string, unknown> | undefined, after: Record<string, unknown> | undefined): boolean {
   if (!before || !after) return false;

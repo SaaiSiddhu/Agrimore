@@ -96,7 +96,10 @@ class _SellerReviewsScreenState extends State<SellerReviewsScreen> {
           );
         }
         if (!snap.hasData) return const Center(child: CircularProgressIndicator());
-        return _body([for (final d in snap.data!.docs) SellerReview.fromDoc(d.id, d.data())]);
+        return _body([
+          for (final d in snap.data!.docs)
+            if (d.data()['supersededBy'] == null) SellerReview.fromDoc(d.id, d.data()),
+        ]);
       },
     ));
   }
