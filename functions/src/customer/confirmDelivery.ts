@@ -38,6 +38,13 @@
 import { onCall, HttpsError } from "firebase-functions/v2/https";
 import * as admin from "firebase-admin";
 import * as crypto from "crypto";
+// Phase DLV-3C: modular FieldValue/Timestamp. Under the functions emulator
+// `admin.firestore` is a BOUND copy of the function (firebase-tools
+// functionsEmulatorRuntime Proxied.getOriginal) with no static members, so
+// `admin.firestore.Timestamp` was undefined and every genuine emulator call
+// threw at the lock check — this callable could not be tested end to end
+// (phaseDLV3C_dispatch_test g06). Production was unaffected.
+import { FieldValue, Timestamp } from "firebase-admin/firestore";
 import { dropCheck, evidenceFields } from "../delivery/riderSteps";
 import {
   deliverySecretRef,
@@ -224,7 +231,7 @@ export const confirmDelivery = onCall(
       // otherwise the lock would only pace a guesser (scenario 18).
       const now = Date.now();
       const lockedUntilMs =
-        secret?.lockedUntil instanceof admin.firestore.Timestamp
+        secret?.lockedUntil instanceof Timestamp
           ? secret.lockedUntil.toMillis()
           : 0;
       if (lockedUntilMs > now) {
@@ -237,16 +244,16 @@ export const confirmDelivery = onCall(
         if (failed >= MAX_FAILED_DELIVERY_ATTEMPTS) {
           tx.set(secretRef, {
             failedAttempts: 0,
-            lockedUntil: admin.firestore.Timestamp.fromMillis(now + DELIVERY_LOCK_MS),
-            lastFailedAt: admin.firestore.FieldValue.serverTimestamp(),
-            lastLockedAt: admin.firestore.FieldValue.serverTimestamp(),
+            lockedUntil: Timestamp.fromMillis(now + DELIVERY_LOCK_MS),
+            lastFailedAt: FieldValue.serverTimestamp(),
+            lastLockedAt: FieldValue.serverTimestamp(),
           }, { merge: true });
           return { kind: "locked", retryAfterSec: Math.ceil(DELIVERY_LOCK_MS / 1000) };
         }
         tx.set(secretRef, {
           failedAttempts: failed,
           lockedUntil: null,
-          lastFailedAt: admin.firestore.FieldValue.serverTimestamp(),
+          lastFailedAt: FieldValue.serverTimestamp(),
         }, { merge: true });
         return { kind: "wrong" };
       }
@@ -258,18 +265,18 @@ export const confirmDelivery = onCall(
       tx.update(orderRef, {
         orderStatus: "delivered",
         status: "delivered",
-        deliveredAt: admin.firestore.FieldValue.serverTimestamp(),
+        deliveredAt: FieldValue.serverTimestamp(),
         codSettlementStatus: "pending",
         deliveryConfirmedBy: uid,
         deliveryConfirmedVia: "confirmDelivery",
-        updatedAt: admin.firestore.FieldValue.serverTimestamp(),
+        updatedAt: FieldValue.serverTimestamp(),
         ...(drop ? evidenceFields("delivered", drop.fix, drop.check, now) : {}),
       });
 
       tx.set(secretRef, {
         failedAttempts: 0,
         lockedUntil: null,
-        consumedAt: admin.firestore.FieldValue.serverTimestamp(),
+        consumedAt: FieldValue.serverTimestamp(),
       }, { merge: true });
 
       const timelineRef = orderRef.collection("timeline").doc();
@@ -281,7 +288,7 @@ export const confirmDelivery = onCall(
         ...(drop && drop.check.reasons.length
           ? { flags: drop.check.reasons, distanceMeters: drop.check.distanceMeters }
           : {}),
-        timestamp: admin.firestore.FieldValue.serverTimestamp(),
+        timestamp: FieldValue.serverTimestamp(),
       });
 
       return { kind: "delivered", alreadyDelivered: false };
