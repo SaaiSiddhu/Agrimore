@@ -60,6 +60,29 @@ class ReviewCard extends StatelessWidget {
             ),
             if (review.imageUrls.isNotEmpty)
               _buildReviewImages(context, review.imageUrls),
+            // SELLER-ACCOUNT-1a: the seller's public reply.
+            if (review.sellerReplyText != null && review.sellerReplyText!.isNotEmpty) ...[
+              const SizedBox(height: 12),
+              Container(
+                width: double.infinity,
+                padding: const EdgeInsets.all(12),
+                decoration: BoxDecoration(
+                  color: isDark ? Colors.white.withValues(alpha: 0.06) : Colors.grey[100],
+                  borderRadius: BorderRadius.circular(8),
+                ),
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Text(
+                      'Response from the seller',
+                      style: TextStyle(fontSize: 12, fontWeight: FontWeight.w700, color: textColor),
+                    ),
+                    const SizedBox(height: 4),
+                    Text(review.sellerReplyText!, style: TextStyle(fontSize: 13, color: textColor, height: 1.4)),
+                  ],
+                ),
+              ),
+            ],
             const SizedBox(height: 12),
             Divider(color: isDark ? Colors.grey[800] : Colors.grey[200]),
             const SizedBox(height: 8),
