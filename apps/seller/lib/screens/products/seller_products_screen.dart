@@ -123,6 +123,22 @@ class _SellerProductsScreenState extends State<SellerProductsScreen> {
         automaticallyImplyLeading: false,
         title: Text(l10n.navCatalogue),
         actions: [
+          PopupMenuButton<ProductSort>(
+            tooltip: l10n.sortTitle,
+            icon: const Icon(AgIcons.sort),
+            initialValue: provider.sort,
+            onSelected: provider.setSort,
+            itemBuilder: (_) => [
+              for (final (s, label) in [
+                (ProductSort.newest, l10n.sortNewest),
+                (ProductSort.nameAz, l10n.sortNameAz),
+                (ProductSort.priceLow, l10n.sortPriceLow),
+                (ProductSort.priceHigh, l10n.sortPriceHigh),
+                (ProductSort.stockLow, l10n.sortStockLow),
+              ])
+                CheckedPopupMenuItem<ProductSort>(value: s, checked: provider.sort == s, child: Text(label)),
+            ],
+          ),
           IconButton(tooltip: l10n.productNewPost, icon: const Icon(AgIcons.image), onPressed: () => _push(const CreatePostScreen())),
         ],
       ),

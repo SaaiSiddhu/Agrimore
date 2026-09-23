@@ -4689,6 +4689,42 @@ abstract class AppLocalizations {
   /// In en, this message translates to:
   /// **'Option: {name}'**
   String variantsOrderLine(String name);
+
+  /// No description provided for @sortTitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Sort'**
+  String get sortTitle;
+
+  /// No description provided for @sortNewest.
+  ///
+  /// In en, this message translates to:
+  /// **'Newest first'**
+  String get sortNewest;
+
+  /// No description provided for @sortNameAz.
+  ///
+  /// In en, this message translates to:
+  /// **'Name A–Z'**
+  String get sortNameAz;
+
+  /// No description provided for @sortPriceLow.
+  ///
+  /// In en, this message translates to:
+  /// **'Price: low to high'**
+  String get sortPriceLow;
+
+  /// No description provided for @sortPriceHigh.
+  ///
+  /// In en, this message translates to:
+  /// **'Price: high to low'**
+  String get sortPriceHigh;
+
+  /// No description provided for @sortStockLow.
+  ///
+  /// In en, this message translates to:
+  /// **'Stock: lowest first'**
+  String get sortStockLow;
 }
 
 class _AppLocalizationsDelegate
