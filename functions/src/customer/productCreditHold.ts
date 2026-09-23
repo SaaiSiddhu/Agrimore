@@ -57,9 +57,11 @@ export function computeCartFingerprint(
   orderMode: string,
   couponCode: string | null
 ): string {
+  // variantId only when present, so a variant-free cart hashes exactly as it
+  // did before SELLER-CATALOGUE-2 (holds quoted before the deploy still match).
   const sorted = items
-    .map((i) => ({ productId: i.productId, quantity: i.quantity }))
-    .sort((a, b) => a.productId.localeCompare(b.productId));
+    .map((i) => (i.variantId ? { productId: i.productId, quantity: i.quantity, variantId: i.variantId } : { productId: i.productId, quantity: i.quantity }))
+    .sort((a, b) => a.productId.localeCompare(b.productId) || String(a.variantId ?? "").localeCompare(String(b.variantId ?? "")));
   const payload = JSON.stringify({ items: sorted, orderMode, couponCode: couponCode ?? null });
   return crypto.createHash("sha256").update(payload).digest("hex");
 }
@@ -134,7 +136,10 @@ export const quoteOrderWithCredit = onCall(
       data?.couponCode && data.couponCode.trim() ? data.couponCode.trim().toUpperCase() : null;
     const cartFingerprint = computeCartFingerprint(normalizedItems, orderMode, normalizedCouponCode);
 
-    const productRefs = normalizedItems.map((item) => db.collection("products").doc(item.productId));
+    // One read per distinct product (two variants of a product share a doc);
+    // snaps stay index-aligned with normalizedItems.
+    const uniqueProductIds = Array.from(new Set(normalizedItems.map((item) => item.productId)));
+    const uniqueRefs = uniqueProductIds.map((id) => db.collection("products").doc(id));
     const couponQuery = normalizedCouponCode
       ? db.collection("coupons").where("code", "==", normalizedCouponCode).limit(1)
       : null;
@@ -156,7 +161,9 @@ export const quoteOrderWithCredit = onCall(
       // ============================================
       // ALL READS FIRST.
       // ============================================
-      const productSnaps = await tx.getAll(...productRefs);
+      const uniqueSnaps = await tx.getAll(...uniqueRefs);
+      const snapById = new Map(uniqueSnaps.map((s) => [s.id, s]));
+      const productSnaps = normalizedItems.map((item) => snapById.get(item.productId)!);
       const couponSnap = couponQuery ? await tx.get(couponQuery) : null;
       const redemptionSnap = redemptionRef ? await tx.get(redemptionRef) : null;
       const projectionSnap = await tx.get(projectionRef);

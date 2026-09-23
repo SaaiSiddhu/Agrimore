@@ -39,7 +39,7 @@
 import { onCall, HttpsError } from "firebase-functions/v2/https";
 import * as admin from "firebase-admin";
 import * as crypto from "crypto";
-import { computeOrderPricing, normalizeOrderItems } from "./orderPricing";
+import { computeOrderPricing, normalizeOrderItems, MAX_VARIANT_ID_LENGTH } from "./orderPricing";
 import { computeCartFingerprint } from "./productCreditHold";
 import { appendLedgerEntry, toProjectionFields } from "./productCreditLedger";
 import { DeliveryFeeSchedule, parseDeliveryFeeSchedule } from "./deliveryFeeSchedule";
@@ -49,6 +49,7 @@ import { assertSellerAcceptingOrders } from "../common/sellerAvailability";
 interface CreateOrderItemInput {
   productId: string;
   quantity: number;
+  variantId?: string;
 }
 
 interface CreateOrderData {
@@ -209,6 +210,10 @@ export const createOrder = onCall({ minInstances: 0, memory: "256MiB" }, async (
     if (!Number.isInteger(item.quantity) || item.quantity <= 0) {
       throw new HttpsError("invalid-argument", `Invalid quantity for product ${item.productId}`);
     }
+    if (item.variantId !== undefined && item.variantId !== null &&
+        (typeof item.variantId !== "string" || item.variantId.length > MAX_VARIANT_ID_LENGTH)) {
+      throw new HttpsError("invalid-argument", `Invalid option for product ${item.productId}`);
+    }
   }
 
   // FIX-16, WS2 (finding N-23). Pure input shape/size validation — no
@@ -356,8 +361,13 @@ export const createOrder = onCall({ minInstances: 0, memory: "256MiB" }, async (
     // productSnaps[i] always corresponds to items[i]. Same document-read
     // count and billing as before (Firestore bills per document regardless
     // of batching); this only removes N sequential round-trips.
-    const productRefs = normalizedItems.map((item) => db.collection("products").doc(item.productId));
-    const productSnaps = await tx.getAll(...productRefs);
+    // One read per distinct product; snaps index-aligned with normalizedItems
+    // (two variants of one product are two lines over the same document).
+    const uniqueProductIds = Array.from(new Set(normalizedItems.map((item) => item.productId)));
+    const uniqueRefs = uniqueProductIds.map((id) => db.collection("products").doc(id));
+    const uniqueSnaps = await tx.getAll(...uniqueRefs);
+    const snapById = new Map(uniqueSnaps.map((s) => [s.id, s]));
+    const productSnaps = normalizedItems.map((item) => snapById.get(item.productId)!);
 
     // Phase FIX-8, WS1: fetch the cart's single seller's own delivery fee
     // schedule, if the cart resolves to exactly one real seller. Mirrors
@@ -883,24 +893,46 @@ export const createOrder = onCall({ minInstances: 0, memory: "256MiB" }, async (
     //
     // `soldCount` is incremented unconditionally: it is a pure counter, and
     // increment() on a missing field starts it at 0, which is correct.
-    for (let i = 0; i < normalizedItems.length; i++) {
-      const item = normalizedItems[i];
-      const snap = productSnaps[i];
-      const stockRaw = snap.data()?.stock;
+    // SELLER-CATALOGUE-2: one write per product. Base lines decrement
+    // `stock` (N-49 rule kept); variant lines decrement that variant's own
+    // stock inside the `variants` array, rewritten once from the snapshot
+    // read in this same transaction.
+    const lineIndex = new Map<string, number[]>();
+    normalizedItems.forEach((item, i) => {
+      const list = lineIndex.get(item.productId) ?? [];
+      list.push(i);
+      lineIndex.set(item.productId, list);
+    });
+    for (const [productId, indexes] of lineIndex) {
+      const snap = snapById.get(productId)!;
+      const data = snap.data() ?? {};
+      let baseQty = 0;
+      let soldQty = 0;
+      const variants = Array.isArray(data.variants) ? (data.variants as Record<string, unknown>[]).map((v) => ({ ...v })) : null;
+      let variantsChanged = false;
+      for (const i of indexes) {
+        const qty = normalizedItems[i].quantity;
+        soldQty += qty;
+        const vIndex = pricing.validatedItems[i]?.variantIndex;
+        if (vIndex !== undefined && variants && variants[vIndex]) {
+          const vs = variants[vIndex].stock;
+          if (typeof vs === "number" && Number.isFinite(vs)) {
+            variants[vIndex].stock = vs - qty;
+            variantsChanged = true;
+          }
+        } else {
+          baseQty += qty;
+        }
+      }
+      const stockRaw = data.stock;
       const stockIsEnforceable = typeof stockRaw === "number" && Number.isFinite(stockRaw);
-      tx.update(
-        productRefs[i],
-        stockIsEnforceable
-          ? {
-            stock: admin.firestore.FieldValue.increment(-item.quantity),
-            soldCount: admin.firestore.FieldValue.increment(item.quantity),
-            updatedAt: admin.firestore.FieldValue.serverTimestamp(),
-          }
-          : {
-            soldCount: admin.firestore.FieldValue.increment(item.quantity),
-            updatedAt: admin.firestore.FieldValue.serverTimestamp(),
-          }
-      );
+      const update: Record<string, unknown> = {
+        soldCount: admin.firestore.FieldValue.increment(soldQty),
+        updatedAt: admin.firestore.FieldValue.serverTimestamp(),
+      };
+      if (baseQty > 0 && stockIsEnforceable) update.stock = admin.firestore.FieldValue.increment(-baseQty);
+      if (variantsChanged) update.variants = variants;
+      tx.update(snap.ref, update);
     }
 
     // Phase D: settle the hold — append the REDEMPTION ledger entry (with

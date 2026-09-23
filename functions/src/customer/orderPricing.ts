@@ -30,6 +30,41 @@ import { DeliveryFeeSchedule, computeFeeFromSchedule } from "./deliveryFeeSchedu
 export interface OrderPricingItemInput {
   productId: string;
   quantity: number;
+  /** SELLER-CATALOGUE-2: the chosen variant (its `id`, or its name for
+   *  variants stored without one — the marketplace cart keeps the name). */
+  variantId?: string;
+}
+
+export const MAX_VARIANT_ID_LENGTH = 120;
+
+/** Name a variant is known by, with the same fallbacks as
+ *  ProductVariant.fromMap (name → weight → label → title). */
+function variantName(v: Record<string, unknown>): string {
+  for (const k of ["name", "weight", "label", "title"]) {
+    if (typeof v[k] === "string" && (v[k] as string).trim()) return (v[k] as string).trim();
+  }
+  return "";
+}
+
+/** The variant a line refers to: by `id` first, then by name. */
+export function findVariant(
+  product: Record<string, unknown>,
+  variantId: string
+): { index: number; variant: Record<string, unknown> } | null {
+  const variants = Array.isArray(product.variants) ? (product.variants as unknown[]) : [];
+  const byId = variants.findIndex((v) => typeof v === "object" && v !== null && (v as Record<string, unknown>).id === variantId);
+  const index = byId >= 0 ? byId : variants.findIndex((v) => typeof v === "object" && v !== null && variantName(v as Record<string, unknown>) === variantId);
+  return index >= 0 ? { index, variant: variants[index] as Record<string, unknown> } : null;
+}
+
+/** First positive price among the same fields ProductVariant.fromMap reads. */
+function positivePrice(o: Record<string, unknown>): number | null {
+  for (const k of ["salePrice", "price", "discountedPrice"]) {
+    const v = o[k];
+    const n = typeof v === "number" ? v : typeof v === "string" ? Number(v) : NaN;
+    if (Number.isFinite(n) && n > 0) return n;
+  }
+  return null;
 }
 
 export interface ValidatedItem {
@@ -37,6 +72,8 @@ export interface ValidatedItem {
   price: number;
   quantity: number;
   data: Record<string, unknown>;
+  /** Index into product.variants when the line is a variant. */
+  variantIndex?: number;
 }
 
 interface CouponResult {
@@ -240,13 +277,17 @@ export const MAX_CART_LINES = 100;
  * observable ordering.
  */
 export function normalizeOrderItems(items: OrderPricingItemInput[]): OrderPricingItemInput[] {
+  // One line per product + variant (SELLER-CATALOGUE-2): two variants of
+  // the same product are different goods with different prices and stock.
   const byProduct = new Map<string, OrderPricingItemInput>();
   for (const item of items) {
-    const existing = byProduct.get(item.productId);
+    const variantId = typeof item.variantId === "string" && item.variantId.trim() ? item.variantId.trim() : undefined;
+    const key = variantId ? `${item.productId}\u0000${variantId}` : item.productId;
+    const existing = byProduct.get(key);
     if (existing) {
       existing.quantity += item.quantity;
     } else {
-      byProduct.set(item.productId, { productId: item.productId, quantity: item.quantity });
+      byProduct.set(key, variantId ? { productId: item.productId, quantity: item.quantity, variantId } : { productId: item.productId, quantity: item.quantity });
     }
   }
   const normalized = Array.from(byProduct.values());
@@ -277,6 +318,15 @@ export function computeOrderPricing(params: ComputeOrderPricingParams): OrderPri
       throw new HttpsError("not-found", `Product ${item.productId} not found`);
     }
     const product = productSnap.data()!;
+
+    // SELLER-CATALOGUE-2: a line naming a variant is priced and stock-checked
+    // against that variant. A line without one keeps the base-product
+    // behaviour (older app versions never send variantId).
+    const chosen = item.variantId ? findVariant(product, item.variantId) : null;
+    if (item.variantId && !chosen) {
+      throw new HttpsError("not-found", `Option "${item.variantId}" of product ${item.productId} is no longer available`);
+    }
+    const variant = chosen?.variant;
 
     let price: number;
     if (orderMode === "B2B") {
@@ -320,6 +370,14 @@ export function computeOrderPricing(params: ComputeOrderPricingParams): OrderPri
         candidatePrice = Number(product.price);
       }
 
+      if (variant) {
+        const variantPrice = positivePrice(variant);
+        if (variantPrice === null) {
+          throw new HttpsError("failed-precondition", `Option "${item.variantId}" of product ${item.productId} has no price`);
+        }
+        candidatePrice = variantPrice;
+      }
+
       if (candidatePrice === null) {
         throw new HttpsError(
           "failed-precondition",
@@ -334,7 +392,7 @@ export function computeOrderPricing(params: ComputeOrderPricingParams): OrderPri
     // mirroring packages/agrimore_core/lib/models/product_model.dart's own
     // ProductModel.fromMap, which defaults a missing/non-numeric stock to
     // 999. When stock IS a real number, it is enforced exactly.
-    const stockRaw = product.stock;
+    const stockRaw = variant ? variant.stock : product.stock;
     if (typeof stockRaw !== "number" || !Number.isFinite(stockRaw)) {
       console.warn(
         `⚠️ Product ${item.productId} has no numeric stock field — assuming available (mirrors ProductModel.fromMap's default of 999). Backfill this product's stock to enforce real limits.`
@@ -353,8 +411,15 @@ export function computeOrderPricing(params: ComputeOrderPricingParams): OrderPri
       id: item.productId,
       productId: item.productId,
       productName: product.name || "",
-      productImage: Array.isArray(product.images) && product.images.length > 0 ? product.images[0] : "",
+      productImage:
+        variant && Array.isArray(variant.images) && variant.images.length > 0
+          ? variant.images[0]
+          : Array.isArray(product.images) && product.images.length > 0
+            ? product.images[0]
+            : "",
       price,
+      // `variant` is the field CartItemModel (and so every app) reads.
+      ...(variant ? { variantId: typeof variant.id === "string" && variant.id ? variant.id : item.variantId, variant: variantName(variant) } : {}),
       quantity: item.quantity,
       userId: uid,
       sellerId: sellerId === "_unassigned" ? "" : sellerId,
@@ -363,7 +428,7 @@ export function computeOrderPricing(params: ComputeOrderPricingParams): OrderPri
       addedAt: admin.firestore.Timestamp.now(),
     };
 
-    validatedItems.push({ productId: item.productId, price, quantity: item.quantity, data: validatedItem });
+    validatedItems.push({ productId: item.productId, price, quantity: item.quantity, data: validatedItem, variantIndex: chosen?.index });
 
     const bucket = itemsBySeller.get(sellerId);
     if (bucket) {
