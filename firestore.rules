@@ -1699,6 +1699,27 @@ service cloud.firestore {
       // Only admin can delete partners
       allow delete: if isAdmin();
     }
+
+    // ============================================
+    // DELIVERY TASKS — one rider leg per order (Phase DLV-1A)
+    // ============================================
+    // Written ONLY by the syncDeliveryTask trigger (Admin SDK), which projects
+    // orders/{orderId} into the typed delivery vocabulary. No client write —
+    // not even the assigned rider: a rider that could write its own task could
+    // fake progress or zero the COD amount (phaseDLV1A_delivery_task_rules_test
+    // r13/r14). Read by the assigned rider, the order's customer and seller,
+    // and admin. Other riders are excluded: a task carries pickup/drop
+    // coordinates and the COD amount. An unassigned (searching) task is not
+    // readable by riders at all — offers are DLV-2's delivery_requests, with
+    // their own rules. Carries no customer name/phone/address text by design.
+    match /delivery_tasks/{orderId} {
+      allow read: if isAuthenticated() &&
+        (isAdmin() ||
+         resource.data.riderId == request.auth.uid ||
+         resource.data.customerId == request.auth.uid ||
+         resource.data.sellerId == request.auth.uid);
+      allow write: if false;
+    }
     // ============================================
     // VENDORS / SUPPLIERS COLLECTION
     // ============================================
