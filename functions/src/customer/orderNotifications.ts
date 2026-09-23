@@ -1,5 +1,6 @@
 import * as functions from "firebase-functions/v1";
 import * as admin from "firebase-admin";
+import { shouldPush } from "../common/notificationPrefs";
 import { FieldValue } from "firebase-admin/firestore";
 
 function uniqueTokens(data: admin.firestore.DocumentData | undefined): string[] {
@@ -67,6 +68,11 @@ export async function notifyUser(
   let failureCount = 0;
 
   await writeInAppNotification(userId, title, body, type, data, emoji);
+
+  // SELLER-ACCOUNT-1b: the user's notification preferences decide whether
+  // this also goes out as a push (category switched off, quiet hours). The
+  // inbox entry above is always kept.
+  if (!(await shouldPush(userId, type))) return { successCount: 0, failureCount: 0 };
 
   for (const token of tokens) {
     try {
