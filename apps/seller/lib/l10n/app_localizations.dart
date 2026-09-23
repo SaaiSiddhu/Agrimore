@@ -1011,6 +1011,144 @@ abstract class AppLocalizations {
   /// In en, this message translates to:
   /// **'Upload this photo to continue'**
   String get errDocument;
+
+  /// No description provided for @rejectOrderTitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Reject this order?'**
+  String get rejectOrderTitle;
+
+  /// No description provided for @cancelOrderTitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Cancel this order?'**
+  String get cancelOrderTitle;
+
+  /// No description provided for @reasonPrompt.
+  ///
+  /// In en, this message translates to:
+  /// **'Tell the buyer why. This is required.'**
+  String get reasonPrompt;
+
+  /// No description provided for @reasonOutOfStock.
+  ///
+  /// In en, this message translates to:
+  /// **'Item out of stock'**
+  String get reasonOutOfStock;
+
+  /// No description provided for @reasonCannotDeliver.
+  ///
+  /// In en, this message translates to:
+  /// **'Can\'t deliver to this area'**
+  String get reasonCannotDeliver;
+
+  /// No description provided for @reasonPriceError.
+  ///
+  /// In en, this message translates to:
+  /// **'Price was wrong'**
+  String get reasonPriceError;
+
+  /// No description provided for @reasonShopClosed.
+  ///
+  /// In en, this message translates to:
+  /// **'Shop is closed'**
+  String get reasonShopClosed;
+
+  /// No description provided for @reasonOther.
+  ///
+  /// In en, this message translates to:
+  /// **'Something else'**
+  String get reasonOther;
+
+  /// No description provided for @reasonNoteLabel.
+  ///
+  /// In en, this message translates to:
+  /// **'Note for the buyer (optional)'**
+  String get reasonNoteLabel;
+
+  /// No description provided for @rejectConsequence.
+  ///
+  /// In en, this message translates to:
+  /// **'The buyer is notified and the stock goes back to your listings.'**
+  String get rejectConsequence;
+
+  /// No description provided for @rejectConsequencePrepaid.
+  ///
+  /// In en, this message translates to:
+  /// **'The buyer is notified, the stock goes back to your listings, and the payment is marked for refund.'**
+  String get rejectConsequencePrepaid;
+
+  /// No description provided for @rejectOrderCta.
+  ///
+  /// In en, this message translates to:
+  /// **'Reject order'**
+  String get rejectOrderCta;
+
+  /// No description provided for @cancelOrderCta.
+  ///
+  /// In en, this message translates to:
+  /// **'Cancel order'**
+  String get cancelOrderCta;
+
+  /// No description provided for @keepOrder.
+  ///
+  /// In en, this message translates to:
+  /// **'Keep order'**
+  String get keepOrder;
+
+  /// No description provided for @orderAccepted.
+  ///
+  /// In en, this message translates to:
+  /// **'Order accepted'**
+  String get orderAccepted;
+
+  /// No description provided for @orderPacking.
+  ///
+  /// In en, this message translates to:
+  /// **'Packing started'**
+  String get orderPacking;
+
+  /// No description provided for @orderReady.
+  ///
+  /// In en, this message translates to:
+  /// **'Marked ready for pickup'**
+  String get orderReady;
+
+  /// No description provided for @orderRejected.
+  ///
+  /// In en, this message translates to:
+  /// **'Order rejected'**
+  String get orderRejected;
+
+  /// No description provided for @orderCancelled.
+  ///
+  /// In en, this message translates to:
+  /// **'Order cancelled'**
+  String get orderCancelled;
+
+  /// No description provided for @orderActionFailed.
+  ///
+  /// In en, this message translates to:
+  /// **'Couldn\'t update the order. Please try again.'**
+  String get orderActionFailed;
+
+  /// No description provided for @orderAlreadyMoved.
+  ///
+  /// In en, this message translates to:
+  /// **'This order was already updated. Pull to refresh.'**
+  String get orderAlreadyMoved;
+
+  /// No description provided for @orderUnpaid.
+  ///
+  /// In en, this message translates to:
+  /// **'Payment for this order isn\'t complete yet.'**
+  String get orderUnpaid;
+
+  /// No description provided for @chatReady.
+  ///
+  /// In en, this message translates to:
+  /// **'Chat with the buyer is ready'**
+  String get chatReady;
 }
 
 class _AppLocalizationsDelegate
