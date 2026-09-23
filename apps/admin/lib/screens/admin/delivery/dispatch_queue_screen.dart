@@ -11,6 +11,7 @@ import 'package:flutter/material.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:agrimore_core/agrimore_core.dart';
 import '../../../app/themes/admin_colors.dart';
+import 'delivery_flags.dart';
 import 'dispatch_queue.dart';
 import 'order_assignment_screen.dart';
 
@@ -390,6 +391,8 @@ class _DispatchDetailScreenState extends State<DispatchDetailScreen> {
                 children: [
                   _orderHeader(orderData),
                   const SizedBox(height: 12),
+                  // Phase DLV-3C: where the rider was at each step.
+                  DeliveryFlagsCard(orderId: widget.orderId, data: orderData),
                   _dispatchState(entry),
                   const SizedBox(height: 12),
                   _assignButton(orderData),
