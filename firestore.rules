@@ -1719,8 +1719,23 @@ service cloud.firestore {
       // Only Cloud Functions (admin SDK) create payouts — no client writes
       allow create: if false;
       
-      // Admins can update payout status (mark as paid)
-      allow update: if isAdmin();
+      // SELLER-MONEY-1: exactly one admin transition — pending → paid with a
+      // bank/UPI reference the seller sees. Before this, any admin update
+      // was allowed: amounts, the seller, or un-paying a paid row. Amounts,
+      // sellerId and orderId are written once by sellerNotifications.ts and
+      // are immutable from any client.
+      allow update: if isAdmin()
+        && resource.data.status == 'pending'
+        && request.resource.data.status == 'paid'
+        && request.resource.data.diff(resource.data).affectedKeys()
+             .hasOnly(['status', 'paidAt', 'paymentReference', 'paidBy', 'payoutMethod', 'updatedAt'])
+        && request.resource.data.paymentReference is string
+        && request.resource.data.paymentReference.size() >= 4
+        && request.resource.data.paymentReference.size() <= 64
+        && request.resource.data.paidAt is timestamp
+        && request.resource.data.paidBy == request.auth.uid
+        && (!('payoutMethod' in request.resource.data)
+            || request.resource.data.payoutMethod in ['bank', 'upi']);
       
       allow delete: if false;
     }
