@@ -8,6 +8,7 @@ import '../../providers/seller_auth_provider.dart';
 import '../../providers/seller_order_provider.dart';
 import '../../providers/seller_product_provider.dart';
 import '../home/dashboard_screen.dart';
+import '../orders/order_stage.dart';
 import '../orders/seller_orders_screen.dart';
 import '../payments/payments_screen.dart';
 import '../products/seller_products_screen.dart';
@@ -72,7 +73,8 @@ class _SellerShellState extends State<SellerShell> {
   @override
   Widget build(BuildContext context) {
     final l10n = AppLocalizations.of(context);
-    final pending = context.watch<SellerOrderProvider>().pendingOrders;
+    // Orders that need the seller to act (accept, pack or mark ready).
+    final pending = context.watch<SellerOrderProvider>().allOrders.where(needsSellerAction).length;
     final screens = widget.screens ?? _defaultScreens;
 
     Widget ordersIcon(IconData icon) => Badge(
