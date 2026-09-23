@@ -12,6 +12,7 @@ import '../../providers/seller_auth_provider.dart';
 import '../../providers/seller_order_provider.dart';
 import '../../providers/seller_product_provider.dart';
 import '../notifications/notifications_screen.dart';
+import '../account/store_schedule.dart';
 import '../account/store_status.dart';
 import '../insights/health_screen.dart';
 import '../insights/insights_rules.dart';
@@ -30,7 +31,7 @@ import 'widgets/home_widgets.dart';
 /// now, how the business is doing against the previous period, and the
 /// next settlement. KPIs come from the server rollup `seller_stats_daily`.
 class DashboardScreen extends StatefulWidget {
-  const DashboardScreen({super.key, this.stats, this.pendingPayout, this.now, this.unreadOverride, this.rating, this.reviewCount = 0});
+  const DashboardScreen({super.key, this.stats, this.pendingPayout, this.now, this.unreadOverride, this.rating, this.reviewCount = 0, this.schedule});
 
   /// Injected in tests; otherwise streamed.
   final Map<String, DayStat>? stats;
@@ -43,6 +44,9 @@ class DashboardScreen extends StatefulWidget {
   /// Server rating (sellers/{uid}); injected in tests, otherwise read once.
   final double? rating;
   final int reviewCount;
+
+  /// Injected in tests; otherwise read from sellers/{uid}.
+  final StoreSchedule? schedule;
 
   @override
   State<DashboardScreen> createState() => _DashboardScreenState();
@@ -65,6 +69,7 @@ class _DashboardScreenState extends State<DashboardScreen> {
   double? _rating;
   int _reviewCount = 0;
   StoreStatus _store = const StoreStatus();
+  late StoreSchedule _schedule = widget.schedule ?? const StoreSchedule();
 
   bool get _injected => widget.stats != null;
 
@@ -94,6 +99,7 @@ class _DashboardScreenState extends State<DashboardScreen> {
         _rating = (snap.data()?['rating'] as num?)?.toDouble();
         _reviewCount = (snap.data()?['reviewCount'] as num?)?.toInt() ?? 0;
         _store = StoreStatus.fromSeller(snap.data());
+        _schedule = StoreSchedule.fromSeller(snap.data());
       });
     }, onError: (Object e) => debugPrint('Home rating failed: $e'));
     _statsSub = db
@@ -311,6 +317,13 @@ class _DashboardScreenState extends State<DashboardScreen> {
               message: _store.pausedUntil == null ? l10n.storePausedBody : l10n.storePausedUntil(AgFormat.date(_store.pausedUntil!)),
               actionLabel: l10n.storeResume,
               onAction: () => _setStore(const StoreStatus()),
+            ),
+            const SizedBox(height: WsSpace.s16),
+          ] else if (_schedule.closedOn(now) != null) ...[
+            SaInfoBanner(
+              variant: SaBannerVariant.info,
+              title: l10n.scheduleClosedToday,
+              message: _schedule.closedOn(now) == ClosedToday.holiday ? l10n.scheduleClosedHoliday : l10n.scheduleClosedWeeklyOff,
             ),
             const SizedBox(height: WsSpace.s16),
           ],
