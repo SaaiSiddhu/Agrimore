@@ -63,19 +63,23 @@ abstract final class AgFormat {
   /// `26 Sep, 10:02 am`
   static String dateTime(DateTime d) => '${dayMonth(d)}, ${time(d)}';
 
-  /// `+91 98••• ••321` — shows the first 2 and last 3 national digits.
-  /// Anything that is not a 10-digit Indian mobile number is masked entirely.
+  /// Non-breaking space: a phone or account number never wraps mid-number.
+  static const String nbsp = '\u00A0';
+
+  /// `+91 98••• ••321` — shows the first 2 and last 3 national digits, joined
+  /// with non-breaking spaces. Anything that is not a 10-digit Indian mobile
+  /// number is masked entirely.
   static String maskPhone(String raw) {
     final digits = raw.replaceAll(RegExp(r'\D'), '');
     final national = digits.length >= 10 ? digits.substring(digits.length - 10) : '';
     if (national.length != 10) return '••••••••••';
-    return '+91 ${national.substring(0, 2)}••• ••${national.substring(7)}';
+    return '+91$nbsp${national.substring(0, 2)}•••$nbsp••${national.substring(7)}';
   }
 
   /// `•••• 4821` — bank account numbers after entry.
   static String maskAccount(String raw) {
     final digits = raw.replaceAll(RegExp(r'\s'), '');
     if (digits.length < 4) return '••••';
-    return '•••• ${digits.substring(digits.length - 4)}';
+    return '••••$nbsp${digits.substring(digits.length - 4)}';
   }
 }

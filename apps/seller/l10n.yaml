@@ -1,0 +1,7 @@
+# SELLER-AUTH-1a (ADR-S16): every user-visible string comes from these ARB files.
+arb-dir: lib/l10n
+template-arb-file: app_en.arb
+output-dir: lib/l10n
+output-localization-file: app_localizations.dart
+output-class: AppLocalizations
+nullable-getter: false
