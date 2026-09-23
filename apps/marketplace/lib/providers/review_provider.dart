@@ -33,6 +33,7 @@ class ReviewProvider extends ChangeNotifier {
     return query.snapshots().map((snapshot) {
       return snapshot.docs
           .map((doc) => ReviewModel.fromMap(doc.data() as Map<String, dynamic>, doc.id))
+          .where((r) => !r.isSuperseded)
           .toList();
     });
   }
@@ -96,11 +97,13 @@ class ReviewProvider extends ChangeNotifier {
       _isLoading = true;
       notifyListeners();
 
+      // REVIEW-UNIQUE-1: one review per buyer per product (id = uid).
       final reviewRef = _firestore
           .collection('products')
           .doc(productId)
           .collection('reviews')
-          .doc();
+          .doc(userId);
+      final exists = (await reviewRef.get()).exists;
 
       final review = ReviewModel(
         reviewId: reviewRef.id,
@@ -117,7 +120,7 @@ class ReviewProvider extends ChangeNotifier {
         isVerifiedPurchase: isVerifiedPurchase,
       );
 
-      await reviewRef.set(review.toMap());
+      await reviewRef.set(reviewContentMap(review, isNew: !exists), SetOptions(merge: true));
 
       // Update review stats (ideally via Cloud Function, but manual for now)
       await _updateReviewStats(productId);

@@ -23,6 +23,11 @@ class ReviewModel {
   final String? sellerReplyText;
   final DateTime? sellerReplyAt;
 
+  /// REVIEW-UNIQUE-1: set by the server when the same buyer has a newer
+  /// review of this product. Superseded reviews are not shown or counted.
+  final String? supersededBy;
+  bool get isSuperseded => supersededBy != null;
+
   ReviewModel({
     required this.reviewId,
     required this.productId,
@@ -42,6 +47,7 @@ class ReviewModel {
     this.imageUrls = const [],
     this.sellerReplyText,
     this.sellerReplyAt,
+    this.supersededBy,
   });
 
   factory ReviewModel.fromMap(Map<String, dynamic> data, String docId) {
@@ -79,6 +85,7 @@ class ReviewModel {
       sellerReplyAt: data['sellerReply'] is Map && (data['sellerReply'] as Map)['at'] != null
           ? _parseDate((data['sellerReply'] as Map)['at'])
           : null,
+      supersededBy: data['supersededBy'] is String ? data['supersededBy'] as String : null,
     );
   }
 
@@ -251,4 +258,15 @@ class ReviewStats {
   // ✅ NEW: hashCode
   @override
   int get hashCode => averageRating.hashCode ^ totalReviews.hashCode;
+}
+
+/// REVIEW-UNIQUE-1: what a buyer's (re-)review writes. Votes, the verified
+/// badge and server stamps are left alone; createdAt only on the first write.
+Map<String, dynamic> reviewContentMap(ReviewModel review, {required bool isNew}) {
+  const kept = {'productId', 'userId', 'userName', 'userAvatar', 'rating', 'comment', 'title', 'updatedAt', 'imageUrls'};
+  final map = review.toMap();
+  return {
+    for (final e in map.entries)
+      if (kept.contains(e.key) || (isNew && e.key == 'createdAt')) e.key: e.value,
+  };
 }
