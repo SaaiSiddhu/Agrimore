@@ -111,14 +111,20 @@ async function main() {
 
     // Scenario 4 (control): the seller's legitimate fulfilment write still
     // succeeds — the denylist addition did not overreach.
+    // SELLER-ORDERS-1 (2026-09-23): status now moves only through the
+    // sellerTransitionOrder callable, so the control is a non-lifecycle
+    // seller write (still allowed) plus the direct status write (now denied).
     try {
-      await assertSucceeds(
+      await assertFails(
         sellerDb.collection("orders").doc("p44b-order4").update({
           orderStatus: "processing",
           status: "processing",
         })
       );
-      scenario4 = "PASSED — seller's legitimate fulfilment write still succeeds";
+      await assertSucceeds(
+        sellerDb.collection("orders").doc("p44b-order4").update({ sellerNote: "packed" })
+      );
+      scenario4 = "PASSED — seller's non-lifecycle write still succeeds; direct status write is callable-only";
     } catch (e) {
       scenario4 = `FAILED — seller's legitimate write was rejected but should have succeeded: ${e.message}`;
     }

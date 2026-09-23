@@ -115,15 +115,20 @@ async function main() {
       record("5_delivery_partner_claim_cannot_set_credit_fields", true, `rejected as expected. code=${e.code}`, "");
     }
 
-    // Scenario 6 CONTROL: seller CAN still advance a legitimate fulfilment
-    // field — proves Workstream 1 did not over-block real fulfilment.
+    // Scenario 6 CONTROL: Workstream 1 did not over-block the seller.
+    // SELLER-ORDERS-1 (2026-09-23): status now moves only through the
+    // sellerTransitionOrder callable, so the control is a non-lifecycle
+    // seller write (must succeed) and a direct status write (must be denied).
     try {
-      await assertSucceeds(
+      await assertFails(
         sellerDb.collection("orders").doc("order-control6").update({ orderStatus: "processing" })
       );
-      record("6_control_seller_legitimate_fulfilment_write_succeeds", true, "seller advancing orderStatus still succeeds", "");
+      await assertSucceeds(
+        sellerDb.collection("orders").doc("order-control6").update({ sellerNote: "packed" })
+      );
+      record("6_control_seller_non_lifecycle_write_succeeds_status_is_callable_only", true, "note write ok; direct status write denied", "");
     } catch (e) {
-      record("6_control_seller_legitimate_fulfilment_write_succeeds", false, "", `legitimate fulfilment write was rejected: ${e.message}`);
+      record("6_control_seller_non_lifecycle_write_succeeds_status_is_callable_only", false, "", `unexpected: ${e.message}`);
     }
 
     // Scenario 7 CONTROL: seller changing `total` is still denied — proves

@@ -101,13 +101,18 @@ async function main() {
     const sellerDb = testEnv
       .authenticatedContext("seller-1", sellerClaims)
       .firestore();
+    // SELLER-ORDERS-1 (2026-09-23): a seller's direct status write is now
+    // denied (callable only); a non-lifecycle seller update must still succeed.
     try {
-      await assertSucceeds(
+      await assertFails(
         sellerDb.collection("orders").doc("order-for-selfreport").update({
           orderStatus: "shipped",
         })
       );
-      scenario3 = "PASSED — seller update succeeded as expected";
+      await assertSucceeds(
+        sellerDb.collection("orders").doc("order-for-selfreport").update({ sellerNote: "packed" })
+      );
+      scenario3 = "PASSED — seller non-lifecycle update succeeded; direct status write denied";
     } catch (e) {
       scenario3 = `FAILED — seller update was rejected but should have succeeded: ${e.message}`;
     }
