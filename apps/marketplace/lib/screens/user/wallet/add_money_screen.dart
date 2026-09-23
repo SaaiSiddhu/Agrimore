@@ -450,6 +450,7 @@ class _AddMoneyScreenState extends State<AddMoneyScreen> {
         userEmail: '',
         userPhone: '',
         description: 'Wallet Top-up ₹${_enteredAmount.toStringAsFixed(0)}',
+        context: context,
       );
 
       // Wait for payment result (timeout after 5 minutes)

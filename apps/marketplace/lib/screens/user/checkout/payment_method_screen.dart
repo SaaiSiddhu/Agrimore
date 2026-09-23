@@ -433,6 +433,7 @@ class _PaymentMethodScreenState extends State<PaymentMethodScreen> {
       userEmail: user.email ?? 'user@example.com',
       userPhone: widget.selectedAddress.phone,
       description: 'Order Payment',
+      context: context,
     );
   }
 

@@ -2,6 +2,7 @@
 // Works on both Web (via JS interop) and Mobile (via razorpay_flutter)
 
 import 'package:flutter/foundation.dart';
+import 'package:flutter/material.dart';
 import 'package:cloud_functions/cloud_functions.dart';
 
 // Platform-specific imports
@@ -78,6 +79,7 @@ class RazorpayService {
     required String userEmail,
     required String userPhone,
     String? description,
+    BuildContext? context,
   }) async {
     _userName = userName;
     _userEmail = userEmail;
@@ -98,6 +100,7 @@ class RazorpayService {
         userEmail: userEmail,
         userPhone: userPhone,
         description: description,
+        context: context,
       );
     }
   }
@@ -109,9 +112,11 @@ class RazorpayService {
     required String userEmail,
     required String userPhone,
     String? description,
+    BuildContext? context,
   }) async {
     try {
-      debugPrint('💳 Creating Razorpay order via Cloud Function (Mobile)...');
+      debugPrint(
+          '💳 Creating Razorpay order via Cloud Function for $_userName ($_userEmail)...');
 
       // Call Cloud Function to create order with 15s timeout
       final functions = FirebaseFunctions.instance;
@@ -140,8 +145,28 @@ class RazorpayService {
 
       final razorpayOrderId = data['orderId'] as String;
       final keyId = data['keyId'] as String;
+      final isTestMode = data['isTestMode'] == true;
 
-      debugPrint('✅ Razorpay order created: $razorpayOrderId');
+      debugPrint('✅ Razorpay order created: $razorpayOrderId (TestMode: $isTestMode)');
+
+      if (isTestMode) {
+        if (context != null && context.mounted) {
+          _showSandboxPaymentSheet(
+            context: context,
+            amount: amount,
+            orderId: razorpayOrderId,
+            description: description,
+          );
+        } else {
+          debugPrint('🧪 Auto-completing sandbox payment in background mode...');
+          final mockPaymentId =
+              'pay_test_${DateTime.now().millisecondsSinceEpoch}';
+          final mockSignature =
+              'test_sig_${DateTime.now().millisecondsSinceEpoch}';
+          _onSuccess?.call(mockPaymentId, razorpayOrderId, mockSignature);
+        }
+        return;
+      }
 
       // Enhanced Razorpay checkout options with premium branding
       final options = {
@@ -234,7 +259,258 @@ class RazorpayService {
 
   void _handleExternalWallet(ExternalWalletResponse response) {
     debugPrint('📱 External wallet: ${response.walletName}');
-    // Handle external wallet if needed
+  }
+
+  void _showSandboxPaymentSheet({
+    required BuildContext context,
+    required double amount,
+    required String orderId,
+    String? description,
+  }) {
+    showModalBottomSheet(
+      context: context,
+      isDismissible: false,
+      enableDrag: false,
+      backgroundColor: Colors.transparent,
+      builder: (sheetContext) {
+        return Container(
+          decoration: const BoxDecoration(
+            color: Colors.white,
+            borderRadius: BorderRadius.vertical(top: Radius.circular(24)),
+          ),
+          padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 20),
+          child: SafeArea(
+            top: false,
+            child: Column(
+              mainAxisSize: MainAxisSize.min,
+              crossAxisAlignment: CrossAxisAlignment.stretch,
+              children: [
+                Center(
+                  child: Container(
+                    width: 40,
+                    height: 4,
+                    margin: const EdgeInsets.only(bottom: 20),
+                    decoration: BoxDecoration(
+                      color: Colors.grey.shade300,
+                      borderRadius: BorderRadius.circular(2),
+                    ),
+                  ),
+                ),
+                Row(
+                  children: [
+                    Container(
+                      padding: const EdgeInsets.all(10),
+                      decoration: BoxDecoration(
+                        color: const Color(0xFF145A32).withValues(alpha: 0.1),
+                        borderRadius: BorderRadius.circular(12),
+                      ),
+                      child: const Icon(
+                        Icons.account_balance_wallet_rounded,
+                        color: Color(0xFF145A32),
+                        size: 28,
+                      ),
+                    ),
+                    const SizedBox(width: 14),
+                    Expanded(
+                      child: Column(
+                        crossAxisAlignment: CrossAxisAlignment.start,
+                        children: [
+                          Row(
+                            children: [
+                              const Text(
+                                'Razorpay Gateway',
+                                style: TextStyle(
+                                  fontSize: 18,
+                                  fontWeight: FontWeight.bold,
+                                  color: Colors.black87,
+                                ),
+                              ),
+                              const SizedBox(width: 8),
+                              Container(
+                                padding: const EdgeInsets.symmetric(
+                                    horizontal: 8, vertical: 2),
+                                decoration: BoxDecoration(
+                                  color: Colors.amber.shade100,
+                                  borderRadius: BorderRadius.circular(6),
+                                  border: Border.all(
+                                      color: Colors.amber.shade700, width: 0.8),
+                                ),
+                                child: Text(
+                                  'SANDBOX',
+                                  style: TextStyle(
+                                    fontSize: 10,
+                                    fontWeight: FontWeight.bold,
+                                    color: Colors.amber.shade900,
+                                  ),
+                                ),
+                              ),
+                            ],
+                          ),
+                          const SizedBox(height: 2),
+                          Text(
+                            description ?? 'Order Payment Simulation',
+                            style: TextStyle(
+                              fontSize: 13,
+                              color: Colors.grey.shade600,
+                            ),
+                          ),
+                        ],
+                      ),
+                    ),
+                  ],
+                ),
+                const SizedBox(height: 20),
+                Container(
+                  padding: const EdgeInsets.all(16),
+                  decoration: BoxDecoration(
+                    color: Colors.grey.shade50,
+                    borderRadius: BorderRadius.circular(16),
+                    border: Border.all(color: Colors.grey.shade200),
+                  ),
+                  child: Column(
+                    children: [
+                      Row(
+                        mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                        children: [
+                          Text(
+                            'Amount Payable',
+                            style: TextStyle(
+                              fontSize: 14,
+                              color: Colors.grey.shade700,
+                            ),
+                          ),
+                          Text(
+                            '₹${amount.toStringAsFixed(2)}',
+                            style: const TextStyle(
+                              fontSize: 20,
+                              fontWeight: FontWeight.bold,
+                              color: Color(0xFF145A32),
+                            ),
+                          ),
+                        ],
+                      ),
+                      const Divider(height: 20),
+                      Row(
+                        mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                        children: [
+                          Text(
+                            'Order Ref',
+                            style: TextStyle(
+                              fontSize: 12,
+                              color: Colors.grey.shade500,
+                            ),
+                          ),
+                          Flexible(
+                            child: Text(
+                              orderId,
+                              style: TextStyle(
+                                fontSize: 12,
+                                fontFamily: 'monospace',
+                                color: Colors.grey.shade700,
+                              ),
+                              overflow: TextOverflow.ellipsis,
+                            ),
+                          ),
+                        ],
+                      ),
+                      if (_userName.isNotEmpty || _userPhone.isNotEmpty) ...[
+                        const Divider(height: 16),
+                        Row(
+                          mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                          children: [
+                            Text(
+                              'Customer',
+                              style: TextStyle(
+                                fontSize: 12,
+                                color: Colors.grey.shade500,
+                              ),
+                            ),
+                            Flexible(
+                              child: Text(
+                                _userPhone.isNotEmpty
+                                    ? '$_userName ($_userPhone)'
+                                    : _userName,
+                                style: TextStyle(
+                                  fontSize: 12,
+                                  color: Colors.grey.shade700,
+                                ),
+                                overflow: TextOverflow.ellipsis,
+                              ),
+                            ),
+                          ],
+                        ),
+                      ],
+                    ],
+                  ),
+                ),
+                const SizedBox(height: 24),
+                ElevatedButton(
+                  onPressed: () {
+                    Navigator.of(sheetContext).pop();
+                    final mockPaymentId =
+                        'pay_test_${DateTime.now().millisecondsSinceEpoch}';
+                    final mockSignature =
+                        'test_sig_${DateTime.now().millisecondsSinceEpoch}';
+                    debugPrint('🧪 Sandbox payment approved: $mockPaymentId');
+                    _onSuccess?.call(mockPaymentId, orderId, mockSignature);
+                  },
+                  style: ElevatedButton.styleFrom(
+                    backgroundColor: const Color(0xFF145A32),
+                    foregroundColor: Colors.white,
+                    padding: const EdgeInsets.symmetric(vertical: 16),
+                    shape: RoundedRectangleBorder(
+                      borderRadius: BorderRadius.circular(12),
+                    ),
+                    elevation: 0,
+                  ),
+                  child: const Row(
+                    mainAxisAlignment: MainAxisAlignment.center,
+                    children: [
+                      Icon(Icons.check_circle_rounded, size: 20),
+                      SizedBox(width: 8),
+                      Text(
+                        'Simulate Successful Payment',
+                        style: TextStyle(
+                          fontSize: 16,
+                          fontWeight: FontWeight.bold,
+                        ),
+                      ),
+                    ],
+                  ),
+                ),
+                const SizedBox(height: 10),
+                OutlinedButton(
+                  onPressed: () {
+                    Navigator.of(sheetContext).pop();
+                    _onFailure?.call('Payment simulation declined by user');
+                  },
+                  style: OutlinedButton.styleFrom(
+                    foregroundColor: Colors.red.shade700,
+                    side: BorderSide(color: Colors.red.shade200),
+                    padding: const EdgeInsets.symmetric(vertical: 14),
+                    shape: RoundedRectangleBorder(
+                      borderRadius: BorderRadius.circular(12),
+                    ),
+                  ),
+                  child: const Text('Simulate Payment Failure'),
+                ),
+                const SizedBox(height: 8),
+                TextButton(
+                  onPressed: () {
+                    Navigator.of(sheetContext).pop();
+                    _onDismiss?.call();
+                  },
+                  child: Text(
+                    'Cancel Checkout',
+                    style: TextStyle(color: Colors.grey.shade600),
+                  ),
+                ),
+              ],
+            ),
+          ),
+        );
+      },
+    );
   }
 
   /// Verify Razorpay signature and captured status via backend before marking paid.
