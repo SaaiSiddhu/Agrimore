@@ -53,10 +53,10 @@ function makeRes() {
   return res;
 }
 
-async function send(phone) {
+async function send(phone, extra = {}) {
   const res = makeRes();
   const before = providerCalls.length;
-  await sendPhoneOTP({ method: "POST", body: { phone } }, res);
+  await sendPhoneOTP({ method: "POST", body: { phone, ...extra } }, res);
   return { res, providerCalled: providerCalls.length > before };
 }
 
@@ -210,6 +210,22 @@ async function main() {
     check("s11_test_mode_respects_cooldown_and_counts",
       first.res.statusCode === 200 && second.res.statusCode === 429 && doc.data()?.sendCount === 1,
       `first=${first.res.statusCode} second=${second.res.statusCode} sendCount=${doc.data()?.sendCount}`);
+  }
+
+  // s12/s13 — SEC-P0b (OWNER_DECISION D-DEBUG-MOCK-OTP): debugMock:true
+  // returns the code for ANY number without delivery (accepted risk); a
+  // request without it (release builds) still gets real delivery.
+  {
+    await setConfig(null);
+    const { res, providerCalled } = await send("+919876511012", { debugMock: true });
+    check("s12_debug_mock_any_number_no_delivery",
+      res.statusCode === 200 && !providerCalled && res.body?.testMode === true && /^\d{6}$/.test(res.body?.testOtp || ""),
+      `status=${res.statusCode} providerCalled=${providerCalled}`);
+  }
+  {
+    const { res, providerCalled } = await send("+919876511013", { debugMock: "true" });
+    check("s13_non_boolean_debug_flag_is_real_delivery",
+      providerCalled && res.body?.testOtp === undefined, `providerCalled=${providerCalled}`);
   }
 
   console.log("\n=== PHASE SEC-P0 (test mode) SUMMARY ===");
