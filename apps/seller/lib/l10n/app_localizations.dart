@@ -62,7 +62,7 @@ import 'app_localizations_en.dart';
 /// property.
 abstract class AppLocalizations {
   AppLocalizations(String locale)
-    : localeName = intl.Intl.canonicalizedLocale(locale.toString());
+      : localeName = intl.Intl.canonicalizedLocale(locale.toString());
 
   final String localeName;
 
@@ -85,11 +85,11 @@ abstract class AppLocalizations {
   /// of delegates is preferred or required.
   static const List<LocalizationsDelegate<dynamic>> localizationsDelegates =
       <LocalizationsDelegate<dynamic>>[
-        delegate,
-        GlobalMaterialLocalizations.delegate,
-        GlobalCupertinoLocalizations.delegate,
-        GlobalWidgetsLocalizations.delegate,
-      ];
+    delegate,
+    GlobalMaterialLocalizations.delegate,
+    GlobalCupertinoLocalizations.delegate,
+    GlobalWidgetsLocalizations.delegate,
+  ];
 
   /// A list of this localizations delegate's supported locales.
   static const List<Locale> supportedLocales = <Locale>[Locale('en')];
@@ -4629,6 +4629,66 @@ abstract class AppLocalizations {
   /// In en, this message translates to:
   /// **'Statement copied'**
   String get statementCopied;
+
+  /// No description provided for @variantsTitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Options'**
+  String get variantsTitle;
+
+  /// No description provided for @variantsHint.
+  ///
+  /// In en, this message translates to:
+  /// **'Sizes or pack weights, each with its own price and stock. Leave empty for a single product.'**
+  String get variantsHint;
+
+  /// No description provided for @variantsLine.
+  ///
+  /// In en, this message translates to:
+  /// **'{price} · {stock} in stock'**
+  String variantsLine(String price, String stock);
+
+  /// No description provided for @variantsAdd.
+  ///
+  /// In en, this message translates to:
+  /// **'Add option'**
+  String get variantsAdd;
+
+  /// No description provided for @variantsEdit.
+  ///
+  /// In en, this message translates to:
+  /// **'Edit option'**
+  String get variantsEdit;
+
+  /// No description provided for @variantsRemove.
+  ///
+  /// In en, this message translates to:
+  /// **'Remove {name}'**
+  String variantsRemove(String name);
+
+  /// No description provided for @variantsName.
+  ///
+  /// In en, this message translates to:
+  /// **'Option name'**
+  String get variantsName;
+
+  /// No description provided for @variantsNameHint.
+  ///
+  /// In en, this message translates to:
+  /// **'e.g. 1 kg, 5 kg, Large'**
+  String get variantsNameHint;
+
+  /// No description provided for @variantsDuplicate.
+  ///
+  /// In en, this message translates to:
+  /// **'You already have an option with this name'**
+  String get variantsDuplicate;
+
+  /// No description provided for @variantsOrderLine.
+  ///
+  /// In en, this message translates to:
+  /// **'Option: {name}'**
+  String variantsOrderLine(String name);
 }
 
 class _AppLocalizationsDelegate
@@ -4656,9 +4716,8 @@ AppLocalizations lookupAppLocalizations(Locale locale) {
   }
 
   throw FlutterError(
-    'AppLocalizations.delegate failed to load unsupported locale "$locale". This is likely '
-    'an issue with the localizations generation tool. Please file an issue '
-    'on GitHub with a reproducible sample app and the gen-l10n configuration '
-    'that was used.',
-  );
+      'AppLocalizations.delegate failed to load unsupported locale "$locale". This is likely '
+      'an issue with the localizations generation tool. Please file an issue '
+      'on GitHub with a reproducible sample app and the gen-l10n configuration '
+      'that was used.');
 }

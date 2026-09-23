@@ -1462,5 +1462,39 @@
     }
   },
   "statementCopy": "Copy statement",
-  "statementCopied": "Statement copied"
+  "statementCopied": "Statement copied",
+  "variantsTitle": "Options",
+  "variantsHint": "Sizes or pack weights, each with its own price and stock. Leave empty for a single product.",
+  "variantsLine": "{price} · {stock} in stock",
+  "@variantsLine": {
+    "placeholders": {
+      "price": {
+        "type": "String"
+      },
+      "stock": {
+        "type": "String"
+      }
+    }
+  },
+  "variantsAdd": "Add option",
+  "variantsEdit": "Edit option",
+  "variantsRemove": "Remove {name}",
+  "@variantsRemove": {
+    "placeholders": {
+      "name": {
+        "type": "String"
+      }
+    }
+  },
+  "variantsName": "Option name",
+  "variantsNameHint": "e.g. 1 kg, 5 kg, Large",
+  "variantsDuplicate": "You already have an option with this name",
+  "variantsOrderLine": "Option: {name}",
+  "@variantsOrderLine": {
+    "placeholders": {
+      "name": {
+        "type": "String"
+      }
+    }
+  }
 }

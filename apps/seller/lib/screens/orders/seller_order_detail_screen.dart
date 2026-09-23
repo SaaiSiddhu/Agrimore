@@ -188,6 +188,8 @@ class _SellerOrderDetailScreenState extends State<SellerOrderDetailScreen> {
                   Expanded(
                     child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
                       Text(i.productName, style: text.bodyMedium, maxLines: 2, overflow: TextOverflow.ellipsis),
+                      if (i.variant != null && i.variant!.isNotEmpty)
+                        Text(l10n.variantsOrderLine(i.variant!), style: text.labelMedium!.copyWith(color: t.primary)),
                       Text(l10n.quoteQtyAtPrice(AgFormat.count(i.quantity), AgFormat.rupees(i.price)),
                           style: text.bodySmall!.copyWith(color: t.textSecondary)),
                     ]),

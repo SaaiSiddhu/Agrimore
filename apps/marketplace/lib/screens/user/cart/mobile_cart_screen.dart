@@ -3088,6 +3088,8 @@ class _MobileCartScreenState extends State<MobileCartScreen>
             .map((item) => {
                   'productId': item.productId,
                   'quantity': item.quantity,
+                  // SELLER-CATALOGUE-2: the server prices and stocks the chosen option.
+                  if (item.variant != null && item.variant!.isNotEmpty) 'variantId': item.variant,
                 })
             .toList(),
         'orderMode': isB2B ? 'B2B' : 'B2C',

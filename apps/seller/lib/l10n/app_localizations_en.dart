@@ -2661,4 +2661,41 @@ class AppLocalizationsEn extends AppLocalizations {
 
   @override
   String get statementCopied => 'Statement copied';
+
+  @override
+  String get variantsTitle => 'Options';
+
+  @override
+  String get variantsHint =>
+      'Sizes or pack weights, each with its own price and stock. Leave empty for a single product.';
+
+  @override
+  String variantsLine(String price, String stock) {
+    return '$price · $stock in stock';
+  }
+
+  @override
+  String get variantsAdd => 'Add option';
+
+  @override
+  String get variantsEdit => 'Edit option';
+
+  @override
+  String variantsRemove(String name) {
+    return 'Remove $name';
+  }
+
+  @override
+  String get variantsName => 'Option name';
+
+  @override
+  String get variantsNameHint => 'e.g. 1 kg, 5 kg, Large';
+
+  @override
+  String get variantsDuplicate => 'You already have an option with this name';
+
+  @override
+  String variantsOrderLine(String name) {
+    return 'Option: $name';
+  }
 }
