@@ -269,6 +269,13 @@ recommendation every time:
 
 DLV-3A (rider location), DLV-3B (customer tracking), DLV-3C (server-checked steps), DLV-3D (the lock).
 
+**D-DLV-BG-CLOSE — OWNER_DECISION 2026-09-23 (AskUserQuestion, during DLV-3A).** The DLV-3A device run showed
+geolocator's foreground service stops when the app's activity is destroyed (Back on the home screen, swipe from
+Recents, OS reclaim) — the plugin disposes its stream when its Flutter engine detaches. Chosen: **handle Back now**
+(while online, Back moves the app to the background instead of closing it) and make **surviving swipe-away** its own
+phase (a native location service independent of the Flutter screen) **before the Play release**. Meanwhile a
+swipe-away fails safe: the server takes the rider offline after 15 min and pushes them.
+
 ## 6. Open owner decisions (do not resolve silently)
 
 | ID | Question | Safe default while open |
