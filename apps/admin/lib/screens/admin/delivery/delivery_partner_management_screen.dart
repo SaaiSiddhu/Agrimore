@@ -487,15 +487,19 @@ class _PartnerCard extends StatelessWidget {
                     ],
                   ),
                   const SizedBox(height: 4),
-                  Row(
+                  // Wrap, not Row: at phone width the phone number and vehicle
+                  // number overflowed the card (seen in the DLV-1B preview).
+                  Wrap(
+                    spacing: 4,
+                    runSpacing: 2,
+                    crossAxisAlignment: WrapCrossAlignment.center,
                     children: [
                       Icon(Icons.phone_outlined,
                           size: 14, color: AdminColors.textSecondary),
-                      const SizedBox(width: 4),
                       Text(partner.phone,
                           style: TextStyle(
                               fontSize: 12, color: AdminColors.textSecondary)),
-                      const SizedBox(width: 16),
+                      const SizedBox(width: 12),
                       Icon(
                         partner.vehicleType == 'ev'
                             ? Icons.electric_moped
@@ -503,7 +507,6 @@ class _PartnerCard extends StatelessWidget {
                         size: 14,
                         color: AdminColors.textSecondary,
                       ),
-                      const SizedBox(width: 4),
                       Text(partner.vehicleNumber,
                           style: TextStyle(
                               fontSize: 12, color: AdminColors.textSecondary)),

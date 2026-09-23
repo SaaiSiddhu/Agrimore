@@ -100,6 +100,17 @@ Future<void> applyRiderReview({
   await batch.commit();
 }
 
+/// Display name for a vehicle type (the enum name reads as 'Ev').
+String vehicleLabel(VehicleType v) => switch (v) {
+      VehicleType.bicycle => 'Bicycle',
+      VehicleType.bike => 'Bike',
+      VehicleType.scooter => 'Scooter',
+      VehicleType.ev => 'EV',
+      VehicleType.threeWheeler => 'Three-wheeler',
+      VehicleType.car => 'Car',
+      VehicleType.van => 'Van',
+    };
+
 /// Last four digits only — the review sheet never shows a full account or
 /// Aadhaar number.
 String maskTail(String? value, {int keep = 4}) {

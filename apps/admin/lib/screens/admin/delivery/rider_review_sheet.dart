@@ -237,8 +237,10 @@ class _RiderReviewSheetState extends State<RiderReviewSheet> {
                       : _s('licenseNumber')),
               _row(
                   'Vehicle',
-                  '${vehicle.name[0].toUpperCase()}${vehicle.name.substring(1)}'
-                      '${_s('vehicleNumber').isEmpty ? '' : ' · ${_s('vehicleNumber')}'}'),
+                  vehicleLabel(vehicle) +
+                      (_s('vehicleNumber').isEmpty
+                          ? ''
+                          : ' · ${_s('vehicleNumber')}')),
               _row(
                   'Area',
                   [_s('city'), _s('pincode')]
