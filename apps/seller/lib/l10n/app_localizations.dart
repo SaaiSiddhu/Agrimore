@@ -2031,6 +2031,186 @@ abstract class AppLocalizations {
   /// In en, this message translates to:
   /// **'{who} · {action}'**
   String quoteHistoryHeader(String who, String action);
+
+  /// No description provided for @homeTitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Home'**
+  String get homeTitle;
+
+  /// No description provided for @homeGreetingMorning.
+  ///
+  /// In en, this message translates to:
+  /// **'Good morning'**
+  String get homeGreetingMorning;
+
+  /// No description provided for @homeGreetingAfternoon.
+  ///
+  /// In en, this message translates to:
+  /// **'Good afternoon'**
+  String get homeGreetingAfternoon;
+
+  /// No description provided for @homeGreetingEvening.
+  ///
+  /// In en, this message translates to:
+  /// **'Good evening'**
+  String get homeGreetingEvening;
+
+  /// No description provided for @homeNeedsYou.
+  ///
+  /// In en, this message translates to:
+  /// **'Needs you now'**
+  String get homeNeedsYou;
+
+  /// No description provided for @homeAllCaughtUp.
+  ///
+  /// In en, this message translates to:
+  /// **'You\'re all caught up'**
+  String get homeAllCaughtUp;
+
+  /// No description provided for @homeAllCaughtUpBody.
+  ///
+  /// In en, this message translates to:
+  /// **'New orders, quotes and stock alerts will show up here.'**
+  String get homeAllCaughtUpBody;
+
+  /// No description provided for @homeOrdersToAccept.
+  ///
+  /// In en, this message translates to:
+  /// **'{count, plural, =1{1 order to accept} other{{count} orders to accept}}'**
+  String homeOrdersToAccept(int count);
+
+  /// No description provided for @homeOldestWaiting.
+  ///
+  /// In en, this message translates to:
+  /// **'Oldest placed {time}'**
+  String homeOldestWaiting(String time);
+
+  /// No description provided for @homeQuotesToAnswer.
+  ///
+  /// In en, this message translates to:
+  /// **'{count, plural, =1{1 quote to answer} other{{count} quotes to answer}}'**
+  String homeQuotesToAnswer(int count);
+
+  /// No description provided for @homeQuotesExpiringSoon.
+  ///
+  /// In en, this message translates to:
+  /// **'{count, plural, =1{1 expires within a day} other{{count} expire within a day}}'**
+  String homeQuotesExpiringSoon(int count);
+
+  /// No description provided for @homeOutOfStock.
+  ///
+  /// In en, this message translates to:
+  /// **'{count, plural, =1{1 product out of stock} other{{count} products out of stock}}'**
+  String homeOutOfStock(int count);
+
+  /// No description provided for @homeLowStock.
+  ///
+  /// In en, this message translates to:
+  /// **'{count, plural, =1{1 product low on stock} other{{count} products low on stock}}'**
+  String homeLowStock(int count);
+
+  /// No description provided for @homePerformance.
+  ///
+  /// In en, this message translates to:
+  /// **'Performance'**
+  String get homePerformance;
+
+  /// No description provided for @periodToday.
+  ///
+  /// In en, this message translates to:
+  /// **'Today'**
+  String get periodToday;
+
+  /// No description provided for @period7d.
+  ///
+  /// In en, this message translates to:
+  /// **'7 days'**
+  String get period7d;
+
+  /// No description provided for @period30d.
+  ///
+  /// In en, this message translates to:
+  /// **'30 days'**
+  String get period30d;
+
+  /// No description provided for @homeStatsFailed.
+  ///
+  /// In en, this message translates to:
+  /// **'Couldn\'t load your numbers. Check your connection and reopen Home.'**
+  String get homeStatsFailed;
+
+  /// No description provided for @kpiSales.
+  ///
+  /// In en, this message translates to:
+  /// **'Sales'**
+  String get kpiSales;
+
+  /// No description provided for @kpiOrders.
+  ///
+  /// In en, this message translates to:
+  /// **'Orders'**
+  String get kpiOrders;
+
+  /// No description provided for @kpiAov.
+  ///
+  /// In en, this message translates to:
+  /// **'Avg. order'**
+  String get kpiAov;
+
+  /// No description provided for @kpiUpVsPrevious.
+  ///
+  /// In en, this message translates to:
+  /// **'{pct} up on the previous period'**
+  String kpiUpVsPrevious(String pct);
+
+  /// No description provided for @kpiDownVsPrevious.
+  ///
+  /// In en, this message translates to:
+  /// **'{pct} down on the previous period'**
+  String kpiDownVsPrevious(String pct);
+
+  /// No description provided for @kpiNoComparison.
+  ///
+  /// In en, this message translates to:
+  /// **'Nothing to compare with yet'**
+  String get kpiNoComparison;
+
+  /// No description provided for @homeNextSettlement.
+  ///
+  /// In en, this message translates to:
+  /// **'To be paid to you'**
+  String get homeNextSettlement;
+
+  /// No description provided for @homeQuickActions.
+  ///
+  /// In en, this message translates to:
+  /// **'Quick actions'**
+  String get homeQuickActions;
+
+  /// No description provided for @homeAddProduct.
+  ///
+  /// In en, this message translates to:
+  /// **'Add product'**
+  String get homeAddProduct;
+
+  /// No description provided for @kpiOrdersMore.
+  ///
+  /// In en, this message translates to:
+  /// **'{count, plural, =1{1 more than before} other{{count} more than before}}'**
+  String kpiOrdersMore(int count);
+
+  /// No description provided for @kpiOrdersFewer.
+  ///
+  /// In en, this message translates to:
+  /// **'{count, plural, =1{1 fewer than before} other{{count} fewer than before}}'**
+  String kpiOrdersFewer(int count);
+
+  /// No description provided for @kpiOrdersSame.
+  ///
+  /// In en, this message translates to:
+  /// **'Same as before'**
+  String get kpiOrdersSame;
 }
 
 class _AppLocalizationsDelegate

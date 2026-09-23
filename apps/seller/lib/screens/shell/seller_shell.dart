@@ -13,8 +13,17 @@ import '../../providers/seller_auth_provider.dart';
 import '../../providers/seller_product_provider.dart';
 import '../../providers/seller_order_provider.dart';
 
+/// Bottom-bar destinations, in bar order.
+enum SellerTab { home, catalogue, orders, payments, account }
+
 class SellerShell extends StatefulWidget {
   const SellerShell({super.key});
+
+  /// Switches the bottom bar from anywhere inside the shell (e.g. Home's
+  /// action queue). No-op outside a shell.
+  static void goToTab(BuildContext context, SellerTab tab) {
+    context.findAncestorStateOfType<_SellerShellState>()?._select(tab.index);
+  }
 
   @override
   State<SellerShell> createState() => _SellerShellState();
@@ -35,6 +44,10 @@ class _SellerShellState extends State<SellerShell> {
   void initState() {
     super.initState();
     WidgetsBinding.instance.addPostFrameCallback((_) => _loadSellerData());
+  }
+
+  void _select(int index) {
+    if (index != _currentIndex) setState(() => _currentIndex = index);
   }
 
   void _loadSellerData() {
