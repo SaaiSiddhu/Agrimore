@@ -63,6 +63,7 @@ class SaLoadingButton extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final tokens = context.saTokens;
+    final onPrimary = Theme.of(context).colorScheme.onPrimary;
     final effectiveLoadingText = loadingText ?? text;
 
     final Widget content = Row(
@@ -77,7 +78,7 @@ class SaLoadingButton extends StatelessWidget {
               strokeWidth: 2,
               valueColor: AlwaysStoppedAnimation<Color>(
                 variant == SaButtonVariant.primary
-                    ? Colors.white
+                    ? onPrimary
                     : tokens.primary,
               ),
             ),
@@ -116,7 +117,7 @@ class SaLoadingButton extends StatelessWidget {
             SaTokens.controlHeight,
           ),
           backgroundColor: tokens.primary,
-          foregroundColor: Colors.white,
+          foregroundColor: onPrimary,
           disabledBackgroundColor: tokens.disabledContainer,
           disabledForegroundColor: tokens.disabledContent,
           elevation: 0,
