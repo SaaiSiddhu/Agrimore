@@ -208,15 +208,15 @@ class _LiveTrackingScreenState extends State<LiveTrackingScreen> with TickerProv
     return p == null ? null : LatLng(p.lat, p.lng);
   }
 
-  /// The route legs to draw: only while they still fit the stage.
+  /// The road legs still ahead (DeliveryRoute.legsAhead — the same choice
+  /// the rider's route card makes): rider → store → you before pickup,
+  /// store/rider → you after.
   List<List<LatLng>> get _routeLegs {
     final route = _task?.route;
     if (route == null || !_riderLegActive) return const [];
-    final wantVia = _status == DeliveryTaskStatus.assigned;
-    if (route.viaPickup != wantVia) return const [];
     return [
-      for (final leg in route.legs) [for (final p in leg.points) LatLng(p.lat, p.lng)]
-    ].where((l) => l.length >= 2).toList();
+      for (final leg in route.legsAhead(_status)) [for (final p in leg) LatLng(p.lat, p.lng)]
+    ];
   }
 
   void _recompute() {
@@ -262,7 +262,30 @@ class _LiveTrackingScreenState extends State<LiveTrackingScreen> with TickerProv
         infoWindow: const InfoWindow(title: 'Store'),
       ));
     }
-    final rider = _riderShown;
+    final legs = _routeLegs;
+    var rider = _riderShown;
+    List<LatLng>? activeLeg;
+    if (legs.isNotEmpty) {
+      activeLeg = legs.first;
+      if (rider != null) {
+        // Zomato/Swiggy style: the line starts at the bike and what has been
+        // ridden disappears; small GPS drift is drawn on the road.
+        final progress = RouteProgress.along(
+          [for (final p in legs.first) DeliveryPoint(lat: p.latitude, lng: p.longitude)],
+          DeliveryPoint(lat: rider.latitude, lng: rider.longitude),
+        );
+        if (progress != null) {
+          final ahead = [for (final p in progress.remaining) LatLng(p.lat, p.lng)];
+          if (progress.onRoute) {
+            rider = ahead.first;
+            activeLeg = ahead;
+          } else {
+            // Off the line until the server re-routes (> 150 m): join them.
+            activeLeg = [rider, ...ahead];
+          }
+        }
+      }
+    }
     if (rider != null && _riderLegActive) {
       markers.add(Marker(
         markerId: const MarkerId('partner'),
@@ -274,13 +297,10 @@ class _LiveTrackingScreenState extends State<LiveTrackingScreen> with TickerProv
       ));
     }
 
-    final legs = _routeLegs;
-    if (legs.isNotEmpty) {
-      // The leg the rider is on, from where the rider is now.
-      final first = [if (rider != null) rider, ...legs.first];
+    if (legs.isNotEmpty && activeLeg != null) {
       polylines.add(Polyline(
         polylineId: const PolylineId('route_active'),
-        points: first,
+        points: activeLeg,
         color: kTrackGreen,
         width: 6,
         zIndex: 2,
@@ -310,6 +330,15 @@ class _LiveTrackingScreenState extends State<LiveTrackingScreen> with TickerProv
           patterns: [PatternItem.dash(18), PatternItem.gap(10)],
         ));
       }
+    } else if (!_riderLegActive && pickup != null && drop != null && !_finished) {
+      // Still finding a rider: store → you, the way it will come.
+      polylines.add(Polyline(
+        polylineId: const PolylineId('store_to_home'),
+        points: [pickup, drop],
+        color: const Color(0xFF9E9E9E),
+        width: 4,
+        patterns: [PatternItem.dash(14), PatternItem.gap(10)],
+      ));
     }
     _markers = markers;
     _polylines = polylines;
@@ -323,9 +352,11 @@ class _LiveTrackingScreenState extends State<LiveTrackingScreen> with TickerProv
     if (controller == null || _finished) return;
     final pts = <LatLng>[
       if (_riderShown != null && _riderLegActive) _riderShown!,
-      ...(_routeLegs.isNotEmpty ? _routeLegs.first : const <LatLng>[]),
+      // The whole way still ahead — rider, store and home before pickup —
+      // so the customer sees the store → home road too.
+      for (final leg in _routeLegs) ...leg,
       if (_beforePickup && _pickupLatLng != null) _pickupLatLng!,
-      if (!_beforePickup && _dropLatLng != null) _dropLatLng!,
+      if (_riderLegActive && _dropLatLng != null) _dropLatLng!,
       if (!_riderLegActive && _pickupLatLng != null) _pickupLatLng!,
       if (!_riderLegActive && _dropLatLng != null) _dropLatLng!,
     ];
