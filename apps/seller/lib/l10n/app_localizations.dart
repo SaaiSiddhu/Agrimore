@@ -4491,6 +4491,72 @@ abstract class AppLocalizations {
   /// In en, this message translates to:
   /// **'Your store is paused'**
   String get storePausedToast;
+
+  /// No description provided for @followersTitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Followers & posts'**
+  String get followersTitle;
+
+  /// No description provided for @followersMenuSubtitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Who follows your store, and your posts'**
+  String get followersMenuSubtitle;
+
+  /// No description provided for @followersCount.
+  ///
+  /// In en, this message translates to:
+  /// **'Followers'**
+  String get followersCount;
+
+  /// No description provided for @followersNew.
+  ///
+  /// In en, this message translates to:
+  /// **'{count, plural, =1{+1 in the last 30 days} other{+{count} in the last 30 days}}'**
+  String followersNew(int count);
+
+  /// No description provided for @followersLoadFailed.
+  ///
+  /// In en, this message translates to:
+  /// **'Couldn\'t load this. Check your connection and open the screen again.'**
+  String get followersLoadFailed;
+
+  /// No description provided for @postsTitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Your posts'**
+  String get postsTitle;
+
+  /// No description provided for @postsEmpty.
+  ///
+  /// In en, this message translates to:
+  /// **'No posts yet. Posts reach everyone who follows your store.'**
+  String get postsEmpty;
+
+  /// No description provided for @postsNoText.
+  ///
+  /// In en, this message translates to:
+  /// **'Photo post'**
+  String get postsNoText;
+
+  /// No description provided for @postsDeleteTitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Delete this post?'**
+  String get postsDeleteTitle;
+
+  /// No description provided for @postsDeleteBody.
+  ///
+  /// In en, this message translates to:
+  /// **'Followers will no longer see it.'**
+  String get postsDeleteBody;
+
+  /// No description provided for @postsDeleted.
+  ///
+  /// In en, this message translates to:
+  /// **'Post deleted'**
+  String get postsDeleted;
 }
 
 class _AppLocalizationsDelegate

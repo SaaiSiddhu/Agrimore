@@ -611,6 +611,20 @@
             ]
         },
         {
+            "collectionGroup": "follows",
+            "queryScope": "COLLECTION",
+            "fields": [
+                {
+                    "fieldPath": "sellerId",
+                    "order": "ASCENDING"
+                },
+                {
+                    "fieldPath": "createdAt",
+                    "order": "DESCENDING"
+                }
+            ]
+        },
+        {
             "collectionGroup": "business_posts",
             "queryScope": "COLLECTION",
             "fields": [
