@@ -128,7 +128,11 @@ List<DeliveryPoint> decodePolyline(String encoded) {
       result |= (b & 0x1f) << shift;
       shift += 5;
     } while (b >= 0x20);
-    return (result & 1) != 0 ? ~(result >> 1) : result >> 1;
+    // Not ~(result >> 1): on web (Dart compiled to JavaScript) `~` yields an
+    // UNSIGNED 32-bit value, which turned every negative step into a huge
+    // positive one — the customer's map jumped to the North Atlantic
+    // (browser run; `flutter test --platform chrome` fails without this).
+    return (result & 1) != 0 ? -(result >> 1) - 1 : result >> 1;
   }
 
   while (i < encoded.length) {
