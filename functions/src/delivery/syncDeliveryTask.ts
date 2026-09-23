@@ -24,6 +24,12 @@
 
 import * as functions from "firebase-functions/v1";
 import * as admin from "firebase-admin";
+// Modular import, NOT admin.firestore.FieldValue: in v1 background dispatch the
+// namespace member is undefined (P0-FIELDVALUE, src/customer/wallet.ts:557).
+// This trigger shipped in DLV-1A with the namespace form; DLV-2A's genuine-
+// dispatch suite (phaseDLV2A_trigger_test.js t01/t04) caught it crashing on
+// every order update — test.wrap(), used by DLV-1A's own suite, cannot.
+import { FieldValue } from "firebase-admin/firestore";
 import { isCashOnDelivery } from "../seller/sellerTransitionOrder";
 import { canTransition, isTerminal, TaskStatus, taskStatusFromOrder, taskStatusFromWire } from "./states";
 
@@ -148,7 +154,7 @@ export function planTaskWrite(
 
   const previous = existing ? taskStatusFromWire(existing.status) : null;
   const statusChanged = previous !== status;
-  const now = admin.firestore.FieldValue.serverTimestamp();
+  const now = FieldValue.serverTimestamp();
   const write: Record<string, unknown> = { ...fields, updatedAt: now };
 
   if (!existing) {
