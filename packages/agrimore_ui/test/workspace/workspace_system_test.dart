@@ -190,9 +190,10 @@ void main() {
       expect(AgFormat.percentDelta(0), '0%');
     });
     test('phone and account masking never reveal the middle digits', () {
-      expect(AgFormat.maskPhone('+91 98765 43321'), '+91 98••• ••321');
+      expect(AgFormat.maskPhone('+91 98765 43321'), '+91\u00A098•••\u00A0••321');
+      expect(AgFormat.maskPhone('+91 98765 43321'), isNot(contains(' ')), reason: 'never wraps mid-number');
       expect(AgFormat.maskPhone('123'), '••••••••••');
-      expect(AgFormat.maskAccount('50100012344821'), '•••• 4821');
+      expect(AgFormat.maskAccount('50100012344821'), '••••\u00A04821');
     });
   });
 
