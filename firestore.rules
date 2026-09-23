@@ -1785,6 +1785,24 @@ service cloud.firestore {
     // ============================================
     // SELLER PAYOUTS COLLECTION
     // ============================================
+    // ============================================
+    // SELLER DAILY STATS (SELLER-HOME-1a)
+    // ============================================
+    // Written only by functions/src/seller/sellerStats.ts (the orders
+    // onWrite rollup and rebuildMySellerStats). A seller reads their own
+    // days; nobody writes from a client — a seller who could write here
+    // could inflate their own dashboard and any future ranking built on it.
+    match /seller_stats_daily/{docId} {
+      allow read: if isAuthenticated() &&
+        (resource.data.sellerId == request.auth.uid || isAdmin());
+      allow write: if false;
+    }
+
+    // Per-order idempotency markers for the rollup: server-only.
+    match /seller_stats_contrib/{orderId} {
+      allow read, write: if false;
+    }
+
     match /seller_payouts/{payoutId} {
       // Sellers can read their own payouts, admins can read all
       allow read: if isAuthenticated() && 

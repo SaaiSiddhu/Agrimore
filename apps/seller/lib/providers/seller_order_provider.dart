@@ -9,8 +9,17 @@ import 'package:agrimore_core/agrimore_core.dart';
 enum OrderActionError { generic, alreadyMoved, unpaid }
 
 class SellerOrderProvider extends ChangeNotifier {
-  final FirebaseFirestore _firestore = FirebaseFirestore.instance;
-  final FirebaseFunctions _functions = FirebaseFunctions.instance;
+  SellerOrderProvider();
+
+  /// Test constructor: a fixed order list, no Firebase.
+  @visibleForTesting
+  SellerOrderProvider.preview(List<OrderModel> orders) {
+    _orders = List.of(orders);
+  }
+
+  // Getters, not fields: nothing touches Firebase until it is used.
+  FirebaseFirestore get _firestore => FirebaseFirestore.instance;
+  FirebaseFunctions get _functions => FirebaseFunctions.instance;
 
   List<OrderModel> _orders = [];
   bool _isLoading = false;

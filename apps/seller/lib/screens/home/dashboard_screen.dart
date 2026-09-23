@@ -1,504 +1,304 @@
+import 'dart:async';
+
+import 'package:agrimore_ui/agrimore_ui.dart';
+import 'package:cloud_firestore/cloud_firestore.dart';
+import 'package:cloud_functions/cloud_functions.dart';
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
-import 'package:agrimore_ui/agrimore_ui.dart';
-import '../../providers/seller_auth_provider.dart';
-import '../../providers/seller_product_provider.dart';
-import '../../providers/seller_order_provider.dart';
-import 'package:intl/intl.dart';
-import 'add_product_screen.dart';
-import '../orders/seller_orders_screen.dart';
-import '../products/seller_products_screen.dart';
 
+import '../../l10n/app_localizations.dart';
+import '../../providers/rfq_provider.dart';
+import '../../providers/seller_auth_provider.dart';
+import '../../providers/seller_order_provider.dart';
+import '../../providers/seller_product_provider.dart';
+import '../payments/payments_screen.dart';
+import '../rfq/quote_rules.dart';
+import '../rfq/seller_rfq_inbox_screen.dart';
+import '../shell/seller_shell.dart';
+import 'add_product_screen.dart';
+import 'home_stats.dart';
+import 'widgets/home_widgets.dart';
+
+/// H-01 Command centre (ADR §10.2, SELLER-HOME-1a): what needs the seller
+/// now, how the business is doing against the previous period, and the
+/// next settlement. KPIs come from the server rollup `seller_stats_daily`.
 class DashboardScreen extends StatefulWidget {
-  const DashboardScreen({super.key});
+  const DashboardScreen({super.key, this.stats, this.pendingPayout, this.now});
+
+  /// Injected in tests; otherwise streamed.
+  final Map<String, DayStat>? stats;
+  final double? pendingPayout;
+  final DateTime? now;
 
   @override
   State<DashboardScreen> createState() => _DashboardScreenState();
 }
 
 class _DashboardScreenState extends State<DashboardScreen> {
-  String _statsPeriod = 'today';
+  /// Enough history for a 30-day period and the 30 days before it.
+  static const int _historyDays = 60;
+  static const int _payoutLimit = 200;
+  static const Duration _quoteSoon = Duration(hours: 24);
+
+  KpiPeriod _period = KpiPeriod.today;
+  StreamSubscription<QuerySnapshot<Map<String, dynamic>>>? _statsSub;
+  StreamSubscription<QuerySnapshot<Map<String, dynamic>>>? _payoutSub;
+  Map<String, DayStat> _stats = const {};
+  bool _statsLoaded = false;
+  bool _statsFailed = false;
+  bool _rebuildRequested = false;
+  double? _pendingPayout;
+
+  bool get _injected => widget.stats != null;
 
   @override
   void initState() {
     super.initState();
-    WidgetsBinding.instance.addPostFrameCallback((_) {
-      final auth = context.read<SellerAuthProvider>();
-      if (auth.currentUser != null) {
-        context.read<SellerProductProvider>().loadSellerProducts(auth.currentUser!.uid);
-        context.read<SellerOrderProvider>().loadSellerOrders(auth.currentUser!.uid);
-      }
+    if (_injected) {
+      _stats = widget.stats!;
+      _statsLoaded = true;
+      _pendingPayout = widget.pendingPayout;
+      return;
+    }
+    WidgetsBinding.instance.addPostFrameCallback((_) => _subscribe());
+  }
+
+  void _subscribe() {
+    if (!mounted) return;
+    final uid = context.read<SellerAuthProvider>().currentUser?.uid;
+    if (uid == null) return;
+    context.read<RfqProvider>().loadMyRfqs();
+    final db = FirebaseFirestore.instance;
+    _statsSub = db
+        .collection('seller_stats_daily')
+        .where('sellerId', isEqualTo: uid)
+        .where('day', isGreaterThanOrEqualTo: istDayKeys(DateTime.now(), _historyDays).first)
+        .snapshots()
+        .listen((snap) {
+      if (!mounted) return;
+      setState(() {
+        _stats = {for (final d in snap.docs) (d.data()['day'] ?? '').toString(): DayStat.fromMap(d.data())};
+        _statsLoaded = true;
+        _statsFailed = false;
+      });
+      _maybeRebuild();
+    }, onError: (Object e) {
+      debugPrint('Home stats failed: $e');
+      if (mounted) setState(() => _statsFailed = true);
     });
+    _payoutSub = db
+        .collection('seller_payouts')
+        .where('sellerId', isEqualTo: uid)
+        .orderBy('createdAt', descending: true)
+        .limit(_payoutLimit)
+        .snapshots()
+        .listen((snap) {
+      if (!mounted) return;
+      final entries = snap.docs.map((d) => PayoutEntry.fromMap(d.id, d.data())).toList();
+      setState(() => _pendingPayout = PayoutSummary.of(entries, DateTime.now()).pending);
+    }, onError: (Object e) => debugPrint('Home payouts failed: $e'));
+  }
+
+  /// Orders placed before the rollup existed have no stats yet: recompute
+  /// once, server-side, when the seller has orders but no rollup at all.
+  void _maybeRebuild() {
+    if (_rebuildRequested || _stats.isNotEmpty) return;
+    if (context.read<SellerOrderProvider>().allOrders.isEmpty) return;
+    _rebuildRequested = true;
+    unawaited(FirebaseFunctions.instance
+        .httpsCallable('rebuildMySellerStats')
+        .call<Map<String, dynamic>>()
+        .then((_) {}, onError: (Object e) => debugPrint('rebuildMySellerStats failed: $e')));
+  }
+
+  @override
+  void dispose() {
+    _statsSub?.cancel();
+    _payoutSub?.cancel();
+    super.dispose();
+  }
+
+  String _greeting(AppLocalizations l10n, DateTime now) {
+    final hour = now.toUtc().add(kIstOffset).hour;
+    if (hour < 12) return l10n.homeGreetingMorning;
+    if (hour < 17) return l10n.homeGreetingAfternoon;
+    return l10n.homeGreetingEvening;
+  }
+
+  String? _pct(double? d) => d == null ? null : '${(d.abs() * 100).round()}%';
+
+  List<ActionItem> _actions(BuildContext context, AppLocalizations l10n, DateTime now) {
+    final orders = context.watch<SellerOrderProvider>();
+    final products = context.watch<SellerProductProvider>();
+    final quotes = context.watch<RfqProvider>().myRfqs;
+    final items = <ActionItem>[];
+
+    final waiting = orders.allOrders
+        .where((o) => o.orderStatus == 'pending' || o.orderStatus == 'confirmed')
+        .toList();
+    if (waiting.isNotEmpty) {
+      final oldest = waiting.map((o) => o.createdAt).reduce((a, b) => a.isBefore(b) ? a : b);
+      items.add(ActionItem(
+        icon: AgIcons.orders,
+        label: l10n.homeOrdersToAccept(waiting.length),
+        detail: l10n.homeOldestWaiting(AgFormat.dateTime(oldest)),
+        tone: ActionTone.urgent,
+        onTap: () {
+          orders.setFilter('pending');
+          SellerShell.goToTab(context, SellerTab.orders);
+        },
+      ));
+    }
+
+    final mine = quotes.where((q) => quoteBucketOf(q, now) == QuoteBucket.needsResponse).toList();
+    if (mine.isNotEmpty) {
+      final soon = mine.where((q) {
+        final at = q.lastOffer?.expiresAt;
+        return at != null && at.isAfter(now) && at.difference(now) <= _quoteSoon;
+      }).length;
+      items.add(ActionItem(
+        icon: AgIcons.quote,
+        label: l10n.homeQuotesToAnswer(mine.length),
+        detail: soon > 0 ? l10n.homeQuotesExpiringSoon(soon) : null,
+        tone: soon > 0 ? ActionTone.attention : ActionTone.neutral,
+        onTap: () => Navigator.of(context).push(MaterialPageRoute<void>(builder: (_) => const SellerRfqInboxScreen())),
+      ));
+    }
+
+    final out = products.outOfStockProducts;
+    final low = products.lowStockProducts;
+    if (out + low > 0) {
+      items.add(ActionItem(
+        icon: AgIcons.inventory,
+        label: out > 0 ? l10n.homeOutOfStock(out) : l10n.homeLowStock(low),
+        detail: out > 0 && low > 0 ? l10n.homeLowStock(low) : null,
+        tone: out > 0 ? ActionTone.attention : ActionTone.neutral,
+        onTap: () {
+          products.setFilter(ProductListFilter.outOfStock);
+          SellerShell.goToTab(context, SellerTab.catalogue);
+        },
+      ));
+    }
+    return items;
   }
 
   @override
   Widget build(BuildContext context) {
-    final auth = context.watch<SellerAuthProvider>();
-    final productProvider = context.watch<SellerProductProvider>();
-    final orderProvider = context.watch<SellerOrderProvider>();
-    final theme = Theme.of(context);
-    final isDark = theme.brightness == Brightness.dark;
+    final l10n = AppLocalizations.of(context);
+    final t = context.ws;
+    final text = context.wsText;
+    final now = widget.now ?? DateTime.now();
+    final user = context.watch<SellerAuthProvider>().currentUser;
+    final actions = _actions(context, l10n, now);
+    final kpi = KpiSummary.of(_stats, _period, now);
+    final pending = _pendingPayout;
 
     return Scaffold(
-      backgroundColor: isDark ? const Color(0xFF121212) : const Color(0xFFF5F7FA),
-      appBar: _buildAppBar(auth.currentUser?.name ?? 'Seller'),
-      body: CustomScrollView(
-        slivers: [
-          SliverToBoxAdapter(
-            child: Padding(
-              padding: const EdgeInsets.all(16.0),
-              child: Column(
-                crossAxisAlignment: CrossAxisAlignment.start,
-                children: [
-                  ..._buildSmartAlerts(isDark, productProvider),
-                  _buildPeriodSelector(isDark),
-                  const SizedBox(height: 12),
-                  _buildStatsGrid(orderProvider),
-                  const SizedBox(height: 24),
-                  const Text(
-                    'Quick Actions',
-                    style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold),
-                  ),
-                  const SizedBox(height: 12),
-                  _buildQuickActions(isDark),
-                  const SizedBox(height: 24),
-                  Row(
-                    mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                    children: [
-                      const Text(
-                        'Your Products',
-                        style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold),
-                      ),
-                      TextButton(
-                        onPressed: () {
-                          Navigator.push(
-                            context,
-                            MaterialPageRoute(builder: (_) => const SellerProductsScreen()),
-                          );
-                        },
-                        child: const Text('View All', style: TextStyle(color: Color(0xFF2D7D3C))),
-                      )
-                    ],
-                  ),
-                  const SizedBox(height: 8),
-                ],
-              ),
-            ),
-          ),
-          productProvider.isLoading
-              ? const SliverToBoxAdapter(child: Center(child: CircularProgressIndicator()))
-              : productProvider.products.isEmpty
-                  ? const SliverToBoxAdapter(
-                      child: Padding(
-                        padding: EdgeInsets.all(32.0),
-                        child: Center(
-                          child: Column(
-                            children: [
-                              Icon(Icons.inventory_2_outlined, size: 64, color: Colors.grey),
-                              SizedBox(height: 16),
-                              Text('No products yet. Start adding!', style: TextStyle(color: Colors.grey)),
-                            ],
-                          ),
-                        ),
-                      ),
-                    )
-                  : SliverList(
-                      delegate: SliverChildBuilderDelegate(
-                        (context, index) {
-                          final product = productProvider.products[index];
-                          return _buildProductTile(product, isDark);
-                        },
-                        childCount: productProvider.products.length > 5 ? 5 : productProvider.products.length,
-                      ),
-                    ),
-        ],
+      appBar: AppBar(
+        automaticallyImplyLeading: false,
+        title: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
+          Text(_greeting(l10n, now), style: text.bodySmall!.copyWith(color: t.textSecondary)),
+          Text(user?.name.isNotEmpty == true ? user!.name : l10n.homeTitle,
+              style: text.titleMedium, maxLines: 1, overflow: TextOverflow.ellipsis),
+        ]),
       ),
-      floatingActionButton: FloatingActionButton.extended(
-        onPressed: () {
-          Navigator.push(
-            context,
-            MaterialPageRoute(builder: (_) => const AddProductScreen()),
-          );
-        },
-        backgroundColor: const Color(0xFF2D7D3C),
-        foregroundColor: Colors.white,
-        icon: const Icon(Icons.add),
-        label: const Text('Add Product'),
-      ),
-    );
-  }
-
-  AppBar _buildAppBar(String name) {
-    return AppBar(
-      elevation: 0,
-      backgroundColor: Colors.transparent,
-      title: Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
+      body: ListView(
+        padding: const EdgeInsets.all(WsSpace.page),
         children: [
-          const Text('Welcome back,', style: TextStyle(fontSize: 12, color: Colors.grey)),
-          Text(name, style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 18, color: Color(0xFF2D7D3C))),
-        ],
-      ),
-      actions: [
-        IconButton(
-          icon: const Icon(Icons.notifications_outlined, color: Colors.black87),
-          onPressed: () => _showInfoSheet(
-            'Notifications',
-            'Order alerts, low-stock reminders, and account updates are available from your Orders and Products sections.',
+          HomeSectionHeader(
+            title: l10n.homeNeedsYou,
+            trailing: actions.isEmpty ? null : Text(AgFormat.count(actions.length), style: text.labelLarge),
           ),
-        ),
-        IconButton(
-          icon: const Icon(Icons.logout, color: Colors.black87),
-          onPressed: () => context.read<SellerAuthProvider>().signOut(),
-        ),
-        const SizedBox(width: 8),
-      ],
-    );
-  }
-
-  /// Real low-stock alert (was a hardcoded fictional claim). Empty when
-  /// nothing is actually low on stock -- no banner is shown rather than
-  /// showing a fake "all good" message nobody asked for.
-  List<Widget> _buildSmartAlerts(bool isDark, SellerProductProvider productProvider) {
-    final lowStock = productProvider.allProducts.where((p) => p.stock > 0 && p.stock < 10).toList()
-      ..sort((a, b) => a.stock.compareTo(b.stock));
-    if (lowStock.isEmpty) return const [];
-
-    final product = lowStock.first;
-    final extraCount = lowStock.length - 1;
-    final message = extraCount > 0
-        ? '"${product.name}" has only ${product.stock} left in stock, and $extraCount other product${extraCount == 1 ? '' : 's'} ${extraCount == 1 ? 'is' : 'are'} running low too.'
-        : '"${product.name}" has only ${product.stock} left in stock.';
-
-    return [
-      Container(
-        padding: const EdgeInsets.all(16),
-        decoration: BoxDecoration(
-          gradient: const LinearGradient(
-            colors: [Color(0xFFFFF3E0), Color(0xFFFFE0B2)],
-            begin: Alignment.topLeft,
-            end: Alignment.bottomRight,
+          ActionQueueCard(items: actions),
+          const SizedBox(height: WsSpace.s24),
+          HomeSectionHeader(title: l10n.homePerformance),
+          SegmentedButton<KpiPeriod>(
+            showSelectedIcon: false,
+            segments: [
+              ButtonSegment(value: KpiPeriod.today, label: Text(l10n.periodToday)),
+              ButtonSegment(value: KpiPeriod.days7, label: Text(l10n.period7d)),
+              ButtonSegment(value: KpiPeriod.days30, label: Text(l10n.period30d)),
+            ],
+            selected: {_period},
+            onSelectionChanged: (s) => setState(() => _period = s.first),
           ),
-          borderRadius: BorderRadius.circular(16),
-          boxShadow: [
-            BoxShadow(
-              color: Colors.orange.withOpacity(0.1),
-              blurRadius: 10,
-              offset: const Offset(0, 4),
+          const SizedBox(height: WsSpace.s12),
+          if (_statsFailed)
+            SaInfoBanner(variant: SaBannerVariant.error, message: l10n.homeStatsFailed)
+          else if (!_statsLoaded)
+            const Padding(
+              padding: EdgeInsets.all(WsSpace.s24),
+              child: Center(child: CircularProgressIndicator()),
+            )
+          else ...[
+            KpiCard(
+              label: l10n.kpiSales,
+              value: AgFormat.rupeesWhole(kpi.current.gross),
+              delta: _pct(kpi.grossDelta) == null
+                  ? l10n.kpiNoComparison
+                  : (kpi.grossDelta! >= 0 ? l10n.kpiUpVsPrevious(_pct(kpi.grossDelta)!) : l10n.kpiDownVsPrevious(_pct(kpi.grossDelta)!)),
+              deltaUp: kpi.grossDelta == null ? null : kpi.grossDelta! >= 0,
+              series: kpi.series,
             ),
-          ],
-        ),
-        child: Row(
-          children: [
-            Container(
-              padding: const EdgeInsets.all(10),
-              decoration: const BoxDecoration(
-                color: Colors.orange,
-                shape: BoxShape.circle,
+            const SizedBox(height: WsSpace.s8),
+            Row(crossAxisAlignment: CrossAxisAlignment.start, children: [
+              Expanded(
+                child: KpiCard(
+                  label: l10n.kpiOrders,
+                  value: AgFormat.count(kpi.current.orders),
+                  delta: kpi.previous.orders == 0 && kpi.current.orders == 0
+                      ? null
+                      : kpi.ordersDelta > 0
+                          ? l10n.kpiOrdersMore(kpi.ordersDelta)
+                          : kpi.ordersDelta < 0
+                              ? l10n.kpiOrdersFewer(-kpi.ordersDelta)
+                              : l10n.kpiOrdersSame,
+                  deltaUp: kpi.ordersDelta == 0 ? null : kpi.ordersDelta > 0,
+                ),
               ),
-              child: const Icon(Icons.trending_up, color: Colors.white, size: 20),
+              const SizedBox(width: WsSpace.s8),
+              Expanded(
+                child: KpiCard(
+                  label: l10n.kpiAov,
+                  value: kpi.current.aov == null ? '—' : AgFormat.rupeesWhole(kpi.current.aov!),
+                  delta: _pct(kpi.aovDelta) == null
+                      ? null
+                      : (kpi.aovDelta! >= 0 ? l10n.kpiUpVsPrevious(_pct(kpi.aovDelta)!) : l10n.kpiDownVsPrevious(_pct(kpi.aovDelta)!)),
+                  deltaUp: kpi.aovDelta == null ? null : kpi.aovDelta! >= 0,
+                ),
+              ),
+            ]),
+          ],
+          const SizedBox(height: WsSpace.s24),
+          Card(
+            child: ListTile(
+              onTap: () => SellerShell.goToTab(context, SellerTab.payments),
+              leading: Icon(AgIcons.wallet, color: t.primary),
+              title: Text(l10n.homeNextSettlement, style: text.titleSmall),
+              subtitle: Text(pending == null ? '—' : AgFormat.rupees(pending),
+                  style: text.titleMedium!.copyWith(fontFeatures: WsType.tabularFigures)),
+              trailing: Icon(AgIcons.chevronRight, color: t.textTertiary),
             ),
-            const SizedBox(width: 16),
+          ),
+          const SizedBox(height: WsSpace.s24),
+          HomeSectionHeader(title: l10n.homeQuickActions),
+          Row(children: [
             Expanded(
-              child: Column(
-                crossAxisAlignment: CrossAxisAlignment.start,
-                children: [
-                  const Text(
-                    'Low Stock Alert',
-                    style: TextStyle(fontWeight: FontWeight.bold, color: Colors.orange),
-                  ),
-                  const SizedBox(height: 4),
-                  Text(
-                    message,
-                    style: const TextStyle(fontSize: 13, color: Colors.black87),
-                  ),
-                ],
+              child: FilledButton.icon(
+                onPressed: () => Navigator.of(context).push(MaterialPageRoute<void>(builder: (_) => const AddProductScreen())),
+                icon: const Icon(AgIcons.add),
+                label: Text(l10n.homeAddProduct),
               ),
             ),
-          ],
-        ),
-      ),
-      const SizedBox(height: 24),
-    ];
-  }
-
-  Widget _buildPeriodSelector(bool isDark) {
-    const periods = [
-      {'key': 'today', 'label': 'Today'},
-      {'key': 'week', 'label': 'This Week'},
-      {'key': 'month', 'label': 'This Month'},
-    ];
-    return Row(
-      children: [
-        for (final period in periods)
-          Padding(
-            padding: const EdgeInsets.only(right: 8),
-            child: ChoiceChip(
-              label: Text(period['label'] as String),
-              selected: _statsPeriod == period['key'],
-              onSelected: (_) => setState(() => _statsPeriod = period['key'] as String),
-              selectedColor: const Color(0xFF2D7D3C).withOpacity(0.15),
-              labelStyle: TextStyle(
-                color: _statsPeriod == period['key'] ? const Color(0xFF2D7D3C) : (isDark ? Colors.grey[300] : Colors.black87),
-                fontWeight: _statsPeriod == period['key'] ? FontWeight.bold : FontWeight.normal,
-              ),
-              side: BorderSide(color: _statsPeriod == period['key'] ? const Color(0xFF2D7D3C) : Colors.grey.withOpacity(0.3)),
-              backgroundColor: isDark ? Colors.grey[900] : Colors.white,
-            ),
-          ),
-      ],
-    );
-  }
-
-  Widget _buildStatsGrid(SellerOrderProvider orderProvider) {
-    final double salesAmount;
-    final String salesLabel;
-    switch (_statsPeriod) {
-      case 'week':
-        salesAmount = orderProvider.weekRevenue;
-        salesLabel = 'This Week\'s Sales';
-        break;
-      case 'month':
-        salesAmount = orderProvider.monthRevenue;
-        salesLabel = 'This Month\'s Sales';
-        break;
-      default:
-        salesAmount = orderProvider.todayRevenue;
-        salesLabel = 'Today\'s Sales';
-    }
-
-    return Row(
-      children: [
-        Expanded(
-          child: _buildStatCard(
-            salesLabel,
-            '₹${salesAmount.toStringAsFixed(0)}',
-            'From delivered orders',
-            Icons.currency_rupee,
-            Colors.green,
-          ),
-        ),
-        const SizedBox(width: 16),
-        Expanded(
-          child: _buildStatCard(
-            'Active Orders',
-            '${orderProvider.activeOrderCount}',
-            '${orderProvider.pendingOrders} pending',
-            Icons.shopping_bag_outlined,
-            Colors.blue,
-          ),
-        ),
-      ],
-    );
-  }
-
-  Widget _buildStatCard(String title, String value, String subtitle, IconData icon, Color color) {
-    return Container(
-      padding: const EdgeInsets.all(16),
-      decoration: BoxDecoration(
-        gradient: LinearGradient(
-          colors: [color.withOpacity(0.05), color.withOpacity(0.15)],
-          begin: Alignment.topLeft,
-          end: Alignment.bottomRight,
-        ),
-        borderRadius: BorderRadius.circular(16),
-        border: Border.all(color: color.withOpacity(0.3), width: 1.5),
-        boxShadow: [
-          BoxShadow(
-            color: color.withOpacity(0.1),
-            blurRadius: 10,
-            offset: const Offset(0, 4),
-          ),
-        ],
-      ),
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
-          Row(
-            mainAxisAlignment: MainAxisAlignment.spaceBetween,
-            children: [
-              Container(
-                padding: const EdgeInsets.all(8),
-                decoration: BoxDecoration(
-                  color: Colors.white,
-                  shape: BoxShape.circle,
-                  boxShadow: [
-                    BoxShadow(color: color.withOpacity(0.2), blurRadius: 4, offset: const Offset(0, 2)),
-                  ],
-                ),
-                child: Icon(icon, color: color, size: 24),
-              ),
-              Container(
-                padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
-                decoration: BoxDecoration(
-                  color: Colors.white,
-                  borderRadius: BorderRadius.circular(12),
-                  border: Border.all(color: color.withOpacity(0.5)),
-                ),
-                child: Text(
-                  subtitle,
-                  style: TextStyle(fontSize: 11, color: color, fontWeight: FontWeight.bold),
-                ),
-              ),
-            ],
-          ),
-          const SizedBox(height: 16),
-          Text(value, style: const TextStyle(fontSize: 26, fontWeight: FontWeight.w900, color: Colors.black87)),
-          const SizedBox(height: 4),
-          Text(title, style: const TextStyle(fontSize: 13, color: Colors.black54, fontWeight: FontWeight.w600)),
-        ],
-      ),
-    );
-  }
-
-  Widget _buildQuickActions(bool isDark) {
-    return SingleChildScrollView(
-      scrollDirection: Axis.horizontal,
-      physics: const BouncingScrollPhysics(),
-      child: Row(
-        children: [
-          _buildActionItem('Orders', Icons.receipt_long, const Color(0xFF2D7D3C), () {
-            Navigator.push(context, MaterialPageRoute(builder: (_) => const SellerOrdersScreen()));
-          }),
-          _buildActionItem('Flash Sale', Icons.flash_on, Colors.orange, () {
-            _showInfoSheet('Flash Sale', 'Create a discounted product by editing the MRP and sale price from Products.');
-          }),
-          _buildActionItem('Reviews', Icons.star_rate_rounded, Colors.amber, () {
-            _showInfoSheet('Reviews', 'Customer review summaries appear on delivered order details and product cards.');
-          }),
-          _buildActionItem('Pricing Insights', Icons.insights, Colors.indigo, () {
-            _showInfoSheet('Pricing Insights', 'Use stock, MRP, and sale price from Products to tune your selling price.');
-          }),
-        ],
-      ),
-    );
-  }
-
-  Widget _buildActionItem(String label, IconData icon, Color color, VoidCallback onTap) {
-    return Padding(
-      padding: const EdgeInsets.only(right: 16),
-      child: InkWell(
-        onTap: onTap,
-        borderRadius: BorderRadius.circular(12),
-        child: Column(
-          children: [
-            Container(
-              width: 60,
-              height: 60,
-              decoration: BoxDecoration(
-                color: color.withOpacity(0.1),
-                borderRadius: BorderRadius.circular(16),
-                border: Border.all(color: color.withOpacity(0.2)),
-              ),
-              child: Icon(icon, color: color, size: 28),
-            ),
-            const SizedBox(height: 8),
-            Text(label, style: const TextStyle(fontSize: 12, fontWeight: FontWeight.w500)),
-          ],
-        ),
-      ),
-    );
-  }
-
-  void _showInfoSheet(String title, String message) {
-    showModalBottomSheet(
-      context: context,
-      shape: const RoundedRectangleBorder(
-        borderRadius: BorderRadius.vertical(top: Radius.circular(18)),
-      ),
-      builder: (_) => Padding(
-        padding: const EdgeInsets.all(24),
-        child: Column(
-          mainAxisSize: MainAxisSize.min,
-          crossAxisAlignment: CrossAxisAlignment.start,
-          children: [
-            Text(title, style: const TextStyle(fontSize: 20, fontWeight: FontWeight.bold)),
-            const SizedBox(height: 12),
-            Text(message, style: const TextStyle(height: 1.4)),
-            const SizedBox(height: 20),
-            SizedBox(
-              width: double.infinity,
-              child: FilledButton(
-                onPressed: () => Navigator.pop(context),
-                child: const Text('Done'),
+            const SizedBox(width: WsSpace.s8),
+            Expanded(
+              child: OutlinedButton.icon(
+                onPressed: () => Navigator.of(context).push(MaterialPageRoute<void>(builder: (_) => const SellerRfqInboxScreen())),
+                icon: const Icon(AgIcons.quote),
+                label: Text(l10n.quotesTitle),
               ),
             ),
-          ],
-        ),
-      ),
-    );
-  }
-
-  Widget _buildProductTile(dynamic product, bool isDark) {
-    return Container(
-      margin: const EdgeInsets.symmetric(horizontal: 16, vertical: 6),
-      padding: const EdgeInsets.all(12),
-      decoration: BoxDecoration(
-        color: isDark ? Colors.grey[900] : Colors.white,
-        borderRadius: BorderRadius.circular(12),
-        boxShadow: [
-          BoxShadow(
-            color: Colors.black.withOpacity(0.03),
-            blurRadius: 8,
-            offset: const Offset(0, 2),
-          ),
-        ],
-      ),
-      child: Row(
-        children: [
-          Container(
-            width: 60,
-            height: 60,
-            decoration: BoxDecoration(
-              color: Colors.grey[200],
-              borderRadius: BorderRadius.circular(8),
-              image: product.primaryImage.isNotEmpty
-                  ? DecorationImage(image: NetworkImage(product.primaryImage), fit: BoxFit.cover)
-                  : null,
-            ),
-            child: product.primaryImage.isEmpty ? const Icon(Icons.image, color: Colors.grey) : null,
-          ),
-          const SizedBox(width: 16),
-          Expanded(
-            child: Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                Text(
-                  product.name,
-                  style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 15),
-                  maxLines: 1,
-                  overflow: TextOverflow.ellipsis,
-                ),
-                const SizedBox(height: 4),
-                Text(
-                  '₹${product.salePrice.toStringAsFixed(2)} • Stock: ${product.stock}',
-                  style: const TextStyle(color: Colors.grey, fontSize: 13),
-                ),
-              ],
-            ),
-          ),
-          Column(
-            crossAxisAlignment: CrossAxisAlignment.end,
-            children: [
-              Container(
-                padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
-                decoration: BoxDecoration(
-                  color: product.isVerified ? Colors.green.withOpacity(0.1) : Colors.orange.withOpacity(0.1),
-                  borderRadius: BorderRadius.circular(6),
-                ),
-                child: Text(
-                  product.isVerified ? 'Live' : 'Pending',
-                  style: TextStyle(
-                    fontSize: 10,
-                    fontWeight: FontWeight.bold,
-                    color: product.isVerified ? Colors.green : Colors.orange,
-                  ),
-                ),
-              ),
-              const SizedBox(height: 8),
-              const Icon(Icons.chevron_right, color: Colors.grey),
-            ],
-          ),
+          ]),
         ],
       ),
     );

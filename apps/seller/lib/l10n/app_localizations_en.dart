@@ -1098,4 +1098,158 @@ class AppLocalizationsEn extends AppLocalizations {
   String quoteHistoryHeader(String who, String action) {
     return '$who · $action';
   }
+
+  @override
+  String get homeTitle => 'Home';
+
+  @override
+  String get homeGreetingMorning => 'Good morning';
+
+  @override
+  String get homeGreetingAfternoon => 'Good afternoon';
+
+  @override
+  String get homeGreetingEvening => 'Good evening';
+
+  @override
+  String get homeNeedsYou => 'Needs you now';
+
+  @override
+  String get homeAllCaughtUp => 'You\'re all caught up';
+
+  @override
+  String get homeAllCaughtUpBody =>
+      'New orders, quotes and stock alerts will show up here.';
+
+  @override
+  String homeOrdersToAccept(int count) {
+    String _temp0 = intl.Intl.pluralLogic(
+      count,
+      locale: localeName,
+      other: '$count orders to accept',
+      one: '1 order to accept',
+    );
+    return '$_temp0';
+  }
+
+  @override
+  String homeOldestWaiting(String time) {
+    return 'Oldest placed $time';
+  }
+
+  @override
+  String homeQuotesToAnswer(int count) {
+    String _temp0 = intl.Intl.pluralLogic(
+      count,
+      locale: localeName,
+      other: '$count quotes to answer',
+      one: '1 quote to answer',
+    );
+    return '$_temp0';
+  }
+
+  @override
+  String homeQuotesExpiringSoon(int count) {
+    String _temp0 = intl.Intl.pluralLogic(
+      count,
+      locale: localeName,
+      other: '$count expire within a day',
+      one: '1 expires within a day',
+    );
+    return '$_temp0';
+  }
+
+  @override
+  String homeOutOfStock(int count) {
+    String _temp0 = intl.Intl.pluralLogic(
+      count,
+      locale: localeName,
+      other: '$count products out of stock',
+      one: '1 product out of stock',
+    );
+    return '$_temp0';
+  }
+
+  @override
+  String homeLowStock(int count) {
+    String _temp0 = intl.Intl.pluralLogic(
+      count,
+      locale: localeName,
+      other: '$count products low on stock',
+      one: '1 product low on stock',
+    );
+    return '$_temp0';
+  }
+
+  @override
+  String get homePerformance => 'Performance';
+
+  @override
+  String get periodToday => 'Today';
+
+  @override
+  String get period7d => '7 days';
+
+  @override
+  String get period30d => '30 days';
+
+  @override
+  String get homeStatsFailed =>
+      'Couldn\'t load your numbers. Check your connection and reopen Home.';
+
+  @override
+  String get kpiSales => 'Sales';
+
+  @override
+  String get kpiOrders => 'Orders';
+
+  @override
+  String get kpiAov => 'Avg. order';
+
+  @override
+  String kpiUpVsPrevious(String pct) {
+    return '$pct up on the previous period';
+  }
+
+  @override
+  String kpiDownVsPrevious(String pct) {
+    return '$pct down on the previous period';
+  }
+
+  @override
+  String get kpiNoComparison => 'Nothing to compare with yet';
+
+  @override
+  String get homeNextSettlement => 'To be paid to you';
+
+  @override
+  String get homeQuickActions => 'Quick actions';
+
+  @override
+  String get homeAddProduct => 'Add product';
+
+  @override
+  String kpiOrdersMore(int count) {
+    String _temp0 = intl.Intl.pluralLogic(
+      count,
+      locale: localeName,
+      other: '$count more than before',
+      one: '1 more than before',
+    );
+    return '$_temp0';
+  }
+
+  @override
+  String kpiOrdersFewer(int count) {
+    String _temp0 = intl.Intl.pluralLogic(
+      count,
+      locale: localeName,
+      other: '$count fewer than before',
+      one: '1 fewer than before',
+    );
+    return '$_temp0';
+  }
+
+  @override
+  String get kpiOrdersSame => 'Same as before';
 }

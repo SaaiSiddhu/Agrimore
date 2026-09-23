@@ -457,6 +457,20 @@
             ]
         },
         {
+            "collectionGroup": "seller_stats_daily",
+            "queryScope": "COLLECTION",
+            "fields": [
+                {
+                    "fieldPath": "sellerId",
+                    "order": "ASCENDING"
+                },
+                {
+                    "fieldPath": "day",
+                    "order": "ASCENDING"
+                }
+            ]
+        },
+        {
             "collectionGroup": "seller_payouts",
             "queryScope": "COLLECTION",
             "fields": [
