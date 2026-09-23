@@ -54,7 +54,7 @@ class _LoginScreenState extends State<LoginScreen> {
   bool _isResending = false;
   bool _isRequestingVoice = false;
   String? _otpErrorMessage;
-  String? _activeMockOtp;
+  String? _activeTestOtp;
   String _channel = 'sms';
   // The phone number the current/last OTP was sent to — set once
   // sendPhoneOTP succeeds, replacing the old OtpVerificationScreen's
@@ -171,7 +171,7 @@ class _LoginScreenState extends State<LoginScreen> {
     }
 
     _pendingPhone = phone;
-    _enterOtpState(result.channel, autofillOtp: result.mockOtp);
+    _enterOtpState(result.channel, autofillOtp: result.testOtp);
   }
 
   void _enterOtpState(String channel, {String? autofillOtp}) {
@@ -180,7 +180,7 @@ class _LoginScreenState extends State<LoginScreen> {
     }
     setState(() {
       _channel = channel;
-      _activeMockOtp = autofillOtp;
+      _activeTestOtp = autofillOtp;
       _otpErrorMessage = null;
       _sheetState = _AuthSheetState.otpEntry;
     });
@@ -297,7 +297,7 @@ class _LoginScreenState extends State<LoginScreen> {
     _resendTimer?.cancel();
     setState(() {
       _sheetState = _AuthSheetState.phoneEntry;
-      _activeMockOtp = null;
+      _activeTestOtp = null;
       _otpErrorMessage = null;
     });
     WidgetsBinding.instance.addPostFrameCallback((_) {
@@ -437,14 +437,14 @@ class _LoginScreenState extends State<LoginScreen> {
     if (result != null) {
       setState(() {
         _channel = result.channel;
-        _activeMockOtp = result.mockOtp;
+        _activeTestOtp = result.testOtp;
       });
       for (final c in _otpControllers) {
         c.clear();
       }
-      if (result.mockOtp != null && result.mockOtp!.length == _kOtpLength) {
+      if (result.testOtp != null && result.testOtp!.length == _kOtpLength) {
         for (int i = 0; i < _kOtpLength; i++) {
-          _otpControllers[i].text = result.mockOtp![i];
+          _otpControllers[i].text = result.testOtp![i];
         }
         WidgetsBinding.instance.addPostFrameCallback((_) {
           if (!mounted) return;
@@ -863,7 +863,7 @@ class _LoginScreenState extends State<LoginScreen> {
           ),
           textAlign: TextAlign.center,
         ),
-        if (_activeMockOtp != null) ...[
+        if (_activeTestOtp != null) ...[
           const SizedBox(height: 8),
           Container(
             padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 4),
@@ -872,7 +872,7 @@ class _LoginScreenState extends State<LoginScreen> {
               borderRadius: BorderRadius.circular(8),
             ),
             child: Text(
-              'Mock OTP: $_activeMockOtp (Autofilled)',
+              'Test mode code: $_activeTestOtp (autofilled)',
               style: const TextStyle(
                 fontSize: 12,
                 fontWeight: FontWeight.w600,
