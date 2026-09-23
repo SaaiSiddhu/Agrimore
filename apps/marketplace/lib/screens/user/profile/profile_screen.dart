@@ -64,7 +64,7 @@ import '../../../providers/seller_provider.dart';
 import '../../../providers/market_mode_provider.dart';
 import '../../../providers/wallet_provider.dart';
 
-const _kAppVersion = '1.0.9'; // mirrors pubspec.yaml's version: line
+const _kAppVersion = '1.0.10'; // mirrors pubspec.yaml's version: line
 
 class ProfileScreen extends StatefulWidget {
   // Non-null when embedded as MainScreen's Profile tab (see

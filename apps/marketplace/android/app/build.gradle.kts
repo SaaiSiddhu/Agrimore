@@ -244,3 +244,8 @@ dependencies {
 // APPLY GOOGLE SERVICES PLUGIN
 // ========================================
 apply(plugin = "com.google.gms.google-services")
+
+// Disable automated network upload of Crashlytics mapping files during build
+tasks.matching { it.name.contains("uploadCrashlytics") }.configureEach {
+    enabled = false
+}
