@@ -1806,4 +1806,130 @@ class AppLocalizationsEn extends AppLocalizations {
 
   @override
   String get accountSave => 'Save';
+
+  @override
+  String get stageToAccept => 'To accept';
+
+  @override
+  String get stagePacking => 'Packing';
+
+  @override
+  String get stageReady => 'Ready for pickup';
+
+  @override
+  String get stageOutForDelivery => 'Out for delivery';
+
+  @override
+  String get stageDelivered => 'Delivered';
+
+  @override
+  String get stageCancelled => 'Cancelled';
+
+  @override
+  String get stageOther => 'Other';
+
+  @override
+  String get ordersSearchHint => 'Order number, customer or product';
+
+  @override
+  String get ordersLoadFailed =>
+      'Couldn\'t load your orders. Check your connection and try again.';
+
+  @override
+  String get ordersEmpty =>
+      'No orders yet. New orders appear here the moment a buyer places them.';
+
+  @override
+  String get ordersNoneMatch => 'No orders match.';
+
+  @override
+  String get ordersCustomer => 'Customer';
+
+  @override
+  String ordersItems(int count) {
+    String _temp0 = intl.Intl.pluralLogic(
+      count,
+      locale: localeName,
+      other: '$count items',
+      one: '1 item',
+    );
+    return '$_temp0';
+  }
+
+  @override
+  String get ordersPrepaid => 'Prepaid';
+
+  @override
+  String get ordersCod => 'Cash on delivery';
+
+  @override
+  String get stageToPack => 'To pack';
+
+  @override
+  String get stepPlaced => 'Placed';
+
+  @override
+  String get stepAccepted => 'Accepted';
+
+  @override
+  String get stepPacking => 'Packing';
+
+  @override
+  String get stepReady => 'Ready for pickup';
+
+  @override
+  String get orderCall => 'Call customer';
+
+  @override
+  String get orderChat => 'Message customer';
+
+  @override
+  String get orderCustomer => 'Customer';
+
+  @override
+  String get orderName => 'Name';
+
+  @override
+  String get orderAddress => 'Deliver to';
+
+  @override
+  String get orderNoAddress => 'No address provided';
+
+  @override
+  String get orderSlot => 'Delivery slot';
+
+  @override
+  String get orderNote => 'Buyer\'s note';
+
+  @override
+  String get orderPayment => 'Payment';
+
+  @override
+  String get orderTax => 'Tax';
+
+  @override
+  String get orderReject => 'Reject';
+
+  @override
+  String get orderCancel => 'Cancel order';
+
+  @override
+  String get orderAccept => 'Accept order';
+
+  @override
+  String get orderStartPacking => 'Start packing';
+
+  @override
+  String get orderMarkReady => 'Mark ready for pickup';
+
+  @override
+  String homeOrdersToPack(int count) {
+    String _temp0 = intl.Intl.pluralLogic(
+      count,
+      locale: localeName,
+      other: '$count accepted orders to pack',
+      one: '1 accepted order to pack',
+    );
+    return '$_temp0';
+  }
 }

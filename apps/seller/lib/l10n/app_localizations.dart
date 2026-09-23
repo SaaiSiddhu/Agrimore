@@ -3141,6 +3141,222 @@ abstract class AppLocalizations {
   /// In en, this message translates to:
   /// **'Save'**
   String get accountSave;
+
+  /// No description provided for @stageToAccept.
+  ///
+  /// In en, this message translates to:
+  /// **'To accept'**
+  String get stageToAccept;
+
+  /// No description provided for @stagePacking.
+  ///
+  /// In en, this message translates to:
+  /// **'Packing'**
+  String get stagePacking;
+
+  /// No description provided for @stageReady.
+  ///
+  /// In en, this message translates to:
+  /// **'Ready for pickup'**
+  String get stageReady;
+
+  /// No description provided for @stageOutForDelivery.
+  ///
+  /// In en, this message translates to:
+  /// **'Out for delivery'**
+  String get stageOutForDelivery;
+
+  /// No description provided for @stageDelivered.
+  ///
+  /// In en, this message translates to:
+  /// **'Delivered'**
+  String get stageDelivered;
+
+  /// No description provided for @stageCancelled.
+  ///
+  /// In en, this message translates to:
+  /// **'Cancelled'**
+  String get stageCancelled;
+
+  /// No description provided for @stageOther.
+  ///
+  /// In en, this message translates to:
+  /// **'Other'**
+  String get stageOther;
+
+  /// No description provided for @ordersSearchHint.
+  ///
+  /// In en, this message translates to:
+  /// **'Order number, customer or product'**
+  String get ordersSearchHint;
+
+  /// No description provided for @ordersLoadFailed.
+  ///
+  /// In en, this message translates to:
+  /// **'Couldn\'t load your orders. Check your connection and try again.'**
+  String get ordersLoadFailed;
+
+  /// No description provided for @ordersEmpty.
+  ///
+  /// In en, this message translates to:
+  /// **'No orders yet. New orders appear here the moment a buyer places them.'**
+  String get ordersEmpty;
+
+  /// No description provided for @ordersNoneMatch.
+  ///
+  /// In en, this message translates to:
+  /// **'No orders match.'**
+  String get ordersNoneMatch;
+
+  /// No description provided for @ordersCustomer.
+  ///
+  /// In en, this message translates to:
+  /// **'Customer'**
+  String get ordersCustomer;
+
+  /// No description provided for @ordersItems.
+  ///
+  /// In en, this message translates to:
+  /// **'{count, plural, =1{1 item} other{{count} items}}'**
+  String ordersItems(int count);
+
+  /// No description provided for @ordersPrepaid.
+  ///
+  /// In en, this message translates to:
+  /// **'Prepaid'**
+  String get ordersPrepaid;
+
+  /// No description provided for @ordersCod.
+  ///
+  /// In en, this message translates to:
+  /// **'Cash on delivery'**
+  String get ordersCod;
+
+  /// No description provided for @stageToPack.
+  ///
+  /// In en, this message translates to:
+  /// **'To pack'**
+  String get stageToPack;
+
+  /// No description provided for @stepPlaced.
+  ///
+  /// In en, this message translates to:
+  /// **'Placed'**
+  String get stepPlaced;
+
+  /// No description provided for @stepAccepted.
+  ///
+  /// In en, this message translates to:
+  /// **'Accepted'**
+  String get stepAccepted;
+
+  /// No description provided for @stepPacking.
+  ///
+  /// In en, this message translates to:
+  /// **'Packing'**
+  String get stepPacking;
+
+  /// No description provided for @stepReady.
+  ///
+  /// In en, this message translates to:
+  /// **'Ready for pickup'**
+  String get stepReady;
+
+  /// No description provided for @orderCall.
+  ///
+  /// In en, this message translates to:
+  /// **'Call customer'**
+  String get orderCall;
+
+  /// No description provided for @orderChat.
+  ///
+  /// In en, this message translates to:
+  /// **'Message customer'**
+  String get orderChat;
+
+  /// No description provided for @orderCustomer.
+  ///
+  /// In en, this message translates to:
+  /// **'Customer'**
+  String get orderCustomer;
+
+  /// No description provided for @orderName.
+  ///
+  /// In en, this message translates to:
+  /// **'Name'**
+  String get orderName;
+
+  /// No description provided for @orderAddress.
+  ///
+  /// In en, this message translates to:
+  /// **'Deliver to'**
+  String get orderAddress;
+
+  /// No description provided for @orderNoAddress.
+  ///
+  /// In en, this message translates to:
+  /// **'No address provided'**
+  String get orderNoAddress;
+
+  /// No description provided for @orderSlot.
+  ///
+  /// In en, this message translates to:
+  /// **'Delivery slot'**
+  String get orderSlot;
+
+  /// No description provided for @orderNote.
+  ///
+  /// In en, this message translates to:
+  /// **'Buyer\'s note'**
+  String get orderNote;
+
+  /// No description provided for @orderPayment.
+  ///
+  /// In en, this message translates to:
+  /// **'Payment'**
+  String get orderPayment;
+
+  /// No description provided for @orderTax.
+  ///
+  /// In en, this message translates to:
+  /// **'Tax'**
+  String get orderTax;
+
+  /// No description provided for @orderReject.
+  ///
+  /// In en, this message translates to:
+  /// **'Reject'**
+  String get orderReject;
+
+  /// No description provided for @orderCancel.
+  ///
+  /// In en, this message translates to:
+  /// **'Cancel order'**
+  String get orderCancel;
+
+  /// No description provided for @orderAccept.
+  ///
+  /// In en, this message translates to:
+  /// **'Accept order'**
+  String get orderAccept;
+
+  /// No description provided for @orderStartPacking.
+  ///
+  /// In en, this message translates to:
+  /// **'Start packing'**
+  String get orderStartPacking;
+
+  /// No description provided for @orderMarkReady.
+  ///
+  /// In en, this message translates to:
+  /// **'Mark ready for pickup'**
+  String get orderMarkReady;
+
+  /// No description provided for @homeOrdersToPack.
+  ///
+  /// In en, this message translates to:
+  /// **'{count, plural, =1{1 accepted order to pack} other{{count} accepted orders to pack}}'**
+  String homeOrdersToPack(int count);
 }
 
 class _AppLocalizationsDelegate
