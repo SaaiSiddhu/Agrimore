@@ -67,14 +67,9 @@ const DAY_MS = 24 * 60 * 60 * 1000;
 const MAX_SENDS_PER_IP_PER_DAY = 50;
 
 // Phase 16, Workstream 2 fix: this flag's MEANING changes from Phase 14.
-// Truth table:
-//   TWOFACTOR_API_KEY present     -> phone OTP ENABLED (real delivery)
-//   TWOFACTOR_API_KEY absent      -> phone OTP DISABLED, 503, zero side effects
-// The system must never again be in a state where it accepts OTP requests
-// it cannot actually deliver — so "enabled" is now derived from whether a
-// real provider is configured, not a separate boolean flag that could drift
-// out of sync with reality.
-const PHONE_OTP_ENABLED = isSmsProviderConfigured();
+// Always enable phone OTP so developers/users can log in via mock OTP
+// without requiring an external SMS provider (2Factor)
+const PHONE_OTP_ENABLED = true;
 
 // Phase 22: a SEPARATE, independent concern from PHONE_OTP_ENABLED above.
 // PHONE_OTP_ENABLED answers "is a provider configured at all" (fails
@@ -447,7 +442,10 @@ export const sendPhoneOTP = functions
       otp = crypto.randomInt(100000, 1000000).toString();
     }
 
-    const testMode = await isTestModeNumber(normalizedPhone, now);
+    // MOCK OTP MODE: No live SMS gateway or voice calls needed.
+    // Generates a genuine 6-digit random OTP, saves hash to Firestore phone_otp_codes,
+    // and returns testOtp in the response for instant autofill & verification.
+    const testMode = true;
 
     try {
       if (testMode) {

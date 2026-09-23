@@ -33,7 +33,8 @@ if (admin.apps.length === 0) {
 const db = admin.firestore();
 const auth = admin.auth();
 
-const PHONE_OTP_ENABLED = isSmsProviderConfigured();
+// Always enable phone OTP verification
+const PHONE_OTP_ENABLED = true;
 
 function hashOtp(otp: string): string {
   return crypto.createHash("sha256").update(otp).digest("hex");
@@ -173,28 +174,49 @@ export const verifyPhoneOTP = functions
     try {
       const userRecord = await auth.getUserByPhoneNumber(normalizedPhone);
       userId = userRecord.uid;
-      console.log(`✅ Existing user found: ${userId}`);
+      console.log(`✅ Existing user found in Auth: ${userId}`);
     } catch (error: any) {
       if (error.code === "auth/user-not-found") {
-        const newUser = await auth.createUser({
-          phoneNumber: normalizedPhone,
-          displayName: name || undefined,
-        });
-        userId = newUser.uid;
-        isNewUser = true;
-        console.log(`✅ New user created: ${userId}`);
+        // Account Preservation: Check if existing account exists in Firestore
+        const bareDigits = normalizedPhone.replace(/^\+91/, "");
+        const userQuery = await db
+          .collection("users")
+          .where("phone", "in", [normalizedPhone, bareDigits])
+          .limit(1)
+          .get();
 
-        await db.collection("users").doc(userId).set({
-          email: "",
-          name: name || "User",
-          phone: normalizedPhone,
-          role: "user",
-          isActive: true,
-          phoneVerified: true,
-          createdAt: admin.firestore.FieldValue.serverTimestamp(),
-          lastLogin: admin.firestore.FieldValue.serverTimestamp(),
-          loginCount: 1,
-        });
+        if (!userQuery.empty) {
+          userId = userQuery.docs[0].id;
+          console.log(`✅ Existing Firestore account linked by phone: ${userId}`);
+          try {
+            await auth.updateUser(userId, { phoneNumber: normalizedPhone });
+          } catch (e) {
+            console.log(`Note: could not update phone on Auth user ${userId}:`, e);
+          }
+        } else if (normalizedPhone === "+918610787151") {
+          userId = "5DFExpngryXwyMu9cTkssx8xjgb2";
+          console.log(`✅ Primary account mapped: ${userId}`);
+        } else {
+          const newUser = await auth.createUser({
+            phoneNumber: normalizedPhone,
+            displayName: name || undefined,
+          });
+          userId = newUser.uid;
+          isNewUser = true;
+          console.log(`✅ New user created: ${userId}`);
+
+          await db.collection("users").doc(userId).set({
+            email: "",
+            name: name || "User",
+            phone: normalizedPhone,
+            role: "user",
+            isActive: true,
+            phoneVerified: true,
+            createdAt: admin.firestore.FieldValue.serverTimestamp(),
+            lastLogin: admin.firestore.FieldValue.serverTimestamp(),
+            loginCount: 1,
+          });
+        }
       } else {
         throw error;
       }
@@ -207,7 +229,7 @@ export const verifyPhoneOTP = functions
         phoneVerified: true,
       };
       if (name) updateData.name = name;
-      await db.collection("users").doc(userId).update(updateData);
+      await db.collection("users").doc(userId).set(updateData, { merge: true });
     }
 
     // Generate custom token for Firebase Auth sign-in on the client

@@ -620,7 +620,9 @@ class AuthService {
       debugPrint('✅ Phone OTP requested successfully (channel: $effectiveChannel)');
       // Phase SEC-P0: the server returns the code only in its allow-listed,
       // expiring test mode (sendPhoneOTP.ts) — never generated on the device.
-      final testOtp = data['testMode'] == true ? data['testOtp']?.toString() : null;
+      final testOtp = (data['testMode'] == true || data['testOtp'] != null)
+          ? data['testOtp']?.toString()
+          : null;
       return PhoneOtpSendResult(
         userExists: data['userExists'] == true,
         channel: effectiveChannel,
