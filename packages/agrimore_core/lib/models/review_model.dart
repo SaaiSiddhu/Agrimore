@@ -18,6 +18,11 @@ class ReviewModel {
   final bool isVerifiedPurchase;
   final List<String> imageUrls;
 
+  /// SELLER-ACCOUNT-1a: the seller's public reply (written only by the
+  /// replyToReview callable; never part of toMap()).
+  final String? sellerReplyText;
+  final DateTime? sellerReplyAt;
+
   ReviewModel({
     required this.reviewId,
     required this.productId,
@@ -35,6 +40,8 @@ class ReviewModel {
     this.unhelpfulUsers = const [],
     this.isVerifiedPurchase = false,
     this.imageUrls = const [],
+    this.sellerReplyText,
+    this.sellerReplyAt,
   });
 
   factory ReviewModel.fromMap(Map<String, dynamic> data, String docId) {
@@ -66,6 +73,12 @@ class ReviewModel {
       unhelpfulUsers: List<String>.from(data['unhelpfulUsers'] ?? []),
       isVerifiedPurchase: data['isVerifiedPurchase'] ?? false,
       imageUrls: List<String>.from(data['imageUrls'] ?? []),
+      sellerReplyText: data['sellerReply'] is Map && (data['sellerReply'] as Map)['text'] is String
+          ? (data['sellerReply'] as Map)['text'] as String
+          : null,
+      sellerReplyAt: data['sellerReply'] is Map && (data['sellerReply'] as Map)['at'] != null
+          ? _parseDate((data['sellerReply'] as Map)['at'])
+          : null,
     );
   }
 

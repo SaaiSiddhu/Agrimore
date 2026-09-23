@@ -169,6 +169,7 @@ export { sellerTransitionOrder } from "./seller/sellerTransitionOrder";
 export { issueSellerInvoice } from "./seller/sellerInvoice";
 export { rollupSellerStats, rebuildMySellerStats } from "./seller/sellerStats";
 export { notifySellerPayoutPaid } from "./seller/payoutNotifications";
+export { onProductReviewWrite, replyToReview } from "./seller/reviews";
 
 // ============================================
 // B2B RFQ & NEGOTIATION (Phase RFQ-1)

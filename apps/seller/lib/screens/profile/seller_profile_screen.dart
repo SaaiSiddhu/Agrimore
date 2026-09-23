@@ -11,7 +11,9 @@ import '../rfq/seller_rfq_inbox_screen.dart';
 import '../ai/seller_ai_chat_screen.dart';
 import 'delivery_fee_sheet.dart';
 import 'seller_ai_integration_screen.dart';
+import '../onboarding/application_rules.dart';
 import '../storefront/storefront_editor_screen.dart';
+import '../reviews/reviews_screen.dart';
 import '../../l10n/app_localizations.dart';
 
 class SellerProfileScreen extends StatefulWidget {
@@ -308,6 +310,14 @@ class _SellerProfileScreenState extends State<SellerProfileScreen> {
               );
             }),
             _buildDivider(isDark),
+            _buildMenuItem(AgIcons.star, AppLocalizations.of(context).reviewsMenu,
+                AppLocalizations.of(context).reviewsMenuSubtitle, isDark, () {
+              Navigator.push(
+                context,
+                MaterialPageRoute(builder: (_) => const SellerReviewsScreen()),
+              );
+            }),
+            _buildDivider(isDark),
             _buildMenuItem(Icons.request_quote_outlined, 'Quote Requests',
                 'Respond to bulk quote requests', isDark, () {
               Navigator.push(
@@ -538,8 +548,10 @@ class _SellerProfileScreenState extends State<SellerProfileScreen> {
         text: _sellerData?['businessName'] ?? _sellerData?['name'] ?? '');
     final phoneController =
         TextEditingController(text: _sellerData?['phone'] ?? '');
-    final gstController =
-        TextEditingController(text: _sellerData?['gstNumber'] ?? '');
+    // SELLER-ACCOUNT-1a: `gstin` is canonical (approval + invoices);
+    // `gstNumber` is the legacy key this dialog used to write.
+    final gstController = TextEditingController(
+        text: _sellerData?['gstin'] ?? _sellerData?['gstNumber'] ?? '');
     final cityController =
         TextEditingController(text: _sellerData?['city'] ?? '');
     final stateController =
@@ -636,6 +648,14 @@ class _SellerProfileScreenState extends State<SellerProfileScreen> {
                     final uid =
                         context.read<SellerAuthProvider>().currentUser?.uid;
                     if (uid == null) return;
+                    final l10n = AppLocalizations.of(context);
+                    final gst = gstController.text.trim().toUpperCase();
+                    String? problem;
+                    if (gst.isNotEmpty && !ApplicationRules.gstin.hasMatch(gst)) {
+                      problem = l10n.errGstin;
+                    }
+                    if (problem == null) {
+                    try {
 
                     await FirebaseFirestore.instance
                         .collection('sellers')
@@ -643,7 +663,9 @@ class _SellerProfileScreenState extends State<SellerProfileScreen> {
                         .set({
                       'businessName': nameController.text.trim(),
                       'phone': phoneController.text.trim(),
-                      'gstNumber': gstController.text.trim(),
+                      // Both keys, so every reader sees the edit.
+                      'gstin': gst,
+                      'gstNumber': gst,
                       'city': cityController.text.trim(),
                       'state': stateController.text.trim(),
                       'openingTime': openingTimeController.text.trim(),
@@ -660,14 +682,21 @@ class _SellerProfileScreenState extends State<SellerProfileScreen> {
                         .update({
                       'name': nameController.text.trim(),
                     });
+                    } catch (e) {
+                      debugPrint('Profile save failed: $e');
+                      problem = l10n.profileSaveFailed;
+                    }
+                    }
 
                     if (mounted) {
-                      Navigator.pop(ctx);
-                      _loadSellerProfile();
+                      if (problem == null) {
+                        Navigator.pop(ctx);
+                        _loadSellerProfile();
+                      }
                       ScaffoldMessenger.of(context).showSnackBar(
-                        const SnackBar(
-                            content: Text('Profile updated!'),
-                            backgroundColor: Colors.green),
+                        SnackBar(
+                            content: Text(problem ?? 'Profile updated!'),
+                            backgroundColor: problem == null ? Colors.green : null),
                       );
                     }
                   },

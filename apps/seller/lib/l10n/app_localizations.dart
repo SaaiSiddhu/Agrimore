@@ -2487,6 +2487,162 @@ abstract class AppLocalizations {
   /// In en, this message translates to:
   /// **'Save storefront'**
   String get storefrontSave;
+
+  /// No description provided for @profileSaveFailed.
+  ///
+  /// In en, this message translates to:
+  /// **'Couldn\'t save your profile. Check your connection and try again.'**
+  String get profileSaveFailed;
+
+  /// No description provided for @reviewsTitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Reviews'**
+  String get reviewsTitle;
+
+  /// No description provided for @reviewsMenu.
+  ///
+  /// In en, this message translates to:
+  /// **'Reviews'**
+  String get reviewsMenu;
+
+  /// No description provided for @reviewsMenuSubtitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Ratings and replies'**
+  String get reviewsMenuSubtitle;
+
+  /// No description provided for @reviewsLoadFailed.
+  ///
+  /// In en, this message translates to:
+  /// **'Couldn\'t load your reviews. Check your connection and open this screen again.'**
+  String get reviewsLoadFailed;
+
+  /// No description provided for @reviewsCount.
+  ///
+  /// In en, this message translates to:
+  /// **'{count, plural, =0{No reviews yet} =1{1 review} other{{count} reviews}}'**
+  String reviewsCount(int count);
+
+  /// No description provided for @reviewsBarLabel.
+  ///
+  /// In en, this message translates to:
+  /// **'{stars} stars: {count}'**
+  String reviewsBarLabel(int stars, int count);
+
+  /// No description provided for @reviewsRatingLabel.
+  ///
+  /// In en, this message translates to:
+  /// **'Rated {stars} out of 5'**
+  String reviewsRatingLabel(int stars);
+
+  /// No description provided for @reviewsAll.
+  ///
+  /// In en, this message translates to:
+  /// **'All'**
+  String get reviewsAll;
+
+  /// No description provided for @reviewsUnanswered.
+  ///
+  /// In en, this message translates to:
+  /// **'Unanswered · {count}'**
+  String reviewsUnanswered(int count);
+
+  /// No description provided for @reviewsStars.
+  ///
+  /// In en, this message translates to:
+  /// **'{stars}★'**
+  String reviewsStars(int stars);
+
+  /// No description provided for @reviewsEmpty.
+  ///
+  /// In en, this message translates to:
+  /// **'No reviews yet. Buyers can review a product after it is delivered.'**
+  String get reviewsEmpty;
+
+  /// No description provided for @reviewsNoneMatch.
+  ///
+  /// In en, this message translates to:
+  /// **'No reviews match this filter.'**
+  String get reviewsNoneMatch;
+
+  /// No description provided for @reviewsAnonymous.
+  ///
+  /// In en, this message translates to:
+  /// **'A buyer'**
+  String get reviewsAnonymous;
+
+  /// No description provided for @reviewsByLine.
+  ///
+  /// In en, this message translates to:
+  /// **'{name} · {date}'**
+  String reviewsByLine(String name, String date);
+
+  /// No description provided for @reviewsVerified.
+  ///
+  /// In en, this message translates to:
+  /// **'Verified purchase'**
+  String get reviewsVerified;
+
+  /// No description provided for @reviewsYourReply.
+  ///
+  /// In en, this message translates to:
+  /// **'Your reply'**
+  String get reviewsYourReply;
+
+  /// No description provided for @reviewsReply.
+  ///
+  /// In en, this message translates to:
+  /// **'Reply'**
+  String get reviewsReply;
+
+  /// No description provided for @reviewsEditReply.
+  ///
+  /// In en, this message translates to:
+  /// **'Edit reply'**
+  String get reviewsEditReply;
+
+  /// No description provided for @reviewsReplyTitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Reply publicly'**
+  String get reviewsReplyTitle;
+
+  /// No description provided for @reviewsReplyHint.
+  ///
+  /// In en, this message translates to:
+  /// **'Buyers see your reply under the review. You can edit it for 24 hours.'**
+  String get reviewsReplyHint;
+
+  /// No description provided for @reviewsReplyLabel.
+  ///
+  /// In en, this message translates to:
+  /// **'Your reply'**
+  String get reviewsReplyLabel;
+
+  /// No description provided for @reviewsReplySend.
+  ///
+  /// In en, this message translates to:
+  /// **'Post reply'**
+  String get reviewsReplySend;
+
+  /// No description provided for @reviewReplySent.
+  ///
+  /// In en, this message translates to:
+  /// **'Reply posted'**
+  String get reviewReplySent;
+
+  /// No description provided for @reviewReplyLocked.
+  ///
+  /// In en, this message translates to:
+  /// **'This reply can no longer be edited — replies can be changed for 24 hours.'**
+  String get reviewReplyLocked;
+
+  /// No description provided for @reviewReplyFailed.
+  ///
+  /// In en, this message translates to:
+  /// **'Couldn\'t post your reply. Check your connection and try again.'**
+  String get reviewReplyFailed;
 }
 
 class _AppLocalizationsDelegate

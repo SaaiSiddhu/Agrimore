@@ -1420,4 +1420,107 @@ class AppLocalizationsEn extends AppLocalizations {
 
   @override
   String get storefrontSave => 'Save storefront';
+
+  @override
+  String get profileSaveFailed =>
+      'Couldn\'t save your profile. Check your connection and try again.';
+
+  @override
+  String get reviewsTitle => 'Reviews';
+
+  @override
+  String get reviewsMenu => 'Reviews';
+
+  @override
+  String get reviewsMenuSubtitle => 'Ratings and replies';
+
+  @override
+  String get reviewsLoadFailed =>
+      'Couldn\'t load your reviews. Check your connection and open this screen again.';
+
+  @override
+  String reviewsCount(int count) {
+    String _temp0 = intl.Intl.pluralLogic(
+      count,
+      locale: localeName,
+      other: '$count reviews',
+      one: '1 review',
+      zero: 'No reviews yet',
+    );
+    return '$_temp0';
+  }
+
+  @override
+  String reviewsBarLabel(int stars, int count) {
+    return '$stars stars: $count';
+  }
+
+  @override
+  String reviewsRatingLabel(int stars) {
+    return 'Rated $stars out of 5';
+  }
+
+  @override
+  String get reviewsAll => 'All';
+
+  @override
+  String reviewsUnanswered(int count) {
+    return 'Unanswered · $count';
+  }
+
+  @override
+  String reviewsStars(int stars) {
+    return '$stars★';
+  }
+
+  @override
+  String get reviewsEmpty =>
+      'No reviews yet. Buyers can review a product after it is delivered.';
+
+  @override
+  String get reviewsNoneMatch => 'No reviews match this filter.';
+
+  @override
+  String get reviewsAnonymous => 'A buyer';
+
+  @override
+  String reviewsByLine(String name, String date) {
+    return '$name · $date';
+  }
+
+  @override
+  String get reviewsVerified => 'Verified purchase';
+
+  @override
+  String get reviewsYourReply => 'Your reply';
+
+  @override
+  String get reviewsReply => 'Reply';
+
+  @override
+  String get reviewsEditReply => 'Edit reply';
+
+  @override
+  String get reviewsReplyTitle => 'Reply publicly';
+
+  @override
+  String get reviewsReplyHint =>
+      'Buyers see your reply under the review. You can edit it for 24 hours.';
+
+  @override
+  String get reviewsReplyLabel => 'Your reply';
+
+  @override
+  String get reviewsReplySend => 'Post reply';
+
+  @override
+  String get reviewReplySent => 'Reply posted';
+
+  @override
+  String get reviewReplyLocked =>
+      'This reply can no longer be edited — replies can be changed for 24 hours.';
+
+  @override
+  String get reviewReplyFailed =>
+      'Couldn\'t post your reply. Check your connection and try again.';
 }
