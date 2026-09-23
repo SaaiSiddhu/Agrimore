@@ -11,6 +11,8 @@
 //  • canUseFullScreenIntent() — Android 14+ lets users (and Play policy)
 //    revoke full-screen alerts; the app explains before sending the rider to
 //    the settings page.
+//  • moveToBackground() — Phase DLV-3A: Back on the home screen while online
+//    backgrounds the app instead of closing it, so location keeps flowing.
 //
 // Every call is best-effort: on other platforms, or if the channel is absent
 // (tests, web), they do nothing and report "allowed".
@@ -31,6 +33,17 @@ class OfferPlatform {
       await _channel.invokeMethod<void>('showOverLockScreen', {'show': show});
     } catch (_) {
       // Best effort: the offer still shows normally when unlocked.
+    }
+  }
+
+  /// True when the app went to the background; false (the caller then lets
+  /// the app close normally) off Android or if the channel is absent.
+  static Future<bool> moveToBackground() async {
+    if (!_android) return false;
+    try {
+      return await _channel.invokeMethod<bool>('moveToBackground') ?? false;
+    } catch (_) {
+      return false;
     }
   }
 

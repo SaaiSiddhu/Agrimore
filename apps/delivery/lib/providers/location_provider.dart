@@ -1,22 +1,42 @@
 // lib/providers/location_provider.dart
+//
+// Phase DLV-3A — the rider's location while online (D-DLV-BG).
+//
+// Before: a foreground-only position stream plus a 30 s Timer, so location
+// stopped whenever the rider switched apps or locked the phone. Now the stream
+// runs inside geolocator's Android foreground service ("You're online"
+// notification), which keeps the process — and this provider's heartbeat —
+// alive in the background. Each send writes:
+//  - delivery_partners/{uid} currentLat/currentLng/lastLocationUpdate, which
+//    dispatch reads (DLV-0 owner allowlist);
+//  - delivery_tasks/{orderId}/live/rider while an order is active, which the
+//    customer's map reads (firestore.rules, phaseDLV3A_live_rules_test).
+// Cadence and payload rules live in lib/location/location_policy.dart.
 import 'dart:async';
-import 'package:flutter/material.dart';
+
+import 'package:flutter/foundation.dart';
 import 'package:geolocator/geolocator.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
+import '../location/location_policy.dart';
 import '../services/distance_service.dart';
 
 class LocationProvider extends ChangeNotifier {
   final FirebaseFirestore _firestore = FirebaseFirestore.instance;
-  
+
   Position? _currentPosition;
   bool _isTracking = false;
   bool _hasPermission = false;
   String? _error;
-  
+
   StreamSubscription<Position>? _positionSubscription;
-  Timer? _uploadTimer;
+  Timer? _heartbeat;
   String? _partnerId;
-  
+  String? _activeOrderId;
+  TrackingProfile _profile = idleProfile;
+  DateTime? _lastUploadAt;
+  bool _hasUnsentFix = false;
+  bool _uploading = false;
+
   // Getters
   Position? get currentPosition => _currentPosition;
   bool get isTracking => _isTracking;
@@ -24,107 +44,227 @@ class LocationProvider extends ChangeNotifier {
   String? get error => _error;
   double? get latitude => _currentPosition?.latitude;
   double? get longitude => _currentPosition?.longitude;
-  
-  // Check and request permissions
-  Future<bool> checkPermissions() async {
+  String? get activeOrderId => _activeOrderId;
+  TrackingProfile get profile => _profile;
+  DateTime? get lastUploadAt => _lastUploadAt;
+
+  /// Location services on and permission granted (asking if not yet asked).
+  Future<GoOnlineResult> ensurePermission() async {
     try {
-      LocationPermission permission = await Geolocator.checkPermission();
-      
+      if (!await Geolocator.isLocationServiceEnabled()) {
+        _setPermission(false, 'Location services are off');
+        return GoOnlineResult.servicesOff;
+      }
+      var permission = await Geolocator.checkPermission();
       if (permission == LocationPermission.denied) {
         permission = await Geolocator.requestPermission();
       }
-      
       if (permission == LocationPermission.deniedForever) {
-        _error = 'Location permission permanently denied';
-        _hasPermission = false;
-        notifyListeners();
-        return false;
+        _setPermission(false, 'Location permission permanently denied');
+        return GoOnlineResult.permissionDeniedForever;
       }
-      
-      if (permission == LocationPermission.denied) {
-        _error = 'Location permission denied';
-        _hasPermission = false;
-        notifyListeners();
-        return false;
+      if (permission == LocationPermission.denied ||
+          permission == LocationPermission.unableToDetermine) {
+        _setPermission(false, 'Location permission denied');
+        return GoOnlineResult.permissionDenied;
       }
-      
-      _hasPermission = true;
-      notifyListeners();
-      return true;
+      _setPermission(true, null);
+      return GoOnlineResult.started;
     } catch (e) {
-      _error = 'Error checking permissions: $e';
-      notifyListeners();
+      debugPrint('Location permission check failed: $e');
+      _setPermission(false, 'Could not check location permission');
+      return GoOnlineResult.failed;
+    }
+  }
+
+  /// Whether tracking can start without asking anything (used to resume
+  /// after the app was closed while online).
+  Future<bool> canTrackWithoutPrompt() async {
+    try {
+      if (!await Geolocator.isLocationServiceEnabled()) return false;
+      final p = await Geolocator.checkPermission();
+      return p == LocationPermission.whileInUse ||
+          p == LocationPermission.always;
+    } catch (e) {
+      debugPrint('Location permission check failed: $e');
       return false;
     }
   }
-  
-  // Start location tracking
-  Future<void> startTracking(String partnerId) async {
-    if (_isTracking) return;
-    
+
+  /// Kept for existing callers: true when location can be used.
+  Future<bool> checkPermissions() async =>
+      await ensurePermission() == GoOnlineResult.started;
+
+  void _setPermission(bool granted, String? error) {
+    _hasPermission = granted;
+    _error = error;
+    notifyListeners();
+  }
+
+  /// Starts background tracking for [partnerId]. The caller shows the
+  /// disclosure first (dashboard_screen.dart).
+  Future<GoOnlineResult> startTracking(String partnerId) async {
+    if (_isTracking && _partnerId == partnerId) return GoOnlineResult.started;
+    final permission = await ensurePermission();
+    if (permission != GoOnlineResult.started) return permission;
     _partnerId = partnerId;
-    
-    final hasPermission = await checkPermissions();
-    if (!hasPermission) return;
-    
-    // Get initial position
     try {
       _currentPosition = await Geolocator.getCurrentPosition(
-        desiredAccuracy: LocationAccuracy.high,
+        locationSettings: const LocationSettings(
+          accuracy: LocationAccuracy.high,
+          timeLimit: Duration(seconds: 20),
+        ),
       );
-      notifyListeners();
     } catch (e) {
-      _error = 'Failed to get location';
+      debugPrint('Initial fix failed: $e');
+      _currentPosition = await Geolocator.getLastKnownPosition();
+      if (_currentPosition == null) {
+        _error = 'Failed to get location';
+        notifyListeners();
+        return GoOnlineResult.failed;
+      }
+    }
+    _hasUnsentFix = true;
+    _isTracking = true;
+    _startStream();
+    _startHeartbeat();
+    await _maybeUpload(force: true);
+    notifyListeners();
+    return GoOnlineResult.started;
+  }
+
+  LocationSettings _settingsFor(TrackingProfile p) {
+    if (!kIsWeb && defaultTargetPlatform == TargetPlatform.android) {
+      return AndroidSettings(
+        accuracy: LocationAccuracy.high,
+        distanceFilter: p.distanceFilterMeters,
+        intervalDuration: p.streamInterval,
+        foregroundNotificationConfig: const ForegroundNotificationConfig(
+          notificationTitle: "You're online",
+          notificationText:
+              'Sharing your location for nearby orders and live tracking. '
+              'Go offline in the app to stop.',
+          notificationChannelName: 'Online status',
+          notificationIcon: AndroidResource(
+              name: 'ic_stat_delivery_offer', defType: 'drawable'),
+          enableWakeLock: true,
+          setOngoing: true,
+        ),
+      );
+    }
+    return LocationSettings(
+      accuracy: LocationAccuracy.high,
+      distanceFilter: p.distanceFilterMeters,
+    );
+  }
+
+  void _startStream() {
+    _positionSubscription?.cancel();
+    _positionSubscription =
+        Geolocator.getPositionStream(locationSettings: _settingsFor(samplingProfile))
+            .listen((position) {
+      _currentPosition = position;
+      _hasUnsentFix = true;
       notifyListeners();
+      _maybeUpload();
+    }, onError: (Object e) {
+      // Location switched off mid-shift: keep the service; the heartbeat
+      // re-sends the last fix and the rider sees the error.
+      debugPrint('Position stream error: $e');
+      _error = 'Location unavailable';
+      notifyListeners();
+    });
+  }
+
+  void _startHeartbeat() {
+    _heartbeat?.cancel();
+    _heartbeat =
+        Timer.periodic(const Duration(seconds: 5), (_) => _maybeUpload());
+  }
+
+  /// Switches cadence when an order starts or ends, and routes the live
+  /// point to that order's task. The stream itself is NOT restarted: a
+  /// restart cancels the foreground service, and Android 12+ refuses to start
+  /// a location foreground service while the app is in the background
+  /// (ForegroundServiceStartNotAllowedException, seen on the device run when
+  /// an order was delivered with the screen off) — tracking would silently
+  /// stop. The stream always samples at [samplingProfile]; the idle/order
+  /// cadence is applied when deciding what to send.
+  void setActiveOrder(String? orderId) {
+    if (orderId == _activeOrderId) return;
+    _activeOrderId = orderId;
+    _profile = profileFor(onOrder: orderId != null);
+    if (_isTracking) _maybeUpload(force: true);
+    notifyListeners();
+  }
+
+  Future<void> _maybeUpload({bool force = false}) async {
+    final pos = _currentPosition;
+    final uid = _partnerId;
+    if (!_isTracking || pos == null || uid == null || _uploading) return;
+    final now = DateTime.now();
+    if (!force &&
+        !shouldUpload(
+            now: now,
+            lastUploadAt: _lastUploadAt,
+            hasNewFix: _hasUnsentFix,
+            profile: _profile)) {
       return;
     }
-    
-    // Start position stream
-    _positionSubscription = Geolocator.getPositionStream(
-      locationSettings: const LocationSettings(
-        accuracy: LocationAccuracy.high,
-        distanceFilter: 10, // Update every 10 meters
-      ),
-    ).listen((position) {
-      _currentPosition = position;
-      notifyListeners();
-    });
-    
-    // Upload location to Firestore every 30 seconds
-    _uploadTimer = Timer.periodic(const Duration(seconds: 30), (_) {
-      _uploadLocation();
-    });
-    
-    // Upload initial location
-    await _uploadLocation();
-    
-    _isTracking = true;
-    notifyListeners();
-  }
-  
-  // Stop tracking
-  void stopTracking() {
-    _positionSubscription?.cancel();
-    _uploadTimer?.cancel();
-    _isTracking = false;
-    notifyListeners();
-  }
-  
-  // Upload location to Firestore
-  Future<void> _uploadLocation() async {
-    if (_currentPosition == null || _partnerId == null) return;
-    
+    if (!isValidFix(pos.latitude, pos.longitude)) return;
+    _uploading = true;
     try {
-      await _firestore.collection('delivery_partners').doc(_partnerId).update({
-        'currentLat': _currentPosition!.latitude,
-        'currentLng': _currentPosition!.longitude,
+      await _firestore.collection('delivery_partners').doc(uid).update({
+        'currentLat': pos.latitude,
+        'currentLng': pos.longitude,
         'lastLocationUpdate': FieldValue.serverTimestamp(),
       });
+      _lastUploadAt = now;
+      _hasUnsentFix = false;
+      final orderId = _activeOrderId;
+      if (orderId != null) {
+        try {
+          await _firestore
+              .collection('delivery_tasks')
+              .doc(orderId)
+              .collection('live')
+              .doc('rider')
+              .set({
+            ...livePointFields(
+              riderId: uid,
+              lat: pos.latitude,
+              lng: pos.longitude,
+              accuracy: pos.accuracy,
+              speed: pos.speed,
+              heading: pos.heading,
+              isMocked: pos.isMocked,
+            ),
+            'at': FieldValue.serverTimestamp(),
+          });
+        } catch (e) {
+          // The task projection trails the order by a moment after accept,
+          // and the rules refuse once the leg ends: not the rider's problem.
+          debugPrint('Live point for $orderId not written: $e');
+        }
+      }
     } catch (e) {
       debugPrint('Error uploading location: $e');
+    } finally {
+      _uploading = false;
     }
   }
-  
+
+  /// Stops the stream, the foreground service and the heartbeat.
+  void stopTracking() {
+    _positionSubscription?.cancel();
+    _positionSubscription = null;
+    _heartbeat?.cancel();
+    _heartbeat = null;
+    _isTracking = false;
+    _lastUploadAt = null;
+    notifyListeners();
+  }
+
   // Update online status
   Future<void> setOnlineStatus(String partnerId, bool isOnline) async {
     try {
@@ -139,18 +279,18 @@ class LocationProvider extends ChangeNotifier {
       debugPrint('❌ Error updating online status: $e');
     }
   }
-  
+
   @override
   void dispose() {
     stopTracking();
     super.dispose();
   }
-  
+
   /// Calculate distance from current position to target coordinates
   /// Returns distance in kilometers, or null if current position not available
   double? calculateDistanceTo(double targetLat, double targetLng) {
     if (_currentPosition == null) return null;
-    
+
     return DistanceService.calculateDistance(
       startLat: _currentPosition!.latitude,
       startLng: _currentPosition!.longitude,
@@ -158,11 +298,11 @@ class LocationProvider extends ChangeNotifier {
       endLng: targetLng,
     );
   }
-  
+
   /// Get delivery details including distance and earnings
   Map<String, dynamic>? getDeliveryDetails(double targetLat, double targetLng) {
     if (_currentPosition == null) return null;
-    
+
     return DistanceService.calculateDeliveryDetails(
       partnerLat: _currentPosition!.latitude,
       partnerLng: _currentPosition!.longitude,

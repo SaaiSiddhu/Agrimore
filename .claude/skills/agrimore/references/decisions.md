@@ -251,6 +251,31 @@ recommended option each; answers recorded verbatim in intent:
 
 Implemented server-side by DLV-2A (`functions/src/delivery/dispatch.ts`); the app side is DLV-2B.
 
+### D-DLV-BG · D-DLV-GEOFENCE · D-DLV-ETA · D-DLV-OTPLOCK — OWNER_DECISION 2026-09-23 (AskUserQuestion, plan DLV-3)
+
+Live tracking for the delivery-app redesign. Each asked with a recommended option; the owner took the
+recommendation every time:
+- **D-DLV-BG** — while a rider is **online**, location keeps flowing with the app in the background, via a
+  persistent "You're online" foreground-service notification (Zomato/Swiggy style). Not limited to active
+  orders; not foreground-only. The Play Console foreground-service (location) declaration is the owner's.
+- **D-DLV-GEOFENCE** — "Arrived at store" / "Picked up" / "Delivered" are **never blocked** on distance; a tap
+  more than **300 m** from the store/customer (or from a mocked location) is recorded and shown to admin.
+- **D-DLV-ETA** — the customer's ETA is a **free, stage-aware estimate** (road factor × straight line at an
+  average bike speed; rider→store→customer before pickup). No Google Routes billing.
+- **D-DLV-OTPLOCK** — proved 2026-09-23 on the rules emulator: the assigned rider can write `delivered`
+  directly, skipping pickup and the OTP; the released Play rider build marks delivery exactly that way. The
+  rules lock (rider status writes only via callables) is **release-gated**: phase DLV-3D, only after the
+  owner confirms the new rider app is released and adopted. Never lock it earlier — it breaks the live app.
+
+DLV-3A (rider location), DLV-3B (customer tracking), DLV-3C (server-checked steps), DLV-3D (the lock).
+
+**D-DLV-BG-CLOSE — OWNER_DECISION 2026-09-23 (AskUserQuestion, during DLV-3A).** The DLV-3A device run showed
+geolocator's foreground service stops when the app's activity is destroyed (Back on the home screen, swipe from
+Recents, OS reclaim) — the plugin disposes its stream when its Flutter engine detaches. Chosen: **handle Back now**
+(while online, Back moves the app to the background instead of closing it) and make **surviving swipe-away** its own
+phase (a native location service independent of the Flutter screen) **before the Play release**. Meanwhile a
+swipe-away fails safe: the server takes the rider offline after 15 min and pushes them.
+
 ## 6. Open owner decisions (do not resolve silently)
 
 | ID | Question | Safe default while open |

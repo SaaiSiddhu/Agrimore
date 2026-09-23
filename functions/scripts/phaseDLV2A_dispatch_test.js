@@ -43,7 +43,10 @@ let T0 = Date.UTC(2026, 8, 23, 6, 0, 0); // synthetic clock for core calls
 const at = (sec) => T0 + sec * 1000;
 
 async function rider(id, kmNorth, extra = {}) {
-  const fresh = extra.staleMin ? T0 - extra.staleMin * 60000 : T0;
+  // DLV-3A tightened LOCATION_FRESHNESS_MS to 5 min while this suite's
+  // synthetic clock runs to at(1201) ≈ 20 min: stamp fresh riders at the END
+  // of that clock so they stay fresh throughout; stale riders stay stale.
+  const fresh = extra.staleMin ? T0 - extra.staleMin * 60000 : T0 + 21 * 60000;
   delete extra.staleMin;
   await db.collection("delivery_partners").doc(id).set({
     name: id, status: "approved", isOnline: true,
