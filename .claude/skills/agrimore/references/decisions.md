@@ -234,6 +234,23 @@ ACCEPTED RISK: the flag is an unverifiable client claim — anyone can call the
 endpoint with it and sign in as any user. Revisit before any public launch.
 Supersedes 7dfeb0d's unconditional `testMode = true` (which also hit release builds).
 
+### D-DLV-DISPATCH · D-DLV-NO-TAKER · D-DLV-LIST · D-DLV-ALERT — OWNER_DECISION 2026-09-23 (AskUserQuestion)
+
+Rider dispatch for the delivery-app redesign (programme `agrimore-delivery-redesign`). Asked with a
+recommended option each; answers recorded verbatim in intent:
+- **D-DLV-DISPATCH** — offer a packed order to the **3 nearest** eligible riders at a time, 30 s per
+  offer, widening 5 → 8 → 12 km; first to accept wins. (Chosen over broadcast-to-all and one-at-a-time.)
+- **D-DLV-NO-TAKER** — **both**: after the third wave flag the order for admin (`delivery_dispatch.
+  needsAdmin`) **and** keep re-offering every 2 min until a rider accepts or an admin assigns.
+- **D-DLV-LIST** — the rider app's platform-wide "Available Orders" list is **replaced** by offers;
+  customer phone/address stay hidden until a rider accepts.
+- **D-DLV-ALERT** — **both**, "as like Zomato/Swiggy": a loud high-priority notification on its own
+  `delivery_offers` channel **and** a full-screen ringing alert over the lock screen. The owner
+  accepted that Google Play restricts full-screen intents to calling/alarm apps on Android 14+: the
+  Play Console declaration is the owner's, per release.
+
+Implemented server-side by DLV-2A (`functions/src/delivery/dispatch.ts`); the app side is DLV-2B.
+
 ## 6. Open owner decisions (do not resolve silently)
 
 | ID | Question | Safe default while open |

@@ -1731,6 +1731,32 @@ service cloud.firestore {
          resource.data.sellerId == request.auth.uid);
       allow write: if false;
     }
+
+    // ============================================
+    // DELIVERY OFFERS + DISPATCH STATE (Phase DLV-2A)
+    // ============================================
+    // delivery_requests/{orderId}_{riderId}: one offer of one order to one
+    // rider, written ONLY by functions/src/delivery/dispatch.ts. Until DLV-2A
+    // this collection had no block (default deny), so no rider could read its
+    // offers. Read: the rider it was offered to — `riderId`, or `partnerId` on
+    // documents written by the pre-DLV-2A dispatcher — and admin. No client
+    // write: accepting is the acceptDeliveryOffer callable; an offer a rider
+    // could write is an order it could award itself (dispatch rules suite
+    // q09–q12). Offers carry no customer name/phone/address by design.
+    match /delivery_requests/{requestId} {
+      allow read: if isAuthenticated() &&
+        (isAdmin() ||
+         resource.data.get('riderId', null) == request.auth.uid ||
+         resource.data.get('partnerId', null) == request.auth.uid);
+      allow write: if false;
+    }
+
+    // delivery_dispatch/{orderId}: wave state, including the needsAdmin flag
+    // (D-DLV-NO-TAKER). Admin read only; server writes only.
+    match /delivery_dispatch/{orderId} {
+      allow read: if isAdmin();
+      allow write: if false;
+    }
     // ============================================
     // VENDORS / SUPPLIERS COLLECTION
     // ============================================
