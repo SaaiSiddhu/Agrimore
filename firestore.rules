@@ -533,7 +533,9 @@ service cloud.firestore {
       return !request.resource.data.diff(resource.data).affectedKeys().hasAny([
         'orderStatus', 'status', 'sellerDecision', 'acceptedAt', 'packingStartedAt',
         'readyForPickupAt', 'cancelledBy', 'cancelledAt', 'cancellationReason',
-        'cancellationNote', 'stockRestored', 'refundStatus', 'inventoryDeducted'
+        'cancellationNote', 'stockRestored', 'refundStatus', 'inventoryDeducted',
+        // SELLER-ORDERS-2: the invoice link is written by issueSellerInvoice only.
+        'invoiceId', 'invoiceNumber'
       ]);
     }
 
@@ -1305,6 +1307,20 @@ service cloud.firestore {
     // Phase SEC-P0: phone-OTP test mode (sendPhoneOTP.ts). Deliberately NOT
     // under settings/ (admin-writable there): whoever can write this doc can
     // sign in as any allow-listed number, so it is Console / Admin SDK only.
+    // SELLER-ORDERS-2 (ADR-S14): invoices are issued by the issueSellerInvoice
+    // callable only — immutable snapshots, readable by the two parties and
+    // admins. The per-seller counters that number them are server-only.
+    match /invoices/{invoiceId} {
+      allow read: if isAuthenticated() &&
+        (resource.data.sellerId == request.auth.uid ||
+         resource.data.buyerId == request.auth.uid ||
+         isAdmin());
+      allow write: if false;
+    }
+    match /seller_invoice_counters/{counterId} {
+      allow read, write: if false;
+    }
+
     match /auth_test_mode/{docId} {
       allow read, write: if false;
     }
