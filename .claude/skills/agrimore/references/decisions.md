@@ -311,6 +311,17 @@ direct `delivered` write stays until DLV-3D (D-DLV-OTPLOCK). Rider steps and "Se
 `advanceDeliveryStep` / `releaseDeliveryOrder`; a step more than 300 m from its place, on a mocked location or with
 no location is flagged for admin, never refused (D-DLV-GEOFENCE).
 
+### D-DLV-PAY / D-DLV-COD / D-DLV-PAYOUT / D-DLV-BANK — OWNER_DECISIONS 2026-09-23 (AskUserQuestion, plan DLV-4)
+
+- **D-DLV-PAY** rider pay per delivered order = base + per-km of the store→customer road distance + waiting beyond
+  10 min at the store, computed on the server at delivery (never from the customer's delivery charge); admin-set rates
+  in `settings/rider_pay`, seeded ₹25 base, ₹6/km, ₹1/min, 25 km cap; the offer shows an estimate.
+- **D-DLV-COD** COD cash a rider holds is netted from the weekly payout; at or over the cash limit (seed ₹2,000) the
+  rider gets no COD offers until admin records a deposit.
+- **D-DLV-PAYOUT** weekly statements (Monday 00:30 IST); admin pays by bank/UPI and records the reference, as for
+  sellers. RazorpayX instant payouts are a later phase.
+- **D-DLV-BANK** riders request bank-detail changes; admin approves or rejects; a statement waits while one is pending.
+
 ## 6. Open owner decisions (do not resolve silently)
 
 | ID | Question | Safe default while open |
