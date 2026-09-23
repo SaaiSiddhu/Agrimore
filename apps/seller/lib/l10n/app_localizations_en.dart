@@ -2508,4 +2508,70 @@ class AppLocalizationsEn extends AppLocalizations {
   String settingsVersionValue(String version, String build) {
     return '$version ($build)';
   }
+
+  @override
+  String get filterLowStock => 'Low stock';
+
+  @override
+  String get storeStatusTitle => 'Store status';
+
+  @override
+  String get storeStatusOpen => 'Taking orders';
+
+  @override
+  String get storeStatusPaused => 'Paused — not taking orders';
+
+  @override
+  String get storeAcceptingOrders => 'Accepting orders';
+
+  @override
+  String get storeAcceptingHint => 'Buyers can order from your store.';
+
+  @override
+  String get storePausedHint =>
+      'Buyers see your store but can\'t place orders.';
+
+  @override
+  String get storePauseFor => 'Pause for';
+
+  @override
+  String storePauseDays(int days) {
+    String _temp0 = intl.Intl.pluralLogic(
+      days,
+      locale: localeName,
+      other: '$days days',
+      one: '1 day',
+    );
+    return '$_temp0';
+  }
+
+  @override
+  String get storePauseUntilResumed => 'Until I resume';
+
+  @override
+  String get storePauseConsequence =>
+      'New orders and quotes can\'t be placed while paused. Orders you already have are not affected.';
+
+  @override
+  String get storePauseCta => 'Pause my store';
+
+  @override
+  String get storePausedTitle => 'Your store is paused';
+
+  @override
+  String get storePausedBody => 'Buyers can\'t place orders until you resume.';
+
+  @override
+  String storePausedUntil(String date) {
+    return 'Buyers can\'t place orders until $date.';
+  }
+
+  @override
+  String get storeResume => 'Resume';
+
+  @override
+  String get storeResumed => 'Your store is taking orders again';
+
+  @override
+  String get storePausedToast => 'Your store is paused';
 }

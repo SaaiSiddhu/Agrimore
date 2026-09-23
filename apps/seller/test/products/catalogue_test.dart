@@ -53,11 +53,22 @@ void main() {
       expect(m(d, ProductListFilter.outOfStock), isFalse);
       expect(m(d, ProductListFilter.active), isFalse);
     });
-    test('every product falls in exactly one non-All tab', () {
+    test('every product falls in exactly one status tab', () {
+      // Status tabs partition the catalogue; Low stock (SELLER-OPS-1) is a
+      // lens over live stock, checked separately below.
+      const status = {ProductListFilter.active, ProductListFilter.draft, ProductListFilter.outOfStock, ProductListFilter.inactive};
       for (final p in [_p(), _p(stock: 0), _p(isActive: false), _p(isActive: false, isDraft: true)]) {
-        final tabs = ProductListFilter.values.where((f) => f != ProductListFilter.all && m(p, f));
+        final tabs = status.where((f) => m(p, f));
         expect(tabs.length, 1, reason: '$p');
       }
+    });
+
+    test('low stock is live stock at or under the product alert level', () {
+      expect(m(_p(stock: 3), ProductListFilter.lowStock), isTrue);
+      expect(m(_p(stock: 3), ProductListFilter.active), isTrue);
+      expect(m(_p(stock: 50), ProductListFilter.lowStock), isFalse);
+      expect(m(_p(stock: 0), ProductListFilter.lowStock), isFalse);
+      expect(m(_p(stock: 3, isActive: false), ProductListFilter.lowStock), isFalse);
     });
   });
 

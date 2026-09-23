@@ -4383,6 +4383,114 @@ abstract class AppLocalizations {
   /// In en, this message translates to:
   /// **'{version} ({build})'**
   String settingsVersionValue(String version, String build);
+
+  /// No description provided for @filterLowStock.
+  ///
+  /// In en, this message translates to:
+  /// **'Low stock'**
+  String get filterLowStock;
+
+  /// No description provided for @storeStatusTitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Store status'**
+  String get storeStatusTitle;
+
+  /// No description provided for @storeStatusOpen.
+  ///
+  /// In en, this message translates to:
+  /// **'Taking orders'**
+  String get storeStatusOpen;
+
+  /// No description provided for @storeStatusPaused.
+  ///
+  /// In en, this message translates to:
+  /// **'Paused — not taking orders'**
+  String get storeStatusPaused;
+
+  /// No description provided for @storeAcceptingOrders.
+  ///
+  /// In en, this message translates to:
+  /// **'Accepting orders'**
+  String get storeAcceptingOrders;
+
+  /// No description provided for @storeAcceptingHint.
+  ///
+  /// In en, this message translates to:
+  /// **'Buyers can order from your store.'**
+  String get storeAcceptingHint;
+
+  /// No description provided for @storePausedHint.
+  ///
+  /// In en, this message translates to:
+  /// **'Buyers see your store but can\'t place orders.'**
+  String get storePausedHint;
+
+  /// No description provided for @storePauseFor.
+  ///
+  /// In en, this message translates to:
+  /// **'Pause for'**
+  String get storePauseFor;
+
+  /// No description provided for @storePauseDays.
+  ///
+  /// In en, this message translates to:
+  /// **'{days, plural, =1{1 day} other{{days} days}}'**
+  String storePauseDays(int days);
+
+  /// No description provided for @storePauseUntilResumed.
+  ///
+  /// In en, this message translates to:
+  /// **'Until I resume'**
+  String get storePauseUntilResumed;
+
+  /// No description provided for @storePauseConsequence.
+  ///
+  /// In en, this message translates to:
+  /// **'New orders and quotes can\'t be placed while paused. Orders you already have are not affected.'**
+  String get storePauseConsequence;
+
+  /// No description provided for @storePauseCta.
+  ///
+  /// In en, this message translates to:
+  /// **'Pause my store'**
+  String get storePauseCta;
+
+  /// No description provided for @storePausedTitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Your store is paused'**
+  String get storePausedTitle;
+
+  /// No description provided for @storePausedBody.
+  ///
+  /// In en, this message translates to:
+  /// **'Buyers can\'t place orders until you resume.'**
+  String get storePausedBody;
+
+  /// No description provided for @storePausedUntil.
+  ///
+  /// In en, this message translates to:
+  /// **'Buyers can\'t place orders until {date}.'**
+  String storePausedUntil(String date);
+
+  /// No description provided for @storeResume.
+  ///
+  /// In en, this message translates to:
+  /// **'Resume'**
+  String get storeResume;
+
+  /// No description provided for @storeResumed.
+  ///
+  /// In en, this message translates to:
+  /// **'Your store is taking orders again'**
+  String get storeResumed;
+
+  /// No description provided for @storePausedToast.
+  ///
+  /// In en, this message translates to:
+  /// **'Your store is paused'**
+  String get storePausedToast;
 }
 
 class _AppLocalizationsDelegate

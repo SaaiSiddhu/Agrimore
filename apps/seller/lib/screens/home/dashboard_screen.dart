@@ -12,6 +12,7 @@ import '../../providers/seller_auth_provider.dart';
 import '../../providers/seller_order_provider.dart';
 import '../../providers/seller_product_provider.dart';
 import '../notifications/notifications_screen.dart';
+import '../account/store_status.dart';
 import '../insights/health_screen.dart';
 import '../insights/insights_rules.dart';
 import '../insights/insights_screen.dart';
@@ -63,6 +64,7 @@ class _DashboardScreenState extends State<DashboardScreen> {
   double? _pendingPayout;
   double? _rating;
   int _reviewCount = 0;
+  StoreStatus _store = const StoreStatus();
 
   bool get _injected => widget.stats != null;
 
@@ -91,6 +93,7 @@ class _DashboardScreenState extends State<DashboardScreen> {
       setState(() {
         _rating = (snap.data()?['rating'] as num?)?.toDouble();
         _reviewCount = (snap.data()?['reviewCount'] as num?)?.toInt() ?? 0;
+        _store = StoreStatus.fromSeller(snap.data());
       });
     }, onError: (Object e) => debugPrint('Home rating failed: $e'));
     _statsSub = db
@@ -140,6 +143,21 @@ class _DashboardScreenState extends State<DashboardScreen> {
     _statsSub?.cancel();
     _payoutSub?.cancel();
     super.dispose();
+  }
+
+  Future<void> _setStore(StoreStatus status) async {
+    final l10n = AppLocalizations.of(context);
+    final uid = context.read<SellerAuthProvider>().currentUser?.uid;
+    if (uid == null) return;
+    try {
+      await FirebaseFirestore.instance.collection('sellers').doc(uid).update({...status.toUpdate(), 'updatedAt': FieldValue.serverTimestamp()});
+      if (!mounted) return;
+      setState(() => _store = status);
+      WsToast.show(context, status.accepting ? l10n.storeResumed : l10n.storePausedToast, tone: WsToastTone.success);
+    } catch (e) {
+      debugPrint('Store status failed: $e');
+      if (mounted) WsToast.show(context, l10n.profileSaveFailed, tone: WsToastTone.error);
+    }
   }
 
   /// Account health + a link to Insights (SELLER-HOME-1c).
@@ -247,7 +265,7 @@ class _DashboardScreenState extends State<DashboardScreen> {
         detail: out > 0 && low > 0 ? l10n.homeLowStock(low) : null,
         tone: out > 0 ? ActionTone.attention : ActionTone.neutral,
         onTap: () {
-          products.setFilter(ProductListFilter.outOfStock);
+          products.setFilter(out > 0 ? ProductListFilter.outOfStock : ProductListFilter.lowStock);
           SellerShell.goToTab(context, SellerTab.catalogue);
         },
       ));
@@ -286,6 +304,16 @@ class _DashboardScreenState extends State<DashboardScreen> {
       body: ListView(
         padding: const EdgeInsets.all(WsSpace.page),
         children: [
+          if (_store.isPaused(now)) ...[
+            SaInfoBanner(
+              variant: SaBannerVariant.warning,
+              title: l10n.storePausedTitle,
+              message: _store.pausedUntil == null ? l10n.storePausedBody : l10n.storePausedUntil(AgFormat.date(_store.pausedUntil!)),
+              actionLabel: l10n.storeResume,
+              onAction: () => _setStore(const StoreStatus()),
+            ),
+            const SizedBox(height: WsSpace.s16),
+          ],
           HomeSectionHeader(
             title: l10n.homeNeedsYou,
             trailing: actions.isEmpty ? null : Text(AgFormat.count(actions.length), style: text.labelLarge),
