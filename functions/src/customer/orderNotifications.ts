@@ -47,7 +47,9 @@ async function writeInAppNotification(
     .add(payload);
 }
 
-async function notifyUser(
+/** Inbox entry (users/{uid}/notifications) + push to every token. Shared by
+ * RFQ and payout notifications (SELLER-HOME-1b). */
+export async function notifyUser(
   userId: string,
   title: string,
   body: string,

@@ -168,6 +168,7 @@ export { sellerTransitionOrder } from "./seller/sellerTransitionOrder";
 // SELLER-ORDERS-2: server-issued, sequentially numbered invoices (ADR-S14)
 export { issueSellerInvoice } from "./seller/sellerInvoice";
 export { rollupSellerStats, rebuildMySellerStats } from "./seller/sellerStats";
+export { notifySellerPayoutPaid } from "./seller/payoutNotifications";
 
 // ============================================
 // B2B RFQ & NEGOTIATION (Phase RFQ-1)
