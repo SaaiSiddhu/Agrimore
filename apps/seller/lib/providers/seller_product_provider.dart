@@ -7,7 +7,16 @@ import 'package:agrimore_services/agrimore_services.dart';
 enum ProductListFilter { all, active, draft, outOfStock, inactive }
 
 class SellerProductProvider with ChangeNotifier {
-  final FirebaseFirestore _firestore = FirebaseFirestore.instance;
+  SellerProductProvider();
+
+  /// Test constructor: a fixed product list, no Firebase.
+  @visibleForTesting
+  SellerProductProvider.preview(List<ProductModel> products) {
+    _products = List.of(products);
+  }
+
+  // A getter, not a field: nothing touches Firebase until it is used.
+  FirebaseFirestore get _firestore => FirebaseFirestore.instance;
 
   List<ProductModel> _products = [];
   bool _isLoading = false;
