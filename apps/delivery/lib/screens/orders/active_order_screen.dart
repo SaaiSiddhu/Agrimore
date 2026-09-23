@@ -12,6 +12,7 @@ import 'package:agrimore_core/agrimore_core.dart';
 import '../../providers/order_provider.dart';
 import '../../navigation/rider_navigation.dart';
 import 'widgets/rider_route_card.dart';
+import '../../delivery/rider_steps.dart';
 
 /// Delivery workflow states — each maps to a Firestore orderStatus
 enum DeliveryStep {
@@ -590,13 +591,26 @@ class _ActiveOrderScreenState extends State<ActiveOrderScreen> {
 
     final orderProvider = context.read<DeliveryOrderProvider>();
     final status = _stepToStatus(step);
-    final description = _getStepDescription(step);
 
-    final success = await orderProvider.updateOrderStatus(
-      widget.order.id,
-      status,
-      description,
-    );
+    // Phase DLV-3C: the step goes to the server with where the rider is. At
+    // the store steps a far tap is asked about first (allowed, flagged —
+    // D-DLV-GEOFENCE); "out for delivery" is often tapped after leaving.
+    final fix = await currentRiderFix();
+    if (step == DeliveryStep.arrivedAtStore || step == DeliveryStep.pickedUp) {
+      final places = await stepPlaces(widget.order.id, widget.order);
+      final question = farTapQuestion(
+        metersTo(fix?.latitude, fix?.longitude, places.store),
+        atStore: true,
+        action: step == DeliveryStep.arrivedAtStore ? 'Mark arrived' : 'Mark picked up',
+      );
+      if (question != null && mounted && !await _confirmFarTap(question)) {
+        if (mounted) setState(() => _isUpdating = false);
+        return;
+      }
+    }
+    if (!mounted) return;
+    final error = await orderProvider.advanceStep(widget.order.id, status, positionPayload(fix));
+    final success = error == null;
 
     if (mounted) {
       setState(() {
@@ -604,19 +618,40 @@ class _ActiveOrderScreenState extends State<ActiveOrderScreen> {
         if (success) _currentStep = step;
       });
 
-      if (success) {
-        ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(
-            content: Text('✅ ${_getButtonLabel(step)}'),
-            backgroundColor: Colors.green,
-            behavior: SnackBarBehavior.floating,
-            shape: RoundedRectangleBorder(
-              borderRadius: BorderRadius.circular(10),
-            ),
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(
+          content: Text(success ? '✅ ${_getButtonLabel(step)}' : error),
+          backgroundColor: success ? Colors.green : Colors.red.shade700,
+          behavior: SnackBarBehavior.floating,
+          shape: RoundedRectangleBorder(
+            borderRadius: BorderRadius.circular(10),
           ),
-        );
-      }
+        ),
+      );
     }
+  }
+
+  /// "You're 1.2 km from the store. Mark arrived anyway?" — true to go ahead.
+  Future<bool> _confirmFarTap(String question) async {
+    final go = await showDialog<bool>(
+      context: context,
+      builder: (ctx) => AlertDialog(
+        icon: const Icon(Icons.wrong_location_outlined, color: Colors.orange, size: 32),
+        title: const Text('Are you there?'),
+        content: Text(question),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.pop(ctx, false),
+            child: const Text('Not yet'),
+          ),
+          FilledButton(
+            onPressed: () => Navigator.pop(ctx, true),
+            child: const Text('Continue'),
+          ),
+        ],
+      ),
+    );
+    return go == true;
   }
 
   Future<void> _confirmSellerNotReady() async {
@@ -644,41 +679,19 @@ class _ActiveOrderScreenState extends State<ActiveOrderScreen> {
 
     setState(() => _isUpdating = true);
     final provider = context.read<DeliveryOrderProvider>();
-    final partnerId = widget.order.deliveryPartnerId ?? '';
-    final success = await provider.releaseOrder(
-      widget.order.id,
-      partnerId,
-      reason: 'Delivery partner reported seller is not ready for pickup',
-    );
+    // Phase DLV-3C: releaseDeliveryOrder (the direct write was always denied).
+    final error = await provider.releaseOrder(widget.order.id, reason: 'seller_not_ready');
+    final success = error == null;
     if (!mounted) return;
 
     setState(() => _isUpdating = false);
     ScaffoldMessenger.of(context).showSnackBar(
       SnackBar(
-        content: Text(
-          success
-              ? 'Order released for reassignment'
-              : provider.error ?? 'Could not release order',
-        ),
+        content: Text(success ? 'Order released for reassignment' : error),
         backgroundColor: success ? Colors.orange.shade700 : Colors.red,
       ),
     );
     if (success) Navigator.pop(context);
-  }
-
-  String _getStepDescription(DeliveryStep step) {
-    switch (step) {
-      case DeliveryStep.accepted:
-        return 'Delivery partner accepted the order';
-      case DeliveryStep.arrivedAtStore:
-        return 'Delivery partner arrived at the seller store';
-      case DeliveryStep.pickedUp:
-        return 'Order has been picked up from seller';
-      case DeliveryStep.outForDelivery:
-        return 'Order is now out for delivery';
-      case DeliveryStep.delivered:
-        return 'Order delivered and verified by customer';
-    }
   }
 
   // ════════════════════════════════════════════
@@ -901,6 +914,20 @@ class _ActiveOrderScreenState extends State<ActiveOrderScreen> {
       }
     }
 
+    // Phase DLV-3C: where the rider is when the code is entered — recorded by
+    // confirmDelivery, flagged beyond 300 m; a far entry is asked about first.
+    final fix = await currentRiderFix();
+    final places = await stepPlaces(widget.order.id, widget.order);
+    final question = farTapQuestion(
+      metersTo(fix?.latitude, fix?.longitude, places.customer),
+      atStore: false,
+      action: 'Complete the delivery',
+    );
+    if (question != null && mounted && !await _confirmFarTap(question)) {
+      if (mounted) setState(() => _isUpdating = false);
+      return 'Delivery not completed. Enter the code when you are with the customer.';
+    }
+
     bool success = false;
     String? errorMessage;
     try {
@@ -909,6 +936,7 @@ class _ActiveOrderScreenState extends State<ActiveOrderScreen> {
       await callable.call<Map<String, dynamic>>({
         'orderId': widget.order.id,
         'code': code,
+        ...positionPayload(fix),
       });
       success = true;
     } on FirebaseFunctionsException catch (e) {
