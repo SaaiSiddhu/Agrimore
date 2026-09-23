@@ -11,6 +11,7 @@ import '../../providers/seller_auth_provider.dart';
 import '../../providers/seller_product_provider.dart';
 import '../../l10n/app_localizations.dart';
 import '../products/widgets/product_tax_section.dart';
+import '../products/widgets/product_variants_section.dart';
 
 /// The real category, if any, whose name exactly matches [typed]
 /// (case-insensitive, trimmed) -- CAT-15's own resolution rule, kept as a
@@ -63,6 +64,7 @@ class _AddProductScreenState extends State<AddProductScreen> {
   // SELLER-CATALOGUE-1: tax data for GST invoices.
   final _hsnController = TextEditingController();
   double? _gstRate;
+  List<ProductVariant> _variants = [];
 
   final ImagePicker _imagePicker = ImagePicker();
   XFile? _selectedImage;
@@ -161,6 +163,7 @@ class _AddProductScreenState extends State<AddProductScreen> {
       _b2bMoqController.text = p.b2bMoq?.toString() ?? '';
       _hsnController.text = p.hsnCode ?? '';
       _gstRate = p.gstRate;
+      _variants = List.of(p.variants);
       if (p.masterProductRef != null && p.masterProductRef!.isNotEmpty) {
         _selectedMasterProduct = {'id': p.masterProductRef, 'name': p.name};
       }
@@ -599,6 +602,7 @@ class _AddProductScreenState extends State<AddProductScreen> {
             : null,
         hsnCode: hsn,
         gstRate: _gstRate,
+        variants: _variants,
         isDraft: asDraft,
         isActive: asDraft ? false : null,
         updatedAt: DateTime.now(),
@@ -640,6 +644,7 @@ class _AddProductScreenState extends State<AddProductScreen> {
         isDraft: asDraft,
         hsnCode: hsn.isEmpty ? null : hsn,
         gstRate: _gstRate,
+        variants: _variants,
         images: uploadedImageUrl == null
             ? _masterImages
             : [
@@ -1073,6 +1078,8 @@ class _AddProductScreenState extends State<AddProductScreen> {
                   gstRate: _gstRate,
                   onGstRateChanged: (v) => setState(() => _gstRate = v),
                 ),
+                gap,
+                ProductVariantsSection(variants: _variants, onChanged: (v) => setState(() => _variants = v)),
                 gap,
                 _buildCoverageSection(theme),
                 const SizedBox(height: WsSpace.s32),

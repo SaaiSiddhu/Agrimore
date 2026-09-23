@@ -4185,6 +4185,66 @@ abstract class AppLocalizations {
   /// In en, this message translates to:
   /// **'Couldn\'t publish your post. Try again.'**
   String get postFailed;
+
+  /// No description provided for @variantsTitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Options'**
+  String get variantsTitle;
+
+  /// No description provided for @variantsHint.
+  ///
+  /// In en, this message translates to:
+  /// **'Sizes or pack weights, each with its own price and stock. Leave empty for a single product.'**
+  String get variantsHint;
+
+  /// No description provided for @variantsLine.
+  ///
+  /// In en, this message translates to:
+  /// **'{price} · {stock} in stock'**
+  String variantsLine(String price, String stock);
+
+  /// No description provided for @variantsAdd.
+  ///
+  /// In en, this message translates to:
+  /// **'Add option'**
+  String get variantsAdd;
+
+  /// No description provided for @variantsEdit.
+  ///
+  /// In en, this message translates to:
+  /// **'Edit option'**
+  String get variantsEdit;
+
+  /// No description provided for @variantsRemove.
+  ///
+  /// In en, this message translates to:
+  /// **'Remove {name}'**
+  String variantsRemove(String name);
+
+  /// No description provided for @variantsName.
+  ///
+  /// In en, this message translates to:
+  /// **'Option name'**
+  String get variantsName;
+
+  /// No description provided for @variantsNameHint.
+  ///
+  /// In en, this message translates to:
+  /// **'e.g. 1 kg, 5 kg, Large'**
+  String get variantsNameHint;
+
+  /// No description provided for @variantsDuplicate.
+  ///
+  /// In en, this message translates to:
+  /// **'You already have an option with this name'**
+  String get variantsDuplicate;
+
+  /// No description provided for @variantsOrderLine.
+  ///
+  /// In en, this message translates to:
+  /// **'Option: {name}'**
+  String variantsOrderLine(String name);
 }
 
 class _AppLocalizationsDelegate
