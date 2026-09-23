@@ -28,6 +28,7 @@ export 'workspace/kit/ws_otp_input.dart';
 export 'workspace/kit/ws_timeline.dart';
 export 'workspace/kit/ws_test_mode_ribbon.dart';
 export 'workspace/kit/ws_step_header.dart';
+export 'workspace/kit/ws_feedback.dart';
 
 // ============================================
 // RESPONSIVE

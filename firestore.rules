@@ -261,6 +261,27 @@ service cloud.firestore {
       // in their own inbox. The owner may only mark entries read (both
       // conventions in use: `unread`, and `read` from the employee app) or
       // delete them.
+      // SELLER-ACCOUNT-1b: notification preferences, read by the sending
+      // functions (common/notificationPrefs.ts). Owner-only, known keys and
+      // types only.
+      match /settings/notifications {
+        allow read: if isOwner(userId) || isAdmin();
+        allow write: if isOwner(userId) &&
+          request.resource.data.keys().hasOnly(['orders', 'quotes', 'payments', 'stock', 'reviews',
+            'announcements', 'quietHours', 'quietStartMin', 'quietEndMin', 'updatedAt']) &&
+          (!('orders' in request.resource.data) || request.resource.data.orders is bool) &&
+          (!('quotes' in request.resource.data) || request.resource.data.quotes is bool) &&
+          (!('payments' in request.resource.data) || request.resource.data.payments is bool) &&
+          (!('stock' in request.resource.data) || request.resource.data.stock is bool) &&
+          (!('reviews' in request.resource.data) || request.resource.data.reviews is bool) &&
+          (!('announcements' in request.resource.data) || request.resource.data.announcements is bool) &&
+          (!('quietHours' in request.resource.data) || request.resource.data.quietHours is bool) &&
+          (!('quietStartMin' in request.resource.data) ||
+            (request.resource.data.quietStartMin is int && request.resource.data.quietStartMin >= 0 && request.resource.data.quietStartMin < 1440)) &&
+          (!('quietEndMin' in request.resource.data) ||
+            (request.resource.data.quietEndMin is int && request.resource.data.quietEndMin >= 0 && request.resource.data.quietEndMin < 1440));
+      }
+
       match /notifications/{notificationId} {
         allow read: if isOwner(userId);
         allow create: if isAdmin();
