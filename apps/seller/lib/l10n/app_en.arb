@@ -312,5 +312,71 @@
         "type": "String"
       }
     }
-  }
+  },
+  "invoiceTitle": "Invoice",
+  "docTaxInvoice": "Tax Invoice",
+  "docBillOfSupply": "Bill of Supply",
+  "billOfSupplyNote": "Issued as a bill of supply: no GST is charged separately. Add your GSTIN and each product's HSN code and GST rate to issue tax invoices.",
+  "invoiceLoadFailed": "Couldn't load this invoice. Please try again.",
+  "invoiceIssueFailed": "Couldn't create the invoice. Please try again.",
+  "copyInvoiceNumber": "Copy invoice number",
+  "invoiceIssued": "Issued {when}",
+  "@invoiceIssued": {
+    "placeholders": {
+      "when": {
+        "type": "String"
+      }
+    }
+  },
+  "invoiceForOrder": "For order {number}",
+  "@invoiceForOrder": {
+    "placeholders": {
+      "number": {
+        "type": "String"
+      }
+    }
+  },
+  "invoiceFrom": "From",
+  "invoiceTo": "Bill to",
+  "invoiceGstin": "GSTIN {gstin}",
+  "@invoiceGstin": {
+    "placeholders": {
+      "gstin": {
+        "type": "String"
+      }
+    }
+  },
+  "invoiceLineQty": "{qty} × {price}",
+  "@invoiceLineQty": {
+    "placeholders": {
+      "qty": {
+        "type": "String"
+      },
+      "price": {
+        "type": "String"
+      }
+    }
+  },
+  "invoiceLineTax": "HSN {hsn} · GST {rate}%",
+  "@invoiceLineTax": {
+    "placeholders": {
+      "hsn": {
+        "type": "String"
+      },
+      "rate": {
+        "type": "String"
+      }
+    }
+  },
+  "invoiceSubtotal": "Subtotal",
+  "invoiceDiscount": "Discount",
+  "invoiceDelivery": "Delivery",
+  "invoiceCgst": "CGST (included)",
+  "invoiceSgst": "SGST (included)",
+  "invoiceIgst": "IGST (included)",
+  "invoiceTotal": "Total",
+  "invoiceTaxIncluded": "Prices include GST.",
+  "generateInvoice": "Generate invoice",
+  "generatingInvoice": "Generating…",
+  "viewInvoice": "View invoice"
 }

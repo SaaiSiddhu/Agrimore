@@ -4,11 +4,13 @@ import 'package:flutter/services.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:provider/provider.dart';
 import 'package:agrimore_core/agrimore_core.dart';
+import 'package:agrimore_ui/agrimore_ui.dart';
 import 'package:intl/intl.dart';
 import 'package:url_launcher/url_launcher.dart';
 import '../../l10n/app_localizations.dart';
 import '../../providers/seller_order_provider.dart';
 import 'widgets/order_reason_sheet.dart';
+import 'widgets/order_invoice_card.dart';
 
 class SellerOrderDetailScreen extends StatefulWidget {
   final OrderModel order;
@@ -140,6 +142,10 @@ class _SellerOrderDetailScreenState extends State<SellerOrderDetailScreen> {
               ],
             ),
             const SizedBox(height: 24),
+
+            // SELLER-ORDERS-2: invoice (generate once accepted, then view)
+            OrderInvoiceCard(orderId: order.id, orderStatus: order.orderStatus),
+            const SizedBox(height: WsSpace.s16),
 
             // Action Buttons
             if (!order.isDelivered && !order.isCancelled)

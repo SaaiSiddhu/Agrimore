@@ -1287,6 +1287,156 @@ abstract class AppLocalizations {
   /// In en, this message translates to:
   /// **'{label} · {count}'**
   String filterWithCount(String label, String count);
+
+  /// No description provided for @invoiceTitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Invoice'**
+  String get invoiceTitle;
+
+  /// No description provided for @docTaxInvoice.
+  ///
+  /// In en, this message translates to:
+  /// **'Tax Invoice'**
+  String get docTaxInvoice;
+
+  /// No description provided for @docBillOfSupply.
+  ///
+  /// In en, this message translates to:
+  /// **'Bill of Supply'**
+  String get docBillOfSupply;
+
+  /// No description provided for @billOfSupplyNote.
+  ///
+  /// In en, this message translates to:
+  /// **'Issued as a bill of supply: no GST is charged separately. Add your GSTIN and each product\'s HSN code and GST rate to issue tax invoices.'**
+  String get billOfSupplyNote;
+
+  /// No description provided for @invoiceLoadFailed.
+  ///
+  /// In en, this message translates to:
+  /// **'Couldn\'t load this invoice. Please try again.'**
+  String get invoiceLoadFailed;
+
+  /// No description provided for @invoiceIssueFailed.
+  ///
+  /// In en, this message translates to:
+  /// **'Couldn\'t create the invoice. Please try again.'**
+  String get invoiceIssueFailed;
+
+  /// No description provided for @copyInvoiceNumber.
+  ///
+  /// In en, this message translates to:
+  /// **'Copy invoice number'**
+  String get copyInvoiceNumber;
+
+  /// No description provided for @invoiceIssued.
+  ///
+  /// In en, this message translates to:
+  /// **'Issued {when}'**
+  String invoiceIssued(String when);
+
+  /// No description provided for @invoiceForOrder.
+  ///
+  /// In en, this message translates to:
+  /// **'For order {number}'**
+  String invoiceForOrder(String number);
+
+  /// No description provided for @invoiceFrom.
+  ///
+  /// In en, this message translates to:
+  /// **'From'**
+  String get invoiceFrom;
+
+  /// No description provided for @invoiceTo.
+  ///
+  /// In en, this message translates to:
+  /// **'Bill to'**
+  String get invoiceTo;
+
+  /// No description provided for @invoiceGstin.
+  ///
+  /// In en, this message translates to:
+  /// **'GSTIN {gstin}'**
+  String invoiceGstin(String gstin);
+
+  /// No description provided for @invoiceLineQty.
+  ///
+  /// In en, this message translates to:
+  /// **'{qty} × {price}'**
+  String invoiceLineQty(String qty, String price);
+
+  /// No description provided for @invoiceLineTax.
+  ///
+  /// In en, this message translates to:
+  /// **'HSN {hsn} · GST {rate}%'**
+  String invoiceLineTax(String hsn, String rate);
+
+  /// No description provided for @invoiceSubtotal.
+  ///
+  /// In en, this message translates to:
+  /// **'Subtotal'**
+  String get invoiceSubtotal;
+
+  /// No description provided for @invoiceDiscount.
+  ///
+  /// In en, this message translates to:
+  /// **'Discount'**
+  String get invoiceDiscount;
+
+  /// No description provided for @invoiceDelivery.
+  ///
+  /// In en, this message translates to:
+  /// **'Delivery'**
+  String get invoiceDelivery;
+
+  /// No description provided for @invoiceCgst.
+  ///
+  /// In en, this message translates to:
+  /// **'CGST (included)'**
+  String get invoiceCgst;
+
+  /// No description provided for @invoiceSgst.
+  ///
+  /// In en, this message translates to:
+  /// **'SGST (included)'**
+  String get invoiceSgst;
+
+  /// No description provided for @invoiceIgst.
+  ///
+  /// In en, this message translates to:
+  /// **'IGST (included)'**
+  String get invoiceIgst;
+
+  /// No description provided for @invoiceTotal.
+  ///
+  /// In en, this message translates to:
+  /// **'Total'**
+  String get invoiceTotal;
+
+  /// No description provided for @invoiceTaxIncluded.
+  ///
+  /// In en, this message translates to:
+  /// **'Prices include GST.'**
+  String get invoiceTaxIncluded;
+
+  /// No description provided for @generateInvoice.
+  ///
+  /// In en, this message translates to:
+  /// **'Generate invoice'**
+  String get generateInvoice;
+
+  /// No description provided for @generatingInvoice.
+  ///
+  /// In en, this message translates to:
+  /// **'Generating…'**
+  String get generatingInvoice;
+
+  /// No description provided for @viewInvoice.
+  ///
+  /// In en, this message translates to:
+  /// **'View invoice'**
+  String get viewInvoice;
 }
 
 class _AppLocalizationsDelegate

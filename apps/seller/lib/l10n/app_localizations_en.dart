@@ -657,4 +657,92 @@ class AppLocalizationsEn extends AppLocalizations {
   String filterWithCount(String label, String count) {
     return '$label · $count';
   }
+
+  @override
+  String get invoiceTitle => 'Invoice';
+
+  @override
+  String get docTaxInvoice => 'Tax Invoice';
+
+  @override
+  String get docBillOfSupply => 'Bill of Supply';
+
+  @override
+  String get billOfSupplyNote =>
+      'Issued as a bill of supply: no GST is charged separately. Add your GSTIN and each product\'s HSN code and GST rate to issue tax invoices.';
+
+  @override
+  String get invoiceLoadFailed =>
+      'Couldn\'t load this invoice. Please try again.';
+
+  @override
+  String get invoiceIssueFailed =>
+      'Couldn\'t create the invoice. Please try again.';
+
+  @override
+  String get copyInvoiceNumber => 'Copy invoice number';
+
+  @override
+  String invoiceIssued(String when) {
+    return 'Issued $when';
+  }
+
+  @override
+  String invoiceForOrder(String number) {
+    return 'For order $number';
+  }
+
+  @override
+  String get invoiceFrom => 'From';
+
+  @override
+  String get invoiceTo => 'Bill to';
+
+  @override
+  String invoiceGstin(String gstin) {
+    return 'GSTIN $gstin';
+  }
+
+  @override
+  String invoiceLineQty(String qty, String price) {
+    return '$qty × $price';
+  }
+
+  @override
+  String invoiceLineTax(String hsn, String rate) {
+    return 'HSN $hsn · GST $rate%';
+  }
+
+  @override
+  String get invoiceSubtotal => 'Subtotal';
+
+  @override
+  String get invoiceDiscount => 'Discount';
+
+  @override
+  String get invoiceDelivery => 'Delivery';
+
+  @override
+  String get invoiceCgst => 'CGST (included)';
+
+  @override
+  String get invoiceSgst => 'SGST (included)';
+
+  @override
+  String get invoiceIgst => 'IGST (included)';
+
+  @override
+  String get invoiceTotal => 'Total';
+
+  @override
+  String get invoiceTaxIncluded => 'Prices include GST.';
+
+  @override
+  String get generateInvoice => 'Generate invoice';
+
+  @override
+  String get generatingInvoice => 'Generating…';
+
+  @override
+  String get viewInvoice => 'View invoice';
 }
