@@ -315,6 +315,17 @@ service cloud.firestore {
       }
     }
 
+    // SELLER-CATALOGUE-1: the values ProductModel.toMap() writes for a new
+    // product; anything else on a seller-created product is a trust claim.
+    function sellerProductTrustFieldsAreDefault() {
+      return request.resource.data.get('rating', 0) == 0 &&
+        request.resource.data.get('reviewCount', 0) == 0 &&
+        request.resource.data.get('isVerified', false) == false &&
+        request.resource.data.get('isFeatured', false) == false &&
+        request.resource.data.get('isTrending', false) == false &&
+        request.resource.data.get('soldCount', 0) == 0;
+    }
+
     // ============================================
     // PRODUCTS COLLECTION
     // ============================================
@@ -322,9 +333,20 @@ service cloud.firestore {
       // Anyone can read products (public catalog)
       allow read: if true;
       
-      // Only admins or product owner (seller) can create/update/delete
-      allow create: if isAdmin() || (isSeller() && request.resource.data.sellerId == request.auth.uid);
-      allow update: if isAdmin() || (isSeller() && resource.data.sellerId == request.auth.uid && request.resource.data.sellerId == request.auth.uid);
+      // Only admins or product owner (seller) can create/update/delete.
+      // SELLER-CATALOGUE-1: trust fields (rating, reviewCount, isVerified,
+      // isFeatured, isTrending, soldCount) are admin / server writes — a
+      // seller may create a product only with their default values and may
+      // never change them afterwards (they could self-verify, self-feature
+      // and fake reviews or sales before this).
+      allow create: if isAdmin() ||
+        (isSeller() && request.resource.data.sellerId == request.auth.uid &&
+         sellerProductTrustFieldsAreDefault());
+      allow update: if isAdmin() ||
+        (isSeller() && resource.data.sellerId == request.auth.uid &&
+         request.resource.data.sellerId == request.auth.uid &&
+         !request.resource.data.diff(resource.data).affectedKeys()
+           .hasAny(['rating', 'reviewCount', 'isVerified', 'isFeatured', 'isTrending', 'soldCount']));
       allow delete: if isAdmin() || (isSeller() && resource.data.sellerId == request.auth.uid);
       
       // Reviews subcollection under products
