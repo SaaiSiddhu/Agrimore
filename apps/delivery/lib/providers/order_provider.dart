@@ -4,29 +4,21 @@ import 'package:flutter/material.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:agrimore_core/agrimore_core.dart';
 
+// Phase DLV-2B: the platform-wide "available orders" list, the client-side
+// deny and the client-side accept transaction are gone. Riders see only
+// offers sent to them (providers/offer_provider.dart) and accept/decline
+// through the acceptDeliveryOffer / declineDeliveryOffer callables.
 class DeliveryOrderProvider extends ChangeNotifier {
   final FirebaseFirestore _firestore = FirebaseFirestore.instance;
 
-  List<OrderModel> _availableOrders = [];
   List<OrderModel> _myOrders = [];
-  final Set<String> _deniedOrderIds = {};
   OrderModel? _activeOrder;
   bool _isLoading = false;
   String? _error;
 
-  StreamSubscription? _ordersSubscription;
   StreamSubscription? _activeOrderSubscription;
   StreamSubscription? _myOrdersSubscription;
 
-  VoidCallback? onNewOrder;
-
-  List<OrderModel> get availableOrders => _availableOrders
-      .where(
-        (o) =>
-            !_deniedOrderIds.contains(o.id) &&
-            (o.deliveryPartnerId == null || o.deliveryPartnerId!.isEmpty),
-      )
-      .toList();
   List<OrderModel> get myOrders => _myOrders;
   OrderModel? get activeOrder => _activeOrder;
   bool get isLoading => _isLoading;
@@ -69,104 +61,6 @@ class DeliveryOrderProvider extends ChangeNotifier {
         (o) => o.isDelivered && o.paymentMethod.toLowerCase().contains('cod'),
       )
       .fold(0.0, (total, o) => total + o.total);
-
-  void loadAvailableOrders() {
-    _isLoading = true;
-    notifyListeners();
-
-    debugPrint('Loading available orders for delivery...');
-
-    _ordersSubscription?.cancel();
-    _ordersSubscription = _firestore
-        .collection('orders')
-        .where('orderStatus', whereIn: ['ready_for_pickup'])
-        .snapshots()
-        .listen(
-          (snapshot) {
-            var hasNewOrder = false;
-            for (final change in snapshot.docChanges) {
-              if (change.type == DocumentChangeType.added && !_isLoading) {
-                hasNewOrder = true;
-              }
-            }
-
-            if (hasNewOrder && onNewOrder != null) {
-              onNewOrder!();
-            }
-
-            _availableOrders = snapshot.docs
-                .map((doc) => OrderModel.fromMap(doc.data(), doc.id))
-                .toList()
-              ..sort((a, b) => b.createdAt.compareTo(a.createdAt));
-            _isLoading = false;
-            notifyListeners();
-          },
-          onError: (e) {
-            debugPrint('Error loading orders: $e');
-            _error = 'Failed to load orders';
-            _isLoading = false;
-            notifyListeners();
-          },
-        );
-  }
-
-  Future<void> denyOrder(String orderId, {String? partnerId}) async {
-    _deniedOrderIds.add(orderId);
-    if (partnerId != null && partnerId.isNotEmpty) {
-      await _firestore.collection('orders').doc(orderId).set({
-        'deliveryRejectedBy': FieldValue.arrayUnion([partnerId]),
-        'updatedAt': FieldValue.serverTimestamp(),
-      }, SetOptions(merge: true));
-    }
-    notifyListeners();
-  }
-
-  void clearDeniedOrders() {
-    _deniedOrderIds.clear();
-    notifyListeners();
-  }
-
-  Future<bool> acceptOrder(String orderId, String partnerId) async {
-    try {
-      final orderRef = _firestore.collection('orders').doc(orderId);
-      await _firestore.runTransaction((transaction) async {
-        final snap = await transaction.get(orderRef);
-        if (!snap.exists) {
-          throw StateError('Order not found');
-        }
-        final data = snap.data() ?? <String, dynamic>{};
-        final assignedTo = data['deliveryPartnerId']?.toString() ?? '';
-        final orderStatus = data['orderStatus']?.toString() ?? '';
-        if (orderStatus != 'ready_for_pickup') {
-          throw StateError('Order is not available for pickup');
-        }
-        if (assignedTo.isNotEmpty && assignedTo != partnerId) {
-          throw StateError('Order already assigned');
-        }
-        transaction.update(orderRef, {
-          'deliveryPartnerId': partnerId,
-          'orderStatus': 'delivery_accepted',
-          'status': 'delivery_accepted',
-          'deliveryAcceptedAt': FieldValue.serverTimestamp(),
-          'updatedAt': FieldValue.serverTimestamp(),
-        });
-      });
-
-      await orderRef.collection('timeline').add({
-        'status': 'delivery_accepted',
-        'title': 'Delivery Accepted',
-        'description': 'Delivery partner accepted this assignment',
-        'timestamp': FieldValue.serverTimestamp(),
-      });
-
-      return true;
-    } catch (e) {
-      debugPrint('Error accepting order: $e');
-      _error = 'Failed to accept order';
-      notifyListeners();
-      return false;
-    }
-  }
 
   Future<bool> updateOrderStatus(
     String orderId,
@@ -328,7 +222,6 @@ class DeliveryOrderProvider extends ChangeNotifier {
 
   @override
   void dispose() {
-    _ordersSubscription?.cancel();
     _activeOrderSubscription?.cancel();
     _myOrdersSubscription?.cancel();
     super.dispose();

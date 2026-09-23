@@ -11,6 +11,11 @@ import 'app/app.dart';
 import 'providers/auth_provider.dart';
 import 'providers/order_provider.dart';
 import 'providers/location_provider.dart';
+import 'providers/offer_provider.dart';
+import 'package:flutter_local_notifications/flutter_local_notifications.dart';
+import 'offers/delivery_offer.dart';
+import 'offers/offer_alerts.dart';
+import 'offers/offer_launch.dart';
 
 void main() async {
   WidgetsFlutterBinding.ensureInitialized();
@@ -25,7 +30,37 @@ void main() async {
   // AppCheckService's header comment. Never blocks startup (activate()
   // swallows its own errors internally).
   await AppCheckService.activate();
-  await NotificationService.initialize();
+  // Phase DLV-2B: delivery offers ring on their own channel and open the
+  // incoming-offer screen; every other message keeps the shared handling.
+  NotificationService.navigatorKey = deliveryNavigatorKey;
+  await NotificationService.initialize(
+    backgroundHandler: deliveryBackgroundMessageHandler,
+    extraChannels: [offersChannel],
+    // In the foreground the OfferProvider listener rings and opens the
+    // offer itself (it also works without FCM); skip the plain duplicate.
+    onForegroundMessage: (m) async => m.data['type'] == 'delivery_offer',
+    onMessageOpened: (m) async {
+      if (m.data['type'] != 'delivery_offer') return false;
+      OfferLaunch.request(m.data['orderId'] as String?);
+      return true;
+    },
+    onNotificationResponse: (r) {
+      final orderId = orderIdFromPayload(r.payload);
+      if (orderId == null) return false;
+      OfferLaunch.request(orderId);
+      return true;
+    },
+  );
+  // Launched by the full-screen offer alert (or a tap on it) from cold.
+  try {
+    final launch =
+        await FlutterLocalNotificationsPlugin().getNotificationAppLaunchDetails();
+    if (launch?.didNotificationLaunchApp == true) {
+      OfferLaunch.request(orderIdFromPayload(launch!.notificationResponse?.payload));
+    }
+  } catch (e) {
+    debugPrint('Notification launch details unavailable: $e');
+  }
 
   // Force portrait orientation
   await SystemChrome.setPreferredOrientations([
@@ -46,6 +81,7 @@ class DeliveryApp extends StatelessWidget {
         ChangeNotifierProvider(create: (_) => DeliveryAuthProvider()),
         ChangeNotifierProvider(create: (_) => DeliveryOrderProvider()),
         ChangeNotifierProvider(create: (_) => LocationProvider()),
+        ChangeNotifierProvider(create: (_) => OfferProvider()),
       ],
       child: const App(),
     );
