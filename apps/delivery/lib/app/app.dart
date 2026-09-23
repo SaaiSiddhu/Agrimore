@@ -5,6 +5,8 @@ import '../providers/auth_provider.dart';
 import '../screens/auth/login_screen.dart';
 import '../screens/auth/pending_approval_screen.dart';
 import '../screens/home/dashboard_screen.dart';
+import '../offers/offer_coordinator.dart';
+import '../offers/offer_launch.dart';
 
 import 'package:agrimore_ui/agrimore_ui.dart';
 
@@ -14,6 +16,7 @@ class App extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return MaterialApp(
+      navigatorKey: deliveryNavigatorKey,
       title: 'Agrimore Delivery',
       debugShowCheckedModeBanner: false,
       theme: ThemeData(
@@ -74,8 +77,14 @@ class _AuthGate extends StatelessWidget {
         }
 
         // Fully authenticated and approved delivery partner
+        // Phase DLV-2B: the coordinator listens for this rider's offers and
+        // rings / opens the incoming-offer screen above the dashboard.
         if (authProvider.isAuthenticated && authProvider.isDeliveryPartner) {
-          return const DashboardScreen();
+          return OfferCoordinator(
+            key: ValueKey(authProvider.user!.uid),
+            riderId: authProvider.user!.uid,
+            child: const DashboardScreen(),
+          );
         }
 
         // Signed in, but onboarding status does not allow work: pending,

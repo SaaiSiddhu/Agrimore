@@ -7,8 +7,10 @@ import 'package:agrimore_core/agrimore_core.dart';
 import '../../providers/auth_provider.dart';
 import '../../providers/order_provider.dart';
 import '../../providers/location_provider.dart';
-import '../orders/pending_orders_screen.dart';
 import '../orders/active_order_screen.dart';
+import '../../offers/offer_alerts.dart';
+import '../../offers/offer_launch.dart';
+import '../../providers/offer_provider.dart';
 import 'package:agrimore_ui/agrimore_ui.dart';
 
 class DashboardScreen extends StatefulWidget {
@@ -34,54 +36,11 @@ class _DashboardScreenState extends State<DashboardScreen> {
       final locationProvider = context.read<LocationProvider>();
 
       if (auth.user != null) {
-        orderProvider.onNewOrder = _handleNewOrder;
-        orderProvider.loadAvailableOrders();
         orderProvider.watchActiveOrder(auth.user!.uid);
         orderProvider.watchMyDeliveries(auth.user!.uid);
         locationProvider.checkPermissions();
       }
     });
-  }
-
-  void _handleNewOrder() {
-    if (_isOnline && mounted) {
-      // Play a system alert sound
-      SystemSound.play(SystemSoundType.alert);
-      HapticFeedback.heavyImpact();
-
-      // Show popup notification
-      showDialog(
-        context: context,
-        builder: (context) => AlertDialog(
-          shape: RoundedRectangleBorder(
-            borderRadius: BorderRadius.circular(20),
-          ),
-          title: Row(
-            children: [
-              Icon(
-                Icons.directions_bike_rounded,
-                color: Colors.green,
-                size: 28,
-              ),
-              SizedBox(width: 10),
-              Text('New Order!'),
-            ],
-          ),
-          content: Text(
-            'A new delivery order is available. Please check pending orders.',
-          ),
-          actions: [
-            TextButton(
-              onPressed: () => Navigator.pop(context),
-              child: Text(
-                'Close',
-                style: TextStyle(fontWeight: FontWeight.bold),
-              ),
-            ),
-          ],
-        ),
-      );
-    }
   }
 
   @override
@@ -437,17 +396,30 @@ class _DashboardScreenState extends State<DashboardScreen> {
           ),
           const SizedBox(height: 12),
 
-          _buildActionCard(
-            'Available Orders',
-            'View and accept delivery orders',
-            Icons.inbox_rounded,
-            colorScheme,
-            badgeCount:
-                context.watch<DeliveryOrderProvider>().availableOrders.length,
-            onTap: () => Navigator.push(
-              context,
-              MaterialPageRoute(builder: (_) => const PendingOrdersScreen()),
-            ),
+          // Phase DLV-2B (D-DLV-LIST): no platform-wide order list any more —
+          // orders are offered to this rider and ring when they arrive.
+          Consumer<OfferProvider>(
+            builder: (context, offers, _) {
+              final current = offers.current;
+              return _buildActionCard(
+                current != null
+                    ? 'Order offered to you'
+                    : _isOnline
+                        ? 'Waiting for orders'
+                        : 'Go online to get orders',
+                current != null
+                    ? 'Tap to see it before it expires'
+                    : _isOnline
+                        ? 'New orders near you will ring on this phone'
+                        : 'Orders are only offered while you are online',
+                Icons.notifications_active_rounded,
+                colorScheme,
+                badgeCount: offers.offers.length,
+                onTap: current == null
+                    ? null
+                    : () => OfferLaunch.request(current.orderId),
+              );
+            },
           ),
           const SizedBox(height: 12),
           _buildActionCard(
@@ -842,6 +814,9 @@ class _DashboardScreenState extends State<DashboardScreen> {
     final location = context.read<LocationProvider>();
 
     if (value && auth.user != null) {
+      // Phase DLV-2B: notifications, and full-screen alerts on Android 14+,
+      // so offers can ring. Asked once; never blocks going online.
+      await ensureOfferAlertPermissions(context);
       await location.startTracking(auth.user!.uid);
       await location.setOnlineStatus(auth.user!.uid, true);
     } else if (auth.user != null) {
