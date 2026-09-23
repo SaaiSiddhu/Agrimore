@@ -4,6 +4,7 @@ import 'package:flutter/material.dart';
 
 import 'sales_associate_theme_extension.dart';
 import 'sales_associate_tokens.dart';
+import '../workspace/ws_tokens.dart';
 
 /// Scoped design theme for AgriMore Sales Associate (`apps/employee`).
 ///
@@ -241,6 +242,8 @@ abstract final class SalesAssociateTheme {
       ),
       extensions: const <ThemeExtension<dynamic>>[
         SalesAssociateTokens.light,
+        // UI-TEAL-0: same values, brand-neutral API (context.ws).
+        WorkspaceTokens.salesAssociateLight,
       ],
     );
   }
@@ -459,6 +462,8 @@ abstract final class SalesAssociateTheme {
       ),
       extensions: const <ThemeExtension<dynamic>>[
         SalesAssociateTokens.dark,
+        // UI-TEAL-0: same values, brand-neutral API (context.ws).
+        WorkspaceTokens.salesAssociateDark,
       ],
     );
   }

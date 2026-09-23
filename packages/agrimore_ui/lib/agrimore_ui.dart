@@ -17,6 +17,12 @@ export 'themes/sales_associate_tokens.dart';
 export 'themes/sales_associate_theme_extension.dart';
 export 'themes/sales_associate_theme.dart';
 export 'themes/sales_associate_icons.dart';
+// UI-TEAL-0: the brand-parameterised Workspace system (Sales Associate + Seller).
+export 'workspace/ws_foundation.dart';
+export 'workspace/ws_tokens.dart';
+export 'workspace/ws_theme.dart';
+export 'workspace/ws_icons.dart';
+export 'workspace/ws_format.dart';
 
 // ============================================
 // RESPONSIVE

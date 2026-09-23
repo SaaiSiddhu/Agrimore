@@ -27,6 +27,7 @@ dependencies:
   font_awesome_flutter: ^11.0.0
   fluttertoast: ^8.2.8
   lucide_icons_flutter: ^3.1.20
+  intl: ^0.20.2
   
   # Carousel
   carousel_slider: ^5.0.0
@@ -43,3 +44,16 @@ flutter:
   uses-material-design: true
   assets:
     - assets/icons/
+  # UI-TEAL-0: Inter 4.1 (SIL OFL 1.1, assets/fonts/OFL.txt), used as
+  # 'packages/agrimore_ui/Inter' by WorkspaceTheme (WsType.fontFamily).
+  fonts:
+    - family: Inter
+      fonts:
+        - asset: assets/fonts/Inter-Regular.ttf
+          weight: 400
+        - asset: assets/fonts/Inter-Medium.ttf
+          weight: 500
+        - asset: assets/fonts/Inter-SemiBold.ttf
+          weight: 600
+        - asset: assets/fonts/Inter-Bold.ttf
+          weight: 700
