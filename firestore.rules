@@ -2000,6 +2000,49 @@ service cloud.firestore {
       allow read, write: if false;
     }
 
+    // Phase DLV-4A — rider money (functions/src/delivery/riderMoney.ts;
+    // OWNER_DECISIONS D-DLV-PAY / COD / PAYOUT / BANK, 2026-09-23). Every
+    // document is written by Cloud Functions: pay per delivered order, the
+    // COD cash a rider holds, its ledger, weekly statements and bank-change
+    // requests. A rider reads only their own; admin reads all. No client may
+    // create, change or delete any of them, with ONE exception below.
+    match /rider_earnings/{orderId} {
+      allow read: if isAuthenticated() && (resource.data.riderId == request.auth.uid || isAdmin());
+      allow write: if false;
+    }
+    match /rider_accounts/{riderId} {
+      allow read: if isAuthenticated() && (riderId == request.auth.uid || isAdmin());
+      allow write: if false;
+    }
+    match /rider_cash_ledger/{entryId} {
+      allow read: if isAuthenticated() && (resource.data.riderId == request.auth.uid || isAdmin());
+      allow write: if false;
+    }
+    match /rider_bank_change_requests/{requestId} {
+      allow read: if isAuthenticated() && (resource.data.riderId == request.auth.uid || isAdmin());
+      allow write: if false;
+    }
+    match /rider_payouts/{payoutId} {
+      allow read: if isAuthenticated() && (resource.data.riderId == request.auth.uid || isAdmin());
+      allow create, delete: if false;
+      // The one client write: admin marks a PENDING statement paid, with the
+      // bank/UPI reference the rider will see — the seller_payouts rule.
+      // Amounts, the rider and the week never change; on_hold statements are
+      // released only by reviewRiderBankChange.
+      allow update: if isAdmin()
+        && resource.data.status == 'pending'
+        && request.resource.data.status == 'paid'
+        && request.resource.data.diff(resource.data).affectedKeys()
+             .hasOnly(['status', 'paidAt', 'paymentReference', 'paidBy', 'payoutMethod', 'updatedAt'])
+        && request.resource.data.paymentReference is string
+        && request.resource.data.paymentReference.size() >= 4
+        && request.resource.data.paymentReference.size() <= 64
+        && request.resource.data.paidAt is timestamp
+        && request.resource.data.paidBy == request.auth.uid
+        && (!('payoutMethod' in request.resource.data)
+            || request.resource.data.payoutMethod in ['bank', 'upi']);
+    }
+
     match /seller_payouts/{payoutId} {
       // Sellers can read their own payouts, admins can read all
       allow read: if isAuthenticated() && 
