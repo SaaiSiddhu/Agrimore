@@ -23,6 +23,10 @@ export 'workspace/ws_tokens.dart';
 export 'workspace/ws_theme.dart';
 export 'workspace/ws_icons.dart';
 export 'workspace/ws_format.dart';
+// Workspace kit (ADR §7) — components live here, never in an app.
+export 'workspace/kit/ws_otp_input.dart';
+export 'workspace/kit/ws_timeline.dart';
+export 'workspace/kit/ws_test_mode_ribbon.dart';
 
 // ============================================
 // RESPONSIVE
