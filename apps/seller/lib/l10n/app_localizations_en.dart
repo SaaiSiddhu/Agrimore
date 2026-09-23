@@ -2698,4 +2698,101 @@ class AppLocalizationsEn extends AppLocalizations {
   String variantsOrderLine(String name) {
     return 'Option: $name';
   }
+
+  @override
+  String get weekdayMon => 'Mon';
+
+  @override
+  String get weekdayTue => 'Tue';
+
+  @override
+  String get weekdayWed => 'Wed';
+
+  @override
+  String get weekdayThu => 'Thu';
+
+  @override
+  String get weekdayFri => 'Fri';
+
+  @override
+  String get weekdaySat => 'Sat';
+
+  @override
+  String get weekdaySun => 'Sun';
+
+  @override
+  String get scheduleTitle => 'Weekly off & holidays';
+
+  @override
+  String get scheduleWeeklyOff => 'Weekly off days';
+
+  @override
+  String get scheduleWeeklyOffHint =>
+      'Your store takes no orders on these days, every week.';
+
+  @override
+  String get scheduleHolidays => 'Holidays';
+
+  @override
+  String get scheduleAddHoliday => 'Add holiday';
+
+  @override
+  String get scheduleRemoveHoliday => 'Remove holiday';
+
+  @override
+  String get scheduleNoHolidays => 'No holidays planned.';
+
+  @override
+  String get scheduleConsequence =>
+      'On a day off, buyers can still see your products but can\'t place orders. Days follow Indian time.';
+
+  @override
+  String get scheduleAllDaysOff =>
+      'Keep at least one day open. To stop orders for a while, pause your store instead.';
+
+  @override
+  String scheduleHolidayLimit(int count) {
+    return 'You can plan up to $count holidays.';
+  }
+
+  @override
+  String get scheduleOpenEveryDay => 'Open every day';
+
+  @override
+  String scheduleOffDays(String days) {
+    return 'Closed $days';
+  }
+
+  @override
+  String scheduleHolidayCount(int count) {
+    String _temp0 = intl.Intl.pluralLogic(
+      count,
+      locale: localeName,
+      other: '$count holidays planned',
+      one: '1 holiday planned',
+    );
+    return '$_temp0';
+  }
+
+  @override
+  String scheduleOffDaysAndHolidays(String days, int count) {
+    String _temp0 = intl.Intl.pluralLogic(
+      count,
+      locale: localeName,
+      other: '$count holidays',
+      one: '1 holiday',
+    );
+    return 'Closed $days · $_temp0';
+  }
+
+  @override
+  String get scheduleClosedToday => 'Closed today';
+
+  @override
+  String get scheduleClosedWeeklyOff =>
+      'Today is your weekly off. Buyers can\'t place orders until tomorrow.';
+
+  @override
+  String get scheduleClosedHoliday =>
+      'Today is a holiday you set. Buyers can\'t place orders until tomorrow.';
 }

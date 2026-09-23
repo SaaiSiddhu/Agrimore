@@ -947,9 +947,12 @@ service cloud.firestore {
           'shopAddress', 'city', 'state', 'pincode', 'latitude', 'longitude',
           'phone', 'gstNumber', 'gstin',
           'openingTime', 'closingTime', 'deliveryRadiusKm', 'deliveryFeeSchedule',
-          'acceptingOrders', 'pausedUntil',
+          'acceptingOrders', 'pausedUntil', 'weeklyOff', 'holidays',
           'updatedAt'
         ]) &&
+        // SELLER-OPS-2: weekly off days (ISO weekdays) and holiday dates.
+        (!('weeklyOff' in d) || (d.weeklyOff is list && d.weeklyOff.size() <= 7 && d.weeklyOff.hasOnly([1, 2, 3, 4, 5, 6, 7]))) &&
+        (!('holidays' in d) || (d.holidays is list && d.holidays.size() <= 30)) &&
         // SELLER-OPS-1: store pause (read by createOrder / createOrderFromRfq).
         (!('acceptingOrders' in d) || d.acceptingOrders is bool) &&
         (!('pausedUntil' in d) || d.pausedUntil == null || d.pausedUntil is timestamp) &&

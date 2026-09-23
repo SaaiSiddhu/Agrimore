@@ -8,13 +8,21 @@ import 'package:cloud_firestore/cloud_firestore.dart';
 bool isVisibleOnStorefront(ProductModel p) => p.isActive && !p.isDraft;
 
 /// SELLER-OPS-1: the seller paused their store (sellers/{uid}.acceptingOrders
-/// false, until pausedUntil if set). Same rule as the server's
-/// sellerAvailability.isSellerPaused — checkout refuses these orders.
+/// false, until pausedUntil if set). SELLER-OPS-2: or today (Indian
+/// calendar day) is one of their weekly off days (ISO weekday, 1 = Monday)
+/// or holidays ("YYYY-MM-DD"). Same rule as the server's
+/// sellerAvailability.sellerClosedReason — checkout refuses these orders.
 bool isStorePaused(Map<String, dynamic>? seller, DateTime now) {
-  if (seller == null || seller['acceptingOrders'] != false) return false;
-  final until = seller['pausedUntil'];
-  if (until is Timestamp) return until.toDate().isAfter(now);
-  return true;
+  if (seller == null) return false;
+  if (seller['acceptingOrders'] == false) {
+    final until = seller['pausedUntil'];
+    if (until is! Timestamp || until.toDate().isAfter(now)) return true;
+  }
+  final ist = now.toUtc().add(const Duration(hours: 5, minutes: 30));
+  final off = (seller['weeklyOff'] as List?) ?? const [];
+  if (off.contains(ist.weekday)) return true;
+  final key = '${ist.year.toString().padLeft(4, '0')}-${ist.month.toString().padLeft(2, '0')}-${ist.day.toString().padLeft(2, '0')}';
+  return ((seller['holidays'] as List?) ?? const []).contains(key);
 }
 
 /// Up to three non-empty highlights from sellers/{uid}.highlights.
