@@ -314,7 +314,7 @@ class _SellerProfileScreenState extends State<SellerProfileScreen> {
                   section(l10n.accountSectionBusiness, [
                     tile(AgIcons.document, l10n.accountBusinessDetails, l10n.accountBusinessDetailsHint, _editBusiness),
                     tile(AgIcons.store, l10n.storefrontMenu, l10n.storefrontMenuSubtitle, () => _push(const StorefrontEditorScreen())),
-                    tile(AgIcons.delivery, l10n.accountDeliveryFee, describeDeliveryFeeSchedule(seller['deliveryFeeSchedule'] as Map<String, dynamic>?), _editDeliveryFee),
+                    tile(AgIcons.delivery, l10n.accountDeliveryFee, describeDeliveryFeeSchedule(seller['deliveryFeeSchedule'] as Map<String, dynamic>?, l10n), _editDeliveryFee),
                   ]),
                   section(l10n.accountSectionSelling, [
                     tile(AgIcons.quote, l10n.quotesTitle, null, () => _push(const SellerRfqInboxScreen())),

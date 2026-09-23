@@ -2,5 +2,5 @@
 # Re-measured by SELLER-AUTH-1a on 2026-09-23 after fixing a SPACING/RADIUS false positive
 # (digits inside token names such as WsSpace.s16 were counted). Lower a number when a phase
 # removes literals.
-apps/seller/lib 228
+apps/seller/lib 0
 apps/employee/lib 655

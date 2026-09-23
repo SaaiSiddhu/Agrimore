@@ -1,7 +1,8 @@
 import 'package:flutter/material.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
-import 'package:agrimore_ui/agrimore_ui.dart' show SnackbarHelper;
-import 'package:agrimore_core/agrimore_core.dart';
+import 'package:agrimore_ui/agrimore_ui.dart';
+
+import '../../l10n/app_localizations.dart';
 import 'delivery_fee_validation.dart';
 
 // Phase FIX-8B — seller-side config for functions/src/customer/
@@ -16,8 +17,6 @@ import 'delivery_fee_validation.dart';
 // with no explanation, which is worse than rejecting it up front with a
 // clear reason. The bounds themselves live in delivery_fee_validation.dart,
 // unit-tested against deliveryFeeSchedule.ts's own source there.
-const _kAccentColor = Color(0xFF2D7D3C);
-
 /// Opens the Flat/Slab delivery fee editor as a bottom sheet, writing
 /// directly to sellers/{uid}.deliveryFeeSchedule (no callable — mirrors
 /// seller_profile_screen.dart's own edit-dialog convention of a direct
@@ -33,8 +32,6 @@ void showDeliveryFeeSheet(
   showModalBottomSheet(
     context: context,
     isScrollControlled: true,
-    shape: const RoundedRectangleBorder(
-        borderRadius: BorderRadius.vertical(top: Radius.circular(20))),
     builder: (ctx) => _DeliveryFeeSheet(
       uid: uid,
       initialSchedule: initialSchedule,
@@ -76,6 +73,9 @@ class _DeliveryFeeSheetState extends State<_DeliveryFeeSheet> {
   late TextEditingController _flatAmount;
   final List<_SlabRow> _slabs = [];
   bool _saving = false;
+
+  /// Shown inline (validation or save failure).
+  String? _error;
 
   @override
   void initState() {
@@ -140,10 +140,8 @@ class _DeliveryFeeSheetState extends State<_DeliveryFeeSheet> {
 
   Future<void> _save() async {
     final error = _validate();
-    if (error != null) {
-      SnackbarHelper.showError(context, error);
-      return;
-    }
+    setState(() => _error = error);
+    if (error != null) return;
 
     setState(() => _saving = true);
     try {
@@ -168,17 +166,16 @@ class _DeliveryFeeSheetState extends State<_DeliveryFeeSheet> {
       }, SetOptions(merge: true));
 
       if (!mounted) return;
+      final l10n = AppLocalizations.of(context);
+      final messenger = ScaffoldMessenger.maybeOf(context);
       Navigator.pop(context);
       widget.onSaved();
-      SnackbarHelper.showSuccess(context, 'Delivery fee updated');
+      if (messenger != null) WsToast.show(messenger.context, l10n.feeSaved, tone: WsToastTone.success);
     } catch (e) {
       // Never render e.toString() (feedback.md §2) — the detail is logged,
       // never shown.
       debugPrint('❌ Error saving delivery fee schedule: $e');
-      if (mounted) {
-        SnackbarHelper.showError(
-            context, 'Could not save your delivery fee right now. Please try again.');
-      }
+      if (mounted) setState(() => _error = AppLocalizations.of(context).feeSaveFailed);
     } finally {
       if (mounted) setState(() => _saving = false);
     }
@@ -199,182 +196,95 @@ class _DeliveryFeeSheetState extends State<_DeliveryFeeSheet> {
 
   @override
   Widget build(BuildContext context) {
+    final l10n = AppLocalizations.of(context);
+    final t = context.ws;
+    final text = context.wsText;
     return Padding(
-      padding: EdgeInsets.fromLTRB(
-          24, 24, 24, MediaQuery.of(context).viewInsets.bottom + 24),
-      child: SingleChildScrollView(
-        child: Column(
-          mainAxisSize: MainAxisSize.min,
-          crossAxisAlignment: CrossAxisAlignment.start,
-          children: [
-            const Text('Delivery Fee',
-                style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold)),
-            const SizedBox(height: 4),
-            Text(
-              'Choose how you charge customers for delivery.',
-              style: TextStyle(fontSize: 12, color: Colors.grey[500]),
+      padding: EdgeInsets.only(bottom: MediaQuery.viewInsetsOf(context).bottom),
+      child: SafeArea(
+        child: SingleChildScrollView(
+          padding: const EdgeInsets.fromLTRB(WsSpace.page, 0, WsSpace.page, WsSpace.s24),
+          child: Column(mainAxisSize: MainAxisSize.min, crossAxisAlignment: CrossAxisAlignment.stretch, children: [
+            Text(l10n.accountDeliveryFee, style: text.titleMedium),
+            const SizedBox(height: WsSpace.s4),
+            Text(l10n.feeIntro, style: text.bodySmall!.copyWith(color: t.textSecondary)),
+            const SizedBox(height: WsSpace.s16),
+            SegmentedButton<bool>(
+              showSelectedIcon: false,
+              segments: [
+                ButtonSegment(value: false, label: Text(l10n.feeFlat)),
+                ButtonSegment(value: true, label: Text(l10n.feeSlab)),
+              ],
+              selected: {_isSlab},
+              onSelectionChanged: (s) => setState(() => _isSlab = s.first),
             ),
-            const SizedBox(height: 16),
-            _buildTypeToggle(),
-            const SizedBox(height: 16),
-            if (!_isSlab) _buildFlatForm() else _buildSlabForm(),
-            const SizedBox(height: 24),
-            SizedBox(
-              width: double.infinity,
-              height: 50,
-              child: FilledButton(
-                onPressed: _saving ? null : _save,
-                style: FilledButton.styleFrom(
-                  backgroundColor: _kAccentColor,
-                  shape: RoundedRectangleBorder(
-                      borderRadius: BorderRadius.circular(12)),
+            const SizedBox(height: WsSpace.s16),
+            if (!_isSlab)
+              TextField(
+                key: const ValueKey('feeFlat'),
+                controller: _flatAmount,
+                keyboardType: const TextInputType.numberWithOptions(decimal: true),
+                decoration: InputDecoration(labelText: l10n.feeAmount, helperText: l10n.feeFlatHelp),
+              )
+            else ...[
+              Text(l10n.feeSlabRule, style: text.bodySmall!.copyWith(color: t.textSecondary)),
+              const SizedBox(height: WsSpace.s12),
+              for (var i = 0; i < _slabs.length; i++)
+                Padding(
+                  padding: const EdgeInsets.only(bottom: WsSpace.s12),
+                  child: Row(children: [
+                    Expanded(
+                      child: TextField(
+                        controller: _slabs[i].minOrderValue,
+                        keyboardType: const TextInputType.numberWithOptions(decimal: true),
+                        decoration: InputDecoration(labelText: l10n.feeMinOrder, isDense: true),
+                      ),
+                    ),
+                    const SizedBox(width: WsSpace.s8),
+                    Expanded(
+                      child: TextField(
+                        controller: _slabs[i].fee,
+                        keyboardType: const TextInputType.numberWithOptions(decimal: true),
+                        decoration: InputDecoration(labelText: l10n.feeSlabFee, isDense: true),
+                      ),
+                    ),
+                    IconButton(
+                      tooltip: l10n.feeRemoveSlab,
+                      onPressed: _slabs.length > 1 ? () => _removeSlab(i) : null,
+                      icon: Icon(AgIcons.delete, color: _slabs.length > 1 ? t.errorFg : t.disabledContent),
+                    ),
+                  ]),
                 ),
-                child: _saving
-                    ? const SizedBox(
-                        width: 20,
-                        height: 20,
-                        child: CircularProgressIndicator(
-                            strokeWidth: 2, color: Colors.white),
-                      )
-                    : const Text('Save Changes',
-                        style: TextStyle(fontWeight: FontWeight.bold)),
-              ),
-            ),
-          ],
+              if (_slabs.length < kMaxSlabs)
+                Align(
+                  alignment: Alignment.centerLeft,
+                  child: TextButton.icon(onPressed: _addSlab, icon: const Icon(AgIcons.add), label: Text(l10n.feeAddSlab)),
+                ),
+            ],
+            if (_error != null) ...[
+              const SizedBox(height: WsSpace.s8),
+              SaInfoBanner(variant: SaBannerVariant.error, message: _error!),
+            ],
+            const SizedBox(height: WsSpace.s24),
+            SaLoadingButton(text: l10n.accountSave, isLoading: _saving, onPressed: _saving ? null : _save),
+          ]),
         ),
-      ),
-    );
-  }
-
-  Widget _buildTypeToggle() {
-    return Row(
-      children: [
-        Expanded(
-          child: _buildTypeButton('Flat', !_isSlab, () {
-            setState(() => _isSlab = false);
-          }),
-        ),
-        const SizedBox(width: 10),
-        Expanded(
-          child: _buildTypeButton('Slab', _isSlab, () {
-            setState(() => _isSlab = true);
-          }),
-        ),
-      ],
-    );
-  }
-
-  Widget _buildTypeButton(String label, bool selected, VoidCallback onTap) {
-    return InkWell(
-      onTap: onTap,
-      borderRadius: BorderRadius.circular(10),
-      child: Container(
-        padding: const EdgeInsets.symmetric(vertical: 12),
-        decoration: BoxDecoration(
-          color: selected ? _kAccentColor.withOpacity(0.1) : Colors.transparent,
-          border: Border.all(
-              color: selected ? _kAccentColor : Colors.grey[300]!, width: 1.5),
-          borderRadius: BorderRadius.circular(10),
-        ),
-        alignment: Alignment.center,
-        child: Text(
-          label,
-          style: TextStyle(
-            fontWeight: FontWeight.bold,
-            color: selected ? _kAccentColor : Colors.grey[600],
-          ),
-        ),
-      ),
-    );
-  }
-
-  Widget _buildFlatForm() {
-    return TextField(
-      controller: _flatAmount,
-      keyboardType: const TextInputType.numberWithOptions(decimal: true),
-      decoration: const InputDecoration(
-        labelText: 'Delivery Fee (₹)',
-        border: OutlineInputBorder(),
-        helperText: 'Charged on every order, regardless of order value',
-      ),
-    );
-  }
-
-  Widget _buildSlabForm() {
-    return Column(
-      crossAxisAlignment: CrossAxisAlignment.start,
-      children: [
-        Text(
-          'One slab must start at a minimum order value of ₹0.',
-          style: TextStyle(fontSize: 12, color: Colors.grey[500]),
-        ),
-        const SizedBox(height: 10),
-        for (int i = 0; i < _slabs.length; i++) _buildSlabRow(i),
-        const SizedBox(height: 4),
-        if (_slabs.length < kMaxSlabs)
-          TextButton.icon(
-            onPressed: _addSlab,
-            icon: const Icon(Icons.add, color: _kAccentColor),
-            label: const Text('Add Slab', style: TextStyle(color: _kAccentColor)),
-          ),
-      ],
-    );
-  }
-
-  Widget _buildSlabRow(int index) {
-    final slab = _slabs[index];
-    return Padding(
-      padding: const EdgeInsets.only(bottom: 10),
-      child: Row(
-        children: [
-          Expanded(
-            child: TextField(
-              controller: slab.minOrderValue,
-              keyboardType: const TextInputType.numberWithOptions(decimal: true),
-              decoration: const InputDecoration(
-                labelText: 'Min order (₹)',
-                border: OutlineInputBorder(),
-                isDense: true,
-              ),
-            ),
-          ),
-          const SizedBox(width: 8),
-          Expanded(
-            child: TextField(
-              controller: slab.fee,
-              keyboardType: const TextInputType.numberWithOptions(decimal: true),
-              decoration: const InputDecoration(
-                labelText: 'Fee (₹)',
-                border: OutlineInputBorder(),
-                isDense: true,
-              ),
-            ),
-          ),
-          IconButton(
-            onPressed: _slabs.length > 1 ? () => _removeSlab(index) : null,
-            icon: Icon(Icons.remove_circle_outline,
-                color: _slabs.length > 1 ? Colors.red : Colors.grey[300]),
-          ),
-        ],
       ),
     );
   }
 }
 
-/// Summary text for the menu item's subtitle — reuses PriceFormatter
-/// (feedback.md §2: rupee amounts never string-concatenated with a
-/// hardcoded symbol in a new file) rather than a bespoke '₹$amount'.
-String describeDeliveryFeeSchedule(Map<String, dynamic>? raw) {
-  if (raw == null) return 'Using default pricing';
+/// One-line summary for the Account row.
+String describeDeliveryFeeSchedule(Map<String, dynamic>? raw, AppLocalizations l10n) {
+  if (raw == null) return l10n.feeDefault;
   if (raw['type'] == 'flat') {
     final amount = (raw['amount'] as num?)?.toDouble();
-    if (amount == null) return 'Using default pricing';
-    return 'Flat ${PriceFormatter.formatPriceInt(amount)}';
+    return amount == null ? l10n.feeDefault : l10n.feeSummaryFlat(AgFormat.rupeesWhole(amount));
   }
   if (raw['type'] == 'slab') {
     final slabs = raw['slabs'];
     final count = slabs is List ? slabs.length : 0;
-    return count > 0 ? 'Slab pricing · $count tier${count == 1 ? '' : 's'}' : 'Using default pricing';
+    return count > 0 ? l10n.feeSummarySlab(count) : l10n.feeDefault;
   }
-  return 'Using default pricing';
+  return l10n.feeDefault;
 }

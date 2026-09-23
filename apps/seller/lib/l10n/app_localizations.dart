@@ -3813,6 +3813,378 @@ abstract class AppLocalizations {
   /// In en, this message translates to:
   /// **'Couldn\'t find your current location.'**
   String get editorLocationFailed;
+
+  /// No description provided for @aiTitle.
+  ///
+  /// In en, this message translates to:
+  /// **'AI assistant'**
+  String get aiTitle;
+
+  /// No description provided for @aiWebOnly.
+  ///
+  /// In en, this message translates to:
+  /// **'AI assistant activation is available on the AgriMore seller website (agrimore.in). The app doesn\'t process this payment.'**
+  String get aiWebOnly;
+
+  /// No description provided for @aiActivateTitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Activate your AI assistant'**
+  String get aiActivateTitle;
+
+  /// No description provided for @aiActivateBody.
+  ///
+  /// In en, this message translates to:
+  /// **'Connect your own ChatGPT or Gemini API key for sales analysis, pricing insights and business questions.'**
+  String get aiActivateBody;
+
+  /// No description provided for @aiActivateCta.
+  ///
+  /// In en, this message translates to:
+  /// **'Activate — ₹50'**
+  String get aiActivateCta;
+
+  /// No description provided for @aiPaymentReceived.
+  ///
+  /// In en, this message translates to:
+  /// **'Payment received'**
+  String get aiPaymentReceived;
+
+  /// No description provided for @aiConnectHint.
+  ///
+  /// In en, this message translates to:
+  /// **'Now add your AI provider details to finish connecting.'**
+  String get aiConnectHint;
+
+  /// No description provided for @aiProvider.
+  ///
+  /// In en, this message translates to:
+  /// **'Provider'**
+  String get aiProvider;
+
+  /// No description provided for @aiProviderGemini.
+  ///
+  /// In en, this message translates to:
+  /// **'Google Gemini'**
+  String get aiProviderGemini;
+
+  /// No description provided for @aiProviderChatgpt.
+  ///
+  /// In en, this message translates to:
+  /// **'ChatGPT (OpenAI)'**
+  String get aiProviderChatgpt;
+
+  /// No description provided for @aiApiKey.
+  ///
+  /// In en, this message translates to:
+  /// **'API key'**
+  String get aiApiKey;
+
+  /// No description provided for @aiApiKeyHint.
+  ///
+  /// In en, this message translates to:
+  /// **'Paste your API key'**
+  String get aiApiKeyHint;
+
+  /// No description provided for @aiConnect.
+  ///
+  /// In en, this message translates to:
+  /// **'Connect'**
+  String get aiConnect;
+
+  /// No description provided for @aiConnected.
+  ///
+  /// In en, this message translates to:
+  /// **'AI assistant connected'**
+  String get aiConnected;
+
+  /// No description provided for @aiDisconnect.
+  ///
+  /// In en, this message translates to:
+  /// **'Disconnect'**
+  String get aiDisconnect;
+
+  /// No description provided for @aiDisconnectTitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Disconnect the AI assistant?'**
+  String get aiDisconnectTitle;
+
+  /// No description provided for @aiDisconnectBody.
+  ///
+  /// In en, this message translates to:
+  /// **'Your API key is removed. You can connect again later.'**
+  String get aiDisconnectBody;
+
+  /// No description provided for @aiMoneyTaken.
+  ///
+  /// In en, this message translates to:
+  /// **'We received your payment but couldn\'t confirm it just now. Try connecting again — you won\'t be charged twice for the same payment.'**
+  String get aiMoneyTaken;
+
+  /// No description provided for @aiPaymentReference.
+  ///
+  /// In en, this message translates to:
+  /// **'Payment reference: {id}'**
+  String aiPaymentReference(String id);
+
+  /// No description provided for @aiRetryConnect.
+  ///
+  /// In en, this message translates to:
+  /// **'Try connecting again'**
+  String get aiRetryConnect;
+
+  /// No description provided for @aiPreparingPayment.
+  ///
+  /// In en, this message translates to:
+  /// **'Preparing payment…'**
+  String get aiPreparingPayment;
+
+  /// No description provided for @aiOpeningPayment.
+  ///
+  /// In en, this message translates to:
+  /// **'Opening payment…'**
+  String get aiOpeningPayment;
+
+  /// No description provided for @aiVerifyingPayment.
+  ///
+  /// In en, this message translates to:
+  /// **'Verifying payment…'**
+  String get aiVerifyingPayment;
+
+  /// No description provided for @aiPleaseWait.
+  ///
+  /// In en, this message translates to:
+  /// **'Please wait…'**
+  String get aiPleaseWait;
+
+  /// No description provided for @aiSignInAgain.
+  ///
+  /// In en, this message translates to:
+  /// **'Please sign in again and retry.'**
+  String get aiSignInAgain;
+
+  /// No description provided for @aiStartFailed.
+  ///
+  /// In en, this message translates to:
+  /// **'Couldn\'t start the payment. Try again.'**
+  String get aiStartFailed;
+
+  /// No description provided for @aiConnectFailed.
+  ///
+  /// In en, this message translates to:
+  /// **'Couldn\'t connect. Check your API key and try again.'**
+  String get aiConnectFailed;
+
+  /// No description provided for @aiDisconnectFailed.
+  ///
+  /// In en, this message translates to:
+  /// **'Couldn\'t disconnect. Try again.'**
+  String get aiDisconnectFailed;
+
+  /// No description provided for @aiConnectTitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Connect your AI assistant'**
+  String get aiConnectTitle;
+
+  /// No description provided for @aiConnectBody.
+  ///
+  /// In en, this message translates to:
+  /// **'Connect your own ChatGPT or Gemini key to ask about your products and orders.'**
+  String get aiConnectBody;
+
+  /// No description provided for @aiConnectNow.
+  ///
+  /// In en, this message translates to:
+  /// **'Connect now'**
+  String get aiConnectNow;
+
+  /// No description provided for @aiInputHint.
+  ///
+  /// In en, this message translates to:
+  /// **'Ask about your sales, products or orders'**
+  String get aiInputHint;
+
+  /// No description provided for @aiSend.
+  ///
+  /// In en, this message translates to:
+  /// **'Send'**
+  String get aiSend;
+
+  /// No description provided for @aiThinking.
+  ///
+  /// In en, this message translates to:
+  /// **'Thinking'**
+  String get aiThinking;
+
+  /// No description provided for @aiPromptRestock.
+  ///
+  /// In en, this message translates to:
+  /// **'Which products should I restock?'**
+  String get aiPromptRestock;
+
+  /// No description provided for @aiPromptBestSellers.
+  ///
+  /// In en, this message translates to:
+  /// **'What sold best this week?'**
+  String get aiPromptBestSellers;
+
+  /// No description provided for @aiPromptPricing.
+  ///
+  /// In en, this message translates to:
+  /// **'Are any of my prices out of line?'**
+  String get aiPromptPricing;
+
+  /// No description provided for @feeIntro.
+  ///
+  /// In en, this message translates to:
+  /// **'Choose how you charge customers for delivery.'**
+  String get feeIntro;
+
+  /// No description provided for @feeFlat.
+  ///
+  /// In en, this message translates to:
+  /// **'Flat fee'**
+  String get feeFlat;
+
+  /// No description provided for @feeSlab.
+  ///
+  /// In en, this message translates to:
+  /// **'By order value'**
+  String get feeSlab;
+
+  /// No description provided for @feeAmount.
+  ///
+  /// In en, this message translates to:
+  /// **'Delivery fee (₹)'**
+  String get feeAmount;
+
+  /// No description provided for @feeFlatHelp.
+  ///
+  /// In en, this message translates to:
+  /// **'Charged on every order, whatever its value'**
+  String get feeFlatHelp;
+
+  /// No description provided for @feeSlabRule.
+  ///
+  /// In en, this message translates to:
+  /// **'One tier must start at a minimum order value of ₹0.'**
+  String get feeSlabRule;
+
+  /// No description provided for @feeMinOrder.
+  ///
+  /// In en, this message translates to:
+  /// **'Min. order (₹)'**
+  String get feeMinOrder;
+
+  /// No description provided for @feeSlabFee.
+  ///
+  /// In en, this message translates to:
+  /// **'Fee (₹)'**
+  String get feeSlabFee;
+
+  /// No description provided for @feeRemoveSlab.
+  ///
+  /// In en, this message translates to:
+  /// **'Remove this tier'**
+  String get feeRemoveSlab;
+
+  /// No description provided for @feeAddSlab.
+  ///
+  /// In en, this message translates to:
+  /// **'Add tier'**
+  String get feeAddSlab;
+
+  /// No description provided for @feeSaved.
+  ///
+  /// In en, this message translates to:
+  /// **'Delivery fee updated'**
+  String get feeSaved;
+
+  /// No description provided for @feeSaveFailed.
+  ///
+  /// In en, this message translates to:
+  /// **'Couldn\'t save your delivery fee. Try again.'**
+  String get feeSaveFailed;
+
+  /// No description provided for @feeDefault.
+  ///
+  /// In en, this message translates to:
+  /// **'Using default pricing'**
+  String get feeDefault;
+
+  /// No description provided for @feeSummaryFlat.
+  ///
+  /// In en, this message translates to:
+  /// **'Flat {amount}'**
+  String feeSummaryFlat(String amount);
+
+  /// No description provided for @feeSummarySlab.
+  ///
+  /// In en, this message translates to:
+  /// **'{count, plural, =1{By order value · 1 tier} other{By order value · {count} tiers}}'**
+  String feeSummarySlab(int count);
+
+  /// No description provided for @postHint.
+  ///
+  /// In en, this message translates to:
+  /// **'What\'s new? Tell your followers about it'**
+  String get postHint;
+
+  /// No description provided for @postAddPhoto.
+  ///
+  /// In en, this message translates to:
+  /// **'Add a photo'**
+  String get postAddPhoto;
+
+  /// No description provided for @postRemovePhoto.
+  ///
+  /// In en, this message translates to:
+  /// **'Remove photo'**
+  String get postRemovePhoto;
+
+  /// No description provided for @postTagProduct.
+  ///
+  /// In en, this message translates to:
+  /// **'Tag a product (optional)'**
+  String get postTagProduct;
+
+  /// No description provided for @postNoTag.
+  ///
+  /// In en, this message translates to:
+  /// **'No product'**
+  String get postNoTag;
+
+  /// No description provided for @postPublish.
+  ///
+  /// In en, this message translates to:
+  /// **'Post'**
+  String get postPublish;
+
+  /// No description provided for @postPosting.
+  ///
+  /// In en, this message translates to:
+  /// **'Posting…'**
+  String get postPosting;
+
+  /// No description provided for @postEmpty.
+  ///
+  /// In en, this message translates to:
+  /// **'Add some text, a photo or a product first.'**
+  String get postEmpty;
+
+  /// No description provided for @postPublished.
+  ///
+  /// In en, this message translates to:
+  /// **'Posted to your followers'**
+  String get postPublished;
+
+  /// No description provided for @postFailed.
+  ///
+  /// In en, this message translates to:
+  /// **'Couldn\'t publish your post. Try again.'**
+  String get postFailed;
 }
 
 class _AppLocalizationsDelegate

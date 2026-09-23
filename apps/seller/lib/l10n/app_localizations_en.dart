@@ -2180,4 +2180,210 @@ class AppLocalizationsEn extends AppLocalizations {
 
   @override
   String get editorLocationFailed => 'Couldn\'t find your current location.';
+
+  @override
+  String get aiTitle => 'AI assistant';
+
+  @override
+  String get aiWebOnly =>
+      'AI assistant activation is available on the AgriMore seller website (agrimore.in). The app doesn\'t process this payment.';
+
+  @override
+  String get aiActivateTitle => 'Activate your AI assistant';
+
+  @override
+  String get aiActivateBody =>
+      'Connect your own ChatGPT or Gemini API key for sales analysis, pricing insights and business questions.';
+
+  @override
+  String get aiActivateCta => 'Activate — ₹50';
+
+  @override
+  String get aiPaymentReceived => 'Payment received';
+
+  @override
+  String get aiConnectHint =>
+      'Now add your AI provider details to finish connecting.';
+
+  @override
+  String get aiProvider => 'Provider';
+
+  @override
+  String get aiProviderGemini => 'Google Gemini';
+
+  @override
+  String get aiProviderChatgpt => 'ChatGPT (OpenAI)';
+
+  @override
+  String get aiApiKey => 'API key';
+
+  @override
+  String get aiApiKeyHint => 'Paste your API key';
+
+  @override
+  String get aiConnect => 'Connect';
+
+  @override
+  String get aiConnected => 'AI assistant connected';
+
+  @override
+  String get aiDisconnect => 'Disconnect';
+
+  @override
+  String get aiDisconnectTitle => 'Disconnect the AI assistant?';
+
+  @override
+  String get aiDisconnectBody =>
+      'Your API key is removed. You can connect again later.';
+
+  @override
+  String get aiMoneyTaken =>
+      'We received your payment but couldn\'t confirm it just now. Try connecting again — you won\'t be charged twice for the same payment.';
+
+  @override
+  String aiPaymentReference(String id) {
+    return 'Payment reference: $id';
+  }
+
+  @override
+  String get aiRetryConnect => 'Try connecting again';
+
+  @override
+  String get aiPreparingPayment => 'Preparing payment…';
+
+  @override
+  String get aiOpeningPayment => 'Opening payment…';
+
+  @override
+  String get aiVerifyingPayment => 'Verifying payment…';
+
+  @override
+  String get aiPleaseWait => 'Please wait…';
+
+  @override
+  String get aiSignInAgain => 'Please sign in again and retry.';
+
+  @override
+  String get aiStartFailed => 'Couldn\'t start the payment. Try again.';
+
+  @override
+  String get aiConnectFailed =>
+      'Couldn\'t connect. Check your API key and try again.';
+
+  @override
+  String get aiDisconnectFailed => 'Couldn\'t disconnect. Try again.';
+
+  @override
+  String get aiConnectTitle => 'Connect your AI assistant';
+
+  @override
+  String get aiConnectBody =>
+      'Connect your own ChatGPT or Gemini key to ask about your products and orders.';
+
+  @override
+  String get aiConnectNow => 'Connect now';
+
+  @override
+  String get aiInputHint => 'Ask about your sales, products or orders';
+
+  @override
+  String get aiSend => 'Send';
+
+  @override
+  String get aiThinking => 'Thinking';
+
+  @override
+  String get aiPromptRestock => 'Which products should I restock?';
+
+  @override
+  String get aiPromptBestSellers => 'What sold best this week?';
+
+  @override
+  String get aiPromptPricing => 'Are any of my prices out of line?';
+
+  @override
+  String get feeIntro => 'Choose how you charge customers for delivery.';
+
+  @override
+  String get feeFlat => 'Flat fee';
+
+  @override
+  String get feeSlab => 'By order value';
+
+  @override
+  String get feeAmount => 'Delivery fee (₹)';
+
+  @override
+  String get feeFlatHelp => 'Charged on every order, whatever its value';
+
+  @override
+  String get feeSlabRule =>
+      'One tier must start at a minimum order value of ₹0.';
+
+  @override
+  String get feeMinOrder => 'Min. order (₹)';
+
+  @override
+  String get feeSlabFee => 'Fee (₹)';
+
+  @override
+  String get feeRemoveSlab => 'Remove this tier';
+
+  @override
+  String get feeAddSlab => 'Add tier';
+
+  @override
+  String get feeSaved => 'Delivery fee updated';
+
+  @override
+  String get feeSaveFailed => 'Couldn\'t save your delivery fee. Try again.';
+
+  @override
+  String get feeDefault => 'Using default pricing';
+
+  @override
+  String feeSummaryFlat(String amount) {
+    return 'Flat $amount';
+  }
+
+  @override
+  String feeSummarySlab(int count) {
+    String _temp0 = intl.Intl.pluralLogic(
+      count,
+      locale: localeName,
+      other: 'By order value · $count tiers',
+      one: 'By order value · 1 tier',
+    );
+    return '$_temp0';
+  }
+
+  @override
+  String get postHint => 'What\'s new? Tell your followers about it';
+
+  @override
+  String get postAddPhoto => 'Add a photo';
+
+  @override
+  String get postRemovePhoto => 'Remove photo';
+
+  @override
+  String get postTagProduct => 'Tag a product (optional)';
+
+  @override
+  String get postNoTag => 'No product';
+
+  @override
+  String get postPublish => 'Post';
+
+  @override
+  String get postPosting => 'Posting…';
+
+  @override
+  String get postEmpty => 'Add some text, a photo or a product first.';
+
+  @override
+  String get postPublished => 'Posted to your followers';
+
+  @override
+  String get postFailed => 'Couldn\'t publish your post. Try again.';
 }

@@ -68,22 +68,14 @@ class _QuoteBody extends StatelessWidget {
   Future<void> _accept(BuildContext context) async {
     final l10n = AppLocalizations.of(context);
     final offer = quote.lastOffer!;
-    final yes = await showDialog<bool>(
-      context: context,
-      builder: (ctx) => AlertDialog(
-        title: Text(l10n.quoteAcceptTitle),
-        content: Text(l10n.quoteAcceptBody(
-          AgFormat.count(offer.quantity),
-          AgFormat.rupees(offer.price),
-          AgFormat.rupees(offer.total),
-        )),
-        actions: [
-          TextButton(onPressed: () => Navigator.pop(ctx, false), child: Text(l10n.cancel)),
-          FilledButton(onPressed: () => Navigator.pop(ctx, true), child: Text(l10n.quoteAccept)),
-        ],
-      ),
+    final yes = await wsConfirm(
+      context,
+      title: l10n.quoteAcceptTitle,
+      message: l10n.quoteAcceptBody(AgFormat.count(offer.quantity), AgFormat.rupees(offer.price), AgFormat.rupees(offer.total)),
+      confirmLabel: l10n.quoteAccept,
+      cancelLabel: l10n.cancel,
     );
-    if (yes != true || !context.mounted) return;
+    if (!yes || !context.mounted) return;
     final provider = context.read<RfqProvider>();
     final ok = await provider.accept(quote.id);
     if (context.mounted) _toast(context, ok, l10n.quoteAcceptedToast, provider.lastError);
@@ -100,7 +92,7 @@ class _QuoteBody extends StatelessWidget {
 
   void _toast(BuildContext context, bool ok, String success, QuoteActionError? error) {
     final l10n = AppLocalizations.of(context);
-    ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text(ok ? success : l10n.quoteError(error))));
+    WsToast.show(context, ok ? success : l10n.quoteError(error), tone: ok ? WsToastTone.success : WsToastTone.error);
   }
 
   void _openOrder(BuildContext context, String orderId) {
