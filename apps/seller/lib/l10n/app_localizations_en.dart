@@ -1642,4 +1642,168 @@ class AppLocalizationsEn extends AppLocalizations {
 
   @override
   String get settingsLicences => 'Open-source licences';
+
+  @override
+  String get navHome => 'Home';
+
+  @override
+  String get navOrders => 'Orders';
+
+  @override
+  String get navCatalogue => 'Catalogue';
+
+  @override
+  String get navAccount => 'Account';
+
+  @override
+  String navOrdersPending(int count) {
+    String _temp0 = intl.Intl.pluralLogic(
+      count,
+      locale: localeName,
+      other: 'Orders, $count waiting',
+      one: 'Orders, 1 waiting',
+    );
+    return '$_temp0';
+  }
+
+  @override
+  String get accountTitle => 'Account';
+
+  @override
+  String get accountLoadFailed =>
+      'Couldn\'t load your account details. Pull down to try again.';
+
+  @override
+  String get accountNoRatings => 'No ratings yet';
+
+  @override
+  String accountRating(String rating, int count) {
+    String _temp0 = intl.Intl.pluralLogic(
+      count,
+      locale: localeName,
+      other: '$count reviews',
+      one: '1 review',
+    );
+    return '$rating · $_temp0';
+  }
+
+  @override
+  String get accountProducts => 'Products';
+
+  @override
+  String get accountDelivered => 'Delivered';
+
+  @override
+  String get accountSectionBusiness => 'Business';
+
+  @override
+  String get accountSectionSelling => 'Selling & money';
+
+  @override
+  String get accountSectionAi => 'AI assistant';
+
+  @override
+  String get accountSectionApp => 'App';
+
+  @override
+  String get accountBusinessDetails => 'Business details';
+
+  @override
+  String get accountBusinessDetailsHint => 'Name, GSTIN, location, hours';
+
+  @override
+  String get accountDeliveryFee => 'Delivery fee';
+
+  @override
+  String get accountPayoutHint => 'Where your settlements are paid';
+
+  @override
+  String get accountPayoutUnavailable =>
+      'We couldn\'t load your payout account right now. Reopen this screen, or contact support if it keeps happening.';
+
+  @override
+  String get accountPayoutChangeHint =>
+      'To change your payout account, contact AgriMore support.';
+
+  @override
+  String accountIfsc(String ifsc) {
+    return 'IFSC $ifsc';
+  }
+
+  @override
+  String get accountAiAssistant => 'Ask AI about your business';
+
+  @override
+  String get accountAiAssistantHint => 'Sales, products and orders';
+
+  @override
+  String get accountAiConnect => 'Connect AI';
+
+  @override
+  String get accountAiConnectHint => 'Use your own ChatGPT or Gemini key';
+
+  @override
+  String get accountLegal => 'Seller policies';
+
+  @override
+  String get legalAccurate =>
+      'Keep product details, prices and stock accurate.';
+
+  @override
+  String get legalPackOnTime => 'Accept and pack orders on time.';
+
+  @override
+  String get legalPayouts =>
+      'Settlements are paid for delivered orders, after AgriMore\'s commission.';
+
+  @override
+  String get accountSignOut => 'Sign out';
+
+  @override
+  String get accountSignOutTitle => 'Sign out?';
+
+  @override
+  String get accountSignOutBody =>
+      'You\'ll need your phone number to sign in again.';
+
+  @override
+  String get accountSaved => 'Business details saved';
+
+  @override
+  String get accountBusinessName => 'Business name';
+
+  @override
+  String get accountBusinessNameRequired => 'Enter your business name';
+
+  @override
+  String get accountPhone => 'Business phone';
+
+  @override
+  String get accountGstin => 'GSTIN (optional)';
+
+  @override
+  String get accountGstinHelp => 'Needed for tax invoices';
+
+  @override
+  String get accountCity => 'City';
+
+  @override
+  String get accountState => 'State';
+
+  @override
+  String get accountOpens => 'Opens';
+
+  @override
+  String get accountCloses => 'Closes';
+
+  @override
+  String get accountRadius => 'Delivery radius (km)';
+
+  @override
+  String accountRadiusInvalid(int max) {
+    return 'Enter a whole number from 1 to $max';
+  }
+
+  @override
+  String get accountSave => 'Save';
 }
