@@ -86,7 +86,9 @@ Future<void> showOfferAlert(
     audioAttributesUsage: AudioAttributesUsage.notificationRingtone,
     enableVibration: true,
     vibrationPattern: _vibration,
-    icon: '@mipmap/ic_launcher',
+    // Monochrome (alpha-only) status-bar icon; the launcher icon renders as
+    // a blank square there.
+    icon: 'ic_stat_delivery_offer',
   );
   await plugin.show(
     offerNotificationId(orderId),

@@ -213,6 +213,14 @@ class _IncomingOfferScreenState extends State<IncomingOfferScreen> {
                         ),
                         const SizedBox(height: 28),
                         _Row(
+                          icon: Icons.payments_rounded,
+                          label: 'Payment',
+                          value: shown.isCod
+                              ? 'Collect ₹${shown.codAmount.round()} in cash'
+                              : 'Prepaid — nothing to collect',
+                          emphasise: shown.isCod,
+                        ),
+                        _Row(
                           icon: Icons.storefront_rounded,
                           label: 'Pickup',
                           value: [
@@ -236,14 +244,6 @@ class _IncomingOfferScreenState extends State<IncomingOfferScreen> {
                           icon: Icons.inventory_2_rounded,
                           label: 'Items',
                           value: '${shown.itemCount}',
-                        ),
-                        _Row(
-                          icon: Icons.payments_rounded,
-                          label: 'Payment',
-                          value: shown.isCod
-                              ? 'Collect ₹${shown.codAmount.round()} in cash'
-                              : 'Prepaid — nothing to collect',
-                          emphasise: shown.isCod,
                         ),
                       ],
                     ),
@@ -302,23 +302,33 @@ class _Row extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final cs = Theme.of(context).colorScheme;
+    // Label above value: at large font scales a side-by-side label squeezed
+    // the value into three lines (seen on the emulator).
     return Padding(
-      padding: const EdgeInsets.symmetric(vertical: 8),
+      padding: const EdgeInsets.symmetric(vertical: 6),
       child: Row(
+        crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          Icon(icon, color: cs.primary),
-          const SizedBox(width: 12),
-          SizedBox(
-            width: 72,
-            child: Text(label, style: TextStyle(color: cs.onSurfaceVariant)),
+          Padding(
+            padding: const EdgeInsets.only(top: 2),
+            child: Icon(icon, color: cs.primary),
           ),
+          const SizedBox(width: 12),
           Expanded(
-            child: Text(
-              value,
-              style: TextStyle(
-                fontWeight: emphasise ? FontWeight.w800 : FontWeight.w600,
-                color: emphasise ? cs.primary : cs.onSurface,
-              ),
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Text(label,
+                    style: TextStyle(fontSize: 12, color: cs.onSurfaceVariant)),
+                Text(
+                  value,
+                  style: TextStyle(
+                    fontSize: emphasise ? 18 : 15,
+                    fontWeight: emphasise ? FontWeight.w800 : FontWeight.w600,
+                    color: emphasise ? cs.primary : cs.onSurface,
+                  ),
+                ),
+              ],
             ),
           ),
         ],
