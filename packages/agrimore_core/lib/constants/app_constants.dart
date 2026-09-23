@@ -2,6 +2,14 @@ class AppConstants {
   // App Info
   static const String appName = 'Agrimore';
   static const String appVersion = '1.0.0';
+
+  // AgriMore Seller (SELLER-AUTH-1 marketplace hand-off). The package id is
+  // apps/seller's applicationId; the web URL is the `agrimore-seller-app`
+  // Firebase Hosting site (firebase.json). OPEN_DECISION: switch to a custom
+  // domain / confirm the Play listing is published.
+  static const String sellerAppPackageId = 'com.agrimore.seller';
+  static const String sellerAppPlayUrl = 'https://play.google.com/store/apps/details?id=$sellerAppPackageId';
+  static const String sellerWebUrl = 'https://agrimore-seller-app.web.app';
   static const String appTagline = 'Your Agricultural Marketplace';
   
   // Pagination

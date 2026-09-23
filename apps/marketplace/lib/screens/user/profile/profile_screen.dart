@@ -404,7 +404,7 @@ class _ProfileScreenState extends State<ProfileScreen>
                       _MenuItem(
                         icon: Icons.storefront_rounded,
                         iconAsset: 'assets/images/Profile/Seller-Registration_Icon.png',
-                        title: 'Seller dashboard',
+                        title: 'Open AgriMore Seller',
                         onTap: () => _navigateTo(AppRoutes.sellerPanel),
                         color: const Color(0xFF00796B),
                       )
@@ -414,7 +414,7 @@ class _ProfileScreenState extends State<ProfileScreen>
                         iconAsset: 'assets/images/Profile/Seller-Registration_Icon.png',
                         title: sellerProvider.isPending
                             ? 'Seller application (pending)'
-                            : 'Seller registration',
+                            : 'Sell on AgriMore',
                         onTap: () => _navigateTo(AppRoutes.sellerApply),
                         color: const Color(0xFF00796B),
                       ),

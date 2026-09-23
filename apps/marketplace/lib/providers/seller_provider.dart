@@ -73,37 +73,6 @@ class SellerProvider extends ChangeNotifier {
     }
   }
 
-  /// Apply to become a seller
-  Future<bool> applyAsSeller(Map<String, dynamic> applicationData) async {
-    final userId = FirebaseAuth.instance.currentUser?.uid;
-    if (userId == null) return false;
-
-    try {
-      _isLoading = true;
-      notifyListeners();
-
-      await _firestore.collection('sellers').doc(userId).set({
-        ...applicationData,
-        'userId': userId,
-        'status': 'pending',
-        'createdAt': FieldValue.serverTimestamp(),
-        'updatedAt': FieldValue.serverTimestamp(),
-      });
-
-      _isSeller = true;
-      _sellerStatus = 'pending';
-      _sellerData = applicationData;
-      
-      debugPrint('✅ Seller application submitted');
-      return true;
-    } catch (e) {
-      debugPrint('❌ Error applying as seller: $e');
-      return false;
-    } finally {
-      _isLoading = false;
-      notifyListeners();
-    }
-  }
 
   /// Load seller's products
   Future<void> loadSellerProducts() async {
@@ -206,25 +175,6 @@ class SellerProvider extends ChangeNotifier {
     return asDate(b).compareTo(asDate(a));
   }
 
-  /// Update seller profile
-  Future<bool> updateProfile(Map<String, dynamic> updates) async {
-    final userId = FirebaseAuth.instance.currentUser?.uid;
-    if (userId == null) return false;
-
-    try {
-      await _firestore.collection('sellers').doc(userId).update({
-        ...updates,
-        'updatedAt': FieldValue.serverTimestamp(),
-      });
-
-      _sellerData = {...?_sellerData, ...updates};
-      notifyListeners();
-      return true;
-    } catch (e) {
-      debugPrint('❌ Error updating seller profile: $e');
-      return false;
-    }
-  }
 
   /// Reset seller state
   void reset() {
