@@ -108,4 +108,66 @@ void main() {
     expect(RiderLivePoint.fromMap(null), isNull);
     expect(RiderLivePoint.fromMap({'lat': 1, 'lng': 2, 'heading': null})!.heading, isNull);
   });
+
+  group('road route (D-DLV-ROUTES)', () {
+    test('decodes Google\'s reference polyline, like the server', () {
+      final pts = decodePolyline('_p~iF~ps|U_ulLnnqC_mqNvxq`@');
+      expect(pts.length, 3);
+      expect(pts[0].lat, closeTo(38.5, 1e-9));
+      expect(pts[0].lng, closeTo(-120.2, 1e-9));
+      expect(pts[2].lat, closeTo(43.252, 1e-9));
+      expect(pts[2].lng, closeTo(-126.453, 1e-9));
+      expect(decodePolyline('_p~iF~ps'), isA<List<DeliveryPoint>>());
+      expect(decodePolyline(''), isEmpty);
+    });
+
+    DeliveryRoute route(String plan, int seconds, {Duration age = Duration.zero, int legs = 1}) => DeliveryRoute.fromMap({
+          'plan': plan,
+          'durationSeconds': seconds,
+          'computedAt': Timestamp.fromDate(now.subtract(age)),
+          'legs': List.generate(legs, (_) => {'polyline': '_p~iF~ps|U', 'durationSeconds': seconds ~/ legs}),
+        })!;
+
+    test('reads the route the function writes', () {
+      final r = route('via_pickup', 1500, legs: 2);
+      expect(r.viaPickup, isTrue);
+      expect(r.legs.length, 2);
+      expect(r.legs.first.points, isNotEmpty);
+      expect(DeliveryRoute.fromMap({'plan': 'to_drop', 'legs': []}), isNull);
+      expect(DeliveryRoute.fromMap(null), isNull);
+      final task = DeliveryTaskModel.fromMap({'status': 'en_route', 'route': {'plan': 'to_drop', 'legs': [{'polyline': 'x'}]}}, 'o');
+      expect(task.route?.plan, 'to_drop');
+    });
+
+    test('counts Google\'s traffic-aware time down, plus handovers', () {
+      // 15 min ride computed 3 min ago → 12 min left + 2 min at the door.
+      final e = DeliveryEtaCalculator.estimate(status: DeliveryTaskStatus.enRoute, rider: riderAt(-1),
+          pickup: store, drop: home, now: now, route: route('to_drop', 900, age: const Duration(minutes: 3)))!;
+      expect(e.fromRoute, isTrue);
+      expect(e.minutes, 14);
+      // Before pickup: via the store, + 5 min handover + 2 at the door.
+      final b = DeliveryEtaCalculator.estimate(status: DeliveryTaskStatus.assigned, rider: riderAt(2),
+          pickup: store, drop: home, now: now, route: route('via_pickup', 1200, legs: 2))!;
+      expect(b.minutes, 20 + 5 + 2);
+      expect(b.stage, EtaStage.toPickup);
+    });
+
+    test('a route that no longer fits falls back to the estimate', () {
+      final est = eta(DeliveryTaskStatus.enRoute, riderAt(-1))!;
+      for (final r in [
+        route('via_pickup', 900, legs: 2), // stage changed: picked up since
+        route('to_drop', 900, age: const Duration(minutes: 8)), // too old
+      ]) {
+        final e = DeliveryEtaCalculator.estimate(status: DeliveryTaskStatus.enRoute, rider: riderAt(-1),
+            pickup: store, drop: home, now: now, route: r)!;
+        expect(e.fromRoute, isFalse);
+        expect(e.minutes, est.minutes);
+      }
+      final late = DeliveryEtaCalculator.estimate(status: DeliveryTaskStatus.enRoute, rider: riderAt(-1),
+          pickup: store, drop: home, now: now, route: route('to_drop', 60, age: const Duration(minutes: 4)))!;
+      expect(late.minutes, 3, reason: 'overdue ride floors at 1 min + 2 at the door');
+      expect(DeliveryEtaCalculator.estimate(status: DeliveryTaskStatus.delivered, rider: riderAt(0),
+          pickup: store, drop: home, now: now, route: route('to_drop', 900)), isNull);
+    });
+  });
 }

@@ -1,5 +1,6 @@
 import 'package:cloud_firestore/cloud_firestore.dart';
 
+import 'delivery_eta.dart' show DeliveryRoute;
 import 'delivery_task_status.dart';
 
 /// Phase DLV-1A — delivery_tasks/{orderId}, one rider leg per order.
@@ -33,6 +34,10 @@ class DeliveryTaskModel {
   final bool lastTransitionAllowed;
   final DateTime? updatedAt;
 
+  /// Phase DLV-3B: the road route the refreshDeliveryRoute function last
+  /// computed (Google Routes, D-DLV-ROUTES); null when there is none.
+  final DeliveryRoute? route;
+
   const DeliveryTaskModel({
     required this.orderId,
     this.orderNumber,
@@ -48,6 +53,7 @@ class DeliveryTaskModel {
     this.legacyStatus,
     this.lastTransitionAllowed = true,
     this.updatedAt,
+    this.route,
   });
 
   bool get isCod => codAmount > 0;
@@ -83,6 +89,7 @@ class DeliveryTaskModel {
       legacyStatus: map['legacyStatus'] as String?,
       lastTransitionAllowed: map['lastTransitionAllowed'] as bool? ?? true,
       updatedAt: _date(map['updatedAt']),
+      route: DeliveryRoute.fromMap(map['route']),
     );
   }
 
@@ -124,6 +131,7 @@ class DeliveryTaskModel {
     String? legacyStatus,
     bool? lastTransitionAllowed,
     DateTime? updatedAt,
+    DeliveryRoute? route,
   }) =>
       DeliveryTaskModel(
         orderId: orderId ?? this.orderId,
@@ -141,6 +149,7 @@ class DeliveryTaskModel {
         lastTransitionAllowed:
             lastTransitionAllowed ?? this.lastTransitionAllowed,
         updatedAt: updatedAt ?? this.updatedAt,
+        route: route ?? this.route,
       );
 }
 
