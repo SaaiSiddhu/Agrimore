@@ -2698,4 +2698,22 @@ class AppLocalizationsEn extends AppLocalizations {
   String variantsOrderLine(String name) {
     return 'Option: $name';
   }
+
+  @override
+  String get sortTitle => 'Sort';
+
+  @override
+  String get sortNewest => 'Newest first';
+
+  @override
+  String get sortNameAz => 'Name A–Z';
+
+  @override
+  String get sortPriceLow => 'Price: low to high';
+
+  @override
+  String get sortPriceHigh => 'Price: high to low';
+
+  @override
+  String get sortStockLow => 'Stock: lowest first';
 }

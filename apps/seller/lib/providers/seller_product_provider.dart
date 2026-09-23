@@ -4,6 +4,9 @@ import 'package:agrimore_core/agrimore_core.dart';
 import 'package:agrimore_services/agrimore_services.dart';
 
 /// Listing tabs (ADR §10.4 C-01, SELLER-CATALOGUE-1).
+/// SELLER-CATALOGUE-3 (gap 17): catalogue order.
+enum ProductSort { newest, nameAz, priceLow, priceHigh, stockLow }
+
 enum ProductListFilter { all, active, draft, lowStock, outOfStock, inactive }
 
 /// SELLER-OPS-1: low stock uses the product's own alert level.
@@ -29,6 +32,27 @@ class SellerProductProvider with ChangeNotifier {
   ProductListFilter _filter = ProductListFilter.all;
 
   ProductListFilter get filter => _filter;
+
+  ProductSort _sort = ProductSort.newest;
+  ProductSort get sort => _sort;
+
+  void setSort(ProductSort value) {
+    _sort = value;
+    notifyListeners();
+  }
+
+  /// Pure comparator; ties fall back to newest first.
+  static int compareBy(ProductSort s, ProductModel a, ProductModel b) {
+    final newest = b.createdAt.compareTo(a.createdAt);
+    final c = switch (s) {
+      ProductSort.newest => newest,
+      ProductSort.nameAz => a.name.toLowerCase().compareTo(b.name.toLowerCase()),
+      ProductSort.priceLow => a.salePrice.compareTo(b.salePrice),
+      ProductSort.priceHigh => b.salePrice.compareTo(a.salePrice),
+      ProductSort.stockLow => a.stock.compareTo(b.stock),
+    };
+    return c != 0 ? c : newest;
+  }
 
   void setFilter(ProductListFilter value) {
     _filter = value;
@@ -73,7 +97,8 @@ class SellerProductProvider with ChangeNotifier {
     return _products
         .where((p) => matchesFilter(p, _filter))
         .where((p) => q.isEmpty || p.name.toLowerCase().contains(q))
-        .toList();
+        .toList()
+      ..sort((a, b) => compareBy(_sort, a, b));
   }
 
   void setSearchQuery(String query) {
