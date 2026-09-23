@@ -1,6 +1,8 @@
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
+import 'package:firebase_storage/firebase_storage.dart';
+import 'package:url_launcher/url_launcher.dart';
 import 'package:agrimore_ui/agrimore_ui.dart';
 
 /// Review `sellerRequests` and approve / reject (updates `users` + optional `sellers`).
@@ -41,6 +43,13 @@ class SellerRequestsManagementScreen extends StatelessWidget {
         SetOptions(merge: true),
       );
 
+      // SELLER-AUTH-1b: the in-app application carries more than the old
+      // form — copy the public business fields (never payout/KYC) into the
+      // public profile. Fields absent on legacy requests are simply skipped.
+      const publicFields = [
+        'businessCategory', 'gstin', 'city', 'state', 'pincode',
+        'deliveryRadiusKm', 'latitude', 'longitude',
+      ];
       batch.set(
         sellerRef,
         {
@@ -51,6 +60,8 @@ class SellerRequestsManagementScreen extends StatelessWidget {
           'email': data['email'],
           'shopName': data['shopName'],
           'shopAddress': data['shopAddress'],
+          for (final f in publicFields)
+            if (data[f] != null && data[f] != '') f: data[f],
           'updatedAt': FieldValue.serverTimestamp(),
           'createdAt': FieldValue.serverTimestamp(),
         },
@@ -65,9 +76,12 @@ class SellerRequestsManagementScreen extends StatelessWidget {
         payoutRef,
         {
           'sellerId': uid,
+          'payoutMethod': data['payoutMethod'] ?? 'bank',
+          'accountHolder': data['accountHolder'],
           'bankName': data['bankName'],
           'accountNumber': data['accountNumber'],
           'ifsc': data['ifsc'],
+          'upiId': data['upiId'],
           'updatedAt': FieldValue.serverTimestamp(),
           'createdAt': FieldValue.serverTimestamp(),
         },
@@ -125,7 +139,8 @@ class SellerRequestsManagementScreen extends StatelessWidget {
           if (!snap.hasData) {
             return const Center(child: CircularProgressIndicator());
           }
-          final docs = snap.data!.docs.toList()
+          // SELLER-AUTH-1b: drafts are unfinished applications — not for review.
+          final docs = snap.data!.docs.where((d) => d.data()['status'] != 'draft').toList()
             ..sort((a, b) {
               final ta = a.data()['appliedAt'];
               final tb = b.data()['appliedAt'];
@@ -199,6 +214,7 @@ class SellerRequestsManagementScreen extends StatelessWidget {
                             style: TextStyle(color: Colors.grey.shade700, fontSize: 13),
                           ),
                         ),
+                      _ApplicationDetails(uid: uid, data: d),
                       if (status == 'pending') ...[
                         const SizedBox(height: 12),
                         Row(
@@ -223,6 +239,62 @@ class SellerRequestsManagementScreen extends StatelessWidget {
             },
           );
         },
+      ),
+    );
+  }
+}
+
+/// SELLER-AUTH-1b: the extra application fields and KYC photos an admin needs
+/// before approving. Photos open via a short-lived download URL (storage.rules:
+/// seller_documents/{uid}/ is owner + admin read only).
+class _ApplicationDetails extends StatelessWidget {
+  const _ApplicationDetails({required this.uid, required this.data});
+  final String uid;
+  final Map<String, dynamic> data;
+
+  Future<void> _openDocument(BuildContext context, String path) async {
+    try {
+      final url = await FirebaseStorage.instance.ref(path).getDownloadURL();
+      await launchUrl(Uri.parse(url), mode: LaunchMode.externalApplication);
+    } catch (e) {
+      if (context.mounted) SnackbarHelper.showError(context, 'Could not open document: $e');
+    }
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    final lines = <String>[
+      if ((data['businessCategory'] ?? '').toString().isNotEmpty) 'Sells: ${data['businessCategory']}',
+      if ((data['gstin'] ?? '').toString().isNotEmpty) 'GSTIN: ${data['gstin']}',
+      if ((data['city'] ?? '').toString().isNotEmpty)
+        '${data['city']}, ${data['state'] ?? ''} ${data['pincode'] ?? ''}',
+      if (data['deliveryRadiusKm'] != null) 'Delivery radius: ${data['deliveryRadiusKm']} km',
+      if (data['payoutMethod'] == 'upi') 'Payout: UPI ${data['upiId'] ?? ''}',
+      if (data['payoutMethod'] == 'bank')
+        'Payout: ${data['bankName'] ?? ''} · ${data['ifsc'] ?? ''} · ${data['accountHolder'] ?? ''}',
+    ];
+    final docs = (data['documents'] as Map?)?.cast<String, dynamic>() ?? const {};
+    if (lines.isEmpty && docs.isEmpty) return const SizedBox.shrink();
+    return Padding(
+      padding: const EdgeInsets.only(top: 8),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          for (final l in lines) Text(l, style: TextStyle(color: Colors.grey.shade800, fontSize: 13)),
+          if (docs.isNotEmpty)
+            Wrap(
+              spacing: 8,
+              children: [
+                for (final e in docs.entries)
+                  if (e.value is String)
+                    TextButton.icon(
+                      onPressed: () => _openDocument(context, e.value as String),
+                      icon: const Icon(Icons.image_outlined, size: 18),
+                      label: Text(e.key),
+                    ),
+              ],
+            ),
+        ],
       ),
     );
   }

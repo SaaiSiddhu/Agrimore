@@ -10,6 +10,8 @@ import '../screens/auth/account_restricted_screen.dart';
 import '../screens/auth/application_status_screen.dart';
 import '../screens/auth/seller_sign_in_screen.dart';
 import '../screens/auth/widgets/auth_brand_panel.dart';
+import '../screens/onboarding/application_screen.dart';
+import '../screens/onboarding/apply_intro_screen.dart';
 import '../screens/shell/seller_shell.dart';
 
 /// AgriMore Seller — Workspace theme, seller (teal) brand (ADR-S02/S03).
@@ -52,7 +54,8 @@ class SellerAuthGate extends StatelessWidget {
         child: switch (access) {
           SellerAccess.loading => const _LoadingAccount(),
           SellerAccess.signedOut => const SellerSignInScreen(),
-          SellerAccess.noApplication => const AccountRestrictedScreen(reason: RestrictionReason.noAccount),
+          SellerAccess.noApplication => const ApplyIntroScreen(),
+          SellerAccess.draft => const ApplicationScreen(),
           SellerAccess.pending => const ApplicationStatusScreen(),
           SellerAccess.rejected => const AccountRestrictedScreen(reason: RestrictionReason.rejected),
           SellerAccess.suspended => const AccountRestrictedScreen(reason: RestrictionReason.suspended),

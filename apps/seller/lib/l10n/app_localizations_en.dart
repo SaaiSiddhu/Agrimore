@@ -229,18 +229,6 @@ class AppLocalizationsEn extends AppLocalizations {
       'Your listings are hidden and new orders are paused. Contact us to resolve this.';
 
   @override
-  String get restrictedNoAccountTitle => 'No seller account on this number';
-
-  @override
-  String restrictedNoAccountBody(String phone) {
-    return '$phone isn\'t registered as an AgriMore seller yet. Contact us to set up your seller account.';
-  }
-
-  @override
-  String get restrictedNoAccountBodyGeneric =>
-      'This account isn\'t registered as an AgriMore seller yet. Contact us to set up your seller account.';
-
-  @override
   String get supportTitle => 'Contact AgriMore';
 
   @override
@@ -274,4 +262,248 @@ class AppLocalizationsEn extends AppLocalizations {
 
   @override
   String get loadingAccount => 'Loading your seller account';
+
+  @override
+  String get applyTitle => 'Start selling on AgriMore';
+
+  @override
+  String get applySubhead =>
+      'Tell us about your business. It takes about 5 minutes and you can stop and continue any time.';
+
+  @override
+  String get applyNeedBusiness => 'Business name and what you sell';
+
+  @override
+  String get applyNeedAddress => 'Shop address and delivery area';
+
+  @override
+  String get applyNeedDocuments => 'A photo of your ID and of your shop';
+
+  @override
+  String get applyNeedPayout => 'Bank account or UPI ID for payments';
+
+  @override
+  String get applyStartCta => 'Start application';
+
+  @override
+  String get applyResumeCta => 'Continue application';
+
+  @override
+  String get applyReopenCta => 'Fix and resubmit';
+
+  @override
+  String stepOf(int current, int total) {
+    return 'Step $current of $total';
+  }
+
+  @override
+  String get stepBusiness => 'Business details';
+
+  @override
+  String get stepLocation => 'Location and delivery';
+
+  @override
+  String get stepDocuments => 'Documents';
+
+  @override
+  String get stepPayout => 'Payout account';
+
+  @override
+  String get stepReview => 'Review and submit';
+
+  @override
+  String get saveContinue => 'Save and continue';
+
+  @override
+  String get saving => 'Saving…';
+
+  @override
+  String get savedDraft => 'Saved. You can continue later.';
+
+  @override
+  String get saveFailed =>
+      'Couldn\'t save. Check your connection and try again.';
+
+  @override
+  String get fieldOwnerName => 'Your full name';
+
+  @override
+  String get fieldShopName => 'Shop or business name';
+
+  @override
+  String get fieldCategory => 'What do you mainly sell?';
+
+  @override
+  String get fieldGstin => 'GSTIN (optional)';
+
+  @override
+  String get fieldGstinHelp => '15 characters, e.g. 33ABCDE1234F1Z5';
+
+  @override
+  String get category_vegetables => 'Vegetables';
+
+  @override
+  String get category_fruits => 'Fruits';
+
+  @override
+  String get category_grains => 'Grains and pulses';
+
+  @override
+  String get category_dairy => 'Dairy';
+
+  @override
+  String get category_seeds => 'Seeds';
+
+  @override
+  String get category_fertilisers => 'Fertilisers and inputs';
+
+  @override
+  String get category_equipment => 'Tools and equipment';
+
+  @override
+  String get category_other => 'Something else';
+
+  @override
+  String get fieldAddress => 'Shop address';
+
+  @override
+  String get fieldCity => 'City or town';
+
+  @override
+  String get fieldState => 'State';
+
+  @override
+  String get fieldPincode => 'PIN code';
+
+  @override
+  String get fieldRadius => 'Delivery radius';
+
+  @override
+  String radiusKm(int km) {
+    return '$km km';
+  }
+
+  @override
+  String get useCurrentLocation => 'Use my current location';
+
+  @override
+  String get locationCaptured => 'Location pinned';
+
+  @override
+  String get locationFailed =>
+      'Couldn\'t get your location. You can continue without it.';
+
+  @override
+  String get documentsHelp =>
+      'Clear photos help us approve you faster. Only AgriMore reviewers can see them.';
+
+  @override
+  String get doc_idProof =>
+      'ID proof (Aadhaar, PAN, voter ID or driving licence)';
+
+  @override
+  String get doc_shopPhoto => 'Photo of your shop or farm';
+
+  @override
+  String get doc_gstCertificate => 'GST certificate (optional)';
+
+  @override
+  String get docTakePhoto => 'Take photo';
+
+  @override
+  String get docChoosePhoto => 'Choose from gallery';
+
+  @override
+  String get docUploaded => 'Uploaded';
+
+  @override
+  String get docUploading => 'Uploading…';
+
+  @override
+  String get docReplace => 'Replace';
+
+  @override
+  String get docUploadFailed => 'Upload failed. Try again.';
+
+  @override
+  String get payoutHelp =>
+      'Your settlements are paid here. We never show these details on your public profile.';
+
+  @override
+  String get payoutBank => 'Bank account';
+
+  @override
+  String get payoutUpi => 'UPI ID';
+
+  @override
+  String get fieldAccountHolder => 'Account holder name';
+
+  @override
+  String get fieldBankName => 'Bank name';
+
+  @override
+  String get fieldAccountNumber => 'Account number';
+
+  @override
+  String get fieldAccountNumberConfirm => 'Re-enter account number';
+
+  @override
+  String get fieldIfsc => 'IFSC code';
+
+  @override
+  String get fieldUpiId => 'UPI ID';
+
+  @override
+  String get accountMismatch => 'Account numbers don\'t match';
+
+  @override
+  String get reviewHelp =>
+      'Check your details. You can\'t edit them while we review your application.';
+
+  @override
+  String get reviewEdit => 'Edit';
+
+  @override
+  String reviewDocumentsCount(int count, int total) {
+    return '$count of $total photos uploaded';
+  }
+
+  @override
+  String get acceptTerms =>
+      'I confirm these details are correct and agree to AgriMore\'s seller terms';
+
+  @override
+  String get submitCta => 'Submit application';
+
+  @override
+  String get submitting => 'Submitting…';
+
+  @override
+  String get submitInvalid =>
+      'Some details need attention. We\'ve taken you to the first one.';
+
+  @override
+  String get submitFailed =>
+      'Couldn\'t submit. Check your connection and try again.';
+
+  @override
+  String get errRequired => 'This is required';
+
+  @override
+  String get errGstin => 'Enter a valid 15-character GSTIN';
+
+  @override
+  String get errPincode => 'Enter a valid 6-digit PIN code';
+
+  @override
+  String get errIfsc => 'Enter a valid 11-character IFSC code';
+
+  @override
+  String get errAccount => 'Enter a valid account number (9–18 digits)';
+
+  @override
+  String get errUpi => 'Enter a valid UPI ID, e.g. name@bank';
+
+  @override
+  String get errDocument => 'Upload this photo to continue';
 }

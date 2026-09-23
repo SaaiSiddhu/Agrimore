@@ -496,24 +496,6 @@ abstract class AppLocalizations {
   /// **'Your listings are hidden and new orders are paused. Contact us to resolve this.'**
   String get restrictedSuspendedBody;
 
-  /// No description provided for @restrictedNoAccountTitle.
-  ///
-  /// In en, this message translates to:
-  /// **'No seller account on this number'**
-  String get restrictedNoAccountTitle;
-
-  /// No description provided for @restrictedNoAccountBody.
-  ///
-  /// In en, this message translates to:
-  /// **'{phone} isn\'t registered as an AgriMore seller yet. Contact us to set up your seller account.'**
-  String restrictedNoAccountBody(String phone);
-
-  /// No description provided for @restrictedNoAccountBodyGeneric.
-  ///
-  /// In en, this message translates to:
-  /// **'This account isn\'t registered as an AgriMore seller yet. Contact us to set up your seller account.'**
-  String get restrictedNoAccountBodyGeneric;
-
   /// No description provided for @supportTitle.
   ///
   /// In en, this message translates to:
@@ -573,6 +555,462 @@ abstract class AppLocalizations {
   /// In en, this message translates to:
   /// **'Loading your seller account'**
   String get loadingAccount;
+
+  /// No description provided for @applyTitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Start selling on AgriMore'**
+  String get applyTitle;
+
+  /// No description provided for @applySubhead.
+  ///
+  /// In en, this message translates to:
+  /// **'Tell us about your business. It takes about 5 minutes and you can stop and continue any time.'**
+  String get applySubhead;
+
+  /// No description provided for @applyNeedBusiness.
+  ///
+  /// In en, this message translates to:
+  /// **'Business name and what you sell'**
+  String get applyNeedBusiness;
+
+  /// No description provided for @applyNeedAddress.
+  ///
+  /// In en, this message translates to:
+  /// **'Shop address and delivery area'**
+  String get applyNeedAddress;
+
+  /// No description provided for @applyNeedDocuments.
+  ///
+  /// In en, this message translates to:
+  /// **'A photo of your ID and of your shop'**
+  String get applyNeedDocuments;
+
+  /// No description provided for @applyNeedPayout.
+  ///
+  /// In en, this message translates to:
+  /// **'Bank account or UPI ID for payments'**
+  String get applyNeedPayout;
+
+  /// No description provided for @applyStartCta.
+  ///
+  /// In en, this message translates to:
+  /// **'Start application'**
+  String get applyStartCta;
+
+  /// No description provided for @applyResumeCta.
+  ///
+  /// In en, this message translates to:
+  /// **'Continue application'**
+  String get applyResumeCta;
+
+  /// No description provided for @applyReopenCta.
+  ///
+  /// In en, this message translates to:
+  /// **'Fix and resubmit'**
+  String get applyReopenCta;
+
+  /// No description provided for @stepOf.
+  ///
+  /// In en, this message translates to:
+  /// **'Step {current} of {total}'**
+  String stepOf(int current, int total);
+
+  /// No description provided for @stepBusiness.
+  ///
+  /// In en, this message translates to:
+  /// **'Business details'**
+  String get stepBusiness;
+
+  /// No description provided for @stepLocation.
+  ///
+  /// In en, this message translates to:
+  /// **'Location and delivery'**
+  String get stepLocation;
+
+  /// No description provided for @stepDocuments.
+  ///
+  /// In en, this message translates to:
+  /// **'Documents'**
+  String get stepDocuments;
+
+  /// No description provided for @stepPayout.
+  ///
+  /// In en, this message translates to:
+  /// **'Payout account'**
+  String get stepPayout;
+
+  /// No description provided for @stepReview.
+  ///
+  /// In en, this message translates to:
+  /// **'Review and submit'**
+  String get stepReview;
+
+  /// No description provided for @saveContinue.
+  ///
+  /// In en, this message translates to:
+  /// **'Save and continue'**
+  String get saveContinue;
+
+  /// No description provided for @saving.
+  ///
+  /// In en, this message translates to:
+  /// **'Saving…'**
+  String get saving;
+
+  /// No description provided for @savedDraft.
+  ///
+  /// In en, this message translates to:
+  /// **'Saved. You can continue later.'**
+  String get savedDraft;
+
+  /// No description provided for @saveFailed.
+  ///
+  /// In en, this message translates to:
+  /// **'Couldn\'t save. Check your connection and try again.'**
+  String get saveFailed;
+
+  /// No description provided for @fieldOwnerName.
+  ///
+  /// In en, this message translates to:
+  /// **'Your full name'**
+  String get fieldOwnerName;
+
+  /// No description provided for @fieldShopName.
+  ///
+  /// In en, this message translates to:
+  /// **'Shop or business name'**
+  String get fieldShopName;
+
+  /// No description provided for @fieldCategory.
+  ///
+  /// In en, this message translates to:
+  /// **'What do you mainly sell?'**
+  String get fieldCategory;
+
+  /// No description provided for @fieldGstin.
+  ///
+  /// In en, this message translates to:
+  /// **'GSTIN (optional)'**
+  String get fieldGstin;
+
+  /// No description provided for @fieldGstinHelp.
+  ///
+  /// In en, this message translates to:
+  /// **'15 characters, e.g. 33ABCDE1234F1Z5'**
+  String get fieldGstinHelp;
+
+  /// No description provided for @category_vegetables.
+  ///
+  /// In en, this message translates to:
+  /// **'Vegetables'**
+  String get category_vegetables;
+
+  /// No description provided for @category_fruits.
+  ///
+  /// In en, this message translates to:
+  /// **'Fruits'**
+  String get category_fruits;
+
+  /// No description provided for @category_grains.
+  ///
+  /// In en, this message translates to:
+  /// **'Grains and pulses'**
+  String get category_grains;
+
+  /// No description provided for @category_dairy.
+  ///
+  /// In en, this message translates to:
+  /// **'Dairy'**
+  String get category_dairy;
+
+  /// No description provided for @category_seeds.
+  ///
+  /// In en, this message translates to:
+  /// **'Seeds'**
+  String get category_seeds;
+
+  /// No description provided for @category_fertilisers.
+  ///
+  /// In en, this message translates to:
+  /// **'Fertilisers and inputs'**
+  String get category_fertilisers;
+
+  /// No description provided for @category_equipment.
+  ///
+  /// In en, this message translates to:
+  /// **'Tools and equipment'**
+  String get category_equipment;
+
+  /// No description provided for @category_other.
+  ///
+  /// In en, this message translates to:
+  /// **'Something else'**
+  String get category_other;
+
+  /// No description provided for @fieldAddress.
+  ///
+  /// In en, this message translates to:
+  /// **'Shop address'**
+  String get fieldAddress;
+
+  /// No description provided for @fieldCity.
+  ///
+  /// In en, this message translates to:
+  /// **'City or town'**
+  String get fieldCity;
+
+  /// No description provided for @fieldState.
+  ///
+  /// In en, this message translates to:
+  /// **'State'**
+  String get fieldState;
+
+  /// No description provided for @fieldPincode.
+  ///
+  /// In en, this message translates to:
+  /// **'PIN code'**
+  String get fieldPincode;
+
+  /// No description provided for @fieldRadius.
+  ///
+  /// In en, this message translates to:
+  /// **'Delivery radius'**
+  String get fieldRadius;
+
+  /// No description provided for @radiusKm.
+  ///
+  /// In en, this message translates to:
+  /// **'{km} km'**
+  String radiusKm(int km);
+
+  /// No description provided for @useCurrentLocation.
+  ///
+  /// In en, this message translates to:
+  /// **'Use my current location'**
+  String get useCurrentLocation;
+
+  /// No description provided for @locationCaptured.
+  ///
+  /// In en, this message translates to:
+  /// **'Location pinned'**
+  String get locationCaptured;
+
+  /// No description provided for @locationFailed.
+  ///
+  /// In en, this message translates to:
+  /// **'Couldn\'t get your location. You can continue without it.'**
+  String get locationFailed;
+
+  /// No description provided for @documentsHelp.
+  ///
+  /// In en, this message translates to:
+  /// **'Clear photos help us approve you faster. Only AgriMore reviewers can see them.'**
+  String get documentsHelp;
+
+  /// No description provided for @doc_idProof.
+  ///
+  /// In en, this message translates to:
+  /// **'ID proof (Aadhaar, PAN, voter ID or driving licence)'**
+  String get doc_idProof;
+
+  /// No description provided for @doc_shopPhoto.
+  ///
+  /// In en, this message translates to:
+  /// **'Photo of your shop or farm'**
+  String get doc_shopPhoto;
+
+  /// No description provided for @doc_gstCertificate.
+  ///
+  /// In en, this message translates to:
+  /// **'GST certificate (optional)'**
+  String get doc_gstCertificate;
+
+  /// No description provided for @docTakePhoto.
+  ///
+  /// In en, this message translates to:
+  /// **'Take photo'**
+  String get docTakePhoto;
+
+  /// No description provided for @docChoosePhoto.
+  ///
+  /// In en, this message translates to:
+  /// **'Choose from gallery'**
+  String get docChoosePhoto;
+
+  /// No description provided for @docUploaded.
+  ///
+  /// In en, this message translates to:
+  /// **'Uploaded'**
+  String get docUploaded;
+
+  /// No description provided for @docUploading.
+  ///
+  /// In en, this message translates to:
+  /// **'Uploading…'**
+  String get docUploading;
+
+  /// No description provided for @docReplace.
+  ///
+  /// In en, this message translates to:
+  /// **'Replace'**
+  String get docReplace;
+
+  /// No description provided for @docUploadFailed.
+  ///
+  /// In en, this message translates to:
+  /// **'Upload failed. Try again.'**
+  String get docUploadFailed;
+
+  /// No description provided for @payoutHelp.
+  ///
+  /// In en, this message translates to:
+  /// **'Your settlements are paid here. We never show these details on your public profile.'**
+  String get payoutHelp;
+
+  /// No description provided for @payoutBank.
+  ///
+  /// In en, this message translates to:
+  /// **'Bank account'**
+  String get payoutBank;
+
+  /// No description provided for @payoutUpi.
+  ///
+  /// In en, this message translates to:
+  /// **'UPI ID'**
+  String get payoutUpi;
+
+  /// No description provided for @fieldAccountHolder.
+  ///
+  /// In en, this message translates to:
+  /// **'Account holder name'**
+  String get fieldAccountHolder;
+
+  /// No description provided for @fieldBankName.
+  ///
+  /// In en, this message translates to:
+  /// **'Bank name'**
+  String get fieldBankName;
+
+  /// No description provided for @fieldAccountNumber.
+  ///
+  /// In en, this message translates to:
+  /// **'Account number'**
+  String get fieldAccountNumber;
+
+  /// No description provided for @fieldAccountNumberConfirm.
+  ///
+  /// In en, this message translates to:
+  /// **'Re-enter account number'**
+  String get fieldAccountNumberConfirm;
+
+  /// No description provided for @fieldIfsc.
+  ///
+  /// In en, this message translates to:
+  /// **'IFSC code'**
+  String get fieldIfsc;
+
+  /// No description provided for @fieldUpiId.
+  ///
+  /// In en, this message translates to:
+  /// **'UPI ID'**
+  String get fieldUpiId;
+
+  /// No description provided for @accountMismatch.
+  ///
+  /// In en, this message translates to:
+  /// **'Account numbers don\'t match'**
+  String get accountMismatch;
+
+  /// No description provided for @reviewHelp.
+  ///
+  /// In en, this message translates to:
+  /// **'Check your details. You can\'t edit them while we review your application.'**
+  String get reviewHelp;
+
+  /// No description provided for @reviewEdit.
+  ///
+  /// In en, this message translates to:
+  /// **'Edit'**
+  String get reviewEdit;
+
+  /// No description provided for @reviewDocumentsCount.
+  ///
+  /// In en, this message translates to:
+  /// **'{count} of {total} photos uploaded'**
+  String reviewDocumentsCount(int count, int total);
+
+  /// No description provided for @acceptTerms.
+  ///
+  /// In en, this message translates to:
+  /// **'I confirm these details are correct and agree to AgriMore\'s seller terms'**
+  String get acceptTerms;
+
+  /// No description provided for @submitCta.
+  ///
+  /// In en, this message translates to:
+  /// **'Submit application'**
+  String get submitCta;
+
+  /// No description provided for @submitting.
+  ///
+  /// In en, this message translates to:
+  /// **'Submitting…'**
+  String get submitting;
+
+  /// No description provided for @submitInvalid.
+  ///
+  /// In en, this message translates to:
+  /// **'Some details need attention. We\'ve taken you to the first one.'**
+  String get submitInvalid;
+
+  /// No description provided for @submitFailed.
+  ///
+  /// In en, this message translates to:
+  /// **'Couldn\'t submit. Check your connection and try again.'**
+  String get submitFailed;
+
+  /// No description provided for @errRequired.
+  ///
+  /// In en, this message translates to:
+  /// **'This is required'**
+  String get errRequired;
+
+  /// No description provided for @errGstin.
+  ///
+  /// In en, this message translates to:
+  /// **'Enter a valid 15-character GSTIN'**
+  String get errGstin;
+
+  /// No description provided for @errPincode.
+  ///
+  /// In en, this message translates to:
+  /// **'Enter a valid 6-digit PIN code'**
+  String get errPincode;
+
+  /// No description provided for @errIfsc.
+  ///
+  /// In en, this message translates to:
+  /// **'Enter a valid 11-character IFSC code'**
+  String get errIfsc;
+
+  /// No description provided for @errAccount.
+  ///
+  /// In en, this message translates to:
+  /// **'Enter a valid account number (9–18 digits)'**
+  String get errAccount;
+
+  /// No description provided for @errUpi.
+  ///
+  /// In en, this message translates to:
+  /// **'Enter a valid UPI ID, e.g. name@bank'**
+  String get errUpi;
+
+  /// No description provided for @errDocument.
+  ///
+  /// In en, this message translates to:
+  /// **'Upload this photo to continue'**
+  String get errDocument;
 }
 
 class _AppLocalizationsDelegate
