@@ -1,4 +1,6 @@
 // lib/providers/auth_provider.dart
+import 'dart:async';
+
 import 'package:flutter/material.dart';
 import 'package:firebase_auth/firebase_auth.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
@@ -13,6 +15,15 @@ class DeliveryAuthProvider extends ChangeNotifier {
   bool _isLoading = true;
   String? _error;
 
+  // Phase DLV-1B: the onboarding status of delivery_partners/{uid}, typed, and
+  // the reason an admin gave for a rejection or suspension. Kept live by
+  // [_partnerSubscription] so a suspension takes effect while the app is open
+  // (the custom claim only reaches the ID token on its next refresh).
+  RiderKycStatus? _kycStatus;
+  String? _statusReason;
+  StreamSubscription<DocumentSnapshot<Map<String, dynamic>>>?
+      _partnerSubscription;
+
   DeliveryAuthProvider() {
     _init();
   }
@@ -20,19 +31,74 @@ class DeliveryAuthProvider extends ChangeNotifier {
   // Getters
   UserModel? get user => _user;
   bool get isLoading => _isLoading;
-  bool get isAuthenticated => _user != null && _error == null;
+
+  /// Signed in AND allowed to work. A pending, rejected or suspended partner
+  /// is signed in but not authenticated for the dashboard — see [isBlocked].
+  bool get isAuthenticated =>
+      _user != null && _error == null && (_kycStatus?.canOperate ?? false);
   bool get isDeliveryPartner => _user?.isDeliveryPartner ?? false;
   String? get error => _error;
+  RiderKycStatus? get kycStatus => _kycStatus;
+  String? get statusReason => _statusReason;
+
+  /// Signed in as a delivery partner whose onboarding status does not allow
+  /// work (pending, rejected, suspended, deactivated).
+  bool get isBlocked =>
+      _user != null && _kycStatus != null && !_kycStatus!.canOperate;
 
   void _init() {
     _auth.authStateChanges().listen((firebaseUser) async {
       if (firebaseUser != null) {
         await _loadUserData(firebaseUser.uid);
       } else {
+        _clearPartnerState();
         _user = null;
       }
       _isLoading = false;
       notifyListeners();
+    });
+  }
+
+  void _clearPartnerState() {
+    _partnerSubscription?.cancel();
+    _partnerSubscription = null;
+    _kycStatus = null;
+    _statusReason = null;
+  }
+
+  /// Reads status and reason from a delivery_partners document.
+  /// An absent `status` reads as pending (RiderKycStatus.fromWire), matching
+  /// roleClaims.ts, which never grants the claim without 'approved'.
+  void _applyPartnerData(Map<String, dynamic>? data) {
+    _kycStatus = RiderKycStatus.fromWire(data?['status'] as String?);
+    final reason = switch (_kycStatus) {
+      RiderKycStatus.rejected => data?['rejectionReason'],
+      RiderKycStatus.suspended => data?['suspensionReason'],
+      _ => null,
+    };
+    _statusReason =
+        (reason is String && reason.trim().isNotEmpty) ? reason.trim() : null;
+  }
+
+  void _watchPartner(String uid) {
+    _partnerSubscription?.cancel();
+    _partnerSubscription = _firestore
+        .collection('delivery_partners')
+        .doc(uid)
+        .snapshots()
+        .listen((snap) {
+      if (_user == null) return;
+      final wasOperating = _kycStatus?.canOperate ?? false;
+      _applyPartnerData(snap.data());
+      final nowOperating = _kycStatus?.canOperate ?? false;
+      if (!wasOperating && nowOperating) {
+        // Approved while the app was open: register for order pushes now.
+        _updateFCMToken(uid);
+      }
+      notifyListeners();
+    }, onError: (Object e) {
+      // Keep the last known status; the next app start re-reads it.
+      debugPrint('⚠️ Partner status listener error: $e');
     });
   }
 
@@ -49,21 +115,21 @@ class DeliveryAuthProvider extends ChangeNotifier {
               '⛔ Unauthorized access attempt by non-delivery: ${_user!.email}');
           await _auth.signOut();
           _user = null;
+          _clearPartnerState();
           _error = 'Access denied. You are not a delivery partner.';
         } else {
-          // Check if approved
           final partnerDoc =
               await _firestore.collection('delivery_partners').doc(uid).get();
           if (partnerDoc.exists) {
-            final status = partnerDoc.data()?['status'] ?? 'pending';
-            if (status != 'approved') {
-              _error = 'Your account is pending approval by an administrator.';
-            } else {
+            _applyPartnerData(partnerDoc.data());
+            if (_kycStatus!.canOperate) {
               await _updateFCMToken(uid);
             }
+            _watchPartner(uid);
           } else {
             await _auth.signOut();
             _user = null;
+            _clearPartnerState();
             _error = 'Could not find delivery partner details.';
           }
         }
@@ -87,7 +153,7 @@ class DeliveryAuthProvider extends ChangeNotifier {
 
       if (credential.user != null) {
         await _loadUserData(credential.user!.uid);
-        // The role checks and approval checks are now handled in _loadUserData
+        // The role and onboarding-status checks are handled in _loadUserData.
 
         // If _user is null after _loadUserData, it means they were rejected and signed out
         if (_user == null) {
@@ -95,9 +161,6 @@ class DeliveryAuthProvider extends ChangeNotifier {
           notifyListeners();
           return false;
         }
-
-        // Update FCM token
-        await _updateFCMToken(credential.user!.uid);
 
         return true;
       }
@@ -145,6 +208,7 @@ class DeliveryAuthProvider extends ChangeNotifier {
   }
 
   Future<void> signOut() async {
+    _clearPartnerState();
     await _auth.signOut();
     _user = null;
     notifyListeners();
@@ -153,5 +217,11 @@ class DeliveryAuthProvider extends ChangeNotifier {
   void clearError() {
     _error = null;
     notifyListeners();
+  }
+
+  @override
+  void dispose() {
+    _partnerSubscription?.cancel();
+    super.dispose();
   }
 }

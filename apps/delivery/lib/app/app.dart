@@ -72,18 +72,19 @@ class _AuthGate extends StatelessWidget {
             body: Center(child: CircularProgressIndicator()),
           );
         }
-        
+
         // Fully authenticated and approved delivery partner
         if (authProvider.isAuthenticated && authProvider.isDeliveryPartner) {
           return const DashboardScreen();
         }
-        
-        // Delivery partner logged in but pending approval or has error
-        if (authProvider.user != null && authProvider.error != null && 
-            authProvider.error!.contains('pending')) {
+
+        // Signed in, but onboarding status does not allow work: pending,
+        // rejected or suspended (Phase DLV-1B — previously matched the word
+        // 'pending' in an error string, so every state read as pending).
+        if (authProvider.isBlocked) {
           return const DeliveryPendingApprovalScreen();
         }
-        
+
         // Not logged in
         return const LoginScreen();
       },
