@@ -1,6 +1,7 @@
 import 'dart:async';
 
 import 'package:agrimore_ui/agrimore_ui.dart';
+import 'package:flutter/gestures.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:provider/provider.dart';
@@ -115,9 +116,6 @@ class _SellerSignInScreenState extends State<SellerSignInScreen> {
     });
   }
 
-  Future<void> _open(String url) async {
-    await launchUrl(Uri.parse(url), mode: LaunchMode.externalApplication);
-  }
 
   // ── Build ──────────────────────────────────────────────────────────────────
 
@@ -127,8 +125,16 @@ class _SellerSignInScreenState extends State<SellerSignInScreen> {
     final layout = wsLayoutFor(MediaQuery.sizeOf(context).width);
     final wide = layout == WsLayout.expanded || layout == WsLayout.large;
 
+    // Test mode: the cells always show the code the ribbon says was filled in.
+    final code = auth.testOtp;
+    if (auth.pendingPhone != null && code != null && _otpController.text.isEmpty) {
+      WidgetsBinding.instance.addPostFrameCallback((_) {
+        if (mounted && _otpController.text.isEmpty) _otpController.text = code;
+      });
+    }
+
     final form = _FormColumn(
-      child: auth.pendingPhone == null ? _phoneStep(context, auth) : _otpStep(context, auth),
+      child: auth.pendingPhone == null ? _phoneStep(context, auth, showIntro: !wide) : _otpStep(context, auth),
     );
 
     return Scaffold(
@@ -145,7 +151,7 @@ class _SellerSignInScreenState extends State<SellerSignInScreen> {
     );
   }
 
-  Widget _phoneStep(BuildContext context, SellerAuthProvider auth) {
+  Widget _phoneStep(BuildContext context, SellerAuthProvider auth, {required bool showIntro}) {
     final l10n = AppLocalizations.of(context);
     final t = context.ws;
     final text = context.wsText;
@@ -156,11 +162,17 @@ class _SellerSignInScreenState extends State<SellerSignInScreen> {
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.stretch,
         children: [
-          const AuthWordmark(),
-          const SizedBox(height: WsSpace.s32),
-          Text(l10n.authHeadline, style: text.headlineMedium),
-          const SizedBox(height: WsSpace.s8),
-          Text(l10n.authSubhead, style: text.bodyLarge!.copyWith(color: t.textSecondary)),
+          // On wide layouts the brand panel already carries the wordmark and headline.
+          if (showIntro) ...[
+            const AuthWordmark(),
+            const SizedBox(height: WsSpace.s32),
+            Text(l10n.authHeadline, style: text.headlineMedium),
+            const SizedBox(height: WsSpace.s8),
+          ],
+          Text(
+            l10n.authSubhead,
+            style: showIntro ? text.bodyLarge!.copyWith(color: t.textSecondary) : text.titleMedium,
+          ),
           const SizedBox(height: WsSpace.s32),
           if (google != null) ...[
             SaInfoBanner(
@@ -228,16 +240,7 @@ class _SellerSignInScreenState extends State<SellerSignInScreen> {
             ),
           ],
           const SizedBox(height: WsSpace.s24),
-          Wrap(
-            alignment: WrapAlignment.center,
-            crossAxisAlignment: WrapCrossAlignment.center,
-            children: [
-              Text(l10n.legalPrefix, style: text.bodySmall),
-              TextButton(onPressed: () => _open(AppConstants.termsUrl), child: Text(l10n.legalTerms)),
-              Text(l10n.legalAnd, style: text.bodySmall),
-              TextButton(onPressed: () => _open(AppConstants.privacyPolicyUrl), child: Text(l10n.legalPrivacy)),
-            ],
-          ),
+          const _LegalLine(),
         ],
       ),
     );
@@ -314,6 +317,52 @@ class _SellerSignInScreenState extends State<SellerSignInScreen> {
             ],
           ),
       ],
+    );
+  }
+}
+
+/// "By continuing you agree to our Terms and Privacy Policy." — one flowing
+/// sentence whose two links are real, focusable links.
+class _LegalLine extends StatefulWidget {
+  const _LegalLine();
+
+  @override
+  State<_LegalLine> createState() => _LegalLineState();
+}
+
+class _LegalLineState extends State<_LegalLine> {
+  late final TapGestureRecognizer _terms = TapGestureRecognizer()..onTap = () => _open(AppConstants.termsUrl);
+  late final TapGestureRecognizer _privacy = TapGestureRecognizer()
+    ..onTap = () => _open(AppConstants.privacyPolicyUrl);
+
+  Future<void> _open(String url) async {
+    await launchUrl(Uri.parse(url), mode: LaunchMode.externalApplication);
+  }
+
+  @override
+  void dispose() {
+    _terms.dispose();
+    _privacy.dispose();
+    super.dispose();
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    final l10n = AppLocalizations.of(context);
+    final t = context.ws;
+    final base = context.wsText.bodySmall!;
+    final link = base.copyWith(color: t.primary, fontWeight: WsType.semibold);
+    return Text.rich(
+      TextSpan(
+        style: base,
+        children: [
+          TextSpan(text: '${l10n.legalPrefix} '),
+          TextSpan(text: l10n.legalTerms, style: link, recognizer: _terms),
+          TextSpan(text: ' ${l10n.legalAnd} '),
+          TextSpan(text: l10n.legalPrivacy, style: link, recognizer: _privacy),
+        ],
+      ),
+      textAlign: TextAlign.center,
     );
   }
 }
