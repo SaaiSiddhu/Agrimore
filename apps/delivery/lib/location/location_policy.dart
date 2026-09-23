@@ -150,3 +150,23 @@ const String locationDisclosureBody =
     'when the app is closed or not in use — to offer you nearby orders and '
     'to show customers where their delivery is. A notification shows while '
     'this is on. It stops as soon as you go offline.';
+
+/// Phase DLV-3A2 (D-DLV-BGLOC-ALWAYS) — the 'Allow all the time' step.
+const String backgroundLocationTitle = 'Keep deliveries working when the app closes';
+const String backgroundLocationBody =
+    'Your phone sometimes closes apps to save memory. To keep sharing your '
+    'location while you are online even then, choose "Allow all the time" '
+    'on the next screen. It still stops as soon as you go offline.';
+
+/// Shown after going online when 'Allow all the time' was not given.
+const String backgroundLocationReminder =
+    'You are online. If your phone closes the app, location sharing stops '
+    'and you go offline — allow location "all the time" in Settings to avoid this.';
+
+/// Phase DLV-3A2 (D-DLV-BATTERY) — the one-time battery guide.
+const String batteryGuideTitle = 'Stop your phone closing the app';
+const String batteryGuideBody =
+    'Some phones close apps in the background to save battery, which takes '
+    'you offline. In the app settings that open next, set Battery to '
+    '"Unrestricted" (or "No restrictions"). On Xiaomi, Oppo, Vivo and Realme '
+    'phones also turn on "Autostart".';

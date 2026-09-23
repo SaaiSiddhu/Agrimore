@@ -96,6 +96,60 @@ void main() {
     });
   });
 
+  group('native service (RiderLocationPolicy.kt) matches', () {
+    final kt = File('android/app/src/main/kotlin/com/agrimore/delivery/RiderLocationPolicy.kt').readAsStringSync();
+    int ms(String name) => int.parse(
+        RegExp('const val $name = ([0-9_]+)L').firstMatch(kt)!.group(1)!.replaceAll('_', ''));
+
+    test('the Dart cadence', () {
+      expect(Duration(milliseconds: ms('SAMPLE_INTERVAL_MS')), samplingProfile.streamInterval);
+      expect(double.parse(RegExp(r'SAMPLE_MIN_DISTANCE_M = ([0-9.]+)f').firstMatch(kt)!.group(1)!),
+          samplingProfile.distanceFilterMeters.toDouble());
+      expect(Duration(milliseconds: ms('ORDER_MIN_UPLOAD_GAP_MS')), taskProfile.minUploadGap);
+      expect(Duration(milliseconds: ms('ORDER_HEARTBEAT_MS')), taskProfile.heartbeat);
+      expect(Duration(milliseconds: ms('IDLE_MIN_UPLOAD_GAP_MS')), idleProfile.minUploadGap);
+      expect(Duration(milliseconds: ms('IDLE_HEARTBEAT_MS')), idleProfile.heartbeat);
+      // The heartbeat check runs often enough to hit every heartbeat.
+      expect(Duration(milliseconds: ms('TICK_MS')), lessThanOrEqualTo(taskProfile.minUploadGap));
+    });
+
+    test('the server active statuses', () {
+      final dispatch = File('../../functions/src/delivery/dispatch.ts').readAsStringSync();
+      List<String?> quoted(String src) =>
+          RegExp(r'"([^"]+)"').allMatches(src).map((m) => m.group(1)).toList();
+      final server = quoted(RegExp(r'RIDER_ACTIVE_ORDER_STATUSES = \[([^\]]*)\]').firstMatch(dispatch)!.group(1)!);
+      final native = quoted(RegExp(r'ACTIVE_ORDER_STATUSES = listOf\(([^)]*)\)').firstMatch(kt)!.group(1)!);
+      expect(native, server);
+    });
+
+    test('the rules live-point keys and bounds', () {
+      final rules = File('../../firestore.rules').readAsStringSync();
+      final block = rules.substring(rules.indexOf('function livePointIsValid()'));
+      final allowed = RegExp(r"'([^']+)'")
+          .allMatches(RegExp(r"hasOnly\(\[([^\]]*)\]\)").firstMatch(block)!.group(1)!)
+          .map((m) => m.group(1))
+          .toSet();
+      final fn = kt.substring(kt.indexOf('fun livePointFields'));
+      final keys = RegExp(r'"([a-zA-Z]+)" to ').allMatches(fn).map((m) => m.group(1)).toSet()..add('at');
+      expect(keys, allowed);
+      expect(fn, contains('inRange(accuracy, 0.0, 100000.0)'));
+      expect(fn, contains('inRange(speed, 0.0, 100.0)'));
+      expect(fn, contains('inRange(heading, 0.0, 360.0)'));
+    });
+
+    test('the manifest declares what the service needs', () {
+      final m = File('android/app/src/main/AndroidManifest.xml').readAsStringSync();
+      for (final p in ['ACCESS_BACKGROUND_LOCATION', 'FOREGROUND_SERVICE_LOCATION', 'ACCESS_FINE_LOCATION']) {
+        expect(m, contains('android.permission.$p'), reason: p);
+      }
+      final svc = m.substring(m.indexOf('android:name=".RiderLocationService"'));
+      final decl = svc.substring(0, svc.indexOf('/>'));
+      expect(decl, contains('android:foregroundServiceType="location"'));
+      expect(decl, contains('android:stopWithTask="false"'));
+      expect(decl, contains('android:exported="false"'));
+    });
+  });
+
   group('rider messages', () {
     test('every failure to go online says what to do', () {
       for (final r in GoOnlineResult.values) {
@@ -113,6 +167,12 @@ void main() {
       expect(serverOfflineMessage('no_location'), contains('15 minutes'));
       expect(serverOfflineMessage(null), isNull);
       expect(serverOfflineMessage('other'), isNull);
+    });
+
+    test('the all-the-time step and reminder say what happens without it', () {
+      expect(backgroundLocationBody, contains('Allow all the time'));
+      expect(backgroundLocationReminder, contains('go offline'));
+      expect(batteryGuideBody, contains('Autostart'));
     });
 
     test('the disclosure says background, purpose and how to stop', () {

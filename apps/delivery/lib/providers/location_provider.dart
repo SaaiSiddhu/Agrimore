@@ -12,15 +12,28 @@
 //  - delivery_tasks/{orderId}/live/rider while an order is active, which the
 //    customer's map reads (firestore.rules, phaseDLV3A_live_rules_test).
 // Cadence and payload rules live in lib/location/location_policy.dart.
+//
+// Phase DLV-3A2: on Android the sending moved to the native
+// RiderLocationService (lib/location/rider_platform.dart), which survives the
+// app being swiped away or killed (D-DLV-NATIVE-LOC). This provider then only
+// starts/stops it and keeps an on-screen position for the UI — no uploads,
+// no geolocator foreground service. The Dart uploader below remains for other
+// platforms.
 import 'dart:async';
 
 import 'package:flutter/foundation.dart';
+import 'package:flutter/widgets.dart';
 import 'package:geolocator/geolocator.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
 import '../location/location_policy.dart';
+import '../location/rider_platform.dart';
 import '../services/distance_service.dart';
 
-class LocationProvider extends ChangeNotifier {
+class LocationProvider extends ChangeNotifier with WidgetsBindingObserver {
+  LocationProvider() {
+    WidgetsBinding.instance.addObserver(this);
+  }
+
   final FirebaseFirestore _firestore = FirebaseFirestore.instance;
 
   Position? _currentPosition;
@@ -36,6 +49,7 @@ class LocationProvider extends ChangeNotifier {
   DateTime? _lastUploadAt;
   bool _hasUnsentFix = false;
   bool _uploading = false;
+  bool _native = false;
 
   // Getters
   Position? get currentPosition => _currentPosition;
@@ -47,6 +61,36 @@ class LocationProvider extends ChangeNotifier {
   String? get activeOrderId => _activeOrderId;
   TrackingProfile get profile => _profile;
   DateTime? get lastUploadAt => _lastUploadAt;
+
+  /// True when the native service does the sending (Android).
+  bool get usesNativeService => _native;
+
+  /// Whether the native service is running (it may be, with the app just
+  /// reopened after being swiped away).
+  Future<bool> nativeServiceRunning() => RiderPlatform.isRunning();
+
+  /// The app was reopened while the native service kept sending (after a
+  /// swipe from Recents): show the rider as online without restarting it.
+  void attachToRunningService(String partnerId) {
+    _partnerId = partnerId;
+    _native = true;
+    _isTracking = true;
+    _startStream();
+    notifyListeners();
+  }
+
+  // With the native service sending, the on-screen stream is only needed
+  // while the app is visible.
+  @override
+  void didChangeAppLifecycleState(AppLifecycleState state) {
+    if (!_native || !_isTracking) return;
+    if (state == AppLifecycleState.resumed) {
+      if (_positionSubscription == null) _startStream();
+    } else if (state == AppLifecycleState.paused) {
+      _positionSubscription?.cancel();
+      _positionSubscription = null;
+    }
+  }
 
   /// Location services on and permission granted (asking if not yet asked).
   Future<GoOnlineResult> ensurePermission() async {
@@ -125,6 +169,21 @@ class LocationProvider extends ChangeNotifier {
       }
     }
     _hasUnsentFix = true;
+    if (RiderPlatform.available) {
+      // The caller has already set delivery_partners.isOnline true: the
+      // service stops itself when the server says offline.
+      if (!await RiderPlatform.start()) {
+        _error = 'Could not start location sharing';
+        notifyListeners();
+        return GoOnlineResult.failed;
+      }
+      _native = true;
+      _isTracking = true;
+      _startStream();
+      notifyListeners();
+      return GoOnlineResult.started;
+    }
+    _native = false;
     _isTracking = true;
     _startStream();
     _startHeartbeat();
@@ -134,6 +193,14 @@ class LocationProvider extends ChangeNotifier {
   }
 
   LocationSettings _settingsFor(TrackingProfile p) {
+    if (_native) {
+      // On-screen position only; the native service owns the foreground
+      // service and the sending.
+      return LocationSettings(
+        accuracy: LocationAccuracy.high,
+        distanceFilter: p.distanceFilterMeters,
+      );
+    }
     if (!kIsWeb && defaultTargetPlatform == TargetPlatform.android) {
       return AndroidSettings(
         accuracy: LocationAccuracy.high,
@@ -199,6 +266,7 @@ class LocationProvider extends ChangeNotifier {
   }
 
   Future<void> _maybeUpload({bool force = false}) async {
+    if (_native) return; // RiderLocationService sends.
     final pos = _currentPosition;
     final uid = _partnerId;
     if (!_isTracking || pos == null || uid == null || _uploading) return;
@@ -256,6 +324,8 @@ class LocationProvider extends ChangeNotifier {
 
   /// Stops the stream, the foreground service and the heartbeat.
   void stopTracking() {
+    if (RiderPlatform.available) RiderPlatform.stop();
+    _native = false;
     _positionSubscription?.cancel();
     _positionSubscription = null;
     _heartbeat?.cancel();
@@ -282,7 +352,12 @@ class LocationProvider extends ChangeNotifier {
 
   @override
   void dispose() {
-    stopTracking();
+    WidgetsBinding.instance.removeObserver(this);
+    // Only this provider's own stream and timer: tearing down the widget
+    // tree must never end the rider's shift — the native service stops on
+    // Go offline, logout, or the server's say-so.
+    _positionSubscription?.cancel();
+    _heartbeat?.cancel();
     super.dispose();
   }
 
