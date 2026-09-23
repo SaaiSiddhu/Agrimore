@@ -234,3 +234,7 @@ export {
   recordAssociateOnboardingRefund,
   requestAssociateOnboardingRefundOnSuspend,
 } from "./employee/adminOnboardingActions";
+// Phase DLV-1A: server-maintained delivery_tasks/{orderId} projection of each
+// rider leg, in the typed vocabulary of delivery/states.ts. Writes only
+// delivery_tasks; never the order. See delivery/syncDeliveryTask.ts.
+export { syncDeliveryTask } from "./delivery/syncDeliveryTask";
