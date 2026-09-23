@@ -1801,6 +1801,50 @@ service cloud.firestore {
          resource.data.customerId == request.auth.uid ||
          resource.data.sellerId == request.auth.uid);
       allow write: if false;
+
+      // Phase DLV-3A — delivery_tasks/{orderId}/live/rider: the rider's live
+      // position for this one leg, so the customer's map can move without
+      // reading delivery_partners (which it may not). Written by the task's
+      // own rider — the only client write under delivery_tasks — and only
+      // while the leg is active: not before assignment, not after delivery,
+      // return or cancellation, never by another rider. Exact keys, bounded
+      // numbers and a server timestamp, so the document cannot carry anything
+      // but a position (phaseDLV3A_live_rules_test). Read by whoever may
+      // read the task.
+      match /live/{docId} {
+        function liveTask() {
+          return get(/databases/$(database)/documents/delivery_tasks/$(orderId)).data;
+        }
+        function optionalNumberIn(d, key, lo, hi) {
+          return !(key in d) || d[key] == null ||
+            (d[key] is number && d[key] >= lo && d[key] <= hi);
+        }
+        function livePointIsValid() {
+          let d = request.resource.data;
+          return d.keys().hasOnly(['riderId', 'lat', 'lng', 'accuracy', 'speed', 'heading', 'isMocked', 'at']) &&
+            d.keys().hasAll(['riderId', 'lat', 'lng', 'at']) &&
+            d.riderId == request.auth.uid &&
+            d.lat is number && d.lat >= -90 && d.lat <= 90 &&
+            d.lng is number && d.lng >= -180 && d.lng <= 180 &&
+            d.at == request.time &&
+            optionalNumberIn(d, 'accuracy', 0, 100000) &&
+            optionalNumberIn(d, 'speed', 0, 100) &&
+            optionalNumberIn(d, 'heading', 0, 360) &&
+            (!('isMocked' in d) || d.isMocked is bool);
+        }
+        allow read: if isAuthenticated() &&
+          (isAdmin() ||
+           liveTask().riderId == request.auth.uid ||
+           liveTask().customerId == request.auth.uid ||
+           liveTask().sellerId == request.auth.uid);
+        allow create, update: if docId == 'rider' &&
+          isDeliveryPartner() &&
+          liveTask().riderId == request.auth.uid &&
+          liveTask().status in ['assigned', 'at_pickup', 'picked_up', 'en_route', 'at_drop',
+                                'failed_attempt', 'returning_to_seller'] &&
+          livePointIsValid();
+        allow delete: if false;
+      }
     }
 
     // ============================================

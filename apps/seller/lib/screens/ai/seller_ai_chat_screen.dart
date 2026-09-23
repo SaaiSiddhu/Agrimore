@@ -1,21 +1,13 @@
 import 'package:agrimore_ui/agrimore_ui.dart';
 import 'package:flutter/material.dart';
+
+import '../../l10n/app_localizations.dart';
 import '../../providers/seller_ai_chat_provider.dart';
 import '../../providers/seller_ai_connection_provider.dart';
 import '../profile/seller_ai_integration_screen.dart';
 
-/// Phase AI-4D — apps/seller's own AI Assistant chat screen. Reached from a
-/// new SellerProfileScreen menu entry ("AI Assistant"), matching that
-/// screen's own convention of pushing a dedicated screen for a stateful
-/// feature rather than a simple info dialog.
-///
-/// Gated on connection status via a screen-local SellerAiConnectionProvider
-/// instance (mirrors SellerAiIntegrationScreen's own pattern -- this
-/// provider is not registered globally in main.dart, so every screen that
-/// needs it creates and disposes its own): not connected shows a CTA to
-/// SellerAiIntegrationScreen (AI-4C); connected shows the actual chat, driven
-/// by SellerAiChatProvider (this phase), which does the functionCall dispatch
-/// loop against sellerAiChatProxy (AI-4B).
+/// M-08 AI assistant chat (ADR §10.6, SELLER-UI-1d): seller-scoped answers
+/// through sellerAiChatProxy; suggested prompts; not-connected state → M-09.
 class SellerAiChatScreen extends StatefulWidget {
   const SellerAiChatScreen({super.key});
 
@@ -24,7 +16,7 @@ class SellerAiChatScreen extends StatefulWidget {
 }
 
 class _SellerAiChatScreenState extends State<SellerAiChatScreen> {
-  static const _accentColor = Color(0xFF2D7D3C);
+  static const double _bubbleMaxFraction = 0.78;
 
   final _chatProvider = SellerAiChatProvider();
   final _connectionProvider = SellerAiConnectionProvider();
@@ -50,8 +42,8 @@ class _SellerAiChatScreenState extends State<SellerAiChatScreen> {
     if (!_scrollController.hasClients) return;
     _scrollController.animateTo(
       _scrollController.position.maxScrollExtent,
-      duration: const Duration(milliseconds: 250),
-      curve: Curves.easeOut,
+      duration: WsMotion.standard,
+      curve: WsMotion.curveEnter,
     );
   }
 
@@ -65,8 +57,7 @@ class _SellerAiChatScreenState extends State<SellerAiChatScreen> {
     super.dispose();
   }
 
-  void _handleSend() {
-    final text = _textController.text;
+  void _send(String text) {
     if (text.trim().isEmpty || _chatProvider.isSending) return;
     _textController.clear();
     _chatProvider.sendMessage(text);
@@ -74,172 +65,162 @@ class _SellerAiChatScreenState extends State<SellerAiChatScreen> {
 
   @override
   Widget build(BuildContext context) {
-    final isDark = Theme.of(context).brightness == Brightness.dark;
+    final l10n = AppLocalizations.of(context);
     return Scaffold(
-      backgroundColor: isDark ? const Color(0xFF121212) : const Color(0xFFF5F7FA),
-      appBar: AppBar(title: const Text('AI Assistant')),
+      appBar: AppBar(
+        leading: IconButton(tooltip: l10n.back, icon: const Icon(AgIcons.arrowLeft), onPressed: () => Navigator.of(context).maybePop()),
+        title: Text(l10n.aiTitle),
+      ),
       body: _connectionProvider.isLoading
-          ? const Center(child: CircularProgressIndicator(color: _accentColor))
+          ? const Center(child: CircularProgressIndicator())
           : _connectionProvider.connected
-              ? _buildChat(isDark)
-              : _buildNotConnected(isDark),
+              ? _buildChat()
+              : _buildNotConnected(),
     );
   }
 
-  Widget _buildNotConnected(bool isDark) {
+  Widget _buildNotConnected() {
+    final l10n = AppLocalizations.of(context);
+    final t = context.ws;
+    final text = context.wsText;
     return Center(
       child: Padding(
-        padding: const EdgeInsets.all(24),
-        child: Column(
-          mainAxisSize: MainAxisSize.min,
-          children: [
-            const Icon(Icons.smart_toy_outlined, size: 56, color: _accentColor),
-            const SizedBox(height: 16),
-            Text('Connect your AI Assistant',
-                style: TextStyle(
-                    fontWeight: FontWeight.w800,
-                    fontSize: 18,
-                    color: isDark ? Colors.white : Colors.black87)),
-            const SizedBox(height: 8),
-            Text(
-              'Connect your own ChatGPT or Gemini key to start asking questions about your products and orders.',
-              textAlign: TextAlign.center,
-              style: TextStyle(
-                  fontSize: 13, color: isDark ? Colors.grey[400] : const Color(0xFF6B7280)),
-            ),
-            const SizedBox(height: 20),
-            ElevatedButton(
-              onPressed: () => Navigator.push(
-                context,
-                MaterialPageRoute(builder: (_) => const SellerAiIntegrationScreen()),
-              ),
-              style: ElevatedButton.styleFrom(
-                backgroundColor: _accentColor,
-                padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 14),
-                shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(10)),
-              ),
-              child: const Text('Connect Now',
-                  style: TextStyle(color: Colors.white, fontWeight: FontWeight.w700)),
-            ),
-          ],
-        ),
+        padding: const EdgeInsets.all(WsSpace.s24),
+        child: Column(mainAxisSize: MainAxisSize.min, children: [
+          Icon(AgIcons.sparkles, size: WsIconSize.empty, color: t.primary),
+          const SizedBox(height: WsSpace.s16),
+          Text(l10n.aiConnectTitle, style: text.titleMedium, textAlign: TextAlign.center),
+          const SizedBox(height: WsSpace.s8),
+          Text(l10n.aiConnectBody, style: text.bodyMedium!.copyWith(color: t.textSecondary), textAlign: TextAlign.center),
+          const SizedBox(height: WsSpace.s24),
+          FilledButton(
+            onPressed: () => Navigator.of(context).push(MaterialPageRoute<void>(builder: (_) => const SellerAiIntegrationScreen())),
+            child: Text(l10n.aiConnectNow),
+          ),
+        ]),
       ),
     );
   }
 
-  Widget _buildChat(bool isDark) {
+  Widget _buildChat() {
+    final l10n = AppLocalizations.of(context);
     final messages = _chatProvider.messages;
     final itemCount = messages.length + (_chatProvider.isSending ? 1 : 0);
-    return Column(
-      children: [
-        Expanded(
-          child: ListView.builder(
-            controller: _scrollController,
-            padding: const EdgeInsets.all(16),
-            itemCount: itemCount,
-            itemBuilder: (context, i) {
-              if (i >= messages.length) return _buildTypingBubble(isDark);
-              return _buildBubble(messages[i], isDark);
-            },
+    final prompts = [l10n.aiPromptRestock, l10n.aiPromptBestSellers, l10n.aiPromptPricing];
+    final showPrompts = messages.where((m) => m.isUser).isEmpty;
+    return Column(children: [
+      Expanded(
+        child: ListView.builder(
+          controller: _scrollController,
+          padding: const EdgeInsets.all(WsSpace.page),
+          itemCount: itemCount,
+          itemBuilder: (context, i) => i >= messages.length ? const _TypingBubble() : _Bubble(message: messages[i], maxFraction: _bubbleMaxFraction),
+        ),
+      ),
+      if (showPrompts)
+        SizedBox(
+          height: WsSize.chipHeight + WsSpace.s16,
+          child: ListView(
+            scrollDirection: Axis.horizontal,
+            padding: const EdgeInsets.symmetric(horizontal: WsSpace.page, vertical: WsSpace.s8),
+            children: [
+              for (final p in prompts)
+                Padding(
+                  padding: const EdgeInsets.only(right: WsSpace.s8),
+                  child: ActionChip(label: Text(p), onPressed: _chatProvider.isSending ? null : () => _send(p)),
+                ),
+            ],
           ),
         ),
-        _buildInputBar(isDark),
-      ],
-    );
+      _buildInputBar(),
+    ]);
   }
 
-  Widget _buildBubble(ChatMessage message, bool isDark) {
-    final isUser = message.isUser;
-    final isError = message.isError;
-    final bg = isError
-        ? AppColors.error.withValues(alpha: 0.1)
-        : isUser
-            ? _accentColor
-            : (isDark ? Colors.grey[900] : Colors.white);
-    final fg = isError
-        ? AppColors.errorDark
-        : isUser
-            ? Colors.white
-            : (isDark ? Colors.white : Colors.black87);
-
-    return Align(
-      alignment: isUser ? Alignment.centerRight : Alignment.centerLeft,
-      child: Container(
-        margin: const EdgeInsets.symmetric(vertical: 6),
-        padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 10),
-        constraints: BoxConstraints(maxWidth: MediaQuery.of(context).size.width * 0.78),
-        decoration: BoxDecoration(
-          color: bg,
-          borderRadius: BorderRadius.circular(14),
-          border: (isUser || isError)
-              ? null
-              : Border.all(color: isDark ? Colors.grey[800]! : const Color(0xFFE5E7EB)),
-        ),
-        child: Text(message.text, style: TextStyle(color: fg, fontSize: 14, height: 1.4)),
-      ),
-    );
-  }
-
-  Widget _buildTypingBubble(bool isDark) {
-    return Align(
-      alignment: Alignment.centerLeft,
-      child: Container(
-        margin: const EdgeInsets.symmetric(vertical: 6),
-        padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 10),
-        decoration: BoxDecoration(
-          color: isDark ? Colors.grey[900] : Colors.white,
-          borderRadius: BorderRadius.circular(14),
-          border: Border.all(color: isDark ? Colors.grey[800]! : const Color(0xFFE5E7EB)),
-        ),
-        child: SizedBox(
-          width: 18,
-          height: 18,
-          child: CircularProgressIndicator(strokeWidth: 2, color: _accentColor),
-        ),
-      ),
-    );
-  }
-
-  Widget _buildInputBar(bool isDark) {
-    return Container(
-      decoration: BoxDecoration(
-        color: isDark ? const Color(0xFF1E1E1E) : Colors.white,
-        boxShadow: [
-          BoxShadow(color: Colors.black.withValues(alpha: 0.06), blurRadius: 10, offset: const Offset(0, -2)),
-        ],
-      ),
+  Widget _buildInputBar() {
+    final l10n = AppLocalizations.of(context);
+    final t = context.ws;
+    return DecoratedBox(
+      decoration: BoxDecoration(color: t.surface, boxShadow: WsElevation.level1),
       child: SafeArea(
         top: false,
         child: Padding(
-          padding: const EdgeInsets.fromLTRB(12, 10, 12, 12),
-          child: Row(
-            children: [
-              Expanded(
-                child: TextField(
-                  controller: _textController,
-                  enabled: !_chatProvider.isSending,
-                  textInputAction: TextInputAction.send,
-                  decoration: InputDecoration(
-                    hintText: 'Ask about your sales, products, or orders...',
-                    filled: true,
-                    fillColor: isDark ? Colors.grey[900] : const Color(0xFFF1F5F9),
-                    contentPadding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
-                    border: OutlineInputBorder(
-                      borderRadius: BorderRadius.circular(24),
-                      borderSide: BorderSide.none,
-                    ),
-                  ),
-                  onSubmitted: (_) => _handleSend(),
-                ),
+          padding: const EdgeInsets.fromLTRB(WsSpace.s12, WsSpace.s8, WsSpace.s12, WsSpace.s12),
+          child: Row(children: [
+            Expanded(
+              child: TextField(
+                controller: _textController,
+                enabled: !_chatProvider.isSending,
+                textInputAction: TextInputAction.send,
+                minLines: 1,
+                maxLines: 4,
+                decoration: InputDecoration(hintText: l10n.aiInputHint),
+                onSubmitted: _send,
               ),
-              const SizedBox(width: 8),
-              IconButton(
-                onPressed: _chatProvider.isSending ? null : _handleSend,
-                icon: Icon(Icons.send_rounded,
-                    color: _chatProvider.isSending ? Colors.grey : _accentColor),
-              ),
-            ],
-          ),
+            ),
+            const SizedBox(width: WsSpace.s8),
+            IconButton.filled(
+              tooltip: l10n.aiSend,
+              onPressed: _chatProvider.isSending ? null : () => _send(_textController.text),
+              icon: const Icon(AgIcons.chat),
+            ),
+          ]),
+        ),
+      ),
+    );
+  }
+}
+
+class _Bubble extends StatelessWidget {
+  const _Bubble({required this.message, required this.maxFraction});
+  final ChatMessage message;
+  final double maxFraction;
+
+  @override
+  Widget build(BuildContext context) {
+    final t = context.ws;
+    final text = context.wsText;
+    final isUser = message.isUser;
+    final (Color bg, Color fg) = message.isError
+        ? (t.errorBg, t.errorFg)
+        : isUser
+            ? (t.primary, t.onPrimary)
+            : (t.surface, t.textPrimary);
+    return Align(
+      alignment: isUser ? Alignment.centerRight : Alignment.centerLeft,
+      child: Container(
+        margin: const EdgeInsets.symmetric(vertical: WsSpace.s4),
+        padding: const EdgeInsets.symmetric(horizontal: WsSpace.s12, vertical: WsSpace.s8),
+        constraints: BoxConstraints(maxWidth: MediaQuery.sizeOf(context).width * maxFraction),
+        decoration: BoxDecoration(
+          color: bg,
+          borderRadius: BorderRadius.circular(WsRadius.card),
+          border: isUser || message.isError ? null : Border.all(color: t.divider),
+        ),
+        child: SelectableText(message.text, style: text.bodyMedium!.copyWith(color: fg)),
+      ),
+    );
+  }
+}
+
+class _TypingBubble extends StatelessWidget {
+  const _TypingBubble();
+
+  @override
+  Widget build(BuildContext context) {
+    final t = context.ws;
+    return Align(
+      alignment: Alignment.centerLeft,
+      child: Container(
+        margin: const EdgeInsets.symmetric(vertical: WsSpace.s4),
+        padding: const EdgeInsets.all(WsSpace.s12),
+        decoration: BoxDecoration(
+          color: t.surface,
+          borderRadius: BorderRadius.circular(WsRadius.card),
+          border: Border.all(color: t.divider),
+        ),
+        child: SizedBox.square(
+          dimension: WsIconSize.supporting,
+          child: CircularProgressIndicator(semanticsLabel: AppLocalizations.of(context).aiThinking),
         ),
       ),
     );

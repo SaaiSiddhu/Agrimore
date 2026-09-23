@@ -21,6 +21,10 @@ class DeliveryAuthProvider extends ChangeNotifier {
   // (the custom claim only reaches the ID token on its next refresh).
   RiderKycStatus? _kycStatus;
   String? _statusReason;
+  // DLV-3A: the server's view of duty — the silent-rider sweep can set it
+  // false (offlineReason 'no_location') while the app thinks it is online.
+  bool? _partnerOnline;
+  String? _offlineReason;
   StreamSubscription<DocumentSnapshot<Map<String, dynamic>>>?
       _partnerSubscription;
 
@@ -40,6 +44,9 @@ class DeliveryAuthProvider extends ChangeNotifier {
   String? get error => _error;
   RiderKycStatus? get kycStatus => _kycStatus;
   String? get statusReason => _statusReason;
+  /// delivery_partners.isOnline as last read; null before the first read.
+  bool? get partnerOnline => _partnerOnline;
+  String? get offlineReason => _offlineReason;
 
   /// Signed in as a delivery partner whose onboarding status does not allow
   /// work (pending, rejected, suspended, deactivated).
@@ -64,12 +71,17 @@ class DeliveryAuthProvider extends ChangeNotifier {
     _partnerSubscription = null;
     _kycStatus = null;
     _statusReason = null;
+    _partnerOnline = null;
+    _offlineReason = null;
   }
 
   /// Reads status and reason from a delivery_partners document.
   /// An absent `status` reads as pending (RiderKycStatus.fromWire), matching
   /// roleClaims.ts, which never grants the claim without 'approved'.
   void _applyPartnerData(Map<String, dynamic>? data) {
+    _partnerOnline = data?['isOnline'] == true;
+    final off = data?['offlineReason'];
+    _offlineReason = off is String && off.isNotEmpty ? off : null;
     _kycStatus = RiderKycStatus.fromWire(data?['status'] as String?);
     final reason = switch (_kycStatus) {
       RiderKycStatus.rejected => data?['rejectionReason'],

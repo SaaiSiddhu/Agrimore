@@ -372,15 +372,14 @@ class _AddProductScreenState extends State<AddProductScreen> {
   bool _validateCoverage() {
     if (_locationType == 'district' &&
         _districtController.text.trim().isEmpty) {
-      SnackbarHelper.showError(context, 'Please select a delivery district.');
+      _toastError(AppLocalizations.of(context).editorNeedDistrict);
       return false;
     }
     if (_locationType == 'radius') {
       final lat = double.tryParse(_latController.text.trim());
       final lng = double.tryParse(_lngController.text.trim());
       if (lat == null || lng == null) {
-        SnackbarHelper.showError(
-            context, 'Please set latitude and longitude for radius delivery.');
+        _toastError(AppLocalizations.of(context).editorNeedCoordinates);
         return false;
       }
     }
@@ -392,24 +391,19 @@ class _AddProductScreenState extends State<AddProductScreen> {
 
     final b2bPrice = double.tryParse(_b2bPriceController.text.trim());
     if (b2bPrice == null || b2bPrice <= 0) {
-      SnackbarHelper.showError(context, 'Please enter a valid B2B price.');
+      _toastError(AppLocalizations.of(context).editorNeedB2bPrice);
       return false;
     }
 
     final salePrice = double.tryParse(_priceController.text.trim());
     if (salePrice != null && b2bPrice >= salePrice) {
-      SnackbarHelper.showError(
-        context,
-        'B2B price (₹${b2bPrice.toStringAsFixed(0)}) must be lower than the '
-        'sale price (₹${salePrice.toStringAsFixed(0)}).',
-      );
+      _toastError(AppLocalizations.of(context).editorB2bTooHigh(AgFormat.rupeesWhole(b2bPrice), AgFormat.rupeesWhole(salePrice)));
       return false;
     }
 
     final b2bMoq = int.tryParse(_b2bMoqController.text.trim());
     if (b2bMoq == null || b2bMoq <= 0) {
-      SnackbarHelper.showError(
-          context, 'Please enter a valid minimum order quantity.');
+      _toastError(AppLocalizations.of(context).editorNeedMoq);
       return false;
     }
 
@@ -432,7 +426,7 @@ class _AddProductScreenState extends State<AddProductScreen> {
       final serviceEnabled = await Geolocator.isLocationServiceEnabled();
       if (!serviceEnabled) {
         if (mounted) {
-          SnackbarHelper.showError(context, 'Please enable location service.');
+          _toastError(AppLocalizations.of(context).editorLocationOff);
         }
         return;
       }
@@ -444,7 +438,7 @@ class _AddProductScreenState extends State<AddProductScreen> {
       if (permission == LocationPermission.denied ||
           permission == LocationPermission.deniedForever) {
         if (mounted) {
-          SnackbarHelper.showError(context, 'Location permission denied.');
+          _toastError(AppLocalizations.of(context).editorLocationDenied);
         }
         return;
       }
@@ -462,7 +456,7 @@ class _AddProductScreenState extends State<AddProductScreen> {
       });
     } catch (_) {
       if (mounted) {
-        SnackbarHelper.showError(context, 'Unable to detect current location.');
+        _toastError(AppLocalizations.of(context).editorLocationFailed);
       }
     } finally {
       if (mounted) setState(() => _isDetectingCoverageLocation = false);
@@ -486,7 +480,7 @@ class _AddProductScreenState extends State<AddProductScreen> {
       });
     } catch (e) {
       if (mounted) {
-        SnackbarHelper.showError(context, 'Unable to pick product image.');
+        _toastError(AppLocalizations.of(context).editorPhotoFailed);
       }
     }
   }
@@ -516,7 +510,7 @@ class _AddProductScreenState extends State<AddProductScreen> {
   Future<void> _saveProduct({bool asDraft = false}) async {
     if (asDraft) {
       if (_nameController.text.trim().isEmpty) {
-        SnackbarHelper.showError(context, AppLocalizations.of(context).draftNeedsName);
+        _toastError(AppLocalizations.of(context).draftNeedsName);
         return;
       }
     } else {
@@ -553,8 +547,7 @@ class _AddProductScreenState extends State<AddProductScreen> {
     } catch (e) {
       if (mounted) {
         setState(() => _isSaving = false);
-        SnackbarHelper.showError(
-            context, 'Image upload failed. Please try again.');
+        _toastError(AppLocalizations.of(context).editorUploadFailed);
       }
       return;
     }
@@ -617,9 +610,12 @@ class _AddProductScreenState extends State<AddProductScreen> {
       setState(() => _isSaving = false);
 
       if (success) {
-        SnackbarHelper.showSuccess(
-            context, asDraft ? AppLocalizations.of(context).draftSaved : 'Product updated successfully!');
+        WsToast.show(context, asDraft ? AppLocalizations.of(context).draftSaved : AppLocalizations.of(context).editorUpdated,
+            tone: WsToastTone.success);
         Navigator.pop(context);
+      } else {
+        // SELLER-UI-1c: a failed save used to end silently.
+        _toastError(AppLocalizations.of(context).editorSaveFailed);
       }
     } else {
       // Create new product
@@ -675,647 +671,379 @@ class _AddProductScreenState extends State<AddProductScreen> {
       setState(() => _isSaving = false);
 
       if (success) {
-        SnackbarHelper.showSuccess(
-            context,
-            asDraft
-                ? AppLocalizations.of(context).draftSaved
-                : 'Product added successfully! Waiting for admin approval.');
+        WsToast.show(context, asDraft ? AppLocalizations.of(context).draftSaved : AppLocalizations.of(context).editorAdded,
+            tone: WsToastTone.success);
         Navigator.pop(context);
+      } else {
+        _toastError(AppLocalizations.of(context).editorSaveFailed);
       }
     }
   }
 
+  void _toastError(String message) => WsToast.show(context, message, tone: WsToastTone.error);
+
+  /// A titled, bordered section (ADR §7 card) with an icon and a hint.
+  Widget _section({required IconData icon, required String title, String? hint, Widget? trailing, required List<Widget> children}) {
+    final t = context.ws;
+    final text = context.wsText;
+    return Card(
+      margin: EdgeInsets.zero,
+      child: Padding(
+        padding: const EdgeInsets.all(WsSpace.s16),
+        child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
+          Row(children: [
+            Container(
+              padding: const EdgeInsets.all(WsSpace.s8),
+              decoration: BoxDecoration(color: t.primarySubtle, borderRadius: BorderRadius.circular(WsRadius.small)),
+              child: Icon(icon, color: t.primary, size: WsIconSize.control),
+            ),
+            const SizedBox(width: WsSpace.s12),
+            Expanded(
+              child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
+                Text(title, style: text.titleSmall),
+                if (hint != null) Text(hint, style: text.bodySmall!.copyWith(color: t.textSecondary)),
+              ]),
+            ),
+            if (trailing != null) trailing,
+          ]),
+          if (children.isNotEmpty) const SizedBox(height: WsSpace.s16),
+          ...children,
+        ]),
+      ),
+    );
+  }
+
   Widget _buildImagePicker() {
+    final l10n = AppLocalizations.of(context);
+    final t = context.ws;
+    final text = context.wsText;
     final existingImage = isEditing ? widget.existingProduct!.primaryImage : '';
     final hasSelectedImage = _selectedImageBytes != null;
     final hasExistingImage = existingImage.isNotEmpty;
-
-    return InkWell(
-      onTap: _isSaving ? null : _pickProductImage,
-      borderRadius: BorderRadius.circular(16),
-      child: Container(
-        width: double.infinity,
-        height: 170,
-        decoration: BoxDecoration(
-          color: Colors.grey.withValues(alpha: 0.1),
-          borderRadius: BorderRadius.circular(16),
-          border: Border.all(color: Colors.grey.withValues(alpha: 0.3)),
-        ),
-        clipBehavior: Clip.antiAlias,
-        child: Stack(
-          fit: StackFit.expand,
-          children: [
-            if (hasSelectedImage)
-              Image.memory(_selectedImageBytes!, fit: BoxFit.cover)
-            else if (hasExistingImage)
-              Image.network(existingImage, fit: BoxFit.cover)
-            else
-              const Column(
-                mainAxisAlignment: MainAxisAlignment.center,
-                children: [
-                  Icon(Icons.add_a_photo, size: 40, color: Colors.grey),
-                  SizedBox(height: WsSpace.s8),
-                  Text(
-                    'Upload Product Image',
-                    style: TextStyle(color: Colors.grey),
-                  ),
-                ],
-              ),
-            Positioned(
-              right: 12,
-              bottom: 12,
-              child: Container(
-                padding:
-                    const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
-                decoration: BoxDecoration(
-                  color: Colors.black.withValues(alpha: 0.62),
-                  borderRadius: BorderRadius.circular(20),
+    return Semantics(
+      button: true,
+      label: hasSelectedImage || hasExistingImage ? l10n.editorChangePhoto : l10n.editorAddPhoto,
+      child: InkWell(
+        onTap: _isSaving ? null : _pickProductImage,
+        borderRadius: BorderRadius.circular(WsRadius.card),
+        child: AspectRatio(
+          aspectRatio: 16 / 9,
+          child: ClipRRect(
+            borderRadius: BorderRadius.circular(WsRadius.card),
+            child: Stack(fit: StackFit.expand, children: [
+              if (hasSelectedImage)
+                Image.memory(_selectedImageBytes!, fit: BoxFit.cover)
+              else if (hasExistingImage)
+                Image.network(existingImage, fit: BoxFit.cover, errorBuilder: (_, __, ___) => ColoredBox(color: t.surfaceSunken))
+              else
+                ColoredBox(
+                  color: t.surfaceSunken,
+                  child: Column(mainAxisAlignment: MainAxisAlignment.center, children: [
+                    Icon(AgIcons.camera, size: WsIconSize.feature, color: t.textTertiary),
+                    const SizedBox(height: WsSpace.s8),
+                    Text(l10n.editorAddPhoto, style: text.bodyMedium!.copyWith(color: t.textSecondary)),
+                  ]),
                 ),
-                child: Row(
-                  mainAxisSize: MainAxisSize.min,
-                  children: [
-                    const Icon(Icons.photo_library_outlined,
-                        color: Colors.white, size: 16),
-                    const SizedBox(width: 6),
-                    Text(
-                      hasSelectedImage || hasExistingImage
-                          ? 'Change'
-                          : 'Choose',
-                      style: const TextStyle(
-                        color: Colors.white,
-                        fontWeight: FontWeight.w700,
-                        fontSize: 12,
-                      ),
+              if (hasSelectedImage || hasExistingImage)
+                Positioned(
+                  right: WsSpace.s12,
+                  bottom: WsSpace.s12,
+                  child: ExcludeSemantics(
+                    child: Chip(
+                      avatar: Icon(AgIcons.image, size: WsIconSize.supporting, color: t.primary),
+                      label: Text(l10n.editorChangePhoto),
                     ),
-                  ],
+                  ),
                 ),
-              ),
-            ),
-          ],
+            ]),
+          ),
         ),
       ),
     );
   }
 
+  Widget _suggestionList(List<Widget> tiles) => Card(
+        margin: const EdgeInsets.only(top: WsSpace.s8),
+        clipBehavior: Clip.antiAlias,
+        child: Column(children: tiles),
+      );
+
   Widget _buildMasterSuggestions() {
     if (_isSearchingMasterProducts) {
-      return const Padding(
-        padding: EdgeInsets.only(top: 8),
-        child: LinearProgressIndicator(minHeight: 2),
-      );
+      return const Padding(padding: EdgeInsets.only(top: WsSpace.s8), child: LinearProgressIndicator());
     }
     if (_masterSuggestions.isEmpty) return const SizedBox.shrink();
-
-    return Container(
-      margin: const EdgeInsets.only(top: 8),
-      decoration: BoxDecoration(
-        color: Theme.of(context).colorScheme.surface,
-        borderRadius: BorderRadius.circular(12),
-        border: Border.all(color: Colors.grey.withValues(alpha: 0.25)),
-        boxShadow: [
-          BoxShadow(
-            color: Colors.black.withValues(alpha: 0.06),
-            blurRadius: 12,
-            offset: const Offset(0, 5),
+    final l10n = AppLocalizations.of(context);
+    return _suggestionList([
+      for (final product in _masterSuggestions)
+        ListTile(
+          leading: const Icon(AgIcons.product),
+          title: Text((product['name'] ?? '').toString(), maxLines: 1, overflow: TextOverflow.ellipsis),
+          subtitle: Text(
+            [
+              if (product['category'] != null) product['category'].toString(),
+              if (product['unit'] != null) product['unit'].toString(),
+              if ((product['basePrice'] ?? product['salePrice'] ?? product['price']) is num)
+                AgFormat.rupees((product['basePrice'] ?? product['salePrice'] ?? product['price']) as num),
+            ].join(l10n.editorSeparator),
+            maxLines: 1,
+            overflow: TextOverflow.ellipsis,
           ),
-        ],
-      ),
-      child: Column(
-        children: _masterSuggestions.map((product) {
-          final price =
-              product['basePrice'] ?? product['salePrice'] ?? product['price'];
-          return ListTile(
-            leading: const Icon(Icons.inventory_2_outlined),
-            title: Text(
-              (product['name'] ?? '').toString(),
-              maxLines: 1,
-              overflow: TextOverflow.ellipsis,
-            ),
-            subtitle: Text(
-              [
-                if (product['category'] != null) product['category'],
-                if (product['unit'] != null) product['unit'],
-                if (price != null) 'Rs.$price',
-              ].join(' • '),
-              maxLines: 1,
-              overflow: TextOverflow.ellipsis,
-            ),
-            onTap: () => _selectMasterProduct(product),
-          );
-        }).toList(),
-      ),
-    );
+          onTap: () => _selectMasterProduct(product),
+        ),
+    ]);
   }
 
   Widget _buildCategorySuggestions() {
     if (_categorySuggestions.isEmpty) return const SizedBox.shrink();
-
-    return Container(
-      margin: const EdgeInsets.only(top: 8),
-      decoration: BoxDecoration(
-        color: Theme.of(context).colorScheme.surface,
-        borderRadius: BorderRadius.circular(12),
-        border: Border.all(color: Colors.grey.withValues(alpha: 0.25)),
-        boxShadow: [
-          BoxShadow(
-            color: Colors.black.withValues(alpha: 0.06),
-            blurRadius: 12,
-            offset: const Offset(0, 5),
-          ),
-        ],
-      ),
-      child: Column(
-        children: _categorySuggestions.map((category) {
-          return ListTile(
-            leading: const Icon(Icons.category_outlined),
-            title: Text(category.name, maxLines: 1, overflow: TextOverflow.ellipsis),
-            onTap: () => _selectCategorySuggestion(category),
-          );
-        }).toList(),
-      ),
-    );
+    return _suggestionList([
+      for (final category in _categorySuggestions)
+        ListTile(
+          leading: const Icon(AgIcons.tag),
+          title: Text(category.name, maxLines: 1, overflow: TextOverflow.ellipsis),
+          onTap: () => _selectCategorySuggestion(category),
+        ),
+    ]);
   }
 
   Widget _buildSelectorPricingSection(ThemeData theme) {
+    final l10n = AppLocalizations.of(context);
     final selectedCenterId = _selectedCenter?['id']?.toString();
     final priceLabel = switch (_priceSource) {
-      'manual' => 'Manual price',
-      'area' => 'Area / hub price',
-      _ => 'Default price',
+      'manual' => l10n.editorPriceManual,
+      'area' => l10n.editorPriceArea,
+      _ => l10n.editorPriceDefault,
     };
-
-    return Container(
-      padding: const EdgeInsets.all(16),
-      decoration: BoxDecoration(
-        color: theme.colorScheme.surface,
-        borderRadius: BorderRadius.circular(16),
-        border: Border.all(color: theme.dividerColor.withValues(alpha: 0.4)),
-      ),
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
-          Row(
-            children: [
-              const Icon(Icons.hub_outlined, color: Color(0xFF2D7D3C)),
-              const SizedBox(width: 10),
-              const Expanded(
-                child: Text(
-                  'Center / Area Pricing',
-                  style: TextStyle(fontWeight: FontWeight.w800, fontSize: 16),
-                ),
-              ),
-              Chip(
-                label: Text(priceLabel),
-                visualDensity: VisualDensity.compact,
-              ),
-            ],
+    String money(double? v) => v == null ? l10n.editorNoValue : AgFormat.rupeesWhole(v);
+    return _section(
+      icon: AgIcons.store,
+      title: l10n.editorCenterPricing,
+      trailing: Chip(label: Text(priceLabel), visualDensity: VisualDensity.compact),
+      children: [
+        DropdownButtonFormField<String>(
+          initialValue: selectedCenterId,
+          decoration: InputDecoration(
+            labelText: _isLoadingCenters ? l10n.editorLoadingCenters : l10n.editorCenter,
+            prefixIcon: const Icon(AgIcons.location),
           ),
-          const SizedBox(height: 14),
-          DropdownButtonFormField<String>(
-            initialValue: selectedCenterId,
-            decoration: InputDecoration(
-              labelText: _isLoadingCenters ? 'Loading centers...' : 'Selector',
-              border: const OutlineInputBorder(),
-              prefixIcon: const Icon(Icons.store_mall_directory_outlined),
-            ),
-            items: _centers
-                .map((center) => DropdownMenuItem<String>(
-                      value: center['id'].toString(),
-                      child: Text(center['name'].toString()),
-                    ))
-                .toList(),
-            onChanged: (id) {
-              final center = _centers.cast<Map<String, dynamic>?>().firstWhere(
-                    (item) => item?['id']?.toString() == id,
-                    orElse: () => null,
-                  );
-              _selectCenter(center);
-            },
+          items: [
+            for (final center in _centers)
+              DropdownMenuItem<String>(value: center['id'].toString(), child: Text(center['name'].toString())),
+          ],
+          onChanged: (id) {
+            final center = _centers.cast<Map<String, dynamic>?>().firstWhere(
+                  (item) => item?['id']?.toString() == id,
+                  orElse: () => null,
+                );
+            _selectCenter(center);
+          },
+        ),
+        const SizedBox(height: WsSpace.s12),
+        Wrap(spacing: WsSpace.s8, runSpacing: WsSpace.s8, children: [
+          Chip(label: Text(l10n.editorPriceChip(l10n.editorPriceDefault, money(_basePrice)))),
+          Chip(label: Text(l10n.editorPriceChip(l10n.editorPriceArea, money(_areaPrice)))),
+          Chip(label: Text(l10n.editorPriceChip(l10n.editorPriceCurrent, money(double.tryParse(_priceController.text.trim()))))),
+        ]),
+        const SizedBox(height: WsSpace.s8),
+        Align(
+          alignment: Alignment.centerLeft,
+          child: TextButton.icon(
+            onPressed: (_basePrice == null && _areaPrice == null) ? null : _resetToMappedPrice,
+            icon: const Icon(AgIcons.undo),
+            label: Text(l10n.editorResetPrice),
           ),
-          const SizedBox(height: WsSpace.s12),
-          Wrap(
-            spacing: 8,
-            runSpacing: 8,
-            children: [
-              _buildPriceInfoChip('Default', _basePrice),
-              _buildPriceInfoChip('Area', _areaPrice),
-              _buildPriceInfoChip(
-                'Current',
-                double.tryParse(_priceController.text.trim()),
-              ),
-            ],
-          ),
-          const SizedBox(height: 10),
-          Align(
-            alignment: Alignment.centerLeft,
-            child: TextButton.icon(
-              onPressed: (_basePrice == null && _areaPrice == null)
-                  ? null
-                  : _resetToMappedPrice,
-              icon: const Icon(Icons.restart_alt_outlined),
-              label: const Text('Reset mapped price'),
-            ),
-          ),
-        ],
-      ),
-    );
-  }
-
-  Widget _buildPriceInfoChip(String label, double? price) {
-    return Chip(
-      label: Text(
-          '$label: ${price == null ? '-' : 'Rs.${price.toStringAsFixed(0)}'}'),
-      backgroundColor: const Color(0xFF2D7D3C).withValues(alpha: 0.08),
-      side: BorderSide.none,
+        ),
+      ],
     );
   }
 
   Widget _buildCoverageSection(ThemeData theme) {
+    final l10n = AppLocalizations.of(context);
+    final text = context.wsText;
     final districtValue =
-        _tamilNaduDistricts.contains(_districtController.text.trim())
-            ? _districtController.text.trim()
-            : null;
-
-    return Container(
-      padding: const EdgeInsets.all(16),
-      decoration: BoxDecoration(
-        color: theme.colorScheme.surface,
-        borderRadius: BorderRadius.circular(16),
-        border: Border.all(color: theme.dividerColor.withValues(alpha: 0.4)),
-        boxShadow: [
-          BoxShadow(
-            color: Colors.black.withValues(alpha: 0.04),
-            blurRadius: 12,
-            offset: const Offset(0, 4),
-          ),
-        ],
-      ),
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
-          Row(
-            children: [
-              Container(
-                padding: const EdgeInsets.all(9),
-                decoration: BoxDecoration(
-                  color: const Color(0xFF2D7D3C).withValues(alpha: 0.1),
-                  borderRadius: BorderRadius.circular(10),
-                ),
-                child: const Icon(
-                  Icons.location_on_outlined,
-                  color: Color(0xFF2D7D3C),
-                ),
-              ),
-              const SizedBox(width: WsSpace.s12),
-              const Expanded(
-                child: Column(
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  children: [
-                    Text(
-                      'Delivery Coverage Area',
-                      style: TextStyle(
-                        fontSize: 16,
-                        fontWeight: FontWeight.w800,
-                      ),
-                    ),
-                    SizedBox(height: 2),
-                    Text(
-                      'Default is full Tamil Nadu. Use radius for targeted delivery.',
-                      style: TextStyle(fontSize: 12, color: Colors.grey),
-                    ),
-                  ],
-                ),
-              ),
-            ],
-          ),
-          const SizedBox(height: WsSpace.s16),
-          Wrap(
-            spacing: 8,
-            runSpacing: 8,
-            children: [
-              ChoiceChip(
-                label: const Text('Full State'),
-                selected: _locationType == 'state',
-                onSelected: (_) => setState(() => _locationType = 'state'),
-              ),
-              ChoiceChip(
-                label: const Text('District'),
-                selected: _locationType == 'district',
-                onSelected: (_) => setState(() => _locationType = 'district'),
-              ),
-              ChoiceChip(
-                label: const Text('Radius'),
-                selected: _locationType == 'radius',
-                onSelected: (_) => setState(() => _locationType = 'radius'),
-              ),
-            ],
-          ),
+        _tamilNaduDistricts.contains(_districtController.text.trim()) ? _districtController.text.trim() : null;
+    return _section(
+      icon: AgIcons.location,
+      title: l10n.editorCoverage,
+      hint: l10n.editorCoverageHint,
+      children: [
+        Wrap(spacing: WsSpace.s8, runSpacing: WsSpace.s8, children: [
+          for (final (value, label) in [
+            ('state', l10n.editorCoverageState),
+            ('district', l10n.editorCoverageDistrict),
+            ('radius', l10n.editorCoverageRadius),
+          ])
+            ChoiceChip(label: Text(label), selected: _locationType == value, onSelected: (_) => setState(() => _locationType = value)),
+        ]),
+        const SizedBox(height: WsSpace.s16),
+        DropdownButtonFormField<String>(
+          initialValue: _selectedState,
+          decoration: InputDecoration(labelText: l10n.accountState, prefixIcon: const Icon(AgIcons.location)),
+          items: [for (final s in _states) DropdownMenuItem(value: s, child: Text(s))],
+          onChanged: (value) {
+            if (value == null) return;
+            setState(() => _selectedState = value);
+          },
+        ),
+        if (_locationType == 'district') ...[
           const SizedBox(height: WsSpace.s16),
           DropdownButtonFormField<String>(
-            initialValue: _selectedState,
-            decoration: const InputDecoration(
-              labelText: 'State',
-              border: OutlineInputBorder(),
-              prefixIcon: Icon(Icons.map_outlined),
-            ),
-            items: _states
-                .map((state) => DropdownMenuItem(
-                      value: state,
-                      child: Text(state),
-                    ))
-                .toList(),
+            initialValue: districtValue,
+            decoration: InputDecoration(labelText: l10n.editorCoverageDistrict, prefixIcon: const Icon(AgIcons.location)),
+            items: [for (final d in _tamilNaduDistricts) DropdownMenuItem(value: d, child: Text(d))],
             onChanged: (value) {
               if (value == null) return;
-              setState(() => _selectedState = value);
+              setState(() => _districtController.text = value);
             },
+            validator: (_) =>
+                _locationType == 'district' && _districtController.text.trim().isEmpty ? l10n.editorRequired : null,
           ),
-          if (_locationType == 'district') ...[
-            const SizedBox(height: WsSpace.s16),
-            DropdownButtonFormField<String>(
-              initialValue: districtValue,
-              decoration: const InputDecoration(
-                labelText: 'District',
-                border: OutlineInputBorder(),
-                prefixIcon: Icon(Icons.location_city_outlined),
-              ),
-              items: _tamilNaduDistricts
-                  .map((district) => DropdownMenuItem(
-                        value: district,
-                        child: Text(district),
-                      ))
-                  .toList(),
-              onChanged: (value) {
-                if (value == null) return;
-                setState(() => _districtController.text = value);
-              },
-              validator: (_) => _locationType == 'district' &&
-                      _districtController.text.trim().isEmpty
-                  ? 'Required'
-                  : null,
-            ),
-          ],
-          if (_locationType == 'radius') ...[
-            const SizedBox(height: WsSpace.s16),
-            Row(
-              children: [
-                Expanded(
-                  child: TextFormField(
-                    controller: _latController,
-                    keyboardType:
-                        const TextInputType.numberWithOptions(decimal: true),
-                    decoration: const InputDecoration(
-                      labelText: 'Latitude',
-                      border: OutlineInputBorder(),
-                      prefixIcon: Icon(Icons.my_location_outlined),
-                    ),
-                  ),
-                ),
-                const SizedBox(width: WsSpace.s12),
-                Expanded(
-                  child: TextFormField(
-                    controller: _lngController,
-                    keyboardType:
-                        const TextInputType.numberWithOptions(decimal: true),
-                    decoration: const InputDecoration(
-                      labelText: 'Longitude',
-                      border: OutlineInputBorder(),
-                      prefixIcon: Icon(Icons.explore_outlined),
-                    ),
-                  ),
-                ),
-              ],
-            ),
-            const SizedBox(height: WsSpace.s12),
-            OutlinedButton.icon(
-              onPressed: _isDetectingCoverageLocation
-                  ? null
-                  : _useCurrentCoverageLocation,
-              icon: _isDetectingCoverageLocation
-                  ? const SizedBox(
-                      width: 16,
-                      height: 16,
-                      child: CircularProgressIndicator(strokeWidth: 2),
-                    )
-                  : const Icon(Icons.gps_fixed_outlined),
-              label: Text(
-                _isDetectingCoverageLocation
-                    ? 'Detecting...'
-                    : 'Use Current Location',
-              ),
-            ),
-            const SizedBox(height: WsSpace.s12),
-            Text(
-              'Radius: ${_radiusKm.round()} km',
-              style: const TextStyle(fontWeight: FontWeight.w700),
-            ),
-            Slider(
-              min: 1,
-              max: 50,
-              divisions: 49,
-              value: _radiusKm.clamp(1, 50),
-              label: '${_radiusKm.round()} km',
-              activeColor: const Color(0xFF2D7D3C),
-              onChanged: (value) => setState(() => _radiusKm = value),
-            ),
-          ],
         ],
-      ),
+        if (_locationType == 'radius') ...[
+          const SizedBox(height: WsSpace.s16),
+          Row(children: [
+            Expanded(
+              child: TextFormField(
+                controller: _latController,
+                keyboardType: const TextInputType.numberWithOptions(decimal: true, signed: true),
+                decoration: InputDecoration(labelText: l10n.editorLatitude),
+              ),
+            ),
+            const SizedBox(width: WsSpace.s12),
+            Expanded(
+              child: TextFormField(
+                controller: _lngController,
+                keyboardType: const TextInputType.numberWithOptions(decimal: true, signed: true),
+                decoration: InputDecoration(labelText: l10n.editorLongitude),
+              ),
+            ),
+          ]),
+          const SizedBox(height: WsSpace.s12),
+          SaLoadingButton(
+            text: l10n.editorUseLocation,
+            loadingText: l10n.editorDetecting,
+            isLoading: _isDetectingCoverageLocation,
+            variant: SaButtonVariant.outlined,
+            icon: AgIcons.location,
+            onPressed: _isDetectingCoverageLocation ? null : _useCurrentCoverageLocation,
+          ),
+          const SizedBox(height: WsSpace.s12),
+          Text(l10n.editorRadiusValue(_radiusKm.round()), style: text.labelLarge),
+          Slider(
+            min: 1,
+            max: 50,
+            divisions: 49,
+            value: _radiusKm.clamp(1, 50),
+            label: l10n.editorRadiusValue(_radiusKm.round()),
+            onChanged: (value) => setState(() => _radiusKm = value),
+          ),
+        ],
+      ],
     );
   }
 
   Widget _buildB2BSection(ThemeData theme) {
-    return Container(
-      padding: const EdgeInsets.all(16),
-      decoration: BoxDecoration(
-        color: theme.colorScheme.surface,
-        borderRadius: BorderRadius.circular(16),
-        border: Border.all(color: theme.dividerColor.withValues(alpha: 0.4)),
-        boxShadow: [
-          BoxShadow(
-            color: Colors.black.withValues(alpha: 0.04),
-            blurRadius: 12,
-            offset: const Offset(0, 4),
-          ),
-        ],
-      ),
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
-          Row(
-            children: [
-              Container(
-                padding: const EdgeInsets.all(9),
-                decoration: BoxDecoration(
-                  color: const Color(0xFF2D7D3C).withValues(alpha: 0.1),
-                  borderRadius: BorderRadius.circular(10),
-                ),
-                child: const Icon(
-                  Icons.storefront_outlined,
-                  color: Color(0xFF2D7D3C),
-                ),
+    final l10n = AppLocalizations.of(context);
+    final t = context.ws;
+    final text = context.wsText;
+    return _section(
+      icon: AgIcons.store,
+      title: l10n.editorB2b,
+      hint: l10n.editorB2bHint,
+      trailing: Switch(value: _isB2BEnabled, onChanged: (value) => setState(() => _isB2BEnabled = value)),
+      children: [
+        if (_isB2BEnabled) ...[
+          Row(children: [
+            Expanded(
+              child: TextFormField(
+                controller: _b2bPriceController,
+                keyboardType: const TextInputType.numberWithOptions(decimal: true),
+                decoration: InputDecoration(labelText: l10n.editorB2bPrice, prefixIcon: const Icon(AgIcons.rupee)),
               ),
-              const SizedBox(width: WsSpace.s12),
-              const Expanded(
-                child: Column(
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  children: [
-                    Text(
-                      'B2B (Wholesale) Listing',
-                      style: TextStyle(
-                        fontSize: 16,
-                        fontWeight: FontWeight.w800,
-                      ),
-                    ),
-                    SizedBox(height: 2),
-                    Text(
-                      'Offer this product at a bulk price with a minimum order quantity.',
-                      style: TextStyle(fontSize: 12, color: Colors.grey),
-                    ),
-                  ],
-                ),
-              ),
-              Switch(
-                value: _isB2BEnabled,
-                activeColor: const Color(0xFF2D7D3C),
-                onChanged: (value) =>
-                    setState(() => _isB2BEnabled = value),
-              ),
-            ],
-          ),
-          if (_isB2BEnabled) ...[
-            const SizedBox(height: WsSpace.s16),
-            Row(
-              children: [
-                Expanded(
-                  child: TextFormField(
-                    controller: _b2bPriceController,
-                    keyboardType: TextInputType.number,
-                    decoration: const InputDecoration(
-                      labelText: 'B2B Price (₹)',
-                      border: OutlineInputBorder(),
-                      prefixIcon: Icon(Icons.currency_rupee),
-                    ),
-                  ),
-                ),
-                const SizedBox(width: WsSpace.s12),
-                Expanded(
-                  child: TextFormField(
-                    controller: _b2bMoqController,
-                    keyboardType: TextInputType.number,
-                    decoration: const InputDecoration(
-                      labelText: 'Minimum Order Quantity (MOQ)',
-                      border: OutlineInputBorder(),
-                      prefixIcon: Icon(Icons.format_list_numbered),
-                    ),
-                  ),
-                ),
-              ],
             ),
-            const SizedBox(height: WsSpace.s8),
-            const Text(
-              'Must be lower than your normal sale price.',
-              style: TextStyle(fontSize: 12, color: Colors.grey),
+            const SizedBox(width: WsSpace.s12),
+            Expanded(
+              child: TextFormField(
+                controller: _b2bMoqController,
+                keyboardType: TextInputType.number,
+                decoration: InputDecoration(labelText: l10n.editorB2bMoq),
+              ),
             ),
-          ],
+          ]),
+          const SizedBox(height: WsSpace.s8),
+          Text(l10n.editorB2bRule, style: text.bodySmall!.copyWith(color: t.textSecondary)),
         ],
-      ),
+      ],
     );
   }
 
   @override
   Widget build(BuildContext context) {
     final theme = Theme.of(context);
+    final l10n = AppLocalizations.of(context);
+    String? required(String? v) => (v ?? '').trim().isEmpty ? l10n.editorRequired : null;
+    const gap = SizedBox(height: WsSpace.s16);
 
     return Scaffold(
       appBar: AppBar(
-        title: Text(isEditing ? 'Edit Product' : 'Add New Product'),
-        backgroundColor: Colors.transparent,
-        elevation: 0,
+        leading: IconButton(tooltip: l10n.back, icon: const Icon(AgIcons.arrowLeft), onPressed: () => Navigator.of(context).maybePop()),
+        title: Text(isEditing ? l10n.editorEditTitle : l10n.editorNewTitle),
       ),
       body: SingleChildScrollView(
-        padding: const EdgeInsets.all(24),
-        child: Form(
-          key: _formKey,
-          child: Column(
-            crossAxisAlignment: CrossAxisAlignment.start,
-            children: [
-              _buildImagePicker(),
-              const SizedBox(height: WsSpace.s24),
-
-              TextFormField(
-                controller: _nameController,
-                decoration: const InputDecoration(
-                  labelText: 'Product Name',
-                  border: OutlineInputBorder(),
-                  prefixIcon: Icon(Icons.shopping_bag_outlined),
+        padding: const EdgeInsets.all(WsSpace.page),
+        child: Center(
+          child: ConstrainedBox(
+            constraints: const BoxConstraints(maxWidth: WsSize.formMaxWidth),
+            child: Form(
+              key: _formKey,
+              child: Column(crossAxisAlignment: CrossAxisAlignment.stretch, children: [
+                _buildImagePicker(),
+                const SizedBox(height: WsSpace.s24),
+                TextFormField(
+                  controller: _nameController,
+                  decoration: InputDecoration(labelText: l10n.editorName, prefixIcon: const Icon(AgIcons.product)),
+                  onChanged: _searchMasterProducts,
+                  validator: required,
                 ),
-                onChanged: _searchMasterProducts,
-                validator: (v) => v!.isEmpty ? 'Required' : null,
-              ),
-              _buildMasterSuggestions(),
-              const SizedBox(height: WsSpace.s16),
-
-              _buildSelectorPricingSection(theme),
-              const SizedBox(height: WsSpace.s16),
-
-              // AI Description Field
-              TextFormField(
-                controller: _descriptionController,
-                maxLines: 4,
-                decoration: const InputDecoration(
-                  labelText: 'Description',
-                  hintText: 'Enter a product description.',
-                  border: OutlineInputBorder(),
+                _buildMasterSuggestions(),
+                gap,
+                _buildSelectorPricingSection(theme),
+                gap,
+                TextFormField(
+                  controller: _descriptionController,
+                  maxLines: 4,
+                  decoration: InputDecoration(labelText: l10n.editorDescription, hintText: l10n.editorDescriptionHint, alignLabelWithHint: true),
+                  validator: required,
                 ),
-                validator: (v) => v!.isEmpty ? 'Required' : null,
-              ),
-              const SizedBox(height: WsSpace.s16),
-
-              Row(
-                children: [
+                gap,
+                Row(crossAxisAlignment: CrossAxisAlignment.start, children: [
                   Expanded(
                     child: TextFormField(
                       controller: _priceController,
-                      keyboardType: TextInputType.number,
-                      decoration: const InputDecoration(
-                        labelText: 'Sale Price (₹)',
-                        border: OutlineInputBorder(),
-                        prefixIcon: Icon(Icons.currency_rupee),
-                      ),
-                      validator: (v) => v!.isEmpty ? 'Required' : null,
+                      keyboardType: const TextInputType.numberWithOptions(decimal: true),
+                      decoration: InputDecoration(labelText: l10n.editorSalePrice, prefixIcon: const Icon(AgIcons.rupee)),
+                      validator: required,
                     ),
                   ),
                   const SizedBox(width: WsSpace.s16),
                   Expanded(
                     child: TextFormField(
                       controller: _originalPriceController,
-                      keyboardType: TextInputType.number,
-                      decoration: const InputDecoration(
-                        labelText: 'MRP (₹)',
-                        border: OutlineInputBorder(),
-                        prefixIcon: Icon(Icons.price_change_outlined),
-                      ),
+                      keyboardType: const TextInputType.numberWithOptions(decimal: true),
+                      decoration: InputDecoration(labelText: l10n.editorMrp, prefixIcon: const Icon(AgIcons.tag)),
                     ),
                   ),
-                ],
-              ),
-              const SizedBox(height: WsSpace.s16),
-              _buildB2BSection(theme),
-              const SizedBox(height: WsSpace.s16),
-
-              // Stock + Low Stock Threshold
-              Row(
-                children: [
+                ]),
+                gap,
+                _buildB2BSection(theme),
+                gap,
+                Row(crossAxisAlignment: CrossAxisAlignment.start, children: [
                   Expanded(
                     child: TextFormField(
                       controller: _stockController,
                       keyboardType: TextInputType.number,
-                      decoration: const InputDecoration(
-                        labelText: 'Stock Qty',
-                        border: OutlineInputBorder(),
-                        prefixIcon: Icon(Icons.inventory_2_outlined),
-                      ),
-                      validator: (v) => v!.isEmpty ? 'Required' : null,
+                      decoration: InputDecoration(labelText: l10n.editorStock, prefixIcon: const Icon(AgIcons.inventory)),
+                      validator: required,
                     ),
                   ),
                   const SizedBox(width: WsSpace.s16),
@@ -1323,74 +1051,48 @@ class _AddProductScreenState extends State<AddProductScreen> {
                     child: TextFormField(
                       controller: _lowStockThresholdController,
                       keyboardType: TextInputType.number,
-                      decoration: const InputDecoration(
-                        labelText: 'Low Stock Alert',
-                        border: OutlineInputBorder(),
-                        prefixIcon: Icon(Icons.notifications_active_outlined),
-                        helperText: 'Alert when below this',
-                        helperMaxLines: 1,
+                      decoration: InputDecoration(
+                        labelText: l10n.editorLowStock,
+                        prefixIcon: const Icon(AgIcons.bell),
+                        helperText: l10n.editorLowStockHelp,
+                        helperMaxLines: 2,
                       ),
                     ),
                   ),
-                ],
-              ),
-              const SizedBox(height: WsSpace.s16),
-
-              TextFormField(
-                controller: _categoryController,
-                decoration: const InputDecoration(
-                  labelText: 'Category (e.g., Vegetables)',
-                  border: OutlineInputBorder(),
-                  prefixIcon: Icon(Icons.category_outlined),
+                ]),
+                gap,
+                TextFormField(
+                  controller: _categoryController,
+                  decoration: InputDecoration(labelText: l10n.editorCategory, hintText: l10n.editorCategoryHint, prefixIcon: const Icon(AgIcons.tag)),
+                  onChanged: _onCategoryTextChanged,
                 ),
-                onChanged: _onCategoryTextChanged,
-              ),
-              _buildCategorySuggestions(),
-
-              const SizedBox(height: WsSpace.s16),
-              ProductTaxSection(
-                hsnController: _hsnController,
-                gstRate: _gstRate,
-                onGstRateChanged: (v) => setState(() => _gstRate = v),
-              ),
-              const SizedBox(height: WsSpace.s16),
-              _buildCoverageSection(theme),
-
-              const SizedBox(height: 40),
-              SizedBox(
-                width: double.infinity,
-                height: 54,
-                child: FilledButton.icon(
+                _buildCategorySuggestions(),
+                gap,
+                ProductTaxSection(
+                  hsnController: _hsnController,
+                  gstRate: _gstRate,
+                  onGstRateChanged: (v) => setState(() => _gstRate = v),
+                ),
+                gap,
+                _buildCoverageSection(theme),
+                const SizedBox(height: WsSpace.s32),
+                SaLoadingButton(
+                  text: isEditing ? l10n.editorUpdate : l10n.editorSave,
+                  loadingText: l10n.editorSaving,
+                  isLoading: _isSaving,
+                  icon: AgIcons.success,
                   onPressed: _isSaving ? null : () => _saveProduct(),
-                  icon: _isSaving
-                      ? const SizedBox(
-                          width: 20,
-                          height: 20,
-                          child: CircularProgressIndicator(
-                              color: Colors.white, strokeWidth: 2))
-                      : Icon(isEditing ? Icons.save : Icons.check),
-                  label: Text(
-                    _isSaving
-                        ? 'Saving...'
-                        : (isEditing ? 'Update Product' : 'Save Product'),
-                    style: const TextStyle(
-                        fontSize: 16, fontWeight: FontWeight.bold),
-                  ),
-                  style: FilledButton.styleFrom(
-                    backgroundColor: const Color(0xFF2D7D3C),
-                    shape: RoundedRectangleBorder(
-                        borderRadius: BorderRadius.circular(12)),
-                  ),
                 ),
-              ),
-              const SizedBox(height: WsSpace.s12),
-              SaLoadingButton(
-                text: AppLocalizations.of(context).saveDraftCta,
-                variant: SaButtonVariant.outlined,
-                icon: AgIcons.document,
-                onPressed: _isSaving ? null : () => _saveProduct(asDraft: true),
-              ),
-            ],
+                const SizedBox(height: WsSpace.s12),
+                SaLoadingButton(
+                  text: l10n.saveDraftCta,
+                  variant: SaButtonVariant.outlined,
+                  icon: AgIcons.document,
+                  onPressed: _isSaving ? null : () => _saveProduct(asDraft: true),
+                ),
+                const SizedBox(height: WsSpace.s24),
+              ]),
+            ),
           ),
         ),
       ),

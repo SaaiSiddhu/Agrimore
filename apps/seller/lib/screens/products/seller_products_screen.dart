@@ -1,17 +1,22 @@
-// lib/screens/products/seller_products_screen.dart
-import 'package:flutter/material.dart';
-import 'package:flutter/services.dart';
-import 'package:provider/provider.dart';
 import 'package:agrimore_core/agrimore_core.dart';
 import 'package:agrimore_ui/agrimore_ui.dart';
 import 'package:cached_network_image/cached_network_image.dart';
+import 'package:flutter/material.dart';
+import 'package:flutter/services.dart';
+import 'package:provider/provider.dart';
+
+import '../../l10n/app_localizations.dart';
 import '../../providers/seller_auth_provider.dart';
 import '../../providers/seller_product_provider.dart';
 import '../home/add_product_screen.dart';
 import '../posts/create_post_screen.dart';
-import '../../l10n/app_localizations.dart';
 import 'widgets/product_list_controls.dart';
 
+/// Stock levels (SellerProductProvider.lowStockProducts uses the same line).
+const int kLowStockLine = 10;
+
+/// C-01 Catalogue (ADR §10.4, SELLER-UI-1c): search, status tabs, bulk
+/// publish/hide, and per product: live toggle, stock, edit, delete.
 class SellerProductsScreen extends StatefulWidget {
   const SellerProductsScreen({super.key});
 
@@ -20,427 +25,342 @@ class SellerProductsScreen extends StatefulWidget {
 }
 
 class _SellerProductsScreenState extends State<SellerProductsScreen> {
-  final _searchController = TextEditingController();
-  // SELLER-CATALOGUE-1: long-press multi-select for bulk publish / hide.
+  final _search = TextEditingController();
   final Set<String> _selected = {};
   bool _bulkBusy = false;
 
+  String? get _uid => context.read<SellerAuthProvider>().currentUser?.uid;
+
+  @override
+  void initState() {
+    super.initState();
+    WidgetsBinding.instance.addPostFrameCallback((_) => _reload());
+  }
+
+  @override
+  void dispose() {
+    _search.dispose();
+    super.dispose();
+  }
+
+  void _reload() {
+    if (!mounted) return;
+    final uid = _uid;
+    if (uid != null) context.read<SellerProductProvider>().loadSellerProducts(uid);
+  }
+
   void _toggle(String id) => setState(() => _selected.contains(id) ? _selected.remove(id) : _selected.add(id));
 
-  Future<void> _bulk(SellerProductProvider provider, bool publish) async {
+  Future<void> _bulk(bool publish) async {
     final l10n = AppLocalizations.of(context);
     final count = _selected.length;
     setState(() => _bulkBusy = true);
-    final ok = await provider.bulkSetActive({..._selected}, publish);
+    final ok = await context.read<SellerProductProvider>().bulkSetActive({..._selected}, publish);
     if (!mounted) return;
     setState(() {
       _bulkBusy = false;
       if (ok) _selected.clear();
     });
-    ScaffoldMessenger.of(context).showSnackBar(
-      SnackBar(content: Text(ok ? l10n.bulkDone(count) : l10n.bulkFailed)),
+    WsToast.show(context, ok ? l10n.bulkDone(count) : l10n.bulkFailed, tone: ok ? WsToastTone.success : WsToastTone.error);
+  }
+
+  Future<void> _editStock(ProductModel p) async {
+    final l10n = AppLocalizations.of(context);
+    final value = await showModalBottomSheet<int>(
+      context: context,
+      isScrollControlled: true,
+      builder: (_) => _StockSheet(product: p),
     );
+    final uid = _uid;
+    if (value == null || uid == null || !mounted) return;
+    final ok = await context.read<SellerProductProvider>().updateStock(p.id, value, uid);
+    if (mounted) {
+      WsToast.show(context, ok ? l10n.productStockSaved : l10n.productActionFailed,
+          tone: ok ? WsToastTone.success : WsToastTone.error);
+    }
   }
 
-  @override
-  void initState() {
-    super.initState();
-    WidgetsBinding.instance.addPostFrameCallback((_) {
-      final auth = context.read<SellerAuthProvider>();
-      if (auth.currentUser != null) {
-        context.read<SellerProductProvider>().loadSellerProducts(auth.currentUser!.uid);
-      }
-    });
+  Future<void> _delete(ProductModel p) async {
+    final l10n = AppLocalizations.of(context);
+    final yes = await wsConfirm(
+      context,
+      title: l10n.productDeleteTitle,
+      message: l10n.productDeleteBody(p.name),
+      confirmLabel: l10n.productDelete,
+      cancelLabel: l10n.cancel,
+      destructive: true,
+    );
+    final uid = _uid;
+    if (!yes || uid == null || !mounted) return;
+    final ok = await context.read<SellerProductProvider>().deleteProduct(p.id, uid);
+    if (mounted) {
+      WsToast.show(context, ok ? l10n.productDeleted : l10n.productActionFailed,
+          tone: ok ? WsToastTone.success : WsToastTone.error);
+    }
   }
 
-  @override
-  void dispose() {
-    _searchController.dispose();
-    super.dispose();
+  Future<void> _setLive(ProductModel p, bool live) async {
+    final l10n = AppLocalizations.of(context);
+    final uid = _uid;
+    if (uid == null) return;
+    HapticFeedback.selectionClick();
+    final ok = await context.read<SellerProductProvider>().toggleProductActive(p.id, live, uid);
+    if (!ok && mounted) WsToast.show(context, l10n.productActionFailed, tone: WsToastTone.error);
   }
+
+  void _push(Widget screen) => Navigator.of(context).push(MaterialPageRoute<void>(builder: (_) => screen));
 
   @override
   Widget build(BuildContext context) {
-    final isDark = Theme.of(context).brightness == Brightness.dark;
+    final l10n = AppLocalizations.of(context);
+    final t = context.ws;
+    final text = context.wsText;
+    final provider = context.watch<SellerProductProvider>();
+    final products = provider.products;
 
     return Scaffold(
+      appBar: AppBar(
+        automaticallyImplyLeading: false,
+        title: Text(l10n.navCatalogue),
+        actions: [
+          IconButton(tooltip: l10n.productNewPost, icon: const Icon(AgIcons.image), onPressed: () => _push(const CreatePostScreen())),
+        ],
+      ),
+      floatingActionButton: _selected.isNotEmpty
+          ? null
+          : FloatingActionButton.extended(
+              onPressed: () => _push(const AddProductScreen()),
+              icon: const Icon(AgIcons.add),
+              label: Text(l10n.homeAddProduct),
+            ),
       bottomNavigationBar: _selected.isEmpty
           ? null
           : ProductBulkBar(
               count: _selected.length,
               busy: _bulkBusy,
-              onPublish: () => _bulk(context.read<SellerProductProvider>(), true),
-              onHide: () => _bulk(context.read<SellerProductProvider>(), false),
+              onPublish: () => _bulk(true),
+              onHide: () => _bulk(false),
               onClear: () => setState(_selected.clear),
             ),
-      backgroundColor: isDark ? const Color(0xFF121212) : const Color(0xFFF5F7FA),
-      appBar: AppBar(
-        elevation: 0,
-        backgroundColor: Colors.transparent,
-        automaticallyImplyLeading: false,
-        title: const Text('My Products', style: TextStyle(fontWeight: FontWeight.bold, fontSize: 20)),
-        actions: [
-          // BUSINESS-NETWORK-2: the entry point into the post composer --
-          // deliberately an AppBar action on this existing screen rather
-          // than a new persistent SellerShell tab (its 5 tabs are fixed).
-          IconButton(
-            icon: const Icon(Icons.add_photo_alternate_outlined),
-            tooltip: 'New Post',
-            onPressed: () {
-              Navigator.push(context, MaterialPageRoute(builder: (_) => const CreatePostScreen()));
+      body: Column(children: [
+        Padding(
+          padding: const EdgeInsets.fromLTRB(WsSpace.page, WsSpace.s8, WsSpace.page, 0),
+          child: TextField(
+            controller: _search,
+            onChanged: (v) {
+              provider.setSearchQuery(v);
+              setState(() {});
             },
+            decoration: InputDecoration(
+              prefixIcon: const Icon(AgIcons.search),
+              hintText: l10n.productSearchHint,
+              suffixIcon: _search.text.isEmpty
+                  ? null
+                  : IconButton(
+                      tooltip: l10n.searchClear,
+                      icon: const Icon(AgIcons.close),
+                      onPressed: () {
+                        _search.clear();
+                        provider.setSearchQuery('');
+                        setState(() {});
+                      },
+                    ),
+            ),
           ),
-          IconButton(
-            icon: const Icon(Icons.refresh_rounded),
-            onPressed: () {
-              final auth = context.read<SellerAuthProvider>();
-              if (auth.currentUser != null) {
-                context.read<SellerProductProvider>().loadSellerProducts(auth.currentUser!.uid);
-              }
-            },
-          ),
-        ],
-      ),
-      floatingActionButton: FloatingActionButton.extended(
-        onPressed: () {
-          Navigator.push(context, MaterialPageRoute(builder: (_) => const AddProductScreen()));
-        },
-        backgroundColor: const Color(0xFF2D7D3C),
-        foregroundColor: Colors.white,
-        icon: const Icon(Icons.add),
-        label: const Text('Add Product', style: TextStyle(fontWeight: FontWeight.bold)),
-      ),
-      body: Consumer<SellerProductProvider>(
-        builder: (context, provider, _) {
-          return Column(
-            children: [
-              // Stats row
-              _buildStatsRow(provider, isDark),
-              const SizedBox(height: WsSpace.s12),
-              // Search bar
-              _buildSearchBar(provider, isDark),
-              ProductFilterBar(provider: provider),
-              // Products list
-              Expanded(
-                child: provider.isLoading
-                    ? const Center(child: CircularProgressIndicator(color: Color(0xFF2D7D3C)))
-                    : provider.products.isEmpty
-                        ? _buildEmptyState()
-                        : ListView.builder(
-                            padding: const EdgeInsets.symmetric(horizontal: 16),
-                            itemCount: provider.products.length,
-                            itemBuilder: (context, index) {
-                              final product = provider.products[index];
+        ),
+        ProductFilterBar(provider: provider),
+        Expanded(
+          child: provider.error != null
+              ? Padding(
+                  padding: const EdgeInsets.all(WsSpace.page),
+                  child: SaInfoBanner(
+                    variant: SaBannerVariant.error,
+                    message: l10n.productsLoadFailed,
+                    actionLabel: l10n.statusRefresh,
+                    onAction: _reload,
+                  ),
+                )
+              : provider.isLoading && provider.allProducts.isEmpty
+                  ? const Center(child: CircularProgressIndicator())
+                  : products.isEmpty
+                      ? Center(
+                          child: Padding(
+                            padding: const EdgeInsets.all(WsSpace.s32),
+                            child: Column(mainAxisSize: MainAxisSize.min, children: [
+                              Icon(AgIcons.inventory, size: WsIconSize.empty, color: t.textTertiary),
+                              const SizedBox(height: WsSpace.s12),
+                              Text(
+                                provider.allProducts.isEmpty ? l10n.productsEmpty : l10n.productsNoneMatch,
+                                style: text.bodyMedium,
+                                textAlign: TextAlign.center,
+                              ),
+                            ]),
+                          ),
+                        )
+                      : RefreshIndicator(
+                          onRefresh: () async => _reload(),
+                          child: ListView.builder(
+                            padding: const EdgeInsets.fromLTRB(WsSpace.page, 0, WsSpace.page, WsSpace.s64 + WsSpace.s32),
+                            itemCount: products.length,
+                            itemBuilder: (context, i) {
+                              final p = products[i];
                               return ProductSelectionFrame(
-                                selected: _selected.contains(product.id),
+                                selected: _selected.contains(p.id),
                                 selecting: _selected.isNotEmpty,
-                                isDraft: product.isDraft,
-                                onToggle: () => _toggle(product.id),
-                                child: _buildProductCard(product, provider, isDark),
+                                isDraft: p.isDraft,
+                                onToggle: () => _toggle(p.id),
+                                child: _ProductCard(
+                                  product: p,
+                                  onLive: (v) => _setLive(p, v),
+                                  onStock: () => _editStock(p),
+                                  onEdit: () => _push(AddProductScreen(existingProduct: p)),
+                                  onDelete: () => _delete(p),
+                                ),
                               );
                             },
                           ),
-              ),
-            ],
-          );
-        },
-      ),
-    );
-  }
-
-  Widget _buildStatsRow(SellerProductProvider provider, bool isDark) {
-    return Container(
-      margin: const EdgeInsets.symmetric(horizontal: 16),
-      child: Row(
-        children: [
-          _buildStatChip('Total', provider.totalProducts.toString(), Icons.inventory_2, Colors.blue, isDark),
-          const SizedBox(width: WsSpace.s8),
-          _buildStatChip('Active', provider.activeProducts.toString(), Icons.check_circle, Colors.green, isDark),
-          const SizedBox(width: WsSpace.s8),
-          _buildStatChip('Low', provider.lowStockProducts.toString(), Icons.warning_amber, Colors.orange, isDark),
-          const SizedBox(width: WsSpace.s8),
-          _buildStatChip('Out', provider.outOfStockProducts.toString(), Icons.cancel, Colors.red, isDark),
-        ],
-      ),
-    );
-  }
-
-  Widget _buildStatChip(String label, String value, IconData icon, Color color, bool isDark) {
-    return Expanded(
-      child: Container(
-        padding: const EdgeInsets.symmetric(vertical: 12),
-        decoration: BoxDecoration(
-          color: isDark ? Colors.grey[900] : Colors.white,
-          borderRadius: BorderRadius.circular(12),
-          border: Border.all(color: color.withOpacity(0.3)),
+                        ),
         ),
-        child: Column(
-          children: [
-            Icon(icon, color: color, size: 18),
-            const SizedBox(height: WsSpace.s4),
-            Text(value, style: TextStyle(fontWeight: FontWeight.bold, fontSize: 16, color: color)),
-            Text(label, style: TextStyle(fontSize: 10, color: Colors.grey[500])),
-          ],
-        ),
-      ),
+      ]),
     );
   }
+}
 
-  Widget _buildSearchBar(SellerProductProvider provider, bool isDark) {
-    return Padding(
-      padding: const EdgeInsets.symmetric(horizontal: 16),
-      child: TextField(
-        controller: _searchController,
-        onChanged: provider.setSearchQuery,
-        decoration: InputDecoration(
-          hintText: 'Search products...',
-          prefixIcon: const Icon(Icons.search, size: 20),
-          suffixIcon: _searchController.text.isNotEmpty
-              ? IconButton(
-                  icon: const Icon(Icons.clear, size: 18),
-                  onPressed: () {
-                    _searchController.clear();
-                    provider.setSearchQuery('');
-                  },
-                )
-              : null,
-          filled: true,
-          fillColor: isDark ? Colors.grey[900] : Colors.white,
-          border: OutlineInputBorder(
-            borderRadius: BorderRadius.circular(12),
-            borderSide: BorderSide.none,
-          ),
-          contentPadding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
-        ),
-      ),
-    );
-  }
+class _ProductCard extends StatelessWidget {
+  const _ProductCard({required this.product, required this.onLive, required this.onStock, required this.onEdit, required this.onDelete});
+  final ProductModel product;
+  final ValueChanged<bool> onLive;
+  final VoidCallback onStock;
+  final VoidCallback onEdit;
+  final VoidCallback onDelete;
 
-  Widget _buildProductCard(ProductModel product, SellerProductProvider provider, bool isDark) {
-    final stockColor = product.stock == 0
-        ? Colors.red
-        : product.stock < 10
-            ? Colors.orange
-            : Colors.green;
-    final auth = context.read<SellerAuthProvider>();
-    final sellerId = auth.currentUser?.uid ?? '';
-
-    return Container(
-      margin: const EdgeInsets.only(bottom: 10),
-      decoration: BoxDecoration(
-        color: isDark ? Colors.grey[900] : Colors.white,
-        borderRadius: BorderRadius.circular(14),
-        boxShadow: [
-          BoxShadow(color: Colors.black.withOpacity(0.04), blurRadius: 10, offset: const Offset(0, 2)),
-        ],
-      ),
+  @override
+  Widget build(BuildContext context) {
+    final l10n = AppLocalizations.of(context);
+    final t = context.ws;
+    final text = context.wsText;
+    final p = product;
+    final (String stockLabel, Color stockColor) = p.stock == 0
+        ? (l10n.productOutOfStock, t.errorFg)
+        : p.stock < kLowStockLine
+            ? (l10n.productLowStock(AgFormat.count(p.stock)), t.warningFg)
+            : (l10n.searchStock(AgFormat.count(p.stock)), t.successFg);
+    final original = p.originalPrice;
+    return Card(
+      margin: const EdgeInsets.only(bottom: WsSpace.s8),
       child: Padding(
-        padding: const EdgeInsets.all(12),
-        child: Row(
-          children: [
-            // Product image
-            Container(
-              width: 70,
-              height: 70,
-              decoration: BoxDecoration(
-                color: Colors.grey[200],
-                borderRadius: BorderRadius.circular(10),
-                image: product.primaryImage.isNotEmpty
-                    ? DecorationImage(
-                        image: CachedNetworkImageProvider(product.primaryImage),
+        padding: const EdgeInsets.all(WsSpace.s12),
+        child: Column(children: [
+          Row(crossAxisAlignment: CrossAxisAlignment.start, children: [
+            ClipRRect(
+              borderRadius: BorderRadius.circular(WsRadius.small),
+              child: SizedBox.square(
+                dimension: WsSize.thumbLg,
+                child: p.primaryImage.isEmpty
+                    ? ColoredBox(color: t.surfaceSunken, child: Icon(AgIcons.image, color: t.textTertiary))
+                    : CachedNetworkImage(
+                        imageUrl: p.primaryImage,
                         fit: BoxFit.cover,
-                      )
-                    : null,
+                        errorWidget: (_, __, ___) => ColoredBox(color: t.surfaceSunken),
+                      ),
               ),
-              child: product.primaryImage.isEmpty
-                  ? const Icon(Icons.image, color: Colors.grey)
-                  : null,
             ),
             const SizedBox(width: WsSpace.s12),
-            // Product details
             Expanded(
-              child: Column(
-                crossAxisAlignment: CrossAxisAlignment.start,
-                children: [
-                  Row(
-                    children: [
-                      Expanded(
-                        child: Text(
-                          product.name,
-                          style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 14),
-                          maxLines: 1,
-                          overflow: TextOverflow.ellipsis,
-                        ),
-                      ),
-                      // Active toggle
-                      Transform.scale(
-                        scale: 0.7,
-                        child: Switch(
-                          value: product.isActive,
-                          onChanged: (val) {
-                            HapticFeedback.selectionClick();
-                            provider.toggleProductActive(product.id, val, sellerId);
-                          },
-                          activeColor: const Color(0xFF2D7D3C),
-                        ),
-                      ),
-                    ],
-                  ),
-                  const SizedBox(height: WsSpace.s4),
-                  Row(
-                    children: [
-                      Text(
-                        '₹${product.salePrice.toStringAsFixed(0)}',
-                        style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 15, color: Color(0xFF2D7D3C)),
-                      ),
-                      if (product.originalPrice != null && product.originalPrice! > product.salePrice)
-                        Padding(
-                          padding: const EdgeInsets.only(left: 6),
-                          child: Text(
-                            '₹${product.originalPrice!.toStringAsFixed(0)}',
-                            style: TextStyle(decoration: TextDecoration.lineThrough, fontSize: 12, color: Colors.grey[500]),
-                          ),
-                        ),
-                      const Spacer(),
-                      // Stock badge
-                      Container(
-                        padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 3),
-                        decoration: BoxDecoration(
-                          color: stockColor.withOpacity(0.1),
-                          borderRadius: BorderRadius.circular(6),
-                        ),
-                        child: Row(
-                          mainAxisSize: MainAxisSize.min,
-                          children: [
-                            Icon(
-                              product.stock == 0 ? Icons.cancel : Icons.inventory_2,
-                              size: 12,
-                              color: stockColor,
-                            ),
-                            const SizedBox(width: WsSpace.s4),
-                            Text(
-                              product.stock == 0 ? 'Out of Stock' : '${product.stock} in stock',
-                              style: TextStyle(fontSize: 11, fontWeight: FontWeight.w600, color: stockColor),
-                            ),
-                          ],
-                        ),
-                      ),
-                    ],
-                  ),
-                  const SizedBox(height: WsSpace.s8),
-                  // Action buttons
-                  Row(
-                    children: [
-                      // Edit Stock
-                      _buildActionChip('Stock', Icons.edit, Colors.blue, () => _showStockDialog(product, provider, sellerId)),
-                      const SizedBox(width: WsSpace.s8),
-                      // Edit Product
-                      _buildActionChip('Edit', Icons.edit_outlined, Colors.orange, () {
-                        Navigator.push(context, MaterialPageRoute(
-                          builder: (_) => AddProductScreen(existingProduct: product),
-                        ));
-                      }),
-                      const SizedBox(width: WsSpace.s8),
-                      // Delete
-                      _buildActionChip('Delete', Icons.delete_outline, Colors.red, () => _confirmDelete(product, provider, sellerId)),
-                    ],
-                  ),
-                ],
-              ),
+              child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
+                Text(p.name, style: text.titleSmall, maxLines: 2, overflow: TextOverflow.ellipsis),
+                const SizedBox(height: WsSpace.s4),
+                Row(children: [
+                  Text(AgFormat.rupees(p.salePrice), style: text.titleSmall!.copyWith(fontFeatures: WsType.tabularFigures)),
+                  if (original != null && original > p.salePrice) ...[
+                    const SizedBox(width: WsSpace.s8),
+                    Text(
+                      AgFormat.rupees(original),
+                      style: text.bodySmall!.copyWith(color: t.textTertiary, decoration: TextDecoration.lineThrough),
+                    ),
+                  ],
+                ]),
+                const SizedBox(height: WsSpace.s4),
+                Text(stockLabel, style: text.labelMedium!.copyWith(color: stockColor)),
+              ]),
             ),
-          ],
-        ),
+            Semantics(
+              label: p.isActive ? l10n.productLive : l10n.productHidden,
+              // Switching a draft on publishes it (the provider clears isDraft).
+              child: Switch(value: p.isActive && !p.isDraft, onChanged: onLive),
+            ),
+          ]),
+          const Divider(height: WsSpace.s16),
+          Row(mainAxisAlignment: MainAxisAlignment.end, children: [
+            TextButton.icon(onPressed: onStock, icon: const Icon(AgIcons.inventory), label: Text(l10n.productStock)),
+            TextButton.icon(onPressed: onEdit, icon: const Icon(AgIcons.edit), label: Text(l10n.productEdit)),
+            TextButton.icon(
+              onPressed: onDelete,
+              icon: const Icon(AgIcons.delete),
+              label: Text(l10n.productDelete),
+              style: TextButton.styleFrom(foregroundColor: t.errorFg),
+            ),
+          ]),
+        ]),
       ),
     );
   }
+}
 
-  Widget _buildActionChip(String label, IconData icon, Color color, VoidCallback onTap) {
-    return InkWell(
-      onTap: onTap,
-      borderRadius: BorderRadius.circular(6),
-      child: Container(
-        padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
-        decoration: BoxDecoration(
-          border: Border.all(color: color.withOpacity(0.4)),
-          borderRadius: BorderRadius.circular(6),
-        ),
-        child: Row(
-          mainAxisSize: MainAxisSize.min,
-          children: [
-            Icon(icon, size: 12, color: color),
-            const SizedBox(width: WsSpace.s4),
-            Text(label, style: TextStyle(fontSize: 11, color: color, fontWeight: FontWeight.w600)),
-          ],
-        ),
-      ),
-    );
+class _StockSheet extends StatefulWidget {
+  const _StockSheet({required this.product});
+  final ProductModel product;
+
+  @override
+  State<_StockSheet> createState() => _StockSheetState();
+}
+
+class _StockSheetState extends State<_StockSheet> {
+  late final _value = TextEditingController(text: '${widget.product.stock}');
+  bool _invalid = false;
+
+  @override
+  void dispose() {
+    _value.dispose();
+    super.dispose();
   }
 
-  void _showStockDialog(ProductModel product, SellerProductProvider provider, String sellerId) {
-    final controller = TextEditingController(text: product.stock.toString());
-    showDialog(
-      context: context,
-      builder: (ctx) => AlertDialog(
-        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
-        title: const Text('Update Stock'),
-        content: TextField(
-          controller: controller,
-          keyboardType: TextInputType.number,
-          decoration: const InputDecoration(
-            labelText: 'Stock Quantity',
-            border: OutlineInputBorder(),
-            prefixIcon: Icon(Icons.inventory_2_outlined),
-          ),
+  void _save() {
+    final n = int.tryParse(_value.text.trim());
+    if (n == null || n < 0) {
+      setState(() => _invalid = true);
+      return;
+    }
+    Navigator.of(context).pop(n);
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    final l10n = AppLocalizations.of(context);
+    final text = context.wsText;
+    return Padding(
+      padding: EdgeInsets.only(bottom: MediaQuery.viewInsetsOf(context).bottom),
+      child: SafeArea(
+        child: Padding(
+          padding: const EdgeInsets.fromLTRB(WsSpace.page, 0, WsSpace.page, WsSpace.s24),
+          child: Column(mainAxisSize: MainAxisSize.min, crossAxisAlignment: CrossAxisAlignment.stretch, children: [
+            Text(l10n.productStockTitle, style: text.titleMedium),
+            const SizedBox(height: WsSpace.s4),
+            Text(widget.product.name, style: text.bodyMedium),
+            const SizedBox(height: WsSpace.s16),
+            TextField(
+              key: const ValueKey('stockValue'),
+              controller: _value,
+              autofocus: true,
+              keyboardType: TextInputType.number,
+              inputFormatters: [FilteringTextInputFormatter.digitsOnly],
+              decoration: InputDecoration(labelText: l10n.productStockLabel, errorText: _invalid ? l10n.counterQtyInvalid : null),
+              onSubmitted: (_) => _save(),
+            ),
+            const SizedBox(height: WsSpace.s16),
+            FilledButton(onPressed: _save, child: Text(l10n.accountSave)),
+          ]),
         ),
-        actions: [
-          TextButton(onPressed: () => Navigator.pop(ctx), child: const Text('Cancel')),
-          FilledButton(
-            onPressed: () {
-              final newStock = int.tryParse(controller.text) ?? 0;
-              provider.updateStock(product.id, newStock, sellerId);
-              Navigator.pop(ctx);
-            },
-            style: FilledButton.styleFrom(backgroundColor: const Color(0xFF2D7D3C)),
-            child: const Text('Update'),
-          ),
-        ],
-      ),
-    );
-  }
-
-  void _confirmDelete(ProductModel product, SellerProductProvider provider, String sellerId) {
-    showDialog(
-      context: context,
-      builder: (ctx) => AlertDialog(
-        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
-        title: const Text('Delete Product?'),
-        content: Text('Are you sure you want to delete "${product.name}"? This action cannot be undone.'),
-        actions: [
-          TextButton(onPressed: () => Navigator.pop(ctx), child: const Text('Cancel')),
-          TextButton(
-            onPressed: () {
-              Navigator.pop(ctx);
-              provider.deleteProduct(product.id, sellerId);
-            },
-            style: TextButton.styleFrom(foregroundColor: Colors.red),
-            child: const Text('Delete'),
-          ),
-        ],
-      ),
-    );
-  }
-
-  Widget _buildEmptyState() {
-    return Center(
-      child: Column(
-        mainAxisAlignment: MainAxisAlignment.center,
-        children: [
-          Icon(Icons.inventory_2_outlined, size: 64, color: Colors.grey[400]),
-          const SizedBox(height: WsSpace.s16),
-          Text('No products yet', style: TextStyle(fontSize: 16, fontWeight: FontWeight.w600, color: Colors.grey[600])),
-          const SizedBox(height: WsSpace.s8),
-          Text('Tap the + button to add your first product', style: TextStyle(fontSize: 13, color: Colors.grey[500])),
-        ],
       ),
     );
   }

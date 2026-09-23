@@ -37,7 +37,9 @@ export const WAVE_RADII_KM = [5, 8, 12] as const;
 export const WAVE_SIZE = 3;
 export const OFFER_TTL_MS = 30 * 1000;
 export const RETRY_INTERVAL_MS = 2 * 60 * 1000;
-export const LOCATION_FRESHNESS_MS = 30 * 60 * 1000;
+// DLV-3A: 30 → 5 min. With D-DLV-BG an online rider reports at least every
+// minute; a location older than 5 min means the app has stopped sending.
+export const LOCATION_FRESHNESS_MS = 5 * 60 * 1000;
 /** A wave in progress holds this lease so concurrent callers do not double it. */
 export const WAVE_LEASE_MS = 60 * 1000;
 export const OFFERS_CHANNEL_ID = "delivery_offers";

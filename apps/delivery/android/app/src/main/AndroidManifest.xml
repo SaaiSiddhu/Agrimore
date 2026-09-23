@@ -11,6 +11,14 @@
     <uses-permission android:name="android.permission.POST_NOTIFICATIONS" />
     <uses-permission android:name="android.permission.VIBRATE" />
     <uses-permission android:name="android.permission.WAKE_LOCK" />
+    <!-- Phase DLV-3A (D-DLV-BG): location keeps flowing while the rider is online,
+         from geolocator's foreground service (type location). Needs the Play Console
+         foreground-service declaration. -->
+    <uses-permission android:name="android.permission.FOREGROUND_SERVICE" />
+    <uses-permission android:name="android.permission.FOREGROUND_SERVICE_LOCATION" />
+    <!-- Phase DLV-3A2 (D-DLV-BGLOC-ALWAYS): lets RiderLocationService restart after Android kills
+         the app while the rider is online. Needs the Play Console background-location declaration. -->
+    <uses-permission android:name="android.permission.ACCESS_BACKGROUND_LOCATION" />
     <!-- Phase DLV-2B: the delivery-offer alert rings over the lock screen
          (D-DLV-ALERT). Android 14+ lets the user revoke it; Google Play
          requires a declaration for apps that are not calling/alarm apps —
@@ -59,6 +67,14 @@
                 <data android:scheme="agrimore-delivery" />
             </intent-filter>
         </activity>
+
+        <!-- Phase DLV-3A2: location while online, independent of the Flutter screen.
+             stopWithTask=false keeps it through a swipe from Recents. -->
+        <service
+            android:name=".RiderLocationService"
+            android:exported="false"
+            android:foregroundServiceType="location"
+            android:stopWithTask="false" />
 
         <service
             android:name="com.google.firebase.messaging.FirebaseMessagingService"

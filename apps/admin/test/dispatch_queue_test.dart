@@ -132,7 +132,7 @@ void main() {
     test('availability', () {
       expect(r('a', at(11.02, 76.96, const Duration(minutes: 2))).availability,
           RiderAvailability.available);
-      expect(r('s', at(11.02, 76.96, const Duration(minutes: 31))).availability,
+      expect(r('s', at(11.02, 76.96, const Duration(minutes: 6))).availability,
           RiderAvailability.staleLocation);
       expect(r('n', {'isOnline': true}).availability, RiderAvailability.noLocation);
       expect(r('b', at(11.02, 76.96, const Duration(minutes: 1)), busy: {'b'}).availability,

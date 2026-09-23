@@ -12,6 +12,7 @@ import '../../providers/seller_auth_provider.dart';
 import '../../providers/seller_order_provider.dart';
 import '../../providers/seller_product_provider.dart';
 import '../notifications/notifications_screen.dart';
+import '../orders/order_stage.dart';
 import '../payments/payments_screen.dart';
 import '../rfq/quote_rules.dart';
 import '../rfq/seller_rfq_inbox_screen.dart';
@@ -138,9 +139,10 @@ class _DashboardScreenState extends State<DashboardScreen> {
     final quotes = context.watch<RfqProvider>().myRfqs;
     final items = <ActionItem>[];
 
-    final waiting = orders.allOrders
-        .where((o) => o.orderStatus == 'pending' || o.orderStatus == 'confirmed')
-        .toList();
+    // SELLER-UI-1b: only `pending` is "to accept" — `confirmed` means the
+    // seller already accepted it and it is waiting to be packed.
+    final waiting = orders.allOrders.where((o) => orderStageOf(o.orderStatus) == OrderStage.toAccept).toList();
+    final toPack = orders.allOrders.where((o) => orderStageOf(o.orderStatus) == OrderStage.toPack).length;
     if (waiting.isNotEmpty) {
       final oldest = waiting.map((o) => o.createdAt).reduce((a, b) => a.isBefore(b) ? a : b);
       items.add(ActionItem(
@@ -150,6 +152,18 @@ class _DashboardScreenState extends State<DashboardScreen> {
         tone: ActionTone.urgent,
         onTap: () {
           orders.setFilter('pending');
+          SellerShell.goToTab(context, SellerTab.orders);
+        },
+      ));
+    }
+
+    if (toPack > 0) {
+      items.add(ActionItem(
+        icon: AgIcons.packed,
+        label: l10n.homeOrdersToPack(toPack),
+        tone: ActionTone.attention,
+        onTap: () {
+          orders.setFilter('confirmed');
           SellerShell.goToTab(context, SellerTab.orders);
         },
       ));

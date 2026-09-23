@@ -35,7 +35,7 @@ const List<String> riderActiveOrderStatuses = [
 
 /// A rider location older than this is not used for dispatch. Mirrors
 /// LOCATION_FRESHNESS_MS in functions/src/delivery/dispatch.ts.
-const Duration locationFreshness = Duration(minutes: 30);
+const Duration locationFreshness = Duration(minutes: 5);
 
 DateTime? _date(dynamic v) {
   if (v is Timestamp) return v.toDate();
@@ -213,7 +213,7 @@ enum RiderAvailability {
   /// Online, free, location fresh.
   available,
 
-  /// Online and free, but the last location is older than 30 min — the
+  /// Online and free, but the last location is older than 5 min — the
   /// distance shown may be wrong.
   staleLocation,
 
