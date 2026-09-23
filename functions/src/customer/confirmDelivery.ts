@@ -38,6 +38,7 @@
 import { onCall, HttpsError } from "firebase-functions/v2/https";
 import * as admin from "firebase-admin";
 import * as crypto from "crypto";
+import { dropCheck, evidenceFields } from "../delivery/riderSteps";
 import {
   deliverySecretRef,
   DELIVERY_LOCK_MS,
@@ -250,6 +251,10 @@ export const confirmDelivery = onCall(
         return { kind: "wrong" };
       }
 
+      // Phase DLV-3C (D-DLV-GEOFENCE): where the rider was when the code was
+      // accepted — recorded, and flagged beyond 300 m / mocked / no fix. Never
+      // a refusal: the customer's code is the proof of delivery.
+      const drop = dropCheck(order, request.data);
       tx.update(orderRef, {
         orderStatus: "delivered",
         status: "delivered",
@@ -258,6 +263,7 @@ export const confirmDelivery = onCall(
         deliveryConfirmedBy: uid,
         deliveryConfirmedVia: "confirmDelivery",
         updatedAt: admin.firestore.FieldValue.serverTimestamp(),
+        ...(drop ? evidenceFields("delivered", drop.fix, drop.check, now) : {}),
       });
 
       tx.set(secretRef, {
@@ -272,6 +278,9 @@ export const confirmDelivery = onCall(
         status: "delivered",
         title: "Delivered",
         description: "Order delivered and verified with the customer's code",
+        ...(drop && drop.check.reasons.length
+          ? { flags: drop.check.reasons, distanceMeters: drop.check.distanceMeters }
+          : {}),
         timestamp: admin.firestore.FieldValue.serverTimestamp(),
       });
 

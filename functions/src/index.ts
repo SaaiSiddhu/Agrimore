@@ -248,3 +248,6 @@ export { acceptDeliveryOffer, declineDeliveryOffer } from "./delivery/dispatchCa
 export { advanceDeliveryDispatch } from "./delivery/advanceDeliveryDispatch";
 // Phase DLV-3B: road route for the customer's live tracking (Google Routes, server-side key).
 export { refreshDeliveryRoute } from "./delivery/deliveryRoute";
+// Phase DLV-3C: server-checked rider steps (transition table + location flags)
+// and the "Seller not ready" hand-back. See delivery/riderSteps.ts.
+export { advanceDeliveryStep, releaseDeliveryOrder } from "./delivery/riderSteps";
