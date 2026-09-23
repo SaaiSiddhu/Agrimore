@@ -63,6 +63,7 @@ async function main() {
   const reqDrop = R.routeRequest("to_drop", { lat: 1, lng: 2 }, STORE, HOME);
   record("p04_request_two_wheeler_traffic_aware_via_store",
     reqVia.travelMode === "TWO_WHEELER" && reqVia.routingPreference === "TRAFFIC_AWARE" && reqVia.regionCode === "IN" &&
+    reqVia.polylineQuality === "HIGH_QUALITY" &&
     reqVia.intermediates?.[0]?.location?.latLng?.latitude === STORE.lat && reqDrop.intermediates === undefined &&
     reqDrop.destination.location.latLng.latitude === HOME.lat, JSON.stringify(reqVia));
   const fresh = { lat: 9.93, lng: 78.12, at: Timestamp.fromMillis(T0) };

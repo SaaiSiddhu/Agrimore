@@ -144,7 +144,8 @@ export function rerouteReason(
 
 export type RouteFetcher = (body: unknown, apiKey: string) => Promise<unknown>;
 
-const googleFetcher: RouteFetcher = async (body, apiKey) => {
+/** The real Routes API call (exported for scripts/routes_smoke.js). */
+export const googleFetcher: RouteFetcher = async (body, apiKey) => {
   const res = await fetch(ROUTES_URL, {
     method: "POST",
     headers: { "content-type": "application/json", "X-Goog-Api-Key": apiKey, "X-Goog-FieldMask": FIELD_MASK },
@@ -164,7 +165,10 @@ export function routeRequest(plan: "via_pickup" | "to_drop", rider: Point, picku
     ...(plan === "via_pickup" && pickup ? { intermediates: [ll(pickup)] } : {}),
     travelMode: "TWO_WHEELER",
     routingPreference: "TRAFFIC_AWARE",
-    polylineQuality: "OVERVIEW",
+    // HIGH_QUALITY: OVERVIEW is "composed using a small number of points"
+    // and cuts corners between junctions instead of following the road.
+    polylineQuality: "HIGH_QUALITY",
+    polylineEncoding: "ENCODED_POLYLINE",
     languageCode: "en-IN",
     regionCode: "IN",
     units: "METRIC",
