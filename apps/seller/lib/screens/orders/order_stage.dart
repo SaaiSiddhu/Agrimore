@@ -59,6 +59,24 @@ String? nextSellerAction(OrderStage s) => switch (s) {
 /// Orders that need the seller to do something now.
 bool needsSellerAction(OrderModel o) => nextSellerAction(orderStageOf(o.orderStatus)) != null;
 
+/// Date windows for the order list (SELLER-POLISH-1, gap 21).
+enum OrderPeriod { all, today, days7, days30 }
+
+/// [today] is the Indian calendar day, like the server's stats.
+bool inPeriod(OrderModel o, OrderPeriod p, DateTime now) {
+  if (p == OrderPeriod.all) return true;
+  if (p == OrderPeriod.today) {
+    final ist = now.toUtc().add(const Duration(hours: 5, minutes: 30));
+    final start = DateTime.utc(ist.year, ist.month, ist.day).subtract(const Duration(hours: 5, minutes: 30));
+    return !o.createdAt.toUtc().isBefore(start);
+  }
+  final days = p == OrderPeriod.days7 ? 7 : 30;
+  return !o.createdAt.isBefore(now.subtract(Duration(days: days)));
+}
+
+/// Business orders: placed as B2B (incl. every order from an accepted quote).
+bool isB2bOrder(OrderModel o) => o.orderMode.toUpperCase() == 'B2B';
+
 bool isPrepaid(OrderModel o) {
   final m = o.paymentMethod.toLowerCase();
   return !m.contains('cod') && !m.contains('cash');
