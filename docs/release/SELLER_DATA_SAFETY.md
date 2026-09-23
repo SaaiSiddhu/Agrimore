@@ -33,10 +33,12 @@ no `crashlytics`).
 - Access control: `firestore.rules` / `storage.rules` — payout details and KYC documents are owner + admin
   only; ratings, stats, invoices and order status are server-written only.
 
-## Deletion — CURRENT STATE (must be fixed before declaring "users can request deletion")
+## Deletion
 
-`deleteUserData` (functions/src/customer/deleteUserData.ts) deletes customer data (user profile, wallet,
-carts, wishlists, addresses, notifications, employee record) but **not** seller data: `sellers/{uid}`,
-`seller_payout_details/{uid}`, `sellerRequests/{uid}`, Storage `seller_documents/{uid}/`, storefront images,
-`ai_connections/{uid}`, `seller_stats_daily`. Phase SELLER-DELETE-1 closes this; until it ships, seller
-deletion requests must be handled manually by an admin.
+`deleteUserData` (functions/src/customer/deleteUserData.ts; SELLER-DELETE-1, merged into develop) deletes, on
+the seller's request from the app: the user profile, seller profile, payout (bank/UPI) details, seller
+application, AI connection (encrypted key), stats, notification settings, and Storage
+`seller_documents/{uid}/` (KYC) and `sellers/{uid}/storefront/`. Products are hidden (kept for past orders);
+the seller's reviews are anonymised. Orders, invoices and settlements are retained as financial and GST
+records. Deletion is refused while the seller has unfulfilled orders or an unpaid settlement.
+Play answer: "Users can request that data be deleted" — yes, in-app (once the owner deploys `deleteUserData`).
