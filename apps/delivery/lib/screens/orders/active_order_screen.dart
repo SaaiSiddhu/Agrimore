@@ -852,7 +852,13 @@ class _ActiveOrderScreenState extends State<ActiveOrderScreen> {
 
                         if (!ctx.mounted) return;
                         if (error == null) {
+                          // Close the code dialog FIRST, then celebrate:
+                          // _completeDelivery used to open the success
+                          // dialog itself, and this pop then closed THAT
+                          // (the top route), leaving "Verifying…" on screen
+                          // after a good delivery (seen in the DLV-3C run).
                           Navigator.pop(ctx);
+                          _showDeliveredDialog();
                         } else {
                           HapticFeedback.heavyImpact();
                           setDialogState(() {
@@ -1003,64 +1009,66 @@ class _ActiveOrderScreenState extends State<ActiveOrderScreen> {
         _isUpdating = false;
         if (success) _currentStep = DeliveryStep.delivered;
       });
-
-      if (success) {
-        // Show success dialog
-        showDialog(
-          context: context,
-          barrierDismissible: false,
-          builder: (ctx) => AlertDialog(
-            shape: RoundedRectangleBorder(
-              borderRadius: BorderRadius.circular(20),
-            ),
-            content: Column(
-              mainAxisSize: MainAxisSize.min,
-              children: [
-                Container(
-                  padding: const EdgeInsets.all(20),
-                  decoration: BoxDecoration(
-                    color: Colors.green.shade50,
-                    shape: BoxShape.circle,
-                  ),
-                  child: Icon(
-                    Icons.done_all_rounded,
-                    size: 48,
-                    color: Colors.green.shade600,
-                  ),
-                ),
-                const SizedBox(height: 20),
-                const Text(
-                  'Delivery Complete! 🎉',
-                  style: TextStyle(fontSize: 20, fontWeight: FontWeight.w900),
-                ),
-                const SizedBox(height: 8),
-                Text(
-                  'Order #${widget.order.orderNumber} has been successfully delivered.',
-                  textAlign: TextAlign.center,
-                  style: TextStyle(fontSize: 14, color: Colors.grey.shade600),
-                ),
-              ],
-            ),
-            actions: [
-              FilledButton(
-                onPressed: () {
-                  Navigator.pop(ctx); // Close dialog
-                  Navigator.pop(context); // Go back to dashboard
-                },
-                style: FilledButton.styleFrom(
-                  minimumSize: const Size.fromHeight(48),
-                  backgroundColor: Colors.green,
-                ),
-                child: const Text('Back to Dashboard'),
-              ),
-            ],
-          ),
-        );
-      }
     }
 
-    // Confirmed by the server. The caller closes the verification dialog.
+    // Confirmed by the server. The caller closes the verification dialog,
+    // then shows _showDeliveredDialog.
     return null;
+  }
+
+  /// "Delivery Complete!" — shown after the code dialog has closed.
+  void _showDeliveredDialog() {
+    if (!mounted) return;
+    showDialog(
+      context: context,
+      barrierDismissible: false,
+      builder: (ctx) => AlertDialog(
+        shape: RoundedRectangleBorder(
+          borderRadius: BorderRadius.circular(20),
+        ),
+        content: Column(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            Container(
+              padding: const EdgeInsets.all(20),
+              decoration: BoxDecoration(
+                color: Colors.green.shade50,
+                shape: BoxShape.circle,
+              ),
+              child: Icon(
+                Icons.done_all_rounded,
+                size: 48,
+                color: Colors.green.shade600,
+              ),
+            ),
+            const SizedBox(height: 20),
+            const Text(
+              'Delivery Complete! 🎉',
+              style: TextStyle(fontSize: 20, fontWeight: FontWeight.w900),
+            ),
+            const SizedBox(height: 8),
+            Text(
+              'Order #${widget.order.orderNumber} has been successfully delivered.',
+              textAlign: TextAlign.center,
+              style: TextStyle(fontSize: 14, color: Colors.grey.shade600),
+            ),
+          ],
+        ),
+        actions: [
+          FilledButton(
+            onPressed: () {
+              Navigator.pop(ctx); // Close dialog
+              Navigator.pop(context); // Go back to dashboard
+            },
+            style: FilledButton.styleFrom(
+              minimumSize: const Size.fromHeight(48),
+              backgroundColor: Colors.green,
+            ),
+            child: const Text('Back to Dashboard'),
+          ),
+        ],
+      ),
+    );
   }
 
   // ════════════════════════════════════════════
