@@ -81,7 +81,8 @@ void main() {
     SharedPreferences.setMockInitialValues({});
     final prefs = await SharedPreferences.getInstance();
     final settings = SellerSettingsProvider(prefs: prefs);
-    final l10n = await _pump(tester, const SellerSettingsScreen(), settings: settings);
+    final l10n = await _pump(tester, const SellerSettingsScreen(versionOverride: '1.2.3 (45)'), settings: settings);
+    expect(find.text('1.2.3 (45)'), findsOneWidget);
     await tester.tap(find.text(l10n.settingsThemeDark));
     await tester.pumpAndSettle();
     expect(settings.themeMode, ThemeMode.dark);

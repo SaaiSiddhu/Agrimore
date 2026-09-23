@@ -4,7 +4,11 @@ import 'package:agrimore_core/agrimore_core.dart';
 import 'package:agrimore_services/agrimore_services.dart';
 
 /// Listing tabs (ADR §10.4 C-01, SELLER-CATALOGUE-1).
-enum ProductListFilter { all, active, draft, outOfStock, inactive }
+enum ProductListFilter { all, active, draft, lowStock, outOfStock, inactive }
+
+/// SELLER-OPS-1: low stock uses the product's own alert level.
+const int kDefaultLowStockThreshold = 10;
+bool isLowStock(ProductModel p) => !p.isDraft && p.isActive && p.stock > 0 && p.stock <= (p.lowStockThreshold ?? kDefaultLowStockThreshold);
 
 class SellerProductProvider with ChangeNotifier {
   SellerProductProvider();
@@ -41,6 +45,8 @@ class SellerProductProvider with ChangeNotifier {
         return p.isDraft;
       case ProductListFilter.active:
         return !p.isDraft && p.isActive && p.stock > 0;
+      case ProductListFilter.lowStock:
+        return isLowStock(p);
       case ProductListFilter.outOfStock:
         return !p.isDraft && p.isActive && p.stock <= 0;
       case ProductListFilter.inactive:
@@ -60,8 +66,7 @@ class SellerProductProvider with ChangeNotifier {
   int get totalProducts => _products.length;
   int get activeProducts => _products.where((p) => p.isActive).length;
   int get outOfStockProducts => _products.where((p) => p.stock == 0).length;
-  int get lowStockProducts =>
-      _products.where((p) => p.stock > 0 && p.stock < 10).length;
+  int get lowStockProducts => _products.where(isLowStock).length;
 
   List<ProductModel> get _filteredProducts {
     final q = _searchQuery.toLowerCase();

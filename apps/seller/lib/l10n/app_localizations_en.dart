@@ -2388,6 +2388,194 @@ class AppLocalizationsEn extends AppLocalizations {
   String get postFailed => 'Couldn\'t publish your post. Try again.';
 
   @override
+  String get insightsTitle => 'Insights';
+
+  @override
+  String get insightsHint => 'Sales trends, orders and best sellers';
+
+  @override
+  String insightsDays(int days) {
+    return '$days days';
+  }
+
+  @override
+  String insightsVsPrevious(String delta, String previous) {
+    return '$delta vs $previous in the previous period';
+  }
+
+  @override
+  String insightsChartSummary(String current, String previous, int days) {
+    return 'Sales $current in the last $days days, against $previous in the $days days before.';
+  }
+
+  @override
+  String get insightsThisPeriod => 'This period';
+
+  @override
+  String get insightsPreviousPeriod => 'Previous period';
+
+  @override
+  String insightsB2bShare(String share) {
+    return '$share of sales came from business (B2B) orders';
+  }
+
+  @override
+  String get insightsOrdersByStage => 'Orders by stage';
+
+  @override
+  String get insightsTopProducts => 'Best sellers';
+
+  @override
+  String get insightsNoOrders => 'No orders in this period yet.';
+
+  @override
+  String get healthTitle => 'Account health';
+
+  @override
+  String get healthNotEnoughData =>
+      'Not enough activity yet to score your account. It appears after a few orders, reviews or quotes.';
+
+  @override
+  String get healthNotEnoughDataShort => 'Shown after a few orders';
+
+  @override
+  String get healthExplainer =>
+      'Calculated from the last 30 days. Only measures with enough data count.';
+
+  @override
+  String healthScoreLabel(int score) {
+    return 'Account health $score out of 100';
+  }
+
+  @override
+  String get healthGood => 'Good';
+
+  @override
+  String get healthFair => 'Needs attention';
+
+  @override
+  String get healthPoor => 'At risk';
+
+  @override
+  String get healthFulfilment => 'Orders delivered';
+
+  @override
+  String get healthCancellations => 'Cancellations';
+
+  @override
+  String get healthRating => 'Buyer rating';
+
+  @override
+  String get healthListings => 'Complete listings';
+
+  @override
+  String get healthQuotes => 'Quotes answered within a day';
+
+  @override
+  String healthTargetAtLeast(String value) {
+    return 'Target: at least $value';
+  }
+
+  @override
+  String healthTargetAtMost(String value) {
+    return 'Target: at most $value';
+  }
+
+  @override
+  String get healthTipFulfilment =>
+      'Accept only what you can deliver, and mark orders ready on time.';
+
+  @override
+  String get healthTipCancellations =>
+      'Keep stock accurate so you don\'t have to cancel accepted orders.';
+
+  @override
+  String get healthTipRating =>
+      'Reply to reviews and pack carefully — buyers rate the whole experience.';
+
+  @override
+  String get healthTipListings =>
+      'Add a photo, a description and the HSN code with GST rate to every live product.';
+
+  @override
+  String get healthTipQuotes =>
+      'Answer quote requests within a day — counter, accept or decline.';
+
+  @override
+  String get settingsVersion => 'Version';
+
+  @override
+  String settingsVersionValue(String version, String build) {
+    return '$version ($build)';
+  }
+
+  @override
+  String get filterLowStock => 'Low stock';
+
+  @override
+  String get storeStatusTitle => 'Store status';
+
+  @override
+  String get storeStatusOpen => 'Taking orders';
+
+  @override
+  String get storeStatusPaused => 'Paused — not taking orders';
+
+  @override
+  String get storeAcceptingOrders => 'Accepting orders';
+
+  @override
+  String get storeAcceptingHint => 'Buyers can order from your store.';
+
+  @override
+  String get storePausedHint =>
+      'Buyers see your store but can\'t place orders.';
+
+  @override
+  String get storePauseFor => 'Pause for';
+
+  @override
+  String storePauseDays(int days) {
+    String _temp0 = intl.Intl.pluralLogic(
+      days,
+      locale: localeName,
+      other: '$days days',
+      one: '1 day',
+    );
+    return '$_temp0';
+  }
+
+  @override
+  String get storePauseUntilResumed => 'Until I resume';
+
+  @override
+  String get storePauseConsequence =>
+      'New orders and quotes can\'t be placed while paused. Orders you already have are not affected.';
+
+  @override
+  String get storePauseCta => 'Pause my store';
+
+  @override
+  String get storePausedTitle => 'Your store is paused';
+
+  @override
+  String get storePausedBody => 'Buyers can\'t place orders until you resume.';
+
+  @override
+  String storePausedUntil(String date) {
+    return 'Buyers can\'t place orders until $date.';
+  }
+
+  @override
+  String get storeResume => 'Resume';
+
+  @override
+  String get storeResumed => 'Your store is taking orders again';
+
+  @override
+  String get storePausedToast => 'Your store is paused';
+
+  @override
   String get variantsTitle => 'Options';
 
   @override

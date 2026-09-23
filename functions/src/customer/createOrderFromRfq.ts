@@ -37,6 +37,7 @@
 
 import { onCall, HttpsError } from "firebase-functions/v2/https";
 import * as admin from "firebase-admin";
+import { assertSellerAcceptingOrders } from "../common/sellerAvailability";
 import * as crypto from "crypto";
 import { deliverySecretRef, newDeliverySecret } from "../delivery/deliverySecret";
 
@@ -228,6 +229,10 @@ export const createOrderFromRfq = onCall(
 
       const productRef = db.collection("products").doc(rfq.productId as string);
       const productSnap = await tx.get(productRef);
+      // SELLER-OPS-1: an accepted quote cannot become an order while the
+      // seller has paused their store.
+      const rfqSellerSnap = await tx.get(db.collection("sellers").doc(sellerId));
+      assertSellerAcceptingOrders(rfqSellerSnap.data(), Date.now());
 
       // Profile-completeness — same server-side gate createOrder.ts enforces.
       if (!userSnap.exists || userSnap.data()?.profileCompleted !== true) {
