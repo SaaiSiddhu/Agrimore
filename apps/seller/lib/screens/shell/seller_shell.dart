@@ -6,7 +6,8 @@ import 'package:provider/provider.dart';
 import '../home/dashboard_screen.dart';
 import '../products/seller_products_screen.dart';
 import '../orders/seller_orders_screen.dart';
-import '../earnings/seller_earnings_screen.dart';
+import '../payments/payments_screen.dart';
+import '../../l10n/app_localizations.dart';
 import '../profile/seller_profile_screen.dart';
 import '../../providers/seller_auth_provider.dart';
 import '../../providers/seller_product_provider.dart';
@@ -26,7 +27,7 @@ class _SellerShellState extends State<SellerShell> {
     DashboardScreen(),
     SellerProductsScreen(),
     SellerOrdersScreen(),
-    SellerEarningsScreen(),
+    PaymentsScreen(),
     SellerProfileScreen(),
   ];
 
@@ -75,7 +76,7 @@ class _SellerShellState extends State<SellerShell> {
                 _buildNavItem(0, Icons.dashboard_rounded, 'Dashboard'),
                 _buildNavItem(1, Icons.inventory_2_rounded, 'Products'),
                 _buildNavItemWithBadge(2, Icons.receipt_long_rounded, 'Orders'),
-                _buildNavItem(3, Icons.account_balance_wallet_rounded, 'Earnings'),
+                _buildNavItem(3, Icons.account_balance_wallet_rounded, AppLocalizations.of(context).paymentsTitle),
                 _buildNavItem(4, Icons.person_rounded, 'Profile'),
               ],
             ),

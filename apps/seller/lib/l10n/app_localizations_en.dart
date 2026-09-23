@@ -745,4 +745,76 @@ class AppLocalizationsEn extends AppLocalizations {
 
   @override
   String get viewInvoice => 'View invoice';
+
+  @override
+  String get paymentsTitle => 'Payments';
+
+  @override
+  String get paymentsLoadFailed =>
+      'Couldn\'t load your payments. Check your connection and open this tab again.';
+
+  @override
+  String get paymentsPending => 'To be paid';
+
+  @override
+  String get paymentsPaid30d => 'Paid · last 30 days';
+
+  @override
+  String get paymentsPaidAll => 'Paid · all time';
+
+  @override
+  String get paymentsHistory => 'Settlements';
+
+  @override
+  String get paymentsEmpty =>
+      'No settlements yet. You\'ll see one here for every delivered order.';
+
+  @override
+  String paymentsForOrder(String number) {
+    return 'Order $number';
+  }
+
+  @override
+  String get payoutPaid => 'Paid';
+
+  @override
+  String get payoutPending => 'Pending';
+
+  @override
+  String get payoutAccountTitle => 'Payout account';
+
+  @override
+  String get payoutAccountMissing => 'No payout account on file';
+
+  @override
+  String get payoutAccountMissingHelp =>
+      'Contact AgriMore to add your bank account or UPI ID before your first settlement.';
+
+  @override
+  String payoutAccountUpi(String upi) {
+    return 'UPI · $upi';
+  }
+
+  @override
+  String payoutAccountBank(String bank, String account) {
+    return '$bank · $account';
+  }
+
+  @override
+  String get settlementCreated => 'Order delivered — settlement created';
+
+  @override
+  String get settlementPaid => 'Paid to your account';
+
+  @override
+  String get settlementGross => 'Order value';
+
+  @override
+  String get settlementCommission => 'AgriMore commission';
+
+  @override
+  String get settlementNet => 'You receive';
+
+  @override
+  String get settlementReference => 'Payment reference';
 }

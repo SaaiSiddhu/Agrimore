@@ -1437,6 +1437,132 @@ abstract class AppLocalizations {
   /// In en, this message translates to:
   /// **'View invoice'**
   String get viewInvoice;
+
+  /// No description provided for @paymentsTitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Payments'**
+  String get paymentsTitle;
+
+  /// No description provided for @paymentsLoadFailed.
+  ///
+  /// In en, this message translates to:
+  /// **'Couldn\'t load your payments. Check your connection and open this tab again.'**
+  String get paymentsLoadFailed;
+
+  /// No description provided for @paymentsPending.
+  ///
+  /// In en, this message translates to:
+  /// **'To be paid'**
+  String get paymentsPending;
+
+  /// No description provided for @paymentsPaid30d.
+  ///
+  /// In en, this message translates to:
+  /// **'Paid · last 30 days'**
+  String get paymentsPaid30d;
+
+  /// No description provided for @paymentsPaidAll.
+  ///
+  /// In en, this message translates to:
+  /// **'Paid · all time'**
+  String get paymentsPaidAll;
+
+  /// No description provided for @paymentsHistory.
+  ///
+  /// In en, this message translates to:
+  /// **'Settlements'**
+  String get paymentsHistory;
+
+  /// No description provided for @paymentsEmpty.
+  ///
+  /// In en, this message translates to:
+  /// **'No settlements yet. You\'ll see one here for every delivered order.'**
+  String get paymentsEmpty;
+
+  /// No description provided for @paymentsForOrder.
+  ///
+  /// In en, this message translates to:
+  /// **'Order {number}'**
+  String paymentsForOrder(String number);
+
+  /// No description provided for @payoutPaid.
+  ///
+  /// In en, this message translates to:
+  /// **'Paid'**
+  String get payoutPaid;
+
+  /// No description provided for @payoutPending.
+  ///
+  /// In en, this message translates to:
+  /// **'Pending'**
+  String get payoutPending;
+
+  /// No description provided for @payoutAccountTitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Payout account'**
+  String get payoutAccountTitle;
+
+  /// No description provided for @payoutAccountMissing.
+  ///
+  /// In en, this message translates to:
+  /// **'No payout account on file'**
+  String get payoutAccountMissing;
+
+  /// No description provided for @payoutAccountMissingHelp.
+  ///
+  /// In en, this message translates to:
+  /// **'Contact AgriMore to add your bank account or UPI ID before your first settlement.'**
+  String get payoutAccountMissingHelp;
+
+  /// No description provided for @payoutAccountUpi.
+  ///
+  /// In en, this message translates to:
+  /// **'UPI · {upi}'**
+  String payoutAccountUpi(String upi);
+
+  /// No description provided for @payoutAccountBank.
+  ///
+  /// In en, this message translates to:
+  /// **'{bank} · {account}'**
+  String payoutAccountBank(String bank, String account);
+
+  /// No description provided for @settlementCreated.
+  ///
+  /// In en, this message translates to:
+  /// **'Order delivered — settlement created'**
+  String get settlementCreated;
+
+  /// No description provided for @settlementPaid.
+  ///
+  /// In en, this message translates to:
+  /// **'Paid to your account'**
+  String get settlementPaid;
+
+  /// No description provided for @settlementGross.
+  ///
+  /// In en, this message translates to:
+  /// **'Order value'**
+  String get settlementGross;
+
+  /// No description provided for @settlementCommission.
+  ///
+  /// In en, this message translates to:
+  /// **'AgriMore commission'**
+  String get settlementCommission;
+
+  /// No description provided for @settlementNet.
+  ///
+  /// In en, this message translates to:
+  /// **'You receive'**
+  String get settlementNet;
+
+  /// No description provided for @settlementReference.
+  ///
+  /// In en, this message translates to:
+  /// **'Payment reference'**
+  String get settlementReference;
 }
 
 class _AppLocalizationsDelegate
