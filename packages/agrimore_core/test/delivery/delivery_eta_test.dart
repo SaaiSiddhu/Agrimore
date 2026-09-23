@@ -139,6 +139,28 @@ void main() {
       expect(task.route?.plan, 'to_drop');
     });
 
+    test('legs ahead: both before pickup, store → customer after', () {
+      // Two distinct 2-point legs: rider → store, store → customer.
+      final r = DeliveryRoute.fromMap({
+        'plan': 'via_pickup',
+        'legs': [
+          {'polyline': '_p~iF~ps|U_ulLnnqC'},
+          {'polyline': '_mqNvxq`@_ulLnnqC'},
+        ],
+      })!;
+      expect(r.legsAhead(DeliveryTaskStatus.assigned).length, 2);
+      final after = r.legsAhead(DeliveryTaskStatus.pickedUp);
+      expect(after.length, 1);
+      expect(after.single.first.lat, r.legs[1].points.first.lat);
+      expect(r.legsAhead(DeliveryTaskStatus.atPickup).single.first.lat, r.legs[1].points.first.lat);
+      final drop = DeliveryRoute.fromMap({'plan': 'to_drop', 'legs': [{'polyline': '_p~iF~ps|U_ulLnnqC'}]})!;
+      expect(drop.legsAhead(DeliveryTaskStatus.enRoute).length, 1);
+      // A to_drop route says nothing about the way to the store.
+      expect(drop.legsAhead(DeliveryTaskStatus.assigned), isEmpty);
+      expect(r.legsAhead(DeliveryTaskStatus.delivered), isEmpty);
+      expect(r.legsAhead(null), isEmpty);
+    });
+
     test('counts Google\'s traffic-aware time down, plus handovers', () {
       // 15 min ride computed 3 min ago → 12 min left + 2 min at the door.
       final e = DeliveryEtaCalculator.estimate(status: DeliveryTaskStatus.enRoute, rider: riderAt(-1),
@@ -168,6 +190,47 @@ void main() {
       expect(late.minutes, 3, reason: 'overdue ride floors at 1 min + 2 at the door');
       expect(DeliveryEtaCalculator.estimate(status: DeliveryTaskStatus.delivered, rider: riderAt(0),
           pickup: store, drop: home, now: now, route: route('to_drop', 900)), isNull);
+    });
+  });
+
+  group('progress along the route', () {
+    // An L-shaped road: 1 km north, then 1 km east.
+    final line = [
+      store,
+      DeliveryPoint(lat: store.lat + 1 * km, lng: store.lng),
+      DeliveryPoint(lat: store.lat + 1 * km, lng: store.lng + 1 * km / 0.985),
+    ];
+
+    test('the line starts at the rider; what is ridden disappears', () {
+      final p = RouteProgress.along(line, DeliveryPoint(lat: store.lat + 0.5 * km, lng: store.lng))!;
+      expect(p.onRoute, isTrue);
+      expect(p.offRouteMeters, lessThan(1));
+      expect(p.remaining.length, 3);
+      expect(p.remaining.first.lat, closeTo(store.lat + 0.5 * km, 1e-7));
+      expect(p.remaining.last.lng, line.last.lng);
+      // Past the corner: only the second leg is left.
+      final q = RouteProgress.along(line, DeliveryPoint(lat: store.lat + 1 * km, lng: store.lng + 0.3 * km))!;
+      expect(q.remaining.length, 2);
+    });
+
+    test('GPS drift of 20 m snaps onto the road; 200 m off does not', () {
+      final east = 20 / 111320 / 0.985;
+      final drift = RouteProgress.along(line, DeliveryPoint(lat: store.lat + 0.4 * km, lng: store.lng + east))!;
+      expect(drift.offRouteMeters, closeTo(20, 1.5));
+      expect(drift.onRoute, isTrue);
+      expect(drift.snapped.lng, closeTo(store.lng, 1e-7));
+      final off = RouteProgress.along(line, DeliveryPoint(lat: store.lat + 0.4 * km, lng: store.lng + east * 10))!;
+      expect(off.onRoute, isFalse);
+    });
+
+    test('edge cases', () {
+      expect(RouteProgress.along(const [], store), isNull);
+      final one = RouteProgress.along(const [store], store)!;
+      expect(one.remaining.length, 1);
+      // Before the start of the line: snaps to the first point.
+      final before = RouteProgress.along(line, DeliveryPoint(lat: store.lat - 0.2 * km, lng: store.lng))!;
+      expect(before.snapped.lat, closeTo(store.lat, 1e-9));
+      expect(before.remaining.length, 3);
     });
   });
 }

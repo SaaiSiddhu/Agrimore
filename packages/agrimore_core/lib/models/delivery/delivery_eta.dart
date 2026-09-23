@@ -79,6 +79,30 @@ class DeliveryRoute {
 
   bool get viaPickup => plan == 'via_pickup';
 
+  /// The road legs still ahead at [status], first one active — shared by the
+  /// customer's tracking map and the rider's route card. Before pickup a
+  /// `via_pickup` route gives rider → store then store → customer. From the
+  /// store on, a `to_drop` route gives rider → customer; until the server has
+  /// re-routed, a `via_pickup` route's second leg (store → customer) stands
+  /// in, since the rider is at or past the store. A wrong-plan route gives
+  /// nothing (the caller draws a straight guide).
+  List<List<DeliveryPoint>> legsAhead(DeliveryTaskStatus? status) {
+    List<DeliveryPoint> pts(int i) => legs[i].points;
+    final List<List<DeliveryPoint>> out;
+    switch (status) {
+      case DeliveryTaskStatus.assigned:
+        out = viaPickup ? [for (var i = 0; i < legs.length; i++) pts(i)] : const [];
+      case DeliveryTaskStatus.atPickup:
+      case DeliveryTaskStatus.pickedUp:
+      case DeliveryTaskStatus.enRoute:
+      case DeliveryTaskStatus.atDrop:
+        out = viaPickup ? (legs.length >= 2 ? [pts(1)] : const []) : [pts(0)];
+      default:
+        out = const [];
+    }
+    return out.where((l) => l.length >= 2).toList();
+  }
+
   static DeliveryRoute? fromMap(dynamic m) {
     if (m is! Map) return null;
     final plan = m['plan'];
@@ -144,6 +168,65 @@ List<DeliveryPoint> decodePolyline(String encoded) {
     out.add(DeliveryPoint(lat: lat / 1e5, lng: lng / 1e5));
   }
   return out;
+}
+
+/// Where the rider is along a route line, Zomato/Swiggy style: the nearest
+/// point on the line ([snapped]), how far the rider's fix is from it, and
+/// the part still ahead ([remaining], starting at the snapped point). The
+/// map draws [remaining] so the line starts at the bike and the stretch
+/// already ridden disappears; within [snapWithinMeters] the bike is drawn on
+/// the road rather than a few metres off it (GPS drift).
+class RouteProgress {
+  final DeliveryPoint snapped;
+  final double offRouteMeters;
+  final List<DeliveryPoint> remaining;
+
+  const RouteProgress({required this.snapped, required this.offRouteMeters, required this.remaining});
+
+  static const double snapWithinMeters = 40;
+
+  bool get onRoute => offRouteMeters <= snapWithinMeters;
+
+  /// Null for an empty line.
+  static RouteProgress? along(List<DeliveryPoint> line, DeliveryPoint rider) {
+    if (line.isEmpty) return null;
+    if (line.length == 1) {
+      return RouteProgress(
+        snapped: line.first,
+        offRouteMeters: _meters(rider, line.first),
+        remaining: line,
+      );
+    }
+    // Flat projection around the rider (metres), fine at city scale.
+    const k = 111320.0;
+    final cosLat = math.cos(rider.lat * math.pi / 180);
+    double x(DeliveryPoint p) => (p.lng - rider.lng) * k * cosLat;
+    double y(DeliveryPoint p) => (p.lat - rider.lat) * k;
+    var bestD = double.infinity, bestI = 0, bestT = 0.0;
+    for (var i = 0; i < line.length - 1; i++) {
+      final ax = x(line[i]), ay = y(line[i]), bx = x(line[i + 1]), by = y(line[i + 1]);
+      final dx = bx - ax, dy = by - ay;
+      final len2 = dx * dx + dy * dy;
+      final t = len2 == 0 ? 0.0 : ((-ax * dx - ay * dy) / len2).clamp(0.0, 1.0);
+      final px = ax + t * dx, py = ay + t * dy;
+      final d = math.sqrt(px * px + py * py);
+      if (d < bestD) {
+        bestD = d;
+        bestI = i;
+        bestT = t;
+      }
+    }
+    final a = line[bestI], b = line[bestI + 1];
+    final snapped = DeliveryPoint(lat: a.lat + (b.lat - a.lat) * bestT, lng: a.lng + (b.lng - a.lng) * bestT);
+    return RouteProgress(
+      snapped: snapped,
+      offRouteMeters: bestD,
+      remaining: [snapped, ...line.sublist(bestI + 1)],
+    );
+  }
+
+  static double _meters(DeliveryPoint a, DeliveryPoint b) =>
+      DeliveryEtaCalculator.straightLineKm(a.lat, a.lng, b.lat, b.lng) * 1000;
 }
 
 /// Which part of the trip the ETA covers.
