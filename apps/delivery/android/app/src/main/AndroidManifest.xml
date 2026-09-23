@@ -11,6 +11,11 @@
     <uses-permission android:name="android.permission.POST_NOTIFICATIONS" />
     <uses-permission android:name="android.permission.VIBRATE" />
     <uses-permission android:name="android.permission.WAKE_LOCK" />
+    <!-- Phase DLV-2B: the delivery-offer alert rings over the lock screen
+         (D-DLV-ALERT). Android 14+ lets the user revoke it; Google Play
+         requires a declaration for apps that are not calling/alarm apps —
+         the owner makes it in Play Console. -->
+    <uses-permission android:name="android.permission.USE_FULL_SCREEN_INTENT" />
 
     <uses-feature android:name="android.hardware.camera" android:required="false" />
     <uses-feature android:name="android.hardware.location.gps" android:required="false" />

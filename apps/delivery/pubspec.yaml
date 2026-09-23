@@ -29,6 +29,10 @@ dependencies:
   # Pinned to ^5.6.2 to match apps/marketplace, apps/admin and apps/employee.
   cloud_functions: ^5.6.2
   firebase_messaging: ^15.1.6
+  # Phase DLV-2B: the ringing full-screen delivery-offer alert. Already in the
+  # build through agrimore_services (same constraint); declared because the
+  # app now imports it directly (depend_on_referenced_packages).
+  flutter_local_notifications: ^18.0.1
   firebase_app_check: ^0.3.1
 
   # State Management

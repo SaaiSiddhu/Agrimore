@@ -469,6 +469,9 @@ async function sendOfferPush(db: Db, riderId: string, o: {
           priority: "high",
           ttl: OFFER_TTL_MS,
           notification: {
+            // DLV-2B: the rider app replaces this system copy with its own
+            // ringing full-screen alert and clears it by this tag.
+            tag: `delivery_offer_${o.orderId}`,
             channelId: OFFERS_CHANNEL_ID,
             priority: "max",
             visibility: "public",
