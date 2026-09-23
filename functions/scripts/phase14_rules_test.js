@@ -350,14 +350,22 @@ async function main() {
         await ctx.firestore().collection("orders").doc(orderId).set(BASE_ORDER);
       });
       const db = testEnv.authenticatedContext("phase14-seller", sellerClaims("seller2@phase14-test.example")).firestore();
+      // SELLER-ORDERS-1 (2026-09-23) changed this contract on purpose: a
+      // seller advances fulfilment ONLY through the sellerTransitionOrder
+      // callable (functions/scripts/phaseSORD1_transition_test.js proves that
+      // path). A direct orderStatus/status write is now denied; a seller's
+      // non-lifecycle update (a note) must still succeed.
       try {
-        await assertSucceeds(
+        await assertFails(
           db.collection("orders").doc(orderId).update({ orderStatus: "processing", status: "processing" })
         );
-        results.w7_seller_normal_fulfilment_update_succeeds =
-          "PASSED — a real fulfilment status advance (orderStatus/status only, matching seller_order_provider.dart) still succeeds — proves live fulfilment isn't broken";
+        await assertSucceeds(
+          db.collection("orders").doc(orderId).update({ sellerNote: "packed in two bags" })
+        );
+        results.w7_seller_status_via_callable_only_note_still_succeeds =
+          "PASSED — direct status write denied (callable only); a non-lifecycle seller update still succeeds";
       } catch (e) {
-        results.w7_seller_normal_fulfilment_update_succeeds = `FAILED — a legitimate fulfilment status update was rejected: ${e.message}`;
+        results.w7_seller_status_via_callable_only_note_still_succeeds = `FAILED — ${e.message}`;
       }
     }
 

@@ -131,8 +131,12 @@ if [ $EMU = 1 ]; then
       # business_posts/{fileName} path — so it needs both emulators too.
       # Added to this same case arm rather than widening the wildcard, for
       # the identical reason phase24 stayed exact-matched above.
+      #
+      # SELLER-ORDERS-1 amendment: phaseSAUTH1B_submit_application_test checks
+      # that KYC photos really exist in Storage (bucket.file().exists()) — it
+      # needs both emulators; without storage it fails with ECONNREFUSED 9199.
       case "$s" in
-        phase24_storage_rules_test|phase48_business_posts_test) EMU_ONLY="storage,firestore";;
+        phase24_storage_rules_test|phase48_business_posts_test|phaseSAUTH1B_submit_application_test) EMU_ONLY="storage,firestore";;
         *storage*)                                              EMU_ONLY="storage";;
         *)                                                       EMU_ONLY="firestore,functions,auth";;
       esac

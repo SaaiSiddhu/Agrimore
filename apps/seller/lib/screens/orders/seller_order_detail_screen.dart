@@ -6,7 +6,9 @@ import 'package:provider/provider.dart';
 import 'package:agrimore_core/agrimore_core.dart';
 import 'package:intl/intl.dart';
 import 'package:url_launcher/url_launcher.dart';
+import '../../l10n/app_localizations.dart';
 import '../../providers/seller_order_provider.dart';
+import 'widgets/order_reason_sheet.dart';
 
 class SellerOrderDetailScreen extends StatefulWidget {
   final OrderModel order;
@@ -375,7 +377,7 @@ class _SellerOrderDetailScreenState extends State<SellerOrderDetailScreen> {
                       ),
                     ),
                     onPressed:
-                        _isUpdating ? null : () => _confirmReject(order.id),
+                        _isUpdating ? null : () => _confirmReject(order),
                     icon: const Icon(Icons.close_rounded),
                     label: const Text(
                       'Reject',
@@ -472,7 +474,7 @@ class _SellerOrderDetailScreenState extends State<SellerOrderDetailScreen> {
                   borderRadius: BorderRadius.circular(14),
                 ),
               ),
-              onPressed: _isUpdating ? null : () => _confirmReject(order.id),
+              onPressed: _isUpdating ? null : () => _confirmReject(order),
               icon: const Icon(Icons.cancel_outlined),
               label: const Text(
                 'Reject Order',
@@ -492,57 +494,46 @@ class _SellerOrderDetailScreenState extends State<SellerOrderDetailScreen> {
     final success = switch (newStatus) {
       'processing' => await provider.markPacking(orderId),
       'ready_for_pickup' => await provider.markReadyForPickup(orderId),
-      _ => await provider.updateOrderStatus(orderId, newStatus),
+      _ => false,
     };
 
     setState(() => _isUpdating = false);
-
-    if (success && mounted) {
-      ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(
-          content: Row(
-            children: [
-              const Icon(Icons.check_circle, color: Colors.white),
-              const SizedBox(width: 8),
-              Text('Order updated to ${_getNextStatusLabel(newStatus)}'),
-            ],
-          ),
-          backgroundColor: Colors.green.shade600,
-          behavior: SnackBarBehavior.floating,
-          shape: RoundedRectangleBorder(
-            borderRadius: BorderRadius.circular(10),
-          ),
-        ),
-      );
+    if (!mounted) return;
+    final l10n = AppLocalizations.of(context);
+    if (success) {
+      _toast(newStatus == 'processing' ? l10n.orderPacking : l10n.orderReady);
       Navigator.pop(context);
+    } else {
+      _toast(_errorCopy(l10n, provider.lastActionError));
     }
   }
 
+  /// Accept a pending order (SELLER-ORDERS-1: server state machine; the
+  /// stock was already taken when the order was placed).
   Future<void> _sellerAction(String orderId, String action) async {
     setState(() => _isUpdating = true);
     HapticFeedback.mediumImpact();
-
     final provider = context.read<SellerOrderProvider>();
-    final success = action == 'accept'
-        ? await provider.acceptOrder(orderId)
-        : await provider.rejectOrder(orderId);
-
+    final success = await provider.acceptOrder(orderId);
     setState(() => _isUpdating = false);
-
-    if (success && mounted) {
-      ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(
-          content: Text(
-            action == 'accept'
-                ? 'Order accepted. Stock updated.'
-                : 'Order rejected.',
-          ),
-          backgroundColor: action == 'accept' ? Colors.green : Colors.red,
-          behavior: SnackBarBehavior.floating,
-        ),
-      );
+    if (!mounted) return;
+    final l10n = AppLocalizations.of(context);
+    if (success) {
+      _toast(l10n.orderAccepted);
       Navigator.pop(context);
+    } else {
+      _toast(_errorCopy(l10n, provider.lastActionError));
     }
+  }
+
+  String _errorCopy(AppLocalizations l10n, OrderActionError? error) => switch (error) {
+        OrderActionError.unpaid => l10n.orderUnpaid,
+        OrderActionError.alreadyMoved => l10n.orderAlreadyMoved,
+        _ => l10n.orderActionFailed,
+      };
+
+  void _toast(String message) {
+    ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text(message)));
   }
 
   Future<void> _callCustomer(String phone) async {
@@ -568,36 +559,30 @@ class _SellerOrderDetailScreenState extends State<SellerOrderDetailScreen> {
     }, SetOptions(merge: true));
 
     if (!mounted) return;
-    ScaffoldMessenger.of(context).showSnackBar(
-      const SnackBar(content: Text('Chat thread is ready')),
-    );
+    _toast(AppLocalizations.of(context).chatReady);
   }
 
-  void _confirmReject(String orderId) {
-    showDialog(
-      context: context,
-      builder: (ctx) => AlertDialog(
-        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
-        title: const Text('Reject Order?'),
-        content: const Text(
-          'Rejecting this order will notify the customer and stop seller processing.',
-        ),
-        actions: [
-          TextButton(
-            onPressed: () => Navigator.pop(ctx),
-            child: const Text('No, Keep'),
-          ),
-          TextButton(
-            onPressed: () {
-              Navigator.pop(ctx);
-              _sellerAction(orderId, 'reject');
-            },
-            style: TextButton.styleFrom(foregroundColor: Colors.red),
-            child: const Text('Yes, Reject'),
-          ),
-        ],
-      ),
-    );
+  /// O-03: reject a pending order, or cancel an accepted one, with a reason.
+  Future<void> _confirmReject(OrderModel order) async {
+    final isCancel = order.orderStatus.toLowerCase() != 'pending';
+    final method = order.paymentMethod.toLowerCase();
+    final prepaid = !method.contains('cod') && !method.contains('cash');
+    final choice = await showOrderReasonSheet(context, isCancel: isCancel, prepaid: prepaid);
+    if (choice == null || !mounted) return;
+    setState(() => _isUpdating = true);
+    final provider = context.read<SellerOrderProvider>();
+    final success = isCancel
+        ? await provider.cancelOrder(order.id, reason: choice.reason, note: choice.note)
+        : await provider.rejectOrder(order.id, reason: choice.reason, note: choice.note);
+    setState(() => _isUpdating = false);
+    if (!mounted) return;
+    final l10n = AppLocalizations.of(context);
+    if (success) {
+      _toast(isCancel ? l10n.orderCancelled : l10n.orderRejected);
+      Navigator.pop(context);
+    } else {
+      _toast(_errorCopy(l10n, provider.lastActionError));
+    }
   }
 
   String? _getNextStatus(String current) {

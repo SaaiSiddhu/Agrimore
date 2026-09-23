@@ -506,4 +506,77 @@ class AppLocalizationsEn extends AppLocalizations {
 
   @override
   String get errDocument => 'Upload this photo to continue';
+
+  @override
+  String get rejectOrderTitle => 'Reject this order?';
+
+  @override
+  String get cancelOrderTitle => 'Cancel this order?';
+
+  @override
+  String get reasonPrompt => 'Tell the buyer why. This is required.';
+
+  @override
+  String get reasonOutOfStock => 'Item out of stock';
+
+  @override
+  String get reasonCannotDeliver => 'Can\'t deliver to this area';
+
+  @override
+  String get reasonPriceError => 'Price was wrong';
+
+  @override
+  String get reasonShopClosed => 'Shop is closed';
+
+  @override
+  String get reasonOther => 'Something else';
+
+  @override
+  String get reasonNoteLabel => 'Note for the buyer (optional)';
+
+  @override
+  String get rejectConsequence =>
+      'The buyer is notified and the stock goes back to your listings.';
+
+  @override
+  String get rejectConsequencePrepaid =>
+      'The buyer is notified, the stock goes back to your listings, and the payment is marked for refund.';
+
+  @override
+  String get rejectOrderCta => 'Reject order';
+
+  @override
+  String get cancelOrderCta => 'Cancel order';
+
+  @override
+  String get keepOrder => 'Keep order';
+
+  @override
+  String get orderAccepted => 'Order accepted';
+
+  @override
+  String get orderPacking => 'Packing started';
+
+  @override
+  String get orderReady => 'Marked ready for pickup';
+
+  @override
+  String get orderRejected => 'Order rejected';
+
+  @override
+  String get orderCancelled => 'Order cancelled';
+
+  @override
+  String get orderActionFailed =>
+      'Couldn\'t update the order. Please try again.';
+
+  @override
+  String get orderAlreadyMoved =>
+      'This order was already updated. Pull to refresh.';
+
+  @override
+  String get orderUnpaid => 'Payment for this order isn\'t complete yet.';
+
+  @override
+  String get chatReady => 'Chat with the buyer is ready';
 }

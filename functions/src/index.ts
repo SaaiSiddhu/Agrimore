@@ -163,6 +163,8 @@ export { createSellerAiActivationOrder, connectSellerAiProvider } from "./seller
 export { sellerAiChatProxy } from "./seller/aiChatProxy";
 // SELLER-AUTH-1b: the only path from a draft application to pending (ADR-S12)
 export { submitSellerApplication } from "./seller/sellerApplication";
+// SELLER-ORDERS-1: the only path for a seller to change an order status (ADR-S13)
+export { sellerTransitionOrder } from "./seller/sellerTransitionOrder";
 
 // ============================================
 // B2B RFQ & NEGOTIATION (Phase RFQ-1)
