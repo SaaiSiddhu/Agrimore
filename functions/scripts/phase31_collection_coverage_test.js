@@ -97,9 +97,16 @@ async function main() {
         assertFails(strangerDb.collection("sellerRequests").doc("phase31-applicant").get()));
       await record("s2c_positive_admin_can_read_any_request",
         assertSucceeds(adminDb.collection("sellerRequests").doc("phase31-applicant").get()));
-      await record("s2d_positive_self_attributed_pending_create_succeeds",
+      // SELLER-AUTH-1b (2026-09-23) changed this contract on purpose: an
+      // applicant creates the request as a DRAFT; only the
+      // submitSellerApplication callable (server-side validation) moves it to
+      // pending. A direct pending create is now a self-submission bypass.
+      await record("s2d_positive_self_attributed_draft_create_succeeds",
         assertSucceeds(testEnv.authenticatedContext("phase31-newapplicant", unprivilegedClaims("new@phase31-test.example")).firestore()
-          .collection("sellerRequests").doc("phase31-newapplicant").set({ userId: "phase31-newapplicant", status: "pending", bankName: "B", accountNumber: "1", ifsc: "X" })));
+          .collection("sellerRequests").doc("phase31-newapplicant").set({ userId: "phase31-newapplicant", status: "draft", bankName: "B", accountNumber: "1", ifsc: "X" })));
+      await record("s2d2_negative_self_attributed_pending_create_denied",
+        assertFails(testEnv.authenticatedContext("phase31-newapplicant2", unprivilegedClaims("new2@phase31-test.example")).firestore()
+          .collection("sellerRequests").doc("phase31-newapplicant2").set({ userId: "phase31-newapplicant2", status: "pending", bankName: "B", accountNumber: "1", ifsc: "X" })));
       await record("s2e_negative_cannot_create_already_approved",
         assertFails(strangerDb.collection("sellerRequests").doc("phase31-stranger2").set({ userId: "phase31-stranger2", status: "approved", bankName: "B", accountNumber: "1", ifsc: "X" })));
       await record("s2f_negative_cannot_create_for_someone_else",
