@@ -75,4 +75,11 @@ flutter {
 
 dependencies {
     coreLibraryDesugaring("com.android.tools:desugar_jdk_libs:2.0.4")
+    // Phase DLV-3A2: RiderLocationService (native). Same versions the FlutterFire
+    // plugins (firebase_core FirebaseSDKVersion) and geolocator already resolve.
+    implementation(platform("com.google.firebase:firebase-bom:33.16.0"))
+    implementation("com.google.firebase:firebase-firestore")
+    implementation("com.google.firebase:firebase-auth")
+    implementation("com.google.android.gms:play-services-location:21.2.0")
+    implementation("androidx.core:core-ktx:1.13.1")
 }
