@@ -46,6 +46,16 @@ void main() {
     expect(resolve(role: 'user', sellerStatus: 'approved', sellerDocExists: true), SellerAccess.pending);
   });
 
+  test('an application in progress resumes, even after an earlier rejection', () {
+    expect(resolve(role: 'user', requestStatus: 'draft'), SellerAccess.draft);
+    expect(resolve(role: 'user', userSellerStatus: 'rejected', requestStatus: 'draft'), SellerAccess.draft);
+  });
+
+  test('an approved seller is never sent back into the application', () {
+    expect(resolve(role: 'seller', sellerStatus: 'approved', sellerDocExists: true, requestStatus: 'draft'),
+        SellerAccess.approved);
+  });
+
   test('a signed-in non-seller is told so — no silent sign-out', () {
     expect(resolve(role: 'user'), SellerAccess.noApplication);
     expect(resolve(role: null), SellerAccess.noApplication);

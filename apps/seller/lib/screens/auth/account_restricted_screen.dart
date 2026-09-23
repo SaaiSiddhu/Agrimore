@@ -3,20 +3,30 @@ import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 
 import '../../l10n/app_localizations.dart';
+import '../../providers/seller_application_provider.dart';
 import '../../providers/seller_auth_provider.dart';
 import 'widgets/auth_brand_panel.dart';
 import 'widgets/support_contact_card.dart';
 
 /// Why the workspace is closed to this account.
-enum RestrictionReason { noAccount, rejected, suspended }
+enum RestrictionReason { rejected, suspended }
 
-/// A-07 Account restricted (ADR §10.1): rejected, suspended, or — until
-/// SELLER-AUTH-1b ships the in-app application — no seller account yet.
-/// Always says what happened, what it affects and how to get help.
+/// A-07 Account restricted (ADR §10.1): rejected (with "Fix and resubmit",
+/// which reopens the application as a draft) or suspended. Always says what
+/// happened, what it affects and how to get help.
 class AccountRestrictedScreen extends StatelessWidget {
-  const AccountRestrictedScreen({super.key, required this.reason});
+  const AccountRestrictedScreen({super.key, required this.reason, this.applicationFactory});
 
   final RestrictionReason reason;
+
+  /// Injected in tests; defaults to a Firebase-backed provider.
+  final SellerApplicationProvider Function()? applicationFactory;
+
+  Future<void> _reopen(BuildContext context) async {
+    final auth = context.read<SellerAuthProvider>();
+    final app = (applicationFactory ?? SellerApplicationProvider.new)();
+    if (await app.reopenAfterRejection()) await auth.refresh();
+  }
 
   @override
   Widget build(BuildContext context) {
@@ -24,7 +34,6 @@ class AccountRestrictedScreen extends StatelessWidget {
     final auth = context.watch<SellerAuthProvider>();
     final t = context.ws;
     final text = context.wsText;
-    final phone = auth.signedInPhone;
 
     final (IconData icon, Color fg, Color bg, String title, String body) = switch (reason) {
       RestrictionReason.rejected => (
@@ -40,15 +49,6 @@ class AccountRestrictedScreen extends StatelessWidget {
           t.warningBg,
           l10n.restrictedSuspendedTitle,
           l10n.restrictedSuspendedBody,
-        ),
-      RestrictionReason.noAccount => (
-          AgIcons.store,
-          t.primary,
-          t.primarySubtle,
-          l10n.restrictedNoAccountTitle,
-          phone == null || phone.isEmpty
-              ? l10n.restrictedNoAccountBodyGeneric
-              : l10n.restrictedNoAccountBody(AgFormat.maskPhone(phone)),
         ),
     };
 
@@ -79,6 +79,14 @@ class AccountRestrictedScreen extends StatelessWidget {
                     const SizedBox(height: WsSpace.s8),
                     Text(body, style: text.bodyLarge!.copyWith(color: t.textSecondary)),
                     const SizedBox(height: WsSpace.s32),
+                    if (reason == RestrictionReason.rejected) ...[
+                      SaLoadingButton(
+                        text: l10n.applyReopenCta,
+                        icon: AgIcons.edit,
+                        onPressed: () => _reopen(context),
+                      ),
+                      const SizedBox(height: WsSpace.s24),
+                    ],
                     const SupportContactCard(),
                     const SizedBox(height: WsSpace.s16),
                     SignOutButton(onConfirmed: auth.signOut),

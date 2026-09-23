@@ -18,6 +18,9 @@ enum SellerAccess {
   /// Signed in, but no seller application or seller account exists.
   noApplication,
 
+  /// An application is in progress (or reopened after a rejection).
+  draft,
+
   /// Application submitted, waiting for an admin decision.
   pending,
 
@@ -188,6 +191,10 @@ class SellerAuthProvider with ChangeNotifier {
     required String? requestStatus,
   }) {
     if (sellerStatus == 'suspended') return SellerAccess.suspended;
+    if (role == 'seller' && (sellerStatus == null || sellerStatus == 'approved')) return SellerAccess.approved;
+    // A reopened application (rejected → draft) wins over the stale
+    // users.sellerStatus 'rejected' left by the earlier review.
+    if (requestStatus == 'draft') return SellerAccess.draft;
     if (sellerStatus == 'rejected' || userSellerStatus == 'rejected' || requestStatus == 'rejected') {
       return SellerAccess.rejected;
     }

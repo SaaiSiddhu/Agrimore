@@ -1,15 +1,12 @@
 {
   "@@locale": "en",
-
   "appName": "AgriMore Seller",
   "appTagline": "Seller workspace",
-
   "authHeadline": "Sell to farms and families across your district",
   "authSubhead": "Manage orders, stock and payments in one place.",
   "authValueOrders": "Accept orders before they're due",
   "authValueStock": "Keep stock and prices up to date",
   "authValuePayments": "Track every settlement to your bank",
-
   "phoneLabel": "Mobile number",
   "phonePrefix": "+91",
   "phoneHint": "10-digit mobile number",
@@ -21,7 +18,13 @@
   "googleCta": "Continue with Google",
   "googleLinkingTitle": "Verify your mobile once",
   "googleLinkingBody": "{email} isn't linked to a seller account yet. Verify your mobile number and we'll link Google to it.",
-  "@googleLinkingBody": { "placeholders": { "email": { "type": "String" } } },
+  "@googleLinkingBody": {
+    "placeholders": {
+      "email": {
+        "type": "String"
+      }
+    }
+  },
   "googleLinkingCancel": "Cancel",
   "googleLinkedConflict": "Signed in. Your Google account is already linked to another AgriMore account, so it wasn't added.",
   "emailSignInLink": "Sign in with email instead",
@@ -29,24 +32,46 @@
   "legalTerms": "Terms",
   "legalAnd": "and",
   "legalPrivacy": "Privacy Policy",
-
   "otpTitle": "Enter the 6-digit code",
   "otpSentSms": "Sent by SMS to {phone}",
-  "@otpSentSms": { "placeholders": { "phone": { "type": "String" } } },
+  "@otpSentSms": {
+    "placeholders": {
+      "phone": {
+        "type": "String"
+      }
+    }
+  },
   "otpSentVoice": "You'll get a call on {phone} with your code",
-  "@otpSentVoice": { "placeholders": { "phone": { "type": "String" } } },
+  "@otpSentVoice": {
+    "placeholders": {
+      "phone": {
+        "type": "String"
+      }
+    }
+  },
   "otpChangeNumber": "Change",
   "otpDigitLabel": "Digit {index} of 6",
-  "@otpDigitLabel": { "placeholders": { "index": { "type": "int" } } },
+  "@otpDigitLabel": {
+    "placeholders": {
+      "index": {
+        "type": "int"
+      }
+    }
+  },
   "otpVerifyCta": "Verify and continue",
   "otpVerifying": "Verifying…",
   "otpResendIn": "Resend code in {seconds}s",
-  "@otpResendIn": { "placeholders": { "seconds": { "type": "int" } } },
+  "@otpResendIn": {
+    "placeholders": {
+      "seconds": {
+        "type": "int"
+      }
+    }
+  },
   "otpResend": "Resend code",
   "otpCallInstead": "Get a call instead",
   "otpErrorIncomplete": "Enter all 6 digits",
   "testModeRibbon": "Test mode — code filled in automatically",
-
   "emailTitle": "Sign in with email",
   "emailSubhead": "For seller accounts created by AgriMore with an email and password.",
   "emailLabel": "Email address",
@@ -60,13 +85,18 @@
   "forgotPassword": "Forgot password?",
   "resetSheetTitle": "Reset your password",
   "resetSheetBody": "We'll email a reset link to {email}.",
-  "@resetSheetBody": { "placeholders": { "email": { "type": "String" } } },
+  "@resetSheetBody": {
+    "placeholders": {
+      "email": {
+        "type": "String"
+      }
+    }
+  },
   "resetSendCta": "Send reset link",
   "resetSent": "Reset link sent. Check your inbox.",
   "resetNeedsEmail": "Enter your email address first",
   "addPhoneNudge": "Tip: after signing in, add your mobile number so you can sign in with OTP next time.",
   "back": "Back",
-
   "statusTitle": "Application under review",
   "statusSubhead": "We're checking your details. You'll get a notification when there's a decision.",
   "statusStepSubmitted": "Application submitted",
@@ -75,27 +105,135 @@
   "statusRefresh": "Check status",
   "statusRefreshing": "Checking…",
   "statusStillPending": "Still under review. We'll notify you as soon as it changes.",
-
   "restrictedRejectedTitle": "Application not approved",
   "restrictedRejectedBody": "Your seller application wasn't approved. Contact us to find out what to change before applying again.",
   "restrictedSuspendedTitle": "Seller account suspended",
   "restrictedSuspendedBody": "Your listings are hidden and new orders are paused. Contact us to resolve this.",
-  "restrictedNoAccountTitle": "No seller account on this number",
-  "restrictedNoAccountBody": "{phone} isn't registered as an AgriMore seller yet. Contact us to set up your seller account.",
-  "@restrictedNoAccountBody": { "placeholders": { "phone": { "type": "String" } } },
-  "restrictedNoAccountBodyGeneric": "This account isn't registered as an AgriMore seller yet. Contact us to set up your seller account.",
-
   "supportTitle": "Contact AgriMore",
   "supportCall": "Call {phone}",
-  "@supportCall": { "placeholders": { "phone": { "type": "String" } } },
+  "@supportCall": {
+    "placeholders": {
+      "phone": {
+        "type": "String"
+      }
+    }
+  },
   "supportEmail": "Email {email}",
-  "@supportEmail": { "placeholders": { "email": { "type": "String" } } },
+  "@supportEmail": {
+    "placeholders": {
+      "email": {
+        "type": "String"
+      }
+    }
+  },
   "signOut": "Sign out",
   "signOutConfirmTitle": "Sign out?",
   "signOutConfirmBody": "You'll need to verify your mobile number again to sign in.",
   "cancel": "Cancel",
-
   "errorGeneric": "Something went wrong. Please try again.",
   "errorNetwork": "Network is too slow right now. Please try again.",
-  "loadingAccount": "Loading your seller account"
+  "loadingAccount": "Loading your seller account",
+  "applyTitle": "Start selling on AgriMore",
+  "applySubhead": "Tell us about your business. It takes about 5 minutes and you can stop and continue any time.",
+  "applyNeedBusiness": "Business name and what you sell",
+  "applyNeedAddress": "Shop address and delivery area",
+  "applyNeedDocuments": "A photo of your ID and of your shop",
+  "applyNeedPayout": "Bank account or UPI ID for payments",
+  "applyStartCta": "Start application",
+  "applyResumeCta": "Continue application",
+  "applyReopenCta": "Fix and resubmit",
+  "stepOf": "Step {current} of {total}",
+  "@stepOf": {
+    "placeholders": {
+      "current": {
+        "type": "int"
+      },
+      "total": {
+        "type": "int"
+      }
+    }
+  },
+  "stepBusiness": "Business details",
+  "stepLocation": "Location and delivery",
+  "stepDocuments": "Documents",
+  "stepPayout": "Payout account",
+  "stepReview": "Review and submit",
+  "saveContinue": "Save and continue",
+  "saving": "Saving…",
+  "savedDraft": "Saved. You can continue later.",
+  "saveFailed": "Couldn't save. Check your connection and try again.",
+  "fieldOwnerName": "Your full name",
+  "fieldShopName": "Shop or business name",
+  "fieldCategory": "What do you mainly sell?",
+  "fieldGstin": "GSTIN (optional)",
+  "fieldGstinHelp": "15 characters, e.g. 33ABCDE1234F1Z5",
+  "category_vegetables": "Vegetables",
+  "category_fruits": "Fruits",
+  "category_grains": "Grains and pulses",
+  "category_dairy": "Dairy",
+  "category_seeds": "Seeds",
+  "category_fertilisers": "Fertilisers and inputs",
+  "category_equipment": "Tools and equipment",
+  "category_other": "Something else",
+  "fieldAddress": "Shop address",
+  "fieldCity": "City or town",
+  "fieldState": "State",
+  "fieldPincode": "PIN code",
+  "fieldRadius": "Delivery radius",
+  "radiusKm": "{km} km",
+  "@radiusKm": {
+    "placeholders": {
+      "km": {
+        "type": "int"
+      }
+    }
+  },
+  "useCurrentLocation": "Use my current location",
+  "locationCaptured": "Location pinned",
+  "locationFailed": "Couldn't get your location. You can continue without it.",
+  "documentsHelp": "Clear photos help us approve you faster. Only AgriMore reviewers can see them.",
+  "doc_idProof": "ID proof (Aadhaar, PAN, voter ID or driving licence)",
+  "doc_shopPhoto": "Photo of your shop or farm",
+  "doc_gstCertificate": "GST certificate (optional)",
+  "docTakePhoto": "Take photo",
+  "docChoosePhoto": "Choose from gallery",
+  "docUploaded": "Uploaded",
+  "docUploading": "Uploading…",
+  "docReplace": "Replace",
+  "docUploadFailed": "Upload failed. Try again.",
+  "payoutHelp": "Your settlements are paid here. We never show these details on your public profile.",
+  "payoutBank": "Bank account",
+  "payoutUpi": "UPI ID",
+  "fieldAccountHolder": "Account holder name",
+  "fieldBankName": "Bank name",
+  "fieldAccountNumber": "Account number",
+  "fieldAccountNumberConfirm": "Re-enter account number",
+  "fieldIfsc": "IFSC code",
+  "fieldUpiId": "UPI ID",
+  "accountMismatch": "Account numbers don't match",
+  "reviewHelp": "Check your details. You can't edit them while we review your application.",
+  "reviewEdit": "Edit",
+  "reviewDocumentsCount": "{count} of {total} photos uploaded",
+  "@reviewDocumentsCount": {
+    "placeholders": {
+      "count": {
+        "type": "int"
+      },
+      "total": {
+        "type": "int"
+      }
+    }
+  },
+  "acceptTerms": "I confirm these details are correct and agree to AgriMore's seller terms",
+  "submitCta": "Submit application",
+  "submitting": "Submitting…",
+  "submitInvalid": "Some details need attention. We've taken you to the first one.",
+  "submitFailed": "Couldn't submit. Check your connection and try again.",
+  "errRequired": "This is required",
+  "errGstin": "Enter a valid 15-character GSTIN",
+  "errPincode": "Enter a valid 6-digit PIN code",
+  "errIfsc": "Enter a valid 11-character IFSC code",
+  "errAccount": "Enter a valid account number (9–18 digits)",
+  "errUpi": "Enter a valid UPI ID, e.g. name@bank",
+  "errDocument": "Upload this photo to continue"
 }

@@ -10,6 +10,7 @@ import 'package:seller/screens/auth/account_restricted_screen.dart';
 import 'package:seller/screens/auth/application_status_screen.dart';
 import 'package:seller/screens/auth/email_sign_in_screen.dart';
 import 'package:seller/screens/auth/seller_sign_in_screen.dart';
+import 'package:seller/screens/onboarding/apply_intro_screen.dart';
 
 /// SELLER-AUTH-1a screen tests: every auth screen renders without overflow
 /// or exceptions in light and dark, at phone and desktop widths, at 1.0× and
@@ -180,27 +181,22 @@ void main() {
       }
     }
 
-    testWidgets('no-account copy names the masked number, never the full one', (tester) async {
-      final l10n = await _pump(tester, const AccountRestrictedScreen(reason: RestrictionReason.noAccount),
-          provider: SellerAuthProvider.preview(access: SellerAccess.noApplication, phone: '+919876543210'));
-      expect(find.text(l10n.restrictedNoAccountBody(AgFormat.maskPhone('+919876543210'))), findsOneWidget);
-      expect(find.textContaining('9876543210'), findsNothing);
-    });
-
     testWidgets('each reason shows its own title', (tester) async {
       var l10n = await _pump(tester, const AccountRestrictedScreen(reason: RestrictionReason.rejected),
           provider: SellerAuthProvider.preview(access: SellerAccess.rejected));
       expect(find.text(l10n.restrictedRejectedTitle), findsOneWidget);
+      expect(find.text(l10n.applyReopenCta), findsOneWidget, reason: 'rejected sellers can fix and resubmit');
       l10n = await _pump(tester, const AccountRestrictedScreen(reason: RestrictionReason.suspended),
           provider: SellerAuthProvider.preview(access: SellerAccess.suspended));
       expect(find.text(l10n.restrictedSuspendedTitle), findsOneWidget);
+      expect(find.text(l10n.applyReopenCta), findsNothing, reason: 'suspension is not self-service');
     });
   });
 
   group('auth gate', () {
     final expectations = <SellerAccess, Type>{
       SellerAccess.signedOut: SellerSignInScreen,
-      SellerAccess.noApplication: AccountRestrictedScreen,
+      SellerAccess.noApplication: ApplyIntroScreen,
       SellerAccess.pending: ApplicationStatusScreen,
       SellerAccess.rejected: AccountRestrictedScreen,
       SellerAccess.suspended: AccountRestrictedScreen,
