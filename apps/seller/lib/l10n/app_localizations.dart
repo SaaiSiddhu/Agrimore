@@ -3141,6 +3141,1050 @@ abstract class AppLocalizations {
   /// In en, this message translates to:
   /// **'Save'**
   String get accountSave;
+
+  /// No description provided for @stageToAccept.
+  ///
+  /// In en, this message translates to:
+  /// **'To accept'**
+  String get stageToAccept;
+
+  /// No description provided for @stagePacking.
+  ///
+  /// In en, this message translates to:
+  /// **'Packing'**
+  String get stagePacking;
+
+  /// No description provided for @stageReady.
+  ///
+  /// In en, this message translates to:
+  /// **'Ready for pickup'**
+  String get stageReady;
+
+  /// No description provided for @stageOutForDelivery.
+  ///
+  /// In en, this message translates to:
+  /// **'Out for delivery'**
+  String get stageOutForDelivery;
+
+  /// No description provided for @stageDelivered.
+  ///
+  /// In en, this message translates to:
+  /// **'Delivered'**
+  String get stageDelivered;
+
+  /// No description provided for @stageCancelled.
+  ///
+  /// In en, this message translates to:
+  /// **'Cancelled'**
+  String get stageCancelled;
+
+  /// No description provided for @stageOther.
+  ///
+  /// In en, this message translates to:
+  /// **'Other'**
+  String get stageOther;
+
+  /// No description provided for @ordersSearchHint.
+  ///
+  /// In en, this message translates to:
+  /// **'Order number, customer or product'**
+  String get ordersSearchHint;
+
+  /// No description provided for @ordersLoadFailed.
+  ///
+  /// In en, this message translates to:
+  /// **'Couldn\'t load your orders. Check your connection and try again.'**
+  String get ordersLoadFailed;
+
+  /// No description provided for @ordersEmpty.
+  ///
+  /// In en, this message translates to:
+  /// **'No orders yet. New orders appear here the moment a buyer places them.'**
+  String get ordersEmpty;
+
+  /// No description provided for @ordersNoneMatch.
+  ///
+  /// In en, this message translates to:
+  /// **'No orders match.'**
+  String get ordersNoneMatch;
+
+  /// No description provided for @ordersCustomer.
+  ///
+  /// In en, this message translates to:
+  /// **'Customer'**
+  String get ordersCustomer;
+
+  /// No description provided for @ordersItems.
+  ///
+  /// In en, this message translates to:
+  /// **'{count, plural, =1{1 item} other{{count} items}}'**
+  String ordersItems(int count);
+
+  /// No description provided for @ordersPrepaid.
+  ///
+  /// In en, this message translates to:
+  /// **'Prepaid'**
+  String get ordersPrepaid;
+
+  /// No description provided for @ordersCod.
+  ///
+  /// In en, this message translates to:
+  /// **'Cash on delivery'**
+  String get ordersCod;
+
+  /// No description provided for @stageToPack.
+  ///
+  /// In en, this message translates to:
+  /// **'To pack'**
+  String get stageToPack;
+
+  /// No description provided for @stepPlaced.
+  ///
+  /// In en, this message translates to:
+  /// **'Placed'**
+  String get stepPlaced;
+
+  /// No description provided for @stepAccepted.
+  ///
+  /// In en, this message translates to:
+  /// **'Accepted'**
+  String get stepAccepted;
+
+  /// No description provided for @stepPacking.
+  ///
+  /// In en, this message translates to:
+  /// **'Packing'**
+  String get stepPacking;
+
+  /// No description provided for @stepReady.
+  ///
+  /// In en, this message translates to:
+  /// **'Ready for pickup'**
+  String get stepReady;
+
+  /// No description provided for @orderCall.
+  ///
+  /// In en, this message translates to:
+  /// **'Call customer'**
+  String get orderCall;
+
+  /// No description provided for @orderChat.
+  ///
+  /// In en, this message translates to:
+  /// **'Message customer'**
+  String get orderChat;
+
+  /// No description provided for @orderCustomer.
+  ///
+  /// In en, this message translates to:
+  /// **'Customer'**
+  String get orderCustomer;
+
+  /// No description provided for @orderName.
+  ///
+  /// In en, this message translates to:
+  /// **'Name'**
+  String get orderName;
+
+  /// No description provided for @orderAddress.
+  ///
+  /// In en, this message translates to:
+  /// **'Deliver to'**
+  String get orderAddress;
+
+  /// No description provided for @orderNoAddress.
+  ///
+  /// In en, this message translates to:
+  /// **'No address provided'**
+  String get orderNoAddress;
+
+  /// No description provided for @orderSlot.
+  ///
+  /// In en, this message translates to:
+  /// **'Delivery slot'**
+  String get orderSlot;
+
+  /// No description provided for @orderNote.
+  ///
+  /// In en, this message translates to:
+  /// **'Buyer\'s note'**
+  String get orderNote;
+
+  /// No description provided for @orderPayment.
+  ///
+  /// In en, this message translates to:
+  /// **'Payment'**
+  String get orderPayment;
+
+  /// No description provided for @orderTax.
+  ///
+  /// In en, this message translates to:
+  /// **'Tax'**
+  String get orderTax;
+
+  /// No description provided for @orderReject.
+  ///
+  /// In en, this message translates to:
+  /// **'Reject'**
+  String get orderReject;
+
+  /// No description provided for @orderCancel.
+  ///
+  /// In en, this message translates to:
+  /// **'Cancel order'**
+  String get orderCancel;
+
+  /// No description provided for @orderAccept.
+  ///
+  /// In en, this message translates to:
+  /// **'Accept order'**
+  String get orderAccept;
+
+  /// No description provided for @orderStartPacking.
+  ///
+  /// In en, this message translates to:
+  /// **'Start packing'**
+  String get orderStartPacking;
+
+  /// No description provided for @orderMarkReady.
+  ///
+  /// In en, this message translates to:
+  /// **'Mark ready for pickup'**
+  String get orderMarkReady;
+
+  /// No description provided for @homeOrdersToPack.
+  ///
+  /// In en, this message translates to:
+  /// **'{count, plural, =1{1 accepted order to pack} other{{count} accepted orders to pack}}'**
+  String homeOrdersToPack(int count);
+
+  /// No description provided for @productNewPost.
+  ///
+  /// In en, this message translates to:
+  /// **'New post'**
+  String get productNewPost;
+
+  /// No description provided for @productSearchHint.
+  ///
+  /// In en, this message translates to:
+  /// **'Search your products'**
+  String get productSearchHint;
+
+  /// No description provided for @productsLoadFailed.
+  ///
+  /// In en, this message translates to:
+  /// **'Couldn\'t load your products. Check your connection and try again.'**
+  String get productsLoadFailed;
+
+  /// No description provided for @productsEmpty.
+  ///
+  /// In en, this message translates to:
+  /// **'No products yet. Add your first product to start selling.'**
+  String get productsEmpty;
+
+  /// No description provided for @productsNoneMatch.
+  ///
+  /// In en, this message translates to:
+  /// **'No products match.'**
+  String get productsNoneMatch;
+
+  /// No description provided for @productOutOfStock.
+  ///
+  /// In en, this message translates to:
+  /// **'Out of stock'**
+  String get productOutOfStock;
+
+  /// No description provided for @productLowStock.
+  ///
+  /// In en, this message translates to:
+  /// **'Only {stock} left'**
+  String productLowStock(String stock);
+
+  /// No description provided for @productLive.
+  ///
+  /// In en, this message translates to:
+  /// **'Visible to buyers'**
+  String get productLive;
+
+  /// No description provided for @productHidden.
+  ///
+  /// In en, this message translates to:
+  /// **'Hidden from buyers'**
+  String get productHidden;
+
+  /// No description provided for @productStock.
+  ///
+  /// In en, this message translates to:
+  /// **'Stock'**
+  String get productStock;
+
+  /// No description provided for @productEdit.
+  ///
+  /// In en, this message translates to:
+  /// **'Edit'**
+  String get productEdit;
+
+  /// No description provided for @productDelete.
+  ///
+  /// In en, this message translates to:
+  /// **'Delete'**
+  String get productDelete;
+
+  /// No description provided for @productDeleteTitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Delete this product?'**
+  String get productDeleteTitle;
+
+  /// No description provided for @productDeleteBody.
+  ///
+  /// In en, this message translates to:
+  /// **'“{name}” will be removed from your catalogue. This can\'t be undone.'**
+  String productDeleteBody(String name);
+
+  /// No description provided for @productDeleted.
+  ///
+  /// In en, this message translates to:
+  /// **'Product deleted'**
+  String get productDeleted;
+
+  /// No description provided for @productStockTitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Update stock'**
+  String get productStockTitle;
+
+  /// No description provided for @productStockLabel.
+  ///
+  /// In en, this message translates to:
+  /// **'Units in stock'**
+  String get productStockLabel;
+
+  /// No description provided for @productStockSaved.
+  ///
+  /// In en, this message translates to:
+  /// **'Stock updated'**
+  String get productStockSaved;
+
+  /// No description provided for @productActionFailed.
+  ///
+  /// In en, this message translates to:
+  /// **'Couldn\'t update this product. Check your connection and try again.'**
+  String get productActionFailed;
+
+  /// No description provided for @editorNewTitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Add product'**
+  String get editorNewTitle;
+
+  /// No description provided for @editorEditTitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Edit product'**
+  String get editorEditTitle;
+
+  /// No description provided for @editorAddPhoto.
+  ///
+  /// In en, this message translates to:
+  /// **'Add a product photo'**
+  String get editorAddPhoto;
+
+  /// No description provided for @editorChangePhoto.
+  ///
+  /// In en, this message translates to:
+  /// **'Change photo'**
+  String get editorChangePhoto;
+
+  /// No description provided for @editorSeparator.
+  ///
+  /// In en, this message translates to:
+  /// **' · '**
+  String get editorSeparator;
+
+  /// No description provided for @editorName.
+  ///
+  /// In en, this message translates to:
+  /// **'Product name'**
+  String get editorName;
+
+  /// No description provided for @editorDescription.
+  ///
+  /// In en, this message translates to:
+  /// **'Description'**
+  String get editorDescription;
+
+  /// No description provided for @editorDescriptionHint.
+  ///
+  /// In en, this message translates to:
+  /// **'What it is, quantity, quality, how it\'s packed'**
+  String get editorDescriptionHint;
+
+  /// No description provided for @editorSalePrice.
+  ///
+  /// In en, this message translates to:
+  /// **'Selling price (₹)'**
+  String get editorSalePrice;
+
+  /// No description provided for @editorMrp.
+  ///
+  /// In en, this message translates to:
+  /// **'MRP (₹, optional)'**
+  String get editorMrp;
+
+  /// No description provided for @editorStock.
+  ///
+  /// In en, this message translates to:
+  /// **'Units in stock'**
+  String get editorStock;
+
+  /// No description provided for @editorLowStock.
+  ///
+  /// In en, this message translates to:
+  /// **'Low-stock alert at'**
+  String get editorLowStock;
+
+  /// No description provided for @editorLowStockHelp.
+  ///
+  /// In en, this message translates to:
+  /// **'You\'ll be alerted below this many units'**
+  String get editorLowStockHelp;
+
+  /// No description provided for @editorCategory.
+  ///
+  /// In en, this message translates to:
+  /// **'Category'**
+  String get editorCategory;
+
+  /// No description provided for @editorCategoryHint.
+  ///
+  /// In en, this message translates to:
+  /// **'e.g. Vegetables'**
+  String get editorCategoryHint;
+
+  /// No description provided for @editorRequired.
+  ///
+  /// In en, this message translates to:
+  /// **'Required'**
+  String get editorRequired;
+
+  /// No description provided for @editorCenterPricing.
+  ///
+  /// In en, this message translates to:
+  /// **'Centre / area pricing'**
+  String get editorCenterPricing;
+
+  /// No description provided for @editorCenter.
+  ///
+  /// In en, this message translates to:
+  /// **'Centre'**
+  String get editorCenter;
+
+  /// No description provided for @editorLoadingCenters.
+  ///
+  /// In en, this message translates to:
+  /// **'Loading centres…'**
+  String get editorLoadingCenters;
+
+  /// No description provided for @editorPriceManual.
+  ///
+  /// In en, this message translates to:
+  /// **'Manual price'**
+  String get editorPriceManual;
+
+  /// No description provided for @editorPriceArea.
+  ///
+  /// In en, this message translates to:
+  /// **'Area price'**
+  String get editorPriceArea;
+
+  /// No description provided for @editorPriceDefault.
+  ///
+  /// In en, this message translates to:
+  /// **'Default price'**
+  String get editorPriceDefault;
+
+  /// No description provided for @editorPriceCurrent.
+  ///
+  /// In en, this message translates to:
+  /// **'Current'**
+  String get editorPriceCurrent;
+
+  /// No description provided for @editorPriceChip.
+  ///
+  /// In en, this message translates to:
+  /// **'{label}: {price}'**
+  String editorPriceChip(String label, String price);
+
+  /// No description provided for @editorNoValue.
+  ///
+  /// In en, this message translates to:
+  /// **'—'**
+  String get editorNoValue;
+
+  /// No description provided for @editorResetPrice.
+  ///
+  /// In en, this message translates to:
+  /// **'Use the mapped price'**
+  String get editorResetPrice;
+
+  /// No description provided for @editorCoverage.
+  ///
+  /// In en, this message translates to:
+  /// **'Delivery coverage'**
+  String get editorCoverage;
+
+  /// No description provided for @editorCoverageHint.
+  ///
+  /// In en, this message translates to:
+  /// **'The whole state by default. Use a radius for local delivery.'**
+  String get editorCoverageHint;
+
+  /// No description provided for @editorCoverageState.
+  ///
+  /// In en, this message translates to:
+  /// **'Whole state'**
+  String get editorCoverageState;
+
+  /// No description provided for @editorCoverageDistrict.
+  ///
+  /// In en, this message translates to:
+  /// **'District'**
+  String get editorCoverageDistrict;
+
+  /// No description provided for @editorCoverageRadius.
+  ///
+  /// In en, this message translates to:
+  /// **'Radius'**
+  String get editorCoverageRadius;
+
+  /// No description provided for @editorLatitude.
+  ///
+  /// In en, this message translates to:
+  /// **'Latitude'**
+  String get editorLatitude;
+
+  /// No description provided for @editorLongitude.
+  ///
+  /// In en, this message translates to:
+  /// **'Longitude'**
+  String get editorLongitude;
+
+  /// No description provided for @editorUseLocation.
+  ///
+  /// In en, this message translates to:
+  /// **'Use my current location'**
+  String get editorUseLocation;
+
+  /// No description provided for @editorDetecting.
+  ///
+  /// In en, this message translates to:
+  /// **'Detecting…'**
+  String get editorDetecting;
+
+  /// No description provided for @editorRadiusValue.
+  ///
+  /// In en, this message translates to:
+  /// **'Radius: {km} km'**
+  String editorRadiusValue(int km);
+
+  /// No description provided for @editorB2b.
+  ///
+  /// In en, this message translates to:
+  /// **'Wholesale (B2B)'**
+  String get editorB2b;
+
+  /// No description provided for @editorB2bHint.
+  ///
+  /// In en, this message translates to:
+  /// **'Offer a bulk price with a minimum order quantity.'**
+  String get editorB2bHint;
+
+  /// No description provided for @editorB2bPrice.
+  ///
+  /// In en, this message translates to:
+  /// **'B2B price (₹)'**
+  String get editorB2bPrice;
+
+  /// No description provided for @editorB2bMoq.
+  ///
+  /// In en, this message translates to:
+  /// **'Minimum order quantity'**
+  String get editorB2bMoq;
+
+  /// No description provided for @editorB2bRule.
+  ///
+  /// In en, this message translates to:
+  /// **'Must be lower than your selling price.'**
+  String get editorB2bRule;
+
+  /// No description provided for @editorUpdate.
+  ///
+  /// In en, this message translates to:
+  /// **'Update product'**
+  String get editorUpdate;
+
+  /// No description provided for @editorSave.
+  ///
+  /// In en, this message translates to:
+  /// **'Save product'**
+  String get editorSave;
+
+  /// No description provided for @editorSaving.
+  ///
+  /// In en, this message translates to:
+  /// **'Saving…'**
+  String get editorSaving;
+
+  /// No description provided for @editorUpdated.
+  ///
+  /// In en, this message translates to:
+  /// **'Product updated'**
+  String get editorUpdated;
+
+  /// No description provided for @editorAdded.
+  ///
+  /// In en, this message translates to:
+  /// **'Product added. It goes live once AgriMore approves it.'**
+  String get editorAdded;
+
+  /// No description provided for @editorSaveFailed.
+  ///
+  /// In en, this message translates to:
+  /// **'Couldn\'t save this product. Check your connection and try again.'**
+  String get editorSaveFailed;
+
+  /// No description provided for @editorUploadFailed.
+  ///
+  /// In en, this message translates to:
+  /// **'Couldn\'t upload the photo. Try again.'**
+  String get editorUploadFailed;
+
+  /// No description provided for @editorPhotoFailed.
+  ///
+  /// In en, this message translates to:
+  /// **'Couldn\'t open that photo. Try another one.'**
+  String get editorPhotoFailed;
+
+  /// No description provided for @editorNeedDistrict.
+  ///
+  /// In en, this message translates to:
+  /// **'Choose a delivery district.'**
+  String get editorNeedDistrict;
+
+  /// No description provided for @editorNeedCoordinates.
+  ///
+  /// In en, this message translates to:
+  /// **'Enter a latitude and longitude for radius delivery.'**
+  String get editorNeedCoordinates;
+
+  /// No description provided for @editorNeedB2bPrice.
+  ///
+  /// In en, this message translates to:
+  /// **'Enter a valid B2B price.'**
+  String get editorNeedB2bPrice;
+
+  /// No description provided for @editorB2bTooHigh.
+  ///
+  /// In en, this message translates to:
+  /// **'The B2B price ({b2b}) must be lower than the selling price ({sale}).'**
+  String editorB2bTooHigh(String b2b, String sale);
+
+  /// No description provided for @editorNeedMoq.
+  ///
+  /// In en, this message translates to:
+  /// **'Enter a valid minimum order quantity.'**
+  String get editorNeedMoq;
+
+  /// No description provided for @editorLocationOff.
+  ///
+  /// In en, this message translates to:
+  /// **'Turn on location services to use your current location.'**
+  String get editorLocationOff;
+
+  /// No description provided for @editorLocationDenied.
+  ///
+  /// In en, this message translates to:
+  /// **'Location permission was denied.'**
+  String get editorLocationDenied;
+
+  /// No description provided for @editorLocationFailed.
+  ///
+  /// In en, this message translates to:
+  /// **'Couldn\'t find your current location.'**
+  String get editorLocationFailed;
+
+  /// No description provided for @aiTitle.
+  ///
+  /// In en, this message translates to:
+  /// **'AI assistant'**
+  String get aiTitle;
+
+  /// No description provided for @aiWebOnly.
+  ///
+  /// In en, this message translates to:
+  /// **'AI assistant activation is available on the AgriMore seller website (agrimore.in). The app doesn\'t process this payment.'**
+  String get aiWebOnly;
+
+  /// No description provided for @aiActivateTitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Activate your AI assistant'**
+  String get aiActivateTitle;
+
+  /// No description provided for @aiActivateBody.
+  ///
+  /// In en, this message translates to:
+  /// **'Connect your own ChatGPT or Gemini API key for sales analysis, pricing insights and business questions.'**
+  String get aiActivateBody;
+
+  /// No description provided for @aiActivateCta.
+  ///
+  /// In en, this message translates to:
+  /// **'Activate — ₹50'**
+  String get aiActivateCta;
+
+  /// No description provided for @aiPaymentReceived.
+  ///
+  /// In en, this message translates to:
+  /// **'Payment received'**
+  String get aiPaymentReceived;
+
+  /// No description provided for @aiConnectHint.
+  ///
+  /// In en, this message translates to:
+  /// **'Now add your AI provider details to finish connecting.'**
+  String get aiConnectHint;
+
+  /// No description provided for @aiProvider.
+  ///
+  /// In en, this message translates to:
+  /// **'Provider'**
+  String get aiProvider;
+
+  /// No description provided for @aiProviderGemini.
+  ///
+  /// In en, this message translates to:
+  /// **'Google Gemini'**
+  String get aiProviderGemini;
+
+  /// No description provided for @aiProviderChatgpt.
+  ///
+  /// In en, this message translates to:
+  /// **'ChatGPT (OpenAI)'**
+  String get aiProviderChatgpt;
+
+  /// No description provided for @aiApiKey.
+  ///
+  /// In en, this message translates to:
+  /// **'API key'**
+  String get aiApiKey;
+
+  /// No description provided for @aiApiKeyHint.
+  ///
+  /// In en, this message translates to:
+  /// **'Paste your API key'**
+  String get aiApiKeyHint;
+
+  /// No description provided for @aiConnect.
+  ///
+  /// In en, this message translates to:
+  /// **'Connect'**
+  String get aiConnect;
+
+  /// No description provided for @aiConnected.
+  ///
+  /// In en, this message translates to:
+  /// **'AI assistant connected'**
+  String get aiConnected;
+
+  /// No description provided for @aiDisconnect.
+  ///
+  /// In en, this message translates to:
+  /// **'Disconnect'**
+  String get aiDisconnect;
+
+  /// No description provided for @aiDisconnectTitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Disconnect the AI assistant?'**
+  String get aiDisconnectTitle;
+
+  /// No description provided for @aiDisconnectBody.
+  ///
+  /// In en, this message translates to:
+  /// **'Your API key is removed. You can connect again later.'**
+  String get aiDisconnectBody;
+
+  /// No description provided for @aiMoneyTaken.
+  ///
+  /// In en, this message translates to:
+  /// **'We received your payment but couldn\'t confirm it just now. Try connecting again — you won\'t be charged twice for the same payment.'**
+  String get aiMoneyTaken;
+
+  /// No description provided for @aiPaymentReference.
+  ///
+  /// In en, this message translates to:
+  /// **'Payment reference: {id}'**
+  String aiPaymentReference(String id);
+
+  /// No description provided for @aiRetryConnect.
+  ///
+  /// In en, this message translates to:
+  /// **'Try connecting again'**
+  String get aiRetryConnect;
+
+  /// No description provided for @aiPreparingPayment.
+  ///
+  /// In en, this message translates to:
+  /// **'Preparing payment…'**
+  String get aiPreparingPayment;
+
+  /// No description provided for @aiOpeningPayment.
+  ///
+  /// In en, this message translates to:
+  /// **'Opening payment…'**
+  String get aiOpeningPayment;
+
+  /// No description provided for @aiVerifyingPayment.
+  ///
+  /// In en, this message translates to:
+  /// **'Verifying payment…'**
+  String get aiVerifyingPayment;
+
+  /// No description provided for @aiPleaseWait.
+  ///
+  /// In en, this message translates to:
+  /// **'Please wait…'**
+  String get aiPleaseWait;
+
+  /// No description provided for @aiSignInAgain.
+  ///
+  /// In en, this message translates to:
+  /// **'Please sign in again and retry.'**
+  String get aiSignInAgain;
+
+  /// No description provided for @aiStartFailed.
+  ///
+  /// In en, this message translates to:
+  /// **'Couldn\'t start the payment. Try again.'**
+  String get aiStartFailed;
+
+  /// No description provided for @aiConnectFailed.
+  ///
+  /// In en, this message translates to:
+  /// **'Couldn\'t connect. Check your API key and try again.'**
+  String get aiConnectFailed;
+
+  /// No description provided for @aiDisconnectFailed.
+  ///
+  /// In en, this message translates to:
+  /// **'Couldn\'t disconnect. Try again.'**
+  String get aiDisconnectFailed;
+
+  /// No description provided for @aiConnectTitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Connect your AI assistant'**
+  String get aiConnectTitle;
+
+  /// No description provided for @aiConnectBody.
+  ///
+  /// In en, this message translates to:
+  /// **'Connect your own ChatGPT or Gemini key to ask about your products and orders.'**
+  String get aiConnectBody;
+
+  /// No description provided for @aiConnectNow.
+  ///
+  /// In en, this message translates to:
+  /// **'Connect now'**
+  String get aiConnectNow;
+
+  /// No description provided for @aiInputHint.
+  ///
+  /// In en, this message translates to:
+  /// **'Ask about your sales, products or orders'**
+  String get aiInputHint;
+
+  /// No description provided for @aiSend.
+  ///
+  /// In en, this message translates to:
+  /// **'Send'**
+  String get aiSend;
+
+  /// No description provided for @aiThinking.
+  ///
+  /// In en, this message translates to:
+  /// **'Thinking'**
+  String get aiThinking;
+
+  /// No description provided for @aiPromptRestock.
+  ///
+  /// In en, this message translates to:
+  /// **'Which products should I restock?'**
+  String get aiPromptRestock;
+
+  /// No description provided for @aiPromptBestSellers.
+  ///
+  /// In en, this message translates to:
+  /// **'What sold best this week?'**
+  String get aiPromptBestSellers;
+
+  /// No description provided for @aiPromptPricing.
+  ///
+  /// In en, this message translates to:
+  /// **'Are any of my prices out of line?'**
+  String get aiPromptPricing;
+
+  /// No description provided for @feeIntro.
+  ///
+  /// In en, this message translates to:
+  /// **'Choose how you charge customers for delivery.'**
+  String get feeIntro;
+
+  /// No description provided for @feeFlat.
+  ///
+  /// In en, this message translates to:
+  /// **'Flat fee'**
+  String get feeFlat;
+
+  /// No description provided for @feeSlab.
+  ///
+  /// In en, this message translates to:
+  /// **'By order value'**
+  String get feeSlab;
+
+  /// No description provided for @feeAmount.
+  ///
+  /// In en, this message translates to:
+  /// **'Delivery fee (₹)'**
+  String get feeAmount;
+
+  /// No description provided for @feeFlatHelp.
+  ///
+  /// In en, this message translates to:
+  /// **'Charged on every order, whatever its value'**
+  String get feeFlatHelp;
+
+  /// No description provided for @feeSlabRule.
+  ///
+  /// In en, this message translates to:
+  /// **'One tier must start at a minimum order value of ₹0.'**
+  String get feeSlabRule;
+
+  /// No description provided for @feeMinOrder.
+  ///
+  /// In en, this message translates to:
+  /// **'Min. order (₹)'**
+  String get feeMinOrder;
+
+  /// No description provided for @feeSlabFee.
+  ///
+  /// In en, this message translates to:
+  /// **'Fee (₹)'**
+  String get feeSlabFee;
+
+  /// No description provided for @feeRemoveSlab.
+  ///
+  /// In en, this message translates to:
+  /// **'Remove this tier'**
+  String get feeRemoveSlab;
+
+  /// No description provided for @feeAddSlab.
+  ///
+  /// In en, this message translates to:
+  /// **'Add tier'**
+  String get feeAddSlab;
+
+  /// No description provided for @feeSaved.
+  ///
+  /// In en, this message translates to:
+  /// **'Delivery fee updated'**
+  String get feeSaved;
+
+  /// No description provided for @feeSaveFailed.
+  ///
+  /// In en, this message translates to:
+  /// **'Couldn\'t save your delivery fee. Try again.'**
+  String get feeSaveFailed;
+
+  /// No description provided for @feeDefault.
+  ///
+  /// In en, this message translates to:
+  /// **'Using default pricing'**
+  String get feeDefault;
+
+  /// No description provided for @feeSummaryFlat.
+  ///
+  /// In en, this message translates to:
+  /// **'Flat {amount}'**
+  String feeSummaryFlat(String amount);
+
+  /// No description provided for @feeSummarySlab.
+  ///
+  /// In en, this message translates to:
+  /// **'{count, plural, =1{By order value · 1 tier} other{By order value · {count} tiers}}'**
+  String feeSummarySlab(int count);
+
+  /// No description provided for @postHint.
+  ///
+  /// In en, this message translates to:
+  /// **'What\'s new? Tell your followers about it'**
+  String get postHint;
+
+  /// No description provided for @postAddPhoto.
+  ///
+  /// In en, this message translates to:
+  /// **'Add a photo'**
+  String get postAddPhoto;
+
+  /// No description provided for @postRemovePhoto.
+  ///
+  /// In en, this message translates to:
+  /// **'Remove photo'**
+  String get postRemovePhoto;
+
+  /// No description provided for @postTagProduct.
+  ///
+  /// In en, this message translates to:
+  /// **'Tag a product (optional)'**
+  String get postTagProduct;
+
+  /// No description provided for @postNoTag.
+  ///
+  /// In en, this message translates to:
+  /// **'No product'**
+  String get postNoTag;
+
+  /// No description provided for @postPublish.
+  ///
+  /// In en, this message translates to:
+  /// **'Post'**
+  String get postPublish;
+
+  /// No description provided for @postPosting.
+  ///
+  /// In en, this message translates to:
+  /// **'Posting…'**
+  String get postPosting;
+
+  /// No description provided for @postEmpty.
+  ///
+  /// In en, this message translates to:
+  /// **'Add some text, a photo or a product first.'**
+  String get postEmpty;
+
+  /// No description provided for @postPublished.
+  ///
+  /// In en, this message translates to:
+  /// **'Posted to your followers'**
+  String get postPublished;
+
+  /// No description provided for @postFailed.
+  ///
+  /// In en, this message translates to:
+  /// **'Couldn\'t publish your post. Try again.'**
+  String get postFailed;
 }
 
 class _AppLocalizationsDelegate

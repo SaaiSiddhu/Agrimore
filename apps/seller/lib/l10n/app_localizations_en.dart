@@ -1806,4 +1806,584 @@ class AppLocalizationsEn extends AppLocalizations {
 
   @override
   String get accountSave => 'Save';
+
+  @override
+  String get stageToAccept => 'To accept';
+
+  @override
+  String get stagePacking => 'Packing';
+
+  @override
+  String get stageReady => 'Ready for pickup';
+
+  @override
+  String get stageOutForDelivery => 'Out for delivery';
+
+  @override
+  String get stageDelivered => 'Delivered';
+
+  @override
+  String get stageCancelled => 'Cancelled';
+
+  @override
+  String get stageOther => 'Other';
+
+  @override
+  String get ordersSearchHint => 'Order number, customer or product';
+
+  @override
+  String get ordersLoadFailed =>
+      'Couldn\'t load your orders. Check your connection and try again.';
+
+  @override
+  String get ordersEmpty =>
+      'No orders yet. New orders appear here the moment a buyer places them.';
+
+  @override
+  String get ordersNoneMatch => 'No orders match.';
+
+  @override
+  String get ordersCustomer => 'Customer';
+
+  @override
+  String ordersItems(int count) {
+    String _temp0 = intl.Intl.pluralLogic(
+      count,
+      locale: localeName,
+      other: '$count items',
+      one: '1 item',
+    );
+    return '$_temp0';
+  }
+
+  @override
+  String get ordersPrepaid => 'Prepaid';
+
+  @override
+  String get ordersCod => 'Cash on delivery';
+
+  @override
+  String get stageToPack => 'To pack';
+
+  @override
+  String get stepPlaced => 'Placed';
+
+  @override
+  String get stepAccepted => 'Accepted';
+
+  @override
+  String get stepPacking => 'Packing';
+
+  @override
+  String get stepReady => 'Ready for pickup';
+
+  @override
+  String get orderCall => 'Call customer';
+
+  @override
+  String get orderChat => 'Message customer';
+
+  @override
+  String get orderCustomer => 'Customer';
+
+  @override
+  String get orderName => 'Name';
+
+  @override
+  String get orderAddress => 'Deliver to';
+
+  @override
+  String get orderNoAddress => 'No address provided';
+
+  @override
+  String get orderSlot => 'Delivery slot';
+
+  @override
+  String get orderNote => 'Buyer\'s note';
+
+  @override
+  String get orderPayment => 'Payment';
+
+  @override
+  String get orderTax => 'Tax';
+
+  @override
+  String get orderReject => 'Reject';
+
+  @override
+  String get orderCancel => 'Cancel order';
+
+  @override
+  String get orderAccept => 'Accept order';
+
+  @override
+  String get orderStartPacking => 'Start packing';
+
+  @override
+  String get orderMarkReady => 'Mark ready for pickup';
+
+  @override
+  String homeOrdersToPack(int count) {
+    String _temp0 = intl.Intl.pluralLogic(
+      count,
+      locale: localeName,
+      other: '$count accepted orders to pack',
+      one: '1 accepted order to pack',
+    );
+    return '$_temp0';
+  }
+
+  @override
+  String get productNewPost => 'New post';
+
+  @override
+  String get productSearchHint => 'Search your products';
+
+  @override
+  String get productsLoadFailed =>
+      'Couldn\'t load your products. Check your connection and try again.';
+
+  @override
+  String get productsEmpty =>
+      'No products yet. Add your first product to start selling.';
+
+  @override
+  String get productsNoneMatch => 'No products match.';
+
+  @override
+  String get productOutOfStock => 'Out of stock';
+
+  @override
+  String productLowStock(String stock) {
+    return 'Only $stock left';
+  }
+
+  @override
+  String get productLive => 'Visible to buyers';
+
+  @override
+  String get productHidden => 'Hidden from buyers';
+
+  @override
+  String get productStock => 'Stock';
+
+  @override
+  String get productEdit => 'Edit';
+
+  @override
+  String get productDelete => 'Delete';
+
+  @override
+  String get productDeleteTitle => 'Delete this product?';
+
+  @override
+  String productDeleteBody(String name) {
+    return '“$name” will be removed from your catalogue. This can\'t be undone.';
+  }
+
+  @override
+  String get productDeleted => 'Product deleted';
+
+  @override
+  String get productStockTitle => 'Update stock';
+
+  @override
+  String get productStockLabel => 'Units in stock';
+
+  @override
+  String get productStockSaved => 'Stock updated';
+
+  @override
+  String get productActionFailed =>
+      'Couldn\'t update this product. Check your connection and try again.';
+
+  @override
+  String get editorNewTitle => 'Add product';
+
+  @override
+  String get editorEditTitle => 'Edit product';
+
+  @override
+  String get editorAddPhoto => 'Add a product photo';
+
+  @override
+  String get editorChangePhoto => 'Change photo';
+
+  @override
+  String get editorSeparator => ' · ';
+
+  @override
+  String get editorName => 'Product name';
+
+  @override
+  String get editorDescription => 'Description';
+
+  @override
+  String get editorDescriptionHint =>
+      'What it is, quantity, quality, how it\'s packed';
+
+  @override
+  String get editorSalePrice => 'Selling price (₹)';
+
+  @override
+  String get editorMrp => 'MRP (₹, optional)';
+
+  @override
+  String get editorStock => 'Units in stock';
+
+  @override
+  String get editorLowStock => 'Low-stock alert at';
+
+  @override
+  String get editorLowStockHelp => 'You\'ll be alerted below this many units';
+
+  @override
+  String get editorCategory => 'Category';
+
+  @override
+  String get editorCategoryHint => 'e.g. Vegetables';
+
+  @override
+  String get editorRequired => 'Required';
+
+  @override
+  String get editorCenterPricing => 'Centre / area pricing';
+
+  @override
+  String get editorCenter => 'Centre';
+
+  @override
+  String get editorLoadingCenters => 'Loading centres…';
+
+  @override
+  String get editorPriceManual => 'Manual price';
+
+  @override
+  String get editorPriceArea => 'Area price';
+
+  @override
+  String get editorPriceDefault => 'Default price';
+
+  @override
+  String get editorPriceCurrent => 'Current';
+
+  @override
+  String editorPriceChip(String label, String price) {
+    return '$label: $price';
+  }
+
+  @override
+  String get editorNoValue => '—';
+
+  @override
+  String get editorResetPrice => 'Use the mapped price';
+
+  @override
+  String get editorCoverage => 'Delivery coverage';
+
+  @override
+  String get editorCoverageHint =>
+      'The whole state by default. Use a radius for local delivery.';
+
+  @override
+  String get editorCoverageState => 'Whole state';
+
+  @override
+  String get editorCoverageDistrict => 'District';
+
+  @override
+  String get editorCoverageRadius => 'Radius';
+
+  @override
+  String get editorLatitude => 'Latitude';
+
+  @override
+  String get editorLongitude => 'Longitude';
+
+  @override
+  String get editorUseLocation => 'Use my current location';
+
+  @override
+  String get editorDetecting => 'Detecting…';
+
+  @override
+  String editorRadiusValue(int km) {
+    return 'Radius: $km km';
+  }
+
+  @override
+  String get editorB2b => 'Wholesale (B2B)';
+
+  @override
+  String get editorB2bHint =>
+      'Offer a bulk price with a minimum order quantity.';
+
+  @override
+  String get editorB2bPrice => 'B2B price (₹)';
+
+  @override
+  String get editorB2bMoq => 'Minimum order quantity';
+
+  @override
+  String get editorB2bRule => 'Must be lower than your selling price.';
+
+  @override
+  String get editorUpdate => 'Update product';
+
+  @override
+  String get editorSave => 'Save product';
+
+  @override
+  String get editorSaving => 'Saving…';
+
+  @override
+  String get editorUpdated => 'Product updated';
+
+  @override
+  String get editorAdded =>
+      'Product added. It goes live once AgriMore approves it.';
+
+  @override
+  String get editorSaveFailed =>
+      'Couldn\'t save this product. Check your connection and try again.';
+
+  @override
+  String get editorUploadFailed => 'Couldn\'t upload the photo. Try again.';
+
+  @override
+  String get editorPhotoFailed => 'Couldn\'t open that photo. Try another one.';
+
+  @override
+  String get editorNeedDistrict => 'Choose a delivery district.';
+
+  @override
+  String get editorNeedCoordinates =>
+      'Enter a latitude and longitude for radius delivery.';
+
+  @override
+  String get editorNeedB2bPrice => 'Enter a valid B2B price.';
+
+  @override
+  String editorB2bTooHigh(String b2b, String sale) {
+    return 'The B2B price ($b2b) must be lower than the selling price ($sale).';
+  }
+
+  @override
+  String get editorNeedMoq => 'Enter a valid minimum order quantity.';
+
+  @override
+  String get editorLocationOff =>
+      'Turn on location services to use your current location.';
+
+  @override
+  String get editorLocationDenied => 'Location permission was denied.';
+
+  @override
+  String get editorLocationFailed => 'Couldn\'t find your current location.';
+
+  @override
+  String get aiTitle => 'AI assistant';
+
+  @override
+  String get aiWebOnly =>
+      'AI assistant activation is available on the AgriMore seller website (agrimore.in). The app doesn\'t process this payment.';
+
+  @override
+  String get aiActivateTitle => 'Activate your AI assistant';
+
+  @override
+  String get aiActivateBody =>
+      'Connect your own ChatGPT or Gemini API key for sales analysis, pricing insights and business questions.';
+
+  @override
+  String get aiActivateCta => 'Activate — ₹50';
+
+  @override
+  String get aiPaymentReceived => 'Payment received';
+
+  @override
+  String get aiConnectHint =>
+      'Now add your AI provider details to finish connecting.';
+
+  @override
+  String get aiProvider => 'Provider';
+
+  @override
+  String get aiProviderGemini => 'Google Gemini';
+
+  @override
+  String get aiProviderChatgpt => 'ChatGPT (OpenAI)';
+
+  @override
+  String get aiApiKey => 'API key';
+
+  @override
+  String get aiApiKeyHint => 'Paste your API key';
+
+  @override
+  String get aiConnect => 'Connect';
+
+  @override
+  String get aiConnected => 'AI assistant connected';
+
+  @override
+  String get aiDisconnect => 'Disconnect';
+
+  @override
+  String get aiDisconnectTitle => 'Disconnect the AI assistant?';
+
+  @override
+  String get aiDisconnectBody =>
+      'Your API key is removed. You can connect again later.';
+
+  @override
+  String get aiMoneyTaken =>
+      'We received your payment but couldn\'t confirm it just now. Try connecting again — you won\'t be charged twice for the same payment.';
+
+  @override
+  String aiPaymentReference(String id) {
+    return 'Payment reference: $id';
+  }
+
+  @override
+  String get aiRetryConnect => 'Try connecting again';
+
+  @override
+  String get aiPreparingPayment => 'Preparing payment…';
+
+  @override
+  String get aiOpeningPayment => 'Opening payment…';
+
+  @override
+  String get aiVerifyingPayment => 'Verifying payment…';
+
+  @override
+  String get aiPleaseWait => 'Please wait…';
+
+  @override
+  String get aiSignInAgain => 'Please sign in again and retry.';
+
+  @override
+  String get aiStartFailed => 'Couldn\'t start the payment. Try again.';
+
+  @override
+  String get aiConnectFailed =>
+      'Couldn\'t connect. Check your API key and try again.';
+
+  @override
+  String get aiDisconnectFailed => 'Couldn\'t disconnect. Try again.';
+
+  @override
+  String get aiConnectTitle => 'Connect your AI assistant';
+
+  @override
+  String get aiConnectBody =>
+      'Connect your own ChatGPT or Gemini key to ask about your products and orders.';
+
+  @override
+  String get aiConnectNow => 'Connect now';
+
+  @override
+  String get aiInputHint => 'Ask about your sales, products or orders';
+
+  @override
+  String get aiSend => 'Send';
+
+  @override
+  String get aiThinking => 'Thinking';
+
+  @override
+  String get aiPromptRestock => 'Which products should I restock?';
+
+  @override
+  String get aiPromptBestSellers => 'What sold best this week?';
+
+  @override
+  String get aiPromptPricing => 'Are any of my prices out of line?';
+
+  @override
+  String get feeIntro => 'Choose how you charge customers for delivery.';
+
+  @override
+  String get feeFlat => 'Flat fee';
+
+  @override
+  String get feeSlab => 'By order value';
+
+  @override
+  String get feeAmount => 'Delivery fee (₹)';
+
+  @override
+  String get feeFlatHelp => 'Charged on every order, whatever its value';
+
+  @override
+  String get feeSlabRule =>
+      'One tier must start at a minimum order value of ₹0.';
+
+  @override
+  String get feeMinOrder => 'Min. order (₹)';
+
+  @override
+  String get feeSlabFee => 'Fee (₹)';
+
+  @override
+  String get feeRemoveSlab => 'Remove this tier';
+
+  @override
+  String get feeAddSlab => 'Add tier';
+
+  @override
+  String get feeSaved => 'Delivery fee updated';
+
+  @override
+  String get feeSaveFailed => 'Couldn\'t save your delivery fee. Try again.';
+
+  @override
+  String get feeDefault => 'Using default pricing';
+
+  @override
+  String feeSummaryFlat(String amount) {
+    return 'Flat $amount';
+  }
+
+  @override
+  String feeSummarySlab(int count) {
+    String _temp0 = intl.Intl.pluralLogic(
+      count,
+      locale: localeName,
+      other: 'By order value · $count tiers',
+      one: 'By order value · 1 tier',
+    );
+    return '$_temp0';
+  }
+
+  @override
+  String get postHint => 'What\'s new? Tell your followers about it';
+
+  @override
+  String get postAddPhoto => 'Add a photo';
+
+  @override
+  String get postRemovePhoto => 'Remove photo';
+
+  @override
+  String get postTagProduct => 'Tag a product (optional)';
+
+  @override
+  String get postNoTag => 'No product';
+
+  @override
+  String get postPublish => 'Post';
+
+  @override
+  String get postPosting => 'Posting…';
+
+  @override
+  String get postEmpty => 'Add some text, a photo or a product first.';
+
+  @override
+  String get postPublished => 'Posted to your followers';
+
+  @override
+  String get postFailed => 'Couldn\'t publish your post. Try again.';
 }

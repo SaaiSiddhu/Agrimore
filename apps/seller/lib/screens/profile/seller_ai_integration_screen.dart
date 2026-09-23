@@ -11,6 +11,7 @@ import 'package:flutter/material.dart';
 // mirroring D2). This screen's own payment button is ALSO kIsWeb-gated
 // below -- belt and suspenders, not either/or.
 import '../../services/razorpay_web.dart' if (dart.library.io) '../../services/razorpay_stub.dart';
+import '../../l10n/app_localizations.dart';
 import '../../providers/seller_ai_connection_provider.dart';
 
 String _asString(dynamic v) => v is String ? v : '';
@@ -48,8 +49,6 @@ class SellerAiIntegrationScreen extends StatefulWidget {
 }
 
 class _SellerAiIntegrationScreenState extends State<SellerAiIntegrationScreen> {
-  static const _accentColor = Color(0xFF2D7D3C);
-
   final _connectionProvider = SellerAiConnectionProvider();
   final _apiKeyController = TextEditingController();
   String _selectedProvider = 'gemini';
@@ -102,7 +101,7 @@ class _SellerAiIntegrationScreenState extends State<SellerAiIntegrationScreen> {
     if (user == null) {
       setState(() {
         _phase = _Phase.error;
-        _errorMessage = 'Please sign in again and retry.';
+        _errorMessage = AppLocalizations.of(context).aiSignInAgain;
       });
       return;
     }
@@ -114,14 +113,14 @@ class _SellerAiIntegrationScreenState extends State<SellerAiIntegrationScreen> {
       if (!mounted) return;
       setState(() {
         _phase = _Phase.error;
-        _errorMessage = e.message ?? 'Could not start payment. Please try again.';
+        _errorMessage = e.message ?? AppLocalizations.of(context).aiStartFailed;
       });
       return;
     } catch (e) {
       if (!mounted) return;
       setState(() {
         _phase = _Phase.error;
-        _errorMessage = 'Could not start payment. Please try again.';
+        _errorMessage = AppLocalizations.of(context).aiStartFailed;
       });
       return;
     }
@@ -224,7 +223,7 @@ class _SellerAiIntegrationScreenState extends State<SellerAiIntegrationScreen> {
       // does NOT go to moneyTakenNotConnected (the payment is still
       // available to retry connectSellerAiProvider with the same paymentId).
       setState(() {
-        _errorMessage = e.message ?? 'Could not connect. Please check your API key and try again.';
+        _errorMessage = e.message ?? AppLocalizations.of(context).aiConnectFailed;
       });
     }
   }
@@ -240,306 +239,196 @@ class _SellerAiIntegrationScreenState extends State<SellerAiIntegrationScreen> {
       });
     } on FirebaseFunctionsException catch (e) {
       if (!mounted) return;
-      setState(() => _errorMessage = e.message ?? 'Could not disconnect. Please try again.');
+      setState(() => _errorMessage = e.message ?? AppLocalizations.of(context).aiDisconnectFailed);
     }
   }
 
   @override
   Widget build(BuildContext context) {
-    final isDark = Theme.of(context).brightness == Brightness.dark;
+    final l10n = AppLocalizations.of(context);
     return Scaffold(
-      backgroundColor: isDark ? const Color(0xFF121212) : const Color(0xFFF5F7FA),
-      appBar: AppBar(title: const Text('AI Integration')),
+      appBar: AppBar(
+        leading: IconButton(tooltip: l10n.back, icon: const Icon(AgIcons.arrowLeft), onPressed: () => Navigator.of(context).maybePop()),
+        title: Text(l10n.aiTitle),
+      ),
       body: SingleChildScrollView(
-        padding: const EdgeInsets.all(16),
-        child: _buildBody(isDark),
+        padding: const EdgeInsets.all(WsSpace.page),
+        child: _buildBody(),
       ),
     );
   }
 
-  Widget _buildBody(bool isDark) {
+  Widget _buildBody() {
     if (_connectionProvider.isLoading) {
-      return const Center(child: Padding(padding: EdgeInsets.all(32), child: CircularProgressIndicator()));
+      return const Center(child: Padding(padding: EdgeInsets.all(WsSpace.s32), child: CircularProgressIndicator()));
     }
     if (_phase == _Phase.connected || (_connectionProvider.connected && _phase != _Phase.connecting)) {
-      return _buildConnectedCard(isDark);
+      return _buildConnectedCard();
     }
-    if (_phase == _Phase.connecting) {
-      return _buildConnectForm(isDark);
-    }
-    if (_phase == _Phase.moneyTakenNotConnected) {
-      return _buildMoneyTakenNotice(isDark);
-    }
-    return _buildActivationCard(isDark);
+    if (_phase == _Phase.connecting) return _buildConnectForm();
+    if (_phase == _Phase.moneyTakenNotConnected) return _buildMoneyTakenNotice();
+    return _buildActivationCard();
   }
 
-  Widget _buildActivationCard(bool isDark) {
+  Widget _card(List<Widget> children) => Card(
+        margin: EdgeInsets.zero,
+        child: Padding(
+          padding: const EdgeInsets.all(WsSpace.s16),
+          child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: children),
+        ),
+      );
+
+  Widget _buildActivationCard() {
+    final l10n = AppLocalizations.of(context);
+    final t = context.ws;
+    final text = context.wsText;
     // D-SELLER-AI-WEB-ONLY -- the payment surface itself does not exist on
     // a non-web build. This branch is the ONLY thing rendered on Android;
     // no payment button, no code path that can initiate a charge.
     if (!kIsWeb) {
-      return Container(
-        padding: const EdgeInsets.all(16),
-        decoration: BoxDecoration(
-          color: AppColors.info.withValues(alpha: 0.1),
-          borderRadius: BorderRadius.circular(14),
-          border: Border.all(color: AppColors.info.withValues(alpha: 0.4)),
-        ),
-        child: Row(
-          crossAxisAlignment: CrossAxisAlignment.start,
-          children: [
-            Icon(Icons.laptop_mac_rounded, color: AppColors.infoDark),
-            const SizedBox(width: 10),
-            Expanded(
-              child: Text(
-                'AI Assistant activation is available on the AgriMore seller website '
-                '(agrimore.in) — the app does not process this payment.',
-                style: TextStyle(color: AppColors.infoDark, fontSize: 13, height: 1.4, fontWeight: FontWeight.w600),
-              ),
-            ),
-          ],
-        ),
-      );
+      return SaInfoBanner(variant: SaBannerVariant.info, message: l10n.aiWebOnly);
     }
-
-    return Container(
-      padding: const EdgeInsets.all(18),
-      decoration: BoxDecoration(
-        color: isDark ? Colors.grey[900] : Colors.white,
-        borderRadius: BorderRadius.circular(16),
-        border: Border.all(color: isDark ? Colors.grey[800]! : const Color(0xFFE5E7EB)),
+    return _card([
+      Text(l10n.aiActivateTitle, style: text.titleMedium),
+      const SizedBox(height: WsSpace.s4),
+      Text(l10n.aiActivateBody, style: text.bodySmall!.copyWith(color: t.textSecondary)),
+      if (_phase == _Phase.error && _errorMessage != null) ...[
+        const SizedBox(height: WsSpace.s12),
+        SaInfoBanner(variant: SaBannerVariant.error, message: _errorMessage!),
+      ],
+      const SizedBox(height: WsSpace.s16),
+      SaLoadingButton(
+        text: l10n.aiActivateCta,
+        loadingText: _phaseLabel(l10n),
+        isLoading: _busy,
+        onPressed: _busy ? null : _startPayment,
       ),
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
-          Text('Activate your AI Assistant',
-              style: TextStyle(fontWeight: FontWeight.w800, fontSize: 16, color: isDark ? Colors.white : Colors.black87)),
-          const SizedBox(height: 4),
-          Text(
-            'Connect your own ChatGPT or Gemini API key for sales analysis, pricing insights, and business questions.',
-            style: TextStyle(fontSize: 12, color: isDark ? Colors.grey[400] : const Color(0xFF6B7280)),
-          ),
-          if (_phase == _Phase.error && _errorMessage != null) ...[
-            const SizedBox(height: 10),
-            Container(
-              padding: const EdgeInsets.all(10),
-              decoration: BoxDecoration(color: AppColors.error.withValues(alpha: 0.1), borderRadius: BorderRadius.circular(8)),
-              child: Text(_errorMessage!, style: TextStyle(color: AppColors.errorDark, fontSize: 12)),
-            ),
-          ],
-          const SizedBox(height: 14),
-          SizedBox(
-            width: double.infinity,
-            child: ElevatedButton(
-              onPressed: _busy ? null : _startPayment,
-              style: ElevatedButton.styleFrom(
-                backgroundColor: _accentColor,
-                disabledBackgroundColor: _accentColor.withValues(alpha: 0.5),
-                padding: const EdgeInsets.symmetric(vertical: 14),
-                shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(10)),
-              ),
-              child: _busy
-                  ? Row(
-                      mainAxisAlignment: MainAxisAlignment.center,
-                      children: [
-                        const SizedBox(
-                          width: 18,
-                          height: 18,
-                          child: CircularProgressIndicator(strokeWidth: 2.5, color: Colors.white),
-                        ),
-                        const SizedBox(width: 10),
-                        Text(_phaseLabel(), style: const TextStyle(color: Colors.white, fontWeight: FontWeight.w700)),
-                      ],
-                    )
-                  : const Text('Activate — ₹50', style: TextStyle(color: Colors.white, fontWeight: FontWeight.w700)),
-            ),
-          ),
-        ],
-      ),
-    );
+    ]);
   }
 
-  Widget _buildConnectForm(bool isDark) {
-    return Container(
-      padding: const EdgeInsets.all(18),
-      decoration: BoxDecoration(
-        color: isDark ? Colors.grey[900] : Colors.white,
-        borderRadius: BorderRadius.circular(16),
-        border: Border.all(color: isDark ? Colors.grey[800]! : const Color(0xFFE5E7EB)),
-      ),
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
-          Row(
-            children: [
-              const Icon(Icons.check_circle_outline_rounded, color: _accentColor),
-              const SizedBox(width: 8),
-              Text('Payment received',
-                  style: TextStyle(fontWeight: FontWeight.w800, fontSize: 15, color: isDark ? Colors.white : Colors.black87)),
-            ],
-          ),
-          const SizedBox(height: 4),
-          Text('Now add your AI provider details to finish connecting.',
-              style: TextStyle(fontSize: 12, color: isDark ? Colors.grey[400] : const Color(0xFF6B7280))),
-          const SizedBox(height: 14),
-          Text('Provider',
-              style: TextStyle(fontWeight: FontWeight.w700, fontSize: 13, color: isDark ? Colors.white : Colors.black87)),
-          const SizedBox(height: 6),
-          DropdownButtonFormField<String>(
-            initialValue: _selectedProvider,
-            decoration: const InputDecoration(border: OutlineInputBorder()),
-            items: const [
-              DropdownMenuItem(value: 'gemini', child: Text('Google Gemini')),
-              DropdownMenuItem(value: 'chatgpt', child: Text('ChatGPT (OpenAI)')),
-            ],
-            onChanged: (v) => setState(() => _selectedProvider = v ?? _selectedProvider),
-          ),
-          const SizedBox(height: 14),
-          Text('API Key',
-              style: TextStyle(fontWeight: FontWeight.w700, fontSize: 13, color: isDark ? Colors.white : Colors.black87)),
-          const SizedBox(height: 6),
-          TextField(
-            controller: _apiKeyController,
-            obscureText: true,
-            decoration: const InputDecoration(border: OutlineInputBorder(), hintText: 'Paste your API key'),
-          ),
-          if (_errorMessage != null) ...[
-            const SizedBox(height: 10),
-            Container(
-              padding: const EdgeInsets.all(10),
-              decoration: BoxDecoration(color: AppColors.error.withValues(alpha: 0.1), borderRadius: BorderRadius.circular(8)),
-              child: Text(_errorMessage!, style: TextStyle(color: AppColors.errorDark, fontSize: 12)),
-            ),
-          ],
-          const SizedBox(height: 14),
-          SizedBox(
-            width: double.infinity,
-            child: ElevatedButton(
-              onPressed: _connectionProvider.isSubmitting ? null : _submitConnect,
-              style: ElevatedButton.styleFrom(
-                backgroundColor: _accentColor,
-                padding: const EdgeInsets.symmetric(vertical: 14),
-                shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(10)),
-              ),
-              child: _connectionProvider.isSubmitting
-                  ? const SizedBox(width: 18, height: 18, child: CircularProgressIndicator(strokeWidth: 2.5, color: Colors.white))
-                  : const Text('Connect', style: TextStyle(color: Colors.white, fontWeight: FontWeight.w700)),
-            ),
-          ),
+  Widget _buildConnectForm() {
+    final l10n = AppLocalizations.of(context);
+    final t = context.ws;
+    final text = context.wsText;
+    return _card([
+      Row(children: [
+        Icon(AgIcons.success, color: t.successFg),
+        const SizedBox(width: WsSpace.s8),
+        Text(l10n.aiPaymentReceived, style: text.titleMedium),
+      ]),
+      const SizedBox(height: WsSpace.s4),
+      Text(l10n.aiConnectHint, style: text.bodySmall!.copyWith(color: t.textSecondary)),
+      const SizedBox(height: WsSpace.s16),
+      DropdownButtonFormField<String>(
+        initialValue: _selectedProvider,
+        decoration: InputDecoration(labelText: l10n.aiProvider),
+        items: [
+          DropdownMenuItem(value: 'gemini', child: Text(l10n.aiProviderGemini)),
+          DropdownMenuItem(value: 'chatgpt', child: Text(l10n.aiProviderChatgpt)),
         ],
+        onChanged: (v) => setState(() => _selectedProvider = v ?? _selectedProvider),
       ),
-    );
+      const SizedBox(height: WsSpace.s16),
+      TextField(
+        controller: _apiKeyController,
+        obscureText: true,
+        autocorrect: false,
+        enableSuggestions: false,
+        decoration: InputDecoration(labelText: l10n.aiApiKey, hintText: l10n.aiApiKeyHint),
+      ),
+      if (_errorMessage != null) ...[
+        const SizedBox(height: WsSpace.s12),
+        SaInfoBanner(variant: SaBannerVariant.error, message: _errorMessage!),
+      ],
+      const SizedBox(height: WsSpace.s16),
+      SaLoadingButton(
+        text: l10n.aiConnect,
+        isLoading: _connectionProvider.isSubmitting,
+        onPressed: _connectionProvider.isSubmitting ? null : _submitConnect,
+      ),
+    ]);
   }
 
-  Widget _buildConnectedCard(bool isDark) {
-    final providerLabel = _connectionProvider.provider == 'chatgpt' ? 'ChatGPT (OpenAI)' : 'Google Gemini';
-    return Container(
-      padding: const EdgeInsets.all(18),
-      decoration: BoxDecoration(
-        color: isDark ? Colors.grey[900] : Colors.white,
-        borderRadius: BorderRadius.circular(16),
-        border: Border.all(color: isDark ? Colors.grey[800]! : const Color(0xFFE5E7EB)),
+  Widget _buildConnectedCard() {
+    final l10n = AppLocalizations.of(context);
+    final t = context.ws;
+    final text = context.wsText;
+    final providerLabel = _connectionProvider.provider == 'chatgpt' ? l10n.aiProviderChatgpt : l10n.aiProviderGemini;
+    return _card([
+      Row(children: [
+        CircleAvatar(
+          radius: WsSize.avatarMd / 2,
+          backgroundColor: t.primarySubtle,
+          child: Icon(AgIcons.sparkles, color: t.primary),
+        ),
+        const SizedBox(width: WsSpace.s12),
+        Expanded(
+          child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
+            Text(l10n.aiConnected, style: text.titleMedium),
+            Text(providerLabel, style: text.bodySmall!.copyWith(color: t.textSecondary)),
+          ]),
+        ),
+      ]),
+      if (_errorMessage != null) ...[
+        const SizedBox(height: WsSpace.s12),
+        SaInfoBanner(variant: SaBannerVariant.error, message: _errorMessage!),
+      ],
+      const SizedBox(height: WsSpace.s16),
+      SizedBox(
+        width: double.infinity,
+        child: OutlinedButton(
+          onPressed: _connectionProvider.isSubmitting ? null : _confirmDisconnect,
+          style: OutlinedButton.styleFrom(foregroundColor: t.errorFg),
+          child: Text(l10n.aiDisconnect),
+        ),
       ),
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
-          Row(
-            children: [
-              CircleAvatar(
-                radius: 20,
-                backgroundColor: _accentColor.withValues(alpha: 0.1),
-                child: const Icon(Icons.smart_toy_outlined, color: _accentColor),
-              ),
-              const SizedBox(width: 12),
-              Expanded(
-                child: Column(
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  children: [
-                    Text('AI Assistant connected',
-                        style: TextStyle(fontWeight: FontWeight.w800, fontSize: 15, color: isDark ? Colors.white : Colors.black87)),
-                    Text(providerLabel, style: TextStyle(fontSize: 12, color: isDark ? Colors.grey[400] : const Color(0xFF6B7280))),
-                  ],
-                ),
-              ),
-            ],
-          ),
-          const SizedBox(height: 16),
-          SizedBox(
-            width: double.infinity,
-            child: OutlinedButton(
-              onPressed: _connectionProvider.isSubmitting ? null : _disconnect,
-              style: OutlinedButton.styleFrom(
-                foregroundColor: Colors.red,
-                side: const BorderSide(color: Colors.red),
-                padding: const EdgeInsets.symmetric(vertical: 12),
-              ),
-              child: _connectionProvider.isSubmitting
-                  ? const SizedBox(width: 18, height: 18, child: CircularProgressIndicator(strokeWidth: 2.5))
-                  : const Text('Disconnect'),
-            ),
-          ),
-        ],
-      ),
+    ]);
+  }
+
+  Future<void> _confirmDisconnect() async {
+    final l10n = AppLocalizations.of(context);
+    final yes = await wsConfirm(
+      context,
+      title: l10n.aiDisconnectTitle,
+      message: l10n.aiDisconnectBody,
+      confirmLabel: l10n.aiDisconnect,
+      cancelLabel: l10n.cancel,
+      destructive: true,
     );
+    if (yes) await _disconnect();
   }
 
   /// Worded like onboarding_payment_step.dart's own _buildMoneyTakenNotice:
   /// never a bare failure when money was taken. The seller can simply retry
   /// connecting with the same, still-verified paymentId (connectSellerAiProvider
   /// checks verified_payments, not a one-shot consumption at this stage).
-  Widget _buildMoneyTakenNotice(bool isDark) {
-    return Container(
-      padding: const EdgeInsets.all(14),
-      decoration: BoxDecoration(
-        color: AppColors.info.withValues(alpha: 0.1),
-        borderRadius: BorderRadius.circular(12),
-        border: Border.all(color: AppColors.info.withValues(alpha: 0.4)),
+  Widget _buildMoneyTakenNotice() {
+    final l10n = AppLocalizations.of(context);
+    final text = context.wsText;
+    return _card([
+      SaInfoBanner(variant: SaBannerVariant.info, title: l10n.aiPaymentReceived, message: l10n.aiMoneyTaken),
+      if (_verifiedPaymentId != null) ...[
+        const SizedBox(height: WsSpace.s12),
+        SelectableText(l10n.aiPaymentReference(_verifiedPaymentId!), style: text.labelLarge),
+      ],
+      const SizedBox(height: WsSpace.s12),
+      SizedBox(
+        width: double.infinity,
+        child: OutlinedButton(
+          onPressed: () => setState(() {
+            _phase = _Phase.connecting;
+            _errorMessage = null;
+          }),
+          child: Text(l10n.aiRetryConnect),
+        ),
       ),
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
-          Row(
-            children: [
-              Icon(Icons.check_circle_outline_rounded, color: AppColors.infoDark),
-              const SizedBox(width: 8),
-              Expanded(
-                child: Text('Payment received', style: TextStyle(fontWeight: FontWeight.w800, fontSize: 15, color: AppColors.infoDark)),
-              ),
-            ],
-          ),
-          const SizedBox(height: 8),
-          Text(
-            'We received your payment, but could not confirm it just now. Please try connecting again — '
-            'you will not be charged twice for the same payment.',
-            style: TextStyle(color: AppColors.infoDark, fontSize: 13, height: 1.5),
-          ),
-          if (_verifiedPaymentId != null) ...[
-            const SizedBox(height: 10),
-            SelectableText('Payment reference: $_verifiedPaymentId',
-                style: TextStyle(fontSize: 12, fontWeight: FontWeight.w700, color: AppColors.infoDark)),
-          ],
-          const SizedBox(height: 12),
-          SizedBox(
-            width: double.infinity,
-            child: OutlinedButton(
-              onPressed: () => setState(() {
-                _phase = _Phase.connecting;
-                _errorMessage = null;
-              }),
-              child: const Text('Try connecting again'),
-            ),
-          ),
-        ],
-      ),
-    );
+    ]);
   }
 
-  String _phaseLabel() {
-    return switch (_phase) {
-      _Phase.creatingOrder => 'Preparing payment…',
-      _Phase.awaitingModal => 'Opening payment…',
-      _Phase.verifying => 'Verifying payment…',
-      _ => 'Please wait…',
-    };
-  }
+  String _phaseLabel(AppLocalizations l10n) => switch (_phase) {
+        _Phase.creatingOrder => l10n.aiPreparingPayment,
+        _Phase.awaitingModal => l10n.aiOpeningPayment,
+        _Phase.verifying => l10n.aiVerifyingPayment,
+        _ => l10n.aiPleaseWait,
+      };
 }
