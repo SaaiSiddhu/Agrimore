@@ -43,6 +43,7 @@ import { computeOrderPricing, normalizeOrderItems } from "./orderPricing";
 import { computeCartFingerprint } from "./productCreditHold";
 import { appendLedgerEntry, toProjectionFields } from "./productCreditLedger";
 import { DeliveryFeeSchedule, parseDeliveryFeeSchedule } from "./deliveryFeeSchedule";
+import { deliverySecretRef, newDeliverySecret } from "../delivery/deliverySecret";
 
 interface CreateOrderItemInput {
   productId: string;
@@ -761,6 +762,7 @@ export const createOrder = onCall({ minInstances: 0, memory: "256MiB" }, async (
       const orderRef = db.collection("orders").doc();
       const orderNumber = pricing.perSeller.length === 1 ? baseOrderNumber : `${baseOrderNumber}-${index}`;
 
+      const deliveryCode = generateVerificationCode();
       tx.set(orderRef, {
         id: orderRef.id,
         userId: uid,
@@ -785,7 +787,12 @@ export const createOrder = onCall({ minInstances: 0, memory: "256MiB" }, async (
         deliverySlot,
         orderType,
         autoFrequency,
-        deliveryVerificationCode: generateVerificationCode(),
+        // DLV-0 stage A: the same code is also written to
+        // orders/{id}/secrets/delivery just below. This copy stays ONLY
+        // because the released marketplace build reads it from here; it is
+        // partner-readable, and DLV-0B removes it once a marketplace build
+        // reading the secret doc is adopted.
+        deliveryVerificationCode: deliveryCode,
         orderMode,
         // Phase 16D-2, Workstream 1d: both fields now tie to the SAME
         // resolution outcome for either mode — `employeeUid` is only ever
@@ -811,6 +818,10 @@ export const createOrder = onCall({ minInstances: 0, memory: "256MiB" }, async (
         createdAt: admin.firestore.FieldValue.serverTimestamp(),
         updatedAt: admin.firestore.FieldValue.serverTimestamp(),
       });
+      // DLV-0: the delivery code where no delivery partner can read it
+      // (firestore.rules orders/{orderId}/secrets — owner/admin read, no
+      // client write). confirmDelivery reads this first.
+      tx.set(deliverySecretRef(db, orderRef.id), newDeliverySecret(deliveryCode));
 
       const timelineRef = orderRef.collection("timeline").doc();
       tx.set(timelineRef, {

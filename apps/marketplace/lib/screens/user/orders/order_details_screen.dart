@@ -3,6 +3,7 @@ import 'dart:async';
 import 'dart:ui';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
+import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:provider/provider.dart';
 import 'package:intl/intl.dart';
 
@@ -34,6 +35,19 @@ class _OrderDetailsScreenState extends State<OrderDetailsScreen>
     with TickerProviderStateMixin {
   late TabController _tabController;
   bool _isInitialized = false;
+
+  // DLV-0: the delivery code now lives in orders/{id}/secrets/delivery, which
+  // only this customer (and admin) can read — the order document itself is
+  // readable by delivery partners. Stage A keeps the order-doc copy as a
+  // fallback for orders created before DLV-0; one stream per screen, not per
+  // rebuild.
+  late final Stream<DocumentSnapshot<Map<String, dynamic>>> _deliverySecretStream =
+      FirebaseFirestore.instance
+          .collection('orders')
+          .doc(widget.orderId)
+          .collection('secrets')
+          .doc('delivery')
+          .snapshots();
 
   // --- Animation ---
   late AnimationController _animationController;
@@ -772,8 +786,21 @@ class _OrderDetailsScreenState extends State<OrderDetailsScreen>
         ),
 
         // 🔐 Delivery Verification Code — shown ONLY to the customer
-        if (isActiveDelivery && order.deliveryVerificationCode != null)
-          _buildDeliveryVerificationCard(order.deliveryVerificationCode!, isDark),
+        if (isActiveDelivery)
+          StreamBuilder<DocumentSnapshot<Map<String, dynamic>>>(
+            stream: _deliverySecretStream,
+            builder: (context, snapshot) {
+              // Secret doc first; the order-doc field is the legacy fallback
+              // (and also covers a read error, so the card never disappears
+              // for an order that has a code).
+              final secretCode = snapshot.data?.data()?['code'];
+              final code = secretCode is String && secretCode.isNotEmpty
+                  ? secretCode
+                  : order.deliveryVerificationCode;
+              if (code == null || code.isEmpty) return const SizedBox.shrink();
+              return _buildDeliveryVerificationCard(code, isDark);
+            },
+          ),
 
         _buildCardSection(
           title: 'Order Timeline',

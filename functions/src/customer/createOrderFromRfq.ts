@@ -38,6 +38,7 @@
 import { onCall, HttpsError } from "firebase-functions/v2/https";
 import * as admin from "firebase-admin";
 import * as crypto from "crypto";
+import { deliverySecretRef, newDeliverySecret } from "../delivery/deliverySecret";
 
 interface CreateOrderFromRfqData {
   rfqId: string;
@@ -356,6 +357,7 @@ export const createOrderFromRfq = onCall(
         addedAt: admin.firestore.Timestamp.now(),
       };
 
+      const deliveryCode = generateVerificationCode();
       tx.set(orderRef, {
         id: orderRef.id,
         userId: uid,
@@ -379,7 +381,12 @@ export const createOrderFromRfq = onCall(
         deliverySlot,
         orderType: "One Time",
         autoFrequency: null,
-        deliveryVerificationCode: generateVerificationCode(),
+        // DLV-0 stage A: the same code is also written to
+        // orders/{id}/secrets/delivery just below. This copy stays ONLY
+        // because the released marketplace build reads it from here; it is
+        // partner-readable, and DLV-0B removes it once a marketplace build
+        // reading the secret doc is adopted.
+        deliveryVerificationCode: deliveryCode,
         orderMode: "B2B",
         // An RFQ is a direct buyer-seller negotiation — no Sales Associate
         // attribution point exists anywhere in rfq.ts/RFQ-2's client flow,
@@ -403,6 +410,10 @@ export const createOrderFromRfq = onCall(
         createdAt: admin.firestore.FieldValue.serverTimestamp(),
         updatedAt: admin.firestore.FieldValue.serverTimestamp(),
       });
+      // DLV-0: the delivery code where no delivery partner can read it
+      // (firestore.rules orders/{orderId}/secrets — owner/admin read, no
+      // client write). confirmDelivery reads this first.
+      tx.set(deliverySecretRef(db, orderRef.id), newDeliverySecret(deliveryCode));
 
       const timelineRef = orderRef.collection("timeline").doc();
       tx.set(timelineRef, {

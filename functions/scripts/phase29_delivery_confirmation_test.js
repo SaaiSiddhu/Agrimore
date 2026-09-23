@@ -13,10 +13,16 @@
 //
 // confirmDelivery is a v2 onCall — wrapped and invoked as wrapped({data, auth}).
 //
+// Phase DLV-0 extends this suite (scenarios 13-22): the code now also lives in
+// orders/{id}/secrets/delivery (read first, order field as legacy fallback),
+// and 5 wrong codes lock the order for 15 minutes — the counter must COMMIT
+// even though the call is refused.
+//
 // Run with:
 //   firebase emulators:exec --only firestore,functions \
 //     "node scripts/phase29_delivery_confirmation_test.js"
-process.env.FIRESTORE_EMULATOR_HOST = "127.0.0.1:8080";
+// Honours FIRESTORE_EMULATOR_HOST (set by emulators:exec), falling back to 127.0.0.1:8080.
+process.env.FIRESTORE_EMULATOR_HOST = process.env.FIRESTORE_EMULATOR_HOST || "127.0.0.1:8080";
 process.env.GCLOUD_PROJECT = "agrimore-66a4e";
 
 const admin = require("firebase-admin");
@@ -36,7 +42,7 @@ async function call(orderId, code, uid) {
   try {
     return { ok: true, result: await wrapped({ data: { orderId, code }, auth: { uid, token: {} } }) };
   } catch (e) {
-    return { ok: false, code: e.code, message: e.message };
+    return { ok: false, code: e.code, message: e.message, details: e.details };
   }
 }
 
@@ -58,6 +64,10 @@ async function seedOrder(orderId, opts = {}) {
   if (opts.code !== null) doc.deliveryVerificationCode = opts.code || REAL_CODE;
   await db.collection("orders").doc(orderId).set(doc);
 }
+
+const secretRef = (id) => db.collection("orders").doc(id).collection("secrets").doc("delivery");
+const secretDoc = (id) => secretRef(id).get().then((s) => (s.exists ? s.data() : null));
+const seedSecret = (id, fields) => secretRef(id).set(fields);
 
 const orderDoc = (id) => db.collection("orders").doc(id).get().then((s) => s.data() || {});
 const timelineCount = (id) =>
@@ -224,6 +234,141 @@ async function main() {
     record("scenario12_cancelled_refusal_is_not_an_oracle",
       !cancelledWrong.ok && same,
       `rightGuess=(${cancelledRight.code}: "${cancelledRight.message}") wrongGuess=(${cancelledWrong.code}: "${cancelledWrong.message}") identical=${same}`);
+  }
+
+  // ── Phase DLV-0 ────────────────────────────────────────────────────────
+
+  // 13 — the NEW location alone is enough. An order whose code exists only in
+  // secrets/delivery (the stage-B shape) delivers, and the secret is marked
+  // consumed with its counter reset.
+  {
+    const oid = "phase29-o13";
+    await seedOrder(oid, { code: null });
+    await seedSecret(oid, { code: REAL_CODE, failedAttempts: 2, lockedUntil: null });
+    const r = await call(oid, REAL_CODE, PARTNER);
+    const d = await orderDoc(oid);
+    const sec = await secretDoc(oid);
+    record("scenario13_secret_doc_code_delivers_and_is_consumed",
+      r.ok && d.orderStatus === "delivered" && !!sec?.consumedAt && sec?.failedAttempts === 0,
+      `ok=${r.ok} code=${r.code} status=${d.orderStatus} consumedAt=${!!sec?.consumedAt} failedAttempts=${sec?.failedAttempts}`);
+  }
+
+  // 14 — the secret doc WINS over a stale order-doc field. The order-doc copy
+  // is readable by partners (until DLV-0B removes it); it must not be the
+  // value that is checked whenever the secret doc exists.
+  {
+    const oid = "phase29-o14";
+    await seedOrder(oid, { code: "111111" });
+    await seedSecret(oid, { code: REAL_CODE, failedAttempts: 0, lockedUntil: null });
+    const stale = await call(oid, "111111", PARTNER);
+    const right = await call(oid, REAL_CODE, PARTNER);
+    record("scenario14_secret_doc_takes_precedence_over_order_field",
+      !stale.ok && stale.code === "permission-denied" && right.ok,
+      `staleOrderField=${stale.code} secretCode.ok=${right.ok}`);
+  }
+
+  // 15 — legacy order (created before DLV-0: no secret doc). A wrong guess
+  // creates the counter doc WITHOUT a code; the order-field code must still
+  // be found afterwards.
+  {
+    const oid = "phase29-o15";
+    await seedOrder(oid);
+    const wrong = await call(oid, WRONG_CODE, PARTNER);
+    const afterWrong = await secretDoc(oid);
+    const right = await call(oid, REAL_CODE, PARTNER);
+    const d = await orderDoc(oid);
+    record("scenario15_legacy_order_counts_attempts_and_still_falls_back_to_order_field",
+      !wrong.ok && wrong.code === "permission-denied" && afterWrong?.failedAttempts === 1 &&
+      right.ok && d.orderStatus === "delivered",
+      `wrong=${wrong.code} failedAttempts=${afterWrong?.failedAttempts} right.ok=${right.ok} status=${d.orderStatus}`);
+  }
+
+  // 16 + 17 + 18 — THE LOCKOUT. Four wrong codes are ordinary refusals with
+  // the unchanged message; the fifth locks the order and says so; the CORRECT
+  // code during the lock is refused too (otherwise the lock only slows a
+  // guesser who then keeps guessing). The counter must have committed even
+  // though every one of these calls threw.
+  {
+    const oid = "phase29-o16";
+    await seedOrder(oid);
+    await seedSecret(oid, { code: REAL_CODE, failedAttempts: 0, lockedUntil: null });
+    const firstFour = [];
+    for (let i = 0; i < 4; i++) firstFour.push(await call(oid, WRONG_CODE, PARTNER));
+    const afterFour = await secretDoc(oid);
+    record("scenario16_four_wrong_codes_are_plain_refusals_and_are_counted",
+      firstFour.every((r) => !r.ok && r.code === "permission-denied" && r.message === "Incorrect verification code") &&
+      afterFour?.failedAttempts === 4 && !afterFour?.lockedUntil,
+      `codes=${firstFour.map((r) => r.code).join(",")} failedAttempts=${afterFour?.failedAttempts} lockedUntil=${afterFour?.lockedUntil}`);
+
+    const fifth = await call(oid, WRONG_CODE, PARTNER);
+    const afterFifth = await secretDoc(oid);
+    const lockMs = afterFifth?.lockedUntil?.toMillis ? afterFifth.lockedUntil.toMillis() - Date.now() : null;
+    record("scenario17_fifth_wrong_code_locks_for_fifteen_minutes",
+      !fifth.ok && fifth.code === "resource-exhausted" && fifth.details?.reason === "locked" &&
+      typeof fifth.details?.retryAfterSec === "number" && fifth.details.retryAfterSec > 0 &&
+      lockMs !== null && lockMs > 14 * 60 * 1000 && lockMs <= 15 * 60 * 1000,
+      `code=${fifth.code} details=${JSON.stringify(fifth.details)} lockMsRemaining=${lockMs}`);
+
+    const rightDuringLock = await call(oid, REAL_CODE, PARTNER);
+    const d = await orderDoc(oid);
+    record("scenario18_correct_code_is_refused_while_locked",
+      !rightDuringLock.ok && rightDuringLock.code === "resource-exhausted" &&
+      d.orderStatus === "out_for_delivery" && (await timelineCount(oid)) === 0,
+      `code=${rightDuringLock.code} status=${d.orderStatus} timeline=${await timelineCount(oid)}`);
+  }
+
+  // 19 — an expired lock no longer blocks.
+  {
+    const oid = "phase29-o19";
+    await seedOrder(oid);
+    await seedSecret(oid, {
+      code: REAL_CODE, failedAttempts: 0,
+      lockedUntil: admin.firestore.Timestamp.fromMillis(Date.now() - 1000),
+    });
+    const r = await call(oid, REAL_CODE, PARTNER);
+    record("scenario19_expired_lock_allows_the_correct_code", r.ok && (await orderDoc(oid)).orderStatus === "delivered",
+      `ok=${r.ok} code=${r.code}`);
+  }
+
+  // 20 — idempotency outranks the lock: a delivered order stays a success.
+  {
+    const oid = "phase29-o20";
+    await seedOrder(oid, { status: "delivered" });
+    await seedSecret(oid, {
+      code: REAL_CODE, failedAttempts: 0,
+      lockedUntil: admin.firestore.Timestamp.fromMillis(Date.now() + 10 * 60 * 1000),
+    });
+    const r = await call(oid, WRONG_CODE, PARTNER);
+    record("scenario20_already_delivered_retry_succeeds_even_while_locked",
+      r.ok && r.result?.alreadyDelivered === true, `ok=${r.ok} code=${r.code}`);
+  }
+
+  // 21 + 22 — the lock is not an oracle and not a weapon. A partner the order
+  // is NOT assigned to gets the same refusal as scenario 3 while the order is
+  // locked, and its guesses do not move the assigned partner's counter (else a
+  // rival could lock someone else's delivery).
+  {
+    const oid = "phase29-o21";
+    await seedOrder(oid);
+    await seedSecret(oid, {
+      code: REAL_CODE, failedAttempts: 0,
+      lockedUntil: admin.firestore.Timestamp.fromMillis(Date.now() + 10 * 60 * 1000),
+    });
+    const r = await call(oid, REAL_CODE, OTHER_PARTNER);
+    record("scenario21_wrong_partner_during_lock_gets_the_scenario3_refusal",
+      !r.ok && r.code === unassignedRight.code && r.message === unassignedRight.message,
+      `code=${r.code} message="${r.message}" vs scenario3 "${unassignedRight.message}"`);
+  }
+  {
+    const oid = "phase29-o22";
+    await seedOrder(oid);
+    await seedSecret(oid, { code: REAL_CODE, failedAttempts: 0, lockedUntil: null });
+    for (let i = 0; i < 6; i++) await call(oid, WRONG_CODE, OTHER_PARTNER);
+    const sec = await secretDoc(oid);
+    const own = await call(oid, REAL_CODE, PARTNER);
+    record("scenario22_other_partners_guesses_do_not_touch_the_counter",
+      sec?.failedAttempts === 0 && !sec?.lockedUntil && own.ok,
+      `failedAttempts=${sec?.failedAttempts} lockedUntil=${sec?.lockedUntil} assignedPartner.ok=${own.ok}`);
   }
 
   console.log("\n=== SUMMARY ===");

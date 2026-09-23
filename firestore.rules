@@ -695,6 +695,29 @@ service cloud.firestore {
            get(/databases/$(database)/documents/orders/$(orderId)).data.deliveryPartnerId == request.auth.uid);
         allow update, delete: if isAdmin();
       }
+
+      // Phase DLV-0: the delivery verification code and its wrong-attempt
+      // counter. The code used to live ONLY on orders/{id}, whose read rule
+      // is whole-document — so every approved delivery partner could read
+      // the code of every unassigned ready_for_pickup order
+      // (isAvailableDeliveryOrder()) and of its own order, which made the
+      // doorstep check meaningless. createOrder/createOrderFromRfq now also
+      // write it here, and confirmDelivery reads and rate-limits it here.
+      //
+      // Read: the order's own customer (who must show the code) and admin.
+      // NEVER the delivery partner — the party being verified.
+      // Write: nobody. Only the Admin SDK (createOrder, confirmDelivery)
+      // writes this document; a client that could write it could reset its
+      // own lockout or replace the code.
+      //
+      // Stage A only: the order-doc copy stays until a marketplace build that
+      // reads this location is released and adopted (DLV-0B removes it).
+      match /secrets/{secretId} {
+        allow read: if isAuthenticated() &&
+          (get(/databases/$(database)/documents/orders/$(orderId)).data.userId == request.auth.uid ||
+           isAdmin());
+        allow write: if false;
+      }
     }
     
     // ============================================
@@ -1622,9 +1645,39 @@ service cloud.firestore {
     // — currentLat/currentLng/lastLocationUpdate/isOnline, none of which
     // touch `status`) keep working, and so status carrying over unchanged in
     // a merge-set is never mistaken for an attempted change.
-    function ownerCannotApproveDeliveryStatus() {
-      return !request.resource.data.diff(resource.data).affectedKeys().hasAny(['status']) ||
-        request.resource.data.status != 'approved';
+    //
+    // Phase DLV-0: that value guard was the ONLY restriction on the owner
+    // path, so a partner could rewrite its own bankAccountNumber/ifscCode/
+    // upiId (redirecting its payouts with no re-verification), rating,
+    // totalDeliveries, isVerified, currentOrderId/isAvailable — everything
+    // except status → approved. Replaced by an allowlist of exactly the keys
+    // an owner has ever legitimately written after registration:
+    // location_provider.dart's _uploadLocation (currentLat, currentLng,
+    // lastLocationUpdate) and setOnlineStatus (isOnline, lastStatusUpdate) —
+    // identical in the released build (0ea1e53) and the current source, and
+    // in apps/seller's copy of the provider — plus updatedAt. `status` is not
+    // in the list, so self-approval stays impossible. Anything else (bank
+    // details, KYC, vehicle) is an admin edit until a reviewed change flow
+    // exists (DLV-4).
+    function ownerDeliveryPartnerUpdateIsAllowed() {
+      return request.resource.data.diff(resource.data).affectedKeys().hasOnly([
+        'currentLat', 'currentLng', 'lastLocationUpdate',
+        'isOnline', 'lastStatusUpdate', 'updatedAt'
+      ]);
+    }
+
+    // Phase DLV-0: owner create (self-registration, and setOnlineStatus()'s
+    // set-merge on a not-yet-existing doc) may not preset anything an admin
+    // or the platform is meant to establish. partner_registration_screen.dart
+    // sends DeliveryPartnerModel.toMap(): status 'pending', rating null,
+    // totalDeliveries 0, and no isVerified/currentOrderId — all accepted.
+    function ownerDeliveryPartnerCreateIsPending() {
+      let d = request.resource.data;
+      return (!('status' in d) || d.status == 'pending') &&
+        (!('rating' in d) || d.rating == null) &&
+        (!('totalDeliveries' in d) || d.totalDeliveries == 0) &&
+        (!('isVerified' in d) || d.isVerified == false) &&
+        (!('currentOrderId' in d) || d.currentOrderId == null);
     }
 
     match /delivery_partners/{partnerId} {
@@ -1636,12 +1689,12 @@ service cloud.firestore {
       // never already pre-approved (apps/delivery's
       // partner_registration_screen.dart always writes status:'pending').
       allow create: if isAdmin() ||
-        (isOwner(partnerId) &&
-         (!('status' in request.resource.data) || request.resource.data.status != 'approved'));
+        (isOwner(partnerId) && ownerDeliveryPartnerCreateIsPending());
 
-      // Partner can update own location/status fields but not self-approve, admin can update all
+      // Partner can update only its own location/online fields (DLV-0
+      // allowlist above); admin can update all
       allow update: if isAdmin() ||
-        (isOwner(partnerId) && ownerCannotApproveDeliveryStatus());
+        (isOwner(partnerId) && ownerDeliveryPartnerUpdateIsAllowed());
 
       // Only admin can delete partners
       allow delete: if isAdmin();

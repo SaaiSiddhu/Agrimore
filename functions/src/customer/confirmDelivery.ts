@@ -27,10 +27,22 @@
 // apps/delivery build, which is exactly how the 2026-08-31 rules deploy left
 // pre-1.0.7 clients unable to order (B2B_PHASE_SEQUENCING). The safe order is:
 // ship this, release a client that uses it, confirm adoption, then tighten.
+//
+// Phase DLV-0 added two things. (1) The expected code is read from
+// orders/{id}/secrets/delivery first (deliverySecret.ts) — a document no
+// delivery partner can read — with the order-doc field as the legacy fallback.
+// (2) Five wrong codes from the assigned partner lock the order for 15
+// minutes; the correct code is refused during the lock. A six-digit code with
+// no attempt limit was guessable by the one party allowed to guess.
 
 import { onCall, HttpsError } from "firebase-functions/v2/https";
 import * as admin from "firebase-admin";
 import * as crypto from "crypto";
+import {
+  deliverySecretRef,
+  DELIVERY_LOCK_MS,
+  MAX_FAILED_DELIVERY_ATTEMPTS,
+} from "../delivery/deliverySecret";
 
 interface ConfirmDeliveryData {
   orderId: string;
@@ -110,13 +122,28 @@ export const confirmDelivery = onCall(
 
     const db = admin.firestore();
     const orderRef = db.collection("orders").doc(orderId);
+    const secretRef = deliverySecretRef(db, orderId);
 
-    return db.runTransaction(async (tx) => {
+    // Phase DLV-0. A wrong code now has a side effect — the attempt counter —
+    // and a transaction that throws commits nothing. So the transaction never
+    // throws for a wrong or locked code: it writes the counter and RETURNS a
+    // verdict, and the refusal is thrown only after the commit. Every other
+    // refusal (unassigned, not found, not deliverable, no code) writes nothing
+    // and still throws from inside, exactly as before.
+    type Verdict =
+      | { kind: "delivered"; alreadyDelivered: boolean }
+      | { kind: "wrong" }
+      | { kind: "locked"; retryAfterSec: number };
+
+    const verdict: Verdict = await db.runTransaction(async (tx): Promise<Verdict> => {
+      // All reads first.
       const snap = await tx.get(orderRef);
       if (!snap.exists) {
         throw new HttpsError("not-found", "Order not found");
       }
       const order = snap.data()!;
+      const secretSnap = await tx.get(secretRef);
+      const secret = secretSnap.exists ? secretSnap.data()! : null;
 
       // Only the delivery partner this order is actually assigned to may
       // confirm it. Checked BEFORE the code comparison so that a partner
@@ -131,6 +158,10 @@ export const confirmDelivery = onCall(
       // deliverable by anyone (scenario 8), and right and wrong guesses become
       // distinguishable (scenario 4, identical=false), which is the oracle this
       // ordering exists to prevent.
+      //
+      // DLV-0: also BEFORE the lock check and the counter, so another partner's
+      // guesses can neither reveal nor trigger this order's lock (scenarios 21,
+      // 22) — otherwise a rival could lock someone else's delivery.
       if (order.deliveryPartnerId !== uid) {
         throw new HttpsError(
           "permission-denied",
@@ -142,9 +173,10 @@ export const confirmDelivery = onCall(
       // success, not as a scary failure on an order that is already delivered —
       // the same reasoning activationCore.ts applies to a duplicated activation.
       // Checked before the code comparison so a retry does not depend on the
-      // partner still having the code to hand.
+      // partner still having the code to hand. DLV-0: and before the lock, so a
+      // retry after a genuine delivery is never reported as locked (scenario 20).
       if (statusIsIn(order, DELIVERED_EQUIVALENT)) {
-        return { success: true, alreadyDelivered: true };
+        return { kind: "delivered", alreadyDelivered: true };
       }
 
       // A cancelled, refunded, returned or rejected order is not deliverable,
@@ -166,9 +198,17 @@ export const confirmDelivery = onCall(
         );
       }
 
-      const expected = typeof order.deliveryVerificationCode === "string"
-        ? order.deliveryVerificationCode
-        : null;
+      // DLV-0: the secret document is authoritative whenever it carries a
+      // code (scenario 14) — the order-doc copy is partner-readable until
+      // DLV-0B removes it. Orders created before DLV-0 have no secret doc (or
+      // only a counter, after a wrong guess) and fall back to the order field
+      // (scenario 15).
+      const expected =
+        typeof secret?.code === "string" && secret.code
+          ? secret.code
+          : typeof order.deliveryVerificationCode === "string"
+            ? order.deliveryVerificationCode
+            : null;
       if (!expected) {
         // Fail closed. An order with no code cannot be confirmed through this
         // path; it needs an admin, not a guess.
@@ -179,10 +219,35 @@ export const confirmDelivery = onCall(
         );
       }
 
+      // DLV-0: the lock. While it holds, even the correct code is refused —
+      // otherwise the lock would only pace a guesser (scenario 18).
+      const now = Date.now();
+      const lockedUntilMs =
+        secret?.lockedUntil instanceof admin.firestore.Timestamp
+          ? secret.lockedUntil.toMillis()
+          : 0;
+      if (lockedUntilMs > now) {
+        return { kind: "locked", retryAfterSec: Math.ceil((lockedUntilMs - now) / 1000) };
+      }
+
       if (!codesMatch(code, expected)) {
-        // Deliberately does not say whether the order, the assignment or the
-        // code was wrong beyond what is already known to this caller.
-        throw new HttpsError("permission-denied", "Incorrect verification code");
+        const failed =
+          (typeof secret?.failedAttempts === "number" ? secret.failedAttempts : 0) + 1;
+        if (failed >= MAX_FAILED_DELIVERY_ATTEMPTS) {
+          tx.set(secretRef, {
+            failedAttempts: 0,
+            lockedUntil: admin.firestore.Timestamp.fromMillis(now + DELIVERY_LOCK_MS),
+            lastFailedAt: admin.firestore.FieldValue.serverTimestamp(),
+            lastLockedAt: admin.firestore.FieldValue.serverTimestamp(),
+          }, { merge: true });
+          return { kind: "locked", retryAfterSec: Math.ceil(DELIVERY_LOCK_MS / 1000) };
+        }
+        tx.set(secretRef, {
+          failedAttempts: failed,
+          lockedUntil: null,
+          lastFailedAt: admin.firestore.FieldValue.serverTimestamp(),
+        }, { merge: true });
+        return { kind: "wrong" };
       }
 
       tx.update(orderRef, {
@@ -195,6 +260,12 @@ export const confirmDelivery = onCall(
         updatedAt: admin.firestore.FieldValue.serverTimestamp(),
       });
 
+      tx.set(secretRef, {
+        failedAttempts: 0,
+        lockedUntil: null,
+        consumedAt: admin.firestore.FieldValue.serverTimestamp(),
+      }, { merge: true });
+
       const timelineRef = orderRef.collection("timeline").doc();
       tx.set(timelineRef, {
         id: timelineRef.id,
@@ -204,7 +275,22 @@ export const confirmDelivery = onCall(
         timestamp: admin.firestore.FieldValue.serverTimestamp(),
       });
 
-      return { success: true, alreadyDelivered: false };
+      return { kind: "delivered", alreadyDelivered: false };
     });
+
+    if (verdict.kind === "wrong") {
+      // Deliberately does not say whether the order, the assignment or the
+      // code was wrong beyond what is already known to this caller. Message
+      // unchanged from before DLV-0 (scenario 16 asserts it).
+      throw new HttpsError("permission-denied", "Incorrect verification code");
+    }
+    if (verdict.kind === "locked") {
+      throw new HttpsError(
+        "resource-exhausted",
+        "Too many incorrect codes. Try again later.",
+        { reason: "locked", retryAfterSec: verdict.retryAfterSec }
+      );
+    }
+    return { success: true, alreadyDelivered: verdict.alreadyDelivered };
   }
 );
