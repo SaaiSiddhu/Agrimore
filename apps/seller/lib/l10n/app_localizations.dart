@@ -2211,6 +2211,156 @@ abstract class AppLocalizations {
   /// In en, this message translates to:
   /// **'Same as before'**
   String get kpiOrdersSame;
+
+  /// No description provided for @notificationsTitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Notifications'**
+  String get notificationsTitle;
+
+  /// No description provided for @notificationsUnread.
+  ///
+  /// In en, this message translates to:
+  /// **'{count, plural, =1{Notifications, 1 unread} other{Notifications, {count} unread}}'**
+  String notificationsUnread(int count);
+
+  /// No description provided for @notificationsAll.
+  ///
+  /// In en, this message translates to:
+  /// **'All'**
+  String get notificationsAll;
+
+  /// No description provided for @notificationsOrders.
+  ///
+  /// In en, this message translates to:
+  /// **'Orders'**
+  String get notificationsOrders;
+
+  /// No description provided for @notificationsQuotes.
+  ///
+  /// In en, this message translates to:
+  /// **'Quotes'**
+  String get notificationsQuotes;
+
+  /// No description provided for @notificationsPayments.
+  ///
+  /// In en, this message translates to:
+  /// **'Payments'**
+  String get notificationsPayments;
+
+  /// No description provided for @notificationsAccount.
+  ///
+  /// In en, this message translates to:
+  /// **'Account'**
+  String get notificationsAccount;
+
+  /// No description provided for @notificationsToday.
+  ///
+  /// In en, this message translates to:
+  /// **'Today'**
+  String get notificationsToday;
+
+  /// No description provided for @notificationsEarlier.
+  ///
+  /// In en, this message translates to:
+  /// **'Earlier'**
+  String get notificationsEarlier;
+
+  /// No description provided for @notificationsMarkAllRead.
+  ///
+  /// In en, this message translates to:
+  /// **'Mark all read'**
+  String get notificationsMarkAllRead;
+
+  /// No description provided for @notificationsMarkRead.
+  ///
+  /// In en, this message translates to:
+  /// **'Mark read'**
+  String get notificationsMarkRead;
+
+  /// No description provided for @notificationsUnreadLabel.
+  ///
+  /// In en, this message translates to:
+  /// **'Unread'**
+  String get notificationsUnreadLabel;
+
+  /// No description provided for @notificationsEmpty.
+  ///
+  /// In en, this message translates to:
+  /// **'No notifications yet. New orders, quotes and payments appear here.'**
+  String get notificationsEmpty;
+
+  /// No description provided for @notificationsLoadFailed.
+  ///
+  /// In en, this message translates to:
+  /// **'Couldn\'t load notifications. Check your connection and open this screen again.'**
+  String get notificationsLoadFailed;
+
+  /// No description provided for @notificationsActionFailed.
+  ///
+  /// In en, this message translates to:
+  /// **'Couldn\'t update your notifications. Try again.'**
+  String get notificationsActionFailed;
+
+  /// No description provided for @searchHint.
+  ///
+  /// In en, this message translates to:
+  /// **'Search orders, products, quotes'**
+  String get searchHint;
+
+  /// No description provided for @searchClear.
+  ///
+  /// In en, this message translates to:
+  /// **'Clear search'**
+  String get searchClear;
+
+  /// No description provided for @searchPrompt.
+  ///
+  /// In en, this message translates to:
+  /// **'Type at least 2 characters — an order number, customer, product or buyer.'**
+  String get searchPrompt;
+
+  /// No description provided for @searchNoResults.
+  ///
+  /// In en, this message translates to:
+  /// **'Nothing matches “{query}”.'**
+  String searchNoResults(String query);
+
+  /// No description provided for @searchGroup.
+  ///
+  /// In en, this message translates to:
+  /// **'{title} · {count}'**
+  String searchGroup(String title, int count);
+
+  /// No description provided for @searchOpenOrder.
+  ///
+  /// In en, this message translates to:
+  /// **'Open order {number}'**
+  String searchOpenOrder(String number);
+
+  /// No description provided for @searchProducts.
+  ///
+  /// In en, this message translates to:
+  /// **'Products'**
+  String get searchProducts;
+
+  /// No description provided for @searchStock.
+  ///
+  /// In en, this message translates to:
+  /// **'{stock} in stock'**
+  String searchStock(String stock);
+
+  /// No description provided for @homeSearch.
+  ///
+  /// In en, this message translates to:
+  /// **'Search'**
+  String get homeSearch;
+
+  /// No description provided for @searchOrderLine.
+  ///
+  /// In en, this message translates to:
+  /// **'{customer} · {date}'**
+  String searchOrderLine(String customer, String date);
 }
 
 class _AppLocalizationsDelegate

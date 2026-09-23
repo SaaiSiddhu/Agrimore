@@ -1252,4 +1252,101 @@ class AppLocalizationsEn extends AppLocalizations {
 
   @override
   String get kpiOrdersSame => 'Same as before';
+
+  @override
+  String get notificationsTitle => 'Notifications';
+
+  @override
+  String notificationsUnread(int count) {
+    String _temp0 = intl.Intl.pluralLogic(
+      count,
+      locale: localeName,
+      other: 'Notifications, $count unread',
+      one: 'Notifications, 1 unread',
+    );
+    return '$_temp0';
+  }
+
+  @override
+  String get notificationsAll => 'All';
+
+  @override
+  String get notificationsOrders => 'Orders';
+
+  @override
+  String get notificationsQuotes => 'Quotes';
+
+  @override
+  String get notificationsPayments => 'Payments';
+
+  @override
+  String get notificationsAccount => 'Account';
+
+  @override
+  String get notificationsToday => 'Today';
+
+  @override
+  String get notificationsEarlier => 'Earlier';
+
+  @override
+  String get notificationsMarkAllRead => 'Mark all read';
+
+  @override
+  String get notificationsMarkRead => 'Mark read';
+
+  @override
+  String get notificationsUnreadLabel => 'Unread';
+
+  @override
+  String get notificationsEmpty =>
+      'No notifications yet. New orders, quotes and payments appear here.';
+
+  @override
+  String get notificationsLoadFailed =>
+      'Couldn\'t load notifications. Check your connection and open this screen again.';
+
+  @override
+  String get notificationsActionFailed =>
+      'Couldn\'t update your notifications. Try again.';
+
+  @override
+  String get searchHint => 'Search orders, products, quotes';
+
+  @override
+  String get searchClear => 'Clear search';
+
+  @override
+  String get searchPrompt =>
+      'Type at least 2 characters — an order number, customer, product or buyer.';
+
+  @override
+  String searchNoResults(String query) {
+    return 'Nothing matches “$query”.';
+  }
+
+  @override
+  String searchGroup(String title, int count) {
+    return '$title · $count';
+  }
+
+  @override
+  String searchOpenOrder(String number) {
+    return 'Open order $number';
+  }
+
+  @override
+  String get searchProducts => 'Products';
+
+  @override
+  String searchStock(String stock) {
+    return '$stock in stock';
+  }
+
+  @override
+  String get homeSearch => 'Search';
+
+  @override
+  String searchOrderLine(String customer, String date) {
+    return '$customer · $date';
+  }
 }
