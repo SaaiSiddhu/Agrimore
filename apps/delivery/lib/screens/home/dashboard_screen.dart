@@ -111,6 +111,14 @@ class _DashboardScreenState extends State<DashboardScreen> {
       return;
     }
     final location = context.read<LocationProvider>();
+    // Phase DLV-3A2: the native service may have kept sending while the app
+    // was swiped away — attach to it rather than restarting.
+    if (await location.nativeServiceRunning()) {
+      debugPrint('Resume online: native service already running');
+      location.attachToRunningService(uid);
+      if (mounted) setState(() => _isOnline = true);
+      return;
+    }
     final disclosed = await locationDisclosureAccepted();
     final canTrack = await location.canTrackWithoutPrompt();
     debugPrint('Resume online: blocked=${auth.isBlocked} '
@@ -926,8 +934,28 @@ class _DashboardScreenState extends State<DashboardScreen> {
         // Phase DLV-2B: notifications, and full-screen alerts on Android 14+,
         // so offers can ring. Asked once; never blocks going online.
         await ensureOfferAlertPermissions(context);
-        final result = await location.startTracking(uid);
+        // Phase DLV-3A2: while-in-use first, then (D-DLV-BGLOC-ALWAYS) the
+        // explained 'Allow all the time' step and (D-DLV-BATTERY) the
+        // one-time battery guide. Neither of the last two blocks going online.
+        var result = await location.ensurePermission();
+        var backgroundAllowed = true;
+        if (result == GoOnlineResult.started) {
+          if (!mounted) return;
+          backgroundAllowed = await ensureBackgroundLocation(context);
+          if (!mounted) return;
+          await maybeShowBatteryGuide(context);
+          // Online on the server BEFORE the native service starts: it stops
+          // itself whenever the server says offline.
+          await location.setOnlineStatus(uid, true);
+          result = await location.startTracking(uid);
+          if (result != GoOnlineResult.started) {
+            await location.setOnlineStatus(uid, false);
+          }
+        }
         if (!mounted) return;
+        if (result == GoOnlineResult.started && !backgroundAllowed) {
+          SnackbarHelper.showWarning(context, backgroundLocationReminder);
+        }
         if (result != GoOnlineResult.started) {
           setState(() => _isOnline = false);
           final message = result.message;
@@ -947,7 +975,6 @@ class _DashboardScreenState extends State<DashboardScreen> {
           }
           return;
         }
-        await location.setOnlineStatus(uid, true);
       } else {
         location.stopTracking();
         await location.setOnlineStatus(uid, false);
