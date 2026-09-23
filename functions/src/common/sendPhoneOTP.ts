@@ -442,10 +442,15 @@ export const sendPhoneOTP = functions
       otp = crypto.randomInt(100000, 1000000).toString();
     }
 
-    // MOCK OTP MODE: No live SMS gateway or voice calls needed.
-    // Generates a genuine 6-digit random OTP, saves hash to Firestore phone_otp_codes,
-    // and returns testOtp in the response for instant autofill & verification.
-    const testMode = true;
+    // Test mode (SEC-P0 allowlist) OR debug mock (SEC-P0b, OWNER_DECISION
+    // D-DEBUG-MOCK-OTP 2026-09-23). The OTP is still generated, hashed and
+    // stored exactly as the real path; only delivery is skipped and the code
+    // is returned for autofill. `debugMock` is sent by kDebugMode app builds
+    // only — release builds use real SMS/voice. ACCEPTED RISK (owner): the
+    // server cannot verify that claim, so anyone who sends debugMock:true
+    // receives the code for any number.
+    const debugMock = req.body?.debugMock === true;
+    const testMode = debugMock || (await isTestModeNumber(normalizedPhone, now));
 
     try {
       if (testMode) {
