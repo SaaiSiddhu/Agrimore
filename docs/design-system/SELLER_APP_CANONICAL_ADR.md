@@ -223,7 +223,7 @@ SA palette for comparison (unchanged): `primary #2563EB / #3B82F6`, `pressed #1D
 | `surfaceSunken` *(new)* | `#F1F5F9` | `#0B1222` |
 | `textPrimary` | `#0F172A` | `#F8FAFC` |
 | `textSecondary` | `#475569` | `#94A3B8` |
-| `textTertiary` *(new)* | `#64748B` | `#64748B` (caption only ≥ 12 px) |
+| `textTertiary` *(new)* | `#64748B` (4.55 : 1 on page) | `#8594AA` (4.75 : 1 on surface — slate-500 measured 3.07 and was rejected by the UI-TEAL-0 contrast test) |
 | `divider` | `#E2E8F0` | `#334155` |
 | `inputBorder` | `#64748B` | `#475569` |
 | `disabledContainer` | `#E2E8F0` | `#334155` |
@@ -940,4 +940,5 @@ Scope `apps/seller/lib/**`, excluding `lib/l10n/**`. Output `path:line RULE`; ex
 | Date | Change |
 |---|---|
 | 2026-09-23 | Initial ADR — owner approved plan A–D; system = Sales Associate, UX bar = tier-1 seller platform, brand = teal. |
+| 2026-09-23 | UI-TEAL-0: dark `textTertiary` corrected to `#8594AA` after the automated WCAG test failed `#64748B`. |
 | 2026-09-23 | SEC-P0: test-mode config moved to Console-only `auth_test_mode/config` (7-day cap, allowlist only); §9, §14 E4, §17 updated. |
