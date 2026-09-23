@@ -11,9 +11,11 @@ import '../../providers/rfq_provider.dart';
 import '../../providers/seller_auth_provider.dart';
 import '../../providers/seller_order_provider.dart';
 import '../../providers/seller_product_provider.dart';
+import '../notifications/notifications_screen.dart';
 import '../payments/payments_screen.dart';
 import '../rfq/quote_rules.dart';
 import '../rfq/seller_rfq_inbox_screen.dart';
+import '../search/search_screen.dart';
 import '../shell/seller_shell.dart';
 import 'add_product_screen.dart';
 import 'home_stats.dart';
@@ -23,12 +25,15 @@ import 'widgets/home_widgets.dart';
 /// now, how the business is doing against the previous period, and the
 /// next settlement. KPIs come from the server rollup `seller_stats_daily`.
 class DashboardScreen extends StatefulWidget {
-  const DashboardScreen({super.key, this.stats, this.pendingPayout, this.now});
+  const DashboardScreen({super.key, this.stats, this.pendingPayout, this.now, this.unreadOverride});
 
   /// Injected in tests; otherwise streamed.
   final Map<String, DayStat>? stats;
   final double? pendingPayout;
   final DateTime? now;
+
+  /// Fixed unread count for the bell in tests.
+  final int? unreadOverride;
 
   @override
   State<DashboardScreen> createState() => _DashboardScreenState();
@@ -201,6 +206,14 @@ class _DashboardScreenState extends State<DashboardScreen> {
           Text(user?.name.isNotEmpty == true ? user!.name : l10n.homeTitle,
               style: text.titleMedium, maxLines: 1, overflow: TextOverflow.ellipsis),
         ]),
+        actions: [
+          IconButton(
+            tooltip: l10n.homeSearch,
+            icon: const Icon(AgIcons.search),
+            onPressed: () => Navigator.of(context).push(MaterialPageRoute<void>(builder: (_) => const SellerSearchScreen())),
+          ),
+          NotificationBell(unreadOverride: widget.unreadOverride ?? (_injected ? 0 : null)),
+        ],
       ),
       body: ListView(
         padding: const EdgeInsets.all(WsSpace.page),

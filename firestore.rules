@@ -255,9 +255,20 @@ service cloud.firestore {
         allow read, write: if isOwner(userId);
       }
       
+      // SELLER-HOME-1b: the inbox is written by Cloud Functions (order, RFQ
+      // and payout notifications); `allow write: if isOwner(userId)` let a
+      // user plant arbitrary "system" notifications — with any actionUrl —
+      // in their own inbox. The owner may only mark entries read (both
+      // conventions in use: `unread`, and `read` from the employee app) or
+      // delete them.
       match /notifications/{notificationId} {
         allow read: if isOwner(userId);
-        allow write: if isOwner(userId) || isAdmin();
+        allow create: if isAdmin();
+        allow update: if isAdmin() ||
+          (isOwner(userId) &&
+           request.resource.data.diff(resource.data).affectedKeys()
+             .hasOnly(['unread', 'read', 'readAt']));
+        allow delete: if isOwner(userId) || isAdmin();
       }
       
       match /chats/{chatId} {

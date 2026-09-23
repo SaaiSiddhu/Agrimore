@@ -38,6 +38,7 @@
 
 import { onCall, HttpsError } from "firebase-functions/v2/https";
 import * as admin from "firebase-admin";
+import { notifyUser } from "./orderNotifications";
 
 const MAX_NOTES_LENGTH = 500; // FIX-16 precedent: bound every client string
 const MAX_QUANTITY = 1_000_000; // generous engineering ceiling, not a business limit
@@ -133,6 +134,27 @@ function otherRole(role: RfqRole): RfqRole {
   return role === "buyer" ? "seller" : "buyer";
 }
 
+/**
+ * SELLER-HOME-1b: tell the other party (inbox + push). Best-effort — a
+ * notification failure never fails the negotiation step that already
+ * committed.
+ */
+async function notifyRfqParty(
+  userId: string,
+  rfqId: string,
+  title: string,
+  body: string,
+  type: string
+): Promise<void> {
+  try {
+    await notifyUser(userId, title, body, type, { rfqId, actionUrl: `rfq/${rfqId}`, type: "rfq" }, "📝");
+  } catch (e) {
+    console.error(`RFQ notification ${type} for ${rfqId} failed`, e);
+  }
+}
+
+const rupees = (n: number) => `Rs.${n.toFixed(2)}`;
+
 interface CreateRfqData {
   productId?: string;
   quantity?: number;
@@ -219,6 +241,16 @@ export const createRfq = onCall(
       history: [historyEntry],
     });
 
+    const productName = typeof productSnap.data()?.name === "string" ? productSnap.data()?.name : "your product";
+    const who = buyer.businessName || buyer.name || "A business buyer";
+    await notifyRfqParty(
+      sellerId,
+      rfqRef.id,
+      "New quote request",
+      `${who} asked for ${quantity} × ${productName}` + (proposedPrice !== null ? ` at ${rupees(proposedPrice)} each.` : "."),
+      "rfq_new"
+    );
+
     return { success: true, rfqId: rfqRef.id };
   }
 );
@@ -250,6 +282,8 @@ export const submitRfqOffer = onCall(
 
     const db = admin.firestore();
     const rfqRef = db.collection("rfqs").doc(data.rfqId);
+    let notifyId = "";
+    let productName = "";
 
     await db.runTransaction(async (tx) => {
       const rfqSnap = await tx.get(rfqRef);
@@ -281,6 +315,9 @@ export const submitRfqOffer = onCall(
         at: now,
       };
 
+      notifyId = role === "buyer" ? rfq.sellerId : rfq.buyerId;
+      productName = String((rfqSnap.data()?.product as { name?: string } | undefined)?.name || "");
+
       tx.update(rfqRef, {
         status: "negotiating",
         awaitingResponseFrom: otherRole(role),
@@ -289,6 +326,14 @@ export const submitRfqOffer = onCall(
         history: admin.firestore.FieldValue.arrayUnion(historyEntry),
       });
     });
+
+    await notifyRfqParty(
+      notifyId,
+      data.rfqId,
+      "New offer on a quote",
+      `${productName || "Quote"}: ${quantity} × ${rupees(price)}. Valid for ${validDays} day${validDays === 1 ? "" : "s"}.`,
+      "rfq_offer"
+    );
 
     return { success: true };
   }
@@ -320,6 +365,8 @@ export const respondToRfqOffer = onCall(
 
     const db = admin.firestore();
     const rfqRef = db.collection("rfqs").doc(data.rfqId);
+    let notifyId = "";
+    let productName = "";
 
     await db.runTransaction(async (tx) => {
       const rfqSnap = await tx.get(rfqRef);
@@ -349,6 +396,8 @@ export const respondToRfqOffer = onCall(
       }
 
       const now = admin.firestore.Timestamp.now();
+      notifyId = role === "buyer" ? rfq.sellerId : rfq.buyerId;
+      productName = String((rfqSnap.data()?.product as { name?: string } | undefined)?.name || "");
 
       if (action === "accept") {
         if (!rfq.lastOffer) {
@@ -399,6 +448,16 @@ export const respondToRfqOffer = onCall(
         });
       }
     });
+
+    await notifyRfqParty(
+      notifyId,
+      data.rfqId,
+      action === "accept" ? "Quote accepted" : "Quote declined",
+      action === "accept"
+        ? `${productName || "Your quote"} was accepted. The order can now be placed at the agreed price.`
+        : `${productName || "Your quote"} was declined${reason ? `: ${reason}` : "."}`,
+      action === "accept" ? "rfq_accepted" : "rfq_declined"
+    );
 
     return { success: true, action };
   }
