@@ -251,3 +251,8 @@ export { refreshDeliveryRoute } from "./delivery/deliveryRoute";
 // Phase DLV-3C: server-checked rider steps (transition table + location flags)
 // and the "Seller not ready" hand-back. See delivery/riderSteps.ts.
 export { advanceDeliveryStep, releaseDeliveryOrder } from "./delivery/riderSteps";
+// Phase DLV-4A: rider pay per order, COD cash held, weekly statements, cash
+// deposits and bank-detail review. See delivery/riderMoney.ts.
+export {
+  onRiderDelivery, buildRiderStatements, recordRiderCashDeposit, requestRiderBankChange, reviewRiderBankChange,
+} from "./delivery/riderMoney";

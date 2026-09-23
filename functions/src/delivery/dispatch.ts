@@ -32,6 +32,8 @@ import * as admin from "firebase-admin";
 import { FieldValue, Timestamp } from "firebase-admin/firestore";
 import { dropPoint, orderPickupPoint, sellerPickupPoint } from "./syncDeliveryTask";
 import { taskStatusFromOrder } from "./states";
+import { riderPay, tripKm } from "./riderPay";
+import { loadRiderPayRates, ridersAtCashLimit } from "./riderRates";
 
 export const WAVE_RADII_KM = [5, 8, 12] as const;
 export const WAVE_SIZE = 3;
@@ -280,6 +282,12 @@ export async function runNextWave(
   const offeredBefore = new Set<string>(Array.isArray(d.offeredTo) ? d.offeredTo : []);
   const open = await openOfferRiders(db, orderId, nowMs);
 
+  // DLV-4A (D-DLV-COD): a rider holding cash at or over the limit gets no
+  // COD offers until admin confirms a deposit; prepaid offers still come.
+  const rates = await loadRiderPayRates(db);
+  const codOrder = isCod(order.paymentMethod) && (num(order.total) ?? 0) > 0;
+  const overCashLimit = codOrder ? await ridersAtCashLimit(db, rates.codCashLimit) : new Set<string>();
+
   let wave = typeof d.wave === "number" ? d.wave : 0;
   let chosen: Candidate[] = [];
   let radiusKm: number = WAVE_RADII_KM[WAVE_RADII_KM.length - 1];
@@ -287,7 +295,7 @@ export async function runNextWave(
     wave += 1;
     const retry = wave > WAVE_RADII_KM.length;
     radiusKm = WAVE_RADII_KM[Math.min(wave, WAVE_RADII_KM.length) - 1];
-    const exclude = new Set<string>([...declined, ...open, ...(retry ? [] : offeredBefore)]);
+    const exclude = new Set<string>([...declined, ...open, ...overCashLimit, ...(retry ? [] : offeredBefore)]);
     chosen = rankCandidates(partnerList, {
       pickup, orderAddress: order.deliveryAddress || {}, exclude, busy,
       radiusKm, limit: WAVE_SIZE, nowMs,
@@ -308,6 +316,11 @@ export async function runNextWave(
     ? await db.collection("sellers").doc(order.sellerId).get() : null;
   const seller = sellerSnap?.data() ?? {};
   const pickupArea = [seller.city, seller.pincode].filter((v) => typeof v === "string" && v).join(" · ") || null;
+  // DLV-4A (D-DLV-PAY): what the rider is offered — base + distance on the
+  // straight line × 1.35 (no road route exists before acceptance). The
+  // amount actually paid is computed at delivery, road distance and waiting
+  // included (riderMoney.ts).
+  const estimate = riderPay(rates, tripKm({ pickup, drop }).km, 0);
 
   const batch = db.batch();
   for (const c of chosen) {
@@ -328,6 +341,7 @@ export async function runNextWave(
       itemCount,
       codAmount: cod,
       paymentMethod: order.paymentMethod ?? null,
+      estimatedPay: estimate.total,
       radiusKm,
       createdAt: Timestamp.fromMillis(nowMs),
       updatedAt: FieldValue.serverTimestamp(),
