@@ -340,6 +340,24 @@ service cloud.firestore {
     // ============================================
     // PRODUCTS COLLECTION
     // ============================================
+    // SELLER-ACCOUNT-1a: collection-group reads of `reviews`. No rule used
+    // to match {path=**}/reviews, so every collectionGroup('reviews') query
+    // (admin review_management_screen, database_service's "my reviews") was
+    // denied. Deliberately NOT public: orders/{id}/reviews (order ratings)
+    // share the name. The seller of the product (sellerId, stamped by
+    // onProductReviewWrite), the review's writer, or an admin.
+    match /{path=**}/reviews/{reviewId} {
+      allow read: if isAuthenticated() &&
+        (resource.data.sellerId == request.auth.uid ||
+         resource.data.userId == request.auth.uid ||
+         isAdmin());
+    }
+
+    function reviewRatingInRange() {
+      return request.resource.data.rating is number &&
+        request.resource.data.rating >= 1 && request.resource.data.rating <= 5;
+    }
+
     match /products/{productId} {
       // Anyone can read products (public catalog)
       allow read: if true;
@@ -365,15 +383,23 @@ service cloud.firestore {
         // Anyone can read reviews
         allow read: if true;
         
-        // Authenticated users can create reviews
-        allow create: if isAuthenticated() && request.resource.data.userId == request.auth.uid;
+        // Authenticated users can create reviews. SELLER-ACCOUNT-1a: the
+        // rating must be 1–5 and the seller's reply / server stamps
+        // (sellerId, productName) cannot be forged; isVerifiedPurchase is
+        // overwritten with the truth by onProductReviewWrite.
+        allow create: if isAuthenticated() && request.resource.data.userId == request.auth.uid &&
+          reviewRatingInRange() &&
+          !request.resource.data.keys().hasAny(['sellerReply', 'sellerId', 'productName']);
         
         // Users can update their own reviews. Phase FIX-6, Workstream 3 fix:
         // this checked only the EXISTING document's userId, not whether the
         // update kept it the same — a user editing their own review could
         // rewrite `userId` to someone else's uid, misattributing the review.
+        // SELLER-ACCOUNT-1a: nor touch the seller's reply or server stamps.
         allow update: if isAuthenticated() && resource.data.userId == request.auth.uid &&
-          request.resource.data.userId == resource.data.userId;
+          request.resource.data.userId == resource.data.userId &&
+          reviewRatingInRange() &&
+          !request.resource.data.diff(resource.data).affectedKeys().hasAny(['sellerReply', 'sellerId', 'productName']);
         
         // Users can delete their own reviews, admins can delete any
         allow delete: if isAuthenticated() && 
@@ -903,7 +929,11 @@ service cloud.firestore {
           'updatedAt'
         ]) &&
         (!('description' in d) || d.description == null || (d.description is string && d.description.size() <= 500)) &&
-        (!('highlights' in d) || d.highlights == null || (d.highlights is list && d.highlights.size() <= 3));
+        (!('highlights' in d) || d.highlights == null || (d.highlights is list && d.highlights.size() <= 3)) &&
+        // SELLER-ACCOUNT-1a: a changed GSTIN must be well-formed (or cleared)
+        // — issueSellerInvoice prints it on tax invoices.
+        (!d.diff(resource.data).affectedKeys().hasAny(['gstin']) || d.gstin == '' ||
+          (d.gstin is string && d.gstin.matches('^[0-9]{2}[A-Z]{5}[0-9]{4}[A-Z][1-9A-Z]Z[0-9A-Z]$')));
     }
 
     match /sellers/{sellerId} {
