@@ -84,9 +84,7 @@ import '../screens/user/rfq/rfq_detail_screen.dart';
 import '../screens/user/settings/language_screen.dart';
 
 // Seller
-import '../screens/seller/seller_apply_screen.dart';
-import '../screens/seller/seller_dashboard_screen.dart';
-import '../screens/seller/seller_panel_screen.dart';
+import '../screens/seller/seller_handoff_screen.dart';
 
 // Employee
 import '../screens/employee/employee_apply_screen.dart';
@@ -624,15 +622,12 @@ class AppRoutes {
           return _buildRoute(const LanguageScreen(), settings);
 
         // Seller Routes
+        // SELLER-AUTH-1: every seller entry point hands off to AgriMore Seller.
         case sellerApply:
-          return _buildRoute(
-              const AuthGuard(child: SellerApplyScreen()), settings);
         case sellerPanel:
-          return _buildRoute(
-              const AuthGuard(child: SellerPanelScreen()), settings);
         case sellerDashboard:
           return _buildRoute(
-              const AuthGuard(child: SellerDashboardScreen()), settings);
+              const AuthGuard(child: SellerHandoffScreen()), settings);
 
         // Employee Routes
         case employeeApply:

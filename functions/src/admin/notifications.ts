@@ -3,6 +3,7 @@ import * as admin from "firebase-admin";
 import { FieldValue, FieldPath } from "firebase-admin/firestore";
 import { log, NotificationData, validateNotificationData, createNotificationMessage } from "../common/helpers";
 import { closeDispatch, startDispatch } from "../delivery/dispatch";
+import { notifyRiderAssignment } from "../delivery/riderPresence";
 
 // Phase 14, Workstream 3 fix: this used to contain a
 // BOOTSTRAP_ADMIN_EMAILS allowlist and, on a match, WROTE role:"admin" onto
@@ -498,6 +499,18 @@ export const onOrderStatusChanged = functions.firestore
         timestamp: FieldValue.serverTimestamp(),
         sentAt: FieldValue.serverTimestamp(),
       });
+    }
+
+    // Phase DLV-3A: an admin assignment or reassignment (DLV-2C) tells the
+    // rider(s) — the status alone does not change on a reassignment.
+    try {
+      const pushed = await notifyRiderAssignment(admin.firestore(), orderId, beforeData, afterData);
+      if (pushed.assignedTo) {
+        log.info(`[AutoTrigger] rider assignment push for ${orderId}: to ${pushed.assignedTo}` +
+          (pushed.removedFrom ? `, moved from ${pushed.removedFrom}` : ""));
+      }
+    } catch (e) {
+      log.error(`[AutoTrigger] rider assignment push failed for ${orderId}: ${(e as Error)?.message ?? e}`);
     }
   });
 

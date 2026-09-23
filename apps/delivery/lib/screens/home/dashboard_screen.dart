@@ -10,7 +10,11 @@ import '../../providers/location_provider.dart';
 import '../orders/active_order_screen.dart';
 import '../../offers/offer_alerts.dart';
 import '../../offers/offer_launch.dart';
+import '../../offers/offer_platform.dart';
 import '../../providers/offer_provider.dart';
+import '../../location/location_disclosure.dart';
+import '../../location/location_policy.dart';
+import 'package:geolocator/geolocator.dart';
 import 'package:agrimore_ui/agrimore_ui.dart';
 
 class DashboardScreen extends StatefulWidget {
@@ -29,18 +33,108 @@ class _DashboardScreenState extends State<DashboardScreen> {
     _initializeProviders();
   }
 
+  // Phase DLV-3A: the toggle follows the server's delivery_partners.isOnline
+  // (resume after the app was closed while online; stop when the server
+  // takes a silent rider offline), and the active order sets the location
+  // cadence and live-point target.
+  DeliveryAuthProvider? _auth;
+  DeliveryOrderProvider? _orders;
+  bool _syncedFromServer = false;
+  bool? _lastServerOnline;
+  bool _toggling = false;
+
   void _initializeProviders() {
     WidgetsBinding.instance.addPostFrameCallback((_) {
+      if (!mounted) return;
       final auth = context.read<DeliveryAuthProvider>();
       final orderProvider = context.read<DeliveryOrderProvider>();
-      final locationProvider = context.read<LocationProvider>();
 
       if (auth.user != null) {
         orderProvider.watchActiveOrder(auth.user!.uid);
         orderProvider.watchMyDeliveries(auth.user!.uid);
-        locationProvider.checkPermissions();
       }
+      _auth = auth..addListener(_onServerState);
+      _orders = orderProvider..addListener(_onActiveOrder);
+      _onServerState();
+      _onActiveOrder();
     });
+  }
+
+  @override
+  void dispose() {
+    _auth?.removeListener(_onServerState);
+    _orders?.removeListener(_onActiveOrder);
+    super.dispose();
+  }
+
+  void _onActiveOrder() {
+    if (!mounted) return;
+    context.read<LocationProvider>().setActiveOrder(_orders?.activeOrder?.id);
+  }
+
+  void _onServerState() {
+    final auth = _auth;
+    if (!mounted || auth == null || auth.user == null) return;
+    final server = auth.partnerOnline;
+    if (server == null) return;
+    final previous = _lastServerOnline;
+    _lastServerOnline = server;
+    if (!_syncedFromServer) {
+      _syncedFromServer = true;
+      if (server && !_isOnline) _resumeOnline();
+      return;
+    }
+    if (!server && previous == true && _isOnline && !_toggling) {
+      context.read<LocationProvider>().stopTracking();
+      setState(() => _isOnline = false);
+      final message = serverOfflineMessage(auth.offlineReason);
+      if (message != null) SnackbarHelper.showWarning(context, message);
+    }
+  }
+
+  /// The server still has this rider online (the app was closed or killed
+  /// while online): pick tracking back up without prompting, or go offline
+  /// if it cannot run.
+  Future<void> _resumeOnline() async {
+    final auth = _auth;
+    if (auth?.user == null) return;
+    final uid = auth!.user!.uid;
+    // Android 12+ refuses to start a location foreground service from the
+    // background (seen on the device run when the rider left the app during
+    // start-up): wait until the app is on screen.
+    if (WidgetsBinding.instance.lifecycleState != AppLifecycleState.resumed) {
+      late final AppLifecycleListener listener;
+      listener = AppLifecycleListener(onResume: () {
+        listener.dispose();
+        if (mounted && !_isOnline) _resumeOnline();
+      });
+      return;
+    }
+    final location = context.read<LocationProvider>();
+    // Phase DLV-3A2: the native service may have kept sending while the app
+    // was swiped away — attach to it rather than restarting.
+    if (await location.nativeServiceRunning()) {
+      debugPrint('Resume online: native service already running');
+      location.attachToRunningService(uid);
+      if (mounted) setState(() => _isOnline = true);
+      return;
+    }
+    final disclosed = await locationDisclosureAccepted();
+    final canTrack = await location.canTrackWithoutPrompt();
+    debugPrint('Resume online: blocked=${auth.isBlocked} '
+        'disclosed=$disclosed canTrack=$canTrack');
+    if (auth.isBlocked || !disclosed || !canTrack) {
+      await location.setOnlineStatus(uid, false);
+      return;
+    }
+    final result = await location.startTracking(uid);
+    debugPrint('Resume online: ${result.name}');
+    if (!mounted) return;
+    if (result == GoOnlineResult.started) {
+      setState(() => _isOnline = true);
+    } else {
+      await location.setOnlineStatus(uid, false);
+    }
   }
 
   @override
@@ -48,31 +142,43 @@ class _DashboardScreenState extends State<DashboardScreen> {
     final theme = Theme.of(context);
     final colorScheme = theme.colorScheme;
 
-    return Scaffold(
-      body: SafeArea(
-        child: Column(
-          children: [
-            // Header
-            _buildHeader(colorScheme),
+    // Phase DLV-3A: while online, Back here keeps the app running in the
+    // background (as WhatsApp does) — closing the activity would end the
+    // location stream. Offline, Back closes the app as before.
+    return PopScope(
+      canPop: !_isOnline,
+      onPopInvokedWithResult: (didPop, _) async {
+        if (didPop) return;
+        if (!await OfferPlatform.moveToBackground()) {
+          await SystemNavigator.pop();
+        }
+      },
+      child: Scaffold(
+        body: SafeArea(
+          child: Column(
+            children: [
+              // Header
+              _buildHeader(colorScheme),
 
-            // Online Toggle
-            _buildOnlineToggle(colorScheme),
+              // Online Toggle
+              _buildOnlineToggle(colorScheme),
 
-            // Active Order or Dashboard
-            Expanded(
-              child: Consumer<DeliveryOrderProvider>(
-                builder: (context, orderProvider, _) {
-                  if (orderProvider.hasActiveOrder) {
-                    return _buildActiveOrderCard(
-                      orderProvider.activeOrder!,
-                      colorScheme,
-                    );
-                  }
-                  return _buildDashboardContent(colorScheme);
-                },
+              // Active Order or Dashboard
+              Expanded(
+                child: Consumer<DeliveryOrderProvider>(
+                  builder: (context, orderProvider, _) {
+                    if (orderProvider.hasActiveOrder) {
+                      return _buildActiveOrderCard(
+                        orderProvider.activeOrder!,
+                        colorScheme,
+                      );
+                    }
+                    return _buildDashboardContent(colorScheme);
+                  },
+                ),
               ),
-            ),
-          ],
+            ],
+          ),
         ),
       ),
     );
@@ -807,21 +913,74 @@ class _DashboardScreenState extends State<DashboardScreen> {
   }
 
   void _toggleOnline(bool value) async {
+    if (_toggling) return;
     HapticFeedback.lightImpact();
-    setState(() => _isOnline = value);
-
     final auth = context.read<DeliveryAuthProvider>();
     final location = context.read<LocationProvider>();
+    final uid = auth.user?.uid;
+    if (uid == null) return;
 
-    if (value && auth.user != null) {
-      // Phase DLV-2B: notifications, and full-screen alerts on Android 14+,
-      // so offers can ring. Asked once; never blocks going online.
-      await ensureOfferAlertPermissions(context);
-      await location.startTracking(auth.user!.uid);
-      await location.setOnlineStatus(auth.user!.uid, true);
-    } else if (auth.user != null) {
-      location.stopTracking();
-      await location.setOnlineStatus(auth.user!.uid, false);
+    _toggling = true;
+    setState(() => _isOnline = value);
+    try {
+      if (value) {
+        // Phase DLV-3A: Play's prominent disclosure comes before the
+        // location prompt; without location the rider cannot go online.
+        if (!await ensureLocationDisclosure(context)) {
+          if (mounted) setState(() => _isOnline = false);
+          return;
+        }
+        if (!mounted) return;
+        // Phase DLV-2B: notifications, and full-screen alerts on Android 14+,
+        // so offers can ring. Asked once; never blocks going online.
+        await ensureOfferAlertPermissions(context);
+        // Phase DLV-3A2: while-in-use first, then (D-DLV-BGLOC-ALWAYS) the
+        // explained 'Allow all the time' step and (D-DLV-BATTERY) the
+        // one-time battery guide. Neither of the last two blocks going online.
+        var result = await location.ensurePermission();
+        var backgroundAllowed = true;
+        if (result == GoOnlineResult.started) {
+          if (!mounted) return;
+          backgroundAllowed = await ensureBackgroundLocation(context);
+          if (!mounted) return;
+          await maybeShowBatteryGuide(context);
+          // Online on the server BEFORE the native service starts: it stops
+          // itself whenever the server says offline.
+          await location.setOnlineStatus(uid, true);
+          result = await location.startTracking(uid);
+          if (result != GoOnlineResult.started) {
+            await location.setOnlineStatus(uid, false);
+          }
+        }
+        if (!mounted) return;
+        if (result == GoOnlineResult.started && !backgroundAllowed) {
+          SnackbarHelper.showWarning(context, backgroundLocationReminder);
+        }
+        if (result != GoOnlineResult.started) {
+          setState(() => _isOnline = false);
+          final message = result.message;
+          if (message != null) {
+            if (result.needsSettings) {
+              SnackbarHelper.showWithAction(
+                context,
+                message,
+                'Settings',
+                () => result == GoOnlineResult.servicesOff
+                    ? Geolocator.openLocationSettings()
+                    : Geolocator.openAppSettings(),
+              );
+            } else {
+              SnackbarHelper.showError(context, message);
+            }
+          }
+          return;
+        }
+      } else {
+        location.stopTracking();
+        await location.setOnlineStatus(uid, false);
+      }
+    } finally {
+      _toggling = false;
     }
   }
 
@@ -837,9 +996,16 @@ class _DashboardScreenState extends State<DashboardScreen> {
             child: Text('Cancel'),
           ),
           FilledButton(
-            onPressed: () {
+            onPressed: () async {
               Navigator.pop(context);
-              context.read<DeliveryAuthProvider>().signOut();
+              // DLV-3A: go offline first — the foreground service and the
+              // server's isOnline would otherwise outlive the session.
+              final auth = this.context.read<DeliveryAuthProvider>();
+              final location = this.context.read<LocationProvider>();
+              final uid = auth.user?.uid;
+              location.stopTracking();
+              if (uid != null) await location.setOnlineStatus(uid, false);
+              await auth.signOut();
             },
             child: Text('Logout'),
           ),
