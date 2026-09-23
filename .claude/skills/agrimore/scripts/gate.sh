@@ -11,6 +11,7 @@
 #   node scripts/phase23_deploy_bundle_guard_test.js    no emulator   (no credential in the deploy bundle, 5 checks)
 #   node scripts/phaseDLV1A_delivery_states_test.js     no emulator   (TS delivery states vs the shared fixture — the Dart/TS parity guard)
 #   (cd packages/agrimore_core && flutter test)         --full        (Dart delivery enums vs the same fixture)
+#   (cd apps/delivery && flutter test)                  --full        (rider offers: model, refusal wording, offer screen)
 #   node scripts/governance/validate-branch-dispositions.mjs   ledger vs git (warnings; exit 0 always — we count "warning(s)")
 #   (cd apps/marketplace && flutter test)               --full        (the only Dart suite)
 #   firebase emulators:exec --only <set> --project agrimore-66a4e "cd functions && node scripts/<suite>.js"   --emulator, one FRESH emulator per suite
@@ -101,6 +102,7 @@ if [ "$MODE" = full ]; then
   run test:agrimore_ui         bash -c 'cd packages/agrimore_ui && flutter test'
   run test:employee            bash -c 'cd apps/employee && flutter test'
   run test:agrimore_core       bash -c 'cd packages/agrimore_core && flutter test'
+  run test:delivery            bash -c 'cd apps/delivery && flutter test'
 fi
 if [ $SECRETS = 1 ]; then
   run secrets:verify           bash -c 'cd functions && node scripts/verify_secrets.js'
