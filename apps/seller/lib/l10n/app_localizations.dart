@@ -4725,6 +4725,150 @@ abstract class AppLocalizations {
   /// In en, this message translates to:
   /// **'Stock: lowest first'**
   String get sortStockLow;
+
+  /// No description provided for @weekdayMon.
+  ///
+  /// In en, this message translates to:
+  /// **'Mon'**
+  String get weekdayMon;
+
+  /// No description provided for @weekdayTue.
+  ///
+  /// In en, this message translates to:
+  /// **'Tue'**
+  String get weekdayTue;
+
+  /// No description provided for @weekdayWed.
+  ///
+  /// In en, this message translates to:
+  /// **'Wed'**
+  String get weekdayWed;
+
+  /// No description provided for @weekdayThu.
+  ///
+  /// In en, this message translates to:
+  /// **'Thu'**
+  String get weekdayThu;
+
+  /// No description provided for @weekdayFri.
+  ///
+  /// In en, this message translates to:
+  /// **'Fri'**
+  String get weekdayFri;
+
+  /// No description provided for @weekdaySat.
+  ///
+  /// In en, this message translates to:
+  /// **'Sat'**
+  String get weekdaySat;
+
+  /// No description provided for @weekdaySun.
+  ///
+  /// In en, this message translates to:
+  /// **'Sun'**
+  String get weekdaySun;
+
+  /// No description provided for @scheduleTitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Weekly off & holidays'**
+  String get scheduleTitle;
+
+  /// No description provided for @scheduleWeeklyOff.
+  ///
+  /// In en, this message translates to:
+  /// **'Weekly off days'**
+  String get scheduleWeeklyOff;
+
+  /// No description provided for @scheduleWeeklyOffHint.
+  ///
+  /// In en, this message translates to:
+  /// **'Your store takes no orders on these days, every week.'**
+  String get scheduleWeeklyOffHint;
+
+  /// No description provided for @scheduleHolidays.
+  ///
+  /// In en, this message translates to:
+  /// **'Holidays'**
+  String get scheduleHolidays;
+
+  /// No description provided for @scheduleAddHoliday.
+  ///
+  /// In en, this message translates to:
+  /// **'Add holiday'**
+  String get scheduleAddHoliday;
+
+  /// No description provided for @scheduleRemoveHoliday.
+  ///
+  /// In en, this message translates to:
+  /// **'Remove holiday'**
+  String get scheduleRemoveHoliday;
+
+  /// No description provided for @scheduleNoHolidays.
+  ///
+  /// In en, this message translates to:
+  /// **'No holidays planned.'**
+  String get scheduleNoHolidays;
+
+  /// No description provided for @scheduleConsequence.
+  ///
+  /// In en, this message translates to:
+  /// **'On a day off, buyers can still see your products but can\'t place orders. Days follow Indian time.'**
+  String get scheduleConsequence;
+
+  /// No description provided for @scheduleAllDaysOff.
+  ///
+  /// In en, this message translates to:
+  /// **'Keep at least one day open. To stop orders for a while, pause your store instead.'**
+  String get scheduleAllDaysOff;
+
+  /// No description provided for @scheduleHolidayLimit.
+  ///
+  /// In en, this message translates to:
+  /// **'You can plan up to {count} holidays.'**
+  String scheduleHolidayLimit(int count);
+
+  /// No description provided for @scheduleOpenEveryDay.
+  ///
+  /// In en, this message translates to:
+  /// **'Open every day'**
+  String get scheduleOpenEveryDay;
+
+  /// No description provided for @scheduleOffDays.
+  ///
+  /// In en, this message translates to:
+  /// **'Closed {days}'**
+  String scheduleOffDays(String days);
+
+  /// No description provided for @scheduleHolidayCount.
+  ///
+  /// In en, this message translates to:
+  /// **'{count, plural, =1{1 holiday planned} other{{count} holidays planned}}'**
+  String scheduleHolidayCount(int count);
+
+  /// No description provided for @scheduleOffDaysAndHolidays.
+  ///
+  /// In en, this message translates to:
+  /// **'Closed {days} · {count, plural, =1{1 holiday} other{{count} holidays}}'**
+  String scheduleOffDaysAndHolidays(String days, int count);
+
+  /// No description provided for @scheduleClosedToday.
+  ///
+  /// In en, this message translates to:
+  /// **'Closed today'**
+  String get scheduleClosedToday;
+
+  /// No description provided for @scheduleClosedWeeklyOff.
+  ///
+  /// In en, this message translates to:
+  /// **'Today is your weekly off. Buyers can\'t place orders until tomorrow.'**
+  String get scheduleClosedWeeklyOff;
+
+  /// No description provided for @scheduleClosedHoliday.
+  ///
+  /// In en, this message translates to:
+  /// **'Today is a holiday you set. Buyers can\'t place orders until tomorrow.'**
+  String get scheduleClosedHoliday;
 }
 
 class _AppLocalizationsDelegate

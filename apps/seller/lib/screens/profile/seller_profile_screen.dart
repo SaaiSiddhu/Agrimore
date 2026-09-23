@@ -15,6 +15,7 @@ import '../reviews/reviews_screen.dart';
 import '../posts/followers_screen.dart';
 import '../rfq/seller_rfq_inbox_screen.dart';
 import '../storefront/storefront_editor_screen.dart';
+import '../account/store_schedule.dart';
 import '../account/store_status.dart';
 import 'business_details_sheet.dart';
 import 'delivery_fee_sheet.dart';
@@ -152,6 +153,21 @@ class _SellerProfileScreenState extends State<SellerProfileScreen> {
       debugPrint('Store status failed: $e');
       if (mounted) WsToast.show(context, l10n.profileSaveFailed, tone: WsToastTone.error);
     }
+  }
+
+  void _editSchedule() {
+    final uid = _uid;
+    if (uid == null) return;
+    _push(StoreScheduleScreen(
+      initial: StoreSchedule.fromSeller(_seller),
+      onSave: (s) async {
+        await FirebaseFirestore.instance
+            .collection('sellers')
+            .doc(uid)
+            .update({...s.toUpdate(DateTime.now()), 'updatedAt': FieldValue.serverTimestamp()});
+        await _load();
+      },
+    ));
   }
 
   void _editDeliveryFee() {
@@ -339,6 +355,7 @@ class _SellerProfileScreenState extends State<SellerProfileScreen> {
                       StoreStatus.fromSeller(seller).isPaused(DateTime.now()) ? l10n.storeStatusPaused : l10n.storeStatusOpen,
                       _editStoreStatus,
                     ),
+                    tile(AgIcons.calendar, l10n.scheduleTitle, describeSchedule(StoreSchedule.fromSeller(seller), l10n, DateTime.now()), _editSchedule),
                     tile(AgIcons.document, l10n.accountBusinessDetails, l10n.accountBusinessDetailsHint, _editBusiness),
                     tile(AgIcons.store, l10n.storefrontMenu, l10n.storefrontMenuSubtitle, () => _push(const StorefrontEditorScreen())),
                     tile(AgIcons.delivery, l10n.accountDeliveryFee, describeDeliveryFeeSchedule(seller['deliveryFeeSchedule'] as Map<String, dynamic>?, l10n), _editDeliveryFee),

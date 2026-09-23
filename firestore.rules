@@ -988,9 +988,12 @@ service cloud.firestore {
           'shopAddress', 'city', 'state', 'pincode', 'latitude', 'longitude',
           'phone', 'gstNumber', 'gstin',
           'openingTime', 'closingTime', 'deliveryRadiusKm', 'deliveryFeeSchedule',
-          'acceptingOrders', 'pausedUntil',
+          'acceptingOrders', 'pausedUntil', 'weeklyOff', 'holidays',
           'updatedAt'
         ]) &&
+        // SELLER-OPS-2: weekly off days (ISO weekdays) and holiday dates.
+        (!('weeklyOff' in d) || (d.weeklyOff is list && d.weeklyOff.size() <= 7 && d.weeklyOff.hasOnly([1, 2, 3, 4, 5, 6, 7]))) &&
+        (!('holidays' in d) || (d.holidays is list && d.holidays.size() <= 30)) &&
         // SELLER-OPS-1: store pause (read by createOrder / createOrderFromRfq).
         (!('acceptingOrders' in d) || d.acceptingOrders is bool) &&
         (!('pausedUntil' in d) || d.pausedUntil == null || d.pausedUntil is timestamp) &&
@@ -2040,8 +2043,21 @@ service cloud.firestore {
       // Only Cloud Functions (admin SDK) create payouts — no client writes
       allow create: if false;
 
-      // Admins can update payout status (mark as paid)
-      allow update: if isAdmin();
+      // SEC-EMPPAYOUT-1: exactly one admin transition — an open request →
+      // paid (what apps/admin's employee_payouts_screen does). Before this,
+      // any admin update was allowed: the amount, the employee, or un-paying
+      // a paid row. The wallet debit already happened in
+      // requestEmployeePayout, so amount/employeeId are immutable.
+      allow update: if isAdmin()
+        && resource.data.status in ['requested', 'pending', 'processing']
+        && request.resource.data.status == 'paid'
+        && request.resource.data.diff(resource.data).affectedKeys()
+             .hasOnly(['status', 'paidAt', 'updatedAt', 'paymentReference', 'paidBy'])
+        && request.resource.data.paidAt is timestamp
+        && (!('paidBy' in request.resource.data) || request.resource.data.paidBy == request.auth.uid)
+        && (!('paymentReference' in request.resource.data)
+            || (request.resource.data.paymentReference is string
+                && request.resource.data.paymentReference.size() <= 64));
 
       allow delete: if false;
     }

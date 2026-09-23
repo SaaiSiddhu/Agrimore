@@ -67,7 +67,7 @@ void main() {
     expect(find.text('Ravi Stores'), findsOneWidget);
     expect(find.text(l10n.accountRating('4.3', 12)), findsOneWidget);
     expect(find.text(l10n.accountSectionBusiness), findsOneWidget);
-    await tester.ensureVisible(find.text(l10n.payoutAccountTitle));
+    await tester.scrollUntilVisible(find.text(l10n.payoutAccountTitle), 200, scrollable: find.byType(Scrollable).first);
     await tester.pumpAndSettle();
     await tester.tap(find.text(l10n.payoutAccountTitle));
     await tester.pumpAndSettle();

@@ -1502,5 +1502,60 @@
   "sortNameAz": "Name A–Z",
   "sortPriceLow": "Price: low to high",
   "sortPriceHigh": "Price: high to low",
-  "sortStockLow": "Stock: lowest first"
+  "sortStockLow": "Stock: lowest first",
+  "weekdayMon": "Mon",
+  "weekdayTue": "Tue",
+  "weekdayWed": "Wed",
+  "weekdayThu": "Thu",
+  "weekdayFri": "Fri",
+  "weekdaySat": "Sat",
+  "weekdaySun": "Sun",
+  "scheduleTitle": "Weekly off & holidays",
+  "scheduleWeeklyOff": "Weekly off days",
+  "scheduleWeeklyOffHint": "Your store takes no orders on these days, every week.",
+  "scheduleHolidays": "Holidays",
+  "scheduleAddHoliday": "Add holiday",
+  "scheduleRemoveHoliday": "Remove holiday",
+  "scheduleNoHolidays": "No holidays planned.",
+  "scheduleConsequence": "On a day off, buyers can still see your products but can't place orders. Days follow Indian time.",
+  "scheduleAllDaysOff": "Keep at least one day open. To stop orders for a while, pause your store instead.",
+  "scheduleHolidayLimit": "You can plan up to {count} holidays.",
+  "@scheduleHolidayLimit": {
+    "placeholders": {
+      "count": {
+        "type": "int"
+      }
+    }
+  },
+  "scheduleOpenEveryDay": "Open every day",
+  "scheduleOffDays": "Closed {days}",
+  "@scheduleOffDays": {
+    "placeholders": {
+      "days": {
+        "type": "String"
+      }
+    }
+  },
+  "scheduleHolidayCount": "{count, plural, =1{1 holiday planned} other{{count} holidays planned}}",
+  "@scheduleHolidayCount": {
+    "placeholders": {
+      "count": {
+        "type": "int"
+      }
+    }
+  },
+  "scheduleOffDaysAndHolidays": "Closed {days} · {count, plural, =1{1 holiday} other{{count} holidays}}",
+  "@scheduleOffDaysAndHolidays": {
+    "placeholders": {
+      "days": {
+        "type": "String"
+      },
+      "count": {
+        "type": "int"
+      }
+    }
+  },
+  "scheduleClosedToday": "Closed today",
+  "scheduleClosedWeeklyOff": "Today is your weekly off. Buyers can't place orders until tomorrow.",
+  "scheduleClosedHoliday": "Today is a holiday you set. Buyers can't place orders until tomorrow."
 }
