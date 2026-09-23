@@ -3,6 +3,7 @@ import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:firebase_auth/firebase_auth.dart';
+import 'package:agrimore_ui/agrimore_ui.dart' show AgIcons;
 import '../../providers/seller_auth_provider.dart';
 import '../../providers/seller_product_provider.dart';
 import '../../providers/seller_order_provider.dart';
@@ -10,6 +11,8 @@ import '../rfq/seller_rfq_inbox_screen.dart';
 import '../ai/seller_ai_chat_screen.dart';
 import 'delivery_fee_sheet.dart';
 import 'seller_ai_integration_screen.dart';
+import '../storefront/storefront_editor_screen.dart';
+import '../../l10n/app_localizations.dart';
 
 class SellerProfileScreen extends StatefulWidget {
   const SellerProfileScreen({super.key});
@@ -296,6 +299,14 @@ class _SellerProfileScreenState extends State<SellerProfileScreen> {
           children: [
             _buildMenuItem(Icons.store_outlined, 'Business Details',
                 'Name, GST, location', isDark, () => _showEditDialog()),
+            _buildDivider(isDark),
+            _buildMenuItem(AgIcons.store, AppLocalizations.of(context).storefrontMenu,
+                AppLocalizations.of(context).storefrontMenuSubtitle, isDark, () {
+              Navigator.push(
+                context,
+                MaterialPageRoute(builder: (_) => const StorefrontEditorScreen()),
+              );
+            }),
             _buildDivider(isDark),
             _buildMenuItem(Icons.request_quote_outlined, 'Quote Requests',
                 'Respond to bulk quote requests', isDark, () {

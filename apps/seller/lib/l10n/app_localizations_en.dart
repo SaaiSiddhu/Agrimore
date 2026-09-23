@@ -1349,4 +1349,75 @@ class AppLocalizationsEn extends AppLocalizations {
   String searchOrderLine(String customer, String date) {
     return '$customer · $date';
   }
+
+  @override
+  String get storefrontTitle => 'Storefront';
+
+  @override
+  String get storefrontMenu => 'Storefront';
+
+  @override
+  String get storefrontMenuSubtitle =>
+      'Cover, logo, description and highlights';
+
+  @override
+  String get storefrontPreview => 'Preview';
+
+  @override
+  String get storefrontPreviewTitle => 'How buyers see your store';
+
+  @override
+  String get storefrontLoadFailed =>
+      'Couldn\'t load your storefront. Check your connection and open this screen again.';
+
+  @override
+  String get storefrontSaveFailed =>
+      'Couldn\'t save. Check your connection and try again.';
+
+  @override
+  String get storefrontCover => 'Cover photo';
+
+  @override
+  String get storefrontAddCover => 'Add a cover photo';
+
+  @override
+  String get storefrontChangeCover => 'Change cover photo';
+
+  @override
+  String get storefrontAddLogo => 'Add a logo';
+
+  @override
+  String get storefrontChangeLogo => 'Change logo';
+
+  @override
+  String get storefrontLogoHint =>
+      'A square logo works best. It appears on your storefront and next to your products.';
+
+  @override
+  String get storefrontName => 'Shop name';
+
+  @override
+  String get storefrontNameRequired => 'Enter your shop name';
+
+  @override
+  String get storefrontDescription => 'About your shop';
+
+  @override
+  String storefrontHighlights(int max) {
+    return 'Highlights (up to $max)';
+  }
+
+  @override
+  String get storefrontAddHighlight => 'Add a highlight';
+
+  @override
+  String get storefrontHighlightHint => 'e.g. Farm fresh, Same-day dispatch';
+
+  @override
+  String storefrontRemoveHighlight(String highlight) {
+    return 'Remove $highlight';
+  }
+
+  @override
+  String get storefrontSave => 'Save storefront';
 }

@@ -2361,6 +2361,132 @@ abstract class AppLocalizations {
   /// In en, this message translates to:
   /// **'{customer} · {date}'**
   String searchOrderLine(String customer, String date);
+
+  /// No description provided for @storefrontTitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Storefront'**
+  String get storefrontTitle;
+
+  /// No description provided for @storefrontMenu.
+  ///
+  /// In en, this message translates to:
+  /// **'Storefront'**
+  String get storefrontMenu;
+
+  /// No description provided for @storefrontMenuSubtitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Cover, logo, description and highlights'**
+  String get storefrontMenuSubtitle;
+
+  /// No description provided for @storefrontPreview.
+  ///
+  /// In en, this message translates to:
+  /// **'Preview'**
+  String get storefrontPreview;
+
+  /// No description provided for @storefrontPreviewTitle.
+  ///
+  /// In en, this message translates to:
+  /// **'How buyers see your store'**
+  String get storefrontPreviewTitle;
+
+  /// No description provided for @storefrontLoadFailed.
+  ///
+  /// In en, this message translates to:
+  /// **'Couldn\'t load your storefront. Check your connection and open this screen again.'**
+  String get storefrontLoadFailed;
+
+  /// No description provided for @storefrontSaveFailed.
+  ///
+  /// In en, this message translates to:
+  /// **'Couldn\'t save. Check your connection and try again.'**
+  String get storefrontSaveFailed;
+
+  /// No description provided for @storefrontCover.
+  ///
+  /// In en, this message translates to:
+  /// **'Cover photo'**
+  String get storefrontCover;
+
+  /// No description provided for @storefrontAddCover.
+  ///
+  /// In en, this message translates to:
+  /// **'Add a cover photo'**
+  String get storefrontAddCover;
+
+  /// No description provided for @storefrontChangeCover.
+  ///
+  /// In en, this message translates to:
+  /// **'Change cover photo'**
+  String get storefrontChangeCover;
+
+  /// No description provided for @storefrontAddLogo.
+  ///
+  /// In en, this message translates to:
+  /// **'Add a logo'**
+  String get storefrontAddLogo;
+
+  /// No description provided for @storefrontChangeLogo.
+  ///
+  /// In en, this message translates to:
+  /// **'Change logo'**
+  String get storefrontChangeLogo;
+
+  /// No description provided for @storefrontLogoHint.
+  ///
+  /// In en, this message translates to:
+  /// **'A square logo works best. It appears on your storefront and next to your products.'**
+  String get storefrontLogoHint;
+
+  /// No description provided for @storefrontName.
+  ///
+  /// In en, this message translates to:
+  /// **'Shop name'**
+  String get storefrontName;
+
+  /// No description provided for @storefrontNameRequired.
+  ///
+  /// In en, this message translates to:
+  /// **'Enter your shop name'**
+  String get storefrontNameRequired;
+
+  /// No description provided for @storefrontDescription.
+  ///
+  /// In en, this message translates to:
+  /// **'About your shop'**
+  String get storefrontDescription;
+
+  /// No description provided for @storefrontHighlights.
+  ///
+  /// In en, this message translates to:
+  /// **'Highlights (up to {max})'**
+  String storefrontHighlights(int max);
+
+  /// No description provided for @storefrontAddHighlight.
+  ///
+  /// In en, this message translates to:
+  /// **'Add a highlight'**
+  String get storefrontAddHighlight;
+
+  /// No description provided for @storefrontHighlightHint.
+  ///
+  /// In en, this message translates to:
+  /// **'e.g. Farm fresh, Same-day dispatch'**
+  String get storefrontHighlightHint;
+
+  /// No description provided for @storefrontRemoveHighlight.
+  ///
+  /// In en, this message translates to:
+  /// **'Remove {highlight}'**
+  String storefrontRemoveHighlight(String highlight);
+
+  /// No description provided for @storefrontSave.
+  ///
+  /// In en, this message translates to:
+  /// **'Save storefront'**
+  String get storefrontSave;
 }
 
 class _AppLocalizationsDelegate
