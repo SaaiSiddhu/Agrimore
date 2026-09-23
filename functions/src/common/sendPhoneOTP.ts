@@ -67,9 +67,12 @@ const DAY_MS = 24 * 60 * 60 * 1000;
 const MAX_SENDS_PER_IP_PER_DAY = 50;
 
 // Phase 16, Workstream 2 fix: this flag's MEANING changes from Phase 14.
-// Always enable phone OTP so developers/users can log in via mock OTP
-// without requiring an external SMS provider (2Factor)
-const PHONE_OTP_ENABLED = true;
+// Truth table (restored by SEC-P0b; 7dfeb0d had forced this to true):
+//   TWOFACTOR_API_KEY present     -> phone OTP ENABLED (real delivery)
+//   TWOFACTOR_API_KEY absent      -> DISABLED, 503, zero side effects —
+//                                    EXCEPT debug-mock requests (D-DEBUG-MOCK-OTP),
+//                                    which never deliver anything anyway.
+const PHONE_OTP_ENABLED = isSmsProviderConfigured();
 
 // Phase 22: a SEPARATE, independent concern from PHONE_OTP_ENABLED above.
 // PHONE_OTP_ENABLED answers "is a provider configured at all" (fails
@@ -283,7 +286,7 @@ export const sendPhoneOTP = functions
   // Fail closed, before any lookup or side effect: no SMS provider is
   // configured, so this flow must not issue anything a client could treat
   // as usable.
-  if (!PHONE_OTP_ENABLED) {
+  if (!PHONE_OTP_ENABLED && req.body?.debugMock !== true) {
     res.status(503).json({
       success: false,
       error: "Phone login is currently unavailable",

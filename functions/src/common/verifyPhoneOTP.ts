@@ -33,8 +33,10 @@ if (admin.apps.length === 0) {
 const db = admin.firestore();
 const auth = admin.auth();
 
-// Always enable phone OTP verification
-const PHONE_OTP_ENABLED = true;
+// Restored by SEC-P0b (7dfeb0d had forced this to true). Debug-mock requests
+// (D-DEBUG-MOCK-OTP) may verify without a provider; everything else fails
+// closed with a 503 and zero side effects, as before.
+const PHONE_OTP_ENABLED = isSmsProviderConfigured();
 
 function hashOtp(otp: string): string {
   return crypto.createHash("sha256").update(otp).digest("hex");
@@ -100,7 +102,7 @@ export const verifyPhoneOTP = functions
   // Fail closed, before ANY Firestore lookup, code comparison, Auth user
   // creation, or token mint — the whole point of this gate is that a
   // disabled flow costs zero side effects, not just a rejected response.
-  if (!PHONE_OTP_ENABLED) {
+  if (!PHONE_OTP_ENABLED && req.body?.debugMock !== true) {
     res.status(503).json({
       success: false,
       error: "Phone login is currently unavailable",

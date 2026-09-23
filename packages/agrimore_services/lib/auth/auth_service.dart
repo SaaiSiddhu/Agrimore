@@ -660,6 +660,7 @@ class AuthService {
               'phone': phone,
               'otp': otp,
               if (name != null && name.trim().isNotEmpty) 'name': name.trim(),
+              if (kDebugMode) 'debugMock': true,
             }),
           )
           .timeout(_phoneVerifyTimeout);
