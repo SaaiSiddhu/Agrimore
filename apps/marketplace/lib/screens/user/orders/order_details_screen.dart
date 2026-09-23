@@ -18,6 +18,7 @@ import 'live_tracking_screen.dart';
 import '../cart/cart_screen.dart';
 import '../help/help_screen.dart';
 import '../../../services/delivery_tracking_service.dart';
+import 'widgets/live_eta_text.dart';
 
 import '../../../providers/order_provider.dart';
 
@@ -957,7 +958,6 @@ class _OrderDetailsScreenState extends State<OrderDetailsScreen>
   Widget _buildTrackLiveButton(OrderModel order, bool isDark) {
     final accentColor = isDark ? AppColors.primaryLight : AppColors.primary;
     final isActive = _isActiveOrder(order.orderStatus);
-    final trackingService = DeliveryTrackingService();
 
     return Column(
       children: [
@@ -995,26 +995,11 @@ class _OrderDetailsScreenState extends State<OrderDetailsScreen>
                 ),
                 const SizedBox(width: 14),
                 Expanded(
-                  child: Column(
-                    crossAxisAlignment: CrossAxisAlignment.start,
-                    children: [
-                      Text(
-                        trackingService.formatETAWithPrefix(_getEstimatedETA(order.orderStatus)),
-                        style: TextStyle(
-                          fontSize: 15,
-                          fontWeight: FontWeight.w800,
-                          color: isDark ? Colors.white : Colors.black87,
-                        ),
-                      ),
-                      const SizedBox(height: 3),
-                      Text(
-                        trackingService.getStatusMessage(order.orderStatus),
-                        style: TextStyle(
-                          fontSize: 12,
-                          color: isDark ? Colors.grey[400] : Colors.grey[600],
-                        ),
-                      ),
-                    ],
+                  // Phase DLV-3B: the live stage-aware ETA, not fixed minutes.
+                  child: LiveEtaText(
+                    orderId: order.id,
+                    orderStatus: order.orderStatus,
+                    isDark: isDark,
                   ),
                 ),
               ],
@@ -1059,26 +1044,7 @@ class _OrderDetailsScreenState extends State<OrderDetailsScreen>
   }
 
   // ✅ NEW: Helper to check if order is active
-  bool _isActiveOrder(String status) {
-    final activeStatuses = ['confirmed', 'processing', 'shipped', 'out_for_delivery'];
-    return activeStatuses.contains(status.toLowerCase());
-  }
-
-  // ✅ NEW: Get simulated ETA based on status
-  int _getEstimatedETA(String status) {
-    switch (status.toLowerCase()) {
-      case 'confirmed':
-        return 25;
-      case 'processing':
-        return 18;
-      case 'shipped':
-        return 12;
-      case 'out_for_delivery':
-        return 8;
-      default:
-        return 15;
-    }
-  }
+  bool _isActiveOrder(String status) => DeliveryTrackingService.isTrackable(status);
 
   Widget _buildDeliveryAddressContent(OrderModel order, bool isDark) {
     final address = order.deliveryAddress;

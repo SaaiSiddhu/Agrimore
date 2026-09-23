@@ -12,6 +12,7 @@ import 'package:agrimore_core/agrimore_core.dart';
 import 'package:agrimore_ui/agrimore_ui.dart';
 import '../../../providers/theme_provider.dart';
 import '../../../services/delivery_tracking_service.dart';
+import 'widgets/live_eta_text.dart';
 import 'order_details_screen.dart';
 import 'live_tracking_screen.dart';
 
@@ -917,16 +918,10 @@ class _OrderCardState extends State<_OrderCard> with SingleTickerProviderStateMi
   }
 
   // ✅ NEW: Check if order is active (in transit)
-  bool _isActiveOrder(String status) {
-    final activeStatuses = ['confirmed', 'processing', 'shipped', 'out_for_delivery'];
-    return activeStatuses.contains(status.toLowerCase());
-  }
+  bool _isActiveOrder(String status) => DeliveryTrackingService.isTrackable(status);
 
   // ✅ NEW: ETA Banner with Track Live button
   Widget _buildETABanner(Color accentColor) {
-    final trackingService = DeliveryTrackingService();
-    final etaMinutes = _getEstimatedETA(widget.order.orderStatus);
-    
     return Container(
       margin: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
       padding: const EdgeInsets.all(14),
@@ -962,26 +957,11 @@ class _OrderCardState extends State<_OrderCard> with SingleTickerProviderStateMi
           
           // ETA info
           Expanded(
-            child: Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                Text(
-                  trackingService.formatETAWithPrefix(etaMinutes),
-                  style: TextStyle(
-                    fontSize: 15,
-                    fontWeight: FontWeight.w800,
-                    color: widget.isDark ? Colors.white : Colors.black87,
-                  ),
-                ),
-                const SizedBox(height: 3),
-                Text(
-                  trackingService.getStatusMessage(widget.order.orderStatus),
-                  style: TextStyle(
-                    fontSize: 12,
-                    color: widget.isDark ? Colors.grey[400] : Colors.grey[600],
-                  ),
-                ),
-              ],
+            // Phase DLV-3B: the live stage-aware ETA, not fixed minutes.
+            child: LiveEtaText(
+              orderId: widget.order.id,
+              orderStatus: widget.order.orderStatus,
+              isDark: widget.isDark,
             ),
           ),
           
@@ -1036,22 +1016,6 @@ class _OrderCardState extends State<_OrderCard> with SingleTickerProviderStateMi
         ],
       ),
     );
-  }
-
-  // ✅ NEW: Get simulated ETA based on status
-  int _getEstimatedETA(String status) {
-    switch (status.toLowerCase()) {
-      case 'confirmed':
-        return 25;
-      case 'processing':
-        return 18;
-      case 'shipped':
-        return 12;
-      case 'out_for_delivery':
-        return 8;
-      default:
-        return 15;
-    }
   }
 
   // ✅ FIXED: Always use carousel, removed grid view

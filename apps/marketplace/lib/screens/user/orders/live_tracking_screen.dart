@@ -1,5 +1,6 @@
 // lib/screens/user/orders/live_tracking_screen.dart
 import 'dart:async';
+import 'dart:math';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:provider/provider.dart';
@@ -11,6 +12,7 @@ import 'package:agrimore_ui/agrimore_ui.dart';
 import '../../../providers/order_provider.dart';
 import '../../../providers/theme_provider.dart';
 import '../../../services/delivery_tracking_service.dart';
+import 'widgets/tracking_marker_icons.dart';
 
 class LiveTrackingScreen extends StatefulWidget {
   final String orderId;
@@ -33,7 +35,22 @@ class _LiveTrackingScreenState extends State<LiveTrackingScreen>
   
   OrderModel? _order;
   DeliveryPartnerModel? _partner;
-  int? _etaMinutes;
+
+  // Phase DLV-3B: the rider leg and the rider's live position replace the
+  // one-time order.deliveryPartner copy (which never moved) and the ETA
+  // invented from the order status.
+  DeliveryTaskModel? _task;
+  RiderLivePoint? _live;
+  DeliveryEta? _eta;
+  LatLng? _riderShown;
+  LatLng? _moveFrom;
+  LatLng? _moveTo;
+  late AnimationController _moveController;
+  StreamSubscription? _taskSubscription;
+  StreamSubscription? _liveSubscription;
+  EtaStage? _fittedForStage;
+  TrackingMarkerIcons? _icons;
+  bool _fittedOnce = false;
   
   StreamSubscription? _orderSubscription;
   Timer? _etaTimer;
@@ -53,6 +70,7 @@ class _LiveTrackingScreenState extends State<LiveTrackingScreen>
     super.initState();
     _order = widget.initialOrder;
     _setupAnimations();
+    _loadMarkerIcons();
     _loadOrderData();
     _startLocationStream();
     _startETATimer();
@@ -67,11 +85,45 @@ class _LiveTrackingScreenState extends State<LiveTrackingScreen>
     _pulseAnimation = Tween<double>(begin: 1.0, end: 1.2).animate(
       CurvedAnimation(parent: _pulseController, curve: Curves.easeInOut),
     );
+
+    // The rider marker glides to each new position instead of jumping.
+    _moveController = AnimationController(
+      duration: const Duration(milliseconds: 900),
+      vsync: this,
+    )..addListener(() {
+        final from = _moveFrom, to = _moveTo;
+        if (from == null || to == null || !mounted) return;
+        final t = Curves.easeInOut.transform(_moveController.value);
+        setState(() {
+          _riderShown = LatLng(
+            from.latitude + (to.latitude - from.latitude) * t,
+            from.longitude + (to.longitude - from.longitude) * t,
+          );
+          _updateMapMarkers();
+        });
+      });
+  }
+
+  Future<void> _loadMarkerIcons() async {
+    try {
+      final icons = await TrackingMarkerIcons.build();
+      if (!mounted) return;
+      setState(() {
+        _icons = icons;
+        _updateMapMarkers();
+      });
+    } catch (e) {
+      // Default pins remain.
+      debugPrint('Marker icons: $e');
+    }
   }
 
   void _loadOrderData() {
-    final orderProvider = context.read<OrderProvider>();
-    orderProvider.loadOrderById(widget.orderId);
+    // After the first frame: loadOrderById notifies listeners, which threw
+    // 'setState() or markNeedsBuild() called during build' from initState.
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      if (mounted) context.read<OrderProvider>().loadOrderById(widget.orderId);
+    });
   }
 
   void _startLocationStream() {
@@ -87,113 +139,188 @@ class _LiveTrackingScreenState extends State<LiveTrackingScreen>
         });
       }
     });
+    _taskSubscription =
+        _trackingService.streamTask(widget.orderId).listen((task) {
+      if (!mounted) return;
+      setState(() {
+        _task = task;
+        _updateMapMarkers();
+        _calculateETA();
+      });
+    }, onError: (Object e) => debugPrint('Delivery task stream: $e'));
+    _liveSubscription =
+        _trackingService.streamLivePoint(widget.orderId).listen((live) {
+      if (!mounted) return;
+      _live = live;
+      if (live != null) {
+        final next = LatLng(live.lat, live.lng);
+        if (_riderShown == null) {
+          _riderShown = next;
+        } else {
+          _moveFrom = _riderShown;
+          _moveTo = next;
+          _moveController.forward(from: 0);
+        }
+      }
+      setState(() {
+        _updateMapMarkers();
+        _calculateETA();
+      });
+    }, onError: (Object e) => debugPrint('Rider live point stream: $e'));
   }
 
+  /// The drop point: the task's (set by the server) or the order address.
+  LatLng? get _dropLatLng {
+    final d = _task?.drop;
+    if (d != null) return LatLng(d.lat, d.lng);
+    final a = _order?.deliveryAddress;
+    if (a?.latitude != null && a?.longitude != null) {
+      return LatLng(a!.latitude!, a.longitude!);
+    }
+    return null;
+  }
+
+  bool get _riderLegActive => const {
+        DeliveryTaskStatus.assigned,
+        DeliveryTaskStatus.atPickup,
+        DeliveryTaskStatus.pickedUp,
+        DeliveryTaskStatus.enRoute,
+        DeliveryTaskStatus.atDrop,
+      }.contains(_task?.status);
+
+  bool get _beforePickup =>
+      _task?.status == DeliveryTaskStatus.assigned ||
+      _task?.status == DeliveryTaskStatus.atPickup;
+
   void _startETATimer() {
+    // Re-evaluates the ETA and the 'location updated' note as time passes.
     _etaTimer = Timer.periodic(const Duration(seconds: 30), (_) {
-      _calculateETA();
+      if (mounted) setState(_calculateETA);
     });
   }
 
   void _calculateETA() {
-    if (_order == null) return;
-
-    final deliveryAddress = _order!.deliveryAddress;
-    
-    // Try to get ETA from estimated delivery time
-    if (_order!.estimatedDeliveryTime != null) {
-      final diff = _order!.estimatedDeliveryTime!.difference(DateTime.now());
-      setState(() {
-        _etaMinutes = diff.inMinutes.clamp(1, 120);
-      });
-      return;
-    }
-
-    // Calculate based on partner location
-    if (_partner?.hasLocation == true) {
-      // For now, use a simulated ETA based on order status
-      setState(() {
-        _etaMinutes = _getSimulatedETA(_order!.orderStatus);
-      });
-    }
+    final drop = _dropLatLng;
+    final eta = DeliveryEtaCalculator.estimate(
+      status: _task?.status,
+      rider: _live,
+      pickup: _task?.pickup,
+      drop: drop == null ? null : DeliveryPoint(lat: drop.latitude, lng: drop.longitude),
+      now: DateTime.now(),
+    );
+    _eta = eta;
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      if (mounted) _fitCameraIfNeeded();
+    });
   }
 
-  int _getSimulatedETA(String status) {
-    switch (status.toLowerCase()) {
-      case 'confirmed':
-        return 25;
-      case 'processing':
-        return 18;
-      case 'shipped':
-      case 'out_for_delivery':
-        return 8;
-      default:
-        return 15;
+  /// Frames rider and next stop once, and again when the rider picks up.
+  Future<void> _fitCameraIfNeeded() async {
+    final controller = _mapController;
+    final rider = _riderShown;
+    final target = _beforePickup && _task?.pickup != null
+        ? LatLng(_task!.pickup!.lat, _task!.pickup!.lng)
+        : _dropLatLng;
+    if (controller == null || rider == null || target == null) return;
+    final stage = _eta?.stage;
+    if (_fittedOnce && stage == _fittedForStage) return;
+    _fittedOnce = true;
+    _fittedForStage = stage;
+    final bounds = LatLngBounds(
+      southwest: LatLng(min(rider.latitude, target.latitude), min(rider.longitude, target.longitude)),
+      northeast: LatLng(max(rider.latitude, target.latitude), max(rider.longitude, target.longitude)),
+    );
+    try {
+      const pad = 60.0;
+      await controller.moveCamera(CameraUpdate.newLatLngBounds(bounds, pad));
+      // The ETA card covers the top of the map and the sheet the bottom 35%:
+      // zoom out until the framed span fits the visible band between them,
+      // then centre it there (seen on the browser run: the store sat under
+      // the sheet).
+      if (!mounted) return;
+      final media = MediaQuery.of(context);
+      final h = media.size.height;
+      final bandTop = media.padding.top + 170;
+      final bandBottom = h * 0.65;
+      final band = bandBottom - bandTop;
+      final span = h - 2 * pad;
+      if (band > 0 && span > band) {
+        await controller.moveCamera(CameraUpdate.zoomBy(-(log(span / band) / ln2)));
+      }
+      await controller.animateCamera(
+          CameraUpdate.scrollBy(0, h / 2 - (bandTop + bandBottom) / 2));
+    } catch (e) {
+      // Map not laid out yet (web): try again shortly.
+      debugPrint('Tracking camera fit failed: $e');
+      _fittedOnce = false;
+      Future.delayed(const Duration(milliseconds: 600), () {
+        if (mounted) _fitCameraIfNeeded();
+      });
     }
   }
 
   void _updateMapMarkers() {
     if (_order == null) return;
-
-    final deliveryAddress = _order!.deliveryAddress;
     final markers = <Marker>{};
     final polylines = <Polyline>{};
+    final drop = _dropLatLng;
+    final pickup = _task?.pickup;
 
-    // Destination marker
-    if (deliveryAddress.latitude != null && deliveryAddress.longitude != null) {
-      final destinationLatLng = LatLng(
-        deliveryAddress.latitude!,
-        deliveryAddress.longitude!,
-      );
-
-      markers.add(
-        Marker(
-          markerId: const MarkerId('destination'),
-          position: destinationLatLng,
-          icon: BitmapDescriptor.defaultMarkerWithHue(BitmapDescriptor.hueGreen),
-          infoWindow: InfoWindow(title: 'Delivery Location'),
-        ),
-      );
-
-      // Delivery partner marker
-      if (_partner?.hasLocation == true) {
-        final partnerLatLng = LatLng(
-          _partner!.currentLat!,
-          _partner!.currentLng!,
-        );
-
-        markers.add(
-          Marker(
-            markerId: const MarkerId('partner'),
-            position: partnerLatLng,
-            icon: BitmapDescriptor.defaultMarkerWithHue(BitmapDescriptor.hueOrange),
-            infoWindow: InfoWindow(title: _partner!.name),
-          ),
-        );
-
-        // Route polyline
-        polylines.add(
-          Polyline(
-            polylineId: const PolylineId('route'),
-            points: [partnerLatLng, destinationLatLng],
-            color: const Color(0xFF2D7D3C),
-            width: 4,
-            patterns: [PatternItem.dash(20), PatternItem.gap(10)],
-          ),
-        );
+    if (drop != null) {
+      markers.add(Marker(
+        markerId: const MarkerId('destination'),
+        position: drop,
+        icon: _icons?.home ?? BitmapDescriptor.defaultMarkerWithHue(BitmapDescriptor.hueOrange),
+        anchor: _icons == null ? const Offset(0.5, 1) : const Offset(0.5, 0.5),
+        infoWindow: const InfoWindow(title: 'Delivery location'),
+      ));
+    }
+    // The store, until the rider has picked the order up.
+    if (pickup != null && (_beforePickup || _task?.status == DeliveryTaskStatus.searching)) {
+      markers.add(Marker(
+        markerId: const MarkerId('store'),
+        position: LatLng(pickup.lat, pickup.lng),
+        icon: _icons?.store ?? BitmapDescriptor.defaultMarkerWithHue(BitmapDescriptor.hueAzure),
+        anchor: _icons == null ? const Offset(0.5, 1) : const Offset(0.5, 0.5),
+        infoWindow: const InfoWindow(title: 'Store'),
+      ));
+    }
+    // The rider shows while they hold the order (not while searching or
+    // after delivery) — independent of whether an ETA could be computed.
+    final rider = _riderShown;
+    if (rider != null && _riderLegActive) {
+      markers.add(Marker(
+        markerId: const MarkerId('partner'),
+        position: rider,
+        zIndexInt: 2,
+        anchor: const Offset(0.5, 0.5),
+        icon: _icons?.rider ?? BitmapDescriptor.defaultMarkerWithHue(BitmapDescriptor.hueGreen),
+        infoWindow: InfoWindow(title: _partner?.name ?? 'Delivery partner'),
+      ));
+      // A straight guide to where the rider goes next (not a road route).
+      final next = _beforePickup && pickup != null ? LatLng(pickup.lat, pickup.lng) : drop;
+      if (next != null) {
+        polylines.add(Polyline(
+          polylineId: const PolylineId('route'),
+          points: [rider, next],
+          color: const Color(0xFF2D7D3C),
+          width: 4,
+          patterns: [PatternItem.dash(20), PatternItem.gap(10)],
+        ));
       }
     }
 
-    setState(() {
-      _markers = markers;
-      _polylines = polylines;
-    });
+    _markers = markers;
+    _polylines = polylines;
   }
 
   @override
   void dispose() {
     _pulseController.dispose();
     _orderSubscription?.cancel();
+    _taskSubscription?.cancel();
+    _liveSubscription?.cancel();
+    _moveController.dispose();
     _etaTimer?.cancel();
     _mapController?.dispose();
     _trackingService.dispose();
@@ -249,6 +376,7 @@ class _LiveTrackingScreenState extends State<LiveTrackingScreen>
       mapToolbarEnabled: false,
       onMapCreated: (controller) {
         _mapController = controller;
+        _fitCameraIfNeeded();
         if (isDark) {
           controller.setMapStyle(_darkMapStyle);
         }
@@ -307,9 +435,9 @@ class _LiveTrackingScreenState extends State<LiveTrackingScreen>
               child: Column(
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
-                  if (_etaMinutes != null) ...[
+                  if (_eta != null) ...[
                     Text(
-                      _trackingService.formatETAWithPrefix(_etaMinutes!),
+                      DeliveryEtaCalculator.label(_eta!),
                       style: TextStyle(
                         fontSize: 18,
                         fontWeight: FontWeight.w800,
@@ -319,12 +447,24 @@ class _LiveTrackingScreenState extends State<LiveTrackingScreen>
                     const SizedBox(height: 4),
                   ],
                   Text(
-                    _trackingService.getStatusMessage(_order?.orderStatus ?? 'pending'),
+                    DeliveryTrackingService.stageMessage(
+                        _task?.status, _order?.orderStatus ?? 'pending'),
                     style: TextStyle(
                       fontSize: 13,
                       color: isDark ? Colors.grey[400] : Colors.grey[600],
                     ),
                   ),
+                  if (_eta?.fromStaleLocation == true) ...[
+                    const SizedBox(height: 4),
+                    Text(
+                      locationAgeMessage(_live?.age(DateTime.now())),
+                      style: TextStyle(
+                        fontSize: 12,
+                        fontWeight: FontWeight.w600,
+                        color: isDark ? Colors.orange[300] : Colors.orange[800],
+                      ),
+                    ),
+                  ],
                 ],
               ),
             ),
@@ -510,11 +650,17 @@ class _LiveTrackingScreenState extends State<LiveTrackingScreen>
                           color: isDark ? Colors.grey[500] : Colors.grey[600],
                         ),
                         const SizedBox(width: 4),
-                        Text(
-                          _partner!.vehicleNumber,
-                          style: TextStyle(
-                            fontSize: 12,
-                            color: isDark ? Colors.grey[400] : Colors.grey[600],
+                        // DLV-3B: overflowed by 22 px at phone width once the
+                        // rider card showed for every accepted order.
+                        Flexible(
+                          child: Text(
+                            _partner!.vehicleNumber,
+                            maxLines: 1,
+                            overflow: TextOverflow.ellipsis,
+                            style: TextStyle(
+                              fontSize: 12,
+                              color: isDark ? Colors.grey[400] : Colors.grey[600],
+                            ),
                           ),
                         ),
                       ],
@@ -574,7 +720,8 @@ class _LiveTrackingScreenState extends State<LiveTrackingScreen>
           ),
           const SizedBox(height: 12),
           Text(
-            'Finding delivery partner...',
+            DeliveryTrackingService.stageMessage(
+                _task?.status, _order?.orderStatus ?? 'pending'),
             style: TextStyle(
               fontSize: 15,
               fontWeight: FontWeight.w600,
@@ -583,7 +730,7 @@ class _LiveTrackingScreenState extends State<LiveTrackingScreen>
           ),
           const SizedBox(height: 4),
           Text(
-            'Please wait while we assign someone',
+            'Your delivery partner will show here once assigned',
             style: TextStyle(
               fontSize: 13,
               color: isDark ? Colors.grey[500] : Colors.grey[600],
