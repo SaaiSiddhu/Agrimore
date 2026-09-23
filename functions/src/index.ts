@@ -161,6 +161,8 @@ export { createSellerAiActivationOrder, connectSellerAiProvider } from "./seller
 // AI MARKETPLACE ASSISTANT — SELLER-SCOPED CHAT PROXY (Phase AI-4B)
 // ============================================
 export { sellerAiChatProxy } from "./seller/aiChatProxy";
+// SELLER-AUTH-1b: the only path from a draft application to pending (ADR-S12)
+export { submitSellerApplication } from "./seller/sellerApplication";
 
 // ============================================
 // B2B RFQ & NEGOTIATION (Phase RFQ-1)
