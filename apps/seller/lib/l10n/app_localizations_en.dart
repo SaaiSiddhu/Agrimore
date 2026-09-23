@@ -817,4 +817,285 @@ class AppLocalizationsEn extends AppLocalizations {
 
   @override
   String get settlementReference => 'Payment reference';
+
+  @override
+  String get quotesTitle => 'Quotes';
+
+  @override
+  String get quotesTabNeedsResponse => 'Needs response';
+
+  @override
+  String get quotesTabNegotiating => 'Negotiating';
+
+  @override
+  String get quotesTabAccepted => 'Accepted';
+
+  @override
+  String get quotesTabClosed => 'Closed';
+
+  @override
+  String quotesTabWithCount(String label, int count) {
+    return '$label · $count';
+  }
+
+  @override
+  String get quotesLoadFailed =>
+      'Couldn\'t load your quotes. Check your connection and open this screen again.';
+
+  @override
+  String get quotesEmptyNeedsResponse =>
+      'You\'re all caught up. New quote requests from business buyers appear here.';
+
+  @override
+  String get quotesEmptyOther => 'Nothing here yet.';
+
+  @override
+  String get quoteUnknownProduct => 'Product';
+
+  @override
+  String get quoteUnknownBuyer => 'Business buyer';
+
+  @override
+  String quoteQtyAtPrice(String qty, String price) {
+    return '$qty × $price';
+  }
+
+  @override
+  String get quoteNoPriceYet => 'No price proposed — send your offer';
+
+  @override
+  String quoteExpiresIn(int days) {
+    String _temp0 = intl.Intl.pluralLogic(
+      days,
+      locale: localeName,
+      other: 'Expires in $days days',
+      one: 'Expires in 1 day',
+    );
+    return '$_temp0';
+  }
+
+  @override
+  String get quoteExpired => 'Offer expired';
+
+  @override
+  String get quoteYourTurn => 'Your turn';
+
+  @override
+  String get quoteWaitingBuyer => 'Waiting for buyer';
+
+  @override
+  String get quoteStatusAccepted => 'Accepted';
+
+  @override
+  String get quoteStatusOrdered => 'Order placed';
+
+  @override
+  String get quoteStatusDeclined => 'Declined';
+
+  @override
+  String get quoteDetailTitle => 'Quote';
+
+  @override
+  String get quoteNotFound => 'This quote is no longer available.';
+
+  @override
+  String quoteRequested(String date) {
+    return 'Requested $date';
+  }
+
+  @override
+  String quoteListedB2b(String price) {
+    return 'Your B2B price $price';
+  }
+
+  @override
+  String quoteMoq(String qty) {
+    return 'Min. order $qty';
+  }
+
+  @override
+  String get quoteCurrentOffer => 'Offer on the table';
+
+  @override
+  String get quoteAgreedTerms => 'Last offer';
+
+  @override
+  String quoteVsListedBelow(String pct) {
+    return '$pct below your B2B price';
+  }
+
+  @override
+  String quoteVsListedAbove(String pct) {
+    return '$pct above your B2B price';
+  }
+
+  @override
+  String get quoteVsListedSame => 'Same as your B2B price';
+
+  @override
+  String get quoteHistoryTitle => 'Negotiation';
+
+  @override
+  String get quoteByBuyer => 'Buyer';
+
+  @override
+  String get quoteByYou => 'You';
+
+  @override
+  String get quoteActionCreate => 'Requested a quote';
+
+  @override
+  String get quoteActionOffer => 'Offered';
+
+  @override
+  String get quoteActionAccept => 'Accepted';
+
+  @override
+  String get quoteActionReject => 'Declined';
+
+  @override
+  String get quoteCounter => 'Counter';
+
+  @override
+  String get quoteAccept => 'Accept';
+
+  @override
+  String get quoteDecline => 'Decline';
+
+  @override
+  String get quoteAcceptTitle => 'Accept this offer?';
+
+  @override
+  String quoteAcceptBody(String qty, String price, String total) {
+    return '$qty × $price = $total. The buyer can then place the order at this price. This can\'t be undone.';
+  }
+
+  @override
+  String get quoteAcceptExpiredHint =>
+      'This offer has expired, so it can\'t be accepted. Send a counter-offer with a new validity instead.';
+
+  @override
+  String quoteAcceptedBanner(String price, String qty) {
+    return 'Accepted at $price × $qty. The buyer can now place the order.';
+  }
+
+  @override
+  String get quoteOrderedBanner =>
+      'The buyer has placed an order for this quote.';
+
+  @override
+  String get quoteViewOrder => 'View order';
+
+  @override
+  String get quoteDeclinedBanner => 'This quote was declined.';
+
+  @override
+  String get quoteWaitingBanner =>
+      'Waiting for the buyer to respond to your offer.';
+
+  @override
+  String get quoteSent => 'Offer sent';
+
+  @override
+  String get quoteAcceptedToast => 'Quote accepted';
+
+  @override
+  String get quoteDeclinedToast => 'Quote declined';
+
+  @override
+  String get quoteErrorExpired =>
+      'This offer has expired — send a counter-offer instead.';
+
+  @override
+  String get quoteErrorNotYourTurn =>
+      'The buyer has already responded. The latest offer is shown now.';
+
+  @override
+  String get quoteErrorClosed => 'This quote is already closed.';
+
+  @override
+  String get quoteErrorGeneric =>
+      'Couldn\'t update this quote. Check your connection and try again.';
+
+  @override
+  String get counterTitle => 'Counter-offer';
+
+  @override
+  String get counterPriceLabel => 'Price per unit (₹)';
+
+  @override
+  String get counterQtyLabel => 'Quantity';
+
+  @override
+  String get counterPriceInvalid => 'Enter a price above ₹0';
+
+  @override
+  String get counterQtyInvalid => 'Enter a whole number above 0';
+
+  @override
+  String counterBelowMoq(String moq) {
+    return 'Below your minimum order of $moq';
+  }
+
+  @override
+  String get counterValidityLabel => 'Offer valid for';
+
+  @override
+  String counterValidityDays(int days) {
+    String _temp0 = intl.Intl.pluralLogic(
+      days,
+      locale: localeName,
+      other: '$days days',
+      one: '1 day',
+    );
+    return '$_temp0';
+  }
+
+  @override
+  String get counterNoteLabel => 'Note to the buyer (optional)';
+
+  @override
+  String get counterTotal => 'Total';
+
+  @override
+  String get counterSend => 'Send offer';
+
+  @override
+  String get declineTitle => 'Decline quote';
+
+  @override
+  String get declinePrompt => 'Tell the buyer why';
+
+  @override
+  String get declineReasonPriceTooLow => 'Price is too low';
+
+  @override
+  String get declineReasonOutOfStock => 'Out of stock';
+
+  @override
+  String get declineReasonQuantity => 'Can\'t supply this quantity';
+
+  @override
+  String get declineReasonCannotDeliver => 'Can\'t deliver to the buyer';
+
+  @override
+  String get declineReasonOther => 'Other';
+
+  @override
+  String get declineNoteLabel => 'Add a note (optional)';
+
+  @override
+  String get declineConsequence =>
+      'The buyer sees your reason. They can send a new quote request later.';
+
+  @override
+  String get declineCta => 'Decline quote';
+
+  @override
+  String get declineKeep => 'Keep negotiating';
+
+  @override
+  String quoteHistoryHeader(String who, String action) {
+    return '$who · $action';
+  }
 }

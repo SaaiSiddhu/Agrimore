@@ -1,19 +1,22 @@
+import 'package:agrimore_core/agrimore_core.dart';
+import 'package:agrimore_ui/agrimore_ui.dart';
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
-import 'package:firebase_auth/firebase_auth.dart';
-import 'package:agrimore_core/agrimore_core.dart';
+
+import '../../l10n/app_localizations.dart';
 import '../../providers/rfq_provider.dart';
+import 'quote_rules.dart';
 import 'seller_rfq_detail_screen.dart';
+import 'widgets/quote_copy.dart';
+import 'widgets/quote_tile.dart';
 
-const _kAccentColor = Color(0xFF2D7D3C);
-
-/// "Quote Requests" — the seller's own RFQ inbox (Phase RFQ-2B). Mirrors
-/// apps/marketplace's MyRfqsScreen (Phase RFQ-2) in structure, restyled to
-/// apps/seller's own established inline-color convention rather than
-/// migrated to agrimore_ui's theme tokens (uiux.md's explicit carve-out for
-/// this app).
+/// Q-01 Quotes inbox (ADR §10.4, SELLER-RFQ-2): quote requests from business
+/// buyers, split into Needs response · Negotiating · Accepted · Closed.
 class SellerRfqInboxScreen extends StatefulWidget {
-  const SellerRfqInboxScreen({super.key});
+  const SellerRfqInboxScreen({super.key, this.now});
+
+  /// Fixed clock for tests.
+  final DateTime? now;
 
   @override
   State<SellerRfqInboxScreen> createState() => _SellerRfqInboxScreenState();
@@ -24,165 +27,91 @@ class _SellerRfqInboxScreenState extends State<SellerRfqInboxScreen> {
   void initState() {
     super.initState();
     WidgetsBinding.instance.addPostFrameCallback((_) {
-      if (!mounted) return;
-      context.read<RfqProvider>().loadMyRfqs();
+      if (mounted) context.read<RfqProvider>().loadMyRfqs();
     });
   }
 
   @override
   Widget build(BuildContext context) {
-    final isDark = Theme.of(context).brightness == Brightness.dark;
-    final rfqProvider = context.watch<RfqProvider>();
-
-    return Scaffold(
-      backgroundColor: isDark ? const Color(0xFF121212) : Colors.grey[50],
-      appBar: AppBar(
-        title: const Text('Quote Requests'),
-        backgroundColor: isDark ? const Color(0xFF1A1A1A) : Colors.white,
-        foregroundColor: isDark ? Colors.white : Colors.black87,
-        elevation: 0,
-      ),
-      body: rfqProvider.isLoading && rfqProvider.myRfqs.isEmpty
-          ? const Center(child: CircularProgressIndicator(color: _kAccentColor))
-          : rfqProvider.myRfqs.isEmpty
-              ? _buildEmptyState()
-              : ListView.separated(
-                  padding: const EdgeInsets.all(16),
-                  itemCount: rfqProvider.myRfqs.length,
-                  separatorBuilder: (_, __) => const SizedBox(height: 12),
-                  itemBuilder: (context, index) {
-                    final rfq = rfqProvider.myRfqs[index];
-                    return _RfqCard(rfq: rfq, isDark: isDark);
-                  },
-                ),
-    );
-  }
-
-  Widget _buildEmptyState() {
-    return Center(
-      child: Column(
-        mainAxisAlignment: MainAxisAlignment.center,
-        children: [
-          Icon(Icons.request_quote_outlined, size: 64, color: Colors.grey[400]),
-          const SizedBox(height: 16),
-          Text(
-            'No quote requests yet',
-            style: TextStyle(fontSize: 16, fontWeight: FontWeight.w600, color: Colors.grey[600]),
+    final l10n = AppLocalizations.of(context);
+    final provider = context.watch<RfqProvider>();
+    final now = widget.now ?? DateTime.now();
+    final quotes = provider.myRfqs;
+    final counts = quoteCounts(quotes, now);
+    return DefaultTabController(
+      length: QuoteBucket.values.length,
+      child: Scaffold(
+        appBar: AppBar(
+          leading: IconButton(
+            tooltip: l10n.back,
+            icon: const Icon(AgIcons.arrowLeft),
+            onPressed: () => Navigator.of(context).maybePop(),
           ),
-          const SizedBox(height: 8),
-          Text(
-            'Bulk quote requests from buyers will appear here',
-            textAlign: TextAlign.center,
-            style: TextStyle(fontSize: 13, color: Colors.grey[500]),
+          title: Text(l10n.quotesTitle),
+          bottom: TabBar(
+            isScrollable: true,
+            tabAlignment: TabAlignment.start,
+            tabs: [
+              for (final b in QuoteBucket.values)
+                Tab(text: l10n.quotesTabWithCount(l10n.bucketLabel(b), counts[b]!)),
+            ],
           ),
-        ],
+        ),
+        body: provider.loadFailed
+            ? Padding(
+                padding: const EdgeInsets.all(WsSpace.page),
+                child: SaInfoBanner(variant: SaBannerVariant.error, message: l10n.quotesLoadFailed),
+              )
+            : provider.isLoading && quotes.isEmpty
+                ? const Center(child: CircularProgressIndicator())
+                : TabBarView(children: [
+                    for (final b in QuoteBucket.values)
+                      _QuoteList(
+                        bucket: b,
+                        now: now,
+                        quotes: quotes.where((q) => quoteBucketOf(q, now) == b).toList(),
+                      ),
+                  ]),
       ),
     );
   }
 }
 
-class _RfqCard extends StatelessWidget {
-  final RfqModel rfq;
-  final bool isDark;
-
-  const _RfqCard({required this.rfq, required this.isDark});
-
-  Color _statusColor() {
-    switch (rfq.status) {
-      case RfqStatus.accepted:
-        return Colors.green;
-      case RfqStatus.rejected:
-        return Colors.red;
-      case RfqStatus.negotiating:
-        return Colors.orange;
-      case RfqStatus.pending:
-        return Colors.blue;
-    }
-  }
-
-  String _statusLabel() {
-    switch (rfq.status) {
-      case RfqStatus.accepted:
-        return 'Accepted';
-      case RfqStatus.rejected:
-        return 'Rejected';
-      case RfqStatus.negotiating:
-        return 'Negotiating';
-      case RfqStatus.pending:
-        return 'Awaiting your response';
-    }
-  }
+class _QuoteList extends StatelessWidget {
+  const _QuoteList({required this.bucket, required this.quotes, required this.now});
+  final QuoteBucket bucket;
+  final List<RfqModel> quotes;
+  final DateTime now;
 
   @override
   Widget build(BuildContext context) {
-    final offer = rfq.lastOffer;
-    final isMyTurn = () {
-      final uid = FirebaseAuth.instance.currentUser?.uid;
-      return uid != null && rfq.canActNow(uid);
-    }();
-
-    return InkWell(
-      borderRadius: BorderRadius.circular(14),
-      onTap: () => Navigator.push(
-        context,
-        MaterialPageRoute(builder: (_) => SellerRfqDetailScreen(rfqId: rfq.id)),
-      ),
-      child: Container(
-        padding: const EdgeInsets.all(16),
-        decoration: BoxDecoration(
-          color: isDark ? Colors.grey[900] : Colors.white,
-          borderRadius: BorderRadius.circular(14),
-          border: Border.all(color: isDark ? Colors.grey[800]! : Colors.grey.shade200),
-        ),
-        child: Column(
-          crossAxisAlignment: CrossAxisAlignment.start,
-          children: [
-            Row(
-              mainAxisAlignment: MainAxisAlignment.spaceBetween,
-              children: [
-                Expanded(
-                  child: Text(
-                    'Quote request',
-                    style: TextStyle(
-                      fontWeight: FontWeight.w700,
-                      fontSize: 15,
-                      color: isDark ? Colors.white : Colors.black87,
-                    ),
-                  ),
-                ),
-                Container(
-                  padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 4),
-                  decoration: BoxDecoration(
-                    color: _statusColor().withOpacity(0.12),
-                    borderRadius: BorderRadius.circular(20),
-                  ),
-                  child: Text(
-                    _statusLabel(),
-                    style: TextStyle(color: _statusColor(), fontWeight: FontWeight.w700, fontSize: 12),
-                  ),
-                ),
-              ],
+    final l10n = AppLocalizations.of(context);
+    final t = context.ws;
+    if (quotes.isEmpty) {
+      return Center(
+        child: Padding(
+          padding: const EdgeInsets.all(WsSpace.s32),
+          child: Column(mainAxisSize: MainAxisSize.min, children: [
+            Icon(AgIcons.quote, size: WsIconSize.empty, color: t.textTertiary),
+            const SizedBox(height: WsSpace.s12),
+            Text(
+              bucket == QuoteBucket.needsResponse ? l10n.quotesEmptyNeedsResponse : l10n.quotesEmptyOther,
+              style: context.wsText.bodyMedium,
+              textAlign: TextAlign.center,
             ),
-            const SizedBox(height: 8),
-            if (offer != null)
-              Text(
-                '${PriceFormatter.formatPriceInt(offer.price)} x ${offer.quantity}',
-                style: TextStyle(fontSize: 14, color: isDark ? Colors.grey[300] : Colors.grey[700]),
-              )
-            else
-              Text(
-                'Awaiting your price',
-                style: TextStyle(fontSize: 14, color: isDark ? Colors.grey[300] : Colors.grey[700]),
-              ),
-            if (isMyTurn)
-              const Padding(
-                padding: EdgeInsets.only(top: 8),
-                child: Text(
-                  'Your turn to respond',
-                  style: TextStyle(color: Colors.orange, fontWeight: FontWeight.w700, fontSize: 12),
-                ),
-              ),
-          ],
+          ]),
+        ),
+      );
+    }
+    return ListView.separated(
+      padding: const EdgeInsets.all(WsSpace.page),
+      itemCount: quotes.length,
+      separatorBuilder: (_, __) => const SizedBox(height: WsSpace.s8),
+      itemBuilder: (context, i) => QuoteTile(
+        quote: quotes[i],
+        now: now,
+        onTap: () => Navigator.of(context).push(
+          MaterialPageRoute<void>(builder: (_) => SellerRfqDetailScreen(rfqId: quotes[i].id, now: now)),
         ),
       ),
     );

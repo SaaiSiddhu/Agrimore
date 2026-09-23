@@ -1563,6 +1563,474 @@ abstract class AppLocalizations {
   /// In en, this message translates to:
   /// **'Payment reference'**
   String get settlementReference;
+
+  /// No description provided for @quotesTitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Quotes'**
+  String get quotesTitle;
+
+  /// No description provided for @quotesTabNeedsResponse.
+  ///
+  /// In en, this message translates to:
+  /// **'Needs response'**
+  String get quotesTabNeedsResponse;
+
+  /// No description provided for @quotesTabNegotiating.
+  ///
+  /// In en, this message translates to:
+  /// **'Negotiating'**
+  String get quotesTabNegotiating;
+
+  /// No description provided for @quotesTabAccepted.
+  ///
+  /// In en, this message translates to:
+  /// **'Accepted'**
+  String get quotesTabAccepted;
+
+  /// No description provided for @quotesTabClosed.
+  ///
+  /// In en, this message translates to:
+  /// **'Closed'**
+  String get quotesTabClosed;
+
+  /// No description provided for @quotesTabWithCount.
+  ///
+  /// In en, this message translates to:
+  /// **'{label} · {count}'**
+  String quotesTabWithCount(String label, int count);
+
+  /// No description provided for @quotesLoadFailed.
+  ///
+  /// In en, this message translates to:
+  /// **'Couldn\'t load your quotes. Check your connection and open this screen again.'**
+  String get quotesLoadFailed;
+
+  /// No description provided for @quotesEmptyNeedsResponse.
+  ///
+  /// In en, this message translates to:
+  /// **'You\'re all caught up. New quote requests from business buyers appear here.'**
+  String get quotesEmptyNeedsResponse;
+
+  /// No description provided for @quotesEmptyOther.
+  ///
+  /// In en, this message translates to:
+  /// **'Nothing here yet.'**
+  String get quotesEmptyOther;
+
+  /// No description provided for @quoteUnknownProduct.
+  ///
+  /// In en, this message translates to:
+  /// **'Product'**
+  String get quoteUnknownProduct;
+
+  /// No description provided for @quoteUnknownBuyer.
+  ///
+  /// In en, this message translates to:
+  /// **'Business buyer'**
+  String get quoteUnknownBuyer;
+
+  /// No description provided for @quoteQtyAtPrice.
+  ///
+  /// In en, this message translates to:
+  /// **'{qty} × {price}'**
+  String quoteQtyAtPrice(String qty, String price);
+
+  /// No description provided for @quoteNoPriceYet.
+  ///
+  /// In en, this message translates to:
+  /// **'No price proposed — send your offer'**
+  String get quoteNoPriceYet;
+
+  /// No description provided for @quoteExpiresIn.
+  ///
+  /// In en, this message translates to:
+  /// **'{days, plural, =1{Expires in 1 day} other{Expires in {days} days}}'**
+  String quoteExpiresIn(int days);
+
+  /// No description provided for @quoteExpired.
+  ///
+  /// In en, this message translates to:
+  /// **'Offer expired'**
+  String get quoteExpired;
+
+  /// No description provided for @quoteYourTurn.
+  ///
+  /// In en, this message translates to:
+  /// **'Your turn'**
+  String get quoteYourTurn;
+
+  /// No description provided for @quoteWaitingBuyer.
+  ///
+  /// In en, this message translates to:
+  /// **'Waiting for buyer'**
+  String get quoteWaitingBuyer;
+
+  /// No description provided for @quoteStatusAccepted.
+  ///
+  /// In en, this message translates to:
+  /// **'Accepted'**
+  String get quoteStatusAccepted;
+
+  /// No description provided for @quoteStatusOrdered.
+  ///
+  /// In en, this message translates to:
+  /// **'Order placed'**
+  String get quoteStatusOrdered;
+
+  /// No description provided for @quoteStatusDeclined.
+  ///
+  /// In en, this message translates to:
+  /// **'Declined'**
+  String get quoteStatusDeclined;
+
+  /// No description provided for @quoteDetailTitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Quote'**
+  String get quoteDetailTitle;
+
+  /// No description provided for @quoteNotFound.
+  ///
+  /// In en, this message translates to:
+  /// **'This quote is no longer available.'**
+  String get quoteNotFound;
+
+  /// No description provided for @quoteRequested.
+  ///
+  /// In en, this message translates to:
+  /// **'Requested {date}'**
+  String quoteRequested(String date);
+
+  /// No description provided for @quoteListedB2b.
+  ///
+  /// In en, this message translates to:
+  /// **'Your B2B price {price}'**
+  String quoteListedB2b(String price);
+
+  /// No description provided for @quoteMoq.
+  ///
+  /// In en, this message translates to:
+  /// **'Min. order {qty}'**
+  String quoteMoq(String qty);
+
+  /// No description provided for @quoteCurrentOffer.
+  ///
+  /// In en, this message translates to:
+  /// **'Offer on the table'**
+  String get quoteCurrentOffer;
+
+  /// No description provided for @quoteAgreedTerms.
+  ///
+  /// In en, this message translates to:
+  /// **'Last offer'**
+  String get quoteAgreedTerms;
+
+  /// No description provided for @quoteVsListedBelow.
+  ///
+  /// In en, this message translates to:
+  /// **'{pct} below your B2B price'**
+  String quoteVsListedBelow(String pct);
+
+  /// No description provided for @quoteVsListedAbove.
+  ///
+  /// In en, this message translates to:
+  /// **'{pct} above your B2B price'**
+  String quoteVsListedAbove(String pct);
+
+  /// No description provided for @quoteVsListedSame.
+  ///
+  /// In en, this message translates to:
+  /// **'Same as your B2B price'**
+  String get quoteVsListedSame;
+
+  /// No description provided for @quoteHistoryTitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Negotiation'**
+  String get quoteHistoryTitle;
+
+  /// No description provided for @quoteByBuyer.
+  ///
+  /// In en, this message translates to:
+  /// **'Buyer'**
+  String get quoteByBuyer;
+
+  /// No description provided for @quoteByYou.
+  ///
+  /// In en, this message translates to:
+  /// **'You'**
+  String get quoteByYou;
+
+  /// No description provided for @quoteActionCreate.
+  ///
+  /// In en, this message translates to:
+  /// **'Requested a quote'**
+  String get quoteActionCreate;
+
+  /// No description provided for @quoteActionOffer.
+  ///
+  /// In en, this message translates to:
+  /// **'Offered'**
+  String get quoteActionOffer;
+
+  /// No description provided for @quoteActionAccept.
+  ///
+  /// In en, this message translates to:
+  /// **'Accepted'**
+  String get quoteActionAccept;
+
+  /// No description provided for @quoteActionReject.
+  ///
+  /// In en, this message translates to:
+  /// **'Declined'**
+  String get quoteActionReject;
+
+  /// No description provided for @quoteCounter.
+  ///
+  /// In en, this message translates to:
+  /// **'Counter'**
+  String get quoteCounter;
+
+  /// No description provided for @quoteAccept.
+  ///
+  /// In en, this message translates to:
+  /// **'Accept'**
+  String get quoteAccept;
+
+  /// No description provided for @quoteDecline.
+  ///
+  /// In en, this message translates to:
+  /// **'Decline'**
+  String get quoteDecline;
+
+  /// No description provided for @quoteAcceptTitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Accept this offer?'**
+  String get quoteAcceptTitle;
+
+  /// No description provided for @quoteAcceptBody.
+  ///
+  /// In en, this message translates to:
+  /// **'{qty} × {price} = {total}. The buyer can then place the order at this price. This can\'t be undone.'**
+  String quoteAcceptBody(String qty, String price, String total);
+
+  /// No description provided for @quoteAcceptExpiredHint.
+  ///
+  /// In en, this message translates to:
+  /// **'This offer has expired, so it can\'t be accepted. Send a counter-offer with a new validity instead.'**
+  String get quoteAcceptExpiredHint;
+
+  /// No description provided for @quoteAcceptedBanner.
+  ///
+  /// In en, this message translates to:
+  /// **'Accepted at {price} × {qty}. The buyer can now place the order.'**
+  String quoteAcceptedBanner(String price, String qty);
+
+  /// No description provided for @quoteOrderedBanner.
+  ///
+  /// In en, this message translates to:
+  /// **'The buyer has placed an order for this quote.'**
+  String get quoteOrderedBanner;
+
+  /// No description provided for @quoteViewOrder.
+  ///
+  /// In en, this message translates to:
+  /// **'View order'**
+  String get quoteViewOrder;
+
+  /// No description provided for @quoteDeclinedBanner.
+  ///
+  /// In en, this message translates to:
+  /// **'This quote was declined.'**
+  String get quoteDeclinedBanner;
+
+  /// No description provided for @quoteWaitingBanner.
+  ///
+  /// In en, this message translates to:
+  /// **'Waiting for the buyer to respond to your offer.'**
+  String get quoteWaitingBanner;
+
+  /// No description provided for @quoteSent.
+  ///
+  /// In en, this message translates to:
+  /// **'Offer sent'**
+  String get quoteSent;
+
+  /// No description provided for @quoteAcceptedToast.
+  ///
+  /// In en, this message translates to:
+  /// **'Quote accepted'**
+  String get quoteAcceptedToast;
+
+  /// No description provided for @quoteDeclinedToast.
+  ///
+  /// In en, this message translates to:
+  /// **'Quote declined'**
+  String get quoteDeclinedToast;
+
+  /// No description provided for @quoteErrorExpired.
+  ///
+  /// In en, this message translates to:
+  /// **'This offer has expired — send a counter-offer instead.'**
+  String get quoteErrorExpired;
+
+  /// No description provided for @quoteErrorNotYourTurn.
+  ///
+  /// In en, this message translates to:
+  /// **'The buyer has already responded. The latest offer is shown now.'**
+  String get quoteErrorNotYourTurn;
+
+  /// No description provided for @quoteErrorClosed.
+  ///
+  /// In en, this message translates to:
+  /// **'This quote is already closed.'**
+  String get quoteErrorClosed;
+
+  /// No description provided for @quoteErrorGeneric.
+  ///
+  /// In en, this message translates to:
+  /// **'Couldn\'t update this quote. Check your connection and try again.'**
+  String get quoteErrorGeneric;
+
+  /// No description provided for @counterTitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Counter-offer'**
+  String get counterTitle;
+
+  /// No description provided for @counterPriceLabel.
+  ///
+  /// In en, this message translates to:
+  /// **'Price per unit (₹)'**
+  String get counterPriceLabel;
+
+  /// No description provided for @counterQtyLabel.
+  ///
+  /// In en, this message translates to:
+  /// **'Quantity'**
+  String get counterQtyLabel;
+
+  /// No description provided for @counterPriceInvalid.
+  ///
+  /// In en, this message translates to:
+  /// **'Enter a price above ₹0'**
+  String get counterPriceInvalid;
+
+  /// No description provided for @counterQtyInvalid.
+  ///
+  /// In en, this message translates to:
+  /// **'Enter a whole number above 0'**
+  String get counterQtyInvalid;
+
+  /// No description provided for @counterBelowMoq.
+  ///
+  /// In en, this message translates to:
+  /// **'Below your minimum order of {moq}'**
+  String counterBelowMoq(String moq);
+
+  /// No description provided for @counterValidityLabel.
+  ///
+  /// In en, this message translates to:
+  /// **'Offer valid for'**
+  String get counterValidityLabel;
+
+  /// No description provided for @counterValidityDays.
+  ///
+  /// In en, this message translates to:
+  /// **'{days, plural, =1{1 day} other{{days} days}}'**
+  String counterValidityDays(int days);
+
+  /// No description provided for @counterNoteLabel.
+  ///
+  /// In en, this message translates to:
+  /// **'Note to the buyer (optional)'**
+  String get counterNoteLabel;
+
+  /// No description provided for @counterTotal.
+  ///
+  /// In en, this message translates to:
+  /// **'Total'**
+  String get counterTotal;
+
+  /// No description provided for @counterSend.
+  ///
+  /// In en, this message translates to:
+  /// **'Send offer'**
+  String get counterSend;
+
+  /// No description provided for @declineTitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Decline quote'**
+  String get declineTitle;
+
+  /// No description provided for @declinePrompt.
+  ///
+  /// In en, this message translates to:
+  /// **'Tell the buyer why'**
+  String get declinePrompt;
+
+  /// No description provided for @declineReasonPriceTooLow.
+  ///
+  /// In en, this message translates to:
+  /// **'Price is too low'**
+  String get declineReasonPriceTooLow;
+
+  /// No description provided for @declineReasonOutOfStock.
+  ///
+  /// In en, this message translates to:
+  /// **'Out of stock'**
+  String get declineReasonOutOfStock;
+
+  /// No description provided for @declineReasonQuantity.
+  ///
+  /// In en, this message translates to:
+  /// **'Can\'t supply this quantity'**
+  String get declineReasonQuantity;
+
+  /// No description provided for @declineReasonCannotDeliver.
+  ///
+  /// In en, this message translates to:
+  /// **'Can\'t deliver to the buyer'**
+  String get declineReasonCannotDeliver;
+
+  /// No description provided for @declineReasonOther.
+  ///
+  /// In en, this message translates to:
+  /// **'Other'**
+  String get declineReasonOther;
+
+  /// No description provided for @declineNoteLabel.
+  ///
+  /// In en, this message translates to:
+  /// **'Add a note (optional)'**
+  String get declineNoteLabel;
+
+  /// No description provided for @declineConsequence.
+  ///
+  /// In en, this message translates to:
+  /// **'The buyer sees your reason. They can send a new quote request later.'**
+  String get declineConsequence;
+
+  /// No description provided for @declineCta.
+  ///
+  /// In en, this message translates to:
+  /// **'Decline quote'**
+  String get declineCta;
+
+  /// No description provided for @declineKeep.
+  ///
+  /// In en, this message translates to:
+  /// **'Keep negotiating'**
+  String get declineKeep;
+
+  /// No description provided for @quoteHistoryHeader.
+  ///
+  /// In en, this message translates to:
+  /// **'{who} · {action}'**
+  String quoteHistoryHeader(String who, String action);
 }
 
 class _AppLocalizationsDelegate
