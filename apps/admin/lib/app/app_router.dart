@@ -13,6 +13,7 @@ import '../screens/admin/products/product_management_screen.dart';
 import '../screens/admin/products/product_form_screen.dart';
 import '../screens/admin/orders/order_management_screen.dart';
 import '../screens/admin/delivery/delivery_partner_management_screen.dart';
+import '../screens/admin/delivery/dispatch_queue_screen.dart';
 import '../screens/admin/users/user_management_screen.dart';
 import '../screens/admin/coupon/coupon_management_screen.dart';
 import '../screens/admin/banners/banner_management_screen.dart';
@@ -60,6 +61,8 @@ class AdminRoutes {
 
   // Delivery Partners
   static const String deliveryPartners = '/delivery-partners';
+  // Phase DLV-2C: orders waiting for a rider (delivery_dispatch).
+  static const String deliveryDispatch = '/delivery-dispatch';
 
   // Users
   static const String users = '/users';
@@ -354,6 +357,14 @@ class AppRouter {
               name: 'delivery-partners',
               pageBuilder: (context, state) =>
                   _buildPage(const DeliveryPartnerManagementScreen(), state),
+            ),
+
+            // Dispatch queue (DLV-2C)
+            GoRoute(
+              path: AdminRoutes.deliveryDispatch,
+              name: 'delivery-dispatch',
+              pageBuilder: (context, state) =>
+                  _buildPage(const DispatchQueueScreen(), state),
             ),
 
             // Coupons
