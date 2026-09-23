@@ -20,6 +20,8 @@ import io.flutter.plugin.common.MethodChannel
  * android:showWhenLocked would leave the whole app (customer names, phones,
  * addresses) readable on a locked phone, so the Dart side clears it again
  * when the offer screen closes (channel below).
+ *
+ * Phase DLV-3A adds moveToBackground (see the channel).
  */
 class MainActivity : FlutterActivity() {
     private val channelName = "com.agrimore.delivery/offers"
@@ -44,6 +46,12 @@ class MainActivity : FlutterActivity() {
                         result.success(null)
                     }
                     "canUseFullScreenIntent" -> result.success(canUseFullScreenIntent())
+                    // Phase DLV-3A: Back on the home screen while online sends
+                    // the app to the background instead of finishing this
+                    // activity — finishing destroys the Flutter engine, and
+                    // with it the location stream (geolocator stops when its
+                    // engine detaches), silently ending tracking.
+                    "moveToBackground" -> result.success(moveTaskToBack(true))
                     else -> result.notImplemented()
                 }
             }

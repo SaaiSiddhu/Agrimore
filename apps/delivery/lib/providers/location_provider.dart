@@ -161,7 +161,7 @@ class LocationProvider extends ChangeNotifier {
   void _startStream() {
     _positionSubscription?.cancel();
     _positionSubscription =
-        Geolocator.getPositionStream(locationSettings: _settingsFor(_profile))
+        Geolocator.getPositionStream(locationSettings: _settingsFor(samplingProfile))
             .listen((position) {
       _currentPosition = position;
       _hasUnsentFix = true;
@@ -183,15 +183,17 @@ class LocationProvider extends ChangeNotifier {
   }
 
   /// Switches cadence when an order starts or ends, and routes the live
-  /// point to that order's task.
+  /// point to that order's task. The stream itself is NOT restarted: a
+  /// restart cancels the foreground service, and Android 12+ refuses to start
+  /// a location foreground service while the app is in the background
+  /// (ForegroundServiceStartNotAllowedException, seen on the device run when
+  /// an order was delivered with the screen off) — tracking would silently
+  /// stop. The stream always samples at [samplingProfile]; the idle/order
+  /// cadence is applied when deciding what to send.
   void setActiveOrder(String? orderId) {
     if (orderId == _activeOrderId) return;
     _activeOrderId = orderId;
-    final next = profileFor(onOrder: orderId != null);
-    if (!identical(next, _profile)) {
-      _profile = next;
-      if (_isTracking) _startStream();
-    }
+    _profile = profileFor(onOrder: orderId != null);
     if (_isTracking) _maybeUpload(force: true);
     notifyListeners();
   }

@@ -10,6 +10,7 @@ import '../../providers/location_provider.dart';
 import '../orders/active_order_screen.dart';
 import '../../offers/offer_alerts.dart';
 import '../../offers/offer_launch.dart';
+import '../../offers/offer_platform.dart';
 import '../../providers/offer_provider.dart';
 import '../../location/location_disclosure.dart';
 import '../../location/location_policy.dart';
@@ -68,9 +69,7 @@ class _DashboardScreenState extends State<DashboardScreen> {
 
   void _onActiveOrder() {
     if (!mounted) return;
-    context
-        .read<LocationProvider>()
-        .setActiveOrder(_orders?.activeOrder?.id);
+    context.read<LocationProvider>().setActiveOrder(_orders?.activeOrder?.id);
   }
 
   void _onServerState() {
@@ -100,14 +99,28 @@ class _DashboardScreenState extends State<DashboardScreen> {
     final auth = _auth;
     if (auth?.user == null) return;
     final uid = auth!.user!.uid;
+    // Android 12+ refuses to start a location foreground service from the
+    // background (seen on the device run when the rider left the app during
+    // start-up): wait until the app is on screen.
+    if (WidgetsBinding.instance.lifecycleState != AppLifecycleState.resumed) {
+      late final AppLifecycleListener listener;
+      listener = AppLifecycleListener(onResume: () {
+        listener.dispose();
+        if (mounted && !_isOnline) _resumeOnline();
+      });
+      return;
+    }
     final location = context.read<LocationProvider>();
-    if (auth.isBlocked ||
-        !await locationDisclosureAccepted() ||
-        !await location.canTrackWithoutPrompt()) {
+    final disclosed = await locationDisclosureAccepted();
+    final canTrack = await location.canTrackWithoutPrompt();
+    debugPrint('Resume online: blocked=${auth.isBlocked} '
+        'disclosed=$disclosed canTrack=$canTrack');
+    if (auth.isBlocked || !disclosed || !canTrack) {
       await location.setOnlineStatus(uid, false);
       return;
     }
     final result = await location.startTracking(uid);
+    debugPrint('Resume online: ${result.name}');
     if (!mounted) return;
     if (result == GoOnlineResult.started) {
       setState(() => _isOnline = true);
@@ -121,31 +134,43 @@ class _DashboardScreenState extends State<DashboardScreen> {
     final theme = Theme.of(context);
     final colorScheme = theme.colorScheme;
 
-    return Scaffold(
-      body: SafeArea(
-        child: Column(
-          children: [
-            // Header
-            _buildHeader(colorScheme),
+    // Phase DLV-3A: while online, Back here keeps the app running in the
+    // background (as WhatsApp does) — closing the activity would end the
+    // location stream. Offline, Back closes the app as before.
+    return PopScope(
+      canPop: !_isOnline,
+      onPopInvokedWithResult: (didPop, _) async {
+        if (didPop) return;
+        if (!await OfferPlatform.moveToBackground()) {
+          await SystemNavigator.pop();
+        }
+      },
+      child: Scaffold(
+        body: SafeArea(
+          child: Column(
+            children: [
+              // Header
+              _buildHeader(colorScheme),
 
-            // Online Toggle
-            _buildOnlineToggle(colorScheme),
+              // Online Toggle
+              _buildOnlineToggle(colorScheme),
 
-            // Active Order or Dashboard
-            Expanded(
-              child: Consumer<DeliveryOrderProvider>(
-                builder: (context, orderProvider, _) {
-                  if (orderProvider.hasActiveOrder) {
-                    return _buildActiveOrderCard(
-                      orderProvider.activeOrder!,
-                      colorScheme,
-                    );
-                  }
-                  return _buildDashboardContent(colorScheme);
-                },
+              // Active Order or Dashboard
+              Expanded(
+                child: Consumer<DeliveryOrderProvider>(
+                  builder: (context, orderProvider, _) {
+                    if (orderProvider.hasActiveOrder) {
+                      return _buildActiveOrderCard(
+                        orderProvider.activeOrder!,
+                        colorScheme,
+                      );
+                    }
+                    return _buildDashboardContent(colorScheme);
+                  },
+                ),
               ),
-            ),
-          ],
+            ],
+          ),
         ),
       ),
     );

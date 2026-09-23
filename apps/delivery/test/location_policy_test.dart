@@ -41,6 +41,15 @@ void main() {
       expect(idleProfile.heartbeat, lessThanOrEqualTo(const Duration(seconds: 60)));
     });
 
+    test('the one stream samples finely enough for both cadences', () {
+      // The stream is never restarted (a restart from the background kills
+      // the foreground service on Android 12+), so it must serve both.
+      for (final p in [idleProfile, taskProfile]) {
+        expect(samplingProfile.distanceFilterMeters, lessThanOrEqualTo(p.distanceFilterMeters), reason: p.name);
+        expect(samplingProfile.streamInterval, lessThanOrEqualTo(p.minUploadGap), reason: p.name);
+      }
+    });
+
     test('heartbeats sit well inside dispatch freshness and the offline sweep', () {
       final dispatch = File('../../functions/src/delivery/dispatch.ts').readAsStringSync();
       final presence = File('../../functions/src/delivery/riderPresence.ts').readAsStringSync();

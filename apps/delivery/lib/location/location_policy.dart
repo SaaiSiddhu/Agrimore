@@ -55,6 +55,11 @@ const TrackingProfile taskProfile = TrackingProfile(
 TrackingProfile profileFor({required bool onOrder}) =>
     onOrder ? taskProfile : idleProfile;
 
+/// What the location stream samples at, whatever the cadence: the finest
+/// profile, because the stream is started once when the rider goes online
+/// and never restarted (see LocationProvider.setActiveOrder).
+const TrackingProfile samplingProfile = taskProfile;
+
 /// Whether to send now: always the first time; a new fix once [minUploadGap]
 /// has passed; otherwise on the [heartbeat].
 bool shouldUpload({
