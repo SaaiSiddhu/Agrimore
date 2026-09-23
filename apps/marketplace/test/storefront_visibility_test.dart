@@ -34,6 +34,18 @@ void main() {
     expect(isStorePaused(null, now), isFalse);
   });
 
+  test('SELLER-OPS-2: weekly off and holidays close the Indian calendar day', () {
+    // Wed 23 Sep 2026, 23:00 IST = 17:30 UTC; Thu 24 Sep 00:30 IST = 19:00 UTC.
+    final wedNight = DateTime.utc(2026, 9, 23, 17, 30);
+    final thuEarly = DateTime.utc(2026, 9, 23, 19, 0);
+    expect(isStorePaused({'weeklyOff': [3]}, wedNight), isTrue);
+    expect(isStorePaused({'weeklyOff': [3]}, thuEarly), isFalse);
+    expect(isStorePaused({'holidays': ['2026-09-24']}, thuEarly), isTrue);
+    expect(isStorePaused({'holidays': ['2026-09-24']}, wedNight), isFalse);
+    // An expired pause still falls through to the schedule.
+    expect(isStorePaused({'acceptingOrders': false, 'pausedUntil': Timestamp.fromDate(DateTime(2020)), 'weeklyOff': [3]}, wedNight), isTrue);
+  });
+
   test('highlights: at most three, trimmed, no blanks', () {
     expect(storefrontHighlights({'highlights': [' a ', '', 1, 'b', 'c', 'd']}), ['a', 'b', 'c']);
     expect(storefrontHighlights(null), isEmpty);
