@@ -239,3 +239,8 @@ export {
 // rider leg, in the typed vocabulary of delivery/states.ts. Writes only
 // delivery_tasks; never the order. See delivery/syncDeliveryTask.ts.
 export { syncDeliveryTask } from "./delivery/syncDeliveryTask";
+// Phase DLV-2A: rider dispatch — offer waves, server-checked accept/decline,
+// and the 1-minute scheduler for expiry, next waves and 2-min retries.
+// See delivery/dispatch.ts. onOrderStatusChanged starts a dispatch.
+export { acceptDeliveryOffer, declineDeliveryOffer } from "./delivery/dispatchCallables";
+export { advanceDeliveryDispatch } from "./delivery/advanceDeliveryDispatch";

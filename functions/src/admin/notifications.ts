@@ -1,7 +1,8 @@
 import * as functions from "firebase-functions/v1";
 import * as admin from "firebase-admin";
-import { FieldValue, FieldPath, Timestamp } from "firebase-admin/firestore";
+import { FieldValue, FieldPath } from "firebase-admin/firestore";
 import { log, NotificationData, validateNotificationData, createNotificationMessage } from "../common/helpers";
+import { closeDispatch, startDispatch } from "../delivery/dispatch";
 
 // Phase 14, Workstream 3 fix: this used to contain a
 // BOOTSTRAP_ADMIN_EMAILS allowlist and, on a match, WROTE role:"admin" onto
@@ -62,117 +63,9 @@ function uniqueTokens(data: admin.firestore.DocumentData | undefined): string[] 
 // deployment, so production always uses 500.
 const BROADCAST_PAGE_SIZE = Number(process.env.BROADCAST_PAGE_SIZE_OVERRIDE) || 500;
 
-const DELIVERY_ASSIGNMENT_RADIUS_KM = 5;
-const DELIVERY_REQUEST_LIMIT = 12;
-const DELIVERY_LOCATION_FRESHNESS_MS = 30 * 60 * 1000;
-
-function numberValue(value: unknown): number | null {
-  if (typeof value === "number" && Number.isFinite(value)) return value;
-  if (typeof value === "string" && value.trim()) {
-    const parsed = Number(value);
-    if (Number.isFinite(parsed)) return parsed;
-  }
-  return null;
-}
-
-function distanceKm(
-  startLat: number,
-  startLng: number,
-  endLat: number,
-  endLng: number
-): number {
-  const earthRadiusKm = 6371;
-  const degToRad = (degrees: number) => (degrees * Math.PI) / 180;
-  const dLat = degToRad(endLat - startLat);
-  const dLng = degToRad(endLng - startLng);
-  const a =
-    Math.sin(dLat / 2) * Math.sin(dLat / 2) +
-    Math.cos(degToRad(startLat)) *
-      Math.cos(degToRad(endLat)) *
-      Math.sin(dLng / 2) *
-      Math.sin(dLng / 2);
-  return earthRadiusKm * 2 * Math.atan2(Math.sqrt(a), Math.sqrt(1 - a));
-}
-
-function timestampMillis(value: unknown): number | null {
-  if (!value) return null;
-  if (value instanceof Timestamp) return value.toMillis();
-  if (typeof (value as any).toDate === "function") {
-    return (value as any).toDate().getTime();
-  }
-  return null;
-}
-
-function hasFreshPartnerLocation(partner: admin.firestore.DocumentData): boolean {
-  const lastUpdate = timestampMillis(partner.lastLocationUpdate);
-  if (!lastUpdate) return false;
-  return Date.now() - lastUpdate <= DELIVERY_LOCATION_FRESHNESS_MS;
-}
-
-function readPoint(
-  data: admin.firestore.DocumentData | undefined,
-  latKeys: string[],
-  lngKeys: string[]
-): { lat: number; lng: number } | null {
-  if (!data) return null;
-  for (const latKey of latKeys) {
-    for (const lngKey of lngKeys) {
-      const lat = numberValue(data[latKey]);
-      const lng = numberValue(data[lngKey]);
-      if (lat !== null && lng !== null) return { lat, lng };
-    }
-  }
-  return null;
-}
-
-async function resolvePickupPoint(
-  order: admin.firestore.DocumentData
-): Promise<{ lat: number; lng: number; source: string } | null> {
-  const directPoint = readPoint(
-    order,
-    ["pickupLat", "sellerLat", "storeLat", "currentLat", "lat", "latitude"],
-    ["pickupLng", "sellerLng", "storeLng", "currentLng", "lng", "longitude"]
-  );
-  if (directPoint) return { ...directPoint, source: "order" };
-
-  for (const key of ["pickupLocation", "sellerLocation", "storeLocation"]) {
-    const nestedPoint = readPoint(order[key], ["lat", "latitude"], ["lng", "longitude"]);
-    if (nestedPoint) return { ...nestedPoint, source: key };
-  }
-
-  const sellerId = String(order.sellerId || "").trim();
-  if (sellerId) {
-    for (const collectionName of ["sellers", "users"]) {
-      const sellerDoc = await admin.firestore().collection(collectionName).doc(sellerId).get();
-      const sellerPoint = readPoint(
-        sellerDoc.data(),
-        ["currentLat", "storeLat", "shopLat", "lat", "latitude"],
-        ["currentLng", "storeLng", "shopLng", "lng", "longitude"]
-      );
-      if (sellerPoint) return { ...sellerPoint, source: collectionName };
-    }
-  }
-
-  const addressPoint = readPoint(
-    order.deliveryAddress,
-    ["latitude", "lat"],
-    ["longitude", "lng"]
-  );
-  return addressPoint ? { ...addressPoint, source: "deliveryAddress" } : null;
-}
-
-function matchesDeliveryArea(
-  partner: admin.firestore.DocumentData,
-  orderAddress: admin.firestore.DocumentData
-): boolean {
-  const partnerPincode = String(partner.pincode || "").trim();
-  const orderPincode = String(orderAddress.pincode || orderAddress.zipcode || "").trim();
-  if (partnerPincode && orderPincode && partnerPincode === orderPincode) return true;
-
-  const partnerCity = String(partner.city || "").trim().toLowerCase();
-  const orderCity = String(orderAddress.city || "").trim().toLowerCase();
-  return !!partnerCity && !!orderCity && partnerCity === orderCity;
-}
+// Phase DLV-2A: rider dispatch (radius, freshness, pickup point, offers)
+// moved to ../delivery/dispatch.ts. The old helpers here fell back to the
+// customer's delivery address as the pickup point.
 
 async function sendOrderPushToUser(
   userId: string,
@@ -226,127 +119,6 @@ async function sendOrderPushToUser(
   return { successCount, failureCount };
 }
 
-async function notifyDeliveryPartnersForPickup(
-  orderId: string,
-  orderNumber: string,
-  order: admin.firestore.DocumentData
-): Promise<number> {
-  const orderAddress = (order.deliveryAddress || {}) as admin.firestore.DocumentData;
-  const partners = await admin
-    .firestore()
-    .collection("delivery_partners")
-    .where("status", "==", "approved")
-    .where("isOnline", "==", true)
-    .get();
-
-  const pickupPoint = await resolvePickupPoint(order);
-  const partnersByDistance = pickupPoint
-    ? partners.docs
-        .map((doc) => {
-          const partner = doc.data();
-          const partnerLat = numberValue(partner.currentLat);
-          const partnerLng = numberValue(partner.currentLng);
-          if (
-            partnerLat === null ||
-            partnerLng === null ||
-            !hasFreshPartnerLocation(partner)
-          ) {
-            return null;
-          }
-          return {
-            doc,
-            distance: distanceKm(pickupPoint.lat, pickupPoint.lng, partnerLat, partnerLng),
-          };
-        })
-        .filter((entry): entry is { doc: admin.firestore.QueryDocumentSnapshot; distance: number } => !!entry)
-        .filter((entry) => entry.distance <= DELIVERY_ASSIGNMENT_RADIUS_KM)
-        .sort((a, b) => a.distance - b.distance)
-    : [];
-
-  const fallbackPartners = partners.docs
-    .filter((doc) => matchesDeliveryArea(doc.data(), orderAddress))
-    .map((doc) => ({ doc, distance: null as number | null }));
-
-  const selectedPartners = (partnersByDistance.length
-    ? partnersByDistance
-    : fallbackPartners).slice(0, DELIVERY_REQUEST_LIMIT);
-
-  if (!selectedPartners.length) return 0;
-
-  const batch = admin.firestore().batch();
-  selectedPartners.forEach(({ doc, distance }) => {
-    const requestId = `${orderId}_${doc.id}`;
-    const request = {
-      requestId,
-      orderId,
-      orderNumber,
-      partnerId: doc.id,
-      sellerId: order.sellerId || null,
-      userId: order.userId || null,
-      status: "pending",
-      distanceKm: distance === null ? null : Number(distance.toFixed(2)),
-      pickupLat: pickupPoint?.lat ?? null,
-      pickupLng: pickupPoint?.lng ?? null,
-      pickupSource: pickupPoint?.source ?? null,
-      radiusKm: DELIVERY_ASSIGNMENT_RADIUS_KM,
-      createdAt: FieldValue.serverTimestamp(),
-      updatedAt: FieldValue.serverTimestamp(),
-    };
-    batch.set(
-      admin.firestore().collection("orders").doc(orderId).collection("deliveryRequests").doc(doc.id),
-      request,
-      { merge: true }
-    );
-    batch.set(admin.firestore().collection("delivery_requests").doc(requestId), request, { merge: true });
-  });
-  await batch.commit();
-
-  await Promise.all(
-    selectedPartners.map(({ doc, distance }) =>
-      sendOrderPushToUser(
-        doc.id,
-        "New nearby delivery request",
-        distance === null
-          ? `Order ${orderNumber} is packed and ready for pickup.`
-          : `Order ${orderNumber} pickup is ${distance.toFixed(1)} km away.`,
-        "delivery_pickup_ready",
-        orderId,
-        orderNumber,
-        "ready_for_pickup"
-      )
-    )
-  );
-
-  return selectedPartners.length;
-}
-
-async function closeDeliveryRequests(orderId: string, assignedPartnerId: string): Promise<void> {
-  const requests = await admin
-    .firestore()
-    .collection("orders")
-    .doc(orderId)
-    .collection("deliveryRequests")
-    .get();
-
-  if (requests.empty) return;
-
-  const batch = admin.firestore().batch();
-  requests.docs.forEach((doc) => {
-    const status = doc.id === assignedPartnerId ? "accepted" : "cancelled";
-    const update = {
-      status,
-      assignedPartnerId,
-      updatedAt: FieldValue.serverTimestamp(),
-    };
-    batch.set(doc.ref, update, { merge: true });
-    batch.set(
-      admin.firestore().collection("delivery_requests").doc(`${orderId}_${doc.id}`),
-      update,
-      { merge: true }
-    );
-  });
-  await batch.commit();
-}
 
 export const sendBroadcastNotification = functions.https.onCall(
   async (data: NotificationData, context) => {
@@ -679,13 +451,20 @@ export const onOrderStatusChanged = functions.firestore
         failureCount += customerResult.failureCount;
       }
 
+      // Phase DLV-2A: first wave of offers (nearest 3 eligible riders); the
+      // advanceDeliveryDispatch scheduler runs the later waves and retries.
       let deliveryTargets = 0;
       if (orderStatus === "ready_for_pickup") {
-        deliveryTargets = await notifyDeliveryPartnersForPickup(orderId, orderNumber, afterData);
+        try {
+          const r = await startDispatch(admin.firestore(), orderId, afterData, Date.now());
+          deliveryTargets = r.started && "offered" in r ? r.offered.length : 0;
+        } catch (e) {
+          log.error(`[AutoTrigger] dispatch failed for ${orderId}: ${(e as Error)?.message ?? e}`);
+        }
       }
 
       if (orderStatus === "delivery_accepted" && afterData.deliveryPartnerId) {
-        await closeDeliveryRequests(orderId, String(afterData.deliveryPartnerId));
+        await closeDispatch(admin.firestore(), orderId, String(afterData.deliveryPartnerId), Date.now(), "accepted");
       }
 
       if (afterData.sellerId && [
