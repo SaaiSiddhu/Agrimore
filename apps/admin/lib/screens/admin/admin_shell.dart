@@ -106,6 +106,12 @@ class _AdminShellState extends State<AdminShell> {
       'Manage Sellers',
       AdminRoutes.manageSellers,
     ),
+    // SELLER-MONEY-1. Appended at the end, same index-stability rule.
+    _NavItem(
+      Icons.account_balance_rounded,
+      'Seller Payouts',
+      AdminRoutes.sellerPayouts,
+    ),
   ];
 
   int get _currentIndex {

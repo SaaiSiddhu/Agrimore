@@ -36,6 +36,7 @@ import '../screens/admin/wallet/wallet_tracking_screen.dart';
 import '../screens/admin/employees/employee_management_screen.dart';
 import '../screens/admin/employees/add_employee_screen.dart';
 import '../screens/admin/employees/employee_payouts_screen.dart';
+import '../screens/admin/sellers/seller_payouts_screen.dart';
 import '../screens/admin/employees/employee_payout_detail_screen.dart';
 import '../screens/admin/benefit_program/compliance_control_screen.dart';
 import '../screens/admin/benefit_program/feature_flags_screen.dart';
@@ -105,6 +106,10 @@ class AdminRoutes {
   /// readability; the _navItems entry itself is appended at the end of
   /// admin_shell.dart's list, mirroring D5's index-stability rule.
   static const String manageSellers = '/manage-sellers';
+
+  /// Settle seller_payouts rows (SELLER-MONEY-1). Nav item appended at the
+  /// end of admin_shell.dart's list, same index-stability rule.
+  static const String sellerPayouts = '/seller-payouts';
 
   static const String employees = '/employees';
 
@@ -449,6 +454,13 @@ class AppRouter {
               name: 'manage-sellers',
               pageBuilder: (context, state) =>
                   _buildPage(const ManageSellersScreen(), state),
+            ),
+
+            GoRoute(
+              path: AdminRoutes.sellerPayouts,
+              name: 'seller-payouts',
+              pageBuilder: (context, state) =>
+                  _buildPage(const SellerPayoutsScreen(), state),
             ),
 
             GoRoute(
