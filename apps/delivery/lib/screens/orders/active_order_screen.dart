@@ -10,6 +10,8 @@ import 'package:firebase_storage/firebase_storage.dart';
 import 'package:cloud_functions/cloud_functions.dart';
 import 'package:agrimore_core/agrimore_core.dart';
 import '../../providers/order_provider.dart';
+import '../../navigation/rider_navigation.dart';
+import 'widgets/rider_route_card.dart';
 
 /// Delivery workflow states — each maps to a Firestore orderStatus
 enum DeliveryStep {
@@ -105,7 +107,24 @@ class _ActiveOrderScreenState extends State<ActiveOrderScreen> {
           children: [
             // ── Delivery Progress Stepper ──
             _buildDeliveryStepper(colorScheme),
-            const SizedBox(height: 24),
+            const SizedBox(height: 16),
+
+            // ── Route: to the store, then to the customer (DLV-3B) ──
+            if (_currentStep != DeliveryStep.delivered) ...[
+              RiderRouteCard(
+                orderId: widget.order.id,
+                stepIndex: _currentStep.index,
+                customerName: widget.order.deliveryAddress.name,
+                dropFallback: widget.order.deliveryAddress.latitude != null &&
+                        widget.order.deliveryAddress.longitude != null
+                    ? DeliveryPoint(
+                        lat: widget.order.deliveryAddress.latitude!,
+                        lng: widget.order.deliveryAddress.longitude!,
+                      )
+                    : null,
+              ),
+              const SizedBox(height: 16),
+            ],
 
             // ── Customer Info ──
             _buildSection(
@@ -1086,10 +1105,11 @@ class _ActiveOrderScreenState extends State<ActiveOrderScreen> {
   void _navigateToAddress() async {
     final address = widget.order.deliveryAddress;
     if (address.latitude != null && address.longitude != null) {
-      final url = Uri.parse(
-        'https://www.google.com/maps/dir/?api=1&destination=${address.latitude},${address.longitude}',
-      );
-      if (await canLaunchUrl(url)) await launchUrl(url);
+      // DLV-3B: two-wheeler turn-by-turn, like the route card's Navigate.
+      final dest = DeliveryPoint(lat: address.latitude!, lng: address.longitude!);
+      final opened = await launchUrl(turnByTurnUri(dest), mode: LaunchMode.externalApplication)
+          .catchError((_) => false);
+      if (!opened) await launchUrl(directionsUri(dest), mode: LaunchMode.externalApplication);
     }
   }
 

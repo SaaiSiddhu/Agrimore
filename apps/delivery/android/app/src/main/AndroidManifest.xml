@@ -94,6 +94,11 @@
         <meta-data
             android:name="flutterEmbedding"
             android:value="2" />
+        <!-- Phase DLV-3B: Maps SDK key for the rider route map, from
+             key.properties via the mapsApiKey placeholder — never tracked. -->
+        <meta-data
+            android:name="com.google.android.geo.API_KEY"
+            android:value="${mapsApiKey}"/>
     </application>
 
     <queries>
