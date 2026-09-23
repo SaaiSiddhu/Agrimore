@@ -112,6 +112,12 @@ class _AdminShellState extends State<AdminShell> {
       'Seller Payouts',
       AdminRoutes.sellerPayouts,
     ),
+    // DLV-2C. Appended at the end, same index-stability rule.
+    _NavItem(
+      Icons.radar_rounded,
+      'Dispatch Queue',
+      AdminRoutes.deliveryDispatch,
+    ),
   ];
 
   int get _currentIndex {
