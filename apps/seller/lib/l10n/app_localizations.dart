@@ -2865,6 +2865,282 @@ abstract class AppLocalizations {
   /// In en, this message translates to:
   /// **'Open-source licences'**
   String get settingsLicences;
+
+  /// No description provided for @navHome.
+  ///
+  /// In en, this message translates to:
+  /// **'Home'**
+  String get navHome;
+
+  /// No description provided for @navOrders.
+  ///
+  /// In en, this message translates to:
+  /// **'Orders'**
+  String get navOrders;
+
+  /// No description provided for @navCatalogue.
+  ///
+  /// In en, this message translates to:
+  /// **'Catalogue'**
+  String get navCatalogue;
+
+  /// No description provided for @navAccount.
+  ///
+  /// In en, this message translates to:
+  /// **'Account'**
+  String get navAccount;
+
+  /// No description provided for @navOrdersPending.
+  ///
+  /// In en, this message translates to:
+  /// **'{count, plural, =1{Orders, 1 waiting} other{Orders, {count} waiting}}'**
+  String navOrdersPending(int count);
+
+  /// No description provided for @accountTitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Account'**
+  String get accountTitle;
+
+  /// No description provided for @accountLoadFailed.
+  ///
+  /// In en, this message translates to:
+  /// **'Couldn\'t load your account details. Pull down to try again.'**
+  String get accountLoadFailed;
+
+  /// No description provided for @accountNoRatings.
+  ///
+  /// In en, this message translates to:
+  /// **'No ratings yet'**
+  String get accountNoRatings;
+
+  /// No description provided for @accountRating.
+  ///
+  /// In en, this message translates to:
+  /// **'{rating} · {count, plural, =1{1 review} other{{count} reviews}}'**
+  String accountRating(String rating, int count);
+
+  /// No description provided for @accountProducts.
+  ///
+  /// In en, this message translates to:
+  /// **'Products'**
+  String get accountProducts;
+
+  /// No description provided for @accountDelivered.
+  ///
+  /// In en, this message translates to:
+  /// **'Delivered'**
+  String get accountDelivered;
+
+  /// No description provided for @accountSectionBusiness.
+  ///
+  /// In en, this message translates to:
+  /// **'Business'**
+  String get accountSectionBusiness;
+
+  /// No description provided for @accountSectionSelling.
+  ///
+  /// In en, this message translates to:
+  /// **'Selling & money'**
+  String get accountSectionSelling;
+
+  /// No description provided for @accountSectionAi.
+  ///
+  /// In en, this message translates to:
+  /// **'AI assistant'**
+  String get accountSectionAi;
+
+  /// No description provided for @accountSectionApp.
+  ///
+  /// In en, this message translates to:
+  /// **'App'**
+  String get accountSectionApp;
+
+  /// No description provided for @accountBusinessDetails.
+  ///
+  /// In en, this message translates to:
+  /// **'Business details'**
+  String get accountBusinessDetails;
+
+  /// No description provided for @accountBusinessDetailsHint.
+  ///
+  /// In en, this message translates to:
+  /// **'Name, GSTIN, location, hours'**
+  String get accountBusinessDetailsHint;
+
+  /// No description provided for @accountDeliveryFee.
+  ///
+  /// In en, this message translates to:
+  /// **'Delivery fee'**
+  String get accountDeliveryFee;
+
+  /// No description provided for @accountPayoutHint.
+  ///
+  /// In en, this message translates to:
+  /// **'Where your settlements are paid'**
+  String get accountPayoutHint;
+
+  /// No description provided for @accountPayoutUnavailable.
+  ///
+  /// In en, this message translates to:
+  /// **'We couldn\'t load your payout account right now. Reopen this screen, or contact support if it keeps happening.'**
+  String get accountPayoutUnavailable;
+
+  /// No description provided for @accountPayoutChangeHint.
+  ///
+  /// In en, this message translates to:
+  /// **'To change your payout account, contact AgriMore support.'**
+  String get accountPayoutChangeHint;
+
+  /// No description provided for @accountIfsc.
+  ///
+  /// In en, this message translates to:
+  /// **'IFSC {ifsc}'**
+  String accountIfsc(String ifsc);
+
+  /// No description provided for @accountAiAssistant.
+  ///
+  /// In en, this message translates to:
+  /// **'Ask AI about your business'**
+  String get accountAiAssistant;
+
+  /// No description provided for @accountAiAssistantHint.
+  ///
+  /// In en, this message translates to:
+  /// **'Sales, products and orders'**
+  String get accountAiAssistantHint;
+
+  /// No description provided for @accountAiConnect.
+  ///
+  /// In en, this message translates to:
+  /// **'Connect AI'**
+  String get accountAiConnect;
+
+  /// No description provided for @accountAiConnectHint.
+  ///
+  /// In en, this message translates to:
+  /// **'Use your own ChatGPT or Gemini key'**
+  String get accountAiConnectHint;
+
+  /// No description provided for @accountLegal.
+  ///
+  /// In en, this message translates to:
+  /// **'Seller policies'**
+  String get accountLegal;
+
+  /// No description provided for @legalAccurate.
+  ///
+  /// In en, this message translates to:
+  /// **'Keep product details, prices and stock accurate.'**
+  String get legalAccurate;
+
+  /// No description provided for @legalPackOnTime.
+  ///
+  /// In en, this message translates to:
+  /// **'Accept and pack orders on time.'**
+  String get legalPackOnTime;
+
+  /// No description provided for @legalPayouts.
+  ///
+  /// In en, this message translates to:
+  /// **'Settlements are paid for delivered orders, after AgriMore\'s commission.'**
+  String get legalPayouts;
+
+  /// No description provided for @accountSignOut.
+  ///
+  /// In en, this message translates to:
+  /// **'Sign out'**
+  String get accountSignOut;
+
+  /// No description provided for @accountSignOutTitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Sign out?'**
+  String get accountSignOutTitle;
+
+  /// No description provided for @accountSignOutBody.
+  ///
+  /// In en, this message translates to:
+  /// **'You\'ll need your phone number to sign in again.'**
+  String get accountSignOutBody;
+
+  /// No description provided for @accountSaved.
+  ///
+  /// In en, this message translates to:
+  /// **'Business details saved'**
+  String get accountSaved;
+
+  /// No description provided for @accountBusinessName.
+  ///
+  /// In en, this message translates to:
+  /// **'Business name'**
+  String get accountBusinessName;
+
+  /// No description provided for @accountBusinessNameRequired.
+  ///
+  /// In en, this message translates to:
+  /// **'Enter your business name'**
+  String get accountBusinessNameRequired;
+
+  /// No description provided for @accountPhone.
+  ///
+  /// In en, this message translates to:
+  /// **'Business phone'**
+  String get accountPhone;
+
+  /// No description provided for @accountGstin.
+  ///
+  /// In en, this message translates to:
+  /// **'GSTIN (optional)'**
+  String get accountGstin;
+
+  /// No description provided for @accountGstinHelp.
+  ///
+  /// In en, this message translates to:
+  /// **'Needed for tax invoices'**
+  String get accountGstinHelp;
+
+  /// No description provided for @accountCity.
+  ///
+  /// In en, this message translates to:
+  /// **'City'**
+  String get accountCity;
+
+  /// No description provided for @accountState.
+  ///
+  /// In en, this message translates to:
+  /// **'State'**
+  String get accountState;
+
+  /// No description provided for @accountOpens.
+  ///
+  /// In en, this message translates to:
+  /// **'Opens'**
+  String get accountOpens;
+
+  /// No description provided for @accountCloses.
+  ///
+  /// In en, this message translates to:
+  /// **'Closes'**
+  String get accountCloses;
+
+  /// No description provided for @accountRadius.
+  ///
+  /// In en, this message translates to:
+  /// **'Delivery radius (km)'**
+  String get accountRadius;
+
+  /// No description provided for @accountRadiusInvalid.
+  ///
+  /// In en, this message translates to:
+  /// **'Enter a whole number from 1 to {max}'**
+  String accountRadiusInvalid(int max);
+
+  /// No description provided for @accountSave.
+  ///
+  /// In en, this message translates to:
+  /// **'Save'**
+  String get accountSave;
 }
 
 class _AppLocalizationsDelegate
