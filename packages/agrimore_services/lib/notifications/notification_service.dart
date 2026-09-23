@@ -27,21 +27,48 @@ Future<void> firebaseMessagingBackgroundHandler(RemoteMessage message) async {
   }
 }
 
+/// Per-app hooks (Phase DLV-2B). Each returns true when the app handled the
+/// event itself, in which case the shared default is skipped.
+typedef RemoteMessageHook = Future<bool> Function(RemoteMessage message);
+typedef NotificationResponseHook = bool Function(NotificationResponse response);
+
 class NotificationService {
   static String? _pendingFCMToken;
   /// Set this from the app's global navigatorKey (e.g., from app.dart)
   /// so notification taps can navigate correctly.
   static GlobalKey<NavigatorState> navigatorKey = GlobalKey<NavigatorState>();
 
-  static Future<void> initialize() async {
+  // Phase DLV-2B: optional per-app hooks. All default to the behaviour every
+  // app had before, so only an app that passes them changes.
+  static List<AndroidNotificationChannel> _extraChannels = const [];
+  static RemoteMessageHook? _onForegroundMessage;
+  static RemoteMessageHook? _onMessageOpened;
+  static NotificationResponseHook? _onNotificationResponse;
+
+  /// [backgroundHandler] replaces the shared background handler (it must be a
+  /// top-level or static function annotated `@pragma('vm:entry-point')`).
+  /// [extraChannels] are created alongside the shared ones.
+  /// [onForegroundMessage], [onMessageOpened] and [onNotificationResponse] run
+  /// first and suppress the shared handling when they return true.
+  static Future<void> initialize({
+    BackgroundMessageHandler? backgroundHandler,
+    List<AndroidNotificationChannel> extraChannels = const [],
+    RemoteMessageHook? onForegroundMessage,
+    RemoteMessageHook? onMessageOpened,
+    NotificationResponseHook? onNotificationResponse,
+  }) async {
     if (kIsWeb) {
       // Web initialization is handled by FCMService
       return;
     }
-    await _initializeMobileFCM();
+    _extraChannels = extraChannels;
+    _onForegroundMessage = onForegroundMessage;
+    _onMessageOpened = onMessageOpened;
+    _onNotificationResponse = onNotificationResponse;
+    await _initializeMobileFCM(backgroundHandler ?? firebaseMessagingBackgroundHandler);
   }
 
-  static Future<void> _initializeMobileFCM() async {
+  static Future<void> _initializeMobileFCM(BackgroundMessageHandler backgroundHandler) async {
     FirebaseMessaging messaging = FirebaseMessaging.instance;
 
     // Request permissions
@@ -87,6 +114,7 @@ class NotificationService {
       await flutterLocalNotificationsPlugin.initialize(
         initializationSettings,
         onDidReceiveNotificationResponse: (NotificationResponse response) async {
+          if (_onNotificationResponse?.call(response) == true) return;
           debugPrint('📱 Notification tapped!');
           debugPrint('📦 Payload: ${response.payload}');
           
@@ -113,7 +141,7 @@ class NotificationService {
       await _createNotificationChannels();
 
       // Set background message handler
-      FirebaseMessaging.onBackgroundMessage(firebaseMessagingBackgroundHandler);
+      FirebaseMessaging.onBackgroundMessage(backgroundHandler);
 
       // Handle foreground messages
       FirebaseMessaging.onMessage.listen((RemoteMessage message) async {
@@ -121,12 +149,14 @@ class NotificationService {
         debugPrint('📦 Title: ${message.notification?.title}');
         debugPrint('📦 Body: ${message.notification?.body}');
         debugPrint('📦 Data: ${message.data}');
-        
+
+        if (await _onForegroundMessage?.call(message) == true) return;
         await showAdvancedNotification(message);
       });
 
       // Handle notification opened app (background state)
-      FirebaseMessaging.onMessageOpenedApp.listen((RemoteMessage message) {
+      FirebaseMessaging.onMessageOpenedApp.listen((RemoteMessage message) async {
+        if (await _onMessageOpened?.call(message) == true) return;
         debugPrint('📱 Notification opened app from background');
         debugPrint('📦 Data: ${message.data}');
         
@@ -141,6 +171,9 @@ class NotificationService {
 
       // Handle app opened from terminated state
       RemoteMessage? initialMessage = await messaging.getInitialMessage();
+      if (initialMessage != null && await _onMessageOpened?.call(initialMessage) == true) {
+        initialMessage = null;
+      }
       if (initialMessage != null) {
         debugPrint('📱 App opened from terminated state via notification');
         debugPrint('📦 Initial message data: ${initialMessage.data}');
@@ -223,7 +256,7 @@ class NotificationService {
     final androidPlugin = flutterLocalNotificationsPlugin
         .resolvePlatformSpecificImplementation<AndroidFlutterLocalNotificationsPlugin>();
 
-    for (var channel in channels) {
+    for (var channel in [...channels, ..._extraChannels]) {
       await androidPlugin?.createNotificationChannel(channel);
     }
     debugPrint('✅ Notification channels created');
