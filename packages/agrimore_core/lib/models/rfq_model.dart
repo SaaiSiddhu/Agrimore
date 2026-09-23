@@ -22,7 +22,15 @@ class RfqOffer {
   final RfqRole by;
   final String? notes;
 
-  RfqOffer({required this.price, required this.quantity, required this.by, this.notes});
+  /// SELLER-RFQ-2: when this offer stops being acceptable. Null on offers
+  /// written before validity existed — those never expire.
+  final DateTime? expiresAt;
+
+  RfqOffer({required this.price, required this.quantity, required this.by, this.notes, this.expiresAt});
+
+  double get total => price * quantity;
+
+  bool isExpired(DateTime now) => expiresAt != null && expiresAt!.isBefore(now);
 
   factory RfqOffer.fromMap(Map<String, dynamic> map) {
     return RfqOffer(
@@ -30,6 +38,7 @@ class RfqOffer {
       quantity: (map['quantity'] as num).toInt(),
       by: map['by'] == 'seller' ? RfqRole.seller : RfqRole.buyer,
       notes: map['notes'] as String?,
+      expiresAt: map['expiresAt'] != null ? _toDate(map['expiresAt']) : null,
     );
   }
 }
@@ -79,6 +88,18 @@ class RfqModel {
   final DateTime? rejectedAt;
   final List<RfqHistoryEntry> history;
 
+  // SELLER-RFQ-2 display snapshots written by createRfq (null on older RFQs).
+  final String? productName;
+  final String? productImageUrl;
+  final String? productUnit;
+  final double? listedB2bPrice;
+  final int? listedB2bMoq;
+  final String? buyerName;
+  final String? buyerBusinessName;
+
+  /// Set by createOrderFromRfq once the buyer places the order.
+  final String? consumedByOrderId;
+
   RfqModel({
     required this.id,
     required this.buyerId,
@@ -94,6 +115,14 @@ class RfqModel {
     this.acceptedAt,
     this.rejectedAt,
     this.history = const [],
+    this.productName,
+    this.productImageUrl,
+    this.productUnit,
+    this.listedB2bPrice,
+    this.listedB2bMoq,
+    this.buyerName,
+    this.buyerBusinessName,
+    this.consumedByOrderId,
   });
 
   factory RfqModel.fromFirestore(DocumentSnapshot doc) {
@@ -102,7 +131,18 @@ class RfqModel {
   }
 
   factory RfqModel.fromMap(Map<String, dynamic> map, String id) {
+    final product = map['product'] is Map ? Map<String, dynamic>.from(map['product'] as Map) : const <String, dynamic>{};
+    final buyer = map['buyer'] is Map ? Map<String, dynamic>.from(map['buyer'] as Map) : const <String, dynamic>{};
+    String? str(Object? v) => v is String && v.isNotEmpty ? v : null;
     return RfqModel(
+      productName: str(product['name']),
+      productImageUrl: str(product['imageUrl']),
+      productUnit: str(product['unit']),
+      listedB2bPrice: (product['b2bPrice'] as num?)?.toDouble(),
+      listedB2bMoq: (product['b2bMoq'] as num?)?.toInt(),
+      buyerName: str(buyer['name']),
+      buyerBusinessName: str(buyer['businessName']),
+      consumedByOrderId: str(map['consumedByOrderId']),
       id: id,
       buyerId: map['buyerId'] as String? ?? '',
       sellerId: map['sellerId'] as String? ?? '',
