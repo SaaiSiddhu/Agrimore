@@ -165,6 +165,8 @@ export { sellerAiChatProxy } from "./seller/aiChatProxy";
 export { submitSellerApplication } from "./seller/sellerApplication";
 // SELLER-ORDERS-1: the only path for a seller to change an order status (ADR-S13)
 export { sellerTransitionOrder } from "./seller/sellerTransitionOrder";
+// SELLER-ORDERS-2: server-issued, sequentially numbered invoices (ADR-S14)
+export { issueSellerInvoice } from "./seller/sellerInvoice";
 
 // ============================================
 // B2B RFQ & NEGOTIATION (Phase RFQ-1)
