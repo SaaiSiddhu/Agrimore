@@ -14,6 +14,7 @@ class ProductFilterBar extends StatelessWidget {
         ProductListFilter.all => l10n.filterAll,
         ProductListFilter.active => l10n.filterActive,
         ProductListFilter.draft => l10n.filterDraft,
+        ProductListFilter.lowStock => l10n.filterLowStock,
         ProductListFilter.outOfStock => l10n.filterOutOfStock,
         ProductListFilter.inactive => l10n.filterInactive,
       };

@@ -111,7 +111,9 @@ void main() {
     expect(find.text(AgFormat.rupeesWhole(1000)), findsOneWidget);
     expect(find.text(l10n.kpiUpVsPrevious('100%')), findsOneWidget);
     expect(find.text(l10n.kpiOrdersMore(2)), findsOneWidget);
+    await tester.scrollUntilVisible(find.text(AgFormat.rupees(1234)), 200, scrollable: find.byType(Scrollable).first);
     expect(find.text(AgFormat.rupees(1234)), findsOneWidget);
+    await tester.scrollUntilVisible(find.text(l10n.period7d), -200, scrollable: find.byType(Scrollable).first);
     await tester.tap(find.text(l10n.period7d));
     await tester.pump();
     expect(find.text(AgFormat.rupeesWhole(1500)), findsOneWidget);

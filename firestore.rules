@@ -947,8 +947,12 @@ service cloud.firestore {
           'shopAddress', 'city', 'state', 'pincode', 'latitude', 'longitude',
           'phone', 'gstNumber', 'gstin',
           'openingTime', 'closingTime', 'deliveryRadiusKm', 'deliveryFeeSchedule',
+          'acceptingOrders', 'pausedUntil',
           'updatedAt'
         ]) &&
+        // SELLER-OPS-1: store pause (read by createOrder / createOrderFromRfq).
+        (!('acceptingOrders' in d) || d.acceptingOrders is bool) &&
+        (!('pausedUntil' in d) || d.pausedUntil == null || d.pausedUntil is timestamp) &&
         (!('description' in d) || d.description == null || (d.description is string && d.description.size() <= 500)) &&
         (!('highlights' in d) || d.highlights == null || (d.highlights is list && d.highlights.size() <= 3)) &&
         // SELLER-ACCOUNT-1a: a changed GSTIN must be well-formed (or cleared)

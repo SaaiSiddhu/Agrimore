@@ -12,6 +12,10 @@ import '../../providers/seller_auth_provider.dart';
 import '../../providers/seller_order_provider.dart';
 import '../../providers/seller_product_provider.dart';
 import '../notifications/notifications_screen.dart';
+import '../account/store_status.dart';
+import '../insights/health_screen.dart';
+import '../insights/insights_rules.dart';
+import '../insights/insights_screen.dart';
 import '../orders/order_stage.dart';
 import '../payments/payments_screen.dart';
 import '../rfq/quote_rules.dart';
@@ -26,7 +30,7 @@ import 'widgets/home_widgets.dart';
 /// now, how the business is doing against the previous period, and the
 /// next settlement. KPIs come from the server rollup `seller_stats_daily`.
 class DashboardScreen extends StatefulWidget {
-  const DashboardScreen({super.key, this.stats, this.pendingPayout, this.now, this.unreadOverride});
+  const DashboardScreen({super.key, this.stats, this.pendingPayout, this.now, this.unreadOverride, this.rating, this.reviewCount = 0});
 
   /// Injected in tests; otherwise streamed.
   final Map<String, DayStat>? stats;
@@ -35,6 +39,10 @@ class DashboardScreen extends StatefulWidget {
 
   /// Fixed unread count for the bell in tests.
   final int? unreadOverride;
+
+  /// Server rating (sellers/{uid}); injected in tests, otherwise read once.
+  final double? rating;
+  final int reviewCount;
 
   @override
   State<DashboardScreen> createState() => _DashboardScreenState();
@@ -54,6 +62,9 @@ class _DashboardScreenState extends State<DashboardScreen> {
   bool _statsFailed = false;
   bool _rebuildRequested = false;
   double? _pendingPayout;
+  double? _rating;
+  int _reviewCount = 0;
+  StoreStatus _store = const StoreStatus();
 
   bool get _injected => widget.stats != null;
 
@@ -64,6 +75,8 @@ class _DashboardScreenState extends State<DashboardScreen> {
       _stats = widget.stats!;
       _statsLoaded = true;
       _pendingPayout = widget.pendingPayout;
+      _rating = widget.rating;
+      _reviewCount = widget.reviewCount;
       return;
     }
     WidgetsBinding.instance.addPostFrameCallback((_) => _subscribe());
@@ -75,6 +88,14 @@ class _DashboardScreenState extends State<DashboardScreen> {
     if (uid == null) return;
     context.read<RfqProvider>().loadMyRfqs();
     final db = FirebaseFirestore.instance;
+    db.collection('sellers').doc(uid).get().then((snap) {
+      if (!mounted) return;
+      setState(() {
+        _rating = (snap.data()?['rating'] as num?)?.toDouble();
+        _reviewCount = (snap.data()?['reviewCount'] as num?)?.toInt() ?? 0;
+        _store = StoreStatus.fromSeller(snap.data());
+      });
+    }, onError: (Object e) => debugPrint('Home rating failed: $e'));
     _statsSub = db
         .collection('seller_stats_daily')
         .where('sellerId', isEqualTo: uid)
@@ -122,6 +143,57 @@ class _DashboardScreenState extends State<DashboardScreen> {
     _statsSub?.cancel();
     _payoutSub?.cancel();
     super.dispose();
+  }
+
+  Future<void> _setStore(StoreStatus status) async {
+    final l10n = AppLocalizations.of(context);
+    final uid = context.read<SellerAuthProvider>().currentUser?.uid;
+    if (uid == null) return;
+    try {
+      await FirebaseFirestore.instance.collection('sellers').doc(uid).update({...status.toUpdate(), 'updatedAt': FieldValue.serverTimestamp()});
+      if (!mounted) return;
+      setState(() => _store = status);
+      WsToast.show(context, status.accepting ? l10n.storeResumed : l10n.storePausedToast, tone: WsToastTone.success);
+    } catch (e) {
+      debugPrint('Store status failed: $e');
+      if (mounted) WsToast.show(context, l10n.profileSaveFailed, tone: WsToastTone.error);
+    }
+  }
+
+  /// Account health + a link to Insights (SELLER-HOME-1c).
+  Widget _healthCard(BuildContext context, DateTime now) {
+    final l10n = AppLocalizations.of(context);
+    final t = context.ws;
+    final text = context.wsText;
+    final inputs = healthInputs(
+      orders: context.watch<SellerOrderProvider>().allOrders,
+      products: context.watch<SellerProductProvider>().allProducts,
+      quotes: context.watch<RfqProvider>().myRfqs,
+      rating: _rating,
+      reviewCount: _reviewCount,
+      now: now,
+    );
+    final score = overallHealth(inputs);
+    return Card(
+      clipBehavior: Clip.antiAlias,
+      child: Column(children: [
+        ListTile(
+          onTap: () => Navigator.of(context).push(MaterialPageRoute<void>(builder: (_) => HealthScreen(inputs: inputs))),
+          leading: score == null ? Icon(AgIcons.shieldCheck, color: t.textTertiary) : HealthRing(score: score, size: WsSize.avatarMd),
+          title: Text(l10n.healthTitle, style: text.titleSmall),
+          subtitle: Text(score == null ? l10n.healthNotEnoughDataShort : l10n.healthBand(bandOf(score)), style: text.bodySmall),
+          trailing: Icon(AgIcons.chevronRight, color: t.textTertiary),
+        ),
+        const Divider(height: WsSize.hairline),
+        ListTile(
+          onTap: () => Navigator.of(context).push(MaterialPageRoute<void>(builder: (_) => const InsightsScreen())),
+          leading: Icon(AgIcons.chartLine, color: t.primary),
+          title: Text(l10n.insightsTitle, style: text.titleSmall),
+          subtitle: Text(l10n.insightsHint, style: text.bodySmall),
+          trailing: Icon(AgIcons.chevronRight, color: t.textTertiary),
+        ),
+      ]),
+    );
   }
 
   String _greeting(AppLocalizations l10n, DateTime now) {
@@ -193,7 +265,7 @@ class _DashboardScreenState extends State<DashboardScreen> {
         detail: out > 0 && low > 0 ? l10n.homeLowStock(low) : null,
         tone: out > 0 ? ActionTone.attention : ActionTone.neutral,
         onTap: () {
-          products.setFilter(ProductListFilter.outOfStock);
+          products.setFilter(out > 0 ? ProductListFilter.outOfStock : ProductListFilter.lowStock);
           SellerShell.goToTab(context, SellerTab.catalogue);
         },
       ));
@@ -232,6 +304,16 @@ class _DashboardScreenState extends State<DashboardScreen> {
       body: ListView(
         padding: const EdgeInsets.all(WsSpace.page),
         children: [
+          if (_store.isPaused(now)) ...[
+            SaInfoBanner(
+              variant: SaBannerVariant.warning,
+              title: l10n.storePausedTitle,
+              message: _store.pausedUntil == null ? l10n.storePausedBody : l10n.storePausedUntil(AgFormat.date(_store.pausedUntil!)),
+              actionLabel: l10n.storeResume,
+              onAction: () => _setStore(const StoreStatus()),
+            ),
+            const SizedBox(height: WsSpace.s16),
+          ],
           HomeSectionHeader(
             title: l10n.homeNeedsYou,
             trailing: actions.isEmpty ? null : Text(AgFormat.count(actions.length), style: text.labelLarge),
@@ -296,6 +378,8 @@ class _DashboardScreenState extends State<DashboardScreen> {
               ),
             ]),
           ],
+          const SizedBox(height: WsSpace.s12),
+          _healthCard(context, now),
           const SizedBox(height: WsSpace.s24),
           Card(
             child: ListTile(
