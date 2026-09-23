@@ -11,6 +11,8 @@ import '../../providers/seller_auth_provider.dart';
 import '../../providers/seller_product_provider.dart';
 import '../../l10n/app_localizations.dart';
 import '../products/widgets/product_tax_section.dart';
+import '../products/product_stats.dart';
+import '../../providers/seller_order_provider.dart';
 
 /// The real category, if any, whose name exactly matches [typed]
 /// (case-insensitive, trimmed) -- CAT-15's own resolution rule, kept as a
@@ -713,6 +715,40 @@ class _AddProductScreenState extends State<AddProductScreen> {
     );
   }
 
+  /// Last-30-day sales for the product being edited (gap 18).
+  Widget _buildStatsCard() {
+    final l10n = AppLocalizations.of(context);
+    final t = context.ws;
+    final text = context.wsText;
+    final stats = ProductSalesStats.of(context.watch<SellerOrderProvider>().allOrders, widget.existingProduct!.id, DateTime.now());
+    Widget cell(String value, String label) => Expanded(
+          child: Column(children: [
+            Text(value, style: text.titleMedium!.copyWith(fontFeatures: WsType.tabularFigures)),
+            Text(label, style: text.bodySmall!.copyWith(color: t.textSecondary)),
+          ]),
+        );
+    return Card(
+      margin: EdgeInsets.zero,
+      child: Padding(
+        padding: const EdgeInsets.all(WsSpace.s16),
+        child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
+          Text(l10n.productStatsTitle, style: text.titleSmall),
+          const SizedBox(height: WsSpace.s12),
+          Row(children: [
+            cell(AgFormat.count(stats.units), l10n.productStatsUnits),
+            cell(AgFormat.rupeesWhole(stats.revenue), l10n.kpiSales),
+            cell(AgFormat.count(stats.orders), l10n.kpiOrders),
+          ]),
+          const SizedBox(height: WsSpace.s8),
+          Text(
+            stats.lastSold == null ? l10n.productStatsNeverSold : l10n.productStatsLastSold(AgFormat.date(stats.lastSold!)),
+            style: text.bodySmall!.copyWith(color: t.textSecondary),
+          ),
+        ]),
+      ),
+    );
+  }
+
   Widget _buildImagePicker() {
     final l10n = AppLocalizations.of(context);
     final t = context.ws;
@@ -997,6 +1033,10 @@ class _AddProductScreenState extends State<AddProductScreen> {
             child: Form(
               key: _formKey,
               child: Column(crossAxisAlignment: CrossAxisAlignment.stretch, children: [
+                if (isEditing) ...[
+                  _buildStatsCard(),
+                  const SizedBox(height: WsSpace.s16),
+                ],
                 _buildImagePicker(),
                 const SizedBox(height: WsSpace.s24),
                 TextFormField(

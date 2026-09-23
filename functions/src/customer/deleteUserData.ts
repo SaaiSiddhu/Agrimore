@@ -75,6 +75,26 @@
 // skipped.
 //
 // ------------------------------------------------------------
+// SELLERS (SELLER-DELETE-1) — added after SELLER-RELEASE-1 found that a
+// seller's account deletion left their KYC photos (ID proof), bank/UPI
+// details and profile behind.
+// REFUSE while the seller still has orders to fulfil (orders.sellerId == uid
+// not terminal) or AgriMore still owes them money (seller_payouts pending) —
+// deleting then would strand buyers or the seller's own settlement.
+// HARD DELETE: sellers/{uid}, seller_payout_details/{uid}, sellerRequests/{uid},
+// ai_connections/{uid}, seller_ai_rate_limits/{uid}, seller_stats_daily
+// (sellerId == uid), users/{uid}/settings/*, and Storage
+// seller_documents/{uid}/ (KYC) + sellers/{uid}/storefront/.
+// HIDE: products (sellerId == uid) → isActive:false, sellerDeleted:true —
+// past orders and reviews still reference them.
+// KEEP: orders, invoices, seller_payouts — financial / GST records (invoices
+// carry the seller snapshot the law requires to be retained).
+//
+// Reviews — now anonymised (SELLER-DELETE-1): ACCOUNT-1a added the
+// COLLECTION_GROUP index reviews (userId, createdAt), so the caller's reviews
+// are found and their userName/userAvatar cleared; the rating stays.
+//
+// ------------------------------------------------------------
 // device_tokens — does not exist as a collection
 // ------------------------------------------------------------
 // Grepped firestore.rules and functions/src: no `device_tokens` collection
@@ -140,6 +160,73 @@ async function anonymizeOrdersInChunks(
   }
 }
 
+/** Seller-side personal data (SELLER-DELETE-1). Safe to re-run. */
+async function deleteSellerData(uid: string): Promise<{ wasSeller: boolean; hardDeleted: number; hiddenProducts: number; deletedFiles: number }> {
+  const [sellerSnap, requestSnap, statsSnap, settingsSnap, productsSnap] = await Promise.all([
+    db.collection("sellers").doc(uid).get(),
+    db.collection("sellerRequests").doc(uid).get(),
+    db.collection("seller_stats_daily").where("sellerId", "==", uid).get(),
+    db.collection("users").doc(uid).collection("settings").get(),
+    db.collection("products").where("sellerId", "==", uid).get(),
+  ]);
+  const refs: FirebaseFirestore.DocumentReference[] = [
+    db.collection("sellers").doc(uid),
+    db.collection("seller_payout_details").doc(uid),
+    db.collection("sellerRequests").doc(uid),
+    db.collection("ai_connections").doc(uid),
+    db.collection("seller_ai_rate_limits").doc(uid),
+    ...statsSnap.docs.map((d) => d.ref),
+    ...settingsSnap.docs.map((d) => d.ref),
+  ];
+  await deleteRefsInChunks(refs);
+
+  for (let i = 0; i < productsSnap.docs.length; i += BATCH_CHUNK_SIZE) {
+    const batch = db.batch();
+    for (const d of productsSnap.docs.slice(i, i + BATCH_CHUNK_SIZE)) {
+      batch.update(d.ref, { isActive: false, sellerDeleted: true, updatedAt: FieldValue.serverTimestamp() });
+    }
+    await batch.commit();
+  }
+
+  // Storage only for accounts that ever applied to sell (a customer has no
+  // seller files). A failure here fails the call on purpose: this runs
+  // before users/{uid} is deleted, so the caller can simply retry.
+  const wasSeller = sellerSnap.exists || requestSnap.exists;
+  let deletedFiles = 0;
+  if (!wasSeller) {
+    return { wasSeller, hardDeleted: refs.length, hiddenProducts: productsSnap.size, deletedFiles };
+  }
+  const bucket = admin.storage().bucket();
+  for (const prefix of [`seller_documents/${uid}/`, `sellers/${uid}/storefront/`]) {
+    const [files] = await bucket.getFiles({ prefix });
+    await Promise.all(files.map((f) => f.delete({ ignoreNotFound: true })));
+    deletedFiles += files.length;
+  }
+  return { wasSeller, hardDeleted: refs.length, hiddenProducts: productsSnap.size, deletedFiles };
+}
+
+/** Clears the author's name/avatar on every review they wrote; ratings stay. */
+async function anonymizeReviews(uid: string): Promise<number> {
+  let snap: FirebaseFirestore.QuerySnapshot;
+  try {
+    // Served by the COLLECTION_GROUP index reviews (userId, createdAt DESC).
+    snap = await db.collectionGroup("reviews").where("userId", "==", uid).orderBy("createdAt", "desc").get();
+  } catch (e) {
+    // Index not deployed yet: never block the deletion over it; the audit
+    // records -1 so the gap is visible.
+    console.error(`Review anonymisation skipped for ${uid}`, e);
+    return -1;
+  }
+  for (let i = 0; i < snap.docs.length; i += BATCH_CHUNK_SIZE) {
+    const batch = db.batch();
+    for (const d of snap.docs.slice(i, i + BATCH_CHUNK_SIZE)) {
+      batch.update(d.ref, { userName: "Deleted user", userAvatar: "" });
+    }
+    await batch.commit();
+  }
+  return snap.size;
+}
+
 export const deleteUserData = functions.https.onCall(async (data, context) => {
   if (!context.auth) {
     throw new functions.https.HttpsError("unauthenticated", "Sign in required");
@@ -189,6 +276,31 @@ export const deleteUserData = functions.https.onCall(async (data, context) => {
     );
   }
 
+  // Seller refusals (SELLER-DELETE-1).
+  const [sellerOrdersSnap, sellerPayoutsSnap] = await Promise.all([
+    db.collection("orders").where("sellerId", "==", uid).get(),
+    db.collection("seller_payouts").where("sellerId", "==", uid).get(),
+  ]);
+  const openSellerOrders = sellerOrdersSnap.docs.filter(
+    (d) => !TERMINAL_ORDER_STATUSES.has(String(d.data().orderStatus || "").toLowerCase())
+  ).length;
+  if (openSellerOrders > 0) {
+    throw new functions.https.HttpsError(
+      "failed-precondition",
+      `You have ${openSellerOrders} order${openSellerOrders === 1 ? "" : "s"} from buyers still to fulfil. ` +
+        "Deliver or cancel them before deleting your account."
+    );
+  }
+  const owed = sellerPayoutsSnap.docs
+    .filter((d) => String(d.data().status || "").toLowerCase() === "pending")
+    .reduce((sum, d) => sum + Number(d.data().netAmount ?? d.data().amount ?? 0), 0);
+  if (owed > 0) {
+    throw new functions.https.HttpsError(
+      "failed-precondition",
+      `AgriMore still owes you Rs ${owed.toFixed(2)} in settlements. Wait until it is paid before deleting your account.`
+    );
+  }
+
   // ============================================================
   // IDEMPOTENCY: if users/{uid} is already gone, a previous call already
   // did the Firestore work — skip straight to the (also-idempotent) Auth
@@ -202,6 +314,12 @@ export const deleteUserData = functions.https.onCall(async (data, context) => {
   let wasAssociate = false;
 
   if (!alreadyDeletedFirestore) {
+    // Seller data and reviews FIRST: users/{uid} is the idempotency marker,
+    // so anything that must happen has to happen before it is deleted —
+    // otherwise a retry after a partial failure would skip it.
+    const seller = await deleteSellerData(uid);
+    const anonymizedReviewsCount = await anonymizeReviews(uid);
+
     const [addressesSnap, cartItemsSnap, wishlistItemsSnap, notificationsSnap, recentlyViewedSnap, employeeSnap] =
       await Promise.all([
         db.collection("addresses").where("userId", "==", uid).get(),
@@ -249,9 +367,13 @@ export const deleteUserData = functions.https.onCall(async (data, context) => {
     await db.collection("account_deletion_audit").doc(uid).set({
       uid,
       deletedAt: FieldValue.serverTimestamp(),
-      hardDeletedDocCount: hardDeletedCount,
+      hardDeletedDocCount: hardDeletedCount + seller.hardDeleted,
       anonymizedOrdersCount,
       wasAssociate,
+      wasSeller: seller.wasSeller,
+      hiddenProductsCount: seller.hiddenProducts,
+      deletedFilesCount: seller.deletedFiles,
+      anonymizedReviewsCount,
     });
   }
 

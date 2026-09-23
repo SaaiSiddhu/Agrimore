@@ -150,6 +150,7 @@ if [ $EMU = 1 ]; then
       # (sellers/{uid}/storefront/{file}) in one suite.
       case "$s" in
         phase24_storage_rules_test|phase48_business_posts_test|phaseSAUTH1B_submit_application_test|phaseSSTORE1_storefront_rules_test) EMU_ONLY="storage,firestore";;
+        phaseSDEL1_seller_delete_test)                          EMU_ONLY="storage,firestore,auth";;
         *storage*)                                              EMU_ONLY="storage";;
         *)                                                       EMU_ONLY="firestore,functions,auth";;
       esac

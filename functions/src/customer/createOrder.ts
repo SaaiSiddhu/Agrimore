@@ -44,6 +44,7 @@ import { computeCartFingerprint } from "./productCreditHold";
 import { appendLedgerEntry, toProjectionFields } from "./productCreditLedger";
 import { DeliveryFeeSchedule, parseDeliveryFeeSchedule } from "./deliveryFeeSchedule";
 import { deliverySecretRef, newDeliverySecret } from "../delivery/deliverySecret";
+import { assertSellerAcceptingOrders } from "../common/sellerAvailability";
 
 interface CreateOrderItemInput {
   productId: string;
@@ -373,12 +374,24 @@ export const createOrder = onCall({ minInstances: 0, memory: "256MiB" }, async (
         return typeof sellerId === "string" && sellerId ? sellerId : "_unassigned";
       })
     );
+    // SELLER-OPS-1: a paused seller (sellers/{uid}.acceptingOrders false)
+    // takes no orders. One read per real seller in the cart, before any
+    // write in this transaction.
+    const realSellerIds = Array.from(cartSellerIds).filter((id) => id !== "_unassigned");
+    const sellerSnaps = realSellerIds.length
+      ? await tx.getAll(...realSellerIds.map((id) => db.collection("sellers").doc(id)))
+      : [];
+    const nowMs = Date.now();
+    for (const snap of sellerSnaps) {
+      assertSellerAcceptingOrders(snap.data(), nowMs);
+    }
+
     let sellerFeeSchedules: Map<string, DeliveryFeeSchedule> | undefined;
     if (cartSellerIds.size === 1) {
       const [onlySellerId] = Array.from(cartSellerIds);
       if (onlySellerId !== "_unassigned") {
-        const sellerSnap = await tx.get(db.collection("sellers").doc(onlySellerId));
-        const schedule = parseDeliveryFeeSchedule(sellerSnap.data()?.deliveryFeeSchedule);
+        const sellerSnap = sellerSnaps.find((s) => s.id === onlySellerId);
+        const schedule = parseDeliveryFeeSchedule(sellerSnap?.data()?.deliveryFeeSchedule);
         if (schedule) {
           sellerFeeSchedules = new Map([[onlySellerId, schedule]]);
         }

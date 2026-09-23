@@ -1,5 +1,6 @@
 import 'package:agrimore_ui/agrimore_ui.dart';
 import 'package:flutter/material.dart';
+import 'package:package_info_plus/package_info_plus.dart';
 import 'package:provider/provider.dart';
 
 import '../../l10n/app_localizations.dart';
@@ -8,9 +9,13 @@ import 'help_screen.dart';
 import 'notification_settings_screen.dart';
 
 /// M-11 Settings (ADR §10.6, SELLER-ACCOUNT-1b): theme, notifications, help,
-/// licences. (App version display lands with SELLER-RELEASE-1.)
+/// licences and the app version (SELLER-RELEASE-1: from package_info_plus,
+/// so it always matches pubspec.yaml).
 class SellerSettingsScreen extends StatelessWidget {
-  const SellerSettingsScreen({super.key});
+  const SellerSettingsScreen({super.key, this.versionOverride});
+
+  /// Fixed version for tests (the platform channel is absent there).
+  final String? versionOverride;
 
   @override
   Widget build(BuildContext context) {
@@ -62,6 +67,17 @@ class SellerSettingsScreen extends StatelessWidget {
             Navigator.of(context).push(MaterialPageRoute<void>(builder: (_) => const HelpScreen()));
           }),
           link(AgIcons.document, l10n.settingsLicences, () => showLicensePage(context: context, applicationName: l10n.appName)),
+          const Divider(height: WsSpace.s32),
+          FutureBuilder<String>(
+            future: versionOverride != null
+                ? Future.value(versionOverride)
+                : PackageInfo.fromPlatform().then((i) => l10n.settingsVersionValue(i.version, i.buildNumber)),
+            builder: (context, snap) => ListTile(
+              leading: Icon(AgIcons.info, color: t.textSecondary),
+              title: Text(l10n.settingsVersion, style: text.bodyLarge),
+              trailing: Text(snap.data ?? '', style: text.bodyMedium!.copyWith(color: t.textSecondary)),
+            ),
+          ),
         ],
       ),
     );

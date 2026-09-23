@@ -629,6 +629,12 @@ class _BusinessProfileScreenState extends State<BusinessProfileScreen> {
                       onRefresh: _load,
                       child: ListView(
                         children: [
+                          if (isStorePaused(_seller, DateTime.now()))
+                            MaterialBanner(
+                              leading: const Icon(Icons.pause_circle_outline),
+                              content: const Text('This store is not taking orders right now. You can still browse.'),
+                              actions: const [SizedBox.shrink()],
+                            ),
                           _buildCoverBanner(isDark, accentColor, coverUrl),
                           Container(
                             width: double.infinity,

@@ -12,8 +12,10 @@ import '../account/notification_settings_screen.dart';
 import '../account/settings_screen.dart';
 import '../ai/seller_ai_chat_screen.dart';
 import '../reviews/reviews_screen.dart';
+import '../posts/followers_screen.dart';
 import '../rfq/seller_rfq_inbox_screen.dart';
 import '../storefront/storefront_editor_screen.dart';
+import '../account/store_status.dart';
 import 'business_details_sheet.dart';
 import 'delivery_fee_sheet.dart';
 import 'seller_ai_integration_screen.dart';
@@ -129,6 +131,25 @@ class _SellerProfileScreenState extends State<SellerProfileScreen> {
       await _load();
     } catch (e) {
       debugPrint('Business details save failed: $e');
+      if (mounted) WsToast.show(context, l10n.profileSaveFailed, tone: WsToastTone.error);
+    }
+  }
+
+  Future<void> _editStoreStatus() async {
+    final l10n = AppLocalizations.of(context);
+    final next = await showStoreStatusSheet(context, StoreStatus.fromSeller(_seller));
+    final uid = _uid;
+    if (next == null || uid == null || !mounted) return;
+    try {
+      await FirebaseFirestore.instance
+          .collection('sellers')
+          .doc(uid)
+          .update({...next.toUpdate(), 'updatedAt': FieldValue.serverTimestamp()});
+      if (!mounted) return;
+      WsToast.show(context, next.accepting ? l10n.storeResumed : l10n.storePausedToast, tone: WsToastTone.success);
+      await _load();
+    } catch (e) {
+      debugPrint('Store status failed: $e');
       if (mounted) WsToast.show(context, l10n.profileSaveFailed, tone: WsToastTone.error);
     }
   }
@@ -312,6 +333,12 @@ class _SellerProfileScreenState extends State<SellerProfileScreen> {
                     ]),
                   ),
                   section(l10n.accountSectionBusiness, [
+                    tile(
+                      AgIcons.store,
+                      l10n.storeStatusTitle,
+                      StoreStatus.fromSeller(seller).isPaused(DateTime.now()) ? l10n.storeStatusPaused : l10n.storeStatusOpen,
+                      _editStoreStatus,
+                    ),
                     tile(AgIcons.document, l10n.accountBusinessDetails, l10n.accountBusinessDetailsHint, _editBusiness),
                     tile(AgIcons.store, l10n.storefrontMenu, l10n.storefrontMenuSubtitle, () => _push(const StorefrontEditorScreen())),
                     tile(AgIcons.delivery, l10n.accountDeliveryFee, describeDeliveryFeeSchedule(seller['deliveryFeeSchedule'] as Map<String, dynamic>?, l10n), _editDeliveryFee),
@@ -319,6 +346,7 @@ class _SellerProfileScreenState extends State<SellerProfileScreen> {
                   section(l10n.accountSectionSelling, [
                     tile(AgIcons.quote, l10n.quotesTitle, null, () => _push(const SellerRfqInboxScreen())),
                     tile(AgIcons.star, l10n.reviewsMenu, l10n.reviewsMenuSubtitle, () => _push(const SellerReviewsScreen())),
+                    tile(AgIcons.users, l10n.followersTitle, l10n.followersMenuSubtitle, () => _push(const FollowersScreen())),
                     tile(AgIcons.bank, l10n.payoutAccountTitle, l10n.accountPayoutHint, _showPayout),
                   ]),
                   section(l10n.accountSectionAi, [

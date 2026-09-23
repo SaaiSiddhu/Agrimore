@@ -387,16 +387,37 @@
   "paymentsHistory": "Settlements",
   "paymentsEmpty": "No settlements yet. You'll see one here for every delivered order.",
   "paymentsForOrder": "Order {number}",
-  "@paymentsForOrder": {"placeholders": {"number": {"type": "String"}}},
+  "@paymentsForOrder": {
+    "placeholders": {
+      "number": {
+        "type": "String"
+      }
+    }
+  },
   "payoutPaid": "Paid",
   "payoutPending": "Pending",
   "payoutAccountTitle": "Payout account",
   "payoutAccountMissing": "No payout account on file",
   "payoutAccountMissingHelp": "Contact AgriMore to add your bank account or UPI ID before your first settlement.",
   "payoutAccountUpi": "UPI · {upi}",
-  "@payoutAccountUpi": {"placeholders": {"upi": {"type": "String"}}},
+  "@payoutAccountUpi": {
+    "placeholders": {
+      "upi": {
+        "type": "String"
+      }
+    }
+  },
   "payoutAccountBank": "{bank} · {account}",
-  "@payoutAccountBank": {"placeholders": {"bank": {"type": "String"}, "account": {"type": "String"}}},
+  "@payoutAccountBank": {
+    "placeholders": {
+      "bank": {
+        "type": "String"
+      },
+      "account": {
+        "type": "String"
+      }
+    }
+  },
   "settlementCreated": "Order delivered — settlement created",
   "settlementPaid": "Paid to your account",
   "settlementGross": "Order value",
@@ -409,17 +430,41 @@
   "quotesTabAccepted": "Accepted",
   "quotesTabClosed": "Closed",
   "quotesTabWithCount": "{label} · {count}",
-  "@quotesTabWithCount": {"placeholders": {"label": {"type": "String"}, "count": {"type": "int"}}},
+  "@quotesTabWithCount": {
+    "placeholders": {
+      "label": {
+        "type": "String"
+      },
+      "count": {
+        "type": "int"
+      }
+    }
+  },
   "quotesLoadFailed": "Couldn't load your quotes. Check your connection and open this screen again.",
   "quotesEmptyNeedsResponse": "You're all caught up. New quote requests from business buyers appear here.",
   "quotesEmptyOther": "Nothing here yet.",
   "quoteUnknownProduct": "Product",
   "quoteUnknownBuyer": "Business buyer",
   "quoteQtyAtPrice": "{qty} × {price}",
-  "@quoteQtyAtPrice": {"placeholders": {"qty": {"type": "String"}, "price": {"type": "String"}}},
+  "@quoteQtyAtPrice": {
+    "placeholders": {
+      "qty": {
+        "type": "String"
+      },
+      "price": {
+        "type": "String"
+      }
+    }
+  },
   "quoteNoPriceYet": "No price proposed — send your offer",
   "quoteExpiresIn": "{days, plural, =1{Expires in 1 day} other{Expires in {days} days}}",
-  "@quoteExpiresIn": {"placeholders": {"days": {"type": "int"}}},
+  "@quoteExpiresIn": {
+    "placeholders": {
+      "days": {
+        "type": "int"
+      }
+    }
+  },
   "quoteExpired": "Offer expired",
   "quoteYourTurn": "Your turn",
   "quoteWaitingBuyer": "Waiting for buyer",
@@ -429,17 +474,47 @@
   "quoteDetailTitle": "Quote",
   "quoteNotFound": "This quote is no longer available.",
   "quoteRequested": "Requested {date}",
-  "@quoteRequested": {"placeholders": {"date": {"type": "String"}}},
+  "@quoteRequested": {
+    "placeholders": {
+      "date": {
+        "type": "String"
+      }
+    }
+  },
   "quoteListedB2b": "Your B2B price {price}",
-  "@quoteListedB2b": {"placeholders": {"price": {"type": "String"}}},
+  "@quoteListedB2b": {
+    "placeholders": {
+      "price": {
+        "type": "String"
+      }
+    }
+  },
   "quoteMoq": "Min. order {qty}",
-  "@quoteMoq": {"placeholders": {"qty": {"type": "String"}}},
+  "@quoteMoq": {
+    "placeholders": {
+      "qty": {
+        "type": "String"
+      }
+    }
+  },
   "quoteCurrentOffer": "Offer on the table",
   "quoteAgreedTerms": "Last offer",
   "quoteVsListedBelow": "{pct} below your B2B price",
-  "@quoteVsListedBelow": {"placeholders": {"pct": {"type": "String"}}},
+  "@quoteVsListedBelow": {
+    "placeholders": {
+      "pct": {
+        "type": "String"
+      }
+    }
+  },
   "quoteVsListedAbove": "{pct} above your B2B price",
-  "@quoteVsListedAbove": {"placeholders": {"pct": {"type": "String"}}},
+  "@quoteVsListedAbove": {
+    "placeholders": {
+      "pct": {
+        "type": "String"
+      }
+    }
+  },
   "quoteVsListedSame": "Same as your B2B price",
   "quoteHistoryTitle": "Negotiation",
   "quoteByBuyer": "Buyer",
@@ -453,10 +528,31 @@
   "quoteDecline": "Decline",
   "quoteAcceptTitle": "Accept this offer?",
   "quoteAcceptBody": "{qty} × {price} = {total}. The buyer can then place the order at this price. This can't be undone.",
-  "@quoteAcceptBody": {"placeholders": {"qty": {"type": "String"}, "price": {"type": "String"}, "total": {"type": "String"}}},
+  "@quoteAcceptBody": {
+    "placeholders": {
+      "qty": {
+        "type": "String"
+      },
+      "price": {
+        "type": "String"
+      },
+      "total": {
+        "type": "String"
+      }
+    }
+  },
   "quoteAcceptExpiredHint": "This offer has expired, so it can't be accepted. Send a counter-offer with a new validity instead.",
   "quoteAcceptedBanner": "Accepted at {price} × {qty}. The buyer can now place the order.",
-  "@quoteAcceptedBanner": {"placeholders": {"price": {"type": "String"}, "qty": {"type": "String"}}},
+  "@quoteAcceptedBanner": {
+    "placeholders": {
+      "price": {
+        "type": "String"
+      },
+      "qty": {
+        "type": "String"
+      }
+    }
+  },
   "quoteOrderedBanner": "The buyer has placed an order for this quote.",
   "quoteViewOrder": "View order",
   "quoteDeclinedBanner": "This quote was declined.",
@@ -474,10 +570,22 @@
   "counterPriceInvalid": "Enter a price above ₹0",
   "counterQtyInvalid": "Enter a whole number above 0",
   "counterBelowMoq": "Below your minimum order of {moq}",
-  "@counterBelowMoq": {"placeholders": {"moq": {"type": "String"}}},
+  "@counterBelowMoq": {
+    "placeholders": {
+      "moq": {
+        "type": "String"
+      }
+    }
+  },
   "counterValidityLabel": "Offer valid for",
   "counterValidityDays": "{days, plural, =1{1 day} other{{days} days}}",
-  "@counterValidityDays": {"placeholders": {"days": {"type": "int"}}},
+  "@counterValidityDays": {
+    "placeholders": {
+      "days": {
+        "type": "int"
+      }
+    }
+  },
   "counterNoteLabel": "Note to the buyer (optional)",
   "counterTotal": "Total",
   "counterSend": "Send offer",
@@ -493,7 +601,16 @@
   "declineCta": "Decline quote",
   "declineKeep": "Keep negotiating",
   "quoteHistoryHeader": "{who} · {action}",
-  "@quoteHistoryHeader": {"placeholders": {"who": {"type": "String"}, "action": {"type": "String"}}},
+  "@quoteHistoryHeader": {
+    "placeholders": {
+      "who": {
+        "type": "String"
+      },
+      "action": {
+        "type": "String"
+      }
+    }
+  },
   "homeTitle": "Home",
   "homeGreetingMorning": "Good morning",
   "homeGreetingAfternoon": "Good afternoon",
@@ -502,17 +619,53 @@
   "homeAllCaughtUp": "You're all caught up",
   "homeAllCaughtUpBody": "New orders, quotes and stock alerts will show up here.",
   "homeOrdersToAccept": "{count, plural, =1{1 order to accept} other{{count} orders to accept}}",
-  "@homeOrdersToAccept": {"placeholders": {"count": {"type": "int"}}},
+  "@homeOrdersToAccept": {
+    "placeholders": {
+      "count": {
+        "type": "int"
+      }
+    }
+  },
   "homeOldestWaiting": "Oldest placed {time}",
-  "@homeOldestWaiting": {"placeholders": {"time": {"type": "String"}}},
+  "@homeOldestWaiting": {
+    "placeholders": {
+      "time": {
+        "type": "String"
+      }
+    }
+  },
   "homeQuotesToAnswer": "{count, plural, =1{1 quote to answer} other{{count} quotes to answer}}",
-  "@homeQuotesToAnswer": {"placeholders": {"count": {"type": "int"}}},
+  "@homeQuotesToAnswer": {
+    "placeholders": {
+      "count": {
+        "type": "int"
+      }
+    }
+  },
   "homeQuotesExpiringSoon": "{count, plural, =1{1 expires within a day} other{{count} expire within a day}}",
-  "@homeQuotesExpiringSoon": {"placeholders": {"count": {"type": "int"}}},
+  "@homeQuotesExpiringSoon": {
+    "placeholders": {
+      "count": {
+        "type": "int"
+      }
+    }
+  },
   "homeOutOfStock": "{count, plural, =1{1 product out of stock} other{{count} products out of stock}}",
-  "@homeOutOfStock": {"placeholders": {"count": {"type": "int"}}},
+  "@homeOutOfStock": {
+    "placeholders": {
+      "count": {
+        "type": "int"
+      }
+    }
+  },
   "homeLowStock": "{count, plural, =1{1 product low on stock} other{{count} products low on stock}}",
-  "@homeLowStock": {"placeholders": {"count": {"type": "int"}}},
+  "@homeLowStock": {
+    "placeholders": {
+      "count": {
+        "type": "int"
+      }
+    }
+  },
   "homePerformance": "Performance",
   "periodToday": "Today",
   "period7d": "7 days",
@@ -522,21 +675,51 @@
   "kpiOrders": "Orders",
   "kpiAov": "Avg. order",
   "kpiUpVsPrevious": "{pct} up on the previous period",
-  "@kpiUpVsPrevious": {"placeholders": {"pct": {"type": "String"}}},
+  "@kpiUpVsPrevious": {
+    "placeholders": {
+      "pct": {
+        "type": "String"
+      }
+    }
+  },
   "kpiDownVsPrevious": "{pct} down on the previous period",
-  "@kpiDownVsPrevious": {"placeholders": {"pct": {"type": "String"}}},
+  "@kpiDownVsPrevious": {
+    "placeholders": {
+      "pct": {
+        "type": "String"
+      }
+    }
+  },
   "kpiNoComparison": "Nothing to compare with yet",
   "homeNextSettlement": "To be paid to you",
   "homeQuickActions": "Quick actions",
   "homeAddProduct": "Add product",
   "kpiOrdersMore": "{count, plural, =1{1 more than before} other{{count} more than before}}",
-  "@kpiOrdersMore": {"placeholders": {"count": {"type": "int"}}},
+  "@kpiOrdersMore": {
+    "placeholders": {
+      "count": {
+        "type": "int"
+      }
+    }
+  },
   "kpiOrdersFewer": "{count, plural, =1{1 fewer than before} other{{count} fewer than before}}",
-  "@kpiOrdersFewer": {"placeholders": {"count": {"type": "int"}}},
+  "@kpiOrdersFewer": {
+    "placeholders": {
+      "count": {
+        "type": "int"
+      }
+    }
+  },
   "kpiOrdersSame": "Same as before",
   "notificationsTitle": "Notifications",
   "notificationsUnread": "{count, plural, =1{Notifications, 1 unread} other{Notifications, {count} unread}}",
-  "@notificationsUnread": {"placeholders": {"count": {"type": "int"}}},
+  "@notificationsUnread": {
+    "placeholders": {
+      "count": {
+        "type": "int"
+      }
+    }
+  },
   "notificationsAll": "All",
   "notificationsOrders": "Orders",
   "notificationsQuotes": "Quotes",
@@ -554,17 +737,53 @@
   "searchClear": "Clear search",
   "searchPrompt": "Type at least 2 characters — an order number, customer, product or buyer.",
   "searchNoResults": "Nothing matches “{query}”.",
-  "@searchNoResults": {"placeholders": {"query": {"type": "String"}}},
+  "@searchNoResults": {
+    "placeholders": {
+      "query": {
+        "type": "String"
+      }
+    }
+  },
   "searchGroup": "{title} · {count}",
-  "@searchGroup": {"placeholders": {"title": {"type": "String"}, "count": {"type": "int"}}},
+  "@searchGroup": {
+    "placeholders": {
+      "title": {
+        "type": "String"
+      },
+      "count": {
+        "type": "int"
+      }
+    }
+  },
   "searchOpenOrder": "Open order {number}",
-  "@searchOpenOrder": {"placeholders": {"number": {"type": "String"}}},
+  "@searchOpenOrder": {
+    "placeholders": {
+      "number": {
+        "type": "String"
+      }
+    }
+  },
   "searchProducts": "Products",
   "searchStock": "{stock} in stock",
-  "@searchStock": {"placeholders": {"stock": {"type": "String"}}},
+  "@searchStock": {
+    "placeholders": {
+      "stock": {
+        "type": "String"
+      }
+    }
+  },
   "homeSearch": "Search",
   "searchOrderLine": "{customer} · {date}",
-  "@searchOrderLine": {"placeholders": {"customer": {"type": "String"}, "date": {"type": "String"}}},
+  "@searchOrderLine": {
+    "placeholders": {
+      "customer": {
+        "type": "String"
+      },
+      "date": {
+        "type": "String"
+      }
+    }
+  },
   "storefrontTitle": "Storefront",
   "storefrontMenu": "Storefront",
   "storefrontMenuSubtitle": "Cover, logo, description and highlights",
@@ -582,11 +801,23 @@
   "storefrontNameRequired": "Enter your shop name",
   "storefrontDescription": "About your shop",
   "storefrontHighlights": "Highlights (up to {max})",
-  "@storefrontHighlights": {"placeholders": {"max": {"type": "int"}}},
+  "@storefrontHighlights": {
+    "placeholders": {
+      "max": {
+        "type": "int"
+      }
+    }
+  },
   "storefrontAddHighlight": "Add a highlight",
   "storefrontHighlightHint": "e.g. Farm fresh, Same-day dispatch",
   "storefrontRemoveHighlight": "Remove {highlight}",
-  "@storefrontRemoveHighlight": {"placeholders": {"highlight": {"type": "String"}}},
+  "@storefrontRemoveHighlight": {
+    "placeholders": {
+      "highlight": {
+        "type": "String"
+      }
+    }
+  },
   "storefrontSave": "Save storefront",
   "profileSaveFailed": "Couldn't save your profile. Check your connection and try again.",
   "reviewsTitle": "Reviews",
@@ -594,21 +825,63 @@
   "reviewsMenuSubtitle": "Ratings and replies",
   "reviewsLoadFailed": "Couldn't load your reviews. Check your connection and open this screen again.",
   "reviewsCount": "{count, plural, =0{No reviews yet} =1{1 review} other{{count} reviews}}",
-  "@reviewsCount": {"placeholders": {"count": {"type": "int"}}},
+  "@reviewsCount": {
+    "placeholders": {
+      "count": {
+        "type": "int"
+      }
+    }
+  },
   "reviewsBarLabel": "{stars} stars: {count}",
-  "@reviewsBarLabel": {"placeholders": {"stars": {"type": "int"}, "count": {"type": "int"}}},
+  "@reviewsBarLabel": {
+    "placeholders": {
+      "stars": {
+        "type": "int"
+      },
+      "count": {
+        "type": "int"
+      }
+    }
+  },
   "reviewsRatingLabel": "Rated {stars} out of 5",
-  "@reviewsRatingLabel": {"placeholders": {"stars": {"type": "int"}}},
+  "@reviewsRatingLabel": {
+    "placeholders": {
+      "stars": {
+        "type": "int"
+      }
+    }
+  },
   "reviewsAll": "All",
   "reviewsUnanswered": "Unanswered · {count}",
-  "@reviewsUnanswered": {"placeholders": {"count": {"type": "int"}}},
+  "@reviewsUnanswered": {
+    "placeholders": {
+      "count": {
+        "type": "int"
+      }
+    }
+  },
   "reviewsStars": "{stars}★",
-  "@reviewsStars": {"placeholders": {"stars": {"type": "int"}}},
+  "@reviewsStars": {
+    "placeholders": {
+      "stars": {
+        "type": "int"
+      }
+    }
+  },
   "reviewsEmpty": "No reviews yet. Buyers can review a product after it is delivered.",
   "reviewsNoneMatch": "No reviews match this filter.",
   "reviewsAnonymous": "A buyer",
   "reviewsByLine": "{name} · {date}",
-  "@reviewsByLine": {"placeholders": {"name": {"type": "String"}, "date": {"type": "String"}}},
+  "@reviewsByLine": {
+    "placeholders": {
+      "name": {
+        "type": "String"
+      },
+      "date": {
+        "type": "String"
+      }
+    }
+  },
   "reviewsVerified": "Verified purchase",
   "reviewsYourReply": "Your reply",
   "reviewsReply": "Reply",
@@ -662,12 +935,27 @@
   "navCatalogue": "Catalogue",
   "navAccount": "Account",
   "navOrdersPending": "{count, plural, =1{Orders, 1 waiting} other{Orders, {count} waiting}}",
-  "@navOrdersPending": {"placeholders": {"count": {"type": "int"}}},
+  "@navOrdersPending": {
+    "placeholders": {
+      "count": {
+        "type": "int"
+      }
+    }
+  },
   "accountTitle": "Account",
   "accountLoadFailed": "Couldn't load your account details. Pull down to try again.",
   "accountNoRatings": "No ratings yet",
   "accountRating": "{rating} · {count, plural, =1{1 review} other{{count} reviews}}",
-  "@accountRating": {"placeholders": {"rating": {"type": "String"}, "count": {"type": "int"}}},
+  "@accountRating": {
+    "placeholders": {
+      "rating": {
+        "type": "String"
+      },
+      "count": {
+        "type": "int"
+      }
+    }
+  },
   "accountProducts": "Products",
   "accountDelivered": "Delivered",
   "accountSectionBusiness": "Business",
@@ -681,7 +969,13 @@
   "accountPayoutUnavailable": "We couldn't load your payout account right now. Reopen this screen, or contact support if it keeps happening.",
   "accountPayoutChangeHint": "To change your payout account, contact AgriMore support.",
   "accountIfsc": "IFSC {ifsc}",
-  "@accountIfsc": {"placeholders": {"ifsc": {"type": "String"}}},
+  "@accountIfsc": {
+    "placeholders": {
+      "ifsc": {
+        "type": "String"
+      }
+    }
+  },
   "accountAiAssistant": "Ask AI about your business",
   "accountAiAssistantHint": "Sales, products and orders",
   "accountAiConnect": "Connect AI",
@@ -705,7 +999,13 @@
   "accountCloses": "Closes",
   "accountRadius": "Delivery radius (km)",
   "accountRadiusInvalid": "Enter a whole number from 1 to {max}",
-  "@accountRadiusInvalid": {"placeholders": {"max": {"type": "int"}}},
+  "@accountRadiusInvalid": {
+    "placeholders": {
+      "max": {
+        "type": "int"
+      }
+    }
+  },
   "accountSave": "Save",
   "stageToAccept": "To accept",
   "stagePacking": "Packing",
@@ -720,7 +1020,13 @@
   "ordersNoneMatch": "No orders match.",
   "ordersCustomer": "Customer",
   "ordersItems": "{count, plural, =1{1 item} other{{count} items}}",
-  "@ordersItems": {"placeholders": {"count": {"type": "int"}}},
+  "@ordersItems": {
+    "placeholders": {
+      "count": {
+        "type": "int"
+      }
+    }
+  },
   "ordersPrepaid": "Prepaid",
   "ordersCod": "Cash on delivery",
   "stageToPack": "To pack",
@@ -744,7 +1050,13 @@
   "orderStartPacking": "Start packing",
   "orderMarkReady": "Mark ready for pickup",
   "homeOrdersToPack": "{count, plural, =1{1 accepted order to pack} other{{count} accepted orders to pack}}",
-  "@homeOrdersToPack": {"placeholders": {"count": {"type": "int"}}},
+  "@homeOrdersToPack": {
+    "placeholders": {
+      "count": {
+        "type": "int"
+      }
+    }
+  },
   "productNewPost": "New post",
   "productSearchHint": "Search your products",
   "productsLoadFailed": "Couldn't load your products. Check your connection and try again.",
@@ -752,7 +1064,13 @@
   "productsNoneMatch": "No products match.",
   "productOutOfStock": "Out of stock",
   "productLowStock": "Only {stock} left",
-  "@productLowStock": {"placeholders": {"stock": {"type": "String"}}},
+  "@productLowStock": {
+    "placeholders": {
+      "stock": {
+        "type": "String"
+      }
+    }
+  },
   "productLive": "Visible to buyers",
   "productHidden": "Hidden from buyers",
   "productStock": "Stock",
@@ -760,7 +1078,13 @@
   "productDelete": "Delete",
   "productDeleteTitle": "Delete this product?",
   "productDeleteBody": "“{name}” will be removed from your catalogue. This can't be undone.",
-  "@productDeleteBody": {"placeholders": {"name": {"type": "String"}}},
+  "@productDeleteBody": {
+    "placeholders": {
+      "name": {
+        "type": "String"
+      }
+    }
+  },
   "productDeleted": "Product deleted",
   "productStockTitle": "Update stock",
   "productStockLabel": "Units in stock",
@@ -790,7 +1114,16 @@
   "editorPriceDefault": "Default price",
   "editorPriceCurrent": "Current",
   "editorPriceChip": "{label}: {price}",
-  "@editorPriceChip": {"placeholders": {"label": {"type": "String"}, "price": {"type": "String"}}},
+  "@editorPriceChip": {
+    "placeholders": {
+      "label": {
+        "type": "String"
+      },
+      "price": {
+        "type": "String"
+      }
+    }
+  },
   "editorNoValue": "—",
   "editorResetPrice": "Use the mapped price",
   "editorCoverage": "Delivery coverage",
@@ -803,7 +1136,13 @@
   "editorUseLocation": "Use my current location",
   "editorDetecting": "Detecting…",
   "editorRadiusValue": "Radius: {km} km",
-  "@editorRadiusValue": {"placeholders": {"km": {"type": "int"}}},
+  "@editorRadiusValue": {
+    "placeholders": {
+      "km": {
+        "type": "int"
+      }
+    }
+  },
   "editorB2b": "Wholesale (B2B)",
   "editorB2bHint": "Offer a bulk price with a minimum order quantity.",
   "editorB2bPrice": "B2B price (₹)",
@@ -821,7 +1160,16 @@
   "editorNeedCoordinates": "Enter a latitude and longitude for radius delivery.",
   "editorNeedB2bPrice": "Enter a valid B2B price.",
   "editorB2bTooHigh": "The B2B price ({b2b}) must be lower than the selling price ({sale}).",
-  "@editorB2bTooHigh": {"placeholders": {"b2b": {"type": "String"}, "sale": {"type": "String"}}},
+  "@editorB2bTooHigh": {
+    "placeholders": {
+      "b2b": {
+        "type": "String"
+      },
+      "sale": {
+        "type": "String"
+      }
+    }
+  },
   "editorNeedMoq": "Enter a valid minimum order quantity.",
   "editorLocationOff": "Turn on location services to use your current location.",
   "editorLocationDenied": "Location permission was denied.",
@@ -845,7 +1193,13 @@
   "aiDisconnectBody": "Your API key is removed. You can connect again later.",
   "aiMoneyTaken": "We received your payment but couldn't confirm it just now. Try connecting again — you won't be charged twice for the same payment.",
   "aiPaymentReference": "Payment reference: {id}",
-  "@aiPaymentReference": {"placeholders": {"id": {"type": "String"}}},
+  "@aiPaymentReference": {
+    "placeholders": {
+      "id": {
+        "type": "String"
+      }
+    }
+  },
   "aiRetryConnect": "Try connecting again",
   "aiPreparingPayment": "Preparing payment…",
   "aiOpeningPayment": "Opening payment…",
@@ -878,9 +1232,21 @@
   "feeSaveFailed": "Couldn't save your delivery fee. Try again.",
   "feeDefault": "Using default pricing",
   "feeSummaryFlat": "Flat {amount}",
-  "@feeSummaryFlat": {"placeholders": {"amount": {"type": "String"}}},
+  "@feeSummaryFlat": {
+    "placeholders": {
+      "amount": {
+        "type": "String"
+      }
+    }
+  },
   "feeSummarySlab": "{count, plural, =1{By order value · 1 tier} other{By order value · {count} tiers}}",
-  "@feeSummarySlab": {"placeholders": {"count": {"type": "int"}}},
+  "@feeSummarySlab": {
+    "placeholders": {
+      "count": {
+        "type": "int"
+      }
+    }
+  },
   "postHint": "What's new? Tell your followers about it",
   "postAddPhoto": "Add a photo",
   "postRemovePhoto": "Remove photo",
@@ -890,5 +1256,211 @@
   "postPosting": "Posting…",
   "postEmpty": "Add some text, a photo or a product first.",
   "postPublished": "Posted to your followers",
-  "postFailed": "Couldn't publish your post. Try again."
+  "postFailed": "Couldn't publish your post. Try again.",
+  "insightsTitle": "Insights",
+  "insightsHint": "Sales trends, orders and best sellers",
+  "insightsDays": "{days} days",
+  "@insightsDays": {
+    "placeholders": {
+      "days": {
+        "type": "int"
+      }
+    }
+  },
+  "insightsVsPrevious": "{delta} vs {previous} in the previous period",
+  "@insightsVsPrevious": {
+    "placeholders": {
+      "delta": {
+        "type": "String"
+      },
+      "previous": {
+        "type": "String"
+      }
+    }
+  },
+  "insightsChartSummary": "Sales {current} in the last {days} days, against {previous} in the {days} days before.",
+  "@insightsChartSummary": {
+    "placeholders": {
+      "current": {
+        "type": "String"
+      },
+      "previous": {
+        "type": "String"
+      },
+      "days": {
+        "type": "int"
+      }
+    }
+  },
+  "insightsThisPeriod": "This period",
+  "insightsPreviousPeriod": "Previous period",
+  "insightsB2bShare": "{share} of sales came from business (B2B) orders",
+  "@insightsB2bShare": {
+    "placeholders": {
+      "share": {
+        "type": "String"
+      }
+    }
+  },
+  "insightsOrdersByStage": "Orders by stage",
+  "insightsTopProducts": "Best sellers",
+  "insightsNoOrders": "No orders in this period yet.",
+  "healthTitle": "Account health",
+  "healthNotEnoughData": "Not enough activity yet to score your account. It appears after a few orders, reviews or quotes.",
+  "healthNotEnoughDataShort": "Shown after a few orders",
+  "healthExplainer": "Calculated from the last 30 days. Only measures with enough data count.",
+  "healthScoreLabel": "Account health {score} out of 100",
+  "@healthScoreLabel": {
+    "placeholders": {
+      "score": {
+        "type": "int"
+      }
+    }
+  },
+  "healthGood": "Good",
+  "healthFair": "Needs attention",
+  "healthPoor": "At risk",
+  "healthFulfilment": "Orders delivered",
+  "healthCancellations": "Cancellations",
+  "healthRating": "Buyer rating",
+  "healthListings": "Complete listings",
+  "healthQuotes": "Quotes answered within a day",
+  "healthTargetAtLeast": "Target: at least {value}",
+  "@healthTargetAtLeast": {
+    "placeholders": {
+      "value": {
+        "type": "String"
+      }
+    }
+  },
+  "healthTargetAtMost": "Target: at most {value}",
+  "@healthTargetAtMost": {
+    "placeholders": {
+      "value": {
+        "type": "String"
+      }
+    }
+  },
+  "healthTipFulfilment": "Accept only what you can deliver, and mark orders ready on time.",
+  "healthTipCancellations": "Keep stock accurate so you don't have to cancel accepted orders.",
+  "healthTipRating": "Reply to reviews and pack carefully — buyers rate the whole experience.",
+  "healthTipListings": "Add a photo, a description and the HSN code with GST rate to every live product.",
+  "healthTipQuotes": "Answer quote requests within a day — counter, accept or decline.",
+  "settingsVersion": "Version",
+  "settingsVersionValue": "{version} ({build})",
+  "@settingsVersionValue": {
+    "placeholders": {
+      "version": {
+        "type": "String"
+      },
+      "build": {
+        "type": "String"
+      }
+    }
+  },
+  "filterLowStock": "Low stock",
+  "storeStatusTitle": "Store status",
+  "storeStatusOpen": "Taking orders",
+  "storeStatusPaused": "Paused — not taking orders",
+  "storeAcceptingOrders": "Accepting orders",
+  "storeAcceptingHint": "Buyers can order from your store.",
+  "storePausedHint": "Buyers see your store but can't place orders.",
+  "storePauseFor": "Pause for",
+  "storePauseDays": "{days, plural, =1{1 day} other{{days} days}}",
+  "@storePauseDays": {
+    "placeholders": {
+      "days": {
+        "type": "int"
+      }
+    }
+  },
+  "storePauseUntilResumed": "Until I resume",
+  "storePauseConsequence": "New orders and quotes can't be placed while paused. Orders you already have are not affected.",
+  "storePauseCta": "Pause my store",
+  "storePausedTitle": "Your store is paused",
+  "storePausedBody": "Buyers can't place orders until you resume.",
+  "storePausedUntil": "Buyers can't place orders until {date}.",
+  "@storePausedUntil": {
+    "placeholders": {
+      "date": {
+        "type": "String"
+      }
+    }
+  },
+  "storeResume": "Resume",
+  "storeResumed": "Your store is taking orders again",
+  "storePausedToast": "Your store is paused",
+  "followersTitle": "Followers & posts",
+  "followersMenuSubtitle": "Who follows your store, and your posts",
+  "followersCount": "Followers",
+  "followersNew": "{count, plural, =1{+1 in the last 30 days} other{+{count} in the last 30 days}}",
+  "@followersNew": {
+    "placeholders": {
+      "count": {
+        "type": "int"
+      }
+    }
+  },
+  "followersLoadFailed": "Couldn't load this. Check your connection and open the screen again.",
+  "postsTitle": "Your posts",
+  "postsEmpty": "No posts yet. Posts reach everyone who follows your store.",
+  "postsNoText": "Photo post",
+  "postsDeleteTitle": "Delete this post?",
+  "postsDeleteBody": "Followers will no longer see it.",
+  "postsDeleted": "Post deleted",
+  "periodAll": "All time",
+  "ordersB2bOnly": "Business (B2B)",
+  "productStatsTitle": "Last 30 days",
+  "productStatsUnits": "Units sold",
+  "productStatsNeverSold": "Not sold yet",
+  "productStatsLastSold": "Last sold {date}",
+  "@productStatsLastSold": {
+    "placeholders": {
+      "date": {
+        "type": "String"
+      }
+    }
+  },
+  "statementsTitle": "Monthly statements",
+  "statementHeading": "Statement — {month}",
+  "@statementHeading": {
+    "placeholders": {
+      "month": {
+        "type": "String"
+      }
+    }
+  },
+  "statementTotals": "Order value {gross} · commission {commission} · you receive {net}",
+  "@statementTotals": {
+    "placeholders": {
+      "gross": {
+        "type": "String"
+      },
+      "commission": {
+        "type": "String"
+      },
+      "net": {
+        "type": "String"
+      }
+    }
+  },
+  "statementLine": "{date}  Order {order}  {net}  {status}",
+  "@statementLine": {
+    "placeholders": {
+      "date": {
+        "type": "String"
+      },
+      "order": {
+        "type": "String"
+      },
+      "net": {
+        "type": "String"
+      },
+      "status": {
+        "type": "String"
+      }
+    }
+  },
+  "statementCopy": "Copy statement",
+  "statementCopied": "Statement copied"
 }
