@@ -4,7 +4,7 @@ import 'package:firebase_auth/firebase_auth.dart';
 import 'package:google_sign_in/google_sign_in.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:cloud_functions/cloud_functions.dart';
-import 'package:flutter/foundation.dart' show kIsWeb, debugPrint;
+import 'package:flutter/foundation.dart' show kDebugMode, kIsWeb, debugPrint;
 import 'package:http/http.dart' as http;
 import 'package:agrimore_core/agrimore_core.dart';
 import '../local/shared_preferences_service.dart';
@@ -595,7 +595,9 @@ class AuthService {
           .post(
             Uri.parse('$_functionsBaseUrl/sendPhoneOTP'),
             headers: {'Content-Type': 'application/json'},
-            body: jsonEncode({'phone': phone, 'channel': channel}),
+            // SEC-P0b (OWNER_DECISION D-DEBUG-MOCK-OTP): debug builds ask the
+            // server for the code instead of an SMS; release builds never do.
+            body: jsonEncode({'phone': phone, 'channel': channel, if (kDebugMode) 'debugMock': true}),
           )
           .timeout(_requestTimeout);
 
@@ -658,6 +660,7 @@ class AuthService {
               'phone': phone,
               'otp': otp,
               if (name != null && name.trim().isNotEmpty) 'name': name.trim(),
+              if (kDebugMode) 'debugMock': true,
             }),
           )
           .timeout(_phoneVerifyTimeout);

@@ -223,6 +223,17 @@ forecast; pricing insights surfaces the seller's own price history only, no cros
 — answered via `AskUserQuestion` at session-stop, when AI-4D-2 was the only decision-blocked phase
 with no independent work left; unblocks AI-4D-2 for the next tick.
 
+### D-DEBUG-MOCK-OTP — OWNER_DECISION 2026-09-23 (chat)
+
+Mock OTP on the LIVE project for debug builds, any number. Offered three
+options (debug+allowlist recommended / debug any number / emulator only) with
+the risk stated; owner chose "Debug builds, any number". Implemented by SEC-P0b:
+sendPhoneOTP skips delivery and returns the code when `debugMock === true` (sent
+only by kDebugMode builds) or the number is on the auth_test_mode allowlist.
+ACCEPTED RISK: the flag is an unverifiable client claim — anyone can call the
+endpoint with it and sign in as any user. Revisit before any public launch.
+Supersedes 7dfeb0d's unconditional `testMode = true` (which also hit release builds).
+
 ## 6. Open owner decisions (do not resolve silently)
 
 | ID | Question | Safe default while open |

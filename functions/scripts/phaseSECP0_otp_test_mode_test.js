@@ -53,10 +53,10 @@ function makeRes() {
   return res;
 }
 
-async function send(phone) {
+async function send(phone, extra = {}) {
   const res = makeRes();
   const before = providerCalls.length;
-  await sendPhoneOTP({ method: "POST", body: { phone } }, res);
+  await sendPhoneOTP({ method: "POST", body: { phone, ...extra } }, res);
   return { res, providerCalled: providerCalls.length > before };
 }
 
@@ -210,6 +210,41 @@ async function main() {
     check("s11_test_mode_respects_cooldown_and_counts",
       first.res.statusCode === 200 && second.res.statusCode === 429 && doc.data()?.sendCount === 1,
       `first=${first.res.statusCode} second=${second.res.statusCode} sendCount=${doc.data()?.sendCount}`);
+  }
+
+  // s12/s13 — SEC-P0b (OWNER_DECISION D-DEBUG-MOCK-OTP): debugMock:true
+  // returns the code for ANY number without delivery (accepted risk); a
+  // request without it (release builds) still gets real delivery.
+  {
+    await setConfig(null);
+    const { res, providerCalled } = await send("+919876511012", { debugMock: true });
+    check("s12_debug_mock_any_number_no_delivery",
+      res.statusCode === 200 && !providerCalled && res.body?.testMode === true && /^\d{6}$/.test(res.body?.testOtp || ""),
+      `status=${res.statusCode} providerCalled=${providerCalled}`);
+  }
+  {
+    const { res, providerCalled } = await send("+919876511013", { debugMock: "true" });
+    check("s13_non_boolean_debug_flag_is_real_delivery",
+      providerCalled && res.body?.testOtp === undefined, `providerCalled=${providerCalled}`);
+  }
+
+  // s14 — without a provider, a release (non-debug) request still fails
+  // closed; a debug-mock request still works (provider-free testing).
+  {
+    const saved = process.env.TWOFACTOR_API_KEY;
+    delete process.env.TWOFACTOR_API_KEY;
+    for (const key of Object.keys(require.cache)) {
+      if (key.includes("/lib/common/sendPhoneOTP.js") || key.includes("/lib/common/smsProvider.js")) delete require.cache[key];
+    }
+    const fresh = require("../lib/common/sendPhoneOTP").sendPhoneOTP;
+    const relRes = makeRes();
+    await fresh({ method: "POST", body: { phone: "+919876511014" } }, relRes);
+    const dbgRes = makeRes();
+    await fresh({ method: "POST", body: { phone: "+919876511015", debugMock: true } }, dbgRes);
+    process.env.TWOFACTOR_API_KEY = saved;
+    check("s14_no_provider_release_503_debug_still_works",
+      relRes.statusCode === 503 && dbgRes.statusCode === 200 && /^\d{6}$/.test(dbgRes.body?.testOtp || ""),
+      `release=${relRes.statusCode} debug=${dbgRes.statusCode}`);
   }
 
   console.log("\n=== PHASE SEC-P0 (test mode) SUMMARY ===");
