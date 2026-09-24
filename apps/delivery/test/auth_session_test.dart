@@ -136,6 +136,18 @@ void main() {
     expect(store.tokens['rA'], {'T1'});
   });
 
+  test('a failed sign-in never shows the gate\'s loading screen (it wiped the form)', () async {
+    final p = make();
+    await pumpEventQueue();
+    final seen = <bool>[];
+    p.addListener(() => seen.add(p.isLoading));
+    final f = p.signIn('a@x.in', 'nope');
+    expect(p.signingIn, isTrue);
+    await f;
+    expect(seen, everyElement(isFalse));
+    expect(p.signingIn, isFalse);
+  });
+
   test('wrong password is a typed problem, not a raw message', () async {
     final p = make();
     await pumpEventQueue();

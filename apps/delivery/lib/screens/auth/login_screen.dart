@@ -213,14 +213,14 @@ class _LoginScreenState extends State<LoginScreen> {
                         Consumer<DeliveryAuthProvider>(
                           builder: (context, auth, _) {
                             return FilledButton(
-                              onPressed: auth.isLoading ? null : _handleLogin,
+                              onPressed: auth.signingIn ? null : _handleLogin,
                               style: FilledButton.styleFrom(
                                 padding: const EdgeInsets.symmetric(vertical: 16),
                                 shape: RoundedRectangleBorder(
                                   borderRadius: BorderRadius.circular(12),
                                 ),
                               ),
-                              child: auth.isLoading
+                              child: auth.signingIn
                                   ? SizedBox(
                                       height: 20,
                                       width: 20,

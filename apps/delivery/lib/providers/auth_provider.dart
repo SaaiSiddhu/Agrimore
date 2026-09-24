@@ -72,6 +72,9 @@ class DeliveryAuthProvider extends ChangeNotifier {
 
   UserModel? _user;
   bool _isLoading = true;
+  // A sign-in in flight: the button spins, the form stays (a failed attempt
+  // must not wipe what the rider typed).
+  bool _signingIn = false;
   RiderAuthProblem? _problem;
   // Why the previous session was refused; kept across the sign-out it causes.
   RiderAuthProblem? _carryProblem;
@@ -86,7 +89,10 @@ class DeliveryAuthProvider extends ChangeNotifier {
   String? _registeredToken;
 
   UserModel? get user => _user;
+  /// The session is being resolved (start-up, or loading an accepted
+  /// account's profile). The gate shows a loading screen.
   bool get isLoading => _isLoading;
+  bool get signingIn => _signingIn;
   RiderAuthProblem? get problem => _problem;
 
   /// Signed in AND allowed to work.
@@ -269,7 +275,7 @@ class DeliveryAuthProvider extends ChangeNotifier {
   Future<bool> signIn(String email, String password) async {
     _problem = null;
     _carryProblem = null;
-    _isLoading = true;
+    _signingIn = true;
     notifyListeners();
     final ready = _sessionReady = Completer<void>();
     try {
@@ -283,7 +289,7 @@ class DeliveryAuthProvider extends ChangeNotifier {
       return false;
     } finally {
       if (identical(_sessionReady, ready)) _sessionReady = null;
-      _isLoading = false;
+      _signingIn = false;
       notifyListeners();
     }
   }

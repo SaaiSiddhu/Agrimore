@@ -423,8 +423,8 @@ class _DashboardScreenState extends State<DashboardScreen> {
           ),
           const SizedBox(height: 12),
           _buildActionCard(
-            'Delivery history',
-            'Your last 50 delivered orders',
+            AppLocalizations.of(context).historyActionTitle,
+            AppLocalizations.of(context).historyActionSubtitle,
             Icons.history_rounded,
             colorScheme,
             onTap: () {

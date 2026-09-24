@@ -126,9 +126,14 @@ class AppLocalizationsEn extends AppLocalizations {
   String get historyStatusOther => 'Other status';
 
   @override
-  String get historyHint =>
-      'Newest first. Totals on this screen cover only the orders loaded.';
+  String get historyHint => 'Newest first, 20 at a time.';
 
   @override
   String get splashTagline => 'Delivery Partner';
+
+  @override
+  String get historyActionTitle => 'Delivery history';
+
+  @override
+  String get historyActionSubtitle => 'Every order you carried, newest first';
 }

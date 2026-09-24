@@ -101,6 +101,9 @@ class _RiderSessionGateState extends State<RiderSessionGate> {
     _boundUid = working;
     context.read<DeliveryOrderProvider>().bind(working);
     if (ended) {
+      // Screens opened in that session (history, an active order, an offer)
+      // belong to it: close them, back to this gate.
+      deliveryNavigatorKey.currentState?.popUntil((route) => route.isFirst);
       OfferLaunch.clear();
       context.read<LocationProvider>().stopTracking();
       FlutterLocalNotificationsPlugin().cancelAll().catchError((Object e) {

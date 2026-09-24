@@ -301,7 +301,7 @@ abstract class AppLocalizations {
   /// Explains that the list is paged
   ///
   /// In en, this message translates to:
-  /// **'Newest first. Totals on this screen cover only the orders loaded.'**
+  /// **'Newest first, 20 at a time.'**
   String get historyHint;
 
   /// Splash screen tagline
@@ -309,6 +309,18 @@ abstract class AppLocalizations {
   /// In en, this message translates to:
   /// **'Delivery Partner'**
   String get splashTagline;
+
+  /// Dashboard quick action title
+  ///
+  /// In en, this message translates to:
+  /// **'Delivery history'**
+  String get historyActionTitle;
+
+  /// Dashboard quick action subtitle
+  ///
+  /// In en, this message translates to:
+  /// **'Every order you carried, newest first'**
+  String get historyActionSubtitle;
 }
 
 class _AppLocalizationsDelegate

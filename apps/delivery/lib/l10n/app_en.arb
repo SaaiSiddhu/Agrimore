@@ -151,12 +151,20 @@
   "@historyStatusOther": {
     "description": "History status: no longer this rider's / unknown state"
   },
-  "historyHint": "Newest first. Totals on this screen cover only the orders loaded.",
+  "historyHint": "Newest first, 20 at a time.",
   "@historyHint": {
     "description": "Explains that the list is paged"
   },
   "splashTagline": "Delivery Partner",
   "@splashTagline": {
     "description": "Splash screen tagline"
+  },
+  "historyActionTitle": "Delivery history",
+  "@historyActionTitle": {
+    "description": "Dashboard quick action title"
+  },
+  "historyActionSubtitle": "Every order you carried, newest first",
+  "@historyActionSubtitle": {
+    "description": "Dashboard quick action subtitle"
   }
 }
