@@ -36,6 +36,7 @@ import { FieldValue, Timestamp } from "firebase-admin/firestore";
 import { taskStatusFromOrder } from "./states";
 import { dropPoint, orderPickupPoint, sellerPickupPoint } from "./syncDeliveryTask";
 import { isCashOnDelivery, isPaid } from "../seller/sellerTransitionOrder";
+import { bankReviewNotice, payoutSentNotice, statementNotice, tellRider } from "./riderNotices";
 import { resolveIsAdmin } from "../admin/complianceGate";
 import {
   billableWaitMinutes, hasPayoutDestination, riderPay, RiderPayRates, settle,
@@ -311,6 +312,12 @@ export async function buildAllStatements(db: Db, nowMs: number) {
     try {
       for (const v of await buildRiderStatementParts(db, a.id, nowMs)) {
         out[v.kind === "created" ? "created" : v.kind] += 1;
+        if (v.kind === "created") {
+          // DLV-N1: the inbox says a statement was made — not that money was sent.
+          const p = (await db.collection("rider_payouts").doc(v.id).get()).data() ?? {};
+          await tellRider(db, a.id, statementNotice({ id: v.id, amountPaise: Number(p.amountPaise ?? 0),
+            status: String(p.status ?? ""), holdReason: p.holdReason ?? null }), nowMs);
+        }
       }
     } catch (e) {
       out.failed += 1;
@@ -500,6 +507,15 @@ export const markRiderPayoutPaid = onCall({ minInstances: 0, memory: "256MiB" },
   const v = await markPayoutPaidCore(admin.firestore(), adminUid, payoutId,
     typeof d.reference === "string" ? d.reference : "", d.method, Date.now());
   if (v.kind === "refused") refuse(v.reason);
+  if (v.kind === "paid") {
+    const db = admin.firestore();
+    const p = (await db.collection("rider_payouts").doc(payoutId).get()).data() ?? {};
+    const to = (p.paidTo ?? {}) as Record<string, unknown>;
+    await tellRider(db, typeof p.riderId === "string" ? p.riderId : null, payoutSentNotice({
+      id: payoutId, amountPaise: Number(p.amountPaise ?? 0), reference: String(p.paymentReference ?? ""),
+      method: String(to.method ?? ""), accountLast4: (to.accountLast4 as string) ?? null, upiId: (to.upiId as string) ?? null,
+    }), Date.now());
+  }
   return { success: true, paidTo: v.paidTo, alreadyPaid: v.kind === "already" };
 });
 
@@ -528,5 +544,9 @@ export const reviewRiderBankChange = onCall({ minInstances: 0, memory: "256MiB" 
   const v = await reviewBankChangeCore(admin.firestore(), adminUid, requestId, d.approve === true,
     typeof d.reason === "string" ? d.reason.trim() : null, Date.now());
   if (v.kind === "refused") refuse(v.reason);
+  const db = admin.firestore();
+  const r = (await db.collection("rider_bank_change_requests").doc(requestId).get()).data() ?? {};
+  await tellRider(db, typeof r.riderId === "string" ? r.riderId : null,
+    bankReviewNotice(requestId, v.kind === "approved", typeof r.rejectionReason === "string" ? r.rejectionReason : null), Date.now());
   return { success: true, status: v.kind, released: v.released };
 });

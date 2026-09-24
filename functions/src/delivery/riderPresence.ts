@@ -21,6 +21,7 @@
 import * as admin from "firebase-admin";
 import { FieldPath, FieldValue, Timestamp } from "firebase-admin/firestore";
 import { RIDER_ACTIVE_ORDER_STATUSES } from "./dispatch";
+import { assignedNotice, offlineNotice, tellRider, unassignedNotice } from "./riderNotices";
 
 type Db = FirebaseFirestore.Firestore;
 
@@ -104,6 +105,8 @@ export async function sweepSilentRiders(
       if (code !== 9 && code !== "failed-precondition") throw e;
     }
   }));
+  // DLV-N1: kept in the inbox too — the push may reach a phone that is off.
+  await Promise.all(off.map((id) => tellRider(db, id, offlineNotice(nowMs), nowMs)));
   await Promise.all(off.map((id) => sendRiderPush(db, id, {
     title: "You're offline",
     body: "We haven't received your location for 15 minutes. Open the app to go online again.",
@@ -181,6 +184,9 @@ export async function notifyRiderAssignment(
   const change = riderAssignmentChange(before, after);
   if (!change.assignedTo) return change;
   const number = String(after.orderNumber ?? orderId);
+  const nowMs = Date.now();
+  await tellRider(db, change.assignedTo, assignedNotice(orderId, number), nowMs);
+  if (change.removedFrom) await tellRider(db, change.removedFrom, unassignedNotice(orderId, number), nowMs);
   await sendRiderPush(db, change.assignedTo, {
     title: "New order assigned to you",
     body: `Order #${number} — open the app to see the pickup.`,
