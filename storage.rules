@@ -218,12 +218,27 @@ service firebase.storage {
     // finding registered for its own future phase, not fixed here; see
     // this phase's ledger row). This change is zero-risk regardless —
     // nothing currently uploads to THIS path to break.
+    // DLV-A1: a rider's KYC photos are frozen once the application has been
+    // decided. The owner may write (upload, overwrite, delete) only before
+    // delivery_partners/{userId} exists (registration uploads first) or while
+    // it is pending / rejected (resubmission). An approved, suspended or
+    // deactivated rider could otherwise swap the Aadhaar or licence an admin
+    // reviewed. Admins may delete (they never uploaded here before either).
+    function riderKycEditable(userId) {
+      return !firestore.exists(/databases/(default)/documents/delivery_partners/$(userId)) ||
+        firestore.get(/databases/(default)/documents/delivery_partners/$(userId)).data.get('status', 'pending')
+          in ['pending', 'rejected'];
+    }
+
     match /delivery_documents/{userId}/{fileName} {
       allow read: if isAuthenticated() && (request.auth.uid == userId || isAdmin());
-      allow write: if isAuthenticated() 
+      allow create, update: if isAuthenticated()
                    && request.auth.uid == userId
                    && isValidFileSize()
-                   && isImage();
+                   && isImage()
+                   && riderKycEditable(userId);
+      allow delete: if isAuthenticated()
+                   && (isAdmin() || (request.auth.uid == userId && riderKycEditable(userId)));
     }
 
     // ============================================
