@@ -1,8 +1,8 @@
-import 'package:agrimore_ui/agrimore_ui.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:provider/provider.dart';
 
+import '../../../design_system/design_system.dart';
 import '../../../l10n/app_localizations.dart';
 import '../../../providers/seller_application_provider.dart';
 import '../application_rules.dart';
@@ -73,88 +73,73 @@ class _PayoutStepState extends State<PayoutStep> {
   Widget build(BuildContext context) {
     final l10n = AppLocalizations.of(context);
     final app = context.watch<SellerApplicationProvider>();
-    final text = context.wsText;
-    String? required(String? v) => ApplicationRules.text(v) ? null : l10n.errRequired;
+    String? required(String v) => ApplicationRules.text(v) ? null : l10n.errRequired;
+    const gap = SizedBox(height: SellerSpace.s16);
 
     return StepBody(
-      footer: StepFooter(
-        primaryLabel: l10n.saveContinue,
-        busyLabel: l10n.saving,
-        busy: app.isSaving,
-        onPrimary: _continue,
-        onBack: app.back,
-      ),
+      footer: StepFooter(primaryLabel: l10n.saveContinue, busyLabel: l10n.saving, busy: app.isSaving, onPrimary: _continue, onBack: app.back),
       children: [
-        Text(l10n.payoutHelp, style: text.bodyLarge),
-        const SizedBox(height: WsSpace.s16),
-        SegmentedButton<String>(
-          segments: [
-            ButtonSegment(value: 'bank', icon: const Icon(AgIcons.bank), label: Text(l10n.payoutBank)),
-            ButtonSegment(value: 'upi', icon: const Icon(AgIcons.wallet), label: Text(l10n.payoutUpi)),
-          ],
-          selected: {_method},
-          onSelectionChanged: (s) => setState(() => _method = s.first),
+        Text(l10n.payoutHelp, style: context.text.bodyLarge),
+        gap,
+        SellerSegmented<String>(
+          semanticLabel: l10n.stepPayout,
+          segments: [SellerSegment('bank', l10n.payoutBank, icon: SellerIcons.bank), SellerSegment('upi', l10n.payoutUpi, icon: SellerIcons.upi)],
+          selected: _method,
+          onChanged: (v) => setState(() => _method = v),
         ),
-        const SizedBox(height: WsSpace.s24),
+        const SizedBox(height: SellerSpace.s24),
         Form(
           key: _form,
           child: _method == 'bank'
-              ? Column(
-                  crossAxisAlignment: CrossAxisAlignment.stretch,
-                  children: [
-                    TextFormField(
-                      controller: _holder,
-                      textCapitalization: TextCapitalization.words,
-                      decoration: InputDecoration(labelText: l10n.fieldAccountHolder),
-                      validator: required,
-                    ),
-                    const SizedBox(height: WsSpace.s16),
-                    TextFormField(
-                      controller: _bank,
-                      textCapitalization: TextCapitalization.words,
-                      decoration: InputDecoration(labelText: l10n.fieldBankName),
-                      validator: required,
-                    ),
-                    const SizedBox(height: WsSpace.s16),
-                    TextFormField(
-                      controller: _account,
-                      keyboardType: TextInputType.number,
-                      maxLength: _accountMaxLength,
-                      obscureText: true,
-                      inputFormatters: [FilteringTextInputFormatter.digitsOnly],
-                      decoration: InputDecoration(labelText: l10n.fieldAccountNumber, counterText: ''),
-                      validator: (v) => ApplicationRules.account.hasMatch(v ?? '') ? null : l10n.errAccount,
-                    ),
-                    const SizedBox(height: WsSpace.s16),
-                    TextFormField(
-                      controller: _accountConfirm,
-                      keyboardType: TextInputType.number,
-                      maxLength: _accountMaxLength,
-                      inputFormatters: [FilteringTextInputFormatter.digitsOnly],
-                      decoration: InputDecoration(labelText: l10n.fieldAccountNumberConfirm, counterText: ''),
-                      validator: (v) => v == _account.text ? null : l10n.accountMismatch,
-                    ),
-                    const SizedBox(height: WsSpace.s16),
-                    TextFormField(
-                      controller: _ifsc,
-                      maxLength: _ifscLength,
-                      textCapitalization: TextCapitalization.characters,
-                      inputFormatters: [
-                        FilteringTextInputFormatter.allow(RegExp('[A-Za-z0-9]')),
-                        TextInputFormatter.withFunction(
-                          (_, v) => v.copyWith(text: v.text.toUpperCase()),
-                        ),
-                      ],
-                      decoration: InputDecoration(labelText: l10n.fieldIfsc, counterText: ''),
-                      validator: (v) => ApplicationRules.ifsc.hasMatch(v ?? '') ? null : l10n.errIfsc,
-                    ),
-                  ],
-                )
-              : TextFormField(
+              ? Column(crossAxisAlignment: CrossAxisAlignment.stretch, children: [
+                  SellerTextField(label: l10n.fieldAccountHolder, required: true, controller: _holder, textCapitalization: TextCapitalization.words, validator: required),
+                  gap,
+                  SellerTextField(label: l10n.fieldBankName, required: true, controller: _bank, prefixIcon: SellerIcons.bank, textCapitalization: TextCapitalization.words, validator: required),
+                  gap,
+                  SellerTextField(
+                    label: l10n.fieldAccountNumber,
+                    required: true,
+                    controller: _account,
+                    obscure: true,
+                    tabular: true,
+                    keyboardType: TextInputType.number,
+                    maxLength: _accountMaxLength,
+                    inputFormatters: [FilteringTextInputFormatter.digitsOnly],
+                    validator: (v) => ApplicationRules.account.hasMatch(v) ? null : l10n.errAccount,
+                  ),
+                  gap,
+                  SellerTextField(
+                    label: l10n.fieldAccountNumberConfirm,
+                    required: true,
+                    controller: _accountConfirm,
+                    tabular: true,
+                    keyboardType: TextInputType.number,
+                    maxLength: _accountMaxLength,
+                    inputFormatters: [FilteringTextInputFormatter.digitsOnly],
+                    validator: (v) => v == _account.text ? null : l10n.accountMismatch,
+                  ),
+                  gap,
+                  SellerTextField(
+                    label: l10n.fieldIfsc,
+                    required: true,
+                    controller: _ifsc,
+                    tabular: true,
+                    maxLength: _ifscLength,
+                    textCapitalization: TextCapitalization.characters,
+                    inputFormatters: [
+                      FilteringTextInputFormatter.allow(RegExp('[A-Za-z0-9]')),
+                      TextInputFormatter.withFunction((_, v) => v.copyWith(text: v.text.toUpperCase())),
+                    ],
+                    validator: (v) => ApplicationRules.ifsc.hasMatch(v) ? null : l10n.errIfsc,
+                  ),
+                ])
+              : SellerTextField(
+                  label: l10n.fieldUpiId,
+                  required: true,
                   controller: _upi,
+                  prefixIcon: SellerIcons.upi,
                   keyboardType: TextInputType.emailAddress,
-                  decoration: InputDecoration(labelText: l10n.fieldUpiId),
-                  validator: (v) => ApplicationRules.upi.hasMatch((v ?? '').trim()) ? null : l10n.errUpi,
+                  validator: (v) => ApplicationRules.upi.hasMatch(v.trim()) ? null : l10n.errUpi,
                 ),
         ),
       ],

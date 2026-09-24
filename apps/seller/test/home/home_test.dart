@@ -1,8 +1,8 @@
-import 'package:agrimore_ui/agrimore_ui.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_localizations/flutter_localizations.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:provider/provider.dart';
+import 'package:seller/design_system/design_system.dart';
 import 'package:seller/l10n/app_localizations.dart';
 import 'package:seller/providers/rfq_provider.dart';
 import 'package:seller/providers/seller_auth_provider.dart';
@@ -88,7 +88,7 @@ void main() {
         ChangeNotifierProvider<RfqProvider>(create: (_) => RfqProvider.preview(const [])),
       ],
       child: MaterialApp(
-        theme: WorkspaceTheme.build(WorkspaceBrand.seller, Brightness.light),
+        theme: SellerTheme.light,
         localizationsDelegates: const [
           AppLocalizations.delegate,
           GlobalMaterialLocalizations.delegate,
@@ -108,15 +108,15 @@ void main() {
     ));
     await tester.pump();
     expect(find.text(l10n.homeAllCaughtUp), findsOneWidget);
-    expect(find.text(AgFormat.rupeesWhole(1000)), findsOneWidget);
+    expect(find.text(SellerFormat.moneyWhole(1000)), findsOneWidget);
     expect(find.text(l10n.kpiUpVsPrevious('100%')), findsOneWidget);
     expect(find.text(l10n.kpiOrdersMore(2)), findsOneWidget);
-    await tester.scrollUntilVisible(find.text(AgFormat.rupees(1234)), 200, scrollable: find.byType(Scrollable).first);
-    expect(find.text(AgFormat.rupees(1234)), findsOneWidget);
+    await tester.scrollUntilVisible(find.text(SellerFormat.money(1234)), 200, scrollable: find.byType(Scrollable).first);
+    expect(find.text(SellerFormat.money(1234)), findsOneWidget);
     await tester.scrollUntilVisible(find.text(l10n.period7d), -200, scrollable: find.byType(Scrollable).first);
     await tester.tap(find.text(l10n.period7d));
     await tester.pump();
-    expect(find.text(AgFormat.rupeesWhole(1500)), findsOneWidget);
+    expect(find.text(SellerFormat.moneyWhole(1500)), findsOneWidget);
     expect(find.text(l10n.kpiNoComparison), findsOneWidget);
     expect(tester.takeException(), isNull);
   });

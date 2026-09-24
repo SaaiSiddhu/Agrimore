@@ -322,6 +322,16 @@ no location is flagged for admin, never refused (D-DLV-GEOFENCE).
   sellers. RazorpayX instant payouts are a later phase.
 - **D-DLV-BANK** riders request bank-detail changes; admin approves or rejects; a statement waits while one is pending.
 
+### D-SELLER-OWN-DS — OWNER_DECISION 2026-09-24 (chat, phase SELLER-REDESIGN-1)
+
+Owner: *"seller app should be canonical but not to make canonical other apps also,.. seller app should have its
+own desgin system , and other apps should have its own system,."* The seller app's design system (tokens, theme,
+typography, icons, formatting, components) lives inside `apps/seller/lib/design_system/`; the shared
+`packages/agrimore_ui` Workspace system keeps serving the Sales Associate and Delivery apps and is not changed for
+the seller. Supersedes ADR-S01/S02/S06/S07 and the uiux lane's "reuse `agrimore_ui` first / ZERO_NEW_WIDGETS" rule
+**for `apps/seller` only**; the zero-literal rule (ADR-S04) still applies there, with `lib/design_system/` as the
+seller's "system itself" (canon_check skips it, like `lib/l10n/`).
+
 ## 6. Open owner decisions (do not resolve silently)
 
 | ID | Question | Safe default while open |

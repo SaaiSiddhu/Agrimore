@@ -1,9 +1,12 @@
-import 'package:agrimore_ui/agrimore_ui.dart';
+import 'package:agrimore_services/agrimore_services.dart' show PendingGoogleIdentity;
+import 'package:firebase_auth/firebase_auth.dart' show GoogleAuthProvider;
 import 'package:flutter/material.dart';
 import 'package:flutter_localizations/flutter_localizations.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:provider/provider.dart';
 import 'package:seller/app/app.dart';
+import 'package:seller/design_system/design_system.dart'
+    show SellerFarmScene, SellerFormat, SellerGoogleMark, SellerOtpInput, SellerProgressLabel, SellerTheme, SellerTimeline;
 import 'package:seller/l10n/app_localizations.dart';
 import 'package:seller/providers/seller_auth_provider.dart';
 import 'package:seller/screens/auth/account_restricted_screen.dart';
@@ -35,7 +38,7 @@ Future<AppLocalizations> _pump(
     ChangeNotifierProvider<SellerAuthProvider>.value(
       value: provider,
       child: MaterialApp(
-        theme: WorkspaceTheme.build(WorkspaceBrand.seller, brightness),
+        theme: brightness == Brightness.dark ? SellerTheme.dark : SellerTheme.light,
         localizationsDelegates: const [
           AppLocalizations.delegate,
           GlobalMaterialLocalizations.delegate,
@@ -78,6 +81,26 @@ void main() {
       });
     }
 
+    testWidgets('phone layout follows board 16-01: landscape + Google mark', (tester) async {
+      await _pump(tester, const SellerSignInScreen(), provider: SellerAuthProvider.preview());
+      expect(find.byType(SellerFarmScene), findsOneWidget);
+      expect(find.byType(SellerGoogleMark), findsOneWidget);
+    });
+
+    testWidgets('Google not linked yet asks to verify the mobile once (16-01 panel 03)', (tester) async {
+      final google = PendingGoogleIdentity(
+        credential: GoogleAuthProvider.credential(idToken: 'test-token'),
+        idToken: 'test-token',
+        email: 'seller@example.com',
+      );
+      final l10n = await _pump(tester, const SellerSignInScreen(), provider: SellerAuthProvider.preview(pendingGoogle: google));
+      expect(tester.takeException(), isNull);
+      expect(find.text(l10n.googleLinkingIntro), findsOneWidget);
+      expect(find.text(l10n.getOtpCta), findsOneWidget);
+      expect(find.text(l10n.googleCta), findsNothing, reason: 'already chose Google');
+      expect(find.text(l10n.googleLinkingCancel), findsOneWidget);
+    });
+
     testWidgets('desktop shows the brand panel value propositions', (tester) async {
       final l10n = await _pump(tester, const SellerSignInScreen(),
           provider: SellerAuthProvider.preview(), size: _desktop);
@@ -87,7 +110,7 @@ void main() {
 
     testWidgets('invalid number is rejected before any request', (tester) async {
       final l10n = await _pump(tester, const SellerSignInScreen(), provider: SellerAuthProvider.preview());
-      await tester.enterText(find.byType(TextFormField), '12345');
+      await tester.enterText(find.byType(TextField), '12345');
       await tester.tap(find.text(l10n.getOtpCta));
       await tester.pump();
       expect(find.text(l10n.phoneErrorInvalid), findsOneWidget);
@@ -107,8 +130,8 @@ void main() {
         );
         expect(tester.takeException(), isNull);
         expect(find.text(l10n.otpTitle), findsOneWidget);
-        expect(find.byType(WsOtpInput), findsOneWidget);
-        expect(find.text(l10n.otpSentSms(AgFormat.maskPhone('+919876543210'))), findsOneWidget);
+        expect(find.byType(SellerOtpInput), findsOneWidget);
+        expect(find.text(l10n.otpSentSms(SellerFormat.maskPhone('+919876543210'))), findsOneWidget);
       });
     }
 
@@ -125,7 +148,13 @@ void main() {
     testWidgets('voice delivery says so', (tester) async {
       final l10n = await _pump(tester, const SellerSignInScreen(),
           provider: SellerAuthProvider.preview(pendingPhone: '+919876543210', otpChannel: 'voice'));
-      expect(find.text(l10n.otpSentVoice(AgFormat.maskPhone('+919876543210'))), findsOneWidget);
+      expect(find.text(l10n.otpSentVoice(SellerFormat.maskPhone('+919876543210'))), findsOneWidget);
+    });
+
+    testWidgets('a wrong code is said under the boxes, not in a banner (16-02)', (tester) async {
+      final l10n = await _pump(tester, const SellerSignInScreen(),
+          provider: SellerAuthProvider.preview(pendingPhone: '+919876543210', error: SellerAuthError.invalidCode));
+      expect(find.text(l10n.otpErrorWrong), findsOneWidget);
     });
 
     testWidgets('network error is shown inline in plain language', (tester) async {
@@ -162,7 +191,7 @@ void main() {
             brightness: b, size: size, textScale: scale);
         expect(tester.takeException(), isNull);
         expect(find.text(l10n.statusTitle), findsOneWidget);
-        expect(find.byType(WsTimeline), findsOneWidget);
+        expect(find.byType(SellerTimeline), findsOneWidget);
         expect(find.text(l10n.supportTitle), findsOneWidget);
         expect(find.text(l10n.signOut), findsOneWidget);
       });
@@ -211,7 +240,7 @@ void main() {
 
     testWidgets('loading shows progress, not a screen', (tester) async {
       await _pump(tester, const SellerAuthGate(), provider: SellerAuthProvider.preview(access: SellerAccess.loading));
-      expect(find.byType(LinearProgressIndicator), findsOneWidget);
+      expect(find.byType(SellerProgressLabel), findsOneWidget);
       expect(find.byType(SellerSignInScreen), findsNothing);
     });
   });

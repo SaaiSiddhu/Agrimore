@@ -1,9 +1,11 @@
-import 'package:agrimore_ui/agrimore_ui.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
+import 'package:firebase_storage/firebase_storage.dart';
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 
+import '../../design_system/design_system.dart';
 import '../../l10n/app_localizations.dart';
+import '../../providers/seller_product_provider.dart';
 import '../../providers/seller_auth_provider.dart';
 import 'create_post_screen.dart';
 
@@ -49,9 +51,18 @@ class _FirestoreFollowers implements FollowersSource {
   @override
   Future<int> followers() async => (await _follows.count().get()).count ?? 0;
 
+  // Ordered newest first so it uses the (sellerId, createdAt DESC) index in
+  // firestore.indexes.json; without the orderBy Firestore wants an ASC index
+  // that was never defined and refused the query (FAILED_PRECONDITION, seen
+  // on a real device).
   @override
-  Future<int> newFollowersSince(DateTime since) async =>
-      (await _follows.where('createdAt', isGreaterThanOrEqualTo: Timestamp.fromDate(since)).count().get()).count ?? 0;
+  Future<int> newFollowersSince(DateTime since) async => (await _follows
+              .where('createdAt', isGreaterThanOrEqualTo: Timestamp.fromDate(since))
+              .orderBy('createdAt', descending: true)
+              .count()
+              .get())
+          .count ??
+      0;
 
   @override
   Stream<List<SellerPost>> posts() => _db
@@ -63,7 +74,20 @@ class _FirestoreFollowers implements FollowersSource {
       .map((s) => [for (final d in s.docs) SellerPost.fromDoc(d.id, d.data())]);
 
   @override
-  Future<void> deletePost(String id) => _db.collection('business_posts').doc(id).delete();
+  Future<void> deletePost(String id) async {
+    final ref = _db.collection('business_posts').doc(id);
+    final imageUrl = (await ref.get()).data()?['imageUrl'];
+    await ref.delete();
+    // The photo goes too (storage.rules lets the owner delete
+    // business_posts/{uid}_…); a failure here leaves only an orphan file.
+    if (imageUrl is String && imageUrl.isNotEmpty) {
+      try {
+        await FirebaseStorage.instance.refFromURL(imageUrl).delete();
+      } catch (e) {
+        debugPrint('Post photo delete failed: $e');
+      }
+    }
+  }
 }
 
 /// M-04 Followers & posts (ADR §10.6, SELLER-FOLLOWERS-1): how many buyers
@@ -84,6 +108,10 @@ class _FollowersScreenState extends State<FollowersScreen> {
   FollowersSource? _source;
   Future<(int, int)>? _counts;
 
+  /// Subscribed once: building it in build() re-subscribed on every rebuild
+  /// (the product list changing is enough) and flashed the loading skeleton.
+  Stream<List<SellerPost>>? _posts;
+
   @override
   void initState() {
     super.initState();
@@ -93,6 +121,7 @@ class _FollowersScreenState extends State<FollowersScreen> {
       if (uid != null) _source = _FirestoreFollowers(uid);
     }
     _loadCounts();
+    _posts = _source?.posts();
   }
 
   void _loadCounts() {
@@ -104,8 +133,9 @@ class _FollowersScreenState extends State<FollowersScreen> {
 
   Future<void> _delete(SellerPost post) async {
     final l10n = AppLocalizations.of(context);
-    final yes = await wsConfirm(
+    final yes = await sellerConfirm(
       context,
+      icon: SellerIcons.delete,
       title: l10n.postsDeleteTitle,
       message: l10n.postsDeleteBody,
       confirmLabel: l10n.productDelete,
@@ -115,101 +145,105 @@ class _FollowersScreenState extends State<FollowersScreen> {
     if (!yes || !mounted) return;
     try {
       await _source!.deletePost(post.id);
-      if (mounted) WsToast.show(context, l10n.postsDeleted, tone: WsToastTone.success);
+      if (mounted) SellerToast.show(context, l10n.postsDeleted, tone: SellerToastTone.success);
     } catch (e) {
       debugPrint('Post delete failed: $e');
-      if (mounted) WsToast.show(context, l10n.postFailed, tone: WsToastTone.error);
+      if (mounted) SellerToast.show(context, l10n.postFailed, tone: SellerToastTone.danger);
     }
   }
 
   @override
   Widget build(BuildContext context) {
     final l10n = AppLocalizations.of(context);
-    final t = context.ws;
-    final text = context.wsText;
+    final text = context.text;
     final source = _source;
+    final products = context.watch<SellerProductProvider>().allProducts;
+    String? productName(String? id) => id == null ? null : products.where((p) => p.id == id).firstOrNull?.name;
     return Scaffold(
-      appBar: AppBar(
-        leading: IconButton(tooltip: l10n.back, icon: const Icon(AgIcons.arrowLeft), onPressed: () => Navigator.of(context).maybePop()),
-        title: Text(l10n.followersTitle),
-      ),
-      floatingActionButton: FloatingActionButton.extended(
-        onPressed: () => Navigator.of(context).push(MaterialPageRoute<void>(builder: (_) => const CreatePostScreen())),
-        icon: const Icon(AgIcons.add),
-        label: Text(l10n.productNewPost),
-      ),
+      appBar: SellerAppBar.detail(context, title: l10n.followersTitle),
       body: source == null
           ? const SizedBox.shrink()
-          : ListView(
-              padding: const EdgeInsets.fromLTRB(WsSpace.page, WsSpace.page, WsSpace.page, WsSpace.s64 + WsSpace.s32),
+          : SellerPage(
+              gap: SellerSpace.s16,
+              footer: SellerButton.tonal(
+                label: l10n.productNewPost,
+                icon: SellerIcons.add,
+                expand: true,
+                onPressed: () => Navigator.of(context).push(MaterialPageRoute<void>(fullscreenDialog: true, builder: (_) => const CreatePostScreen())),
+              ),
               children: [
                 FutureBuilder<(int, int)>(
                   future: _counts,
                   builder: (context, snap) {
                     if (snap.hasError) {
                       debugPrint('Follower counts failed: ${snap.error}');
-                      return SaInfoBanner(variant: SaBannerVariant.error, message: l10n.followersLoadFailed);
+                      return SellerBanner(tone: SellerTone.danger, message: l10n.followersLoadFailed);
                     }
                     final c = snap.data;
-                    return Card(
-                      child: Padding(
-                        padding: const EdgeInsets.all(WsSpace.s16),
-                        child: Row(children: [
-                          Icon(AgIcons.users, color: t.primary, size: WsIconSize.feature),
-                          const SizedBox(width: WsSpace.s16),
-                          Expanded(
-                            child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
-                              Text(c == null ? '—' : AgFormat.count(c.$1),
-                                  style: text.headlineMedium!.copyWith(fontFeatures: WsType.tabularFigures)),
-                              Text(l10n.followersCount, style: text.bodySmall!.copyWith(color: t.textSecondary)),
-                              if (c != null && c.$2 > 0)
-                                Text(l10n.followersNew(c.$2), style: text.labelMedium!.copyWith(color: t.successFg)),
-                            ]),
-                          ),
-                        ]),
-                      ),
+                    return SellerCard(
+                      tone: SellerCardTone.mint,
+                      child: Row(children: [
+                        const SellerIconTile(icon: SellerIcons.users, circle: true, size: SellerSize.avatarLg),
+                        const SizedBox(width: SellerSpace.s16),
+                        Expanded(
+                          child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
+                            Text(c == null ? '—' : SellerFormat.count(c.$1), style: text.displayLarge!.tabular),
+                            Text(l10n.followersCount, style: text.bodyMedium!.copyWith(color: context.colors.textPrimary)),
+                            if (c != null && c.$2 > 0) ...[
+                              const SizedBox(height: SellerSpace.s4),
+                              SellerDelta(trend: SellerTrend.up, label: l10n.followersNew(c.$2)),
+                            ],
+                          ]),
+                        ),
+                      ]),
                     );
                   },
                 ),
-                const SizedBox(height: WsSpace.s24),
-                Text(l10n.postsTitle, style: text.titleMedium),
-                const SizedBox(height: WsSpace.s8),
+                SellerSectionHeader(title: l10n.postsTitle),
                 StreamBuilder<List<SellerPost>>(
-                  stream: source.posts(),
+                  stream: _posts,
                   builder: (context, snap) {
                     if (snap.hasError) {
                       debugPrint('Posts failed: ${snap.error}');
-                      return SaInfoBanner(variant: SaBannerVariant.error, message: l10n.followersLoadFailed);
+                      return SellerBanner(tone: SellerTone.danger, message: l10n.followersLoadFailed);
                     }
-                    if (!snap.hasData) return const Center(child: CircularProgressIndicator());
+                    if (!snap.hasData) return SellerSkeletonList(count: 2, label: l10n.dsLoading);
                     final posts = snap.data!;
-                    if (posts.isEmpty) {
-                      return Padding(
-                        padding: const EdgeInsets.symmetric(vertical: WsSpace.s24),
-                        child: Text(l10n.postsEmpty, style: text.bodyMedium!.copyWith(color: t.textSecondary), textAlign: TextAlign.center),
-                      );
-                    }
+                    if (posts.isEmpty) return SellerEmptyState(icon: SellerIcons.post, title: l10n.postsEmpty, compact: true);
                     return Column(children: [
                       for (final p in posts)
-                        Card(
-                          margin: const EdgeInsets.only(bottom: WsSpace.s8),
-                          clipBehavior: Clip.antiAlias,
-                          child: Column(crossAxisAlignment: CrossAxisAlignment.stretch, children: [
-                            if (p.imageUrl != null)
-                              AspectRatio(
-                                aspectRatio: 16 / 9,
-                                child: Image.network(p.imageUrl!, fit: BoxFit.cover, errorBuilder: (_, __, ___) => ColoredBox(color: t.surfaceSunken)),
+                        Padding(
+                          padding: const EdgeInsets.only(bottom: SellerSpace.s12),
+                          child: SellerCard(
+                            padding: EdgeInsets.zero,
+                            clip: true,
+                            child: Column(crossAxisAlignment: CrossAxisAlignment.stretch, children: [
+                              if (p.imageUrl != null)
+                                AspectRatio(
+                                  aspectRatio: 16 / 9,
+                                  child: SellerImage(url: p.imageUrl, size: double.infinity, height: double.infinity, radius: 0),
+                                ),
+                              Padding(
+                                padding: const EdgeInsets.fromLTRB(SellerSpace.s16, SellerSpace.s12, SellerSpace.s4, SellerSpace.s12),
+                                child: Row(crossAxisAlignment: CrossAxisAlignment.start, children: [
+                                  Expanded(
+                                    child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
+                                      Text(p.text?.isNotEmpty == true ? p.text! : l10n.postsNoText, style: text.bodyLarge),
+                                      if (p.createdAt != null) ...[
+                                        const SizedBox(height: SellerSpace.s4),
+                                        Text(SellerFormat.dateTime(p.createdAt!), style: text.bodyMedium),
+                                      ],
+                                      if (productName(p.productId) != null) ...[
+                                        const SizedBox(height: SellerSpace.s8),
+                                        SellerStatusBadge(label: l10n.postTaggedProduct(productName(p.productId)!), tone: SellerTone.brand, icon: SellerIcons.tag),
+                                      ],
+                                    ]),
+                                  ),
+                                  SellerIconButton(icon: SellerIcons.delete, label: l10n.productDelete, color: context.colors.danger, onPressed: () => _delete(p)),
+                                ]),
                               ),
-                            ListTile(
-                              title: Text(p.text?.isNotEmpty == true ? p.text! : l10n.postsNoText, style: text.bodyMedium),
-                              subtitle: p.createdAt == null ? null : Text(AgFormat.dateTime(p.createdAt!), style: text.bodySmall),
-                              trailing: IconButton(
-                                tooltip: l10n.productDelete,
-                                icon: Icon(AgIcons.delete, color: t.errorFg),
-                                onPressed: () => _delete(p),
-                              ),
-                            ),
-                          ]),
+                            ]),
+                          ),
                         ),
                     ]);
                   },

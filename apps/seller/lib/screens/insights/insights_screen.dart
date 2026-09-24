@@ -1,10 +1,10 @@
 import 'dart:async';
 
-import 'package:agrimore_ui/agrimore_ui.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 
+import '../../design_system/design_system.dart';
 import '../../l10n/app_localizations.dart';
 import '../../providers/seller_auth_provider.dart';
 import '../../providers/seller_order_provider.dart';
@@ -66,181 +66,217 @@ class _InsightsScreenState extends State<InsightsScreen> {
     super.dispose();
   }
 
+  DateTime _dayOf(String key) => DateTime(int.parse(key.substring(0, 4)), int.parse(key.substring(4, 6)), int.parse(key.substring(6, 8)));
+
+  String _range(List<String> keys) => keys.isEmpty ? '' : SellerFormat.dateRange(_dayOf(keys.first), _dayOf(keys.last));
+
+  SellerTrend _trend(double? d) => d == null ? SellerTrend.none : (d > 0 ? SellerTrend.up : (d < 0 ? SellerTrend.down : SellerTrend.flat));
+
+  String _change(AppLocalizations l10n, double? d) => d == null ? l10n.kpiNoComparison : SellerFormat.percentChange(d);
+
+  void _explain(BuildContext context) {
+    final l10n = AppLocalizations.of(context);
+    showSellerSheet<void>(
+      context,
+      title: l10n.insightsInfo,
+      builder: (ctx) => Column(crossAxisAlignment: CrossAxisAlignment.stretch, children: [
+        for (final line in [l10n.insightsDefSales, l10n.insightsDefOrders, l10n.insightsDefAov, l10n.insightsDefB2b, l10n.insightsDefCompare])
+          Padding(padding: const EdgeInsets.only(bottom: SellerSpace.s12), child: Text(line, style: ctx.text.bodyLarge)),
+      ]),
+      footer: (ctx) => SellerButton(label: l10n.insightsGotIt, expand: true, onPressed: () => Navigator.of(ctx).pop()),
+    );
+  }
+
   @override
   Widget build(BuildContext context) {
     final l10n = AppLocalizations.of(context);
-    final t = context.ws;
-    final text = context.wsText;
+    final text = context.text;
     final now = widget.now ?? DateTime.now();
     final cur = istDayKeys(now, _days);
     final prev = istDayKeys(now, _days, endOffsetDays: _days);
-    final curSeries = [for (final k in cur) _stats[k]?.gross ?? 0.0];
-    final prevSeries = [for (final k in prev) _stats[k]?.gross ?? 0.0];
-    final curTotal = curSeries.fold<double>(0, (a, b) => a + b);
-    final prevTotal = prevSeries.fold<double>(0, (a, b) => a + b);
-    final b2b = [for (final k in cur) _stats[k]?.b2bGross ?? 0.0].fold<double>(0, (a, b) => a + b);
+    double sum(Iterable<double> v) => v.fold<double>(0, (a, b) => a + b);
+    final curTotal = sum([for (final k in cur) _stats[k]?.gross ?? 0.0]);
+    final prevTotal = sum([for (final k in prev) _stats[k]?.gross ?? 0.0]);
+    final curOrders = [for (final k in cur) _stats[k]?.orders ?? 0].fold<int>(0, (a, b) => a + b);
+    final prevOrders = [for (final k in prev) _stats[k]?.orders ?? 0].fold<int>(0, (a, b) => a + b);
+    final b2b = sum([for (final k in cur) _stats[k]?.b2bGross ?? 0.0]);
     final delta = KpiSummary.delta(curTotal, prevTotal);
+    final aov = curOrders == 0 ? null : curTotal / curOrders;
+    final prevAov = prevOrders == 0 ? null : prevTotal / prevOrders;
+    final aovDelta = aov == null || prevAov == null ? null : KpiSummary.delta(aov, prevAov);
 
     final orders = context.watch<SellerOrderProvider>().allOrders;
     final from = now.subtract(Duration(days: _days));
     final top = topProducts(ordersIn(orders, from, now));
     final stages = stageCounts(orders, from, now);
-    final maxStage = stages.values.fold<int>(0, (m, v) => v > m ? v : m);
-    String pct(double? d) => d == null ? l10n.kpiNoComparison : '${d >= 0 ? '+' : '−'}${(d.abs() * 100).round()}%';
+    final stageTotal = stages.values.fold<int>(0, (a, b) => a + b);
 
-    Widget card(String title, Widget child) => Card(
-          margin: const EdgeInsets.only(bottom: WsSpace.s12),
-          child: Padding(
-            padding: const EdgeInsets.all(WsSpace.s16),
-            child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
-              Text(title, style: text.titleSmall),
-              const SizedBox(height: WsSpace.s12),
-              child,
-            ]),
-          ),
+    SellerChartPoint point(String k) => SellerChartPoint(
+          SellerFormat.dayMonth(_dayOf(k)),
+          _stats[k]?.gross ?? 0,
+          SellerFormat.moneyWhole(_stats[k]?.gross ?? 0),
         );
+    final curPoints = [for (final k in cur) point(k)];
+    // The previous series is drawn against this period's days.
+    final prevPoints = [
+      for (var i = 0; i < prev.length; i++) SellerChartPoint(curPoints[i].label, _stats[prev[i]]?.gross ?? 0, SellerFormat.moneyWhole(_stats[prev[i]]?.gross ?? 0)),
+    ];
+    final summary = l10n.insightsChartSummary(SellerFormat.moneyWhole(curTotal), SellerFormat.moneyWhole(prevTotal), _days);
+
+    final ordersCard = SellerMetricCard(
+      label: l10n.kpiOrders,
+      icon: SellerIcons.orders,
+      value: SellerFormat.count(curOrders),
+      delta: curOrders == 0 && prevOrders == 0
+          ? null
+          : SellerDelta(
+              trend: curOrders > prevOrders ? SellerTrend.up : (curOrders < prevOrders ? SellerTrend.down : SellerTrend.flat),
+              label: curOrders > prevOrders
+                  ? l10n.kpiOrdersMore(curOrders - prevOrders)
+                  : curOrders < prevOrders
+                      ? l10n.kpiOrdersFewer(prevOrders - curOrders)
+                      : l10n.kpiOrdersSame,
+            ),
+    );
+    final aovCard = SellerMetricCard(
+      label: l10n.kpiAov,
+      icon: SellerIcons.receipt,
+      value: aov == null ? '—' : SellerFormat.moneyWhole(aov),
+      delta: aovDelta == null ? null : SellerDelta(trend: _trend(aovDelta), label: _change(l10n, aovDelta)),
+    );
 
     return Scaffold(
-      appBar: AppBar(
-        leading: IconButton(tooltip: l10n.back, icon: const Icon(AgIcons.arrowLeft), onPressed: () => Navigator.of(context).maybePop()),
-        title: Text(l10n.insightsTitle),
-      ),
-      body: ListView(
-        padding: const EdgeInsets.all(WsSpace.page),
+      appBar: SellerAppBar.detail(context, title: l10n.insightsTitle, actions: [
+        SellerIconButton(icon: SellerIcons.info, label: l10n.insightsInfo, onPressed: () => _explain(context)),
+      ]),
+      body: SellerPage(
+        maxWidth: SellerSize.contentMaxWidth,
+        gap: SellerSpace.s16,
         children: [
-          SegmentedButton<int>(
-            showSelectedIcon: false,
-            segments: [for (final d in kInsightPeriods) ButtonSegment(value: d, label: Text(l10n.insightsDays(d)))],
-            selected: {_days},
-            onSelectionChanged: (s) => setState(() => _days = s.first),
+          SellerSegmented<int>(
+            semanticLabel: l10n.insightsTitle,
+            segments: [for (final d in kInsightPeriods) SellerSegment(d, l10n.insightsDays(d))],
+            selected: _days,
+            onChanged: (d) => setState(() => _days = d),
           ),
-          const SizedBox(height: WsSpace.s16),
-          if (_failed) ...[
-            SaInfoBanner(variant: SaBannerVariant.error, message: l10n.homeStatsFailed),
-            const SizedBox(height: WsSpace.s12),
-          ],
-          card(
-            l10n.kpiSales,
-            Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
-              Text(AgFormat.rupeesWhole(curTotal), style: text.headlineMedium!.copyWith(fontFeatures: WsType.tabularFigures)),
-              Text(l10n.insightsVsPrevious(pct(delta), AgFormat.rupeesWhole(prevTotal)), style: text.bodySmall!.copyWith(color: t.textSecondary)),
-              const SizedBox(height: WsSpace.s16),
-              Semantics(
-                label: l10n.insightsChartSummary(AgFormat.rupeesWhole(curTotal), AgFormat.rupeesWhole(prevTotal), _days),
-                excludeSemantics: true,
-                child: SizedBox(
-                  height: WsSize.thumbLg,
-                  width: double.infinity,
-                  child: CustomPaint(painter: _TwoLinePainter(curSeries, prevSeries, t.primary, t.textTertiary)),
-                ),
-              ),
-              const SizedBox(height: WsSpace.s8),
-              Row(children: [
-                _Legend(color: t.primary, label: l10n.insightsThisPeriod),
-                const SizedBox(width: WsSpace.s16),
-                _Legend(color: t.textTertiary, label: l10n.insightsPreviousPeriod),
-              ]),
-              if (curTotal > 0) ...[
-                const SizedBox(height: WsSpace.s12),
-                Text(l10n.insightsB2bShare('${(b2b / curTotal * 100).round()}%'), style: text.bodySmall),
+          Row(children: [
+            const Icon(SellerIcons.calendar, size: SellerIconSize.md),
+            const SizedBox(width: SellerSpace.s8),
+            Expanded(child: Text(l10n.insightsRange(_range(cur), _range(prev)), style: text.bodyMedium)),
+          ]),
+          if (_failed) SellerBanner(tone: SellerTone.danger, message: l10n.homeStatsFailed),
+          SellerMetricCard(
+            label: l10n.kpiSales,
+            icon: SellerIcons.chartBar,
+            value: SellerFormat.moneyWhole(curTotal),
+            large: true,
+            delta: SellerDelta(trend: _trend(delta), label: _change(l10n, delta), pill: true),
+            caption: l10n.insightsVsPrevious(_change(l10n, delta), SellerFormat.moneyWhole(prevTotal)),
+          ),
+          SellerChartCard(
+            title: l10n.insightsSalesTrend,
+            summary: summary,
+            chart: _failed
+                ? SellerChartUnavailable(message: l10n.insightsSalesUnavailable)
+                : SellerLineChart(
+                    series: [
+                      SellerChartSeries(name: l10n.insightsThisPeriod, points: curPoints),
+                      SellerChartSeries(name: l10n.insightsPreviousPeriod, points: prevPoints, previous: true),
+                    ],
+                    axisLabel: SellerFormat.moneyCompact,
+                    semanticSummary: summary,
+                  ),
+            legend: SellerChartLegend(items: [
+              SellerLegendItem(l10n.insightsThisPeriod, SellerLegendKind.line),
+              SellerLegendItem(l10n.insightsPreviousPeriod, SellerLegendKind.dashedLine),
+            ]),
+            table: SellerDataTable(
+              columns: [
+                SellerTableColumn(l10n.insightsTableDay, flex: 2),
+                SellerTableColumn(l10n.insightsThisPeriod, numeric: true, flex: 2),
+                SellerTableColumn(l10n.insightsPreviousPeriod, numeric: true, flex: 2),
               ],
+              rows: [for (var i = 0; i < curPoints.length; i++) [curPoints[i].label, curPoints[i].valueLabel, prevPoints[i].valueLabel]],
+            ),
+          ),
+          if (context.largeText) ...[ordersCard, aovCard]
+          else
+            IntrinsicHeight(
+              child: Row(crossAxisAlignment: CrossAxisAlignment.stretch, children: [
+                Expanded(child: ordersCard),
+                const SizedBox(width: SellerSpace.s12),
+                Expanded(child: aovCard),
+              ]),
+            ),
+          if (curTotal > 0)
+            SellerCard(
+              child: Row(children: [
+                SellerDonut(fraction: b2b / curTotal, centerLabel: SellerFormat.percent(b2b / curTotal)),
+                const SizedBox(width: SellerSpace.s16),
+                Expanded(
+                  child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
+                    Text(l10n.insightsB2bTitle, style: text.titleSmall),
+                    Text(l10n.dsShare(SellerFormat.moneyWhole(b2b), SellerFormat.moneyWhole(curTotal)), style: text.bodyMedium!.tabular),
+                    Text(l10n.insightsB2bShare(SellerFormat.percent(b2b / curTotal)), style: text.bodySmall),
+                  ]),
+                ),
+              ]),
+            ),
+          SellerCard(
+            child: Column(crossAxisAlignment: CrossAxisAlignment.stretch, children: [
+              SellerSectionHeader(title: l10n.insightsComparisons, subtitle: l10n.insightsDefCompare),
+              SellerComparisonBars(
+                currentLabel: l10n.insightsCurrentLabel(_range(cur)),
+                current: curTotal,
+                currentValueLabel: SellerFormat.moneyWhole(curTotal),
+                previousLabel: l10n.insightsPreviousLabel(_range(prev)),
+                previous: prevTotal,
+                previousValueLabel: SellerFormat.moneyWhole(prevTotal),
+              ),
             ]),
           ),
-          card(
-            l10n.insightsOrdersByStage,
-            stages.isEmpty
-                ? Text(l10n.insightsNoOrders, style: text.bodyMedium!.copyWith(color: t.textSecondary))
-                : Column(children: [
-                    for (final s in OrderStage.values)
-                      if ((stages[s] ?? 0) > 0)
-                        Padding(
-                          padding: const EdgeInsets.symmetric(vertical: WsSpace.s4),
-                          child: Row(children: [
-                            SizedBox(width: WsSpace.s64 + WsSpace.s48, child: Text(l10n.stageLabel(s), style: text.bodySmall)),
-                            Expanded(
-                              child: ClipRRect(
-                                borderRadius: BorderRadius.circular(WsRadius.pill),
-                                child: LinearProgressIndicator(
-                                  value: stages[s]! / maxStage,
-                                  minHeight: WsSpace.s8,
-                                  backgroundColor: t.surfaceSunken,
-                                ),
-                              ),
-                            ),
-                            const SizedBox(width: WsSpace.s8),
-                            Text(AgFormat.count(stages[s]!), style: text.bodySmall!.copyWith(fontFeatures: WsType.tabularFigures)),
-                          ]),
-                        ),
-                  ]),
-          ),
-          card(
-            l10n.insightsTopProducts,
-            top.isEmpty
-                ? Text(l10n.insightsNoOrders, style: text.bodyMedium!.copyWith(color: t.textSecondary))
-                : Column(children: [
-                    for (var i = 0; i < top.length; i++)
-                      ListTile(
-                        contentPadding: EdgeInsets.zero,
-                        leading: CircleAvatar(radius: WsSize.avatarSm / 2, child: Text(AgFormat.count(i + 1))),
-                        title: Text(top[i].name, style: text.bodyMedium, maxLines: 1, overflow: TextOverflow.ellipsis),
-                        subtitle: Text(l10n.ordersItems(top[i].units), style: text.bodySmall),
-                        trailing: Text(AgFormat.rupeesWhole(top[i].revenue),
-                            style: text.titleSmall!.copyWith(fontFeatures: WsType.tabularFigures)),
+          SellerCard(
+            child: Column(crossAxisAlignment: CrossAxisAlignment.stretch, children: [
+              SellerSectionHeader(title: l10n.insightsOrdersByStage, count: stageTotal == 0 ? null : stageTotal, subtitle: l10n.insightsStageNote),
+              if (stages.isEmpty)
+                SellerEmptyState(icon: SellerIcons.document, title: l10n.insightsNoOrders, compact: true)
+              else
+                SellerBarList(items: [
+                  for (final st in OrderStage.values)
+                    if ((stages[st] ?? 0) > 0)
+                      SellerBarItem(
+                        label: l10n.stageLabel(st),
+                        value: stages[st]!.toDouble(),
+                        valueLabel: SellerFormat.count(stages[st]!),
+                        icon: orderStageStyle(st).$2,
+                        tone: orderStageStyle(st).$1,
                       ),
-                  ]),
+                ]),
+            ]),
+          ),
+          SellerCard(
+            child: Column(crossAxisAlignment: CrossAxisAlignment.stretch, children: [
+              SellerSectionHeader(title: l10n.insightsTopProducts, subtitle: l10n.insightsTopNote),
+              if (top.isEmpty)
+                SellerEmptyState(icon: SellerIcons.sprout, title: l10n.insightsNoOrders, compact: true)
+              else
+                for (var i = 0; i < top.length; i++)
+                  SellerListRow(
+                    leading: Container(
+                      width: SellerSize.avatarSm,
+                      height: SellerSize.avatarSm,
+                      alignment: Alignment.center,
+                      decoration: BoxDecoration(color: context.colors.primaryContainer, shape: BoxShape.circle),
+                      child: Text(SellerFormat.count(i + 1), style: text.labelLarge!.copyWith(color: context.colors.onPrimaryContainer)),
+                    ),
+                    title: top[i].name,
+                    subtitle: l10n.insightsUnits(top[i].units),
+                    value: SellerFormat.moneyWhole(top[i].revenue),
+                  ),
+            ]),
           ),
         ],
       ),
     );
   }
-}
-
-class _Legend extends StatelessWidget {
-  const _Legend({required this.color, required this.label});
-  final Color color;
-  final String label;
-
-  @override
-  Widget build(BuildContext context) => Row(mainAxisSize: MainAxisSize.min, children: [
-        Container(width: WsSpace.s12, height: WsSpace.s4, color: color),
-        const SizedBox(width: WsSpace.s4),
-        Text(label, style: context.wsText.bodySmall),
-      ]);
-}
-
-class _TwoLinePainter extends CustomPainter {
-  _TwoLinePainter(this.current, this.previous, this.currentColor, this.previousColor);
-  final List<double> current;
-  final List<double> previous;
-  final Color currentColor;
-  final Color previousColor;
-
-  @override
-  void paint(Canvas canvas, Size size) {
-    final all = [...current, ...previous];
-    final max = all.fold<double>(0, (m, v) => v > m ? v : m);
-    void line(List<double> values, Color color) {
-      if (values.length < 2) return;
-      final dx = size.width / (values.length - 1);
-      double y(double v) => max == 0 ? size.height : size.height - v / max * size.height;
-      final path = Path()..moveTo(0, y(values.first));
-      for (var i = 1; i < values.length; i++) {
-        path.lineTo(dx * i, y(values[i]));
-      }
-      canvas.drawPath(
-        path,
-        Paint()
-          ..color = color
-          ..style = PaintingStyle.stroke
-          ..strokeWidth = WsSize.outline
-          ..strokeJoin = StrokeJoin.round,
-      );
-    }
-
-    line(previous, previousColor);
-    line(current, currentColor);
-  }
-
-  @override
-  bool shouldRepaint(_TwoLinePainter old) => old.current != current || old.previous != previous;
 }

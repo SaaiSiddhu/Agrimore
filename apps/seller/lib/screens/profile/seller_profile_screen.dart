@@ -1,13 +1,14 @@
-import 'package:agrimore_ui/agrimore_ui.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 
+import '../../design_system/design_system.dart';
 import '../../l10n/app_localizations.dart';
 import '../../providers/seller_auth_provider.dart';
 import '../../providers/seller_order_provider.dart';
 import '../../providers/seller_product_provider.dart';
 import '../account/help_screen.dart';
+import '../account/policies_screen.dart';
 import '../account/notification_settings_screen.dart';
 import '../account/settings_screen.dart';
 import '../ai/seller_ai_chat_screen.dart';
@@ -34,7 +35,7 @@ class PayoutView {
       available: true,
       method: s(d?['payoutMethod']),
       bankName: s(d?['bankName']),
-      maskedAccount: account == null ? null : AgFormat.maskAccount(account),
+      maskedAccount: account == null ? null : SellerFormat.maskAccount(account),
       ifsc: s(d?['ifsc']),
       upiId: s(d?['upiId']),
     );
@@ -128,11 +129,11 @@ class _SellerProfileScreenState extends State<SellerProfileScreen> {
           .doc(uid)
           .set({...edited.toUpdate(), 'updatedAt': FieldValue.serverTimestamp()}, SetOptions(merge: true));
       if (!mounted) return;
-      WsToast.show(context, l10n.accountSaved, tone: WsToastTone.success);
+      SellerToast.show(context, l10n.accountSaved, tone: SellerToastTone.success);
       await _load();
     } catch (e) {
       debugPrint('Business details save failed: $e');
-      if (mounted) WsToast.show(context, l10n.profileSaveFailed, tone: WsToastTone.error);
+      if (mounted) SellerToast.show(context, l10n.profileSaveFailed, tone: SellerToastTone.danger);
     }
   }
 
@@ -147,11 +148,11 @@ class _SellerProfileScreenState extends State<SellerProfileScreen> {
           .doc(uid)
           .update({...next.toUpdate(), 'updatedAt': FieldValue.serverTimestamp()});
       if (!mounted) return;
-      WsToast.show(context, next.accepting ? l10n.storeResumed : l10n.storePausedToast, tone: WsToastTone.success);
+      SellerToast.show(context, next.accepting ? l10n.storeResumed : l10n.storePausedToast, tone: SellerToastTone.success);
       await _load();
     } catch (e) {
       debugPrint('Store status failed: $e');
-      if (mounted) WsToast.show(context, l10n.profileSaveFailed, tone: WsToastTone.error);
+      if (mounted) SellerToast.show(context, l10n.profileSaveFailed, tone: SellerToastTone.danger);
     }
   }
 
@@ -189,7 +190,7 @@ class _SellerProfileScreenState extends State<SellerProfileScreen> {
         : p.isEmpty
             ? [l10n.payoutAccountMissingHelp]
             : [
-                if (p.upiId != null) l10n.payoutAccountUpi(p.upiId!),
+                if (p.upiId != null) l10n.payoutAccountUpi(SellerFormat.maskUpi(p.upiId!)),
                 if (p.maskedAccount != null) l10n.payoutAccountBank(p.bankName ?? '', p.maskedAccount!),
                 if (p.ifsc != null) l10n.accountIfsc(p.ifsc!),
                 l10n.accountPayoutChangeHint,
@@ -197,51 +198,108 @@ class _SellerProfileScreenState extends State<SellerProfileScreen> {
     _infoSheet(l10n.payoutAccountTitle, lines);
   }
 
-  void _showLegal() {
-    final l10n = AppLocalizations.of(context);
-    _infoSheet(l10n.accountLegal, [l10n.legalAccurate, l10n.legalPackOnTime, l10n.legalPayouts]);
-  }
-
   void _infoSheet(String title, List<String> lines) {
-    showModalBottomSheet<void>(
-      context: context,
-      builder: (ctx) {
-        final text = ctx.wsText;
-        return SafeArea(
-          child: Padding(
-            padding: const EdgeInsets.fromLTRB(WsSpace.page, 0, WsSpace.page, WsSpace.s24),
-            child: Column(mainAxisSize: MainAxisSize.min, crossAxisAlignment: CrossAxisAlignment.start, children: [
-              Text(title, style: text.titleMedium),
-              const SizedBox(height: WsSpace.s12),
-              for (final l in lines)
-                Padding(padding: const EdgeInsets.only(bottom: WsSpace.s8), child: Text(l, style: text.bodyMedium)),
-            ]),
-          ),
-        );
-      },
+    showSellerSheet<void>(
+      context,
+      title: title,
+      builder: (ctx) => Column(crossAxisAlignment: CrossAxisAlignment.stretch, children: [
+        for (final l in lines) Padding(padding: const EdgeInsets.only(bottom: SellerSpace.s12), child: Text(l, style: ctx.text.bodyLarge)),
+      ]),
     );
   }
 
   Future<void> _signOut() async {
     final l10n = AppLocalizations.of(context);
     final auth = context.read<SellerAuthProvider>();
-    final yes = await wsConfirm(
+    final yes = await sellerConfirm(
       context,
+      icon: SellerIcons.logOut,
       title: l10n.accountSignOutTitle,
       message: l10n.accountSignOutBody,
       confirmLabel: l10n.accountSignOut,
       cancelLabel: l10n.cancel,
+      destructive: true,
     );
     if (yes) await auth.signOut();
   }
 
   void _push(Widget screen) => Navigator.of(context).push(MaterialPageRoute<void>(builder: (_) => screen));
 
+  Future<void> _resume() async {
+    final l10n = AppLocalizations.of(context);
+    final uid = _uid;
+    if (uid == null) return;
+    try {
+      await FirebaseFirestore.instance.collection('sellers').doc(uid).update({...const StoreStatus().toUpdate(), 'updatedAt': FieldValue.serverTimestamp()});
+      if (!mounted) return;
+      SellerToast.show(context, l10n.storeResumed, tone: SellerToastTone.success);
+      await _load();
+    } catch (e) {
+      debugPrint('Resume failed: $e');
+      if (mounted) SellerToast.show(context, l10n.profileSaveFailed, tone: SellerToastTone.danger);
+    }
+  }
+
+  /// Store status card (board 22-01): open (green) · paused (amber, Resume)
+  /// · closed today by the schedule (blue, Manage schedule).
+  Widget _statusCard(Map<String, dynamic> seller) {
+    final l10n = AppLocalizations.of(context);
+    final text = context.text;
+    final now = DateTime.now();
+    final status = StoreStatus.fromSeller(seller);
+    final schedule = StoreSchedule.fromSeller(seller);
+    if (status.isPaused(now)) {
+      return SellerBanner(
+        tone: SellerTone.warning,
+        icon: SellerIcons.paused,
+        title: l10n.storePausedTitle,
+        message: status.pausedUntil == null ? l10n.storePausedBody : l10n.storePausedUntil(SellerFormat.date(status.pausedUntil!)),
+        actionLabel: l10n.storeResume,
+        onAction: _resume,
+      );
+    }
+    final closed = schedule.closedOn(now);
+    if (closed != null) {
+      return SellerCard(
+        tone: SellerCardTone.info,
+        onTap: _editSchedule,
+        child: Row(crossAxisAlignment: CrossAxisAlignment.start, children: [
+          const SellerIconTile(icon: SellerIcons.calendar, tone: SellerTone.info),
+          const SizedBox(width: SellerSpace.s12),
+          Expanded(
+            child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
+              Text(l10n.storeClosedTodayTitle, style: text.titleSmall),
+              Text(closed == ClosedToday.holiday ? l10n.scheduleClosedHoliday : l10n.scheduleClosedWeeklyOff, style: text.bodyMedium!.copyWith(color: context.colors.textPrimary)),
+              const SizedBox(height: SellerSpace.s4),
+              Text(l10n.storeManageSchedule, style: text.labelLarge!.copyWith(color: context.colors.info)),
+            ]),
+          ),
+        ]),
+      );
+    }
+    return SellerCard(
+      tone: SellerCardTone.success,
+      onTap: _editStoreStatus,
+      semanticLabel: '${l10n.storeStatusTitle}, ${l10n.storeStatusOpen}',
+      child: Row(crossAxisAlignment: CrossAxisAlignment.start, children: [
+        Padding(padding: const EdgeInsets.only(top: SellerSpace.s6), child: SellerDot(color: context.colors.success)),
+        const SizedBox(width: SellerSpace.s12),
+        Expanded(
+          child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
+            Text(l10n.storeStatusTitle, style: text.bodyMedium!.copyWith(color: context.colors.textPrimary)),
+            Text(l10n.storeStatusOpen, style: text.titleSmall),
+            Text(l10n.storeOpenBody, style: text.bodyMedium!.copyWith(color: context.colors.textPrimary)),
+          ]),
+        ),
+        Icon(SellerIcons.chevronRight, color: context.colors.textSecondary),
+      ]),
+    );
+  }
+
   @override
   Widget build(BuildContext context) {
     final l10n = AppLocalizations.of(context);
-    final t = context.ws;
-    final text = context.wsText;
+    final text = context.text;
     final seller = _seller ?? const <String, dynamic>{};
     final user = context.watch<SellerAuthProvider>().currentUser;
     final products = context.watch<SellerProductProvider>();
@@ -252,142 +310,101 @@ class _SellerProfileScreenState extends State<SellerProfileScreen> {
     final rating = (seller['rating'] as num?)?.toDouble() ?? 0;
     final reviewCount = (seller['reviewCount'] as num?)?.toInt() ?? 0;
     final logo = seller['logoUrl'] as String?;
+    final city = [seller['city'], seller['state']].whereType<String>().where((s) => s.trim().isNotEmpty).join(', ');
 
-    Widget section(String title, List<Widget> tiles) => Padding(
-          padding: const EdgeInsets.fromLTRB(WsSpace.page, WsSpace.s16, WsSpace.page, 0),
-          child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
-            Padding(
-              padding: const EdgeInsets.only(left: WsSpace.s4, bottom: WsSpace.s8),
-              child: Text(title, style: text.labelLarge!.copyWith(color: t.textSecondary)),
-            ),
-            Card(
-              clipBehavior: Clip.antiAlias,
+    Widget stat(String label, int value) => Expanded(
+          child: SellerCard(
+            padding: const EdgeInsets.all(SellerSpace.s12),
+            child: MergeSemantics(
               child: Column(children: [
-                for (var i = 0; i < tiles.length; i++) ...[
-                  if (i > 0) const Divider(height: WsSize.hairline, indent: WsSpace.s64),
-                  tiles[i],
-                ],
+                Text(SellerFormat.count(value), style: text.titleLarge!.tabular),
+                Text(label, style: text.bodySmall, textAlign: TextAlign.center),
               ]),
             ),
-          ]),
-        );
-
-    Widget tile(IconData icon, String title, String? subtitle, VoidCallback onTap) => ListTile(
-          leading: Icon(icon, color: t.primary),
-          title: Text(title, style: text.bodyLarge),
-          subtitle: subtitle == null ? null : Text(subtitle, style: text.bodySmall),
-          trailing: Icon(AgIcons.chevronRight, color: t.textTertiary),
-          onTap: onTap,
+          ),
         );
 
     return Scaffold(
-      appBar: AppBar(automaticallyImplyLeading: false, title: Text(l10n.accountTitle)),
+      appBar: SellerAppBar.root(context, title: l10n.accountTitle, actions: [
+        SellerIconButton(icon: SellerIcons.settings, label: l10n.accountSettings, onPressed: () => _push(const SellerSettingsScreen())),
+      ]),
       body: _loading
-          ? const Center(child: CircularProgressIndicator())
-          : RefreshIndicator(
-              onRefresh: _load,
-              child: ListView(
-                padding: const EdgeInsets.only(bottom: WsSpace.s32),
+          ? SellerLoadingView(label: l10n.dsLoading)
+          : SellerPage(
+                onRefresh: _load,
+                gap: SellerSpace.s16,
                 children: [
-                  if (_loadFailed)
-                    Padding(
-                      padding: const EdgeInsets.fromLTRB(WsSpace.page, WsSpace.s16, WsSpace.page, 0),
-                      child: SaInfoBanner(variant: SaBannerVariant.error, message: l10n.accountLoadFailed),
-                    ),
-                  Padding(
-                    padding: const EdgeInsets.fromLTRB(WsSpace.page, WsSpace.s16, WsSpace.page, 0),
-                    child: Card(
-                      child: Padding(
-                        padding: const EdgeInsets.all(WsSpace.s16),
-                        child: Row(children: [
-                          CircleAvatar(
-                            radius: WsSize.avatarLg / 2,
-                            backgroundColor: t.primarySubtle,
-                            backgroundImage: logo == null || logo.isEmpty ? null : NetworkImage(logo),
-                            child: logo == null || logo.isEmpty ? Icon(AgIcons.store, color: t.primary) : null,
-                          ),
-                          const SizedBox(width: WsSpace.s16),
-                          Expanded(
-                            child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
-                              Text(name, style: text.titleMedium, maxLines: 1, overflow: TextOverflow.ellipsis),
-                              if ((user?.phone ?? '').isNotEmpty)
-                                Text(AgFormat.maskPhone(user!.phone!), style: text.bodySmall!.copyWith(color: t.textSecondary)),
-                              const SizedBox(height: WsSpace.s4),
-                              Row(children: [
-                                Icon(AgIcons.star, size: WsIconSize.supporting, color: t.warningFg),
-                                const SizedBox(width: WsSpace.s4),
-                                Text(
-                                  reviewCount == 0 ? l10n.accountNoRatings : l10n.accountRating(rating.toStringAsFixed(1), reviewCount),
-                                  style: text.bodySmall,
-                                ),
-                              ]),
-                            ]),
-                          ),
+                  if (_loadFailed) SellerBanner(tone: SellerTone.danger, message: l10n.accountLoadFailed),
+                  SellerCard(
+                    onTap: () => _push(const StorefrontEditorScreen()),
+                    child: Row(children: [
+                      SellerAvatar(imageUrl: logo, name: name, size: SellerSize.avatarLg),
+                      const SizedBox(width: SellerSpace.s12),
+                      Expanded(
+                        child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
+                          Text(name, style: text.titleMedium),
+                          Text(city.isEmpty ? l10n.accountStoreHeaderHint : city, style: text.bodyMedium),
+                          if ((user?.phone ?? '').isNotEmpty) Text(SellerFormat.maskPhone(user!.phone!), style: text.bodyMedium!.tabular),
+                          const SizedBox(height: SellerSpace.s4),
+                          Row(children: [
+                            Icon(SellerIcons.star, size: SellerIconSize.sm, color: context.colors.warning),
+                            const SizedBox(width: SellerSpace.s4),
+                            Flexible(
+                              child: Text(
+                                reviewCount == 0 ? l10n.accountNoRatings : l10n.accountRating(rating.toStringAsFixed(1), reviewCount),
+                                style: text.bodyMedium,
+                              ),
+                            ),
+                          ]),
                         ]),
                       ),
-                    ),
-                  ),
-                  Padding(
-                    padding: const EdgeInsets.fromLTRB(WsSpace.page, WsSpace.s12, WsSpace.page, 0),
-                    child: Row(children: [
-                      for (final (label, value) in [
-                        (l10n.accountProducts, AgFormat.count(products.totalProducts)),
-                        (l10n.kpiOrders, AgFormat.count(orders.totalOrders)),
-                        (l10n.accountDelivered, AgFormat.count(orders.deliveredOrders)),
-                      ])
-                        Expanded(
-                          child: Card(
-                            child: Padding(
-                              padding: const EdgeInsets.all(WsSpace.s12),
-                              child: Column(children: [
-                                Text(value, style: text.titleMedium!.copyWith(fontFeatures: WsType.tabularFigures)),
-                                Text(label, style: text.bodySmall!.copyWith(color: t.textSecondary)),
-                              ]),
-                            ),
-                          ),
-                        ),
+                      Icon(SellerIcons.chevronRight, color: context.colors.textTertiary),
                     ]),
                   ),
-                  section(l10n.accountSectionBusiness, [
-                    tile(
-                      AgIcons.store,
-                      l10n.storeStatusTitle,
-                      StoreStatus.fromSeller(seller).isPaused(DateTime.now()) ? l10n.storeStatusPaused : l10n.storeStatusOpen,
-                      _editStoreStatus,
+                  _statusCard(seller),
+                  Row(children: [
+                    stat(l10n.accountProducts, products.totalProducts),
+                    const SizedBox(width: SellerSpace.s8),
+                    stat(l10n.kpiOrders, orders.totalOrders),
+                    const SizedBox(width: SellerSpace.s8),
+                    stat(l10n.accountDelivered, orders.deliveredOrders),
+                  ]),
+                  SellerMenuGroup(title: l10n.accountSectionBusiness, children: [
+                    SellerListRow(
+                      icon: SellerIcons.store,
+                      title: l10n.storeStatusTitle,
+                      subtitle: StoreStatus.fromSeller(seller).isPaused(DateTime.now()) ? l10n.storeStatusPaused : l10n.storeStatusOpen,
+                      onTap: _editStoreStatus,
                     ),
-                    tile(AgIcons.calendar, l10n.scheduleTitle, describeSchedule(StoreSchedule.fromSeller(seller), l10n, DateTime.now()), _editSchedule),
-                    tile(AgIcons.document, l10n.accountBusinessDetails, l10n.accountBusinessDetailsHint, _editBusiness),
-                    tile(AgIcons.store, l10n.storefrontMenu, l10n.storefrontMenuSubtitle, () => _push(const StorefrontEditorScreen())),
-                    tile(AgIcons.delivery, l10n.accountDeliveryFee, describeDeliveryFeeSchedule(seller['deliveryFeeSchedule'] as Map<String, dynamic>?, l10n), _editDeliveryFee),
-                  ]),
-                  section(l10n.accountSectionSelling, [
-                    tile(AgIcons.quote, l10n.quotesTitle, null, () => _push(const SellerRfqInboxScreen())),
-                    tile(AgIcons.star, l10n.reviewsMenu, l10n.reviewsMenuSubtitle, () => _push(const SellerReviewsScreen())),
-                    tile(AgIcons.users, l10n.followersTitle, l10n.followersMenuSubtitle, () => _push(const FollowersScreen())),
-                    tile(AgIcons.bank, l10n.payoutAccountTitle, l10n.accountPayoutHint, _showPayout),
-                  ]),
-                  section(l10n.accountSectionAi, [
-                    tile(AgIcons.sparkles, l10n.accountAiAssistant, l10n.accountAiAssistantHint, () => _push(const SellerAiChatScreen())),
-                    tile(AgIcons.settings, l10n.accountAiConnect, l10n.accountAiConnectHint, () => _push(const SellerAiIntegrationScreen())),
-                  ]),
-                  section(l10n.accountSectionApp, [
-                    tile(AgIcons.bell, l10n.prefTitle, null, () => _push(const NotificationSettingsScreen())),
-                    tile(AgIcons.help, l10n.helpTitle, null, () => _push(const HelpScreen())),
-                    tile(AgIcons.settings, l10n.settingsTitle, l10n.settingsMenuSubtitle, () => _push(const SellerSettingsScreen())),
-                    tile(AgIcons.shieldCheck, l10n.accountLegal, null, _showLegal),
-                  ]),
-                  Padding(
-                    padding: const EdgeInsets.fromLTRB(WsSpace.page, WsSpace.s24, WsSpace.page, 0),
-                    child: OutlinedButton.icon(
-                      onPressed: _signOut,
-                      icon: const Icon(AgIcons.logOut),
-                      label: Text(l10n.accountSignOut),
-                      style: OutlinedButton.styleFrom(foregroundColor: t.errorFg),
+                    SellerListRow(icon: SellerIcons.calendarDays, title: l10n.scheduleTitle, subtitle: describeSchedule(StoreSchedule.fromSeller(seller), l10n, DateTime.now()), onTap: _editSchedule),
+                    SellerListRow(icon: SellerIcons.business, title: l10n.accountBusinessDetails, subtitle: l10n.accountBusinessDetailsHint, onTap: _editBusiness),
+                    SellerListRow(
+                      icon: SellerIcons.delivery,
+                      title: l10n.accountDeliveryFee,
+                      subtitle: describeDeliveryFeeSchedule(seller['deliveryFeeSchedule'] as Map<String, dynamic>?, l10n),
+                      onTap: _editDeliveryFee,
                     ),
-                  ),
+                    SellerListRow(icon: SellerIcons.image, title: l10n.storefrontMenu, subtitle: l10n.storefrontMenuSubtitle, onTap: () => _push(const StorefrontEditorScreen())),
+                    SellerListRow(icon: SellerIcons.star, title: l10n.reviewsMenu, subtitle: l10n.reviewsMenuSubtitle, onTap: () => _push(const SellerReviewsScreen())),
+                    SellerListRow(icon: SellerIcons.users, title: l10n.followersTitle, subtitle: l10n.followersMenuSubtitle, onTap: () => _push(const FollowersScreen())),
+                  ]),
+                  SellerMenuGroup(title: l10n.accountSectionSelling, children: [
+                    SellerListRow(icon: SellerIcons.quote, title: l10n.quotesTitle, onTap: () => _push(const SellerRfqInboxScreen())),
+                    SellerListRow(icon: SellerIcons.bank, title: l10n.payoutAccountTitle, subtitle: l10n.accountPayoutHint, onTap: _showPayout),
+                  ]),
+                  SellerMenuGroup(title: l10n.accountSectionAi, children: [
+                    SellerListRow(icon: SellerIcons.ai, title: l10n.accountAiAssistant, subtitle: l10n.accountAiAssistantHint, onTap: () => _push(const SellerAiChatScreen())),
+                    SellerListRow(icon: SellerIcons.settings, title: l10n.accountAiConnect, subtitle: l10n.accountAiConnectHint, onTap: () => _push(const SellerAiIntegrationScreen())),
+                  ]),
+                  SellerMenuGroup(title: l10n.accountSectionApp, children: [
+                    SellerListRow(icon: SellerIcons.bell, title: l10n.prefTitle, onTap: () => _push(const NotificationSettingsScreen())),
+                    SellerListRow(icon: SellerIcons.support, title: l10n.helpTitle, onTap: () => _push(const HelpScreen())),
+                    SellerListRow(icon: SellerIcons.settings, title: l10n.settingsTitle, subtitle: l10n.settingsMenuSubtitle, onTap: () => _push(const SellerSettingsScreen())),
+                    SellerListRow(icon: SellerIcons.policy, title: l10n.accountLegal, onTap: () => _push(const SellerPoliciesScreen())),
+                  ]),
+                  SellerButton.dangerOutline(label: l10n.accountSignOut, icon: SellerIcons.logOut, expand: true, onPressed: _signOut),
                 ],
               ),
-            ),
     );
   }
 }

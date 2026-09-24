@@ -66,6 +66,17 @@ class SellerAiChatProvider with ChangeNotifier {
     }
   }
 
+  /// Re-sends the last question after a failed answer (the error bubble is
+  /// removed; the question is asked again).
+  Future<void> retryLast() async {
+    if (_isSending || _messages.isEmpty || !_messages.last.isError) return;
+    _messages.removeLast();
+    final index = _messages.lastIndexWhere((m) => m.isUser);
+    if (index < 0) return;
+    final question = _messages.removeAt(index).text;
+    await sendMessage(question);
+  }
+
   List<Map<String, dynamic>> _buildChatHistory() {
     return _messages
         .where((m) => !m.isLoading && !m.isError)

@@ -1,7 +1,7 @@
-import 'package:agrimore_ui/agrimore_ui.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_localizations/flutter_localizations.dart';
 import 'package:flutter_test/flutter_test.dart';
+import 'package:seller/design_system/design_system.dart';
 import 'package:seller/l10n/app_localizations.dart';
 import 'package:seller/screens/payments/payments_screen.dart';
 import 'package:seller/screens/payments/statements.dart';
@@ -40,7 +40,7 @@ void main() {
   testWidgets('Payments lists months; a month opens its statement', (tester) async {
     late AppLocalizations l10n;
     await tester.pumpWidget(MaterialApp(
-      theme: WorkspaceTheme.build(WorkspaceBrand.seller, Brightness.light),
+      theme: SellerTheme.light,
       localizationsDelegates: const [
         AppLocalizations.delegate,
         GlobalMaterialLocalizations.delegate,
@@ -54,12 +54,12 @@ void main() {
       }),
     ));
     await tester.pump();
-    final month = find.text(AgFormat.monthYear(DateTime(2026, 9)));
+    final month = find.text(SellerFormat.monthYear(DateTime(2026, 9)));
     await tester.scrollUntilVisible(month, 200, scrollable: find.byType(Scrollable).first);
     expect(find.text(l10n.statementsTitle), findsOneWidget);
     await tester.tap(month);
     await tester.pumpAndSettle();
-    expect(find.text(l10n.statementHeading(AgFormat.monthYear(DateTime(2026, 9)))), findsOneWidget);
+    expect(find.text(l10n.statementHeading(SellerFormat.monthYear(DateTime(2026, 9)))), findsOneWidget);
     expect(find.text(l10n.paymentsForOrder('ORD-a')), findsOneWidget);
     expect(find.text(l10n.paymentsForOrder('ORD-c')), findsNothing);
   });

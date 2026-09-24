@@ -1,9 +1,9 @@
-import 'package:agrimore_ui/agrimore_ui.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:cloud_functions/cloud_functions.dart';
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 
+import '../../design_system/design_system.dart';
 import '../../l10n/app_localizations.dart';
 import '../../providers/seller_auth_provider.dart';
 import 'review_rules.dart';
@@ -52,6 +52,7 @@ class _SellerReviewsScreenState extends State<SellerReviewsScreen> {
     final text = await showModalBottomSheet<String>(
       context: context,
       isScrollControlled: true,
+      useSafeArea: true,
       builder: (_) => _ReplySheet(review: r),
     );
     if (text == null || !mounted) return;
@@ -66,17 +67,7 @@ class _SellerReviewsScreenState extends State<SellerReviewsScreen> {
   Widget build(BuildContext context) {
     final l10n = AppLocalizations.of(context);
     final injected = widget.reviews;
-    Widget scaffold(Widget body) => Scaffold(
-          appBar: AppBar(
-            leading: IconButton(
-              tooltip: l10n.back,
-              icon: const Icon(AgIcons.arrowLeft),
-              onPressed: () => Navigator.of(context).maybePop(),
-            ),
-            title: Text(l10n.reviewsTitle),
-          ),
-          body: body,
-        );
+    Widget scaffold(Widget body) => Scaffold(appBar: SellerAppBar.detail(context, title: l10n.reviewsTitle), body: body);
     if (injected != null) return scaffold(_body(injected));
     final uid = context.read<SellerAuthProvider>().currentUser?.uid;
     if (uid == null) return scaffold(const SizedBox.shrink());
@@ -90,12 +81,9 @@ class _SellerReviewsScreenState extends State<SellerReviewsScreen> {
       builder: (context, snap) {
         if (snap.hasError) {
           debugPrint('Reviews failed: ${snap.error}');
-          return Padding(
-            padding: const EdgeInsets.all(WsSpace.page),
-            child: SaInfoBanner(variant: SaBannerVariant.error, message: l10n.reviewsLoadFailed),
-          );
+          return SellerErrorState(title: l10n.reviewsLoadFailed);
         }
-        if (!snap.hasData) return const Center(child: CircularProgressIndicator());
+        if (!snap.hasData) return SellerSkeletonList(label: l10n.dsLoading, thumbnail: false);
         return _body([
           for (final d in snap.data!.docs)
             if (d.data()['supersededBy'] == null) SellerReview.fromDoc(d.id, d.data()),
@@ -106,125 +94,83 @@ class _SellerReviewsScreenState extends State<SellerReviewsScreen> {
 
   Widget _body(List<SellerReview> all) {
     final l10n = AppLocalizations.of(context);
-    final t = context.ws;
-    final text = context.wsText;
+    final text = context.text;
     final now = widget.now ?? DateTime.now();
     final summary = ReviewSummary.of(all);
     final shown = all.where(_filter.matches).toList();
-
-    Widget chip(String label, ReviewFilter f) => Padding(
-          padding: const EdgeInsets.only(right: WsSpace.s8),
-          child: ChoiceChip(
-            label: Text(label),
-            selected: _filter.stars == f.stars && _filter.unansweredOnly == f.unansweredOnly,
-            onSelected: (_) => setState(() => _filter = f),
-          ),
-        );
-
+    bool on(ReviewFilter f) => _filter.stars == f.stars && _filter.unansweredOnly == f.unansweredOnly;
     final notice = _notice;
-    return ListView(
-      padding: const EdgeInsets.symmetric(vertical: WsSpace.s16),
+
+    return SellerPage(
+      gap: SellerSpace.s16,
       children: [
         if (notice != null)
-          Padding(
-            padding: const EdgeInsets.fromLTRB(WsSpace.page, 0, WsSpace.page, WsSpace.s12),
-            child: SaInfoBanner(
-              variant: notice.$2 ? SaBannerVariant.error : SaBannerVariant.success,
-              message: notice.$1,
-            ),
-          ),
-        Padding(
-          padding: const EdgeInsets.symmetric(horizontal: WsSpace.page),
-          child: Card(
-            child: Padding(
-              padding: const EdgeInsets.all(WsSpace.s16),
-              child: Row(crossAxisAlignment: CrossAxisAlignment.start, children: [
-                Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
-                  Text(summary.total == 0 ? '—' : summary.average.toStringAsFixed(1),
-                      style: text.headlineMedium!.copyWith(fontFeatures: WsType.tabularFigures)),
-                  _Stars(rating: summary.average.round()),
-                  const SizedBox(height: WsSpace.s4),
-                  Text(l10n.reviewsCount(summary.total), style: text.bodySmall!.copyWith(color: t.textSecondary)),
+          SellerBanner(tone: notice.$2 ? SellerTone.danger : SellerTone.success, message: notice.$1, announce: true),
+        SellerCard(
+          child: Column(crossAxisAlignment: CrossAxisAlignment.stretch, children: [
+            Row(crossAxisAlignment: CrossAxisAlignment.end, children: [
+              Text(summary.total == 0 ? '—' : summary.average.toStringAsFixed(1), style: text.displayLarge!.tabular),
+              const SizedBox(width: SellerSpace.s8),
+              Expanded(
+                child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
+                  SellerStars(rating: summary.average),
+                  Text(l10n.reviewsCount(summary.total), style: text.bodyMedium),
                 ]),
-                const SizedBox(width: WsSpace.s24),
-                Expanded(
-                  child: Column(children: [
-                    for (var s = 5; s >= 1; s--)
-                      Padding(
-                        padding: const EdgeInsets.symmetric(vertical: WsSpace.s2),
-                        child: Semantics(
-                          label: l10n.reviewsBarLabel(s, summary.counts[s]),
-                          excludeSemantics: true,
-                          child: Row(children: [
-                            SizedBox(width: WsSpace.s16, child: Text(AgFormat.count(s), style: text.bodySmall)),
-                            Expanded(
-                              child: ClipRRect(
-                                borderRadius: BorderRadius.circular(WsRadius.pill),
-                                child: LinearProgressIndicator(
-                                  value: summary.total == 0 ? 0 : summary.counts[s] / summary.total,
-                                  minHeight: WsSpace.s8,
-                                  backgroundColor: t.surfaceSunken,
-                                  color: t.primary,
-                                ),
-                              ),
-                            ),
-                            const SizedBox(width: WsSpace.s8),
-                            SizedBox(
-                              width: WsSpace.s32,
-                              child: Text(AgFormat.count(summary.counts[s]), style: text.bodySmall, textAlign: TextAlign.end),
-                            ),
-                          ]),
-                        ),
-                      ),
-                  ]),
-                ),
-              ]),
-            ),
-          ),
-        ),
-        SizedBox(
-          height: WsSize.chipHeight + WsSpace.s24,
-          child: ListView(
-            scrollDirection: Axis.horizontal,
-            padding: const EdgeInsets.symmetric(horizontal: WsSpace.page, vertical: WsSpace.s12),
-            children: [
-              chip(l10n.reviewsAll, const ReviewFilter()),
-              chip(l10n.reviewsUnanswered(summary.unanswered), const ReviewFilter(unansweredOnly: true)),
-              for (var s = 5; s >= 1; s--) chip(l10n.reviewsStars(s), ReviewFilter(stars: s)),
-            ],
-          ),
-        ),
-        if (shown.isEmpty)
-          Padding(
-            padding: const EdgeInsets.all(WsSpace.s32),
-            child: Column(children: [
-              Icon(AgIcons.star, size: WsIconSize.empty, color: t.textTertiary),
-              const SizedBox(height: WsSpace.s12),
-              Text(all.isEmpty ? l10n.reviewsEmpty : l10n.reviewsNoneMatch, style: text.bodyMedium, textAlign: TextAlign.center),
+              ),
             ]),
-          )
-        else
-          for (final r in shown)
-            Padding(
-              padding: const EdgeInsets.fromLTRB(WsSpace.page, 0, WsSpace.page, WsSpace.s8),
-              child: _ReviewCard(review: r, canReply: r.canReply(now), onReply: () => _reply(r)),
+            const SizedBox(height: SellerSpace.s12),
+            SellerBarList(
+              max: summary.total == 0 ? 1 : summary.total.toDouble(),
+              items: [
+                for (var s = 5; s >= 1; s--)
+                  SellerBarItem(
+                    label: l10n.reviewsStars(s),
+                    caption: l10n.reviewsCount(summary.counts[s]),
+                    value: summary.counts[s].toDouble(),
+                    valueLabel: SellerFormat.percent(summary.total == 0 ? 0 : summary.counts[s] / summary.total),
+                    tone: SellerTone.brand,
+                  ),
+              ],
             ),
+          ]),
+        ),
+        SellerChipBar(padding: EdgeInsets.zero, children: [
+          SellerChip(label: l10n.reviewsAll, selected: on(const ReviewFilter()), onSelected: (_) => setState(() => _filter = const ReviewFilter())),
+          SellerChip(
+            label: l10n.reviewsUnanswered(summary.unanswered),
+            selected: on(const ReviewFilter(unansweredOnly: true)),
+            onSelected: (_) => setState(() => _filter = const ReviewFilter(unansweredOnly: true)),
+          ),
+          for (var s = 5; s >= 1; s--)
+            SellerChip(label: l10n.reviewsStars(s), selected: on(ReviewFilter(stars: s)), onSelected: (_) => setState(() => _filter = ReviewFilter(stars: s))),
+        ]),
+        if (shown.isEmpty)
+          SellerEmptyState(icon: SellerIcons.star, title: all.isEmpty ? l10n.reviewsEmpty : l10n.reviewsNoneMatch)
+        else
+          for (final r in shown) _ReviewCard(review: r, canReply: r.canReply(now), onReply: () => _reply(r)),
+        Text(l10n.reviewsReplyRule, style: text.bodySmall, textAlign: TextAlign.center),
       ],
     );
   }
 }
 
-class _Stars extends StatelessWidget {
-  const _Stars({required this.rating});
-  final int rating;
+/// Five stars with halves; decorative — the number beside it is read.
+class SellerStars extends StatelessWidget {
+  const SellerStars({super.key, required this.rating, this.size = SellerIconSize.md});
+  final double rating;
+  final double size;
 
   @override
   Widget build(BuildContext context) {
-    final t = context.ws;
+    final c = context.colors;
     return ExcludeSemantics(
       child: Row(mainAxisSize: MainAxisSize.min, children: [
         for (var i = 1; i <= 5; i++)
-          Icon(AgIcons.star, size: WsIconSize.supporting, color: i <= rating ? t.warningFg : t.disabledContent),
+          Icon(
+            rating >= i ? SellerIcons.starFilled : (rating >= i - 0.5 ? SellerIcons.starHalf : SellerIcons.star),
+            size: size,
+            color: rating >= i - 0.5 ? c.warning : c.controlBorder,
+          ),
       ]),
     );
   }
@@ -239,57 +185,56 @@ class _ReviewCard extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final l10n = AppLocalizations.of(context);
-    final t = context.ws;
-    final text = context.wsText;
+    final c = context.colors;
+    final text = context.text;
     final r = review;
-    return Card(
-      child: Padding(
-        padding: const EdgeInsets.all(WsSpace.s16),
-        child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
-          Semantics(label: l10n.reviewsRatingLabel(r.rating), child: _Stars(rating: r.rating)),
-          const SizedBox(height: WsSpace.s4),
-          Text(
-            l10n.reviewsByLine(r.userName.isEmpty ? l10n.reviewsAnonymous : r.userName,
-                r.createdAt == null ? '' : AgFormat.date(r.createdAt!)),
-            style: text.bodySmall!.copyWith(color: t.textSecondary),
-          ),
-          if (r.productName.isNotEmpty) Text(r.productName, style: text.labelMedium),
-          if (r.verified) ...[
-            const SizedBox(height: WsSpace.s4),
-            Row(children: [
-              Icon(AgIcons.badgeCheck, size: WsIconSize.supporting, color: t.successFg),
-              const SizedBox(width: WsSpace.s4),
-              Text(l10n.reviewsVerified, style: text.labelMedium!.copyWith(color: t.successFg)),
+    final name = r.userName.isEmpty ? l10n.reviewsAnonymous : r.userName;
+    return SellerCard(
+      child: Column(crossAxisAlignment: CrossAxisAlignment.stretch, children: [
+        Row(children: [
+          SellerAvatar(name: name),
+          const SizedBox(width: SellerSpace.s12),
+          Expanded(
+            child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
+              Text(name, style: text.titleSmall),
+              if (r.createdAt != null) Text(SellerFormat.date(r.createdAt!), style: text.bodyMedium),
             ]),
-          ],
-          if (r.title.isNotEmpty) ...[const SizedBox(height: WsSpace.s8), Text(r.title, style: text.titleSmall)],
-          if (r.comment.isNotEmpty) ...[const SizedBox(height: WsSpace.s4), Text(r.comment, style: text.bodyMedium)],
-          if (r.answered) ...[
-            const SizedBox(height: WsSpace.s12),
-            Container(
-              width: double.infinity,
-              padding: const EdgeInsets.all(WsSpace.s12),
-              decoration: BoxDecoration(color: t.primarySubtle, borderRadius: BorderRadius.circular(WsRadius.small)),
+          ),
+          if (r.verified) SellerStatusBadge(label: l10n.reviewsVerified, tone: SellerTone.success, icon: SellerIcons.verified),
+        ]),
+        const SizedBox(height: SellerSpace.s8),
+        Semantics(label: l10n.reviewsRatingLabel(r.rating), child: SellerStars(rating: r.rating.toDouble())),
+        if (r.productName.isNotEmpty) Text(r.productName, style: text.labelLarge!.copyWith(color: c.textSecondary)),
+        if (r.title.isNotEmpty) ...[const SizedBox(height: SellerSpace.s8), Text(r.title, style: text.titleSmall)],
+        if (r.comment.isNotEmpty) ...[const SizedBox(height: SellerSpace.s4), Text(r.comment, style: text.bodyLarge)],
+        if (r.answered) ...[
+          const SizedBox(height: SellerSpace.s12),
+          SellerCard(
+            tone: SellerCardTone.subtle,
+            padding: const EdgeInsets.all(SellerSpace.s12),
+            child: MergeSemantics(
               child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
-                Text(l10n.reviewsYourReply, style: text.labelMedium),
-                const SizedBox(height: WsSpace.s4),
-                Text(r.replyText!, style: text.bodyMedium),
+                Row(children: [
+                  Icon(SellerIcons.store, size: SellerIconSize.sm, color: c.primary),
+                  const SizedBox(width: SellerSpace.s6),
+                  Text(l10n.reviewsYourReply, style: text.labelLarge),
+                ]),
+                const SizedBox(height: SellerSpace.s4),
+                Text(r.replyText!, style: text.bodyLarge),
               ]),
             ),
-          ],
-          if (canReply) ...[
-            const SizedBox(height: WsSpace.s8),
-            Align(
-              alignment: Alignment.centerRight,
-              child: TextButton.icon(
-                onPressed: onReply,
-                icon: const Icon(AgIcons.chat),
-                label: Text(r.answered ? l10n.reviewsEditReply : l10n.reviewsReply),
-              ),
-            ),
-          ],
-        ]),
-      ),
+          ),
+        ],
+        if (canReply) ...[
+          const SizedBox(height: SellerSpace.s12),
+          r.answered
+              ? Align(
+                  alignment: AlignmentDirectional.centerStart,
+                  child: SellerButton.tertiary(label: l10n.reviewsEditReply, icon: SellerIcons.edit, onPressed: onReply),
+                )
+              : SellerButton.secondary(label: l10n.reviewsReply, icon: SellerIcons.message, onPressed: onReply),
+        ],
+      ]),
     );
   }
 }
@@ -314,36 +259,41 @@ class _ReplySheetState extends State<_ReplySheet> {
   @override
   Widget build(BuildContext context) {
     final l10n = AppLocalizations.of(context);
-    final text = context.wsText;
+    final text = context.text;
     final value = _text.text.trim();
-    return Padding(
-      padding: EdgeInsets.only(bottom: MediaQuery.viewInsetsOf(context).bottom),
-      child: SafeArea(
-        child: Padding(
-          padding: const EdgeInsets.fromLTRB(WsSpace.page, 0, WsSpace.page, WsSpace.s24),
-          child: Column(mainAxisSize: MainAxisSize.min, crossAxisAlignment: CrossAxisAlignment.stretch, children: [
-            Text(l10n.reviewsReplyTitle, style: text.titleMedium),
-            const SizedBox(height: WsSpace.s4),
-            Text(l10n.reviewsReplyHint, style: text.bodySmall),
-            const SizedBox(height: WsSpace.s12),
-            TextField(
-              key: const ValueKey('replyText'),
-              controller: _text,
-              autofocus: true,
-              minLines: 3,
-              maxLines: 6,
-              maxLength: kReplyMax,
-              onChanged: (_) => setState(() {}),
-              decoration: InputDecoration(labelText: l10n.reviewsReplyLabel, alignLabelWithHint: true),
-            ),
-            const SizedBox(height: WsSpace.s8),
-            FilledButton(
-              onPressed: value.isEmpty ? null : () => Navigator.of(context).pop(value),
-              child: Text(l10n.reviewsReplySend),
-            ),
-          ]),
+    final r = widget.review;
+    return SellerSheetFrame(
+      title: l10n.reviewsReplyTitle,
+      subtitle: l10n.reviewsReplyHint,
+      body: Column(crossAxisAlignment: CrossAxisAlignment.stretch, children: [
+        if (r.comment.isNotEmpty)
+          SellerCard(
+            tone: SellerCardTone.sunken,
+            padding: const EdgeInsets.all(SellerSpace.s12),
+            child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
+              SellerStars(rating: r.rating.toDouble(), size: SellerIconSize.sm),
+              const SizedBox(height: SellerSpace.s4),
+              Text(r.comment, style: text.bodyMedium!.copyWith(color: context.colors.textPrimary), maxLines: 4, overflow: TextOverflow.ellipsis),
+            ]),
+          ),
+        const SizedBox(height: SellerSpace.s12),
+        SellerTextField(
+          fieldKey: const ValueKey('replyText'),
+          label: l10n.reviewsReplyLabel,
+          controller: _text,
+          autofocus: true,
+          minLines: 3,
+          maxLines: 6,
+          maxLength: kReplyMax,
+          showCounter: true,
+          helper: l10n.reviewsReplyLimit(kReplyMax),
+          onChanged: (_) => setState(() {}),
         ),
-      ),
+      ]),
+      footer: SellerButtonBar(children: [
+        SellerButton.secondary(label: l10n.cancel, onPressed: () => Navigator.of(context).pop()),
+        SellerButton(label: l10n.reviewsReplySend, icon: SellerIcons.send, onPressed: value.isEmpty ? null : () => Navigator.of(context).pop(value)),
+      ]),
     );
   }
 }

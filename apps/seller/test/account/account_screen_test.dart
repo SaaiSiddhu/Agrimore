@@ -1,8 +1,8 @@
-import 'package:agrimore_ui/agrimore_ui.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_localizations/flutter_localizations.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:provider/provider.dart';
+import 'package:seller/design_system/design_system.dart';
 import 'package:seller/l10n/app_localizations.dart';
 import 'package:seller/providers/seller_auth_provider.dart';
 import 'package:seller/providers/seller_order_provider.dart';
@@ -21,7 +21,7 @@ Future<AppLocalizations> _pump(WidgetTester tester, Widget child, {Brightness b 
       ChangeNotifierProvider<SellerProductProvider>(create: (_) => SellerProductProvider.preview(const [])),
     ],
     child: MaterialApp(
-      theme: WorkspaceTheme.build(WorkspaceBrand.seller, b),
+      theme: (b == Brightness.dark ? SellerTheme.dark : SellerTheme.light),
       localizationsDelegates: const [
         AppLocalizations.delegate,
         GlobalMaterialLocalizations.delegate,
@@ -42,7 +42,7 @@ Future<AppLocalizations> _pump(WidgetTester tester, Widget child, {Brightness b 
 void main() {
   test('payout view masks the account and keeps a read failure distinct', () {
     final v = PayoutView.of({'bankName': 'SBI', 'accountNumber': '123456789012', 'ifsc': 'SBIN0001'}, readFailed: false);
-    expect(v.maskedAccount, AgFormat.maskAccount('123456789012'));
+    expect(v.maskedAccount, SellerFormat.maskAccount('123456789012'));
     expect(v.maskedAccount!.contains('123456789012'), isFalse);
     expect(PayoutView.of(null, readFailed: true).available, isFalse);
     expect(PayoutView.of(null, readFailed: false).isEmpty, isTrue);
@@ -71,7 +71,7 @@ void main() {
     await tester.pumpAndSettle();
     await tester.tap(find.text(l10n.payoutAccountTitle));
     await tester.pumpAndSettle();
-    expect(find.text(l10n.payoutAccountBank('SBI', AgFormat.maskAccount('123456789012'))), findsOneWidget);
+    expect(find.text(l10n.payoutAccountBank('SBI', SellerFormat.maskAccount('123456789012'))), findsOneWidget);
     expect(find.textContaining('123456789012'), findsNothing);
     expect(tester.takeException(), isNull);
   });

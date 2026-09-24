@@ -1,6 +1,7 @@
-import 'package:agrimore_ui/agrimore_ui.dart';
+import 'package:agrimore_core/agrimore_core.dart';
 import 'package:flutter/material.dart';
 
+import '../../design_system/design_system.dart';
 import '../../l10n/app_localizations.dart';
 import '../../providers/seller_ai_chat_provider.dart';
 import '../../providers/seller_ai_connection_provider.dart';
@@ -40,11 +41,12 @@ class _SellerAiChatScreenState extends State<SellerAiChatScreen> {
 
   void _scrollToBottom() {
     if (!_scrollController.hasClients) return;
-    _scrollController.animateTo(
-      _scrollController.position.maxScrollExtent,
-      duration: WsMotion.standard,
-      curve: WsMotion.curveEnter,
-    );
+    final duration = context.motion(SellerMotion.standard);
+    if (duration == Duration.zero) {
+      _scrollController.jumpTo(_scrollController.position.maxScrollExtent);
+    } else {
+      _scrollController.animateTo(_scrollController.position.maxScrollExtent, duration: duration, curve: SellerMotion.enter);
+    }
   }
 
   @override
@@ -66,39 +68,31 @@ class _SellerAiChatScreenState extends State<SellerAiChatScreen> {
   @override
   Widget build(BuildContext context) {
     final l10n = AppLocalizations.of(context);
+    final connected = !_connectionProvider.isLoading && _connectionProvider.connected;
     return Scaffold(
-      appBar: AppBar(
-        leading: IconButton(tooltip: l10n.back, icon: const Icon(AgIcons.arrowLeft), onPressed: () => Navigator.of(context).maybePop()),
-        title: Text(l10n.aiTitle),
+      appBar: SellerAppBar.detail(
+        context,
+        title: l10n.aiTitle,
+        status: connected ? SellerStatusBadge(label: l10n.aiStatusConnected, tone: SellerTone.success, icon: SellerIcons.success) : null,
       ),
       body: _connectionProvider.isLoading
-          ? const Center(child: CircularProgressIndicator())
-          : _connectionProvider.connected
+          ? SellerLoadingView(label: l10n.dsLoading)
+          : connected
               ? _buildChat()
               : _buildNotConnected(),
     );
   }
 
+  /// Not connected (board 23-01): what the assistant does and where to
+  /// connect it. Activation itself is website-only (D-SELLER-AI-WEB-ONLY).
   Widget _buildNotConnected() {
     final l10n = AppLocalizations.of(context);
-    final t = context.ws;
-    final text = context.wsText;
-    return Center(
-      child: Padding(
-        padding: const EdgeInsets.all(WsSpace.s24),
-        child: Column(mainAxisSize: MainAxisSize.min, children: [
-          Icon(AgIcons.sparkles, size: WsIconSize.empty, color: t.primary),
-          const SizedBox(height: WsSpace.s16),
-          Text(l10n.aiConnectTitle, style: text.titleMedium, textAlign: TextAlign.center),
-          const SizedBox(height: WsSpace.s8),
-          Text(l10n.aiConnectBody, style: text.bodyMedium!.copyWith(color: t.textSecondary), textAlign: TextAlign.center),
-          const SizedBox(height: WsSpace.s24),
-          FilledButton(
-            onPressed: () => Navigator.of(context).push(MaterialPageRoute<void>(builder: (_) => const SellerAiIntegrationScreen())),
-            child: Text(l10n.aiConnectNow),
-          ),
-        ]),
-      ),
+    return SellerEmptyState(
+      icon: SellerIcons.ai,
+      title: l10n.aiConnectTitle,
+      message: l10n.aiConnectBody,
+      actionLabel: l10n.aiConnectNow,
+      onAction: () => Navigator.of(context).push(MaterialPageRoute<void>(builder: (_) => const SellerAiIntegrationScreen())),
     );
   }
 
@@ -112,40 +106,36 @@ class _SellerAiChatScreenState extends State<SellerAiChatScreen> {
       Expanded(
         child: ListView.builder(
           controller: _scrollController,
-          padding: const EdgeInsets.all(WsSpace.page),
+          padding: EdgeInsets.all(context.pageInset),
           itemCount: itemCount,
-          itemBuilder: (context, i) => i >= messages.length ? const _TypingBubble() : _Bubble(message: messages[i], maxFraction: _bubbleMaxFraction),
+          itemBuilder: (context, i) => i >= messages.length
+              ? const _TypingBubble()
+              : _Bubble(
+                  message: messages[i],
+                  maxFraction: _bubbleMaxFraction,
+                  onRetry: i == messages.length - 1 && messages[i].isError ? _chatProvider.retryLast : null,
+                ),
         ),
       ),
       if (showPrompts)
-        SizedBox(
-          height: WsSize.chipHeight + WsSpace.s16,
-          child: ListView(
-            scrollDirection: Axis.horizontal,
-            padding: const EdgeInsets.symmetric(horizontal: WsSpace.page, vertical: WsSpace.s8),
-            children: [
-              for (final p in prompts)
-                Padding(
-                  padding: const EdgeInsets.only(right: WsSpace.s8),
-                  child: ActionChip(label: Text(p), onPressed: _chatProvider.isSending ? null : () => _send(p)),
-                ),
-            ],
-          ),
-        ),
+        SellerChipBar(children: [
+          for (final p in prompts)
+            SellerChip(label: p, icon: SellerIcons.ai, selected: false, onSelected: _chatProvider.isSending ? null : (_) => _send(p)),
+        ]),
       _buildInputBar(),
     ]);
   }
 
   Widget _buildInputBar() {
     final l10n = AppLocalizations.of(context);
-    final t = context.ws;
+    final c = context.colors;
     return DecoratedBox(
-      decoration: BoxDecoration(color: t.surface, boxShadow: WsElevation.level1),
+      decoration: BoxDecoration(color: c.surface, border: Border(top: BorderSide(color: c.border))),
       child: SafeArea(
         top: false,
         child: Padding(
-          padding: const EdgeInsets.fromLTRB(WsSpace.s12, WsSpace.s8, WsSpace.s12, WsSpace.s12),
-          child: Row(children: [
+          padding: const EdgeInsets.fromLTRB(SellerSpace.s12, SellerSpace.s8, SellerSpace.s12, SellerSpace.s12),
+          child: Row(crossAxisAlignment: CrossAxisAlignment.end, children: [
             Expanded(
               child: TextField(
                 controller: _textController,
@@ -153,15 +143,17 @@ class _SellerAiChatScreenState extends State<SellerAiChatScreen> {
                 textInputAction: TextInputAction.send,
                 minLines: 1,
                 maxLines: 4,
+                style: context.text.bodyLarge,
                 decoration: InputDecoration(hintText: l10n.aiInputHint),
                 onSubmitted: _send,
               ),
             ),
-            const SizedBox(width: WsSpace.s8),
-            IconButton.filled(
-              tooltip: l10n.aiSend,
+            const SizedBox(width: SellerSpace.s8),
+            SellerIconButton(
+              icon: SellerIcons.send,
+              label: l10n.aiSend,
+              filled: true,
               onPressed: _chatProvider.isSending ? null : () => _send(_textController.text),
-              icon: const Icon(AgIcons.chat),
             ),
           ]),
         ),
@@ -170,34 +162,61 @@ class _SellerAiChatScreenState extends State<SellerAiChatScreen> {
   }
 }
 
+/// Chat bubble (board 23-01): the seller on the right in teal, the
+/// assistant on the left on the surface with a sparkles avatar. Greeting,
+/// not-connected and error messages are shown in the app's own words.
 class _Bubble extends StatelessWidget {
-  const _Bubble({required this.message, required this.maxFraction});
+  const _Bubble({required this.message, required this.maxFraction, this.onRetry});
   final ChatMessage message;
   final double maxFraction;
+  final VoidCallback? onRetry;
 
   @override
   Widget build(BuildContext context) {
-    final t = context.ws;
-    final text = context.wsText;
+    final l10n = AppLocalizations.of(context);
+    final c = context.colors;
+    final text = context.text;
     final isUser = message.isUser;
+    final body = message.isError
+        ? l10n.aiChatError
+        : switch (message.category) {
+            'greeting' => l10n.aiGreeting,
+            'ai_offline' => l10n.aiOffline,
+            _ => message.text,
+          };
     final (Color bg, Color fg) = message.isError
-        ? (t.errorBg, t.errorFg)
+        ? (c.dangerContainer, c.danger)
         : isUser
-            ? (t.primary, t.onPrimary)
-            : (t.surface, t.textPrimary);
-    return Align(
-      alignment: isUser ? Alignment.centerRight : Alignment.centerLeft,
-      child: Container(
-        margin: const EdgeInsets.symmetric(vertical: WsSpace.s4),
-        padding: const EdgeInsets.symmetric(horizontal: WsSpace.s12, vertical: WsSpace.s8),
-        constraints: BoxConstraints(maxWidth: MediaQuery.sizeOf(context).width * maxFraction),
-        decoration: BoxDecoration(
-          color: bg,
-          borderRadius: BorderRadius.circular(WsRadius.card),
-          border: isUser || message.isError ? null : Border.all(color: t.divider),
-        ),
-        child: SelectableText(message.text, style: text.bodyMedium!.copyWith(color: fg)),
+            ? (c.primary, c.onPrimary)
+            : (c.surface, c.textPrimary);
+    final bubble = Container(
+      margin: const EdgeInsets.symmetric(vertical: SellerSpace.s4),
+      padding: const EdgeInsets.symmetric(horizontal: SellerSpace.s12, vertical: SellerSpace.s8),
+      constraints: BoxConstraints(maxWidth: MediaQuery.sizeOf(context).width * maxFraction),
+      decoration: BoxDecoration(
+        color: bg,
+        borderRadius: BorderRadius.circular(SellerRadius.card),
+        border: isUser || message.isError ? null : Border.all(color: c.border),
       ),
+      child: Column(crossAxisAlignment: CrossAxisAlignment.start, mainAxisSize: MainAxisSize.min, children: [
+        SelectableText(body, style: text.bodyLarge!.copyWith(color: fg)),
+        const SizedBox(height: SellerSpace.s2),
+        Text(SellerFormat.time(message.timestamp), style: text.bodySmall!.copyWith(color: isUser ? c.onPrimary : c.textSecondary)),
+        if (onRetry != null) ...[
+          const SizedBox(height: SellerSpace.s8),
+          SellerButton.secondary(label: l10n.aiRetry, icon: SellerIcons.refresh, compact: true, expand: false, onPressed: onRetry),
+        ],
+      ]),
+    );
+    return Align(
+      alignment: isUser ? AlignmentDirectional.centerEnd : AlignmentDirectional.centerStart,
+      child: isUser
+          ? bubble
+          : Row(mainAxisSize: MainAxisSize.min, crossAxisAlignment: CrossAxisAlignment.start, children: [
+              const Padding(padding: EdgeInsets.only(top: SellerSpace.s4), child: SellerIconTile(icon: SellerIcons.ai, circle: true, size: SellerSize.avatarSm)),
+              const SizedBox(width: SellerSpace.s8),
+              Flexible(child: bubble),
+            ]),
     );
   }
 }
@@ -207,21 +226,12 @@ class _TypingBubble extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final t = context.ws;
+    final l10n = AppLocalizations.of(context);
     return Align(
-      alignment: Alignment.centerLeft,
-      child: Container(
-        margin: const EdgeInsets.symmetric(vertical: WsSpace.s4),
-        padding: const EdgeInsets.all(WsSpace.s12),
-        decoration: BoxDecoration(
-          color: t.surface,
-          borderRadius: BorderRadius.circular(WsRadius.card),
-          border: Border.all(color: t.divider),
-        ),
-        child: SizedBox.square(
-          dimension: WsIconSize.supporting,
-          child: CircularProgressIndicator(semanticsLabel: AppLocalizations.of(context).aiThinking),
-        ),
+      alignment: AlignmentDirectional.centerStart,
+      child: Padding(
+        padding: const EdgeInsets.symmetric(vertical: SellerSpace.s8),
+        child: SellerProgressLabel(label: l10n.aiThinking, center: false),
       ),
     );
   }

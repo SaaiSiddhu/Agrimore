@@ -1,8 +1,7 @@
-import 'package:agrimore_ui/agrimore_ui.dart';
-import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 
+import '../../design_system/design_system.dart';
 import '../../l10n/app_localizations.dart';
 import 'payments_screen.dart';
 
@@ -36,13 +35,13 @@ class MonthlyStatement {
   String toText(AppLocalizations l10n, String monthLabel) {
     final b = StringBuffer()
       ..writeln(l10n.statementHeading(monthLabel))
-      ..writeln(l10n.statementTotals(AgFormat.rupees(gross), AgFormat.rupees(commission), AgFormat.rupees(net)))
+      ..writeln(l10n.statementTotals(SellerFormat.money(gross), SellerFormat.money(commission), SellerFormat.money(net)))
       ..writeln();
     for (final e in entries) {
       b.writeln(l10n.statementLine(
-        e.createdAt == null ? '' : AgFormat.date(e.createdAt!),
+        e.createdAt == null ? '' : SellerFormat.date(e.createdAt!),
         e.orderNumber,
-        AgFormat.rupees(e.net),
+        SellerFormat.money(e.net),
         e.isPaid ? (e.reference ?? l10n.payoutPaid) : l10n.payoutPending,
       ));
     }
@@ -50,8 +49,10 @@ class MonthlyStatement {
   }
 }
 
-String monthLabel(DateTime month) => AgFormat.monthYear(month);
+String monthLabel(DateTime month) => SellerFormat.monthYear(month);
 
+/// P-05 Monthly statement (board 19-05): summary, the month's orders and a
+/// copy action for the seller's accountant.
 class StatementScreen extends StatelessWidget {
   const StatementScreen({super.key, required this.statement});
   final MonthlyStatement statement;
@@ -59,56 +60,58 @@ class StatementScreen extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final l10n = AppLocalizations.of(context);
-    final t = context.ws;
-    final text = context.wsText;
+    final text = context.text;
     final s = statement;
     final label = monthLabel(s.month);
-    Widget row(String k, String v, {bool strong = false}) => Padding(
-          padding: const EdgeInsets.symmetric(vertical: WsSpace.s4),
-          child: Row(children: [
-            Expanded(child: Text(k, style: text.bodyMedium!.copyWith(color: t.textSecondary))),
-            Text(v, style: (strong ? text.titleSmall : text.bodyMedium)!.copyWith(fontFeatures: WsType.tabularFigures)),
-          ]),
-        );
+    Future<void> copy() async {
+      await Clipboard.setData(ClipboardData(text: s.toText(l10n, label)));
+      if (context.mounted) SellerToast.show(context, l10n.statementCopied, tone: SellerToastTone.success);
+    }
+
     return Scaffold(
-      appBar: AppBar(
-        leading: IconButton(tooltip: l10n.back, icon: const Icon(AgIcons.arrowLeft), onPressed: () => Navigator.of(context).maybePop()),
-        title: Text(l10n.statementHeading(label)),
-        actions: [
-          IconButton(
-            tooltip: l10n.statementCopy,
-            icon: const Icon(AgIcons.copy),
-            onPressed: () async {
-              await Clipboard.setData(ClipboardData(text: s.toText(l10n, label)));
-              if (context.mounted) WsToast.show(context, l10n.statementCopied, tone: WsToastTone.success);
-            },
-          ),
-        ],
+      appBar: SellerAppBar.detail(
+        context,
+        title: label,
+        subtitle: l10n.statementSubtitle,
+        actions: [SellerIconButton(icon: SellerIcons.copy, label: l10n.statementCopy, onPressed: copy)],
       ),
-      body: ListView(
-        padding: const EdgeInsets.all(WsSpace.page),
+      body: SellerPage(
+        gap: SellerSpace.s16,
         children: [
-          Card(
-            child: Padding(
-              padding: const EdgeInsets.all(WsSpace.s16),
-              child: Column(children: [
-                row(l10n.settlementGross, AgFormat.rupees(s.gross)),
-                row(l10n.settlementCommission, AgFormat.rupees(-s.commission)),
-                const Divider(height: WsSpace.s16),
-                row(l10n.settlementNet, AgFormat.rupees(s.net), strong: true),
-                row(l10n.payoutPaid, AgFormat.rupees(s.paid)),
-                row(l10n.payoutPending, AgFormat.rupees(s.pending)),
-              ]),
-            ),
+          Semantics(header: true, child: Text(l10n.statementHeading(label), style: text.titleMedium)),
+          SellerCard(
+            child: Column(crossAxisAlignment: CrossAxisAlignment.stretch, children: [
+              Text(l10n.statementSummary, style: text.titleSmall),
+              SellerMoneyBreakdown(
+                lines: [
+                  SellerMoneyLine(l10n.settlementGross, SellerFormat.money(s.gross)),
+                  SellerMoneyLine(l10n.settlementCommission, SellerFormat.money(-s.commission)),
+                ],
+                totalLabel: l10n.settlementNet,
+                total: SellerFormat.money(s.net),
+                totalTone: SellerTone.brand,
+                after: [
+                  SellerMoneyLine(l10n.payoutPaid, SellerFormat.money(s.paid), tone: SellerTone.success),
+                  SellerMoneyLine(l10n.payoutPending, SellerFormat.money(s.pending), tone: SellerTone.warning),
+                ],
+              ),
+            ]),
           ),
-          const SizedBox(height: WsSpace.s16),
-          for (final e in s.entries)
-            ListTile(
-              contentPadding: EdgeInsets.zero,
-              title: Text(l10n.paymentsForOrder(e.orderNumber), style: text.bodyMedium),
-              subtitle: Text(e.createdAt == null ? '' : AgFormat.date(e.createdAt!), style: text.bodySmall),
-              trailing: Text(AgFormat.rupees(e.net), style: text.titleSmall!.copyWith(fontFeatures: WsType.tabularFigures)),
-            ),
+          SellerSectionHeader(title: l10n.statementOrders, count: s.entries.length),
+          SellerMenuGroup(children: [
+            for (final e in s.entries)
+              SellerListRow(
+                icon: SellerIcons.document,
+                title: l10n.paymentsForOrder(e.orderNumber),
+                subtitle: e.createdAt == null ? null : l10n.paymentsCreatedOn(SellerFormat.date(e.createdAt!)),
+                trailing: Column(crossAxisAlignment: CrossAxisAlignment.end, mainAxisSize: MainAxisSize.min, children: [
+                  Text(SellerFormat.money(e.net), style: text.titleSmall!.tabular),
+                  const SizedBox(height: SellerSpace.s4),
+                  settlementBadge(l10n, e),
+                ]),
+              ),
+          ]),
+          SellerButton.tonal(label: l10n.statementCopy, icon: SellerIcons.copy, expand: true, onPressed: copy),
         ],
       ),
     );

@@ -9,13 +9,15 @@ import 'package:agrimore_core/agrimore_core.dart';
 enum OrderActionError { generic, alreadyMoved, unpaid }
 
 class SellerOrderProvider extends ChangeNotifier {
-  SellerOrderProvider();
+  SellerOrderProvider() : _preview = false;
 
   /// Test constructor: a fixed order list, no Firebase.
   @visibleForTesting
-  SellerOrderProvider.preview(List<OrderModel> orders) {
+  SellerOrderProvider.preview(List<OrderModel> orders) : _preview = true {
     _orders = List.of(orders);
   }
+
+  final bool _preview;
 
   // Getters, not fields: nothing touches Firebase until it is used.
   FirebaseFirestore get _firestore => FirebaseFirestore.instance;
@@ -130,6 +132,7 @@ class SellerOrderProvider extends ChangeNotifier {
   /// Load only orders assigned to this seller. Checkout writes one order per
   /// seller, so this query matches Firestore security rules.
   Future<void> loadSellerOrders(String sellerId) async {
+    if (_preview) return;
     _isLoading = true;
     _error = null;
     notifyListeners();

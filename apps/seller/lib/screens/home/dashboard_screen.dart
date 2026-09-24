@@ -1,11 +1,11 @@
 import 'dart:async';
 
-import 'package:agrimore_ui/agrimore_ui.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:cloud_functions/cloud_functions.dart';
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 
+import '../../design_system/design_system.dart';
 import '../../l10n/app_localizations.dart';
 import '../../providers/rfq_provider.dart';
 import '../../providers/seller_auth_provider.dart';
@@ -159,18 +159,16 @@ class _DashboardScreenState extends State<DashboardScreen> {
       await FirebaseFirestore.instance.collection('sellers').doc(uid).update({...status.toUpdate(), 'updatedAt': FieldValue.serverTimestamp()});
       if (!mounted) return;
       setState(() => _store = status);
-      WsToast.show(context, status.accepting ? l10n.storeResumed : l10n.storePausedToast, tone: WsToastTone.success);
+      SellerToast.show(context, status.accepting ? l10n.storeResumed : l10n.storePausedToast, tone: SellerToastTone.success);
     } catch (e) {
       debugPrint('Store status failed: $e');
-      if (mounted) WsToast.show(context, l10n.profileSaveFailed, tone: WsToastTone.error);
+      if (mounted) SellerToast.show(context, l10n.profileSaveFailed, tone: SellerToastTone.danger);
     }
   }
 
-  /// Account health + a link to Insights (SELLER-HOME-1c).
+  /// Account health + a link to Insights (SELLER-HOME-1c, board 12).
   Widget _healthCard(BuildContext context, DateTime now) {
     final l10n = AppLocalizations.of(context);
-    final t = context.ws;
-    final text = context.wsText;
     final inputs = healthInputs(
       orders: context.watch<SellerOrderProvider>().allOrders,
       products: context.watch<SellerProductProvider>().allProducts,
@@ -180,26 +178,27 @@ class _DashboardScreenState extends State<DashboardScreen> {
       now: now,
     );
     final score = overallHealth(inputs);
-    return Card(
-      clipBehavior: Clip.antiAlias,
-      child: Column(children: [
-        ListTile(
-          onTap: () => Navigator.of(context).push(MaterialPageRoute<void>(builder: (_) => HealthScreen(inputs: inputs))),
-          leading: score == null ? Icon(AgIcons.shieldCheck, color: t.textTertiary) : HealthRing(score: score, size: WsSize.avatarMd),
-          title: Text(l10n.healthTitle, style: text.titleSmall),
-          subtitle: Text(score == null ? l10n.healthNotEnoughDataShort : l10n.healthBand(bandOf(score)), style: text.bodySmall),
-          trailing: Icon(AgIcons.chevronRight, color: t.textTertiary),
-        ),
-        const Divider(height: WsSize.hairline),
-        ListTile(
-          onTap: () => Navigator.of(context).push(MaterialPageRoute<void>(builder: (_) => const InsightsScreen())),
-          leading: Icon(AgIcons.chartLine, color: t.primary),
-          title: Text(l10n.insightsTitle, style: text.titleSmall),
-          subtitle: Text(l10n.insightsHint, style: text.bodySmall),
-          trailing: Icon(AgIcons.chevronRight, color: t.textTertiary),
-        ),
-      ]),
-    );
+    return SellerMenuGroup(children: [
+      SellerListRow(
+        title: l10n.healthTitle,
+        subtitle: score == null ? l10n.healthNotEnoughDataShort : l10n.healthBand(bandOf(score)),
+        leading: score == null
+            ? const SellerIconTile(icon: SellerIcons.health, tone: SellerTone.neutral)
+            : SellerDonut(
+                fraction: score / 100,
+                centerLabel: SellerFormat.count(score),
+                size: SellerSize.avatarLg,
+                semanticLabel: l10n.healthScoreLabel(score),
+              ),
+        onTap: () => Navigator.of(context).push(MaterialPageRoute<void>(builder: (_) => HealthScreen(inputs: inputs))),
+      ),
+      SellerListRow(
+        title: l10n.insightsTitle,
+        subtitle: l10n.insightsHint,
+        icon: SellerIcons.chartLine,
+        onTap: () => Navigator.of(context).push(MaterialPageRoute<void>(builder: (_) => const InsightsScreen())),
+      ),
+    ]);
   }
 
   String _greeting(AppLocalizations l10n, DateTime now) {
@@ -210,6 +209,8 @@ class _DashboardScreenState extends State<DashboardScreen> {
   }
 
   String? _pct(double? d) => d == null ? null : '${(d.abs() * 100).round()}%';
+
+  SellerTrend _trend(double? d) => d == null ? SellerTrend.none : (d > 0 ? SellerTrend.up : (d < 0 ? SellerTrend.down : SellerTrend.flat));
 
   List<ActionItem> _actions(BuildContext context, AppLocalizations l10n, DateTime now) {
     final orders = context.watch<SellerOrderProvider>();
@@ -224,9 +225,9 @@ class _DashboardScreenState extends State<DashboardScreen> {
     if (waiting.isNotEmpty) {
       final oldest = waiting.map((o) => o.createdAt).reduce((a, b) => a.isBefore(b) ? a : b);
       items.add(ActionItem(
-        icon: AgIcons.orders,
+        icon: SellerIcons.orders,
         label: l10n.homeOrdersToAccept(waiting.length),
-        detail: l10n.homeOldestWaiting(AgFormat.dateTime(oldest)),
+        detail: l10n.homeOldestWaiting(SellerFormat.dateTime(oldest)),
         tone: ActionTone.urgent,
         onTap: () {
           orders.setFilter('pending');
@@ -237,7 +238,7 @@ class _DashboardScreenState extends State<DashboardScreen> {
 
     if (toPack > 0) {
       items.add(ActionItem(
-        icon: AgIcons.packed,
+        icon: SellerIcons.packing,
         label: l10n.homeOrdersToPack(toPack),
         tone: ActionTone.attention,
         onTap: () {
@@ -254,7 +255,7 @@ class _DashboardScreenState extends State<DashboardScreen> {
         return at != null && at.isAfter(now) && at.difference(now) <= _quoteSoon;
       }).length;
       items.add(ActionItem(
-        icon: AgIcons.quote,
+        icon: SellerIcons.quote,
         label: l10n.homeQuotesToAnswer(mine.length),
         detail: soon > 0 ? l10n.homeQuotesExpiringSoon(soon) : null,
         tone: soon > 0 ? ActionTone.attention : ActionTone.neutral,
@@ -266,7 +267,7 @@ class _DashboardScreenState extends State<DashboardScreen> {
     final low = products.lowStockProducts;
     if (out + low > 0) {
       items.add(ActionItem(
-        icon: AgIcons.inventory,
+        icon: SellerIcons.inventory,
         label: out > 0 ? l10n.homeOutOfStock(out) : l10n.homeLowStock(low),
         detail: out > 0 && low > 0 ? l10n.homeLowStock(low) : null,
         tone: out > 0 ? ActionTone.attention : ActionTone.neutral,
@@ -279,149 +280,172 @@ class _DashboardScreenState extends State<DashboardScreen> {
     return items;
   }
 
+  Widget _kpis(BuildContext context, AppLocalizations l10n, KpiSummary kpi) {
+    if (_statsFailed) {
+      return SellerBanner(message: l10n.homeStatsFailed, tone: SellerTone.danger);
+    }
+    if (!_statsLoaded) return const SellerSkeletonList(count: 2, thumbnail: false);
+
+    String change(double? d) => _pct(d) == null
+        ? l10n.kpiNoComparison
+        : (d! >= 0 ? l10n.kpiUpVsPrevious(_pct(d)!) : l10n.kpiDownVsPrevious(_pct(d)!));
+
+    final sales = SellerMetricCard(
+      label: l10n.kpiSales,
+      icon: SellerIcons.chartBar,
+      value: SellerFormat.moneyWhole(kpi.current.gross),
+      large: true,
+      delta: SellerDelta(trend: _trend(kpi.grossDelta), label: change(kpi.grossDelta)),
+      chart: kpi.series.length > 1 ? SellerSparkline(values: kpi.series) : null,
+    );
+    final orders = SellerMetricCard(
+      label: l10n.kpiOrders,
+      icon: SellerIcons.orders,
+      value: SellerFormat.count(kpi.current.orders),
+      delta: kpi.previous.orders == 0 && kpi.current.orders == 0
+          ? null
+          : SellerDelta(
+              trend: kpi.ordersDelta > 0 ? SellerTrend.up : (kpi.ordersDelta < 0 ? SellerTrend.down : SellerTrend.flat),
+              label: kpi.ordersDelta > 0
+                  ? l10n.kpiOrdersMore(kpi.ordersDelta)
+                  : kpi.ordersDelta < 0
+                      ? l10n.kpiOrdersFewer(-kpi.ordersDelta)
+                      : l10n.kpiOrdersSame,
+            ),
+    );
+    final aov = SellerMetricCard(
+      label: l10n.kpiAov,
+      icon: SellerIcons.receipt,
+      value: kpi.current.aov == null ? '—' : SellerFormat.moneyWhole(kpi.current.aov!),
+      delta: _pct(kpi.aovDelta) == null ? null : SellerDelta(trend: _trend(kpi.aovDelta), label: change(kpi.aovDelta)),
+    );
+    return Column(crossAxisAlignment: CrossAxisAlignment.stretch, children: [
+      sales,
+      const SizedBox(height: SellerSpace.s12),
+      // Side by side on a normal phone; stacked at large text sizes.
+      if (context.largeText) ...[
+        orders,
+        const SizedBox(height: SellerSpace.s12),
+        aov,
+      ] else
+        IntrinsicHeight(
+          child: Row(crossAxisAlignment: CrossAxisAlignment.stretch, children: [
+            Expanded(child: orders),
+            const SizedBox(width: SellerSpace.s12),
+            Expanded(child: aov),
+          ]),
+        ),
+    ]);
+  }
+
   @override
   Widget build(BuildContext context) {
     final l10n = AppLocalizations.of(context);
-    final t = context.ws;
-    final text = context.wsText;
+    final c = context.colors;
+    final text = context.text;
     final now = widget.now ?? DateTime.now();
     final user = context.watch<SellerAuthProvider>().currentUser;
     final actions = _actions(context, l10n, now);
     final kpi = KpiSummary.of(_stats, _period, now);
     final pending = _pendingPayout;
+    final name = user?.name.trim() ?? '';
 
     return Scaffold(
-      appBar: AppBar(
-        automaticallyImplyLeading: false,
-        title: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
-          Text(_greeting(l10n, now), style: text.bodySmall!.copyWith(color: t.textSecondary)),
-          Text(user?.name.isNotEmpty == true ? user!.name : l10n.homeTitle,
-              style: text.titleMedium, maxLines: 1, overflow: TextOverflow.ellipsis),
-        ]),
+      appBar: SellerAppBar.actionsOnly(
+        context,
         actions: [
-          IconButton(
-            tooltip: l10n.homeSearch,
-            icon: const Icon(AgIcons.search),
+          SellerIconButton(
+            icon: SellerIcons.search,
+            label: l10n.homeSearch,
             onPressed: () => Navigator.of(context).push(MaterialPageRoute<void>(builder: (_) => const SellerSearchScreen())),
           ),
           NotificationBell(unreadOverride: widget.unreadOverride ?? (_injected ? 0 : null)),
         ],
       ),
-      body: ListView(
-        padding: const EdgeInsets.all(WsSpace.page),
+      body: SellerPage(
+        maxWidth: SellerSize.contentMaxWidth,
+        gap: SellerSpace.section,
         children: [
-          if (_store.isPaused(now)) ...[
-            SaInfoBanner(
-              variant: SaBannerVariant.warning,
+          // Board 03: "Good morning, Kaveri" + "Here's what needs your
+          // attention today." as the page header; it wraps at any text size.
+          Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
+            Semantics(
+              header: true,
+              child: Text(
+                name.isEmpty ? l10n.homeTitle : l10n.homeGreetingName(_greeting(l10n, now), name.split(' ').first),
+                style: text.headlineMedium,
+              ),
+            ),
+            const SizedBox(height: SellerSpace.s4),
+            Text(l10n.homeAttentionToday, style: text.bodyLarge!.copyWith(color: c.textSecondary)),
+          ]),
+          if (_store.isPaused(now))
+            SellerBanner(
+              tone: SellerTone.warning,
+              icon: SellerIcons.paused,
               title: l10n.storePausedTitle,
-              message: _store.pausedUntil == null ? l10n.storePausedBody : l10n.storePausedUntil(AgFormat.date(_store.pausedUntil!)),
+              message: _store.pausedUntil == null ? l10n.storePausedBody : l10n.storePausedUntil(SellerFormat.date(_store.pausedUntil!)),
               actionLabel: l10n.storeResume,
               onAction: () => _setStore(const StoreStatus()),
-            ),
-            const SizedBox(height: WsSpace.s16),
-          ] else if (_schedule.closedOn(now) != null) ...[
-            SaInfoBanner(
-              variant: SaBannerVariant.info,
+            )
+          else if (_schedule.closedOn(now) != null)
+            SellerBanner(
+              tone: SellerTone.info,
+              icon: SellerIcons.calendar,
               title: l10n.scheduleClosedToday,
               message: _schedule.closedOn(now) == ClosedToday.holiday ? l10n.scheduleClosedHoliday : l10n.scheduleClosedWeeklyOff,
             ),
-            const SizedBox(height: WsSpace.s16),
-          ],
-          HomeSectionHeader(
-            title: l10n.homeNeedsYou,
-            trailing: actions.isEmpty ? null : Text(AgFormat.count(actions.length), style: text.labelLarge),
-          ),
-          ActionQueueCard(items: actions),
-          const SizedBox(height: WsSpace.s24),
-          HomeSectionHeader(title: l10n.homePerformance),
-          SegmentedButton<KpiPeriod>(
-            showSelectedIcon: false,
-            segments: [
-              ButtonSegment(value: KpiPeriod.today, label: Text(l10n.periodToday)),
-              ButtonSegment(value: KpiPeriod.days7, label: Text(l10n.period7d)),
-              ButtonSegment(value: KpiPeriod.days30, label: Text(l10n.period30d)),
-            ],
-            selected: {_period},
-            onSelectionChanged: (s) => setState(() => _period = s.first),
-          ),
-          const SizedBox(height: WsSpace.s12),
-          if (_statsFailed)
-            SaInfoBanner(variant: SaBannerVariant.error, message: l10n.homeStatsFailed)
-          else if (!_statsLoaded)
-            const Padding(
-              padding: EdgeInsets.all(WsSpace.s24),
-              child: Center(child: CircularProgressIndicator()),
-            )
-          else ...[
-            KpiCard(
-              label: l10n.kpiSales,
-              value: AgFormat.rupeesWhole(kpi.current.gross),
-              delta: _pct(kpi.grossDelta) == null
-                  ? l10n.kpiNoComparison
-                  : (kpi.grossDelta! >= 0 ? l10n.kpiUpVsPrevious(_pct(kpi.grossDelta)!) : l10n.kpiDownVsPrevious(_pct(kpi.grossDelta)!)),
-              deltaUp: kpi.grossDelta == null ? null : kpi.grossDelta! >= 0,
-              series: kpi.series,
+          Column(crossAxisAlignment: CrossAxisAlignment.stretch, children: [
+            SellerSectionHeader(title: l10n.homeNeedsYou, count: actions.isEmpty ? null : actions.length),
+            ActionQueueCard(items: actions),
+          ]),
+          Column(crossAxisAlignment: CrossAxisAlignment.stretch, children: [
+            SellerSectionHeader(title: l10n.homePerformance),
+            SellerSegmented<KpiPeriod>(
+              semanticLabel: l10n.homePerformance,
+              segments: [
+                SellerSegment(KpiPeriod.today, l10n.periodToday),
+                SellerSegment(KpiPeriod.days7, l10n.period7d),
+                SellerSegment(KpiPeriod.days30, l10n.period30d),
+              ],
+              selected: _period,
+              onChanged: (p) => setState(() => _period = p),
             ),
-            const SizedBox(height: WsSpace.s8),
-            Row(crossAxisAlignment: CrossAxisAlignment.start, children: [
+            const SizedBox(height: SellerSpace.s12),
+            _kpis(context, l10n, kpi),
+            const SizedBox(height: SellerSpace.s12),
+            _healthCard(context, now),
+          ]),
+          // "To be paid to you ₹3,840 >" (board 11).
+          SellerCard(
+            onTap: () => SellerShell.goToTab(context, SellerTab.payments),
+            semanticLabel: '${l10n.homeNextSettlement}, ${pending == null ? '—' : SellerFormat.money(pending)}, ${l10n.homePaidTo}',
+            child: Row(children: [
+              const SellerIconTile(icon: SellerIcons.payments),
+              const SizedBox(width: SellerSpace.s12),
               Expanded(
-                child: KpiCard(
-                  label: l10n.kpiOrders,
-                  value: AgFormat.count(kpi.current.orders),
-                  delta: kpi.previous.orders == 0 && kpi.current.orders == 0
-                      ? null
-                      : kpi.ordersDelta > 0
-                          ? l10n.kpiOrdersMore(kpi.ordersDelta)
-                          : kpi.ordersDelta < 0
-                              ? l10n.kpiOrdersFewer(-kpi.ordersDelta)
-                              : l10n.kpiOrdersSame,
-                  deltaUp: kpi.ordersDelta == 0 ? null : kpi.ordersDelta > 0,
-                ),
+                child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
+                  Text(l10n.homeNextSettlement, style: text.bodyMedium),
+                  Text(pending == null ? '—' : SellerFormat.money(pending), style: text.headlineMedium!.tabular),
+                ]),
               ),
-              const SizedBox(width: WsSpace.s8),
-              Expanded(
-                child: KpiCard(
-                  label: l10n.kpiAov,
-                  value: kpi.current.aov == null ? '—' : AgFormat.rupeesWhole(kpi.current.aov!),
-                  delta: _pct(kpi.aovDelta) == null
-                      ? null
-                      : (kpi.aovDelta! >= 0 ? l10n.kpiUpVsPrevious(_pct(kpi.aovDelta)!) : l10n.kpiDownVsPrevious(_pct(kpi.aovDelta)!)),
-                  deltaUp: kpi.aovDelta == null ? null : kpi.aovDelta! >= 0,
-                ),
+              Icon(SellerIcons.chevronRight, color: c.textTertiary),
+            ]),
+          ),
+          Column(crossAxisAlignment: CrossAxisAlignment.stretch, children: [
+            SellerSectionHeader(title: l10n.homeQuickActions),
+            SellerButtonBar(children: [
+              SellerButton.secondary(
+                label: l10n.quotesTitle,
+                icon: SellerIcons.quote,
+                onPressed: () => Navigator.of(context).push(MaterialPageRoute<void>(builder: (_) => const SellerRfqInboxScreen())),
+              ),
+              SellerButton(
+                label: l10n.homeAddProduct,
+                icon: SellerIcons.add,
+                onPressed: () => Navigator.of(context).push(MaterialPageRoute<void>(builder: (_) => const AddProductScreen())),
               ),
             ]),
-          ],
-          const SizedBox(height: WsSpace.s12),
-          _healthCard(context, now),
-          const SizedBox(height: WsSpace.s24),
-          Card(
-            child: ListTile(
-              onTap: () => SellerShell.goToTab(context, SellerTab.payments),
-              leading: Icon(AgIcons.wallet, color: t.primary),
-              title: Text(l10n.homeNextSettlement, style: text.titleSmall),
-              subtitle: Text(pending == null ? '—' : AgFormat.rupees(pending),
-                  style: text.titleMedium!.copyWith(fontFeatures: WsType.tabularFigures)),
-              trailing: Icon(AgIcons.chevronRight, color: t.textTertiary),
-            ),
-          ),
-          const SizedBox(height: WsSpace.s24),
-          HomeSectionHeader(title: l10n.homeQuickActions),
-          Row(children: [
-            Expanded(
-              child: FilledButton.icon(
-                onPressed: () => Navigator.of(context).push(MaterialPageRoute<void>(builder: (_) => const AddProductScreen())),
-                icon: const Icon(AgIcons.add),
-                label: Text(l10n.homeAddProduct),
-              ),
-            ),
-            const SizedBox(width: WsSpace.s8),
-            Expanded(
-              child: OutlinedButton.icon(
-                onPressed: () => Navigator.of(context).push(MaterialPageRoute<void>(builder: (_) => const SellerRfqInboxScreen())),
-                icon: const Icon(AgIcons.quote),
-                label: Text(l10n.quotesTitle),
-              ),
-            ),
           ]),
         ],
       ),

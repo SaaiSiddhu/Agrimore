@@ -1557,5 +1557,910 @@
   },
   "scheduleClosedToday": "Closed today",
   "scheduleClosedWeeklyOff": "Today is your weekly off. Buyers can't place orders until tomorrow.",
-  "scheduleClosedHoliday": "Today is a holiday you set. Buyers can't place orders until tomorrow."
+  "scheduleClosedHoliday": "Today is a holiday you set. Buyers can't place orders until tomorrow.",
+  "dsClose": "Close",
+  "dsRetry": "Retry",
+  "dsTryAgain": "Try again",
+  "dsOptional": "(optional)",
+  "dsRequired": "required",
+  "dsLoading": "Loading…",
+  "dsDiscardTitle": "Discard changes?",
+  "dsDiscardBody": "You have unsaved changes.",
+  "dsKeepEditing": "Keep editing",
+  "dsDiscard": "Discard",
+  "dsFieldsNeedAttention": "{count, plural, =1{1 field needs attention} other{{count} fields need attention}}",
+  "@dsFieldsNeedAttention": {
+    "placeholders": {
+      "count": {
+        "type": "int"
+      }
+    }
+  },
+  "dsTabPosition": "Tab {index} of {count}",
+  "@dsTabPosition": {
+    "placeholders": {
+      "index": {
+        "type": "int"
+      },
+      "count": {
+        "type": "int"
+      }
+    }
+  },
+  "dsBadgeCount": "{count, plural, =1{1 new} other{{count} new}}",
+  "@dsBadgeCount": {
+    "placeholders": {
+      "count": {
+        "type": "int"
+      }
+    }
+  },
+  "dsNoImage": "No image",
+  "dsImageFailed": "Image couldn't load",
+  "dsChartSummaryUnavailable": "Data unavailable",
+  "dsSelected": "Selected",
+  "dsNotSelected": "Not selected",
+  "dsExpandHint": "Double tap to expand",
+  "dsCollapseHint": "Double tap to collapse",
+  "dsCopied": "Copied",
+  "dsStepCompleted": "Completed",
+  "dsStepCurrent": "Current",
+  "dsStepUpcoming": "Not started yet",
+  "dsStepFailed": "Needs attention",
+  "dsOutOf": "out of {max}",
+  "@dsOutOf": {
+    "placeholders": {
+      "max": {
+        "type": "int"
+      }
+    }
+  },
+  "dsScoreUnavailable": "Not enough activity yet",
+  "dsOtpFieldLabel": "Verification code, {length} digits",
+  "@dsOtpFieldLabel": {
+    "placeholders": {
+      "length": {
+        "type": "int"
+      }
+    }
+  },
+  "dsShowTable": "Show as table",
+  "dsHideTable": "Hide table",
+  "dsCellLabel": "{column}: {value}",
+  "@dsCellLabel": {
+    "placeholders": {
+      "column": {
+        "type": "String"
+      },
+      "value": {
+        "type": "String"
+      }
+    }
+  },
+  "dsChartPointLabel": "{label}: {value}",
+  "@dsChartPointLabel": {
+    "placeholders": {
+      "label": {
+        "type": "String"
+      },
+      "value": {
+        "type": "String"
+      }
+    }
+  },
+  "dsBrandName": "AgriMore",
+  "dsBrandRole": "Seller",
+  "dsTestDataRibbon": "Test data — local emulator",
+  "dsShare": "{value} of {total}",
+  "@dsShare": {
+    "placeholders": {
+      "value": {
+        "type": "String"
+      },
+      "total": {
+        "type": "String"
+      }
+    }
+  },
+  "homeGreetingName": "{greeting}, {name}",
+  "@homeGreetingName": {
+    "placeholders": {
+      "greeting": {
+        "type": "String"
+      },
+      "name": {
+        "type": "String"
+      }
+    }
+  },
+  "homeAttentionToday": "Here's what needs your attention today.",
+  "homePaidTo": "Opens Payments",
+  "orderGuideToAccept": "Waiting for your action",
+  "orderGuideToPack": "Prepare items for packing",
+  "orderGuidePacking": "Items are being packed",
+  "orderGuideReady": "Awaiting pickup",
+  "orderGuideOut": "Delivery in progress",
+  "orderGuideDelivered": "Order complete",
+  "orderGuideCancelled": "Order was cancelled",
+  "orderNoNote": "No note from buyer",
+  "orderPhoneLabel": "Business phone",
+  "orderCallHint": "Opens phone app",
+  "orderMessageHint": "Opens SMS app",
+  "orderItemsHeader": "Items ({count})",
+  "@orderItemsHeader": {
+    "placeholders": {
+      "count": {
+        "type": "int"
+      }
+    }
+  },
+  "orderItemsReadOnly": "Ordered options and quantities stay read-only.",
+  "orderLineQty": "{qty} × {price}",
+  "@orderLineQty": {
+    "placeholders": {
+      "qty": {
+        "type": "String"
+      },
+      "price": {
+        "type": "String"
+      }
+    }
+  },
+  "orderTotalSeparate": "Buyer order total is separate from your settlement.",
+  "orderPrepaidDetail": "Paid by customer online",
+  "orderCodDetail": "Customer pays on delivery",
+  "orderCardSummary": "{items} · {payment}",
+  "@orderCardSummary": {
+    "placeholders": {
+      "items": {
+        "type": "String"
+      },
+      "payment": {
+        "type": "String"
+      }
+    }
+  },
+  "orderNumberTitle": "Order #{number}",
+  "@orderNumberTitle": {
+    "placeholders": {
+      "number": {
+        "type": "String"
+      }
+    }
+  },
+  "orderReasonRequired": "Choose a reason to continue.",
+  "orderSelectPrompt": "Select an order to see its details.",
+  "orderPlacedAt": "Placed {time}",
+  "@orderPlacedAt": {
+    "placeholders": {
+      "time": {
+        "type": "String"
+      }
+    }
+  },
+  "orderMessageBody": "About your AgriMore order {number}",
+  "@orderMessageBody": {
+    "placeholders": {
+      "number": {
+        "type": "String"
+      }
+    }
+  },
+  "invoiceGeneratePrompt": "Generate an invoice for this order.",
+  "invoiceNumberCopied": "Invoice number copied",
+  "orderNumberShort": "#{number}",
+  "@orderNumberShort": {
+    "placeholders": {
+      "number": {
+        "type": "String"
+      }
+    }
+  },
+  "bulkPartial": "{done} updated. {failed} couldn't be updated and are still selected.",
+  "@bulkPartial": {
+    "placeholders": {
+      "done": {
+        "type": "int"
+      },
+      "failed": {
+        "type": "int"
+      }
+    }
+  },
+  "bulkHideCount": "Hide ({count})",
+  "@bulkHideCount": {
+    "placeholders": {
+      "count": {
+        "type": "int"
+      }
+    }
+  },
+  "bulkPublishCount": "Publish ({count})",
+  "@bulkPublishCount": {
+    "placeholders": {
+      "count": {
+        "type": "int"
+      }
+    }
+  },
+  "bulkTip": "Long-press a product to select it",
+  "productInStock": "{stock} in stock",
+  "@productInStock": {
+    "placeholders": {
+      "stock": {
+        "type": "String"
+      }
+    }
+  },
+  "productMrp": "MRP {price}",
+  "@productMrp": {
+    "placeholders": {
+      "price": {
+        "type": "String"
+      }
+    }
+  },
+  "productVisibleInfo": "Visible products appear in your store. Stock and visibility are separate.",
+  "productMoreActions": "More actions for {name}",
+  "@productMoreActions": {
+    "placeholders": {
+      "name": {
+        "type": "String"
+      }
+    }
+  },
+  "productCurrentStock": "Current stock: {stock}",
+  "@productCurrentStock": {
+    "placeholders": {
+      "stock": {
+        "type": "String"
+      }
+    }
+  },
+  "productStockSaveFailed": "Couldn't update stock. Try again.",
+  "productStockInvalid": "Enter a valid stock quantity.",
+  "productEditNamed": "Edit {name}",
+  "@productEditNamed": {
+    "placeholders": {
+      "name": {
+        "type": "String"
+      }
+    }
+  },
+  "productVisibilityFailed": "Couldn't update visibility. Try again.",
+  "variantsEmptyTitle": "No pack options yet",
+  "variantsEmptyBody": "Add pack options to offer this product in different sizes.",
+  "variantsCount": "Pack options ({count})",
+  "@variantsCount": {
+    "placeholders": {
+      "count": {
+        "type": "int"
+      }
+    }
+  },
+  "variantsEditNamed": "Edit {name}",
+  "@variantsEditNamed": {
+    "placeholders": {
+      "name": {
+        "type": "String"
+      }
+    }
+  },
+  "variantsStockRule": "Each option has its own price and stock. Product stock is not added to option stock.",
+  "editorApply": "Apply changes",
+  "editorPackOptions": "Pack options",
+  "editorPackOptionsHint": "Manage product packs and variants",
+  "editorPricingTax": "Pricing & tax",
+  "editorPricingTaxHint": "Set additional pricing information",
+  "editorCoverageRowHint": "Manage where this product is visible",
+  "editorWholesale": "Wholesale",
+  "editorWholesaleRowHint": "Set wholesale buying options",
+  "editorWholesaleSummary": "Wholesale summary",
+  "editorWholesaleOffTitle": "Wholesale is off",
+  "editorWholesaleOffBody": "Enable wholesale to set a separate price for bulk orders and a minimum order quantity.",
+  "editorWholesaleMinUnits": "{count} units",
+  "@editorWholesaleMinUnits": {
+    "placeholders": {
+      "count": {
+        "type": "int"
+      }
+    }
+  },
+  "editorWholesaleLine": "{price} · min {count}",
+  "@editorWholesaleLine": {
+    "placeholders": {
+      "price": {
+        "type": "String"
+      },
+      "count": {
+        "type": "int"
+      }
+    }
+  },
+  "editorOptionsCount": "{count, plural, =0{No options} =1{1 option} other{{count} options}}",
+  "@editorOptionsCount": {
+    "placeholders": {
+      "count": {
+        "type": "int"
+      }
+    }
+  },
+  "editorReplacePhoto": "Replace photo",
+  "editorLowStockAlert": "Low stock alert: {count}",
+  "@editorLowStockAlert": {
+    "placeholders": {
+      "count": {
+        "type": "String"
+      }
+    }
+  },
+  "editorSaveFailedBody": "Check your connection and try again. Your changes are not saved.",
+  "editorPriceSourceLabel": "Price source",
+  "editorCoverageLead": "Choose where this product is available to buyers.",
+  "editorCoverageSummary": "Coverage",
+  "editorB2bRuleShort": "Must be lower than your selling price.",
+  "editorMoqHelper": "Enter the minimum number of units per order.",
+  "paymentsPendingHelp": "Amount from completed orders that are pending settlement.",
+  "paymentsSeeAll": "See all",
+  "paymentsRecent": "Recent settlements",
+  "paymentsAllTitle": "All settlements",
+  "paymentsEmptyTitle": "No settlements yet",
+  "paymentsEmptyBody": "Settlements appear here after delivered orders.",
+  "paymentsCreatedOn": "Created {date}",
+  "@paymentsCreatedOn": {
+    "placeholders": {
+      "date": {
+        "type": "String"
+      }
+    }
+  },
+  "paymentsPaidOn": "Paid {date}",
+  "@paymentsPaidOn": {
+    "placeholders": {
+      "date": {
+        "type": "String"
+      }
+    }
+  },
+  "payoutAccountOnFile": "Account on file",
+  "payoutAccountNotAvailable": "Your payout account details will appear here once added.",
+  "settlementAwaiting": "Awaiting payment record",
+  "settlementPaymentPending": "Payment pending",
+  "settlementToReceive": "To receive",
+  "settlementReceived": "Received",
+  "settlementAmountsNote": "Amounts shown for this order, as recorded in the settlement.",
+  "settlementReferenceCopied": "Payment reference copied",
+  "settlementCopyReference": "Copy payment reference",
+  "settlementFinancials": "Order financials",
+  "settlementStatus": "Settlement status",
+  "statementSubtitle": "Monthly statement",
+  "statementOrders": "Orders in this month",
+  "statementSummary": "Statement summary",
+  "statementCount": "{count, plural, =1{1 settlement} other{{count} settlements}}",
+  "@statementCount": {
+    "placeholders": {
+      "count": {
+        "type": "int"
+      }
+    }
+  },
+  "quoteFromBuyer": "From buyer",
+  "quoteFromYou": "From you",
+  "quoteNoPriceTitle": "No price proposed",
+  "quoteNoPriceBody": "Send your offer to start the negotiation.",
+  "quoteValidUntil": "Offer valid until {date}",
+  "@quoteValidUntil": {
+    "placeholders": {
+      "date": {
+        "type": "String"
+      }
+    }
+  },
+  "quoteExpiredOn": "This offer expired on {date}.",
+  "@quoteExpiredOn": {
+    "placeholders": {
+      "date": {
+        "type": "String"
+      }
+    }
+  },
+  "quoteNotResponded": "You haven't responded yet",
+  "quoteAwaitingYou": "Waiting for your reply",
+  "quoteQuantity": "Quantity",
+  "quotePricePerUnit": "Price per unit",
+  "quoteTotalValue": "Total value",
+  "quoteBuyerNote": "Buyer note",
+  "quoteBuyerLabel": "Buyer",
+  "quoteLinkedOrderSub": "Linked to this quote",
+  "quoteAcceptNotOrder": "Accepting does not mean payment or delivery. The buyer places the order.",
+  "quoteDeclineTerms": "{label} — {note}",
+  "@quoteDeclineTerms": {
+    "placeholders": {
+      "label": {
+        "type": "String"
+      },
+      "note": {
+        "type": "String"
+      }
+    }
+  },
+  "quoteTermsLine": "{qty} × {price} = {total}",
+  "@quoteTermsLine": {
+    "placeholders": {
+      "qty": {
+        "type": "String"
+      },
+      "price": {
+        "type": "String"
+      },
+      "total": {
+        "type": "String"
+      }
+    }
+  },
+  "counterToBuyer": "to {buyer}",
+  "@counterToBuyer": {
+    "placeholders": {
+      "buyer": {
+        "type": "String"
+      }
+    }
+  },
+  "counterMoqWarning": "This is a warning. You can still send this offer.",
+  "insightsRange": "{current} vs {previous}",
+  "@insightsRange": {
+    "placeholders": {
+      "current": {
+        "type": "String"
+      },
+      "previous": {
+        "type": "String"
+      }
+    }
+  },
+  "insightsInfo": "What these numbers mean",
+  "insightsDefSales": "Total sales: the value of items sold in the period — not profit or payout.",
+  "insightsDefOrders": "Orders: customer orders placed in the period.",
+  "insightsDefAov": "Avg. order value: sales ÷ orders. Not shown when there are no orders.",
+  "insightsDefB2b": "B2B share: the part of total sales that came from business buyers.",
+  "insightsDefCompare": "Each period is compared with the period of the same length just before it.",
+  "insightsGotIt": "Got it",
+  "insightsComparisons": "Comparisons",
+  "insightsCurrentLabel": "Current ({range})",
+  "@insightsCurrentLabel": {
+    "placeholders": {
+      "range": {
+        "type": "String"
+      }
+    }
+  },
+  "insightsPreviousLabel": "Previous ({range})",
+  "@insightsPreviousLabel": {
+    "placeholders": {
+      "range": {
+        "type": "String"
+      }
+    }
+  },
+  "insightsB2bTitle": "B2B sales share",
+  "insightsSalesTrend": "Sales trend",
+  "insightsTableDay": "Day",
+  "insightsStageNote": "Current stage of orders placed in this period. Includes cancelled orders.",
+  "insightsTopNote": "Ranked by item revenue",
+  "insightsUnits": "{count, plural, =1{1 unit} other{{count} units}}",
+  "@insightsUnits": {
+    "placeholders": {
+      "count": {
+        "type": "int"
+      }
+    }
+  },
+  "insightsSalesUnavailable": "Sales data unavailable",
+  "healthMeasures": "Performance measures",
+  "healthLast30": "Last 30 days",
+  "feeErrFlatInvalid": "Enter a valid delivery fee (0 or more).",
+  "feeErrTooHigh": "Delivery fee can't be more than {max}.",
+  "@feeErrTooHigh": {
+    "placeholders": {
+      "max": {
+        "type": "String"
+      }
+    }
+  },
+  "feeErrNoTiers": "Add at least one tier.",
+  "feeErrTooManyTiers": "You can add up to {max} tiers.",
+  "@feeErrTooManyTiers": {
+    "placeholders": {
+      "max": {
+        "type": "int"
+      }
+    }
+  },
+  "feeErrTierMin": "Every tier needs a minimum order value (0 or more).",
+  "feeErrTierFee": "Every tier needs a delivery fee (0 or more).",
+  "feeErrNoZeroTier": "Include a ₹0 minimum-order tier so every order matches a tier.",
+  "feeFreeTitle": "₹0 fee = free delivery",
+  "feeFreeBody": "Set the fee to ₹0 to offer free delivery on eligible orders.",
+  "storeOpenBody": "Your store is open to receive orders and quotes.",
+  "storeClosedTodayTitle": "Closed today",
+  "storeManageSchedule": "Manage schedule",
+  "storeExistingOrders": "Existing orders are not affected by a manual pause.",
+  "storeScheduledStillApply": "Scheduled closures still apply.",
+  "accountSettings": "Settings",
+  "accountStoreHeaderHint": "Seller account",
+  "accountTimePick": "Choose a time",
+  "accountTimeNotSet": "Not set",
+  "accountGstinOptionalHelp": "Leave blank if not applicable.",
+  "scheduleSaved": "Schedule saved",
+  "scheduleClosedEvery": "Closed every {days}",
+  "@scheduleClosedEvery": {
+    "placeholders": {
+      "days": {
+        "type": "String"
+      }
+    }
+  },
+  "scheduleHolidayHint": "Add specific dates when your store will be closed.",
+  "scheduleHolidayLimitNote": "You can plan up to {max} holidays.",
+  "@scheduleHolidayLimitNote": {
+    "placeholders": {
+      "max": {
+        "type": "int"
+      }
+    }
+  },
+  "scheduleKeepOneOpen": "Keep at least one day open. To stop orders for a while, pause your store instead.",
+  "storefrontHighlightCount": "{count} of {max} highlights added",
+  "@storefrontHighlightCount": {
+    "placeholders": {
+      "count": {
+        "type": "int"
+      },
+      "max": {
+        "type": "int"
+      }
+    }
+  },
+  "storefrontEditPhoto": "Edit photo",
+  "storefrontPreviewOnly": "Preview only",
+  "storefrontPreviewNote": "This is how your store appears to buyers. Nothing is published from here.",
+  "storefrontSaved": "Storefront updated",
+  "storefrontUploading": "Uploading…",
+  "reviewsOutOf5": "{rating} / 5",
+  "@reviewsOutOf5": {
+    "placeholders": {
+      "rating": {
+        "type": "String"
+      }
+    }
+  },
+  "reviewsReplyRule": "Public reply · Editable for 24 hours after first posting.",
+  "reviewsReplyLimit": "Up to {max} characters",
+  "@reviewsReplyLimit": {
+    "placeholders": {
+      "max": {
+        "type": "int"
+      }
+    }
+  },
+  "postRequirement": "Text, a photo or a tagged product is required to post.",
+  "postDeletePost": "Delete post",
+  "postTaggedProduct": "Tagged: {name}",
+  "@postTaggedProduct": {
+    "placeholders": {
+      "name": {
+        "type": "String"
+      }
+    }
+  },
+  "supportCallTitle": "Call support",
+  "supportEmailTitle": "Email support",
+  "supportOpensApps": "Opens your phone or email app.",
+  "supportSubtitle": "Get help with your seller account.",
+  "helpResults": "{count, plural, =1{1 result} other{{count} results}}",
+  "@helpResults": {
+    "placeholders": {
+      "count": {
+        "type": "int"
+      }
+    }
+  },
+  "helpNoMatchTitle": "No matching FAQs",
+  "helpNoMatchBody": "Try a different search.",
+  "settingsAppearance": "Appearance",
+  "settingsThemeSystemHint": "Follows your device appearance.",
+  "settingsThemeLightHint": "Always use light appearance.",
+  "settingsThemeDarkHint": "Always use dark appearance.",
+  "policiesLegalDocs": "Legal documents",
+  "policiesOpensBrowser": "Opens in your browser.",
+  "notificationsEmptyTitle": "You are all caught up",
+  "notificationsReadLabel": "Read",
+  "prefQuietRange": "{from} – {until}",
+  "@prefQuietRange": {
+    "placeholders": {
+      "from": {
+        "type": "String"
+      },
+      "until": {
+        "type": "String"
+      }
+    }
+  },
+  "prefQuietNextMorning": "Notifications remain in your inbox. Quiet hours end the following morning.",
+  "aiGreeting": "Hi! I'm your AgriMore AI assistant. Ask me about your products, orders or store — for example, \"How many orders came in this week?\"",
+  "aiOffline": "Your AI assistant isn't connected, or your key was rejected. Check the AI connection.",
+  "aiChatError": "Couldn't get an answer. Check your connection and try again.",
+  "aiRetry": "Try again",
+  "aiStatusConnected": "Connected",
+  "aiConnectedBody": "Your assistant is ready to help with your business questions.",
+  "aiKeyNeverShown": "Your key is stored securely and never shown again.",
+  "aiConnectionTitle": "AI connection",
+  "aiConnecting": "Connecting…",
+  "applicationTitle": "Seller application",
+  "docIdProofHint": "Aadhaar, PAN, voter ID or driving licence",
+  "docShopPhotoHint": "A clear photo of your shop, farm or business location",
+  "docGstHint": "Upload your GST certificate if you have one",
+  "docUploadedNote": "Uploaded means received, not yet approved.",
+  "applyAbout": "About 5 minutes · Stop and continue anytime.",
+  "stepBusinessHelp": "Tell us who you are and what you sell.",
+  "stepLocationHelp": "Where buyers can find you and how far you deliver.",
+  "applySignOut": "Sign out",
+  "applySignOutTitle": "Sign out?",
+  "applySignOutBody": "Your application draft is saved. You'll need your phone number to sign in again.",
+  "statusCheckHint": "Check back here for your application status.",
+  "statusCompleted": "Completed",
+  "statusInProgress": "In progress",
+  "statusPending": "Pending",
+  "googleLinkingIntro": "Link your Google sign-in to your mobile number.",
+  "@googleLinkingIntro": {
+    "description": "Subtitle on the Google mobile-verification step (board 16-01 panel 03)."
+  },
+  "resetFailed": "Couldn't send the link. Please check your email and try again.",
+  "@resetFailed": {
+    "description": "Shown when the password-reset email could not be sent."
+  },
+  "otpErrorWrong": "That code didn't work. Try again.",
+  "@otpErrorWrong": {
+    "description": "Under the OTP boxes when the code is wrong (board 16-02)."
+  },
+  "emailHint": "name@example.com",
+  "@emailHint": {
+    "description": "Placeholder in the email sign-in field; an example, not a real address."
+  },
+  "walletTitle": "Wallet balance",
+  "@walletTitle": {
+    "description": "Payments: the money the seller can withdraw now."
+  },
+  "walletAvailableHelp": "Ready to withdraw. Delivered orders add to it after commission.",
+  "@walletAvailableHelp": {
+    "description": "Under the wallet balance."
+  },
+  "walletHeld": "{amount} more after the {days}-day hold",
+  "@walletHeld": {
+    "description": "Money from recent orders not yet withdrawable.",
+    "placeholders": {
+      "amount": {
+        "type": "String"
+      },
+      "days": {
+        "type": "int"
+      }
+    }
+  },
+  "walletWithdrawCta": "Withdraw",
+  "@walletWithdrawCta": {
+    "description": "Wallet primary button."
+  },
+  "walletMinimum": "Minimum withdrawal is {amount}.",
+  "@walletMinimum": {
+    "description": "Shown when the balance is below the minimum.",
+    "placeholders": {
+      "amount": {
+        "type": "String"
+      }
+    }
+  },
+  "walletNothing": "Nothing to withdraw yet.",
+  "@walletNothing": {
+    "description": "Balance is zero."
+  },
+  "walletNeedAccount": "Add a bank account or UPI ID to withdraw.",
+  "@walletNeedAccount": {
+    "description": "No payout destination on file."
+  },
+  "walletChangePendingBlock": "You can withdraw once your new bank/UPI details are verified.",
+  "@walletChangePendingBlock": {
+    "description": "A payout-account change is waiting for review."
+  },
+  "walletConfirmTitle": "Withdraw {amount}?",
+  "@walletConfirmTitle": {
+    "description": "Withdraw confirmation title.",
+    "placeholders": {
+      "amount": {
+        "type": "String"
+      }
+    }
+  },
+  "walletConfirmBody": "AgriMore will send it to {destination} and tell you when it is paid.",
+  "@walletConfirmBody": {
+    "description": "Withdraw confirmation body.",
+    "placeholders": {
+      "destination": {
+        "type": "String"
+      }
+    }
+  },
+  "walletRequested": "Withdrawal requested",
+  "@walletRequested": {
+    "description": "Toast after requesting a withdrawal."
+  },
+  "walletOpenTitle": "Withdrawal requested",
+  "@walletOpenTitle": {
+    "description": "Card title for the open withdrawal."
+  },
+  "walletOpenBody": "{amount} to {destination}",
+  "@walletOpenBody": {
+    "description": "Open withdrawal: amount and masked destination.",
+    "placeholders": {
+      "amount": {
+        "type": "String"
+      },
+      "destination": {
+        "type": "String"
+      }
+    }
+  },
+  "walletOpenWaiting": "Requested {date} · waiting for AgriMore to pay",
+  "@walletOpenWaiting": {
+    "description": "Open withdrawal status line.",
+    "placeholders": {
+      "date": {
+        "type": "String"
+      }
+    }
+  },
+  "walletCancel": "Cancel withdrawal",
+  "@walletCancel": {
+    "description": "Cancel the open withdrawal."
+  },
+  "walletCancelTitle": "Cancel this withdrawal?",
+  "@walletCancelTitle": {
+    "description": "Confirm cancelling."
+  },
+  "walletCancelBody": "The amount goes back to your wallet balance.",
+  "@walletCancelBody": {
+    "description": "Confirm cancelling body."
+  },
+  "walletKeep": "Keep it",
+  "@walletKeep": {
+    "description": "Cancel dialog: keep the withdrawal."
+  },
+  "walletCancelled": "Withdrawal cancelled",
+  "@walletCancelled": {
+    "description": "Toast after cancelling."
+  },
+  "walletLoadFailed": "Couldn't load your wallet.",
+  "@walletLoadFailed": {
+    "description": "Wallet summary failed to load."
+  },
+  "walletErrOpen": "A withdrawal is already waiting to be paid.",
+  "@walletErrOpen": {
+    "description": "Refusal: one open withdrawal at a time."
+  },
+  "walletErrFailed": "Couldn't request the withdrawal. Try again.",
+  "@walletErrFailed": {
+    "description": "Generic withdraw failure."
+  },
+  "withdrawalsTitle": "Withdrawals",
+  "@withdrawalsTitle": {
+    "description": "Section header: past withdrawals."
+  },
+  "withdrawalRequested": "Requested",
+  "@withdrawalRequested": {
+    "description": "Withdrawal status."
+  },
+  "withdrawalPaid": "Paid",
+  "@withdrawalPaid": {
+    "description": "Withdrawal status."
+  },
+  "withdrawalRejected": "Not paid",
+  "@withdrawalRejected": {
+    "description": "Withdrawal status: rejected by AgriMore."
+  },
+  "withdrawalCancelled": "Cancelled",
+  "@withdrawalCancelled": {
+    "description": "Withdrawal status: cancelled by the seller."
+  },
+  "withdrawalOrders": "{count, plural, =1{1 order} other{{count} orders}}",
+  "@withdrawalOrders": {
+    "description": "Number of orders in a withdrawal.",
+    "placeholders": {
+      "count": {
+        "type": "int"
+      }
+    }
+  },
+  "withdrawalRef": "Ref {reference}",
+  "@withdrawalRef": {
+    "description": "Payment reference of a paid withdrawal.",
+    "placeholders": {
+      "reference": {
+        "type": "String"
+      }
+    }
+  },
+  "withdrawalReason": "Reason: {reason}",
+  "@withdrawalReason": {
+    "description": "Why AgriMore did not pay.",
+    "placeholders": {
+      "reason": {
+        "type": "String"
+      }
+    }
+  },
+  "payoutInWithdrawal": "In withdrawal",
+  "@payoutInWithdrawal": {
+    "description": "Settlement status: part of a requested withdrawal."
+  },
+  "payoutAccountAdd": "Add bank account or UPI",
+  "@payoutAccountAdd": {
+    "description": "Button when no payout account is on file."
+  },
+  "payoutAccountChange": "Change",
+  "@payoutAccountChange": {
+    "description": "Change the payout account."
+  },
+  "payoutChangePendingTitle": "New details waiting for review",
+  "@payoutChangePendingTitle": {
+    "description": "A payout-account change is pending."
+  },
+  "payoutChangePendingBody": "{destination} · AgriMore checks new details before paying to them.",
+  "@payoutChangePendingBody": {
+    "description": "Pending change body.",
+    "placeholders": {
+      "destination": {
+        "type": "String"
+      }
+    }
+  },
+  "payoutChangeCancel": "Cancel change",
+  "@payoutChangeCancel": {
+    "description": "Withdraw the pending change request."
+  },
+  "payoutChangeCancelled": "Change cancelled",
+  "@payoutChangeCancelled": {
+    "description": "Toast after cancelling the change."
+  },
+  "payoutFormTitleAdd": "Add payout account",
+  "@payoutFormTitleAdd": {
+    "description": "Payout form title when none is on file."
+  },
+  "payoutFormTitleChange": "Change payout account",
+  "@payoutFormTitleChange": {
+    "description": "Payout form title when changing."
+  },
+  "payoutFormIntro": "AgriMore verifies new details before sending money to them. Until then, withdrawals wait.",
+  "@payoutFormIntro": {
+    "description": "Payout form intro."
+  },
+  "payoutFormSubmit": "Send for verification",
+  "@payoutFormSubmit": {
+    "description": "Payout form submit."
+  },
+  "payoutFormSending": "Sending…",
+  "@payoutFormSending": {
+    "description": "Payout form busy label."
+  },
+  "payoutFormSent": "Sent for verification. We'll let you know.",
+  "@payoutFormSent": {
+    "description": "Toast after sending new details."
+  },
+  "payoutFormFailed": "Couldn't send your details. Try again.",
+  "@payoutFormFailed": {
+    "description": "Payout form failure."
+  },
+  "payoutFormPending": "A change is already waiting for review.",
+  "@payoutFormPending": {
+    "description": "Refusal: one pending change at a time."
+  }
 }

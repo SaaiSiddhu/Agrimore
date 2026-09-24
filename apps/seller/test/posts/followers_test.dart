@@ -1,11 +1,12 @@
 import 'dart:async';
 
-import 'package:agrimore_ui/agrimore_ui.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_localizations/flutter_localizations.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:provider/provider.dart';
+import 'package:seller/design_system/design_system.dart';
 import 'package:seller/l10n/app_localizations.dart';
+import 'package:seller/providers/seller_product_provider.dart';
 import 'package:seller/providers/seller_auth_provider.dart';
 import 'package:seller/screens/posts/followers_screen.dart';
 
@@ -13,6 +14,7 @@ import 'package:seller/screens/posts/followers_screen.dart';
 /// newest first, deletion asks first.
 class _Fake implements FollowersSource {
   final deleted = <String>[];
+  int subscriptions = 0;
   final _posts = StreamController<List<SellerPost>>.broadcast();
   List<SellerPost> current = [
     SellerPost(id: 'p1', text: 'Fresh mangoes today', createdAt: DateTime(2026, 9, 22)),
@@ -25,6 +27,7 @@ class _Fake implements FollowersSource {
   Future<int> newFollowersSince(DateTime since) async => 7;
   @override
   Stream<List<SellerPost>> posts() async* {
+    subscriptions += 1;
     yield current;
     yield* _posts.stream;
   }
@@ -41,10 +44,13 @@ void main() {
   testWidgets('counts, posts, delete with confirmation', (tester) async {
     final fake = _Fake();
     late AppLocalizations l10n;
-    await tester.pumpWidget(ChangeNotifierProvider<SellerAuthProvider>(
-      create: (_) => SellerAuthProvider.preview(access: SellerAccess.approved),
+    await tester.pumpWidget(MultiProvider(
+      providers: [
+        ChangeNotifierProvider<SellerAuthProvider>(create: (_) => SellerAuthProvider.preview(access: SellerAccess.approved)),
+        ChangeNotifierProvider<SellerProductProvider>(create: (_) => SellerProductProvider.preview(const [])),
+      ],
       child: MaterialApp(
-        theme: WorkspaceTheme.build(WorkspaceBrand.seller, Brightness.light),
+        theme: SellerTheme.light,
         localizationsDelegates: const [
           AppLocalizations.delegate,
           GlobalMaterialLocalizations.delegate,
@@ -52,6 +58,9 @@ void main() {
           GlobalCupertinoLocalizations.delegate,
         ],
         supportedLocales: AppLocalizations.supportedLocales,
+        // Post photos never load in tests; with animations off their
+        // skeleton stays still so pumpAndSettle can settle.
+        builder: (context, app) => MediaQuery(data: MediaQuery.of(context).copyWith(disableAnimations: true), child: app!),
         home: Builder(builder: (context) {
           l10n = AppLocalizations.of(context);
           return FollowersScreen(source: fake, now: DateTime(2026, 9, 23));
@@ -59,7 +68,7 @@ void main() {
       ),
     ));
     await tester.pumpAndSettle();
-    expect(find.text(AgFormat.count(128)), findsOneWidget);
+    expect(find.text(SellerFormat.count(128)), findsOneWidget);
     expect(find.text(l10n.followersNew(7)), findsOneWidget);
     expect(find.text('Fresh mangoes today'), findsOneWidget);
     expect(find.text(l10n.postsNoText), findsOneWidget);
@@ -70,6 +79,9 @@ void main() {
     await tester.pumpAndSettle();
     expect(fake.deleted, ['p1']);
     expect(find.text('Fresh mangoes today'), findsNothing);
+    // Rebuilds (dialog, toast) must not re-subscribe: that flashed the
+    // loading skeleton and re-read every post from Firestore.
+    expect(fake.subscriptions, 1);
     expect(tester.takeException(), isNull);
   });
 }

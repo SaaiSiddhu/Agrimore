@@ -1,8 +1,8 @@
-import 'package:agrimore_ui/agrimore_ui.dart';
 import 'package:flutter/material.dart';
 import 'package:package_info_plus/package_info_plus.dart';
 import 'package:provider/provider.dart';
 
+import '../../design_system/design_system.dart';
 import '../../l10n/app_localizations.dart';
 import '../../providers/seller_settings_provider.dart';
 import 'help_screen.dart';
@@ -20,63 +20,60 @@ class SellerSettingsScreen extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final l10n = AppLocalizations.of(context);
-    final text = context.wsText;
-    final t = context.ws;
+    final text = context.text;
     final settings = context.watch<SellerSettingsProvider>();
-    Widget link(IconData icon, String label, VoidCallback onTap) => ListTile(
-          leading: Icon(icon, color: t.textSecondary),
-          title: Text(label, style: text.bodyLarge),
-          trailing: Icon(AgIcons.chevronRight, color: t.textTertiary),
-          onTap: onTap,
-        );
+    final hint = switch (settings.themeMode) {
+      ThemeMode.light => l10n.settingsThemeLightHint,
+      ThemeMode.dark => l10n.settingsThemeDarkHint,
+      ThemeMode.system => l10n.settingsThemeSystemHint,
+    };
     return Scaffold(
-      appBar: AppBar(
-        leading: IconButton(
-          tooltip: l10n.back,
-          icon: const Icon(AgIcons.arrowLeft),
-          onPressed: () => Navigator.of(context).maybePop(),
-        ),
-        title: Text(l10n.settingsTitle),
-      ),
-      body: ListView(
-        padding: const EdgeInsets.symmetric(vertical: WsSpace.s16),
+      appBar: SellerAppBar.detail(context, title: l10n.settingsTitle),
+      body: SellerPage(
+        gap: SellerSpace.s16,
         children: [
-          Padding(
-            padding: const EdgeInsets.symmetric(horizontal: WsSpace.page),
-            child: Text(l10n.settingsTheme, style: text.labelLarge),
+          SellerCard(
+            child: Column(crossAxisAlignment: CrossAxisAlignment.stretch, children: [
+              SellerSectionHeader(title: l10n.settingsAppearance),
+              SellerSegmented<ThemeMode>(
+                semanticLabel: l10n.settingsTheme,
+                showCheck: true,
+                segments: [
+                  SellerSegment(ThemeMode.system, l10n.settingsThemeSystem, icon: SellerIcons.systemTheme),
+                  SellerSegment(ThemeMode.light, l10n.settingsThemeLight, icon: SellerIcons.sun),
+                  SellerSegment(ThemeMode.dark, l10n.settingsThemeDark, icon: SellerIcons.moon),
+                ],
+                selected: settings.themeMode,
+                onChanged: settings.setThemeMode,
+              ),
+              const SizedBox(height: SellerSpace.s8),
+              Semantics(liveRegion: true, child: Text(hint, style: text.bodyMedium)),
+            ]),
           ),
-          const SizedBox(height: WsSpace.s8),
-          Padding(
-            padding: const EdgeInsets.symmetric(horizontal: WsSpace.page),
-            child: SegmentedButton<ThemeMode>(
-              showSelectedIcon: false,
-              segments: [
-                ButtonSegment(value: ThemeMode.system, label: Text(l10n.settingsThemeSystem), icon: const Icon(AgIcons.settings)),
-                ButtonSegment(value: ThemeMode.light, label: Text(l10n.settingsThemeLight), icon: const Icon(AgIcons.lightMode)),
-                ButtonSegment(value: ThemeMode.dark, label: Text(l10n.settingsThemeDark), icon: const Icon(AgIcons.darkMode)),
-              ],
-              selected: {settings.themeMode},
-              onSelectionChanged: (s) => settings.setThemeMode(s.first),
+          SellerMenuGroup(children: [
+            SellerListRow(
+              icon: SellerIcons.bell,
+              title: l10n.prefTitle,
+              onTap: () => Navigator.of(context).push(MaterialPageRoute<void>(builder: (_) => const NotificationSettingsScreen())),
             ),
-          ),
-          const Divider(height: WsSpace.s32),
-          link(AgIcons.bell, l10n.prefTitle, () {
-            Navigator.of(context).push(MaterialPageRoute<void>(builder: (_) => const NotificationSettingsScreen()));
-          }),
-          link(AgIcons.help, l10n.helpTitle, () {
-            Navigator.of(context).push(MaterialPageRoute<void>(builder: (_) => const HelpScreen()));
-          }),
-          link(AgIcons.document, l10n.settingsLicences, () => showLicensePage(context: context, applicationName: l10n.appName)),
-          const Divider(height: WsSpace.s32),
+            SellerListRow(
+              icon: SellerIcons.support,
+              title: l10n.helpTitle,
+              onTap: () => Navigator.of(context).push(MaterialPageRoute<void>(builder: (_) => const HelpScreen())),
+            ),
+            SellerListRow(
+              icon: SellerIcons.licences,
+              title: l10n.settingsLicences,
+              onTap: () => showLicensePage(context: context, applicationName: l10n.appName),
+            ),
+          ]),
           FutureBuilder<String>(
             future: versionOverride != null
                 ? Future.value(versionOverride)
                 : PackageInfo.fromPlatform().then((i) => l10n.settingsVersionValue(i.version, i.buildNumber)),
-            builder: (context, snap) => ListTile(
-              leading: Icon(AgIcons.info, color: t.textSecondary),
-              title: Text(l10n.settingsVersion, style: text.bodyLarge),
-              trailing: Text(snap.data ?? '', style: text.bodyMedium!.copyWith(color: t.textSecondary)),
-            ),
+            builder: (context, snap) => SellerMenuGroup(children: [
+              SellerListRow(icon: SellerIcons.info, title: l10n.settingsVersion, value: snap.data ?? '', showChevron: false),
+            ]),
           ),
         ],
       ),

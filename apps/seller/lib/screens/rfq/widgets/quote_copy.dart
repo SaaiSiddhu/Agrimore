@@ -1,7 +1,7 @@
 import 'package:agrimore_core/agrimore_core.dart';
-import 'package:agrimore_ui/agrimore_ui.dart';
 import 'package:flutter/material.dart';
 
+import '../../../design_system/design_system.dart';
 import '../../../l10n/app_localizations.dart';
 import '../../../providers/rfq_provider.dart';
 import '../quote_rules.dart';
@@ -44,7 +44,8 @@ extension QuoteCopy on AppLocalizations {
   }
 }
 
-/// Status pill for a quote: tone + label, never colour alone.
+/// Status badge for a quote (board 20-02): text + icon + tone, never colour
+/// alone. Accepted and Order placed are different states.
 class QuoteStatusPill extends StatelessWidget {
   const QuoteStatusPill({super.key, required this.quote, required this.now});
   final RfqModel quote;
@@ -53,22 +54,17 @@ class QuoteStatusPill extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final l10n = AppLocalizations.of(context);
-    final t = context.ws;
-    final (String label, Color fg, Color bg) = switch (quoteBucketOf(quote, now)) {
-      QuoteBucket.needsResponse => (l10n.quoteYourTurn, t.warningFg, t.warningBg),
-      QuoteBucket.negotiating => (l10n.quoteWaitingBuyer, t.infoFg, t.infoBg),
+    final (String label, SellerTone tone, IconData icon) = switch (quoteBucketOf(quote, now)) {
+      QuoteBucket.needsResponse => (l10n.quoteYourTurn, SellerTone.warning, SellerIcons.pending),
+      QuoteBucket.negotiating => (l10n.quoteWaitingBuyer, SellerTone.info, SellerIcons.hourglass),
       QuoteBucket.accepted => quote.consumedByOrderId != null
-          ? (l10n.quoteStatusOrdered, t.successFg, t.successBg)
-          : (l10n.quoteStatusAccepted, t.successFg, t.successBg),
+          ? (l10n.quoteStatusOrdered, SellerTone.info, SellerIcons.packing)
+          : (l10n.quoteStatusAccepted, SellerTone.success, SellerIcons.success),
       QuoteBucket.closed => quote.status == RfqStatus.rejected
-          ? (l10n.quoteStatusDeclined, t.textSecondary, t.surfaceSunken)
-          : (l10n.quoteExpired, t.textSecondary, t.surfaceSunken),
+          ? (l10n.quoteStatusDeclined, SellerTone.danger, SellerIcons.cancelled)
+          : (l10n.quoteExpired, SellerTone.neutral, SellerIcons.timer),
     };
-    return Container(
-      padding: const EdgeInsets.symmetric(horizontal: WsSpace.s8, vertical: WsSpace.s2),
-      decoration: BoxDecoration(color: bg, borderRadius: BorderRadius.circular(WsRadius.pill)),
-      child: Text(label, style: context.wsText.labelMedium!.copyWith(color: fg)),
-    );
+    return SellerStatusBadge(label: label, tone: tone, icon: icon);
   }
 }
 
@@ -83,15 +79,19 @@ class QuoteExpiryText extends StatelessWidget {
     final at = offer.expiresAt;
     if (at == null) return const SizedBox.shrink();
     final l10n = AppLocalizations.of(context);
-    final t = context.ws;
+    final c = context.colors;
     final expired = offer.isExpired(now);
     final left = daysLeft(at, now);
+    final urgent = expired || left <= 1;
+    final color = urgent ? c.warning : c.textSecondary;
     return Row(mainAxisSize: MainAxisSize.min, children: [
-      Icon(AgIcons.timer, size: WsIconSize.supporting, color: expired || left <= 1 ? t.warningFg : t.textTertiary),
-      const SizedBox(width: WsSpace.s4),
-      Text(
-        expired ? l10n.quoteExpired : l10n.quoteExpiresIn(left),
-        style: context.wsText.bodySmall!.copyWith(color: expired || left <= 1 ? t.warningFg : t.textSecondary),
+      Icon(SellerIcons.timer, size: SellerIconSize.sm, color: color),
+      const SizedBox(width: SellerSpace.s4),
+      Flexible(
+        child: Text(
+          expired ? l10n.quoteExpired : l10n.quoteExpiresIn(left),
+          style: context.text.bodyMedium!.copyWith(color: color),
+        ),
       ),
     ]);
   }

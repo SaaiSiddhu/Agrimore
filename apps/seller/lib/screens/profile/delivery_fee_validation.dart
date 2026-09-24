@@ -1,63 +1,54 @@
 // Phase FIX-8B — pure validation rules for a seller's delivery fee
-// schedule, extracted from delivery_fee_sheet.dart's own form so they can
-// be unit-tested without a widget harness (apps/seller/test/
-// delivery_fee_validation_test.dart). Every bound here is copied from
-// functions/src/customer/deliveryFeeSchedule.ts's own
-// parseDeliveryFeeSchedule() — this file must never drift from that one;
-// if either changes, change both together.
+// schedule (unit-tested in apps/seller/test/delivery_fee_validation_test.dart).
+// Every bound here is copied from functions/src/customer/
+// deliveryFeeSchedule.ts's own parseDeliveryFeeSchedule() — this file must
+// never drift from that one; if either changes, change both together.
+// Redesign: returns an error CODE; the screen shows the localised sentence.
 
-import 'package:agrimore_core/agrimore_core.dart';
+import '../../l10n/app_localizations.dart';
 
 const int kMaxFeeRupees = 1000;
 const int kMaxSlabs = 10;
-final String _kMaxFeeFormatted = PriceFormatter.formatPriceInt(kMaxFeeRupees.toDouble());
+
+/// Why a schedule was refused.
+enum FeeError { flatInvalid, tooHigh, noTiers, tooManyTiers, tierMin, tierFee, noZeroTier }
 
 /// One slab row's already-parsed numeric inputs — null means the field
 /// could not be parsed as a number (e.g. empty or non-numeric text).
 typedef SlabInput = ({double? minOrderValue, double? fee});
 
-/// Validates a flat fee amount. Returns a user-safe error sentence, or
-/// null if valid. Mirrors deliveryFeeSchedule.ts's own flat-schedule
-/// bounds: 0 <= amount <= kMaxFeeRupees.
-String? validateFlatFee(double? amount) {
-  if (amount == null || amount < 0) {
-    return 'Enter a valid delivery fee (0 or more)';
-  }
-  if (amount > kMaxFeeRupees) {
-    return 'Delivery fee cannot exceed $_kMaxFeeFormatted';
-  }
+/// Flat fee: 0 <= amount <= kMaxFeeRupees.
+FeeError? validateFlatFee(double? amount) {
+  if (amount == null || amount < 0) return FeeError.flatInvalid;
+  if (amount > kMaxFeeRupees) return FeeError.tooHigh;
   return null;
 }
 
-/// Validates a slab schedule. Returns a user-safe error sentence, or null
-/// if valid. Mirrors deliveryFeeSchedule.ts's own slab-schedule bounds:
-/// 1-kMaxSlabs entries, each minOrderValue >= 0 and 0 <= fee <=
-/// kMaxFeeRupees, and at least one slab with minOrderValue == 0 (so every
-/// non-negative subtotal always matches at least one slab).
-String? validateSlabSchedule(List<SlabInput> slabs) {
-  if (slabs.isEmpty) {
-    return 'Add at least one slab';
-  }
-  if (slabs.length > kMaxSlabs) {
-    return 'A maximum of $kMaxSlabs slabs is allowed';
-  }
-  bool hasZeroSlab = false;
+/// Slab schedule: 1–kMaxSlabs entries, each minOrderValue >= 0 and
+/// 0 <= fee <= kMaxFeeRupees, and one slab with minOrderValue == 0 (so
+/// every non-negative subtotal matches a slab).
+FeeError? validateSlabSchedule(List<SlabInput> slabs) {
+  if (slabs.isEmpty) return FeeError.noTiers;
+  if (slabs.length > kMaxSlabs) return FeeError.tooManyTiers;
+  var hasZeroSlab = false;
   for (final slab in slabs) {
     final minOrderValue = slab.minOrderValue;
     final fee = slab.fee;
-    if (minOrderValue == null || minOrderValue < 0) {
-      return 'Every slab needs a valid minimum order value (0 or more)';
-    }
-    if (fee == null || fee < 0) {
-      return 'Every slab needs a valid delivery fee (0 or more)';
-    }
-    if (fee > kMaxFeeRupees) {
-      return 'A slab fee cannot exceed $_kMaxFeeFormatted';
-    }
+    if (minOrderValue == null || minOrderValue < 0) return FeeError.tierMin;
+    if (fee == null || fee < 0) return FeeError.tierFee;
+    if (fee > kMaxFeeRupees) return FeeError.tooHigh;
     if (minOrderValue == 0) hasZeroSlab = true;
   }
-  if (!hasZeroSlab) {
-    return 'One slab must start at a minimum order value of 0, so every order matches a slab';
-  }
-  return null;
+  return hasZeroSlab ? null : FeeError.noZeroTier;
 }
+
+/// The sentence the seller reads for [e].
+String feeErrorText(AppLocalizations l10n, FeeError e, String maxFee) => switch (e) {
+      FeeError.flatInvalid => l10n.feeErrFlatInvalid,
+      FeeError.tooHigh => l10n.feeErrTooHigh(maxFee),
+      FeeError.noTiers => l10n.feeErrNoTiers,
+      FeeError.tooManyTiers => l10n.feeErrTooManyTiers(kMaxSlabs),
+      FeeError.tierMin => l10n.feeErrTierMin,
+      FeeError.tierFee => l10n.feeErrTierFee,
+      FeeError.noZeroTier => l10n.feeErrNoZeroTier,
+    };

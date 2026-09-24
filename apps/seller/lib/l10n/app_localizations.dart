@@ -4869,6 +4869,1764 @@ abstract class AppLocalizations {
   /// In en, this message translates to:
   /// **'Today is a holiday you set. Buyers can\'t place orders until tomorrow.'**
   String get scheduleClosedHoliday;
+
+  /// No description provided for @dsClose.
+  ///
+  /// In en, this message translates to:
+  /// **'Close'**
+  String get dsClose;
+
+  /// No description provided for @dsRetry.
+  ///
+  /// In en, this message translates to:
+  /// **'Retry'**
+  String get dsRetry;
+
+  /// No description provided for @dsTryAgain.
+  ///
+  /// In en, this message translates to:
+  /// **'Try again'**
+  String get dsTryAgain;
+
+  /// No description provided for @dsOptional.
+  ///
+  /// In en, this message translates to:
+  /// **'(optional)'**
+  String get dsOptional;
+
+  /// No description provided for @dsRequired.
+  ///
+  /// In en, this message translates to:
+  /// **'required'**
+  String get dsRequired;
+
+  /// No description provided for @dsLoading.
+  ///
+  /// In en, this message translates to:
+  /// **'Loading…'**
+  String get dsLoading;
+
+  /// No description provided for @dsDiscardTitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Discard changes?'**
+  String get dsDiscardTitle;
+
+  /// No description provided for @dsDiscardBody.
+  ///
+  /// In en, this message translates to:
+  /// **'You have unsaved changes.'**
+  String get dsDiscardBody;
+
+  /// No description provided for @dsKeepEditing.
+  ///
+  /// In en, this message translates to:
+  /// **'Keep editing'**
+  String get dsKeepEditing;
+
+  /// No description provided for @dsDiscard.
+  ///
+  /// In en, this message translates to:
+  /// **'Discard'**
+  String get dsDiscard;
+
+  /// No description provided for @dsFieldsNeedAttention.
+  ///
+  /// In en, this message translates to:
+  /// **'{count, plural, =1{1 field needs attention} other{{count} fields need attention}}'**
+  String dsFieldsNeedAttention(int count);
+
+  /// No description provided for @dsTabPosition.
+  ///
+  /// In en, this message translates to:
+  /// **'Tab {index} of {count}'**
+  String dsTabPosition(int index, int count);
+
+  /// No description provided for @dsBadgeCount.
+  ///
+  /// In en, this message translates to:
+  /// **'{count, plural, =1{1 new} other{{count} new}}'**
+  String dsBadgeCount(int count);
+
+  /// No description provided for @dsNoImage.
+  ///
+  /// In en, this message translates to:
+  /// **'No image'**
+  String get dsNoImage;
+
+  /// No description provided for @dsImageFailed.
+  ///
+  /// In en, this message translates to:
+  /// **'Image couldn\'t load'**
+  String get dsImageFailed;
+
+  /// No description provided for @dsChartSummaryUnavailable.
+  ///
+  /// In en, this message translates to:
+  /// **'Data unavailable'**
+  String get dsChartSummaryUnavailable;
+
+  /// No description provided for @dsSelected.
+  ///
+  /// In en, this message translates to:
+  /// **'Selected'**
+  String get dsSelected;
+
+  /// No description provided for @dsNotSelected.
+  ///
+  /// In en, this message translates to:
+  /// **'Not selected'**
+  String get dsNotSelected;
+
+  /// No description provided for @dsExpandHint.
+  ///
+  /// In en, this message translates to:
+  /// **'Double tap to expand'**
+  String get dsExpandHint;
+
+  /// No description provided for @dsCollapseHint.
+  ///
+  /// In en, this message translates to:
+  /// **'Double tap to collapse'**
+  String get dsCollapseHint;
+
+  /// No description provided for @dsCopied.
+  ///
+  /// In en, this message translates to:
+  /// **'Copied'**
+  String get dsCopied;
+
+  /// No description provided for @dsStepCompleted.
+  ///
+  /// In en, this message translates to:
+  /// **'Completed'**
+  String get dsStepCompleted;
+
+  /// No description provided for @dsStepCurrent.
+  ///
+  /// In en, this message translates to:
+  /// **'Current'**
+  String get dsStepCurrent;
+
+  /// No description provided for @dsStepUpcoming.
+  ///
+  /// In en, this message translates to:
+  /// **'Not started yet'**
+  String get dsStepUpcoming;
+
+  /// No description provided for @dsStepFailed.
+  ///
+  /// In en, this message translates to:
+  /// **'Needs attention'**
+  String get dsStepFailed;
+
+  /// No description provided for @dsOutOf.
+  ///
+  /// In en, this message translates to:
+  /// **'out of {max}'**
+  String dsOutOf(int max);
+
+  /// No description provided for @dsScoreUnavailable.
+  ///
+  /// In en, this message translates to:
+  /// **'Not enough activity yet'**
+  String get dsScoreUnavailable;
+
+  /// No description provided for @dsOtpFieldLabel.
+  ///
+  /// In en, this message translates to:
+  /// **'Verification code, {length} digits'**
+  String dsOtpFieldLabel(int length);
+
+  /// No description provided for @dsShowTable.
+  ///
+  /// In en, this message translates to:
+  /// **'Show as table'**
+  String get dsShowTable;
+
+  /// No description provided for @dsHideTable.
+  ///
+  /// In en, this message translates to:
+  /// **'Hide table'**
+  String get dsHideTable;
+
+  /// No description provided for @dsCellLabel.
+  ///
+  /// In en, this message translates to:
+  /// **'{column}: {value}'**
+  String dsCellLabel(String column, String value);
+
+  /// No description provided for @dsChartPointLabel.
+  ///
+  /// In en, this message translates to:
+  /// **'{label}: {value}'**
+  String dsChartPointLabel(String label, String value);
+
+  /// No description provided for @dsBrandName.
+  ///
+  /// In en, this message translates to:
+  /// **'AgriMore'**
+  String get dsBrandName;
+
+  /// No description provided for @dsBrandRole.
+  ///
+  /// In en, this message translates to:
+  /// **'Seller'**
+  String get dsBrandRole;
+
+  /// No description provided for @dsTestDataRibbon.
+  ///
+  /// In en, this message translates to:
+  /// **'Test data — local emulator'**
+  String get dsTestDataRibbon;
+
+  /// No description provided for @dsShare.
+  ///
+  /// In en, this message translates to:
+  /// **'{value} of {total}'**
+  String dsShare(String value, String total);
+
+  /// No description provided for @homeGreetingName.
+  ///
+  /// In en, this message translates to:
+  /// **'{greeting}, {name}'**
+  String homeGreetingName(String greeting, String name);
+
+  /// No description provided for @homeAttentionToday.
+  ///
+  /// In en, this message translates to:
+  /// **'Here\'s what needs your attention today.'**
+  String get homeAttentionToday;
+
+  /// No description provided for @homePaidTo.
+  ///
+  /// In en, this message translates to:
+  /// **'Opens Payments'**
+  String get homePaidTo;
+
+  /// No description provided for @orderGuideToAccept.
+  ///
+  /// In en, this message translates to:
+  /// **'Waiting for your action'**
+  String get orderGuideToAccept;
+
+  /// No description provided for @orderGuideToPack.
+  ///
+  /// In en, this message translates to:
+  /// **'Prepare items for packing'**
+  String get orderGuideToPack;
+
+  /// No description provided for @orderGuidePacking.
+  ///
+  /// In en, this message translates to:
+  /// **'Items are being packed'**
+  String get orderGuidePacking;
+
+  /// No description provided for @orderGuideReady.
+  ///
+  /// In en, this message translates to:
+  /// **'Awaiting pickup'**
+  String get orderGuideReady;
+
+  /// No description provided for @orderGuideOut.
+  ///
+  /// In en, this message translates to:
+  /// **'Delivery in progress'**
+  String get orderGuideOut;
+
+  /// No description provided for @orderGuideDelivered.
+  ///
+  /// In en, this message translates to:
+  /// **'Order complete'**
+  String get orderGuideDelivered;
+
+  /// No description provided for @orderGuideCancelled.
+  ///
+  /// In en, this message translates to:
+  /// **'Order was cancelled'**
+  String get orderGuideCancelled;
+
+  /// No description provided for @orderNoNote.
+  ///
+  /// In en, this message translates to:
+  /// **'No note from buyer'**
+  String get orderNoNote;
+
+  /// No description provided for @orderPhoneLabel.
+  ///
+  /// In en, this message translates to:
+  /// **'Business phone'**
+  String get orderPhoneLabel;
+
+  /// No description provided for @orderCallHint.
+  ///
+  /// In en, this message translates to:
+  /// **'Opens phone app'**
+  String get orderCallHint;
+
+  /// No description provided for @orderMessageHint.
+  ///
+  /// In en, this message translates to:
+  /// **'Opens SMS app'**
+  String get orderMessageHint;
+
+  /// No description provided for @orderItemsHeader.
+  ///
+  /// In en, this message translates to:
+  /// **'Items ({count})'**
+  String orderItemsHeader(int count);
+
+  /// No description provided for @orderItemsReadOnly.
+  ///
+  /// In en, this message translates to:
+  /// **'Ordered options and quantities stay read-only.'**
+  String get orderItemsReadOnly;
+
+  /// No description provided for @orderLineQty.
+  ///
+  /// In en, this message translates to:
+  /// **'{qty} × {price}'**
+  String orderLineQty(String qty, String price);
+
+  /// No description provided for @orderTotalSeparate.
+  ///
+  /// In en, this message translates to:
+  /// **'Buyer order total is separate from your settlement.'**
+  String get orderTotalSeparate;
+
+  /// No description provided for @orderPrepaidDetail.
+  ///
+  /// In en, this message translates to:
+  /// **'Paid by customer online'**
+  String get orderPrepaidDetail;
+
+  /// No description provided for @orderCodDetail.
+  ///
+  /// In en, this message translates to:
+  /// **'Customer pays on delivery'**
+  String get orderCodDetail;
+
+  /// No description provided for @orderCardSummary.
+  ///
+  /// In en, this message translates to:
+  /// **'{items} · {payment}'**
+  String orderCardSummary(String items, String payment);
+
+  /// No description provided for @orderNumberTitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Order #{number}'**
+  String orderNumberTitle(String number);
+
+  /// No description provided for @orderReasonRequired.
+  ///
+  /// In en, this message translates to:
+  /// **'Choose a reason to continue.'**
+  String get orderReasonRequired;
+
+  /// No description provided for @orderSelectPrompt.
+  ///
+  /// In en, this message translates to:
+  /// **'Select an order to see its details.'**
+  String get orderSelectPrompt;
+
+  /// No description provided for @orderPlacedAt.
+  ///
+  /// In en, this message translates to:
+  /// **'Placed {time}'**
+  String orderPlacedAt(String time);
+
+  /// No description provided for @orderMessageBody.
+  ///
+  /// In en, this message translates to:
+  /// **'About your AgriMore order {number}'**
+  String orderMessageBody(String number);
+
+  /// No description provided for @invoiceGeneratePrompt.
+  ///
+  /// In en, this message translates to:
+  /// **'Generate an invoice for this order.'**
+  String get invoiceGeneratePrompt;
+
+  /// No description provided for @invoiceNumberCopied.
+  ///
+  /// In en, this message translates to:
+  /// **'Invoice number copied'**
+  String get invoiceNumberCopied;
+
+  /// No description provided for @orderNumberShort.
+  ///
+  /// In en, this message translates to:
+  /// **'#{number}'**
+  String orderNumberShort(String number);
+
+  /// No description provided for @bulkPartial.
+  ///
+  /// In en, this message translates to:
+  /// **'{done} updated. {failed} couldn\'t be updated and are still selected.'**
+  String bulkPartial(int done, int failed);
+
+  /// No description provided for @bulkHideCount.
+  ///
+  /// In en, this message translates to:
+  /// **'Hide ({count})'**
+  String bulkHideCount(int count);
+
+  /// No description provided for @bulkPublishCount.
+  ///
+  /// In en, this message translates to:
+  /// **'Publish ({count})'**
+  String bulkPublishCount(int count);
+
+  /// No description provided for @bulkTip.
+  ///
+  /// In en, this message translates to:
+  /// **'Long-press a product to select it'**
+  String get bulkTip;
+
+  /// No description provided for @productInStock.
+  ///
+  /// In en, this message translates to:
+  /// **'{stock} in stock'**
+  String productInStock(String stock);
+
+  /// No description provided for @productMrp.
+  ///
+  /// In en, this message translates to:
+  /// **'MRP {price}'**
+  String productMrp(String price);
+
+  /// No description provided for @productVisibleInfo.
+  ///
+  /// In en, this message translates to:
+  /// **'Visible products appear in your store. Stock and visibility are separate.'**
+  String get productVisibleInfo;
+
+  /// No description provided for @productMoreActions.
+  ///
+  /// In en, this message translates to:
+  /// **'More actions for {name}'**
+  String productMoreActions(String name);
+
+  /// No description provided for @productCurrentStock.
+  ///
+  /// In en, this message translates to:
+  /// **'Current stock: {stock}'**
+  String productCurrentStock(String stock);
+
+  /// No description provided for @productStockSaveFailed.
+  ///
+  /// In en, this message translates to:
+  /// **'Couldn\'t update stock. Try again.'**
+  String get productStockSaveFailed;
+
+  /// No description provided for @productStockInvalid.
+  ///
+  /// In en, this message translates to:
+  /// **'Enter a valid stock quantity.'**
+  String get productStockInvalid;
+
+  /// No description provided for @productEditNamed.
+  ///
+  /// In en, this message translates to:
+  /// **'Edit {name}'**
+  String productEditNamed(String name);
+
+  /// No description provided for @productVisibilityFailed.
+  ///
+  /// In en, this message translates to:
+  /// **'Couldn\'t update visibility. Try again.'**
+  String get productVisibilityFailed;
+
+  /// No description provided for @variantsEmptyTitle.
+  ///
+  /// In en, this message translates to:
+  /// **'No pack options yet'**
+  String get variantsEmptyTitle;
+
+  /// No description provided for @variantsEmptyBody.
+  ///
+  /// In en, this message translates to:
+  /// **'Add pack options to offer this product in different sizes.'**
+  String get variantsEmptyBody;
+
+  /// No description provided for @variantsCount.
+  ///
+  /// In en, this message translates to:
+  /// **'Pack options ({count})'**
+  String variantsCount(int count);
+
+  /// No description provided for @variantsEditNamed.
+  ///
+  /// In en, this message translates to:
+  /// **'Edit {name}'**
+  String variantsEditNamed(String name);
+
+  /// No description provided for @variantsStockRule.
+  ///
+  /// In en, this message translates to:
+  /// **'Each option has its own price and stock. Product stock is not added to option stock.'**
+  String get variantsStockRule;
+
+  /// No description provided for @editorApply.
+  ///
+  /// In en, this message translates to:
+  /// **'Apply changes'**
+  String get editorApply;
+
+  /// No description provided for @editorPackOptions.
+  ///
+  /// In en, this message translates to:
+  /// **'Pack options'**
+  String get editorPackOptions;
+
+  /// No description provided for @editorPackOptionsHint.
+  ///
+  /// In en, this message translates to:
+  /// **'Manage product packs and variants'**
+  String get editorPackOptionsHint;
+
+  /// No description provided for @editorPricingTax.
+  ///
+  /// In en, this message translates to:
+  /// **'Pricing & tax'**
+  String get editorPricingTax;
+
+  /// No description provided for @editorPricingTaxHint.
+  ///
+  /// In en, this message translates to:
+  /// **'Set additional pricing information'**
+  String get editorPricingTaxHint;
+
+  /// No description provided for @editorCoverageRowHint.
+  ///
+  /// In en, this message translates to:
+  /// **'Manage where this product is visible'**
+  String get editorCoverageRowHint;
+
+  /// No description provided for @editorWholesale.
+  ///
+  /// In en, this message translates to:
+  /// **'Wholesale'**
+  String get editorWholesale;
+
+  /// No description provided for @editorWholesaleRowHint.
+  ///
+  /// In en, this message translates to:
+  /// **'Set wholesale buying options'**
+  String get editorWholesaleRowHint;
+
+  /// No description provided for @editorWholesaleSummary.
+  ///
+  /// In en, this message translates to:
+  /// **'Wholesale summary'**
+  String get editorWholesaleSummary;
+
+  /// No description provided for @editorWholesaleOffTitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Wholesale is off'**
+  String get editorWholesaleOffTitle;
+
+  /// No description provided for @editorWholesaleOffBody.
+  ///
+  /// In en, this message translates to:
+  /// **'Enable wholesale to set a separate price for bulk orders and a minimum order quantity.'**
+  String get editorWholesaleOffBody;
+
+  /// No description provided for @editorWholesaleMinUnits.
+  ///
+  /// In en, this message translates to:
+  /// **'{count} units'**
+  String editorWholesaleMinUnits(int count);
+
+  /// No description provided for @editorWholesaleLine.
+  ///
+  /// In en, this message translates to:
+  /// **'{price} · min {count}'**
+  String editorWholesaleLine(String price, int count);
+
+  /// No description provided for @editorOptionsCount.
+  ///
+  /// In en, this message translates to:
+  /// **'{count, plural, =0{No options} =1{1 option} other{{count} options}}'**
+  String editorOptionsCount(int count);
+
+  /// No description provided for @editorReplacePhoto.
+  ///
+  /// In en, this message translates to:
+  /// **'Replace photo'**
+  String get editorReplacePhoto;
+
+  /// No description provided for @editorLowStockAlert.
+  ///
+  /// In en, this message translates to:
+  /// **'Low stock alert: {count}'**
+  String editorLowStockAlert(String count);
+
+  /// No description provided for @editorSaveFailedBody.
+  ///
+  /// In en, this message translates to:
+  /// **'Check your connection and try again. Your changes are not saved.'**
+  String get editorSaveFailedBody;
+
+  /// No description provided for @editorPriceSourceLabel.
+  ///
+  /// In en, this message translates to:
+  /// **'Price source'**
+  String get editorPriceSourceLabel;
+
+  /// No description provided for @editorCoverageLead.
+  ///
+  /// In en, this message translates to:
+  /// **'Choose where this product is available to buyers.'**
+  String get editorCoverageLead;
+
+  /// No description provided for @editorCoverageSummary.
+  ///
+  /// In en, this message translates to:
+  /// **'Coverage'**
+  String get editorCoverageSummary;
+
+  /// No description provided for @editorB2bRuleShort.
+  ///
+  /// In en, this message translates to:
+  /// **'Must be lower than your selling price.'**
+  String get editorB2bRuleShort;
+
+  /// No description provided for @editorMoqHelper.
+  ///
+  /// In en, this message translates to:
+  /// **'Enter the minimum number of units per order.'**
+  String get editorMoqHelper;
+
+  /// No description provided for @paymentsPendingHelp.
+  ///
+  /// In en, this message translates to:
+  /// **'Amount from completed orders that are pending settlement.'**
+  String get paymentsPendingHelp;
+
+  /// No description provided for @paymentsSeeAll.
+  ///
+  /// In en, this message translates to:
+  /// **'See all'**
+  String get paymentsSeeAll;
+
+  /// No description provided for @paymentsRecent.
+  ///
+  /// In en, this message translates to:
+  /// **'Recent settlements'**
+  String get paymentsRecent;
+
+  /// No description provided for @paymentsAllTitle.
+  ///
+  /// In en, this message translates to:
+  /// **'All settlements'**
+  String get paymentsAllTitle;
+
+  /// No description provided for @paymentsEmptyTitle.
+  ///
+  /// In en, this message translates to:
+  /// **'No settlements yet'**
+  String get paymentsEmptyTitle;
+
+  /// No description provided for @paymentsEmptyBody.
+  ///
+  /// In en, this message translates to:
+  /// **'Settlements appear here after delivered orders.'**
+  String get paymentsEmptyBody;
+
+  /// No description provided for @paymentsCreatedOn.
+  ///
+  /// In en, this message translates to:
+  /// **'Created {date}'**
+  String paymentsCreatedOn(String date);
+
+  /// No description provided for @paymentsPaidOn.
+  ///
+  /// In en, this message translates to:
+  /// **'Paid {date}'**
+  String paymentsPaidOn(String date);
+
+  /// No description provided for @payoutAccountOnFile.
+  ///
+  /// In en, this message translates to:
+  /// **'Account on file'**
+  String get payoutAccountOnFile;
+
+  /// No description provided for @payoutAccountNotAvailable.
+  ///
+  /// In en, this message translates to:
+  /// **'Your payout account details will appear here once added.'**
+  String get payoutAccountNotAvailable;
+
+  /// No description provided for @settlementAwaiting.
+  ///
+  /// In en, this message translates to:
+  /// **'Awaiting payment record'**
+  String get settlementAwaiting;
+
+  /// No description provided for @settlementPaymentPending.
+  ///
+  /// In en, this message translates to:
+  /// **'Payment pending'**
+  String get settlementPaymentPending;
+
+  /// No description provided for @settlementToReceive.
+  ///
+  /// In en, this message translates to:
+  /// **'To receive'**
+  String get settlementToReceive;
+
+  /// No description provided for @settlementReceived.
+  ///
+  /// In en, this message translates to:
+  /// **'Received'**
+  String get settlementReceived;
+
+  /// No description provided for @settlementAmountsNote.
+  ///
+  /// In en, this message translates to:
+  /// **'Amounts shown for this order, as recorded in the settlement.'**
+  String get settlementAmountsNote;
+
+  /// No description provided for @settlementReferenceCopied.
+  ///
+  /// In en, this message translates to:
+  /// **'Payment reference copied'**
+  String get settlementReferenceCopied;
+
+  /// No description provided for @settlementCopyReference.
+  ///
+  /// In en, this message translates to:
+  /// **'Copy payment reference'**
+  String get settlementCopyReference;
+
+  /// No description provided for @settlementFinancials.
+  ///
+  /// In en, this message translates to:
+  /// **'Order financials'**
+  String get settlementFinancials;
+
+  /// No description provided for @settlementStatus.
+  ///
+  /// In en, this message translates to:
+  /// **'Settlement status'**
+  String get settlementStatus;
+
+  /// No description provided for @statementSubtitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Monthly statement'**
+  String get statementSubtitle;
+
+  /// No description provided for @statementOrders.
+  ///
+  /// In en, this message translates to:
+  /// **'Orders in this month'**
+  String get statementOrders;
+
+  /// No description provided for @statementSummary.
+  ///
+  /// In en, this message translates to:
+  /// **'Statement summary'**
+  String get statementSummary;
+
+  /// No description provided for @statementCount.
+  ///
+  /// In en, this message translates to:
+  /// **'{count, plural, =1{1 settlement} other{{count} settlements}}'**
+  String statementCount(int count);
+
+  /// No description provided for @quoteFromBuyer.
+  ///
+  /// In en, this message translates to:
+  /// **'From buyer'**
+  String get quoteFromBuyer;
+
+  /// No description provided for @quoteFromYou.
+  ///
+  /// In en, this message translates to:
+  /// **'From you'**
+  String get quoteFromYou;
+
+  /// No description provided for @quoteNoPriceTitle.
+  ///
+  /// In en, this message translates to:
+  /// **'No price proposed'**
+  String get quoteNoPriceTitle;
+
+  /// No description provided for @quoteNoPriceBody.
+  ///
+  /// In en, this message translates to:
+  /// **'Send your offer to start the negotiation.'**
+  String get quoteNoPriceBody;
+
+  /// No description provided for @quoteValidUntil.
+  ///
+  /// In en, this message translates to:
+  /// **'Offer valid until {date}'**
+  String quoteValidUntil(String date);
+
+  /// No description provided for @quoteExpiredOn.
+  ///
+  /// In en, this message translates to:
+  /// **'This offer expired on {date}.'**
+  String quoteExpiredOn(String date);
+
+  /// No description provided for @quoteNotResponded.
+  ///
+  /// In en, this message translates to:
+  /// **'You haven\'t responded yet'**
+  String get quoteNotResponded;
+
+  /// No description provided for @quoteAwaitingYou.
+  ///
+  /// In en, this message translates to:
+  /// **'Waiting for your reply'**
+  String get quoteAwaitingYou;
+
+  /// No description provided for @quoteQuantity.
+  ///
+  /// In en, this message translates to:
+  /// **'Quantity'**
+  String get quoteQuantity;
+
+  /// No description provided for @quotePricePerUnit.
+  ///
+  /// In en, this message translates to:
+  /// **'Price per unit'**
+  String get quotePricePerUnit;
+
+  /// No description provided for @quoteTotalValue.
+  ///
+  /// In en, this message translates to:
+  /// **'Total value'**
+  String get quoteTotalValue;
+
+  /// No description provided for @quoteBuyerNote.
+  ///
+  /// In en, this message translates to:
+  /// **'Buyer note'**
+  String get quoteBuyerNote;
+
+  /// No description provided for @quoteBuyerLabel.
+  ///
+  /// In en, this message translates to:
+  /// **'Buyer'**
+  String get quoteBuyerLabel;
+
+  /// No description provided for @quoteLinkedOrderSub.
+  ///
+  /// In en, this message translates to:
+  /// **'Linked to this quote'**
+  String get quoteLinkedOrderSub;
+
+  /// No description provided for @quoteAcceptNotOrder.
+  ///
+  /// In en, this message translates to:
+  /// **'Accepting does not mean payment or delivery. The buyer places the order.'**
+  String get quoteAcceptNotOrder;
+
+  /// No description provided for @quoteDeclineTerms.
+  ///
+  /// In en, this message translates to:
+  /// **'{label} — {note}'**
+  String quoteDeclineTerms(String label, String note);
+
+  /// No description provided for @quoteTermsLine.
+  ///
+  /// In en, this message translates to:
+  /// **'{qty} × {price} = {total}'**
+  String quoteTermsLine(String qty, String price, String total);
+
+  /// No description provided for @counterToBuyer.
+  ///
+  /// In en, this message translates to:
+  /// **'to {buyer}'**
+  String counterToBuyer(String buyer);
+
+  /// No description provided for @counterMoqWarning.
+  ///
+  /// In en, this message translates to:
+  /// **'This is a warning. You can still send this offer.'**
+  String get counterMoqWarning;
+
+  /// No description provided for @insightsRange.
+  ///
+  /// In en, this message translates to:
+  /// **'{current} vs {previous}'**
+  String insightsRange(String current, String previous);
+
+  /// No description provided for @insightsInfo.
+  ///
+  /// In en, this message translates to:
+  /// **'What these numbers mean'**
+  String get insightsInfo;
+
+  /// No description provided for @insightsDefSales.
+  ///
+  /// In en, this message translates to:
+  /// **'Total sales: the value of items sold in the period — not profit or payout.'**
+  String get insightsDefSales;
+
+  /// No description provided for @insightsDefOrders.
+  ///
+  /// In en, this message translates to:
+  /// **'Orders: customer orders placed in the period.'**
+  String get insightsDefOrders;
+
+  /// No description provided for @insightsDefAov.
+  ///
+  /// In en, this message translates to:
+  /// **'Avg. order value: sales ÷ orders. Not shown when there are no orders.'**
+  String get insightsDefAov;
+
+  /// No description provided for @insightsDefB2b.
+  ///
+  /// In en, this message translates to:
+  /// **'B2B share: the part of total sales that came from business buyers.'**
+  String get insightsDefB2b;
+
+  /// No description provided for @insightsDefCompare.
+  ///
+  /// In en, this message translates to:
+  /// **'Each period is compared with the period of the same length just before it.'**
+  String get insightsDefCompare;
+
+  /// No description provided for @insightsGotIt.
+  ///
+  /// In en, this message translates to:
+  /// **'Got it'**
+  String get insightsGotIt;
+
+  /// No description provided for @insightsComparisons.
+  ///
+  /// In en, this message translates to:
+  /// **'Comparisons'**
+  String get insightsComparisons;
+
+  /// No description provided for @insightsCurrentLabel.
+  ///
+  /// In en, this message translates to:
+  /// **'Current ({range})'**
+  String insightsCurrentLabel(String range);
+
+  /// No description provided for @insightsPreviousLabel.
+  ///
+  /// In en, this message translates to:
+  /// **'Previous ({range})'**
+  String insightsPreviousLabel(String range);
+
+  /// No description provided for @insightsB2bTitle.
+  ///
+  /// In en, this message translates to:
+  /// **'B2B sales share'**
+  String get insightsB2bTitle;
+
+  /// No description provided for @insightsSalesTrend.
+  ///
+  /// In en, this message translates to:
+  /// **'Sales trend'**
+  String get insightsSalesTrend;
+
+  /// No description provided for @insightsTableDay.
+  ///
+  /// In en, this message translates to:
+  /// **'Day'**
+  String get insightsTableDay;
+
+  /// No description provided for @insightsStageNote.
+  ///
+  /// In en, this message translates to:
+  /// **'Current stage of orders placed in this period. Includes cancelled orders.'**
+  String get insightsStageNote;
+
+  /// No description provided for @insightsTopNote.
+  ///
+  /// In en, this message translates to:
+  /// **'Ranked by item revenue'**
+  String get insightsTopNote;
+
+  /// No description provided for @insightsUnits.
+  ///
+  /// In en, this message translates to:
+  /// **'{count, plural, =1{1 unit} other{{count} units}}'**
+  String insightsUnits(int count);
+
+  /// No description provided for @insightsSalesUnavailable.
+  ///
+  /// In en, this message translates to:
+  /// **'Sales data unavailable'**
+  String get insightsSalesUnavailable;
+
+  /// No description provided for @healthMeasures.
+  ///
+  /// In en, this message translates to:
+  /// **'Performance measures'**
+  String get healthMeasures;
+
+  /// No description provided for @healthLast30.
+  ///
+  /// In en, this message translates to:
+  /// **'Last 30 days'**
+  String get healthLast30;
+
+  /// No description provided for @feeErrFlatInvalid.
+  ///
+  /// In en, this message translates to:
+  /// **'Enter a valid delivery fee (0 or more).'**
+  String get feeErrFlatInvalid;
+
+  /// No description provided for @feeErrTooHigh.
+  ///
+  /// In en, this message translates to:
+  /// **'Delivery fee can\'t be more than {max}.'**
+  String feeErrTooHigh(String max);
+
+  /// No description provided for @feeErrNoTiers.
+  ///
+  /// In en, this message translates to:
+  /// **'Add at least one tier.'**
+  String get feeErrNoTiers;
+
+  /// No description provided for @feeErrTooManyTiers.
+  ///
+  /// In en, this message translates to:
+  /// **'You can add up to {max} tiers.'**
+  String feeErrTooManyTiers(int max);
+
+  /// No description provided for @feeErrTierMin.
+  ///
+  /// In en, this message translates to:
+  /// **'Every tier needs a minimum order value (0 or more).'**
+  String get feeErrTierMin;
+
+  /// No description provided for @feeErrTierFee.
+  ///
+  /// In en, this message translates to:
+  /// **'Every tier needs a delivery fee (0 or more).'**
+  String get feeErrTierFee;
+
+  /// No description provided for @feeErrNoZeroTier.
+  ///
+  /// In en, this message translates to:
+  /// **'Include a ₹0 minimum-order tier so every order matches a tier.'**
+  String get feeErrNoZeroTier;
+
+  /// No description provided for @feeFreeTitle.
+  ///
+  /// In en, this message translates to:
+  /// **'₹0 fee = free delivery'**
+  String get feeFreeTitle;
+
+  /// No description provided for @feeFreeBody.
+  ///
+  /// In en, this message translates to:
+  /// **'Set the fee to ₹0 to offer free delivery on eligible orders.'**
+  String get feeFreeBody;
+
+  /// No description provided for @storeOpenBody.
+  ///
+  /// In en, this message translates to:
+  /// **'Your store is open to receive orders and quotes.'**
+  String get storeOpenBody;
+
+  /// No description provided for @storeClosedTodayTitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Closed today'**
+  String get storeClosedTodayTitle;
+
+  /// No description provided for @storeManageSchedule.
+  ///
+  /// In en, this message translates to:
+  /// **'Manage schedule'**
+  String get storeManageSchedule;
+
+  /// No description provided for @storeExistingOrders.
+  ///
+  /// In en, this message translates to:
+  /// **'Existing orders are not affected by a manual pause.'**
+  String get storeExistingOrders;
+
+  /// No description provided for @storeScheduledStillApply.
+  ///
+  /// In en, this message translates to:
+  /// **'Scheduled closures still apply.'**
+  String get storeScheduledStillApply;
+
+  /// No description provided for @accountSettings.
+  ///
+  /// In en, this message translates to:
+  /// **'Settings'**
+  String get accountSettings;
+
+  /// No description provided for @accountStoreHeaderHint.
+  ///
+  /// In en, this message translates to:
+  /// **'Seller account'**
+  String get accountStoreHeaderHint;
+
+  /// No description provided for @accountTimePick.
+  ///
+  /// In en, this message translates to:
+  /// **'Choose a time'**
+  String get accountTimePick;
+
+  /// No description provided for @accountTimeNotSet.
+  ///
+  /// In en, this message translates to:
+  /// **'Not set'**
+  String get accountTimeNotSet;
+
+  /// No description provided for @accountGstinOptionalHelp.
+  ///
+  /// In en, this message translates to:
+  /// **'Leave blank if not applicable.'**
+  String get accountGstinOptionalHelp;
+
+  /// No description provided for @scheduleSaved.
+  ///
+  /// In en, this message translates to:
+  /// **'Schedule saved'**
+  String get scheduleSaved;
+
+  /// No description provided for @scheduleClosedEvery.
+  ///
+  /// In en, this message translates to:
+  /// **'Closed every {days}'**
+  String scheduleClosedEvery(String days);
+
+  /// No description provided for @scheduleHolidayHint.
+  ///
+  /// In en, this message translates to:
+  /// **'Add specific dates when your store will be closed.'**
+  String get scheduleHolidayHint;
+
+  /// No description provided for @scheduleHolidayLimitNote.
+  ///
+  /// In en, this message translates to:
+  /// **'You can plan up to {max} holidays.'**
+  String scheduleHolidayLimitNote(int max);
+
+  /// No description provided for @scheduleKeepOneOpen.
+  ///
+  /// In en, this message translates to:
+  /// **'Keep at least one day open. To stop orders for a while, pause your store instead.'**
+  String get scheduleKeepOneOpen;
+
+  /// No description provided for @storefrontHighlightCount.
+  ///
+  /// In en, this message translates to:
+  /// **'{count} of {max} highlights added'**
+  String storefrontHighlightCount(int count, int max);
+
+  /// No description provided for @storefrontEditPhoto.
+  ///
+  /// In en, this message translates to:
+  /// **'Edit photo'**
+  String get storefrontEditPhoto;
+
+  /// No description provided for @storefrontPreviewOnly.
+  ///
+  /// In en, this message translates to:
+  /// **'Preview only'**
+  String get storefrontPreviewOnly;
+
+  /// No description provided for @storefrontPreviewNote.
+  ///
+  /// In en, this message translates to:
+  /// **'This is how your store appears to buyers. Nothing is published from here.'**
+  String get storefrontPreviewNote;
+
+  /// No description provided for @storefrontSaved.
+  ///
+  /// In en, this message translates to:
+  /// **'Storefront updated'**
+  String get storefrontSaved;
+
+  /// No description provided for @storefrontUploading.
+  ///
+  /// In en, this message translates to:
+  /// **'Uploading…'**
+  String get storefrontUploading;
+
+  /// No description provided for @reviewsOutOf5.
+  ///
+  /// In en, this message translates to:
+  /// **'{rating} / 5'**
+  String reviewsOutOf5(String rating);
+
+  /// No description provided for @reviewsReplyRule.
+  ///
+  /// In en, this message translates to:
+  /// **'Public reply · Editable for 24 hours after first posting.'**
+  String get reviewsReplyRule;
+
+  /// No description provided for @reviewsReplyLimit.
+  ///
+  /// In en, this message translates to:
+  /// **'Up to {max} characters'**
+  String reviewsReplyLimit(int max);
+
+  /// No description provided for @postRequirement.
+  ///
+  /// In en, this message translates to:
+  /// **'Text, a photo or a tagged product is required to post.'**
+  String get postRequirement;
+
+  /// No description provided for @postDeletePost.
+  ///
+  /// In en, this message translates to:
+  /// **'Delete post'**
+  String get postDeletePost;
+
+  /// No description provided for @postTaggedProduct.
+  ///
+  /// In en, this message translates to:
+  /// **'Tagged: {name}'**
+  String postTaggedProduct(String name);
+
+  /// No description provided for @supportCallTitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Call support'**
+  String get supportCallTitle;
+
+  /// No description provided for @supportEmailTitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Email support'**
+  String get supportEmailTitle;
+
+  /// No description provided for @supportOpensApps.
+  ///
+  /// In en, this message translates to:
+  /// **'Opens your phone or email app.'**
+  String get supportOpensApps;
+
+  /// No description provided for @supportSubtitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Get help with your seller account.'**
+  String get supportSubtitle;
+
+  /// No description provided for @helpResults.
+  ///
+  /// In en, this message translates to:
+  /// **'{count, plural, =1{1 result} other{{count} results}}'**
+  String helpResults(int count);
+
+  /// No description provided for @helpNoMatchTitle.
+  ///
+  /// In en, this message translates to:
+  /// **'No matching FAQs'**
+  String get helpNoMatchTitle;
+
+  /// No description provided for @helpNoMatchBody.
+  ///
+  /// In en, this message translates to:
+  /// **'Try a different search.'**
+  String get helpNoMatchBody;
+
+  /// No description provided for @settingsAppearance.
+  ///
+  /// In en, this message translates to:
+  /// **'Appearance'**
+  String get settingsAppearance;
+
+  /// No description provided for @settingsThemeSystemHint.
+  ///
+  /// In en, this message translates to:
+  /// **'Follows your device appearance.'**
+  String get settingsThemeSystemHint;
+
+  /// No description provided for @settingsThemeLightHint.
+  ///
+  /// In en, this message translates to:
+  /// **'Always use light appearance.'**
+  String get settingsThemeLightHint;
+
+  /// No description provided for @settingsThemeDarkHint.
+  ///
+  /// In en, this message translates to:
+  /// **'Always use dark appearance.'**
+  String get settingsThemeDarkHint;
+
+  /// No description provided for @policiesLegalDocs.
+  ///
+  /// In en, this message translates to:
+  /// **'Legal documents'**
+  String get policiesLegalDocs;
+
+  /// No description provided for @policiesOpensBrowser.
+  ///
+  /// In en, this message translates to:
+  /// **'Opens in your browser.'**
+  String get policiesOpensBrowser;
+
+  /// No description provided for @notificationsEmptyTitle.
+  ///
+  /// In en, this message translates to:
+  /// **'You are all caught up'**
+  String get notificationsEmptyTitle;
+
+  /// No description provided for @notificationsReadLabel.
+  ///
+  /// In en, this message translates to:
+  /// **'Read'**
+  String get notificationsReadLabel;
+
+  /// No description provided for @prefQuietRange.
+  ///
+  /// In en, this message translates to:
+  /// **'{from} – {until}'**
+  String prefQuietRange(String from, String until);
+
+  /// No description provided for @prefQuietNextMorning.
+  ///
+  /// In en, this message translates to:
+  /// **'Notifications remain in your inbox. Quiet hours end the following morning.'**
+  String get prefQuietNextMorning;
+
+  /// No description provided for @aiGreeting.
+  ///
+  /// In en, this message translates to:
+  /// **'Hi! I\'m your AgriMore AI assistant. Ask me about your products, orders or store — for example, \"How many orders came in this week?\"'**
+  String get aiGreeting;
+
+  /// No description provided for @aiOffline.
+  ///
+  /// In en, this message translates to:
+  /// **'Your AI assistant isn\'t connected, or your key was rejected. Check the AI connection.'**
+  String get aiOffline;
+
+  /// No description provided for @aiChatError.
+  ///
+  /// In en, this message translates to:
+  /// **'Couldn\'t get an answer. Check your connection and try again.'**
+  String get aiChatError;
+
+  /// No description provided for @aiRetry.
+  ///
+  /// In en, this message translates to:
+  /// **'Try again'**
+  String get aiRetry;
+
+  /// No description provided for @aiStatusConnected.
+  ///
+  /// In en, this message translates to:
+  /// **'Connected'**
+  String get aiStatusConnected;
+
+  /// No description provided for @aiConnectedBody.
+  ///
+  /// In en, this message translates to:
+  /// **'Your assistant is ready to help with your business questions.'**
+  String get aiConnectedBody;
+
+  /// No description provided for @aiKeyNeverShown.
+  ///
+  /// In en, this message translates to:
+  /// **'Your key is stored securely and never shown again.'**
+  String get aiKeyNeverShown;
+
+  /// No description provided for @aiConnectionTitle.
+  ///
+  /// In en, this message translates to:
+  /// **'AI connection'**
+  String get aiConnectionTitle;
+
+  /// No description provided for @aiConnecting.
+  ///
+  /// In en, this message translates to:
+  /// **'Connecting…'**
+  String get aiConnecting;
+
+  /// No description provided for @applicationTitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Seller application'**
+  String get applicationTitle;
+
+  /// No description provided for @docIdProofHint.
+  ///
+  /// In en, this message translates to:
+  /// **'Aadhaar, PAN, voter ID or driving licence'**
+  String get docIdProofHint;
+
+  /// No description provided for @docShopPhotoHint.
+  ///
+  /// In en, this message translates to:
+  /// **'A clear photo of your shop, farm or business location'**
+  String get docShopPhotoHint;
+
+  /// No description provided for @docGstHint.
+  ///
+  /// In en, this message translates to:
+  /// **'Upload your GST certificate if you have one'**
+  String get docGstHint;
+
+  /// No description provided for @docUploadedNote.
+  ///
+  /// In en, this message translates to:
+  /// **'Uploaded means received, not yet approved.'**
+  String get docUploadedNote;
+
+  /// No description provided for @applyAbout.
+  ///
+  /// In en, this message translates to:
+  /// **'About 5 minutes · Stop and continue anytime.'**
+  String get applyAbout;
+
+  /// No description provided for @stepBusinessHelp.
+  ///
+  /// In en, this message translates to:
+  /// **'Tell us who you are and what you sell.'**
+  String get stepBusinessHelp;
+
+  /// No description provided for @stepLocationHelp.
+  ///
+  /// In en, this message translates to:
+  /// **'Where buyers can find you and how far you deliver.'**
+  String get stepLocationHelp;
+
+  /// No description provided for @applySignOut.
+  ///
+  /// In en, this message translates to:
+  /// **'Sign out'**
+  String get applySignOut;
+
+  /// No description provided for @applySignOutTitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Sign out?'**
+  String get applySignOutTitle;
+
+  /// No description provided for @applySignOutBody.
+  ///
+  /// In en, this message translates to:
+  /// **'Your application draft is saved. You\'ll need your phone number to sign in again.'**
+  String get applySignOutBody;
+
+  /// No description provided for @statusCheckHint.
+  ///
+  /// In en, this message translates to:
+  /// **'Check back here for your application status.'**
+  String get statusCheckHint;
+
+  /// No description provided for @statusCompleted.
+  ///
+  /// In en, this message translates to:
+  /// **'Completed'**
+  String get statusCompleted;
+
+  /// No description provided for @statusInProgress.
+  ///
+  /// In en, this message translates to:
+  /// **'In progress'**
+  String get statusInProgress;
+
+  /// No description provided for @statusPending.
+  ///
+  /// In en, this message translates to:
+  /// **'Pending'**
+  String get statusPending;
+
+  /// Subtitle on the Google mobile-verification step (board 16-01 panel 03).
+  ///
+  /// In en, this message translates to:
+  /// **'Link your Google sign-in to your mobile number.'**
+  String get googleLinkingIntro;
+
+  /// Shown when the password-reset email could not be sent.
+  ///
+  /// In en, this message translates to:
+  /// **'Couldn\'t send the link. Please check your email and try again.'**
+  String get resetFailed;
+
+  /// Under the OTP boxes when the code is wrong (board 16-02).
+  ///
+  /// In en, this message translates to:
+  /// **'That code didn\'t work. Try again.'**
+  String get otpErrorWrong;
+
+  /// Placeholder in the email sign-in field; an example, not a real address.
+  ///
+  /// In en, this message translates to:
+  /// **'name@example.com'**
+  String get emailHint;
+
+  /// Payments: the money the seller can withdraw now.
+  ///
+  /// In en, this message translates to:
+  /// **'Wallet balance'**
+  String get walletTitle;
+
+  /// Under the wallet balance.
+  ///
+  /// In en, this message translates to:
+  /// **'Ready to withdraw. Delivered orders add to it after commission.'**
+  String get walletAvailableHelp;
+
+  /// Money from recent orders not yet withdrawable.
+  ///
+  /// In en, this message translates to:
+  /// **'{amount} more after the {days}-day hold'**
+  String walletHeld(String amount, int days);
+
+  /// Wallet primary button.
+  ///
+  /// In en, this message translates to:
+  /// **'Withdraw'**
+  String get walletWithdrawCta;
+
+  /// Shown when the balance is below the minimum.
+  ///
+  /// In en, this message translates to:
+  /// **'Minimum withdrawal is {amount}.'**
+  String walletMinimum(String amount);
+
+  /// Balance is zero.
+  ///
+  /// In en, this message translates to:
+  /// **'Nothing to withdraw yet.'**
+  String get walletNothing;
+
+  /// No payout destination on file.
+  ///
+  /// In en, this message translates to:
+  /// **'Add a bank account or UPI ID to withdraw.'**
+  String get walletNeedAccount;
+
+  /// A payout-account change is waiting for review.
+  ///
+  /// In en, this message translates to:
+  /// **'You can withdraw once your new bank/UPI details are verified.'**
+  String get walletChangePendingBlock;
+
+  /// Withdraw confirmation title.
+  ///
+  /// In en, this message translates to:
+  /// **'Withdraw {amount}?'**
+  String walletConfirmTitle(String amount);
+
+  /// Withdraw confirmation body.
+  ///
+  /// In en, this message translates to:
+  /// **'AgriMore will send it to {destination} and tell you when it is paid.'**
+  String walletConfirmBody(String destination);
+
+  /// Toast after requesting a withdrawal.
+  ///
+  /// In en, this message translates to:
+  /// **'Withdrawal requested'**
+  String get walletRequested;
+
+  /// Card title for the open withdrawal.
+  ///
+  /// In en, this message translates to:
+  /// **'Withdrawal requested'**
+  String get walletOpenTitle;
+
+  /// Open withdrawal: amount and masked destination.
+  ///
+  /// In en, this message translates to:
+  /// **'{amount} to {destination}'**
+  String walletOpenBody(String amount, String destination);
+
+  /// Open withdrawal status line.
+  ///
+  /// In en, this message translates to:
+  /// **'Requested {date} · waiting for AgriMore to pay'**
+  String walletOpenWaiting(String date);
+
+  /// Cancel the open withdrawal.
+  ///
+  /// In en, this message translates to:
+  /// **'Cancel withdrawal'**
+  String get walletCancel;
+
+  /// Confirm cancelling.
+  ///
+  /// In en, this message translates to:
+  /// **'Cancel this withdrawal?'**
+  String get walletCancelTitle;
+
+  /// Confirm cancelling body.
+  ///
+  /// In en, this message translates to:
+  /// **'The amount goes back to your wallet balance.'**
+  String get walletCancelBody;
+
+  /// Cancel dialog: keep the withdrawal.
+  ///
+  /// In en, this message translates to:
+  /// **'Keep it'**
+  String get walletKeep;
+
+  /// Toast after cancelling.
+  ///
+  /// In en, this message translates to:
+  /// **'Withdrawal cancelled'**
+  String get walletCancelled;
+
+  /// Wallet summary failed to load.
+  ///
+  /// In en, this message translates to:
+  /// **'Couldn\'t load your wallet.'**
+  String get walletLoadFailed;
+
+  /// Refusal: one open withdrawal at a time.
+  ///
+  /// In en, this message translates to:
+  /// **'A withdrawal is already waiting to be paid.'**
+  String get walletErrOpen;
+
+  /// Generic withdraw failure.
+  ///
+  /// In en, this message translates to:
+  /// **'Couldn\'t request the withdrawal. Try again.'**
+  String get walletErrFailed;
+
+  /// Section header: past withdrawals.
+  ///
+  /// In en, this message translates to:
+  /// **'Withdrawals'**
+  String get withdrawalsTitle;
+
+  /// Withdrawal status.
+  ///
+  /// In en, this message translates to:
+  /// **'Requested'**
+  String get withdrawalRequested;
+
+  /// Withdrawal status.
+  ///
+  /// In en, this message translates to:
+  /// **'Paid'**
+  String get withdrawalPaid;
+
+  /// Withdrawal status: rejected by AgriMore.
+  ///
+  /// In en, this message translates to:
+  /// **'Not paid'**
+  String get withdrawalRejected;
+
+  /// Withdrawal status: cancelled by the seller.
+  ///
+  /// In en, this message translates to:
+  /// **'Cancelled'**
+  String get withdrawalCancelled;
+
+  /// Number of orders in a withdrawal.
+  ///
+  /// In en, this message translates to:
+  /// **'{count, plural, =1{1 order} other{{count} orders}}'**
+  String withdrawalOrders(int count);
+
+  /// Payment reference of a paid withdrawal.
+  ///
+  /// In en, this message translates to:
+  /// **'Ref {reference}'**
+  String withdrawalRef(String reference);
+
+  /// Why AgriMore did not pay.
+  ///
+  /// In en, this message translates to:
+  /// **'Reason: {reason}'**
+  String withdrawalReason(String reason);
+
+  /// Settlement status: part of a requested withdrawal.
+  ///
+  /// In en, this message translates to:
+  /// **'In withdrawal'**
+  String get payoutInWithdrawal;
+
+  /// Button when no payout account is on file.
+  ///
+  /// In en, this message translates to:
+  /// **'Add bank account or UPI'**
+  String get payoutAccountAdd;
+
+  /// Change the payout account.
+  ///
+  /// In en, this message translates to:
+  /// **'Change'**
+  String get payoutAccountChange;
+
+  /// A payout-account change is pending.
+  ///
+  /// In en, this message translates to:
+  /// **'New details waiting for review'**
+  String get payoutChangePendingTitle;
+
+  /// Pending change body.
+  ///
+  /// In en, this message translates to:
+  /// **'{destination} · AgriMore checks new details before paying to them.'**
+  String payoutChangePendingBody(String destination);
+
+  /// Withdraw the pending change request.
+  ///
+  /// In en, this message translates to:
+  /// **'Cancel change'**
+  String get payoutChangeCancel;
+
+  /// Toast after cancelling the change.
+  ///
+  /// In en, this message translates to:
+  /// **'Change cancelled'**
+  String get payoutChangeCancelled;
+
+  /// Payout form title when none is on file.
+  ///
+  /// In en, this message translates to:
+  /// **'Add payout account'**
+  String get payoutFormTitleAdd;
+
+  /// Payout form title when changing.
+  ///
+  /// In en, this message translates to:
+  /// **'Change payout account'**
+  String get payoutFormTitleChange;
+
+  /// Payout form intro.
+  ///
+  /// In en, this message translates to:
+  /// **'AgriMore verifies new details before sending money to them. Until then, withdrawals wait.'**
+  String get payoutFormIntro;
+
+  /// Payout form submit.
+  ///
+  /// In en, this message translates to:
+  /// **'Send for verification'**
+  String get payoutFormSubmit;
+
+  /// Payout form busy label.
+  ///
+  /// In en, this message translates to:
+  /// **'Sending…'**
+  String get payoutFormSending;
+
+  /// Toast after sending new details.
+  ///
+  /// In en, this message translates to:
+  /// **'Sent for verification. We\'ll let you know.'**
+  String get payoutFormSent;
+
+  /// Payout form failure.
+  ///
+  /// In en, this message translates to:
+  /// **'Couldn\'t send your details. Try again.'**
+  String get payoutFormFailed;
+
+  /// Refusal: one pending change at a time.
+  ///
+  /// In en, this message translates to:
+  /// **'A change is already waiting for review.'**
+  String get payoutFormPending;
 }
 
 class _AppLocalizationsDelegate

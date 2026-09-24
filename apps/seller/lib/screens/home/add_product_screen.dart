@@ -2,14 +2,15 @@ import 'dart:typed_data';
 
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
-import 'package:agrimore_ui/agrimore_ui.dart';
-import 'package:agrimore_services/agrimore_services.dart';
+import 'package:agrimore_services/agrimore_services.dart' hide DefaultFirebaseOptions;
 import 'package:firebase_storage/firebase_storage.dart';
 import 'package:geolocator/geolocator.dart';
 import 'package:image_picker/image_picker.dart';
 import '../../providers/seller_auth_provider.dart';
 import '../../providers/seller_product_provider.dart';
+import '../../design_system/design_system.dart';
 import '../../l10n/app_localizations.dart';
+import '../products/seller_products_screen.dart' show productStockBadge;
 import '../products/widgets/product_tax_section.dart';
 import '../products/product_stats.dart';
 import '../../providers/seller_order_provider.dart';
@@ -91,6 +92,12 @@ class _AddProductScreenState extends State<AddProductScreen> {
   double? _basePrice;
   double? _areaPrice;
   bool _isB2BEnabled = false;
+
+  // Redesign (board 18-04, decision D6): one form + sub-screens.
+  final _scopeKey = GlobalKey<SellerFormScopeState>();
+  final ValueNotifier<int> _rev = ValueNotifier(0);
+  bool _dirty = false;
+  bool _saveFailed = false;
 
   static const List<String> _states = ['Tamil Nadu'];
   static const List<String> _tamilNaduDistricts = [
@@ -177,6 +184,13 @@ class _AddProductScreenState extends State<AddProductScreen> {
       }
     }
     _priceController.addListener(_handleManualPriceEdit);
+    for (final c in [
+      _nameController, _descriptionController, _priceController, _originalPriceController, _stockController,
+      _categoryController, _lowStockThresholdController, _districtController, _latController, _lngController,
+      _b2bPriceController, _b2bMoqController, _hsnController,
+    ]) {
+      c.addListener(_markDirty);
+    }
     WidgetsBinding.instance.addPostFrameCallback((_) => _loadCenters());
     _loadCategories();
   }
@@ -209,8 +223,19 @@ class _AddProductScreenState extends State<AddProductScreen> {
     }
   }
 
+  void _markDirty() {
+    if (!_dirty && mounted) setState(() => _dirty = true);
+  }
+
+  @override
+  void setState(VoidCallback fn) {
+    super.setState(fn);
+    _rev.value++;
+  }
+
   @override
   void dispose() {
+    _rev.dispose();
     _nameController.dispose();
     _descriptionController.dispose();
     _priceController.dispose();
@@ -250,6 +275,8 @@ class _AddProductScreenState extends State<AddProductScreen> {
               );
         }
       });
+    } catch (e) {
+      debugPrint('Centres unavailable: $e');
     } finally {
       if (mounted) setState(() => _isLoadingCenters = false);
     }
@@ -402,7 +429,7 @@ class _AddProductScreenState extends State<AddProductScreen> {
 
     final salePrice = double.tryParse(_priceController.text.trim());
     if (salePrice != null && b2bPrice >= salePrice) {
-      _toastError(AppLocalizations.of(context).editorB2bTooHigh(AgFormat.rupeesWhole(b2bPrice), AgFormat.rupeesWhole(salePrice)));
+      _toastError(AppLocalizations.of(context).editorB2bTooHigh(SellerFormat.moneyWhole(b2bPrice), SellerFormat.moneyWhole(salePrice)));
       return false;
     }
 
@@ -519,7 +546,11 @@ class _AddProductScreenState extends State<AddProductScreen> {
         return;
       }
     } else {
-      if (!_formKey.currentState!.validate()) return;
+      if (!_formKey.currentState!.validate()) {
+        setState(() {});
+        WidgetsBinding.instance.addPostFrameCallback((_) => _scopeKey.currentState?.focusFirstInvalid());
+        return;
+      }
       if (!_validateCoverage()) return;
       if (!_validateB2B()) return;
     }
@@ -530,7 +561,10 @@ class _AddProductScreenState extends State<AddProductScreen> {
     final sellerId = auth.currentUser!.uid;
     final productProvider = context.read<SellerProductProvider>();
 
-    setState(() => _isSaving = true);
+    setState(() {
+      _isSaving = true;
+      _saveFailed = false;
+    });
 
     final salePrice = double.tryParse(_priceController.text) ?? 0.0;
     final originalPrice = double.tryParse(_originalPriceController.text);
@@ -616,11 +650,13 @@ class _AddProductScreenState extends State<AddProductScreen> {
       setState(() => _isSaving = false);
 
       if (success) {
-        WsToast.show(context, asDraft ? AppLocalizations.of(context).draftSaved : AppLocalizations.of(context).editorUpdated,
-            tone: WsToastTone.success);
+        _dirty = false;
+        SellerToast.show(context, asDraft ? AppLocalizations.of(context).draftSaved : AppLocalizations.of(context).editorUpdated,
+            tone: SellerToastTone.success);
         Navigator.pop(context);
       } else {
         // SELLER-UI-1c: a failed save used to end silently.
+        setState(() => _saveFailed = true);
         _toastError(AppLocalizations.of(context).editorSaveFailed);
       }
     } else {
@@ -678,469 +714,633 @@ class _AddProductScreenState extends State<AddProductScreen> {
       setState(() => _isSaving = false);
 
       if (success) {
-        WsToast.show(context, asDraft ? AppLocalizations.of(context).draftSaved : AppLocalizations.of(context).editorAdded,
-            tone: WsToastTone.success);
+        _dirty = false;
+        SellerToast.show(context, asDraft ? AppLocalizations.of(context).draftSaved : AppLocalizations.of(context).editorAdded,
+            tone: SellerToastTone.success);
         Navigator.pop(context);
       } else {
+        setState(() => _saveFailed = true);
         _toastError(AppLocalizations.of(context).editorSaveFailed);
       }
     }
   }
 
-  void _toastError(String message) => WsToast.show(context, message, tone: WsToastTone.error);
+  void _toastError(String message) => SellerToast.show(context, message, tone: SellerToastTone.danger);
 
-  /// A titled, bordered section (ADR §7 card) with an icon and a hint.
-  Widget _section({required IconData icon, required String title, String? hint, Widget? trailing, required List<Widget> children}) {
-    final t = context.ws;
-    final text = context.wsText;
-    return Card(
-      margin: EdgeInsets.zero,
-      child: Padding(
-        padding: const EdgeInsets.all(WsSpace.s16),
-        child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
-          Row(children: [
-            Container(
-              padding: const EdgeInsets.all(WsSpace.s8),
-              decoration: BoxDecoration(color: t.primarySubtle, borderRadius: BorderRadius.circular(WsRadius.small)),
-              child: Icon(icon, color: t.primary, size: WsIconSize.control),
-            ),
-            const SizedBox(width: WsSpace.s12),
+  /// A user edit outside the text fields.
+  void _edit(VoidCallback fn) => setState(() {
+        fn();
+        _dirty = true;
+      });
+
+  // ─────────────────────── sub-screens (decision D6) ───────────────────────
+
+  Map<String, Object?> _snapshot() => {
+        'price': _priceController.text,
+        'mrp': _originalPriceController.text,
+        'district': _districtController.text,
+        'lat': _latController.text,
+        'lng': _lngController.text,
+        'b2bPrice': _b2bPriceController.text,
+        'b2bMoq': _b2bMoqController.text,
+        'hsn': _hsnController.text,
+        'gst': _gstRate,
+        'variants': List.of(_variants),
+        'locationType': _locationType,
+        'state': _selectedState,
+        'radius': _radiusKm,
+        'b2b': _isB2BEnabled,
+        'center': _selectedCenter,
+        'source': _priceSource,
+        'manual': _manualPriceEdited,
+        'area': _areaPrice,
+        'dirty': _dirty,
+      };
+
+  void _restore(Map<String, Object?> s) {
+    _isApplyingProgrammaticPrice = true;
+    _priceController.text = s['price']! as String;
+    _isApplyingProgrammaticPrice = false;
+    _originalPriceController.text = s['mrp']! as String;
+    _districtController.text = s['district']! as String;
+    _latController.text = s['lat']! as String;
+    _lngController.text = s['lng']! as String;
+    _b2bPriceController.text = s['b2bPrice']! as String;
+    _b2bMoqController.text = s['b2bMoq']! as String;
+    _hsnController.text = s['hsn']! as String;
+    setState(() {
+      _gstRate = s['gst'] as double?;
+      _variants = s['variants']! as List<ProductVariant>;
+      _locationType = s['locationType']! as String;
+      _selectedState = s['state']! as String;
+      _radiusKm = s['radius']! as double;
+      _isB2BEnabled = s['b2b']! as bool;
+      _selectedCenter = s['center'] as Map<String, dynamic>?;
+      _priceSource = s['source']! as String;
+      _manualPriceEdited = s['manual']! as bool;
+      _areaPrice = s['area'] as double?;
+      _dirty = s['dirty']! as bool;
+    });
+  }
+
+  /// Opens a sub-screen that edits this form's state live. "Apply changes"
+  /// keeps the edits (after [validate]); leaving any other way restores
+  /// what was there before.
+  Future<void> _openSubscreen(String title, WidgetBuilder body, {bool Function()? validate}) async {
+    final before = _snapshot();
+    final applied = await Navigator.of(context).push<bool>(MaterialPageRoute(
+      builder: (routeContext) => _EditorSubscreen(
+        title: title,
+        summary: _summaryHeader(),
+        rev: _rev,
+        body: body,
+        onApply: () {
+          if (validate != null && !validate()) return;
+          Navigator.of(routeContext).pop(true);
+        },
+      ),
+    ));
+    if (applied != true && mounted) _restore(before);
+  }
+
+  Widget _summaryHeader() => Builder(builder: (context) {
+        final l10n = AppLocalizations.of(context);
+        final text = context.text;
+        final existing = isEditing ? widget.existingProduct!.primaryImage : (_masterImages.isEmpty ? '' : _masterImages.first);
+        final name = _nameController.text.trim();
+        return SellerCard(
+          child: Row(children: [
+            SellerImage(url: existing, bytes: _selectedImageBytes, size: SellerSize.thumbMd),
+            const SizedBox(width: SellerSpace.s12),
             Expanded(
               child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
-                Text(title, style: text.titleSmall),
-                if (hint != null) Text(hint, style: text.bodySmall!.copyWith(color: t.textSecondary)),
+                Text(name.isEmpty ? l10n.editorNewTitle : name, style: text.titleSmall),
+                if (_priceController.text.trim().isNotEmpty)
+                  Text(SellerFormat.money(double.tryParse(_priceController.text.trim()) ?? 0), style: text.bodyMedium!.tabular),
+                if (_categoryController.text.trim().isNotEmpty) Text(_categoryController.text.trim(), style: text.bodyMedium),
               ]),
             ),
-            if (trailing != null) trailing,
           ]),
-          if (children.isNotEmpty) const SizedBox(height: WsSpace.s16),
-          ...children,
-        ]),
-      ),
-    );
-  }
+        );
+      });
+
+  // ─────────────────────── form parts ───────────────────────
 
   /// Last-30-day sales for the product being edited (gap 18).
   Widget _buildStatsCard() {
     final l10n = AppLocalizations.of(context);
-    final t = context.ws;
-    final text = context.wsText;
+    final text = context.text;
     final stats = ProductSalesStats.of(context.watch<SellerOrderProvider>().allOrders, widget.existingProduct!.id, DateTime.now());
     Widget cell(String value, String label) => Expanded(
-          child: Column(children: [
-            Text(value, style: text.titleMedium!.copyWith(fontFeatures: WsType.tabularFigures)),
-            Text(label, style: text.bodySmall!.copyWith(color: t.textSecondary)),
-          ]),
-        );
-    return Card(
-      margin: EdgeInsets.zero,
-      child: Padding(
-        padding: const EdgeInsets.all(WsSpace.s16),
-        child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
-          Text(l10n.productStatsTitle, style: text.titleSmall),
-          const SizedBox(height: WsSpace.s12),
-          Row(children: [
-            cell(AgFormat.count(stats.units), l10n.productStatsUnits),
-            cell(AgFormat.rupeesWhole(stats.revenue), l10n.kpiSales),
-            cell(AgFormat.count(stats.orders), l10n.kpiOrders),
-          ]),
-          const SizedBox(height: WsSpace.s8),
-          Text(
-            stats.lastSold == null ? l10n.productStatsNeverSold : l10n.productStatsLastSold(AgFormat.date(stats.lastSold!)),
-            style: text.bodySmall!.copyWith(color: t.textSecondary),
-          ),
-        ]),
-      ),
-    );
-  }
-
-  Widget _buildImagePicker() {
-    final l10n = AppLocalizations.of(context);
-    final t = context.ws;
-    final text = context.wsText;
-    final existingImage = isEditing ? widget.existingProduct!.primaryImage : '';
-    final hasSelectedImage = _selectedImageBytes != null;
-    final hasExistingImage = existingImage.isNotEmpty;
-    return Semantics(
-      button: true,
-      label: hasSelectedImage || hasExistingImage ? l10n.editorChangePhoto : l10n.editorAddPhoto,
-      child: InkWell(
-        onTap: _isSaving ? null : _pickProductImage,
-        borderRadius: BorderRadius.circular(WsRadius.card),
-        child: AspectRatio(
-          aspectRatio: 16 / 9,
-          child: ClipRRect(
-            borderRadius: BorderRadius.circular(WsRadius.card),
-            child: Stack(fit: StackFit.expand, children: [
-              if (hasSelectedImage)
-                Image.memory(_selectedImageBytes!, fit: BoxFit.cover)
-              else if (hasExistingImage)
-                Image.network(existingImage, fit: BoxFit.cover, errorBuilder: (_, __, ___) => ColoredBox(color: t.surfaceSunken))
-              else
-                ColoredBox(
-                  color: t.surfaceSunken,
-                  child: Column(mainAxisAlignment: MainAxisAlignment.center, children: [
-                    Icon(AgIcons.camera, size: WsIconSize.feature, color: t.textTertiary),
-                    const SizedBox(height: WsSpace.s8),
-                    Text(l10n.editorAddPhoto, style: text.bodyMedium!.copyWith(color: t.textSecondary)),
-                  ]),
-                ),
-              if (hasSelectedImage || hasExistingImage)
-                Positioned(
-                  right: WsSpace.s12,
-                  bottom: WsSpace.s12,
-                  child: ExcludeSemantics(
-                    child: Chip(
-                      avatar: Icon(AgIcons.image, size: WsIconSize.supporting, color: t.primary),
-                      label: Text(l10n.editorChangePhoto),
-                    ),
-                  ),
-                ),
+          child: MergeSemantics(
+            child: Column(children: [
+              Text(value, style: text.titleMedium!.tabular),
+              Text(label, style: text.bodySmall, textAlign: TextAlign.center),
             ]),
           ),
+        );
+    return SellerCard(
+      child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
+        Text(l10n.productStatsTitle, style: text.titleSmall),
+        const SizedBox(height: SellerSpace.s12),
+        Row(crossAxisAlignment: CrossAxisAlignment.start, children: [
+          cell(SellerFormat.count(stats.units), l10n.productStatsUnits),
+          cell(SellerFormat.moneyWhole(stats.revenue), l10n.kpiSales),
+          cell(SellerFormat.count(stats.orders), l10n.kpiOrders),
+        ]),
+        const SizedBox(height: SellerSpace.s8),
+        Text(
+          stats.lastSold == null ? l10n.productStatsNeverSold : l10n.productStatsLastSold(SellerFormat.date(stats.lastSold!)),
+          style: text.bodySmall,
         ),
-      ),
+      ]),
     );
   }
 
-  Widget _suggestionList(List<Widget> tiles) => Card(
-        margin: const EdgeInsets.only(top: WsSpace.s8),
-        clipBehavior: Clip.antiAlias,
-        child: Column(children: tiles),
+  /// Photo row (board 18-04): the product photo with a camera badge, then
+  /// "Add photo" — or, once there is one, [Replace photo] + stock details.
+  Widget _buildImagePicker() {
+    final l10n = AppLocalizations.of(context);
+    final text = context.text;
+    final existingImage = isEditing ? widget.existingProduct!.primaryImage : (_masterImages.isEmpty ? '' : _masterImages.first);
+    final hasImage = _selectedImageBytes != null || existingImage.isNotEmpty;
+    final photo = SellerPhotoTile(
+      label: hasImage ? l10n.editorChangePhoto : l10n.editorAddPhoto,
+      state: hasImage ? SellerUploadState.uploaded : SellerUploadState.empty,
+      imageUrl: existingImage,
+      bytes: _selectedImageBytes,
+      size: SellerSize.thumbXl + SellerSpace.s32,
+      onTap: _isSaving ? null : _pick,
+    );
+    return Row(crossAxisAlignment: CrossAxisAlignment.start, children: [
+      photo,
+      const SizedBox(width: SellerSpace.s16),
+      Expanded(
+        child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
+          if (hasImage)
+            SellerButton.secondary(label: l10n.editorReplacePhoto, icon: SellerIcons.camera, compact: true, onPressed: _isSaving ? null : _pick)
+          else
+            Text(l10n.editorAddPhoto, style: text.titleSmall),
+          if (isEditing) ...[
+            const SizedBox(height: SellerSpace.s8),
+            productStockBadge(l10n, widget.existingProduct!),
+            const SizedBox(height: SellerSpace.s4),
+            Text(l10n.editorLowStockAlert(_lowStockThresholdController.text.trim()), style: text.bodyMedium),
+          ],
+        ]),
+      ),
+    ]);
+  }
+
+  Future<void> _pick() async {
+    final before = _selectedImageBytes;
+    await _pickProductImage();
+    if (_selectedImageBytes != before) _edit(() {});
+  }
+
+  Widget _suggestions(List<Widget> rows) => Padding(
+        padding: const EdgeInsets.only(top: SellerSpace.s8),
+        child: SellerMenuGroup(children: rows),
       );
 
   Widget _buildMasterSuggestions() {
     if (_isSearchingMasterProducts) {
-      return const Padding(padding: EdgeInsets.only(top: WsSpace.s8), child: LinearProgressIndicator());
+      return Padding(padding: const EdgeInsets.only(top: SellerSpace.s8), child: SellerProgressLabel(label: AppLocalizations.of(context).dsLoading, center: false));
     }
     if (_masterSuggestions.isEmpty) return const SizedBox.shrink();
     final l10n = AppLocalizations.of(context);
-    return _suggestionList([
+    return _suggestions([
       for (final product in _masterSuggestions)
-        ListTile(
-          leading: const Icon(AgIcons.product),
-          title: Text((product['name'] ?? '').toString(), maxLines: 1, overflow: TextOverflow.ellipsis),
-          subtitle: Text(
-            [
-              if (product['category'] != null) product['category'].toString(),
-              if (product['unit'] != null) product['unit'].toString(),
-              if ((product['basePrice'] ?? product['salePrice'] ?? product['price']) is num)
-                AgFormat.rupees((product['basePrice'] ?? product['salePrice'] ?? product['price']) as num),
-            ].join(l10n.editorSeparator),
-            maxLines: 1,
-            overflow: TextOverflow.ellipsis,
-          ),
-          onTap: () => _selectMasterProduct(product),
+        SellerListRow(
+          icon: SellerIcons.product,
+          title: (product['name'] ?? '').toString(),
+          subtitle: [
+            if (product['category'] != null) product['category'].toString(),
+            if (product['unit'] != null) product['unit'].toString(),
+            if ((product['basePrice'] ?? product['salePrice'] ?? product['price']) is num)
+              SellerFormat.money((product['basePrice'] ?? product['salePrice'] ?? product['price']) as num),
+          ].join(l10n.editorSeparator),
+          showChevron: false,
+          onTap: () {
+            _selectMasterProduct(product);
+            _dirty = true;
+          },
         ),
     ]);
   }
 
   Widget _buildCategorySuggestions() {
     if (_categorySuggestions.isEmpty) return const SizedBox.shrink();
-    return _suggestionList([
+    return _suggestions([
       for (final category in _categorySuggestions)
-        ListTile(
-          leading: const Icon(AgIcons.tag),
-          title: Text(category.name, maxLines: 1, overflow: TextOverflow.ellipsis),
-          onTap: () => _selectCategorySuggestion(category),
-        ),
+        SellerListRow(icon: SellerIcons.tag, title: category.name, showChevron: false, onTap: () => _selectCategorySuggestion(category)),
     ]);
   }
 
-  Widget _buildSelectorPricingSection(ThemeData theme) {
+  // Pricing & tax (board 18-06). Centre pricing shows only real data: the
+  // centre list and mapped prices come from the server.
+  Widget _pricingBody(BuildContext context) {
     final l10n = AppLocalizations.of(context);
+    final c = context.colors;
+    final text = context.text;
     final selectedCenterId = _selectedCenter?['id']?.toString();
     final priceLabel = switch (_priceSource) {
       'manual' => l10n.editorPriceManual,
       'area' => l10n.editorPriceArea,
       _ => l10n.editorPriceDefault,
     };
-    String money(double? v) => v == null ? l10n.editorNoValue : AgFormat.rupeesWhole(v);
-    return _section(
-      icon: AgIcons.store,
-      title: l10n.editorCenterPricing,
-      trailing: Chip(label: Text(priceLabel), visualDensity: VisualDensity.compact),
-      children: [
-        DropdownButtonFormField<String>(
-          initialValue: selectedCenterId,
-          decoration: InputDecoration(
-            labelText: _isLoadingCenters ? l10n.editorLoadingCenters : l10n.editorCenter,
-            prefixIcon: const Icon(AgIcons.location),
+    String money(double? v) => v == null ? l10n.editorNoValue : SellerFormat.moneyWhole(v);
+    Widget tile(String label, String value, bool current) => Expanded(
+          child: SellerCard(
+            tone: current ? SellerCardTone.mint : SellerCardTone.surface,
+            padding: const EdgeInsets.all(SellerSpace.s12),
+            child: MergeSemantics(
+              child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
+                Text(label, style: text.bodyMedium!.copyWith(color: current ? c.textPrimary : null)),
+                Text(value, style: text.titleMedium!.tabular),
+              ]),
+            ),
           ),
-          items: [
-            for (final center in _centers)
-              DropdownMenuItem<String>(value: center['id'].toString(), child: Text(center['name'].toString())),
-          ],
-          onChanged: (id) {
-            final center = _centers.cast<Map<String, dynamic>?>().firstWhere(
-                  (item) => item?['id']?.toString() == id,
-                  orElse: () => null,
-                );
-            _selectCenter(center);
-          },
+        );
+    return Column(crossAxisAlignment: CrossAxisAlignment.stretch, children: [
+      _priceFields(context),
+      const SizedBox(height: SellerSpace.section),
+      SellerSectionHeader(title: l10n.editorCenterPricing),
+      SellerSelectField<String>(
+        label: _isLoadingCenters ? l10n.editorLoadingCenters : l10n.editorCenter,
+        prefixIcon: SellerIcons.location,
+        value: _centers.any((c) => c['id'].toString() == selectedCenterId) ? selectedCenterId : null,
+        options: [for (final center in _centers) SellerOption(center['id'].toString(), center['name'].toString())],
+        onChanged: (id) {
+          final center = _centers.cast<Map<String, dynamic>?>().firstWhere((item) => item?['id']?.toString() == id, orElse: () => null);
+          _dirty = true;
+          _selectCenter(center);
+        },
+      ),
+      const SizedBox(height: SellerSpace.s12),
+      Row(children: [
+        tile(l10n.editorPriceDefault, money(_basePrice), _priceSource == 'default'),
+        const SizedBox(width: SellerSpace.s8),
+        tile(l10n.editorPriceArea, money(_areaPrice), _priceSource == 'area'),
+        const SizedBox(width: SellerSpace.s8),
+        tile(l10n.editorPriceCurrent, money(double.tryParse(_priceController.text.trim())), _priceSource == 'manual'),
+      ]),
+      const SizedBox(height: SellerSpace.s12),
+      Wrap(crossAxisAlignment: WrapCrossAlignment.center, spacing: SellerSpace.s8, runSpacing: SellerSpace.s8, children: [
+        Text(l10n.editorPriceSourceLabel, style: text.bodyMedium),
+        SellerStatusBadge(label: priceLabel, tone: SellerTone.brand),
+        SellerButton.tertiary(
+          label: l10n.editorResetPrice,
+          icon: SellerIcons.replace,
+          onPressed: (_basePrice == null && _areaPrice == null) ? null : () => _edit(_resetToMappedPrice),
         ),
-        const SizedBox(height: WsSpace.s12),
-        Wrap(spacing: WsSpace.s8, runSpacing: WsSpace.s8, children: [
-          Chip(label: Text(l10n.editorPriceChip(l10n.editorPriceDefault, money(_basePrice)))),
-          Chip(label: Text(l10n.editorPriceChip(l10n.editorPriceArea, money(_areaPrice)))),
-          Chip(label: Text(l10n.editorPriceChip(l10n.editorPriceCurrent, money(double.tryParse(_priceController.text.trim()))))),
-        ]),
-        const SizedBox(height: WsSpace.s8),
-        Align(
-          alignment: Alignment.centerLeft,
-          child: TextButton.icon(
-            onPressed: (_basePrice == null && _areaPrice == null) ? null : _resetToMappedPrice,
-            icon: const Icon(AgIcons.undo),
-            label: Text(l10n.editorResetPrice),
-          ),
-        ),
-      ],
-    );
+      ]),
+      const SizedBox(height: SellerSpace.section),
+      ProductTaxSection(hsnController: _hsnController, gstRate: _gstRate, onGstRateChanged: (v) => _edit(() => _gstRate = v)),
+    ]);
   }
 
-  Widget _buildCoverageSection(ThemeData theme) {
+  Widget _priceFields(BuildContext context) {
     final l10n = AppLocalizations.of(context);
-    final text = context.wsText;
-    final districtValue =
-        _tamilNaduDistricts.contains(_districtController.text.trim()) ? _districtController.text.trim() : null;
-    return _section(
-      icon: AgIcons.location,
-      title: l10n.editorCoverage,
-      hint: l10n.editorCoverageHint,
-      children: [
-        Wrap(spacing: WsSpace.s8, runSpacing: WsSpace.s8, children: [
-          for (final (value, label) in [
-            ('state', l10n.editorCoverageState),
-            ('district', l10n.editorCoverageDistrict),
-            ('radius', l10n.editorCoverageRadius),
-          ])
-            ChoiceChip(label: Text(label), selected: _locationType == value, onSelected: (_) => setState(() => _locationType = value)),
-        ]),
-        const SizedBox(height: WsSpace.s16),
-        DropdownButtonFormField<String>(
-          initialValue: _selectedState,
-          decoration: InputDecoration(labelText: l10n.accountState, prefixIcon: const Icon(AgIcons.location)),
-          items: [for (final s in _states) DropdownMenuItem(value: s, child: Text(s))],
-          onChanged: (value) {
-            if (value == null) return;
-            setState(() => _selectedState = value);
-          },
-        ),
-        if (_locationType == 'district') ...[
-          const SizedBox(height: WsSpace.s16),
-          DropdownButtonFormField<String>(
-            initialValue: districtValue,
-            decoration: InputDecoration(labelText: l10n.editorCoverageDistrict, prefixIcon: const Icon(AgIcons.location)),
-            items: [for (final d in _tamilNaduDistricts) DropdownMenuItem(value: d, child: Text(d))],
-            onChanged: (value) {
-              if (value == null) return;
-              setState(() => _districtController.text = value);
-            },
-            validator: (_) =>
-                _locationType == 'district' && _districtController.text.trim().isEmpty ? l10n.editorRequired : null,
-          ),
-        ],
-        if (_locationType == 'radius') ...[
-          const SizedBox(height: WsSpace.s16),
-          Row(children: [
-            Expanded(
-              child: TextFormField(
-                controller: _latController,
-                keyboardType: const TextInputType.numberWithOptions(decimal: true, signed: true),
-                decoration: InputDecoration(labelText: l10n.editorLatitude),
-              ),
-            ),
-            const SizedBox(width: WsSpace.s12),
-            Expanded(
-              child: TextFormField(
-                controller: _lngController,
-                keyboardType: const TextInputType.numberWithOptions(decimal: true, signed: true),
-                decoration: InputDecoration(labelText: l10n.editorLongitude),
-              ),
-            ),
-          ]),
-          const SizedBox(height: WsSpace.s12),
-          SaLoadingButton(
-            text: l10n.editorUseLocation,
-            loadingText: l10n.editorDetecting,
-            isLoading: _isDetectingCoverageLocation,
-            variant: SaButtonVariant.outlined,
-            icon: AgIcons.location,
-            onPressed: _isDetectingCoverageLocation ? null : _useCurrentCoverageLocation,
-          ),
-          const SizedBox(height: WsSpace.s12),
-          Text(l10n.editorRadiusValue(_radiusKm.round()), style: text.labelLarge),
-          Slider(
-            min: 1,
-            max: 50,
-            divisions: 49,
-            value: _radiusKm.clamp(1, 50),
-            label: l10n.editorRadiusValue(_radiusKm.round()),
-            onChanged: (value) => setState(() => _radiusKm = value),
-          ),
-        ],
-      ],
+    String? required(String v) => v.trim().isEmpty ? l10n.editorRequired : null;
+    final price = SellerTextField(
+      label: l10n.editorSalePrice,
+      required: true,
+      controller: _priceController,
+      prefixText: SellerFormat.rupeeSymbol,
+      tabular: true,
+      keyboardType: const TextInputType.numberWithOptions(decimal: true),
+      validator: required,
     );
+    final mrp = SellerTextField(
+      label: l10n.editorMrp,
+      controller: _originalPriceController,
+      prefixText: SellerFormat.rupeeSymbol,
+      tabular: true,
+      keyboardType: const TextInputType.numberWithOptions(decimal: true),
+    );
+    return _pair(price, mrp);
   }
 
-  Widget _buildB2BSection(ThemeData theme) {
+  Widget _pair(Widget a, Widget b) => context.largeText
+      ? Column(crossAxisAlignment: CrossAxisAlignment.stretch, children: [a, const SizedBox(height: SellerSpace.s16), b])
+      : Row(crossAxisAlignment: CrossAxisAlignment.start, children: [
+          Expanded(child: a),
+          const SizedBox(width: SellerSpace.s12),
+          Expanded(child: b),
+        ]);
+
+  // Coverage (board 18-07).
+  Widget _coverageBody(BuildContext context) {
     final l10n = AppLocalizations.of(context);
-    final t = context.ws;
-    final text = context.wsText;
-    return _section(
-      icon: AgIcons.store,
-      title: l10n.editorB2b,
-      hint: l10n.editorB2bHint,
-      trailing: Switch(value: _isB2BEnabled, onChanged: (value) => setState(() => _isB2BEnabled = value)),
-      children: [
-        if (_isB2BEnabled) ...[
-          Row(children: [
-            Expanded(
-              child: TextFormField(
-                controller: _b2bPriceController,
-                keyboardType: const TextInputType.numberWithOptions(decimal: true),
-                decoration: InputDecoration(labelText: l10n.editorB2bPrice, prefixIcon: const Icon(AgIcons.rupee)),
-              ),
-            ),
-            const SizedBox(width: WsSpace.s12),
-            Expanded(
-              child: TextFormField(
-                controller: _b2bMoqController,
-                keyboardType: TextInputType.number,
-                decoration: InputDecoration(labelText: l10n.editorB2bMoq),
-              ),
-            ),
-          ]),
-          const SizedBox(height: WsSpace.s8),
-          Text(l10n.editorB2bRule, style: text.bodySmall!.copyWith(color: t.textSecondary)),
+    final text = context.text;
+    final districtValue = _tamilNaduDistricts.contains(_districtController.text.trim()) ? _districtController.text.trim() : null;
+    return Column(crossAxisAlignment: CrossAxisAlignment.stretch, children: [
+      Text(l10n.editorCoverageLead, style: text.bodyLarge),
+      const SizedBox(height: SellerSpace.s16),
+      SellerSegmented<String>(
+        semanticLabel: l10n.editorCoverage,
+        segments: [
+          SellerSegment('state', l10n.editorCoverageState),
+          SellerSegment('district', l10n.editorCoverageDistrict),
+          SellerSegment('radius', l10n.editorCoverageRadius),
+        ],
+        selected: _locationType,
+        onChanged: (v) => _edit(() => _locationType = v),
+      ),
+      const SizedBox(height: SellerSpace.s16),
+      SellerSelectField<String>(
+        label: l10n.accountState,
+        prefixIcon: SellerIcons.location,
+        value: _selectedState,
+        options: [for (final s in _states) SellerOption(s, s)],
+        onChanged: (v) {
+          if (v != null) _edit(() => _selectedState = v);
+        },
+      ),
+      if (_locationType == 'district') ...[
+        const SizedBox(height: SellerSpace.s16),
+        SellerSelectField<String>(
+          label: l10n.editorCoverageDistrict,
+          required: true,
+          prefixIcon: SellerIcons.location,
+          value: districtValue,
+          options: [for (final d in _tamilNaduDistricts) SellerOption(d, d)],
+          onChanged: (v) {
+            if (v != null) _edit(() => _districtController.text = v);
+          },
+        ),
+      ],
+      if (_locationType == 'radius') ...[
+        const SizedBox(height: SellerSpace.s16),
+        _pair(
+          SellerTextField(
+            label: l10n.editorLatitude,
+            controller: _latController,
+            tabular: true,
+            keyboardType: const TextInputType.numberWithOptions(decimal: true, signed: true),
+          ),
+          SellerTextField(
+            label: l10n.editorLongitude,
+            controller: _lngController,
+            tabular: true,
+            keyboardType: const TextInputType.numberWithOptions(decimal: true, signed: true),
+          ),
+        ),
+        const SizedBox(height: SellerSpace.s12),
+        SellerButton.secondary(
+          label: l10n.editorUseLocation,
+          icon: SellerIcons.locate,
+          loading: _isDetectingCoverageLocation,
+          loadingLabel: l10n.editorDetecting,
+          expand: true,
+          onPressed: _useCurrentCoverageLocation,
+        ),
+        const SizedBox(height: SellerSpace.s12),
+        SellerSliderField(
+          label: l10n.editorCoverageRadius,
+          value: _radiusKm.clamp(1, 50),
+          min: 1,
+          max: 50,
+          divisions: 49,
+          valueLabel: l10n.editorRadiusValue(_radiusKm.round()),
+          onChanged: (v) => _edit(() => _radiusKm = v),
+        ),
+      ],
+      const SizedBox(height: SellerSpace.s16),
+      SellerCard(
+        tone: SellerCardTone.mint,
+        child: Row(crossAxisAlignment: CrossAxisAlignment.start, children: [
+          const SellerIconTile(icon: SellerIcons.location),
+          const SizedBox(width: SellerSpace.s12),
+          Expanded(
+            child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
+              Text(l10n.editorCoverageSummary, style: text.bodyMedium!.copyWith(color: context.colors.textPrimary)),
+              Text(_coverageLabel(), style: text.titleSmall),
+            ]),
+          ),
+        ]),
+      ),
+    ]);
+  }
+
+  // Wholesale (board 18-08).
+  Widget _wholesaleBody(BuildContext context) {
+    final l10n = AppLocalizations.of(context);
+    final text = context.text;
+    final price = double.tryParse(_b2bPriceController.text.trim());
+    final moq = int.tryParse(_b2bMoqController.text.trim());
+    return Column(crossAxisAlignment: CrossAxisAlignment.stretch, children: [
+      SellerSwitchRow(
+        title: l10n.editorB2b,
+        subtitle: l10n.editorB2bHint,
+        icon: SellerIcons.wholesale,
+        bordered: true,
+        value: _isB2BEnabled,
+        onChanged: (v) => _edit(() => _isB2BEnabled = v),
+      ),
+      const SizedBox(height: SellerSpace.s16),
+      if (!_isB2BEnabled)
+        SellerEmptyState(icon: SellerIcons.store, title: l10n.editorWholesaleOffTitle, message: l10n.editorWholesaleOffBody, compact: true)
+      else ...[
+        SellerTextField(
+          label: l10n.editorB2bPrice,
+          required: true,
+          controller: _b2bPriceController,
+          prefixText: SellerFormat.rupeeSymbol,
+          tabular: true,
+          helper: l10n.editorB2bRuleShort,
+          keyboardType: const TextInputType.numberWithOptions(decimal: true),
+        ),
+        const SizedBox(height: SellerSpace.s16),
+        SellerTextField(
+          label: l10n.editorB2bMoq,
+          required: true,
+          controller: _b2bMoqController,
+          tabular: true,
+          helper: l10n.editorMoqHelper,
+          keyboardType: TextInputType.number,
+        ),
+        if (price != null && price > 0 && moq != null && moq > 0) ...[
+          const SizedBox(height: SellerSpace.s16),
+          SellerCard(
+            tone: SellerCardTone.mint,
+            child: Column(crossAxisAlignment: CrossAxisAlignment.stretch, children: [
+              Row(children: [
+                const Icon(SellerIcons.tag, size: SellerIconSize.md),
+                const SizedBox(width: SellerSpace.s8),
+                Text(l10n.editorWholesaleSummary, style: text.titleSmall),
+              ]),
+              SellerKeyValueRow(label: l10n.editorB2bPrice, value: SellerFormat.money(price), tabular: true),
+              SellerKeyValueRow(label: l10n.editorB2bMoq, value: l10n.editorWholesaleMinUnits(moq), tabular: true),
+            ]),
+          ),
         ],
       ],
-    );
+    ]);
   }
 
   @override
   Widget build(BuildContext context) {
-    final theme = Theme.of(context);
     final l10n = AppLocalizations.of(context);
-    String? required(String? v) => (v ?? '').trim().isEmpty ? l10n.editorRequired : null;
-    const gap = SizedBox(height: WsSpace.s16);
+    String? required(String v) => v.trim().isEmpty ? l10n.editorRequired : null;
+    const gap = SizedBox(height: SellerSpace.s16);
+    final invalid = _scopeKey.currentState?.invalidLabels ?? const <String>[];
+    final b2bPrice = double.tryParse(_b2bPriceController.text.trim());
+    final b2bMoq = int.tryParse(_b2bMoqController.text.trim());
 
-    return Scaffold(
-      appBar: AppBar(
-        leading: IconButton(tooltip: l10n.back, icon: const Icon(AgIcons.arrowLeft), onPressed: () => Navigator.of(context).maybePop()),
-        title: Text(isEditing ? l10n.editorEditTitle : l10n.editorNewTitle),
-      ),
-      body: SingleChildScrollView(
-        padding: const EdgeInsets.all(WsSpace.page),
-        child: Center(
-          child: ConstrainedBox(
-            constraints: const BoxConstraints(maxWidth: WsSize.formMaxWidth),
-            child: Form(
-              key: _formKey,
-              child: Column(crossAxisAlignment: CrossAxisAlignment.stretch, children: [
-                if (isEditing) ...[
-                  _buildStatsCard(),
-                  const SizedBox(height: WsSpace.s16),
+    final stock = SellerTextField(
+      label: l10n.editorStock,
+      required: true,
+      controller: _stockController,
+      tabular: true,
+      keyboardType: TextInputType.number,
+      validator: required,
+    );
+    final lowStock = SellerTextField(
+      label: l10n.editorLowStock,
+      controller: _lowStockThresholdController,
+      tabular: true,
+      helper: l10n.editorLowStockHelp,
+      keyboardType: TextInputType.number,
+    );
+
+    return SellerDiscardGuard(
+      hasChanges: _dirty && !_isSaving,
+      child: Scaffold(
+        appBar: SellerAppBar.detail(context, title: isEditing ? l10n.editorEditTitle : l10n.editorNewTitle),
+        body: SellerFormScope(
+          key: _scopeKey,
+          child: Form(
+            key: _formKey,
+            child: SellerPage(
+              footer: SellerButtonBar(children: [
+                SellerButton.secondary(
+                  label: l10n.saveDraftCta,
+                  icon: SellerIcons.document,
+                  onPressed: _isSaving ? null : () => _saveProduct(asDraft: true),
+                ),
+                SellerButton(
+                  label: isEditing ? l10n.editorUpdate : l10n.editorSave,
+                  icon: SellerIcons.check,
+                  loading: _isSaving,
+                  loadingLabel: l10n.editorSaving,
+                  onPressed: () => _saveProduct(),
+                ),
+              ]),
+              children: [
+                if (invalid.isNotEmpty) ...[
+                  SellerFormErrorSummary(labels: invalid, onSelect: (label) => _scopeKey.currentState?.focusLabel(label)),
+                  gap,
                 ],
+                if (_saveFailed) ...[
+                  SellerBanner(tone: SellerTone.danger, title: l10n.editorSaveFailed, message: l10n.editorSaveFailedBody),
+                  gap,
+                ],
+                if (isEditing) ...[_buildStatsCard(), gap],
                 _buildImagePicker(),
-                const SizedBox(height: WsSpace.s24),
-                TextFormField(
+                const SizedBox(height: SellerSpace.s24),
+                SellerTextField(
+                  label: l10n.editorName,
+                  required: true,
                   controller: _nameController,
-                  decoration: InputDecoration(labelText: l10n.editorName, prefixIcon: const Icon(AgIcons.product)),
+                  textCapitalization: TextCapitalization.sentences,
                   onChanged: _searchMasterProducts,
                   validator: required,
                 ),
                 _buildMasterSuggestions(),
                 gap,
-                _buildSelectorPricingSection(theme),
-                gap,
-                TextFormField(
+                SellerTextField(
+                  label: l10n.editorDescription,
+                  hint: l10n.editorDescriptionHint,
+                  required: true,
                   controller: _descriptionController,
-                  maxLines: 4,
-                  decoration: InputDecoration(labelText: l10n.editorDescription, hintText: l10n.editorDescriptionHint, alignLabelWithHint: true),
+                  maxLines: 5,
+                  minLines: 3,
+                  textCapitalization: TextCapitalization.sentences,
                   validator: required,
                 ),
                 gap,
-                Row(crossAxisAlignment: CrossAxisAlignment.start, children: [
-                  Expanded(
-                    child: TextFormField(
-                      controller: _priceController,
-                      keyboardType: const TextInputType.numberWithOptions(decimal: true),
-                      decoration: InputDecoration(labelText: l10n.editorSalePrice, prefixIcon: const Icon(AgIcons.rupee)),
-                      validator: required,
-                    ),
-                  ),
-                  const SizedBox(width: WsSpace.s16),
-                  Expanded(
-                    child: TextFormField(
-                      controller: _originalPriceController,
-                      keyboardType: const TextInputType.numberWithOptions(decimal: true),
-                      decoration: InputDecoration(labelText: l10n.editorMrp, prefixIcon: const Icon(AgIcons.tag)),
-                    ),
-                  ),
-                ]),
-                gap,
-                _buildB2BSection(theme),
-                gap,
-                Row(crossAxisAlignment: CrossAxisAlignment.start, children: [
-                  Expanded(
-                    child: TextFormField(
-                      controller: _stockController,
-                      keyboardType: TextInputType.number,
-                      decoration: InputDecoration(labelText: l10n.editorStock, prefixIcon: const Icon(AgIcons.inventory)),
-                      validator: required,
-                    ),
-                  ),
-                  const SizedBox(width: WsSpace.s16),
-                  Expanded(
-                    child: TextFormField(
-                      controller: _lowStockThresholdController,
-                      keyboardType: TextInputType.number,
-                      decoration: InputDecoration(
-                        labelText: l10n.editorLowStock,
-                        prefixIcon: const Icon(AgIcons.bell),
-                        helperText: l10n.editorLowStockHelp,
-                        helperMaxLines: 2,
-                      ),
-                    ),
-                  ),
-                ]),
-                gap,
-                TextFormField(
+                SellerTextField(
+                  label: l10n.editorCategory,
+                  hint: l10n.editorCategoryHint,
                   controller: _categoryController,
-                  decoration: InputDecoration(labelText: l10n.editorCategory, hintText: l10n.editorCategoryHint, prefixIcon: const Icon(AgIcons.tag)),
+                  prefixIcon: SellerIcons.sprout,
                   onChanged: _onCategoryTextChanged,
                 ),
                 _buildCategorySuggestions(),
                 gap,
-                ProductTaxSection(
-                  hsnController: _hsnController,
-                  gstRate: _gstRate,
-                  onGstRateChanged: (v) => setState(() => _gstRate = v),
-                ),
+                _priceFields(context),
                 gap,
-                ProductVariantsSection(variants: _variants, onChanged: (v) => setState(() => _variants = v)),
-                gap,
-                _buildCoverageSection(theme),
-                const SizedBox(height: WsSpace.s32),
-                SaLoadingButton(
-                  text: isEditing ? l10n.editorUpdate : l10n.editorSave,
-                  loadingText: l10n.editorSaving,
-                  isLoading: _isSaving,
-                  icon: AgIcons.success,
-                  onPressed: _isSaving ? null : () => _saveProduct(),
-                ),
-                const SizedBox(height: WsSpace.s12),
-                SaLoadingButton(
-                  text: l10n.saveDraftCta,
-                  variant: SaButtonVariant.outlined,
-                  icon: AgIcons.document,
-                  onPressed: _isSaving ? null : () => _saveProduct(asDraft: true),
-                ),
-                const SizedBox(height: WsSpace.s24),
-              ]),
+                _pair(stock, lowStock),
+                const SizedBox(height: SellerSpace.s24),
+                SellerMenuGroup(children: [
+                  SellerListRow(
+                    icon: SellerIcons.packing,
+                    plainIcon: true,
+                    title: l10n.editorPackOptions,
+                    subtitle: _variants.isEmpty ? l10n.editorPackOptionsHint : l10n.editorOptionsCount(_variants.length),
+                    onTap: () => _openSubscreen(
+                      l10n.editorPackOptions,
+                      (_) => ProductVariantsSection(variants: _variants, onChanged: (v) => _edit(() => _variants = v)),
+                    ),
+                  ),
+                  SellerListRow(
+                    icon: SellerIcons.tag,
+                    plainIcon: true,
+                    title: l10n.editorPricingTax,
+                    subtitle: l10n.editorPricingTaxHint,
+                    onTap: () => _openSubscreen(l10n.editorPricingTax, _pricingBody),
+                  ),
+                  SellerListRow(
+                    icon: SellerIcons.coverage,
+                    plainIcon: true,
+                    title: l10n.editorCoverage,
+                    subtitle: _coverageLabel(),
+                    onTap: () => _openSubscreen(l10n.editorCoverage, _coverageBody, validate: _validateCoverage),
+                  ),
+                  SellerListRow(
+                    icon: SellerIcons.wholesale,
+                    plainIcon: true,
+                    title: l10n.editorWholesale,
+                    subtitle: _isB2BEnabled && b2bPrice != null && b2bMoq != null
+                        ? l10n.editorWholesaleLine(SellerFormat.money(b2bPrice), b2bMoq)
+                        : l10n.editorWholesaleRowHint,
+                    onTap: () => _openSubscreen(l10n.editorWholesale, _wholesaleBody, validate: _validateB2B),
+                  ),
+                ]),
+              ],
             ),
           ),
+        ),
+      ),
+    );
+  }
+}
+
+/// Sub-screen chrome (boards 18-05…18-08): back arrow + title, the product
+/// summary, the section, and a sticky [Apply changes]. Rebuilds whenever
+/// the editor's state changes ([rev]).
+class _EditorSubscreen extends StatelessWidget {
+  const _EditorSubscreen({required this.title, required this.summary, required this.rev, required this.body, required this.onApply});
+
+  final String title;
+  final Widget summary;
+  final ValueNotifier<int> rev;
+  final WidgetBuilder body;
+  final VoidCallback onApply;
+
+  @override
+  Widget build(BuildContext context) {
+    final l10n = AppLocalizations.of(context);
+    return Scaffold(
+      appBar: SellerAppBar.detail(context, title: title),
+      body: ValueListenableBuilder<int>(
+        valueListenable: rev,
+        builder: (context, _, __) => SellerPage(
+          gap: SellerSpace.s16,
+          footer: SellerButton(label: l10n.editorApply, icon: SellerIcons.check, expand: true, onPressed: onApply),
+          children: [summary, body(context)],
         ),
       ),
     );

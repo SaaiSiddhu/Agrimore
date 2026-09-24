@@ -10,6 +10,9 @@
 #
 # Generated localisation code (lib/l10n/**) is excluded. The Workspace system itself
 # (packages/agrimore_ui/lib/workspace/**) is where literals legitimately live and is never scanned.
+# An app that owns its design system keeps it in lib/design_system/** (the seller app since
+# SELLER-REDESIGN-1, OWNER_DECISION D-SELLER-OWN-DS) — that folder is the system itself and is skipped too;
+# every screen outside it stays strict.
 # bash 3.2 compatible (no associative arrays).
 set -u
 
@@ -45,6 +48,7 @@ hits() { # hits <rule> -> "path:line:text" lines
   local p; p="$(pattern "$1")"
   grep -rnE --include='*.dart' "$p" "$DIR" 2>/dev/null \
     | grep -v '/l10n/' \
+    | grep -v '/lib/design_system/' \
     | grep -vE '^[^:]+:[0-9]+: *//' \
     | { [ "$1" = COLOR ] && grep -vE 'Colors\.transparent[^A-Za-z]*$|Colors\.transparent[,;) ]' || cat; }
 }

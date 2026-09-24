@@ -1,9 +1,9 @@
 import 'package:agrimore_core/agrimore_core.dart';
-import 'package:agrimore_ui/agrimore_ui.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_localizations/flutter_localizations.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:provider/provider.dart';
+import 'package:seller/design_system/design_system.dart';
 import 'package:seller/l10n/app_localizations.dart';
 import 'package:seller/providers/seller_auth_provider.dart';
 import 'package:seller/providers/seller_product_provider.dart';
@@ -24,13 +24,16 @@ ProductModel _p(String id, {int stock = 20, bool active = true, bool draft = fal
 
 Future<AppLocalizations> _pump(WidgetTester tester, List<ProductModel> products) async {
   late AppLocalizations l10n;
+  tester.view.physicalSize = const Size(800, 3000);
+  tester.view.devicePixelRatio = 1;
+  addTearDown(tester.view.reset);
   await tester.pumpWidget(MultiProvider(
     providers: [
       ChangeNotifierProvider<SellerAuthProvider>(create: (_) => SellerAuthProvider.preview(access: SellerAccess.approved)),
       ChangeNotifierProvider<SellerProductProvider>(create: (_) => SellerProductProvider.preview(products)),
     ],
     child: MaterialApp(
-      theme: WorkspaceTheme.build(WorkspaceBrand.seller, Brightness.light),
+      theme: SellerTheme.light,
       localizationsDelegates: const [
         AppLocalizations.delegate,
         GlobalMaterialLocalizations.delegate,
@@ -51,10 +54,10 @@ Future<AppLocalizations> _pump(WidgetTester tester, List<ProductModel> products)
 void main() {
   testWidgets('stock levels, prices and an empty catalogue', (tester) async {
     final l10n = await _pump(tester, [_p('1'), _p('2', stock: 0), _p('3', stock: 4)]);
-    expect(find.text(l10n.searchStock(AgFormat.count(20))), findsOneWidget);
-    expect(find.text(l10n.productOutOfStock), findsOneWidget);
-    expect(find.text(l10n.productLowStock(AgFormat.count(4))), findsOneWidget);
-    expect(find.text(AgFormat.rupees(150)), findsNWidgets(3));
+    expect(find.text(l10n.searchStock(SellerFormat.count(20))), findsOneWidget);
+    expect(find.widgetWithText(SellerStatusBadge, l10n.productOutOfStock), findsOneWidget);
+    expect(find.text(l10n.productLowStock(SellerFormat.count(4))), findsOneWidget);
+    expect(find.text(l10n.productMrp(SellerFormat.money(150))), findsNWidgets(3));
     expect(tester.takeException(), isNull);
   });
 
@@ -66,6 +69,8 @@ void main() {
 
   testWidgets('delete asks first; cancelling keeps the product', (tester) async {
     final l10n = await _pump(tester, [_p('1')]);
+    await tester.tap(find.byTooltip(l10n.productMoreActions('Product 1')));
+    await tester.pumpAndSettle();
     await tester.tap(find.text(l10n.productDelete));
     await tester.pumpAndSettle();
     expect(find.text(l10n.productDeleteTitle), findsOneWidget);
@@ -76,6 +81,8 @@ void main() {
 
   testWidgets('stock sheet rejects an empty value', (tester) async {
     final l10n = await _pump(tester, [_p('1')]);
+    await tester.tap(find.byTooltip(l10n.productMoreActions('Product 1')));
+    await tester.pumpAndSettle();
     await tester.tap(find.text(l10n.productStock));
     await tester.pumpAndSettle();
     await tester.enterText(find.byKey(const ValueKey('stockValue')), '');

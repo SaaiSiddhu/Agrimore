@@ -1,10 +1,10 @@
 import 'package:agrimore_core/agrimore_core.dart';
-import 'package:agrimore_ui/agrimore_ui.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_localizations/flutter_localizations.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:provider/provider.dart';
+import 'package:seller/design_system/design_system.dart';
 import 'package:seller/l10n/app_localizations.dart';
 import 'package:seller/providers/seller_auth_provider.dart';
 import 'package:seller/providers/seller_order_provider.dart';
@@ -110,7 +110,7 @@ void main() {
         ChangeNotifierProvider<SellerOrderProvider>(create: (_) => SellerOrderProvider.preview(const [])),
       ],
       child: MaterialApp(
-        theme: WorkspaceTheme.build(WorkspaceBrand.seller, Brightness.light),
+        theme: SellerTheme.light,
         localizationsDelegates: const [
           AppLocalizations.delegate,
           GlobalMaterialLocalizations.delegate,
@@ -143,7 +143,7 @@ void main() {
     // The dot's label merges into its tile's node for screen readers.
     expect(find.byWidgetPredicate((w) => w is Semantics && w.properties.label == l10n.notificationsUnreadLabel),
         findsNWidgets(2));
-    await tester.tap(find.widgetWithText(ChoiceChip, l10n.notificationsQuotes));
+    await tester.tap(find.widgetWithText(SellerChip, l10n.notificationsQuotes));
     await tester.pump();
     expect(find.text('Title 2'), findsOneWidget);
     expect(find.text('Title 1'), findsNothing);

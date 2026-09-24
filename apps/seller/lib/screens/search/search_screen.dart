@@ -1,8 +1,8 @@
 import 'package:agrimore_core/agrimore_core.dart';
-import 'package:agrimore_ui/agrimore_ui.dart';
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 
+import '../../design_system/design_system.dart';
 import '../../l10n/app_localizations.dart';
 import '../../providers/rfq_provider.dart';
 import '../../providers/seller_order_provider.dart';
@@ -37,8 +37,7 @@ class _SellerSearchScreenState extends State<SellerSearchScreen> {
   @override
   Widget build(BuildContext context) {
     final l10n = AppLocalizations.of(context);
-    final t = context.ws;
-    final text = context.wsText;
+    final text = context.text;
     final results = searchSeller(
       _query.text,
       orders: context.watch<SellerOrderProvider>().allOrders,
@@ -47,104 +46,86 @@ class _SellerSearchScreenState extends State<SellerSearchScreen> {
     );
     final tooShort = _query.text.trim().length < kSearchMinChars;
 
-    Widget header(String title, int n) => Padding(
-          padding: const EdgeInsets.fromLTRB(WsSpace.page, WsSpace.s16, WsSpace.page, WsSpace.s4),
-          child: Text(l10n.searchGroup(title, n), style: text.labelLarge!.copyWith(color: t.textSecondary)),
-        );
+    Widget group(String title, int n, List<Widget> rows) => Column(crossAxisAlignment: CrossAxisAlignment.stretch, children: [
+          Padding(
+            padding: const EdgeInsets.only(top: SellerSpace.s8, bottom: SellerSpace.s8, left: SellerSpace.s4),
+            child: Semantics(header: true, child: Text(l10n.searchGroup(title, n), style: text.labelLarge!.copyWith(color: context.colors.textSecondary))),
+          ),
+          SellerMenuGroup(children: rows),
+        ]);
+
+    Widget body;
+    if (tooShort) {
+      body = SellerEmptyState(icon: SellerIcons.search, title: l10n.searchPrompt, compact: true);
+    } else if (results.isEmpty) {
+      body = SellerEmptyState(
+        icon: SellerIcons.search,
+        title: l10n.searchNoResults(_query.text.trim()),
+        actionLabel: l10n.searchClear,
+        onAction: () => setState(_query.clear),
+        compact: true,
+      );
+    } else {
+      body = Column(crossAxisAlignment: CrossAxisAlignment.stretch, children: [
+        if (results.exactOrder != null)
+          SellerButton.secondary(
+            label: l10n.searchOpenOrder(results.exactOrder!.orderNumber),
+            icon: SellerIcons.externalLink,
+            onPressed: () => _openOrder(results.exactOrder!),
+          ),
+        if (results.orders.isNotEmpty)
+          group(l10n.kpiOrders, results.orders.length, [
+            for (final o in results.orders)
+              SellerListRow(
+                icon: SellerIcons.orders,
+                title: l10n.paymentsForOrder(o.orderNumber),
+                subtitle: l10n.searchOrderLine(o.deliveryAddress.name, SellerFormat.date(o.createdAt)),
+                value: SellerFormat.money(o.total),
+                onTap: () => _openOrder(o),
+              ),
+          ]),
+        if (results.products.isNotEmpty)
+          group(l10n.searchProducts, results.products.length, [
+            for (final p in results.products)
+              SellerListRow(
+                leading: SellerImage(url: p.primaryImage, size: SellerSize.thumbSm),
+                title: p.name,
+                subtitle: l10n.searchStock(SellerFormat.count(p.stock)),
+                value: SellerFormat.money(p.salePrice),
+                onTap: () => Navigator.of(context).push(MaterialPageRoute<void>(builder: (_) => AddProductScreen(existingProduct: p))),
+              ),
+          ]),
+        if (results.quotes.isNotEmpty)
+          group(l10n.quotesTitle, results.quotes.length, [
+            for (final r in results.quotes)
+              SellerListRow(
+                icon: SellerIcons.quote,
+                title: l10n.productOf(r),
+                subtitle: l10n.buyerOf(r),
+                onTap: () => Navigator.of(context).push(MaterialPageRoute<void>(builder: (_) => SellerRfqDetailScreen(rfqId: r.id))),
+              ),
+          ]),
+      ]);
+    }
 
     return Scaffold(
-      appBar: AppBar(
-        leading: IconButton(
-          tooltip: l10n.back,
-          icon: const Icon(AgIcons.arrowLeft),
-          onPressed: () => Navigator.of(context).maybePop(),
-        ),
-        titleSpacing: 0,
-        title: TextField(
-          controller: _query,
-          autofocus: true,
-          textInputAction: TextInputAction.search,
-          onChanged: (_) => setState(() {}),
-          onSubmitted: (_) {
-            final exact = results.exactOrder;
-            if (exact != null) _openOrder(exact);
-          },
-          decoration: InputDecoration(
-            hintText: l10n.searchHint,
-            border: InputBorder.none,
-            suffixIcon: _query.text.isEmpty
-                ? null
-                : IconButton(
-                    tooltip: l10n.searchClear,
-                    icon: const Icon(AgIcons.close),
-                    onPressed: () => setState(_query.clear),
-                  ),
+      appBar: SellerAppBar.detail(context, title: l10n.homeSearch),
+      body: SellerPage(
+        gap: SellerSpace.s12,
+        children: [
+          SellerSearchField(
+            controller: _query,
+            hint: l10n.searchHint,
+            autofocus: true,
+            onChanged: (_) => setState(() {}),
+            onSubmitted: (_) {
+              final exact = results.exactOrder;
+              if (exact != null) _openOrder(exact);
+            },
           ),
-        ),
+          body,
+        ],
       ),
-      body: tooShort
-          ? Center(
-              child: Padding(
-                padding: const EdgeInsets.all(WsSpace.s32),
-                child: Text(l10n.searchPrompt, style: text.bodyMedium, textAlign: TextAlign.center),
-              ),
-            )
-          : results.isEmpty
-              ? Center(
-                  child: Padding(
-                    padding: const EdgeInsets.all(WsSpace.s32),
-                    child: Text(l10n.searchNoResults(_query.text.trim()),
-                        style: text.bodyMedium, textAlign: TextAlign.center),
-                  ),
-                )
-              : ListView(children: [
-                  if (results.exactOrder != null)
-                    Padding(
-                      padding: const EdgeInsets.fromLTRB(WsSpace.page, WsSpace.s12, WsSpace.page, 0),
-                      child: FilledButton.icon(
-                        onPressed: () => _openOrder(results.exactOrder!),
-                        icon: const Icon(AgIcons.orders),
-                        label: Text(l10n.searchOpenOrder(results.exactOrder!.orderNumber)),
-                      ),
-                    ),
-                  if (results.orders.isNotEmpty) ...[
-                    header(l10n.kpiOrders, results.orders.length),
-                    for (final o in results.orders)
-                      ListTile(
-                        onTap: () => _openOrder(o),
-                        leading: const Icon(AgIcons.orders),
-                        title: Text(l10n.paymentsForOrder(o.orderNumber), style: text.titleSmall),
-                        subtitle: Text(l10n.searchOrderLine(o.deliveryAddress.name, AgFormat.date(o.createdAt)), style: text.bodySmall),
-                        trailing: Text(AgFormat.rupees(o.total),
-                            style: text.bodyMedium!.copyWith(fontFeatures: WsType.tabularFigures)),
-                      ),
-                  ],
-                  if (results.products.isNotEmpty) ...[
-                    header(l10n.searchProducts, results.products.length),
-                    for (final p in results.products)
-                      ListTile(
-                        onTap: () => Navigator.of(context)
-                            .push(MaterialPageRoute<void>(builder: (_) => AddProductScreen(existingProduct: p))),
-                        leading: const Icon(AgIcons.product),
-                        title: Text(p.name, style: text.titleSmall),
-                        subtitle: Text(l10n.searchStock(AgFormat.count(p.stock)), style: text.bodySmall),
-                        trailing: Text(AgFormat.rupees(p.salePrice),
-                            style: text.bodyMedium!.copyWith(fontFeatures: WsType.tabularFigures)),
-                      ),
-                  ],
-                  if (results.quotes.isNotEmpty) ...[
-                    header(l10n.quotesTitle, results.quotes.length),
-                    for (final r in results.quotes)
-                      ListTile(
-                        onTap: () => Navigator.of(context)
-                            .push(MaterialPageRoute<void>(builder: (_) => SellerRfqDetailScreen(rfqId: r.id))),
-                        leading: const Icon(AgIcons.quote),
-                        title: Text(l10n.productOf(r), style: text.titleSmall),
-                        subtitle: Text(l10n.buyerOf(r), style: text.bodySmall),
-                      ),
-                  ],
-                  const SizedBox(height: WsSpace.s24),
-                ]),
     );
   }
 }

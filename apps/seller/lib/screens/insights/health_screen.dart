@@ -1,6 +1,6 @@
-import 'package:agrimore_ui/agrimore_ui.dart';
 import 'package:flutter/material.dart';
 
+import '../../design_system/design_system.dart';
 import '../../l10n/app_localizations.dart';
 import 'insights_rules.dart';
 
@@ -38,7 +38,14 @@ extension HealthCopy on AppLocalizations {
           : healthTargetAtLeast('${(s.target * 100).round()}%');
 }
 
-/// H-05 Account health (ADR §10.2, SELLER-HOME-1c): an overall score from
+/// Band → tone and icon (word + colour + shape, board 21-08).
+(SellerTone, IconData) healthBandStyle(HealthBand b) => switch (b) {
+      HealthBand.good => (SellerTone.success, SellerIcons.success),
+      HealthBand.fair => (SellerTone.warning, SellerIcons.warning),
+      HealthBand.poor => (SellerTone.danger, SellerIcons.error),
+    };
+
+/// H-05 Account health (board 21-08, SELLER-HOME-1c): an overall score from
 /// transparent inputs — each with its value, target and how to improve.
 /// Inputs without enough data are left out, not counted as zero.
 class HealthScreen extends StatelessWidget {
@@ -48,88 +55,53 @@ class HealthScreen extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final l10n = AppLocalizations.of(context);
-    final t = context.ws;
-    final text = context.wsText;
+    final text = context.text;
     final score = overallHealth(inputs);
+    final band = score == null ? null : bandOf(score);
+    final style = band == null ? null : healthBandStyle(band);
     return Scaffold(
-      appBar: AppBar(
-        leading: IconButton(tooltip: l10n.back, icon: const Icon(AgIcons.arrowLeft), onPressed: () => Navigator.of(context).maybePop()),
-        title: Text(l10n.healthTitle),
-      ),
-      body: ListView(
-        padding: const EdgeInsets.all(WsSpace.page),
+      appBar: SellerAppBar.detail(context, title: l10n.healthTitle, subtitle: l10n.healthLast30),
+      body: SellerPage(
+        gap: SellerSpace.s16,
         children: [
-          Card(
-            child: Padding(
-              padding: const EdgeInsets.all(WsSpace.s16),
-              child: score == null
-                  ? Text(l10n.healthNotEnoughData, style: text.bodyMedium)
-                  : Row(children: [
-                      HealthRing(score: score),
-                      const SizedBox(width: WsSpace.s16),
+          SellerCard(
+            child: Column(children: [
+              SellerScoreRing(score: score, tone: style?.$1 ?? SellerTone.neutral),
+              const SizedBox(height: SellerSpace.s12),
+              if (band != null) SellerStatusBadge(label: l10n.healthBand(band), tone: style!.$1, icon: style.$2, large: true),
+              const SizedBox(height: SellerSpace.s8),
+              Text(score == null ? l10n.healthNotEnoughData : l10n.healthExplainer, style: text.bodyMedium, textAlign: TextAlign.center),
+            ]),
+          ),
+          if (inputs.isNotEmpty) ...[
+            SellerSectionHeader(title: l10n.healthMeasures),
+            SellerMenuGroup(children: [
+              for (final s in inputs)
+                MergeSemantics(
+                  child: Padding(
+                    padding: const EdgeInsets.all(SellerSpace.s12),
+                    child: Row(crossAxisAlignment: CrossAxisAlignment.start, children: [
+                      SellerIconTile(icon: s.meetsTarget ? SellerIcons.success : SellerIcons.warning, tone: s.meetsTarget ? SellerTone.success : SellerTone.warning, circle: true),
+                      const SizedBox(width: SellerSpace.s12),
                       Expanded(
                         child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
-                          Text(l10n.healthBand(bandOf(score)), style: text.titleMedium),
-                          Text(l10n.healthExplainer, style: text.bodySmall!.copyWith(color: t.textSecondary)),
+                          Row(crossAxisAlignment: CrossAxisAlignment.start, children: [
+                            Expanded(child: Text(l10n.healthLabel(s.input), style: text.titleSmall)),
+                            Text(l10n.healthValue(s), style: text.titleSmall!.tabular),
+                          ]),
+                          Text(l10n.healthTarget(s), style: text.bodyMedium),
+                          if (!s.meetsTarget) ...[
+                            const SizedBox(height: SellerSpace.s4),
+                            Text(l10n.healthTip(s.input), style: text.bodyMedium!.copyWith(color: context.colors.textPrimary)),
+                          ],
                         ]),
                       ),
                     ]),
-            ),
-          ),
-          const SizedBox(height: WsSpace.s12),
-          for (final s in inputs)
-            Card(
-              margin: const EdgeInsets.only(bottom: WsSpace.s8),
-              child: Padding(
-                padding: const EdgeInsets.all(WsSpace.s16),
-                child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
-                  Row(children: [
-                    Icon(s.meetsTarget ? AgIcons.success : AgIcons.warning, color: s.meetsTarget ? t.successFg : t.warningFg),
-                    const SizedBox(width: WsSpace.s8),
-                    Expanded(child: Text(l10n.healthLabel(s.input), style: text.titleSmall)),
-                    Text(l10n.healthValue(s), style: text.titleSmall!.copyWith(fontFeatures: WsType.tabularFigures)),
-                  ]),
-                  const SizedBox(height: WsSpace.s4),
-                  Text(l10n.healthTarget(s), style: text.bodySmall!.copyWith(color: t.textSecondary)),
-                  if (!s.meetsTarget) ...[
-                    const SizedBox(height: WsSpace.s8),
-                    Text(l10n.healthTip(s.input), style: text.bodyMedium),
-                  ],
-                ]),
-              ),
-            ),
+                  ),
+                ),
+            ]),
+          ],
         ],
-      ),
-    );
-  }
-}
-
-/// `WsScoreRing` (ADR §7).
-class HealthRing extends StatelessWidget {
-  const HealthRing({super.key, required this.score, this.size = WsSize.avatarLg});
-  final int score;
-  final double size;
-
-  @override
-  Widget build(BuildContext context) {
-    final t = context.ws;
-    final band = bandOf(score);
-    final color = switch (band) {
-      HealthBand.good => t.successFg,
-      HealthBand.fair => t.warningFg,
-      HealthBand.poor => t.errorFg,
-    };
-    return Semantics(
-      label: AppLocalizations.of(context).healthScoreLabel(score),
-      excludeSemantics: true,
-      child: SizedBox.square(
-        dimension: size,
-        child: Stack(alignment: Alignment.center, children: [
-          SizedBox.expand(
-            child: CircularProgressIndicator(value: score / 100, color: color, backgroundColor: t.surfaceSunken, strokeWidth: WsSpace.s4),
-          ),
-          Text(AgFormat.count(score), style: context.wsText.titleMedium!.copyWith(fontFeatures: WsType.tabularFigures)),
-        ]),
       ),
     );
   }

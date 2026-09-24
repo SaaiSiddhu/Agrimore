@@ -1,16 +1,16 @@
 import 'package:agrimore_core/agrimore_core.dart';
-import 'package:agrimore_ui/agrimore_ui.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 
+import '../../../design_system/design_system.dart';
 import '../../../l10n/app_localizations.dart';
 
 /// Upper bound on options per product (keeps the product document small).
 const int kMaxVariants = 20;
 
-/// C-03 step 4 (ADR, SELLER-CATALOGUE-2): options such as sizes or pack
-/// weights, each with its own price and stock. Checkout prices and
-/// decrements the chosen option server-side (orderPricing.findVariant).
+/// Pack options (board 18-05, SELLER-CATALOGUE-2): sizes or pack weights,
+/// each with its own price and stock. Checkout prices and decrements the
+/// chosen option server-side (orderPricing.findVariant).
 class ProductVariantsSection extends StatelessWidget {
   const ProductVariantsSection({super.key, required this.variants, required this.onChanged});
   final List<ProductVariant> variants;
@@ -20,6 +20,7 @@ class ProductVariantsSection extends StatelessWidget {
     final result = await showModalBottomSheet<ProductVariant>(
       context: context,
       isScrollControlled: true,
+      useSafeArea: true,
       builder: (_) => _VariantSheet(
         initial: index == null ? null : variants[index],
         existingNames: {for (var i = 0; i < variants.length; i++) if (i != index) variants[i].name.toLowerCase()},
@@ -38,39 +39,51 @@ class ProductVariantsSection extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final l10n = AppLocalizations.of(context);
-    final t = context.ws;
-    final text = context.wsText;
-    return Card(
-      margin: EdgeInsets.zero,
-      child: Padding(
-        padding: const EdgeInsets.all(WsSpace.s16),
-        child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
-          Text(l10n.variantsTitle, style: text.titleSmall),
-          Text(l10n.variantsHint, style: text.bodySmall!.copyWith(color: t.textSecondary)),
-          const SizedBox(height: WsSpace.s8),
-          for (var i = 0; i < variants.length; i++)
-            ListTile(
-              contentPadding: EdgeInsets.zero,
-              title: Text(variants[i].name, style: text.bodyLarge),
-              subtitle: Text(
-                l10n.variantsLine(AgFormat.rupees(variants[i].salePrice), AgFormat.count(variants[i].stock)),
-                style: text.bodySmall,
-              ),
-              onTap: () => _edit(context, i),
-              trailing: IconButton(
-                tooltip: l10n.variantsRemove(variants[i].name),
-                icon: Icon(AgIcons.delete, color: t.errorFg),
+    final c = context.colors;
+    final add = variants.length < kMaxVariants
+        ? SellerButton.secondary(label: l10n.variantsAdd, icon: SellerIcons.add, expand: true, onPressed: () => _edit(context))
+        : null;
+    if (variants.isEmpty) {
+      return SellerEmptyState(
+        icon: SellerIcons.packing,
+        title: l10n.variantsEmptyTitle,
+        message: l10n.variantsEmptyBody,
+        actionLabel: l10n.variantsAdd,
+        actionIcon: SellerIcons.add,
+        onAction: () => _edit(context),
+        compact: true,
+      );
+    }
+    return Column(crossAxisAlignment: CrossAxisAlignment.stretch, children: [
+      SellerSectionHeader(title: l10n.variantsCount(variants.length), subtitle: l10n.variantsHint),
+      SellerMenuGroup(children: [
+        for (var i = 0; i < variants.length; i++)
+          SellerListRow(
+            title: variants[i].name,
+            subtitle: l10n.variantsLine(SellerFormat.money(variants[i].salePrice), SellerFormat.count(variants[i].stock)),
+            icon: SellerIcons.packing,
+            showChevron: false,
+            onTap: () => _edit(context, i),
+            trailing: Row(mainAxisSize: MainAxisSize.min, children: [
+              SellerIconButton(icon: SellerIcons.edit, label: l10n.variantsEditNamed(variants[i].name), color: c.primary, onPressed: () => _edit(context, i)),
+              SellerIconButton(
+                icon: SellerIcons.delete,
+                label: l10n.variantsRemove(variants[i].name),
+                color: c.danger,
                 onPressed: () => onChanged([...variants]..removeAt(i)),
               ),
-            ),
-          if (variants.length < kMaxVariants)
-            TextButton.icon(onPressed: () => _edit(context), icon: const Icon(AgIcons.add), label: Text(l10n.variantsAdd)),
-        ]),
-      ),
-    );
+            ]),
+          ),
+      ]),
+      const SizedBox(height: SellerSpace.s12),
+      if (add != null) add,
+      const SizedBox(height: SellerSpace.s8),
+      Text(l10n.variantsStockRule, style: context.text.bodySmall),
+    ]);
   }
 }
 
+/// Add / edit option sheet: name, selling price, stock (board 18-05).
 class _VariantSheet extends StatefulWidget {
   const _VariantSheet({this.initial, required this.existingNames});
   final ProductVariant? initial;
@@ -120,58 +133,57 @@ class _VariantSheetState extends State<_VariantSheet> {
   @override
   Widget build(BuildContext context) {
     final l10n = AppLocalizations.of(context);
-    final text = context.wsText;
-    return Padding(
-      padding: EdgeInsets.only(bottom: MediaQuery.viewInsetsOf(context).bottom),
-      child: SafeArea(
-        child: Padding(
-          padding: const EdgeInsets.fromLTRB(WsSpace.page, 0, WsSpace.page, WsSpace.s24),
-          child: Form(
-            key: _form,
-            child: Column(mainAxisSize: MainAxisSize.min, crossAxisAlignment: CrossAxisAlignment.stretch, children: [
-              Text(widget.initial == null ? l10n.variantsAdd : l10n.variantsEdit, style: text.titleMedium),
-              const SizedBox(height: WsSpace.s12),
-              TextFormField(
-                key: const ValueKey('variantName'),
-                controller: _name,
-                maxLength: _maxName,
-                decoration: InputDecoration(labelText: l10n.variantsName, hintText: l10n.variantsNameHint),
-                validator: (v) {
-                  final n = (v ?? '').trim();
-                  if (n.isEmpty) return l10n.editorRequired;
-                  if (widget.existingNames.contains(n.toLowerCase())) return l10n.variantsDuplicate;
-                  return null;
-                },
-              ),
-              Row(crossAxisAlignment: CrossAxisAlignment.start, children: [
-                Expanded(
-                  child: TextFormField(
-                    key: const ValueKey('variantPrice'),
-                    controller: _price,
-                    keyboardType: const TextInputType.numberWithOptions(decimal: true),
-                    inputFormatters: [FilteringTextInputFormatter.allow(RegExp(r'[0-9.]'))],
-                    decoration: InputDecoration(labelText: l10n.editorSalePrice),
-                    validator: (v) => (double.tryParse((v ?? '').trim()) ?? 0) > 0 ? null : l10n.counterPriceInvalid,
-                  ),
-                ),
-                const SizedBox(width: WsSpace.s12),
-                Expanded(
-                  child: TextFormField(
-                    key: const ValueKey('variantStock'),
-                    controller: _stock,
-                    keyboardType: TextInputType.number,
-                    inputFormatters: [FilteringTextInputFormatter.digitsOnly],
-                    decoration: InputDecoration(labelText: l10n.editorStock),
-                    validator: (v) => int.tryParse((v ?? '').trim()) == null ? l10n.counterQtyInvalid : null,
-                  ),
-                ),
-              ]),
-              const SizedBox(height: WsSpace.s16),
-              FilledButton(onPressed: _save, child: Text(l10n.accountSave)),
-            ]),
+    final price = SellerTextField(
+      fieldKey: const ValueKey('variantPrice'),
+      label: l10n.editorSalePrice,
+      required: true,
+      controller: _price,
+      prefixText: SellerFormat.rupeeSymbol,
+      tabular: true,
+      keyboardType: const TextInputType.numberWithOptions(decimal: true),
+      inputFormatters: [FilteringTextInputFormatter.allow(RegExp(r'[0-9.]'))],
+      validator: (v) => (double.tryParse(v.trim()) ?? 0) > 0 ? null : l10n.counterPriceInvalid,
+    );
+    final stock = SellerTextField(
+      fieldKey: const ValueKey('variantStock'),
+      label: l10n.editorStock,
+      required: true,
+      controller: _stock,
+      tabular: true,
+      keyboardType: TextInputType.number,
+      inputFormatters: [FilteringTextInputFormatter.digitsOnly],
+      validator: (v) => int.tryParse(v.trim()) == null ? l10n.counterQtyInvalid : null,
+    );
+    return SellerSheetFrame(
+      title: widget.initial == null ? l10n.variantsAdd : l10n.variantsEdit,
+      body: Form(
+        key: _form,
+        child: Column(crossAxisAlignment: CrossAxisAlignment.stretch, children: [
+          SellerTextField(
+            fieldKey: const ValueKey('variantName'),
+            label: l10n.variantsName,
+            hint: l10n.variantsNameHint,
+            required: true,
+            controller: _name,
+            maxLength: _maxName,
+            validator: (v) {
+              final n = v.trim();
+              if (n.isEmpty) return l10n.editorRequired;
+              if (widget.existingNames.contains(n.toLowerCase())) return l10n.variantsDuplicate;
+              return null;
+            },
           ),
-        ),
+          const SizedBox(height: SellerSpace.s12),
+          if (context.largeText) ...[price, const SizedBox(height: SellerSpace.s12), stock]
+          else
+            Row(crossAxisAlignment: CrossAxisAlignment.start, children: [
+              Expanded(child: price),
+              const SizedBox(width: SellerSpace.s12),
+              Expanded(child: stock),
+            ]),
+        ]),
       ),
+      footer: SellerButton(label: l10n.accountSave, expand: true, onPressed: _save),
     );
   }
 }

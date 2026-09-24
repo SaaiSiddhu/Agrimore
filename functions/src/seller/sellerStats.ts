@@ -19,6 +19,10 @@
 import * as functions from "firebase-functions/v1";
 import { onCall, HttpsError } from "firebase-functions/v2/https";
 import * as admin from "firebase-admin";
+// Modular Timestamp/FieldValue: Timestamp is undefined under
+// the functions emulator (seen crashing rollupSellerStats in the SELLER-WALLET-1
+// end-to-end run), same fix as riderMoney.ts / confirmDelivery.ts.
+import { FieldValue, Timestamp } from "firebase-admin/firestore";
 
 const IST_OFFSET_MS = 330 * 60 * 1000;
 const CANCELLED = new Set(["cancelled", "canceled", "rejected", "refunded"]);
@@ -48,7 +52,7 @@ export function istDay(ms: number): string {
 }
 
 function toMillis(v: unknown): number | null {
-  if (v instanceof admin.firestore.Timestamp) return v.toMillis();
+  if (v instanceof Timestamp) return v.toMillis();
   if (v instanceof Date) return v.getTime();
   return null;
 }
@@ -104,8 +108,8 @@ export async function applyOrderContribution(
     const marker = await tx.get(markerRef);
     const prev = marker.exists ? ((marker.data() as { c?: Contribution }).c ?? null) : null;
     if (sameContribution(prev, next)) return;
-    const inc = admin.firestore.FieldValue.increment;
-    const now = admin.firestore.FieldValue.serverTimestamp();
+    const inc = FieldValue.increment;
+    const now = FieldValue.serverTimestamp();
     const write = (c: Contribution, sign: 1 | -1) => {
       const data: Record<string, unknown> = { sellerId: c.sellerId, day: c.day, updatedAt: now };
       for (const m of METRICS) data[m] = inc(sign * c[m]);
@@ -146,7 +150,7 @@ export const rebuildMySellerStats = onCall({ minInstances: 0, memory: "512MiB", 
     throw new HttpsError("permission-denied", "Only an approved seller can rebuild their stats");
   }
   const last = seller.data()?.statsRebuiltAt;
-  if (last instanceof admin.firestore.Timestamp && Date.now() - last.toMillis() < REBUILD_COOLDOWN_MS) {
+  if (last instanceof Timestamp && Date.now() - last.toMillis() < REBUILD_COOLDOWN_MS) {
     throw new HttpsError("resource-exhausted", "Stats were rebuilt a few minutes ago");
   }
 
@@ -164,7 +168,7 @@ export const rebuildMySellerStats = onCall({ minInstances: 0, memory: "512MiB", 
 
   // Days that exist but no longer have any order are zeroed, not left stale.
   const existing = await db.collection("seller_stats_daily").where("sellerId", "==", uid).get();
-  const now = admin.firestore.FieldValue.serverTimestamp();
+  const now = FieldValue.serverTimestamp();
   const writes: ((b: admin.firestore.WriteBatch) => void)[] = [];
   for (const doc of existing.docs) {
     const day = String(doc.data().day ?? "");

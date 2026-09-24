@@ -1,8 +1,8 @@
 import 'package:agrimore_core/agrimore_core.dart';
-import 'package:agrimore_ui/agrimore_ui.dart';
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 
+import '../../design_system/design_system.dart';
 import '../../l10n/app_localizations.dart';
 import '../../providers/rfq_provider.dart';
 import '../../providers/seller_order_provider.dart';
@@ -11,9 +11,9 @@ import 'widgets/quote_copy.dart';
 import 'widgets/quote_counter_sheet.dart';
 import 'widgets/quote_decline_sheet.dart';
 
-/// Q-02 Quote thread (ADR §10.4, SELLER-RFQ-2): what the buyer asked for,
-/// every offer in order, the offer on the table with its expiry, and —
-/// when it is the seller's turn — Counter · Accept · Decline.
+/// Q-02 Quote detail (boards 20-02…20-08, SELLER-RFQ-2): buyer and product,
+/// the offer on the table with its expiry and comparison, the negotiation
+/// history, and — when it is the seller's turn — Decline · Counter · Accept.
 class SellerRfqDetailScreen extends StatelessWidget {
   const SellerRfqDetailScreen({super.key, required this.rfqId, this.now});
   final String rfqId;
@@ -23,21 +23,16 @@ class SellerRfqDetailScreen extends StatelessWidget {
   Widget build(BuildContext context) {
     final l10n = AppLocalizations.of(context);
     final quote = context.watch<RfqProvider>().byId(rfqId);
+    final clock = now ?? DateTime.now();
     return Scaffold(
-      appBar: AppBar(
-        leading: IconButton(
-          tooltip: l10n.back,
-          icon: const Icon(AgIcons.arrowLeft),
-          onPressed: () => Navigator.of(context).maybePop(),
-        ),
-        title: Text(quote == null ? l10n.quoteDetailTitle : l10n.productOf(quote)),
+      appBar: SellerAppBar.detail(
+        context,
+        title: quote == null ? l10n.quoteDetailTitle : l10n.productOf(quote),
+        status: quote == null ? null : QuoteStatusPill(quote: quote, now: clock),
       ),
       body: quote == null
-          ? Padding(
-              padding: const EdgeInsets.all(WsSpace.page),
-              child: SaInfoBanner(variant: SaBannerVariant.info, message: l10n.quoteNotFound),
-            )
-          : _QuoteBody(quote: quote, now: now ?? DateTime.now()),
+          ? SellerEmptyState(icon: SellerIcons.quote, title: l10n.quoteNotFound)
+          : _QuoteBody(quote: quote, now: clock),
     );
   }
 }
@@ -68,10 +63,11 @@ class _QuoteBody extends StatelessWidget {
   Future<void> _accept(BuildContext context) async {
     final l10n = AppLocalizations.of(context);
     final offer = quote.lastOffer!;
-    final yes = await wsConfirm(
+    final yes = await sellerConfirm(
       context,
+      icon: SellerIcons.success,
       title: l10n.quoteAcceptTitle,
-      message: l10n.quoteAcceptBody(AgFormat.count(offer.quantity), AgFormat.rupees(offer.price), AgFormat.rupees(offer.total)),
+      message: l10n.quoteAcceptBody(SellerFormat.count(offer.quantity), SellerFormat.money(offer.price), SellerFormat.money(offer.total)),
       confirmLabel: l10n.quoteAccept,
       cancelLabel: l10n.cancel,
     );
@@ -92,208 +88,191 @@ class _QuoteBody extends StatelessWidget {
 
   void _toast(BuildContext context, bool ok, String success, QuoteActionError? error) {
     final l10n = AppLocalizations.of(context);
-    WsToast.show(context, ok ? success : l10n.quoteError(error), tone: ok ? WsToastTone.success : WsToastTone.error);
+    SellerToast.show(context, ok ? success : l10n.quoteError(error), tone: ok ? SellerToastTone.success : SellerToastTone.danger);
   }
 
-  void _openOrder(BuildContext context, String orderId) {
-    OrderModel? order;
-    for (final o in context.read<SellerOrderProvider>().allOrders) {
-      if (o.id == orderId) order = o;
-    }
-    if (order == null) return;
-    final found = order;
-    Navigator.of(context).push(MaterialPageRoute<void>(builder: (_) => SellerOrderDetailScreen(order: found)));
-  }
+  OrderModel? _order(BuildContext context, String orderId) =>
+      context.watch<SellerOrderProvider>().allOrders.where((o) => o.id == orderId).firstOrNull;
 
   @override
   Widget build(BuildContext context) {
     final l10n = AppLocalizations.of(context);
-    final t = context.ws;
-    final text = context.wsText;
+    final c = context.colors;
+    final text = context.text;
     final offer = quote.lastOffer;
     final expired = offer?.isExpired(now) ?? false;
     final submitting = context.watch<RfqProvider>().isSubmitting;
     final orderId = quote.consumedByOrderId;
+    final open = quote.status == RfqStatus.pending || quote.status == RfqStatus.negotiating;
+    final order = orderId == null ? null : _order(context, orderId);
 
-    return Column(children: [
-      Expanded(
-        child: ListView(
-          padding: const EdgeInsets.all(WsSpace.page),
-          children: [
-            // Header: what was asked, by whom, against the listed B2B terms.
-            Card(
-              child: Padding(
-                padding: const EdgeInsets.all(WsSpace.s16),
+    final header = SellerCard(
+      child: Column(crossAxisAlignment: CrossAxisAlignment.stretch, children: [
+        Row(children: [
+          SellerAvatar(name: l10n.buyerOf(quote)),
+          const SizedBox(width: SellerSpace.s12),
+          Expanded(
+            child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
+              Text(l10n.buyerOf(quote), style: text.titleSmall),
+              Text(l10n.quoteRequested(SellerFormat.date(quote.createdAt)), style: text.bodyMedium),
+            ]),
+          ),
+        ]),
+        const Divider(height: SellerSpace.s24),
+        Row(children: [
+          SellerImage(url: quote.productImageUrl, size: SellerSize.thumbMd),
+          const SizedBox(width: SellerSpace.s12),
+          Expanded(
+            child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
+              Text(l10n.productOf(quote), style: text.titleSmall),
+              if (quote.listedB2bPrice != null) Text(l10n.quoteListedB2b(SellerFormat.money(quote.listedB2bPrice!)), style: text.bodyMedium),
+              if (quote.listedB2bMoq != null) Text(l10n.quoteMoq(SellerFormat.count(quote.listedB2bMoq!)), style: text.bodyMedium),
+            ]),
+          ),
+        ]),
+      ]),
+    );
+
+    final Widget offerCard;
+    if (offer == null) {
+      offerCard = SellerEmptyState(icon: SellerIcons.quote, title: l10n.quoteNoPriceTitle, message: l10n.quoteNoPriceBody, compact: true);
+    } else {
+      final vs = l10n.vsListed(offer.price, quote.listedB2bPrice);
+      final fromBuyer = offer.by == RfqRole.buyer;
+      offerCard = SellerCard(
+        child: Column(crossAxisAlignment: CrossAxisAlignment.stretch, children: [
+          Row(children: [
+            Expanded(child: Semantics(header: true, child: Text(open ? l10n.quoteCurrentOffer : l10n.quoteAgreedTerms, style: text.titleSmall))),
+            SellerStatusBadge(
+              label: fromBuyer ? l10n.quoteFromBuyer : l10n.quoteFromYou,
+              tone: fromBuyer ? SellerTone.info : SellerTone.brand,
+              icon: fromBuyer ? SellerIcons.business : SellerIcons.store,
+            ),
+          ]),
+          const SizedBox(height: SellerSpace.s8),
+          SellerKeyValueRow(label: l10n.quoteQuantity, value: SellerFormat.count(offer.quantity), tabular: true),
+          SellerKeyValueRow(label: l10n.quotePricePerUnit, value: SellerFormat.money(offer.price), tabular: true),
+          const Divider(height: SellerSpace.s16),
+          SellerKeyValueRow(label: l10n.quoteTotalValue, value: SellerFormat.money(offer.total), emphasis: true, valueColor: c.primary, tabular: true),
+          if (vs != null) ...[
+            const SizedBox(height: SellerSpace.s8),
+            Align(alignment: AlignmentDirectional.centerStart, child: SellerStatusBadge(label: vs, tone: SellerTone.neutral, icon: SellerIcons.percent)),
+          ],
+          if (open && offer.expiresAt != null) ...[
+            const SizedBox(height: SellerSpace.s8),
+            QuoteExpiryText(offer: offer, now: now),
+          ],
+          if ((offer.notes ?? '').trim().isNotEmpty) ...[
+            const SizedBox(height: SellerSpace.s12),
+            SellerCard(
+              tone: SellerCardTone.sunken,
+              padding: const EdgeInsets.all(SellerSpace.s12),
+              child: MergeSemantics(
                 child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
-                  Row(children: [
-                    Expanded(child: Text(l10n.buyerOf(quote), style: text.titleSmall)),
-                    QuoteStatusPill(quote: quote, now: now),
-                  ]),
-                  const SizedBox(height: WsSpace.s4),
-                  Text(l10n.quoteRequested(AgFormat.date(quote.createdAt)),
-                      style: text.bodySmall!.copyWith(color: t.textSecondary)),
-                  if (quote.listedB2bPrice != null || quote.listedB2bMoq != null) ...[
-                    const SizedBox(height: WsSpace.s8),
-                    Wrap(spacing: WsSpace.s16, children: [
-                      if (quote.listedB2bPrice != null)
-                        Text(l10n.quoteListedB2b(AgFormat.rupees(quote.listedB2bPrice!)), style: text.bodyMedium),
-                      if (quote.listedB2bMoq != null)
-                        Text(l10n.quoteMoq(AgFormat.count(quote.listedB2bMoq!)), style: text.bodyMedium),
-                    ]),
-                  ],
+                  Text(l10n.quoteBuyerNote, style: text.labelLarge),
+                  Text(offer.notes!.trim(), style: text.bodyMedium!.copyWith(color: c.textPrimary)),
                 ]),
               ),
             ),
-            if (offer != null) ...[
-              const SizedBox(height: WsSpace.s12),
-              _CurrentOffer(quote: quote, offer: offer, now: now),
-            ],
-            const SizedBox(height: WsSpace.s12),
-            if (quote.status == RfqStatus.accepted)
-              SaInfoBanner(
-                variant: SaBannerVariant.success,
-                message: orderId != null
-                    ? l10n.quoteOrderedBanner
-                    : l10n.quoteAcceptedBanner(
-                        AgFormat.rupees(quote.finalPrice ?? 0), AgFormat.count(quote.finalQuantity ?? 0)),
-                actionLabel: orderId != null ? l10n.quoteViewOrder : null,
-                onAction: orderId != null ? () => _openOrder(context, orderId) : null,
-              )
-            else if (quote.status == RfqStatus.rejected)
-              SaInfoBanner(variant: SaBannerVariant.info, message: l10n.quoteDeclinedBanner)
-            else if (!_myTurn)
-              SaInfoBanner(variant: SaBannerVariant.info, message: l10n.quoteWaitingBanner)
-            else if (expired)
-              SaInfoBanner(variant: SaBannerVariant.warning, message: l10n.quoteAcceptExpiredHint),
-            const SizedBox(height: WsSpace.s24),
-            Text(l10n.quoteHistoryTitle, style: text.titleMedium),
-            const SizedBox(height: WsSpace.s8),
-            for (final h in quote.history) _HistoryEntry(entry: h),
-          ],
-        ),
-      ),
-      if (_myTurn)
-        SafeArea(
-          top: false,
-          child: Padding(
-            padding: const EdgeInsets.fromLTRB(WsSpace.page, WsSpace.s8, WsSpace.page, WsSpace.s12),
-            child: Row(children: [
-              Expanded(
-                child: OutlinedButton(
-                  onPressed: submitting ? null : () => _decline(context),
-                  child: Text(l10n.quoteDecline),
-                ),
-              ),
-              const SizedBox(width: WsSpace.s8),
-              Expanded(
-                child: OutlinedButton(
-                  onPressed: submitting ? null : () => _counter(context),
-                  child: Text(l10n.quoteCounter),
-                ),
-              ),
-              const SizedBox(width: WsSpace.s8),
-              Expanded(
-                child: FilledButton(
-                  onPressed: submitting || offer == null || expired ? null : () => _accept(context),
-                  child: Text(l10n.quoteAccept),
-                ),
-              ),
-            ]),
-          ),
-        ),
-    ]);
-  }
-}
-
-class _CurrentOffer extends StatelessWidget {
-  const _CurrentOffer({required this.quote, required this.offer, required this.now});
-  final RfqModel quote;
-  final RfqOffer offer;
-  final DateTime now;
-
-  @override
-  Widget build(BuildContext context) {
-    final l10n = AppLocalizations.of(context);
-    final t = context.ws;
-    final text = context.wsText;
-    final open = quote.status == RfqStatus.pending || quote.status == RfqStatus.negotiating;
-    final vs = l10n.vsListed(offer.price, quote.listedB2bPrice);
-    return Card(
-      child: Padding(
-        padding: const EdgeInsets.all(WsSpace.s16),
-        child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
-          Text(open ? l10n.quoteCurrentOffer : l10n.quoteAgreedTerms, style: text.labelLarge),
-          const SizedBox(height: WsSpace.s8),
-          Text(
-            AgFormat.rupees(offer.total),
-            style: text.headlineMedium!.copyWith(fontFeatures: WsType.tabularFigures, color: t.primary),
-          ),
-          const SizedBox(height: WsSpace.s4),
-          Text(l10n.quoteQtyAtPrice(AgFormat.count(offer.quantity), AgFormat.rupees(offer.price)),
-              style: text.bodyMedium!.copyWith(fontFeatures: WsType.tabularFigures)),
-          if (vs != null) ...[
-            const SizedBox(height: WsSpace.s4),
-            Text(vs, style: text.bodySmall!.copyWith(color: t.textSecondary)),
-          ],
-          if (open) ...[
-            const SizedBox(height: WsSpace.s8),
-            QuoteExpiryText(offer: offer, now: now),
           ],
         ]),
-      ),
-    );
-  }
-}
+      );
+    }
 
-class _HistoryEntry extends StatelessWidget {
-  const _HistoryEntry({required this.entry});
-  final RfqHistoryEntry entry;
+    Widget? banner;
+    if (quote.status == RfqStatus.accepted) {
+      banner = SellerBanner(
+        tone: SellerTone.success,
+        icon: SellerIcons.success,
+        message: orderId != null
+            ? l10n.quoteOrderedBanner
+            : l10n.quoteAcceptedBanner(SellerFormat.money(quote.finalPrice ?? 0), SellerFormat.count(quote.finalQuantity ?? 0)),
+      );
+    } else if (quote.status == RfqStatus.rejected) {
+      banner = SellerBanner(tone: SellerTone.neutral, icon: SellerIcons.cancelled, message: l10n.quoteDeclinedBanner);
+    } else if (!_myTurn) {
+      banner = SellerBanner(tone: SellerTone.info, icon: SellerIcons.hourglass, message: l10n.quoteWaitingBanner);
+    } else if (expired) {
+      banner = SellerBanner(
+        tone: SellerTone.warning,
+        icon: SellerIcons.timer,
+        title: offer?.expiresAt == null ? null : l10n.quoteExpiredOn(SellerFormat.date(offer!.expiresAt!)),
+        message: l10n.quoteAcceptExpiredHint,
+      );
+    }
 
-  @override
-  Widget build(BuildContext context) {
-    final l10n = AppLocalizations.of(context);
-    final t = context.ws;
-    final text = context.wsText;
-    final mine = entry.actor == RfqRole.seller;
-    final action = switch (entry.action) {
-      'create' => l10n.quoteActionCreate,
-      'offer' => l10n.quoteActionOffer,
-      'accept' => l10n.quoteActionAccept,
-      'reject' => l10n.quoteActionReject,
-      _ => entry.action,
-    };
-    final price = entry.price;
-    final qty = entry.quantity;
-    final notes = entry.notes;
-    return Align(
-      alignment: mine ? Alignment.centerRight : Alignment.centerLeft,
-      child: ConstrainedBox(
-        constraints: const BoxConstraints(maxWidth: WsSize.formMaxWidth),
-        child: Container(
-          margin: const EdgeInsets.only(bottom: WsSpace.s8),
-          padding: const EdgeInsets.all(WsSpace.s12),
-          decoration: BoxDecoration(
-            color: mine ? t.primarySubtle : t.surfaceSunken,
-            borderRadius: BorderRadius.circular(WsRadius.card),
-          ),
-          child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
-            Text(l10n.quoteHistoryHeader(mine ? l10n.quoteByYou : l10n.quoteByBuyer, action), style: text.labelMedium),
-            if (price != null && qty != null) ...[
-              const SizedBox(height: WsSpace.s4),
-              Text(
-                '${l10n.quoteQtyAtPrice(AgFormat.count(qty), AgFormat.rupees(price))}  ·  ${AgFormat.rupees(price * qty)}',
-                style: text.bodyMedium!.copyWith(fontFeatures: WsType.tabularFigures),
-              ),
-            ],
-            if (notes != null && notes.isNotEmpty) ...[
-              const SizedBox(height: WsSpace.s4),
-              Text(notes, style: text.bodyMedium),
-            ],
-            const SizedBox(height: WsSpace.s4),
-            Text(AgFormat.dateTime(entry.at), style: text.bodySmall!.copyWith(color: t.textTertiary)),
-          ]),
+    final history = [
+      for (final h in quote.history)
+        SellerTimelineStep(
+          title: l10n.quoteHistoryHeader(h.actor == RfqRole.seller ? l10n.quoteByYou : l10n.quoteByBuyer, switch (h.action) {
+            'create' => l10n.quoteActionCreate,
+            'offer' => l10n.quoteActionOffer,
+            'accept' => l10n.quoteActionAccept,
+            'reject' => l10n.quoteActionReject,
+            _ => h.action,
+          }),
+          subtitle: SellerFormat.dateTime(h.at),
+          state: SellerStepState.done,
+          detail: (h.price == null || h.quantity == null) && (h.notes ?? '').isEmpty
+              ? null
+              : Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
+                  if (h.price != null && h.quantity != null)
+                    Text(
+                      l10n.quoteTermsLine(SellerFormat.count(h.quantity!), SellerFormat.money(h.price!), SellerFormat.money(h.price! * h.quantity!)),
+                      style: text.bodyMedium!.copyWith(color: c.textPrimary).tabular,
+                    ),
+                  if ((h.notes ?? '').isNotEmpty) Text(h.notes!, style: text.bodyMedium),
+                ]),
         ),
-      ),
+      if (_myTurn) SellerTimelineStep(title: l10n.quoteNotResponded, subtitle: l10n.quoteAwaitingYou, state: SellerStepState.current),
+    ];
+
+    final footer = !_myTurn
+        ? null
+        : offer == null
+            ? SellerButton(label: l10n.quoteCounter, icon: SellerIcons.counter, expand: true, onPressed: submitting ? null : () => _counter(context))
+            : SellerButtonBar(stackBelow: 300, children: [
+                SellerButton.dangerOutline(label: l10n.quoteDecline, icon: SellerIcons.cancelled, onPressed: submitting ? null : () => _decline(context)),
+                SellerButton.secondary(label: l10n.quoteCounter, icon: SellerIcons.counter, onPressed: submitting ? null : () => _counter(context)),
+                SellerButton(
+                  label: l10n.quoteAccept,
+                  icon: SellerIcons.check,
+                  loading: submitting,
+                  // The server refuses to accept an expired offer.
+                  onPressed: expired ? null : () => _accept(context),
+                ),
+              ]);
+
+    return SellerPage(
+      gap: SellerSpace.s16,
+      footer: footer,
+      children: [
+        header,
+        offerCard,
+        if (banner != null) banner,
+        if (orderId != null)
+          SellerMenuGroup(children: [
+            SellerListRow(
+              icon: SellerIcons.document,
+              title: order == null ? l10n.quoteViewOrder : l10n.paymentsForOrder(order.orderNumber),
+              subtitle: l10n.quoteLinkedOrderSub,
+              trailing: order == null ? null : Text(l10n.quoteViewOrder, style: text.labelLarge!.copyWith(color: c.primary)),
+              onTap: order == null
+                  ? null
+                  : () => Navigator.of(context).push(MaterialPageRoute<void>(builder: (_) => SellerOrderDetailScreen(order: order))),
+            ),
+          ]),
+        if (quote.status == RfqStatus.accepted && orderId == null)
+          Text(l10n.quoteAcceptNotOrder, style: text.bodyMedium),
+        if (history.isNotEmpty)
+          SellerCard(
+            child: Column(crossAxisAlignment: CrossAxisAlignment.stretch, children: [
+              Semantics(header: true, child: Text(l10n.quoteHistoryTitle, style: text.titleSmall)),
+              const SizedBox(height: SellerSpace.s12),
+              SellerTimeline(steps: history, showCurrentPill: false),
+            ]),
+          ),
+      ],
     );
   }
 }

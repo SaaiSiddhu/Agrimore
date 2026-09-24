@@ -2813,4 +2813,1095 @@ class AppLocalizationsEn extends AppLocalizations {
   @override
   String get scheduleClosedHoliday =>
       'Today is a holiday you set. Buyers can\'t place orders until tomorrow.';
+
+  @override
+  String get dsClose => 'Close';
+
+  @override
+  String get dsRetry => 'Retry';
+
+  @override
+  String get dsTryAgain => 'Try again';
+
+  @override
+  String get dsOptional => '(optional)';
+
+  @override
+  String get dsRequired => 'required';
+
+  @override
+  String get dsLoading => 'Loading…';
+
+  @override
+  String get dsDiscardTitle => 'Discard changes?';
+
+  @override
+  String get dsDiscardBody => 'You have unsaved changes.';
+
+  @override
+  String get dsKeepEditing => 'Keep editing';
+
+  @override
+  String get dsDiscard => 'Discard';
+
+  @override
+  String dsFieldsNeedAttention(int count) {
+    String _temp0 = intl.Intl.pluralLogic(
+      count,
+      locale: localeName,
+      other: '$count fields need attention',
+      one: '1 field needs attention',
+    );
+    return '$_temp0';
+  }
+
+  @override
+  String dsTabPosition(int index, int count) {
+    return 'Tab $index of $count';
+  }
+
+  @override
+  String dsBadgeCount(int count) {
+    String _temp0 = intl.Intl.pluralLogic(
+      count,
+      locale: localeName,
+      other: '$count new',
+      one: '1 new',
+    );
+    return '$_temp0';
+  }
+
+  @override
+  String get dsNoImage => 'No image';
+
+  @override
+  String get dsImageFailed => 'Image couldn\'t load';
+
+  @override
+  String get dsChartSummaryUnavailable => 'Data unavailable';
+
+  @override
+  String get dsSelected => 'Selected';
+
+  @override
+  String get dsNotSelected => 'Not selected';
+
+  @override
+  String get dsExpandHint => 'Double tap to expand';
+
+  @override
+  String get dsCollapseHint => 'Double tap to collapse';
+
+  @override
+  String get dsCopied => 'Copied';
+
+  @override
+  String get dsStepCompleted => 'Completed';
+
+  @override
+  String get dsStepCurrent => 'Current';
+
+  @override
+  String get dsStepUpcoming => 'Not started yet';
+
+  @override
+  String get dsStepFailed => 'Needs attention';
+
+  @override
+  String dsOutOf(int max) {
+    return 'out of $max';
+  }
+
+  @override
+  String get dsScoreUnavailable => 'Not enough activity yet';
+
+  @override
+  String dsOtpFieldLabel(int length) {
+    return 'Verification code, $length digits';
+  }
+
+  @override
+  String get dsShowTable => 'Show as table';
+
+  @override
+  String get dsHideTable => 'Hide table';
+
+  @override
+  String dsCellLabel(String column, String value) {
+    return '$column: $value';
+  }
+
+  @override
+  String dsChartPointLabel(String label, String value) {
+    return '$label: $value';
+  }
+
+  @override
+  String get dsBrandName => 'AgriMore';
+
+  @override
+  String get dsBrandRole => 'Seller';
+
+  @override
+  String get dsTestDataRibbon => 'Test data — local emulator';
+
+  @override
+  String dsShare(String value, String total) {
+    return '$value of $total';
+  }
+
+  @override
+  String homeGreetingName(String greeting, String name) {
+    return '$greeting, $name';
+  }
+
+  @override
+  String get homeAttentionToday => 'Here\'s what needs your attention today.';
+
+  @override
+  String get homePaidTo => 'Opens Payments';
+
+  @override
+  String get orderGuideToAccept => 'Waiting for your action';
+
+  @override
+  String get orderGuideToPack => 'Prepare items for packing';
+
+  @override
+  String get orderGuidePacking => 'Items are being packed';
+
+  @override
+  String get orderGuideReady => 'Awaiting pickup';
+
+  @override
+  String get orderGuideOut => 'Delivery in progress';
+
+  @override
+  String get orderGuideDelivered => 'Order complete';
+
+  @override
+  String get orderGuideCancelled => 'Order was cancelled';
+
+  @override
+  String get orderNoNote => 'No note from buyer';
+
+  @override
+  String get orderPhoneLabel => 'Business phone';
+
+  @override
+  String get orderCallHint => 'Opens phone app';
+
+  @override
+  String get orderMessageHint => 'Opens SMS app';
+
+  @override
+  String orderItemsHeader(int count) {
+    return 'Items ($count)';
+  }
+
+  @override
+  String get orderItemsReadOnly =>
+      'Ordered options and quantities stay read-only.';
+
+  @override
+  String orderLineQty(String qty, String price) {
+    return '$qty × $price';
+  }
+
+  @override
+  String get orderTotalSeparate =>
+      'Buyer order total is separate from your settlement.';
+
+  @override
+  String get orderPrepaidDetail => 'Paid by customer online';
+
+  @override
+  String get orderCodDetail => 'Customer pays on delivery';
+
+  @override
+  String orderCardSummary(String items, String payment) {
+    return '$items · $payment';
+  }
+
+  @override
+  String orderNumberTitle(String number) {
+    return 'Order #$number';
+  }
+
+  @override
+  String get orderReasonRequired => 'Choose a reason to continue.';
+
+  @override
+  String get orderSelectPrompt => 'Select an order to see its details.';
+
+  @override
+  String orderPlacedAt(String time) {
+    return 'Placed $time';
+  }
+
+  @override
+  String orderMessageBody(String number) {
+    return 'About your AgriMore order $number';
+  }
+
+  @override
+  String get invoiceGeneratePrompt => 'Generate an invoice for this order.';
+
+  @override
+  String get invoiceNumberCopied => 'Invoice number copied';
+
+  @override
+  String orderNumberShort(String number) {
+    return '#$number';
+  }
+
+  @override
+  String bulkPartial(int done, int failed) {
+    return '$done updated. $failed couldn\'t be updated and are still selected.';
+  }
+
+  @override
+  String bulkHideCount(int count) {
+    return 'Hide ($count)';
+  }
+
+  @override
+  String bulkPublishCount(int count) {
+    return 'Publish ($count)';
+  }
+
+  @override
+  String get bulkTip => 'Long-press a product to select it';
+
+  @override
+  String productInStock(String stock) {
+    return '$stock in stock';
+  }
+
+  @override
+  String productMrp(String price) {
+    return 'MRP $price';
+  }
+
+  @override
+  String get productVisibleInfo =>
+      'Visible products appear in your store. Stock and visibility are separate.';
+
+  @override
+  String productMoreActions(String name) {
+    return 'More actions for $name';
+  }
+
+  @override
+  String productCurrentStock(String stock) {
+    return 'Current stock: $stock';
+  }
+
+  @override
+  String get productStockSaveFailed => 'Couldn\'t update stock. Try again.';
+
+  @override
+  String get productStockInvalid => 'Enter a valid stock quantity.';
+
+  @override
+  String productEditNamed(String name) {
+    return 'Edit $name';
+  }
+
+  @override
+  String get productVisibilityFailed =>
+      'Couldn\'t update visibility. Try again.';
+
+  @override
+  String get variantsEmptyTitle => 'No pack options yet';
+
+  @override
+  String get variantsEmptyBody =>
+      'Add pack options to offer this product in different sizes.';
+
+  @override
+  String variantsCount(int count) {
+    return 'Pack options ($count)';
+  }
+
+  @override
+  String variantsEditNamed(String name) {
+    return 'Edit $name';
+  }
+
+  @override
+  String get variantsStockRule =>
+      'Each option has its own price and stock. Product stock is not added to option stock.';
+
+  @override
+  String get editorApply => 'Apply changes';
+
+  @override
+  String get editorPackOptions => 'Pack options';
+
+  @override
+  String get editorPackOptionsHint => 'Manage product packs and variants';
+
+  @override
+  String get editorPricingTax => 'Pricing & tax';
+
+  @override
+  String get editorPricingTaxHint => 'Set additional pricing information';
+
+  @override
+  String get editorCoverageRowHint => 'Manage where this product is visible';
+
+  @override
+  String get editorWholesale => 'Wholesale';
+
+  @override
+  String get editorWholesaleRowHint => 'Set wholesale buying options';
+
+  @override
+  String get editorWholesaleSummary => 'Wholesale summary';
+
+  @override
+  String get editorWholesaleOffTitle => 'Wholesale is off';
+
+  @override
+  String get editorWholesaleOffBody =>
+      'Enable wholesale to set a separate price for bulk orders and a minimum order quantity.';
+
+  @override
+  String editorWholesaleMinUnits(int count) {
+    return '$count units';
+  }
+
+  @override
+  String editorWholesaleLine(String price, int count) {
+    return '$price · min $count';
+  }
+
+  @override
+  String editorOptionsCount(int count) {
+    String _temp0 = intl.Intl.pluralLogic(
+      count,
+      locale: localeName,
+      other: '$count options',
+      one: '1 option',
+      zero: 'No options',
+    );
+    return '$_temp0';
+  }
+
+  @override
+  String get editorReplacePhoto => 'Replace photo';
+
+  @override
+  String editorLowStockAlert(String count) {
+    return 'Low stock alert: $count';
+  }
+
+  @override
+  String get editorSaveFailedBody =>
+      'Check your connection and try again. Your changes are not saved.';
+
+  @override
+  String get editorPriceSourceLabel => 'Price source';
+
+  @override
+  String get editorCoverageLead =>
+      'Choose where this product is available to buyers.';
+
+  @override
+  String get editorCoverageSummary => 'Coverage';
+
+  @override
+  String get editorB2bRuleShort => 'Must be lower than your selling price.';
+
+  @override
+  String get editorMoqHelper => 'Enter the minimum number of units per order.';
+
+  @override
+  String get paymentsPendingHelp =>
+      'Amount from completed orders that are pending settlement.';
+
+  @override
+  String get paymentsSeeAll => 'See all';
+
+  @override
+  String get paymentsRecent => 'Recent settlements';
+
+  @override
+  String get paymentsAllTitle => 'All settlements';
+
+  @override
+  String get paymentsEmptyTitle => 'No settlements yet';
+
+  @override
+  String get paymentsEmptyBody =>
+      'Settlements appear here after delivered orders.';
+
+  @override
+  String paymentsCreatedOn(String date) {
+    return 'Created $date';
+  }
+
+  @override
+  String paymentsPaidOn(String date) {
+    return 'Paid $date';
+  }
+
+  @override
+  String get payoutAccountOnFile => 'Account on file';
+
+  @override
+  String get payoutAccountNotAvailable =>
+      'Your payout account details will appear here once added.';
+
+  @override
+  String get settlementAwaiting => 'Awaiting payment record';
+
+  @override
+  String get settlementPaymentPending => 'Payment pending';
+
+  @override
+  String get settlementToReceive => 'To receive';
+
+  @override
+  String get settlementReceived => 'Received';
+
+  @override
+  String get settlementAmountsNote =>
+      'Amounts shown for this order, as recorded in the settlement.';
+
+  @override
+  String get settlementReferenceCopied => 'Payment reference copied';
+
+  @override
+  String get settlementCopyReference => 'Copy payment reference';
+
+  @override
+  String get settlementFinancials => 'Order financials';
+
+  @override
+  String get settlementStatus => 'Settlement status';
+
+  @override
+  String get statementSubtitle => 'Monthly statement';
+
+  @override
+  String get statementOrders => 'Orders in this month';
+
+  @override
+  String get statementSummary => 'Statement summary';
+
+  @override
+  String statementCount(int count) {
+    String _temp0 = intl.Intl.pluralLogic(
+      count,
+      locale: localeName,
+      other: '$count settlements',
+      one: '1 settlement',
+    );
+    return '$_temp0';
+  }
+
+  @override
+  String get quoteFromBuyer => 'From buyer';
+
+  @override
+  String get quoteFromYou => 'From you';
+
+  @override
+  String get quoteNoPriceTitle => 'No price proposed';
+
+  @override
+  String get quoteNoPriceBody => 'Send your offer to start the negotiation.';
+
+  @override
+  String quoteValidUntil(String date) {
+    return 'Offer valid until $date';
+  }
+
+  @override
+  String quoteExpiredOn(String date) {
+    return 'This offer expired on $date.';
+  }
+
+  @override
+  String get quoteNotResponded => 'You haven\'t responded yet';
+
+  @override
+  String get quoteAwaitingYou => 'Waiting for your reply';
+
+  @override
+  String get quoteQuantity => 'Quantity';
+
+  @override
+  String get quotePricePerUnit => 'Price per unit';
+
+  @override
+  String get quoteTotalValue => 'Total value';
+
+  @override
+  String get quoteBuyerNote => 'Buyer note';
+
+  @override
+  String get quoteBuyerLabel => 'Buyer';
+
+  @override
+  String get quoteLinkedOrderSub => 'Linked to this quote';
+
+  @override
+  String get quoteAcceptNotOrder =>
+      'Accepting does not mean payment or delivery. The buyer places the order.';
+
+  @override
+  String quoteDeclineTerms(String label, String note) {
+    return '$label — $note';
+  }
+
+  @override
+  String quoteTermsLine(String qty, String price, String total) {
+    return '$qty × $price = $total';
+  }
+
+  @override
+  String counterToBuyer(String buyer) {
+    return 'to $buyer';
+  }
+
+  @override
+  String get counterMoqWarning =>
+      'This is a warning. You can still send this offer.';
+
+  @override
+  String insightsRange(String current, String previous) {
+    return '$current vs $previous';
+  }
+
+  @override
+  String get insightsInfo => 'What these numbers mean';
+
+  @override
+  String get insightsDefSales =>
+      'Total sales: the value of items sold in the period — not profit or payout.';
+
+  @override
+  String get insightsDefOrders =>
+      'Orders: customer orders placed in the period.';
+
+  @override
+  String get insightsDefAov =>
+      'Avg. order value: sales ÷ orders. Not shown when there are no orders.';
+
+  @override
+  String get insightsDefB2b =>
+      'B2B share: the part of total sales that came from business buyers.';
+
+  @override
+  String get insightsDefCompare =>
+      'Each period is compared with the period of the same length just before it.';
+
+  @override
+  String get insightsGotIt => 'Got it';
+
+  @override
+  String get insightsComparisons => 'Comparisons';
+
+  @override
+  String insightsCurrentLabel(String range) {
+    return 'Current ($range)';
+  }
+
+  @override
+  String insightsPreviousLabel(String range) {
+    return 'Previous ($range)';
+  }
+
+  @override
+  String get insightsB2bTitle => 'B2B sales share';
+
+  @override
+  String get insightsSalesTrend => 'Sales trend';
+
+  @override
+  String get insightsTableDay => 'Day';
+
+  @override
+  String get insightsStageNote =>
+      'Current stage of orders placed in this period. Includes cancelled orders.';
+
+  @override
+  String get insightsTopNote => 'Ranked by item revenue';
+
+  @override
+  String insightsUnits(int count) {
+    String _temp0 = intl.Intl.pluralLogic(
+      count,
+      locale: localeName,
+      other: '$count units',
+      one: '1 unit',
+    );
+    return '$_temp0';
+  }
+
+  @override
+  String get insightsSalesUnavailable => 'Sales data unavailable';
+
+  @override
+  String get healthMeasures => 'Performance measures';
+
+  @override
+  String get healthLast30 => 'Last 30 days';
+
+  @override
+  String get feeErrFlatInvalid => 'Enter a valid delivery fee (0 or more).';
+
+  @override
+  String feeErrTooHigh(String max) {
+    return 'Delivery fee can\'t be more than $max.';
+  }
+
+  @override
+  String get feeErrNoTiers => 'Add at least one tier.';
+
+  @override
+  String feeErrTooManyTiers(int max) {
+    return 'You can add up to $max tiers.';
+  }
+
+  @override
+  String get feeErrTierMin =>
+      'Every tier needs a minimum order value (0 or more).';
+
+  @override
+  String get feeErrTierFee => 'Every tier needs a delivery fee (0 or more).';
+
+  @override
+  String get feeErrNoZeroTier =>
+      'Include a ₹0 minimum-order tier so every order matches a tier.';
+
+  @override
+  String get feeFreeTitle => '₹0 fee = free delivery';
+
+  @override
+  String get feeFreeBody =>
+      'Set the fee to ₹0 to offer free delivery on eligible orders.';
+
+  @override
+  String get storeOpenBody =>
+      'Your store is open to receive orders and quotes.';
+
+  @override
+  String get storeClosedTodayTitle => 'Closed today';
+
+  @override
+  String get storeManageSchedule => 'Manage schedule';
+
+  @override
+  String get storeExistingOrders =>
+      'Existing orders are not affected by a manual pause.';
+
+  @override
+  String get storeScheduledStillApply => 'Scheduled closures still apply.';
+
+  @override
+  String get accountSettings => 'Settings';
+
+  @override
+  String get accountStoreHeaderHint => 'Seller account';
+
+  @override
+  String get accountTimePick => 'Choose a time';
+
+  @override
+  String get accountTimeNotSet => 'Not set';
+
+  @override
+  String get accountGstinOptionalHelp => 'Leave blank if not applicable.';
+
+  @override
+  String get scheduleSaved => 'Schedule saved';
+
+  @override
+  String scheduleClosedEvery(String days) {
+    return 'Closed every $days';
+  }
+
+  @override
+  String get scheduleHolidayHint =>
+      'Add specific dates when your store will be closed.';
+
+  @override
+  String scheduleHolidayLimitNote(int max) {
+    return 'You can plan up to $max holidays.';
+  }
+
+  @override
+  String get scheduleKeepOneOpen =>
+      'Keep at least one day open. To stop orders for a while, pause your store instead.';
+
+  @override
+  String storefrontHighlightCount(int count, int max) {
+    return '$count of $max highlights added';
+  }
+
+  @override
+  String get storefrontEditPhoto => 'Edit photo';
+
+  @override
+  String get storefrontPreviewOnly => 'Preview only';
+
+  @override
+  String get storefrontPreviewNote =>
+      'This is how your store appears to buyers. Nothing is published from here.';
+
+  @override
+  String get storefrontSaved => 'Storefront updated';
+
+  @override
+  String get storefrontUploading => 'Uploading…';
+
+  @override
+  String reviewsOutOf5(String rating) {
+    return '$rating / 5';
+  }
+
+  @override
+  String get reviewsReplyRule =>
+      'Public reply · Editable for 24 hours after first posting.';
+
+  @override
+  String reviewsReplyLimit(int max) {
+    return 'Up to $max characters';
+  }
+
+  @override
+  String get postRequirement =>
+      'Text, a photo or a tagged product is required to post.';
+
+  @override
+  String get postDeletePost => 'Delete post';
+
+  @override
+  String postTaggedProduct(String name) {
+    return 'Tagged: $name';
+  }
+
+  @override
+  String get supportCallTitle => 'Call support';
+
+  @override
+  String get supportEmailTitle => 'Email support';
+
+  @override
+  String get supportOpensApps => 'Opens your phone or email app.';
+
+  @override
+  String get supportSubtitle => 'Get help with your seller account.';
+
+  @override
+  String helpResults(int count) {
+    String _temp0 = intl.Intl.pluralLogic(
+      count,
+      locale: localeName,
+      other: '$count results',
+      one: '1 result',
+    );
+    return '$_temp0';
+  }
+
+  @override
+  String get helpNoMatchTitle => 'No matching FAQs';
+
+  @override
+  String get helpNoMatchBody => 'Try a different search.';
+
+  @override
+  String get settingsAppearance => 'Appearance';
+
+  @override
+  String get settingsThemeSystemHint => 'Follows your device appearance.';
+
+  @override
+  String get settingsThemeLightHint => 'Always use light appearance.';
+
+  @override
+  String get settingsThemeDarkHint => 'Always use dark appearance.';
+
+  @override
+  String get policiesLegalDocs => 'Legal documents';
+
+  @override
+  String get policiesOpensBrowser => 'Opens in your browser.';
+
+  @override
+  String get notificationsEmptyTitle => 'You are all caught up';
+
+  @override
+  String get notificationsReadLabel => 'Read';
+
+  @override
+  String prefQuietRange(String from, String until) {
+    return '$from – $until';
+  }
+
+  @override
+  String get prefQuietNextMorning =>
+      'Notifications remain in your inbox. Quiet hours end the following morning.';
+
+  @override
+  String get aiGreeting =>
+      'Hi! I\'m your AgriMore AI assistant. Ask me about your products, orders or store — for example, \"How many orders came in this week?\"';
+
+  @override
+  String get aiOffline =>
+      'Your AI assistant isn\'t connected, or your key was rejected. Check the AI connection.';
+
+  @override
+  String get aiChatError =>
+      'Couldn\'t get an answer. Check your connection and try again.';
+
+  @override
+  String get aiRetry => 'Try again';
+
+  @override
+  String get aiStatusConnected => 'Connected';
+
+  @override
+  String get aiConnectedBody =>
+      'Your assistant is ready to help with your business questions.';
+
+  @override
+  String get aiKeyNeverShown =>
+      'Your key is stored securely and never shown again.';
+
+  @override
+  String get aiConnectionTitle => 'AI connection';
+
+  @override
+  String get aiConnecting => 'Connecting…';
+
+  @override
+  String get applicationTitle => 'Seller application';
+
+  @override
+  String get docIdProofHint => 'Aadhaar, PAN, voter ID or driving licence';
+
+  @override
+  String get docShopPhotoHint =>
+      'A clear photo of your shop, farm or business location';
+
+  @override
+  String get docGstHint => 'Upload your GST certificate if you have one';
+
+  @override
+  String get docUploadedNote => 'Uploaded means received, not yet approved.';
+
+  @override
+  String get applyAbout => 'About 5 minutes · Stop and continue anytime.';
+
+  @override
+  String get stepBusinessHelp => 'Tell us who you are and what you sell.';
+
+  @override
+  String get stepLocationHelp =>
+      'Where buyers can find you and how far you deliver.';
+
+  @override
+  String get applySignOut => 'Sign out';
+
+  @override
+  String get applySignOutTitle => 'Sign out?';
+
+  @override
+  String get applySignOutBody =>
+      'Your application draft is saved. You\'ll need your phone number to sign in again.';
+
+  @override
+  String get statusCheckHint => 'Check back here for your application status.';
+
+  @override
+  String get statusCompleted => 'Completed';
+
+  @override
+  String get statusInProgress => 'In progress';
+
+  @override
+  String get statusPending => 'Pending';
+
+  @override
+  String get googleLinkingIntro =>
+      'Link your Google sign-in to your mobile number.';
+
+  @override
+  String get resetFailed =>
+      'Couldn\'t send the link. Please check your email and try again.';
+
+  @override
+  String get otpErrorWrong => 'That code didn\'t work. Try again.';
+
+  @override
+  String get emailHint => 'name@example.com';
+
+  @override
+  String get walletTitle => 'Wallet balance';
+
+  @override
+  String get walletAvailableHelp =>
+      'Ready to withdraw. Delivered orders add to it after commission.';
+
+  @override
+  String walletHeld(String amount, int days) {
+    return '$amount more after the $days-day hold';
+  }
+
+  @override
+  String get walletWithdrawCta => 'Withdraw';
+
+  @override
+  String walletMinimum(String amount) {
+    return 'Minimum withdrawal is $amount.';
+  }
+
+  @override
+  String get walletNothing => 'Nothing to withdraw yet.';
+
+  @override
+  String get walletNeedAccount => 'Add a bank account or UPI ID to withdraw.';
+
+  @override
+  String get walletChangePendingBlock =>
+      'You can withdraw once your new bank/UPI details are verified.';
+
+  @override
+  String walletConfirmTitle(String amount) {
+    return 'Withdraw $amount?';
+  }
+
+  @override
+  String walletConfirmBody(String destination) {
+    return 'AgriMore will send it to $destination and tell you when it is paid.';
+  }
+
+  @override
+  String get walletRequested => 'Withdrawal requested';
+
+  @override
+  String get walletOpenTitle => 'Withdrawal requested';
+
+  @override
+  String walletOpenBody(String amount, String destination) {
+    return '$amount to $destination';
+  }
+
+  @override
+  String walletOpenWaiting(String date) {
+    return 'Requested $date · waiting for AgriMore to pay';
+  }
+
+  @override
+  String get walletCancel => 'Cancel withdrawal';
+
+  @override
+  String get walletCancelTitle => 'Cancel this withdrawal?';
+
+  @override
+  String get walletCancelBody => 'The amount goes back to your wallet balance.';
+
+  @override
+  String get walletKeep => 'Keep it';
+
+  @override
+  String get walletCancelled => 'Withdrawal cancelled';
+
+  @override
+  String get walletLoadFailed => 'Couldn\'t load your wallet.';
+
+  @override
+  String get walletErrOpen => 'A withdrawal is already waiting to be paid.';
+
+  @override
+  String get walletErrFailed => 'Couldn\'t request the withdrawal. Try again.';
+
+  @override
+  String get withdrawalsTitle => 'Withdrawals';
+
+  @override
+  String get withdrawalRequested => 'Requested';
+
+  @override
+  String get withdrawalPaid => 'Paid';
+
+  @override
+  String get withdrawalRejected => 'Not paid';
+
+  @override
+  String get withdrawalCancelled => 'Cancelled';
+
+  @override
+  String withdrawalOrders(int count) {
+    String _temp0 = intl.Intl.pluralLogic(
+      count,
+      locale: localeName,
+      other: '$count orders',
+      one: '1 order',
+    );
+    return '$_temp0';
+  }
+
+  @override
+  String withdrawalRef(String reference) {
+    return 'Ref $reference';
+  }
+
+  @override
+  String withdrawalReason(String reason) {
+    return 'Reason: $reason';
+  }
+
+  @override
+  String get payoutInWithdrawal => 'In withdrawal';
+
+  @override
+  String get payoutAccountAdd => 'Add bank account or UPI';
+
+  @override
+  String get payoutAccountChange => 'Change';
+
+  @override
+  String get payoutChangePendingTitle => 'New details waiting for review';
+
+  @override
+  String payoutChangePendingBody(String destination) {
+    return '$destination · AgriMore checks new details before paying to them.';
+  }
+
+  @override
+  String get payoutChangeCancel => 'Cancel change';
+
+  @override
+  String get payoutChangeCancelled => 'Change cancelled';
+
+  @override
+  String get payoutFormTitleAdd => 'Add payout account';
+
+  @override
+  String get payoutFormTitleChange => 'Change payout account';
+
+  @override
+  String get payoutFormIntro =>
+      'AgriMore verifies new details before sending money to them. Until then, withdrawals wait.';
+
+  @override
+  String get payoutFormSubmit => 'Send for verification';
+
+  @override
+  String get payoutFormSending => 'Sending…';
+
+  @override
+  String get payoutFormSent => 'Sent for verification. We\'ll let you know.';
+
+  @override
+  String get payoutFormFailed => 'Couldn\'t send your details. Try again.';
+
+  @override
+  String get payoutFormPending => 'A change is already waiting for review.';
 }

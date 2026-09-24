@@ -1,7 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
-import 'package:agrimore_ui/agrimore_ui.dart';
 
+import '../../design_system/design_system.dart';
 import '../../l10n/app_localizations.dart';
 import 'delivery_fee_validation.dart';
 
@@ -17,27 +17,19 @@ import 'delivery_fee_validation.dart';
 // with no explanation, which is worse than rejecting it up front with a
 // clear reason. The bounds themselves live in delivery_fee_validation.dart,
 // unit-tested against deliveryFeeSchedule.ts's own source there.
-/// Opens the Flat/Slab delivery fee editor as a bottom sheet, writing
-/// directly to sellers/{uid}.deliveryFeeSchedule (no callable — mirrors
-/// seller_profile_screen.dart's own edit-dialog convention of a direct
-/// Firestore write for a seller's own profile fields). Calls [onSaved]
-/// after a successful write so the caller can refresh its own cached copy
-/// of the seller doc.
+/// Opens the delivery fee screen (board 22-06): flat fee or tiers by order
+/// value, written to sellers/{uid}.deliveryFeeSchedule (the server's
+/// parseDeliveryFeeSchedule is the only other check). Calls [onSaved]
+/// after a successful write.
 void showDeliveryFeeSheet(
   BuildContext context, {
   required String uid,
   required Map<String, dynamic>? initialSchedule,
   required VoidCallback onSaved,
 }) {
-  showModalBottomSheet(
-    context: context,
-    isScrollControlled: true,
-    builder: (ctx) => _DeliveryFeeSheet(
-      uid: uid,
-      initialSchedule: initialSchedule,
-      onSaved: onSaved,
-    ),
-  );
+  Navigator.of(context).push(MaterialPageRoute<void>(
+    builder: (_) => DeliveryFeeScreen(uid: uid, initialSchedule: initialSchedule, onSaved: onSaved),
+  ));
 }
 
 class _SlabRow {
@@ -53,29 +45,34 @@ class _SlabRow {
   }
 }
 
-class _DeliveryFeeSheet extends StatefulWidget {
+class DeliveryFeeScreen extends StatefulWidget {
+  const DeliveryFeeScreen({super.key, required this.uid, required this.initialSchedule, required this.onSaved, this.save});
+
   final String uid;
   final Map<String, dynamic>? initialSchedule;
   final VoidCallback onSaved;
 
-  const _DeliveryFeeSheet({
-    required this.uid,
-    required this.initialSchedule,
-    required this.onSaved,
-  });
+  /// Replaces the Firestore write in tests.
+  final Future<void> Function(Map<String, dynamic> schedule)? save;
 
   @override
-  State<_DeliveryFeeSheet> createState() => _DeliveryFeeSheetState();
+  State<DeliveryFeeScreen> createState() => _DeliveryFeeScreenState();
 }
 
-class _DeliveryFeeSheetState extends State<_DeliveryFeeSheet> {
+class _DeliveryFeeScreenState extends State<DeliveryFeeScreen> {
   late bool _isSlab;
   late TextEditingController _flatAmount;
   final List<_SlabRow> _slabs = [];
   bool _saving = false;
+  bool _dirty = false;
 
   /// Shown inline (validation or save failure).
   String? _error;
+
+  String _num(Object? v) {
+    if (v is num) return v == v.roundToDouble() ? v.toInt().toString() : v.toString();
+    return v?.toString() ?? '';
+  }
 
   @override
   void initState() {
@@ -83,30 +80,26 @@ class _DeliveryFeeSheetState extends State<_DeliveryFeeSheet> {
     final raw = widget.initialSchedule;
     final scheduleType = raw?['type'];
     _isSlab = scheduleType == 'slab';
-    Object? flatAmount;
-    if (scheduleType == 'flat') {
-      flatAmount = raw?['amount'];
-    }
-    _flatAmount = TextEditingController(text: flatAmount?.toString() ?? '');
+    _flatAmount = TextEditingController(text: scheduleType == 'flat' ? _num(raw?['amount']) : '');
     if (_isSlab) {
       final rawSlabs = raw?['slabs'];
       if (rawSlabs is List) {
         for (final s in rawSlabs) {
-          if (s is Map) {
-            _slabs.add(_SlabRow(
-              minOrderValue: s['minOrderValue']?.toString() ?? '',
-              fee: s['fee']?.toString() ?? '',
-            ));
-          }
+          if (s is Map) _slabs.add(_SlabRow(minOrderValue: _num(s['minOrderValue']), fee: _num(s['fee'])));
         }
       }
     }
-    if (_slabs.isEmpty) {
-      // A fresh slab schedule always starts with the required zero-value
-      // slab pre-filled, rather than an empty list a seller has to know to
-      // seed correctly themselves.
-      _slabs.add(_SlabRow(minOrderValue: '0', fee: ''));
+    // A fresh tier schedule starts with the required ₹0 tier pre-filled.
+    if (_slabs.isEmpty) _slabs.add(_SlabRow(minOrderValue: '0'));
+    _flatAmount.addListener(_touch);
+    for (final s in _slabs) {
+      s.minOrderValue.addListener(_touch);
+      s.fee.addListener(_touch);
     }
+  }
+
+  void _touch() {
+    if (!_dirty) setState(() => _dirty = true);
   }
 
   @override
@@ -118,64 +111,47 @@ class _DeliveryFeeSheetState extends State<_DeliveryFeeSheet> {
     super.dispose();
   }
 
-  /// Returns a user-safe error message, or null if valid. Delegates to
-  /// delivery_fee_validation.dart's pure functions (unit-tested in
-  /// apps/seller/test/delivery_fee_validation_test.dart) so this widget
-  /// only handles reading the current form state, never the bounds
-  /// themselves. Never throws; the caller shows the returned string via
-  /// SnackbarHelper.showError directly, so it must already be a complete,
-  /// honest sentence (feedback.md §2).
-  String? _validate() {
-    if (!_isSlab) {
-      return validateFlatFee(double.tryParse(_flatAmount.text.trim()));
-    }
+  FeeError? _validate() {
+    if (!_isSlab) return validateFlatFee(double.tryParse(_flatAmount.text.trim()));
     return validateSlabSchedule([
       for (final slab in _slabs)
-        (
-          minOrderValue: double.tryParse(slab.minOrderValue.text.trim()),
-          fee: double.tryParse(slab.fee.text.trim()),
-        ),
+        (minOrderValue: double.tryParse(slab.minOrderValue.text.trim()), fee: double.tryParse(slab.fee.text.trim())),
     ]);
   }
 
   Future<void> _save() async {
+    final l10n = AppLocalizations.of(context);
     final error = _validate();
-    setState(() => _error = error);
+    setState(() => _error = error == null ? null : feeErrorText(l10n, error, SellerFormat.moneyWhole(kMaxFeeRupees)));
     if (error != null) return;
-
     setState(() => _saving = true);
     try {
       final Map<String, dynamic> schedule = _isSlab
           ? {
               'type': 'slab',
-              'slabs': _slabs
-                  .map((s) => {
-                        'minOrderValue': double.parse(s.minOrderValue.text.trim()),
-                        'fee': double.parse(s.fee.text.trim()),
-                      })
-                  .toList(),
+              'slabs': [
+                for (final s in _slabs)
+                  {'minOrderValue': double.parse(s.minOrderValue.text.trim()), 'fee': double.parse(s.fee.text.trim())},
+              ],
             }
-          : {
-              'type': 'flat',
-              'amount': double.parse(_flatAmount.text.trim()),
-            };
-
-      await FirebaseFirestore.instance.collection('sellers').doc(widget.uid).set({
-        'deliveryFeeSchedule': schedule,
-        'updatedAt': FieldValue.serverTimestamp(),
-      }, SetOptions(merge: true));
-
+          : {'type': 'flat', 'amount': double.parse(_flatAmount.text.trim())};
+      if (widget.save != null) {
+        await widget.save!(schedule);
+      } else {
+        await FirebaseFirestore.instance.collection('sellers').doc(widget.uid).set({
+          'deliveryFeeSchedule': schedule,
+          'updatedAt': FieldValue.serverTimestamp(),
+        }, SetOptions(merge: true));
+      }
       if (!mounted) return;
-      final l10n = AppLocalizations.of(context);
-      final messenger = ScaffoldMessenger.maybeOf(context);
-      Navigator.pop(context);
+      _dirty = false;
+      SellerToast.show(context, l10n.feeSaved, tone: SellerToastTone.success);
       widget.onSaved();
-      if (messenger != null) WsToast.show(messenger.context, l10n.feeSaved, tone: WsToastTone.success);
+      Navigator.of(context).pop();
     } catch (e) {
-      // Never render e.toString() (feedback.md §2) — the detail is logged,
-      // never shown.
-      debugPrint('❌ Error saving delivery fee schedule: $e');
-      if (mounted) setState(() => _error = AppLocalizations.of(context).feeSaveFailed);
+      // Never render e.toString() — the detail is logged, never shown.
+      debugPrint('Error saving delivery fee schedule: $e');
+      if (mounted) setState(() => _error = l10n.feeSaveFailed);
     } finally {
       if (mounted) setState(() => _saving = false);
     }
@@ -183,7 +159,13 @@ class _DeliveryFeeSheetState extends State<_DeliveryFeeSheet> {
 
   void _addSlab() {
     if (_slabs.length >= kMaxSlabs) return;
-    setState(() => _slabs.add(_SlabRow()));
+    final row = _SlabRow()
+      ..minOrderValue.addListener(_touch)
+      ..fee.addListener(_touch);
+    setState(() {
+      _slabs.add(row);
+      _dirty = true;
+    });
   }
 
   void _removeSlab(int index) {
@@ -191,83 +173,100 @@ class _DeliveryFeeSheetState extends State<_DeliveryFeeSheet> {
     setState(() {
       _slabs[index].dispose();
       _slabs.removeAt(index);
+      _dirty = true;
     });
   }
 
   @override
   Widget build(BuildContext context) {
     final l10n = AppLocalizations.of(context);
-    final t = context.ws;
-    final text = context.wsText;
-    return Padding(
-      padding: EdgeInsets.only(bottom: MediaQuery.viewInsetsOf(context).bottom),
-      child: SafeArea(
-        child: SingleChildScrollView(
-          padding: const EdgeInsets.fromLTRB(WsSpace.page, 0, WsSpace.page, WsSpace.s24),
-          child: Column(mainAxisSize: MainAxisSize.min, crossAxisAlignment: CrossAxisAlignment.stretch, children: [
-            Text(l10n.accountDeliveryFee, style: text.titleMedium),
-            const SizedBox(height: WsSpace.s4),
-            Text(l10n.feeIntro, style: text.bodySmall!.copyWith(color: t.textSecondary)),
-            const SizedBox(height: WsSpace.s16),
-            SegmentedButton<bool>(
-              showSelectedIcon: false,
-              segments: [
-                ButtonSegment(value: false, label: Text(l10n.feeFlat)),
-                ButtonSegment(value: true, label: Text(l10n.feeSlab)),
-              ],
-              selected: {_isSlab},
-              onSelectionChanged: (s) => setState(() => _isSlab = s.first),
+    final c = context.colors;
+    final text = context.text;
+    return SellerDiscardGuard(
+      hasChanges: _dirty && !_saving,
+      child: Scaffold(
+        appBar: SellerAppBar.detail(context, title: l10n.accountDeliveryFee),
+        body: SellerPage(
+          gap: SellerSpace.s16,
+          footer: SellerButton(label: l10n.accountSave, expand: true, loading: _saving, loadingLabel: l10n.saving, onPressed: _save),
+          children: [
+            Text(l10n.feeIntro, style: text.bodyLarge),
+            SellerSegmented<bool>(
+              semanticLabel: l10n.accountDeliveryFee,
+              segments: [SellerSegment(false, l10n.feeFlat), SellerSegment(true, l10n.feeSlab)],
+              selected: _isSlab,
+              onChanged: (v) => setState(() {
+                _isSlab = v;
+                _dirty = true;
+                _error = null;
+              }),
             ),
-            const SizedBox(height: WsSpace.s16),
             if (!_isSlab)
-              TextField(
-                key: const ValueKey('feeFlat'),
-                controller: _flatAmount,
-                keyboardType: const TextInputType.numberWithOptions(decimal: true),
-                decoration: InputDecoration(labelText: l10n.feeAmount, helperText: l10n.feeFlatHelp),
+              SellerCard(
+                child: SellerTextField(
+                  fieldKey: const ValueKey('feeFlat'),
+                  label: l10n.feeAmount,
+                  controller: _flatAmount,
+                  prefixText: SellerFormat.rupeeSymbol,
+                  tabular: true,
+                  helper: l10n.feeFlatHelp,
+                  keyboardType: const TextInputType.numberWithOptions(decimal: true),
+                ),
               )
-            else ...[
-              Text(l10n.feeSlabRule, style: text.bodySmall!.copyWith(color: t.textSecondary)),
-              const SizedBox(height: WsSpace.s12),
-              for (var i = 0; i < _slabs.length; i++)
-                Padding(
-                  padding: const EdgeInsets.only(bottom: WsSpace.s12),
-                  child: Row(children: [
-                    Expanded(
-                      child: TextField(
-                        controller: _slabs[i].minOrderValue,
-                        keyboardType: const TextInputType.numberWithOptions(decimal: true),
-                        decoration: InputDecoration(labelText: l10n.feeMinOrder, isDense: true),
-                      ),
-                    ),
-                    const SizedBox(width: WsSpace.s8),
-                    Expanded(
-                      child: TextField(
-                        controller: _slabs[i].fee,
-                        keyboardType: const TextInputType.numberWithOptions(decimal: true),
-                        decoration: InputDecoration(labelText: l10n.feeSlabFee, isDense: true),
-                      ),
-                    ),
-                    IconButton(
-                      tooltip: l10n.feeRemoveSlab,
-                      onPressed: _slabs.length > 1 ? () => _removeSlab(i) : null,
-                      icon: Icon(AgIcons.delete, color: _slabs.length > 1 ? t.errorFg : t.disabledContent),
-                    ),
+            else
+              SellerCard(
+                child: Column(crossAxisAlignment: CrossAxisAlignment.stretch, children: [
+                  Row(children: [
+                    Expanded(child: Text(l10n.feeMinOrder, style: text.labelLarge)),
+                    const SizedBox(width: SellerSpace.s12),
+                    Expanded(child: Text(l10n.feeSlabFee, style: text.labelLarge)),
+                    const SizedBox(width: SellerSize.touchTarget),
                   ]),
-                ),
-              if (_slabs.length < kMaxSlabs)
-                Align(
-                  alignment: Alignment.centerLeft,
-                  child: TextButton.icon(onPressed: _addSlab, icon: const Icon(AgIcons.add), label: Text(l10n.feeAddSlab)),
-                ),
-            ],
-            if (_error != null) ...[
-              const SizedBox(height: WsSpace.s8),
-              SaInfoBanner(variant: SaBannerVariant.error, message: _error!),
-            ],
-            const SizedBox(height: WsSpace.s24),
-            SaLoadingButton(text: l10n.accountSave, isLoading: _saving, onPressed: _saving ? null : _save),
-          ]),
+                  const SizedBox(height: SellerSpace.s8),
+                  for (var i = 0; i < _slabs.length; i++)
+                    Padding(
+                      padding: const EdgeInsets.only(bottom: SellerSpace.s8),
+                      child: Row(crossAxisAlignment: CrossAxisAlignment.start, children: [
+                        Expanded(
+                          child: Semantics(
+                            label: l10n.feeMinOrder,
+                            child: TextField(
+                              controller: _slabs[i].minOrderValue,
+                              style: text.bodyLarge!.tabular,
+                              keyboardType: const TextInputType.numberWithOptions(decimal: true),
+                              decoration: InputDecoration(prefixText: SellerFormat.rupeeSymbol, hintText: l10n.feeMinOrder),
+                            ),
+                          ),
+                        ),
+                        const SizedBox(width: SellerSpace.s12),
+                        Expanded(
+                          child: Semantics(
+                            label: l10n.feeSlabFee,
+                            child: TextField(
+                              controller: _slabs[i].fee,
+                              style: text.bodyLarge!.tabular,
+                              keyboardType: const TextInputType.numberWithOptions(decimal: true),
+                              decoration: InputDecoration(prefixText: SellerFormat.rupeeSymbol, hintText: l10n.feeSlabFee),
+                            ),
+                          ),
+                        ),
+                        SellerIconButton(
+                          icon: SellerIcons.delete,
+                          label: l10n.feeRemoveSlab,
+                          color: c.danger,
+                          onPressed: _slabs.length > 1 ? () => _removeSlab(i) : null,
+                        ),
+                      ]),
+                    ),
+                  if (_slabs.length < kMaxSlabs)
+                    SellerButton.secondary(label: l10n.feeAddSlab, icon: SellerIcons.add, expand: true, onPressed: _addSlab),
+                  const SizedBox(height: SellerSpace.s8),
+                  Text(l10n.feeSlabRule, style: text.bodySmall),
+                ]),
+              ),
+            SellerBanner(tone: SellerTone.info, title: l10n.feeFreeTitle, message: l10n.feeFreeBody),
+            if (_error != null) SellerBanner(tone: SellerTone.danger, message: _error!, announce: true),
+          ],
         ),
       ),
     );
@@ -279,7 +278,7 @@ String describeDeliveryFeeSchedule(Map<String, dynamic>? raw, AppLocalizations l
   if (raw == null) return l10n.feeDefault;
   if (raw['type'] == 'flat') {
     final amount = (raw['amount'] as num?)?.toDouble();
-    return amount == null ? l10n.feeDefault : l10n.feeSummaryFlat(AgFormat.rupeesWhole(amount));
+    return amount == null ? l10n.feeDefault : l10n.feeSummaryFlat(SellerFormat.moneyWhole(amount));
   }
   if (raw['type'] == 'slab') {
     final slabs = raw['slabs'];
