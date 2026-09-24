@@ -7,7 +7,7 @@
 // the dialer is not a completed call, so nothing here says anyone was called,
 // alerted or sent a location. "Tell the Agrimore team" (DLV-S2) records a
 // report on the server and shows its real state (incident_report.dart).
-import 'package:agrimore_core/agrimore_core.dart' show AppConstants;
+import 'package:agrimore_core/agrimore_core.dart' show AppConstants, DeliveryTiming;
 import 'package:flutter/material.dart';
 import 'package:url_launcher/url_launcher.dart';
 
@@ -98,7 +98,7 @@ class _EmergencySheetState extends State<EmergencySheet> {
     Map<String, dynamic> fix = const {};
     if (widget.fix != null) {
       try {
-        fix = await widget.fix!().timeout(const Duration(seconds: 5));
+        fix = await widget.fix!().timeout(DeliveryTiming.reportFixTimeout);
       } catch (_) {}
     }
     try {

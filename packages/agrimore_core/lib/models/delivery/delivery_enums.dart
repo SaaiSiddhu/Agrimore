@@ -124,6 +124,8 @@ enum DeliveryFailureReason {
   wrongAddress('wrong_address'),
   addressNotFound('address_not_found'),
   paymentIssue('payment_issue'),
+  // DLV-E1: goods damaged or missing when the rider reached the customer.
+  damagedGoods('damaged_goods'),
   sellerNotReady('seller_not_ready'),
   vehicleIssue('vehicle_issue'),
   safety('safety'),

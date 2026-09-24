@@ -572,4 +572,87 @@ class AppLocalizationsEn extends AppLocalizations {
   @override
   String get regResubmitNote =>
       'Correct your details and submit your application again.';
+
+  @override
+  String get problemReport => 'Report a problem';
+
+  @override
+  String get problemSheetTitle => 'What went wrong?';
+
+  @override
+  String get problemNoteLabel => 'Details (optional)';
+
+  @override
+  String get problemSend => 'Send to Agrimore';
+
+  @override
+  String get problemReported => 'Problem reported';
+
+  @override
+  String get problemReportedBody =>
+      'Agrimore has your report but may not have seen it yet. Keep the goods with you and stay reachable.';
+
+  @override
+  String get problemSeen => 'Seen by Agrimore';
+
+  @override
+  String get problemSeenBody =>
+      'A person at Agrimore is looking at this. Keep the goods with you until they tell you what to do.';
+
+  @override
+  String get problemReattempt => 'Try the delivery again';
+
+  @override
+  String get problemReturned => 'Goods recorded as returned to the seller';
+
+  @override
+  String problemResolutionNote(String note) {
+    return 'Agrimore wrote: $note';
+  }
+
+  @override
+  String get problemFailNotAfterPickup =>
+      'You can report a problem once you have picked the order up.';
+
+  @override
+  String get problemFailOpen => 'A problem is already open for this order.';
+
+  @override
+  String get problemFailNetwork =>
+      'No connection — the report didn\'t go through. Try again.';
+
+  @override
+  String get problemFailUnknown =>
+      'The report didn\'t go through. Try again or call Agrimore support.';
+
+  @override
+  String get reasonCustomerUnreachable => 'Customer not reachable';
+
+  @override
+  String get reasonCustomerRefused => 'Customer refused the order';
+
+  @override
+  String get reasonWrongAddress => 'Wrong address';
+
+  @override
+  String get reasonAddressNotFound => 'Can\'t find the address';
+
+  @override
+  String get reasonPaymentIssue => 'Cash payment problem';
+
+  @override
+  String get reasonDamagedGoods => 'Goods damaged or missing';
+
+  @override
+  String get reasonVehicleIssue => 'Vehicle problem';
+
+  @override
+  String get reasonSafety => 'Safety concern';
+
+  @override
+  String get reasonOther => 'Something else';
+
+  @override
+  String get proofNotSaved =>
+      'Delivered. The proof photo couldn\'t be saved — the delivery still counts.';
 }

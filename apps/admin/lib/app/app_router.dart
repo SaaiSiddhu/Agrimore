@@ -16,6 +16,7 @@ import '../screens/admin/delivery/delivery_partner_management_screen.dart';
 import '../screens/admin/delivery/dispatch_queue_screen.dart';
 import '../screens/admin/delivery/rider_payouts_screen.dart';
 import '../screens/admin/delivery/rider_incidents_screen.dart';
+import '../screens/admin/delivery/delivery_problems_screen.dart';
 import '../screens/admin/users/user_management_screen.dart';
 import '../screens/admin/coupon/coupon_management_screen.dart';
 import '../screens/admin/banners/banner_management_screen.dart';
@@ -67,6 +68,7 @@ class AdminRoutes {
   static const String deliveryDispatch = '/delivery-dispatch';
   static const String riderPayouts = '/rider-payouts';
   static const String riderIncidents = '/rider-incidents';
+  static const String deliveryProblems = '/delivery-problems';
 
   // Users
   static const String users = '/users';
@@ -385,6 +387,14 @@ class AppRouter {
               name: 'rider-incidents',
               pageBuilder: (context, state) =>
                   _buildPage(const RiderIncidentsScreen(), state),
+            ),
+
+            // Delivery problems (DLV-E1)
+            GoRoute(
+              path: AdminRoutes.deliveryProblems,
+              name: 'delivery-problems',
+              pageBuilder: (context, state) =>
+                  _buildPage(const DeliveryProblemsScreen(), state),
             ),
 
             // Coupons

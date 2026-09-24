@@ -265,7 +265,14 @@ service firebase.storage {
             .data.deliveryPartnerId == request.auth.uid;
       }
       allow read: if isAssignedPartnerForThisProof() || isAdmin();
-      allow write: if (isAssignedPartnerForThisProof() || isAdmin()) && isValidFileSize() && isImage();
+      // DLV-E1: once attachDeliveryProof has recorded the proof on the order,
+      // the rider can no longer replace it (admins still can).
+      function proofNotYetAttached() {
+        return !('deliveryProofPath' in
+          firestore.get(/databases/(default)/documents/orders/$(assignedOrderId())).data);
+      }
+      allow write: if ((isAssignedPartnerForThisProof() && proofNotYetAttached()) || isAdmin()) &&
+        isValidFileSize() && isImage();
     }
 
     // ============================================
