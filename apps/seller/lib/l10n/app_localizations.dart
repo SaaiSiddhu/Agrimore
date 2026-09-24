@@ -5637,6 +5637,120 @@ abstract class AppLocalizations {
   /// In en, this message translates to:
   /// **'{count, plural, =1{1 settlement} other{{count} settlements}}'**
   String statementCount(int count);
+
+  /// No description provided for @quoteFromBuyer.
+  ///
+  /// In en, this message translates to:
+  /// **'From buyer'**
+  String get quoteFromBuyer;
+
+  /// No description provided for @quoteFromYou.
+  ///
+  /// In en, this message translates to:
+  /// **'From you'**
+  String get quoteFromYou;
+
+  /// No description provided for @quoteNoPriceTitle.
+  ///
+  /// In en, this message translates to:
+  /// **'No price proposed'**
+  String get quoteNoPriceTitle;
+
+  /// No description provided for @quoteNoPriceBody.
+  ///
+  /// In en, this message translates to:
+  /// **'Send your offer to start the negotiation.'**
+  String get quoteNoPriceBody;
+
+  /// No description provided for @quoteValidUntil.
+  ///
+  /// In en, this message translates to:
+  /// **'Offer valid until {date}'**
+  String quoteValidUntil(String date);
+
+  /// No description provided for @quoteExpiredOn.
+  ///
+  /// In en, this message translates to:
+  /// **'This offer expired on {date}.'**
+  String quoteExpiredOn(String date);
+
+  /// No description provided for @quoteNotResponded.
+  ///
+  /// In en, this message translates to:
+  /// **'You haven\'t responded yet'**
+  String get quoteNotResponded;
+
+  /// No description provided for @quoteAwaitingYou.
+  ///
+  /// In en, this message translates to:
+  /// **'Waiting for your reply'**
+  String get quoteAwaitingYou;
+
+  /// No description provided for @quoteQuantity.
+  ///
+  /// In en, this message translates to:
+  /// **'Quantity'**
+  String get quoteQuantity;
+
+  /// No description provided for @quotePricePerUnit.
+  ///
+  /// In en, this message translates to:
+  /// **'Price per unit'**
+  String get quotePricePerUnit;
+
+  /// No description provided for @quoteTotalValue.
+  ///
+  /// In en, this message translates to:
+  /// **'Total value'**
+  String get quoteTotalValue;
+
+  /// No description provided for @quoteBuyerNote.
+  ///
+  /// In en, this message translates to:
+  /// **'Buyer note'**
+  String get quoteBuyerNote;
+
+  /// No description provided for @quoteBuyerLabel.
+  ///
+  /// In en, this message translates to:
+  /// **'Buyer'**
+  String get quoteBuyerLabel;
+
+  /// No description provided for @quoteLinkedOrderSub.
+  ///
+  /// In en, this message translates to:
+  /// **'Linked to this quote'**
+  String get quoteLinkedOrderSub;
+
+  /// No description provided for @quoteAcceptNotOrder.
+  ///
+  /// In en, this message translates to:
+  /// **'Accepting does not mean payment or delivery. The buyer places the order.'**
+  String get quoteAcceptNotOrder;
+
+  /// No description provided for @quoteDeclineTerms.
+  ///
+  /// In en, this message translates to:
+  /// **'{label} — {note}'**
+  String quoteDeclineTerms(String label, String note);
+
+  /// No description provided for @quoteTermsLine.
+  ///
+  /// In en, this message translates to:
+  /// **'{qty} × {price} = {total}'**
+  String quoteTermsLine(String qty, String price, String total);
+
+  /// No description provided for @counterToBuyer.
+  ///
+  /// In en, this message translates to:
+  /// **'to {buyer}'**
+  String counterToBuyer(String buyer);
+
+  /// No description provided for @counterMoqWarning.
+  ///
+  /// In en, this message translates to:
+  /// **'This is a warning. You can still send this offer.'**
+  String get counterMoqWarning;
 }
 
 class _AppLocalizationsDelegate

@@ -1,11 +1,11 @@
 import 'dart:io';
 
 import 'package:agrimore_core/agrimore_core.dart';
-import 'package:agrimore_ui/agrimore_ui.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_localizations/flutter_localizations.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:provider/provider.dart';
+import 'package:seller/design_system/design_system.dart';
 import 'package:seller/l10n/app_localizations.dart';
 import 'package:seller/providers/rfq_provider.dart';
 import 'package:seller/providers/seller_order_provider.dart';
@@ -63,7 +63,7 @@ Future<AppLocalizations> _pump(WidgetTester tester, Widget child, RfqProvider rf
       ChangeNotifierProvider<SellerOrderProvider>(create: (_) => SellerOrderProvider()),
     ],
     child: MaterialApp(
-      theme: WorkspaceTheme.build(WorkspaceBrand.seller, b),
+      theme: (b == Brightness.dark ? SellerTheme.dark : SellerTheme.light),
       localizationsDelegates: const [
         AppLocalizations.delegate,
         GlobalMaterialLocalizations.delegate,
@@ -151,9 +151,9 @@ void main() {
       _q('3', status: RfqStatus.accepted, awaiting: null),
     ]);
     final l10n = await _pump(tester, SellerRfqInboxScreen(now: _now), provider);
-    expect(find.text(l10n.quotesTabWithCount(l10n.quotesTabNeedsResponse, 1)), findsOneWidget);
-    expect(find.text(l10n.quotesTabWithCount(l10n.quotesTabNegotiating, 1)), findsOneWidget);
-    expect(find.text(l10n.quotesTabWithCount(l10n.quotesTabClosed, 0)), findsOneWidget);
+    expect(tester.widget<SellerChip>(find.widgetWithText(SellerChip, l10n.quotesTabNeedsResponse)).count, 1);
+    expect(tester.widget<SellerChip>(find.widgetWithText(SellerChip, l10n.quotesTabNegotiating)).count, 1);
+    expect(tester.widget<SellerChip>(find.widgetWithText(SellerChip, l10n.quotesTabClosed)).count, 0);
     expect(find.text('Basmati Rice 25kg'), findsOneWidget);
     expect(find.text(l10n.quoteYourTurn), findsOneWidget);
     expect(find.text(l10n.quoteExpiresIn(5)), findsOneWidget);
@@ -173,8 +173,8 @@ void main() {
     final accept = tester.widget<FilledButton>(find.widgetWithText(FilledButton, l10n.quoteAccept));
     expect(accept.onPressed, isNotNull);
     expect(find.text(l10n.quoteVsListedBelow('6%')), findsOneWidget);
-    expect(find.text(AgFormat.rupees(34000)), findsOneWidget);
-    expect(find.text(l10n.quoteListedB2b(AgFormat.rupees(1800))), findsOneWidget);
+    expect(find.text(SellerFormat.money(34000)), findsOneWidget);
+    expect(find.text(l10n.quoteListedB2b(SellerFormat.money(1800))), findsOneWidget);
     expect(tester.takeException(), isNull);
   });
 
@@ -222,13 +222,13 @@ void main() {
     );
     await tester.tap(find.text('open'));
     await tester.pumpAndSettle();
-    expect(find.text(AgFormat.rupees(34000)), findsOneWidget); // pre-filled 1700 × 20
+    expect(find.text(SellerFormat.money(34000)), findsOneWidget); // pre-filled 1700 × 20
     await tester.enterText(find.byKey(const ValueKey('counterPrice')), '1800');
     await tester.enterText(find.byKey(const ValueKey('counterQty')), '5');
     await tester.pump();
-    expect(find.text(AgFormat.rupees(9000)), findsOneWidget);
+    expect(find.text(SellerFormat.money(9000)), findsOneWidget);
     expect(find.text(l10n.quoteVsListedSame), findsOneWidget);
-    expect(find.text(l10n.counterBelowMoq(AgFormat.count(10))), findsOneWidget);
+    expect(find.text(l10n.counterBelowMoq(SellerFormat.count(10))), findsOneWidget);
     await tester.enterText(find.byKey(const ValueKey('counterQty')), '');
     await tester.tap(find.text(l10n.counterSend));
     await tester.pump();

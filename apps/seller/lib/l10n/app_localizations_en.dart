@@ -3301,4 +3301,73 @@ class AppLocalizationsEn extends AppLocalizations {
     );
     return '$_temp0';
   }
+
+  @override
+  String get quoteFromBuyer => 'From buyer';
+
+  @override
+  String get quoteFromYou => 'From you';
+
+  @override
+  String get quoteNoPriceTitle => 'No price proposed';
+
+  @override
+  String get quoteNoPriceBody => 'Send your offer to start the negotiation.';
+
+  @override
+  String quoteValidUntil(String date) {
+    return 'Offer valid until $date';
+  }
+
+  @override
+  String quoteExpiredOn(String date) {
+    return 'This offer expired on $date.';
+  }
+
+  @override
+  String get quoteNotResponded => 'You haven\'t responded yet';
+
+  @override
+  String get quoteAwaitingYou => 'Waiting for your reply';
+
+  @override
+  String get quoteQuantity => 'Quantity';
+
+  @override
+  String get quotePricePerUnit => 'Price per unit';
+
+  @override
+  String get quoteTotalValue => 'Total value';
+
+  @override
+  String get quoteBuyerNote => 'Buyer note';
+
+  @override
+  String get quoteBuyerLabel => 'Buyer';
+
+  @override
+  String get quoteLinkedOrderSub => 'Linked to this quote';
+
+  @override
+  String get quoteAcceptNotOrder =>
+      'Accepting does not mean payment or delivery. The buyer places the order.';
+
+  @override
+  String quoteDeclineTerms(String label, String note) {
+    return '$label — $note';
+  }
+
+  @override
+  String quoteTermsLine(String qty, String price, String total) {
+    return '$qty × $price = $total';
+  }
+
+  @override
+  String counterToBuyer(String buyer) {
+    return 'to $buyer';
+  }
+
+  @override
+  String get counterMoqWarning =>
+      'This is a warning. You can still send this offer.';
 }

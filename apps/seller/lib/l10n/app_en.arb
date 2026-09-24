@@ -1943,5 +1943,68 @@
         "type": "int"
       }
     }
-  }
+  },
+  "quoteFromBuyer": "From buyer",
+  "quoteFromYou": "From you",
+  "quoteNoPriceTitle": "No price proposed",
+  "quoteNoPriceBody": "Send your offer to start the negotiation.",
+  "quoteValidUntil": "Offer valid until {date}",
+  "@quoteValidUntil": {
+    "placeholders": {
+      "date": {
+        "type": "String"
+      }
+    }
+  },
+  "quoteExpiredOn": "This offer expired on {date}.",
+  "@quoteExpiredOn": {
+    "placeholders": {
+      "date": {
+        "type": "String"
+      }
+    }
+  },
+  "quoteNotResponded": "You haven't responded yet",
+  "quoteAwaitingYou": "Waiting for your reply",
+  "quoteQuantity": "Quantity",
+  "quotePricePerUnit": "Price per unit",
+  "quoteTotalValue": "Total value",
+  "quoteBuyerNote": "Buyer note",
+  "quoteBuyerLabel": "Buyer",
+  "quoteLinkedOrderSub": "Linked to this quote",
+  "quoteAcceptNotOrder": "Accepting does not mean payment or delivery. The buyer places the order.",
+  "quoteDeclineTerms": "{label} — {note}",
+  "@quoteDeclineTerms": {
+    "placeholders": {
+      "label": {
+        "type": "String"
+      },
+      "note": {
+        "type": "String"
+      }
+    }
+  },
+  "quoteTermsLine": "{qty} × {price} = {total}",
+  "@quoteTermsLine": {
+    "placeholders": {
+      "qty": {
+        "type": "String"
+      },
+      "price": {
+        "type": "String"
+      },
+      "total": {
+        "type": "String"
+      }
+    }
+  },
+  "counterToBuyer": "to {buyer}",
+  "@counterToBuyer": {
+    "placeholders": {
+      "buyer": {
+        "type": "String"
+      }
+    }
+  },
+  "counterMoqWarning": "This is a warning. You can still send this offer."
 }
