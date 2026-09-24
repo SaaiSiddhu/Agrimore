@@ -29,8 +29,20 @@ class FakeWalletSource implements WalletSource {
     if (refuseWith != null) throw WalletException(refuseWith!);
   }
 
+  int summaryCalls = 0;
+
   @override
-  Future<WalletSummary> summary() async => balance;
+  Future<WalletSummary> summary() async {
+    summaryCalls += 1;
+    return balance;
+  }
+
+  /// AgriMore decides the pending change (admin approve/reject).
+  void decideChange(WalletSummary after) {
+    balance = after;
+    change = null;
+    _changeOut.add(null);
+  }
 
   @override
   Stream<List<SellerWithdrawal>> withdrawals() async* {

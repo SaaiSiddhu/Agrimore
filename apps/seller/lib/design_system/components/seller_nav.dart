@@ -96,16 +96,20 @@ class _NavButton extends StatelessWidget {
                     // the semantics label above.
                     MediaQuery.withClampedTextScaling(
                       maxScaleFactor: SellerNavBar.maxLabelScale,
-                      child: Text(
-                        item.label,
-                        maxLines: 1,
-                        softWrap: false,
-                        overflow: TextOverflow.ellipsis,
-                        textAlign: TextAlign.center,
-                        style: text.labelSmall!.copyWith(
-                          color: labelColor,
-                          letterSpacing: 0,
-                          fontWeight: selected ? SellerType.bold : SellerType.semibold,
+                      // A long label ("Catalogue") at large text shrinks to
+                      // fit instead of being cut to "Catalo…".
+                      child: FittedBox(
+                        fit: BoxFit.scaleDown,
+                        child: Text(
+                          item.label,
+                          maxLines: 1,
+                          softWrap: false,
+                          textAlign: TextAlign.center,
+                          style: text.labelSmall!.copyWith(
+                            color: labelColor,
+                            letterSpacing: 0,
+                            fontWeight: selected ? SellerType.bold : SellerType.semibold,
+                          ),
                         ),
                       ),
                     ),

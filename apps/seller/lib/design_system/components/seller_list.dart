@@ -3,6 +3,7 @@ import 'package:flutter/material.dart';
 import '../icons/seller_icons.dart';
 import '../theme/seller_focus.dart';
 import '../tokens/seller_colors.dart';
+import 'seller_layout.dart';
 import '../tokens/seller_tokens.dart';
 import '../tokens/seller_typography.dart';
 import 'seller_card.dart';
@@ -59,6 +60,7 @@ class SellerListRow extends StatelessWidget {
     final text = context.text;
     final fg = destructive ? c.danger : c.textPrimary;
     final chevron = showChevron ?? onTap != null;
+    final stackValue = context.largeText;
 
     Widget? lead = leading;
     if (lead == null && icon != null) {
@@ -84,10 +86,16 @@ class SellerListRow extends StatelessWidget {
                     const SizedBox(height: SellerSpace.s2),
                     Text(subtitle!, style: text.bodyMedium),
                   ],
+                  // Large text: the value goes under the title, so neither
+                  // is squeezed into breaking mid-word (seen at 150 % on a device).
+                  if (value != null && stackValue) ...[
+                    const SizedBox(height: SellerSpace.s4),
+                    Text(value!, style: text.titleSmall!.tabular),
+                  ],
                 ],
               ),
             ),
-            if (value != null) ...[
+            if (value != null && !stackValue) ...[
               const SizedBox(width: SellerSpace.s12),
               Text(value!, style: text.titleSmall!.tabular, textAlign: TextAlign.end),
             ],

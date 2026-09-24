@@ -238,7 +238,11 @@ class _WalletSectionState extends State<WalletSection> {
       }
     }, onError: (Object e) => debugPrint('Withdrawals failed: $e'));
     _changeSub = widget.source.pendingChange().listen((c) {
-      if (mounted) setState(() => _change = c);
+      if (!mounted) return;
+      final decided = _change != null && c == null;
+      setState(() => _change = c);
+      // Approved or rejected by AgriMore: the balance card's block changes.
+      if (decided) _reload();
     }, onError: (Object e) => debugPrint('Payout change failed: $e'));
   }
 

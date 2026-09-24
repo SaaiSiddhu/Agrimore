@@ -188,6 +188,7 @@ class SellerTestDataRibbon extends StatelessWidget {
     final c = context.colors;
     final l10n = AppLocalizations.of(context);
     return Column(
+      crossAxisAlignment: CrossAxisAlignment.stretch,
       children: [
         Material(
           color: c.warningContainer,

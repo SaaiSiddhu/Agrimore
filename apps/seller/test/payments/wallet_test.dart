@@ -73,6 +73,19 @@ void main() {
     expect(w.cancelled, ['c1']);
   });
 
+  testWidgets('when AgriMore decides the change, the balance is re-read and Withdraw returns (device bug)', (tester) async {
+    final w = FakeWalletSource(
+      balance: const WalletSummary(available: 893, held: 0, minimum: 100, holdDays: 0, hasDestination: true, payoutChangePendingId: 'c1'),
+      change: const PayoutChange(id: 'c1', details: {'payoutMethod': 'upi', 'upiId': 'kaveri@okbank'}),
+    );
+    await _open(tester, w);
+    expect(find.text('Withdraw ₹893'), findsNothing);
+    w.decideChange(const WalletSummary(available: 893, held: 0, minimum: 100, holdDays: 0, hasDestination: true));
+    await tester.pumpAndSettle();
+    expect(find.text('New details waiting for review'), findsNothing);
+    expect(find.text('Withdraw ₹893'), findsOneWidget);
+  });
+
   testWidgets('history shows each withdrawal with its status and reference', (tester) async {
     final w = FakeWalletSource(history: [
       SellerWithdrawal(id: 'a', amount: 1200, status: 'paid', orderCount: 4, reference: 'UTR998877',
