@@ -31,7 +31,7 @@
 
 import * as admin from "firebase-admin";
 import { FieldValue } from "firebase-admin/firestore";
-import { RIDER_ACTIVE_ORDER_STATUSES } from "./dispatch";
+import { holdsRider, RIDER_ACTIVE_ORDER_STATUSES } from "./dispatch";
 
 type Db = FirebaseFirestore.Firestore;
 
@@ -44,11 +44,11 @@ const num = (v: unknown) => (typeof v === "number" && Number.isFinite(v) ? v : 0
 export async function riderDeletionRefusal(db: Db, uid: string): Promise<RiderDeletionRefusal | null> {
   const [active, account, statements] = await Promise.all([
     db.collection("orders").where("deliveryPartnerId", "==", uid)
-      .where("orderStatus", "in", RIDER_ACTIVE_ORDER_STATUSES).limit(1).get(),
+      .where("orderStatus", "in", RIDER_ACTIVE_ORDER_STATUSES).limit(20).get(),
     db.collection("rider_accounts").doc(uid).get(),
     db.collection("rider_payouts").where("riderId", "==", uid).get(),
   ]);
-  if (!active.empty) {
+  if (active.docs.some((d) => holdsRider(d.data()))) {
     return { reason: "rider_active_order",
       message: "You still have an order assigned. Deliver it or ask Agrimore to reassign it before deleting your account." };
   }

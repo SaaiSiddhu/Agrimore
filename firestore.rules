@@ -1849,8 +1849,12 @@ service cloud.firestore {
     // readable by riders at all — offers are DLV-2's delivery_requests, with
     // their own rules. Carries no customer name/phone/address text by design.
     match /delivery_tasks/{orderId} {
+      // DLV-INT: a task not made yet reads as absent, not denied — the rider
+      // app opens an accepted order before syncDeliveryTask has written it,
+      // and a denied listener never recovers (the route card stayed empty).
       allow read: if isAuthenticated() &&
-        (isAdmin() ||
+        (resource == null ||
+         isAdmin() ||
          resource.data.riderId == request.auth.uid ||
          resource.data.customerId == request.auth.uid ||
          resource.data.sellerId == request.auth.uid);
@@ -1887,7 +1891,8 @@ service cloud.firestore {
             (!('isMocked' in d) || d.isMocked is bool);
         }
         allow read: if isAuthenticated() &&
-          (isAdmin() ||
+          (resource == null ||
+           isAdmin() ||
            liveTask().riderId == request.auth.uid ||
            liveTask().customerId == request.auth.uid ||
            liveTask().sellerId == request.auth.uid);

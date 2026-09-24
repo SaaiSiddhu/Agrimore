@@ -26,7 +26,7 @@
 import { onCall, HttpsError } from "firebase-functions/v2/https";
 import * as admin from "firebase-admin";
 import { Timestamp } from "firebase-admin/firestore";
-import { RIDER_ACTIVE_ORDER_STATUSES } from "./dispatch";
+import { holdsRider, RIDER_ACTIVE_ORDER_STATUSES } from "./dispatch";
 import { parseFix } from "./riderSteps";
 import { resolveIsAdmin } from "../admin/complianceGate";
 import { incidentNotice, tellRider } from "./riderNotices";
@@ -112,7 +112,7 @@ export async function reportIncidentCore(db: Db, riderId: string, data: unknown,
     const p = partner.data()!;
     // Every active assignment, not an arbitrary first one: more than one is
     // itself something the team needs to see.
-    const activeOrderIds = active.docs.map((o) => o.id).sort();
+    const activeOrderIds = active.docs.filter((o) => holdsRider(o.data())).map((o) => o.id).sort();
     const at = Timestamp.fromMillis(nowMs);
     tx.create(incidentRef, {
       incidentId,
