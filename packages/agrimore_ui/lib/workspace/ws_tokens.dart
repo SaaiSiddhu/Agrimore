@@ -14,6 +14,10 @@ enum WorkspaceBrand {
 
   /// `apps/seller` — teal `#0F766E`.
   seller,
+
+  /// `apps/delivery` — green `#2D7D3C`, the rider app's existing seed colour
+  /// (DLV-C1 moved the app onto the Workspace foundation; no new brand).
+  delivery,
 }
 
 /// Every colour role a Workspace screen may use, for one brand and one
@@ -99,6 +103,8 @@ class WorkspaceTokens extends ThemeExtension<WorkspaceTokens> {
         return brightness == Brightness.dark ? salesAssociateDark : salesAssociateLight;
       case WorkspaceBrand.seller:
         return brightness == Brightness.dark ? sellerDark : sellerLight;
+      case WorkspaceBrand.delivery:
+        return brightness == Brightness.dark ? deliveryDark : deliveryLight;
     }
   }
 
@@ -268,6 +274,86 @@ class WorkspaceTokens extends ThemeExtension<WorkspaceTokens> {
     infoBg: _darkInfoBg,
     dataViz: [
       Color(0xFF2DD4BF),
+      Color(0xFF60A5FA),
+      Color(0xFFFBBF24),
+      Color(0xFFA78BFA),
+      Color(0xFFFB7185),
+      Color(0xFF94A3B8),
+    ],
+  );
+
+  // ── Delivery (green) — the rider app's existing seeds ─────────────────────
+
+  static const WorkspaceTokens deliveryLight = WorkspaceTokens(
+    brand: WorkspaceBrand.delivery,
+    brightness: Brightness.light,
+    primary: Color(0xFF2D7D3C), // the app's light seed — 5.1:1 with white text
+    primaryPressed: Color(0xFF236330),
+    primarySubtle: Color(0xFFF0FDF4), // green-50
+    primaryMuted: Color(0xFFDCFCE7), // green-100
+    onPrimary: Color(0xFFFFFFFF),
+    focusRing: Color(0x662D7D3C), // primary @ 40 %
+    pageBackground: SaTokens.pageBackground,
+    surface: SaTokens.surface,
+    surfaceElevated: SaTokens.surface,
+    surfaceSunken: _lightSurfaceSunken,
+    textPrimary: SaTokens.textPrimary,
+    textSecondary: SaTokens.textSecondary,
+    textTertiary: _lightTextTertiary,
+    divider: SaTokens.divider,
+    inputBorder: SaTokens.inputBorder,
+    disabledContainer: SaTokens.disabledContainer,
+    disabledContent: SaTokens.disabledContent,
+    scrim: _lightScrim,
+    successFg: SaTokens.successFg,
+    successBg: SaTokens.successBg,
+    warningFg: SaTokens.warningFg,
+    warningBg: SaTokens.warningBg,
+    errorFg: SaTokens.errorFg,
+    errorBg: SaTokens.errorBg,
+    infoFg: _lightInfoFg,
+    infoBg: _lightInfoBg,
+    dataViz: [
+      Color(0xFF2D7D3C),
+      Color(0xFF2563EB),
+      Color(0xFFB45309),
+      Color(0xFF7C3AED),
+      Color(0xFFBE123C),
+      Color(0xFF475569),
+    ],
+  );
+
+  static const WorkspaceTokens deliveryDark = WorkspaceTokens(
+    brand: WorkspaceBrand.delivery,
+    brightness: Brightness.dark,
+    primary: Color(0xFF4DB85F), // the app's dark seed — 7:1 on slate-900
+    primaryPressed: Color(0xFF6FCB7E),
+    primarySubtle: Color(0xFF052E16), // green-950
+    primaryMuted: Color(0xFF14532D), // green-900
+    onPrimary: Color(0xFF052E16), // dark text on bright green
+    focusRing: Color(0x804DB85F), // primary @ 50 %
+    pageBackground: SaTokens.darkPageBackground,
+    surface: SaTokens.darkSurface,
+    surfaceElevated: SaTokens.darkSurfaceElevated,
+    surfaceSunken: _darkSurfaceSunken,
+    textPrimary: SaTokens.darkTextPrimary,
+    textSecondary: SaTokens.darkTextSecondary,
+    textTertiary: _darkTextTertiary,
+    divider: SaTokens.darkDivider,
+    inputBorder: SaTokens.darkInputBorder,
+    disabledContainer: SaTokens.darkDisabledContainer,
+    disabledContent: SaTokens.darkDisabledContent,
+    scrim: _darkScrim,
+    successFg: SaTokens.darkSuccessFg,
+    successBg: SaTokens.darkSuccessBg,
+    warningFg: SaTokens.darkWarningFg,
+    warningBg: SaTokens.darkWarningBg,
+    errorFg: SaTokens.darkErrorFg,
+    errorBg: SaTokens.darkErrorBg,
+    infoFg: _darkInfoFg,
+    infoBg: _darkInfoBg,
+    dataViz: [
+      Color(0xFF4DB85F),
       Color(0xFF60A5FA),
       Color(0xFFFBBF24),
       Color(0xFFA78BFA),
