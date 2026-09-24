@@ -1,0 +1,162 @@
+# Seller redesign — decisions
+
+Phase **SELLER-REDESIGN-1** (branch `agrimore/sredesign1-seller-ui`, claimed at `ab600a5` from `develop` `358d3da`).
+Authority order used for every call below: explicit owner corrections → canonical mockups
+(`apps/seller/assets/ui-mockups/`, 86 images, all inspected — see `mockup-inspection-notes.md`) →
+existing business/security contracts (functions, rules, providers) → platform accessibility.
+Tags: `OWNER_DECISION` (quoted from the brief or a recorded owner answer) · `DESIGN_DECISION` (made here,
+reversible) · `CONTRACT` (dictated by existing server/rules behaviour) · `DEVIATION` (intentional
+difference from a raster concept, with the reason).
+
+## D1 — Seller palette (DESIGN_DECISION from boards 01–03, supersedes ADR §5.1–5.3 for the seller brand)
+
+The boards define a seller-specific neutral set (green-tinted, not the Sales Associate slate) and a
+black-and-teal dark theme. ADR §5 values (dark slate `#0F172A`, dark primary `#2DD4BF`) are superseded
+for `WorkspaceBrand.seller` only; Sales Associate and Delivery keep their tokens.
+
+| Role | Light | Dark | Source |
+|---|---|---|---|
+| pageBackground (canvas) | `#F5F8F7` | `#050908` | 02, 03 |
+| surface | `#FFFFFF` | `#0B1513` | 02, 03 |
+| surfaceElevated (raised) | `#FFFFFF` | `#12221E` | 03 |
+| surfaceSunken | `#EDF3F1` | `#08100E` | derived |
+| primary | `#0F766E` | `#5EEAD4` | 01–03 |
+| onPrimary | `#FFFFFF` | `#042F2E` | 03 |
+| primaryPressed (strong) | `#134E4A` | `#2DD4BF` | 02 / derived |
+| primaryMuted (mint, selected fills) | `#DDF3EA` | `#134E4A` | 01–03 |
+| primarySubtle (tinted cards) | `#EEF8F4` | `#0D2622` | derived |
+| textPrimary | `#142D2A` | `#ECFDF5` | 02, 03 |
+| textSecondary (muted) | `#526660` | `#A3B8B0` | 02, 03 |
+| textTertiary | `#5A6E68` | `#8FA69E` | derived (≥ 4.5:1 incl. on mint) |
+| divider (border) | `#D8E3DF` | `#29433A` | 02, 03 |
+| inputBorder (control boundary) | `#7C8F89` | `#5F7D74` | derived for ≥ 3:1 (see D5) |
+| success fg / bg | `#15803D` / `#EEF8F1` | `#86EFAC` / `#0E2A1B` | 02, 03 (bg derived) |
+| warning fg / bg | `#B45309` / `#FDF3E3` | `#FCD34D` / `#2C2108` | 02, 03 |
+| error fg / bg | `#B91C1C` / `#FDECEC` | `#FCA5A5` / `#321515` | 02, 03 |
+| info fg / bg | `#1D4ED8` / `#EAF0FD` | `#93C5FD` / `#0F1E38` | 02, 03 |
+| focus border | `#0F766E` | `#5EEAD4` | 24-02 |
+| focus stroke on filled controls | `#0B1513` | `#0F766E` | derived (D2) |
+
+Measured contrast (scratch script, re-asserted by `packages/agrimore_ui/test/workspace/seller_palette_test.dart`):
+every text role on every surface it is used on ≥ 4.5:1 (lowest: light tertiary on mint 4.68, light success
+on its tint 4.62); control boundaries ≥ 3:1 (light input border 3.42 on surface / 3.20 on canvas; dark 4.13);
+focus borders ≥ 3:1 against the page in both themes.
+
+## D2 — Single-border keyboard focus (OWNER_DECISION, brief §6; board 24-02 is authoritative, 24-01's double ring is superseded)
+
+- Focus is shown **only** by the component's own outline getting a stronger colour and a heavier stroke,
+  drawn inside the existing boundary (`BorderSide.strokeAlignInside`) so geometry never changes.
+- Outlined components (fields, outlined buttons, cards/rows acting as controls, chips, dropdown and
+  picker triggers, icon buttons, nav items, choice rows): focused border = focus colour, 2 dp (3 dp where
+  the resting outline is already 1.5 dp).
+- Filled buttons have a resting hairline in `primaryPressed` (their "existing outline"); focused it becomes
+  3 dp of the focus-on-fill stroke (light `#0B1513` 3.39:1 vs the fill, dark `#0F766E` 3.70:1 vs the fill
+  and 3.66:1 vs the page).
+- Material focus overlays/halos are switched off in the seller theme (`focusColor` transparent,
+  `overlayColor` focused → transparent on buttons, chips, switches, checkboxes, radios, sliders).
+- The indicator shows only in keyboard highlight mode (`FocusHighlightMode.traditional`), except text
+  fields, whose focused border is the normal editing state.
+- Platform screen-reader focus (TalkBack/VoiceOver rectangles) is never imitated.
+
+## D3 — Brand shape & type (DESIGN_DECISION, boards 02, 05, 08)
+
+Seller only (new `WsBrandStyle`, Sales Associate/Delivery unchanged): controls 48 dp tall
+(compact 40), control radius 8, card radius 12, sheet radius 20, chips pill. Type (Inter, bundled):
+Display 32/40 w700 · Heading 24/32 w600 · Title 20/28 w600 · Section 18/24 w600 · List title 16/24 w600 ·
+Body 16/24 · Label 14/20 w600 · Caption 12/16 · Micro 11/16. Money/IDs use tabular figures.
+
+## D4 — Navigation (boards 04, 07; DESIGN_DECISION)
+
+- Roots: Home · Orders · Catalogue · Payments · Account (unchanged order). Root app bars carry a large
+  left title and **no back arrow** (23-08's back arrow on "Account" is a mockup inconsistency — `DEVIATION`).
+- Bottom bar below 600 dp; navigation rail from 600 dp (board 04 "Medium 600–839 = rail"; supersedes the
+  ADR's 840 dp rail breakpoint); list + detail for Orders from 840 dp.
+- Custom `WsNavBar` / `WsNavRail` in the kit (not Material `NavigationBar`) so a focused destination can
+  show the single-border focus on its indicator and announce "Orders, 3 need action, tab 2 of 5".
+- Quotes stay reachable from Home's action queue and the Account/Orders entry points (ADR-S08: a quote is
+  a pre-order); Insights from Home.
+
+## D5 — Accessibility adaptations that change the look slightly (DEVIATION, WCAG over raster)
+
+- Field boundaries use `inputBorder` (≥ 3:1) instead of the very light border drawn on the boards, so
+  inputs are identifiable in both themes (WCAG 1.4.11).
+- Persistent labels above fields (`WsTextField`) exactly as the boards show; the label and field are
+  merged for screen readers.
+- Chips and nav items are drawn at the board sizes but keep a 48 × 48 dp hit area.
+- No `FittedBox` shrinking of amounts: large values wrap or the layout reflows (brief §5 "do not shrink
+  text"). The previous KPI card did shrink; fixed.
+- Reduced motion: spinners become a static hourglass + text (board 24-05), skeletons stop pulsing, page
+  transitions are instant, success confirmations stay visible instead of sliding away.
+
+## D6 — Product editor structure (boards 18-04…18-08; DESIGN_DECISION)
+
+One editor for create and edit (18-04) with the core fields inline and four link rows to sub-screens:
+Pack options, Pricing & tax, Coverage, Wholesale. Sub-screens edit the same in-memory draft; their
+primary button reads **"Apply changes"** and returns to the editor; only the editor's sticky footer
+("Save as draft" / "Save product" or "Update product") persists. `DEVIATION` from the boards' "Save changes"
+label on sub-screens: those screens do not persist anything, and a label implying they do would mislead.
+18-05's tab strip (Basic info · Pricing · Stock · Pack options) conflicts with 18-04's link rows; link rows win.
+Unsaved changes are guarded ("Discard changes?", board 14).
+
+## D7 — Catalogue card actions (board 18-02 is the selected revision)
+
+Card = photo, name, draft tag, category, price + MRP, stock badge (from 18-01/18-03, using each product's own
+low-stock threshold), "Visible to buyers" switch, wide **Edit** + overflow (**Update stock**, **Delete**).
+Stock and visibility stay separate states (18-02 note). A draft's switch publishes it (existing contract).
+
+## D8 — Bulk publish / hide reports per product (brief §8 phase 18; CONTRACT fix)
+
+The previous implementation committed in 450-product batches and reported one boolean: a failure after an
+earlier batch had committed was reported as a total failure while half the products had changed, and the
+local list was not updated for the committed half. Now each product is updated individually (seller
+catalogues are small), results are collected, local state changes only for successes, and the toast reports
+"N updated · M couldn't be updated" with the failed ones kept selected for a retry.
+
+## D9 — Messaging a buyer (board 17-02; DESIGN_DECISION)
+
+"Message customer — Opens SMS app" replaces the old "chat" action, which created an empty
+`threads/{order}_seller_customer` document and showed "Chat ready" with no seller chat screen to open.
+Call and SMS hand off to the phone's own apps. The buyer's number is masked on screen (ADR §11 privacy);
+the dialer/SMS app receives the full number only when the seller taps.
+
+## D10 — Order detail stays open and updates in place (boards 17-05; CONTRACT unchanged)
+
+The detail screen now follows the live order from `SellerOrderProvider` (Firestore stream) instead of a
+snapshot passed at navigation, so after Accept → Start packing → Ready the screen shows the new stage and
+the next permitted action. Transitions still go only through `sellerTransitionOrder`.
+
+## D11 — Payments scope (OWNER_DECISION, brief §8 phase 19)
+
+No wallet, no withdraw, no payout request. Amounts are exactly the server's `seller_payouts`
+(`grossAmount`, `commissionAmount`, `netAmount`); the app sums them for totals only and never recomputes
+commission. Masked identifiers only (bank `•••• 1234`, UPI masked). "Pending", "Paid", "Not available"
+(read failed) and ₹0 are distinct states.
+
+## D12 — AI assistant (OWNER_DECISION D-SELLER-AI-WEB-ONLY; brief §8 phase 23)
+
+Mobile shows the activation explanation and the existing web-only notice (`aiWebOnly`, a Play-sensitive
+string — **not reworded**). Chat, connection status and disconnect are restyled only; payment/verify/connect
+logic is untouched. Server error text is no longer shown raw: callable error codes map to localised copy.
+The provider's greeting and error strings move to ARB. The board's sample chat text is never shipped.
+
+## D13 — Emulator switch for isolated end-to-end runs (DESIGN_DECISION, mirrors marketplace/employee)
+
+`--dart-define=USE_FIREBASE_EMULATOR=true` (+ host/ports) points Auth, Firestore, Functions and Storage
+at the local emulators and routes the shared `AuthService` OTP/Google-resolve HTTP calls to the functions
+emulator instead of the hard-coded production URL (compile-time constant; release builds are
+bit-identical). Without it the OTP journey could only be tested against production, which the brief and
+`agrimore-near-miss-real-otp-via-partial-emulator-isolation` forbid.
+
+## D14 — Mockup collection is not committed
+
+`apps/seller/assets/ui-mockups/` (132 MB, the owner's untracked WIP) is referenced by path, never added to
+git or to `pubspec.yaml` assets (only `assets/images/` is declared).
+
+## D15 — Things the boards show that the product does not have (not invented)
+
+- Rejection/suspension reasons: sellers' records carry none, so the restricted screens use the fixed
+  explanations (16-07/16-08 say "use the supplied account explanation; do not invent a reason").
+- "Grade A", "Verified purchase" (shown only when the review document says so), follower identities,
+  per-centre pricing tiles (shown only when the product is linked to a master product and a centre).
+- Quote decline reasons are free text on the server (`respondToRfqOffer` `reason`, ≤ 500 chars); the
+  reason list is the existing `kQuoteDeclineReasons`.
