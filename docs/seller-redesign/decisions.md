@@ -189,12 +189,23 @@ git or to `pubspec.yaml` assets (only `assets/images/` is declared).
 - Quote decline reasons are free text on the server (`respondToRfqOffer` `reason`, ≤ 500 chars); the
   reason list is the existing `kQuoteDeclineReasons`.
 
-## D16 — Sign-in screens kept as they are (OWNER_DECISION 2026-09-24)
+## D16 — Sign-in: logic kept, look redesigned (OWNER_DECISION 2026-09-24, revised the same day)
 
-Owner: "leave auth as it is". The phone sign-in, OTP and email sign-in screens (A-01…A-04) are not
-redesigned; they keep rendering on the shared Workspace theme through `LegacyAuthTheme`
-(`apps/seller/lib/app/legacy_auth_theme.dart`). Onboarding (A-05…A-10) and the post-sign-in status
-screens (A-11…A-13) are redesigned — they are application/account states, not sign-in.
+First instruction: "leave auth as it is". That was read as covering the look too, so the sign-in screens
+first kept the shared Workspace theme. After seeing it on the device, the owner said the login page
+"looks fully outdated not as like in the ui mockup". So the owner meant the sign-in logic, not the look.
+
+- **Now:** A-01…A-04 are rebuilt on the seller design system to boards 16-01 and 16-02: the logo and
+  landscape, a mobile field with +91, Get OTP, OR, Continue with Google with Google's own "G" (Google
+  branding rules), an email link, and the legal line.
+- **Google verify-mobile-once step:** back arrow, G mark, info card and Cancel.
+- **OTP:** six boxes, with a wrong code said under the boxes (icon + text), the resend countdown, then
+  "Resend code | Get a call instead".
+- **Email:** a reset bottom sheet with success and failure notices.
+- **Unchanged:** every call into `SellerAuthProvider` (send, verify, Google, link, email, reset), the
+  validation rules, the cooldown and the test-mode fill.
+- **Removed:** `LegacyAuthTheme` and the unused `support_contact_card.dart`. The seller app no longer
+  depends on `agrimore_ui`.
 
 ## D17 — "Mock OTP in production": not implemented (OPEN_DECISION)
 

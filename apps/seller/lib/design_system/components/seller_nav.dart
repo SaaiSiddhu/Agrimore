@@ -253,6 +253,21 @@ abstract final class SellerAppBar {
     );
   }
 
+  /// Just a back arrow (boards 16-01 panels 02–03, 16-02): the page's own
+  /// heading names the screen.
+  static PreferredSizeWidget backOnly(BuildContext context, {VoidCallback? onBack}) {
+    final l10n = AppLocalizations.of(context);
+    return AppBar(
+      automaticallyImplyLeading: false,
+      toolbarHeight: SellerSize.navBar,
+      leading: IconButton(
+        tooltip: l10n.back,
+        onPressed: onBack ?? () => Navigator.of(context).maybePop(),
+        icon: const Icon(SellerIcons.back),
+      ),
+    );
+  }
+
   /// Pushed screen: back arrow (or × for a modal), title, optional status and actions.
   static PreferredSizeWidget detail(
     BuildContext context, {

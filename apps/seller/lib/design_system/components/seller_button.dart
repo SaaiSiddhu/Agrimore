@@ -43,6 +43,7 @@ class SellerButton extends StatelessWidget {
     required this.onPressed,
     this.variant = SellerButtonVariant.primary,
     this.icon,
+    this.leading,
     this.trailingIcon,
     this.loading = false,
     this.loadingLabel,
@@ -58,6 +59,7 @@ class SellerButton extends StatelessWidget {
     required this.label,
     required this.onPressed,
     this.icon,
+    this.leading,
     this.trailingIcon,
     this.loading = false,
     this.loadingLabel,
@@ -73,6 +75,7 @@ class SellerButton extends StatelessWidget {
     required this.label,
     required this.onPressed,
     this.icon,
+    this.leading,
     this.trailingIcon,
     this.loading = false,
     this.loadingLabel,
@@ -88,6 +91,7 @@ class SellerButton extends StatelessWidget {
     required this.label,
     required this.onPressed,
     this.icon,
+    this.leading,
     this.trailingIcon,
     this.loading = false,
     this.loadingLabel,
@@ -103,6 +107,7 @@ class SellerButton extends StatelessWidget {
     required this.label,
     required this.onPressed,
     this.icon,
+    this.leading,
     this.trailingIcon,
     this.loading = false,
     this.loadingLabel,
@@ -118,6 +123,7 @@ class SellerButton extends StatelessWidget {
     required this.label,
     required this.onPressed,
     this.icon,
+    this.leading,
     this.trailingIcon,
     this.loading = false,
     this.loadingLabel,
@@ -134,6 +140,9 @@ class SellerButton extends StatelessWidget {
   final VoidCallback? onPressed;
   final SellerButtonVariant variant;
   final IconData? icon;
+
+  /// A widget in place of [icon] — a brand mark such as Google's "G".
+  final Widget? leading;
   final IconData? trailingIcon;
   final bool loading;
   final String? loadingLabel;
@@ -214,6 +223,7 @@ class SellerButton extends StatelessWidget {
     final content = _Content(
       label: shownLabel,
       icon: loading ? null : icon,
+      leading: loading ? null : leading,
       trailingIcon: loading ? null : trailingIcon,
       loading: loading,
       expand: expand,
@@ -268,6 +278,7 @@ class _Content extends StatelessWidget {
   const _Content({
     required this.label,
     required this.icon,
+    required this.leading,
     required this.trailingIcon,
     required this.loading,
     required this.expand,
@@ -276,6 +287,7 @@ class _Content extends StatelessWidget {
 
   final String label;
   final IconData? icon;
+  final Widget? leading;
   final IconData? trailingIcon;
   final bool loading;
   final bool expand;
@@ -289,6 +301,9 @@ class _Content extends StatelessWidget {
       children: [
         if (loading) ...[
           SellerSpinner(size: SellerIconSize.md, color: spinnerColor),
+          const SizedBox(width: SellerSpace.s12),
+        ] else if (leading != null) ...[
+          leading!,
           const SizedBox(width: SellerSpace.s12),
         ] else if (icon != null) ...[
           Icon(icon, size: SellerIconSize.md),

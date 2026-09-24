@@ -62,6 +62,7 @@ Future<AppLocalizations> pumpSellerApp(
   List<ProductModel> products = const [],
   List<RfqModel> quotes = const [],
   UserModel? user,
+  SellerAuthProvider? auth,
   Brightness brightness = Brightness.light,
   Size size = const Size(390, 844),
   double textScale = 1,
@@ -76,7 +77,7 @@ Future<AppLocalizations> pumpSellerApp(
   late AppLocalizations l10n;
   await tester.pumpWidget(qaFrame(MultiProvider(
     providers: [
-      ChangeNotifierProvider<SellerAuthProvider>(create: (_) => SellerAuthProvider.preview(access: SellerAccess.approved, user: user)),
+      ChangeNotifierProvider<SellerAuthProvider>(create: (_) => auth ?? SellerAuthProvider.preview(access: SellerAccess.approved, user: user)),
       ChangeNotifierProvider<SellerOrderProvider>(create: (_) => SellerOrderProvider.preview(orders)),
       ChangeNotifierProvider<SellerProductProvider>(create: (_) => SellerProductProvider.preview(products)),
       ChangeNotifierProvider<RfqProvider>(create: (_) => RfqProvider.preview(quotes)),

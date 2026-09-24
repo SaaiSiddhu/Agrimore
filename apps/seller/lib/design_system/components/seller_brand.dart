@@ -211,3 +211,158 @@ class SellerTestDataRibbon extends StatelessWidget {
     );
   }
 }
+
+/// The sign-in landscape (board 16-01): rolling hills, crop rows, a farmhouse
+/// and two trees, drawn from the theme so it works in light and dark.
+/// Decorative — the headline under it carries the meaning.
+class SellerFarmScene extends StatelessWidget {
+  const SellerFarmScene({super.key, this.height = SellerSize.farmScene});
+  final double height;
+
+  @override
+  Widget build(BuildContext context) {
+    final c = context.colors;
+    return ExcludeSemantics(
+      child: SizedBox(
+        height: height,
+        width: double.infinity,
+        child: CustomPaint(
+          painter: _FarmPainter(
+            radius: SellerRadius.dialog,
+            far: c.primaryContainer,
+            near: c.leaf,
+            rows: c.primary,
+            house: c.surface,
+            roof: c.primaryStrong,
+            outline: c.border,
+          ),
+        ),
+      ),
+    );
+  }
+}
+
+class _FarmPainter extends CustomPainter {
+  _FarmPainter({required this.radius, required this.far, required this.near, required this.rows, required this.house, required this.roof, required this.outline});
+  final double radius;
+  final Color far;
+  final Color near;
+  final Color rows;
+  final Color house;
+  final Color roof;
+  final Color outline;
+
+  @override
+  void paint(Canvas canvas, Size size) {
+    final w = size.width;
+    final h = size.height;
+    // Keep the drawing a fixed aspect, centred, whatever the width.
+    final dw = h * 2.4 < w ? h * 2.4 : w;
+    final ox = (w - dw) / 2;
+    Offset p(double x, double y) => Offset(ox + dw * x, h * y);
+    // Soft rounded edges, as on the board, instead of a hard crop.
+    canvas.clipRRect(RRect.fromRectAndRadius(Rect.fromLTWH(ox, 0, dw, h), Radius.circular(radius)));
+
+    final back = Path()
+      ..moveTo(p(0, 0.62).dx, p(0, 0.62).dy)
+      ..quadraticBezierTo(p(0.22, 0.28).dx, p(0.22, 0.28).dy, p(0.46, 0.5).dx, p(0.46, 0.5).dy)
+      ..quadraticBezierTo(p(0.72, 0.2).dx, p(0.72, 0.2).dy, p(1, 0.52).dx, p(1, 0.52).dy)
+      ..lineTo(p(1, 1).dx, p(1, 1).dy)
+      ..lineTo(p(0, 1).dx, p(0, 1).dy)
+      ..close();
+    canvas.drawPath(back, Paint()..color = far);
+
+    final front = Path()
+      ..moveTo(p(0, 0.78).dx, p(0, 0.78).dy)
+      ..quadraticBezierTo(p(0.5, 0.56).dx, p(0.5, 0.56).dy, p(1, 0.74).dx, p(1, 0.74).dy)
+      ..lineTo(p(1, 1).dx, p(1, 1).dy)
+      ..lineTo(p(0, 1).dx, p(0, 1).dy)
+      ..close();
+    canvas.drawPath(front, Paint()..color = near.withValues(alpha: 0.55));
+
+    // Crop rows curving toward the horizon.
+    final row = Paint()
+      ..color = rows.withValues(alpha: 0.35)
+      ..style = PaintingStyle.stroke
+      ..strokeWidth = h * 0.018
+      ..strokeCap = StrokeCap.round;
+    for (var i = 0; i < 4; i++) {
+      final y = 0.8 + i * 0.05;
+      canvas.drawPath(
+        Path()
+          ..moveTo(p(0.06, y + 0.03).dx, p(0.06, y + 0.03).dy)
+          ..quadraticBezierTo(p(0.5, y - 0.1).dx, p(0.5, y - 0.1).dy, p(0.94, y + 0.02).dx, p(0.94, y + 0.02).dy),
+        row,
+      );
+    }
+
+    // Farmhouse.
+    final body = Rect.fromLTRB(p(0.44, 0.42).dx, p(0, 0.42).dy, p(0.6, 0).dx, p(0, 0.68).dy);
+    canvas.drawRect(body, Paint()..color = house);
+    canvas.drawRect(body, Paint()..color = outline..style = PaintingStyle.stroke..strokeWidth = h * 0.01);
+    final roofPath = Path()
+      ..moveTo(p(0.42, 0.44).dx, p(0.42, 0.44).dy)
+      ..lineTo(p(0.52, 0.24).dx, p(0.52, 0.24).dy)
+      ..lineTo(p(0.62, 0.44).dx, p(0.62, 0.44).dy)
+      ..close();
+    canvas.drawPath(roofPath, Paint()..color = roof);
+    final door = Rect.fromLTRB(p(0.5, 0).dx, p(0, 0.54).dy, p(0.54, 0).dx, p(0, 0.68).dy);
+    canvas.drawRect(door, Paint()..color = roof.withValues(alpha: 0.8));
+
+    // Trees.
+    void tree(double x, double y, double r) {
+      canvas.drawLine(p(x, y), p(x, y + r * 2.2), Paint()..color = roof..strokeWidth = h * 0.02);
+      canvas.drawCircle(p(x, y), h * r, Paint()..color = rows.withValues(alpha: 0.85));
+      canvas.drawCircle(p(x - 0.012, y - 0.04), h * r * 0.6, Paint()..color = near);
+    }
+
+    tree(0.3, 0.42, 0.11);
+    tree(0.76, 0.4, 0.09);
+    tree(0.84, 0.48, 0.07);
+  }
+
+  @override
+  bool shouldRepaint(_FarmPainter old) =>
+      old.far != far || old.near != near || old.rows != rows || old.house != house || old.roof != roof || old.outline != outline;
+}
+
+/// Google's four-colour "G", required on a "Continue with Google" button by
+/// Google's sign-in branding rules (board 16-01). Its colours are Google's,
+/// not the seller palette, so they are fixed in both themes.
+class SellerGoogleMark extends StatelessWidget {
+  const SellerGoogleMark({super.key, this.size = SellerIconSize.md});
+  final double size;
+
+  @override
+  Widget build(BuildContext context) =>
+      ExcludeSemantics(child: SizedBox.square(dimension: size, child: const CustomPaint(painter: _GooglePainter())));
+}
+
+class _GooglePainter extends CustomPainter {
+  const _GooglePainter();
+
+  static const Color _blue = Color(0xFF4285F4);
+  static const Color _green = Color(0xFF34A853);
+  static const Color _yellow = Color(0xFFFBBC05);
+  static const Color _red = Color(0xFFEA4335);
+
+  @override
+  void paint(Canvas canvas, Size size) {
+    final s = size.width;
+    final stroke = s * 0.2;
+    final rect = Rect.fromCircle(center: Offset(s / 2, s / 2), radius: (s - stroke) / 2);
+    Paint arc(Color c) => Paint()
+      ..color = c
+      ..style = PaintingStyle.stroke
+      ..strokeWidth = stroke;
+    const deg = 3.141592653589793 / 180;
+    canvas.drawArc(rect, 0, 45 * deg, false, arc(_blue));
+    canvas.drawArc(rect, 45 * deg, 100 * deg, false, arc(_green));
+    canvas.drawArc(rect, 145 * deg, 70 * deg, false, arc(_yellow));
+    canvas.drawArc(rect, 215 * deg, 100 * deg, false, arc(_red));
+    canvas.drawRect(Rect.fromLTRB(s / 2, s / 2 - stroke / 2, s - stroke / 2 + stroke / 2, s / 2 + stroke / 2), Paint()..color = _blue);
+  }
+
+  @override
+  bool shouldRepaint(_GooglePainter old) => false;
+}

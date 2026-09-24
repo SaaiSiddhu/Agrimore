@@ -1,23 +1,25 @@
 import 'dart:async';
 
-import 'package:agrimore_ui/agrimore_ui.dart';
+import 'package:agrimore_core/agrimore_core.dart' show AppConstants;
 import 'package:flutter/gestures.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:provider/provider.dart';
 import 'package:url_launcher/url_launcher.dart';
 
+import '../../design_system/design_system.dart';
 import '../../l10n/app_localizations.dart';
 import '../../providers/seller_auth_provider.dart';
 import 'email_sign_in_screen.dart';
 import 'widgets/auth_brand_panel.dart';
 import 'widgets/auth_error_banner.dart';
-import '../../app/legacy_auth_theme.dart';
 
-/// A-01 Sign in + A-02 Verify OTP + A-03 Google linking (ADR §10.1).
+/// A-01 Sign in (board 16-01) + A-02 Verify OTP (16-02) + A-03 Google
+/// mobile verification (16-01 panel 03).
 ///
 /// One screen, two steps driven by [SellerAuthProvider.pendingPhone]. The
-/// auth gate in `app.dart` routes away on success.
+/// auth gate in `app.dart` routes away on success. Only the look changed in
+/// the redesign; every call into [SellerAuthProvider] is as before.
 class SellerSignInScreen extends StatefulWidget {
   const SellerSignInScreen({super.key});
 
@@ -48,10 +50,10 @@ class _SellerSignInScreenState extends State<SellerSignInScreen> {
     super.dispose();
   }
 
-  // ── Actions ────────────────────────────────────────────────────────────────
+  // ── Actions (unchanged by the redesign) ───────────────────────────────────
 
-  String? _validatePhone(String? value, AppLocalizations l10n) {
-    final v = value?.trim() ?? '';
+  String? _validatePhone(String value, AppLocalizations l10n) {
+    final v = value.trim();
     if (v.isEmpty) return l10n.phoneErrorEmpty;
     if (!_indianMobile.hasMatch(v)) return l10n.phoneErrorInvalid;
     return null;
@@ -70,7 +72,7 @@ class _SellerSignInScreenState extends State<SellerSignInScreen> {
     _startResendCountdown();
     final code = auth.testOtp;
     if (code != null && code.length == _otpLength) {
-      _otpController.text = code; // WsOtpInput.onCompleted submits it
+      _otpController.text = code; // SellerOtpInput.onCompleted submits it
     }
   }
 
@@ -117,31 +119,41 @@ class _SellerSignInScreenState extends State<SellerSignInScreen> {
     });
   }
 
+  void _openEmail() => Navigator.of(context).push(MaterialPageRoute<void>(builder: (_) => const EmailSignInScreen()));
 
   // ── Build ──────────────────────────────────────────────────────────────────
 
   @override
   Widget build(BuildContext context) {
     final auth = context.watch<SellerAuthProvider>();
-    final layout = wsLayoutFor(MediaQuery.sizeOf(context).width);
-    final wide = layout == WsLayout.expanded || layout == WsLayout.large;
+    final layout = context.layout;
+    final wide = layout == SellerLayout.expanded || layout == SellerLayout.large;
+    final otp = auth.pendingPhone != null;
+    final linking = !otp && auth.pendingGoogle != null;
 
-    // Test mode: the cells always show the code the ribbon says was filled in.
+    // Test mode: the cells always show the code the banner says was filled in.
     final code = auth.testOtp;
-    if (auth.pendingPhone != null && code != null && _otpController.text.isEmpty) {
+    if (otp && code != null && _otpController.text.isEmpty) {
       WidgetsBinding.instance.addPostFrameCallback((_) {
         if (mounted && _otpController.text.isEmpty) _otpController.text = code;
       });
     }
 
-    final form = _FormColumn(
-      child: auth.pendingPhone == null ? _phoneStep(context, auth, showIntro: !wide) : _otpStep(context, auth),
-    );
+    final Widget step = otp
+        ? _otpStep(context, auth)
+        : linking
+            ? _googleStep(context, auth)
+            : _phoneStep(context, auth, showIntro: !wide);
 
+    final form = _FormColumn(child: step);
     return Scaffold(
+      appBar: otp || linking
+          ? SellerAppBar.backOnly(context, onBack: auth.isBusy ? () {} : (otp ? _changeNumber : auth.cancelGoogleLink))
+          : null,
       body: SafeArea(
         child: wide
             ? Row(
+                crossAxisAlignment: CrossAxisAlignment.stretch,
                 children: [
                   const Expanded(child: AuthBrandPanel()),
                   Expanded(child: Center(child: form)),
@@ -152,168 +164,213 @@ class _SellerSignInScreenState extends State<SellerSignInScreen> {
     );
   }
 
+  Widget _phoneField(AppLocalizations l10n, SellerAuthProvider auth) {
+    return SellerTextField(
+      label: l10n.phoneLabel,
+      hint: l10n.phoneHint,
+      controller: _phoneController,
+      prefixText: l10n.phonePrefix,
+      keyboardType: TextInputType.phone,
+      textInputAction: TextInputAction.done,
+      autofillHints: const [AutofillHints.telephoneNumberNational],
+      maxLength: _nationalDigits,
+      inputFormatters: [FilteringTextInputFormatter.digitsOnly],
+      tabular: true,
+      enabled: !auth.isBusy,
+      trailing: auth.isBusy ? const Padding(padding: EdgeInsets.all(SellerSpace.s12), child: SellerSpinner()) : null,
+      validator: (v) => _validatePhone(v, l10n),
+      onSubmitted: (_) => _sendOtp(),
+    );
+  }
+
+  Widget _getOtpButton(AppLocalizations l10n, SellerAuthProvider auth) => SellerButton(
+        label: l10n.getOtpCta,
+        loadingLabel: l10n.sendingOtp,
+        loading: auth.isBusy,
+        onPressed: auth.isBusy ? null : _sendOtp,
+      );
+
+  /// Board 16-01 panel 01: logo, landscape, headline, number, Get OTP, OR,
+  /// Google, email link, legal line.
   Widget _phoneStep(BuildContext context, SellerAuthProvider auth, {required bool showIntro}) {
     final l10n = AppLocalizations.of(context);
-    final t = context.ws;
-    final text = context.wsText;
-    final google = auth.pendingGoogle;
+    final c = context.colors;
+    final text = context.text;
 
     return Form(
       key: _formKey,
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.stretch,
-        children: [
-          // On wide layouts the brand panel already carries the wordmark and headline.
-          if (showIntro) ...[
-            const AuthWordmark(),
-            const SizedBox(height: WsSpace.s32),
-            Text(l10n.authHeadline, style: text.headlineMedium),
-            const SizedBox(height: WsSpace.s8),
-          ],
-          Text(
-            l10n.authSubhead,
-            style: showIntro ? text.bodyLarge!.copyWith(color: t.textSecondary) : text.titleMedium,
-          ),
-          const SizedBox(height: WsSpace.s32),
-          if (google != null) ...[
-            SaInfoBanner(
-              variant: SaBannerVariant.info,
-              title: l10n.googleLinkingTitle,
-              message: l10n.googleLinkingBody(google.email ?? ''),
-              actionLabel: l10n.googleLinkingCancel,
-              onAction: auth.cancelGoogleLink,
-            ),
-            const SizedBox(height: WsSpace.s16),
-          ],
-          AuthErrorBanner(error: auth.lastError, serverMessage: auth.lastErrorMessage),
-          TextFormField(
-            controller: _phoneController,
-            keyboardType: TextInputType.phone,
-            textInputAction: TextInputAction.done,
-            autofillHints: const [AutofillHints.telephoneNumberNational],
-            maxLength: _nationalDigits,
-            inputFormatters: [FilteringTextInputFormatter.digitsOnly],
-            style: text.bodyLarge!.copyWith(fontFeatures: WsType.tabularFigures),
-            decoration: InputDecoration(
-              labelText: l10n.phoneLabel,
-              hintText: l10n.phoneHint,
-              prefixText: '${l10n.phonePrefix} ',
-              prefixIcon: const Icon(AgIcons.phone, size: WsIconSize.control),
-              counterText: '',
-            ),
-            validator: (v) => _validatePhone(v, l10n),
-            onFieldSubmitted: (_) => _sendOtp(),
-          ),
-          const SizedBox(height: WsSpace.s16),
-          SaLoadingButton(
-            text: l10n.getOtpCta,
-            loadingText: l10n.sendingOtp,
-            isLoading: auth.isBusy,
-            onPressed: auth.isBusy ? null : _sendOtp,
-          ),
-          if (google == null) ...[
-            const SizedBox(height: WsSpace.s24),
-            Row(
-              children: [
-                const Expanded(child: Divider()),
-                Padding(
-                  padding: const EdgeInsets.symmetric(horizontal: WsSpace.s12),
-                  child: Text(l10n.orDivider, style: text.bodySmall),
-                ),
-                const Expanded(child: Divider()),
-              ],
-            ),
-            const SizedBox(height: WsSpace.s24),
-            SaLoadingButton(
-              text: l10n.googleCta,
-              variant: SaButtonVariant.outlined,
-              icon: AgIcons.user,
+      child: SellerFormScope(
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.stretch,
+          children: [
+            // On wide layouts the brand panel already carries these.
+            if (showIntro) ...[
+              const Center(child: SellerLogo(large: true)),
+              const SizedBox(height: SellerSpace.s16),
+              const SellerFarmScene(),
+              const SizedBox(height: SellerSpace.s16),
+              Semantics(
+                header: true,
+                child: Text(l10n.authHeadline, style: text.headlineMedium, textAlign: TextAlign.center),
+              ),
+              const SizedBox(height: SellerSpace.s8),
+              Text(
+                l10n.authSubhead,
+                style: text.bodyLarge!.copyWith(color: c.textSecondary),
+                textAlign: TextAlign.center,
+              ),
+            ] else
+              Semantics(header: true, child: Text(l10n.authSubhead, style: text.titleLarge)),
+            const SizedBox(height: SellerSpace.s24),
+            AuthErrorBanner(error: auth.lastError, serverMessage: auth.lastErrorMessage),
+            _phoneField(l10n, auth),
+            const SizedBox(height: SellerSpace.s16),
+            _getOtpButton(l10n, auth),
+            const SellerOrDivider(),
+            SellerButton.secondary(
+              label: l10n.googleCta,
               onPressed: auth.isBusy ? null : _google,
+              leading: const SellerGoogleMark(),
             ),
-            const SizedBox(height: WsSpace.s8),
-            TextButton(
-              onPressed: auth.isBusy
-                  ? null
-                  : () => Navigator.of(context).push(
-                        MaterialPageRoute<void>(builder: (_) => const LegacyAuthTheme(child: EmailSignInScreen())),
-                      ),
-              child: Text(l10n.emailSignInLink),
+            const SizedBox(height: SellerSpace.s8),
+            Center(
+              child: SellerButton.tertiary(label: l10n.emailSignInLink, onPressed: auth.isBusy ? null : _openEmail),
             ),
+            const SizedBox(height: SellerSpace.s16),
+            const _LegalLine(),
           ],
-          const SizedBox(height: WsSpace.s24),
-          const _LegalLine(),
-        ],
+        ),
       ),
     );
   }
 
+  /// Board 16-01 panel 03: Google account not linked yet — verify the mobile
+  /// number once and the provider links Google to it.
+  Widget _googleStep(BuildContext context, SellerAuthProvider auth) {
+    final l10n = AppLocalizations.of(context);
+    final c = context.colors;
+    final text = context.text;
+    final google = auth.pendingGoogle!;
+
+    return Form(
+      key: _formKey,
+      child: SellerFormScope(
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.stretch,
+          children: [
+            const Center(child: SellerGoogleMark(size: SellerIconSize.xl)),
+            const SizedBox(height: SellerSpace.s16),
+            Semantics(
+              header: true,
+              child: Text(l10n.googleLinkingTitle, style: text.headlineMedium, textAlign: TextAlign.center),
+            ),
+            const SizedBox(height: SellerSpace.s8),
+            Text(
+              l10n.googleLinkingIntro,
+              style: text.bodyLarge!.copyWith(color: c.textSecondary),
+              textAlign: TextAlign.center,
+            ),
+            const SizedBox(height: SellerSpace.s24),
+            SellerBanner(
+              tone: SellerTone.brand,
+              icon: SellerIcons.phone,
+              message: l10n.googleLinkingBody(google.email ?? ''),
+            ),
+            const SizedBox(height: SellerSpace.s16),
+            AuthErrorBanner(error: auth.lastError, serverMessage: auth.lastErrorMessage),
+            _phoneField(l10n, auth),
+            const SizedBox(height: SellerSpace.s16),
+            _getOtpButton(l10n, auth),
+            const SizedBox(height: SellerSpace.s8),
+            Center(
+              child: SellerButton.tertiary(
+                label: l10n.googleLinkingCancel,
+                onPressed: auth.isBusy ? null : auth.cancelGoogleLink,
+              ),
+            ),
+            const SizedBox(height: SellerSpace.s24),
+            const _LegalLine(),
+          ],
+        ),
+      ),
+    );
+  }
+
+  /// Board 16-02 panels 01–02: six boxes, verify, resend countdown, then
+  /// "Resend code | Get a call instead"; a wrong code is said under the boxes.
   Widget _otpStep(BuildContext context, SellerAuthProvider auth) {
     final l10n = AppLocalizations.of(context);
-    final t = context.ws;
-    final text = context.wsText;
-    final masked = AgFormat.maskPhone(auth.pendingPhone ?? '');
+    final c = context.colors;
+    final text = context.text;
+    final masked = SellerFormat.maskPhone(auth.pendingPhone ?? '');
     final sentCopy = auth.otpChannel == 'voice' ? l10n.otpSentVoice(masked) : l10n.otpSentSms(masked);
+    final wrong = auth.lastError == SellerAuthError.invalidCode;
+    final String? inlineError = _otpIncomplete
+        ? l10n.otpErrorIncomplete
+        : wrong
+            ? (auth.lastErrorMessage ?? l10n.otpErrorWrong)
+            : null;
 
     return Column(
       crossAxisAlignment: CrossAxisAlignment.stretch,
       children: [
-        Align(
-          alignment: Alignment.centerLeft,
-          child: IconButton(
-            tooltip: l10n.back,
-            onPressed: auth.isBusy ? null : _changeNumber,
-            icon: const Icon(AgIcons.arrowLeft),
-          ),
-        ),
-        const SizedBox(height: WsSpace.s16),
-        Text(l10n.otpTitle, style: text.headlineMedium),
-        const SizedBox(height: WsSpace.s8),
-        Row(
+        Semantics(header: true, child: Text(l10n.otpTitle, style: text.headlineMedium)),
+        const SizedBox(height: SellerSpace.s4),
+        Wrap(
+          crossAxisAlignment: WrapCrossAlignment.center,
+          spacing: SellerSpace.s4,
           children: [
-            Flexible(child: Text(sentCopy, style: text.bodyLarge!.copyWith(color: t.textSecondary))),
-            TextButton(onPressed: auth.isBusy ? null : _changeNumber, child: Text(l10n.otpChangeNumber)),
+            Text(sentCopy, style: text.bodyLarge!.copyWith(color: c.textSecondary).tabular),
+            SellerButton.tertiary(label: l10n.otpChangeNumber, onPressed: auth.isBusy ? null : _changeNumber),
           ],
         ),
-        const SizedBox(height: WsSpace.s24),
+        const SizedBox(height: SellerSpace.s24),
         if (auth.isTestMode) ...[
-          WsTestModeRibbon(label: l10n.testModeRibbon),
-          const SizedBox(height: WsSpace.s16),
+          SellerBanner(tone: SellerTone.warning, message: l10n.testModeRibbon),
+          const SizedBox(height: SellerSpace.s16),
         ],
         AuthErrorBanner(error: auth.lastError, serverMessage: auth.lastErrorMessage),
-        WsOtpInput(
+        SellerOtpInput(
           controller: _otpController,
           length: _otpLength,
           enabled: !auth.isBusy,
-          hasError: _otpIncomplete || auth.lastError == SellerAuthError.invalidCode,
-          digitSemanticsLabel: (i) => l10n.otpDigitLabel(i),
+          hasError: inlineError != null,
           onCompleted: _verify,
         ),
-        if (_otpIncomplete) ...[
-          const SizedBox(height: WsSpace.s8),
-          Text(l10n.otpErrorIncomplete, style: text.bodySmall!.copyWith(color: t.errorFg)),
+        if (inlineError != null) ...[
+          const SizedBox(height: SellerSpace.s12),
+          AuthInlineError(message: inlineError),
         ],
-        const SizedBox(height: WsSpace.s24),
-        SaLoadingButton(
-          text: l10n.otpVerifyCta,
-          loadingText: l10n.otpVerifying,
-          isLoading: auth.isBusy,
+        const SizedBox(height: SellerSpace.s24),
+        SellerButton(
+          label: l10n.otpVerifyCta,
+          loadingLabel: l10n.otpVerifying,
+          loading: auth.isBusy,
           onPressed: auth.isBusy ? null : _verify,
         ),
-        const SizedBox(height: WsSpace.s16),
+        const SizedBox(height: SellerSpace.s16),
         if (_resendLeft > 0)
           Text(
             l10n.otpResendIn(_resendLeft),
             textAlign: TextAlign.center,
-            style: text.bodySmall!.copyWith(fontFeatures: WsType.tabularFigures),
+            style: text.bodyMedium!.copyWith(color: c.textSecondary).tabular,
           )
         else
           Wrap(
             alignment: WrapAlignment.center,
+            crossAxisAlignment: WrapCrossAlignment.center,
+            spacing: SellerSpace.s8,
             children: [
-              TextButton(onPressed: auth.isBusy ? null : () => _sendOtp(), child: Text(l10n.otpResend)),
-              TextButton(
+              SellerButton.tertiary(label: l10n.otpResend, onPressed: auth.isBusy ? null : () => _sendOtp()),
+              ExcludeSemantics(
+                child: SizedBox(
+                  height: SellerSpace.s16,
+                  child: VerticalDivider(width: SellerSize.hairline, thickness: SellerSize.hairline, color: c.border),
+                ),
+              ),
+              SellerButton.tertiary(
+                label: l10n.otpCallInstead,
                 onPressed: auth.isBusy ? null : () => _sendOtp(channel: 'voice'),
-                child: Text(l10n.otpCallInstead),
               ),
             ],
           ),
@@ -322,8 +379,8 @@ class _SellerSignInScreenState extends State<SellerSignInScreen> {
   }
 }
 
-/// "By continuing you agree to our Terms and Privacy Policy." — one flowing
-/// sentence whose two links are real, focusable links.
+/// "By continuing, you agree to our Terms of Service and Privacy Policy." —
+/// one flowing sentence whose two links are real, focusable links.
 class _LegalLine extends StatefulWidget {
   const _LegalLine();
 
@@ -350,9 +407,9 @@ class _LegalLineState extends State<_LegalLine> {
   @override
   Widget build(BuildContext context) {
     final l10n = AppLocalizations.of(context);
-    final t = context.ws;
-    final base = context.wsText.bodySmall!;
-    final link = base.copyWith(color: t.primary, fontWeight: WsType.semibold);
+    final c = context.colors;
+    final base = context.text.bodySmall!.copyWith(color: c.textSecondary);
+    final link = base.copyWith(color: c.primary, fontWeight: SellerType.semibold, decoration: TextDecoration.underline);
     return Text.rich(
       TextSpan(
         style: base,
@@ -375,11 +432,12 @@ class _FormColumn extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final inset = context.pageInset;
     return SingleChildScrollView(
-      padding: const EdgeInsets.symmetric(horizontal: WsSpace.page, vertical: WsSpace.s32),
+      padding: EdgeInsets.fromLTRB(inset, SellerSpace.s24, inset, SellerSpace.s32),
       child: Center(
         child: ConstrainedBox(
-          constraints: const BoxConstraints(maxWidth: WsSize.formMaxWidth),
+          constraints: const BoxConstraints(maxWidth: SellerSize.formMaxWidth),
           child: child,
         ),
       ),

@@ -3726,4 +3726,18 @@ class AppLocalizationsEn extends AppLocalizations {
 
   @override
   String get statusPending => 'Pending';
+
+  @override
+  String get googleLinkingIntro =>
+      'Link your Google sign-in to your mobile number.';
+
+  @override
+  String get resetFailed =>
+      'Couldn\'t send the link. Please check your email and try again.';
+
+  @override
+  String get otpErrorWrong => 'That code didn\'t work. Try again.';
+
+  @override
+  String get emailHint => 'name@example.com';
 }

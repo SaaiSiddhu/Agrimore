@@ -15,8 +15,6 @@ dependencies:
   # Shared Packages
   agrimore_core:
     path: ../../packages/agrimore_core
-  agrimore_ui:
-    path: ../../packages/agrimore_ui
   agrimore_services:
     path: ../../packages/agrimore_services
   

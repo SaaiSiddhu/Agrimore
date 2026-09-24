@@ -98,6 +98,9 @@ abstract final class SellerSize {
   static const double illustration = 120;
 
   /// Storefront logo (88) and how far it overlaps the cover (half of it).
+  /// Height of the sign-in landscape (board 16-01).
+  static const double farmScene = 140;
+
   static const double storefrontLogo = 88;
   static const double storefrontLogoOverlap = 44;
 }

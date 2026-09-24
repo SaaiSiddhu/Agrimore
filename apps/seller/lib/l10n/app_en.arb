@@ -2210,5 +2210,21 @@
   "statusCheckHint": "Check back here for your application status.",
   "statusCompleted": "Completed",
   "statusInProgress": "In progress",
-  "statusPending": "Pending"
+  "statusPending": "Pending",
+  "googleLinkingIntro": "Link your Google sign-in to your mobile number.",
+  "@googleLinkingIntro": {
+    "description": "Subtitle on the Google mobile-verification step (board 16-01 panel 03)."
+  },
+  "resetFailed": "Couldn't send the link. Please check your email and try again.",
+  "@resetFailed": {
+    "description": "Shown when the password-reset email could not be sent."
+  },
+  "otpErrorWrong": "That code didn't work. Try again.",
+  "@otpErrorWrong": {
+    "description": "Under the OTP boxes when the code is wrong (board 16-02)."
+  },
+  "emailHint": "name@example.com",
+  "@emailHint": {
+    "description": "Placeholder in the email sign-in field; an example, not a real address."
+  }
 }

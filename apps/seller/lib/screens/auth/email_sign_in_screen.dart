@@ -1,14 +1,14 @@
-import 'package:agrimore_ui/agrimore_ui.dart';
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 
+import '../../design_system/design_system.dart';
 import '../../l10n/app_localizations.dart';
 import '../../providers/seller_auth_provider.dart';
-import 'widgets/auth_brand_panel.dart';
 import 'widgets/auth_error_banner.dart';
 
-/// A-04 Sign in with email (ADR §10.1) — legacy, admin-created accounts only.
-/// New sellers are never offered email sign-up.
+/// A-04 Sign in with email (board 16-01 panel 02; reset sheet 16-02 panel 03)
+/// — legacy, admin-created accounts only. New sellers are never offered email
+/// sign-up. Only the look changed in the redesign.
 class EmailSignInScreen extends StatefulWidget {
   const EmailSignInScreen({super.key});
 
@@ -22,9 +22,8 @@ class _EmailSignInScreenState extends State<EmailSignInScreen> {
   final _formKey = GlobalKey<FormState>();
   final _emailController = TextEditingController();
   final _passwordController = TextEditingController();
-  bool _obscure = true;
   String? _notice;
-  SaBannerVariant _noticeVariant = SaBannerVariant.info;
+  SellerTone _noticeTone = SellerTone.info;
 
   @override
   void dispose() {
@@ -48,146 +47,115 @@ class _EmailSignInScreenState extends State<EmailSignInScreen> {
     if (!_email.hasMatch(email)) {
       setState(() {
         _notice = l10n.resetNeedsEmail;
-        _noticeVariant = SaBannerVariant.warning;
+        _noticeTone = SellerTone.warning;
       });
       return;
     }
-    final confirmed = await showModalBottomSheet<bool>(
-      context: context,
-      builder: (sheetContext) => _ResetSheet(email: email),
+    final confirmed = await showSellerSheet<bool>(
+      context,
+      title: l10n.resetSheetTitle,
+      builder: (ctx) => Text(l10n.resetSheetBody(email), style: ctx.text.bodyLarge),
+      footer: (ctx) => Column(
+        mainAxisSize: MainAxisSize.min,
+        crossAxisAlignment: CrossAxisAlignment.stretch,
+        children: [
+          SellerButton(label: l10n.resetSendCta, onPressed: () => Navigator.of(ctx).pop(true)),
+          const SizedBox(height: SellerSpace.s8),
+          SellerButton.secondary(label: l10n.cancel, onPressed: () => Navigator.of(ctx).pop(false)),
+        ],
+      ),
     );
     if (confirmed != true || !mounted) return;
     final ok = await context.read<SellerAuthProvider>().sendPasswordReset(email);
-    if (ok && mounted) {
-      setState(() {
-        _notice = l10n.resetSent;
-        _noticeVariant = SaBannerVariant.success;
-      });
-    }
+    if (!mounted) return;
+    setState(() {
+      _notice = ok ? l10n.resetSent : l10n.resetFailed;
+      _noticeTone = ok ? SellerTone.success : SellerTone.danger;
+    });
   }
 
   @override
   Widget build(BuildContext context) {
     final l10n = AppLocalizations.of(context);
     final auth = context.watch<SellerAuthProvider>();
-    final t = context.ws;
-    final text = context.wsText;
+    final c = context.colors;
+    final text = context.text;
+    final inset = context.pageInset;
 
     return Scaffold(
-      appBar: AppBar(
-        leading: IconButton(
-          tooltip: l10n.back,
-          icon: const Icon(AgIcons.arrowLeft),
-          onPressed: () => Navigator.of(context).maybePop(),
-        ),
-      ),
+      appBar: SellerAppBar.backOnly(context),
       body: SafeArea(
         child: SingleChildScrollView(
-          padding: const EdgeInsets.symmetric(horizontal: WsSpace.page, vertical: WsSpace.s16),
+          padding: EdgeInsets.fromLTRB(inset, SellerSpace.s8, inset, SellerSpace.s32),
           child: Center(
             child: ConstrainedBox(
-              constraints: const BoxConstraints(maxWidth: WsSize.formMaxWidth),
+              constraints: const BoxConstraints(maxWidth: SellerSize.formMaxWidth),
               child: Form(
                 key: _formKey,
-                child: AutofillGroup(
-                  child: Column(
-                    crossAxisAlignment: CrossAxisAlignment.stretch,
-                    children: [
-                      const AuthWordmark(),
-                      const SizedBox(height: WsSpace.s32),
-                      Text(l10n.emailTitle, style: text.headlineMedium),
-                      const SizedBox(height: WsSpace.s8),
-                      Text(l10n.emailSubhead, style: text.bodyLarge!.copyWith(color: t.textSecondary)),
-                      const SizedBox(height: WsSpace.s24),
-                      AuthErrorBanner(error: auth.lastError, serverMessage: auth.lastErrorMessage),
-                      if (_notice != null) ...[
-                        SaInfoBanner(variant: _noticeVariant, message: _notice!),
-                        const SizedBox(height: WsSpace.s16),
+                child: SellerFormScope(
+                  child: AutofillGroup(
+                    child: Column(
+                      crossAxisAlignment: CrossAxisAlignment.stretch,
+                      children: [
+                        Semantics(
+                          header: true,
+                          child: Text(l10n.emailTitle, style: text.headlineMedium, textAlign: TextAlign.center),
+                        ),
+                        const SizedBox(height: SellerSpace.s8),
+                        Text(
+                          l10n.emailSubhead,
+                          style: text.bodyLarge!.copyWith(color: c.textSecondary),
+                          textAlign: TextAlign.center,
+                        ),
+                        const SizedBox(height: SellerSpace.s32),
+                        AuthErrorBanner(error: auth.lastError, serverMessage: auth.lastErrorMessage),
+                        if (_notice != null) ...[
+                          SellerBanner(tone: _noticeTone, message: _notice!, announce: true),
+                          const SizedBox(height: SellerSpace.s16),
+                        ],
+                        SellerTextField(
+                          label: l10n.emailLabel,
+                          hint: l10n.emailHint,
+                          controller: _emailController,
+                          keyboardType: TextInputType.emailAddress,
+                          textInputAction: TextInputAction.next,
+                          autofillHints: const [AutofillHints.email],
+                          prefixIcon: SellerIcons.mail,
+                          enabled: !auth.isBusy,
+                          validator: (v) => _email.hasMatch(v.trim()) ? null : l10n.emailErrorInvalid,
+                        ),
+                        const SizedBox(height: SellerSpace.s16),
+                        SellerTextField(
+                          label: l10n.passwordLabel,
+                          controller: _passwordController,
+                          obscure: true,
+                          textInputAction: TextInputAction.done,
+                          autofillHints: const [AutofillHints.password],
+                          prefixIcon: SellerIcons.lock,
+                          enabled: !auth.isBusy,
+                          validator: (v) => v.isEmpty ? l10n.passwordErrorEmpty : null,
+                          onSubmitted: (_) => _submit(),
+                        ),
+                        Align(
+                          alignment: Alignment.centerRight,
+                          child: SellerButton.tertiary(label: l10n.forgotPassword, onPressed: auth.isBusy ? null : _reset),
+                        ),
+                        const SizedBox(height: SellerSpace.s8),
+                        SellerButton(
+                          label: l10n.emailSignInCta,
+                          loadingLabel: l10n.signingIn,
+                          loading: auth.isBusy,
+                          onPressed: auth.isBusy ? null : _submit,
+                        ),
+                        const SizedBox(height: SellerSpace.s24),
+                        SellerBanner(tone: SellerTone.brand, icon: SellerIcons.info, message: l10n.addPhoneNudge),
                       ],
-                      TextFormField(
-                        controller: _emailController,
-                        keyboardType: TextInputType.emailAddress,
-                        textInputAction: TextInputAction.next,
-                        autofillHints: const [AutofillHints.email],
-                        decoration: InputDecoration(
-                          labelText: l10n.emailLabel,
-                          prefixIcon: const Icon(AgIcons.mail, size: WsIconSize.control),
-                        ),
-                        validator: (v) => _email.hasMatch(v?.trim() ?? '') ? null : l10n.emailErrorInvalid,
-                      ),
-                      const SizedBox(height: WsSpace.s16),
-                      TextFormField(
-                        controller: _passwordController,
-                        obscureText: _obscure,
-                        textInputAction: TextInputAction.done,
-                        autofillHints: const [AutofillHints.password],
-                        decoration: InputDecoration(
-                          labelText: l10n.passwordLabel,
-                          prefixIcon: const Icon(AgIcons.lock, size: WsIconSize.control),
-                          suffixIcon: IconButton(
-                            tooltip: _obscure ? l10n.showPassword : l10n.hidePassword,
-                            icon: Icon(_obscure ? AgIcons.eye : AgIcons.eyeOff, size: WsIconSize.control),
-                            onPressed: () => setState(() => _obscure = !_obscure),
-                          ),
-                        ),
-                        validator: (v) => (v ?? '').isEmpty ? l10n.passwordErrorEmpty : null,
-                        onFieldSubmitted: (_) => _submit(),
-                      ),
-                      Align(
-                        alignment: Alignment.centerRight,
-                        child: TextButton(
-                          onPressed: auth.isBusy ? null : _reset,
-                          child: Text(l10n.forgotPassword),
-                        ),
-                      ),
-                      const SizedBox(height: WsSpace.s8),
-                      SaLoadingButton(
-                        text: l10n.emailSignInCta,
-                        loadingText: l10n.signingIn,
-                        isLoading: auth.isBusy,
-                        onPressed: auth.isBusy ? null : _submit,
-                      ),
-                      const SizedBox(height: WsSpace.s24),
-                      SaInfoBanner(variant: SaBannerVariant.info, message: l10n.addPhoneNudge),
-                    ],
+                    ),
                   ),
                 ),
               ),
             ),
           ),
-        ),
-      ),
-    );
-  }
-}
-
-class _ResetSheet extends StatelessWidget {
-  const _ResetSheet({required this.email});
-  final String email;
-
-  @override
-  Widget build(BuildContext context) {
-    final l10n = AppLocalizations.of(context);
-    final text = context.wsText;
-    return SafeArea(
-      child: Padding(
-        padding: const EdgeInsets.fromLTRB(WsSpace.page, 0, WsSpace.page, WsSpace.s24),
-        child: Column(
-          mainAxisSize: MainAxisSize.min,
-          crossAxisAlignment: CrossAxisAlignment.stretch,
-          children: [
-            Text(l10n.resetSheetTitle, style: text.titleMedium),
-            const SizedBox(height: WsSpace.s8),
-            Text(l10n.resetSheetBody(email), style: text.bodyLarge),
-            const SizedBox(height: WsSpace.s24),
-            SaLoadingButton(text: l10n.resetSendCta, onPressed: () => Navigator.of(context).pop(true)),
-            const SizedBox(height: WsSpace.s8),
-            SaLoadingButton(
-              text: l10n.cancel,
-              variant: SaButtonVariant.outlined,
-              onPressed: () => Navigator.of(context).pop(false),
-            ),
-          ],
         ),
       ),
     );

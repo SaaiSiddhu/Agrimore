@@ -6333,6 +6333,30 @@ abstract class AppLocalizations {
   /// In en, this message translates to:
   /// **'Pending'**
   String get statusPending;
+
+  /// Subtitle on the Google mobile-verification step (board 16-01 panel 03).
+  ///
+  /// In en, this message translates to:
+  /// **'Link your Google sign-in to your mobile number.'**
+  String get googleLinkingIntro;
+
+  /// Shown when the password-reset email could not be sent.
+  ///
+  /// In en, this message translates to:
+  /// **'Couldn\'t send the link. Please check your email and try again.'**
+  String get resetFailed;
+
+  /// Under the OTP boxes when the code is wrong (board 16-02).
+  ///
+  /// In en, this message translates to:
+  /// **'That code didn\'t work. Try again.'**
+  String get otpErrorWrong;
+
+  /// Placeholder in the email sign-in field; an example, not a real address.
+  ///
+  /// In en, this message translates to:
+  /// **'name@example.com'**
+  String get emailHint;
 }
 
 class _AppLocalizationsDelegate

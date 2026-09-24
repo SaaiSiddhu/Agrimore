@@ -12,7 +12,6 @@ import '../screens/auth/seller_sign_in_screen.dart';
 import '../screens/onboarding/application_screen.dart';
 import '../screens/onboarding/apply_intro_screen.dart';
 import '../screens/shell/seller_shell.dart';
-import 'legacy_auth_theme.dart';
 
 /// AgriMore Seller — the seller's own design system (decision D0), light,
 /// dark or following the system (persisted per device).
@@ -61,7 +60,7 @@ class SellerAuthGate extends StatelessWidget {
         key: ValueKey(access),
         child: switch (access) {
           SellerAccess.loading => const _LoadingAccount(),
-          SellerAccess.signedOut => const LegacyAuthTheme(child: SellerSignInScreen()),
+          SellerAccess.signedOut => const SellerSignInScreen(),
           SellerAccess.noApplication => const ApplyIntroScreen(),
           SellerAccess.draft => const ApplicationScreen(),
           SellerAccess.pending => const ApplicationStatusScreen(),

@@ -46,10 +46,10 @@ Board ids are `NN-MM` = `apps/seller/assets/ui-mockups/<phase folder>/<MM>-….p
 
 | ID | Screen / state | Boards | Route / widget | Func | Impl | Verified | Evidence / tests | Blockers |
 |---|---|---|---|---|---|---|---|---|
-| A-01 | Mobile sign-in: idle · invalid · sending · rate-limited · unavailable · network | 16-01 | `auth/seller_sign_in_screen.dart` | E | KEPT (D16) | T | `auth_screens_test.dart` | — |
-| A-02 | OTP: entry · verifying · wrong code · resend countdown · resend / call · test-mode ribbon | 16-02 | same | E | KEPT (D16) | T | | OTP E2E only on emulator (D13) |
-| A-03 | Google → verify mobile once (link) · cancel | 16-01 | same | E | KEPT (D16) | T | | Google sign-in needs SHA registration (owner, ADR E5) |
-| A-04 | Email sign-in · show/hide password · errors · reset sheet · sent · failed | 16-01, 16-02 | `auth/email_sign_in_screen.dart` | E | KEPT (D16) | T | | — |
+| A-01 | Mobile sign-in: idle · invalid · sending · rate-limited · unavailable · network | 16-01 | `auth/seller_sign_in_screen.dart` | E | DONE | T · R | `auth_screens_test.dart`, render `auth_signin_light/dark/desktop` | — |
+| A-02 | OTP: entry · verifying · wrong code · resend countdown · resend / call · test-mode ribbon | 16-02 | same | E | DONE | T · R | render `auth_otp_light`, `auth_otp_wrong_dark` | OTP E2E only on emulator (D13) |
+| A-03 | Google → verify mobile once (link) · cancel | 16-01 | same | E | DONE | T · R | render `auth_google_verify` | Google sign-in needs SHA registration (owner, ADR E5) |
+| A-04 | Email sign-in · show/hide password · errors · reset sheet · sent · failed | 16-01, 16-02 | `auth/email_sign_in_screen.dart` | E | DONE | T · R | render `auth_email` | — |
 | A-05 | Application intro ("About 5 minutes") | 16-03 | `onboarding/apply_intro_screen.dart` | E | DONE | T · R | `onboarding_test.dart` | — |
 | A-06 | Step 1 business details | 16-03 | `onboarding/steps/business_step.dart` | E | DONE | T · R · A | device 17 | — |
 | A-07 | Step 2 location & delivery: use location · finding · pinned · denied (settings/try again) · manual | 16-03, 15-01 | `steps/location_step.dart` | E+N | DONE | T · R | | — |
