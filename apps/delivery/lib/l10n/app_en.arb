@@ -32,14 +32,6 @@
   "@authNotDeliveryPartner": {
     "description": "Signed in with a non-rider account"
   },
-  "authNoPartnerRecord": "We couldn't find your delivery partner details. Contact Agrimore support.",
-  "@authNoPartnerRecord": {
-    "description": "users doc is a rider but delivery_partners doc is missing"
-  },
-  "authNoProfile": "We couldn't find your account profile. Contact Agrimore support.",
-  "@authNoProfile": {
-    "description": "users doc missing on the server"
-  },
   "authProfileUnavailable": "Couldn't load your account. Check your connection.",
   "@authProfileUnavailable": {
     "description": "Profile read only reached the device cache / failed"
@@ -166,5 +158,333 @@
   "historyActionSubtitle": "Every order you carried, newest first",
   "@historyActionSubtitle": {
     "description": "Dashboard quick action subtitle"
+  },
+  "regTitle": "Become a delivery partner",
+  "@regTitle": {
+    "description": "Registration screen title"
+  },
+  "regResumeNote": "Your account is ready — finish your details to apply.",
+  "@regResumeNote": {
+    "description": "Shown when registration resumes for a signed-in account"
+  },
+  "regStepAccount": "Account",
+  "@regStepAccount": {
+    "description": "Stepper step"
+  },
+  "regStepAbout": "About you",
+  "@regStepAbout": {
+    "description": "Stepper step"
+  },
+  "regStepVehicle": "Vehicle and licence",
+  "@regStepVehicle": {
+    "description": "Stepper step"
+  },
+  "regStepDocuments": "Identity documents",
+  "@regStepDocuments": {
+    "description": "Stepper step"
+  },
+  "regStepPayout": "Payout (optional)",
+  "@regStepPayout": {
+    "description": "Stepper step"
+  },
+  "regNext": "Next",
+  "@regNext": {
+    "description": "Stepper continue"
+  },
+  "regBack": "Back",
+  "@regBack": {
+    "description": "Stepper back"
+  },
+  "regSubmit": "Submit application",
+  "@regSubmit": {
+    "description": "Final submit button"
+  },
+  "regSubmitting": "Submitting…",
+  "@regSubmitting": {
+    "description": "Submit in progress"
+  },
+  "fieldEmail": "Email",
+  "@fieldEmail": {
+    "description": "Field label"
+  },
+  "fieldPassword": "Password",
+  "@fieldPassword": {
+    "description": "Field label"
+  },
+  "fieldName": "Full name",
+  "@fieldName": {
+    "description": "Field label"
+  },
+  "fieldPhone": "Mobile number",
+  "@fieldPhone": {
+    "description": "Field label"
+  },
+  "fieldAltPhone": "Alternate mobile (optional)",
+  "@fieldAltPhone": {
+    "description": "Field label"
+  },
+  "fieldAddress": "Address",
+  "@fieldAddress": {
+    "description": "Field label"
+  },
+  "fieldCity": "City",
+  "@fieldCity": {
+    "description": "Field label"
+  },
+  "fieldPincode": "PIN code",
+  "@fieldPincode": {
+    "description": "Field label"
+  },
+  "fieldVehicleType": "Vehicle",
+  "@fieldVehicleType": {
+    "description": "Field label"
+  },
+  "fieldVehicleNumber": "Vehicle registration number",
+  "@fieldVehicleNumber": {
+    "description": "Field label"
+  },
+  "fieldLicenseNumber": "Driving licence number",
+  "@fieldLicenseNumber": {
+    "description": "Field label"
+  },
+  "fieldAadhaarNumber": "Aadhaar number",
+  "@fieldAadhaarNumber": {
+    "description": "Field label"
+  },
+  "fieldAccountHolder": "Account holder name",
+  "@fieldAccountHolder": {
+    "description": "Field label"
+  },
+  "fieldAccountNumber": "Bank account number",
+  "@fieldAccountNumber": {
+    "description": "Field label"
+  },
+  "fieldIfsc": "IFSC",
+  "@fieldIfsc": {
+    "description": "Field label"
+  },
+  "fieldUpi": "UPI ID",
+  "@fieldUpi": {
+    "description": "Field label"
+  },
+  "payoutHint": "Add a bank account, a UPI ID, or both — or skip and add them later from Earnings (an admin reviews changes).",
+  "@payoutHint": {
+    "description": "Payout step explanation"
+  },
+  "docAadhaarFront": "Aadhaar — front",
+  "@docAadhaarFront": {
+    "description": "Photo tile"
+  },
+  "docAadhaarBack": "Aadhaar — back",
+  "@docAadhaarBack": {
+    "description": "Photo tile"
+  },
+  "docSelfie": "Selfie",
+  "@docSelfie": {
+    "description": "Photo tile"
+  },
+  "docLicense": "Driving licence",
+  "@docLicense": {
+    "description": "Photo tile"
+  },
+  "docAdd": "Add photo",
+  "@docAdd": {
+    "description": "Photo tile action"
+  },
+  "docChange": "Change",
+  "@docChange": {
+    "description": "Photo tile action"
+  },
+  "docMissing": "Add this photo",
+  "@docMissing": {
+    "description": "Photo tile error"
+  },
+  "docsPrivacy": "Photos are visible only to you and Agrimore admins, and are locked once your application is decided.",
+  "@docsPrivacy": {
+    "description": "KYC privacy note"
+  },
+  "vehicleBicycle": "Bicycle",
+  "@vehicleBicycle": {
+    "description": "Vehicle type"
+  },
+  "vehicleBike": "Motorbike",
+  "@vehicleBike": {
+    "description": "Vehicle type"
+  },
+  "vehicleScooter": "Scooter",
+  "@vehicleScooter": {
+    "description": "Vehicle type"
+  },
+  "vehicleEv": "Electric two-wheeler",
+  "@vehicleEv": {
+    "description": "Vehicle type"
+  },
+  "vehicleThreeWheeler": "Three-wheeler",
+  "@vehicleThreeWheeler": {
+    "description": "Vehicle type"
+  },
+  "vehicleCar": "Car",
+  "@vehicleCar": {
+    "description": "Vehicle type"
+  },
+  "vehicleVan": "Van",
+  "@vehicleVan": {
+    "description": "Vehicle type"
+  },
+  "errEmail": "Enter a valid email",
+  "@errEmail": {
+    "description": "Field error"
+  },
+  "errPassword": "At least 6 characters",
+  "@errPassword": {
+    "description": "Field error"
+  },
+  "errName": "Enter your full name",
+  "@errName": {
+    "description": "Field error"
+  },
+  "errPhone": "Enter a 10-digit Indian mobile number",
+  "@errPhone": {
+    "description": "Field error"
+  },
+  "errAltPhone": "Enter a different 10-digit mobile number",
+  "@errAltPhone": {
+    "description": "Field error"
+  },
+  "errAddress": "Enter your address",
+  "@errAddress": {
+    "description": "Field error"
+  },
+  "errCity": "Enter your city",
+  "@errCity": {
+    "description": "Field error"
+  },
+  "errPincode": "Enter a 6-digit PIN code",
+  "@errPincode": {
+    "description": "Field error"
+  },
+  "errVehicleNumber": "Enter the registration number, e.g. TN58AB1234",
+  "@errVehicleNumber": {
+    "description": "Field error"
+  },
+  "errLicenseNumber": "Enter your driving licence number",
+  "@errLicenseNumber": {
+    "description": "Field error"
+  },
+  "errAadhaarNumber": "Enter the 12-digit Aadhaar number",
+  "@errAadhaarNumber": {
+    "description": "Field error"
+  },
+  "errAccountHolder": "Enter the account holder's name",
+  "@errAccountHolder": {
+    "description": "Field error"
+  },
+  "errAccountNumber": "9–18 digits",
+  "@errAccountNumber": {
+    "description": "Field error"
+  },
+  "errIfsc": "11 characters, e.g. SBIN0001234",
+  "@errIfsc": {
+    "description": "Field error"
+  },
+  "errUpi": "Enter a UPI ID like name@bank",
+  "@errUpi": {
+    "description": "Field error"
+  },
+  "regFailEmailInUse": "An account with this email already exists. Sign in with it to continue your application.",
+  "@regFailEmailInUse": {
+    "description": "Registration failure"
+  },
+  "regFailWeakPassword": "Choose a stronger password.",
+  "@regFailWeakPassword": {
+    "description": "Registration failure"
+  },
+  "regFailInvalidEmail": "Enter a valid email address.",
+  "@regFailInvalidEmail": {
+    "description": "Registration failure"
+  },
+  "regFailNetwork": "No connection. Your details are kept — try again.",
+  "@regFailNetwork": {
+    "description": "Registration failure"
+  },
+  "regFailUpload": "A photo didn't upload. Your details are kept — try again.",
+  "@regFailUpload": {
+    "description": "Registration failure"
+  },
+  "regFailInvalid": "Some details need fixing — they're marked below.",
+  "@regFailInvalid": {
+    "description": "Registration failure"
+  },
+  "regFailDocuments": "Some photos didn't reach Agrimore. Add them again and resubmit.",
+  "@regFailDocuments": {
+    "description": "Registration failure"
+  },
+  "regFailAlreadyRegistered": "This account is already registered. Sign in to continue.",
+  "@regFailAlreadyRegistered": {
+    "description": "Registration failure"
+  },
+  "regFailOtherRole": "This account is used for another Agrimore app. Register with a different email.",
+  "@regFailOtherRole": {
+    "description": "Registration failure"
+  },
+  "regFailUnknown": "The application didn't go through. Your details are kept — try again.",
+  "@regFailUnknown": {
+    "description": "Registration failure"
+  },
+  "forgotPassword": "Forgot password?",
+  "@forgotPassword": {
+    "description": "Login link"
+  },
+  "resetTitle": "Reset your password",
+  "@resetTitle": {
+    "description": "Dialog title"
+  },
+  "resetBody": "Enter your account email. If an account exists, we'll email a link to set a new password.",
+  "@resetBody": {
+    "description": "Dialog body"
+  },
+  "resetSend": "Send link",
+  "@resetSend": {
+    "description": "Dialog action"
+  },
+  "resetCancel": "Cancel",
+  "@resetCancel": {
+    "description": "Dialog action"
+  },
+  "resetSent": "If an account exists for that email, a reset link is on its way. Check your inbox and spam folder.",
+  "@resetSent": {
+    "description": "Account-safe confirmation (same for known and unknown emails)"
+  },
+  "signInTitle": "Sign in",
+  "@signInTitle": {
+    "description": "Card title"
+  },
+  "signInSubtitle": "Use the email and password you registered with.",
+  "@signInSubtitle": {
+    "description": "Card subtitle"
+  },
+  "signInAction": "Sign in",
+  "@signInAction": {
+    "description": "Button"
+  },
+  "signingIn": "Signing in",
+  "@signingIn": {
+    "description": "Screen-reader label while signing in"
+  },
+  "registerAction": "Register as a delivery partner",
+  "@registerAction": {
+    "description": "Button"
+  },
+  "showPassword": "Show password",
+  "@showPassword": {
+    "description": "Tooltip"
+  },
+  "hidePassword": "Hide password",
+  "@hidePassword": {
+    "description": "Tooltip"
+  },
+  "errPasswordEmpty": "Enter your password",
+  "@errPasswordEmpty": {
+    "description": "Field error"
   }
 }

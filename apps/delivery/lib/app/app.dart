@@ -18,6 +18,7 @@ import '../providers/location_provider.dart';
 import '../providers/order_provider.dart';
 import '../screens/auth/login_screen.dart';
 import '../screens/auth/pending_approval_screen.dart';
+import '../screens/auth/rider_registration_screen.dart';
 import '../screens/home/dashboard_screen.dart';
 
 class App extends StatelessWidget {
@@ -126,6 +127,8 @@ class _RiderSessionGateState extends State<RiderSessionGate> {
       );
     }
     if (auth.isBlocked) return const DeliveryPendingApprovalScreen();
+    // DLV-A1: signed in, no rider record yet — finish registering.
+    if (auth.needsRegistration) return const RiderRegistrationScreen();
     if (auth.profileUnavailable) return const _AccountUnavailable();
     return const LoginScreen();
   }

@@ -40,6 +40,11 @@ abstract class RiderAuthGateway {
 
   /// Fetches fresh custom claims (after an admin status change).
   Future<void> refreshClaims();
+
+  /// DLV-A1: asks Firebase to email a reset link. Throws [RiderAuthFailure]
+  /// only for a malformed email or no connection — an unknown account is
+  /// not an error (the reply must not reveal which emails have accounts).
+  Future<void> sendPasswordReset(String email);
 }
 
 abstract class RiderAccountStore {
@@ -88,6 +93,20 @@ class FirebaseRiderAuthGateway implements RiderAuthGateway {
       await _auth.currentUser?.getIdToken(true);
     } catch (e) {
       debugPrint('Claims refresh skipped: $e');
+    }
+  }
+
+  @override
+  Future<void> sendPasswordReset(String email) async {
+    try {
+      await _auth.sendPasswordResetEmail(email: email);
+    } on FirebaseAuthException catch (e) {
+      debugPrint('Password reset: ${e.code}');
+      if (e.code == 'invalid-email' || e.code == 'missing-email' || e.code == 'network-request-failed' ||
+          e.code == 'too-many-requests') {
+        throw RiderAuthFailure(e.code);
+      }
+      // user-not-found and anything else: same answer as success.
     }
   }
 }
