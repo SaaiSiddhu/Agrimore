@@ -12,6 +12,7 @@ import '../../providers/seller_auth_provider.dart';
 import 'email_sign_in_screen.dart';
 import 'widgets/auth_brand_panel.dart';
 import 'widgets/auth_error_banner.dart';
+import '../../app/legacy_auth_theme.dart';
 
 /// A-01 Sign in + A-02 Verify OTP + A-03 Google linking (ADR §10.1).
 ///
@@ -234,7 +235,7 @@ class _SellerSignInScreenState extends State<SellerSignInScreen> {
               onPressed: auth.isBusy
                   ? null
                   : () => Navigator.of(context).push(
-                        MaterialPageRoute<void>(builder: (_) => const EmailSignInScreen()),
+                        MaterialPageRoute<void>(builder: (_) => const LegacyAuthTheme(child: EmailSignInScreen())),
                       ),
               child: Text(l10n.emailSignInLink),
             ),

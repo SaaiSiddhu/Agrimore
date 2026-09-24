@@ -200,19 +200,29 @@ abstract final class SellerAppBar {
     Widget? subtitle,
   }) {
     final text = context.text;
-    final height = _height(context, 32, 64, lines: subtitle == null ? 1 : 2);
+    final scaler = MediaQuery.textScalerOf(context);
+    final titleLines = _large(context) ? 2 : 1;
+    final subtitleLines = subtitle == null ? 0 : 2;
+    final height = math.max(
+      SellerSize.navBar,
+      scaler.scale(32) * titleLines + scaler.scale(20) * subtitleLines + SellerSpace.s16,
+    );
+    final heading = Semantics(
+      header: true,
+      child: Text(title, style: text.headlineMedium, maxLines: titleLines, overflow: TextOverflow.ellipsis),
+    );
     return AppBar(
       automaticallyImplyLeading: false,
       toolbarHeight: height,
       titleSpacing: SellerSpace.page,
       title: subtitle == null
-          ? Semantics(header: true, child: Text(title, style: text.headlineMedium, maxLines: 2))
+          ? heading
           : Column(
               crossAxisAlignment: CrossAxisAlignment.start,
               mainAxisSize: MainAxisSize.min,
               children: [
-                subtitle,
-                Semantics(header: true, child: Text(title, style: text.headlineMedium, maxLines: 1, overflow: TextOverflow.ellipsis)),
+                heading,
+                DefaultTextStyle.merge(maxLines: subtitleLines, overflow: TextOverflow.ellipsis, child: subtitle),
               ],
             ),
       actions: [...actions, const SizedBox(width: SellerSpace.s8)],

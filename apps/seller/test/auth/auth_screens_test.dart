@@ -4,6 +4,7 @@ import 'package:flutter_localizations/flutter_localizations.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:provider/provider.dart';
 import 'package:seller/app/app.dart';
+import 'package:seller/design_system/design_system.dart' show SellerProgressLabel;
 import 'package:seller/l10n/app_localizations.dart';
 import 'package:seller/providers/seller_auth_provider.dart';
 import 'package:seller/screens/auth/account_restricted_screen.dart';
@@ -211,7 +212,7 @@ void main() {
 
     testWidgets('loading shows progress, not a screen', (tester) async {
       await _pump(tester, const SellerAuthGate(), provider: SellerAuthProvider.preview(access: SellerAccess.loading));
-      expect(find.byType(LinearProgressIndicator), findsOneWidget);
+      expect(find.byType(SellerProgressLabel), findsOneWidget);
       expect(find.byType(SellerSignInScreen), findsNothing);
     });
   });

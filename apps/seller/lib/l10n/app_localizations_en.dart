@@ -2949,4 +2949,15 @@ class AppLocalizationsEn extends AppLocalizations {
   String dsShare(String value, String total) {
     return '$value of $total';
   }
+
+  @override
+  String homeGreetingName(String greeting, String name) {
+    return '$greeting, $name';
+  }
+
+  @override
+  String get homeAttentionToday => 'Here\'s what needs your attention today.';
+
+  @override
+  String get homePaidTo => 'Opens Payments';
 }

@@ -1,8 +1,8 @@
-import 'package:agrimore_ui/agrimore_ui.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:provider/provider.dart';
 
+import '../../design_system/design_system.dart';
 import '../../l10n/app_localizations.dart';
 import '../../providers/seller_auth_provider.dart';
 import '../../providers/seller_order_provider.dart';
@@ -18,8 +18,8 @@ import '../profile/seller_profile_screen.dart';
 /// Payments · Account).
 enum SellerTab { home, orders, catalogue, payments, account }
 
-/// `WsNavShell` for the seller app (ADR §7/§8, SELLER-UI-1a): a bottom
-/// navigation bar on phones, a navigation rail from the expanded breakpoint.
+/// The seller shell (ADR §7/§8, board 04): a bottom navigation bar on phones,
+/// a navigation rail from 600 dp.
 /// Each destination keeps its state (IndexedStack).
 class SellerShell extends StatefulWidget {
   const SellerShell({super.key, this.screens});
@@ -77,58 +77,47 @@ class _SellerShellState extends State<SellerShell> {
     final pending = context.watch<SellerOrderProvider>().allOrders.where(needsSellerAction).length;
     final screens = widget.screens ?? _defaultScreens;
 
-    Widget ordersIcon(IconData icon) => Badge(
-          isLabelVisible: pending > 0,
-          label: Text(pending > 99 ? '99+' : AgFormat.count(pending)),
-          child: Icon(icon),
-        );
-
-    final labels = [l10n.navHome, l10n.navOrders, l10n.navCatalogue, l10n.paymentsTitle, l10n.navAccount];
-    const icons = [AgIcons.home, AgIcons.orders, AgIcons.inventory, AgIcons.wallet, AgIcons.store];
-    String semantic(int i) => i == SellerTab.orders.index && pending > 0 ? l10n.navOrdersPending(pending) : labels[i];
+    final items = [
+      SellerNavItem(icon: SellerIcons.home, label: l10n.navHome),
+      SellerNavItem(
+        icon: SellerIcons.orders,
+        label: l10n.navOrders,
+        badgeCount: pending,
+        semanticLabel: pending > 0 ? l10n.navOrdersPending(pending) : null,
+      ),
+      SellerNavItem(icon: SellerIcons.catalogue, label: l10n.navCatalogue),
+      SellerNavItem(icon: SellerIcons.payments, label: l10n.paymentsTitle),
+      SellerNavItem(icon: SellerIcons.account, label: l10n.navAccount),
+    ];
 
     final body = IndexedStack(index: _currentIndex, children: screens);
-    final wide = wsLayoutFor(MediaQuery.sizeOf(context).width).index >= WsLayout.expanded.index;
+    // Android back on another root returns to Home before leaving the app.
+    final guarded = PopScope<Object?>(
+      canPop: _currentIndex == SellerTab.home.index,
+      onPopInvokedWithResult: (didPop, _) {
+        if (!didPop) _select(SellerTab.home.index);
+      },
+      child: body,
+    );
 
-    if (wide) {
+    // Rail from 600 dp (board 04), bottom bar below.
+    if (context.layout != SellerLayout.compact) {
       return Scaffold(
         body: Row(children: [
-          NavigationRail(
+          SellerNavRail(
+            items: items,
             selectedIndex: _currentIndex,
-            onDestinationSelected: _select,
-            labelType: NavigationRailLabelType.all,
-            destinations: [
-              for (var i = 0; i < labels.length; i++)
-                NavigationRailDestination(
-                  icon: Semantics(
-                    label: semantic(i),
-                    excludeSemantics: true,
-                    child: i == SellerTab.orders.index ? ordersIcon(icons[i]) : Icon(icons[i]),
-                  ),
-                  label: Text(labels[i]),
-                ),
-            ],
+            onSelected: _select,
+            leading: const SellerLeafMark(),
           ),
-          const VerticalDivider(width: WsSize.hairline),
-          Expanded(child: body),
+          Expanded(child: guarded),
         ]),
       );
     }
 
     return Scaffold(
-      body: body,
-      bottomNavigationBar: NavigationBar(
-        selectedIndex: _currentIndex,
-        onDestinationSelected: _select,
-        destinations: [
-          for (var i = 0; i < labels.length; i++)
-            NavigationDestination(
-              icon: i == SellerTab.orders.index ? ordersIcon(icons[i]) : Icon(icons[i]),
-              label: labels[i],
-              tooltip: semantic(i),
-            ),
-        ],
-      ),
+      body: guarded,
+      bottomNavigationBar: SellerNavBar(items: items, selectedIndex: _currentIndex, onSelected: _select),
     );
   }
 }

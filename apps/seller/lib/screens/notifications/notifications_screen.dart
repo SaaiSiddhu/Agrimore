@@ -4,6 +4,7 @@ import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 
+import '../../design_system/design_system.dart';
 import '../../l10n/app_localizations.dart';
 import '../../providers/seller_auth_provider.dart';
 import '../../providers/seller_order_provider.dart';
@@ -26,17 +27,14 @@ class NotificationBell extends StatelessWidget {
   Widget build(BuildContext context) {
     final l10n = AppLocalizations.of(context);
     final uid = unreadOverride == null ? context.read<SellerAuthProvider>().currentUser?.uid : null;
-    Widget bell(int n) => IconButton(
-          tooltip: n == 0 ? l10n.notificationsTitle : l10n.notificationsUnread(n),
+    Widget bell(int n) => SellerIconButton(
+          icon: SellerIcons.bell,
+          label: n == 0 ? l10n.notificationsTitle : l10n.notificationsUnread(n),
+          badgeCount: n,
           // The bell sits inside the shell; a pushed route does not, so the
           // tab switch is handed over as a callback bound to this context.
           onPressed: () => Navigator.of(context).push(MaterialPageRoute<void>(
               builder: (_) => NotificationsScreen(onTab: (tab) => SellerShell.goToTab(context, tab)))),
-          icon: Badge(
-            isLabelVisible: n > 0,
-            label: Text(n > 99 ? '99+' : AgFormat.count(n)),
-            child: const Icon(AgIcons.bell),
-          ),
         );
     if (unreadOverride != null || uid == null) return bell(unreadOverride ?? 0);
     return StreamBuilder<QuerySnapshot<Map<String, dynamic>>>(

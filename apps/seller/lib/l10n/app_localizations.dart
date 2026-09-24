@@ -5085,6 +5085,24 @@ abstract class AppLocalizations {
   /// In en, this message translates to:
   /// **'{value} of {total}'**
   String dsShare(String value, String total);
+
+  /// No description provided for @homeGreetingName.
+  ///
+  /// In en, this message translates to:
+  /// **'{greeting}, {name}'**
+  String homeGreetingName(String greeting, String name);
+
+  /// No description provided for @homeAttentionToday.
+  ///
+  /// In en, this message translates to:
+  /// **'Here\'s what needs your attention today.'**
+  String get homeAttentionToday;
+
+  /// No description provided for @homePaidTo.
+  ///
+  /// In en, this message translates to:
+  /// **'Opens Payments'**
+  String get homePaidTo;
 }
 
 class _AppLocalizationsDelegate

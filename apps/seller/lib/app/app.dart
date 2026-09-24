@@ -1,21 +1,21 @@
-// lib/app/app.dart
-import 'package:agrimore_ui/agrimore_ui.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_localizations/flutter_localizations.dart';
 import 'package:provider/provider.dart';
 
+import '../design_system/design_system.dart';
 import '../l10n/app_localizations.dart';
 import '../providers/seller_auth_provider.dart';
 import '../providers/seller_settings_provider.dart';
 import '../screens/auth/account_restricted_screen.dart';
 import '../screens/auth/application_status_screen.dart';
 import '../screens/auth/seller_sign_in_screen.dart';
-import '../screens/auth/widgets/auth_brand_panel.dart';
 import '../screens/onboarding/application_screen.dart';
 import '../screens/onboarding/apply_intro_screen.dart';
 import '../screens/shell/seller_shell.dart';
+import 'legacy_auth_theme.dart';
 
-/// AgriMore Seller — Workspace theme, seller (teal) brand (ADR-S02/S03).
+/// AgriMore Seller — the seller's own design system (decision D0), light,
+/// dark or following the system (persisted per device).
 class App extends StatelessWidget {
   const App({super.key});
 
@@ -24,8 +24,8 @@ class App extends StatelessWidget {
     return MaterialApp(
       onGenerateTitle: (context) => AppLocalizations.of(context).appName,
       debugShowCheckedModeBanner: false,
-      theme: WorkspaceTheme.build(WorkspaceBrand.seller, Brightness.light),
-      darkTheme: WorkspaceTheme.build(WorkspaceBrand.seller, Brightness.dark),
+      theme: withLegacyWorkspaceTokens(SellerTheme.light),
+      darkTheme: withLegacyWorkspaceTokens(SellerTheme.dark),
       themeMode: context.watch<SellerSettingsProvider>().themeMode,
       localizationsDelegates: const [
         AppLocalizations.delegate,
@@ -34,6 +34,13 @@ class App extends StatelessWidget {
         GlobalCupertinoLocalizations.delegate,
       ],
       supportedLocales: AppLocalizations.supportedLocales,
+      // Reduced motion: no ink ripples either (board 24-05); pressed states
+      // still show through their overlay colour.
+      builder: (context, child) {
+        if (!context.reduceMotion) return child!;
+        final theme = Theme.of(context);
+        return Theme(data: theme.copyWith(splashFactory: NoSplash.splashFactory), child: child!);
+      },
       home: const SellerAuthGate(),
     );
   }
@@ -47,14 +54,14 @@ class SellerAuthGate extends StatelessWidget {
   Widget build(BuildContext context) {
     final access = context.watch<SellerAuthProvider>().access;
     return AnimatedSwitcher(
-      duration: WsMotion.standard,
-      switchInCurve: WsMotion.curveEnter,
-      switchOutCurve: WsMotion.curveExit,
+      duration: context.motion(SellerMotion.standard),
+      switchInCurve: SellerMotion.enter,
+      switchOutCurve: SellerMotion.exit,
       child: KeyedSubtree(
         key: ValueKey(access),
         child: switch (access) {
           SellerAccess.loading => const _LoadingAccount(),
-          SellerAccess.signedOut => const SellerSignInScreen(),
+          SellerAccess.signedOut => const LegacyAuthTheme(child: SellerSignInScreen()),
           SellerAccess.noApplication => const ApplyIntroScreen(),
           SellerAccess.draft => const ApplicationScreen(),
           SellerAccess.pending => const ApplicationStatusScreen(),
@@ -67,6 +74,8 @@ class SellerAuthGate extends StatelessWidget {
   }
 }
 
+/// "Loading your seller account" — logo and an indeterminate spinner; no
+/// invented percentage (board 13).
 class _LoadingAccount extends StatelessWidget {
   const _LoadingAccount();
 
@@ -75,19 +84,13 @@ class _LoadingAccount extends StatelessWidget {
     final l10n = AppLocalizations.of(context);
     return Scaffold(
       body: Center(
-        child: Semantics(
-          label: l10n.loadingAccount,
-          child: const Column(
-            mainAxisSize: MainAxisSize.min,
-            children: [
-              AuthWordmark(),
-              SizedBox(height: WsSpace.s24),
-              SizedBox(
-                width: WsSize.railWidthExpanded / 2,
-                child: LinearProgressIndicator(),
-              ),
-            ],
-          ),
+        child: Column(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            const SellerLogo(large: true),
+            const SizedBox(height: SellerSpace.s32),
+            SellerProgressLabel(label: l10n.loadingAccount),
+          ],
         ),
       ),
     );

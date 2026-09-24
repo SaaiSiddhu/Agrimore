@@ -1661,5 +1661,18 @@
         "type": "String"
       }
     }
-  }
+  },
+  "homeGreetingName": "{greeting}, {name}",
+  "@homeGreetingName": {
+    "placeholders": {
+      "greeting": {
+        "type": "String"
+      },
+      "name": {
+        "type": "String"
+      }
+    }
+  },
+  "homeAttentionToday": "Here's what needs your attention today.",
+  "homePaidTo": "Opens Payments"
 }

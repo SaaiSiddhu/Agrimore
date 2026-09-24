@@ -66,6 +66,7 @@ class SellerAuthProvider with ChangeNotifier {
     PendingGoogleIdentity? pendingGoogle,
     SellerAuthError error = SellerAuthError.none,
     String? phone,
+    UserModel? user,
   })  : _authServiceOverride = null,
         _auth = null,
         _firestore = null,
@@ -76,6 +77,7 @@ class SellerAuthProvider with ChangeNotifier {
     _testOtp = testOtp;
     _pendingGoogle = pendingGoogle;
     _lastError = error;
+    _currentUser = user;
   }
 
   final AuthService? _authServiceOverride;
