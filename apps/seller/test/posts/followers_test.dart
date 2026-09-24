@@ -14,6 +14,7 @@ import 'package:seller/screens/posts/followers_screen.dart';
 /// newest first, deletion asks first.
 class _Fake implements FollowersSource {
   final deleted = <String>[];
+  int subscriptions = 0;
   final _posts = StreamController<List<SellerPost>>.broadcast();
   List<SellerPost> current = [
     SellerPost(id: 'p1', text: 'Fresh mangoes today', createdAt: DateTime(2026, 9, 22)),
@@ -26,6 +27,7 @@ class _Fake implements FollowersSource {
   Future<int> newFollowersSince(DateTime since) async => 7;
   @override
   Stream<List<SellerPost>> posts() async* {
+    subscriptions += 1;
     yield current;
     yield* _posts.stream;
   }
@@ -77,6 +79,9 @@ void main() {
     await tester.pumpAndSettle();
     expect(fake.deleted, ['p1']);
     expect(find.text('Fresh mangoes today'), findsNothing);
+    // Rebuilds (dialog, toast) must not re-subscribe: that flashed the
+    // loading skeleton and re-read every post from Firestore.
+    expect(fake.subscriptions, 1);
     expect(tester.takeException(), isNull);
   });
 }

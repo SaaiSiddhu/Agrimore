@@ -1070,6 +1070,27 @@ service cloud.firestore {
       allow delete: if isAdmin();
     }
 
+    // SELLER-WALLET-1 (functions/src/seller/sellerWallet.ts). All three are
+    // written only by Cloud Functions; the seller reads their own, admins all.
+    //   seller_withdrawals               requested → paid | rejected | cancelled
+    //   seller_payout_change_requests    pending → approved | rejected | cancelled
+    //                                    (holds the full new account number:
+    //                                    owner + admin read only, like
+    //                                    seller_payout_details)
+    //   seller_wallets/{sellerId}        openWithdrawal, payoutChangePending
+    match /seller_withdrawals/{withdrawalId} {
+      allow read: if isAuthenticated() && (resource.data.sellerId == request.auth.uid || isAdmin());
+      allow write: if false;
+    }
+    match /seller_payout_change_requests/{requestId} {
+      allow read: if isAuthenticated() && (resource.data.sellerId == request.auth.uid || isAdmin());
+      allow write: if false;
+    }
+    match /seller_wallets/{sellerId} {
+      allow read: if isOwner(sellerId) || isAdmin();
+      allow write: if false;
+    }
+
     // ============================================
     // EMPLOYEES COLLECTION (B2B Sales Reps)
     // ============================================
@@ -2121,7 +2142,14 @@ service cloud.firestore {
         && request.resource.data.paidAt is timestamp
         && request.resource.data.paidBy == request.auth.uid
         && (!('payoutMethod' in request.resource.data)
-            || request.resource.data.payoutMethod in ['bank', 'upi']);
+            || request.resource.data.payoutMethod in ['bank', 'upi'])
+        // SELLER-WALLET-1: a payout inside a withdrawal is paid through the
+        // withdrawal (status is 'requested' then, so the check above already
+        // refuses — this states it), and nothing is paid to the old account
+        // while the seller's bank/UPI change waits for review.
+        && !('withdrawalId' in resource.data)
+        && !(exists(/databases/$(database)/documents/seller_wallets/$(resource.data.sellerId))
+             && get(/databases/$(database)/documents/seller_wallets/$(resource.data.sellerId)).data.get('payoutChangePending', null) != null);
       
       allow delete: if false;
     }
@@ -2474,10 +2502,19 @@ service cloud.firestore {
         (resource.data.followerId == request.auth.uid ||
          resource.data.sellerId == request.auth.uid ||
          isAdmin());
+      // SELLER-WALLET-1 (followers fix): the buyer app asks "do I follow this
+      // store?" by reading follows/{uid}_{sellerId}. Before any follow exists
+      // there is no resource, so the rule above refused the read and the
+      // follow button never knew its state. A buyer may get their own id —
+      // present or not.
+      allow get: if isAuthenticated() && followId.matches(request.auth.uid + '_.+');
+      // The id is always {followerId}_{sellerId}, so one buyer follows a
+      // store at most once.
       allow create: if isAuthenticated() &&
         request.resource.data.followerId == request.auth.uid &&
         request.resource.data.sellerId is string &&
-        request.resource.data.sellerId != request.auth.uid;
+        request.resource.data.sellerId != request.auth.uid &&
+        followId == request.auth.uid + '_' + request.resource.data.sellerId;
       allow update: if false;
       allow delete: if isAuthenticated() &&
         (resource.data.followerId == request.auth.uid || isAdmin());

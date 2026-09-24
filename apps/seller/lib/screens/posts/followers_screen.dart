@@ -1,4 +1,5 @@
 import 'package:cloud_firestore/cloud_firestore.dart';
+import 'package:firebase_storage/firebase_storage.dart';
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 
@@ -50,9 +51,18 @@ class _FirestoreFollowers implements FollowersSource {
   @override
   Future<int> followers() async => (await _follows.count().get()).count ?? 0;
 
+  // Ordered newest first so it uses the (sellerId, createdAt DESC) index in
+  // firestore.indexes.json; without the orderBy Firestore wants an ASC index
+  // that was never defined and refused the query (FAILED_PRECONDITION, seen
+  // on a real device).
   @override
-  Future<int> newFollowersSince(DateTime since) async =>
-      (await _follows.where('createdAt', isGreaterThanOrEqualTo: Timestamp.fromDate(since)).count().get()).count ?? 0;
+  Future<int> newFollowersSince(DateTime since) async => (await _follows
+              .where('createdAt', isGreaterThanOrEqualTo: Timestamp.fromDate(since))
+              .orderBy('createdAt', descending: true)
+              .count()
+              .get())
+          .count ??
+      0;
 
   @override
   Stream<List<SellerPost>> posts() => _db
@@ -64,7 +74,20 @@ class _FirestoreFollowers implements FollowersSource {
       .map((s) => [for (final d in s.docs) SellerPost.fromDoc(d.id, d.data())]);
 
   @override
-  Future<void> deletePost(String id) => _db.collection('business_posts').doc(id).delete();
+  Future<void> deletePost(String id) async {
+    final ref = _db.collection('business_posts').doc(id);
+    final imageUrl = (await ref.get()).data()?['imageUrl'];
+    await ref.delete();
+    // The photo goes too (storage.rules lets the owner delete
+    // business_posts/{uid}_…); a failure here leaves only an orphan file.
+    if (imageUrl is String && imageUrl.isNotEmpty) {
+      try {
+        await FirebaseStorage.instance.refFromURL(imageUrl).delete();
+      } catch (e) {
+        debugPrint('Post photo delete failed: $e');
+      }
+    }
+  }
 }
 
 /// M-04 Followers & posts (ADR §10.6, SELLER-FOLLOWERS-1): how many buyers
@@ -85,6 +108,10 @@ class _FollowersScreenState extends State<FollowersScreen> {
   FollowersSource? _source;
   Future<(int, int)>? _counts;
 
+  /// Subscribed once: building it in build() re-subscribed on every rebuild
+  /// (the product list changing is enough) and flashed the loading skeleton.
+  Stream<List<SellerPost>>? _posts;
+
   @override
   void initState() {
     super.initState();
@@ -94,6 +121,7 @@ class _FollowersScreenState extends State<FollowersScreen> {
       if (uid != null) _source = _FirestoreFollowers(uid);
     }
     _loadCounts();
+    _posts = _source?.posts();
   }
 
   void _loadCounts() {
@@ -173,7 +201,7 @@ class _FollowersScreenState extends State<FollowersScreen> {
                 ),
                 SellerSectionHeader(title: l10n.postsTitle),
                 StreamBuilder<List<SellerPost>>(
-                  stream: source.posts(),
+                  stream: _posts,
                   builder: (context, snap) {
                     if (snap.hasError) {
                       debugPrint('Posts failed: ${snap.error}');
