@@ -2813,4 +2813,140 @@ class AppLocalizationsEn extends AppLocalizations {
   @override
   String get scheduleClosedHoliday =>
       'Today is a holiday you set. Buyers can\'t place orders until tomorrow.';
+
+  @override
+  String get dsClose => 'Close';
+
+  @override
+  String get dsRetry => 'Retry';
+
+  @override
+  String get dsTryAgain => 'Try again';
+
+  @override
+  String get dsOptional => '(optional)';
+
+  @override
+  String get dsRequired => 'required';
+
+  @override
+  String get dsLoading => 'Loading…';
+
+  @override
+  String get dsDiscardTitle => 'Discard changes?';
+
+  @override
+  String get dsDiscardBody => 'You have unsaved changes.';
+
+  @override
+  String get dsKeepEditing => 'Keep editing';
+
+  @override
+  String get dsDiscard => 'Discard';
+
+  @override
+  String dsFieldsNeedAttention(int count) {
+    String _temp0 = intl.Intl.pluralLogic(
+      count,
+      locale: localeName,
+      other: '$count fields need attention',
+      one: '1 field needs attention',
+    );
+    return '$_temp0';
+  }
+
+  @override
+  String dsTabPosition(int index, int count) {
+    return 'Tab $index of $count';
+  }
+
+  @override
+  String dsBadgeCount(int count) {
+    String _temp0 = intl.Intl.pluralLogic(
+      count,
+      locale: localeName,
+      other: '$count new',
+      one: '1 new',
+    );
+    return '$_temp0';
+  }
+
+  @override
+  String get dsNoImage => 'No image';
+
+  @override
+  String get dsImageFailed => 'Image couldn\'t load';
+
+  @override
+  String get dsChartSummaryUnavailable => 'Data unavailable';
+
+  @override
+  String get dsSelected => 'Selected';
+
+  @override
+  String get dsNotSelected => 'Not selected';
+
+  @override
+  String get dsExpandHint => 'Double tap to expand';
+
+  @override
+  String get dsCollapseHint => 'Double tap to collapse';
+
+  @override
+  String get dsCopied => 'Copied';
+
+  @override
+  String get dsStepCompleted => 'Completed';
+
+  @override
+  String get dsStepCurrent => 'Current';
+
+  @override
+  String get dsStepUpcoming => 'Not started yet';
+
+  @override
+  String get dsStepFailed => 'Needs attention';
+
+  @override
+  String dsOutOf(int max) {
+    return 'out of $max';
+  }
+
+  @override
+  String get dsScoreUnavailable => 'Not enough activity yet';
+
+  @override
+  String dsOtpFieldLabel(int length) {
+    return 'Verification code, $length digits';
+  }
+
+  @override
+  String get dsShowTable => 'Show as table';
+
+  @override
+  String get dsHideTable => 'Hide table';
+
+  @override
+  String dsCellLabel(String column, String value) {
+    return '$column: $value';
+  }
+
+  @override
+  String dsChartPointLabel(String label, String value) {
+    return '$label: $value';
+  }
+
+  @override
+  String get dsBrandName => 'AgriMore';
+
+  @override
+  String get dsBrandRole => 'Seller';
+
+  @override
+  String get dsTestDataRibbon => 'Test data — local emulator';
+
+  @override
+  String dsShare(String value, String total) {
+    return '$value of $total';
+  }
 }

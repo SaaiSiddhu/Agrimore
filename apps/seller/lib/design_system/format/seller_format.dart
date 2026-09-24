@@ -59,22 +59,22 @@ abstract final class SellerFormat {
   static String rating(num value) => value.toStringAsFixed(1);
 
   /// `24 Sep`
-  static String dayMonth(DateTime d) => DateFormat('d MMM', 'en_IN').format(d);
+  static String dayMonth(DateTime d) => DateFormat('d MMM', 'en').format(d);
 
   /// `24 Sep 2026`
-  static String date(DateTime d) => DateFormat('d MMM y', 'en_IN').format(d);
+  static String date(DateTime d) => DateFormat('d MMM y', 'en').format(d);
 
   /// `September 2026`
-  static String monthYear(DateTime d) => DateFormat('MMMM y', 'en_IN').format(d);
+  static String monthYear(DateTime d) => DateFormat('MMMM y', 'en').format(d);
 
   /// `10:30 AM`
-  static String time(DateTime d) => DateFormat('h:mm a', 'en_IN').format(d).toUpperCase();
+  static String time(DateTime d) => DateFormat('h:mm a', 'en').format(d);
 
   /// `24 Sep 2026, 10:30 AM`
   static String dateTime(DateTime d) => '${date(d)}, ${time(d)}';
 
   /// `Mon`
-  static String weekdayShort(DateTime d) => DateFormat('E', 'en_IN').format(d);
+  static String weekdayShort(DateTime d) => DateFormat('E', 'en').format(d);
 
   /// `18 – 24 Sep 2026` (same month) or `28 Aug – 3 Sep 2026`.
   static String dateRange(DateTime from, DateTime to) {
@@ -118,18 +118,7 @@ abstract final class SellerFormat {
   static String initials(String name) {
     final parts = name.trim().split(RegExp(r'\s+')).where((p) => p.isNotEmpty).toList();
     if (parts.isEmpty) return '';
-    final first = parts.first.characters.first;
-    final second = parts.length > 1 ? parts[1].characters.first : '';
-    return (first + second).toUpperCase();
+    String first(String p) => String.fromCharCode(p.runes.first);
+    return (first(parts.first) + (parts.length > 1 ? first(parts[1]) : '')).toUpperCase();
   }
-}
-
-extension on String {
-  _Chars get characters => _Chars(this);
-}
-
-class _Chars {
-  const _Chars(this.s);
-  final String s;
-  String get first => s.isEmpty ? '' : String.fromCharCode(s.runes.first);
 }

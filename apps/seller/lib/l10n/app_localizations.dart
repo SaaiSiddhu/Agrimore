@@ -4869,6 +4869,222 @@ abstract class AppLocalizations {
   /// In en, this message translates to:
   /// **'Today is a holiday you set. Buyers can\'t place orders until tomorrow.'**
   String get scheduleClosedHoliday;
+
+  /// No description provided for @dsClose.
+  ///
+  /// In en, this message translates to:
+  /// **'Close'**
+  String get dsClose;
+
+  /// No description provided for @dsRetry.
+  ///
+  /// In en, this message translates to:
+  /// **'Retry'**
+  String get dsRetry;
+
+  /// No description provided for @dsTryAgain.
+  ///
+  /// In en, this message translates to:
+  /// **'Try again'**
+  String get dsTryAgain;
+
+  /// No description provided for @dsOptional.
+  ///
+  /// In en, this message translates to:
+  /// **'(optional)'**
+  String get dsOptional;
+
+  /// No description provided for @dsRequired.
+  ///
+  /// In en, this message translates to:
+  /// **'required'**
+  String get dsRequired;
+
+  /// No description provided for @dsLoading.
+  ///
+  /// In en, this message translates to:
+  /// **'Loading…'**
+  String get dsLoading;
+
+  /// No description provided for @dsDiscardTitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Discard changes?'**
+  String get dsDiscardTitle;
+
+  /// No description provided for @dsDiscardBody.
+  ///
+  /// In en, this message translates to:
+  /// **'You have unsaved changes.'**
+  String get dsDiscardBody;
+
+  /// No description provided for @dsKeepEditing.
+  ///
+  /// In en, this message translates to:
+  /// **'Keep editing'**
+  String get dsKeepEditing;
+
+  /// No description provided for @dsDiscard.
+  ///
+  /// In en, this message translates to:
+  /// **'Discard'**
+  String get dsDiscard;
+
+  /// No description provided for @dsFieldsNeedAttention.
+  ///
+  /// In en, this message translates to:
+  /// **'{count, plural, =1{1 field needs attention} other{{count} fields need attention}}'**
+  String dsFieldsNeedAttention(int count);
+
+  /// No description provided for @dsTabPosition.
+  ///
+  /// In en, this message translates to:
+  /// **'Tab {index} of {count}'**
+  String dsTabPosition(int index, int count);
+
+  /// No description provided for @dsBadgeCount.
+  ///
+  /// In en, this message translates to:
+  /// **'{count, plural, =1{1 new} other{{count} new}}'**
+  String dsBadgeCount(int count);
+
+  /// No description provided for @dsNoImage.
+  ///
+  /// In en, this message translates to:
+  /// **'No image'**
+  String get dsNoImage;
+
+  /// No description provided for @dsImageFailed.
+  ///
+  /// In en, this message translates to:
+  /// **'Image couldn\'t load'**
+  String get dsImageFailed;
+
+  /// No description provided for @dsChartSummaryUnavailable.
+  ///
+  /// In en, this message translates to:
+  /// **'Data unavailable'**
+  String get dsChartSummaryUnavailable;
+
+  /// No description provided for @dsSelected.
+  ///
+  /// In en, this message translates to:
+  /// **'Selected'**
+  String get dsSelected;
+
+  /// No description provided for @dsNotSelected.
+  ///
+  /// In en, this message translates to:
+  /// **'Not selected'**
+  String get dsNotSelected;
+
+  /// No description provided for @dsExpandHint.
+  ///
+  /// In en, this message translates to:
+  /// **'Double tap to expand'**
+  String get dsExpandHint;
+
+  /// No description provided for @dsCollapseHint.
+  ///
+  /// In en, this message translates to:
+  /// **'Double tap to collapse'**
+  String get dsCollapseHint;
+
+  /// No description provided for @dsCopied.
+  ///
+  /// In en, this message translates to:
+  /// **'Copied'**
+  String get dsCopied;
+
+  /// No description provided for @dsStepCompleted.
+  ///
+  /// In en, this message translates to:
+  /// **'Completed'**
+  String get dsStepCompleted;
+
+  /// No description provided for @dsStepCurrent.
+  ///
+  /// In en, this message translates to:
+  /// **'Current'**
+  String get dsStepCurrent;
+
+  /// No description provided for @dsStepUpcoming.
+  ///
+  /// In en, this message translates to:
+  /// **'Not started yet'**
+  String get dsStepUpcoming;
+
+  /// No description provided for @dsStepFailed.
+  ///
+  /// In en, this message translates to:
+  /// **'Needs attention'**
+  String get dsStepFailed;
+
+  /// No description provided for @dsOutOf.
+  ///
+  /// In en, this message translates to:
+  /// **'out of {max}'**
+  String dsOutOf(int max);
+
+  /// No description provided for @dsScoreUnavailable.
+  ///
+  /// In en, this message translates to:
+  /// **'Not enough activity yet'**
+  String get dsScoreUnavailable;
+
+  /// No description provided for @dsOtpFieldLabel.
+  ///
+  /// In en, this message translates to:
+  /// **'Verification code, {length} digits'**
+  String dsOtpFieldLabel(int length);
+
+  /// No description provided for @dsShowTable.
+  ///
+  /// In en, this message translates to:
+  /// **'Show as table'**
+  String get dsShowTable;
+
+  /// No description provided for @dsHideTable.
+  ///
+  /// In en, this message translates to:
+  /// **'Hide table'**
+  String get dsHideTable;
+
+  /// No description provided for @dsCellLabel.
+  ///
+  /// In en, this message translates to:
+  /// **'{column}: {value}'**
+  String dsCellLabel(String column, String value);
+
+  /// No description provided for @dsChartPointLabel.
+  ///
+  /// In en, this message translates to:
+  /// **'{label}: {value}'**
+  String dsChartPointLabel(String label, String value);
+
+  /// No description provided for @dsBrandName.
+  ///
+  /// In en, this message translates to:
+  /// **'AgriMore'**
+  String get dsBrandName;
+
+  /// No description provided for @dsBrandRole.
+  ///
+  /// In en, this message translates to:
+  /// **'Seller'**
+  String get dsBrandRole;
+
+  /// No description provided for @dsTestDataRibbon.
+  ///
+  /// In en, this message translates to:
+  /// **'Test data — local emulator'**
+  String get dsTestDataRibbon;
+
+  /// No description provided for @dsShare.
+  ///
+  /// In en, this message translates to:
+  /// **'{value} of {total}'**
+  String dsShare(String value, String total);
 }
 
 class _AppLocalizationsDelegate

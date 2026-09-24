@@ -1557,5 +1557,109 @@
   },
   "scheduleClosedToday": "Closed today",
   "scheduleClosedWeeklyOff": "Today is your weekly off. Buyers can't place orders until tomorrow.",
-  "scheduleClosedHoliday": "Today is a holiday you set. Buyers can't place orders until tomorrow."
+  "scheduleClosedHoliday": "Today is a holiday you set. Buyers can't place orders until tomorrow.",
+  "dsClose": "Close",
+  "dsRetry": "Retry",
+  "dsTryAgain": "Try again",
+  "dsOptional": "(optional)",
+  "dsRequired": "required",
+  "dsLoading": "Loading…",
+  "dsDiscardTitle": "Discard changes?",
+  "dsDiscardBody": "You have unsaved changes.",
+  "dsKeepEditing": "Keep editing",
+  "dsDiscard": "Discard",
+  "dsFieldsNeedAttention": "{count, plural, =1{1 field needs attention} other{{count} fields need attention}}",
+  "@dsFieldsNeedAttention": {
+    "placeholders": {
+      "count": {
+        "type": "int"
+      }
+    }
+  },
+  "dsTabPosition": "Tab {index} of {count}",
+  "@dsTabPosition": {
+    "placeholders": {
+      "index": {
+        "type": "int"
+      },
+      "count": {
+        "type": "int"
+      }
+    }
+  },
+  "dsBadgeCount": "{count, plural, =1{1 new} other{{count} new}}",
+  "@dsBadgeCount": {
+    "placeholders": {
+      "count": {
+        "type": "int"
+      }
+    }
+  },
+  "dsNoImage": "No image",
+  "dsImageFailed": "Image couldn't load",
+  "dsChartSummaryUnavailable": "Data unavailable",
+  "dsSelected": "Selected",
+  "dsNotSelected": "Not selected",
+  "dsExpandHint": "Double tap to expand",
+  "dsCollapseHint": "Double tap to collapse",
+  "dsCopied": "Copied",
+  "dsStepCompleted": "Completed",
+  "dsStepCurrent": "Current",
+  "dsStepUpcoming": "Not started yet",
+  "dsStepFailed": "Needs attention",
+  "dsOutOf": "out of {max}",
+  "@dsOutOf": {
+    "placeholders": {
+      "max": {
+        "type": "int"
+      }
+    }
+  },
+  "dsScoreUnavailable": "Not enough activity yet",
+  "dsOtpFieldLabel": "Verification code, {length} digits",
+  "@dsOtpFieldLabel": {
+    "placeholders": {
+      "length": {
+        "type": "int"
+      }
+    }
+  },
+  "dsShowTable": "Show as table",
+  "dsHideTable": "Hide table",
+  "dsCellLabel": "{column}: {value}",
+  "@dsCellLabel": {
+    "placeholders": {
+      "column": {
+        "type": "String"
+      },
+      "value": {
+        "type": "String"
+      }
+    }
+  },
+  "dsChartPointLabel": "{label}: {value}",
+  "@dsChartPointLabel": {
+    "placeholders": {
+      "label": {
+        "type": "String"
+      },
+      "value": {
+        "type": "String"
+      }
+    }
+  },
+  "dsBrandName": "AgriMore",
+  "dsBrandRole": "Seller",
+  "dsTestDataRibbon": "Test data — local emulator",
+  "dsShare": "{value} of {total}",
+  "@dsShare": {
+    "placeholders": {
+      "value": {
+        "type": "String"
+      },
+      "total": {
+        "type": "String"
+      }
+    }
+  }
 }
