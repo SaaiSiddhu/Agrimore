@@ -1,10 +1,10 @@
 import 'dart:typed_data';
 
-import 'package:agrimore_ui/agrimore_ui.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_localizations/flutter_localizations.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:provider/provider.dart';
+import 'package:seller/design_system/design_system.dart';
 import 'package:seller/l10n/app_localizations.dart';
 import 'package:seller/providers/seller_auth_provider.dart';
 import 'package:seller/screens/storefront/storefront_editor_screen.dart';
@@ -60,7 +60,7 @@ void main() {
     await tester.pumpWidget(ChangeNotifierProvider<SellerAuthProvider>(
       create: (_) => SellerAuthProvider.preview(access: SellerAccess.approved),
       child: MaterialApp(
-        theme: WorkspaceTheme.build(WorkspaceBrand.seller, Brightness.light),
+        theme: SellerTheme.light,
         localizationsDelegates: const [
           AppLocalizations.delegate,
           GlobalMaterialLocalizations.delegate,
@@ -121,7 +121,7 @@ void main() {
     await tester.pumpWidget(ChangeNotifierProvider<SellerAuthProvider>(
       create: (_) => SellerAuthProvider.preview(access: SellerAccess.approved),
       child: MaterialApp(
-        theme: WorkspaceTheme.build(WorkspaceBrand.seller, Brightness.dark),
+        theme: SellerTheme.dark,
         localizationsDelegates: const [
           AppLocalizations.delegate,
           GlobalMaterialLocalizations.delegate,

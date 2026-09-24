@@ -110,6 +110,7 @@ abstract final class SellerIcons {
   static const IconData camera = LucideIcons.camera;
   static const IconData star = LucideIcons.star;
   static const IconData starHalf = LucideIcons.starHalf;
+  static const IconData starFilled = LucideIcons.star;
   static const IconData leaf = LucideIcons.leaf;
   static const IconData sprout = LucideIcons.sprout;
   static const IconData post = LucideIcons.squarePen;

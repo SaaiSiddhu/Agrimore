@@ -2109,5 +2109,48 @@
       }
     }
   },
-  "scheduleKeepOneOpen": "Keep at least one day open. To stop orders for a while, pause your store instead."
+  "scheduleKeepOneOpen": "Keep at least one day open. To stop orders for a while, pause your store instead.",
+  "storefrontHighlightCount": "{count} of {max} highlights added",
+  "@storefrontHighlightCount": {
+    "placeholders": {
+      "count": {
+        "type": "int"
+      },
+      "max": {
+        "type": "int"
+      }
+    }
+  },
+  "storefrontEditPhoto": "Edit photo",
+  "storefrontPreviewOnly": "Preview only",
+  "storefrontPreviewNote": "This is how your store appears to buyers. Nothing is published from here.",
+  "storefrontSaved": "Storefront updated",
+  "storefrontUploading": "Uploading…",
+  "reviewsOutOf5": "{rating} / 5",
+  "@reviewsOutOf5": {
+    "placeholders": {
+      "rating": {
+        "type": "String"
+      }
+    }
+  },
+  "reviewsReplyRule": "Public reply · Editable for 24 hours after first posting.",
+  "reviewsReplyLimit": "Up to {max} characters",
+  "@reviewsReplyLimit": {
+    "placeholders": {
+      "max": {
+        "type": "int"
+      }
+    }
+  },
+  "postRequirement": "Text, a photo or a tagged product is required to post.",
+  "postDeletePost": "Delete post",
+  "postTaggedProduct": "Tagged: {name}",
+  "@postTaggedProduct": {
+    "placeholders": {
+      "name": {
+        "type": "String"
+      }
+    }
+  }
 }

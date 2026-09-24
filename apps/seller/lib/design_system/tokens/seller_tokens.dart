@@ -96,6 +96,10 @@ abstract final class SellerSize {
   static const double handle = 4;
   static const double handleWidth = 36;
   static const double illustration = 120;
+
+  /// Storefront logo (88) and how far it overlaps the cover (half of it).
+  static const double storefrontLogo = 88;
+  static const double storefrontLogoOverlap = 44;
 }
 
 /// Icon sizes (board 06: 16 / 20 / 24 / 32).

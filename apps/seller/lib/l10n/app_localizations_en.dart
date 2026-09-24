@@ -3537,4 +3537,51 @@ class AppLocalizationsEn extends AppLocalizations {
   @override
   String get scheduleKeepOneOpen =>
       'Keep at least one day open. To stop orders for a while, pause your store instead.';
+
+  @override
+  String storefrontHighlightCount(int count, int max) {
+    return '$count of $max highlights added';
+  }
+
+  @override
+  String get storefrontEditPhoto => 'Edit photo';
+
+  @override
+  String get storefrontPreviewOnly => 'Preview only';
+
+  @override
+  String get storefrontPreviewNote =>
+      'This is how your store appears to buyers. Nothing is published from here.';
+
+  @override
+  String get storefrontSaved => 'Storefront updated';
+
+  @override
+  String get storefrontUploading => 'Uploading…';
+
+  @override
+  String reviewsOutOf5(String rating) {
+    return '$rating / 5';
+  }
+
+  @override
+  String get reviewsReplyRule =>
+      'Public reply · Editable for 24 hours after first posting.';
+
+  @override
+  String reviewsReplyLimit(int max) {
+    return 'Up to $max characters';
+  }
+
+  @override
+  String get postRequirement =>
+      'Text, a photo or a tagged product is required to post.';
+
+  @override
+  String get postDeletePost => 'Delete post';
+
+  @override
+  String postTaggedProduct(String name) {
+    return 'Tagged: $name';
+  }
 }

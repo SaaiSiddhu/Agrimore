@@ -6015,6 +6015,78 @@ abstract class AppLocalizations {
   /// In en, this message translates to:
   /// **'Keep at least one day open. To stop orders for a while, pause your store instead.'**
   String get scheduleKeepOneOpen;
+
+  /// No description provided for @storefrontHighlightCount.
+  ///
+  /// In en, this message translates to:
+  /// **'{count} of {max} highlights added'**
+  String storefrontHighlightCount(int count, int max);
+
+  /// No description provided for @storefrontEditPhoto.
+  ///
+  /// In en, this message translates to:
+  /// **'Edit photo'**
+  String get storefrontEditPhoto;
+
+  /// No description provided for @storefrontPreviewOnly.
+  ///
+  /// In en, this message translates to:
+  /// **'Preview only'**
+  String get storefrontPreviewOnly;
+
+  /// No description provided for @storefrontPreviewNote.
+  ///
+  /// In en, this message translates to:
+  /// **'This is how your store appears to buyers. Nothing is published from here.'**
+  String get storefrontPreviewNote;
+
+  /// No description provided for @storefrontSaved.
+  ///
+  /// In en, this message translates to:
+  /// **'Storefront updated'**
+  String get storefrontSaved;
+
+  /// No description provided for @storefrontUploading.
+  ///
+  /// In en, this message translates to:
+  /// **'Uploading…'**
+  String get storefrontUploading;
+
+  /// No description provided for @reviewsOutOf5.
+  ///
+  /// In en, this message translates to:
+  /// **'{rating} / 5'**
+  String reviewsOutOf5(String rating);
+
+  /// No description provided for @reviewsReplyRule.
+  ///
+  /// In en, this message translates to:
+  /// **'Public reply · Editable for 24 hours after first posting.'**
+  String get reviewsReplyRule;
+
+  /// No description provided for @reviewsReplyLimit.
+  ///
+  /// In en, this message translates to:
+  /// **'Up to {max} characters'**
+  String reviewsReplyLimit(int max);
+
+  /// No description provided for @postRequirement.
+  ///
+  /// In en, this message translates to:
+  /// **'Text, a photo or a tagged product is required to post.'**
+  String get postRequirement;
+
+  /// No description provided for @postDeletePost.
+  ///
+  /// In en, this message translates to:
+  /// **'Delete post'**
+  String get postDeletePost;
+
+  /// No description provided for @postTaggedProduct.
+  ///
+  /// In en, this message translates to:
+  /// **'Tagged: {name}'**
+  String postTaggedProduct(String name);
 }
 
 class _AppLocalizationsDelegate
