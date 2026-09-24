@@ -2009,6 +2009,20 @@ service cloud.firestore {
     // COD cash a rider holds, its ledger, weekly statements and bank-change
     // requests. A rider reads only their own; admin reads all. No client may
     // create, change or delete any of them, with ONE exception below.
+    // Phase DLV-S2 — rider safety incidents (functions/src/delivery/
+    // riderIncidents.ts). Written only by reportRiderIncident /
+    // updateRiderIncident: the reporting rider reads their own, admins read
+    // all; no client creates, edits or deletes one (a rider must not be able
+    // to mark their own report "acknowledged", nor erase it).
+    match /rider_incidents/{incidentId} {
+      allow read: if isAuthenticated() && (resource.data.riderId == request.auth.uid || isAdmin());
+      allow write: if false;
+    }
+    // Per-rider report timestamps for the rate bound: server-only.
+    match /rider_incident_limits/{riderId} {
+      allow read, write: if false;
+    }
+
     match /rider_earnings/{orderId} {
       allow read: if isAuthenticated() && (resource.data.riderId == request.auth.uid || isAdmin());
       allow write: if false;

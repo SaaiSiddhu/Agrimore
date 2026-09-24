@@ -15,6 +15,7 @@ import '../screens/admin/orders/order_management_screen.dart';
 import '../screens/admin/delivery/delivery_partner_management_screen.dart';
 import '../screens/admin/delivery/dispatch_queue_screen.dart';
 import '../screens/admin/delivery/rider_payouts_screen.dart';
+import '../screens/admin/delivery/rider_incidents_screen.dart';
 import '../screens/admin/users/user_management_screen.dart';
 import '../screens/admin/coupon/coupon_management_screen.dart';
 import '../screens/admin/banners/banner_management_screen.dart';
@@ -65,6 +66,7 @@ class AdminRoutes {
   // Phase DLV-2C: orders waiting for a rider (delivery_dispatch).
   static const String deliveryDispatch = '/delivery-dispatch';
   static const String riderPayouts = '/rider-payouts';
+  static const String riderIncidents = '/rider-incidents';
 
   // Users
   static const String users = '/users';
@@ -375,6 +377,14 @@ class AppRouter {
               name: 'rider-payouts',
               pageBuilder: (context, state) =>
                   _buildPage(const RiderPayoutsScreen(), state),
+            ),
+
+            // Rider incidents (DLV-S2)
+            GoRoute(
+              path: AdminRoutes.riderIncidents,
+              name: 'rider-incidents',
+              pageBuilder: (context, state) =>
+                  _buildPage(const RiderIncidentsScreen(), state),
             ),
 
             // Coupons

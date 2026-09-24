@@ -5,6 +5,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:agrimore_ui/agrimore_ui.dart';
 
+import 'rider_incidents_admin.dart' show appBarTabs;
 import 'rider_money_admin.dart';
 
 /// Phase DLV-4B: rider money for the delivery team, on top of DLV-4A
@@ -24,15 +25,12 @@ class RiderPayoutsScreen extends StatelessWidget {
       child: Scaffold(
         appBar: AppBar(
           title: const Text('Rider Payouts'),
-          bottom: const TabBar(
-            isScrollable: true,
-            tabs: [
+          bottom: appBarTabs(context, const [
               Tab(text: 'Statements'),
               Tab(text: 'Cash with riders'),
               Tab(text: 'Payout details'),
               Tab(text: 'Pay rates'),
-            ],
-          ),
+            ], scrollable: true),
         ),
         body: const TabBarView(
           children: [
