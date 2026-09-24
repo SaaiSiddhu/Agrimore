@@ -119,6 +119,11 @@ String offerRefusalMessage({required String code, String? reason}) {
         return 'Your account cannot take orders right now.';
       case 'no_offer':
         return 'This order is no longer offered to you.';
+      // DLV-D1: re-checked at accept.
+      case 'offline':
+        return 'Go online to accept orders.';
+      case 'cash_limit':
+        return 'Deposit the cash you hold with Agrimore before taking cash orders.';
     }
   }
   if (code == 'unauthenticated') return 'Please sign in again.';

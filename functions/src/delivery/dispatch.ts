@@ -431,7 +431,7 @@ export async function runDispatchTick(db: Db, nowMs: number, limit = 50) {
   return { expired, due: due.size, advanced };
 }
 
-function isCod(paymentMethod: unknown): boolean {
+export function isCod(paymentMethod: unknown): boolean {
   const m = typeof paymentMethod === "string" ? paymentMethod.toLowerCase() : "";
   return m === "cod" || m === "cash_on_delivery" || m.includes("cash");
 }

@@ -235,4 +235,12 @@ void main() {
       }
     });
   });
+
+  // DLV-D1: the in-transaction reservation check.
+  test('a reservation blocks only while its order is active for that rider', () {
+    expect(reservationBlocks({'deliveryPartnerId': 'r1', 'orderStatus': 'picked_up'}, 'r1'), isTrue);
+    expect(reservationBlocks({'deliveryPartnerId': 'r1', 'orderStatus': 'delivered'}, 'r1'), isFalse);
+    expect(reservationBlocks({'deliveryPartnerId': 'r2', 'orderStatus': 'picked_up'}, 'r1'), isFalse);
+    expect(reservationBlocks(null, 'r1'), isFalse);
+  });
 }

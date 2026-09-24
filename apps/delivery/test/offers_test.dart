@@ -229,4 +229,10 @@ void main() {
     });
   });
 
+
+  // DLV-D1: the accept's new refusals are worded, not the generic fallback.
+  test('offline and cash-limit refusals are worded', () {
+    expect(offerRefusalMessage(code: 'failed-precondition', reason: 'offline'), 'Go online to accept orders.');
+    expect(offerRefusalMessage(code: 'failed-precondition', reason: 'cash_limit'), contains('Deposit the cash'));
+  });
 }

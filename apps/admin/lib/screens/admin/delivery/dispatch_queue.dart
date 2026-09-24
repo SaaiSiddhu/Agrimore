@@ -19,19 +19,11 @@ import 'dart:math' as math;
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:agrimore_core/agrimore_core.dart';
 
-/// Order statuses in which a rider is on a job. Mirrors
-/// RIDER_ACTIVE_ORDER_STATUSES in functions/src/delivery/dispatch.ts
-/// (test/dispatch_queue_test.dart checks the two agree).
-const List<String> riderActiveOrderStatuses = [
-  'delivery_accepted',
-  'arrived_at_store',
-  'reached_pickup',
-  'picked_up',
-  'parcel_picked',
-  'out_for_delivery',
-  'outfordelivery',
-  'outForDelivery',
-];
+/// Order statuses in which a rider is on a job — the shared list
+/// (DeliveryTaskStatus.riderActiveOrderStatuses, parity-tested with
+/// functions/src/delivery/dispatch.ts RIDER_ACTIVE_ORDER_STATUSES since
+/// DLV-C1). DLV-D1 removed this file's own copy.
+const List<String> riderActiveOrderStatuses = DeliveryTaskStatus.riderActiveOrderStatuses;
 
 /// A rider location older than this is not used for dispatch. Mirrors
 /// LOCATION_FRESHNESS_MS in functions/src/delivery/dispatch.ts.
@@ -400,6 +392,13 @@ extension AssignOutcomeX on AssignOutcome {
       };
 }
 
+/// Whether the order a rider is reserved for still holds them: assigned to
+/// them and in an active rider status. A finished or moved order does not.
+bool reservationBlocks(Map<String, dynamic>? reservedOrder, String riderId) =>
+    reservedOrder != null &&
+    reservedOrder['deliveryPartnerId'] == riderId &&
+    riderActiveOrderStatuses.contains(reservedOrder['orderStatus']);
+
 /// The order fields written by an admin assignment — the acceptDeliveryOffer
 /// set plus who assigned it and the display copy of the rider that customer
 /// tracking reads (order_model.dart, delivery_tracking_service.dart).
@@ -467,6 +466,17 @@ Future<AssignOutcome> assignRiderToOrder({
       return AssignOutcome.riderNotApproved;
     }
     if (rider['isOnline'] != true) return AssignOutcome.riderOffline;
+
+    // DLV-D1: the busy check above is a query outside this transaction (a
+    // client transaction cannot run queries). The rider's reservation —
+    // delivery_partners.currentOrderId, written by this assignment and by
+    // acceptDeliveryOffer — is read here, so an assignment racing a rider's
+    // own accept conflicts and retries instead of both committing.
+    final reservedId = _str(rider['currentOrderId']);
+    if (reservedId != null && reservedId != orderId) {
+      final reserved = await tx.get(firestore.collection('orders').doc(reservedId));
+      if (reservationBlocks(reserved.data(), riderId)) return AssignOutcome.riderBusy;
+    }
 
     DocumentSnapshot<Map<String, dynamic>>? previousSnap;
     if (previous != null) {

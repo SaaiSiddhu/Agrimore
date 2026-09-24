@@ -20,9 +20,10 @@ import { onCall, HttpsError } from "firebase-functions/v2/https";
 import * as admin from "firebase-admin";
 import { FieldValue, Timestamp } from "firebase-admin/firestore";
 import {
-  closeDispatch, dispatchRef, hasPartner, isReadyForPickup, offerRef,
+  closeDispatch, dispatchRef, hasPartner, isCod, isReadyForPickup, offerRef,
   RIDER_ACTIVE_ORDER_STATUSES, runNextWave,
 } from "./dispatch";
+import { loadRiderPayRates } from "./riderRates";
 
 /** DeliveryFailureReason wire values (packages/agrimore_core delivery_enums.dart). */
 const DECLINE_REASONS = new Set([
@@ -44,7 +45,7 @@ function refuse(reason: string, message: string): never {
 
 type AcceptVerdict =
   | { kind: "accepted"; alreadyAccepted?: boolean }
-  | { kind: "refused"; reason: "no_offer" | "expired" | "taken" | "not_eligible" | "busy" };
+  | { kind: "refused"; reason: "no_offer" | "expired" | "taken" | "not_eligible" | "busy" | "offline" | "cash_limit" };
 
 export async function acceptOfferCore(db: FirebaseFirestore.Firestore, uid: string, orderId: string, nowMs: number) {
   const oRef = offerRef(db, orderId, uid);
@@ -54,11 +55,23 @@ export async function acceptOfferCore(db: FirebaseFirestore.Firestore, uid: stri
     .where("deliveryPartnerId", "==", uid)
     .where("orderStatus", "in", RIDER_ACTIVE_ORDER_STATUSES)
     .limit(1);
+  const accountRef = db.collection("rider_accounts").doc(uid);
+  // DLV-D1: the COD cash limit is re-checked at accept (it was only applied
+  // when offers were made; a rider could pass the limit in between).
+  const rates = await loadRiderPayRates(db);
 
   const verdict: AcceptVerdict = await db.runTransaction(async (tx): Promise<AcceptVerdict> => {
-    const [offer, order, partner, busy] = await Promise.all([
-      tx.get(oRef), tx.get(orderRef), tx.get(partnerRef), tx.get(busyQuery),
+    const [offer, order, partner, busy, account] = await Promise.all([
+      tx.get(oRef), tx.get(orderRef), tx.get(partnerRef), tx.get(busyQuery), tx.get(accountRef),
     ]);
+    // DLV-D1 reservation: the order this rider was last given (by an accept
+    // or an admin assignment), read in the transaction. Both paths WRITE
+    // delivery_partners/{uid}.currentOrderId, so two assignments of one rider
+    // conflict and retry instead of both committing; a stale value (that
+    // order finished or moved) does not block.
+    const reservedId = partner.exists ? partner.data()!.currentOrderId : null;
+    const reserved = typeof reservedId === "string" && reservedId && reservedId !== orderId
+      ? await tx.get(db.collection("orders").doc(reservedId)) : null;
     if (!offer.exists) return { kind: "refused", reason: "no_offer" };
     const o = offer.data()!;
     const rider = o.riderId ?? o.partnerId;
@@ -89,7 +102,19 @@ export async function acceptOfferCore(db: FirebaseFirestore.Firestore, uid: stri
     }
     const p = partner.exists ? partner.data()! : null;
     if (!p || p.status !== "approved") return { kind: "refused", reason: "not_eligible" };
+    // DLV-D1: an offer made while online is not accepted after going offline.
+    if (p.isOnline !== true) return { kind: "refused", reason: "offline" };
     if (!busy.empty) return { kind: "refused", reason: "busy" };
+    if (reserved?.exists) {
+      const r = reserved.data()!;
+      if (r.deliveryPartnerId === uid && RIDER_ACTIVE_ORDER_STATUSES.includes(r.orderStatus)) {
+        return { kind: "refused", reason: "busy" };
+      }
+    }
+    if (isCod(ord.paymentMethod) && (Number(ord.total) || 0) > 0) {
+      const held = Number(account.data()?.cashHeld) || 0;
+      if (held >= rates.codCashLimit) return { kind: "refused", reason: "cash_limit" };
+    }
 
     tx.update(orderRef, {
       deliveryPartnerId: uid,
@@ -118,6 +143,9 @@ export async function acceptOfferCore(db: FirebaseFirestore.Firestore, uid: stri
       acceptedAt: Timestamp.fromMillis(nowMs),
       updatedAt: FieldValue.serverTimestamp(),
     });
+    // The reservation (legacy availability fields kept in step, as the admin
+    // assignment writes them).
+    tx.update(partnerRef, { currentOrderId: orderId, isAvailable: false, lastAcceptedAt: Timestamp.fromMillis(nowMs) });
     return { kind: "accepted" };
   });
 
@@ -154,6 +182,8 @@ export const acceptDeliveryOffer = onCall({ minInstances: 0, memory: "256MiB" },
     case "taken": return refuse(v.reason, "Another delivery partner took this order");
     case "busy": return refuse(v.reason, "Finish your current delivery first");
     case "not_eligible": return refuse(v.reason, "Your account cannot take orders right now");
+    case "offline": return refuse(v.reason, "Go online to accept orders");
+    case "cash_limit": return refuse(v.reason, "Deposit the cash you hold before taking cash orders");
   }
 });
 
