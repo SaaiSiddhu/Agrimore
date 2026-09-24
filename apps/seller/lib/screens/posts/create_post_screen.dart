@@ -14,7 +14,10 @@ import '../../providers/seller_product_provider.dart';
 /// M-05 Post composer (ADR §10.6, SELLER-UI-1d): text, photo, optional
 /// product tag, published to followers.
 class CreatePostScreen extends StatefulWidget {
-  const CreatePostScreen({super.key});
+  const CreatePostScreen({super.key, this.provider});
+
+  /// Injected in tests; otherwise a Firebase-backed [SellerPostProvider].
+  final SellerPostProvider? provider;
 
   @override
   State<CreatePostScreen> createState() => _CreatePostScreenState();
@@ -27,7 +30,7 @@ class _CreatePostScreenState extends State<CreatePostScreen> {
 
   final _textController = TextEditingController();
   final _imagePicker = ImagePicker();
-  final _postProvider = SellerPostProvider();
+  late final SellerPostProvider _postProvider = widget.provider ?? SellerPostProvider();
 
   XFile? _selectedImage;
   Uint8List? _selectedImageBytes;
@@ -47,7 +50,7 @@ class _CreatePostScreenState extends State<CreatePostScreen> {
   @override
   void dispose() {
     _postProvider.removeListener(_onPostingChanged);
-    _postProvider.dispose();
+    if (widget.provider == null) _postProvider.dispose();
     _textController.dispose();
     super.dispose();
   }
