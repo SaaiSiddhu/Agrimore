@@ -161,7 +161,7 @@ class _SellerProductsScreenState extends State<SellerProductsScreen> {
 
     Widget body;
     if (provider.error != null && provider.allProducts.isEmpty) {
-      body = SellerErrorState(title: l10n.productsLoadFailed, onRetry: _reload, retryLabel: l10n.statusRefresh);
+      body = SellerErrorState(title: l10n.productsLoadFailed, onRetry: _reload);
     } else if (provider.isLoading && provider.allProducts.isEmpty) {
       body = SellerSkeletonList(label: l10n.dsLoading);
     } else if (products.isEmpty) {

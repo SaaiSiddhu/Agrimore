@@ -124,7 +124,7 @@ class _SellerOrdersScreenState extends State<SellerOrdersScreen> {
 
     Widget body;
     if (provider.error != null) {
-      body = SellerErrorState(title: l10n.ordersLoadFailed, onRetry: _reload, retryLabel: l10n.statusRefresh);
+      body = SellerErrorState(title: l10n.ordersLoadFailed, onRetry: _reload);
     } else if (provider.isLoading && all.isEmpty) {
       body = SellerSkeletonList(label: l10n.dsLoading, thumbnail: false);
     } else if (shown.isEmpty) {

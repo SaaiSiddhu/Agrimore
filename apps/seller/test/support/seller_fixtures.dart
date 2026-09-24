@@ -65,10 +65,14 @@ Future<AppLocalizations> pumpSellerApp(
   Brightness brightness = Brightness.light,
   Size size = const Size(390, 844),
   double textScale = 1,
+  bool deviceView = false,
 }) async {
-  tester.view.physicalSize = size;
-  tester.view.devicePixelRatio = 1;
-  addTearDown(tester.view.reset);
+  // On a real device (integration tour) the screen keeps its own size.
+  if (!deviceView) {
+    tester.view.physicalSize = size;
+    tester.view.devicePixelRatio = 1;
+    addTearDown(tester.view.reset);
+  }
   late AppLocalizations l10n;
   await tester.pumpWidget(qaFrame(MultiProvider(
     providers: [

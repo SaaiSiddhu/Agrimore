@@ -188,3 +188,28 @@ git or to `pubspec.yaml` assets (only `assets/images/` is declared).
   per-centre pricing tiles (shown only when the product is linked to a master product and a centre).
 - Quote decline reasons are free text on the server (`respondToRfqOffer` `reason`, ≤ 500 chars); the
   reason list is the existing `kQuoteDeclineReasons`.
+
+## D16 — Sign-in screens kept as they are (OWNER_DECISION 2026-09-24)
+
+Owner: "leave auth as it is". The phone sign-in, OTP and email sign-in screens (A-01…A-04) are not
+redesigned; they keep rendering on the shared Workspace theme through `LegacyAuthTheme`
+(`apps/seller/lib/app/legacy_auth_theme.dart`). Onboarding (A-05…A-10) and the post-sign-in status
+screens (A-11…A-13) are redesigned — they are application/account states, not sign-in.
+
+## D17 — "Mock OTP in production": not implemented (OPEN_DECISION)
+
+Owner asked for the mock OTP system in production too. `sendPhoneOTP.ts` already returns the code to
+anyone who sends `debugMock: true` (only debug builds send it). Making the release app send it would let
+anyone sign in as any seller with only their phone number (account takeover of live users). Nothing was
+changed; a safer alternative (a fixed allow-list of test numbers, already supported server-side via the
+SEC-P0 test-mode list) was offered. Needs the owner's explicit decision.
+
+## D18 — Toasts rise above sticky footers
+
+A floating toast covered the sticky Save for 4 s (found by a test). `SellerStickyFooter` registers with
+its route and `SellerToast` adds its height to the toast margin (board 13: "above the bottom controls").
+
+## D19 — No invented centres
+
+`SellerProductProvider.loadCenters()` returned four hard-coded centres when the database had none; that is
+invented data. It now returns the real list only (empty = none shown).

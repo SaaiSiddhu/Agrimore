@@ -91,13 +91,22 @@ class _NavButton extends StatelessWidget {
                       child: icon,
                     ),
                     const SizedBox(height: SellerSpace.s4),
-                    Text(
-                      item.label,
-                      maxLines: 2,
-                      textAlign: TextAlign.center,
-                      style: text.labelMedium!.copyWith(
-                        color: labelColor,
-                        fontWeight: selected ? SellerType.bold : SellerType.semibold,
+                    // Like the system navigation bars, labels grow with the
+                    // text size only up to 130 %; the full name is always in
+                    // the semantics label above.
+                    MediaQuery.withClampedTextScaling(
+                      maxScaleFactor: SellerNavBar.maxLabelScale,
+                      child: Text(
+                        item.label,
+                        maxLines: 1,
+                        softWrap: false,
+                        overflow: TextOverflow.ellipsis,
+                        textAlign: TextAlign.center,
+                        style: text.labelSmall!.copyWith(
+                          color: labelColor,
+                          letterSpacing: 0,
+                          fontWeight: selected ? SellerType.bold : SellerType.semibold,
+                        ),
                       ),
                     ),
                   ],
@@ -116,6 +125,9 @@ class _NavButton extends StatelessWidget {
 /// count badges ("99+" in red).
 class SellerNavBar extends StatelessWidget {
   const SellerNavBar({super.key, required this.items, required this.selectedIndex, required this.onSelected});
+
+  /// Largest text scale applied to nav labels.
+  static const double maxLabelScale = 1.3;
 
   final List<SellerNavItem> items;
   final int selectedIndex;

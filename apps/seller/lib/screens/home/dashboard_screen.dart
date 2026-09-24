@@ -353,8 +353,7 @@ class _DashboardScreenState extends State<DashboardScreen> {
     return Scaffold(
       appBar: SellerAppBar.root(
         context,
-        title: name.isEmpty ? l10n.homeTitle : l10n.homeGreetingName(_greeting(l10n, now), name.split(' ').first),
-        subtitle: Text(l10n.homeAttentionToday, style: text.bodyMedium),
+        title: '',
         actions: [
           SellerIconButton(
             icon: SellerIcons.search,
@@ -368,6 +367,19 @@ class _DashboardScreenState extends State<DashboardScreen> {
         maxWidth: SellerSize.contentMaxWidth,
         gap: SellerSpace.section,
         children: [
+          // Board 03: "Good morning, Kaveri" + "Here's what needs your
+          // attention today." as the page header; it wraps at any text size.
+          Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
+            Semantics(
+              header: true,
+              child: Text(
+                name.isEmpty ? l10n.homeTitle : l10n.homeGreetingName(_greeting(l10n, now), name.split(' ').first),
+                style: text.headlineMedium,
+              ),
+            ),
+            const SizedBox(height: SellerSpace.s4),
+            Text(l10n.homeAttentionToday, style: text.bodyLarge!.copyWith(color: c.textSecondary)),
+          ]),
           if (_store.isPaused(now))
             SellerBanner(
               tone: SellerTone.warning,
