@@ -293,7 +293,8 @@ export const deleteUserData = functions.https.onCall(async (data, context) => {
     );
   }
   const owed = sellerPayoutsSnap.docs
-    .filter((d) => String(d.data().status || "").toLowerCase() === "pending")
+    // SELLER-WALLET-1: money in a withdrawal not yet paid is still owed.
+    .filter((d) => ["pending", "requested"].includes(String(d.data().status || "").toLowerCase()))
     .reduce((sum, d) => sum + Number(d.data().netAmount ?? d.data().amount ?? 0), 0);
   if (owed > 0) {
     throw new functions.https.HttpsError(

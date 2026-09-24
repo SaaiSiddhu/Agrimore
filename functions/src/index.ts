@@ -169,6 +169,11 @@ export { sellerTransitionOrder } from "./seller/sellerTransitionOrder";
 export { issueSellerInvoice } from "./seller/sellerInvoice";
 export { rollupSellerStats, rebuildMySellerStats } from "./seller/sellerStats";
 export { notifySellerPayoutPaid } from "./seller/payoutNotifications";
+// SELLER-WALLET-1: seller withdrawals + admin-approved bank/UPI changes.
+export {
+  sellerWalletSummary, requestSellerWithdrawal, cancelSellerWithdrawal, markSellerWithdrawalPaid,
+  rejectSellerWithdrawal, requestSellerPayoutChange, cancelSellerPayoutChange, reviewSellerPayoutChange,
+} from "./seller/sellerWallet";
 export { onProductReviewWrite, replyToReview } from "./seller/reviews";
 
 // ============================================

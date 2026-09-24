@@ -19,6 +19,9 @@ export const notifySellerPayoutPaid = functions.firestore
     if (before.status === "paid" || after.status !== "paid") return null;
     const sellerId = typeof after.sellerId === "string" ? after.sellerId : "";
     if (!sellerId) return null;
+    // SELLER-WALLET-1: a payout paid as part of a withdrawal is announced once,
+    // for the whole withdrawal (sellerWallet.ts markSellerWithdrawalPaid).
+    if (after.withdrawalId) return null;
 
     const net = Number(after.netAmount ?? after.amount ?? 0);
     const orderNumber = String(after.orderNumber || after.orderId || "");
