@@ -2793,6 +2793,168 @@ abstract class AppLocalizations {
   /// In en, this message translates to:
   /// **'Could not open Google Maps. Please install it and try again.'**
   String get routeMapsMissing;
+
+  /// Dashboard greeting
+  ///
+  /// In en, this message translates to:
+  /// **'Hello, {name}'**
+  String dashGreeting(String name);
+
+  /// Dashboard greeting without a name
+  ///
+  /// In en, this message translates to:
+  /// **'Hello'**
+  String get dashGreetingNoName;
+
+  /// Under the greeting while online
+  ///
+  /// In en, this message translates to:
+  /// **'Ready to deliver'**
+  String get dashReady;
+
+  /// Under the greeting while offline
+  ///
+  /// In en, this message translates to:
+  /// **'Offline'**
+  String get dashOfflineShort;
+
+  /// Online toggle while online
+  ///
+  /// In en, this message translates to:
+  /// **'You are online'**
+  String get dashOnline;
+
+  /// Online toggle while offline
+  ///
+  /// In en, this message translates to:
+  /// **'You are offline'**
+  String get dashOffline;
+
+  /// Tooltip: sign out
+  ///
+  /// In en, this message translates to:
+  /// **'Sign out'**
+  String get dashSignOutTooltip;
+
+  /// Confirm sign-out title
+  ///
+  /// In en, this message translates to:
+  /// **'Sign out?'**
+  String get dashSignOutTitle;
+
+  /// Confirm sign-out body
+  ///
+  /// In en, this message translates to:
+  /// **'You will go offline and stop getting orders.'**
+  String get dashSignOutBody;
+
+  /// Earnings card label
+  ///
+  /// In en, this message translates to:
+  /// **'Earned this week'**
+  String get dashEarnedWeek;
+
+  /// Earnings card line
+  ///
+  /// In en, this message translates to:
+  /// **'Today {amount} · paid every Monday'**
+  String dashEarnedTodayLine(String amount);
+
+  /// Stat: deliveries today
+  ///
+  /// In en, this message translates to:
+  /// **'Today'**
+  String get dashStatToday;
+
+  /// Stat: pay this week
+  ///
+  /// In en, this message translates to:
+  /// **'This week'**
+  String get dashStatWeek;
+
+  /// Stat: pay today
+  ///
+  /// In en, this message translates to:
+  /// **'Earned today'**
+  String get dashStatEarnedToday;
+
+  /// Stat: COD cash held
+  ///
+  /// In en, this message translates to:
+  /// **'Cash with you'**
+  String get dashStatCash;
+
+  /// Action card: money
+  ///
+  /// In en, this message translates to:
+  /// **'Earnings & payouts'**
+  String get dashMoneyTitle;
+
+  /// Action card: money subtitle
+  ///
+  /// In en, this message translates to:
+  /// **'Pay per delivery, cash with you, Monday statements'**
+  String get dashMoneySubtitle;
+
+  /// Heading
+  ///
+  /// In en, this message translates to:
+  /// **'Quick actions'**
+  String get dashQuickActions;
+
+  /// Action card: an offer is waiting
+  ///
+  /// In en, this message translates to:
+  /// **'Order offered to you'**
+  String get dashOfferTitle;
+
+  /// Action card: open the offer
+  ///
+  /// In en, this message translates to:
+  /// **'Tap to see it before it expires'**
+  String get dashOfferSubtitle;
+
+  /// Action card: online, no offer
+  ///
+  /// In en, this message translates to:
+  /// **'Waiting for orders'**
+  String get dashWaitingTitle;
+
+  /// Action card: online, no offer
+  ///
+  /// In en, this message translates to:
+  /// **'New orders near you will ring on this phone'**
+  String get dashWaitingSubtitle;
+
+  /// Action card: offline
+  ///
+  /// In en, this message translates to:
+  /// **'Go online to get orders'**
+  String get dashGoOnlineTitle;
+
+  /// Action card: offline
+  ///
+  /// In en, this message translates to:
+  /// **'Orders are only offered while you are online'**
+  String get dashGoOnlineSubtitle;
+
+  /// Active order card title
+  ///
+  /// In en, this message translates to:
+  /// **'Active delivery'**
+  String get dashActiveTitle;
+
+  /// Open the active order
+  ///
+  /// In en, this message translates to:
+  /// **'View details'**
+  String get dashViewDetails;
+
+  /// Going online needs a phone setting
+  ///
+  /// In en, this message translates to:
+  /// **'Can\'t go online yet'**
+  String get goOnlineBlockedTitle;
 }
 
 class _AppLocalizationsDelegate

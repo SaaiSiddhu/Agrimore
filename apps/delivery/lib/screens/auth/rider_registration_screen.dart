@@ -9,7 +9,6 @@
 //
 // The form keeps everything typed across steps and failures; a resumed
 // registration (signed in, no rider record yet) skips the account step.
-import 'package:agrimore_core/agrimore_core.dart';
 import 'package:agrimore_ui/agrimore_ui.dart';
 import 'package:flutter/material.dart';
 import 'package:image_picker/image_picker.dart';

@@ -3,7 +3,6 @@
 // Phase DLV-C1 — the dashboard's states around active work: loading, a
 // failed read, several active orders at once, and data shown from the
 // device cache. Workspace tokens and ARB copy only.
-import 'package:agrimore_core/agrimore_core.dart';
 import 'package:agrimore_ui/agrimore_ui.dart';
 import 'package:flutter/material.dart';
 

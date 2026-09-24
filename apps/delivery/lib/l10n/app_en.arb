@@ -2107,5 +2107,123 @@
   "routeMapsMissing": "Could not open Google Maps. Please install it and try again.",
   "@routeMapsMissing": {
     "description": "Maps did not open"
+  },
+  "dashGreeting": "Hello, {name}",
+  "@dashGreeting": {
+    "description": "Dashboard greeting",
+    "placeholders": {
+      "name": {
+        "type": "String"
+      }
+    }
+  },
+  "dashGreetingNoName": "Hello",
+  "@dashGreetingNoName": {
+    "description": "Dashboard greeting without a name"
+  },
+  "dashReady": "Ready to deliver",
+  "@dashReady": {
+    "description": "Under the greeting while online"
+  },
+  "dashOfflineShort": "Offline",
+  "@dashOfflineShort": {
+    "description": "Under the greeting while offline"
+  },
+  "dashOnline": "You are online",
+  "@dashOnline": {
+    "description": "Online toggle while online"
+  },
+  "dashOffline": "You are offline",
+  "@dashOffline": {
+    "description": "Online toggle while offline"
+  },
+  "dashSignOutTooltip": "Sign out",
+  "@dashSignOutTooltip": {
+    "description": "Tooltip: sign out"
+  },
+  "dashSignOutTitle": "Sign out?",
+  "@dashSignOutTitle": {
+    "description": "Confirm sign-out title"
+  },
+  "dashSignOutBody": "You will go offline and stop getting orders.",
+  "@dashSignOutBody": {
+    "description": "Confirm sign-out body"
+  },
+  "dashEarnedWeek": "Earned this week",
+  "@dashEarnedWeek": {
+    "description": "Earnings card label"
+  },
+  "dashEarnedTodayLine": "Today {amount} · paid every Monday",
+  "@dashEarnedTodayLine": {
+    "description": "Earnings card line",
+    "placeholders": {
+      "amount": {
+        "type": "String"
+      }
+    }
+  },
+  "dashStatToday": "Today",
+  "@dashStatToday": {
+    "description": "Stat: deliveries today"
+  },
+  "dashStatWeek": "This week",
+  "@dashStatWeek": {
+    "description": "Stat: pay this week"
+  },
+  "dashStatEarnedToday": "Earned today",
+  "@dashStatEarnedToday": {
+    "description": "Stat: pay today"
+  },
+  "dashStatCash": "Cash with you",
+  "@dashStatCash": {
+    "description": "Stat: COD cash held"
+  },
+  "dashMoneyTitle": "Earnings & payouts",
+  "@dashMoneyTitle": {
+    "description": "Action card: money"
+  },
+  "dashMoneySubtitle": "Pay per delivery, cash with you, Monday statements",
+  "@dashMoneySubtitle": {
+    "description": "Action card: money subtitle"
+  },
+  "dashQuickActions": "Quick actions",
+  "@dashQuickActions": {
+    "description": "Heading"
+  },
+  "dashOfferTitle": "Order offered to you",
+  "@dashOfferTitle": {
+    "description": "Action card: an offer is waiting"
+  },
+  "dashOfferSubtitle": "Tap to see it before it expires",
+  "@dashOfferSubtitle": {
+    "description": "Action card: open the offer"
+  },
+  "dashWaitingTitle": "Waiting for orders",
+  "@dashWaitingTitle": {
+    "description": "Action card: online, no offer"
+  },
+  "dashWaitingSubtitle": "New orders near you will ring on this phone",
+  "@dashWaitingSubtitle": {
+    "description": "Action card: online, no offer"
+  },
+  "dashGoOnlineTitle": "Go online to get orders",
+  "@dashGoOnlineTitle": {
+    "description": "Action card: offline"
+  },
+  "dashGoOnlineSubtitle": "Orders are only offered while you are online",
+  "@dashGoOnlineSubtitle": {
+    "description": "Action card: offline"
+  },
+  "dashActiveTitle": "Active delivery",
+  "@dashActiveTitle": {
+    "description": "Active order card title"
+  },
+  "dashViewDetails": "View details",
+  "@dashViewDetails": {
+    "description": "Open the active order"
+  },
+  "goOnlineBlockedTitle": "Can't go online yet",
+  "@goOnlineBlockedTitle": {
+    "description": "Going online needs a phone setting"
   }
 }

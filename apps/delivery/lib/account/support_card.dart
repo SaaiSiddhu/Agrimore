@@ -3,7 +3,6 @@
 // Phase DLV-A2 — the configured Agrimore support contacts
 // (AppConstants.supportPhone / supportEmail), as actions. Opening the phone
 // app or mail app is not contacting anyone; nothing here claims it is.
-import 'package:agrimore_core/agrimore_core.dart' show AppConstants;
 import 'package:agrimore_ui/agrimore_ui.dart';
 import 'package:flutter/material.dart';
 import 'package:url_launcher/url_launcher.dart';

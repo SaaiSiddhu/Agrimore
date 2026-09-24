@@ -2,7 +2,6 @@
 // and detail (data/rider_history.dart, screens/history).
 import 'dart:async';
 
-import 'package:agrimore_core/agrimore_core.dart';
 import 'package:agrimore_ui/agrimore_ui.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:delivery/data/rider_history.dart';

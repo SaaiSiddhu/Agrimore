@@ -1583,4 +1583,92 @@ class AppLocalizationsEn extends AppLocalizations {
   @override
   String get routeMapsMissing =>
       'Could not open Google Maps. Please install it and try again.';
+
+  @override
+  String dashGreeting(String name) {
+    return 'Hello, $name';
+  }
+
+  @override
+  String get dashGreetingNoName => 'Hello';
+
+  @override
+  String get dashReady => 'Ready to deliver';
+
+  @override
+  String get dashOfflineShort => 'Offline';
+
+  @override
+  String get dashOnline => 'You are online';
+
+  @override
+  String get dashOffline => 'You are offline';
+
+  @override
+  String get dashSignOutTooltip => 'Sign out';
+
+  @override
+  String get dashSignOutTitle => 'Sign out?';
+
+  @override
+  String get dashSignOutBody => 'You will go offline and stop getting orders.';
+
+  @override
+  String get dashEarnedWeek => 'Earned this week';
+
+  @override
+  String dashEarnedTodayLine(String amount) {
+    return 'Today $amount · paid every Monday';
+  }
+
+  @override
+  String get dashStatToday => 'Today';
+
+  @override
+  String get dashStatWeek => 'This week';
+
+  @override
+  String get dashStatEarnedToday => 'Earned today';
+
+  @override
+  String get dashStatCash => 'Cash with you';
+
+  @override
+  String get dashMoneyTitle => 'Earnings & payouts';
+
+  @override
+  String get dashMoneySubtitle =>
+      'Pay per delivery, cash with you, Monday statements';
+
+  @override
+  String get dashQuickActions => 'Quick actions';
+
+  @override
+  String get dashOfferTitle => 'Order offered to you';
+
+  @override
+  String get dashOfferSubtitle => 'Tap to see it before it expires';
+
+  @override
+  String get dashWaitingTitle => 'Waiting for orders';
+
+  @override
+  String get dashWaitingSubtitle =>
+      'New orders near you will ring on this phone';
+
+  @override
+  String get dashGoOnlineTitle => 'Go online to get orders';
+
+  @override
+  String get dashGoOnlineSubtitle =>
+      'Orders are only offered while you are online';
+
+  @override
+  String get dashActiveTitle => 'Active delivery';
+
+  @override
+  String get dashViewDetails => 'View details';
+
+  @override
+  String get goOnlineBlockedTitle => 'Can\'t go online yet';
 }

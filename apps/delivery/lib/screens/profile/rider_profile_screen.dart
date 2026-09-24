@@ -4,7 +4,6 @@
 // (Aadhaar and bank masked), document and payout state, the contact details
 // they may edit themselves (updateRiderContact), the reviewed paths for
 // everything else, support, sign-out and account deletion.
-import 'package:agrimore_core/agrimore_core.dart';
 import 'package:agrimore_ui/agrimore_ui.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:flutter/material.dart';

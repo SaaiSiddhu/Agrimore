@@ -4,7 +4,6 @@
 import 'dart:async';
 import 'dart:typed_data';
 
-import 'package:agrimore_core/agrimore_core.dart';
 import 'package:agrimore_ui/agrimore_ui.dart';
 import 'package:delivery/delivery/delivery_problems.dart';
 import 'package:delivery/l10n/app_localizations.dart';

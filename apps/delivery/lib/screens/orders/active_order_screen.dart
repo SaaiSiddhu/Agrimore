@@ -7,7 +7,6 @@
 // sees the expected code. DLV-P1: Workspace tokens and kit, lib/l10n strings.
 import 'dart:io';
 
-import 'package:agrimore_core/agrimore_core.dart';
 import 'package:agrimore_ui/agrimore_ui.dart';
 import 'package:cloud_functions/cloud_functions.dart';
 import 'package:flutter/material.dart';

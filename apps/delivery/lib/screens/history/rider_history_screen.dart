@@ -5,7 +5,6 @@
 // index that was never created, so in production it always said
 // "No deliveries yet". Shows no customer details: order number, date,
 // state, amount.
-import 'package:agrimore_core/agrimore_core.dart';
 import 'package:agrimore_ui/agrimore_ui.dart';
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
