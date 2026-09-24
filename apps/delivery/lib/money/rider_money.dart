@@ -233,8 +233,17 @@ class RiderMoneyService {
       .map((s) => s.docs.map((d) => RiderEarning.fromMap(d.id, d.data())).toList()
         ..sort((a, b) => (b.createdAt ?? DateTime(0)).compareTo(a.createdAt ?? DateTime(0))));
 
-  Stream<RiderAccount> account() =>
-      _db.collection('rider_accounts').doc(riderId).snapshots().map((s) => RiderAccount.fromMap(s.data()));
+  /// Only answers the server has confirmed: when the backend is slow the web
+  /// SDK goes offline and reports an uncached document as missing, which
+  /// would read as "no cash with you" / "no payout details" (DLV-4B).
+  static bool _known(DocumentSnapshot<Map<String, dynamic>> s) => s.exists || !s.metadata.isFromCache;
+
+  Stream<RiderAccount> account() => _db
+      .collection('rider_accounts')
+      .doc(riderId)
+      .snapshots()
+      .where(_known)
+      .map((s) => RiderAccount.fromMap(s.data()));
 
   /// Statements, newest first.
   Stream<List<RiderPayout>> payouts() => _db
@@ -260,6 +269,7 @@ class RiderMoneyService {
       .collection('delivery_partners')
       .doc(riderId)
       .snapshots()
+      .where(_known)
       .map((s) {
     final d = s.data() ?? const {};
     return (

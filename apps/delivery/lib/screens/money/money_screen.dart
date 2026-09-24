@@ -156,7 +156,9 @@ class _MoneyScreenState extends State<MoneyScreen> {
   Widget _earningTile(ColorScheme cs, RiderEarning e) {
     final parts = <String>[
       'Base ${rupees(e.basePay)}',
-      if (e.km > 0) '${e.km.toStringAsFixed(1)} km ${rupees(e.distancePay)}',
+      // Two decimals: pay is worked out on the km as stored (4.05 km × ₹6 =
+      // ₹24.30); "4.0 km ₹24.30" would not add up for the rider.
+      if (e.km > 0) '${e.km.toStringAsFixed(2)} km ${rupees(e.distancePay)}',
       if (e.waitMinutes > 0) 'Waiting ${e.waitMinutes} min ${rupees(e.waitingPay)}',
     ];
     final when = e.createdAt?.toLocal();
