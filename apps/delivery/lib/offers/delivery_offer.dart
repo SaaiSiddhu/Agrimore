@@ -20,6 +20,11 @@ class DeliveryOffer {
   final double codAmount;
   final int wave;
 
+  /// DLV-4A/4B: pay for this order as offered (base + distance on the
+  /// straight line × 1.35); the pay at delivery also counts road distance
+  /// and waiting. Null for an offer made before DLV-4A.
+  final double? estimatedPay;
+
   const DeliveryOffer({
     required this.orderId,
     required this.orderNumber,
@@ -31,6 +36,7 @@ class DeliveryOffer {
     this.itemCount = 0,
     this.codAmount = 0,
     this.wave = 1,
+    this.estimatedPay,
   });
 
   /// Offers last 30 s (dispatch.ts OFFER_TTL_MS); the countdown ring is drawn
@@ -81,11 +87,14 @@ class DeliveryOffer {
       itemCount: (m['itemCount'] as num?)?.toInt() ?? 0,
       codAmount: _num(m['codAmount']) ?? 0,
       wave: (m['wave'] as num?)?.toInt() ?? 1,
+      estimatedPay: _num(m['estimatedPay']),
     );
   }
 
-  /// One line for the notification body. Mirrors dispatch.ts sendOfferPush.
+  /// One line for the notification body. Mirrors dispatch.ts sendOfferPush,
+  /// led by the pay when the offer carries it (DLV-4B).
   String get summary => [
+        if (estimatedPay != null) 'Earn ~₹${estimatedPay!.round()}',
         pickupDistanceKm == null
             ? 'Pickup nearby'
             : 'Pickup ${pickupDistanceKm!.toStringAsFixed(1)} km away',
