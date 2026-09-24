@@ -2226,5 +2226,241 @@
   "emailHint": "name@example.com",
   "@emailHint": {
     "description": "Placeholder in the email sign-in field; an example, not a real address."
+  },
+  "walletTitle": "Wallet balance",
+  "@walletTitle": {
+    "description": "Payments: the money the seller can withdraw now."
+  },
+  "walletAvailableHelp": "Ready to withdraw. Delivered orders add to it after commission.",
+  "@walletAvailableHelp": {
+    "description": "Under the wallet balance."
+  },
+  "walletHeld": "{amount} more after the {days}-day hold",
+  "@walletHeld": {
+    "description": "Money from recent orders not yet withdrawable.",
+    "placeholders": {
+      "amount": {
+        "type": "String"
+      },
+      "days": {
+        "type": "int"
+      }
+    }
+  },
+  "walletWithdrawCta": "Withdraw",
+  "@walletWithdrawCta": {
+    "description": "Wallet primary button."
+  },
+  "walletMinimum": "Minimum withdrawal is {amount}.",
+  "@walletMinimum": {
+    "description": "Shown when the balance is below the minimum.",
+    "placeholders": {
+      "amount": {
+        "type": "String"
+      }
+    }
+  },
+  "walletNothing": "Nothing to withdraw yet.",
+  "@walletNothing": {
+    "description": "Balance is zero."
+  },
+  "walletNeedAccount": "Add a bank account or UPI ID to withdraw.",
+  "@walletNeedAccount": {
+    "description": "No payout destination on file."
+  },
+  "walletChangePendingBlock": "You can withdraw once your new bank/UPI details are verified.",
+  "@walletChangePendingBlock": {
+    "description": "A payout-account change is waiting for review."
+  },
+  "walletConfirmTitle": "Withdraw {amount}?",
+  "@walletConfirmTitle": {
+    "description": "Withdraw confirmation title.",
+    "placeholders": {
+      "amount": {
+        "type": "String"
+      }
+    }
+  },
+  "walletConfirmBody": "AgriMore will send it to {destination} and tell you when it is paid.",
+  "@walletConfirmBody": {
+    "description": "Withdraw confirmation body.",
+    "placeholders": {
+      "destination": {
+        "type": "String"
+      }
+    }
+  },
+  "walletRequested": "Withdrawal requested",
+  "@walletRequested": {
+    "description": "Toast after requesting a withdrawal."
+  },
+  "walletOpenTitle": "Withdrawal requested",
+  "@walletOpenTitle": {
+    "description": "Card title for the open withdrawal."
+  },
+  "walletOpenBody": "{amount} to {destination}",
+  "@walletOpenBody": {
+    "description": "Open withdrawal: amount and masked destination.",
+    "placeholders": {
+      "amount": {
+        "type": "String"
+      },
+      "destination": {
+        "type": "String"
+      }
+    }
+  },
+  "walletOpenWaiting": "Requested {date} · waiting for AgriMore to pay",
+  "@walletOpenWaiting": {
+    "description": "Open withdrawal status line.",
+    "placeholders": {
+      "date": {
+        "type": "String"
+      }
+    }
+  },
+  "walletCancel": "Cancel withdrawal",
+  "@walletCancel": {
+    "description": "Cancel the open withdrawal."
+  },
+  "walletCancelTitle": "Cancel this withdrawal?",
+  "@walletCancelTitle": {
+    "description": "Confirm cancelling."
+  },
+  "walletCancelBody": "The amount goes back to your wallet balance.",
+  "@walletCancelBody": {
+    "description": "Confirm cancelling body."
+  },
+  "walletKeep": "Keep it",
+  "@walletKeep": {
+    "description": "Cancel dialog: keep the withdrawal."
+  },
+  "walletCancelled": "Withdrawal cancelled",
+  "@walletCancelled": {
+    "description": "Toast after cancelling."
+  },
+  "walletLoadFailed": "Couldn't load your wallet.",
+  "@walletLoadFailed": {
+    "description": "Wallet summary failed to load."
+  },
+  "walletErrOpen": "A withdrawal is already waiting to be paid.",
+  "@walletErrOpen": {
+    "description": "Refusal: one open withdrawal at a time."
+  },
+  "walletErrFailed": "Couldn't request the withdrawal. Try again.",
+  "@walletErrFailed": {
+    "description": "Generic withdraw failure."
+  },
+  "withdrawalsTitle": "Withdrawals",
+  "@withdrawalsTitle": {
+    "description": "Section header: past withdrawals."
+  },
+  "withdrawalRequested": "Requested",
+  "@withdrawalRequested": {
+    "description": "Withdrawal status."
+  },
+  "withdrawalPaid": "Paid",
+  "@withdrawalPaid": {
+    "description": "Withdrawal status."
+  },
+  "withdrawalRejected": "Not paid",
+  "@withdrawalRejected": {
+    "description": "Withdrawal status: rejected by AgriMore."
+  },
+  "withdrawalCancelled": "Cancelled",
+  "@withdrawalCancelled": {
+    "description": "Withdrawal status: cancelled by the seller."
+  },
+  "withdrawalOrders": "{count, plural, =1{1 order} other{{count} orders}}",
+  "@withdrawalOrders": {
+    "description": "Number of orders in a withdrawal.",
+    "placeholders": {
+      "count": {
+        "type": "int"
+      }
+    }
+  },
+  "withdrawalRef": "Ref {reference}",
+  "@withdrawalRef": {
+    "description": "Payment reference of a paid withdrawal.",
+    "placeholders": {
+      "reference": {
+        "type": "String"
+      }
+    }
+  },
+  "withdrawalReason": "Reason: {reason}",
+  "@withdrawalReason": {
+    "description": "Why AgriMore did not pay.",
+    "placeholders": {
+      "reason": {
+        "type": "String"
+      }
+    }
+  },
+  "payoutInWithdrawal": "In withdrawal",
+  "@payoutInWithdrawal": {
+    "description": "Settlement status: part of a requested withdrawal."
+  },
+  "payoutAccountAdd": "Add bank account or UPI",
+  "@payoutAccountAdd": {
+    "description": "Button when no payout account is on file."
+  },
+  "payoutAccountChange": "Change",
+  "@payoutAccountChange": {
+    "description": "Change the payout account."
+  },
+  "payoutChangePendingTitle": "New details waiting for review",
+  "@payoutChangePendingTitle": {
+    "description": "A payout-account change is pending."
+  },
+  "payoutChangePendingBody": "{destination} · AgriMore checks new details before paying to them.",
+  "@payoutChangePendingBody": {
+    "description": "Pending change body.",
+    "placeholders": {
+      "destination": {
+        "type": "String"
+      }
+    }
+  },
+  "payoutChangeCancel": "Cancel change",
+  "@payoutChangeCancel": {
+    "description": "Withdraw the pending change request."
+  },
+  "payoutChangeCancelled": "Change cancelled",
+  "@payoutChangeCancelled": {
+    "description": "Toast after cancelling the change."
+  },
+  "payoutFormTitleAdd": "Add payout account",
+  "@payoutFormTitleAdd": {
+    "description": "Payout form title when none is on file."
+  },
+  "payoutFormTitleChange": "Change payout account",
+  "@payoutFormTitleChange": {
+    "description": "Payout form title when changing."
+  },
+  "payoutFormIntro": "AgriMore verifies new details before sending money to them. Until then, withdrawals wait.",
+  "@payoutFormIntro": {
+    "description": "Payout form intro."
+  },
+  "payoutFormSubmit": "Send for verification",
+  "@payoutFormSubmit": {
+    "description": "Payout form submit."
+  },
+  "payoutFormSending": "Sending…",
+  "@payoutFormSending": {
+    "description": "Payout form busy label."
+  },
+  "payoutFormSent": "Sent for verification. We'll let you know.",
+  "@payoutFormSent": {
+    "description": "Toast after sending new details."
+  },
+  "payoutFormFailed": "Couldn't send your details. Try again.",
+  "@payoutFormFailed": {
+    "description": "Payout form failure."
+  },
+  "payoutFormPending": "A change is already waiting for review.",
+  "@payoutFormPending": {
+    "description": "Refusal: one pending change at a time."
   }
 }

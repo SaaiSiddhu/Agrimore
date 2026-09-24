@@ -6,6 +6,7 @@ import 'package:provider/provider.dart';
 import '../../design_system/design_system.dart';
 import '../../l10n/app_localizations.dart';
 import '../../providers/seller_auth_provider.dart';
+import 'wallet.dart';
 import 'statements.dart';
 
 /// One settlement row from `seller_payouts` (written by the server when an
@@ -66,7 +67,8 @@ class PayoutSummary {
         paidAll += e.net;
         final at = e.paidAt ?? e.createdAt;
         if (at != null && now.difference(at) <= window) paid30 += e.net;
-      } else if (e.status == 'pending') {
+      } else if (e.status == 'pending' || e.status == 'requested') {
+        // SELLER-WALLET-1: money in a withdrawal not yet paid is still owed.
         pending += e.net;
       }
     }
@@ -78,16 +80,18 @@ class PayoutSummary {
   final double paidAll;
 }
 
-/// P-01 Payments (boards 19-01, 19-02, 19-07; SELLER-MONEY-1): what the
-/// seller is owed and has been paid, the payout account on file (always
-/// masked) and the settlements. Read-only: no wallet, withdrawal or
-/// payout-request controls exist (brief; decision D11).
+/// P-01 Payments (boards 19-01, 19-02, 19-07; SELLER-MONEY-1): the wallet
+/// balance with Withdraw, the payout account on file (always masked; add or
+/// change it for an admin to verify), what has been paid, and the
+/// settlements. SELLER-WALLET-1 (owner 2026-09-24) replaced the brief's
+/// read-only "no wallet" scope (decision D11, revised).
 class PaymentsScreen extends StatefulWidget {
-  const PaymentsScreen({super.key, this.entries, this.payoutDetails});
+  const PaymentsScreen({super.key, this.entries, this.payoutDetails, this.wallet});
 
   /// Injected in tests; otherwise streamed from Firestore.
   final List<PayoutEntry>? entries;
   final Map<String, dynamic>? payoutDetails;
+  final WalletSource? wallet;
 
   static const int limit = 200;
 
@@ -97,6 +101,17 @@ class PaymentsScreen extends StatefulWidget {
 
 class _PaymentsScreenState extends State<PaymentsScreen> {
   int _attempt = 0;
+  WalletSource? _wallet;
+
+  @override
+  void initState() {
+    super.initState();
+    _wallet = widget.wallet;
+    if (_wallet == null && widget.entries == null) {
+      final uid = context.read<SellerAuthProvider>().currentUser?.uid;
+      if (uid != null) _wallet = FirebaseWalletSource(uid);
+    }
+  }
 
   @override
   Widget build(BuildContext context) {
@@ -105,7 +120,7 @@ class _PaymentsScreenState extends State<PaymentsScreen> {
     final uid = injected == null ? context.read<SellerAuthProvider>().currentUser?.uid : null;
     Widget body;
     if (injected != null) {
-      body = PaymentsBody(entries: injected, payoutDetails: widget.payoutDetails);
+      body = PaymentsBody(entries: injected, payoutDetails: widget.payoutDetails, wallet: _wallet);
     } else if (uid == null) {
       body = const SizedBox.shrink();
     } else {
@@ -123,9 +138,10 @@ class _PaymentsScreenState extends State<PaymentsScreen> {
           }
           if (!snap.hasData) return SellerSkeletonList(label: l10n.dsLoading, thumbnail: false);
           final list = snap.data!.docs.map((d) => PayoutEntry.fromMap(d.id, d.data())).toList();
-          return FutureBuilder<DocumentSnapshot<Map<String, dynamic>>>(
-            future: FirebaseFirestore.instance.collection('seller_payout_details').doc(uid).get(),
-            builder: (context, details) => PaymentsBody(entries: list, payoutDetails: details.data?.data()),
+          // Streamed so an admin approving a bank/UPI change shows at once.
+          return StreamBuilder<DocumentSnapshot<Map<String, dynamic>>>(
+            stream: FirebaseFirestore.instance.collection('seller_payout_details').doc(uid).snapshots(),
+            builder: (context, details) => PaymentsBody(entries: list, payoutDetails: details.data?.data(), wallet: _wallet),
           );
         },
       );
@@ -145,7 +161,9 @@ String payoutAccountLine(AppLocalizations l10n, Map<String, dynamic> details) =>
 /// Status badge of a settlement: Pending (clock, amber) / Paid (check, green).
 Widget settlementBadge(AppLocalizations l10n, PayoutEntry e) => e.isPaid
     ? SellerStatusBadge(label: l10n.payoutPaid, tone: SellerTone.success, icon: SellerIcons.success)
-    : SellerStatusBadge(label: l10n.payoutPending, tone: SellerTone.warning, icon: SellerIcons.pending);
+    : e.status == 'requested'
+        ? SellerStatusBadge(label: l10n.payoutInWithdrawal, tone: SellerTone.info, icon: SellerIcons.bank)
+        : SellerStatusBadge(label: l10n.payoutPending, tone: SellerTone.warning, icon: SellerIcons.pending);
 
 /// One settlement row: order, date (paid date once paid), amount, status.
 class SettlementRow extends StatelessWidget {
@@ -175,9 +193,13 @@ class SettlementRow extends StatelessWidget {
 }
 
 class PaymentsBody extends StatelessWidget {
-  const PaymentsBody({super.key, required this.entries, this.payoutDetails});
+  const PaymentsBody({super.key, required this.entries, this.payoutDetails, this.wallet});
   final List<PayoutEntry> entries;
   final Map<String, dynamic>? payoutDetails;
+
+  /// With a wallet the balance card, Withdraw and the payout-account actions
+  /// replace the read-only "To be paid" tile and account card.
+  final WalletSource? wallet;
 
   static const int _recent = 5;
 
@@ -264,12 +286,31 @@ class PaymentsBody extends StatelessWidget {
             ),
           );
 
+    final w = wallet;
+    final paidPair = IntrinsicHeight(
+      child: Row(crossAxisAlignment: CrossAxisAlignment.stretch, children: [
+        Expanded(child: tile(l10n.paymentsPaid30d, summary.paid30d)),
+        const SizedBox(width: SellerSpace.s12),
+        Expanded(child: tile(l10n.paymentsPaidAll, summary.paidAll)),
+      ]),
+    );
     return ListView(
       padding: EdgeInsets.fromLTRB(context.pageInset, SellerSpace.s8, context.pageInset, SellerSpace.s32),
       children: [
-        summaryBlock,
-        const SizedBox(height: SellerSpace.s16),
-        account,
+        if (w != null) ...[
+          WalletSection(source: w, payoutDetails: details),
+          const SizedBox(height: SellerSpace.s16),
+          if (context.largeText) ...[
+            tile(l10n.paymentsPaid30d, summary.paid30d),
+            const SizedBox(height: SellerSpace.s12),
+            tile(l10n.paymentsPaidAll, summary.paidAll),
+          ] else
+            paidPair,
+        ] else ...[
+          summaryBlock,
+          const SizedBox(height: SellerSpace.s16),
+          account,
+        ],
         if (statements.isNotEmpty) ...[
           const SizedBox(height: SellerSpace.section),
           SellerSectionHeader(title: l10n.statementsTitle),

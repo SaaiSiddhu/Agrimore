@@ -3740,4 +3740,168 @@ class AppLocalizationsEn extends AppLocalizations {
 
   @override
   String get emailHint => 'name@example.com';
+
+  @override
+  String get walletTitle => 'Wallet balance';
+
+  @override
+  String get walletAvailableHelp =>
+      'Ready to withdraw. Delivered orders add to it after commission.';
+
+  @override
+  String walletHeld(String amount, int days) {
+    return '$amount more after the $days-day hold';
+  }
+
+  @override
+  String get walletWithdrawCta => 'Withdraw';
+
+  @override
+  String walletMinimum(String amount) {
+    return 'Minimum withdrawal is $amount.';
+  }
+
+  @override
+  String get walletNothing => 'Nothing to withdraw yet.';
+
+  @override
+  String get walletNeedAccount => 'Add a bank account or UPI ID to withdraw.';
+
+  @override
+  String get walletChangePendingBlock =>
+      'You can withdraw once your new bank/UPI details are verified.';
+
+  @override
+  String walletConfirmTitle(String amount) {
+    return 'Withdraw $amount?';
+  }
+
+  @override
+  String walletConfirmBody(String destination) {
+    return 'AgriMore will send it to $destination and tell you when it is paid.';
+  }
+
+  @override
+  String get walletRequested => 'Withdrawal requested';
+
+  @override
+  String get walletOpenTitle => 'Withdrawal requested';
+
+  @override
+  String walletOpenBody(String amount, String destination) {
+    return '$amount to $destination';
+  }
+
+  @override
+  String walletOpenWaiting(String date) {
+    return 'Requested $date · waiting for AgriMore to pay';
+  }
+
+  @override
+  String get walletCancel => 'Cancel withdrawal';
+
+  @override
+  String get walletCancelTitle => 'Cancel this withdrawal?';
+
+  @override
+  String get walletCancelBody => 'The amount goes back to your wallet balance.';
+
+  @override
+  String get walletKeep => 'Keep it';
+
+  @override
+  String get walletCancelled => 'Withdrawal cancelled';
+
+  @override
+  String get walletLoadFailed => 'Couldn\'t load your wallet.';
+
+  @override
+  String get walletErrOpen => 'A withdrawal is already waiting to be paid.';
+
+  @override
+  String get walletErrFailed => 'Couldn\'t request the withdrawal. Try again.';
+
+  @override
+  String get withdrawalsTitle => 'Withdrawals';
+
+  @override
+  String get withdrawalRequested => 'Requested';
+
+  @override
+  String get withdrawalPaid => 'Paid';
+
+  @override
+  String get withdrawalRejected => 'Not paid';
+
+  @override
+  String get withdrawalCancelled => 'Cancelled';
+
+  @override
+  String withdrawalOrders(int count) {
+    String _temp0 = intl.Intl.pluralLogic(
+      count,
+      locale: localeName,
+      other: '$count orders',
+      one: '1 order',
+    );
+    return '$_temp0';
+  }
+
+  @override
+  String withdrawalRef(String reference) {
+    return 'Ref $reference';
+  }
+
+  @override
+  String withdrawalReason(String reason) {
+    return 'Reason: $reason';
+  }
+
+  @override
+  String get payoutInWithdrawal => 'In withdrawal';
+
+  @override
+  String get payoutAccountAdd => 'Add bank account or UPI';
+
+  @override
+  String get payoutAccountChange => 'Change';
+
+  @override
+  String get payoutChangePendingTitle => 'New details waiting for review';
+
+  @override
+  String payoutChangePendingBody(String destination) {
+    return '$destination · AgriMore checks new details before paying to them.';
+  }
+
+  @override
+  String get payoutChangeCancel => 'Cancel change';
+
+  @override
+  String get payoutChangeCancelled => 'Change cancelled';
+
+  @override
+  String get payoutFormTitleAdd => 'Add payout account';
+
+  @override
+  String get payoutFormTitleChange => 'Change payout account';
+
+  @override
+  String get payoutFormIntro =>
+      'AgriMore verifies new details before sending money to them. Until then, withdrawals wait.';
+
+  @override
+  String get payoutFormSubmit => 'Send for verification';
+
+  @override
+  String get payoutFormSending => 'Sending…';
+
+  @override
+  String get payoutFormSent => 'Sent for verification. We\'ll let you know.';
+
+  @override
+  String get payoutFormFailed => 'Couldn\'t send your details. Try again.';
+
+  @override
+  String get payoutFormPending => 'A change is already waiting for review.';
 }

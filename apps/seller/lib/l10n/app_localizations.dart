@@ -6357,6 +6357,276 @@ abstract class AppLocalizations {
   /// In en, this message translates to:
   /// **'name@example.com'**
   String get emailHint;
+
+  /// Payments: the money the seller can withdraw now.
+  ///
+  /// In en, this message translates to:
+  /// **'Wallet balance'**
+  String get walletTitle;
+
+  /// Under the wallet balance.
+  ///
+  /// In en, this message translates to:
+  /// **'Ready to withdraw. Delivered orders add to it after commission.'**
+  String get walletAvailableHelp;
+
+  /// Money from recent orders not yet withdrawable.
+  ///
+  /// In en, this message translates to:
+  /// **'{amount} more after the {days}-day hold'**
+  String walletHeld(String amount, int days);
+
+  /// Wallet primary button.
+  ///
+  /// In en, this message translates to:
+  /// **'Withdraw'**
+  String get walletWithdrawCta;
+
+  /// Shown when the balance is below the minimum.
+  ///
+  /// In en, this message translates to:
+  /// **'Minimum withdrawal is {amount}.'**
+  String walletMinimum(String amount);
+
+  /// Balance is zero.
+  ///
+  /// In en, this message translates to:
+  /// **'Nothing to withdraw yet.'**
+  String get walletNothing;
+
+  /// No payout destination on file.
+  ///
+  /// In en, this message translates to:
+  /// **'Add a bank account or UPI ID to withdraw.'**
+  String get walletNeedAccount;
+
+  /// A payout-account change is waiting for review.
+  ///
+  /// In en, this message translates to:
+  /// **'You can withdraw once your new bank/UPI details are verified.'**
+  String get walletChangePendingBlock;
+
+  /// Withdraw confirmation title.
+  ///
+  /// In en, this message translates to:
+  /// **'Withdraw {amount}?'**
+  String walletConfirmTitle(String amount);
+
+  /// Withdraw confirmation body.
+  ///
+  /// In en, this message translates to:
+  /// **'AgriMore will send it to {destination} and tell you when it is paid.'**
+  String walletConfirmBody(String destination);
+
+  /// Toast after requesting a withdrawal.
+  ///
+  /// In en, this message translates to:
+  /// **'Withdrawal requested'**
+  String get walletRequested;
+
+  /// Card title for the open withdrawal.
+  ///
+  /// In en, this message translates to:
+  /// **'Withdrawal requested'**
+  String get walletOpenTitle;
+
+  /// Open withdrawal: amount and masked destination.
+  ///
+  /// In en, this message translates to:
+  /// **'{amount} to {destination}'**
+  String walletOpenBody(String amount, String destination);
+
+  /// Open withdrawal status line.
+  ///
+  /// In en, this message translates to:
+  /// **'Requested {date} · waiting for AgriMore to pay'**
+  String walletOpenWaiting(String date);
+
+  /// Cancel the open withdrawal.
+  ///
+  /// In en, this message translates to:
+  /// **'Cancel withdrawal'**
+  String get walletCancel;
+
+  /// Confirm cancelling.
+  ///
+  /// In en, this message translates to:
+  /// **'Cancel this withdrawal?'**
+  String get walletCancelTitle;
+
+  /// Confirm cancelling body.
+  ///
+  /// In en, this message translates to:
+  /// **'The amount goes back to your wallet balance.'**
+  String get walletCancelBody;
+
+  /// Cancel dialog: keep the withdrawal.
+  ///
+  /// In en, this message translates to:
+  /// **'Keep it'**
+  String get walletKeep;
+
+  /// Toast after cancelling.
+  ///
+  /// In en, this message translates to:
+  /// **'Withdrawal cancelled'**
+  String get walletCancelled;
+
+  /// Wallet summary failed to load.
+  ///
+  /// In en, this message translates to:
+  /// **'Couldn\'t load your wallet.'**
+  String get walletLoadFailed;
+
+  /// Refusal: one open withdrawal at a time.
+  ///
+  /// In en, this message translates to:
+  /// **'A withdrawal is already waiting to be paid.'**
+  String get walletErrOpen;
+
+  /// Generic withdraw failure.
+  ///
+  /// In en, this message translates to:
+  /// **'Couldn\'t request the withdrawal. Try again.'**
+  String get walletErrFailed;
+
+  /// Section header: past withdrawals.
+  ///
+  /// In en, this message translates to:
+  /// **'Withdrawals'**
+  String get withdrawalsTitle;
+
+  /// Withdrawal status.
+  ///
+  /// In en, this message translates to:
+  /// **'Requested'**
+  String get withdrawalRequested;
+
+  /// Withdrawal status.
+  ///
+  /// In en, this message translates to:
+  /// **'Paid'**
+  String get withdrawalPaid;
+
+  /// Withdrawal status: rejected by AgriMore.
+  ///
+  /// In en, this message translates to:
+  /// **'Not paid'**
+  String get withdrawalRejected;
+
+  /// Withdrawal status: cancelled by the seller.
+  ///
+  /// In en, this message translates to:
+  /// **'Cancelled'**
+  String get withdrawalCancelled;
+
+  /// Number of orders in a withdrawal.
+  ///
+  /// In en, this message translates to:
+  /// **'{count, plural, =1{1 order} other{{count} orders}}'**
+  String withdrawalOrders(int count);
+
+  /// Payment reference of a paid withdrawal.
+  ///
+  /// In en, this message translates to:
+  /// **'Ref {reference}'**
+  String withdrawalRef(String reference);
+
+  /// Why AgriMore did not pay.
+  ///
+  /// In en, this message translates to:
+  /// **'Reason: {reason}'**
+  String withdrawalReason(String reason);
+
+  /// Settlement status: part of a requested withdrawal.
+  ///
+  /// In en, this message translates to:
+  /// **'In withdrawal'**
+  String get payoutInWithdrawal;
+
+  /// Button when no payout account is on file.
+  ///
+  /// In en, this message translates to:
+  /// **'Add bank account or UPI'**
+  String get payoutAccountAdd;
+
+  /// Change the payout account.
+  ///
+  /// In en, this message translates to:
+  /// **'Change'**
+  String get payoutAccountChange;
+
+  /// A payout-account change is pending.
+  ///
+  /// In en, this message translates to:
+  /// **'New details waiting for review'**
+  String get payoutChangePendingTitle;
+
+  /// Pending change body.
+  ///
+  /// In en, this message translates to:
+  /// **'{destination} · AgriMore checks new details before paying to them.'**
+  String payoutChangePendingBody(String destination);
+
+  /// Withdraw the pending change request.
+  ///
+  /// In en, this message translates to:
+  /// **'Cancel change'**
+  String get payoutChangeCancel;
+
+  /// Toast after cancelling the change.
+  ///
+  /// In en, this message translates to:
+  /// **'Change cancelled'**
+  String get payoutChangeCancelled;
+
+  /// Payout form title when none is on file.
+  ///
+  /// In en, this message translates to:
+  /// **'Add payout account'**
+  String get payoutFormTitleAdd;
+
+  /// Payout form title when changing.
+  ///
+  /// In en, this message translates to:
+  /// **'Change payout account'**
+  String get payoutFormTitleChange;
+
+  /// Payout form intro.
+  ///
+  /// In en, this message translates to:
+  /// **'AgriMore verifies new details before sending money to them. Until then, withdrawals wait.'**
+  String get payoutFormIntro;
+
+  /// Payout form submit.
+  ///
+  /// In en, this message translates to:
+  /// **'Send for verification'**
+  String get payoutFormSubmit;
+
+  /// Payout form busy label.
+  ///
+  /// In en, this message translates to:
+  /// **'Sending…'**
+  String get payoutFormSending;
+
+  /// Toast after sending new details.
+  ///
+  /// In en, this message translates to:
+  /// **'Sent for verification. We\'ll let you know.'**
+  String get payoutFormSent;
+
+  /// Payout form failure.
+  ///
+  /// In en, this message translates to:
+  /// **'Couldn\'t send your details. Try again.'**
+  String get payoutFormFailed;
+
+  /// Refusal: one pending change at a time.
+  ///
+  /// In en, this message translates to:
+  /// **'A change is already waiting for review.'**
+  String get payoutFormPending;
 }
 
 class _AppLocalizationsDelegate

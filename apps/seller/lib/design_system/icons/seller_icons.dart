@@ -53,6 +53,7 @@ abstract final class SellerIcons {
   static const IconData newItem = LucideIcons.circleDot;
   static const IconData unselected = LucideIcons.circle;
   static const IconData pending = LucideIcons.clock;
+  static const IconData wallet = LucideIcons.wallet;
   static const IconData hourglass = LucideIcons.hourglass;
   static const IconData timer = LucideIcons.timer;
   static const IconData paused = LucideIcons.circlePause;
