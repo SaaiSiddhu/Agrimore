@@ -24,8 +24,8 @@ class App extends StatelessWidget {
     return MaterialApp(
       onGenerateTitle: (context) => AppLocalizations.of(context).appName,
       debugShowCheckedModeBanner: false,
-      theme: withLegacyWorkspaceTokens(SellerTheme.light),
-      darkTheme: withLegacyWorkspaceTokens(SellerTheme.dark),
+      theme: SellerTheme.light,
+      darkTheme: SellerTheme.dark,
       themeMode: context.watch<SellerSettingsProvider>().themeMode,
       localizationsDelegates: const [
         AppLocalizations.delegate,

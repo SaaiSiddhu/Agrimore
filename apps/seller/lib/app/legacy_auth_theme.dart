@@ -16,11 +16,3 @@ class LegacyAuthTheme extends StatelessWidget {
     );
   }
 }
-
-/// TRANSITIONAL — removed when the last seller screen is off the Workspace
-/// kit: carries the Workspace tokens inside the seller theme so screens not
-/// yet migrated keep working. Seller design-system widgets never read them.
-ThemeData withLegacyWorkspaceTokens(ThemeData seller) {
-  final legacy = WorkspaceTheme.build(WorkspaceBrand.seller, seller.brightness).extension<WorkspaceTokens>()!;
-  return seller.copyWith(extensions: [...seller.extensions.values, legacy]);
-}
