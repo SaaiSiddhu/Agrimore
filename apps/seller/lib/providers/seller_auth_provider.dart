@@ -5,6 +5,7 @@ import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:firebase_auth/firebase_auth.dart';
 import 'package:firebase_messaging/firebase_messaging.dart';
 import 'package:flutter/foundation.dart';
+import '../app/emulator.dart';
 
 /// Where a signed-in (or signed-out) person stands with the seller app.
 /// The auth gate routes on this and nothing else (ADR §9, "Auth gate states").
@@ -409,7 +410,9 @@ class SellerAuthProvider with ChangeNotifier {
 
   Future<void> _updateFcmToken(String uid) async {
     final db = _firestore;
-    if (db == null) return;
+    // D13: an emulator run registers no push token — a real device token in
+    // emulator data makes every server notification try live FCM.
+    if (db == null || kSellerUsesEmulator) return;
     try {
       final token = await FirebaseMessaging.instance.getToken();
       if (token == null) return;

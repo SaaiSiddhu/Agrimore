@@ -9,6 +9,7 @@ import '../providers/seller_settings_provider.dart';
 import '../screens/auth/account_restricted_screen.dart';
 import '../screens/auth/application_status_screen.dart';
 import '../screens/auth/seller_sign_in_screen.dart';
+import 'emulator.dart';
 import '../screens/onboarding/application_screen.dart';
 import '../screens/onboarding/apply_intro_screen.dart';
 import '../screens/shell/seller_shell.dart';
@@ -36,9 +37,11 @@ class App extends StatelessWidget {
       // Reduced motion: no ink ripples either (board 24-05); pressed states
       // still show through their overlay colour.
       builder: (context, child) {
-        if (!context.reduceMotion) return child!;
+        // D13: an emulator run is labelled on every screen.
+        final page = SellerTestDataRibbon(enabled: kSellerUsesEmulator, child: child!);
+        if (!context.reduceMotion) return page;
         final theme = Theme.of(context);
-        return Theme(data: theme.copyWith(splashFactory: NoSplash.splashFactory), child: child!);
+        return Theme(data: theme.copyWith(splashFactory: NoSplash.splashFactory), child: page);
       },
       home: const SellerAuthGate(),
     );

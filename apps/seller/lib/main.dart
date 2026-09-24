@@ -8,6 +8,7 @@ import 'package:agrimore_core/agrimore_core.dart';
 import 'package:agrimore_services/agrimore_services.dart'
     hide DefaultFirebaseOptions;
 import 'app/app.dart';
+import 'app/emulator.dart';
 import 'providers/seller_auth_provider.dart';
 import 'providers/seller_product_provider.dart';
 import 'providers/seller_order_provider.dart';
@@ -23,11 +24,15 @@ void main() async {
   } else {
     await Firebase.initializeApp();
   }
-  // Phase 17, Workstream 2: monitoring mode only — see
-  // AppCheckService's header comment. Never blocks startup (activate()
-  // swallows its own errors internally).
-  await AppCheckService.activate();
-  await NotificationService.initialize();
+  // D13: opt-in emulator run (lib/app/emulator.dart) — before any use.
+  await connectSellerEmulators();
+  if (!kSellerUsesEmulator) {
+    // Phase 17, Workstream 2: monitoring mode only — see
+    // AppCheckService's header comment. Never blocks startup (activate()
+    // swallows its own errors internally).
+    await AppCheckService.activate();
+    await NotificationService.initialize();
+  }
 
   // Force portrait orientation
   await SystemChrome.setPreferredOrientations([
