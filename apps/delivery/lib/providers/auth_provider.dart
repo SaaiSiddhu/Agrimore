@@ -17,6 +17,9 @@
 //     claim-based rules see it now, not at the next hourly refresh.
 //   - A read that only reached the device cache is "unavailable", never
 //     "does not exist" (the web SDK reports cached misses when offline).
+//   - DLV-A1: an account with no rider record yet (mid-registration, or a
+//     registration that failed after the account was created) is NOT signed
+//     out: it is [needsRegistration], and the gate resumes registration.
 // Firebase lives behind lib/auth/rider_account_source.dart; the logic here
 // is covered by test/auth_session_test.dart.
 import 'dart:async';
@@ -34,8 +37,6 @@ enum RiderAuthProblem {
   network,
   accountDisabled,
   notDeliveryPartner,
-  noPartnerRecord,
-  noProfile,
   profileUnavailable,
   unknown,
 }
@@ -75,6 +76,7 @@ class DeliveryAuthProvider extends ChangeNotifier {
   // A sign-in in flight: the button spins, the form stays (a failed attempt
   // must not wipe what the rider typed).
   bool _signingIn = false;
+  bool _needsRegistration = false;
   RiderAuthProblem? _problem;
   // Why the previous session was refused; kept across the sign-out it causes.
   RiderAuthProblem? _carryProblem;
@@ -93,6 +95,9 @@ class DeliveryAuthProvider extends ChangeNotifier {
   /// account's profile). The gate shows a loading screen.
   bool get isLoading => _isLoading;
   bool get signingIn => _signingIn;
+
+  /// Signed in, but no rider record exists yet: registration continues.
+  bool get needsRegistration => _needsRegistration && _gateway.currentUid != null;
   RiderAuthProblem? get problem => _problem;
 
   /// Signed in AND allowed to work.
@@ -155,6 +160,7 @@ class DeliveryAuthProvider extends ChangeNotifier {
     _partnerOnline = null;
     _offlineReason = null;
     _problem = null;
+    _needsRegistration = false;
   }
 
   void _applyPartnerData(Map<String, dynamic>? data) {
@@ -175,17 +181,31 @@ class DeliveryAuthProvider extends ChangeNotifier {
       final userRead = await _store.user(uid);
       if (session != _session) return;
       if (!userRead.exists) {
-        if (userRead.missing) return _refuse(RiderAuthProblem.noProfile);
-        _problem = RiderAuthProblem.profileUnavailable;
+        if (userRead.missing) {
+          _needsRegistration = true;
+        } else {
+          _problem = RiderAuthProblem.profileUnavailable;
+        }
         return;
       }
+      final role = userRead.data?['role'];
       final user = UserModel.fromMap(userRead.data!, uid);
-      if (!user.isDeliveryPartner) return _refuse(RiderAuthProblem.notDeliveryPartner);
+      // A profile with no role yet may still register; any other role
+      // belongs to another app.
+      final unregistered = role == null || (role is String && role.isEmpty);
+      if (!unregistered && !user.isDeliveryPartner) return _refuse(RiderAuthProblem.notDeliveryPartner);
       final partner = await _store.partner(uid);
       if (session != _session) return;
       if (!partner.exists) {
-        if (partner.missing) return _refuse(RiderAuthProblem.noPartnerRecord);
-        _problem = RiderAuthProblem.profileUnavailable;
+        if (partner.missing) {
+          _needsRegistration = true;
+        } else {
+          _problem = RiderAuthProblem.profileUnavailable;
+        }
+        return;
+      }
+      if (unregistered) {
+        _needsRegistration = true;
         return;
       }
       _user = user;
@@ -294,8 +314,23 @@ class DeliveryAuthProvider extends ChangeNotifier {
     }
   }
 
+  /// After a successful submitRiderApplication: read the new record.
+  Future<void> registrationSubmitted() => _onAuthChanged(_gateway.currentUid);
+
   /// Reads the profile again (after "profile unavailable").
   Future<void> retryProfile() => _onAuthChanged(_gateway.currentUid);
+
+  /// Requests a password-reset email. Null = "if an account exists, a link
+  /// was sent" (the same for known and unknown emails); otherwise the problem
+  /// with the request itself.
+  Future<RiderAuthProblem?> sendPasswordReset(String email) async {
+    try {
+      await _gateway.sendPasswordReset(email.trim());
+      return null;
+    } on RiderAuthFailure catch (e) {
+      return authProblemOf(e.code);
+    }
+  }
 
   /// Removes and invalidates this device's push token, then signs out.
   /// Callers stop location first; the session gate clears everything else.

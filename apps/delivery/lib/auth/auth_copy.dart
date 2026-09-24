@@ -11,8 +11,6 @@ String authProblemText(AppLocalizations l, RiderAuthProblem p) => switch (p) {
       RiderAuthProblem.network => l.authNetwork,
       RiderAuthProblem.accountDisabled => l.authAccountDisabled,
       RiderAuthProblem.notDeliveryPartner => l.authNotDeliveryPartner,
-      RiderAuthProblem.noPartnerRecord => l.authNoPartnerRecord,
-      RiderAuthProblem.noProfile => l.authNoProfile,
       RiderAuthProblem.profileUnavailable => l.authProfileUnavailable,
       RiderAuthProblem.unknown => l.authUnknown,
     };

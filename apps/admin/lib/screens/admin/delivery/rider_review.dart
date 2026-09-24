@@ -119,3 +119,20 @@ String maskTail(String? value, {int keep = 4}) {
   if (v.length <= keep) return '•' * v.length;
   return '•••• ${v.substring(v.length - keep)}';
 }
+
+
+/// DLV-A1: one KYC document of a rider — its storage path (registrations
+/// through submitRiderApplication) or, for older records, the download URL
+/// the old registration stored. The path is resolved when an admin views it.
+typedef KycDocument = ({String label, String? path, String? url});
+
+List<KycDocument> kycDocuments(Map<String, dynamic> d) {
+  final paths = d['kycDocuments'] is Map ? Map<String, dynamic>.from(d['kycDocuments'] as Map) : const <String, dynamic>{};
+  String? s(Object? v) => v is String && v.trim().isNotEmpty ? v.trim() : null;
+  return [
+    (label: 'Aadhaar front', path: s(paths['aadhaarFront']), url: s(d['aadhaarFrontImage'])),
+    (label: 'Aadhaar back', path: s(paths['aadhaarBack']), url: s(d['aadhaarBackImage'])),
+    (label: 'Selfie', path: s(paths['selfie']), url: s(d['selfieImage'])),
+    (label: 'Licence', path: s(paths['license']), url: s(d['licenseImage'])),
+  ];
+}

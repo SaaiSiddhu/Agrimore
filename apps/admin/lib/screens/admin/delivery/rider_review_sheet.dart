@@ -5,6 +5,7 @@
 // and reason, and the actions that status allows (rider_review.dart).
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:firebase_auth/firebase_auth.dart';
+import 'package:firebase_storage/firebase_storage.dart';
 import 'package:flutter/material.dart';
 import 'package:agrimore_ui/agrimore_ui.dart';
 import 'package:url_launcher/url_launcher.dart';
@@ -157,12 +158,7 @@ class _RiderReviewSheetState extends State<RiderReviewSheet> {
             : '';
     final vehicle = VehicleType.fromWire(d['vehicleType'] as String?);
 
-    final docs = <(String, String)>[
-      ('Aadhaar front', _s('aadhaarFrontImage')),
-      ('Aadhaar back', _s('aadhaarBackImage')),
-      ('Selfie', _s('selfieImage')),
-      ('Licence', _s('licenseImage')),
-    ];
+    final docs = kycDocuments(d);
 
     return SafeArea(
       child: ConstrainedBox(
@@ -224,7 +220,7 @@ class _RiderReviewSheetState extends State<RiderReviewSheet> {
                 spacing: 12,
                 runSpacing: 12,
                 children: [
-                  for (final (label, url) in docs) _docTile(label, url)
+                  for (final doc in docs) _KycTile(doc: doc, open: _openImage, tile: _docTile)
                 ],
               ),
               const SizedBox(height: 20),
@@ -380,4 +376,38 @@ class _RiderReviewSheetState extends State<RiderReviewSheet> {
 
 extension on String {
   String ifEmpty(String fallback) => isEmpty ? fallback : this;
+}
+
+
+/// Resolves a KYC storage path to a short-lived URL only when shown (the
+/// admin's own Storage permission); a legacy record's URL is used as is.
+class _KycTile extends StatefulWidget {
+  const _KycTile({required this.doc, required this.open, required this.tile});
+  final KycDocument doc;
+  final Future<void> Function(String url) open;
+  final Widget Function(String label, String url) tile;
+
+  @override
+  State<_KycTile> createState() => _KycTileState();
+}
+
+class _KycTileState extends State<_KycTile> {
+  late final Future<String> _url = _resolve();
+
+  Future<String> _resolve() async {
+    final path = widget.doc.path;
+    if (path == null) return widget.doc.url ?? '';
+    try {
+      return await FirebaseStorage.instance.ref(path).getDownloadURL();
+    } catch (e) {
+      debugPrint('KYC document ${widget.doc.label} unavailable: $e');
+      return '';
+    }
+  }
+
+  @override
+  Widget build(BuildContext context) => FutureBuilder<String>(
+        future: _url,
+        builder: (context, snap) => widget.tile(widget.doc.label, snap.data ?? ''),
+      );
 }

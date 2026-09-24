@@ -140,18 +140,24 @@ class _ActiveOrderScreenState extends State<ActiveOrderScreen> {
                   ),
                   if (widget.order.deliveryAddress.phone.isNotEmpty) ...[
                     const SizedBox(height: 8),
+                    // DLV-A1: Workspace buttons are full-width (Size.fromHeight);
+                    // unwrapped in a Row they failed to lay out (DLV-C1 theme).
                     Row(
                       children: [
-                        OutlinedButton.icon(
-                          onPressed: () => _callCustomer(),
-                          icon: const Icon(Icons.call, size: 16),
-                          label: const Text('Call'),
+                        Expanded(
+                          child: OutlinedButton.icon(
+                            onPressed: () => _callCustomer(),
+                            icon: const Icon(Icons.call, size: 16),
+                            label: const Text('Call'),
+                          ),
                         ),
                         const SizedBox(width: 8),
-                        OutlinedButton.icon(
-                          onPressed: () => _navigateToAddress(),
-                          icon: const Icon(Icons.navigation, size: 16),
-                          label: const Text('Navigate'),
+                        Expanded(
+                          child: OutlinedButton.icon(
+                            onPressed: () => _navigateToAddress(),
+                            icon: const Icon(Icons.navigation, size: 16),
+                            label: const Text('Navigate'),
+                          ),
                         ),
                       ],
                     ),

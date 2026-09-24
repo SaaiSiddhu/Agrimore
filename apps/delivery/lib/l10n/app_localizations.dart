@@ -142,18 +142,6 @@ abstract class AppLocalizations {
   /// **'This account is not a delivery partner account.'**
   String get authNotDeliveryPartner;
 
-  /// users doc is a rider but delivery_partners doc is missing
-  ///
-  /// In en, this message translates to:
-  /// **'We couldn\'t find your delivery partner details. Contact Agrimore support.'**
-  String get authNoPartnerRecord;
-
-  /// users doc missing on the server
-  ///
-  /// In en, this message translates to:
-  /// **'We couldn\'t find your account profile. Contact Agrimore support.'**
-  String get authNoProfile;
-
   /// Profile read only reached the device cache / failed
   ///
   /// In en, this message translates to:
@@ -321,6 +309,504 @@ abstract class AppLocalizations {
   /// In en, this message translates to:
   /// **'Every order you carried, newest first'**
   String get historyActionSubtitle;
+
+  /// Registration screen title
+  ///
+  /// In en, this message translates to:
+  /// **'Become a delivery partner'**
+  String get regTitle;
+
+  /// Shown when registration resumes for a signed-in account
+  ///
+  /// In en, this message translates to:
+  /// **'Your account is ready — finish your details to apply.'**
+  String get regResumeNote;
+
+  /// Stepper step
+  ///
+  /// In en, this message translates to:
+  /// **'Account'**
+  String get regStepAccount;
+
+  /// Stepper step
+  ///
+  /// In en, this message translates to:
+  /// **'About you'**
+  String get regStepAbout;
+
+  /// Stepper step
+  ///
+  /// In en, this message translates to:
+  /// **'Vehicle and licence'**
+  String get regStepVehicle;
+
+  /// Stepper step
+  ///
+  /// In en, this message translates to:
+  /// **'Identity documents'**
+  String get regStepDocuments;
+
+  /// Stepper step
+  ///
+  /// In en, this message translates to:
+  /// **'Payout (optional)'**
+  String get regStepPayout;
+
+  /// Stepper continue
+  ///
+  /// In en, this message translates to:
+  /// **'Next'**
+  String get regNext;
+
+  /// Stepper back
+  ///
+  /// In en, this message translates to:
+  /// **'Back'**
+  String get regBack;
+
+  /// Final submit button
+  ///
+  /// In en, this message translates to:
+  /// **'Submit application'**
+  String get regSubmit;
+
+  /// Submit in progress
+  ///
+  /// In en, this message translates to:
+  /// **'Submitting…'**
+  String get regSubmitting;
+
+  /// Field label
+  ///
+  /// In en, this message translates to:
+  /// **'Email'**
+  String get fieldEmail;
+
+  /// Field label
+  ///
+  /// In en, this message translates to:
+  /// **'Password'**
+  String get fieldPassword;
+
+  /// Field label
+  ///
+  /// In en, this message translates to:
+  /// **'Full name'**
+  String get fieldName;
+
+  /// Field label
+  ///
+  /// In en, this message translates to:
+  /// **'Mobile number'**
+  String get fieldPhone;
+
+  /// Field label
+  ///
+  /// In en, this message translates to:
+  /// **'Alternate mobile (optional)'**
+  String get fieldAltPhone;
+
+  /// Field label
+  ///
+  /// In en, this message translates to:
+  /// **'Address'**
+  String get fieldAddress;
+
+  /// Field label
+  ///
+  /// In en, this message translates to:
+  /// **'City'**
+  String get fieldCity;
+
+  /// Field label
+  ///
+  /// In en, this message translates to:
+  /// **'PIN code'**
+  String get fieldPincode;
+
+  /// Field label
+  ///
+  /// In en, this message translates to:
+  /// **'Vehicle'**
+  String get fieldVehicleType;
+
+  /// Field label
+  ///
+  /// In en, this message translates to:
+  /// **'Vehicle registration number'**
+  String get fieldVehicleNumber;
+
+  /// Field label
+  ///
+  /// In en, this message translates to:
+  /// **'Driving licence number'**
+  String get fieldLicenseNumber;
+
+  /// Field label
+  ///
+  /// In en, this message translates to:
+  /// **'Aadhaar number'**
+  String get fieldAadhaarNumber;
+
+  /// Field label
+  ///
+  /// In en, this message translates to:
+  /// **'Account holder name'**
+  String get fieldAccountHolder;
+
+  /// Field label
+  ///
+  /// In en, this message translates to:
+  /// **'Bank account number'**
+  String get fieldAccountNumber;
+
+  /// Field label
+  ///
+  /// In en, this message translates to:
+  /// **'IFSC'**
+  String get fieldIfsc;
+
+  /// Field label
+  ///
+  /// In en, this message translates to:
+  /// **'UPI ID'**
+  String get fieldUpi;
+
+  /// Payout step explanation
+  ///
+  /// In en, this message translates to:
+  /// **'Add a bank account, a UPI ID, or both — or skip and add them later from Earnings (an admin reviews changes).'**
+  String get payoutHint;
+
+  /// Photo tile
+  ///
+  /// In en, this message translates to:
+  /// **'Aadhaar — front'**
+  String get docAadhaarFront;
+
+  /// Photo tile
+  ///
+  /// In en, this message translates to:
+  /// **'Aadhaar — back'**
+  String get docAadhaarBack;
+
+  /// Photo tile
+  ///
+  /// In en, this message translates to:
+  /// **'Selfie'**
+  String get docSelfie;
+
+  /// Photo tile
+  ///
+  /// In en, this message translates to:
+  /// **'Driving licence'**
+  String get docLicense;
+
+  /// Photo tile action
+  ///
+  /// In en, this message translates to:
+  /// **'Add photo'**
+  String get docAdd;
+
+  /// Photo tile action
+  ///
+  /// In en, this message translates to:
+  /// **'Change'**
+  String get docChange;
+
+  /// Photo tile error
+  ///
+  /// In en, this message translates to:
+  /// **'Add this photo'**
+  String get docMissing;
+
+  /// KYC privacy note
+  ///
+  /// In en, this message translates to:
+  /// **'Photos are visible only to you and Agrimore admins, and are locked once your application is decided.'**
+  String get docsPrivacy;
+
+  /// Vehicle type
+  ///
+  /// In en, this message translates to:
+  /// **'Bicycle'**
+  String get vehicleBicycle;
+
+  /// Vehicle type
+  ///
+  /// In en, this message translates to:
+  /// **'Motorbike'**
+  String get vehicleBike;
+
+  /// Vehicle type
+  ///
+  /// In en, this message translates to:
+  /// **'Scooter'**
+  String get vehicleScooter;
+
+  /// Vehicle type
+  ///
+  /// In en, this message translates to:
+  /// **'Electric two-wheeler'**
+  String get vehicleEv;
+
+  /// Vehicle type
+  ///
+  /// In en, this message translates to:
+  /// **'Three-wheeler'**
+  String get vehicleThreeWheeler;
+
+  /// Vehicle type
+  ///
+  /// In en, this message translates to:
+  /// **'Car'**
+  String get vehicleCar;
+
+  /// Vehicle type
+  ///
+  /// In en, this message translates to:
+  /// **'Van'**
+  String get vehicleVan;
+
+  /// Field error
+  ///
+  /// In en, this message translates to:
+  /// **'Enter a valid email'**
+  String get errEmail;
+
+  /// Field error
+  ///
+  /// In en, this message translates to:
+  /// **'At least 6 characters'**
+  String get errPassword;
+
+  /// Field error
+  ///
+  /// In en, this message translates to:
+  /// **'Enter your full name'**
+  String get errName;
+
+  /// Field error
+  ///
+  /// In en, this message translates to:
+  /// **'Enter a 10-digit Indian mobile number'**
+  String get errPhone;
+
+  /// Field error
+  ///
+  /// In en, this message translates to:
+  /// **'Enter a different 10-digit mobile number'**
+  String get errAltPhone;
+
+  /// Field error
+  ///
+  /// In en, this message translates to:
+  /// **'Enter your address'**
+  String get errAddress;
+
+  /// Field error
+  ///
+  /// In en, this message translates to:
+  /// **'Enter your city'**
+  String get errCity;
+
+  /// Field error
+  ///
+  /// In en, this message translates to:
+  /// **'Enter a 6-digit PIN code'**
+  String get errPincode;
+
+  /// Field error
+  ///
+  /// In en, this message translates to:
+  /// **'Enter the registration number, e.g. TN58AB1234'**
+  String get errVehicleNumber;
+
+  /// Field error
+  ///
+  /// In en, this message translates to:
+  /// **'Enter your driving licence number'**
+  String get errLicenseNumber;
+
+  /// Field error
+  ///
+  /// In en, this message translates to:
+  /// **'Enter the 12-digit Aadhaar number'**
+  String get errAadhaarNumber;
+
+  /// Field error
+  ///
+  /// In en, this message translates to:
+  /// **'Enter the account holder\'s name'**
+  String get errAccountHolder;
+
+  /// Field error
+  ///
+  /// In en, this message translates to:
+  /// **'9–18 digits'**
+  String get errAccountNumber;
+
+  /// Field error
+  ///
+  /// In en, this message translates to:
+  /// **'11 characters, e.g. SBIN0001234'**
+  String get errIfsc;
+
+  /// Field error
+  ///
+  /// In en, this message translates to:
+  /// **'Enter a UPI ID like name@bank'**
+  String get errUpi;
+
+  /// Registration failure
+  ///
+  /// In en, this message translates to:
+  /// **'An account with this email already exists. Sign in with it to continue your application.'**
+  String get regFailEmailInUse;
+
+  /// Registration failure
+  ///
+  /// In en, this message translates to:
+  /// **'Choose a stronger password.'**
+  String get regFailWeakPassword;
+
+  /// Registration failure
+  ///
+  /// In en, this message translates to:
+  /// **'Enter a valid email address.'**
+  String get regFailInvalidEmail;
+
+  /// Registration failure
+  ///
+  /// In en, this message translates to:
+  /// **'No connection. Your details are kept — try again.'**
+  String get regFailNetwork;
+
+  /// Registration failure
+  ///
+  /// In en, this message translates to:
+  /// **'A photo didn\'t upload. Your details are kept — try again.'**
+  String get regFailUpload;
+
+  /// Registration failure
+  ///
+  /// In en, this message translates to:
+  /// **'Some details need fixing — they\'re marked below.'**
+  String get regFailInvalid;
+
+  /// Registration failure
+  ///
+  /// In en, this message translates to:
+  /// **'Some photos didn\'t reach Agrimore. Add them again and resubmit.'**
+  String get regFailDocuments;
+
+  /// Registration failure
+  ///
+  /// In en, this message translates to:
+  /// **'This account is already registered. Sign in to continue.'**
+  String get regFailAlreadyRegistered;
+
+  /// Registration failure
+  ///
+  /// In en, this message translates to:
+  /// **'This account is used for another Agrimore app. Register with a different email.'**
+  String get regFailOtherRole;
+
+  /// Registration failure
+  ///
+  /// In en, this message translates to:
+  /// **'The application didn\'t go through. Your details are kept — try again.'**
+  String get regFailUnknown;
+
+  /// Login link
+  ///
+  /// In en, this message translates to:
+  /// **'Forgot password?'**
+  String get forgotPassword;
+
+  /// Dialog title
+  ///
+  /// In en, this message translates to:
+  /// **'Reset your password'**
+  String get resetTitle;
+
+  /// Dialog body
+  ///
+  /// In en, this message translates to:
+  /// **'Enter your account email. If an account exists, we\'ll email a link to set a new password.'**
+  String get resetBody;
+
+  /// Dialog action
+  ///
+  /// In en, this message translates to:
+  /// **'Send link'**
+  String get resetSend;
+
+  /// Dialog action
+  ///
+  /// In en, this message translates to:
+  /// **'Cancel'**
+  String get resetCancel;
+
+  /// Account-safe confirmation (same for known and unknown emails)
+  ///
+  /// In en, this message translates to:
+  /// **'If an account exists for that email, a reset link is on its way. Check your inbox and spam folder.'**
+  String get resetSent;
+
+  /// Card title
+  ///
+  /// In en, this message translates to:
+  /// **'Sign in'**
+  String get signInTitle;
+
+  /// Card subtitle
+  ///
+  /// In en, this message translates to:
+  /// **'Use the email and password you registered with.'**
+  String get signInSubtitle;
+
+  /// Button
+  ///
+  /// In en, this message translates to:
+  /// **'Sign in'**
+  String get signInAction;
+
+  /// Screen-reader label while signing in
+  ///
+  /// In en, this message translates to:
+  /// **'Signing in'**
+  String get signingIn;
+
+  /// Button
+  ///
+  /// In en, this message translates to:
+  /// **'Register as a delivery partner'**
+  String get registerAction;
+
+  /// Tooltip
+  ///
+  /// In en, this message translates to:
+  /// **'Show password'**
+  String get showPassword;
+
+  /// Tooltip
+  ///
+  /// In en, this message translates to:
+  /// **'Hide password'**
+  String get hidePassword;
+
+  /// Field error
+  ///
+  /// In en, this message translates to:
+  /// **'Enter your password'**
+  String get errPasswordEmpty;
+
+  /// Password reset request failed (not an unknown-account case)
+  ///
+  /// In en, this message translates to:
+  /// **'Couldn\'t send the reset link. Try again, or contact Agrimore support.'**
+  String get resetFailed;
 }
 
 class _AppLocalizationsDelegate
