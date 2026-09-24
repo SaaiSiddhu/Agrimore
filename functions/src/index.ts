@@ -255,6 +255,7 @@ export { advanceDeliveryStep, releaseDeliveryOrder } from "./delivery/riderSteps
 // deposits and bank-detail review. See delivery/riderMoney.ts.
 export {
   onRiderDelivery, buildRiderStatements, recordRiderCashDeposit, requestRiderBankChange, reviewRiderBankChange,
+  markRiderPayoutPaid, riderMoneySummary,
 } from "./delivery/riderMoney";
 // Phase DLV-S2: a rider reports a safety incident to the Agrimore team; admins
 // acknowledge and resolve it. See delivery/riderIncidents.ts.

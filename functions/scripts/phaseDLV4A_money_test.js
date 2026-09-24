@@ -151,7 +151,8 @@ async function main() {
   const st7 = await get(`rider_payouts/${w7.id}`);
   const rej = await M.reviewBankChangeCore(db, "admin1", b5.id, false, "UPI name does not match", NEXT_WEEK);
   const st7b = await get(`rider_payouts/${w7.id}`);
-  record("b05_pending_change_holds_reject_keeps_old", st7.holdReason === "bank_change_pending" && rej.kind === "rejected" && rej.released === 1 &&
+  // DLV-M1: the request also holds r1's earlier still-pending statement, so the rejection releases both.
+  record("b05_pending_change_holds_reject_keeps_old", st7.holdReason === "bank_change_pending" && rej.kind === "rejected" && rej.released === 2 &&
     st7b.status === "pending" && (await get("delivery_partners/r1")).upiId === undefined &&
     (await get(`rider_bank_change_requests/${b5.id}`)).rejectionReason === "UPI name does not match", JSON.stringify({ st7, rej, st7b }));
 
