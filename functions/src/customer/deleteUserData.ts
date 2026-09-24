@@ -117,6 +117,7 @@ import * as admin from "firebase-admin";
 // namespace-style call everywhere else in functions/src, which is out of
 // this phase's scope and not something this phase's testing covered.
 import { FieldValue } from "firebase-admin/firestore";
+import { deleteRiderData, deleteStorageFolder, riderDeletionRefusal } from "../delivery/riderAccountDeletion";
 
 const db = admin.firestore();
 const auth = admin.auth();
@@ -301,6 +302,13 @@ export const deleteUserData = functions.https.onCall(async (data, context) => {
     );
   }
 
+  // Rider refusals (DLV-A2): an assigned order, customers' cash still held,
+  // or pay still owed. Stable reason in details for the rider app.
+  const riderRefusal = await riderDeletionRefusal(db, uid);
+  if (riderRefusal) {
+    throw new functions.https.HttpsError("failed-precondition", riderRefusal.message, { reason: riderRefusal.reason });
+  }
+
   // ============================================================
   // IDEMPOTENCY: if users/{uid} is already gone, a previous call already
   // did the Firestore work — skip straight to the (also-idempotent) Auth
@@ -318,6 +326,7 @@ export const deleteUserData = functions.https.onCall(async (data, context) => {
     // so anything that must happen has to happen before it is deleted —
     // otherwise a retry after a partial failure would skip it.
     const seller = await deleteSellerData(uid);
+    const rider = await deleteRiderData(db, uid, deleteStorageFolder);
     const anonymizedReviewsCount = await anonymizeReviews(uid);
 
     const [addressesSnap, cartItemsSnap, wishlistItemsSnap, notificationsSnap, recentlyViewedSnap, employeeSnap] =
@@ -372,7 +381,10 @@ export const deleteUserData = functions.https.onCall(async (data, context) => {
       wasAssociate,
       wasSeller: seller.wasSeller,
       hiddenProductsCount: seller.hiddenProducts,
-      deletedFilesCount: seller.deletedFiles,
+      deletedFilesCount: seller.deletedFiles + rider.deletedFiles,
+      wasRider: rider.wasRider,
+      riderHardDeletedDocCount: rider.hardDeleted,
+      riderAnonymizedOrdersCount: rider.anonymizedOrders,
       anonymizedReviewsCount,
     });
   }

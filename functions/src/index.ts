@@ -260,3 +260,4 @@ export {
 // acknowledge and resolve it. See delivery/riderIncidents.ts.
 export { reportRiderIncident, updateRiderIncident } from "./delivery/riderIncidents";
 export { submitRiderApplication } from "./delivery/riderApplication";
+export { updateRiderContact } from "./delivery/riderProfile";
