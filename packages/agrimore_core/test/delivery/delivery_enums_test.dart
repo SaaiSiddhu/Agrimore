@@ -67,6 +67,22 @@ void main() {
     }
   });
 
+  // DLV-C1: the rider app's active-work query and the server's busy check.
+  group('riderActiveOrderStatuses', () {
+    test('is exactly the table\'s list, in order', () {
+      expect(DeliveryTaskStatus.riderActiveOrderStatuses,
+          List<String>.from(table['riderActiveOrderStatuses'] as List));
+    });
+    for (final v in DeliveryTaskStatus.riderActiveOrderStatuses) {
+      test('"$v" is an open rider leg', () {
+        final s = DeliveryTaskStatus.fromOrderStatus(orderStatus: v, status: null, hasPartner: true);
+        expect(s, isNotNull);
+        expect(s!.isTerminal, isFalse);
+        expect(s, isNot(DeliveryTaskStatus.searching));
+      });
+    }
+  });
+
   group('fromOrderStatus (every legacy spelling in the repository)', () {
     for (final raw in (table['fromOrderStatus'] as List)) {
       final c = raw as Map<String, dynamic>;

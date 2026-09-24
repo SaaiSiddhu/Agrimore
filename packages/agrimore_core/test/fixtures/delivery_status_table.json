@@ -13,55 +13,286 @@
     "returned": "returned",
     "cancelled": "cancelled"
   },
-  "terminal": ["delivered", "returned", "cancelled"],
+  "terminal": [
+    "delivered",
+    "returned",
+    "cancelled"
+  ],
   "transitions": {
-    "searching": ["assigned", "cancelled"],
-    "assigned": ["atPickup", "pickedUp", "searching", "cancelled"],
-    "atPickup": ["pickedUp", "searching", "cancelled"],
-    "pickedUp": ["enRoute", "atDrop", "delivered", "failedAttempt", "returningToSeller"],
-    "enRoute": ["atDrop", "delivered", "failedAttempt", "returningToSeller"],
-    "atDrop": ["delivered", "failedAttempt", "returningToSeller"],
-    "failedAttempt": ["enRoute", "atDrop", "delivered", "returningToSeller"],
-    "returningToSeller": ["returned"],
+    "searching": [
+      "assigned",
+      "cancelled"
+    ],
+    "assigned": [
+      "atPickup",
+      "pickedUp",
+      "searching",
+      "cancelled"
+    ],
+    "atPickup": [
+      "pickedUp",
+      "searching",
+      "cancelled"
+    ],
+    "pickedUp": [
+      "enRoute",
+      "atDrop",
+      "delivered",
+      "failedAttempt",
+      "returningToSeller"
+    ],
+    "enRoute": [
+      "atDrop",
+      "delivered",
+      "failedAttempt",
+      "returningToSeller"
+    ],
+    "atDrop": [
+      "delivered",
+      "failedAttempt",
+      "returningToSeller"
+    ],
+    "failedAttempt": [
+      "enRoute",
+      "atDrop",
+      "delivered",
+      "returningToSeller"
+    ],
+    "returningToSeller": [
+      "returned"
+    ],
     "delivered": [],
     "returned": [],
     "cancelled": []
   },
   "fromOrderStatus": [
-    {"orderStatus": "pending", "status": "pending", "hasPartner": false, "expect": null},
-    {"orderStatus": "placed", "status": "placed", "hasPartner": false, "expect": null},
-    {"orderStatus": "confirmed", "status": "confirmed", "hasPartner": false, "expect": null},
-    {"orderStatus": "processing", "status": "processing", "hasPartner": false, "expect": null},
-    {"orderStatus": "accepted", "status": "accepted", "hasPartner": false, "expect": null},
-    {"orderStatus": "failed", "status": "failed", "hasPartner": false, "expect": null},
-    {"orderStatus": "ready_for_pickup", "status": "ready_for_pickup", "hasPartner": false, "expect": "searching"},
-    {"orderStatus": "ready_for_pickup", "status": "ready_for_pickup", "hasPartner": true, "expect": "assigned"},
-    {"orderStatus": "delivery_accepted", "status": "delivery_accepted", "hasPartner": true, "expect": "assigned"},
-    {"orderStatus": "arrived_at_store", "status": "arrived_at_store", "hasPartner": true, "expect": "atPickup"},
-    {"orderStatus": "reached_pickup", "status": null, "hasPartner": true, "expect": "atPickup"},
-    {"orderStatus": "picked_up", "status": "picked_up", "hasPartner": true, "expect": "pickedUp"},
-    {"orderStatus": "parcel_picked", "status": null, "hasPartner": true, "expect": "pickedUp"},
-    {"orderStatus": "out_for_delivery", "status": "out_for_delivery", "hasPartner": true, "expect": "enRoute"},
-    {"orderStatus": "outfordelivery", "status": null, "hasPartner": true, "expect": "enRoute"},
-    {"orderStatus": "outForDelivery", "status": null, "hasPartner": true, "expect": "enRoute"},
-    {"orderStatus": "OUT_FOR_DELIVERY", "status": null, "hasPartner": true, "expect": "enRoute"},
-    {"orderStatus": "shipped", "status": "shipped", "hasPartner": false, "expect": null},
-    {"orderStatus": "shipped", "status": "shipped", "hasPartner": true, "expect": "enRoute"},
-    {"orderStatus": "delivered", "status": "delivered", "hasPartner": true, "expect": "delivered"},
-    {"orderStatus": "completed", "status": null, "hasPartner": true, "expect": "delivered"},
-    {"orderStatus": "cancelled", "status": "cancelled", "hasPartner": false, "expect": "cancelled"},
-    {"orderStatus": "canceled", "status": null, "hasPartner": false, "expect": "cancelled"},
-    {"orderStatus": "rejected", "status": null, "hasPartner": false, "expect": "cancelled"},
-    {"orderStatus": "refunded", "status": null, "hasPartner": true, "expect": "cancelled"},
-    {"orderStatus": "returned", "status": "returned", "hasPartner": true, "expect": "returned"},
-    {"_why": "seller/admin panels write ONLY `status` — a terminal value in either field wins", "orderStatus": "out_for_delivery", "status": "cancelled", "hasPartner": true, "expect": "cancelled"},
-    {"_why": "and a delivered `status` alone reads as delivered", "orderStatus": "out_for_delivery", "status": "delivered", "hasPartner": true, "expect": "delivered"},
-    {"_why": "non-terminal: the more advanced of the two fields wins", "orderStatus": "delivery_accepted", "status": "picked_up", "hasPartner": true, "expect": "pickedUp"},
-    {"_why": "only `status` carries a delivery value", "orderStatus": "processing", "status": "ready_for_pickup", "hasPartner": false, "expect": "searching"},
-    {"_why": "rider released the order (Seller Not Ready): back to searching", "orderStatus": "ready_for_pickup", "status": "ready_for_pickup", "hasPartner": false, "expect": "searching"},
-    {"_why": "terminal precedence 1: a return follows a delivery", "orderStatus": "returned", "status": "delivered", "hasPartner": true, "expect": "returned"},
-    {"_why": "terminal precedence 2: delivered outranks cancelled, as in confirmDelivery", "orderStatus": "delivered", "status": "cancelled", "hasPartner": true, "expect": "delivered"},
-    {"orderStatus": "some_future_value", "status": null, "hasPartner": true, "expect": null},
-    {"orderStatus": null, "status": null, "hasPartner": false, "expect": null}
-  ]
+    {
+      "orderStatus": "pending",
+      "status": "pending",
+      "hasPartner": false,
+      "expect": null
+    },
+    {
+      "orderStatus": "placed",
+      "status": "placed",
+      "hasPartner": false,
+      "expect": null
+    },
+    {
+      "orderStatus": "confirmed",
+      "status": "confirmed",
+      "hasPartner": false,
+      "expect": null
+    },
+    {
+      "orderStatus": "processing",
+      "status": "processing",
+      "hasPartner": false,
+      "expect": null
+    },
+    {
+      "orderStatus": "accepted",
+      "status": "accepted",
+      "hasPartner": false,
+      "expect": null
+    },
+    {
+      "orderStatus": "failed",
+      "status": "failed",
+      "hasPartner": false,
+      "expect": null
+    },
+    {
+      "orderStatus": "ready_for_pickup",
+      "status": "ready_for_pickup",
+      "hasPartner": false,
+      "expect": "searching"
+    },
+    {
+      "orderStatus": "ready_for_pickup",
+      "status": "ready_for_pickup",
+      "hasPartner": true,
+      "expect": "assigned"
+    },
+    {
+      "orderStatus": "delivery_accepted",
+      "status": "delivery_accepted",
+      "hasPartner": true,
+      "expect": "assigned"
+    },
+    {
+      "orderStatus": "arrived_at_store",
+      "status": "arrived_at_store",
+      "hasPartner": true,
+      "expect": "atPickup"
+    },
+    {
+      "orderStatus": "reached_pickup",
+      "status": null,
+      "hasPartner": true,
+      "expect": "atPickup"
+    },
+    {
+      "orderStatus": "picked_up",
+      "status": "picked_up",
+      "hasPartner": true,
+      "expect": "pickedUp"
+    },
+    {
+      "orderStatus": "parcel_picked",
+      "status": null,
+      "hasPartner": true,
+      "expect": "pickedUp"
+    },
+    {
+      "orderStatus": "out_for_delivery",
+      "status": "out_for_delivery",
+      "hasPartner": true,
+      "expect": "enRoute"
+    },
+    {
+      "orderStatus": "outfordelivery",
+      "status": null,
+      "hasPartner": true,
+      "expect": "enRoute"
+    },
+    {
+      "orderStatus": "outForDelivery",
+      "status": null,
+      "hasPartner": true,
+      "expect": "enRoute"
+    },
+    {
+      "orderStatus": "OUT_FOR_DELIVERY",
+      "status": null,
+      "hasPartner": true,
+      "expect": "enRoute"
+    },
+    {
+      "orderStatus": "shipped",
+      "status": "shipped",
+      "hasPartner": false,
+      "expect": null
+    },
+    {
+      "orderStatus": "shipped",
+      "status": "shipped",
+      "hasPartner": true,
+      "expect": "enRoute"
+    },
+    {
+      "orderStatus": "delivered",
+      "status": "delivered",
+      "hasPartner": true,
+      "expect": "delivered"
+    },
+    {
+      "orderStatus": "completed",
+      "status": null,
+      "hasPartner": true,
+      "expect": "delivered"
+    },
+    {
+      "orderStatus": "cancelled",
+      "status": "cancelled",
+      "hasPartner": false,
+      "expect": "cancelled"
+    },
+    {
+      "orderStatus": "canceled",
+      "status": null,
+      "hasPartner": false,
+      "expect": "cancelled"
+    },
+    {
+      "orderStatus": "rejected",
+      "status": null,
+      "hasPartner": false,
+      "expect": "cancelled"
+    },
+    {
+      "orderStatus": "refunded",
+      "status": null,
+      "hasPartner": true,
+      "expect": "cancelled"
+    },
+    {
+      "orderStatus": "returned",
+      "status": "returned",
+      "hasPartner": true,
+      "expect": "returned"
+    },
+    {
+      "_why": "seller/admin panels write ONLY `status` — a terminal value in either field wins",
+      "orderStatus": "out_for_delivery",
+      "status": "cancelled",
+      "hasPartner": true,
+      "expect": "cancelled"
+    },
+    {
+      "_why": "and a delivered `status` alone reads as delivered",
+      "orderStatus": "out_for_delivery",
+      "status": "delivered",
+      "hasPartner": true,
+      "expect": "delivered"
+    },
+    {
+      "_why": "non-terminal: the more advanced of the two fields wins",
+      "orderStatus": "delivery_accepted",
+      "status": "picked_up",
+      "hasPartner": true,
+      "expect": "pickedUp"
+    },
+    {
+      "_why": "only `status` carries a delivery value",
+      "orderStatus": "processing",
+      "status": "ready_for_pickup",
+      "hasPartner": false,
+      "expect": "searching"
+    },
+    {
+      "_why": "rider released the order (Seller Not Ready): back to searching",
+      "orderStatus": "ready_for_pickup",
+      "status": "ready_for_pickup",
+      "hasPartner": false,
+      "expect": "searching"
+    },
+    {
+      "_why": "terminal precedence 1: a return follows a delivery",
+      "orderStatus": "returned",
+      "status": "delivered",
+      "hasPartner": true,
+      "expect": "returned"
+    },
+    {
+      "_why": "terminal precedence 2: delivered outranks cancelled, as in confirmDelivery",
+      "orderStatus": "delivered",
+      "status": "cancelled",
+      "hasPartner": true,
+      "expect": "delivered"
+    },
+    {
+      "orderStatus": "some_future_value",
+      "status": null,
+      "hasPartner": true,
+      "expect": null
+    },
+    {
+      "orderStatus": null,
+      "status": null,
+      "hasPartner": false,
+      "expect": null
+    }
+  ],
+  "riderActiveOrderStatuses": [
+    "delivery_accepted",
+    "arrived_at_store",
+    "reached_pickup",
+    "picked_up",
+    "parcel_picked",
+    "out_for_delivery",
+    "outfordelivery",
+    "outForDelivery"
+  ],
+  "_comment_riderActiveOrderStatuses": "DLV-C1: orders.orderStatus values in which a rider holds the order — the server's busy check (functions/src/delivery/dispatch.ts RIDER_ACTIVE_ORDER_STATUSES) and the rider app's active-work query (DeliveryTaskStatus.riderActiveOrderStatuses) must be this exact list (Firestore 'in' matches case-sensitively, so spellings are listed as stored)."
 }
