@@ -193,6 +193,7 @@ class _RiderRegistrationScreenState extends State<RiderRegistrationScreen> {
         },
         decoration: InputDecoration(
           labelText: label,
+          errorMaxLines: 3,
           errorText: _problems.contains(key) ? fieldErrorText(l, key) : null,
         ),
       ),

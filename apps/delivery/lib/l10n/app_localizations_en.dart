@@ -389,4 +389,8 @@ class AppLocalizationsEn extends AppLocalizations {
 
   @override
   String get errPasswordEmpty => 'Enter your password';
+
+  @override
+  String get resetFailed =>
+      'Couldn\'t send the reset link. Try again, or contact Agrimore support.';
 }

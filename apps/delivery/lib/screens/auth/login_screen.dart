@@ -62,7 +62,9 @@ class _LoginScreenState extends State<LoginScreen> {
               keyboardType: TextInputType.emailAddress,
               decoration: InputDecoration(
                 labelText: l.fieldEmail,
-                errorText: problem == null ? null : authProblemText(l, problem!),
+                errorText: problem == null
+                    ? null
+                    : (problem == RiderAuthProblem.unknown ? l.resetFailed : authProblemText(l, problem!)),
               ),
             ),
           ]),

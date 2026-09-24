@@ -486,5 +486,9 @@
   "errPasswordEmpty": "Enter your password",
   "@errPasswordEmpty": {
     "description": "Field error"
+  },
+  "resetFailed": "Couldn't send the reset link. Try again, or contact Agrimore support.",
+  "@resetFailed": {
+    "description": "Password reset request failed (not an unknown-account case)"
   }
 }

@@ -801,6 +801,12 @@ abstract class AppLocalizations {
   /// In en, this message translates to:
   /// **'Enter your password'**
   String get errPasswordEmpty;
+
+  /// Password reset request failed (not an unknown-account case)
+  ///
+  /// In en, this message translates to:
+  /// **'Couldn\'t send the reset link. Try again, or contact Agrimore support.'**
+  String get resetFailed;
 }
 
 class _AppLocalizationsDelegate

@@ -51,6 +51,7 @@ class FakeGateway implements RiderAuthGateway {
   @override
   Future<void> sendPasswordReset(String email) async {
     if (!email.contains('@')) throw const RiderAuthFailure('invalid-email');
+    if (email.startsWith('broken')) throw const RiderAuthFailure('api-key-not-valid');
     resets.add(email); // known or unknown: the same outcome
   }
 }
@@ -162,6 +163,9 @@ void main() {
     expect(await p.sendPasswordReset('nobody@x.in'), isNull);
     expect(gw.resets, ['a@x.in', 'nobody@x.in']);
     expect(await p.sendPasswordReset('not-an-email'), RiderAuthProblem.invalidEmail);
+    // A real failure is never reported as "sent" (the DLV-A1 browser run
+    // hit a misconfigured key and the old code said the link was on its way).
+    expect(await p.sendPasswordReset('broken@x.in'), RiderAuthProblem.unknown);
   });
 
   test('wrong password is a typed problem, not a raw message', () async {
