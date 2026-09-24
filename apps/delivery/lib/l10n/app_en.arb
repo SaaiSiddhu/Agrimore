@@ -2033,5 +2033,79 @@
   "deliveredBack": "Back to dashboard",
   "@deliveredBack": {
     "description": "Leave the finished order"
+  },
+  "legMinutes": "{minutes} min",
+  "@legMinutes": {
+    "description": "Riding time left",
+    "placeholders": {
+      "minutes": {
+        "type": "int"
+      }
+    }
+  },
+  "routeStore": "Store",
+  "@routeStore": {
+    "description": "Map pin: the store"
+  },
+  "routeCustomer": "Customer",
+  "@routeCustomer": {
+    "description": "Map pin: the customer when no name"
+  },
+  "routeYou": "You",
+  "@routeYou": {
+    "description": "Map pin: the rider (web)"
+  },
+  "routeAtStore": "You are at the store",
+  "@routeAtStore": {
+    "description": "Route headline at the store"
+  },
+  "routeToStore": "Head to the store",
+  "@routeToStore": {
+    "description": "Route headline before pickup"
+  },
+  "routeToCustomer": "Deliver to {name}",
+  "@routeToCustomer": {
+    "description": "Route headline after pickup",
+    "placeholders": {
+      "name": {
+        "type": "String"
+      }
+    }
+  },
+  "routeToCustomerNoName": "Deliver to the customer",
+  "@routeToCustomerNoName": {
+    "description": "Route headline after pickup, no name"
+  },
+  "routeAtStoreHint": "Collect the order, then tap Picked up",
+  "@routeAtStoreHint": {
+    "description": "Route line at the store"
+  },
+  "routeStoreUnknown": "Store location not available",
+  "@routeStoreUnknown": {
+    "description": "No store coordinates"
+  },
+  "routeCustomerUnknown": "Customer location not available",
+  "@routeCustomerUnknown": {
+    "description": "No customer coordinates"
+  },
+  "routePending": "Road route on its way — Navigate gives it now",
+  "@routePending": {
+    "description": "Route not computed yet"
+  },
+  "routeWaiting": "Waiting for the route…",
+  "@routeWaiting": {
+    "description": "Map placeholder"
+  },
+  "routeNavigateStore": "Navigate to store",
+  "@routeNavigateStore": {
+    "description": "Open Maps to the store"
+  },
+  "routeNavigateCustomer": "Navigate to customer",
+  "@routeNavigateCustomer": {
+    "description": "Open Maps to the customer"
+  },
+  "routeMapsMissing": "Could not open Google Maps. Please install it and try again.",
+  "@routeMapsMissing": {
+    "description": "Maps did not open"
   }
 }

@@ -2697,6 +2697,102 @@ abstract class AppLocalizations {
   /// In en, this message translates to:
   /// **'Back to dashboard'**
   String get deliveredBack;
+
+  /// Riding time left
+  ///
+  /// In en, this message translates to:
+  /// **'{minutes} min'**
+  String legMinutes(int minutes);
+
+  /// Map pin: the store
+  ///
+  /// In en, this message translates to:
+  /// **'Store'**
+  String get routeStore;
+
+  /// Map pin: the customer when no name
+  ///
+  /// In en, this message translates to:
+  /// **'Customer'**
+  String get routeCustomer;
+
+  /// Map pin: the rider (web)
+  ///
+  /// In en, this message translates to:
+  /// **'You'**
+  String get routeYou;
+
+  /// Route headline at the store
+  ///
+  /// In en, this message translates to:
+  /// **'You are at the store'**
+  String get routeAtStore;
+
+  /// Route headline before pickup
+  ///
+  /// In en, this message translates to:
+  /// **'Head to the store'**
+  String get routeToStore;
+
+  /// Route headline after pickup
+  ///
+  /// In en, this message translates to:
+  /// **'Deliver to {name}'**
+  String routeToCustomer(String name);
+
+  /// Route headline after pickup, no name
+  ///
+  /// In en, this message translates to:
+  /// **'Deliver to the customer'**
+  String get routeToCustomerNoName;
+
+  /// Route line at the store
+  ///
+  /// In en, this message translates to:
+  /// **'Collect the order, then tap Picked up'**
+  String get routeAtStoreHint;
+
+  /// No store coordinates
+  ///
+  /// In en, this message translates to:
+  /// **'Store location not available'**
+  String get routeStoreUnknown;
+
+  /// No customer coordinates
+  ///
+  /// In en, this message translates to:
+  /// **'Customer location not available'**
+  String get routeCustomerUnknown;
+
+  /// Route not computed yet
+  ///
+  /// In en, this message translates to:
+  /// **'Road route on its way — Navigate gives it now'**
+  String get routePending;
+
+  /// Map placeholder
+  ///
+  /// In en, this message translates to:
+  /// **'Waiting for the route…'**
+  String get routeWaiting;
+
+  /// Open Maps to the store
+  ///
+  /// In en, this message translates to:
+  /// **'Navigate to store'**
+  String get routeNavigateStore;
+
+  /// Open Maps to the customer
+  ///
+  /// In en, this message translates to:
+  /// **'Navigate to customer'**
+  String get routeNavigateCustomer;
+
+  /// Maps did not open
+  ///
+  /// In en, this message translates to:
+  /// **'Could not open Google Maps. Please install it and try again.'**
+  String get routeMapsMissing;
 }
 
 class _AppLocalizationsDelegate

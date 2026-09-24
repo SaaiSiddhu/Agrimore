@@ -13,10 +13,10 @@ import 'package:flutter/material.dart';
 import 'package:google_maps_flutter/google_maps_flutter.dart';
 import 'package:url_launcher/url_launcher.dart';
 import 'package:agrimore_core/agrimore_core.dart';
+import 'package:agrimore_ui/agrimore_ui.dart';
 
+import '../../../l10n/app_localizations.dart';
 import '../../../navigation/rider_navigation.dart';
-
-const _navBlue = Color(0xFF1A73E8);
 
 class RiderRouteCard extends StatefulWidget {
   const RiderRouteCard({
@@ -137,7 +137,8 @@ class _RiderRouteCardState extends State<RiderRouteCard> {
       _framedFor = key;
     } catch (e) {
       debugPrint('Rider route: camera: $e');
-      Future.delayed(const Duration(milliseconds: 600), () {
+      // Retry once the map's own layout has settled.
+      Future.delayed(WsMotion.slow, () {
         if (mounted) _frame();
       });
     }
@@ -160,21 +161,24 @@ class _RiderRouteCardState extends State<RiderRouteCard> {
       opened = await launchUrl(directionsUri(dest), mode: LaunchMode.externalApplication);
     }
     if (!opened && mounted) {
-      ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(content: Text('Could not open Google Maps. Please install it and try again.')),
-      );
+      WsToast.show(context, AppLocalizations.of(context).routeMapsMissing, tone: WsToastTone.error);
     }
   }
 
   @override
   Widget build(BuildContext context) {
-    final cs = Theme.of(context).colorScheme;
+    final l = AppLocalizations.of(context);
+    final t = context.ws;
+    final text = Theme.of(context).textTheme;
     final leg = _leg;
     if (leg == null) return const SizedBox.shrink();
     final geo = _geometry;
     final target = _target;
     final toStore = leg == RiderLeg.toStore;
     final atStore = _status == DeliveryTaskStatus.atPickup;
+    // The route is drawn in the theme's information colour (the customer's
+    // tracking screen draws the same route); legs after this one are muted.
+    final routeColor = t.infoFg;
 
     final markers = <Marker>{
       if (_pickup != null && toStore)
@@ -182,14 +186,14 @@ class _RiderRouteCardState extends State<RiderRouteCard> {
           markerId: const MarkerId('store'),
           position: LatLng(_pickup!.lat, _pickup!.lng),
           icon: BitmapDescriptor.defaultMarkerWithHue(BitmapDescriptor.hueAzure),
-          infoWindow: const InfoWindow(title: 'Store'),
+          infoWindow: InfoWindow(title: l.routeStore),
         ),
       if (_drop != null)
         Marker(
           markerId: const MarkerId('customer'),
           position: LatLng(_drop!.lat, _drop!.lng),
           icon: BitmapDescriptor.defaultMarkerWithHue(BitmapDescriptor.hueRed),
-          infoWindow: InfoWindow(title: widget.customerName ?? 'Customer'),
+          infoWindow: InfoWindow(title: widget.customerName ?? l.routeCustomer),
         ),
       if (_rider != null && kIsWeb)
         // On the phone the map's own blue dot shows the rider.
@@ -197,7 +201,7 @@ class _RiderRouteCardState extends State<RiderRouteCard> {
           markerId: const MarkerId('me'),
           position: LatLng(_rider!.lat, _rider!.lng),
           icon: BitmapDescriptor.defaultMarkerWithHue(BitmapDescriptor.hueGreen),
-          infoWindow: const InfoWindow(title: 'You'),
+          infoWindow: InfoWindow(title: l.routeYou),
         ),
     };
     LatLng ll(DeliveryPoint p) => LatLng(p.lat, p.lng);
@@ -206,7 +210,7 @@ class _RiderRouteCardState extends State<RiderRouteCard> {
       polylines.add(Polyline(
         polylineId: const PolylineId('active'),
         points: [for (final p in geo.ahead!) ll(p)],
-        color: _navBlue,
+        color: routeColor,
         width: 6,
         zIndex: 2,
         jointType: JointType.round,
@@ -217,7 +221,7 @@ class _RiderRouteCardState extends State<RiderRouteCard> {
         polylines.add(Polyline(
           polylineId: PolylineId('next_$i'),
           points: [for (final p in geo.legs[i]) ll(p)],
-          color: const Color(0xFF9E9E9E),
+          color: t.textTertiary,
           width: 5,
           zIndex: 1,
           jointType: JointType.round,
@@ -228,43 +232,44 @@ class _RiderRouteCardState extends State<RiderRouteCard> {
       polylines.add(Polyline(
         polylineId: const PolylineId('guide'),
         points: [ll(_rider!), ll(target)],
-        color: _navBlue.withValues(alpha: 0.6),
+        color: routeColor.withValues(alpha: WsOpacity.disabled),
         width: 4,
         patterns: [PatternItem.dash(18), PatternItem.gap(10)],
       ));
     }
 
+    final name = widget.customerName;
     final headline = atStore
-        ? 'You are at the store'
+        ? l.routeAtStore
         : toStore
-            ? 'Head to the store'
-            : 'Deliver to ${widget.customerName?.isNotEmpty == true ? widget.customerName : 'the customer'}';
+            ? l.routeToStore
+            : (name != null && name.isNotEmpty ? l.routeToCustomer(name) : l.routeToCustomerNoName);
     final remaining = geo.ahead == null
         ? null
         : legRemaining(leg: geo.legs.first, ahead: geo.ahead!, legSeconds: geo.legSeconds);
     final sub = atStore
-        ? 'Collect the order, then tap Picked Up'
+        ? l.routeAtStoreHint
         : remaining != null
-            ? legSummary(remaining)
+            ? legSummary(l, remaining)
             : target == null
-                ? (toStore ? 'Store location not available' : 'Customer location not available')
-                : 'Road route on its way — Navigate gives it now';
+                ? (toStore ? l.routeStoreUnknown : l.routeCustomerUnknown)
+                : l.routePending;
 
     final start = target ?? _rider ?? _drop ?? _pickup;
     return Container(
       clipBehavior: Clip.antiAlias,
       decoration: BoxDecoration(
-        color: cs.surfaceContainerLowest,
-        borderRadius: BorderRadius.circular(16),
-        border: Border.all(color: cs.outline.withValues(alpha: 0.1)),
+        color: t.surface,
+        borderRadius: BorderRadius.circular(WsRadius.card),
+        border: Border.all(color: t.divider, width: WsSize.hairline),
       ),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.stretch,
         children: [
-          SizedBox(
-            height: 240,
+          AspectRatio(
+            aspectRatio: 4 / 3,
             child: start == null
-                ? Center(child: Text('Waiting for the route…', style: TextStyle(color: cs.onSurfaceVariant)))
+                ? Center(child: Text(l.routeWaiting, style: text.bodyMedium?.copyWith(color: t.textSecondary)))
                 : LayoutBuilder(builder: (context, box) {
                     _mapSize = Size(box.maxWidth, box.maxHeight);
                     return GoogleMap(
@@ -279,32 +284,29 @@ class _RiderRouteCardState extends State<RiderRouteCard> {
                       onMapCreated: (c) {
                         _map = c;
                         _framedFor = null;
-                        Future.delayed(const Duration(milliseconds: 300), _frame);
+                        Future.delayed(WsMotion.emphasized, _frame);
                       },
                     );
                   }),
           ),
           Padding(
-            padding: const EdgeInsets.fromLTRB(16, 14, 16, 12),
+            padding: const EdgeInsets.fromLTRB(WsSpace.s16, WsSpace.s12, WsSpace.s16, WsSpace.s12),
             child: Row(
               children: [
                 Container(
-                  width: 40,
-                  height: 40,
-                  decoration: BoxDecoration(color: _navBlue.withValues(alpha: 0.12), shape: BoxShape.circle),
-                  child: Icon(toStore ? Icons.storefront_rounded : Icons.home_rounded, color: _navBlue),
+                  width: WsSize.avatarMd,
+                  height: WsSize.avatarMd,
+                  decoration: BoxDecoration(color: t.infoBg, shape: BoxShape.circle),
+                  child: Icon(toStore ? AgIcons.store : AgIcons.home, color: routeColor),
                 ),
-                const SizedBox(width: 12),
+                const SizedBox(width: WsSpace.s12),
                 Expanded(
                   child: Column(
                     crossAxisAlignment: CrossAxisAlignment.start,
                     children: [
-                      Text(headline,
-                          maxLines: 2,
-                          overflow: TextOverflow.ellipsis,
-                          style: TextStyle(fontSize: 16, fontWeight: FontWeight.w800, color: cs.onSurface)),
-                      const SizedBox(height: 2),
-                      Text(sub, style: TextStyle(fontSize: 13, color: cs.onSurfaceVariant)),
+                      Text(headline, maxLines: 2, overflow: TextOverflow.ellipsis, style: text.titleMedium),
+                      const SizedBox(height: WsSpace.s2),
+                      Text(sub, style: text.bodySmall?.copyWith(color: t.textSecondary)),
                     ],
                   ),
                 ),
@@ -312,16 +314,11 @@ class _RiderRouteCardState extends State<RiderRouteCard> {
             ),
           ),
           Padding(
-            padding: const EdgeInsets.fromLTRB(16, 0, 16, 16),
+            padding: const EdgeInsets.fromLTRB(WsSpace.s16, 0, WsSpace.s16, WsSpace.s16),
             child: FilledButton.icon(
               onPressed: target == null ? null : _navigate,
-              style: FilledButton.styleFrom(
-                backgroundColor: _navBlue,
-                padding: const EdgeInsets.symmetric(vertical: 14),
-              ),
-              icon: const Icon(Icons.navigation_rounded, size: 20),
-              label: Text(toStore ? 'Navigate to store' : 'Navigate to customer',
-                  style: const TextStyle(fontWeight: FontWeight.w800)),
+              icon: const Icon(AgIcons.navigate),
+              label: Text(toStore ? l.routeNavigateStore : l.routeNavigateCustomer),
             ),
           ),
         ],

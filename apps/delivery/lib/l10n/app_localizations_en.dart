@@ -1530,4 +1530,57 @@ class AppLocalizationsEn extends AppLocalizations {
 
   @override
   String get deliveredBack => 'Back to dashboard';
+
+  @override
+  String legMinutes(int minutes) {
+    return '$minutes min';
+  }
+
+  @override
+  String get routeStore => 'Store';
+
+  @override
+  String get routeCustomer => 'Customer';
+
+  @override
+  String get routeYou => 'You';
+
+  @override
+  String get routeAtStore => 'You are at the store';
+
+  @override
+  String get routeToStore => 'Head to the store';
+
+  @override
+  String routeToCustomer(String name) {
+    return 'Deliver to $name';
+  }
+
+  @override
+  String get routeToCustomerNoName => 'Deliver to the customer';
+
+  @override
+  String get routeAtStoreHint => 'Collect the order, then tap Picked up';
+
+  @override
+  String get routeStoreUnknown => 'Store location not available';
+
+  @override
+  String get routeCustomerUnknown => 'Customer location not available';
+
+  @override
+  String get routePending => 'Road route on its way — Navigate gives it now';
+
+  @override
+  String get routeWaiting => 'Waiting for the route…';
+
+  @override
+  String get routeNavigateStore => 'Navigate to store';
+
+  @override
+  String get routeNavigateCustomer => 'Navigate to customer';
+
+  @override
+  String get routeMapsMissing =>
+      'Could not open Google Maps. Please install it and try again.';
 }

@@ -48,48 +48,55 @@ class _LoginScreenState extends State<LoginScreen> {
     final auth = context.read<DeliveryAuthProvider>();
     RiderAuthProblem? problem;
     var sending = false;
-    final sent = await showDialog<bool>(
+    final sent = await showModalBottomSheet<bool>(
       context: context,
+      isScrollControlled: true,
+      showDragHandle: true,
       builder: (ctx) => StatefulBuilder(
-        builder: (ctx, setD) => AlertDialog(
-          title: Text(l.resetTitle),
-          content: Column(mainAxisSize: MainAxisSize.min, crossAxisAlignment: CrossAxisAlignment.start, children: [
-            Text(l.resetBody),
-            const SizedBox(height: WsSpace.s12),
-            TextField(
-              key: const ValueKey('reset-email'),
-              controller: email,
-              keyboardType: TextInputType.emailAddress,
-              decoration: InputDecoration(
-                labelText: l.fieldEmail,
-                errorText: problem == null
-                    ? null
-                    : (problem == RiderAuthProblem.unknown ? l.resetFailed : authProblemText(l, problem!)),
+        builder: (ctx, setD) => Padding(
+          padding: EdgeInsets.fromLTRB(
+              WsSpace.page, 0, WsSpace.page, MediaQuery.of(ctx).viewInsets.bottom + WsSpace.s24),
+          child: SingleChildScrollView(
+            child: Column(mainAxisSize: MainAxisSize.min, crossAxisAlignment: CrossAxisAlignment.stretch, children: [
+              Text(l.resetTitle, style: Theme.of(ctx).textTheme.titleLarge),
+              const SizedBox(height: WsSpace.s8),
+              Text(l.resetBody),
+              const SizedBox(height: WsSpace.s12),
+              TextField(
+                key: const ValueKey('reset-email'),
+                controller: email,
+                keyboardType: TextInputType.emailAddress,
+                decoration: InputDecoration(
+                  labelText: l.fieldEmail,
+                  errorText: problem == null
+                      ? null
+                      : (problem == RiderAuthProblem.unknown ? l.resetFailed : authProblemText(l, problem!)),
+                ),
               ),
-            ),
-          ]),
-          actions: [
-            TextButton(onPressed: () => Navigator.pop(ctx, false), child: Text(l.resetCancel)),
-            FilledButton(
-              key: const ValueKey('reset-send'),
-              onPressed: sending
-                  ? null
-                  : () async {
-                      setD(() => sending = true);
-                      final p = await auth.sendPasswordReset(email.text);
-                      if (!ctx.mounted) return;
-                      if (p == null) {
-                        Navigator.pop(ctx, true);
-                      } else {
-                        setD(() {
-                          problem = p;
-                          sending = false;
-                        });
-                      }
-                    },
-              child: Text(l.resetSend),
-            ),
-          ],
+              const SizedBox(height: WsSpace.s16),
+              FilledButton(
+                key: const ValueKey('reset-send'),
+                onPressed: sending
+                    ? null
+                    : () async {
+                        setD(() => sending = true);
+                        final p = await auth.sendPasswordReset(email.text);
+                        if (!ctx.mounted) return;
+                        if (p == null) {
+                          Navigator.pop(ctx, true);
+                        } else {
+                          setD(() {
+                            problem = p;
+                            sending = false;
+                          });
+                        }
+                      },
+                child: Text(l.resetSend),
+              ),
+              const SizedBox(height: WsSpace.s8),
+              TextButton(onPressed: () => Navigator.pop(ctx, false), child: Text(l.resetCancel)),
+            ]),
+          ),
         ),
       ),
     );
