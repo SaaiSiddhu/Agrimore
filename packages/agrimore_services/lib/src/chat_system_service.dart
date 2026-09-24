@@ -62,11 +62,13 @@ class ChatSystemService {
         'read': false,
       });
 
-      // 2. Update thread last message
+      // 2. Update thread last message (firestore.rules DLV-K1: a party may
+      // move only these summary fields).
       final threadRef = _firestore.collection('threads').doc(threadId);
       batch.update(threadRef, {
         'lastMessage': text,
         'lastMessageTime': FieldValue.serverTimestamp(),
+        'lastSenderId': senderId,
         'unreadCount': FieldValue.increment(1),
       });
 

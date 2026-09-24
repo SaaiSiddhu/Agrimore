@@ -67,16 +67,21 @@ class _SellerOrderDetailScreenState extends State<SellerOrderDetailScreen> {
     final l10n = AppLocalizations.of(context);
     final sellerId = o.sellerId ?? '';
     try {
-      await FirebaseFirestore.instance.collection('threads').doc('${o.id}_seller_customer').set({
-        'orderId': o.id,
-        'orderNumber': o.orderNumber,
-        'customerId': o.userId,
-        'sellerId': sellerId,
-        'participantIds': [o.userId, sellerId].where((id) => id.isNotEmpty).toList(),
-        'type': 'seller_customer',
-        'updatedAt': FieldValue.serverTimestamp(),
-        'createdAt': FieldValue.serverTimestamp(),
-      }, SetOptions(merge: true));
+      // DLV-K1: a thread's parties are fixed when it is made (firestore.rules
+      // threads) — create it once; never rewrite it.
+      final ref = FirebaseFirestore.instance.collection('threads').doc('${o.id}_seller_customer');
+      if (!(await ref.get()).exists) {
+        await ref.set({
+          'orderId': o.id,
+          'orderNumber': o.orderNumber,
+          'customerId': o.userId,
+          'sellerId': sellerId,
+          'participantIds': [o.userId, sellerId].where((id) => id.isNotEmpty).toList(),
+          'type': 'seller_customer',
+          'updatedAt': FieldValue.serverTimestamp(),
+          'createdAt': FieldValue.serverTimestamp(),
+        });
+      }
       if (mounted) WsToast.show(context, l10n.chatReady);
     } catch (e) {
       debugPrint('Chat thread failed: $e');
