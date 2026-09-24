@@ -1940,51 +1940,70 @@ service cloud.firestore {
     // CUSTOMER ↔ SELLER CHAT THREADS
     // ============================================
     match /threads/{threadId} {
-      // A thread can only be read if the user is the customer or the seller in the thread
-      allow read: if isAuthenticated() && 
-        (resource.data.customerId == request.auth.uid || 
-         resource.data.sellerId == request.auth.uid || 
-         resource.data.deliveryPartnerId == request.auth.uid ||
-         (resource.data.participantIds is list &&
-          request.auth.uid in resource.data.participantIds) ||
-         isAdmin());
-         
-      // Any authenticated user can create a thread
-      allow create: if isAuthenticated() &&
-        (request.resource.data.customerId == request.auth.uid ||
-         request.resource.data.sellerId == request.auth.uid ||
-         request.resource.data.deliveryPartnerId == request.auth.uid ||
-         (request.resource.data.participantIds is list &&
-          request.auth.uid in request.resource.data.participantIds) ||
-         isAdmin());
-      
-      // Updates allowed if they are participants
-      allow update: if isAuthenticated() && 
-        (resource.data.customerId == request.auth.uid || 
-         resource.data.sellerId == request.auth.uid || 
-         resource.data.deliveryPartnerId == request.auth.uid ||
-         (resource.data.participantIds is list &&
-          request.auth.uid in resource.data.participantIds) ||
-         isAdmin());
-         
-      // FIX-15 (finding N-45): allow read and allow create each called
-      // get() on the SAME threads/{threadId} document FIVE times (once per
-      // OR-branch) — a helper function with a `let` binding (mirroring
-      // ownerCannotChangePrivilegedFields()'s own established pattern
-      // above) fetches it once per evaluation and reuses the result. Same
-      // boolean logic, verified against every existing rules suite.
-      function isThreadPartyOrAdmin() {
-        let thread = get(/databases/$(database)/documents/threads/$(threadId)).data;
-        return thread.customerId == request.auth.uid ||
-          thread.sellerId == request.auth.uid ||
-          thread.deliveryPartnerId == request.auth.uid ||
-          (thread.participantIds is list && request.auth.uid in thread.participantIds) ||
-          isAdmin();
+      // DLV-K1 (audit G17). The parties are customerId / sellerId /
+      // deliveryPartnerId, fixed when the thread is made; participantIds, when
+      // present, lists exactly those parties. Before K1 any party could
+      // rewrite every field (add an outsider, who then read every message),
+      // any signed-in user could create a thread naming other users, and a
+      // message's senderId was whatever the client wrote.
+      function threadParties(d) {
+        return [d.get('customerId', null), d.get('sellerId', null), d.get('deliveryPartnerId', null)];
+      }
+      function isThreadParty(d) {
+        return request.auth.uid in threadParties(d)
+          || (d.get('participantIds', null) is list && request.auth.uid in d.participantIds);
+      }
+      // An order thread's parties are the order's own; a thread without an
+      // order is a customer asking a seller (id customerId_sellerId).
+      function threadBoundToItsOrder(d) {
+        let order = get(/databases/$(database)/documents/orders/$(d.orderId)).data;
+        return d.customerId == order.userId
+          && (d.get('sellerId', null) == null || d.sellerId == order.get('sellerId', null))
+          && (d.get('deliveryPartnerId', null) == null || d.deliveryPartnerId == order.get('deliveryPartnerId', null));
+      }
+      function threadCreateAllowed(d) {
+        return d.customerId is string
+          && (d.get('participantIds', null) == null
+              || (d.participantIds is list && d.participantIds.size() <= 3
+                  && d.participantIds.hasOnly(threadParties(d))))
+          && (d.get('orderId', null) != null
+              ? (d.orderId is string && threadBoundToItsOrder(d))
+              : (d.customerId == request.auth.uid
+                 && d.sellerId is string
+                 && d.get('deliveryPartnerId', null) == null
+                 && threadId == d.customerId + '_' + d.sellerId));
+      }
+
+      // A get() of a thread not made yet (create-if-absent) reveals nothing.
+      allow read: if isAuthenticated() && (resource == null || isThreadParty(resource.data) || isAdmin());
+      allow create: if isAuthenticated()
+        && request.auth.uid in threadParties(request.resource.data)
+        && threadCreateAllowed(request.resource.data);
+      // A party may only move the last-message summary; who is in the thread
+      // never changes from a client.
+      allow update: if isAuthenticated()
+        && (isThreadParty(resource.data) || isAdmin())
+        && request.resource.data.diff(resource.data).affectedKeys()
+             .hasOnly(['lastMessage', 'lastMessageTime', 'lastSenderId', 'unreadCount', 'updatedAt']);
+
+      // FIX-15 (finding N-45): one get() of the parent thread per evaluation.
+      function parentThread() {
+        return get(/databases/$(database)/documents/threads/$(threadId)).data;
       }
 
       match /messages/{messageId} {
-        allow read: if isAuthenticated() && isThreadPartyOrAdmin();
-        allow create: if isAuthenticated() && isThreadPartyOrAdmin();
+        allow read: if isAuthenticated() && (isThreadParty(parentThread()) || isAdmin());
+        // The sender is the caller; isSeller (ChatSystemService) must be true
+        // exactly when the caller is the thread's seller. Messages are never
+        // edited or deleted from a client.
+        allow create: if isAuthenticated()
+          && (isThreadParty(parentThread()) || isAdmin())
+          && request.resource.data.senderId == request.auth.uid
+          && request.resource.data.text is string
+          && request.resource.data.text.size() > 0
+          && request.resource.data.text.size() <= 2000
+          && (!('isSeller' in request.resource.data)
+              || request.resource.data.isSeller == (parentThread().get('sellerId', null) == request.auth.uid));
       }
     }
 
