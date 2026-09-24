@@ -826,5 +826,437 @@
   "proofNotSaved": "Delivered. The proof photo couldn't be saved — the delivery still counts.",
   "@proofNotSaved": {
     "description": "After delivery when the photo fails"
+  },
+  "moneyTitle": "Earnings",
+  "@moneyTitle": {
+    "description": "Earnings screen title"
+  },
+  "moneyThisWeek": "This week",
+  "@moneyThisWeek": {
+    "description": "Heading: pay not yet in a statement"
+  },
+  "moneyToday": "Today",
+  "@moneyToday": {
+    "description": "Label: pay earned today"
+  },
+  "moneyDeliveries": "{count, plural, =1{1 delivery} other{{count} deliveries}}",
+  "@moneyDeliveries": {
+    "description": "A number of deliveries",
+    "placeholders": {
+      "count": {
+        "type": "int"
+      }
+    }
+  },
+  "moneyPaidMondays": "Paid every Monday",
+  "@moneyPaidMondays": {
+    "description": "Summary caption: when pay is sent"
+  },
+  "moneyLoadError": "Could not load your earnings. Check your connection.",
+  "@moneyLoadError": {
+    "description": "Earnings stream failed"
+  },
+  "moneyNoDeliveriesYet": "No deliveries yet this week. Pay for each delivery shows here as soon as it is delivered.",
+  "@moneyNoDeliveriesYet": {
+    "description": "Empty week"
+  },
+  "moneyCashNone": "No cash with you",
+  "@moneyCashNone": {
+    "description": "Cash card: nothing held"
+  },
+  "moneyCashNoneHint": "Cash you collect on COD orders shows here.",
+  "@moneyCashNoneHint": {
+    "description": "Cash card hint when nothing is held"
+  },
+  "moneyCashHeld": "Cash with you: {amount}",
+  "@moneyCashHeld": {
+    "description": "Cash card: amount held",
+    "placeholders": {
+      "amount": {
+        "type": "String"
+      }
+    }
+  },
+  "moneyCashHint": "Cash from COD orders is taken off your Monday payout. Hand larger amounts to the Agrimore team.",
+  "@moneyCashHint": {
+    "description": "Cash card hint while holding cash"
+  },
+  "moneyCashUnderLimit": "You get cash-on-delivery orders while you hold less than {limit}.",
+  "@moneyCashUnderLimit": {
+    "description": "Cash card: the COD cash limit, under it",
+    "placeholders": {
+      "limit": {
+        "type": "String"
+      }
+    }
+  },
+  "moneyCashOverLimit": "You hold {limit} or more, so you won't get cash-on-delivery orders until you hand cash to the Agrimore team.",
+  "@moneyCashOverLimit": {
+    "description": "Cash card: at or over the COD cash limit",
+    "placeholders": {
+      "limit": {
+        "type": "String"
+      }
+    }
+  },
+  "moneyEarningTitle": "Order #{number}",
+  "@moneyEarningTitle": {
+    "description": "Earning row title",
+    "placeholders": {
+      "number": {
+        "type": "String"
+      }
+    }
+  },
+  "moneyLineBase": "Base {amount}",
+  "@moneyLineBase": {
+    "description": "Earning line: base pay",
+    "placeholders": {
+      "amount": {
+        "type": "String"
+      }
+    }
+  },
+  "moneyLineDistance": "{km} km {amount}",
+  "@moneyLineDistance": {
+    "description": "Earning line: distance pay",
+    "placeholders": {
+      "km": {
+        "type": "String"
+      },
+      "amount": {
+        "type": "String"
+      }
+    }
+  },
+  "moneyLineWaiting": "Waiting {minutes} min {amount}",
+  "@moneyLineWaiting": {
+    "description": "Earning line: waiting pay",
+    "placeholders": {
+      "minutes": {
+        "type": "int"
+      },
+      "amount": {
+        "type": "String"
+      }
+    }
+  },
+  "moneyLineCash": "Collected {amount} cash",
+  "@moneyLineCash": {
+    "description": "Earning line: COD cash collected",
+    "placeholders": {
+      "amount": {
+        "type": "String"
+      }
+    }
+  },
+  "moneyStatementsTitle": "Weekly statements",
+  "@moneyStatementsTitle": {
+    "description": "Heading: statements"
+  },
+  "moneyStatementsError": "Could not load statements.",
+  "@moneyStatementsError": {
+    "description": "Statements stream failed"
+  },
+  "moneyStatementsEmpty": "Your first statement is made on Monday for the week before. Pay is sent to your bank or UPI.",
+  "@moneyStatementsEmpty": {
+    "description": "No statements yet"
+  },
+  "moneyWeekEnding": "Week ending {date}",
+  "@moneyWeekEnding": {
+    "description": "Statement title",
+    "placeholders": {
+      "date": {
+        "type": "String"
+      }
+    }
+  },
+  "moneyWeekEndingPart": "Week ending {date} · part {part}",
+  "@moneyWeekEndingPart": {
+    "description": "Statement title for a split week",
+    "placeholders": {
+      "date": {
+        "type": "String"
+      },
+      "part": {
+        "type": "int"
+      }
+    }
+  },
+  "moneyStatementEarned": "earned {amount}",
+  "@moneyStatementEarned": {
+    "description": "Statement row: gross earned",
+    "placeholders": {
+      "amount": {
+        "type": "String"
+      }
+    }
+  },
+  "moneyStatementCashOff": "cash taken off {amount}",
+  "@moneyStatementCashOff": {
+    "description": "Statement row: COD cash offset",
+    "placeholders": {
+      "amount": {
+        "type": "String"
+      }
+    }
+  },
+  "stagePaid": "Money sent · Ref {reference}",
+  "@stagePaid": {
+    "description": "Statement: transferred, with the reference",
+    "placeholders": {
+      "reference": {
+        "type": "String"
+      }
+    }
+  },
+  "stagePaidNoRef": "Money sent",
+  "@stagePaidNoRef": {
+    "description": "Statement: transferred, no reference"
+  },
+  "stageAwaiting": "Statement ready — the Agrimore team will send the money",
+  "@stageAwaiting": {
+    "description": "Statement made, not yet transferred"
+  },
+  "stageHeldReview": "On hold — your new payout details are being checked",
+  "@stageHeldReview": {
+    "description": "Statement held for a bank change"
+  },
+  "stageHeldNoDetails": "On hold — add your bank or UPI details",
+  "@stageHeldNoDetails": {
+    "description": "Statement held: no payout details"
+  },
+  "stageNothing": "Nothing to pay",
+  "@stageNothing": {
+    "description": "Statement with nothing to pay"
+  },
+  "stageNothingCash": "Nothing to pay — cash you hold covered it ({amount} still with you)",
+  "@stageNothingCash": {
+    "description": "Nothing to pay; cash remains",
+    "placeholders": {
+      "amount": {
+        "type": "String"
+      }
+    }
+  },
+  "stageUnknown": "Status: {status}",
+  "@stageUnknown": {
+    "description": "Unrecognised statement status",
+    "placeholders": {
+      "status": {
+        "type": "String"
+      }
+    }
+  },
+  "payoutDetailsTitle": "Payout details",
+  "@payoutDetailsTitle": {
+    "description": "Heading: bank/UPI details"
+  },
+  "payoutDetailsNone": "No bank or UPI details yet — your pay will wait until you add them.",
+  "@payoutDetailsNone": {
+    "description": "No payout details on file"
+  },
+  "payoutDetailsBank": "Bank {account}",
+  "@payoutDetailsBank": {
+    "description": "Bank on file",
+    "placeholders": {
+      "account": {
+        "type": "String"
+      }
+    }
+  },
+  "payoutDetailsBankIfsc": "Bank {account} · {ifsc}",
+  "@payoutDetailsBankIfsc": {
+    "description": "Bank on file with IFSC",
+    "placeholders": {
+      "account": {
+        "type": "String"
+      },
+      "ifsc": {
+        "type": "String"
+      }
+    }
+  },
+  "payoutDetailsUpi": "UPI {upi}",
+  "@payoutDetailsUpi": {
+    "description": "UPI on file",
+    "placeholders": {
+      "upi": {
+        "type": "String"
+      }
+    }
+  },
+  "bankChangeReviewing": "Your change is being checked by the Agrimore team.",
+  "@bankChangeReviewing": {
+    "description": "Bank change pending"
+  },
+  "bankChangeRejected": "Your last change was not approved: {reason}",
+  "@bankChangeRejected": {
+    "description": "Bank change rejected",
+    "placeholders": {
+      "reason": {
+        "type": "String"
+      }
+    }
+  },
+  "bankChangeRejectedNoReason": "Your last change was not approved.",
+  "@bankChangeRejectedNoReason": {
+    "description": "Bank change rejected without a reason"
+  },
+  "bankChangeButton": "Change payout details",
+  "@bankChangeButton": {
+    "description": "Open the bank change form"
+  },
+  "bankChangeWaiting": "Change waiting for review",
+  "@bankChangeWaiting": {
+    "description": "Disabled button while a change is pending"
+  },
+  "bankChangeSent": "Sent. The Agrimore team will check it; your pay waits until then.",
+  "@bankChangeSent": {
+    "description": "Bank change sent"
+  },
+  "bankFormTitle": "Change payout details",
+  "@bankFormTitle": {
+    "description": "Bank change sheet title"
+  },
+  "bankFormIntro": "The Agrimore team checks every change before any money is sent to it.",
+  "@bankFormIntro": {
+    "description": "Bank change sheet intro"
+  },
+  "bankFormHolder": "Account holder name",
+  "@bankFormHolder": {
+    "description": "Field label"
+  },
+  "bankFormAccount": "Bank account number",
+  "@bankFormAccount": {
+    "description": "Field label"
+  },
+  "bankFormIfsc": "IFSC",
+  "@bankFormIfsc": {
+    "description": "Field label"
+  },
+  "bankFormOr": "and / or",
+  "@bankFormOr": {
+    "description": "Between bank and UPI fields"
+  },
+  "bankFormUpi": "UPI ID (e.g. name@okaxis)",
+  "@bankFormUpi": {
+    "description": "Field label"
+  },
+  "bankFormSend": "Send for review",
+  "@bankFormSend": {
+    "description": "Submit the bank change"
+  },
+  "bankProblemEmpty": "Enter bank details or a UPI ID",
+  "@bankProblemEmpty": {
+    "description": "Form: nothing entered"
+  },
+  "bankProblemHolder": "Enter the account holder name",
+  "@bankProblemHolder": {
+    "description": "Form: holder missing"
+  },
+  "bankProblemAccount": "Account number should be 9–18 digits",
+  "@bankProblemAccount": {
+    "description": "Form: bad account number"
+  },
+  "bankProblemIfsc": "IFSC looks wrong (e.g. SBIN0001234)",
+  "@bankProblemIfsc": {
+    "description": "Form: bad IFSC"
+  },
+  "bankProblemUpi": "UPI ID looks wrong (e.g. name@okaxis)",
+  "@bankProblemUpi": {
+    "description": "Form: bad UPI"
+  },
+  "bankFailAlreadyPending": "A change is already waiting for review.",
+  "@bankFailAlreadyPending": {
+    "description": "Server: change already pending"
+  },
+  "bankFailInvalid": "Please check the details and try again.",
+  "@bankFailInvalid": {
+    "description": "Server: details refused"
+  },
+  "bankFailOther": "Could not send the change. Please try again.",
+  "@bankFailOther": {
+    "description": "Server: other failure"
+  },
+  "statementTitle": "Statement",
+  "@statementTitle": {
+    "description": "Statement screen title"
+  },
+  "statementEarned": "Earned",
+  "@statementEarned": {
+    "description": "Statement: gross"
+  },
+  "statementCashOff": "Cash you held, taken off",
+  "@statementCashOff": {
+    "description": "Statement: COD offset"
+  },
+  "statementToPay": "To be sent to you",
+  "@statementToPay": {
+    "description": "Statement: net, not yet transferred"
+  },
+  "statementSent": "Sent to you",
+  "@statementSent": {
+    "description": "Statement: net, transferred"
+  },
+  "statementCashAfter": "Cash still with you",
+  "@statementCashAfter": {
+    "description": "Statement: cash remaining after offset"
+  },
+  "statementSentToBank": "Sent to bank account ending {last4}",
+  "@statementSentToBank": {
+    "description": "Statement: bank destination",
+    "placeholders": {
+      "last4": {
+        "type": "String"
+      }
+    }
+  },
+  "statementSentToUpi": "Sent to UPI {upi}",
+  "@statementSentToUpi": {
+    "description": "Statement: UPI destination",
+    "placeholders": {
+      "upi": {
+        "type": "String"
+      }
+    }
+  },
+  "statementSentOn": "Sent on {date}",
+  "@statementSentOn": {
+    "description": "Statement: transfer date",
+    "placeholders": {
+      "date": {
+        "type": "String"
+      }
+    }
+  },
+  "statementMadeOn": "Statement made on {date}",
+  "@statementMadeOn": {
+    "description": "Statement: creation date",
+    "placeholders": {
+      "date": {
+        "type": "String"
+      }
+    }
+  },
+  "statementDeliveries": "Deliveries in this statement",
+  "@statementDeliveries": {
+    "description": "Heading: statement lines"
+  },
+  "statementLinesEmpty": "No deliveries in this statement.",
+  "@statementLinesEmpty": {
+    "description": "Statement without lines"
+  },
+  "statementLinesError": "Could not load the deliveries. Check your connection.",
+  "@statementLinesError": {
+    "description": "Statement lines failed"
+  },
+  "statementLoadMore": "Load more",
+  "@statementLoadMore": {
+    "description": "Load the next page of statement lines"
+  },
+  "moneyAmountLoading": "…",
+  "@moneyAmountLoading": {
+    "description": "Stands in for an amount while it loads"
   }
 }

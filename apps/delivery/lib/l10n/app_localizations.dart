@@ -1281,6 +1281,456 @@ abstract class AppLocalizations {
   /// In en, this message translates to:
   /// **'Delivered. The proof photo couldn\'t be saved — the delivery still counts.'**
   String get proofNotSaved;
+
+  /// Earnings screen title
+  ///
+  /// In en, this message translates to:
+  /// **'Earnings'**
+  String get moneyTitle;
+
+  /// Heading: pay not yet in a statement
+  ///
+  /// In en, this message translates to:
+  /// **'This week'**
+  String get moneyThisWeek;
+
+  /// Label: pay earned today
+  ///
+  /// In en, this message translates to:
+  /// **'Today'**
+  String get moneyToday;
+
+  /// A number of deliveries
+  ///
+  /// In en, this message translates to:
+  /// **'{count, plural, =1{1 delivery} other{{count} deliveries}}'**
+  String moneyDeliveries(int count);
+
+  /// Summary caption: when pay is sent
+  ///
+  /// In en, this message translates to:
+  /// **'Paid every Monday'**
+  String get moneyPaidMondays;
+
+  /// Earnings stream failed
+  ///
+  /// In en, this message translates to:
+  /// **'Could not load your earnings. Check your connection.'**
+  String get moneyLoadError;
+
+  /// Empty week
+  ///
+  /// In en, this message translates to:
+  /// **'No deliveries yet this week. Pay for each delivery shows here as soon as it is delivered.'**
+  String get moneyNoDeliveriesYet;
+
+  /// Cash card: nothing held
+  ///
+  /// In en, this message translates to:
+  /// **'No cash with you'**
+  String get moneyCashNone;
+
+  /// Cash card hint when nothing is held
+  ///
+  /// In en, this message translates to:
+  /// **'Cash you collect on COD orders shows here.'**
+  String get moneyCashNoneHint;
+
+  /// Cash card: amount held
+  ///
+  /// In en, this message translates to:
+  /// **'Cash with you: {amount}'**
+  String moneyCashHeld(String amount);
+
+  /// Cash card hint while holding cash
+  ///
+  /// In en, this message translates to:
+  /// **'Cash from COD orders is taken off your Monday payout. Hand larger amounts to the Agrimore team.'**
+  String get moneyCashHint;
+
+  /// Cash card: the COD cash limit, under it
+  ///
+  /// In en, this message translates to:
+  /// **'You get cash-on-delivery orders while you hold less than {limit}.'**
+  String moneyCashUnderLimit(String limit);
+
+  /// Cash card: at or over the COD cash limit
+  ///
+  /// In en, this message translates to:
+  /// **'You hold {limit} or more, so you won\'t get cash-on-delivery orders until you hand cash to the Agrimore team.'**
+  String moneyCashOverLimit(String limit);
+
+  /// Earning row title
+  ///
+  /// In en, this message translates to:
+  /// **'Order #{number}'**
+  String moneyEarningTitle(String number);
+
+  /// Earning line: base pay
+  ///
+  /// In en, this message translates to:
+  /// **'Base {amount}'**
+  String moneyLineBase(String amount);
+
+  /// Earning line: distance pay
+  ///
+  /// In en, this message translates to:
+  /// **'{km} km {amount}'**
+  String moneyLineDistance(String km, String amount);
+
+  /// Earning line: waiting pay
+  ///
+  /// In en, this message translates to:
+  /// **'Waiting {minutes} min {amount}'**
+  String moneyLineWaiting(int minutes, String amount);
+
+  /// Earning line: COD cash collected
+  ///
+  /// In en, this message translates to:
+  /// **'Collected {amount} cash'**
+  String moneyLineCash(String amount);
+
+  /// Heading: statements
+  ///
+  /// In en, this message translates to:
+  /// **'Weekly statements'**
+  String get moneyStatementsTitle;
+
+  /// Statements stream failed
+  ///
+  /// In en, this message translates to:
+  /// **'Could not load statements.'**
+  String get moneyStatementsError;
+
+  /// No statements yet
+  ///
+  /// In en, this message translates to:
+  /// **'Your first statement is made on Monday for the week before. Pay is sent to your bank or UPI.'**
+  String get moneyStatementsEmpty;
+
+  /// Statement title
+  ///
+  /// In en, this message translates to:
+  /// **'Week ending {date}'**
+  String moneyWeekEnding(String date);
+
+  /// Statement title for a split week
+  ///
+  /// In en, this message translates to:
+  /// **'Week ending {date} · part {part}'**
+  String moneyWeekEndingPart(String date, int part);
+
+  /// Statement row: gross earned
+  ///
+  /// In en, this message translates to:
+  /// **'earned {amount}'**
+  String moneyStatementEarned(String amount);
+
+  /// Statement row: COD cash offset
+  ///
+  /// In en, this message translates to:
+  /// **'cash taken off {amount}'**
+  String moneyStatementCashOff(String amount);
+
+  /// Statement: transferred, with the reference
+  ///
+  /// In en, this message translates to:
+  /// **'Money sent · Ref {reference}'**
+  String stagePaid(String reference);
+
+  /// Statement: transferred, no reference
+  ///
+  /// In en, this message translates to:
+  /// **'Money sent'**
+  String get stagePaidNoRef;
+
+  /// Statement made, not yet transferred
+  ///
+  /// In en, this message translates to:
+  /// **'Statement ready — the Agrimore team will send the money'**
+  String get stageAwaiting;
+
+  /// Statement held for a bank change
+  ///
+  /// In en, this message translates to:
+  /// **'On hold — your new payout details are being checked'**
+  String get stageHeldReview;
+
+  /// Statement held: no payout details
+  ///
+  /// In en, this message translates to:
+  /// **'On hold — add your bank or UPI details'**
+  String get stageHeldNoDetails;
+
+  /// Statement with nothing to pay
+  ///
+  /// In en, this message translates to:
+  /// **'Nothing to pay'**
+  String get stageNothing;
+
+  /// Nothing to pay; cash remains
+  ///
+  /// In en, this message translates to:
+  /// **'Nothing to pay — cash you hold covered it ({amount} still with you)'**
+  String stageNothingCash(String amount);
+
+  /// Unrecognised statement status
+  ///
+  /// In en, this message translates to:
+  /// **'Status: {status}'**
+  String stageUnknown(String status);
+
+  /// Heading: bank/UPI details
+  ///
+  /// In en, this message translates to:
+  /// **'Payout details'**
+  String get payoutDetailsTitle;
+
+  /// No payout details on file
+  ///
+  /// In en, this message translates to:
+  /// **'No bank or UPI details yet — your pay will wait until you add them.'**
+  String get payoutDetailsNone;
+
+  /// Bank on file
+  ///
+  /// In en, this message translates to:
+  /// **'Bank {account}'**
+  String payoutDetailsBank(String account);
+
+  /// Bank on file with IFSC
+  ///
+  /// In en, this message translates to:
+  /// **'Bank {account} · {ifsc}'**
+  String payoutDetailsBankIfsc(String account, String ifsc);
+
+  /// UPI on file
+  ///
+  /// In en, this message translates to:
+  /// **'UPI {upi}'**
+  String payoutDetailsUpi(String upi);
+
+  /// Bank change pending
+  ///
+  /// In en, this message translates to:
+  /// **'Your change is being checked by the Agrimore team.'**
+  String get bankChangeReviewing;
+
+  /// Bank change rejected
+  ///
+  /// In en, this message translates to:
+  /// **'Your last change was not approved: {reason}'**
+  String bankChangeRejected(String reason);
+
+  /// Bank change rejected without a reason
+  ///
+  /// In en, this message translates to:
+  /// **'Your last change was not approved.'**
+  String get bankChangeRejectedNoReason;
+
+  /// Open the bank change form
+  ///
+  /// In en, this message translates to:
+  /// **'Change payout details'**
+  String get bankChangeButton;
+
+  /// Disabled button while a change is pending
+  ///
+  /// In en, this message translates to:
+  /// **'Change waiting for review'**
+  String get bankChangeWaiting;
+
+  /// Bank change sent
+  ///
+  /// In en, this message translates to:
+  /// **'Sent. The Agrimore team will check it; your pay waits until then.'**
+  String get bankChangeSent;
+
+  /// Bank change sheet title
+  ///
+  /// In en, this message translates to:
+  /// **'Change payout details'**
+  String get bankFormTitle;
+
+  /// Bank change sheet intro
+  ///
+  /// In en, this message translates to:
+  /// **'The Agrimore team checks every change before any money is sent to it.'**
+  String get bankFormIntro;
+
+  /// Field label
+  ///
+  /// In en, this message translates to:
+  /// **'Account holder name'**
+  String get bankFormHolder;
+
+  /// Field label
+  ///
+  /// In en, this message translates to:
+  /// **'Bank account number'**
+  String get bankFormAccount;
+
+  /// Field label
+  ///
+  /// In en, this message translates to:
+  /// **'IFSC'**
+  String get bankFormIfsc;
+
+  /// Between bank and UPI fields
+  ///
+  /// In en, this message translates to:
+  /// **'and / or'**
+  String get bankFormOr;
+
+  /// Field label
+  ///
+  /// In en, this message translates to:
+  /// **'UPI ID (e.g. name@okaxis)'**
+  String get bankFormUpi;
+
+  /// Submit the bank change
+  ///
+  /// In en, this message translates to:
+  /// **'Send for review'**
+  String get bankFormSend;
+
+  /// Form: nothing entered
+  ///
+  /// In en, this message translates to:
+  /// **'Enter bank details or a UPI ID'**
+  String get bankProblemEmpty;
+
+  /// Form: holder missing
+  ///
+  /// In en, this message translates to:
+  /// **'Enter the account holder name'**
+  String get bankProblemHolder;
+
+  /// Form: bad account number
+  ///
+  /// In en, this message translates to:
+  /// **'Account number should be 9–18 digits'**
+  String get bankProblemAccount;
+
+  /// Form: bad IFSC
+  ///
+  /// In en, this message translates to:
+  /// **'IFSC looks wrong (e.g. SBIN0001234)'**
+  String get bankProblemIfsc;
+
+  /// Form: bad UPI
+  ///
+  /// In en, this message translates to:
+  /// **'UPI ID looks wrong (e.g. name@okaxis)'**
+  String get bankProblemUpi;
+
+  /// Server: change already pending
+  ///
+  /// In en, this message translates to:
+  /// **'A change is already waiting for review.'**
+  String get bankFailAlreadyPending;
+
+  /// Server: details refused
+  ///
+  /// In en, this message translates to:
+  /// **'Please check the details and try again.'**
+  String get bankFailInvalid;
+
+  /// Server: other failure
+  ///
+  /// In en, this message translates to:
+  /// **'Could not send the change. Please try again.'**
+  String get bankFailOther;
+
+  /// Statement screen title
+  ///
+  /// In en, this message translates to:
+  /// **'Statement'**
+  String get statementTitle;
+
+  /// Statement: gross
+  ///
+  /// In en, this message translates to:
+  /// **'Earned'**
+  String get statementEarned;
+
+  /// Statement: COD offset
+  ///
+  /// In en, this message translates to:
+  /// **'Cash you held, taken off'**
+  String get statementCashOff;
+
+  /// Statement: net, not yet transferred
+  ///
+  /// In en, this message translates to:
+  /// **'To be sent to you'**
+  String get statementToPay;
+
+  /// Statement: net, transferred
+  ///
+  /// In en, this message translates to:
+  /// **'Sent to you'**
+  String get statementSent;
+
+  /// Statement: cash remaining after offset
+  ///
+  /// In en, this message translates to:
+  /// **'Cash still with you'**
+  String get statementCashAfter;
+
+  /// Statement: bank destination
+  ///
+  /// In en, this message translates to:
+  /// **'Sent to bank account ending {last4}'**
+  String statementSentToBank(String last4);
+
+  /// Statement: UPI destination
+  ///
+  /// In en, this message translates to:
+  /// **'Sent to UPI {upi}'**
+  String statementSentToUpi(String upi);
+
+  /// Statement: transfer date
+  ///
+  /// In en, this message translates to:
+  /// **'Sent on {date}'**
+  String statementSentOn(String date);
+
+  /// Statement: creation date
+  ///
+  /// In en, this message translates to:
+  /// **'Statement made on {date}'**
+  String statementMadeOn(String date);
+
+  /// Heading: statement lines
+  ///
+  /// In en, this message translates to:
+  /// **'Deliveries in this statement'**
+  String get statementDeliveries;
+
+  /// Statement without lines
+  ///
+  /// In en, this message translates to:
+  /// **'No deliveries in this statement.'**
+  String get statementLinesEmpty;
+
+  /// Statement lines failed
+  ///
+  /// In en, this message translates to:
+  /// **'Could not load the deliveries. Check your connection.'**
+  String get statementLinesError;
+
+  /// Load the next page of statement lines
+  ///
+  /// In en, this message translates to:
+  /// **'Load more'**
+  String get statementLoadMore;
+
+  /// Stands in for an amount while it loads
+  ///
+  /// In en, this message translates to:
+  /// **'…'**
+  String get moneyAmountLoading;
 }
 
 class _AppLocalizationsDelegate
