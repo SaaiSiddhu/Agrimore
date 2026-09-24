@@ -697,6 +697,20 @@
                     "order": "DESCENDING"
                 }
             ]
+        },
+        {
+            "collectionGroup": "orders",
+            "queryScope": "COLLECTION",
+            "fields": [
+                {
+                    "fieldPath": "deliveryPartnerId",
+                    "order": "ASCENDING"
+                },
+                {
+                    "fieldPath": "deliveredAt",
+                    "order": "ASCENDING"
+                }
+            ]
         }
     ],
     "fieldOverrides": []
