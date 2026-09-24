@@ -17,13 +17,14 @@ const admin = require("firebase-admin");
 if (admin.apps.length === 0) admin.initializeApp({ projectId: PROJECT, storageBucket: `${PROJECT}.appspot.com` });
 const db = admin.firestore();
 const { Timestamp } = require("firebase-admin/firestore");
+const PW = "dlve1-pass-1"; // emulator-only test account
 const results = [];
 const record = (label, pass, detail) => { results.push(pass); console.log(`${pass ? "PASSED" : "FAILED"} — ${label}${pass ? "" : ` :: ${detail}`}`); };
 async function account(email, claims) {
-  let u; try { u = await admin.auth().getUserByEmail(email); } catch { u = await admin.auth().createUser({ email, password: "dlve1-pass-1" }); }
+  let u; try { u = await admin.auth().getUserByEmail(email); } catch { u = await admin.auth().createUser({ email, password: PW }); }
   if (claims) await admin.auth().setCustomUserClaims(u.uid, claims);
   const t = await fetch(`http://${process.env.FIREBASE_AUTH_EMULATOR_HOST}/identitytoolkit.googleapis.com/v1/accounts:signInWithPassword?key=fake`, {
-    method: "POST", headers: { "content-type": "application/json" }, body: JSON.stringify({ email, password: "dlve1-pass-1", returnSecureToken: true }) }).then((r) => r.json());
+    method: "POST", headers: { "content-type": "application/json" }, body: JSON.stringify({ email, password: PW, returnSecureToken: true }) }).then((r) => r.json());
   return { uid: u.uid, token: t.idToken };
 }
 async function call(name, token, data) {
