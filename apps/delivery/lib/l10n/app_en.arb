@@ -490,5 +490,236 @@
   "resetFailed": "Couldn't send the reset link. Try again, or contact Agrimore support.",
   "@resetFailed": {
     "description": "Password reset request failed (not an unknown-account case)"
+  },
+  "profileTitle": "Your profile",
+  "@profileTitle": {
+    "description": "Profile screen title"
+  },
+  "profileOpen": "Open your profile",
+  "@profileOpen": {
+    "description": "Tooltip / label for the avatar button"
+  },
+  "profileDetails": "Your details",
+  "@profileDetails": {
+    "description": "Section"
+  },
+  "profileContact": "Contact and address",
+  "@profileContact": {
+    "description": "Section"
+  },
+  "profileDocuments": "Documents",
+  "@profileDocuments": {
+    "description": "Section"
+  },
+  "profilePayout": "Payout details",
+  "@profilePayout": {
+    "description": "Section"
+  },
+  "profileSupport": "Help and support",
+  "@profileSupport": {
+    "description": "Section"
+  },
+  "profileAccount": "Account",
+  "@profileAccount": {
+    "description": "Section"
+  },
+  "profileVehicle": "Vehicle",
+  "@profileVehicle": {
+    "description": "Label"
+  },
+  "profileVehicleNumber": "Registration number",
+  "@profileVehicleNumber": {
+    "description": "Label"
+  },
+  "profileLicence": "Driving licence",
+  "@profileLicence": {
+    "description": "Label"
+  },
+  "profileAadhaar": "Aadhaar",
+  "@profileAadhaar": {
+    "description": "Label"
+  },
+  "profilePhone": "Mobile",
+  "@profilePhone": {
+    "description": "Label"
+  },
+  "profileAltPhone": "Alternate mobile",
+  "@profileAltPhone": {
+    "description": "Label"
+  },
+  "profileAddress": "Address",
+  "@profileAddress": {
+    "description": "Label"
+  },
+  "profileNotSet": "Not added",
+  "@profileNotSet": {
+    "description": "Value missing"
+  },
+  "profileEditContact": "Edit contact and address",
+  "@profileEditContact": {
+    "description": "Button"
+  },
+  "profileLockedNote": "To change your name, mobile number, vehicle, licence or Aadhaar, contact Agrimore support — an admin reviews those changes.",
+  "@profileLockedNote": {
+    "description": "Explains which fields are reviewed"
+  },
+  "docSubmitted": "Submitted",
+  "@docSubmitted": {
+    "description": "Document state"
+  },
+  "docNotSubmitted": "Not submitted",
+  "@docNotSubmitted": {
+    "description": "Document state"
+  },
+  "payoutBank": "Bank account {masked}",
+  "@payoutBank": {
+    "description": "Payout destination",
+    "placeholders": {
+      "masked": {
+        "type": "String"
+      }
+    }
+  },
+  "payoutUpi": "UPI {upi}",
+  "@payoutUpi": {
+    "description": "Payout destination",
+    "placeholders": {
+      "upi": {
+        "type": "String"
+      }
+    }
+  },
+  "payoutNone": "No payout details yet",
+  "@payoutNone": {
+    "description": "No destination"
+  },
+  "payoutChange": "Change payout details",
+  "@payoutChange": {
+    "description": "Button (reviewed flow)"
+  },
+  "supportCall": "Call Agrimore support",
+  "@supportCall": {
+    "description": "Button"
+  },
+  "supportEmail": "Email Agrimore support",
+  "@supportEmail": {
+    "description": "Button"
+  },
+  "supportOpenFailed": "Couldn't open that. Support: {contact}",
+  "@supportOpenFailed": {
+    "description": "Launcher failed",
+    "placeholders": {
+      "contact": {
+        "type": "String"
+      }
+    }
+  },
+  "deleteAccount": "Delete my account",
+  "@deleteAccount": {
+    "description": "Button"
+  },
+  "deleteConfirmTitle": "Delete your account?",
+  "@deleteConfirmTitle": {
+    "description": "Dialog title"
+  },
+  "deleteConfirmBody": "Your profile, documents and payout details are removed and you are signed out. Records of your deliveries and payments are kept. This cannot be undone.",
+  "@deleteConfirmBody": {
+    "description": "Dialog body"
+  },
+  "deleteConfirm": "Delete",
+  "@deleteConfirm": {
+    "description": "Dialog destructive action"
+  },
+  "cancel": "Cancel",
+  "@cancel": {
+    "description": "Dialog cancel"
+  },
+  "deleteDone": "Your account was deleted.",
+  "@deleteDone": {
+    "description": "Toast after deletion"
+  },
+  "failActiveOrder": "You still have an order assigned. Deliver it or ask Agrimore to reassign it first.",
+  "@failActiveOrder": {
+    "description": "Account action refused"
+  },
+  "failCashHeld": "You still hold customers' cash. Deposit it with Agrimore first.",
+  "@failCashHeld": {
+    "description": "Account action refused"
+  },
+  "failPayOwed": "Agrimore still owes you delivery pay. Wait until your statement is paid.",
+  "@failPayOwed": {
+    "description": "Account action refused"
+  },
+  "failOtherBalance": "This account still has an open balance or order. Contact Agrimore support.",
+  "@failOtherBalance": {
+    "description": "Account action refused"
+  },
+  "failInvalid": "Some details need fixing — they're marked.",
+  "@failInvalid": {
+    "description": "Account action refused"
+  },
+  "failNetwork": "No connection. Try again.",
+  "@failNetwork": {
+    "description": "Account action failed"
+  },
+  "failUnknown": "That didn't go through. Try again.",
+  "@failUnknown": {
+    "description": "Account action failed"
+  },
+  "save": "Save",
+  "@save": {
+    "description": "Button"
+  },
+  "contactSaved": "Contact details saved.",
+  "@contactSaved": {
+    "description": "Toast"
+  },
+  "statusPendingTitle": "Application under review",
+  "@statusPendingTitle": {
+    "description": "Account status title"
+  },
+  "statusPendingBody": "An Agrimore admin is checking your details and documents. You'll be able to go online once approved.",
+  "@statusPendingBody": {
+    "description": "Account status body"
+  },
+  "statusRejectedTitle": "Application not approved",
+  "@statusRejectedTitle": {
+    "description": "Account status title"
+  },
+  "statusRejectedBody": "Your application was not approved. You can correct it and submit again.",
+  "@statusRejectedBody": {
+    "description": "Account status body"
+  },
+  "statusSuspendedTitle": "Account suspended",
+  "@statusSuspendedTitle": {
+    "description": "Account status title"
+  },
+  "statusSuspendedBody": "You can't go online or accept orders until an admin reinstates your account.",
+  "@statusSuspendedBody": {
+    "description": "Account status body"
+  },
+  "statusDeactivatedTitle": "Account deactivated",
+  "@statusDeactivatedTitle": {
+    "description": "Account status title"
+  },
+  "statusDeactivatedBody": "This delivery partner account is no longer active.",
+  "@statusDeactivatedBody": {
+    "description": "Account status body"
+  },
+  "statusReason": "Reason",
+  "@statusReason": {
+    "description": "Label for the admin's reason"
+  },
+  "statusUpdateApplication": "Update and resubmit",
+  "@statusUpdateApplication": {
+    "description": "Button (pending/rejected)"
+  },
+  "statusEditApplication": "Edit application",
+  "@statusEditApplication": {
+    "description": "Button (pending)"
+  },
+  "regResubmitNote": "Correct your details and submit your application again.",
+  "@regResubmitNote": {
+    "description": "Banner when a pending/rejected rider edits the application"
   }
 }

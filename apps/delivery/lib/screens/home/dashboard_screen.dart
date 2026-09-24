@@ -12,6 +12,8 @@ import '../../money/rider_money.dart';
 import '../../safety/emergency_sheet.dart';
 import '../../l10n/app_localizations.dart';
 import '../history/rider_history_screen.dart';
+import '../profile/rider_profile_screen.dart';
+import '../../account/rider_account.dart';
 import 'active_work_states.dart';
 import '../../offers/offer_alerts.dart';
 import '../../offers/offer_launch.dart';
@@ -212,14 +214,22 @@ class _DashboardScreenState extends State<DashboardScreen> {
           padding: const EdgeInsets.all(20),
           child: Row(
             children: [
-              CircleAvatar(
-                radius: 24,
-                backgroundColor: colorScheme.primaryContainer,
-                child: Text(
-                  auth.user?.initials ?? 'DP',
-                  style: TextStyle(
-                    fontWeight: FontWeight.w700,
-                    color: colorScheme.primary,
+              // DLV-A2: the avatar opens the rider's profile.
+              IconButton(
+                key: const ValueKey('open-profile'),
+                tooltip: AppLocalizations.of(context).profileOpen,
+                onPressed: () => Navigator.of(context).push(
+                  MaterialPageRoute<void>(builder: (_) => const RiderProfileScreen()),
+                ),
+                icon: CircleAvatar(
+                  radius: 24,
+                  backgroundColor: colorScheme.primaryContainer,
+                  child: Text(
+                    auth.user?.initials ?? 'DP',
+                    style: TextStyle(
+                      fontWeight: FontWeight.w700,
+                      color: colorScheme.primary,
+                    ),
                   ),
                 ),
               ),
@@ -447,7 +457,11 @@ class _DashboardScreenState extends State<DashboardScreen> {
   Stream<RiderAccount>? _accountStream;
 
   RiderMoneyService? get _moneyService {
-    final uid = _auth?.user?.uid;
+    // DLV-A2: read the provider here, not the field set in a post-frame
+    // callback — nothing rebuilt the money section after that callback once
+    // DLV-C1 bound the order provider before the dashboard existed, so a
+    // rider with no order changes saw "–" for pay and cash indefinitely.
+    final uid = context.read<DeliveryAuthProvider>().user?.uid;
     if (uid == null) return null;
     if (_money?.riderId != uid) {
       _money = RiderMoneyService(uid);
@@ -819,14 +833,8 @@ class _DashboardScreenState extends State<DashboardScreen> {
           FilledButton(
             onPressed: () async {
               Navigator.pop(context);
-              // DLV-3A: go offline first — the foreground service and the
-              // server's isOnline would otherwise outlive the session.
-              final auth = this.context.read<DeliveryAuthProvider>();
-              final location = this.context.read<LocationProvider>();
-              final uid = auth.user?.uid;
-              location.stopTracking();
-              if (uid != null) await location.setOnlineStatus(uid, false);
-              await auth.signOut();
+              // DLV-3A: offline first (account/rider_account.dart).
+              await riderSignOut(this.context);
             },
             child: Text('Logout'),
           ),

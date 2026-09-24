@@ -1,22 +1,47 @@
+// lib/screens/auth/pending_approval_screen.dart
+//
+// Shown to a signed-in delivery partner who may not work: pending review,
+// rejected, suspended or deactivated (Phase DLV-1B), with the admin's reason.
+// Phase DLV-A2: Workspace + ARB; a pending or rejected rider can correct and
+// resubmit the application (submitRiderApplication updates the same record);
+// support contacts; sign-out; account deletion (deleteUserData's rider branch).
+import 'package:agrimore_core/agrimore_core.dart';
+import 'package:agrimore_ui/agrimore_ui.dart';
+import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
-import 'package:agrimore_core/agrimore_core.dart';
+
+import '../../account/rider_account.dart';
+import '../../account/support_card.dart';
+import '../../l10n/app_localizations.dart';
 import '../../providers/auth_provider.dart';
 import '../../providers/location_provider.dart';
+import '../profile/rider_profile_screen.dart' show accountFailureText;
+import 'rider_registration_screen.dart';
 
-/// Shown to a signed-in delivery partner who may not work: pending review,
-/// rejected, suspended or deactivated (Phase DLV-1B — previously every one of
-/// those read as "Pending Approval", with no reason).
+/// Title, body and icon for a blocked status.
+({String title, String body, IconData icon}) statusCopy(AppLocalizations l, RiderKycStatus s) => switch (s) {
+      RiderKycStatus.rejected => (title: l.statusRejectedTitle, body: l.statusRejectedBody, icon: AgIcons.packageRejected),
+      RiderKycStatus.suspended => (title: l.statusSuspendedTitle, body: l.statusSuspendedBody, icon: AgIcons.warning),
+      RiderKycStatus.deactivated => (title: l.statusDeactivatedTitle, body: l.statusDeactivatedBody, icon: AgIcons.close),
+      _ => (title: l.statusPendingTitle, body: l.statusPendingBody, icon: AgIcons.clock),
+    };
+
+/// Whether the rider may still change and resubmit the application.
+bool canResubmit(RiderKycStatus s) => s == RiderKycStatus.pending || s == RiderKycStatus.rejected;
+
 class DeliveryPendingApprovalScreen extends StatefulWidget {
-  const DeliveryPendingApprovalScreen({super.key});
+  const DeliveryPendingApprovalScreen({super.key, this.backend});
+  final RiderAccountBackend? backend;
 
   @override
-  State<DeliveryPendingApprovalScreen> createState() =>
-      _DeliveryPendingApprovalScreenState();
+  State<DeliveryPendingApprovalScreen> createState() => _DeliveryPendingApprovalScreenState();
 }
 
-class _DeliveryPendingApprovalScreenState
-    extends State<DeliveryPendingApprovalScreen> {
+class _DeliveryPendingApprovalScreenState extends State<DeliveryPendingApprovalScreen> {
+  late final RiderAccountBackend _backend = widget.backend ?? CallableRiderAccountBackend();
+  bool _busy = false;
+
   @override
   void initState() {
     super.initState();
@@ -32,141 +57,102 @@ class _DeliveryPendingApprovalScreenState
     });
   }
 
+  Future<void> _resubmit() async {
+    final uid = context.read<DeliveryAuthProvider>().user?.uid;
+    if (uid == null) return;
+    setState(() => _busy = true);
+    Map<String, dynamic>? record;
+    try {
+      record = (await FirebaseFirestore.instance.collection('delivery_partners').doc(uid).get()).data();
+    } catch (e) {
+      debugPrint('Application record not read: $e');
+    }
+    if (!mounted) return;
+    setState(() => _busy = false);
+    await Navigator.of(context).push(
+      MaterialPageRoute<void>(builder: (_) => RiderRegistrationScreen(initial: record)),
+    );
+  }
+
+  Future<void> _delete() async {
+    final l = AppLocalizations.of(context);
+    final ok = await wsConfirm(context,
+        title: l.deleteConfirmTitle, message: l.deleteConfirmBody, confirmLabel: l.deleteConfirm, cancelLabel: l.cancel,
+        destructive: true);
+    if (!ok || !mounted) return;
+    setState(() => _busy = true);
+    try {
+      await _backend.deleteAccount();
+      if (!mounted) return;
+      final auth = context.read<DeliveryAuthProvider>();
+      WsToast.show(context, l.deleteDone);
+      await auth.signOut();
+    } on AccountActionException catch (e) {
+      if (mounted) WsToast.show(context, accountFailureText(l, e.failure), tone: WsToastTone.error);
+    } finally {
+      if (mounted) setState(() => _busy = false);
+    }
+  }
+
   @override
   Widget build(BuildContext context) {
-    final colorScheme = Theme.of(context).colorScheme;
+    final l = AppLocalizations.of(context);
+    final t = context.ws;
+    final text = Theme.of(context).textTheme;
     final auth = context.watch<DeliveryAuthProvider>();
     final status = auth.kycStatus ?? RiderKycStatus.pending;
+    final copy = statusCopy(l, status);
     final reason = auth.statusReason;
-
-    final (IconData icon, Color tone, String title, String body) =
-        switch (status) {
-      RiderKycStatus.rejected => (
-          Icons.assignment_late_rounded,
-          colorScheme.error,
-          'Application not approved',
-          'Your delivery partner application was not approved.',
-        ),
-      RiderKycStatus.suspended => (
-          Icons.block_rounded,
-          colorScheme.error,
-          'Account suspended',
-          'You cannot go online or accept orders until an admin reinstates your account.',
-        ),
-      RiderKycStatus.deactivated => (
-          Icons.person_off_rounded,
-          colorScheme.outline,
-          'Account deactivated',
-          'This delivery partner account is no longer active.',
-        ),
-      _ => (
-          Icons.delivery_dining_rounded,
-          colorScheme.primary,
-          'Pending approval',
-          'Your delivery partner account is under review by the admin team. '
-              'Once approved, you can start accepting delivery orders.',
-        ),
-    };
-    final showSupport =
-        status != RiderKycStatus.pending && status != RiderKycStatus.approved;
-
+    final severe = status == RiderKycStatus.rejected || status == RiderKycStatus.suspended;
     return Scaffold(
       body: SafeArea(
         child: Center(
           child: SingleChildScrollView(
-            padding: const EdgeInsets.all(32),
-            child: Column(
-              mainAxisAlignment: MainAxisAlignment.center,
-              children: [
-                Container(
-                  width: 120,
-                  height: 120,
-                  decoration: BoxDecoration(
-                    color: tone.withValues(alpha: 0.12),
-                    shape: BoxShape.circle,
-                  ),
-                  child: Icon(icon, size: 56, color: tone),
-                ),
-                const SizedBox(height: 32),
-                Text(
-                  title,
-                  textAlign: TextAlign.center,
-                  style: TextStyle(
-                    fontSize: 28,
-                    fontWeight: FontWeight.w800,
-                    color: colorScheme.onSurface,
-                  ),
-                ),
-                const SizedBox(height: 12),
-                Text(
-                  body,
-                  textAlign: TextAlign.center,
-                  style: TextStyle(
-                    fontSize: 16,
-                    color: colorScheme.onSurfaceVariant,
-                    height: 1.5,
-                  ),
-                ),
+            padding: const EdgeInsets.all(WsSpace.page),
+            child: ConstrainedBox(
+              constraints: const BoxConstraints(maxWidth: WsSize.formMaxWidth),
+              child: Column(crossAxisAlignment: CrossAxisAlignment.stretch, children: [
+                Icon(copy.icon, size: WsIconSize.empty, color: severe ? t.errorFg : t.textTertiary),
+                const SizedBox(height: WsSpace.s16),
+                Text(copy.title, textAlign: TextAlign.center, style: text.headlineSmall),
+                const SizedBox(height: WsSpace.s8),
+                Text(copy.body, textAlign: TextAlign.center, style: text.bodyLarge?.copyWith(color: t.textSecondary)),
                 if (reason != null) ...[
-                  const SizedBox(height: 20),
+                  const SizedBox(height: WsSpace.s16),
                   Container(
-                    width: double.infinity,
-                    padding: const EdgeInsets.all(16),
-                    decoration: BoxDecoration(
-                      color: colorScheme.surfaceContainerHighest,
-                      borderRadius: BorderRadius.circular(12),
-                    ),
-                    child: Column(
-                      crossAxisAlignment: CrossAxisAlignment.start,
-                      children: [
-                        Text(
-                          'Reason',
-                          style: TextStyle(
-                            fontSize: 12,
-                            fontWeight: FontWeight.w700,
-                            color: colorScheme.onSurfaceVariant,
-                          ),
-                        ),
-                        const SizedBox(height: 4),
-                        Text(
-                          reason,
-                          style: TextStyle(
-                            fontSize: 15,
-                            color: colorScheme.onSurface,
-                            height: 1.4,
-                          ),
-                        ),
-                      ],
-                    ),
+                    padding: const EdgeInsets.all(WsSpace.s12),
+                    decoration: BoxDecoration(color: t.surfaceSunken, borderRadius: BorderRadius.circular(WsRadius.card)),
+                    child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
+                      Text(l.statusReason, style: text.labelMedium?.copyWith(color: t.textSecondary)),
+                      const SizedBox(height: WsSpace.s4),
+                      Text(reason, style: text.bodyMedium),
+                    ]),
                   ),
                 ],
-                if (showSupport) ...[
-                  const SizedBox(height: 20),
-                  Text(
-                    'If you think this is a mistake, contact Agrimore support at '
-                    '${AppConstants.supportPhone} or ${AppConstants.supportEmail}.',
-                    textAlign: TextAlign.center,
-                    style: TextStyle(
-                      fontSize: 14,
-                      color: colorScheme.onSurfaceVariant,
-                      height: 1.4,
-                    ),
+                const SizedBox(height: WsSpace.s24),
+                if (canResubmit(status)) ...[
+                  FilledButton.icon(
+                    key: const ValueKey('resubmit'),
+                    onPressed: _busy ? null : _resubmit,
+                    icon: const Icon(AgIcons.edit),
+                    label: Text(status == RiderKycStatus.rejected ? l.statusUpdateApplication : l.statusEditApplication),
                   ),
+                  const SizedBox(height: WsSpace.s16),
                 ],
-                const SizedBox(height: 48),
-                FilledButton.icon(
-                  onPressed: () {
-                    context.read<DeliveryAuthProvider>().signOut();
-                  },
-                  icon: const Icon(Icons.logout_rounded),
-                  label: const Text('Sign Out'),
-                  style: FilledButton.styleFrom(
-                    padding: const EdgeInsets.symmetric(
-                        horizontal: 32, vertical: 16),
-                    backgroundColor: colorScheme.error,
-                  ),
+                const SupportContactButtons(),
+                const SizedBox(height: WsSpace.s16),
+                FilledButton.tonalIcon(
+                  onPressed: _busy ? null : () => riderSignOut(context),
+                  icon: const Icon(AgIcons.logOut),
+                  label: Text(l.actionSignOut),
                 ),
-              ],
+                const SizedBox(height: WsSpace.s8),
+                TextButton(
+                  style: TextButton.styleFrom(foregroundColor: t.errorFg),
+                  onPressed: _busy ? null : _delete,
+                  child: Text(l.deleteAccount),
+                ),
+              ]),
             ),
           ),
         ),

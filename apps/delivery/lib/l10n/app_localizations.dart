@@ -807,6 +807,330 @@ abstract class AppLocalizations {
   /// In en, this message translates to:
   /// **'Couldn\'t send the reset link. Try again, or contact Agrimore support.'**
   String get resetFailed;
+
+  /// Profile screen title
+  ///
+  /// In en, this message translates to:
+  /// **'Your profile'**
+  String get profileTitle;
+
+  /// Tooltip / label for the avatar button
+  ///
+  /// In en, this message translates to:
+  /// **'Open your profile'**
+  String get profileOpen;
+
+  /// Section
+  ///
+  /// In en, this message translates to:
+  /// **'Your details'**
+  String get profileDetails;
+
+  /// Section
+  ///
+  /// In en, this message translates to:
+  /// **'Contact and address'**
+  String get profileContact;
+
+  /// Section
+  ///
+  /// In en, this message translates to:
+  /// **'Documents'**
+  String get profileDocuments;
+
+  /// Section
+  ///
+  /// In en, this message translates to:
+  /// **'Payout details'**
+  String get profilePayout;
+
+  /// Section
+  ///
+  /// In en, this message translates to:
+  /// **'Help and support'**
+  String get profileSupport;
+
+  /// Section
+  ///
+  /// In en, this message translates to:
+  /// **'Account'**
+  String get profileAccount;
+
+  /// Label
+  ///
+  /// In en, this message translates to:
+  /// **'Vehicle'**
+  String get profileVehicle;
+
+  /// Label
+  ///
+  /// In en, this message translates to:
+  /// **'Registration number'**
+  String get profileVehicleNumber;
+
+  /// Label
+  ///
+  /// In en, this message translates to:
+  /// **'Driving licence'**
+  String get profileLicence;
+
+  /// Label
+  ///
+  /// In en, this message translates to:
+  /// **'Aadhaar'**
+  String get profileAadhaar;
+
+  /// Label
+  ///
+  /// In en, this message translates to:
+  /// **'Mobile'**
+  String get profilePhone;
+
+  /// Label
+  ///
+  /// In en, this message translates to:
+  /// **'Alternate mobile'**
+  String get profileAltPhone;
+
+  /// Label
+  ///
+  /// In en, this message translates to:
+  /// **'Address'**
+  String get profileAddress;
+
+  /// Value missing
+  ///
+  /// In en, this message translates to:
+  /// **'Not added'**
+  String get profileNotSet;
+
+  /// Button
+  ///
+  /// In en, this message translates to:
+  /// **'Edit contact and address'**
+  String get profileEditContact;
+
+  /// Explains which fields are reviewed
+  ///
+  /// In en, this message translates to:
+  /// **'To change your name, mobile number, vehicle, licence or Aadhaar, contact Agrimore support — an admin reviews those changes.'**
+  String get profileLockedNote;
+
+  /// Document state
+  ///
+  /// In en, this message translates to:
+  /// **'Submitted'**
+  String get docSubmitted;
+
+  /// Document state
+  ///
+  /// In en, this message translates to:
+  /// **'Not submitted'**
+  String get docNotSubmitted;
+
+  /// Payout destination
+  ///
+  /// In en, this message translates to:
+  /// **'Bank account {masked}'**
+  String payoutBank(String masked);
+
+  /// Payout destination
+  ///
+  /// In en, this message translates to:
+  /// **'UPI {upi}'**
+  String payoutUpi(String upi);
+
+  /// No destination
+  ///
+  /// In en, this message translates to:
+  /// **'No payout details yet'**
+  String get payoutNone;
+
+  /// Button (reviewed flow)
+  ///
+  /// In en, this message translates to:
+  /// **'Change payout details'**
+  String get payoutChange;
+
+  /// Button
+  ///
+  /// In en, this message translates to:
+  /// **'Call Agrimore support'**
+  String get supportCall;
+
+  /// Button
+  ///
+  /// In en, this message translates to:
+  /// **'Email Agrimore support'**
+  String get supportEmail;
+
+  /// Launcher failed
+  ///
+  /// In en, this message translates to:
+  /// **'Couldn\'t open that. Support: {contact}'**
+  String supportOpenFailed(String contact);
+
+  /// Button
+  ///
+  /// In en, this message translates to:
+  /// **'Delete my account'**
+  String get deleteAccount;
+
+  /// Dialog title
+  ///
+  /// In en, this message translates to:
+  /// **'Delete your account?'**
+  String get deleteConfirmTitle;
+
+  /// Dialog body
+  ///
+  /// In en, this message translates to:
+  /// **'Your profile, documents and payout details are removed and you are signed out. Records of your deliveries and payments are kept. This cannot be undone.'**
+  String get deleteConfirmBody;
+
+  /// Dialog destructive action
+  ///
+  /// In en, this message translates to:
+  /// **'Delete'**
+  String get deleteConfirm;
+
+  /// Dialog cancel
+  ///
+  /// In en, this message translates to:
+  /// **'Cancel'**
+  String get cancel;
+
+  /// Toast after deletion
+  ///
+  /// In en, this message translates to:
+  /// **'Your account was deleted.'**
+  String get deleteDone;
+
+  /// Account action refused
+  ///
+  /// In en, this message translates to:
+  /// **'You still have an order assigned. Deliver it or ask Agrimore to reassign it first.'**
+  String get failActiveOrder;
+
+  /// Account action refused
+  ///
+  /// In en, this message translates to:
+  /// **'You still hold customers\' cash. Deposit it with Agrimore first.'**
+  String get failCashHeld;
+
+  /// Account action refused
+  ///
+  /// In en, this message translates to:
+  /// **'Agrimore still owes you delivery pay. Wait until your statement is paid.'**
+  String get failPayOwed;
+
+  /// Account action refused
+  ///
+  /// In en, this message translates to:
+  /// **'This account still has an open balance or order. Contact Agrimore support.'**
+  String get failOtherBalance;
+
+  /// Account action refused
+  ///
+  /// In en, this message translates to:
+  /// **'Some details need fixing — they\'re marked.'**
+  String get failInvalid;
+
+  /// Account action failed
+  ///
+  /// In en, this message translates to:
+  /// **'No connection. Try again.'**
+  String get failNetwork;
+
+  /// Account action failed
+  ///
+  /// In en, this message translates to:
+  /// **'That didn\'t go through. Try again.'**
+  String get failUnknown;
+
+  /// Button
+  ///
+  /// In en, this message translates to:
+  /// **'Save'**
+  String get save;
+
+  /// Toast
+  ///
+  /// In en, this message translates to:
+  /// **'Contact details saved.'**
+  String get contactSaved;
+
+  /// Account status title
+  ///
+  /// In en, this message translates to:
+  /// **'Application under review'**
+  String get statusPendingTitle;
+
+  /// Account status body
+  ///
+  /// In en, this message translates to:
+  /// **'An Agrimore admin is checking your details and documents. You\'ll be able to go online once approved.'**
+  String get statusPendingBody;
+
+  /// Account status title
+  ///
+  /// In en, this message translates to:
+  /// **'Application not approved'**
+  String get statusRejectedTitle;
+
+  /// Account status body
+  ///
+  /// In en, this message translates to:
+  /// **'Your application was not approved. You can correct it and submit again.'**
+  String get statusRejectedBody;
+
+  /// Account status title
+  ///
+  /// In en, this message translates to:
+  /// **'Account suspended'**
+  String get statusSuspendedTitle;
+
+  /// Account status body
+  ///
+  /// In en, this message translates to:
+  /// **'You can\'t go online or accept orders until an admin reinstates your account.'**
+  String get statusSuspendedBody;
+
+  /// Account status title
+  ///
+  /// In en, this message translates to:
+  /// **'Account deactivated'**
+  String get statusDeactivatedTitle;
+
+  /// Account status body
+  ///
+  /// In en, this message translates to:
+  /// **'This delivery partner account is no longer active.'**
+  String get statusDeactivatedBody;
+
+  /// Label for the admin's reason
+  ///
+  /// In en, this message translates to:
+  /// **'Reason'**
+  String get statusReason;
+
+  /// Button (pending/rejected)
+  ///
+  /// In en, this message translates to:
+  /// **'Update and resubmit'**
+  String get statusUpdateApplication;
+
+  /// Button (pending)
+  ///
+  /// In en, this message translates to:
+  /// **'Edit application'**
+  String get statusEditApplication;
+
+  /// Banner when a pending/rejected rider edits the application
+  ///
+  /// In en, this message translates to:
+  /// **'Correct your details and submit your application again.'**
+  String get regResubmitNote;
 }
 
 class _AppLocalizationsDelegate
