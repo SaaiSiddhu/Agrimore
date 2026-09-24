@@ -124,6 +124,12 @@ class _AdminShellState extends State<AdminShell> {
       'Rider Payouts',
       AdminRoutes.riderPayouts,
     ),
+    // DLV-S2. Appended at the end, same index-stability rule.
+    _NavItem(
+      Icons.sos_rounded,
+      'Rider Incidents',
+      AdminRoutes.riderIncidents,
+    ),
   ];
 
   int get _currentIndex {
