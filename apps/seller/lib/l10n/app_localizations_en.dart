@@ -3216,4 +3216,89 @@ class AppLocalizationsEn extends AppLocalizations {
 
   @override
   String get editorMoqHelper => 'Enter the minimum number of units per order.';
+
+  @override
+  String get paymentsPendingHelp =>
+      'Amount from completed orders that are pending settlement.';
+
+  @override
+  String get paymentsSeeAll => 'See all';
+
+  @override
+  String get paymentsRecent => 'Recent settlements';
+
+  @override
+  String get paymentsAllTitle => 'All settlements';
+
+  @override
+  String get paymentsEmptyTitle => 'No settlements yet';
+
+  @override
+  String get paymentsEmptyBody =>
+      'Settlements appear here after delivered orders.';
+
+  @override
+  String paymentsCreatedOn(String date) {
+    return 'Created $date';
+  }
+
+  @override
+  String paymentsPaidOn(String date) {
+    return 'Paid $date';
+  }
+
+  @override
+  String get payoutAccountOnFile => 'Account on file';
+
+  @override
+  String get payoutAccountNotAvailable =>
+      'Your payout account details will appear here once added.';
+
+  @override
+  String get settlementAwaiting => 'Awaiting payment record';
+
+  @override
+  String get settlementPaymentPending => 'Payment pending';
+
+  @override
+  String get settlementToReceive => 'To receive';
+
+  @override
+  String get settlementReceived => 'Received';
+
+  @override
+  String get settlementAmountsNote =>
+      'Amounts shown for this order, as recorded in the settlement.';
+
+  @override
+  String get settlementReferenceCopied => 'Payment reference copied';
+
+  @override
+  String get settlementCopyReference => 'Copy payment reference';
+
+  @override
+  String get settlementFinancials => 'Order financials';
+
+  @override
+  String get settlementStatus => 'Settlement status';
+
+  @override
+  String get statementSubtitle => 'Monthly statement';
+
+  @override
+  String get statementOrders => 'Orders in this month';
+
+  @override
+  String get statementSummary => 'Statement summary';
+
+  @override
+  String statementCount(int count) {
+    String _temp0 = intl.Intl.pluralLogic(
+      count,
+      locale: localeName,
+      other: '$count settlements',
+      one: '1 settlement',
+    );
+    return '$_temp0';
+  }
 }

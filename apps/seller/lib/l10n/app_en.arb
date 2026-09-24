@@ -1899,5 +1899,49 @@
   "editorCoverageLead": "Choose where this product is available to buyers.",
   "editorCoverageSummary": "Coverage",
   "editorB2bRuleShort": "Must be lower than your selling price.",
-  "editorMoqHelper": "Enter the minimum number of units per order."
+  "editorMoqHelper": "Enter the minimum number of units per order.",
+  "paymentsPendingHelp": "Amount from completed orders that are pending settlement.",
+  "paymentsSeeAll": "See all",
+  "paymentsRecent": "Recent settlements",
+  "paymentsAllTitle": "All settlements",
+  "paymentsEmptyTitle": "No settlements yet",
+  "paymentsEmptyBody": "Settlements appear here after delivered orders.",
+  "paymentsCreatedOn": "Created {date}",
+  "@paymentsCreatedOn": {
+    "placeholders": {
+      "date": {
+        "type": "String"
+      }
+    }
+  },
+  "paymentsPaidOn": "Paid {date}",
+  "@paymentsPaidOn": {
+    "placeholders": {
+      "date": {
+        "type": "String"
+      }
+    }
+  },
+  "payoutAccountOnFile": "Account on file",
+  "payoutAccountNotAvailable": "Your payout account details will appear here once added.",
+  "settlementAwaiting": "Awaiting payment record",
+  "settlementPaymentPending": "Payment pending",
+  "settlementToReceive": "To receive",
+  "settlementReceived": "Received",
+  "settlementAmountsNote": "Amounts shown for this order, as recorded in the settlement.",
+  "settlementReferenceCopied": "Payment reference copied",
+  "settlementCopyReference": "Copy payment reference",
+  "settlementFinancials": "Order financials",
+  "settlementStatus": "Settlement status",
+  "statementSubtitle": "Monthly statement",
+  "statementOrders": "Orders in this month",
+  "statementSummary": "Statement summary",
+  "statementCount": "{count, plural, =1{1 settlement} other{{count} settlements}}",
+  "@statementCount": {
+    "placeholders": {
+      "count": {
+        "type": "int"
+      }
+    }
+  }
 }

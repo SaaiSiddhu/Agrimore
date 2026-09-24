@@ -5499,6 +5499,144 @@ abstract class AppLocalizations {
   /// In en, this message translates to:
   /// **'Enter the minimum number of units per order.'**
   String get editorMoqHelper;
+
+  /// No description provided for @paymentsPendingHelp.
+  ///
+  /// In en, this message translates to:
+  /// **'Amount from completed orders that are pending settlement.'**
+  String get paymentsPendingHelp;
+
+  /// No description provided for @paymentsSeeAll.
+  ///
+  /// In en, this message translates to:
+  /// **'See all'**
+  String get paymentsSeeAll;
+
+  /// No description provided for @paymentsRecent.
+  ///
+  /// In en, this message translates to:
+  /// **'Recent settlements'**
+  String get paymentsRecent;
+
+  /// No description provided for @paymentsAllTitle.
+  ///
+  /// In en, this message translates to:
+  /// **'All settlements'**
+  String get paymentsAllTitle;
+
+  /// No description provided for @paymentsEmptyTitle.
+  ///
+  /// In en, this message translates to:
+  /// **'No settlements yet'**
+  String get paymentsEmptyTitle;
+
+  /// No description provided for @paymentsEmptyBody.
+  ///
+  /// In en, this message translates to:
+  /// **'Settlements appear here after delivered orders.'**
+  String get paymentsEmptyBody;
+
+  /// No description provided for @paymentsCreatedOn.
+  ///
+  /// In en, this message translates to:
+  /// **'Created {date}'**
+  String paymentsCreatedOn(String date);
+
+  /// No description provided for @paymentsPaidOn.
+  ///
+  /// In en, this message translates to:
+  /// **'Paid {date}'**
+  String paymentsPaidOn(String date);
+
+  /// No description provided for @payoutAccountOnFile.
+  ///
+  /// In en, this message translates to:
+  /// **'Account on file'**
+  String get payoutAccountOnFile;
+
+  /// No description provided for @payoutAccountNotAvailable.
+  ///
+  /// In en, this message translates to:
+  /// **'Your payout account details will appear here once added.'**
+  String get payoutAccountNotAvailable;
+
+  /// No description provided for @settlementAwaiting.
+  ///
+  /// In en, this message translates to:
+  /// **'Awaiting payment record'**
+  String get settlementAwaiting;
+
+  /// No description provided for @settlementPaymentPending.
+  ///
+  /// In en, this message translates to:
+  /// **'Payment pending'**
+  String get settlementPaymentPending;
+
+  /// No description provided for @settlementToReceive.
+  ///
+  /// In en, this message translates to:
+  /// **'To receive'**
+  String get settlementToReceive;
+
+  /// No description provided for @settlementReceived.
+  ///
+  /// In en, this message translates to:
+  /// **'Received'**
+  String get settlementReceived;
+
+  /// No description provided for @settlementAmountsNote.
+  ///
+  /// In en, this message translates to:
+  /// **'Amounts shown for this order, as recorded in the settlement.'**
+  String get settlementAmountsNote;
+
+  /// No description provided for @settlementReferenceCopied.
+  ///
+  /// In en, this message translates to:
+  /// **'Payment reference copied'**
+  String get settlementReferenceCopied;
+
+  /// No description provided for @settlementCopyReference.
+  ///
+  /// In en, this message translates to:
+  /// **'Copy payment reference'**
+  String get settlementCopyReference;
+
+  /// No description provided for @settlementFinancials.
+  ///
+  /// In en, this message translates to:
+  /// **'Order financials'**
+  String get settlementFinancials;
+
+  /// No description provided for @settlementStatus.
+  ///
+  /// In en, this message translates to:
+  /// **'Settlement status'**
+  String get settlementStatus;
+
+  /// No description provided for @statementSubtitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Monthly statement'**
+  String get statementSubtitle;
+
+  /// No description provided for @statementOrders.
+  ///
+  /// In en, this message translates to:
+  /// **'Orders in this month'**
+  String get statementOrders;
+
+  /// No description provided for @statementSummary.
+  ///
+  /// In en, this message translates to:
+  /// **'Statement summary'**
+  String get statementSummary;
+
+  /// No description provided for @statementCount.
+  ///
+  /// In en, this message translates to:
+  /// **'{count, plural, =1{1 settlement} other{{count} settlements}}'**
+  String statementCount(int count);
 }
 
 class _AppLocalizationsDelegate
