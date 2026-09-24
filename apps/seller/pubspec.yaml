@@ -45,8 +45,10 @@ dependencies:
   image_picker: ^1.1.2
   firebase_storage: ^12.3.7
   
-  # UI
+  # UI — the seller's own design system (lib/design_system/) uses Lucide icons
+  # (same constraint as the shared packages, so the lockfile resolves the same version).
   cupertino_icons: ^1.0.8
+  lucide_icons_flutter: ^3.1.20
 
 dev_dependencies:
   flutter_test:
@@ -71,3 +73,17 @@ flutter:
   # same phase). Do not re-add it.
   assets:
     - assets/images/
+
+  # SELLER-REDESIGN-1 (decisions D0/D14b): Inter 4.1 (SIL OFL 1.1, assets/fonts/OFL.txt)
+  # bundled with the seller app itself — the seller's own design system.
+  fonts:
+    - family: Inter
+      fonts:
+        - asset: assets/fonts/Inter-Regular.ttf
+          weight: 400
+        - asset: assets/fonts/Inter-Medium.ttf
+          weight: 500
+        - asset: assets/fonts/Inter-SemiBold.ttf
+          weight: 600
+        - asset: assets/fonts/Inter-Bold.ttf
+          weight: 700
