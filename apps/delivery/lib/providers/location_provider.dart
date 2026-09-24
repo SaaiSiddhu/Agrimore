@@ -27,7 +27,6 @@ import 'package:geolocator/geolocator.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
 import '../location/location_policy.dart';
 import '../location/rider_platform.dart';
-import '../services/distance_service.dart';
 
 class LocationProvider extends ChangeNotifier with WidgetsBindingObserver {
   LocationProvider() {
@@ -359,30 +358,5 @@ class LocationProvider extends ChangeNotifier with WidgetsBindingObserver {
     _positionSubscription?.cancel();
     _heartbeat?.cancel();
     super.dispose();
-  }
-
-  /// Calculate distance from current position to target coordinates
-  /// Returns distance in kilometers, or null if current position not available
-  double? calculateDistanceTo(double targetLat, double targetLng) {
-    if (_currentPosition == null) return null;
-
-    return DistanceService.calculateDistance(
-      startLat: _currentPosition!.latitude,
-      startLng: _currentPosition!.longitude,
-      endLat: targetLat,
-      endLng: targetLng,
-    );
-  }
-
-  /// Get delivery details including distance and earnings
-  Map<String, dynamic>? getDeliveryDetails(double targetLat, double targetLng) {
-    if (_currentPosition == null) return null;
-
-    return DistanceService.calculateDeliveryDetails(
-      partnerLat: _currentPosition!.latitude,
-      partnerLng: _currentPosition!.longitude,
-      customerLat: targetLat,
-      customerLng: targetLng,
-    );
   }
 }

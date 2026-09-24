@@ -94,11 +94,6 @@ class _ActiveOrderScreenState extends State<ActiveOrderScreen> {
             onPressed: _callCustomer,
             icon: const Icon(Icons.call_rounded),
           ),
-          IconButton(
-            tooltip: 'Chat',
-            onPressed: _openCommunicationSheet,
-            icon: const Icon(Icons.chat_bubble_outline_rounded),
-          ),
         ],
       ),
       body: SingleChildScrollView(
@@ -1149,67 +1144,9 @@ class _ActiveOrderScreenState extends State<ActiveOrderScreen> {
     }
   }
 
-  void _openCommunicationSheet() {
-    showModalBottomSheet<void>(
-      context: context,
-      showDragHandle: true,
-      builder: (ctx) => SafeArea(
-        child: Column(
-          mainAxisSize: MainAxisSize.min,
-          children: [
-            ListTile(
-              leading: const Icon(Icons.person_outline_rounded),
-              title: const Text('Chat with Customer'),
-              trailing: const Icon(Icons.chevron_right_rounded),
-              onTap: () {
-                Navigator.pop(ctx);
-                _createChatThread('customer');
-              },
-            ),
-            if ((widget.order.sellerId ?? '').isNotEmpty)
-              ListTile(
-                leading: const Icon(Icons.storefront_rounded),
-                title: const Text('Chat with Seller'),
-                trailing: const Icon(Icons.chevron_right_rounded),
-                onTap: () {
-                  Navigator.pop(ctx);
-                  _createChatThread('seller');
-                },
-              ),
-          ],
-        ),
-      ),
-    );
-  }
-
-  Future<void> _createChatThread(String target) async {
-    final order = widget.order;
-    final partnerId = order.deliveryPartnerId ?? '';
-    final sellerId = order.sellerId ?? '';
-    final threadId = target == 'seller'
-        ? '${order.id}_seller_delivery'
-        : '${order.id}_customer_delivery';
-    final participantIds = target == 'seller'
-        ? [sellerId, partnerId].where((id) => id.isNotEmpty).toList()
-        : [order.userId, partnerId].where((id) => id.isNotEmpty).toList();
-
-    await FirebaseFirestore.instance.collection('threads').doc(threadId).set({
-      'orderId': order.id,
-      'orderNumber': order.orderNumber,
-      'customerId': order.userId,
-      'sellerId': sellerId,
-      'deliveryPartnerId': partnerId,
-      'participantIds': participantIds,
-      'type': target == 'seller' ? 'seller_delivery' : 'customer_delivery',
-      'updatedAt': FieldValue.serverTimestamp(),
-      'createdAt': FieldValue.serverTimestamp(),
-    }, SetOptions(merge: true));
-
-    if (!mounted) return;
-    ScaffoldMessenger.of(context).showSnackBar(
-      const SnackBar(content: Text('Chat thread is ready')),
-    );
-  }
+  // Phase DLV-S1: the Chat icon created a threads document from this
+  // client and said "Chat thread is ready" with no chat screen behind it.
+  // Removed until an authorised rider conversation exists (programme K1).
 }
 
 class _StepInfo {
