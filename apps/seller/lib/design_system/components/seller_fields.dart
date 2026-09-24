@@ -357,7 +357,10 @@ class _SellerTextFieldState extends State<SellerTextField> with _Registers<Selle
         if (widget.prefixText != null) {
           prefix = _Segment(widget.prefixText!);
         } else if (widget.prefixIcon != null) {
-          prefix = Icon(widget.prefixIcon, size: SellerIconSize.md);
+          prefix = Padding(
+            padding: const EdgeInsetsDirectional.only(start: SellerSpace.s12, end: SellerSpace.s8),
+            child: Icon(widget.prefixIcon, size: SellerIconSize.md),
+          );
         }
         var style = context.text.bodyLarge!;
         if (widget.tabular) style = style.tabular;

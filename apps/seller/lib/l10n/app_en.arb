@@ -1827,5 +1827,77 @@
       }
     }
   },
-  "productVisibilityFailed": "Couldn't update visibility. Try again."
+  "productVisibilityFailed": "Couldn't update visibility. Try again.",
+  "variantsEmptyTitle": "No pack options yet",
+  "variantsEmptyBody": "Add pack options to offer this product in different sizes.",
+  "variantsCount": "Pack options ({count})",
+  "@variantsCount": {
+    "placeholders": {
+      "count": {
+        "type": "int"
+      }
+    }
+  },
+  "variantsEditNamed": "Edit {name}",
+  "@variantsEditNamed": {
+    "placeholders": {
+      "name": {
+        "type": "String"
+      }
+    }
+  },
+  "variantsStockRule": "Each option has its own price and stock. Product stock is not added to option stock.",
+  "editorApply": "Apply changes",
+  "editorPackOptions": "Pack options",
+  "editorPackOptionsHint": "Manage product packs and variants",
+  "editorPricingTax": "Pricing & tax",
+  "editorPricingTaxHint": "Set additional pricing information",
+  "editorCoverageRowHint": "Manage where this product is visible",
+  "editorWholesale": "Wholesale",
+  "editorWholesaleRowHint": "Set wholesale buying options",
+  "editorWholesaleSummary": "Wholesale summary",
+  "editorWholesaleOffTitle": "Wholesale is off",
+  "editorWholesaleOffBody": "Enable wholesale to set a separate price for bulk orders and a minimum order quantity.",
+  "editorWholesaleMinUnits": "{count} units",
+  "@editorWholesaleMinUnits": {
+    "placeholders": {
+      "count": {
+        "type": "int"
+      }
+    }
+  },
+  "editorWholesaleLine": "{price} · min {count}",
+  "@editorWholesaleLine": {
+    "placeholders": {
+      "price": {
+        "type": "String"
+      },
+      "count": {
+        "type": "int"
+      }
+    }
+  },
+  "editorOptionsCount": "{count, plural, =0{No options} =1{1 option} other{{count} options}}",
+  "@editorOptionsCount": {
+    "placeholders": {
+      "count": {
+        "type": "int"
+      }
+    }
+  },
+  "editorReplacePhoto": "Replace photo",
+  "editorLowStockAlert": "Low stock alert: {count}",
+  "@editorLowStockAlert": {
+    "placeholders": {
+      "count": {
+        "type": "String"
+      }
+    }
+  },
+  "editorSaveFailedBody": "Check your connection and try again. Your changes are not saved.",
+  "editorPriceSourceLabel": "Price source",
+  "editorCoverageLead": "Choose where this product is available to buyers.",
+  "editorCoverageSummary": "Coverage",
+  "editorB2bRuleShort": "Must be lower than your selling price.",
+  "editorMoqHelper": "Enter the minimum number of units per order."
 }

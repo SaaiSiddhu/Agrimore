@@ -14,13 +14,15 @@ const int kDefaultLowStockThreshold = 10;
 bool isLowStock(ProductModel p) => !p.isDraft && p.isActive && p.stock > 0 && p.stock <= (p.lowStockThreshold ?? kDefaultLowStockThreshold);
 
 class SellerProductProvider with ChangeNotifier {
-  SellerProductProvider();
+  SellerProductProvider() : _preview = false;
 
   /// Test constructor: a fixed product list, no Firebase.
   @visibleForTesting
-  SellerProductProvider.preview(List<ProductModel> products) {
+  SellerProductProvider.preview(List<ProductModel> products) : _preview = true {
     _products = List.of(products);
   }
+
+  final bool _preview;
 
   // A getter, not a field: nothing touches Firebase until it is used.
   FirebaseFirestore get _firestore => FirebaseFirestore.instance;
@@ -297,7 +299,7 @@ class SellerProductProvider with ChangeNotifier {
 
   Future<List<Map<String, dynamic>>> searchMasterProducts(String query) async {
     final term = query.trim();
-    if (term.length < 2) return [];
+    if (term.length < 2 || _preview) return [];
 
     QuerySnapshot<Map<String, dynamic>> snapshot;
     try {
@@ -321,7 +323,10 @@ class SellerProductProvider with ChangeNotifier {
         .toList();
   }
 
+  /// The real centres; empty when there are none (no stand-in list — the
+  /// seller app never shows invented data).
   Future<List<Map<String, dynamic>>> loadCenters() async {
+    if (_preview) return const [];
     final snapshot = await _firestore.collection('centers').limit(50).get();
     final centers = snapshot.docs.map((doc) {
       final data = doc.data();
@@ -334,13 +339,7 @@ class SellerProductProvider with ChangeNotifier {
       return {'id': doc.id, 'name': name, ...data};
     }).toList();
 
-    if (centers.isNotEmpty) return centers;
-    return const [
-      {'id': 'tamil_nadu', 'name': 'Tamil Nadu'},
-      {'id': 'theni', 'name': 'Theni'},
-      {'id': 'chennai', 'name': 'Chennai'},
-      {'id': 'coimbatore', 'name': 'Coimbatore'},
-    ];
+    return centers;
   }
 
   Future<double?> getCenterPrice({
@@ -348,6 +347,7 @@ class SellerProductProvider with ChangeNotifier {
     required String centerId,
     String? sellerId,
   }) async {
+    if (_preview) return null;
     final candidateIds = [
       if (sellerId != null && sellerId.isNotEmpty)
         '${masterProductId}_${centerId}_$sellerId',

@@ -85,6 +85,9 @@ abstract final class SellerFormat {
     return '${date(from)} – ${date(to)}';
   }
 
+  /// The rupee sign for currency field prefixes (board 05 "₹ prefix segment").
+  static const String rupeeSymbol = '₹';
+
   /// Non-breaking space: a masked number never wraps.
   static const String nbsp = ' ';
 

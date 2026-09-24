@@ -3111,4 +3111,109 @@ class AppLocalizationsEn extends AppLocalizations {
   @override
   String get productVisibilityFailed =>
       'Couldn\'t update visibility. Try again.';
+
+  @override
+  String get variantsEmptyTitle => 'No pack options yet';
+
+  @override
+  String get variantsEmptyBody =>
+      'Add pack options to offer this product in different sizes.';
+
+  @override
+  String variantsCount(int count) {
+    return 'Pack options ($count)';
+  }
+
+  @override
+  String variantsEditNamed(String name) {
+    return 'Edit $name';
+  }
+
+  @override
+  String get variantsStockRule =>
+      'Each option has its own price and stock. Product stock is not added to option stock.';
+
+  @override
+  String get editorApply => 'Apply changes';
+
+  @override
+  String get editorPackOptions => 'Pack options';
+
+  @override
+  String get editorPackOptionsHint => 'Manage product packs and variants';
+
+  @override
+  String get editorPricingTax => 'Pricing & tax';
+
+  @override
+  String get editorPricingTaxHint => 'Set additional pricing information';
+
+  @override
+  String get editorCoverageRowHint => 'Manage where this product is visible';
+
+  @override
+  String get editorWholesale => 'Wholesale';
+
+  @override
+  String get editorWholesaleRowHint => 'Set wholesale buying options';
+
+  @override
+  String get editorWholesaleSummary => 'Wholesale summary';
+
+  @override
+  String get editorWholesaleOffTitle => 'Wholesale is off';
+
+  @override
+  String get editorWholesaleOffBody =>
+      'Enable wholesale to set a separate price for bulk orders and a minimum order quantity.';
+
+  @override
+  String editorWholesaleMinUnits(int count) {
+    return '$count units';
+  }
+
+  @override
+  String editorWholesaleLine(String price, int count) {
+    return '$price · min $count';
+  }
+
+  @override
+  String editorOptionsCount(int count) {
+    String _temp0 = intl.Intl.pluralLogic(
+      count,
+      locale: localeName,
+      other: '$count options',
+      one: '1 option',
+      zero: 'No options',
+    );
+    return '$_temp0';
+  }
+
+  @override
+  String get editorReplacePhoto => 'Replace photo';
+
+  @override
+  String editorLowStockAlert(String count) {
+    return 'Low stock alert: $count';
+  }
+
+  @override
+  String get editorSaveFailedBody =>
+      'Check your connection and try again. Your changes are not saved.';
+
+  @override
+  String get editorPriceSourceLabel => 'Price source';
+
+  @override
+  String get editorCoverageLead =>
+      'Choose where this product is available to buyers.';
+
+  @override
+  String get editorCoverageSummary => 'Coverage';
+
+  @override
+  String get editorB2bRuleShort => 'Must be lower than your selling price.';
+
+  @override
+  String get editorMoqHelper => 'Enter the minimum number of units per order.';
 }

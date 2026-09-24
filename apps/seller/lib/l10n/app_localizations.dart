@@ -5337,6 +5337,168 @@ abstract class AppLocalizations {
   /// In en, this message translates to:
   /// **'Couldn\'t update visibility. Try again.'**
   String get productVisibilityFailed;
+
+  /// No description provided for @variantsEmptyTitle.
+  ///
+  /// In en, this message translates to:
+  /// **'No pack options yet'**
+  String get variantsEmptyTitle;
+
+  /// No description provided for @variantsEmptyBody.
+  ///
+  /// In en, this message translates to:
+  /// **'Add pack options to offer this product in different sizes.'**
+  String get variantsEmptyBody;
+
+  /// No description provided for @variantsCount.
+  ///
+  /// In en, this message translates to:
+  /// **'Pack options ({count})'**
+  String variantsCount(int count);
+
+  /// No description provided for @variantsEditNamed.
+  ///
+  /// In en, this message translates to:
+  /// **'Edit {name}'**
+  String variantsEditNamed(String name);
+
+  /// No description provided for @variantsStockRule.
+  ///
+  /// In en, this message translates to:
+  /// **'Each option has its own price and stock. Product stock is not added to option stock.'**
+  String get variantsStockRule;
+
+  /// No description provided for @editorApply.
+  ///
+  /// In en, this message translates to:
+  /// **'Apply changes'**
+  String get editorApply;
+
+  /// No description provided for @editorPackOptions.
+  ///
+  /// In en, this message translates to:
+  /// **'Pack options'**
+  String get editorPackOptions;
+
+  /// No description provided for @editorPackOptionsHint.
+  ///
+  /// In en, this message translates to:
+  /// **'Manage product packs and variants'**
+  String get editorPackOptionsHint;
+
+  /// No description provided for @editorPricingTax.
+  ///
+  /// In en, this message translates to:
+  /// **'Pricing & tax'**
+  String get editorPricingTax;
+
+  /// No description provided for @editorPricingTaxHint.
+  ///
+  /// In en, this message translates to:
+  /// **'Set additional pricing information'**
+  String get editorPricingTaxHint;
+
+  /// No description provided for @editorCoverageRowHint.
+  ///
+  /// In en, this message translates to:
+  /// **'Manage where this product is visible'**
+  String get editorCoverageRowHint;
+
+  /// No description provided for @editorWholesale.
+  ///
+  /// In en, this message translates to:
+  /// **'Wholesale'**
+  String get editorWholesale;
+
+  /// No description provided for @editorWholesaleRowHint.
+  ///
+  /// In en, this message translates to:
+  /// **'Set wholesale buying options'**
+  String get editorWholesaleRowHint;
+
+  /// No description provided for @editorWholesaleSummary.
+  ///
+  /// In en, this message translates to:
+  /// **'Wholesale summary'**
+  String get editorWholesaleSummary;
+
+  /// No description provided for @editorWholesaleOffTitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Wholesale is off'**
+  String get editorWholesaleOffTitle;
+
+  /// No description provided for @editorWholesaleOffBody.
+  ///
+  /// In en, this message translates to:
+  /// **'Enable wholesale to set a separate price for bulk orders and a minimum order quantity.'**
+  String get editorWholesaleOffBody;
+
+  /// No description provided for @editorWholesaleMinUnits.
+  ///
+  /// In en, this message translates to:
+  /// **'{count} units'**
+  String editorWholesaleMinUnits(int count);
+
+  /// No description provided for @editorWholesaleLine.
+  ///
+  /// In en, this message translates to:
+  /// **'{price} · min {count}'**
+  String editorWholesaleLine(String price, int count);
+
+  /// No description provided for @editorOptionsCount.
+  ///
+  /// In en, this message translates to:
+  /// **'{count, plural, =0{No options} =1{1 option} other{{count} options}}'**
+  String editorOptionsCount(int count);
+
+  /// No description provided for @editorReplacePhoto.
+  ///
+  /// In en, this message translates to:
+  /// **'Replace photo'**
+  String get editorReplacePhoto;
+
+  /// No description provided for @editorLowStockAlert.
+  ///
+  /// In en, this message translates to:
+  /// **'Low stock alert: {count}'**
+  String editorLowStockAlert(String count);
+
+  /// No description provided for @editorSaveFailedBody.
+  ///
+  /// In en, this message translates to:
+  /// **'Check your connection and try again. Your changes are not saved.'**
+  String get editorSaveFailedBody;
+
+  /// No description provided for @editorPriceSourceLabel.
+  ///
+  /// In en, this message translates to:
+  /// **'Price source'**
+  String get editorPriceSourceLabel;
+
+  /// No description provided for @editorCoverageLead.
+  ///
+  /// In en, this message translates to:
+  /// **'Choose where this product is available to buyers.'**
+  String get editorCoverageLead;
+
+  /// No description provided for @editorCoverageSummary.
+  ///
+  /// In en, this message translates to:
+  /// **'Coverage'**
+  String get editorCoverageSummary;
+
+  /// No description provided for @editorB2bRuleShort.
+  ///
+  /// In en, this message translates to:
+  /// **'Must be lower than your selling price.'**
+  String get editorB2bRuleShort;
+
+  /// No description provided for @editorMoqHelper.
+  ///
+  /// In en, this message translates to:
+  /// **'Enter the minimum number of units per order.'**
+  String get editorMoqHelper;
 }
 
 class _AppLocalizationsDelegate
