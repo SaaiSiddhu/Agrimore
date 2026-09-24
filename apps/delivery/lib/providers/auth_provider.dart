@@ -301,7 +301,7 @@ class DeliveryAuthProvider extends ChangeNotifier {
     try {
       // The password is used exactly as typed — never trimmed.
       await _gateway.signIn(email.trim(), password);
-      await ready.future.timeout(const Duration(seconds: 30), onTimeout: () {});
+      await ready.future.timeout(DeliveryTiming.signInAccountWait, onTimeout: () {});
       return _user != null;
     } on RiderAuthFailure catch (e) {
       debugPrint('Sign-in refused: ${e.code}');

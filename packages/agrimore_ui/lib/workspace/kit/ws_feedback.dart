@@ -39,6 +39,8 @@ abstract final class WsToast {
 }
 
 /// A two-button confirmation; resolves true only on the confirm button.
+/// [icon] heads the dialog; a long [message] scrolls; [dismissible] false
+/// keeps a tap outside from closing it (a disclosure the user must answer).
 Future<bool> wsConfirm(
   BuildContext context, {
   required String title,
@@ -46,13 +48,17 @@ Future<bool> wsConfirm(
   required String confirmLabel,
   required String cancelLabel,
   bool destructive = false,
+  IconData? icon,
+  bool dismissible = true,
 }) async {
   final t = context.ws;
   final result = await showDialog<bool>(
     context: context,
+    barrierDismissible: dismissible,
     builder: (ctx) => AlertDialog(
+      icon: icon == null ? null : Icon(icon, size: WsIconSize.feature, color: t.primary),
       title: Text(title),
-      content: Text(message),
+      content: SingleChildScrollView(child: Text(message)),
       actions: [
         TextButton(onPressed: () => Navigator.of(ctx).pop(false), child: Text(cancelLabel)),
         FilledButton(

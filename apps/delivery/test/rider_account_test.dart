@@ -3,7 +3,6 @@
 // edits through the server, and a resubmission prefilled from the record.
 import 'dart:typed_data';
 
-import 'package:agrimore_core/agrimore_core.dart';
 import 'package:agrimore_ui/agrimore_ui.dart';
 import 'package:delivery/account/rider_account.dart';
 import 'package:delivery/auth/rider_account_source.dart';

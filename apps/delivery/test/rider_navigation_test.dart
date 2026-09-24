@@ -1,9 +1,12 @@
 // Phase DLV-3B — the rider's route card logic (lib/navigation/rider_navigation.dart).
+import 'package:delivery/l10n/app_localizations.dart';
+import 'package:flutter/widgets.dart';
 import 'package:agrimore_core/agrimore_core.dart';
 import 'package:delivery/navigation/rider_navigation.dart';
 import 'package:flutter_test/flutter_test.dart';
 
 void main() {
+  final l = lookupAppLocalizations(const Locale('en'));
   const store = DeliveryPoint(lat: 9.9252, lng: 78.1198);
   const km = 1 / 111.2;
 
@@ -37,9 +40,9 @@ void main() {
     final half = legRemaining(leg: leg, ahead: leg.sublist(1), legSeconds: 600);
     expect(half.meters, closeTo(1000, 5));
     expect(half.seconds, closeTo(300, 2));
-    expect(legSummary(half), '5 min · 1.0 km');
-    expect(legSummary(const LegRemaining(347, 40)), '1 min · 350 m');
-    expect(legSummary(const LegRemaining(2600, null)), '2.6 km');
+    expect(legSummary(l, half), '5 min · 1.0 km');
+    expect(legSummary(l, const LegRemaining(347, 40)), '1 min · 350 m');
+    expect(legSummary(l, const LegRemaining(2600, null)), '2.6 km');
   });
 
   test('camera zoom fits the points; one point is street level', () {

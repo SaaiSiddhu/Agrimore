@@ -6,6 +6,9 @@
 //
 // Pure Dart (no Flutter, no Firebase calls) so the rules below are unit-tested
 // in test/offers_test.dart.
+import 'package:agrimore_ui/agrimore_ui.dart' show AgFormat;
+import '../l10n/app_localizations.dart';
+import 'package:agrimore_core/agrimore_core.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
 
 class DeliveryOffer {
@@ -41,7 +44,7 @@ class DeliveryOffer {
 
   /// Offers last 30 s (dispatch.ts OFFER_TTL_MS); the countdown ring is drawn
   /// against this.
-  static const Duration lifetime = Duration(seconds: 30);
+  static const Duration lifetime = DeliveryTiming.offerLifetime;
 
   bool get isCod => codAmount > 0;
 
@@ -93,44 +96,40 @@ class DeliveryOffer {
 
   /// One line for the notification body. Mirrors dispatch.ts sendOfferPush,
   /// led by the pay when the offer carries it (DLV-4B).
-  String get summary => [
-        if (estimatedPay != null) 'Earn ~₹${estimatedPay!.round()}',
-        pickupDistanceKm == null
-            ? 'Pickup nearby'
-            : 'Pickup ${pickupDistanceKm!.toStringAsFixed(1)} km away',
-        '$itemCount item${itemCount == 1 ? '' : 's'}',
-        if (isCod) 'Collect ₹${codAmount.round()}',
+  String summary(AppLocalizations l) => [
+        if (estimatedPay != null) l.offerSummaryPay(AgFormat.rupeesWhole(estimatedPay!.round())),
+        pickupDistanceKm == null ? l.offerSummaryNearby : l.offerSummaryDistance(pickupDistanceKm!.toStringAsFixed(1)),
+        l.offerSummaryItems(itemCount),
+        if (isCod) l.offerSummaryCollect(AgFormat.rupeesWhole(codAmount.round())),
       ].join(' · ');
 }
 
 /// What a refused accept/decline means for the rider. `reason` is the
 /// callable's details.reason (dispatchCallables.ts); never shows raw server
 /// text (feedback.md §2).
-String offerRefusalMessage({required String code, String? reason}) {
+String offerRefusalMessage(AppLocalizations l, {required String code, String? reason}) {
   if (code == 'failed-precondition') {
     switch (reason) {
       case 'taken':
-        return 'Another delivery partner took this order.';
+        return l.offerRefusalTaken;
       case 'expired':
-        return 'This offer has expired.';
+        return l.offerRefusalExpired;
       case 'busy':
-        return 'Finish your current delivery before taking another.';
+        return l.offerRefusalBusy;
       case 'not_eligible':
-        return 'Your account cannot take orders right now.';
+        return l.offerRefusalNotEligible;
       case 'no_offer':
-        return 'This order is no longer offered to you.';
+        return l.offerRefusalNoOffer;
       // DLV-D1: re-checked at accept.
       case 'offline':
-        return 'Go online to accept orders.';
+        return l.offerRefusalOffline;
       case 'cash_limit':
-        return 'Deposit the cash you hold with Agrimore before taking cash orders.';
+        return l.offerRefusalCashLimit;
     }
   }
-  if (code == 'unauthenticated') return 'Please sign in again.';
-  if (code == 'unavailable' || code == 'deadline-exceeded') {
-    return 'No connection. Check your internet and try again.';
-  }
-  return 'Could not update this offer. Please try again.';
+  if (code == 'unauthenticated') return l.offerRefusalSignIn;
+  if (code == 'unavailable' || code == 'deadline-exceeded') return l.authNetwork;
+  return l.offerRefusalFailed;
 }
 
 /// Notification payload for an offer, and its inverse.

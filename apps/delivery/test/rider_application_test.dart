@@ -4,7 +4,6 @@
 // used exactly as typed; a failure keeps everything the rider entered.
 import 'dart:typed_data';
 
-import 'package:agrimore_core/agrimore_core.dart';
 import 'package:delivery/auth/rider_account_source.dart';
 import 'package:delivery/l10n/app_localizations.dart';
 import 'package:delivery/providers/auth_provider.dart';

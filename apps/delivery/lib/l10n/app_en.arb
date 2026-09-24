@@ -1344,5 +1344,886 @@
   "historyDetailPayError": "Could not load your pay for this order.",
   "@historyDetailPayError": {
     "description": "History detail: earning read failed"
+  },
+  "actionNotNow": "Not now",
+  "@actionNotNow": {
+    "description": "Decline for now"
+  },
+  "actionContinue": "Continue",
+  "@actionContinue": {
+    "description": "Go on to the next step"
+  },
+  "actionLater": "Later",
+  "@actionLater": {
+    "description": "Put off"
+  },
+  "actionOpenSettings": "Open settings",
+  "@actionOpenSettings": {
+    "description": "Open the phone's settings for this app"
+  },
+  "actionAllow": "Allow",
+  "@actionAllow": {
+    "description": "Grant a permission"
+  },
+  "goOnlineServicesOff": "Turn on location (GPS) to go online.",
+  "@goOnlineServicesOff": {
+    "description": "Going online: location services off"
+  },
+  "goOnlinePermissionDenied": "Allow location access to go online. Orders are offered by distance.",
+  "@goOnlinePermissionDenied": {
+    "description": "Going online: permission denied"
+  },
+  "goOnlinePermissionForever": "Location access is turned off for this app. Turn it on in Settings to go online.",
+  "@goOnlinePermissionForever": {
+    "description": "Going online: permission denied forever"
+  },
+  "goOnlineFailed": "Could not get your location. Move to an open area and try again.",
+  "@goOnlineFailed": {
+    "description": "Going online: no fix"
+  },
+  "serverOfflineNoLocation": "You're offline — your location stopped for 15 minutes. Go online again when you're ready.",
+  "@serverOfflineNoLocation": {
+    "description": "The server took the rider offline for no location"
+  },
+  "locationDisclosureTitle": "Your location while you are online",
+  "@locationDisclosureTitle": {
+    "description": "Play prominent disclosure title"
+  },
+  "locationDisclosureBody": "While you are online, Agrimore Delivery collects your location — also when the app is closed or not in use — to offer you nearby orders and to show customers where their delivery is. A notification shows while this is on. It stops as soon as you go offline.",
+  "@locationDisclosureBody": {
+    "description": "Play prominent disclosure body"
+  },
+  "backgroundLocationTitle": "Keep deliveries working when the app closes",
+  "@backgroundLocationTitle": {
+    "description": "Allow-all-the-time step title"
+  },
+  "backgroundLocationBody": "Your phone sometimes closes apps to save memory. To keep sharing your location while you are online even then, choose \"Allow all the time\" on the next screen. It still stops as soon as you go offline.",
+  "@backgroundLocationBody": {
+    "description": "Allow-all-the-time step body"
+  },
+  "backgroundLocationReminder": "You are online. If your phone closes the app, location sharing stops and you go offline — allow location \"all the time\" in Settings to avoid this.",
+  "@backgroundLocationReminder": {
+    "description": "Shown after going online without background location"
+  },
+  "batteryGuideTitle": "Stop your phone closing the app",
+  "@batteryGuideTitle": {
+    "description": "Battery guide title"
+  },
+  "batteryGuideBody": "Some phones close apps in the background to save battery, which takes you offline. In the app settings that open next, set Battery to \"Unrestricted\" (or \"No restrictions\"). On Xiaomi, Oppo, Vivo and Realme phones also turn on \"Autostart\".",
+  "@batteryGuideBody": {
+    "description": "Battery guide body"
+  },
+  "onlineNoticeTitle": "You're online",
+  "@onlineNoticeTitle": {
+    "description": "Ongoing notification while sharing location"
+  },
+  "onlineNoticeText": "Sharing your location for nearby orders and live tracking. Go offline in the app to stop.",
+  "@onlineNoticeText": {
+    "description": "Ongoing notification text"
+  },
+  "onlineNoticeChannel": "Online status",
+  "@onlineNoticeChannel": {
+    "description": "Android notification channel name for the ongoing notice"
+  },
+  "offerChannelName": "Delivery offers",
+  "@offerChannelName": {
+    "description": "Android notification channel name for offers"
+  },
+  "offerChannelDescription": "Rings when a new delivery order is offered to you",
+  "@offerChannelDescription": {
+    "description": "Android notification channel description"
+  },
+  "offerNotificationTitle": "New delivery request",
+  "@offerNotificationTitle": {
+    "description": "Offer notification title"
+  },
+  "offerNotificationBody": "Tap to see the order",
+  "@offerNotificationBody": {
+    "description": "Offer notification body when no details are known"
+  },
+  "offerRingPromptTitle": "Ring for new orders?",
+  "@offerRingPromptTitle": {
+    "description": "Ask for full-screen alerts"
+  },
+  "offerRingPromptBody": "Allow full-screen alerts so a new delivery order rings and shows even when your phone is locked. You can change this later in Settings.",
+  "@offerRingPromptBody": {
+    "description": "Full-screen alert permission explanation"
+  },
+  "offerSummaryPay": "Earn ~{amount}",
+  "@offerSummaryPay": {
+    "description": "Offer line: estimated pay",
+    "placeholders": {
+      "amount": {
+        "type": "String"
+      }
+    }
+  },
+  "offerSummaryNearby": "Pickup nearby",
+  "@offerSummaryNearby": {
+    "description": "Offer line: pickup distance unknown"
+  },
+  "offerSummaryDistance": "Pickup {km} km away",
+  "@offerSummaryDistance": {
+    "description": "Offer line: pickup distance",
+    "placeholders": {
+      "km": {
+        "type": "String"
+      }
+    }
+  },
+  "offerSummaryItems": "{count, plural, =1{1 item} other{{count} items}}",
+  "@offerSummaryItems": {
+    "description": "Offer line: item count",
+    "placeholders": {
+      "count": {
+        "type": "int"
+      }
+    }
+  },
+  "offerSummaryCollect": "Collect {amount}",
+  "@offerSummaryCollect": {
+    "description": "Offer line: cash to collect",
+    "placeholders": {
+      "amount": {
+        "type": "String"
+      }
+    }
+  },
+  "offerRefusalTaken": "Another delivery partner took this order.",
+  "@offerRefusalTaken": {
+    "description": "Accept refused: taken"
+  },
+  "offerRefusalExpired": "This offer has expired.",
+  "@offerRefusalExpired": {
+    "description": "Accept refused: expired"
+  },
+  "offerRefusalBusy": "Finish your current delivery before taking another.",
+  "@offerRefusalBusy": {
+    "description": "Accept refused: busy"
+  },
+  "offerRefusalNotEligible": "Your account cannot take orders right now.",
+  "@offerRefusalNotEligible": {
+    "description": "Accept refused: not eligible"
+  },
+  "offerRefusalNoOffer": "This order is no longer offered to you.",
+  "@offerRefusalNoOffer": {
+    "description": "Accept refused: no offer"
+  },
+  "offerRefusalOffline": "Go online to accept orders.",
+  "@offerRefusalOffline": {
+    "description": "Accept refused: rider offline"
+  },
+  "offerRefusalCashLimit": "Deposit the cash you hold with Agrimore before taking cash orders.",
+  "@offerRefusalCashLimit": {
+    "description": "Accept refused: COD cash limit"
+  },
+  "offerRefusalSignIn": "Please sign in again.",
+  "@offerRefusalSignIn": {
+    "description": "Offer call: signed out"
+  },
+  "offerRefusalFailed": "Could not update this offer. Please try again.",
+  "@offerRefusalFailed": {
+    "description": "Offer call: other failure"
+  },
+  "distanceMeters": "{meters} m",
+  "@distanceMeters": {
+    "description": "A distance under 1 km",
+    "placeholders": {
+      "meters": {
+        "type": "int"
+      }
+    }
+  },
+  "distanceKm": "{km} km",
+  "@distanceKm": {
+    "description": "A distance in km",
+    "placeholders": {
+      "km": {
+        "type": "String"
+      }
+    }
+  },
+  "stepFarStore": "You're {distance} from the store. {action} anyway? The delivery team will be told.",
+  "@stepFarStore": {
+    "description": "Far-tap question at the store",
+    "placeholders": {
+      "distance": {
+        "type": "String"
+      },
+      "action": {
+        "type": "String"
+      }
+    }
+  },
+  "stepFarCustomer": "You're {distance} from the customer's address. {action} anyway? The delivery team will be told.",
+  "@stepFarCustomer": {
+    "description": "Far-tap question at the customer",
+    "placeholders": {
+      "distance": {
+        "type": "String"
+      },
+      "action": {
+        "type": "String"
+      }
+    }
+  },
+  "stepActionArrived": "Mark arrived",
+  "@stepActionArrived": {
+    "description": "Far-tap question: the arrived step"
+  },
+  "stepActionPickedUp": "Mark picked up",
+  "@stepActionPickedUp": {
+    "description": "Far-tap question: the picked-up step"
+  },
+  "stepActionComplete": "Complete the delivery",
+  "@stepActionComplete": {
+    "description": "Far-tap question: completing the delivery"
+  },
+  "stepErrBadTransition": "This step is not possible right now — the order may have changed. Go back and open it again.",
+  "@stepErrBadTransition": {
+    "description": "Step refused: bad transition"
+  },
+  "stepErrNotAssigned": "This order is no longer assigned to you.",
+  "@stepErrNotAssigned": {
+    "description": "Step refused: not assigned"
+  },
+  "stepErrAfterPickup": "The order is already picked up, so it can no longer be released. Contact support if there is a problem.",
+  "@stepErrAfterPickup": {
+    "description": "Release refused after pickup"
+  },
+  "stepErrNotFound": "This order could not be found.",
+  "@stepErrNotFound": {
+    "description": "Step refused: order missing"
+  },
+  "stepErrNetwork": "No internet connection. Check your network and try again.",
+  "@stepErrNetwork": {
+    "description": "Step call offline"
+  },
+  "stepErrSession": "Your session has expired. Please sign in again.",
+  "@stepErrSession": {
+    "description": "Step call signed out"
+  },
+  "stepErrUpdate": "Could not update the order. Please try again.",
+  "@stepErrUpdate": {
+    "description": "Step call other failure"
+  },
+  "stepErrRelease": "Could not release the order. Please try again.",
+  "@stepErrRelease": {
+    "description": "Release call other failure"
+  },
+  "incidentErrTooMany": "Too many reports in a few minutes. Call 112 or Agrimore support.",
+  "@incidentErrTooMany": {
+    "description": "Safety report refused: rate limit"
+  },
+  "incidentErrNotRider": "This account cannot report here. Call 112 or Agrimore support.",
+  "@incidentErrNotRider": {
+    "description": "Safety report refused: not a rider"
+  },
+  "incidentErrNetwork": "No connection — the report didn't go through. Try again, or call 112.",
+  "@incidentErrNetwork": {
+    "description": "Safety report offline"
+  },
+  "incidentErrSignedOut": "You are signed out. Call 112 or Agrimore support.",
+  "@incidentErrSignedOut": {
+    "description": "Safety report signed out"
+  },
+  "incidentErrFailed": "The report didn't go through. Try again, or call 112.",
+  "@incidentErrFailed": {
+    "description": "Safety report other failure"
+  },
+  "incidentStatusClosed": "Closed by the Agrimore team",
+  "@incidentStatusClosed": {
+    "description": "Safety report state: resolved"
+  },
+  "incidentStatusNoNote": "No note was added.",
+  "@incidentStatusNoNote": {
+    "description": "Safety report resolved without a note"
+  },
+  "incidentStatusSeen": "Seen by the Agrimore team",
+  "@incidentStatusSeen": {
+    "description": "Safety report state: acknowledged"
+  },
+  "incidentStatusSeenDetail": "A person on the team has opened your report. If you are in danger, call 112.",
+  "@incidentStatusSeenDetail": {
+    "description": "Safety report acknowledged detail"
+  },
+  "incidentStatusRecorded": "Report recorded",
+  "@incidentStatusRecorded": {
+    "description": "Safety report state: reported"
+  },
+  "incidentStatusRecordedDetail": "Nobody on the Agrimore team may have seen it yet. If you are in danger, call 112 now.",
+  "@incidentStatusRecordedDetail": {
+    "description": "Safety report reported detail"
+  },
+  "emergencyTitle": "Emergency help",
+  "@emergencyTitle": {
+    "description": "Emergency sheet title"
+  },
+  "emergencyIntro": "If you or someone else is in danger, call {number} now. This app does not alert the police or Agrimore by itself.",
+  "@emergencyIntro": {
+    "description": "Emergency sheet intro — makes no claim that anyone was alerted",
+    "placeholders": {
+      "number": {
+        "type": "String"
+      }
+    }
+  },
+  "emergencyCall": "Call {number} (emergency)",
+  "@emergencyCall": {
+    "description": "Hands the emergency number to the dialer",
+    "placeholders": {
+      "number": {
+        "type": "String"
+      }
+    }
+  },
+  "emergencyCallSupport": "Call Agrimore support",
+  "@emergencyCallSupport": {
+    "description": "Hands the support number to the dialer"
+  },
+  "emergencyDialFailed": "Couldn't open the phone app. Dial {number} directly.",
+  "@emergencyDialFailed": {
+    "description": "The dialer did not open",
+    "placeholders": {
+      "number": {
+        "type": "String"
+      }
+    }
+  },
+  "incidentReportAction": "Tell the Agrimore team",
+  "@incidentReportAction": {
+    "description": "Records a safety report"
+  },
+  "incidentReportSending": "Recording your report…",
+  "@incidentReportSending": {
+    "description": "While the safety report is being sent"
+  },
+  "incidentReportHint": "Records a report for the Agrimore team with your current order and, if the phone has it, your position. It does not call anyone.",
+  "@incidentReportHint": {
+    "description": "What the safety report does and does not do"
+  },
+  "offerOrderNumber": "Order #{number}",
+  "@offerOrderNumber": {
+    "description": "Offer screen: which order",
+    "placeholders": {
+      "number": {
+        "type": "String"
+      }
+    }
+  },
+  "offerSeconds": "seconds",
+  "@offerSeconds": {
+    "description": "Under the countdown number"
+  },
+  "offerEarnLabel": "You earn",
+  "@offerEarnLabel": {
+    "description": "Offer row label: pay"
+  },
+  "offerEarnValue": "~{amount} (final pay adds waiting time)",
+  "@offerEarnValue": {
+    "description": "Offer row value: estimated pay",
+    "placeholders": {
+      "amount": {
+        "type": "String"
+      }
+    }
+  },
+  "offerPaymentLabel": "Payment",
+  "@offerPaymentLabel": {
+    "description": "Offer row label: payment"
+  },
+  "offerPaymentCod": "Collect {amount} in cash",
+  "@offerPaymentCod": {
+    "description": "Offer row value: COD",
+    "placeholders": {
+      "amount": {
+        "type": "String"
+      }
+    }
+  },
+  "offerPaymentPrepaid": "Prepaid — nothing to collect",
+  "@offerPaymentPrepaid": {
+    "description": "Offer row value: prepaid"
+  },
+  "offerPickupLabel": "Pickup",
+  "@offerPickupLabel": {
+    "description": "Offer row label: pickup"
+  },
+  "offerPickupNearby": "Nearby",
+  "@offerPickupNearby": {
+    "description": "Offer row: pickup distance unknown"
+  },
+  "offerPickupKm": "{km} km away",
+  "@offerPickupKm": {
+    "description": "Offer row: pickup distance",
+    "placeholders": {
+      "km": {
+        "type": "String"
+      }
+    }
+  },
+  "offerDropLabel": "Drop",
+  "@offerDropLabel": {
+    "description": "Offer row label: drop"
+  },
+  "offerDropKm": "{km} km from pickup",
+  "@offerDropKm": {
+    "description": "Offer row: drop distance",
+    "placeholders": {
+      "km": {
+        "type": "String"
+      }
+    }
+  },
+  "offerDropPin": "PIN {pincode}",
+  "@offerDropPin": {
+    "description": "Offer row: drop pincode",
+    "placeholders": {
+      "pincode": {
+        "type": "String"
+      }
+    }
+  },
+  "offerDropHidden": "Shown after you accept",
+  "@offerDropHidden": {
+    "description": "Offer row: drop not disclosed before acceptance"
+  },
+  "offerItemsLabel": "Items",
+  "@offerItemsLabel": {
+    "description": "Offer row label: item count"
+  },
+  "offerAccept": "Accept order",
+  "@offerAccept": {
+    "description": "Accept the offer"
+  },
+  "offerDecline": "Decline",
+  "@offerDecline": {
+    "description": "Decline the offer"
+  },
+  "offerExpired": "The offer expired.",
+  "@offerExpired": {
+    "description": "The offer screen closed at expiry"
+  },
+  "offerGone": "This order is no longer available.",
+  "@offerGone": {
+    "description": "The offer was withdrawn or taken"
+  },
+  "offerAcceptedOpenDashboard": "Order accepted. Open it from your dashboard.",
+  "@offerAcceptedOpenDashboard": {
+    "description": "Accepted but the order could not be opened"
+  },
+  "activeCallCustomer": "Call customer",
+  "@activeCallCustomer": {
+    "description": "Tooltip: call the customer"
+  },
+  "activeCall": "Call",
+  "@activeCall": {
+    "description": "Call the customer"
+  },
+  "activeNavigate": "Navigate",
+  "@activeNavigate": {
+    "description": "Open turn-by-turn directions"
+  },
+  "activeSectionCustomer": "Customer",
+  "@activeSectionCustomer": {
+    "description": "Section: the customer"
+  },
+  "activeSectionAddress": "Delivery address",
+  "@activeSectionAddress": {
+    "description": "Section: where to deliver"
+  },
+  "activeSectionItems": "Items ({count})",
+  "@activeSectionItems": {
+    "description": "Section: order items",
+    "placeholders": {
+      "count": {
+        "type": "int"
+      }
+    }
+  },
+  "activeItemQuantity": "x{quantity}",
+  "@activeItemQuantity": {
+    "description": "Quantity of an item",
+    "placeholders": {
+      "quantity": {
+        "type": "int"
+      }
+    }
+  },
+  "activeSectionPayment": "Payment",
+  "@activeSectionPayment": {
+    "description": "Section: payment"
+  },
+  "activePaymentCod": "Cash on delivery",
+  "@activePaymentCod": {
+    "description": "Payment method: COD"
+  },
+  "activePaymentPrepaid": "Prepaid",
+  "@activePaymentPrepaid": {
+    "description": "Payment method: paid online"
+  },
+  "activeSectionProgress": "Delivery progress",
+  "@activeSectionProgress": {
+    "description": "Section: step timeline"
+  },
+  "activeStepAccepted": "Accepted",
+  "@activeStepAccepted": {
+    "description": "Timeline step"
+  },
+  "activeStepArrived": "Arrived at the store",
+  "@activeStepArrived": {
+    "description": "Timeline step"
+  },
+  "activeStepPickedUp": "Picked up",
+  "@activeStepPickedUp": {
+    "description": "Timeline step"
+  },
+  "activeStepOutForDelivery": "Out for delivery",
+  "@activeStepOutForDelivery": {
+    "description": "Timeline step"
+  },
+  "activeStepDelivered": "Delivered",
+  "@activeStepDelivered": {
+    "description": "Timeline step"
+  },
+  "activeActionArrived": "Arrived at store",
+  "@activeActionArrived": {
+    "description": "Next-step button"
+  },
+  "activeActionPickedUp": "Picked up",
+  "@activeActionPickedUp": {
+    "description": "Next-step button"
+  },
+  "activeActionStart": "Start delivery",
+  "@activeActionStart": {
+    "description": "Next-step button"
+  },
+  "activeActionComplete": "Complete delivery",
+  "@activeActionComplete": {
+    "description": "Next-step button"
+  },
+  "activeStepDone": "Done: {step}",
+  "@activeStepDone": {
+    "description": "Toast after a step is recorded",
+    "placeholders": {
+      "step": {
+        "type": "String"
+      }
+    }
+  },
+  "activeProofTitle": "Proof of delivery (optional)",
+  "@activeProofTitle": {
+    "description": "Section: delivery photo"
+  },
+  "activeProofTake": "Tap to take a delivery photo",
+  "@activeProofTake": {
+    "description": "Empty photo tile"
+  },
+  "activeProofRetake": "Retake",
+  "@activeProofRetake": {
+    "description": "Retake the photo"
+  },
+  "activeProofRemove": "Remove",
+  "@activeProofRemove": {
+    "description": "Remove the photo"
+  },
+  "activeSellerNotReady": "Seller not ready",
+  "@activeSellerNotReady": {
+    "description": "Release the order before pickup"
+  },
+  "activeSellerNotReadyTitle": "Seller not ready?",
+  "@activeSellerNotReadyTitle": {
+    "description": "Confirm releasing the order"
+  },
+  "activeSellerNotReadyBody": "This releases the order back to the pickup queue and tells the team.",
+  "@activeSellerNotReadyBody": {
+    "description": "What releasing does"
+  },
+  "activeSellerNotReadyConfirm": "Release order",
+  "@activeSellerNotReadyConfirm": {
+    "description": "Confirm release"
+  },
+  "activeSellerNotReadyWait": "Wait",
+  "@activeSellerNotReadyWait": {
+    "description": "Keep the order"
+  },
+  "activeReleased": "Order released for reassignment",
+  "@activeReleased": {
+    "description": "Toast after release"
+  },
+  "activeFarTitle": "Are you there?",
+  "@activeFarTitle": {
+    "description": "Far-tap confirmation title"
+  },
+  "activeFarNotYet": "Not yet",
+  "@activeFarNotYet": {
+    "description": "Far-tap: do not go ahead"
+  },
+  "verifyTitle": "Verify delivery",
+  "@verifyTitle": {
+    "description": "Code sheet title"
+  },
+  "verifyHint": "Ask the customer for their 6-digit delivery code.",
+  "@verifyHint": {
+    "description": "Code sheet instruction"
+  },
+  "verifyDigit": "Digit {index} of 6",
+  "@verifyDigit": {
+    "description": "Screen-reader label for a code cell",
+    "placeholders": {
+      "index": {
+        "type": "int"
+      }
+    }
+  },
+  "verifyIncomplete": "Enter the full 6-digit code",
+  "@verifyIncomplete": {
+    "description": "Code shorter than 6 digits"
+  },
+  "verifySubmit": "Verify & complete",
+  "@verifySubmit": {
+    "description": "Submit the code"
+  },
+  "verifySubmitting": "Verifying…",
+  "@verifySubmitting": {
+    "description": "While the code is checked"
+  },
+  "deliverWrongCode": "Incorrect code. Please try again.",
+  "@deliverWrongCode": {
+    "description": "confirmDelivery: wrong code"
+  },
+  "deliverNotActive": "This order is no longer active and cannot be marked delivered.",
+  "@deliverNotActive": {
+    "description": "confirmDelivery: not deliverable"
+  },
+  "deliverNoVerification": "Verification is not available for this order. Please contact support.",
+  "@deliverNoVerification": {
+    "description": "confirmDelivery: other precondition"
+  },
+  "deliverLocked": "{minutes, plural, =1{Too many incorrect codes. Check the code with the customer and try again in 1 min.} other{Too many incorrect codes. Check the code with the customer and try again in {minutes} min.}}",
+  "@deliverLocked": {
+    "description": "confirmDelivery: locked out",
+    "placeholders": {
+      "minutes": {
+        "type": "int"
+      }
+    }
+  },
+  "deliverFailed": "Could not confirm delivery. Please try again.",
+  "@deliverFailed": {
+    "description": "confirmDelivery: other failure"
+  },
+  "deliverNotCompletedFar": "Delivery not completed. Enter the code when you are with the customer.",
+  "@deliverNotCompletedFar": {
+    "description": "The rider declined a far code entry"
+  },
+  "deliveredTitle": "Delivery complete",
+  "@deliveredTitle": {
+    "description": "After a confirmed delivery"
+  },
+  "deliveredBody": "Order #{number} has been delivered.",
+  "@deliveredBody": {
+    "description": "After a confirmed delivery",
+    "placeholders": {
+      "number": {
+        "type": "String"
+      }
+    }
+  },
+  "deliveredBack": "Back to dashboard",
+  "@deliveredBack": {
+    "description": "Leave the finished order"
+  },
+  "legMinutes": "{minutes} min",
+  "@legMinutes": {
+    "description": "Riding time left",
+    "placeholders": {
+      "minutes": {
+        "type": "int"
+      }
+    }
+  },
+  "routeStore": "Store",
+  "@routeStore": {
+    "description": "Map pin: the store"
+  },
+  "routeCustomer": "Customer",
+  "@routeCustomer": {
+    "description": "Map pin: the customer when no name"
+  },
+  "routeYou": "You",
+  "@routeYou": {
+    "description": "Map pin: the rider (web)"
+  },
+  "routeAtStore": "You are at the store",
+  "@routeAtStore": {
+    "description": "Route headline at the store"
+  },
+  "routeToStore": "Head to the store",
+  "@routeToStore": {
+    "description": "Route headline before pickup"
+  },
+  "routeToCustomer": "Deliver to {name}",
+  "@routeToCustomer": {
+    "description": "Route headline after pickup",
+    "placeholders": {
+      "name": {
+        "type": "String"
+      }
+    }
+  },
+  "routeToCustomerNoName": "Deliver to the customer",
+  "@routeToCustomerNoName": {
+    "description": "Route headline after pickup, no name"
+  },
+  "routeAtStoreHint": "Collect the order, then tap Picked up",
+  "@routeAtStoreHint": {
+    "description": "Route line at the store"
+  },
+  "routeStoreUnknown": "Store location not available",
+  "@routeStoreUnknown": {
+    "description": "No store coordinates"
+  },
+  "routeCustomerUnknown": "Customer location not available",
+  "@routeCustomerUnknown": {
+    "description": "No customer coordinates"
+  },
+  "routePending": "Road route on its way — Navigate gives it now",
+  "@routePending": {
+    "description": "Route not computed yet"
+  },
+  "routeWaiting": "Waiting for the route…",
+  "@routeWaiting": {
+    "description": "Map placeholder"
+  },
+  "routeNavigateStore": "Navigate to store",
+  "@routeNavigateStore": {
+    "description": "Open Maps to the store"
+  },
+  "routeNavigateCustomer": "Navigate to customer",
+  "@routeNavigateCustomer": {
+    "description": "Open Maps to the customer"
+  },
+  "routeMapsMissing": "Could not open Google Maps. Please install it and try again.",
+  "@routeMapsMissing": {
+    "description": "Maps did not open"
+  },
+  "dashGreeting": "Hello, {name}",
+  "@dashGreeting": {
+    "description": "Dashboard greeting",
+    "placeholders": {
+      "name": {
+        "type": "String"
+      }
+    }
+  },
+  "dashGreetingNoName": "Hello",
+  "@dashGreetingNoName": {
+    "description": "Dashboard greeting without a name"
+  },
+  "dashReady": "Ready to deliver",
+  "@dashReady": {
+    "description": "Under the greeting while online"
+  },
+  "dashOfflineShort": "Offline",
+  "@dashOfflineShort": {
+    "description": "Under the greeting while offline"
+  },
+  "dashOnline": "You are online",
+  "@dashOnline": {
+    "description": "Online toggle while online"
+  },
+  "dashOffline": "You are offline",
+  "@dashOffline": {
+    "description": "Online toggle while offline"
+  },
+  "dashSignOutTooltip": "Sign out",
+  "@dashSignOutTooltip": {
+    "description": "Tooltip: sign out"
+  },
+  "dashSignOutTitle": "Sign out?",
+  "@dashSignOutTitle": {
+    "description": "Confirm sign-out title"
+  },
+  "dashSignOutBody": "You will go offline and stop getting orders.",
+  "@dashSignOutBody": {
+    "description": "Confirm sign-out body"
+  },
+  "dashEarnedWeek": "Earned this week",
+  "@dashEarnedWeek": {
+    "description": "Earnings card label"
+  },
+  "dashEarnedTodayLine": "Today {amount} · paid every Monday",
+  "@dashEarnedTodayLine": {
+    "description": "Earnings card line",
+    "placeholders": {
+      "amount": {
+        "type": "String"
+      }
+    }
+  },
+  "dashStatToday": "Today",
+  "@dashStatToday": {
+    "description": "Stat: deliveries today"
+  },
+  "dashStatWeek": "This week",
+  "@dashStatWeek": {
+    "description": "Stat: pay this week"
+  },
+  "dashStatEarnedToday": "Earned today",
+  "@dashStatEarnedToday": {
+    "description": "Stat: pay today"
+  },
+  "dashStatCash": "Cash with you",
+  "@dashStatCash": {
+    "description": "Stat: COD cash held"
+  },
+  "dashMoneyTitle": "Earnings & payouts",
+  "@dashMoneyTitle": {
+    "description": "Action card: money"
+  },
+  "dashMoneySubtitle": "Pay per delivery, cash with you, Monday statements",
+  "@dashMoneySubtitle": {
+    "description": "Action card: money subtitle"
+  },
+  "dashQuickActions": "Quick actions",
+  "@dashQuickActions": {
+    "description": "Heading"
+  },
+  "dashOfferTitle": "Order offered to you",
+  "@dashOfferTitle": {
+    "description": "Action card: an offer is waiting"
+  },
+  "dashOfferSubtitle": "Tap to see it before it expires",
+  "@dashOfferSubtitle": {
+    "description": "Action card: open the offer"
+  },
+  "dashWaitingTitle": "Waiting for orders",
+  "@dashWaitingTitle": {
+    "description": "Action card: online, no offer"
+  },
+  "dashWaitingSubtitle": "New orders near you will ring on this phone",
+  "@dashWaitingSubtitle": {
+    "description": "Action card: online, no offer"
+  },
+  "dashGoOnlineTitle": "Go online to get orders",
+  "@dashGoOnlineTitle": {
+    "description": "Action card: offline"
+  },
+  "dashGoOnlineSubtitle": "Orders are only offered while you are online",
+  "@dashGoOnlineSubtitle": {
+    "description": "Action card: offline"
+  },
+  "dashActiveTitle": "Active delivery",
+  "@dashActiveTitle": {
+    "description": "Active order card title"
+  },
+  "dashViewDetails": "View details",
+  "@dashViewDetails": {
+    "description": "Open the active order"
+  },
+  "goOnlineBlockedTitle": "Can't go online yet",
+  "@goOnlineBlockedTitle": {
+    "description": "Going online needs a phone setting"
   }
 }

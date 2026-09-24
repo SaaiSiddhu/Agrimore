@@ -3,12 +3,13 @@
 // now may only hand off to the dialer, and must never claim more.
 import 'package:delivery/safety/emergency_sheet.dart';
 import 'package:flutter/material.dart';
+import 'support/ws_app.dart';
 import 'package:flutter_test/flutter_test.dart';
 
 void main() {
   Future<List<Uri>> pump(WidgetTester t, {bool opens = true, String? support = '+91 98765 43210'}) async {
     final dialled = <Uri>[];
-    await t.pumpWidget(MaterialApp(
+    await t.pumpWidget(wsApp(
       home: Scaffold(
         body: EmergencySheet(
           launcher: (uri) async {

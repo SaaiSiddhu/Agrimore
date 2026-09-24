@@ -76,6 +76,20 @@ abstract final class AgIcons {
   static const IconData star = LucideIcons.star;
   static const IconData location = LucideIcons.mapPin;
 
+  // ── Delivery (DLV-P1: the rider app) ──────────────────────────────────────
+  static const IconData rider = LucideIcons.bike;
+  static const IconData navigate = LucideIcons.navigation;
+  static const IconData locate = LucideIcons.locateFixed;
+  static const IconData locationOff = LucideIcons.mapPinOff;
+  static const IconData battery = LucideIcons.batteryWarning;
+  static const IconData emergency = LucideIcons.siren;
+  static const IconData call = LucideIcons.phoneCall;
+  static const IconData history = LucideIcons.history;
+  static const IconData report = LucideIcons.flag;
+  static const IconData addPhoto = LucideIcons.imagePlus;
+  static const IconData stepPending = LucideIcons.circle;
+  static const IconData allDone = LucideIcons.checkCheck;
+
   // ── Insights & time ───────────────────────────────────────────────────────
   static const IconData chartBar = LucideIcons.chartColumn;
   static const IconData chartLine = LucideIcons.chartLine;

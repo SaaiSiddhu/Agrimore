@@ -5,7 +5,6 @@
 // Phase DLV-A2: Workspace + ARB; a pending or rejected rider can correct and
 // resubmit the application (submitRiderApplication updates the same record);
 // support contacts; sign-out; account deletion (deleteUserData's rider branch).
-import 'package:agrimore_core/agrimore_core.dart';
 import 'package:agrimore_ui/agrimore_ui.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:flutter/material.dart';

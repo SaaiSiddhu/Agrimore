@@ -7,7 +7,6 @@
 // is assigned, customers' cash is held or pay is owed). Covered by
 // test/rider_account_test.dart.
 import 'package:cloud_functions/cloud_functions.dart';
-import 'package:flutter/foundation.dart';
 import 'package:flutter/widgets.dart';
 import 'package:provider/provider.dart';
 

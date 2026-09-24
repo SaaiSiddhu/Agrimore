@@ -294,5 +294,11 @@
     "outfordelivery",
     "outForDelivery"
   ],
-  "_comment_riderActiveOrderStatuses": "DLV-C1: orders.orderStatus values in which a rider holds the order — the server's busy check (functions/src/delivery/dispatch.ts RIDER_ACTIVE_ORDER_STATUSES) and the rider app's active-work query (DeliveryTaskStatus.riderActiveOrderStatuses) must be this exact list (Firestore 'in' matches case-sensitively, so spellings are listed as stored)."
+  "_comment_riderActiveOrderStatuses": "DLV-C1: orders.orderStatus values in which a rider holds the order — the server's busy check (functions/src/delivery/dispatch.ts RIDER_ACTIVE_ORDER_STATUSES) and the rider app's active-work query (DeliveryTaskStatus.riderActiveOrderStatuses) must be this exact list (Firestore 'in' matches case-sensitively, so spellings are listed as stored).",
+  "timing": {
+    "offerLifetimeMs": 30000,
+    "riderSilentOfflineMs": 900000,
+    "dispatchLocationFreshnessMs": 300000
+  },
+  "_comment_timing": "DLV-P1: server time limits the rider app mirrors in DeliveryTiming (dispatch.ts OFFER_TTL_MS, LOCATION_FRESHNESS_MS; riderPresence.ts SILENT_OFFLINE_MS)."
 }

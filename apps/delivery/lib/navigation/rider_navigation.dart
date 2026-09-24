@@ -5,6 +5,7 @@
 // the customer sees (delivery_tasks/{orderId}.route, D-DLV-ROUTES), and one
 // tap into Google Maps turn-by-turn in two-wheeler mode for the actual ride.
 // Pure: no Flutter, no plugins — covered by test/rider_navigation_test.dart.
+import '../l10n/app_localizations.dart';
 import 'dart:math' as math;
 
 import 'package:agrimore_core/agrimore_core.dart';
@@ -79,13 +80,13 @@ LegRemaining legRemaining({
 }
 
 /// "9 min · 2.6 km"; "1 min · 350 m" when close.
-String legSummary(LegRemaining r) {
+String legSummary(AppLocalizations l, LegRemaining r) {
   // Round first, then pick the unit: 999.6 m is "1.0 km", not "1000 m".
   final tens = (r.meters / 10).round() * 10;
-  final dist = tens < 1000 ? '$tens m' : '${(r.meters / 1000).toStringAsFixed(1)} km';
+  final dist = tens < 1000 ? l.distanceMeters(tens) : l.distanceKm((r.meters / 1000).toStringAsFixed(1));
   if (r.seconds == null) return dist;
   final min = math.max(1, (r.seconds! / 60).ceil());
-  return '$min min · $dist';
+  return [l.legMinutes(min), dist].join(' · ');
 }
 
 /// The Web-Mercator zoom at which the box around [pts] fits [widthPx] ×

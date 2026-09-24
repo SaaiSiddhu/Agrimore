@@ -3,7 +3,6 @@
 // Phase DLV-E1 — on the active order, after pickup: "Report a problem", and
 // once reported, the record's real state (reported / seen / resolved as
 // reattempt or returned to seller) with Agrimore's words verbatim.
-import 'package:agrimore_core/agrimore_core.dart';
 import 'package:agrimore_ui/agrimore_ui.dart';
 import 'package:flutter/material.dart';
 
@@ -211,15 +210,22 @@ class _ProblemReportSheetState extends State<ProblemReportSheet> {
         child: Column(mainAxisSize: MainAxisSize.min, crossAxisAlignment: CrossAxisAlignment.stretch, children: [
           Text(l.problemSheetTitle, style: Theme.of(context).textTheme.titleMedium),
           const SizedBox(height: WsSpace.s8),
-          for (final r in afterPickupReasons)
-            RadioListTile<DeliveryFailureReason>(
-              key: ValueKey('reason-${r.wire}'),
-              value: r,
-              groupValue: _reason,
-              onChanged: _sending ? null : (v) => setState(() => _reason = v),
-              title: Text(reasonText(l, r)),
-              contentPadding: EdgeInsets.zero,
-            ),
+          RadioGroup<DeliveryFailureReason>(
+            groupValue: _reason,
+            onChanged: (v) {
+              if (!_sending) setState(() => _reason = v);
+            },
+            child: Column(children: [
+              for (final r in afterPickupReasons)
+                RadioListTile<DeliveryFailureReason>(
+                  key: ValueKey('reason-${r.wire}'),
+                  value: r,
+                  enabled: !_sending,
+                  title: Text(reasonText(l, r)),
+                  contentPadding: EdgeInsets.zero,
+                ),
+            ]),
+          ),
           TextField(
             controller: _note,
             maxLength: 500,

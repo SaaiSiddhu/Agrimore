@@ -19,6 +19,8 @@
 // starts/stops it and keeps an on-screen position for the UI — no uploads,
 // no geolocator foreground service. The Dart uploader below remains for other
 // platforms.
+import '../app/device_localizations.dart';
+import 'package:agrimore_core/agrimore_core.dart';
 import 'dart:async';
 
 import 'package:flutter/foundation.dart';
@@ -38,7 +40,7 @@ class LocationProvider extends ChangeNotifier with WidgetsBindingObserver {
   Position? _currentPosition;
   bool _isTracking = false;
   bool _hasPermission = false;
-  String? _error;
+  LocationIssue? _issue;
 
   StreamSubscription<Position>? _positionSubscription;
   Timer? _heartbeat;
@@ -55,7 +57,9 @@ class LocationProvider extends ChangeNotifier with WidgetsBindingObserver {
   Position? get currentPosition => _currentPosition;
   bool get isTracking => _isTracking;
   bool get hasPermission => _hasPermission;
-  String? get error => _error;
+  /// Why location is not working, for diagnostics (not shown to the rider:
+  /// going online reports its own GoOnlineResult).
+  LocationIssue? get issue => _issue;
   double? get latitude => _currentPosition?.latitude;
   double? get longitude => _currentPosition?.longitude;
   List<String> get activeOrderIds => _activeOrderIds;
@@ -96,7 +100,7 @@ class LocationProvider extends ChangeNotifier with WidgetsBindingObserver {
   Future<GoOnlineResult> ensurePermission() async {
     try {
       if (!await Geolocator.isLocationServiceEnabled()) {
-        _setPermission(false, 'Location services are off');
+        _setPermission(false, LocationIssue.servicesOff);
         return GoOnlineResult.servicesOff;
       }
       var permission = await Geolocator.checkPermission();
@@ -104,19 +108,19 @@ class LocationProvider extends ChangeNotifier with WidgetsBindingObserver {
         permission = await Geolocator.requestPermission();
       }
       if (permission == LocationPermission.deniedForever) {
-        _setPermission(false, 'Location permission permanently denied');
+        _setPermission(false, LocationIssue.deniedForever);
         return GoOnlineResult.permissionDeniedForever;
       }
       if (permission == LocationPermission.denied ||
           permission == LocationPermission.unableToDetermine) {
-        _setPermission(false, 'Location permission denied');
+        _setPermission(false, LocationIssue.denied);
         return GoOnlineResult.permissionDenied;
       }
       _setPermission(true, null);
       return GoOnlineResult.started;
     } catch (e) {
       debugPrint('Location permission check failed: $e');
-      _setPermission(false, 'Could not check location permission');
+      _setPermission(false, LocationIssue.checkFailed);
       return GoOnlineResult.failed;
     }
   }
@@ -139,9 +143,9 @@ class LocationProvider extends ChangeNotifier with WidgetsBindingObserver {
   Future<bool> checkPermissions() async =>
       await ensurePermission() == GoOnlineResult.started;
 
-  void _setPermission(bool granted, String? error) {
+  void _setPermission(bool granted, LocationIssue? issue) {
     _hasPermission = granted;
-    _error = error;
+    _issue = issue;
     notifyListeners();
   }
 
@@ -156,14 +160,14 @@ class LocationProvider extends ChangeNotifier with WidgetsBindingObserver {
       _currentPosition = await Geolocator.getCurrentPosition(
         locationSettings: const LocationSettings(
           accuracy: LocationAccuracy.high,
-          timeLimit: Duration(seconds: 20),
+          timeLimit: DeliveryTiming.goOnlineFixTimeout,
         ),
       );
     } catch (e) {
       debugPrint('Initial fix failed: $e');
       _currentPosition = await Geolocator.getLastKnownPosition();
       if (_currentPosition == null) {
-        _error = 'Failed to get location';
+        _issue = LocationIssue.noFix;
         notifyListeners();
         return GoOnlineResult.failed;
       }
@@ -173,7 +177,7 @@ class LocationProvider extends ChangeNotifier with WidgetsBindingObserver {
       // The caller has already set delivery_partners.isOnline true: the
       // service stops itself when the server says offline.
       if (!await RiderPlatform.start()) {
-        _error = 'Could not start location sharing';
+        _issue = LocationIssue.serviceStartFailed;
         notifyListeners();
         return GoOnlineResult.failed;
       }
@@ -202,16 +206,15 @@ class LocationProvider extends ChangeNotifier with WidgetsBindingObserver {
       );
     }
     if (!kIsWeb && defaultTargetPlatform == TargetPlatform.android) {
+      final notice = deviceLocalizations();
       return AndroidSettings(
         accuracy: LocationAccuracy.high,
         distanceFilter: p.distanceFilterMeters,
         intervalDuration: p.streamInterval,
-        foregroundNotificationConfig: const ForegroundNotificationConfig(
-          notificationTitle: "You're online",
-          notificationText:
-              'Sharing your location for nearby orders and live tracking. '
-              'Go offline in the app to stop.',
-          notificationChannelName: 'Online status',
+        foregroundNotificationConfig: ForegroundNotificationConfig(
+          notificationTitle: notice.onlineNoticeTitle,
+          notificationText: notice.onlineNoticeText,
+          notificationChannelName: notice.onlineNoticeChannel,
           notificationIcon: AndroidResource(
               name: 'ic_stat_delivery_offer', defType: 'drawable'),
           enableWakeLock: true,
@@ -238,7 +241,7 @@ class LocationProvider extends ChangeNotifier with WidgetsBindingObserver {
       // Location switched off mid-shift: keep the service; the heartbeat
       // re-sends the last fix and the rider sees the error.
       debugPrint('Position stream error: $e');
-      _error = 'Location unavailable';
+      _issue = LocationIssue.streamLost;
       notifyListeners();
     });
   }
@@ -246,7 +249,7 @@ class LocationProvider extends ChangeNotifier with WidgetsBindingObserver {
   void _startHeartbeat() {
     _heartbeat?.cancel();
     _heartbeat =
-        Timer.periodic(const Duration(seconds: 5), (_) => _maybeUpload());
+        Timer.periodic(DeliveryTiming.uploadCheckInterval, (_) => _maybeUpload());
   }
 
   /// Switches cadence when an order starts or ends, and routes the live
@@ -360,3 +363,6 @@ class LocationProvider extends ChangeNotifier with WidgetsBindingObserver {
     super.dispose();
   }
 }
+
+/// Why location is not working (LocationProvider.issue).
+enum LocationIssue { servicesOff, denied, deniedForever, checkFailed, noFix, serviceStartFailed, streamLost }

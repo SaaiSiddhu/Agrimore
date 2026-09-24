@@ -4,9 +4,11 @@
 import 'dart:async';
 import 'dart:math';
 
+import 'package:delivery/l10n/app_localizations.dart';
 import 'package:delivery/safety/emergency_sheet.dart';
 import 'package:delivery/safety/incident_report.dart';
 import 'package:flutter/material.dart';
+import 'support/ws_app.dart';
 import 'package:flutter_test/flutter_test.dart';
 
 // Words that would promise a response nobody has committed to.
@@ -16,6 +18,7 @@ final promises = RegExp(
     caseSensitive: false);
 
 void main() {
+  final l = lookupAppLocalizations(const Locale('en'));
   group('pure', () {
     test('request ids fit the server pattern and differ', () {
       final a = newIncidentRequestId(), b = newIncidentRequestId();
@@ -25,24 +28,24 @@ void main() {
     });
 
     test('status wording follows the record and promises nothing', () {
-      expect(incidentStatusText(null).title, 'Report recorded');
-      expect(incidentStatusText({'status': 'reported'}).detail, contains('may have seen it yet'));
-      expect(incidentStatusText({'status': 'acknowledged'}).title, 'Seen by the Agrimore team');
-      final r = incidentStatusText({'status': 'resolved', 'resolution': ' Called you; bike towed. '});
+      expect(incidentStatusText(l, null).title, 'Report recorded');
+      expect(incidentStatusText(l, {'status': 'reported'}).detail, contains('may have seen it yet'));
+      expect(incidentStatusText(l, {'status': 'acknowledged'}).title, 'Seen by the Agrimore team');
+      final r = incidentStatusText(l, {'status': 'resolved', 'resolution': ' Called you; bike towed. '});
       expect(r.title, 'Closed by the Agrimore team');
       expect(r.detail, 'Called you; bike towed.');
-      expect(incidentStatusText({'status': 'resolved'}).detail, 'No note was added.');
+      expect(incidentStatusText(l, {'status': 'resolved'}).detail, 'No note was added.');
       for (final s in ['reported', 'acknowledged']) {
-        final t = incidentStatusText({'status': s});
+        final t = incidentStatusText(l, {'status': s});
         expect(promises.hasMatch('${t.title} ${t.detail}'), isFalse, reason: s);
       }
     });
 
     test('refusals are sentences, never the raw code', () {
-      expect(incidentErrorMessage('resource-exhausted', 'too_many'), contains('Too many reports'));
-      expect(incidentErrorMessage('permission-denied', 'not_a_rider'), contains('cannot report here'));
-      expect(incidentErrorMessage('unavailable', null), startsWith('No connection'));
-      expect(incidentErrorMessage('internal', null), contains('call 112'));
+      expect(incidentErrorMessage(l, 'resource-exhausted', 'too_many'), contains('Too many reports'));
+      expect(incidentErrorMessage(l, 'permission-denied', 'not_a_rider'), contains('cannot report here'));
+      expect(incidentErrorMessage(l, 'unavailable', null), startsWith('No connection'));
+      expect(incidentErrorMessage(l, 'internal', null), contains('call 112'));
     });
   });
 
@@ -52,7 +55,7 @@ void main() {
 
     Future<void> pump(WidgetTester t,
         {required IncidentReporter reporter, IncidentFix? fix}) async {
-      await t.pumpWidget(MaterialApp(
+      await t.pumpWidget(wsApp(
         home: Scaffold(
           body: EmergencySheet(
             launcher: (_) async => true,
@@ -75,7 +78,7 @@ void main() {
     });
 
     testWidgets('no report button on the dial-only sheet', (t) async {
-      await t.pumpWidget(MaterialApp(home: Scaffold(body: EmergencySheet(launcher: (_) async => true))));
+      await t.pumpWidget(wsApp(home: Scaffold(body: EmergencySheet(launcher: (_) async => true))));
       expect(find.text('Tell the Agrimore team'), findsNothing);
     });
 
@@ -103,7 +106,7 @@ void main() {
       var fail = true;
       await pump(t, reporter: (p) async {
         calls.add(p);
-        if (fail) throw const IncidentReportException("No connection — the report didn't go through. Try again, or call 112.");
+        if (fail) throw const IncidentReportException('unavailable');
         return 'r1_x';
       });
       await t.tap(find.text('Tell the Agrimore team'));

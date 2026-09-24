@@ -79,7 +79,7 @@ void main() {
     final base = {'orderId': 'o1', 'orderNumber': 'ORD-1', 'expiresAt': DateTime.utc(2026, 9, 24, 6), 'itemCount': 2};
     final withPay = DeliveryOffer.fromMap({...base, 'estimatedPay': 49.3})!;
     expect(withPay.estimatedPay, 49.3);
-    expect(withPay.summary, startsWith('Earn ~₹49 · '));
+    expect(withPay.summary(lookupAppLocalizations(const Locale('en'))), startsWith('Earn ~₹49 · '));
     expect(DeliveryOffer.fromMap(base)!.estimatedPay, isNull);
   });
 

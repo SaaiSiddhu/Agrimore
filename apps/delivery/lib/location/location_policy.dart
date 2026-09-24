@@ -9,6 +9,10 @@
 // ignores locations older than 5 min (dispatch.ts LOCATION_FRESHNESS_MS), so
 // even a rider standing still re-sends on a heartbeat well inside both.
 
+import 'package:agrimore_core/agrimore_core.dart';
+
+import '../l10n/app_localizations.dart';
+
 /// How often to sample and send, idle or on an order.
 class TrackingProfile {
   const TrackingProfile({
@@ -38,18 +42,18 @@ class TrackingProfile {
 const TrackingProfile idleProfile = TrackingProfile(
   name: 'idle',
   distanceFilterMeters: 100,
-  streamInterval: Duration(seconds: 30),
-  minUploadGap: Duration(seconds: 30),
-  heartbeat: Duration(seconds: 60),
+  streamInterval: DeliveryTiming.idleStreamInterval,
+  minUploadGap: DeliveryTiming.idleMinUploadGap,
+  heartbeat: DeliveryTiming.idleHeartbeat,
 );
 
 /// On an order: the customer is watching the map.
 const TrackingProfile taskProfile = TrackingProfile(
   name: 'task',
   distanceFilterMeters: 25,
-  streamInterval: Duration(seconds: 5),
-  minUploadGap: Duration(seconds: 10),
-  heartbeat: Duration(seconds: 30),
+  streamInterval: DeliveryTiming.taskStreamInterval,
+  minUploadGap: DeliveryTiming.taskMinUploadGap,
+  heartbeat: DeliveryTiming.taskHeartbeat,
 );
 
 TrackingProfile profileFor({required bool onOrder}) =>
@@ -117,16 +121,12 @@ enum GoOnlineResult {
 extension GoOnlineResultX on GoOnlineResult {
   /// What the rider is told when going online did not work; null on success
   /// or when they chose not to continue.
-  String? get message => switch (this) {
+  String? message(AppLocalizations l) => switch (this) {
         GoOnlineResult.started || GoOnlineResult.disclosureDeclined => null,
-        GoOnlineResult.servicesOff =>
-          'Turn on location (GPS) to go online.',
-        GoOnlineResult.permissionDenied =>
-          'Allow location access to go online. Orders are offered by distance.',
-        GoOnlineResult.permissionDeniedForever =>
-          'Location access is turned off for this app. Turn it on in Settings to go online.',
-        GoOnlineResult.failed =>
-          'Could not get your location. Move to an open area and try again.',
+        GoOnlineResult.servicesOff => l.goOnlineServicesOff,
+        GoOnlineResult.permissionDenied => l.goOnlinePermissionDenied,
+        GoOnlineResult.permissionDeniedForever => l.goOnlinePermissionForever,
+        GoOnlineResult.failed => l.goOnlineFailed,
       };
 
   /// Whether the fix is in the phone's settings rather than a retry.
@@ -136,37 +136,7 @@ extension GoOnlineResultX on GoOnlineResult {
 }
 
 /// Why the server took the rider offline (delivery_partners.offlineReason).
-String? serverOfflineMessage(String? reason) => switch (reason) {
-      'no_location' =>
-        "You're offline — your location stopped for 15 minutes. Go online again when you're ready.",
+String? serverOfflineMessage(AppLocalizations l, String? reason) => switch (reason) {
+      'no_location' => l.serverOfflineNoLocation,
       _ => null,
     };
-
-/// The prominent disclosure shown once, before the location permission
-/// prompt (Google Play policy for location used while the app is closed).
-const String locationDisclosureTitle = 'Your location while you are online';
-const String locationDisclosureBody =
-    'While you are online, Agrimore Delivery collects your location — also '
-    'when the app is closed or not in use — to offer you nearby orders and '
-    'to show customers where their delivery is. A notification shows while '
-    'this is on. It stops as soon as you go offline.';
-
-/// Phase DLV-3A2 (D-DLV-BGLOC-ALWAYS) — the 'Allow all the time' step.
-const String backgroundLocationTitle = 'Keep deliveries working when the app closes';
-const String backgroundLocationBody =
-    'Your phone sometimes closes apps to save memory. To keep sharing your '
-    'location while you are online even then, choose "Allow all the time" '
-    'on the next screen. It still stops as soon as you go offline.';
-
-/// Shown after going online when 'Allow all the time' was not given.
-const String backgroundLocationReminder =
-    'You are online. If your phone closes the app, location sharing stops '
-    'and you go offline — allow location "all the time" in Settings to avoid this.';
-
-/// Phase DLV-3A2 (D-DLV-BATTERY) — the one-time battery guide.
-const String batteryGuideTitle = 'Stop your phone closing the app';
-const String batteryGuideBody =
-    'Some phones close apps in the background to save battery, which takes '
-    'you offline. In the app settings that open next, set Battery to '
-    '"Unrestricted" (or "No restrictions"). On Xiaomi, Oppo, Vivo and Realme '
-    'phones also turn on "Autostart".';
