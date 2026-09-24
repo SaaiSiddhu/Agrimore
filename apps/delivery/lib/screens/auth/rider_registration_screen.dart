@@ -382,7 +382,7 @@ class _RiderRegistrationScreenState extends State<RiderRegistrationScreen> {
             width: double.infinity,
             color: t.infoBg,
             padding: const EdgeInsets.symmetric(horizontal: WsSpace.page, vertical: WsSpace.s8),
-            child: Text(l.regResumeNote, style: Theme.of(context).textTheme.bodySmall?.copyWith(color: t.infoFg)),
+            child: Text(widget.initial != null ? l.regResubmitNote : l.regResumeNote, style: Theme.of(context).textTheme.bodySmall?.copyWith(color: t.infoFg)),
           ),
         if (_failure != null)
           Semantics(

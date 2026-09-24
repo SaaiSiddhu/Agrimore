@@ -622,7 +622,7 @@
   "@deleteConfirmTitle": {
     "description": "Dialog title"
   },
-  "deleteConfirmBody": "Your profile, documents and payout details are removed and you are signed out. Records of deliveries and payments are kept, as the law requires. This cannot be undone.",
+  "deleteConfirmBody": "Your profile, documents and payout details are removed and you are signed out. Records of your deliveries and payments are kept. This cannot be undone.",
   "@deleteConfirmBody": {
     "description": "Dialog body"
   },
@@ -717,5 +717,9 @@
   "statusEditApplication": "Edit application",
   "@statusEditApplication": {
     "description": "Button (pending)"
+  },
+  "regResubmitNote": "Correct your details and submit your application again.",
+  "@regResubmitNote": {
+    "description": "Banner when a pending/rejected rider edits the application"
   }
 }

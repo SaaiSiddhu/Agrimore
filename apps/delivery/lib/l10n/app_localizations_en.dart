@@ -490,7 +490,7 @@ class AppLocalizationsEn extends AppLocalizations {
 
   @override
   String get deleteConfirmBody =>
-      'Your profile, documents and payout details are removed and you are signed out. Records of deliveries and payments are kept, as the law requires. This cannot be undone.';
+      'Your profile, documents and payout details are removed and you are signed out. Records of your deliveries and payments are kept. This cannot be undone.';
 
   @override
   String get deleteConfirm => 'Delete';
@@ -568,4 +568,8 @@ class AppLocalizationsEn extends AppLocalizations {
 
   @override
   String get statusEditApplication => 'Edit application';
+
+  @override
+  String get regResubmitNote =>
+      'Correct your details and submit your application again.';
 }

@@ -985,7 +985,7 @@ abstract class AppLocalizations {
   /// Dialog body
   ///
   /// In en, this message translates to:
-  /// **'Your profile, documents and payout details are removed and you are signed out. Records of deliveries and payments are kept, as the law requires. This cannot be undone.'**
+  /// **'Your profile, documents and payout details are removed and you are signed out. Records of your deliveries and payments are kept. This cannot be undone.'**
   String get deleteConfirmBody;
 
   /// Dialog destructive action
@@ -1125,6 +1125,12 @@ abstract class AppLocalizations {
   /// In en, this message translates to:
   /// **'Edit application'**
   String get statusEditApplication;
+
+  /// Banner when a pending/rejected rider edits the application
+  ///
+  /// In en, this message translates to:
+  /// **'Correct your details and submit your application again.'**
+  String get regResubmitNote;
 }
 
 class _AppLocalizationsDelegate

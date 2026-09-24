@@ -100,6 +100,7 @@ class _RiderProfileScreenState extends State<RiderProfileScreen> {
       padding: const EdgeInsets.symmetric(vertical: WsSpace.s4),
       child: Row(crossAxisAlignment: CrossAxisAlignment.start, children: [
         Expanded(flex: 2, child: Text(label, style: text.bodyMedium?.copyWith(color: t.textSecondary))),
+        const SizedBox(width: WsSpace.s8),
         Expanded(flex: 3, child: Text(value, style: text.bodyMedium?.copyWith(color: t.textPrimary))),
       ]),
     );

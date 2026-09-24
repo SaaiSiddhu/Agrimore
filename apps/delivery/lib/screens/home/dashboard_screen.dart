@@ -457,7 +457,11 @@ class _DashboardScreenState extends State<DashboardScreen> {
   Stream<RiderAccount>? _accountStream;
 
   RiderMoneyService? get _moneyService {
-    final uid = _auth?.user?.uid;
+    // DLV-A2: read the provider here, not the field set in a post-frame
+    // callback — nothing rebuilt the money section after that callback once
+    // DLV-C1 bound the order provider before the dashboard existed, so a
+    // rider with no order changes saw "–" for pay and cash indefinitely.
+    final uid = context.read<DeliveryAuthProvider>().user?.uid;
     if (uid == null) return null;
     if (_money?.riderId != uid) {
       _money = RiderMoneyService(uid);
