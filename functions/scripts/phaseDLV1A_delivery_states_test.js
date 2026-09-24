@@ -77,6 +77,19 @@ check("empty_partner_is_no_partner",
   taskStatusFromOrder({ orderStatus: "ready_for_pickup", deliveryPartnerId: "" }) === "searching",
   "empty string must not count as assigned");
 
+// 6 — DLV-C1: the busy/active list is the fixture's list, in order.
+{
+  const { RIDER_ACTIVE_ORDER_STATUSES } = require("../lib/delivery/dispatch");
+  check("rider_active_list_matches_table",
+    JSON.stringify(RIDER_ACTIVE_ORDER_STATUSES) === JSON.stringify(table.riderActiveOrderStatuses),
+    `${JSON.stringify(RIDER_ACTIVE_ORDER_STATUSES)} vs ${JSON.stringify(table.riderActiveOrderStatuses)}`);
+  // Every entry is a rider leg that is not over.
+  table.riderActiveOrderStatuses.forEach((v) => {
+    const t = taskStatusFromOrder({ orderStatus: v, deliveryPartnerId: "r1" });
+    check(`rider_active_${v}_is_open_leg`, t !== null && !isTerminal(t) && t !== "searching", `got ${t}`);
+  });
+}
+
 const total = passed + failures.length;
 console.log(`=== PHASE DLV-1A — delivery states (TS mirror) ===`);
 failures.forEach((f) => console.log(`FAILED — ${f}`));

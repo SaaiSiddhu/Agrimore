@@ -43,7 +43,8 @@ class LocationProvider extends ChangeNotifier with WidgetsBindingObserver {
   StreamSubscription<Position>? _positionSubscription;
   Timer? _heartbeat;
   String? _partnerId;
-  String? _activeOrderId;
+  // DLV-C1: every active order (normally one) gets the live point.
+  List<String> _activeOrderIds = const [];
   TrackingProfile _profile = idleProfile;
   DateTime? _lastUploadAt;
   bool _hasUnsentFix = false;
@@ -57,7 +58,7 @@ class LocationProvider extends ChangeNotifier with WidgetsBindingObserver {
   String? get error => _error;
   double? get latitude => _currentPosition?.latitude;
   double? get longitude => _currentPosition?.longitude;
-  String? get activeOrderId => _activeOrderId;
+  List<String> get activeOrderIds => _activeOrderIds;
   TrackingProfile get profile => _profile;
   DateTime? get lastUploadAt => _lastUploadAt;
 
@@ -256,10 +257,10 @@ class LocationProvider extends ChangeNotifier with WidgetsBindingObserver {
   /// an order was delivered with the screen off) — tracking would silently
   /// stop. The stream always samples at [samplingProfile]; the idle/order
   /// cadence is applied when deciding what to send.
-  void setActiveOrder(String? orderId) {
-    if (orderId == _activeOrderId) return;
-    _activeOrderId = orderId;
-    _profile = profileFor(onOrder: orderId != null);
+  void setActiveOrders(List<String> orderIds) {
+    if (listEquals(orderIds, _activeOrderIds)) return;
+    _activeOrderIds = List.unmodifiable(orderIds);
+    _profile = profileFor(onOrder: orderIds.isNotEmpty);
     if (_isTracking) _maybeUpload(force: true);
     notifyListeners();
   }
@@ -288,8 +289,7 @@ class LocationProvider extends ChangeNotifier with WidgetsBindingObserver {
       });
       _lastUploadAt = now;
       _hasUnsentFix = false;
-      final orderId = _activeOrderId;
-      if (orderId != null) {
+      for (final orderId in _activeOrderIds) {
         try {
           await _firestore
               .collection('delivery_tasks')

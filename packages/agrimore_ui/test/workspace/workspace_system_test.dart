@@ -89,6 +89,34 @@ void main() {
     });
   });
 
+  // DLV-C1: every brand's primary must carry its on-primary text (WCAG AA).
+  group('brand contrast', () {
+    double lum(Color c) => c.computeLuminance();
+    double ratio(Color a, Color b) {
+      final x = lum(a), y = lum(b);
+      return (x > y ? x + 0.05 : y + 0.05) / (x > y ? y + 0.05 : x + 0.05);
+    }
+
+    // Known, out of this phase: salesAssociate dark measures 3.68:1 (the
+    // employee app's palette) — reported separately, asserted as-is so it
+    // cannot get worse unnoticed.
+    test('salesAssociate / dark (known finding) stays at its measured contrast', () {
+      final t = WorkspaceTokens.forBrand(WorkspaceBrand.salesAssociate, Brightness.dark);
+      expect(ratio(t.primary, t.onPrimary), greaterThanOrEqualTo(3.6));
+    });
+
+    for (final brand in WorkspaceBrand.values) {
+      for (final b in Brightness.values) {
+        if (brand == WorkspaceBrand.salesAssociate && b == Brightness.dark) continue;
+        test('$brand / $b primary vs onPrimary ≥ 4.5:1', () {
+          final t = WorkspaceTokens.forBrand(brand, b);
+          expect(ratio(t.primary, t.onPrimary), greaterThanOrEqualTo(4.5));
+          expect(ratio(t.primary, t.pageBackground), greaterThanOrEqualTo(3.0));
+        });
+      }
+    }
+  });
+
   group('WorkspaceTheme.build', () {
     for (final brand in WorkspaceBrand.values) {
       for (final b in Brightness.values) {

@@ -2,7 +2,6 @@
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:provider/provider.dart';
-import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:agrimore_core/agrimore_core.dart';
 import '../../providers/auth_provider.dart';
 import '../../providers/order_provider.dart';
@@ -11,6 +10,9 @@ import '../orders/active_order_screen.dart';
 import '../money/money_screen.dart';
 import '../../money/rider_money.dart';
 import '../../safety/emergency_sheet.dart';
+import '../../l10n/app_localizations.dart';
+import '../history/rider_history_screen.dart';
+import 'active_work_states.dart';
 import '../../offers/offer_alerts.dart';
 import '../../offers/offer_launch.dart';
 import '../../offers/offer_platform.dart';
@@ -50,12 +52,8 @@ class _DashboardScreenState extends State<DashboardScreen> {
     WidgetsBinding.instance.addPostFrameCallback((_) {
       if (!mounted) return;
       final auth = context.read<DeliveryAuthProvider>();
+      // DLV-C1: the session gate (app/app.dart) binds the order provider.
       final orderProvider = context.read<DeliveryOrderProvider>();
-
-      if (auth.user != null) {
-        orderProvider.watchActiveOrder(auth.user!.uid);
-        orderProvider.watchMyDeliveries(auth.user!.uid);
-      }
       _auth = auth..addListener(_onServerState);
       _orders = orderProvider..addListener(_onActiveOrder);
       _onServerState();
@@ -72,7 +70,8 @@ class _DashboardScreenState extends State<DashboardScreen> {
 
   void _onActiveOrder() {
     if (!mounted) return;
-    context.read<LocationProvider>().setActiveOrder(_orders?.activeOrder?.id);
+    context.read<LocationProvider>().setActiveOrders(
+        _orders?.activeOrders.map((o) => o.id).toList() ?? const []);
   }
 
   void _onServerState() {
@@ -170,13 +169,32 @@ class _DashboardScreenState extends State<DashboardScreen> {
               Expanded(
                 child: Consumer<DeliveryOrderProvider>(
                   builder: (context, orderProvider, _) {
-                    if (orderProvider.hasActiveOrder) {
-                      return _buildActiveOrderCard(
-                        orderProvider.activeOrder!,
-                        colorScheme,
+                    final work = orderProvider.work;
+                    final Widget body;
+                    if (!work.loaded) {
+                      body = const ActiveWorkLoading();
+                    } else if (work.hasMultiple) {
+                      body = MultipleActiveOrders(
+                        orders: work.orders,
+                        onOpen: _openOrder,
                       );
+                    } else if (work.single != null) {
+                      body = _buildActiveOrderCard(work.single!, colorScheme);
+                    } else if (work.error != null) {
+                      body = ActiveWorkError(
+                        error: work.error!,
+                        onRetry: orderProvider.retry,
+                      );
+                    } else {
+                      body = _buildDashboardContent(colorScheme);
                     }
-                    return _buildDashboardContent(colorScheme);
+                    return Column(
+                      children: [
+                        if (work.loaded && (work.fromCache || work.error != null) && work.orders.isNotEmpty)
+                          const StaleDataBanner(),
+                        Expanded(child: body),
+                      ],
+                    );
                   },
                 ),
               ),
@@ -311,7 +329,8 @@ class _DashboardScreenState extends State<DashboardScreen> {
                       Expanded(
                         child: _buildStatCard(
                           'Today',
-                          orderProvider.todayDeliveries.toString(),
+                          orderProvider.todayDelivered?.toString() ??
+                              AppLocalizations.of(context).todayDeliveredUnknown,
                           Icons.receipt_long_rounded,
                           colorScheme,
                         ),
@@ -404,8 +423,8 @@ class _DashboardScreenState extends State<DashboardScreen> {
           ),
           const SizedBox(height: 12),
           _buildActionCard(
-            'Delivery history',
-            'Your last 50 delivered orders',
+            AppLocalizations.of(context).historyActionTitle,
+            AppLocalizations.of(context).historyActionSubtitle,
             Icons.history_rounded,
             colorScheme,
             onTap: () {
@@ -702,160 +721,15 @@ class _DashboardScreenState extends State<DashboardScreen> {
     );
   }
 
-  void _showDeliveryHistory() {
-    final auth = context.read<DeliveryAuthProvider>();
-    if (auth.user == null) return;
+  void _openOrder(OrderModel order) {
+    Navigator.of(context).push(
+      MaterialPageRoute<void>(builder: (_) => ActiveOrderScreen(order: order)),
+    );
+  }
 
-    showModalBottomSheet(
-      context: context,
-      isScrollControlled: true,
-      backgroundColor: Colors.transparent,
-      builder: (context) {
-        return DraggableScrollableSheet(
-          initialChildSize: 0.75,
-          minChildSize: 0.4,
-          maxChildSize: 0.95,
-          builder: (context, scrollController) {
-            return Container(
-              decoration: BoxDecoration(
-                color: Theme.of(context).scaffoldBackgroundColor,
-                borderRadius: const BorderRadius.vertical(
-                  top: Radius.circular(20),
-                ),
-              ),
-              child: Column(
-                children: [
-                  // Drag handle
-                  Container(
-                    margin: const EdgeInsets.symmetric(vertical: 12),
-                    width: 40,
-                    height: 4,
-                    decoration: BoxDecoration(
-                      color: Colors.grey[400],
-                      borderRadius: BorderRadius.circular(2),
-                    ),
-                  ),
-                  Padding(
-                    padding: const EdgeInsets.symmetric(horizontal: 20),
-                    child: Row(
-                      children: [
-                        const Icon(Icons.history_rounded, size: 24),
-                        const SizedBox(width: 12),
-                        Text(
-                          'Delivery History',
-                          style: TextStyle(
-                            fontSize: 18,
-                            fontWeight: FontWeight.w800,
-                            color: Theme.of(context).colorScheme.onSurface,
-                          ),
-                        ),
-                      ],
-                    ),
-                  ),
-                  const SizedBox(height: 12),
-                  Expanded(
-                    child: StreamBuilder<QuerySnapshot>(
-                      stream: FirebaseFirestore.instance
-                          .collection('orders')
-                          .where('deliveryPartnerId', isEqualTo: auth.user!.uid)
-                          .where('orderStatus', isEqualTo: 'delivered')
-                          .orderBy('updatedAt', descending: true)
-                          .limit(50)
-                          .snapshots(),
-                      builder: (context, snapshot) {
-                        if (snapshot.connectionState ==
-                            ConnectionState.waiting) {
-                          return const Center(
-                            child: CircularProgressIndicator(),
-                          );
-                        }
-                        if (!snapshot.hasData || snapshot.data!.docs.isEmpty) {
-                          return Center(
-                            child: Column(
-                              mainAxisAlignment: MainAxisAlignment.center,
-                              children: [
-                                Icon(
-                                  Icons.inbox_rounded,
-                                  size: 64,
-                                  color: Colors.grey[400],
-                                ),
-                                const SizedBox(height: 16),
-                                Text(
-                                  'No deliveries yet',
-                                  style: TextStyle(
-                                    fontSize: 16,
-                                    color: Colors.grey[600],
-                                    fontWeight: FontWeight.w600,
-                                  ),
-                                ),
-                              ],
-                            ),
-                          );
-                        }
-                        final orders = snapshot.data!.docs;
-                        return ListView.separated(
-                          controller: scrollController,
-                          padding: const EdgeInsets.symmetric(horizontal: 20),
-                          itemCount: orders.length,
-                          separatorBuilder: (_, __) => const Divider(height: 1),
-                          itemBuilder: (context, index) {
-                            final data =
-                                orders[index].data() as Map<String, dynamic>;
-                            final orderNumber = data['orderNumber'] ??
-                                orders[index].id.substring(0, 8);
-                            final total =
-                                (data['totalAmount'] as num?)?.toDouble() ?? 0;
-                            final updatedAt =
-                                (data['updatedAt'] as Timestamp?)?.toDate();
-                            return ListTile(
-                              contentPadding: const EdgeInsets.symmetric(
-                                vertical: 8,
-                              ),
-                              leading: Container(
-                                padding: const EdgeInsets.all(10),
-                                decoration: BoxDecoration(
-                                  color: Colors.green.withOpacity(0.1),
-                                  borderRadius: BorderRadius.circular(12),
-                                ),
-                                child: const Icon(
-                                  Icons.check_circle_rounded,
-                                  color: Colors.green,
-                                ),
-                              ),
-                              title: Text(
-                                'Order #$orderNumber',
-                                style: const TextStyle(
-                                  fontWeight: FontWeight.w700,
-                                ),
-                              ),
-                              subtitle: Text(
-                                updatedAt != null
-                                    ? '${updatedAt.day}/${updatedAt.month}/${updatedAt.year} ${updatedAt.hour}:${updatedAt.minute.toString().padLeft(2, '0')}'
-                                    : 'Delivered',
-                                style: TextStyle(
-                                  fontSize: 12,
-                                  color: Colors.grey[600],
-                                ),
-                              ),
-                              trailing: Text(
-                                '₹${total.toStringAsFixed(0)}',
-                                style: const TextStyle(
-                                  fontWeight: FontWeight.w800,
-                                  fontSize: 15,
-                                ),
-                              ),
-                            );
-                          },
-                        );
-                      },
-                    ),
-                  ),
-                ],
-              ),
-            );
-          },
-        );
-      },
+  void _showDeliveryHistory() {
+    Navigator.of(context).push(
+      MaterialPageRoute<void>(builder: (_) => const RiderHistoryScreen()),
     );
   }
 

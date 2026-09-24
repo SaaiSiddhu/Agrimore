@@ -93,6 +93,8 @@ if [ "$MODE" != quick ]; then
   # UI-TEAL-0: zero-literal ratchet (ADR §6) — literal debt may shrink, never grow
   run canon:seller             bash .claude/skills/agrimore/scripts/canon_check.sh --ratchet apps/seller/lib
   run canon:employee           bash .claude/skills/agrimore/scripts/canon_check.sh --ratchet apps/employee/lib
+  # DLV-C1: the rider app joins the ratchet (655 → 610); DLV-P1 takes it to strict zero
+  run canon:delivery           bash .claude/skills/agrimore/scripts/canon_check.sh --ratchet apps/delivery/lib
   # the validator always exits 0 — count its warnings as the signal
   VLOG="$OUT/ledger_validator.log"; node scripts/governance/validate-branch-dispositions.mjs >"$VLOG" 2>&1; VW=$(grep -c '•' "$VLOG" || true)
   row "ledger:validate" "0" "0" "warnings=$VW$( [ "$VW" -gt 0 ] && echo " — $(grep -m1 '•' "$VLOG" | cut -c1-100)" )"

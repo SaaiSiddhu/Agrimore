@@ -216,12 +216,17 @@ void main() {
       expect(re['deliveryReassignedFrom'], 'r1');
     });
 
-    test('the rider app shows delivery_accepted as an active order', () {
-      final src = File('../delivery/lib/providers/order_provider.dart').readAsStringSync();
-      final watch = src.substring(src.indexOf('void watchActiveOrder'));
-      final active = watch.substring(0, watch.indexOf('].contains'));
-      expect(active, contains("'delivery_accepted'"));
-      expect(active, isNot(contains("'ready_for_pickup'")));
+    // DLV-C1: the rider app's active-work query and the server's busy check
+    // share DeliveryTaskStatus.riderActiveOrderStatuses (parity-tested with
+    // dispatch.ts); an admin assignment must land in it.
+    test('the rider app shows an admin assignment as an active order', () {
+      final u = assignmentOrderUpdate(riderId: 'r1', rider: const {}, adminUid: 'a');
+      expect(DeliveryTaskStatus.riderActiveOrderStatuses, contains(u['orderStatus']));
+      expect(DeliveryTaskStatus.riderActiveOrderStatuses, isNot(contains('ready_for_pickup')));
+      expect(
+        DeliveryTaskStatus.fromOrderStatus(orderStatus: u['orderStatus'] as String?, status: u['status'] as String?, hasPartner: true),
+        DeliveryTaskStatus.assigned,
+      );
     });
 
     test('every refusal has a message', () {

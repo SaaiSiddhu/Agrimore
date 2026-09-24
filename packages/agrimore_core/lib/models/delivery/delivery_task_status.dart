@@ -67,6 +67,24 @@ enum DeliveryTaskStatus {
     cancelled: {},
   };
 
+  /// `orders.orderStatus` values in which a rider holds an order, exactly
+  /// as stored (Firestore `in` is case-sensitive). The server's busy check
+  /// (functions/src/delivery/dispatch.ts RIDER_ACTIVE_ORDER_STATUSES) and the
+  /// rider app's active-work query use this list; both are tested against
+  /// test/fixtures/delivery_status_table.json. A query on it returns
+  /// candidates only — read each result with [fromOrderStatus], which also
+  /// weighs `status` (an admin may have delivered or cancelled it there).
+  static const List<String> riderActiveOrderStatuses = [
+    'delivery_accepted',
+    'arrived_at_store',
+    'reached_pickup',
+    'picked_up',
+    'parcel_picked',
+    'out_for_delivery',
+    'outfordelivery',
+    'outForDelivery',
+  ];
+
   static DeliveryTaskStatus? fromWire(String? value) {
     if (value == null) return null;
     final v = value.trim().toLowerCase();
