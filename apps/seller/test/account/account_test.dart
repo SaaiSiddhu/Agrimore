@@ -1,8 +1,9 @@
-import 'package:agrimore_ui/agrimore_ui.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_localizations/flutter_localizations.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:provider/provider.dart';
+import 'package:seller/app/legacy_auth_theme.dart';
+import 'package:seller/design_system/design_system.dart';
 import 'package:seller/l10n/app_localizations.dart';
 import 'package:seller/providers/seller_auth_provider.dart';
 import 'package:seller/providers/seller_settings_provider.dart';
@@ -22,7 +23,7 @@ Future<AppLocalizations> _pump(WidgetTester tester, Widget child, {SellerSetting
       ChangeNotifierProvider<SellerSettingsProvider>(create: (_) => settings ?? SellerSettingsProvider()),
     ],
     child: MaterialApp(
-      theme: WorkspaceTheme.build(WorkspaceBrand.seller, Brightness.light),
+      theme: withLegacyWorkspaceTokens(SellerTheme.light),
       localizationsDelegates: const [
         AppLocalizations.delegate,
         GlobalMaterialLocalizations.delegate,

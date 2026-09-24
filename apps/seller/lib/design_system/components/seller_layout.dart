@@ -82,10 +82,45 @@ class SellerPage extends StatelessWidget {
 
 /// The bar of main actions at the bottom of a task screen: top hairline,
 /// surface fill, safe-area aware, centred at the page's readable width.
-class SellerStickyFooter extends StatelessWidget {
+/// It registers itself with its route so toasts rise above it (board 13:
+/// "toast above the bottom controls") instead of covering Save.
+class SellerStickyFooter extends StatefulWidget {
   const SellerStickyFooter({super.key, required this.child, this.maxWidth = SellerSize.formMaxWidth});
   final Widget child;
   final double maxWidth;
+
+  static final Map<ModalRoute<Object?>, _SellerStickyFooterState> _byRoute = {};
+
+  /// Height of the sticky footer on [context]'s route, if it has one.
+  static double? extentOf(BuildContext context) {
+    final route = ModalRoute.of(context);
+    final box = route == null ? null : _byRoute[route]?.context.findRenderObject();
+    return box is RenderBox && box.hasSize && box.attached ? box.size.height : null;
+  }
+
+  @override
+  State<SellerStickyFooter> createState() => _SellerStickyFooterState();
+}
+
+class _SellerStickyFooterState extends State<SellerStickyFooter> {
+  ModalRoute<Object?>? _route;
+
+  @override
+  void didChangeDependencies() {
+    super.didChangeDependencies();
+    final route = ModalRoute.of(context);
+    if (route != _route) {
+      if (SellerStickyFooter._byRoute[_route] == this) SellerStickyFooter._byRoute.remove(_route);
+      _route = route;
+      if (route != null) SellerStickyFooter._byRoute[route] = this;
+    }
+  }
+
+  @override
+  void dispose() {
+    if (SellerStickyFooter._byRoute[_route] == this) SellerStickyFooter._byRoute.remove(_route);
+    super.dispose();
+  }
 
   @override
   Widget build(BuildContext context) {
@@ -98,10 +133,10 @@ class SellerStickyFooter extends StatelessWidget {
         child: Center(
           heightFactor: 1,
           child: ConstrainedBox(
-            constraints: BoxConstraints(maxWidth: maxWidth),
+            constraints: BoxConstraints(maxWidth: widget.maxWidth),
             child: Padding(
               padding: EdgeInsets.fromLTRB(inset, SellerSpace.s12, inset, SellerSpace.s12),
-              child: child,
+              child: widget.child,
             ),
           ),
         ),

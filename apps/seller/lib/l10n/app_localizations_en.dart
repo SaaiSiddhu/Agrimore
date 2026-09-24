@@ -3450,4 +3450,91 @@ class AppLocalizationsEn extends AppLocalizations {
 
   @override
   String get healthLast30 => 'Last 30 days';
+
+  @override
+  String get feeErrFlatInvalid => 'Enter a valid delivery fee (0 or more).';
+
+  @override
+  String feeErrTooHigh(String max) {
+    return 'Delivery fee can\'t be more than $max.';
+  }
+
+  @override
+  String get feeErrNoTiers => 'Add at least one tier.';
+
+  @override
+  String feeErrTooManyTiers(int max) {
+    return 'You can add up to $max tiers.';
+  }
+
+  @override
+  String get feeErrTierMin =>
+      'Every tier needs a minimum order value (0 or more).';
+
+  @override
+  String get feeErrTierFee => 'Every tier needs a delivery fee (0 or more).';
+
+  @override
+  String get feeErrNoZeroTier =>
+      'Include a ₹0 minimum-order tier so every order matches a tier.';
+
+  @override
+  String get feeFreeTitle => '₹0 fee = free delivery';
+
+  @override
+  String get feeFreeBody =>
+      'Set the fee to ₹0 to offer free delivery on eligible orders.';
+
+  @override
+  String get storeOpenBody =>
+      'Your store is open to receive orders and quotes.';
+
+  @override
+  String get storeClosedTodayTitle => 'Closed today';
+
+  @override
+  String get storeManageSchedule => 'Manage schedule';
+
+  @override
+  String get storeExistingOrders =>
+      'Existing orders are not affected by a manual pause.';
+
+  @override
+  String get storeScheduledStillApply => 'Scheduled closures still apply.';
+
+  @override
+  String get accountSettings => 'Settings';
+
+  @override
+  String get accountStoreHeaderHint => 'Seller account';
+
+  @override
+  String get accountTimePick => 'Choose a time';
+
+  @override
+  String get accountTimeNotSet => 'Not set';
+
+  @override
+  String get accountGstinOptionalHelp => 'Leave blank if not applicable.';
+
+  @override
+  String get scheduleSaved => 'Schedule saved';
+
+  @override
+  String scheduleClosedEvery(String days) {
+    return 'Closed every $days';
+  }
+
+  @override
+  String get scheduleHolidayHint =>
+      'Add specific dates when your store will be closed.';
+
+  @override
+  String scheduleHolidayLimitNote(int max) {
+    return 'You can plan up to $max holidays.';
+  }
+
+  @override
+  String get scheduleKeepOneOpen =>
+      'Keep at least one day open. To stop orders for a while, pause your store instead.';
 }

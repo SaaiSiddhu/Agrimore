@@ -5871,6 +5871,150 @@ abstract class AppLocalizations {
   /// In en, this message translates to:
   /// **'Last 30 days'**
   String get healthLast30;
+
+  /// No description provided for @feeErrFlatInvalid.
+  ///
+  /// In en, this message translates to:
+  /// **'Enter a valid delivery fee (0 or more).'**
+  String get feeErrFlatInvalid;
+
+  /// No description provided for @feeErrTooHigh.
+  ///
+  /// In en, this message translates to:
+  /// **'Delivery fee can\'t be more than {max}.'**
+  String feeErrTooHigh(String max);
+
+  /// No description provided for @feeErrNoTiers.
+  ///
+  /// In en, this message translates to:
+  /// **'Add at least one tier.'**
+  String get feeErrNoTiers;
+
+  /// No description provided for @feeErrTooManyTiers.
+  ///
+  /// In en, this message translates to:
+  /// **'You can add up to {max} tiers.'**
+  String feeErrTooManyTiers(int max);
+
+  /// No description provided for @feeErrTierMin.
+  ///
+  /// In en, this message translates to:
+  /// **'Every tier needs a minimum order value (0 or more).'**
+  String get feeErrTierMin;
+
+  /// No description provided for @feeErrTierFee.
+  ///
+  /// In en, this message translates to:
+  /// **'Every tier needs a delivery fee (0 or more).'**
+  String get feeErrTierFee;
+
+  /// No description provided for @feeErrNoZeroTier.
+  ///
+  /// In en, this message translates to:
+  /// **'Include a ₹0 minimum-order tier so every order matches a tier.'**
+  String get feeErrNoZeroTier;
+
+  /// No description provided for @feeFreeTitle.
+  ///
+  /// In en, this message translates to:
+  /// **'₹0 fee = free delivery'**
+  String get feeFreeTitle;
+
+  /// No description provided for @feeFreeBody.
+  ///
+  /// In en, this message translates to:
+  /// **'Set the fee to ₹0 to offer free delivery on eligible orders.'**
+  String get feeFreeBody;
+
+  /// No description provided for @storeOpenBody.
+  ///
+  /// In en, this message translates to:
+  /// **'Your store is open to receive orders and quotes.'**
+  String get storeOpenBody;
+
+  /// No description provided for @storeClosedTodayTitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Closed today'**
+  String get storeClosedTodayTitle;
+
+  /// No description provided for @storeManageSchedule.
+  ///
+  /// In en, this message translates to:
+  /// **'Manage schedule'**
+  String get storeManageSchedule;
+
+  /// No description provided for @storeExistingOrders.
+  ///
+  /// In en, this message translates to:
+  /// **'Existing orders are not affected by a manual pause.'**
+  String get storeExistingOrders;
+
+  /// No description provided for @storeScheduledStillApply.
+  ///
+  /// In en, this message translates to:
+  /// **'Scheduled closures still apply.'**
+  String get storeScheduledStillApply;
+
+  /// No description provided for @accountSettings.
+  ///
+  /// In en, this message translates to:
+  /// **'Settings'**
+  String get accountSettings;
+
+  /// No description provided for @accountStoreHeaderHint.
+  ///
+  /// In en, this message translates to:
+  /// **'Seller account'**
+  String get accountStoreHeaderHint;
+
+  /// No description provided for @accountTimePick.
+  ///
+  /// In en, this message translates to:
+  /// **'Choose a time'**
+  String get accountTimePick;
+
+  /// No description provided for @accountTimeNotSet.
+  ///
+  /// In en, this message translates to:
+  /// **'Not set'**
+  String get accountTimeNotSet;
+
+  /// No description provided for @accountGstinOptionalHelp.
+  ///
+  /// In en, this message translates to:
+  /// **'Leave blank if not applicable.'**
+  String get accountGstinOptionalHelp;
+
+  /// No description provided for @scheduleSaved.
+  ///
+  /// In en, this message translates to:
+  /// **'Schedule saved'**
+  String get scheduleSaved;
+
+  /// No description provided for @scheduleClosedEvery.
+  ///
+  /// In en, this message translates to:
+  /// **'Closed every {days}'**
+  String scheduleClosedEvery(String days);
+
+  /// No description provided for @scheduleHolidayHint.
+  ///
+  /// In en, this message translates to:
+  /// **'Add specific dates when your store will be closed.'**
+  String get scheduleHolidayHint;
+
+  /// No description provided for @scheduleHolidayLimitNote.
+  ///
+  /// In en, this message translates to:
+  /// **'You can plan up to {max} holidays.'**
+  String scheduleHolidayLimitNote(int max);
+
+  /// No description provided for @scheduleKeepOneOpen.
+  ///
+  /// In en, this message translates to:
+  /// **'Keep at least one day open. To stop orders for a while, pause your store instead.'**
+  String get scheduleKeepOneOpen;
 }
 
 class _AppLocalizationsDelegate

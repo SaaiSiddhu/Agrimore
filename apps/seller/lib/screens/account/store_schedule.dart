@@ -1,6 +1,6 @@
-import 'package:agrimore_ui/agrimore_ui.dart';
 import 'package:flutter/material.dart';
 
+import '../../design_system/design_system.dart';
 import '../../l10n/app_localizations.dart';
 
 /// SELLER-OPS-2: weekly off days and holidays. Mirrors
@@ -96,16 +96,21 @@ class StoreScheduleScreen extends StatefulWidget {
   State<StoreScheduleScreen> createState() => _StoreScheduleScreenState();
 }
 
+/// Weekly off & holidays (boards 22-03 + 22-04, one screen): day chips
+/// with a summary, upcoming holidays with remove, add holiday (IST dates,
+/// up to 30), at least one open day, sticky Save.
 class _StoreScheduleScreenState extends State<StoreScheduleScreen> {
   late final DateTime _now = widget.now ?? DateTime.now();
   late final Set<int> _off = {...widget.initial.weeklyOff};
   late List<String> _holidays = widget.initial.upcoming(_now);
   bool _saving = false;
+  bool _dirty = false;
+  bool _allOffError = false;
 
   Future<void> _addHoliday() async {
     final l10n = AppLocalizations.of(context);
     if (_holidays.length >= StoreSchedule.maxHolidays) {
-      WsToast.show(context, l10n.scheduleHolidayLimit(StoreSchedule.maxHolidays), tone: WsToastTone.error);
+      SellerToast.show(context, l10n.scheduleHolidayLimit(StoreSchedule.maxHolidays), tone: SellerToastTone.danger);
       return;
     }
     final today = istDate(_now);
@@ -119,24 +124,32 @@ class _StoreScheduleScreenState extends State<StoreScheduleScreen> {
     if (picked == null || !mounted) return;
     final key = dayKey(picked);
     if (_holidays.contains(key)) return;
-    setState(() => _holidays = ([..._holidays, key]..sort()));
+    setState(() {
+      _holidays = ([..._holidays, key]..sort());
+      _dirty = true;
+    });
   }
 
   Future<void> _save() async {
     final l10n = AppLocalizations.of(context);
     if (_off.length == 7) {
-      WsToast.show(context, l10n.scheduleAllDaysOff, tone: WsToastTone.error);
+      setState(() => _allOffError = true);
+      SellerToast.show(context, l10n.scheduleAllDaysOff, tone: SellerToastTone.danger);
       return;
     }
     setState(() => _saving = true);
     try {
       await widget.onSave(StoreSchedule(weeklyOff: _off, holidays: _holidays));
       if (!mounted) return;
-      WsToast.show(context, l10n.accountSaved, tone: WsToastTone.success);
-      Navigator.of(context).maybePop();
+      _dirty = false;
+      SellerToast.show(context, l10n.scheduleSaved, tone: SellerToastTone.success);
+      // pop(), not maybePop(): the unsaved-changes guard must not ask
+      // "Discard changes?" right after a successful save.
+      final navigator = Navigator.of(context);
+      if (navigator.canPop()) navigator.pop();
     } catch (e) {
       debugPrint('Schedule save failed: $e');
-      if (mounted) WsToast.show(context, l10n.profileSaveFailed, tone: WsToastTone.error);
+      if (mounted) SellerToast.show(context, l10n.profileSaveFailed, tone: SellerToastTone.danger);
     } finally {
       if (mounted) setState(() => _saving = false);
     }
@@ -145,52 +158,85 @@ class _StoreScheduleScreenState extends State<StoreScheduleScreen> {
   @override
   Widget build(BuildContext context) {
     final l10n = AppLocalizations.of(context);
-    final t = context.ws;
-    final text = context.wsText;
-    return Scaffold(
-      appBar: AppBar(
-        leading: IconButton(tooltip: l10n.back, icon: const Icon(AgIcons.arrowLeft), onPressed: () => Navigator.of(context).maybePop()),
-        title: Text(l10n.scheduleTitle),
-      ),
-      body: ListView(
-        padding: const EdgeInsets.all(WsSpace.page),
-        children: [
-          Text(l10n.scheduleWeeklyOff, style: text.titleSmall),
-          const SizedBox(height: WsSpace.s4),
-          Text(l10n.scheduleWeeklyOffHint, style: text.bodySmall!.copyWith(color: t.textSecondary)),
-          const SizedBox(height: WsSpace.s12),
-          Wrap(spacing: WsSpace.s8, runSpacing: WsSpace.s8, children: [
-            for (var d = 1; d <= 7; d++)
-              FilterChip(
-                label: Text(weekdayShort(l10n, d)),
-                selected: _off.contains(d),
-                onSelected: (v) => setState(() => v ? _off.add(d) : _off.remove(d)),
-              ),
-          ]),
-          const SizedBox(height: WsSpace.s24),
-          Row(children: [
-            Expanded(child: Text(l10n.scheduleHolidays, style: text.titleSmall)),
-            TextButton.icon(onPressed: _addHoliday, icon: const Icon(AgIcons.add), label: Text(l10n.scheduleAddHoliday)),
-          ]),
-          if (_holidays.isEmpty)
-            Text(l10n.scheduleNoHolidays, style: text.bodySmall!.copyWith(color: t.textSecondary))
-          else
-            for (final h in _holidays)
-              ListTile(
-                contentPadding: EdgeInsets.zero,
-                leading: Icon(AgIcons.calendar, color: t.primary),
-                title: Text(AgFormat.date(parseDayKey(h)!), style: text.bodyLarge),
-                trailing: IconButton(
-                  tooltip: l10n.scheduleRemoveHoliday,
-                  icon: const Icon(AgIcons.delete),
-                  onPressed: () => setState(() => _holidays = [..._holidays]..remove(h)),
+    final c = context.colors;
+    final text = context.text;
+    final offDays = (_off.toList()..sort()).map((d) => weekdayShort(l10n, d)).join(', ');
+    return SellerDiscardGuard(
+      hasChanges: _dirty && !_saving,
+      child: Scaffold(
+        appBar: SellerAppBar.detail(context, title: l10n.scheduleTitle),
+        body: SellerPage(
+          gap: SellerSpace.s16,
+          footer: SellerButton(label: l10n.accountSave, expand: true, loading: _saving, loadingLabel: l10n.saving, onPressed: _save),
+          children: [
+            SellerCard(
+              child: Column(crossAxisAlignment: CrossAxisAlignment.stretch, children: [
+                SellerSectionHeader(title: l10n.scheduleWeeklyOff, subtitle: l10n.scheduleWeeklyOffHint),
+                Wrap(spacing: SellerSpace.s8, runSpacing: SellerSpace.s4, children: [
+                  for (var d = 1; d <= 7; d++)
+                    SellerChip(
+                      label: weekdayShort(l10n, d),
+                      style: SellerChipStyle.toggle,
+                      selected: _off.contains(d),
+                      onSelected: (v) => setState(() {
+                        v ? _off.add(d) : _off.remove(d);
+                        _dirty = true;
+                        _allOffError = false;
+                      }),
+                    ),
+                ]),
+                const SizedBox(height: SellerSpace.s12),
+                Row(children: [
+                  Icon(SellerIcons.calendar, size: SellerIconSize.md, color: c.primary),
+                  const SizedBox(width: SellerSpace.s8),
+                  Expanded(
+                    child: Text(
+                      offDays.isEmpty ? l10n.scheduleOpenEveryDay : l10n.scheduleClosedEvery(offDays),
+                      style: text.bodyLarge,
+                    ),
+                  ),
+                ]),
+                if (_allOffError) ...[
+                  const SizedBox(height: SellerSpace.s12),
+                  SellerBanner(tone: SellerTone.danger, message: l10n.scheduleKeepOneOpen, announce: true),
+                ],
+              ]),
+            ),
+            SellerCard(
+              child: Column(crossAxisAlignment: CrossAxisAlignment.stretch, children: [
+                SellerSectionHeader(title: l10n.scheduleHolidays, subtitle: l10n.scheduleHolidayHint, count: _holidays.isEmpty ? null : _holidays.length),
+                if (_holidays.isEmpty)
+                  SellerEmptyState(icon: SellerIcons.calendarAdd, title: l10n.scheduleNoHolidays, compact: true)
+                else
+                  for (final h in _holidays)
+                    SellerListRow(
+                      icon: SellerIcons.calendar,
+                      title: SellerFormat.date(parseDayKey(h)!),
+                      showChevron: false,
+                      trailing: SellerIconButton(
+                        icon: SellerIcons.delete,
+                        label: l10n.scheduleRemoveHoliday,
+                        color: c.danger,
+                        onPressed: () => setState(() {
+                          _holidays = [..._holidays]..remove(h);
+                          _dirty = true;
+                        }),
+                      ),
+                    ),
+                const SizedBox(height: SellerSpace.s12),
+                SellerButton.secondary(
+                  label: l10n.scheduleAddHoliday,
+                  icon: SellerIcons.calendarAdd,
+                  expand: true,
+                  onPressed: _holidays.length >= StoreSchedule.maxHolidays ? null : _addHoliday,
                 ),
-              ),
-          const SizedBox(height: WsSpace.s16),
-          SaInfoBanner(variant: SaBannerVariant.info, message: l10n.scheduleConsequence),
-          const SizedBox(height: WsSpace.s24),
-          FilledButton(onPressed: _saving ? null : _save, child: Text(l10n.accountSave)),
-        ],
+                const SizedBox(height: SellerSpace.s8),
+                Text(l10n.scheduleHolidayLimitNote(StoreSchedule.maxHolidays), style: text.bodySmall),
+              ]),
+            ),
+            SellerBanner(tone: SellerTone.info, message: l10n.scheduleConsequence),
+          ],
+        ),
       ),
     );
   }

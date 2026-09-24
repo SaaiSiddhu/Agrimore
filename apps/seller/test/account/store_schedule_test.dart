@@ -1,8 +1,8 @@
-import 'package:agrimore_ui/agrimore_ui.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_localizations/flutter_localizations.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:provider/provider.dart';
+import 'package:seller/design_system/design_system.dart';
 import 'package:seller/l10n/app_localizations.dart';
 import 'package:seller/providers/rfq_provider.dart';
 import 'package:seller/providers/seller_auth_provider.dart';
@@ -21,7 +21,7 @@ Widget _app(Widget child, void Function(AppLocalizations) onL10n) => MultiProvid
         ChangeNotifierProvider<RfqProvider>(create: (_) => RfqProvider.preview(const [])),
       ],
       child: MaterialApp(
-        theme: WorkspaceTheme.build(WorkspaceBrand.seller, Brightness.light),
+        theme: (Brightness.light == Brightness.dark ? SellerTheme.dark : SellerTheme.light),
         localizationsDelegates: const [
           AppLocalizations.delegate,
           GlobalMaterialLocalizations.delegate,
@@ -66,15 +66,18 @@ void main() {
       (l) => l10n = l,
     ));
     await tester.pump();
-    await tester.tap(find.widgetWithText(FilterChip, l10n.weekdaySun));
+    await tester.tap(find.widgetWithText(SellerChip, l10n.weekdaySun));
     await tester.pump();
     await tester.tap(find.widgetWithText(FilledButton, l10n.accountSave));
     await tester.pump();
     expect(saved?.weeklyOff, {7});
+    // Saving never asks to discard (regression: the guard used to fire).
+    expect(find.byType(Dialog), findsNothing);
+    await tester.pumpAndSettle(const Duration(seconds: 5));
 
     saved = null;
     for (final d in [l10n.weekdayMon, l10n.weekdayTue, l10n.weekdayWed, l10n.weekdayThu, l10n.weekdayFri, l10n.weekdaySat]) {
-      await tester.tap(find.widgetWithText(FilterChip, d));
+      await tester.tap(find.widgetWithText(SellerChip, d));
       await tester.pump();
     }
     await tester.tap(find.widgetWithText(FilledButton, l10n.accountSave));

@@ -2057,5 +2057,57 @@
   },
   "insightsSalesUnavailable": "Sales data unavailable",
   "healthMeasures": "Performance measures",
-  "healthLast30": "Last 30 days"
+  "healthLast30": "Last 30 days",
+  "feeErrFlatInvalid": "Enter a valid delivery fee (0 or more).",
+  "feeErrTooHigh": "Delivery fee can't be more than {max}.",
+  "@feeErrTooHigh": {
+    "placeholders": {
+      "max": {
+        "type": "String"
+      }
+    }
+  },
+  "feeErrNoTiers": "Add at least one tier.",
+  "feeErrTooManyTiers": "You can add up to {max} tiers.",
+  "@feeErrTooManyTiers": {
+    "placeholders": {
+      "max": {
+        "type": "int"
+      }
+    }
+  },
+  "feeErrTierMin": "Every tier needs a minimum order value (0 or more).",
+  "feeErrTierFee": "Every tier needs a delivery fee (0 or more).",
+  "feeErrNoZeroTier": "Include a ₹0 minimum-order tier so every order matches a tier.",
+  "feeFreeTitle": "₹0 fee = free delivery",
+  "feeFreeBody": "Set the fee to ₹0 to offer free delivery on eligible orders.",
+  "storeOpenBody": "Your store is open to receive orders and quotes.",
+  "storeClosedTodayTitle": "Closed today",
+  "storeManageSchedule": "Manage schedule",
+  "storeExistingOrders": "Existing orders are not affected by a manual pause.",
+  "storeScheduledStillApply": "Scheduled closures still apply.",
+  "accountSettings": "Settings",
+  "accountStoreHeaderHint": "Seller account",
+  "accountTimePick": "Choose a time",
+  "accountTimeNotSet": "Not set",
+  "accountGstinOptionalHelp": "Leave blank if not applicable.",
+  "scheduleSaved": "Schedule saved",
+  "scheduleClosedEvery": "Closed every {days}",
+  "@scheduleClosedEvery": {
+    "placeholders": {
+      "days": {
+        "type": "String"
+      }
+    }
+  },
+  "scheduleHolidayHint": "Add specific dates when your store will be closed.",
+  "scheduleHolidayLimitNote": "You can plan up to {max} holidays.",
+  "@scheduleHolidayLimitNote": {
+    "placeholders": {
+      "max": {
+        "type": "int"
+      }
+    }
+  },
+  "scheduleKeepOneOpen": "Keep at least one day open. To stop orders for a while, pause your store instead."
 }

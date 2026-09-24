@@ -7,6 +7,7 @@ import '../tokens/seller_motion.dart';
 import '../tokens/seller_tokens.dart';
 import '../tokens/seller_typography.dart';
 import 'seller_button.dart';
+import 'seller_layout.dart';
 
 /// Tone of a transient message.
 enum SellerToastTone { neutral, success, danger }
@@ -25,6 +26,8 @@ abstract final class SellerToast {
     final messenger = ScaffoldMessenger.maybeOf(context);
     if (messenger == null) return;
     final c = context.colors;
+    // Rise above the screen's sticky actions rather than cover them.
+    final footer = SellerStickyFooter.extentOf(context);
     final (IconData? icon, Color? color) = switch (tone) {
       SellerToastTone.success => (SellerIcons.success, c.toastSuccess),
       SellerToastTone.danger => (SellerIcons.error, c.toastDanger),
@@ -35,6 +38,9 @@ abstract final class SellerToast {
       ..showSnackBar(
         SnackBar(
           behavior: SnackBarBehavior.floating,
+          margin: footer == null
+              ? null
+              : EdgeInsets.fromLTRB(SellerSpace.s16, 0, SellerSpace.s16, footer + SellerSpace.s8),
           duration: SellerMotion.toast,
           showCloseIcon: true,
           closeIconColor: c.onToast,
