@@ -74,6 +74,7 @@ void main() {
       expect(d.primary, SaTokens.darkPrimary);
       expect(d.surface, SaTokens.darkSurface);
       expect(d.divider, SaTokens.darkDivider);
+      expect(d.onPrimary, SaTokens.darkOnPrimary);
     });
 
     test('SalesAssociateTheme keeps its colours and font, and now also carries WorkspaceTokens', () {
@@ -97,17 +98,20 @@ void main() {
       return (x > y ? x + 0.05 : y + 0.05) / (x > y ? y + 0.05 : x + 0.05);
     }
 
-    // Known, out of this phase: salesAssociate dark measures 3.68:1 (the
-    // employee app's palette) — reported separately, asserted as-is so it
-    // cannot get worse unnoticed.
-    test('salesAssociate / dark (known finding) stays at its measured contrast', () {
-      final t = WorkspaceTokens.forBrand(WorkspaceBrand.salesAssociate, Brightness.dark);
-      expect(ratio(t.primary, t.onPrimary), greaterThanOrEqualTo(3.6));
+    // UI-SA1: the employee app renders SalesAssociateTheme (not WorkspaceTheme);
+    // its dark button text must pass too, in both the resting and pressed fill.
+    test('SalesAssociateTheme dark: button text on the primary fill ≥ 4.5:1', () {
+      final theme = SalesAssociateTheme.darkTheme;
+      expect(ratio(theme.colorScheme.primary, theme.colorScheme.onPrimary), greaterThanOrEqualTo(4.5));
+      final button = theme.elevatedButtonTheme.style!;
+      final fg = button.foregroundColor!.resolve(<WidgetState>{})!;
+      final bg = button.backgroundColor!.resolve(<WidgetState>{})!;
+      expect(ratio(bg, fg), greaterThanOrEqualTo(4.5));
+      expect(ratio(SaTokens.darkPrimaryPressed, fg), greaterThanOrEqualTo(4.5));
     });
 
     for (final brand in WorkspaceBrand.values) {
       for (final b in Brightness.values) {
-        if (brand == WorkspaceBrand.salesAssociate && b == Brightness.dark) continue;
         test('$brand / $b primary vs onPrimary ≥ 4.5:1', () {
           final t = WorkspaceTokens.forBrand(brand, b);
           expect(ratio(t.primary, t.onPrimary), greaterThanOrEqualTo(4.5));

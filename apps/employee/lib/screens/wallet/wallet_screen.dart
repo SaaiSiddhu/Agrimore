@@ -205,8 +205,8 @@ class _WalletScreenState extends State<WalletScreen> {
         Expanded(
           child: _ActionTile(
             icon: SaIcons.arrowLeft, // inverted arrow for payout out
-            iconWidget: const Icon(Icons.arrow_upward_rounded,
-                color: Colors.white, size: 18),
+            iconWidget: Icon(Icons.arrow_upward_rounded,
+                color: Theme.of(context).colorScheme.onPrimary, size: 18),
             label: 'Request Payout',
             isPrimary: true,
             onTap: () {
@@ -473,6 +473,8 @@ class _ActionTile extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final tokens = context.saTokens;
+    // UI-SA1: text on the primary fill follows the theme (navy in dark mode).
+    final onPrimary = Theme.of(context).colorScheme.onPrimary;
     return InkWell(
       onTap: onTap,
       borderRadius: BorderRadius.circular(SaTokens.radiusInput),
@@ -494,7 +496,7 @@ class _ActionTile extends StatelessWidget {
                 Icon(
                   icon,
                   size: 20,
-                  color: isPrimary ? Colors.white : tokens.primary,
+                  color: isPrimary ? onPrimary : tokens.primary,
                 ),
             const SizedBox(height: 6),
             Text(
@@ -503,7 +505,7 @@ class _ActionTile extends StatelessWidget {
               style: TextStyle(
                 fontSize: 11,
                 fontWeight: FontWeight.w700,
-                color: isPrimary ? Colors.white : tokens.textPrimary,
+                color: isPrimary ? onPrimary : tokens.textPrimary,
               ),
               maxLines: 2,
               overflow: TextOverflow.ellipsis,

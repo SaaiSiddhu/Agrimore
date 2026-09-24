@@ -117,6 +117,11 @@ abstract final class SaTokens {
   /// Dark primary pressed — #60A5FA.
   static const Color darkPrimaryPressed = Color(0xFF60A5FA);
 
+  /// Text and icons on a dark-mode [darkPrimary] fill — #0F172A (slate-900).
+  /// 4.85:1 on #3B82F6 (7.0:1 on the pressed #60A5FA); white measured 3.68:1,
+  /// below WCAG AA for button text (UI-SA1).
+  static const Color darkOnPrimary = Color(0xFF0F172A);
+
   /// Dark success foreground — #4ADE80.
   static const Color darkSuccessFg = Color(0xFF4ADE80);
 
