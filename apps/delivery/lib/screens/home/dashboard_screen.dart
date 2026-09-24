@@ -94,7 +94,7 @@ class _DashboardScreenState extends State<DashboardScreen> {
     if (!server && previous == true && _isOnline && !_toggling) {
       context.read<LocationProvider>().stopTracking();
       setState(() => _isOnline = false);
-      final message = serverOfflineMessage(auth.offlineReason);
+      final message = serverOfflineMessage(AppLocalizations.of(context), auth.offlineReason);
       if (message != null) SnackbarHelper.showWarning(context, message);
     }
   }
@@ -794,11 +794,11 @@ class _DashboardScreenState extends State<DashboardScreen> {
         }
         if (!mounted) return;
         if (result == GoOnlineResult.started && !backgroundAllowed) {
-          SnackbarHelper.showWarning(context, backgroundLocationReminder);
+          SnackbarHelper.showWarning(context, AppLocalizations.of(context).backgroundLocationReminder);
         }
         if (result != GoOnlineResult.started) {
           setState(() => _isOnline = false);
-          final message = result.message;
+          final message = result.message(AppLocalizations.of(context));
           if (message != null) {
             if (result.needsSettings) {
               SnackbarHelper.showWithAction(

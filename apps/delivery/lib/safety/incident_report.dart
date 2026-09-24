@@ -11,6 +11,7 @@
 //
 // The pure parts (request id, status wording, refusal wording) are covered by
 // test/incident_report_test.dart.
+import 'package:agrimore_core/agrimore_core.dart';
 import 'dart:async';
 import 'dart:math';
 
@@ -90,7 +91,7 @@ String incidentErrorMessage(String code, String? reason) {
 Future<String> reportIncidentCallable(Map<String, dynamic> payload) async {
   try {
     final r = await FirebaseFunctions.instance
-        .httpsCallable('reportRiderIncident', options: HttpsCallableOptions(timeout: const Duration(seconds: 20)))
+        .httpsCallable('reportRiderIncident', options: HttpsCallableOptions(timeout: DeliveryTiming.incidentCallTimeout))
         .call<Map<String, dynamic>>(payload);
     final id = r.data['incidentId'];
     if (id is String && id.isNotEmpty) return id;
@@ -123,7 +124,7 @@ Future<Map<String, dynamic>> quickIncidentFix() async {
     Position? pos;
     try {
       pos = await Geolocator.getCurrentPosition(
-        locationSettings: const LocationSettings(accuracy: LocationAccuracy.high, timeLimit: Duration(seconds: 4)),
+        locationSettings: const LocationSettings(accuracy: LocationAccuracy.high, timeLimit: DeliveryTiming.reportFixRequestLimit),
       );
     } catch (_) {
       pos = await Geolocator.getLastKnownPosition();

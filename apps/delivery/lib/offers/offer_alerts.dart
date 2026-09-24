@@ -18,6 +18,7 @@
 // It is raised from two places: the foreground OfferProvider (Firestore
 // listener — works without FCM), and the FCM background handler below when
 // the app is in the background or killed.
+import 'package:agrimore_core/agrimore_core.dart';
 import 'dart:io' show Platform;
 import 'dart:typed_data';
 
@@ -27,14 +28,15 @@ import 'package:flutter/material.dart';
 import 'package:flutter_local_notifications/flutter_local_notifications.dart';
 import 'package:agrimore_services/agrimore_services.dart'
     show NotificationService;
-import 'package:agrimore_ui/agrimore_ui.dart' show DialogHelper;
+import 'package:agrimore_ui/agrimore_ui.dart' show wsConfirm;
 import 'package:shared_preferences/shared_preferences.dart';
 
+import '../app/device_localizations.dart';
+import '../l10n/app_localizations.dart';
 import 'delivery_offer.dart';
 import 'offer_platform.dart';
 
 const String offersChannelId = 'delivery_offers';
-const String _channelName = 'Delivery offers';
 const UriAndroidNotificationSound _ringtone =
     UriAndroidNotificationSound('content://settings/system/ringtone');
 final Int64List _vibration = Int64List.fromList([0, 900, 500, 900, 500, 900]);
@@ -46,10 +48,11 @@ const int _flagInsistent = 4;
 /// everywhere else — tests, web — the calls below do nothing.
 bool get _alertsSupported => !kIsWeb && Platform.isAndroid;
 
-final AndroidNotificationChannel offersChannel = AndroidNotificationChannel(
+/// The offers channel, named in the device language (lib/l10n).
+AndroidNotificationChannel get offersChannel => AndroidNotificationChannel(
   offersChannelId,
-  _channelName,
-  description: 'Rings when a new delivery order is offered to you',
+  deviceLocalizations().offerChannelName,
+  description: deviceLocalizations().offerChannelDescription,
   importance: Importance.max,
   playSound: true,
   sound: _ringtone,
@@ -69,10 +72,11 @@ Future<void> showOfferAlert(
   if (!_alertsSupported) return;
   final remaining = expiresAt.difference(now ?? DateTime.now());
   if (remaining.inMilliseconds <= 0) return;
+  final l = deviceLocalizations();
   final details = AndroidNotificationDetails(
     offersChannelId,
-    _channelName,
-    channelDescription: offersChannel.description,
+    l.offerChannelName,
+    channelDescription: l.offerChannelDescription,
     importance: Importance.max,
     priority: Priority.max,
     category: AndroidNotificationCategory.call,
@@ -92,7 +96,7 @@ Future<void> showOfferAlert(
   );
   await plugin.show(
     offerNotificationId(orderId),
-    'New delivery request',
+    l.offerNotificationTitle,
     body,
     NotificationDetails(android: details),
     payload: offerPayload(orderId),
@@ -139,13 +143,13 @@ Future<void> deliveryBackgroundMessageHandler(RemoteMessage message) async {
   // dispatch.ts sets. Give it a moment to land, then replace it with the
   // ringing full-screen alert under a different id, so a late system copy can
   // never overwrite the ring.
-  await Future<void>.delayed(const Duration(milliseconds: 800));
+  await Future<void>.delayed(DeliveryTiming.offerAlertReplaceDelay);
   await plugin.cancel(0, tag: offerNotificationTag(orderId));
   await showOfferAlert(
     plugin,
     orderId: orderId,
     expiresAt: expiresAt,
-    body: message.notification?.body ?? 'Tap to see the order',
+    body: message.notification?.body ?? deviceLocalizations().offerNotificationBody,
   );
 }
 
@@ -168,15 +172,13 @@ Future<void> ensureOfferAlertPermissions(BuildContext context) async {
     if (prefs.getBool(_fullScreenPromptedKey) == true) return;
     await prefs.setBool(_fullScreenPromptedKey, true);
     if (!context.mounted) return;
-    final ok = await DialogHelper.showConfirmation(
+    final l = AppLocalizations.of(context);
+    final ok = await wsConfirm(
       context,
-      title: 'Ring for new orders?',
-      message:
-          'Allow full-screen alerts so a new delivery order rings and shows '
-          'even when your phone is locked. You can change this later in '
-          'Settings.',
-      confirmText: 'Allow',
-      cancelText: 'Not now',
+      title: l.offerRingPromptTitle,
+      message: l.offerRingPromptBody,
+      confirmLabel: l.actionAllow,
+      cancelLabel: l.actionNotNow,
     );
     if (ok == true) await android.requestFullScreenIntentPermission();
   } catch (e) {

@@ -1344,5 +1344,109 @@
   "historyDetailPayError": "Could not load your pay for this order.",
   "@historyDetailPayError": {
     "description": "History detail: earning read failed"
+  },
+  "actionNotNow": "Not now",
+  "@actionNotNow": {
+    "description": "Decline for now"
+  },
+  "actionContinue": "Continue",
+  "@actionContinue": {
+    "description": "Go on to the next step"
+  },
+  "actionLater": "Later",
+  "@actionLater": {
+    "description": "Put off"
+  },
+  "actionOpenSettings": "Open settings",
+  "@actionOpenSettings": {
+    "description": "Open the phone's settings for this app"
+  },
+  "actionAllow": "Allow",
+  "@actionAllow": {
+    "description": "Grant a permission"
+  },
+  "goOnlineServicesOff": "Turn on location (GPS) to go online.",
+  "@goOnlineServicesOff": {
+    "description": "Going online: location services off"
+  },
+  "goOnlinePermissionDenied": "Allow location access to go online. Orders are offered by distance.",
+  "@goOnlinePermissionDenied": {
+    "description": "Going online: permission denied"
+  },
+  "goOnlinePermissionForever": "Location access is turned off for this app. Turn it on in Settings to go online.",
+  "@goOnlinePermissionForever": {
+    "description": "Going online: permission denied forever"
+  },
+  "goOnlineFailed": "Could not get your location. Move to an open area and try again.",
+  "@goOnlineFailed": {
+    "description": "Going online: no fix"
+  },
+  "serverOfflineNoLocation": "You're offline — your location stopped for 15 minutes. Go online again when you're ready.",
+  "@serverOfflineNoLocation": {
+    "description": "The server took the rider offline for no location"
+  },
+  "locationDisclosureTitle": "Your location while you are online",
+  "@locationDisclosureTitle": {
+    "description": "Play prominent disclosure title"
+  },
+  "locationDisclosureBody": "While you are online, Agrimore Delivery collects your location — also when the app is closed or not in use — to offer you nearby orders and to show customers where their delivery is. A notification shows while this is on. It stops as soon as you go offline.",
+  "@locationDisclosureBody": {
+    "description": "Play prominent disclosure body"
+  },
+  "backgroundLocationTitle": "Keep deliveries working when the app closes",
+  "@backgroundLocationTitle": {
+    "description": "Allow-all-the-time step title"
+  },
+  "backgroundLocationBody": "Your phone sometimes closes apps to save memory. To keep sharing your location while you are online even then, choose \"Allow all the time\" on the next screen. It still stops as soon as you go offline.",
+  "@backgroundLocationBody": {
+    "description": "Allow-all-the-time step body"
+  },
+  "backgroundLocationReminder": "You are online. If your phone closes the app, location sharing stops and you go offline — allow location \"all the time\" in Settings to avoid this.",
+  "@backgroundLocationReminder": {
+    "description": "Shown after going online without background location"
+  },
+  "batteryGuideTitle": "Stop your phone closing the app",
+  "@batteryGuideTitle": {
+    "description": "Battery guide title"
+  },
+  "batteryGuideBody": "Some phones close apps in the background to save battery, which takes you offline. In the app settings that open next, set Battery to \"Unrestricted\" (or \"No restrictions\"). On Xiaomi, Oppo, Vivo and Realme phones also turn on \"Autostart\".",
+  "@batteryGuideBody": {
+    "description": "Battery guide body"
+  },
+  "onlineNoticeTitle": "You're online",
+  "@onlineNoticeTitle": {
+    "description": "Ongoing notification while sharing location"
+  },
+  "onlineNoticeText": "Sharing your location for nearby orders and live tracking. Go offline in the app to stop.",
+  "@onlineNoticeText": {
+    "description": "Ongoing notification text"
+  },
+  "onlineNoticeChannel": "Online status",
+  "@onlineNoticeChannel": {
+    "description": "Android notification channel name for the ongoing notice"
+  },
+  "offerChannelName": "Delivery offers",
+  "@offerChannelName": {
+    "description": "Android notification channel name for offers"
+  },
+  "offerChannelDescription": "Rings when a new delivery order is offered to you",
+  "@offerChannelDescription": {
+    "description": "Android notification channel description"
+  },
+  "offerNotificationTitle": "New delivery request",
+  "@offerNotificationTitle": {
+    "description": "Offer notification title"
+  },
+  "offerNotificationBody": "Tap to see the order",
+  "@offerNotificationBody": {
+    "description": "Offer notification body when no details are known"
+  },
+  "offerRingPromptTitle": "Ring for new orders?",
+  "@offerRingPromptTitle": {
+    "description": "Ask for full-screen alerts"
+  },
+  "offerRingPromptBody": "Allow full-screen alerts so a new delivery order rings and shows even when your phone is locked. You can change this later in Settings.",
+  "@offerRingPromptBody": {
+    "description": "Full-screen alert permission explanation"
   }
 }

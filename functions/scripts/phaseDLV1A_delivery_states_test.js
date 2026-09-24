@@ -90,6 +90,16 @@ check("empty_partner_is_no_partner",
   });
 }
 
+// DLV-P1: server time limits the rider app mirrors (DeliveryTiming).
+{
+  const { OFFER_TTL_MS, LOCATION_FRESHNESS_MS } = require("../lib/delivery/dispatch");
+  const { SILENT_OFFLINE_MS } = require("../lib/delivery/riderPresence");
+  check("timing_offer_lifetime", OFFER_TTL_MS === table.timing.offerLifetimeMs, `${OFFER_TTL_MS} vs ${table.timing.offerLifetimeMs}`);
+  check("timing_silent_offline", SILENT_OFFLINE_MS === table.timing.riderSilentOfflineMs, `${SILENT_OFFLINE_MS} vs ${table.timing.riderSilentOfflineMs}`);
+  check("timing_location_freshness", LOCATION_FRESHNESS_MS === table.timing.dispatchLocationFreshnessMs,
+    `${LOCATION_FRESHNESS_MS} vs ${table.timing.dispatchLocationFreshnessMs}`);
+}
+
 const total = passed + failures.length;
 console.log(`=== PHASE DLV-1A — delivery states (TS mirror) ===`);
 failures.forEach((f) => console.log(`FAILED — ${f}`));

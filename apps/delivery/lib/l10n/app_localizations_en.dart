@@ -1011,4 +1011,94 @@ class AppLocalizationsEn extends AppLocalizations {
 
   @override
   String get historyDetailPayError => 'Could not load your pay for this order.';
+
+  @override
+  String get actionNotNow => 'Not now';
+
+  @override
+  String get actionContinue => 'Continue';
+
+  @override
+  String get actionLater => 'Later';
+
+  @override
+  String get actionOpenSettings => 'Open settings';
+
+  @override
+  String get actionAllow => 'Allow';
+
+  @override
+  String get goOnlineServicesOff => 'Turn on location (GPS) to go online.';
+
+  @override
+  String get goOnlinePermissionDenied =>
+      'Allow location access to go online. Orders are offered by distance.';
+
+  @override
+  String get goOnlinePermissionForever =>
+      'Location access is turned off for this app. Turn it on in Settings to go online.';
+
+  @override
+  String get goOnlineFailed =>
+      'Could not get your location. Move to an open area and try again.';
+
+  @override
+  String get serverOfflineNoLocation =>
+      'You\'re offline — your location stopped for 15 minutes. Go online again when you\'re ready.';
+
+  @override
+  String get locationDisclosureTitle => 'Your location while you are online';
+
+  @override
+  String get locationDisclosureBody =>
+      'While you are online, Agrimore Delivery collects your location — also when the app is closed or not in use — to offer you nearby orders and to show customers where their delivery is. A notification shows while this is on. It stops as soon as you go offline.';
+
+  @override
+  String get backgroundLocationTitle =>
+      'Keep deliveries working when the app closes';
+
+  @override
+  String get backgroundLocationBody =>
+      'Your phone sometimes closes apps to save memory. To keep sharing your location while you are online even then, choose \"Allow all the time\" on the next screen. It still stops as soon as you go offline.';
+
+  @override
+  String get backgroundLocationReminder =>
+      'You are online. If your phone closes the app, location sharing stops and you go offline — allow location \"all the time\" in Settings to avoid this.';
+
+  @override
+  String get batteryGuideTitle => 'Stop your phone closing the app';
+
+  @override
+  String get batteryGuideBody =>
+      'Some phones close apps in the background to save battery, which takes you offline. In the app settings that open next, set Battery to \"Unrestricted\" (or \"No restrictions\"). On Xiaomi, Oppo, Vivo and Realme phones also turn on \"Autostart\".';
+
+  @override
+  String get onlineNoticeTitle => 'You\'re online';
+
+  @override
+  String get onlineNoticeText =>
+      'Sharing your location for nearby orders and live tracking. Go offline in the app to stop.';
+
+  @override
+  String get onlineNoticeChannel => 'Online status';
+
+  @override
+  String get offerChannelName => 'Delivery offers';
+
+  @override
+  String get offerChannelDescription =>
+      'Rings when a new delivery order is offered to you';
+
+  @override
+  String get offerNotificationTitle => 'New delivery request';
+
+  @override
+  String get offerNotificationBody => 'Tap to see the order';
+
+  @override
+  String get offerRingPromptTitle => 'Ring for new orders?';
+
+  @override
+  String get offerRingPromptBody =>
+      'Allow full-screen alerts so a new delivery order rings and shows even when your phone is locked. You can change this later in Settings.';
 }

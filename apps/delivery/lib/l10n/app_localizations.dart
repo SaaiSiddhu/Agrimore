@@ -1845,6 +1845,162 @@ abstract class AppLocalizations {
   /// In en, this message translates to:
   /// **'Could not load your pay for this order.'**
   String get historyDetailPayError;
+
+  /// Decline for now
+  ///
+  /// In en, this message translates to:
+  /// **'Not now'**
+  String get actionNotNow;
+
+  /// Go on to the next step
+  ///
+  /// In en, this message translates to:
+  /// **'Continue'**
+  String get actionContinue;
+
+  /// Put off
+  ///
+  /// In en, this message translates to:
+  /// **'Later'**
+  String get actionLater;
+
+  /// Open the phone's settings for this app
+  ///
+  /// In en, this message translates to:
+  /// **'Open settings'**
+  String get actionOpenSettings;
+
+  /// Grant a permission
+  ///
+  /// In en, this message translates to:
+  /// **'Allow'**
+  String get actionAllow;
+
+  /// Going online: location services off
+  ///
+  /// In en, this message translates to:
+  /// **'Turn on location (GPS) to go online.'**
+  String get goOnlineServicesOff;
+
+  /// Going online: permission denied
+  ///
+  /// In en, this message translates to:
+  /// **'Allow location access to go online. Orders are offered by distance.'**
+  String get goOnlinePermissionDenied;
+
+  /// Going online: permission denied forever
+  ///
+  /// In en, this message translates to:
+  /// **'Location access is turned off for this app. Turn it on in Settings to go online.'**
+  String get goOnlinePermissionForever;
+
+  /// Going online: no fix
+  ///
+  /// In en, this message translates to:
+  /// **'Could not get your location. Move to an open area and try again.'**
+  String get goOnlineFailed;
+
+  /// The server took the rider offline for no location
+  ///
+  /// In en, this message translates to:
+  /// **'You\'re offline — your location stopped for 15 minutes. Go online again when you\'re ready.'**
+  String get serverOfflineNoLocation;
+
+  /// Play prominent disclosure title
+  ///
+  /// In en, this message translates to:
+  /// **'Your location while you are online'**
+  String get locationDisclosureTitle;
+
+  /// Play prominent disclosure body
+  ///
+  /// In en, this message translates to:
+  /// **'While you are online, Agrimore Delivery collects your location — also when the app is closed or not in use — to offer you nearby orders and to show customers where their delivery is. A notification shows while this is on. It stops as soon as you go offline.'**
+  String get locationDisclosureBody;
+
+  /// Allow-all-the-time step title
+  ///
+  /// In en, this message translates to:
+  /// **'Keep deliveries working when the app closes'**
+  String get backgroundLocationTitle;
+
+  /// Allow-all-the-time step body
+  ///
+  /// In en, this message translates to:
+  /// **'Your phone sometimes closes apps to save memory. To keep sharing your location while you are online even then, choose \"Allow all the time\" on the next screen. It still stops as soon as you go offline.'**
+  String get backgroundLocationBody;
+
+  /// Shown after going online without background location
+  ///
+  /// In en, this message translates to:
+  /// **'You are online. If your phone closes the app, location sharing stops and you go offline — allow location \"all the time\" in Settings to avoid this.'**
+  String get backgroundLocationReminder;
+
+  /// Battery guide title
+  ///
+  /// In en, this message translates to:
+  /// **'Stop your phone closing the app'**
+  String get batteryGuideTitle;
+
+  /// Battery guide body
+  ///
+  /// In en, this message translates to:
+  /// **'Some phones close apps in the background to save battery, which takes you offline. In the app settings that open next, set Battery to \"Unrestricted\" (or \"No restrictions\"). On Xiaomi, Oppo, Vivo and Realme phones also turn on \"Autostart\".'**
+  String get batteryGuideBody;
+
+  /// Ongoing notification while sharing location
+  ///
+  /// In en, this message translates to:
+  /// **'You\'re online'**
+  String get onlineNoticeTitle;
+
+  /// Ongoing notification text
+  ///
+  /// In en, this message translates to:
+  /// **'Sharing your location for nearby orders and live tracking. Go offline in the app to stop.'**
+  String get onlineNoticeText;
+
+  /// Android notification channel name for the ongoing notice
+  ///
+  /// In en, this message translates to:
+  /// **'Online status'**
+  String get onlineNoticeChannel;
+
+  /// Android notification channel name for offers
+  ///
+  /// In en, this message translates to:
+  /// **'Delivery offers'**
+  String get offerChannelName;
+
+  /// Android notification channel description
+  ///
+  /// In en, this message translates to:
+  /// **'Rings when a new delivery order is offered to you'**
+  String get offerChannelDescription;
+
+  /// Offer notification title
+  ///
+  /// In en, this message translates to:
+  /// **'New delivery request'**
+  String get offerNotificationTitle;
+
+  /// Offer notification body when no details are known
+  ///
+  /// In en, this message translates to:
+  /// **'Tap to see the order'**
+  String get offerNotificationBody;
+
+  /// Ask for full-screen alerts
+  ///
+  /// In en, this message translates to:
+  /// **'Ring for new orders?'**
+  String get offerRingPromptTitle;
+
+  /// Full-screen alert permission explanation
+  ///
+  /// In en, this message translates to:
+  /// **'Allow full-screen alerts so a new delivery order rings and shows even when your phone is locked. You can change this later in Settings.'**
+  String get offerRingPromptBody;
 }
 
 class _AppLocalizationsDelegate

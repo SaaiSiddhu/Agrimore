@@ -4,9 +4,11 @@
 // collects location while it is closed or not in use. Shown once, before the
 // first location permission prompt; a rider who declines cannot go online
 // (orders are offered by distance), and is asked again next time.
+import 'package:agrimore_ui/agrimore_ui.dart';
 import 'package:flutter/material.dart';
 import 'package:shared_preferences/shared_preferences.dart';
-import 'location_policy.dart';
+
+import '../l10n/app_localizations.dart';
 import 'rider_platform.dart';
 
 const String _acceptedKey = 'dlv3a_location_disclosure_accepted';
@@ -25,26 +27,17 @@ Future<bool> locationDisclosureAccepted() async {
 Future<bool> ensureLocationDisclosure(BuildContext context) async {
   if (await locationDisclosureAccepted()) return true;
   if (!context.mounted) return false;
-  final ok = await showDialog<bool>(
-    context: context,
-    barrierDismissible: false,
-    builder: (context) => AlertDialog(
-      icon: const Icon(Icons.location_on_rounded, size: 32),
-      title: const Text(locationDisclosureTitle),
-      content: const SingleChildScrollView(child: Text(locationDisclosureBody)),
-      actions: [
-        TextButton(
-          onPressed: () => Navigator.of(context).pop(false),
-          child: const Text('Not now'),
-        ),
-        FilledButton(
-          onPressed: () => Navigator.of(context).pop(true),
-          child: const Text('Continue'),
-        ),
-      ],
-    ),
+  final l = AppLocalizations.of(context);
+  final ok = await wsConfirm(
+    context,
+    icon: AgIcons.location,
+    title: l.locationDisclosureTitle,
+    message: l.locationDisclosureBody,
+    confirmLabel: l.actionContinue,
+    cancelLabel: l.actionNotNow,
+    dismissible: false,
   );
-  if (ok != true) return false;
+  if (!ok) return false;
   try {
     final prefs = await SharedPreferences.getInstance();
     await prefs.setBool(_acceptedKey, true);
@@ -57,30 +50,21 @@ Future<bool> ensureLocationDisclosure(BuildContext context) async {
 // Phase DLV-3A2 (D-DLV-BGLOC-ALWAYS) — the second step: 'Allow all the time',
 // so location sharing restarts if the phone closes the app. Asked after the
 // while-in-use grant (Android 11+ sends the rider to Settings for it). A rider
-// who declines can still go online (see [backgroundLocationReminder]).
+// who declines can still go online (see backgroundLocationReminder in lib/l10n).
 Future<bool> ensureBackgroundLocation(BuildContext context) async {
   if (!RiderPlatform.available) return true;
   if (await RiderPlatform.hasBackgroundLocation()) return true;
   if (!context.mounted) return false;
-  final ok = await showDialog<bool>(
-    context: context,
-    builder: (context) => AlertDialog(
-      icon: const Icon(Icons.my_location_rounded, size: 32),
-      title: const Text(backgroundLocationTitle),
-      content: const SingleChildScrollView(child: Text(backgroundLocationBody)),
-      actions: [
-        TextButton(
-          onPressed: () => Navigator.of(context).pop(false),
-          child: const Text('Not now'),
-        ),
-        FilledButton(
-          onPressed: () => Navigator.of(context).pop(true),
-          child: const Text('Continue'),
-        ),
-      ],
-    ),
+  final l = AppLocalizations.of(context);
+  final ok = await wsConfirm(
+    context,
+    icon: AgIcons.locate,
+    title: l.backgroundLocationTitle,
+    message: l.backgroundLocationBody,
+    confirmLabel: l.actionContinue,
+    cancelLabel: l.actionNotNow,
   );
-  if (ok != true) return false;
+  if (!ok) return false;
   // Not Geolocator.requestPermission(): it bundles background with the
   // foreground permissions, which Android 11+ silently drops (device run).
   return RiderPlatform.requestBackgroundLocation();
@@ -102,23 +86,14 @@ Future<void> maybeShowBatteryGuide(BuildContext context) async {
     return;
   }
   if (!context.mounted) return;
-  final open = await showDialog<bool>(
-    context: context,
-    builder: (context) => AlertDialog(
-      icon: const Icon(Icons.battery_saver_rounded, size: 32),
-      title: const Text(batteryGuideTitle),
-      content: const SingleChildScrollView(child: Text(batteryGuideBody)),
-      actions: [
-        TextButton(
-          onPressed: () => Navigator.of(context).pop(false),
-          child: const Text('Later'),
-        ),
-        FilledButton(
-          onPressed: () => Navigator.of(context).pop(true),
-          child: const Text('Open settings'),
-        ),
-      ],
-    ),
+  final l = AppLocalizations.of(context);
+  final open = await wsConfirm(
+    context,
+    icon: AgIcons.battery,
+    title: l.batteryGuideTitle,
+    message: l.batteryGuideBody,
+    confirmLabel: l.actionOpenSettings,
+    cancelLabel: l.actionLater,
   );
-  if (open == true) await RiderPlatform.openBatterySettings();
+  if (open) await RiderPlatform.openBatterySettings();
 }

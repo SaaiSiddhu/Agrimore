@@ -96,7 +96,7 @@ Future<Position?> currentRiderFix() async {
     final perm = await Geolocator.checkPermission();
     if (perm == LocationPermission.denied || perm == LocationPermission.deniedForever) return null;
     return await Geolocator.getCurrentPosition(
-      locationSettings: const LocationSettings(accuracy: LocationAccuracy.high, timeLimit: Duration(seconds: 6)),
+      locationSettings: const LocationSettings(accuracy: LocationAccuracy.high, timeLimit: DeliveryTiming.stepFixTimeout),
     );
   } catch (e) {
     debugPrint('Step fix failed: $e');

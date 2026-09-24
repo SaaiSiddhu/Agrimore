@@ -6,6 +6,7 @@
 //
 // Pure Dart (no Flutter, no Firebase calls) so the rules below are unit-tested
 // in test/offers_test.dart.
+import 'package:agrimore_core/agrimore_core.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
 
 class DeliveryOffer {
@@ -41,7 +42,7 @@ class DeliveryOffer {
 
   /// Offers last 30 s (dispatch.ts OFFER_TTL_MS); the countdown ring is drawn
   /// against this.
-  static const Duration lifetime = Duration(seconds: 30);
+  static const Duration lifetime = DeliveryTiming.offerLifetime;
 
   bool get isCod => codAmount > 0;
 

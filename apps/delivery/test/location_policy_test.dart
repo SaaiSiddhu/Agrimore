@@ -2,7 +2,9 @@
 // against what the server and the rules actually enforce.
 import 'dart:io';
 
+import 'package:delivery/l10n/app_localizations.dart';
 import 'package:delivery/location/location_policy.dart';
+import 'package:flutter/widgets.dart';
 import 'package:flutter_test/flutter_test.dart';
 
 int _msConst(String src, String name) {
@@ -151,10 +153,11 @@ void main() {
   });
 
   group('rider messages', () {
+    final l = lookupAppLocalizations(const Locale('en'));
     test('every failure to go online says what to do', () {
       for (final r in GoOnlineResult.values) {
         final silent = r == GoOnlineResult.started || r == GoOnlineResult.disclosureDeclined;
-        expect(r.message == null, silent, reason: r.name);
+        expect(r.message(l) == null, silent, reason: r.name);
       }
       expect(GoOnlineResult.servicesOff.needsSettings, isTrue);
       expect(GoOnlineResult.permissionDeniedForever.needsSettings, isTrue);
@@ -164,21 +167,21 @@ void main() {
     test('the server sweep reason is explained; anything else stays quiet', () {
       final presence = File('../../functions/src/delivery/riderPresence.ts').readAsStringSync();
       expect(presence, contains('offlineReason: "no_location"'));
-      expect(serverOfflineMessage('no_location'), contains('15 minutes'));
-      expect(serverOfflineMessage(null), isNull);
-      expect(serverOfflineMessage('other'), isNull);
+      expect(serverOfflineMessage(l, 'no_location'), contains('15 minutes'));
+      expect(serverOfflineMessage(l, null), isNull);
+      expect(serverOfflineMessage(l, 'other'), isNull);
     });
 
     test('the all-the-time step and reminder say what happens without it', () {
-      expect(backgroundLocationBody, contains('Allow all the time'));
-      expect(backgroundLocationReminder, contains('go offline'));
-      expect(batteryGuideBody, contains('Autostart'));
+      expect(l.backgroundLocationBody, contains('Allow all the time'));
+      expect(l.backgroundLocationReminder, contains('go offline'));
+      expect(l.batteryGuideBody, contains('Autostart'));
     });
 
     test('the disclosure says background, purpose and how to stop', () {
-      expect(locationDisclosureBody, contains('when the app is closed or not in use'));
-      expect(locationDisclosureBody, contains('nearby orders'));
-      expect(locationDisclosureBody, contains('go offline'));
+      expect(l.locationDisclosureBody, contains('when the app is closed or not in use'));
+      expect(l.locationDisclosureBody, contains('nearby orders'));
+      expect(l.locationDisclosureBody, contains('go offline'));
     });
   });
 }

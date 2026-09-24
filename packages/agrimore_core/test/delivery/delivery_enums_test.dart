@@ -201,4 +201,22 @@ void main() {
       expect(n.orderId, 'o3');
     });
   });
+
+  group('DeliveryTiming (DLV-P1)', () {
+    final timing = (table['timing'] as Map).cast<String, int>();
+
+    test('mirrors the server', () {
+      expect(DeliveryTiming.offerLifetime.inMilliseconds, timing['offerLifetimeMs']);
+      expect(DeliveryTiming.riderSilentOffline.inMilliseconds, timing['riderSilentOfflineMs']);
+      expect(DeliveryTiming.dispatchLocationFreshness.inMilliseconds, timing['dispatchLocationFreshnessMs']);
+    });
+
+    test('a still rider keeps sending well inside dispatch freshness', () {
+      for (final hb in [DeliveryTiming.idleHeartbeat, DeliveryTiming.taskHeartbeat]) {
+        expect(hb + DeliveryTiming.uploadCheckInterval, lessThan(DeliveryTiming.dispatchLocationFreshness));
+      }
+      expect(DeliveryTiming.reportFixRequestLimit, lessThan(DeliveryTiming.reportFixTimeout));
+      expect(DeliveryTiming.taskMinUploadGap, lessThanOrEqualTo(DeliveryTiming.taskHeartbeat));
+    });
+  });
 }
