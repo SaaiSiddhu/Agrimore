@@ -96,7 +96,52 @@ for shot 03).
     not taken.
 - Nothing in `evidence/ios/`.
 
-## Journeys (brief §15) — NOT EXECUTED against a backend
+## SELLER-WALLET-1 — end to end (2026-09-24)
+
+**Environment.**
+- Android emulator `emulator-5554` running the real app (`integration_test/wallet_journey_test.dart`,
+  `USE_FIREBASE_EMULATOR=true`).
+- Local Auth, Firestore, Functions and Storage emulators, started with an empty Firebase CLI config.
+  The log says "not currently authenticated", so the emulated functions hold no live credentials.
+- TEST data only (`functions/scripts/e2e/seller_wallet_seed.js`, refuses non-local hosts).
+- The admin played by `functions/scripts/e2e/seller_wallet_admin_actor.js` through the same callables the
+  admin Seller Payouts screen calls.
+
+**Result: PASSED** — "All tests passed", 10 screenshots `evidence/android/e2e_*.png`, all inspected.
+
+| Step | Evidence |
+|---|---|
+| Two orders delivered, and the real `calculateSellerPayout` trigger writes 2 payouts (₹940 gross, 5 %, **₹893 net**) | seed output |
+| Seller signs in (email, Auth emulator) → Payments shows ₹893 | e2e_02, e2e_03 |
+| Seller adds a UPI ID → "New details waiting for review", Withdraw blocked | e2e_04, e2e_05 |
+| Admin `reviewSellerPayoutChange` → 200 approved; the phone updates by itself, Withdraw returns | e2e_06 |
+| Seller withdraws ₹893 (2 orders) → open withdrawal | e2e_07, e2e_08 |
+| Admin `markSellerWithdrawalPaid` (UTR, UPI) → 200; withdrawal and both payouts `paid`; seller notified "Withdrawal paid" | actor output, e2e_09 |
+| Followers & posts: 3 followers, +3 in 30 days, the seeded post | e2e_10 |
+
+**What the device run found, all fixed and re-run:**
+1. Android blocked cleartext to the emulators → debug-only network config.
+2. The seller's real FCM token was saved into emulator data, so the approval tried live FCM (60 s
+   hang; isolation held, no call succeeded) → no push registration in emulator runs.
+3. After approval the wallet kept its stale "change pending" block → it re-reads (test
+   revert-and-watched).
+4. `rollupSellerStats` crashed under the emulator (`admin.firestore.Timestamp`) → modular imports.
+5. At the emulator's 150 % font: nav labels truncated, "September" broke mid-word, and the ribbon was
+   narrow → fixed.
+
+Emulator suites:
+- `phaseSWALLET1_wallet_test` 13/13;
+- `phaseSWALLET1_rules_test` 21/21;
+- `phaseSHOME1_stats`, `SHOME1B_notify`, `SMONEY1_payout_rules`, `phase47_seller_follow`, `SDEL1`, `phase26`,
+  `phase28`, `phase44`, `phase48` all exit 0.
+
+Gate `--full` at `d24cc87`: failed=0.
+
+**Not covered by the device run:** the admin app's own screens were not driven in a browser. They are
+covered by widget/helper tests (`apps/admin/test/seller_wallet_admin_test.dart`), and their callables
+were exercised over HTTP above.
+
+## Journeys (brief §15) — sign-in/onboarding journeys still NOT EXECUTED against a backend
 
 | # | Journey | How | Result |
 |---|---|---|---|

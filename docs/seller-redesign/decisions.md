@@ -145,12 +145,12 @@ The detail screen now follows the live order from `SellerOrderProvider` (Firesto
 snapshot passed at navigation, so after Accept → Start packing → Ready the screen shows the new stage and
 the next permitted action. Transitions still go only through `sellerTransitionOrder`.
 
-## D11 — Payments scope (OWNER_DECISION, brief §8 phase 19)
+## D11 — Payments scope (revised: OWNER_DECISION 2026-09-24, chat — "Both … end to end on both seller and admin app")
 
-No wallet, no withdraw, no payout request. Amounts are exactly the server's `seller_payouts`
-(`grossAmount`, `commissionAmount`, `netAmount`); the app sums them for totals only and never recomputes
-commission. Masked identifiers only (bank `•••• 1234`, UPI masked). "Pending", "Paid", "Not available"
-(read failed) and ₹0 are distinct states.
+The brief's "no wallet, no withdraw, no payout request" is **reversed** by the owner. What is built is
+SELLER-WALLET-1 (D20). Unchanged: amounts are exactly the server's `seller_payouts` (`grossAmount`,
+`commissionAmount`, `netAmount`); the app never recomputes commission. Only masked identifiers are
+shown to the seller. "Pending", "In withdrawal", "Paid", "Not available" and ₹0 are distinct states.
 
 ## D12 — AI assistant (OWNER_DECISION D-SELLER-AI-WEB-ONLY; brief §8 phase 23)
 
@@ -224,3 +224,40 @@ its route and `SellerToast` adds its height to the toast margin (board 13: "abov
 
 `SellerProductProvider.loadCenters()` returned four hard-coded centres when the database had none; that is
 invented data. It now returns the real list only (empty = none shown).
+
+## D20 — Seller wallet and bank/UPI changes (SELLER-WALLET-1, OWNER_DECISION 2026-09-24)
+
+- **Balance** = the seller's `pending` `seller_payouts` rows, summed in paise on the server
+  (`sellerWalletSummary`). `settings/seller_wallet` { `minWithdrawal` (₹, default 100), `holdDays`
+  (default 0) } are the only knobs; both defaults are provisional and the owner can change them.
+- **Withdraw** takes the whole available balance. There is one open withdrawal at a time, the request id
+  is made on the phone (idempotent), and each withdrawal holds at most 400 orders. The payouts become
+  `requested`. Admin marks the withdrawal paid with a UTR and bank/UPI
+  (`markSellerWithdrawalPaid`), or rejects it with a reason; the seller can cancel it. Rejected or
+  cancelled money goes back to the balance.
+- **Bank/UPI add or change**: the seller sends new details (`requestSellerPayoutChange`), an admin
+  approves or rejects them (`reviewSellerPayoutChange`). While a change is pending, nothing can be paid
+  to that seller, through the callable or through the legacy per-order rules path. This is the rider
+  pattern (DLV-M1).
+- **Storage**: collections `seller_withdrawals`, `seller_payout_change_requests` and `seller_wallets` are
+  server-written only; the seller reads their own, admins read all.
+
+## D21 — Followers fixes (SELLER-WALLET-1 scope, owner: "check the followers and post screen has issue")
+
+- **New-followers count** now uses the existing (sellerId, createdAt DESC) index. The live project
+  refused the ASC query (`FAILED_PRECONDITION` in the S26 log).
+- **Posts stream** is subscribed once.
+- **Deleted posts** lose their photo too.
+- **Rules**: a buyer may read their own `follows/{uid}_{sellerId}` before it exists (the follow button
+  could not know its state), and may create follows only under that id.
+
+## D13 — implemented (2026-09-24)
+
+`apps/seller/lib/app/emulator.dart`. With `--dart-define=USE_FIREBASE_EMULATOR=true`:
+- Auth, Firestore, Functions and Storage go to the emulators, and a "Test data" ribbon shows.
+- App Check and push-token registration are skipped.
+- A debug-only network config allows cleartext to 10.0.2.2.
+
+The end-to-end run starts the emulators with an empty Firebase CLI config ("not authenticated"), so no
+emulated function holds credentials for a live service.
+
