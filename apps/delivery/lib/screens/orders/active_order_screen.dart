@@ -1,14 +1,16 @@
 // lib/screens/orders/active_order_screen.dart
+import '../../delivery/delivery_problems.dart';
+import '../../l10n/app_localizations.dart';
+import 'delivery_problem_panel.dart';
 import 'dart:io';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:provider/provider.dart';
 import 'package:url_launcher/url_launcher.dart';
-import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:image_picker/image_picker.dart';
-import 'package:firebase_storage/firebase_storage.dart';
 import 'package:cloud_functions/cloud_functions.dart';
 import 'package:agrimore_core/agrimore_core.dart';
+import 'package:agrimore_ui/agrimore_ui.dart';
 import '../../providers/order_provider.dart';
 import '../../navigation/rider_navigation.dart';
 import 'widgets/rider_route_card.dart';
@@ -44,25 +46,17 @@ class _ActiveOrderScreenState extends State<ActiveOrderScreen> {
     _currentStep = _mapStatusToStep(widget.order.orderStatus);
   }
 
-  DeliveryStep _mapStatusToStep(String status) {
-    switch (status) {
-      case 'delivery_accepted':
-        return DeliveryStep.accepted;
-      case 'arrived_at_store':
-      case 'reached_pickup':
-        return DeliveryStep.arrivedAtStore;
-      case 'picked_up':
-      case 'parcel_picked':
-        return DeliveryStep.pickedUp;
-      case 'out_for_delivery':
-      case 'outfordelivery':
-        return DeliveryStep.outForDelivery;
-      case 'delivered':
-        return DeliveryStep.delivered;
-      default:
-        return DeliveryStep.accepted;
-    }
-  }
+  // DLV-E1: through the shared status helper — this screen's own list missed
+  // the `outForDelivery` spelling and showed such an order as just accepted.
+  DeliveryStep _mapStatusToStep(String status) =>
+      switch (DeliveryTaskStatus.fromOrderStatus(orderStatus: status, status: null, hasPartner: true)) {
+        DeliveryTaskStatus.atPickup => DeliveryStep.arrivedAtStore,
+        DeliveryTaskStatus.pickedUp => DeliveryStep.pickedUp,
+        DeliveryTaskStatus.enRoute || DeliveryTaskStatus.atDrop || DeliveryTaskStatus.failedAttempt =>
+          DeliveryStep.outForDelivery,
+        DeliveryTaskStatus.delivered => DeliveryStep.delivered,
+        _ => DeliveryStep.accepted,
+      };
 
   String _stepToStatus(DeliveryStep step) {
     switch (step) {
@@ -104,6 +98,12 @@ class _ActiveOrderScreenState extends State<ActiveOrderScreen> {
             // ── Delivery Progress Stepper ──
             _buildDeliveryStepper(colorScheme),
             const SizedBox(height: 16),
+
+            // ── Report a problem after pickup / its state (DLV-E1) ──
+            if (_currentStep != DeliveryStep.delivered) ...[
+              DeliveryProblemPanel(orderId: widget.order.id),
+              const SizedBox(height: 16),
+            ],
 
             // ── Route: to the store, then to the customer (DLV-3B) ──
             if (_currentStep != DeliveryStep.delivered) ...[
@@ -900,27 +900,8 @@ class _ActiveOrderScreenState extends State<ActiveOrderScreen> {
     setState(() => _isUpdating = true);
     HapticFeedback.heavyImpact();
 
-    String? proofPhotoUrl;
-
-    // Upload proof photo if available. Deliberately BEFORE the confirmation
-    // call: a failed upload must not block a genuine delivery (it is best
-    // effort today and was before this change), while a refused confirmation
-    // must leave no delivered status behind.
-    if (_proofPhoto != null) {
-      try {
-        final ref =
-            FirebaseStorage.instance.ref().child('delivery_proofs').child(
-                  '${widget.order.id}_${DateTime.now().millisecondsSinceEpoch}.jpg',
-                );
-
-        await ref.putFile(_proofPhoto!);
-        proofPhotoUrl = await ref.getDownloadURL();
-        debugPrint('📸 Proof photo uploaded: $proofPhotoUrl');
-      } catch (e) {
-        debugPrint('⚠️ Failed to upload proof photo: $e');
-      }
-    }
-
+    // DLV-E1: the proof photo is uploaded only AFTER the delivery is
+    // confirmed (below), to one fixed object, and attached by the server.
     // Phase DLV-3C: where the rider is when the code is entered — recorded by
     // confirmDelivery, flagged beyond 300 m; a far entry is asked about first.
     final fix = await currentRiderFix();
@@ -997,12 +978,19 @@ class _ActiveOrderScreenState extends State<ActiveOrderScreen> {
       return errorMessage ?? 'Could not confirm delivery. Please try again.';
     }
 
-    // Save proof photo URL if available
-    if (proofPhotoUrl != null) {
-      await FirebaseFirestore.instance
-          .collection('orders')
-          .doc(widget.order.id)
-          .update({'deliveryProofPhoto': proofPhotoUrl});
+    // DLV-E1: never throws — a photo that does not save is told as that,
+    // and the confirmed delivery still counts.
+    final photo = _proofPhoto;
+    if (photo != null) {
+      final saved = await saveDeliveryProof(
+        FirebaseDeliveryProblemBackend(),
+        widget.order.id,
+        await photo.readAsBytes(),
+        'image/jpeg',
+      );
+      if (!saved && mounted) {
+        WsToast.show(context, AppLocalizations.of(context).proofNotSaved, tone: WsToastTone.error);
+      }
     }
 
     if (mounted) {

@@ -1131,6 +1131,156 @@ abstract class AppLocalizations {
   /// In en, this message translates to:
   /// **'Correct your details and submit your application again.'**
   String get regResubmitNote;
+
+  /// Button on the active order after pickup
+  ///
+  /// In en, this message translates to:
+  /// **'Report a problem'**
+  String get problemReport;
+
+  /// Sheet title
+  ///
+  /// In en, this message translates to:
+  /// **'What went wrong?'**
+  String get problemSheetTitle;
+
+  /// Note field
+  ///
+  /// In en, this message translates to:
+  /// **'Details (optional)'**
+  String get problemNoteLabel;
+
+  /// Sheet submit
+  ///
+  /// In en, this message translates to:
+  /// **'Send to Agrimore'**
+  String get problemSend;
+
+  /// State title
+  ///
+  /// In en, this message translates to:
+  /// **'Problem reported'**
+  String get problemReported;
+
+  /// State body
+  ///
+  /// In en, this message translates to:
+  /// **'Agrimore has your report but may not have seen it yet. Keep the goods with you and stay reachable.'**
+  String get problemReportedBody;
+
+  /// State title
+  ///
+  /// In en, this message translates to:
+  /// **'Seen by Agrimore'**
+  String get problemSeen;
+
+  /// State body
+  ///
+  /// In en, this message translates to:
+  /// **'A person at Agrimore is looking at this. Keep the goods with you until they tell you what to do.'**
+  String get problemSeenBody;
+
+  /// State title (resolved: reattempt)
+  ///
+  /// In en, this message translates to:
+  /// **'Try the delivery again'**
+  String get problemReattempt;
+
+  /// State title (resolved: returned)
+  ///
+  /// In en, this message translates to:
+  /// **'Goods recorded as returned to the seller'**
+  String get problemReturned;
+
+  /// Resolution text shown verbatim
+  ///
+  /// In en, this message translates to:
+  /// **'Agrimore wrote: {note}'**
+  String problemResolutionNote(String note);
+
+  /// Refusal
+  ///
+  /// In en, this message translates to:
+  /// **'You can report a problem once you have picked the order up.'**
+  String get problemFailNotAfterPickup;
+
+  /// Refusal
+  ///
+  /// In en, this message translates to:
+  /// **'A problem is already open for this order.'**
+  String get problemFailOpen;
+
+  /// Failure
+  ///
+  /// In en, this message translates to:
+  /// **'No connection — the report didn\'t go through. Try again.'**
+  String get problemFailNetwork;
+
+  /// Failure
+  ///
+  /// In en, this message translates to:
+  /// **'The report didn\'t go through. Try again or call Agrimore support.'**
+  String get problemFailUnknown;
+
+  /// Reason
+  ///
+  /// In en, this message translates to:
+  /// **'Customer not reachable'**
+  String get reasonCustomerUnreachable;
+
+  /// Reason
+  ///
+  /// In en, this message translates to:
+  /// **'Customer refused the order'**
+  String get reasonCustomerRefused;
+
+  /// Reason
+  ///
+  /// In en, this message translates to:
+  /// **'Wrong address'**
+  String get reasonWrongAddress;
+
+  /// Reason
+  ///
+  /// In en, this message translates to:
+  /// **'Can\'t find the address'**
+  String get reasonAddressNotFound;
+
+  /// Reason
+  ///
+  /// In en, this message translates to:
+  /// **'Cash payment problem'**
+  String get reasonPaymentIssue;
+
+  /// Reason
+  ///
+  /// In en, this message translates to:
+  /// **'Goods damaged or missing'**
+  String get reasonDamagedGoods;
+
+  /// Reason
+  ///
+  /// In en, this message translates to:
+  /// **'Vehicle problem'**
+  String get reasonVehicleIssue;
+
+  /// Reason
+  ///
+  /// In en, this message translates to:
+  /// **'Safety concern'**
+  String get reasonSafety;
+
+  /// Reason
+  ///
+  /// In en, this message translates to:
+  /// **'Something else'**
+  String get reasonOther;
+
+  /// After delivery when the photo fails
+  ///
+  /// In en, this message translates to:
+  /// **'Delivered. The proof photo couldn\'t be saved — the delivery still counts.'**
+  String get proofNotSaved;
 }
 
 class _AppLocalizationsDelegate

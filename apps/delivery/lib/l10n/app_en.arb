@@ -721,5 +721,110 @@
   "regResubmitNote": "Correct your details and submit your application again.",
   "@regResubmitNote": {
     "description": "Banner when a pending/rejected rider edits the application"
+  },
+  "problemReport": "Report a problem",
+  "@problemReport": {
+    "description": "Button on the active order after pickup"
+  },
+  "problemSheetTitle": "What went wrong?",
+  "@problemSheetTitle": {
+    "description": "Sheet title"
+  },
+  "problemNoteLabel": "Details (optional)",
+  "@problemNoteLabel": {
+    "description": "Note field"
+  },
+  "problemSend": "Send to Agrimore",
+  "@problemSend": {
+    "description": "Sheet submit"
+  },
+  "problemReported": "Problem reported",
+  "@problemReported": {
+    "description": "State title"
+  },
+  "problemReportedBody": "Agrimore has your report but may not have seen it yet. Keep the goods with you and stay reachable.",
+  "@problemReportedBody": {
+    "description": "State body"
+  },
+  "problemSeen": "Seen by Agrimore",
+  "@problemSeen": {
+    "description": "State title"
+  },
+  "problemSeenBody": "A person at Agrimore is looking at this. Keep the goods with you until they tell you what to do.",
+  "@problemSeenBody": {
+    "description": "State body"
+  },
+  "problemReattempt": "Try the delivery again",
+  "@problemReattempt": {
+    "description": "State title (resolved: reattempt)"
+  },
+  "problemReturned": "Goods recorded as returned to the seller",
+  "@problemReturned": {
+    "description": "State title (resolved: returned)"
+  },
+  "problemResolutionNote": "Agrimore wrote: {note}",
+  "@problemResolutionNote": {
+    "description": "Resolution text shown verbatim",
+    "placeholders": {
+      "note": {
+        "type": "String"
+      }
+    }
+  },
+  "problemFailNotAfterPickup": "You can report a problem once you have picked the order up.",
+  "@problemFailNotAfterPickup": {
+    "description": "Refusal"
+  },
+  "problemFailOpen": "A problem is already open for this order.",
+  "@problemFailOpen": {
+    "description": "Refusal"
+  },
+  "problemFailNetwork": "No connection — the report didn't go through. Try again.",
+  "@problemFailNetwork": {
+    "description": "Failure"
+  },
+  "problemFailUnknown": "The report didn't go through. Try again or call Agrimore support.",
+  "@problemFailUnknown": {
+    "description": "Failure"
+  },
+  "reasonCustomerUnreachable": "Customer not reachable",
+  "@reasonCustomerUnreachable": {
+    "description": "Reason"
+  },
+  "reasonCustomerRefused": "Customer refused the order",
+  "@reasonCustomerRefused": {
+    "description": "Reason"
+  },
+  "reasonWrongAddress": "Wrong address",
+  "@reasonWrongAddress": {
+    "description": "Reason"
+  },
+  "reasonAddressNotFound": "Can't find the address",
+  "@reasonAddressNotFound": {
+    "description": "Reason"
+  },
+  "reasonPaymentIssue": "Cash payment problem",
+  "@reasonPaymentIssue": {
+    "description": "Reason"
+  },
+  "reasonDamagedGoods": "Goods damaged or missing",
+  "@reasonDamagedGoods": {
+    "description": "Reason"
+  },
+  "reasonVehicleIssue": "Vehicle problem",
+  "@reasonVehicleIssue": {
+    "description": "Reason"
+  },
+  "reasonSafety": "Safety concern",
+  "@reasonSafety": {
+    "description": "Reason"
+  },
+  "reasonOther": "Something else",
+  "@reasonOther": {
+    "description": "Reason"
+  },
+  "proofNotSaved": "Delivered. The proof photo couldn't be saved — the delivery still counts.",
+  "@proofNotSaved": {
+    "description": "After delivery when the photo fails"
   }
 }
