@@ -318,6 +318,19 @@ class RiderMoneyService {
     );
   });
 
+  /// DLV-N1: this rider's pay for one order, or null when there is none yet.
+  /// A missing document reads as permission-denied under the owner-only rule.
+  Future<RiderEarning?> earningFor(String orderId) async {
+    try {
+      final d = await _db.collection('rider_earnings').doc(orderId).get();
+      final m = d.data();
+      return m == null || m['riderId'] != riderId ? null : RiderEarning.fromMap(d.id, m);
+    } on FirebaseException catch (e) {
+      if (e.code == 'permission-denied' || e.code == 'not-found') return null;
+      rethrow;
+    }
+  }
+
   /// A statement's deliveries, newest first, a page at a time (index:
   /// rider_earnings riderId + statementId + createdAt desc).
   Future<StatementPage> statementLines(String statementId,

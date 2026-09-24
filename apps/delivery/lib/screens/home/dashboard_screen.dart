@@ -12,6 +12,8 @@ import '../../money/rider_money.dart';
 import '../../safety/emergency_sheet.dart';
 import '../../l10n/app_localizations.dart';
 import '../history/rider_history_screen.dart';
+import '../inbox/inbox_screen.dart';
+import '../../inbox/rider_inbox.dart';
 import '../profile/rider_profile_screen.dart';
 import '../../account/rider_account.dart';
 import 'active_work_states.dart';
@@ -32,6 +34,7 @@ class DashboardScreen extends StatefulWidget {
 }
 
 class _DashboardScreenState extends State<DashboardScreen> {
+  final RiderInboxSource _inbox = FirestoreRiderInbox();
   bool _isOnline = false;
 
   @override
@@ -256,6 +259,8 @@ class _DashboardScreenState extends State<DashboardScreen> {
                   ],
                 ),
               ),
+              // DLV-N1: the inbox — pushes a phone missed, statements, payments.
+              if (auth.user != null) InboxButton(riderId: auth.user!.uid, source: _inbox),
               // Phase DLV-S1: this used to show "SOS Alert Sent! Live
               // location shared with authorities and admin." and send
               // nothing. It now opens a sheet that only hands off to the
