@@ -37,31 +37,10 @@ class DeliveryOrderProvider extends ChangeNotifier {
     }).length;
   }
 
-  double get todayEarnings {
-    final now = DateTime.now();
-    return _myOrders.where((o) {
-      final date = o.updatedAt ?? o.createdAt;
-      return o.isDelivered &&
-          date.year == now.year &&
-          date.month == now.month &&
-          date.day == now.day;
-    }).fold(0.0, (total, o) => total + _deliveryEarningFor(o));
-  }
 
-  double get weeklyEarnings {
-    final cutoff = DateTime.now().subtract(const Duration(days: 7));
-    return _myOrders
-        .where(
-          (o) => o.isDelivered && (o.updatedAt ?? o.createdAt).isAfter(cutoff),
-        )
-        .fold(0.0, (total, o) => total + _deliveryEarningFor(o));
-  }
 
-  double get codCollected => _myOrders
-      .where(
-        (o) => o.isDelivered && o.paymentMethod.toLowerCase().contains('cod'),
-      )
-      .fold(0.0, (total, o) => total + o.total);
+
+
 
   /// Phase DLV-3C: a rider step (arrived_at_store, picked_up,
   /// out_for_delivery) goes through the advanceDeliveryStep callable, which
@@ -141,10 +120,7 @@ class DeliveryOrderProvider extends ChangeNotifier {
     });
   }
 
-  double _deliveryEarningFor(OrderModel order) {
-    if (order.deliveryCharge > 0) return order.deliveryCharge;
-    return 15;
-  }
+
 
   @override
   void dispose() {

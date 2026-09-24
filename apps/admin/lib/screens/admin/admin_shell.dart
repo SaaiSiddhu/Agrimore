@@ -118,6 +118,12 @@ class _AdminShellState extends State<AdminShell> {
       'Dispatch Queue',
       AdminRoutes.deliveryDispatch,
     ),
+    // DLV-4B. Appended at the end, same index-stability rule.
+    _NavItem(
+      Icons.two_wheeler_rounded,
+      'Rider Payouts',
+      AdminRoutes.riderPayouts,
+    ),
   ];
 
   int get _currentIndex {

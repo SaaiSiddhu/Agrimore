@@ -8,6 +8,8 @@ import '../../providers/auth_provider.dart';
 import '../../providers/order_provider.dart';
 import '../../providers/location_provider.dart';
 import '../orders/active_order_screen.dart';
+import '../money/money_screen.dart';
+import '../../money/rider_money.dart';
 import '../../offers/offer_alerts.dart';
 import '../../offers/offer_launch.dart';
 import '../../offers/offer_platform.dart';
@@ -292,201 +294,74 @@ class _DashboardScreenState extends State<DashboardScreen> {
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          // Earnings Rate Card
-          Container(
-            padding: const EdgeInsets.all(16),
-            decoration: BoxDecoration(
-              gradient: LinearGradient(
-                colors: [Colors.green.shade400, Colors.green.shade600],
-                begin: Alignment.topLeft,
-                end: Alignment.bottomRight,
-              ),
-              borderRadius: BorderRadius.circular(16),
-              boxShadow: [
-                BoxShadow(
-                  color: Colors.green.withOpacity(0.3),
-                  blurRadius: 12,
-                  offset: const Offset(0, 6),
-                ),
-              ],
-            ),
-            child: Row(
-              children: [
-                Container(
-                  padding: const EdgeInsets.all(12),
-                  decoration: BoxDecoration(
-                    color: Colors.white.withOpacity(0.2),
-                    borderRadius: BorderRadius.circular(12),
-                  ),
-                  child: const Icon(
-                    Icons.currency_rupee_rounded,
-                    color: Colors.white,
-                    size: 28,
-                  ),
-                ),
-                const SizedBox(width: 16),
-                Expanded(
-                  child: Column(
-                    crossAxisAlignment: CrossAxisAlignment.start,
-                    children: [
-                      const Text(
-                        'Current Rate',
-                        style: TextStyle(
-                          color: Colors.white70,
-                          fontSize: 12,
-                          fontWeight: FontWeight.w600,
-                        ),
-                      ),
-                      const SizedBox(height: 4),
-                      const Text(
-                        '₹4.75 / km',
-                        style: TextStyle(
-                          color: Colors.white,
-                          fontSize: 24,
-                          fontWeight: FontWeight.w900,
-                        ),
-                      ),
-                    ],
-                  ),
-                ),
-                Container(
-                  padding: const EdgeInsets.symmetric(
-                    horizontal: 12,
-                    vertical: 6,
-                  ),
-                  decoration: BoxDecoration(
-                    color: Colors.white.withOpacity(0.2),
-                    borderRadius: BorderRadius.circular(20),
-                  ),
-                  child: const Text(
-                    'Min ₹15',
-                    style: TextStyle(
-                      color: Colors.white,
-                      fontSize: 12,
-                      fontWeight: FontWeight.w700,
-                    ),
-                  ),
-                ),
-              ],
-            ),
-          ),
-
-          const SizedBox(height: 16),
-
-          // Daily Challenge
-          Container(
-            padding: const EdgeInsets.all(16),
-            decoration: BoxDecoration(
-              color: Colors.orange.shade50,
-              borderRadius: BorderRadius.circular(16),
-              border: Border.all(color: Colors.orange.shade200),
-            ),
-            child: Row(
-              children: [
-                Container(
-                  padding: const EdgeInsets.all(8),
-                  decoration: BoxDecoration(
-                    color: Colors.orange.shade100,
-                    shape: BoxShape.circle,
-                  ),
-                  child: Icon(
-                    Icons.emoji_events_rounded,
-                    color: Colors.orange.shade700,
-                  ),
-                ),
-                const SizedBox(width: 12),
-                Expanded(
-                  child: Column(
-                    crossAxisAlignment: CrossAxisAlignment.start,
-                    children: [
-                      Text(
-                        'Daily Challenge',
-                        style: TextStyle(
-                          fontWeight: FontWeight.bold,
-                          color: Colors.orange.shade900,
-                        ),
-                      ),
-                      const SizedBox(height: 2),
-                      Text(
-                        'Complete 3 more deliveries before 8 PM to earn a ₹150 bonus!',
-                        style: TextStyle(
-                          fontSize: 12,
-                          color: Colors.orange.shade800,
-                        ),
-                      ),
-                    ],
-                  ),
-                ),
-              ],
-            ),
-          ),
-
+          // Phase DLV-4B: what the server says this rider earned (DLV-4A),
+          // replacing a hard-coded "₹4.75 / km, Min ₹15" card and a "Daily
+          // Challenge ₹150 bonus" that nothing in the system ever paid.
+          _buildEarningsCard(),
           const SizedBox(height: 20),
 
-          // Stats Row
-          Consumer<DeliveryOrderProvider>(
-            builder: (context, orderProvider, _) => Column(
-              children: [
-                Row(
-                  children: [
-                    Expanded(
-                      child: _buildStatCard(
-                        'Today',
-                        orderProvider.todayDeliveries.toString(),
-                        Icons.receipt_long_rounded,
-                        colorScheme,
+          // Stats Row — deliveries from the order stream; money from the
+          // server's records (DLV-4B).
+          _moneyStats(
+            (week, today, cash) => Consumer<DeliveryOrderProvider>(
+              builder: (context, orderProvider, _) => Column(
+                children: [
+                  Row(
+                    children: [
+                      Expanded(
+                        child: _buildStatCard(
+                          'Today',
+                          orderProvider.todayDeliveries.toString(),
+                          Icons.receipt_long_rounded,
+                          colorScheme,
+                        ),
                       ),
-                    ),
-                    const SizedBox(width: 12),
-                    Expanded(
-                      child: _buildStatCard(
-                        'Weekly',
-                        'Rs ${orderProvider.weeklyEarnings.toStringAsFixed(0)}',
-                        Icons.date_range_rounded,
-                        colorScheme,
+                      const SizedBox(width: 12),
+                      Expanded(
+                        child: _buildStatCard(
+                          'This week',
+                          week,
+                          Icons.date_range_rounded,
+                          colorScheme,
+                        ),
                       ),
-                    ),
-                  ],
-                ),
-                const SizedBox(height: 12),
-                Row(
-                  children: [
-                    Expanded(
-                      child: _buildStatCard(
-                        'Earnings',
-                        'Rs ${orderProvider.todayEarnings.toStringAsFixed(0)}',
-                        Icons.account_balance_wallet_rounded,
-                        colorScheme,
-                        isHighlight: true,
+                    ],
+                  ),
+                  const SizedBox(height: 12),
+                  Row(
+                    children: [
+                      Expanded(
+                        child: _buildStatCard(
+                          'Earned today',
+                          today,
+                          Icons.account_balance_wallet_rounded,
+                          colorScheme,
+                          isHighlight: true,
+                        ),
                       ),
-                    ),
-                    const SizedBox(width: 12),
-                    Expanded(
-                      child: _buildStatCard(
-                        'COD Cash',
-                        'Rs ${orderProvider.codCollected.toStringAsFixed(0)}',
-                        Icons.payments_rounded,
-                        colorScheme,
+                      const SizedBox(width: 12),
+                      Expanded(
+                        child: _buildStatCard(
+                          'Cash with you',
+                          cash,
+                          Icons.payments_rounded,
+                          colorScheme,
+                        ),
                       ),
-                    ),
-                  ],
-                ),
-              ],
+                    ],
+                  ),
+                ],
+              ),
             ),
           ),
 
           const SizedBox(height: 12),
-          Consumer<DeliveryOrderProvider>(
-            builder: (context, orderProvider, _) => _buildActionCard(
-              'COD Settlement',
-              'Cash collected: Rs ${orderProvider.codCollected.toStringAsFixed(0)}',
-              Icons.payments_rounded,
-              colorScheme,
-              onTap: () => SnackbarHelper.showInfo(
-                context,
-                'COD settlement is tracked as pending after delivery.',
-              ),
-            ),
+          _buildActionCard(
+            'Earnings & payouts',
+            'Pay per delivery, cash with you, Monday statements',
+            Icons.account_balance_wallet_rounded,
+            colorScheme,
+            onTap: _openMoney,
           ),
 
           const SizedBox(height: 24),
@@ -558,6 +433,94 @@ class _DashboardScreenState extends State<DashboardScreen> {
             },
           ),
         ],
+      ),
+    );
+  }
+
+  // ── Phase DLV-4B: money from the server (rider_earnings / rider_accounts) ──
+
+  RiderMoneyService? _money;
+  Stream<List<RiderEarning>>? _earningsStream;
+  Stream<RiderAccount>? _accountStream;
+
+  RiderMoneyService? get _moneyService {
+    final uid = _auth?.user?.uid;
+    if (uid == null) return null;
+    if (_money?.riderId != uid) {
+      _money = RiderMoneyService(uid);
+      _earningsStream = _money!.unsettledEarnings().asBroadcastStream();
+      _accountStream = _money!.account().asBroadcastStream();
+    }
+    return _money;
+  }
+
+  void _openMoney() {
+    final uid = _auth?.user?.uid;
+    if (uid == null) return;
+    Navigator.push(context, MaterialPageRoute(builder: (_) => MoneyScreen(riderId: uid)));
+  }
+
+  /// Builds [child] with this week's pay, today's pay and cash held, formatted.
+  Widget _moneyStats(Widget Function(String week, String today, String cash) child) {
+    if (_moneyService == null) return child('–', '–', '–');
+    return StreamBuilder<List<RiderEarning>>(
+      stream: _earningsStream,
+      builder: (context, earnings) => StreamBuilder<RiderAccount>(
+        stream: _accountStream,
+        builder: (context, account) {
+          final list = earnings.data;
+          final week = list == null ? '…' : rupees(list.fold(0.0, (s, e) => s + e.total));
+          final today = list == null ? '…' : rupees(earnedSince(list, istDayStart(DateTime.now())));
+          final cash = account.data == null ? '…' : rupees(account.data!.cashHeld);
+          return child(week, today, cash);
+        },
+      ),
+    );
+  }
+
+  Widget _buildEarningsCard() {
+    return _moneyStats(
+      (week, today, _) => InkWell(
+        onTap: _openMoney,
+        borderRadius: BorderRadius.circular(16),
+        child: Container(
+          padding: const EdgeInsets.all(16),
+          decoration: BoxDecoration(
+            gradient: LinearGradient(
+              colors: [Colors.green.shade400, Colors.green.shade600],
+              begin: Alignment.topLeft,
+              end: Alignment.bottomRight,
+            ),
+            borderRadius: BorderRadius.circular(16),
+          ),
+          child: Row(
+            children: [
+              Container(
+                padding: const EdgeInsets.all(12),
+                decoration: BoxDecoration(
+                  color: Colors.white.withValues(alpha: 0.2),
+                  borderRadius: BorderRadius.circular(12),
+                ),
+                child: const Icon(Icons.currency_rupee_rounded, color: Colors.white, size: 28),
+              ),
+              const SizedBox(width: 16),
+              Expanded(
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    const Text('Earned this week',
+                        style: TextStyle(color: Colors.white70, fontSize: 12, fontWeight: FontWeight.w600)),
+                    const SizedBox(height: 4),
+                    Text(week, style: const TextStyle(color: Colors.white, fontSize: 24, fontWeight: FontWeight.w900)),
+                    Text('Today $today · paid every Monday',
+                        style: const TextStyle(color: Colors.white70, fontSize: 12)),
+                  ],
+                ),
+              ),
+              const Icon(Icons.chevron_right_rounded, color: Colors.white),
+            ],
+          ),
+        ),
       ),
     );
   }

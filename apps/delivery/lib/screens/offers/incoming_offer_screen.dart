@@ -212,6 +212,14 @@ class _IncomingOfferScreenState extends State<IncomingOfferScreen> {
                           ),
                         ),
                         const SizedBox(height: 28),
+                        // DLV-4B: what this order pays, before the rider decides.
+                        if (shown.estimatedPay != null)
+                          _Row(
+                            icon: Icons.account_balance_wallet_rounded,
+                            label: 'You earn',
+                            value: '~₹${shown.estimatedPay!.round()} (final pay adds waiting time)',
+                            emphasise: true,
+                          ),
                         _Row(
                           icon: Icons.payments_rounded,
                           label: 'Payment',
