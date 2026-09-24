@@ -642,6 +642,9 @@ class _VerifySheetState extends State<_VerifySheet> {
             onChanged: (_) {
               if (_error != null) setState(() => _error = null);
             },
+            // DLV-INT: leave the code field once it is full. On web a click
+            // while its hidden input had focus did not reach the button.
+            onCompleted: (_) => FocusScope.of(context).unfocus(),
           ),
           if (_error != null) ...[
             const SizedBox(height: WsSpace.s8),

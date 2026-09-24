@@ -203,6 +203,8 @@ class _StatementsTabState extends State<_StatementsTab> {
                 selected: {method},
                 onSelectionChanged: (s) => setD(() => method = s.first),
               ),
+              // DLV-INT: the selector overlapped the field's floating label.
+              const SizedBox(height: 16),
               TextField(
                 controller: ref,
                 autofocus: true,

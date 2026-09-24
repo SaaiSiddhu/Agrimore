@@ -31,7 +31,7 @@
 import * as admin from "firebase-admin";
 import { FieldValue, Timestamp } from "firebase-admin/firestore";
 import { dropPoint, orderPickupPoint, sellerPickupPoint } from "./syncDeliveryTask";
-import { taskStatusFromOrder } from "./states";
+import { isTerminal, taskStatusFromOrder } from "./states";
 import { riderPay, tripKm } from "./riderPay";
 import { loadRiderPayRates, ridersAtCashLimit } from "./riderRates";
 
@@ -45,6 +45,19 @@ export const LOCATION_FRESHNESS_MS = 5 * 60 * 1000;
 /** A wave in progress holds this lease so concurrent callers do not double it. */
 export const WAVE_LEASE_MS = 60 * 1000;
 export const OFFERS_CHANNEL_ID = "delivery_offers";
+
+/**
+ * DLV-INT: whether [order] still holds its rider, by BOTH status fields
+ * (taskStatusFromOrder). A query on RIDER_ACTIVE_ORDER_STATUSES matches
+ * `orderStatus` only; an order a seller or admin panel finished through
+ * `status` alone keeps `orderStatus` behind and would leave the rider busy
+ * for good (never offered, refused at accept, never swept, cannot delete).
+ * Every such query's results pass through this.
+ */
+export function holdsRider(order: FirebaseFirestore.DocumentData): boolean {
+  const t = taskStatusFromOrder(order);
+  return t !== null && t !== "searching" && !isTerminal(t);
+}
 
 /** Order statuses in which a rider is carrying (or collecting) an order. */
 export const RIDER_ACTIVE_ORDER_STATUSES = [
@@ -177,7 +190,7 @@ async function busyRiders(db: Db): Promise<Set<string>> {
   const busy = new Set<string>();
   snap.docs.forEach((d) => {
     const id = d.data().deliveryPartnerId;
-    if (typeof id === "string" && id) busy.add(id);
+    if (typeof id === "string" && id && holdsRider(d.data())) busy.add(id);
   });
   return busy;
 }

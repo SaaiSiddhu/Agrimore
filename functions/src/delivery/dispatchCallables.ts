@@ -20,7 +20,7 @@ import { onCall, HttpsError } from "firebase-functions/v2/https";
 import * as admin from "firebase-admin";
 import { FieldValue, Timestamp } from "firebase-admin/firestore";
 import {
-  closeDispatch, dispatchRef, hasPartner, isCod, isReadyForPickup, offerRef,
+  closeDispatch, dispatchRef, hasPartner, holdsRider, isCod, isReadyForPickup, offerRef,
   RIDER_ACTIVE_ORDER_STATUSES, runNextWave,
 } from "./dispatch";
 import { loadRiderPayRates } from "./riderRates";
@@ -54,7 +54,7 @@ export async function acceptOfferCore(db: FirebaseFirestore.Firestore, uid: stri
   const busyQuery = db.collection("orders")
     .where("deliveryPartnerId", "==", uid)
     .where("orderStatus", "in", RIDER_ACTIVE_ORDER_STATUSES)
-    .limit(1);
+    .limit(20);
   const accountRef = db.collection("rider_accounts").doc(uid);
   // DLV-D1: the COD cash limit is re-checked at accept (it was only applied
   // when offers were made; a rider could pass the limit in between).
@@ -104,10 +104,10 @@ export async function acceptOfferCore(db: FirebaseFirestore.Firestore, uid: stri
     if (!p || p.status !== "approved") return { kind: "refused", reason: "not_eligible" };
     // DLV-D1: an offer made while online is not accepted after going offline.
     if (p.isOnline !== true) return { kind: "refused", reason: "offline" };
-    if (!busy.empty) return { kind: "refused", reason: "busy" };
+    if (busy.docs.some((d) => holdsRider(d.data()))) return { kind: "refused", reason: "busy" };
     if (reserved?.exists) {
       const r = reserved.data()!;
-      if (r.deliveryPartnerId === uid && RIDER_ACTIVE_ORDER_STATUSES.includes(r.orderStatus)) {
+      if (r.deliveryPartnerId === uid && holdsRider(r)) {
         return { kind: "refused", reason: "busy" };
       }
     }

@@ -20,7 +20,7 @@
 
 import * as admin from "firebase-admin";
 import { FieldPath, FieldValue, Timestamp } from "firebase-admin/firestore";
-import { RIDER_ACTIVE_ORDER_STATUSES } from "./dispatch";
+import { holdsRider, RIDER_ACTIVE_ORDER_STATUSES } from "./dispatch";
 import { assignedNotice, offlineNotice, tellRider, unassignedNotice } from "./riderNotices";
 
 type Db = FirebaseFirestore.Firestore;
@@ -82,7 +82,7 @@ export async function sweepSilentRiders(
   const busy = new Set<string>();
   active.docs.forEach((o) => {
     const id = o.data().deliveryPartnerId;
-    if (typeof id === "string" && id) busy.add(id);
+    if (typeof id === "string" && id && holdsRider(o.data())) busy.add(id);
   });
 
   const candidates = silent.filter((d) => !busy.has(d.id));
