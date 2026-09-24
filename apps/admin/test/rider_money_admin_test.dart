@@ -30,4 +30,31 @@ void main() {
     expect(riderMoneyRefusal('permission-denied', null), 'Only admins can do this.');
     expect(holdReasonLabel('no_bank_details'), contains('no bank'));
   });
+
+  // DLV-M1
+  test('balances prefer exact paise, fall back to rounded rupees', () {
+    expect(accountRupees({'cashHeldPaise': 43070, 'cashHeld': 999}, 'cashHeld'), 430.7);
+    expect(accountRupees({'cashHeld': 430.70000000000005}, 'cashHeld'), 430.7);
+    expect(accountRupees({}, 'cashHeld'), 0);
+  });
+
+  test('a deposit whose outcome is unknown is retried under the same key', () {
+    final a = DepositAttempts();
+    final k1 = a.keyFor('r1', 4000, 'RCPT-1');
+    expect(RegExp(r'^[A-Za-z0-9_-]{8,64}$').hasMatch(k1), isTrue); // riderMoney.ts DEPOSIT_REQUEST_ID
+    a.unsure('r1', k1, 4000, 'RCPT-1');
+    expect(a.keyFor('r1', 4000, 'RCPT-1'), k1);
+    expect(a.keyFor('r1', 4500, 'RCPT-1'), isNot(k1));
+    expect(a.keyFor('r2', 4000, 'RCPT-1'), isNot(k1));
+    a.settled('r1');
+    expect(a.keyFor('r1', 4000, 'RCPT-1'), isNot(k1));
+    expect(outcomeUnknown('unavailable'), isTrue);
+    expect(outcomeUnknown('failed-precondition'), isFalse);
+  });
+
+  test('payout refusals from markRiderPayoutPaid', () {
+    for (final r in ['payout_not_pending', 'bank_change_pending', 'no_destination', 'bad_method', 'request_reused']) {
+      expect(riderMoneyRefusal('failed-precondition', r), isNot(contains('Could not complete')), reason: r);
+    }
+  });
 }
