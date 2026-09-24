@@ -248,14 +248,21 @@ class PaymentsBody extends StatelessWidget {
               ),
             ]),
           )
-        : SellerMenuGroup(children: [
-            SellerListRow(
-              icon: SellerIcons.bank,
-              title: l10n.payoutAccountTitle,
-              subtitle: '${payoutAccountLine(l10n, details)}\n${l10n.payoutAccountOnFile}',
-              showChevron: false,
+        : SellerCard(
+            child: MergeSemantics(
+              child: Row(crossAxisAlignment: CrossAxisAlignment.start, children: [
+                const SellerIconTile(icon: SellerIcons.bank),
+                const SizedBox(width: SellerSpace.s12),
+                Expanded(
+                  child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
+                    Text(l10n.payoutAccountTitle, style: text.titleSmall),
+                    Text(payoutAccountLine(l10n, details), style: text.bodyMedium!.copyWith(color: c.textPrimary).tabular),
+                    Text(l10n.payoutAccountOnFile, style: text.bodyMedium),
+                  ]),
+                ),
+              ]),
             ),
-          ]);
+          );
 
     return ListView(
       padding: EdgeInsets.fromLTRB(context.pageInset, SellerSpace.s8, context.pageInset, SellerSpace.s32),
