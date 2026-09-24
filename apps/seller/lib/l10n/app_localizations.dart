@@ -5751,6 +5751,126 @@ abstract class AppLocalizations {
   /// In en, this message translates to:
   /// **'This is a warning. You can still send this offer.'**
   String get counterMoqWarning;
+
+  /// No description provided for @insightsRange.
+  ///
+  /// In en, this message translates to:
+  /// **'{current} vs {previous}'**
+  String insightsRange(String current, String previous);
+
+  /// No description provided for @insightsInfo.
+  ///
+  /// In en, this message translates to:
+  /// **'What these numbers mean'**
+  String get insightsInfo;
+
+  /// No description provided for @insightsDefSales.
+  ///
+  /// In en, this message translates to:
+  /// **'Total sales: the value of items sold in the period — not profit or payout.'**
+  String get insightsDefSales;
+
+  /// No description provided for @insightsDefOrders.
+  ///
+  /// In en, this message translates to:
+  /// **'Orders: customer orders placed in the period.'**
+  String get insightsDefOrders;
+
+  /// No description provided for @insightsDefAov.
+  ///
+  /// In en, this message translates to:
+  /// **'Avg. order value: sales ÷ orders. Not shown when there are no orders.'**
+  String get insightsDefAov;
+
+  /// No description provided for @insightsDefB2b.
+  ///
+  /// In en, this message translates to:
+  /// **'B2B share: the part of total sales that came from business buyers.'**
+  String get insightsDefB2b;
+
+  /// No description provided for @insightsDefCompare.
+  ///
+  /// In en, this message translates to:
+  /// **'Each period is compared with the period of the same length just before it.'**
+  String get insightsDefCompare;
+
+  /// No description provided for @insightsGotIt.
+  ///
+  /// In en, this message translates to:
+  /// **'Got it'**
+  String get insightsGotIt;
+
+  /// No description provided for @insightsComparisons.
+  ///
+  /// In en, this message translates to:
+  /// **'Comparisons'**
+  String get insightsComparisons;
+
+  /// No description provided for @insightsCurrentLabel.
+  ///
+  /// In en, this message translates to:
+  /// **'Current ({range})'**
+  String insightsCurrentLabel(String range);
+
+  /// No description provided for @insightsPreviousLabel.
+  ///
+  /// In en, this message translates to:
+  /// **'Previous ({range})'**
+  String insightsPreviousLabel(String range);
+
+  /// No description provided for @insightsB2bTitle.
+  ///
+  /// In en, this message translates to:
+  /// **'B2B sales share'**
+  String get insightsB2bTitle;
+
+  /// No description provided for @insightsSalesTrend.
+  ///
+  /// In en, this message translates to:
+  /// **'Sales trend'**
+  String get insightsSalesTrend;
+
+  /// No description provided for @insightsTableDay.
+  ///
+  /// In en, this message translates to:
+  /// **'Day'**
+  String get insightsTableDay;
+
+  /// No description provided for @insightsStageNote.
+  ///
+  /// In en, this message translates to:
+  /// **'Current stage of orders placed in this period. Includes cancelled orders.'**
+  String get insightsStageNote;
+
+  /// No description provided for @insightsTopNote.
+  ///
+  /// In en, this message translates to:
+  /// **'Ranked by item revenue'**
+  String get insightsTopNote;
+
+  /// No description provided for @insightsUnits.
+  ///
+  /// In en, this message translates to:
+  /// **'{count, plural, =1{1 unit} other{{count} units}}'**
+  String insightsUnits(int count);
+
+  /// No description provided for @insightsSalesUnavailable.
+  ///
+  /// In en, this message translates to:
+  /// **'Sales data unavailable'**
+  String get insightsSalesUnavailable;
+
+  /// No description provided for @healthMeasures.
+  ///
+  /// In en, this message translates to:
+  /// **'Performance measures'**
+  String get healthMeasures;
+
+  /// No description provided for @healthLast30.
+  ///
+  /// In en, this message translates to:
+  /// **'Last 30 days'**
+  String get healthLast30;
 }
 
 class _AppLocalizationsDelegate

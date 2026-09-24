@@ -2006,5 +2006,56 @@
       }
     }
   },
-  "counterMoqWarning": "This is a warning. You can still send this offer."
+  "counterMoqWarning": "This is a warning. You can still send this offer.",
+  "insightsRange": "{current} vs {previous}",
+  "@insightsRange": {
+    "placeholders": {
+      "current": {
+        "type": "String"
+      },
+      "previous": {
+        "type": "String"
+      }
+    }
+  },
+  "insightsInfo": "What these numbers mean",
+  "insightsDefSales": "Total sales: the value of items sold in the period — not profit or payout.",
+  "insightsDefOrders": "Orders: customer orders placed in the period.",
+  "insightsDefAov": "Avg. order value: sales ÷ orders. Not shown when there are no orders.",
+  "insightsDefB2b": "B2B share: the part of total sales that came from business buyers.",
+  "insightsDefCompare": "Each period is compared with the period of the same length just before it.",
+  "insightsGotIt": "Got it",
+  "insightsComparisons": "Comparisons",
+  "insightsCurrentLabel": "Current ({range})",
+  "@insightsCurrentLabel": {
+    "placeholders": {
+      "range": {
+        "type": "String"
+      }
+    }
+  },
+  "insightsPreviousLabel": "Previous ({range})",
+  "@insightsPreviousLabel": {
+    "placeholders": {
+      "range": {
+        "type": "String"
+      }
+    }
+  },
+  "insightsB2bTitle": "B2B sales share",
+  "insightsSalesTrend": "Sales trend",
+  "insightsTableDay": "Day",
+  "insightsStageNote": "Current stage of orders placed in this period. Includes cancelled orders.",
+  "insightsTopNote": "Ranked by item revenue",
+  "insightsUnits": "{count, plural, =1{1 unit} other{{count} units}}",
+  "@insightsUnits": {
+    "placeholders": {
+      "count": {
+        "type": "int"
+      }
+    }
+  },
+  "insightsSalesUnavailable": "Sales data unavailable",
+  "healthMeasures": "Performance measures",
+  "healthLast30": "Last 30 days"
 }

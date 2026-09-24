@@ -3370,4 +3370,84 @@ class AppLocalizationsEn extends AppLocalizations {
   @override
   String get counterMoqWarning =>
       'This is a warning. You can still send this offer.';
+
+  @override
+  String insightsRange(String current, String previous) {
+    return '$current vs $previous';
+  }
+
+  @override
+  String get insightsInfo => 'What these numbers mean';
+
+  @override
+  String get insightsDefSales =>
+      'Total sales: the value of items sold in the period — not profit or payout.';
+
+  @override
+  String get insightsDefOrders =>
+      'Orders: customer orders placed in the period.';
+
+  @override
+  String get insightsDefAov =>
+      'Avg. order value: sales ÷ orders. Not shown when there are no orders.';
+
+  @override
+  String get insightsDefB2b =>
+      'B2B share: the part of total sales that came from business buyers.';
+
+  @override
+  String get insightsDefCompare =>
+      'Each period is compared with the period of the same length just before it.';
+
+  @override
+  String get insightsGotIt => 'Got it';
+
+  @override
+  String get insightsComparisons => 'Comparisons';
+
+  @override
+  String insightsCurrentLabel(String range) {
+    return 'Current ($range)';
+  }
+
+  @override
+  String insightsPreviousLabel(String range) {
+    return 'Previous ($range)';
+  }
+
+  @override
+  String get insightsB2bTitle => 'B2B sales share';
+
+  @override
+  String get insightsSalesTrend => 'Sales trend';
+
+  @override
+  String get insightsTableDay => 'Day';
+
+  @override
+  String get insightsStageNote =>
+      'Current stage of orders placed in this period. Includes cancelled orders.';
+
+  @override
+  String get insightsTopNote => 'Ranked by item revenue';
+
+  @override
+  String insightsUnits(int count) {
+    String _temp0 = intl.Intl.pluralLogic(
+      count,
+      locale: localeName,
+      other: '$count units',
+      one: '1 unit',
+    );
+    return '$_temp0';
+  }
+
+  @override
+  String get insightsSalesUnavailable => 'Sales data unavailable';
+
+  @override
+  String get healthMeasures => 'Performance measures';
+
+  @override
+  String get healthLast30 => 'Last 30 days';
 }
