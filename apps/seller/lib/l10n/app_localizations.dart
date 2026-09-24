@@ -5259,6 +5259,84 @@ abstract class AppLocalizations {
   /// In en, this message translates to:
   /// **'#{number}'**
   String orderNumberShort(String number);
+
+  /// No description provided for @bulkPartial.
+  ///
+  /// In en, this message translates to:
+  /// **'{done} updated. {failed} couldn\'t be updated and are still selected.'**
+  String bulkPartial(int done, int failed);
+
+  /// No description provided for @bulkHideCount.
+  ///
+  /// In en, this message translates to:
+  /// **'Hide ({count})'**
+  String bulkHideCount(int count);
+
+  /// No description provided for @bulkPublishCount.
+  ///
+  /// In en, this message translates to:
+  /// **'Publish ({count})'**
+  String bulkPublishCount(int count);
+
+  /// No description provided for @bulkTip.
+  ///
+  /// In en, this message translates to:
+  /// **'Long-press a product to select it'**
+  String get bulkTip;
+
+  /// No description provided for @productInStock.
+  ///
+  /// In en, this message translates to:
+  /// **'{stock} in stock'**
+  String productInStock(String stock);
+
+  /// No description provided for @productMrp.
+  ///
+  /// In en, this message translates to:
+  /// **'MRP {price}'**
+  String productMrp(String price);
+
+  /// No description provided for @productVisibleInfo.
+  ///
+  /// In en, this message translates to:
+  /// **'Visible products appear in your store. Stock and visibility are separate.'**
+  String get productVisibleInfo;
+
+  /// No description provided for @productMoreActions.
+  ///
+  /// In en, this message translates to:
+  /// **'More actions for {name}'**
+  String productMoreActions(String name);
+
+  /// No description provided for @productCurrentStock.
+  ///
+  /// In en, this message translates to:
+  /// **'Current stock: {stock}'**
+  String productCurrentStock(String stock);
+
+  /// No description provided for @productStockSaveFailed.
+  ///
+  /// In en, this message translates to:
+  /// **'Couldn\'t update stock. Try again.'**
+  String get productStockSaveFailed;
+
+  /// No description provided for @productStockInvalid.
+  ///
+  /// In en, this message translates to:
+  /// **'Enter a valid stock quantity.'**
+  String get productStockInvalid;
+
+  /// No description provided for @productEditNamed.
+  ///
+  /// In en, this message translates to:
+  /// **'Edit {name}'**
+  String productEditNamed(String name);
+
+  /// No description provided for @productVisibilityFailed.
+  ///
+  /// In en, this message translates to:
+  /// **'Couldn\'t update visibility. Try again.'**
+  String get productVisibilityFailed;
 }
 
 class _AppLocalizationsDelegate

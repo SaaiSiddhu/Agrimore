@@ -1,10 +1,9 @@
 import 'package:agrimore_core/agrimore_core.dart';
-import 'package:agrimore_ui/agrimore_ui.dart';
-import 'package:cached_network_image/cached_network_image.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:provider/provider.dart';
 
+import '../../design_system/design_system.dart';
 import '../../l10n/app_localizations.dart';
 import '../../providers/seller_auth_provider.dart';
 import '../../providers/seller_product_provider.dart';
@@ -15,8 +14,19 @@ import 'widgets/product_list_controls.dart';
 /// Stock levels (SellerProductProvider.lowStockProducts uses the same line).
 const int kLowStockLine = 10;
 
-/// C-01 Catalogue (ADR §10.4, SELLER-UI-1c): search, status tabs, bulk
-/// publish/hide, and per product: live toggle, stock, edit, delete.
+/// Stock badge: "25 in stock" · "Only 3 left" · "Out of stock" — text, icon
+/// and tone (board 12).
+Widget productStockBadge(AppLocalizations l10n, ProductModel p) {
+  if (p.stock <= 0) return SellerStatusBadge(label: l10n.productOutOfStock, tone: SellerTone.danger, icon: SellerIcons.cancelled);
+  if (p.stock < kLowStockLine) {
+    return SellerStatusBadge(label: l10n.productLowStock(SellerFormat.count(p.stock)), tone: SellerTone.warning, icon: SellerIcons.warning);
+  }
+  return SellerStatusBadge(label: l10n.searchStock(SellerFormat.count(p.stock)), tone: SellerTone.success, icon: SellerIcons.success);
+}
+
+/// C-01 Catalogue (boards 18-01…18-03, selected revision 18-02): search,
+/// status chips, product cards (visibility switch, Edit + overflow), long
+/// press to select, bulk publish/hide with a result per product.
 class SellerProductsScreen extends StatefulWidget {
   const SellerProductsScreen({super.key});
 
@@ -49,53 +59,66 @@ class _SellerProductsScreenState extends State<SellerProductsScreen> {
     if (uid != null) context.read<SellerProductProvider>().loadSellerProducts(uid);
   }
 
-  void _toggle(String id) => setState(() => _selected.contains(id) ? _selected.remove(id) : _selected.add(id));
+  void _toggle(String id) {
+    HapticFeedback.selectionClick();
+    setState(() => _selected.contains(id) ? _selected.remove(id) : _selected.add(id));
+  }
 
   Future<void> _bulk(bool publish) async {
     final l10n = AppLocalizations.of(context);
-    final count = _selected.length;
+    final ids = {..._selected};
     setState(() => _bulkBusy = true);
-    final ok = await context.read<SellerProductProvider>().bulkSetActive({..._selected}, publish);
+    final failed = await context.read<SellerProductProvider>().bulkSetActiveEach(ids, publish);
     if (!mounted) return;
     setState(() {
       _bulkBusy = false;
-      if (ok) _selected.clear();
+      // Failed products stay selected so the seller can retry them.
+      _selected
+        ..clear()
+        ..addAll(failed);
     });
-    WsToast.show(context, ok ? l10n.bulkDone(count) : l10n.bulkFailed, tone: ok ? WsToastTone.success : WsToastTone.error);
+    if (failed.isEmpty) {
+      SellerToast.show(context, l10n.bulkDone(ids.length), tone: SellerToastTone.success);
+    } else if (failed.length == ids.length) {
+      SellerToast.show(context, l10n.bulkFailed, tone: SellerToastTone.danger);
+    } else {
+      SellerToast.show(context, l10n.bulkPartial(ids.length - failed.length, failed.length), tone: SellerToastTone.danger);
+    }
   }
 
   Future<void> _editStock(ProductModel p) async {
     final l10n = AppLocalizations.of(context);
-    final value = await showModalBottomSheet<int>(
+    final uid = _uid;
+    final provider = context.read<SellerProductProvider>();
+    final saved = await showModalBottomSheet<bool>(
       context: context,
       isScrollControlled: true,
-      builder: (_) => _StockSheet(product: p),
+      useSafeArea: true,
+      builder: (_) => _StockSheet(
+        product: p,
+        onSave: (value) => uid == null ? Future.value(false) : provider.updateStock(p.id, value, uid),
+      ),
     );
-    final uid = _uid;
-    if (value == null || uid == null || !mounted) return;
-    final ok = await context.read<SellerProductProvider>().updateStock(p.id, value, uid);
-    if (mounted) {
-      WsToast.show(context, ok ? l10n.productStockSaved : l10n.productActionFailed,
-          tone: ok ? WsToastTone.success : WsToastTone.error);
-    }
+    if (saved == true && mounted) SellerToast.show(context, l10n.productStockSaved, tone: SellerToastTone.success);
   }
 
   Future<void> _delete(ProductModel p) async {
     final l10n = AppLocalizations.of(context);
-    final yes = await wsConfirm(
+    final yes = await sellerConfirm(
       context,
       title: l10n.productDeleteTitle,
       message: l10n.productDeleteBody(p.name),
       confirmLabel: l10n.productDelete,
       cancelLabel: l10n.cancel,
+      icon: SellerIcons.delete,
       destructive: true,
     );
     final uid = _uid;
     if (!yes || uid == null || !mounted) return;
     final ok = await context.read<SellerProductProvider>().deleteProduct(p.id, uid);
     if (mounted) {
-      WsToast.show(context, ok ? l10n.productDeleted : l10n.productActionFailed,
-          tone: ok ? WsToastTone.success : WsToastTone.error);
+      SellerToast.show(context, ok ? l10n.productDeleted : l10n.productActionFailed,
+          tone: ok ? SellerToastTone.success : SellerToastTone.danger);
     }
   }
 
@@ -105,146 +128,146 @@ class _SellerProductsScreenState extends State<SellerProductsScreen> {
     if (uid == null) return;
     HapticFeedback.selectionClick();
     final ok = await context.read<SellerProductProvider>().toggleProductActive(p.id, live, uid);
-    if (!ok && mounted) WsToast.show(context, l10n.productActionFailed, tone: WsToastTone.error);
+    if (!ok && mounted) SellerToast.show(context, l10n.productVisibilityFailed, tone: SellerToastTone.danger);
   }
 
   void _push(Widget screen) => Navigator.of(context).push(MaterialPageRoute<void>(builder: (_) => screen));
 
+  Future<void> _sortMenu(SellerProductProvider provider) async {
+    final l10n = AppLocalizations.of(context);
+    final chosen = await showSellerSheet<ProductSort>(
+      context,
+      title: l10n.sortTitle,
+      builder: (ctx) => Column(children: [
+        for (final (s, label) in [
+          (ProductSort.newest, l10n.sortNewest),
+          (ProductSort.nameAz, l10n.sortNameAz),
+          (ProductSort.priceLow, l10n.sortPriceLow),
+          (ProductSort.priceHigh, l10n.sortPriceHigh),
+          (ProductSort.stockLow, l10n.sortStockLow),
+        ])
+          SellerChoiceRow<ProductSort>(value: s, groupValue: provider.sort, title: label, onChanged: (v) => Navigator.of(ctx).pop(v)),
+      ]),
+    );
+    if (chosen != null) provider.setSort(chosen);
+  }
+
   @override
   Widget build(BuildContext context) {
     final l10n = AppLocalizations.of(context);
-    final t = context.ws;
-    final text = context.wsText;
     final provider = context.watch<SellerProductProvider>();
     final products = provider.products;
+    final selecting = _selected.isNotEmpty;
 
-    return Scaffold(
-      appBar: AppBar(
-        automaticallyImplyLeading: false,
-        title: Text(l10n.navCatalogue),
-        actions: [
-          PopupMenuButton<ProductSort>(
-            tooltip: l10n.sortTitle,
-            icon: const Icon(AgIcons.sort),
-            initialValue: provider.sort,
-            onSelected: provider.setSort,
-            itemBuilder: (_) => [
-              for (final (s, label) in [
-                (ProductSort.newest, l10n.sortNewest),
-                (ProductSort.nameAz, l10n.sortNameAz),
-                (ProductSort.priceLow, l10n.sortPriceLow),
-                (ProductSort.priceHigh, l10n.sortPriceHigh),
-                (ProductSort.stockLow, l10n.sortStockLow),
-              ])
-                CheckedPopupMenuItem<ProductSort>(value: s, checked: provider.sort == s, child: Text(label)),
-            ],
-          ),
-          IconButton(tooltip: l10n.productNewPost, icon: const Icon(AgIcons.image), onPressed: () => _push(const CreatePostScreen())),
-        ],
-      ),
-      floatingActionButton: _selected.isNotEmpty
-          ? null
-          : FloatingActionButton.extended(
-              onPressed: () => _push(const AddProductScreen()),
-              icon: const Icon(AgIcons.add),
-              label: Text(l10n.homeAddProduct),
+    Widget body;
+    if (provider.error != null && provider.allProducts.isEmpty) {
+      body = SellerErrorState(title: l10n.productsLoadFailed, onRetry: _reload, retryLabel: l10n.statusRefresh);
+    } else if (provider.isLoading && provider.allProducts.isEmpty) {
+      body = SellerSkeletonList(label: l10n.dsLoading);
+    } else if (products.isEmpty) {
+      body = provider.allProducts.isEmpty
+          ? SellerEmptyState(
+              icon: SellerIcons.catalogue,
+              title: l10n.productsEmpty,
+              actionLabel: l10n.homeAddProduct,
+              actionIcon: SellerIcons.add,
+              onAction: () => _push(const AddProductScreen()),
+            )
+          : SellerEmptyState(icon: SellerIcons.search, title: l10n.productsNoneMatch);
+    } else {
+      body = RefreshIndicator(
+        onRefresh: () async => _reload(),
+        child: ListView.separated(
+          padding: EdgeInsets.fromLTRB(context.pageInset, SellerSpace.s4, context.pageInset, SellerSpace.s24),
+          itemCount: products.length,
+          separatorBuilder: (_, __) => const SizedBox(height: SellerSpace.s12),
+          itemBuilder: (context, i) {
+            final p = products[i];
+            return _ProductCard(
+              product: p,
+              selecting: selecting,
+              selected: _selected.contains(p.id),
+              onSelect: () => _toggle(p.id),
+              onLive: (v) => _setLive(p, v),
+              onStock: () => _editStock(p),
+              onEdit: () => _push(AddProductScreen(existingProduct: p)),
+              onDelete: () => _delete(p),
+            );
+          },
+        ),
+      );
+    }
+
+    return PopScope<Object?>(
+      canPop: !selecting,
+      onPopInvokedWithResult: (didPop, _) {
+        if (!didPop) setState(_selected.clear);
+      },
+      child: Scaffold(
+        appBar: selecting
+            ? SellerAppBar.detail(
+                context,
+                title: l10n.selectedCount(_selected.length),
+                close: true,
+                onBack: () => setState(_selected.clear),
+              )
+            : SellerAppBar.root(context, title: l10n.navCatalogue, actions: [
+                SellerIconButton(icon: SellerIcons.sort, label: l10n.sortTitle, onPressed: () => _sortMenu(provider)),
+                SellerIconButton(icon: SellerIcons.post, label: l10n.productNewPost, onPressed: () => _push(const CreatePostScreen())),
+                SellerIconButton(icon: SellerIcons.add, label: l10n.homeAddProduct, filled: true, onPressed: () => _push(const AddProductScreen())),
+              ]),
+        body: Column(children: [
+          Padding(
+            padding: EdgeInsets.fromLTRB(context.pageInset, SellerSpace.s4, context.pageInset, SellerSpace.s8),
+            child: SellerSearchField(
+              controller: _search,
+              hint: l10n.productSearchHint,
+              onChanged: (v) {
+                provider.setSearchQuery(v);
+                setState(() {});
+              },
             ),
-      bottomNavigationBar: _selected.isEmpty
-          ? null
-          : ProductBulkBar(
+          ),
+          ProductFilterBar(provider: provider),
+          Expanded(child: body),
+          if (selecting)
+            ProductBulkBar(
               count: _selected.length,
               busy: _bulkBusy,
               onPublish: () => _bulk(true),
               onHide: () => _bulk(false),
               onClear: () => setState(_selected.clear),
+            )
+          else if (provider.allProducts.isNotEmpty)
+            SellerStickyFooter(
+              maxWidth: SellerSize.contentMaxWidth,
+              child: SellerButton.tonal(label: l10n.homeAddProduct, icon: SellerIcons.add, expand: true, onPressed: () => _push(const AddProductScreen())),
             ),
-      body: Column(children: [
-        Padding(
-          padding: const EdgeInsets.fromLTRB(WsSpace.page, WsSpace.s8, WsSpace.page, 0),
-          child: TextField(
-            controller: _search,
-            onChanged: (v) {
-              provider.setSearchQuery(v);
-              setState(() {});
-            },
-            decoration: InputDecoration(
-              prefixIcon: const Icon(AgIcons.search),
-              hintText: l10n.productSearchHint,
-              suffixIcon: _search.text.isEmpty
-                  ? null
-                  : IconButton(
-                      tooltip: l10n.searchClear,
-                      icon: const Icon(AgIcons.close),
-                      onPressed: () {
-                        _search.clear();
-                        provider.setSearchQuery('');
-                        setState(() {});
-                      },
-                    ),
-            ),
-          ),
-        ),
-        ProductFilterBar(provider: provider),
-        Expanded(
-          child: provider.error != null
-              ? Padding(
-                  padding: const EdgeInsets.all(WsSpace.page),
-                  child: SaInfoBanner(
-                    variant: SaBannerVariant.error,
-                    message: l10n.productsLoadFailed,
-                    actionLabel: l10n.statusRefresh,
-                    onAction: _reload,
-                  ),
-                )
-              : provider.isLoading && provider.allProducts.isEmpty
-                  ? const Center(child: CircularProgressIndicator())
-                  : products.isEmpty
-                      ? Center(
-                          child: Padding(
-                            padding: const EdgeInsets.all(WsSpace.s32),
-                            child: Column(mainAxisSize: MainAxisSize.min, children: [
-                              Icon(AgIcons.inventory, size: WsIconSize.empty, color: t.textTertiary),
-                              const SizedBox(height: WsSpace.s12),
-                              Text(
-                                provider.allProducts.isEmpty ? l10n.productsEmpty : l10n.productsNoneMatch,
-                                style: text.bodyMedium,
-                                textAlign: TextAlign.center,
-                              ),
-                            ]),
-                          ),
-                        )
-                      : RefreshIndicator(
-                          onRefresh: () async => _reload(),
-                          child: ListView.builder(
-                            padding: const EdgeInsets.fromLTRB(WsSpace.page, 0, WsSpace.page, WsSpace.s64 + WsSpace.s32),
-                            itemCount: products.length,
-                            itemBuilder: (context, i) {
-                              final p = products[i];
-                              return ProductSelectionFrame(
-                                selected: _selected.contains(p.id),
-                                selecting: _selected.isNotEmpty,
-                                isDraft: p.isDraft,
-                                onToggle: () => _toggle(p.id),
-                                child: _ProductCard(
-                                  product: p,
-                                  onLive: (v) => _setLive(p, v),
-                                  onStock: () => _editStock(p),
-                                  onEdit: () => _push(AddProductScreen(existingProduct: p)),
-                                  onDelete: () => _delete(p),
-                                ),
-                              );
-                            },
-                          ),
-                        ),
-        ),
-      ]),
+        ]),
+      ),
     );
   }
 }
 
+/// Product card (board 18-02): photo, name + Draft tag, category, stock
+/// badge, price + struck MRP, "Visible to buyers" switch, [Edit] + [⋯].
+/// Long press selects; while selecting a tap toggles and a check shows.
 class _ProductCard extends StatelessWidget {
-  const _ProductCard({required this.product, required this.onLive, required this.onStock, required this.onEdit, required this.onDelete});
+  const _ProductCard({
+    required this.product,
+    required this.selecting,
+    required this.selected,
+    required this.onSelect,
+    required this.onLive,
+    required this.onStock,
+    required this.onEdit,
+    required this.onDelete,
+  });
+
   final ProductModel product;
+  final bool selecting;
+  final bool selected;
+  final VoidCallback onSelect;
   final ValueChanged<bool> onLive;
   final VoidCallback onStock;
   final VoidCallback onEdit;
@@ -253,79 +276,100 @@ class _ProductCard extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final l10n = AppLocalizations.of(context);
-    final t = context.ws;
-    final text = context.wsText;
+    final c = context.colors;
+    final text = context.text;
     final p = product;
-    final (String stockLabel, Color stockColor) = p.stock == 0
-        ? (l10n.productOutOfStock, t.errorFg)
-        : p.stock < kLowStockLine
-            ? (l10n.productLowStock(AgFormat.count(p.stock)), t.warningFg)
-            : (l10n.searchStock(AgFormat.count(p.stock)), t.successFg);
     final original = p.originalPrice;
-    return Card(
-      margin: const EdgeInsets.only(bottom: WsSpace.s8),
-      child: Padding(
-        padding: const EdgeInsets.all(WsSpace.s12),
-        child: Column(children: [
+    final visible = p.isActive && !p.isDraft;
+
+    final summary = Row(crossAxisAlignment: CrossAxisAlignment.start, children: [
+      if (selecting) ...[
+        Padding(
+          padding: const EdgeInsets.only(top: SellerSpace.s4),
+          child: Icon(selected ? SellerIcons.success : SellerIcons.unselected, color: selected ? c.primary : c.controlBorder),
+        ),
+        const SizedBox(width: SellerSpace.s8),
+      ],
+      SellerImage(url: p.primaryImage, size: SellerSize.thumbXl),
+      const SizedBox(width: SellerSpace.s12),
+      Expanded(
+        child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
           Row(crossAxisAlignment: CrossAxisAlignment.start, children: [
-            ClipRRect(
-              borderRadius: BorderRadius.circular(WsRadius.small),
-              child: SizedBox.square(
-                dimension: WsSize.thumbLg,
-                child: p.primaryImage.isEmpty
-                    ? ColoredBox(color: t.surfaceSunken, child: Icon(AgIcons.image, color: t.textTertiary))
-                    : CachedNetworkImage(
-                        imageUrl: p.primaryImage,
-                        fit: BoxFit.cover,
-                        errorWidget: (_, __, ___) => ColoredBox(color: t.surfaceSunken),
-                      ),
-              ),
-            ),
-            const SizedBox(width: WsSpace.s12),
-            Expanded(
-              child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
-                Text(p.name, style: text.titleSmall, maxLines: 2, overflow: TextOverflow.ellipsis),
-                const SizedBox(height: WsSpace.s4),
-                Row(children: [
-                  Text(AgFormat.rupees(p.salePrice), style: text.titleSmall!.copyWith(fontFeatures: WsType.tabularFigures)),
-                  if (original != null && original > p.salePrice) ...[
-                    const SizedBox(width: WsSpace.s8),
-                    Text(
-                      AgFormat.rupees(original),
-                      style: text.bodySmall!.copyWith(color: t.textTertiary, decoration: TextDecoration.lineThrough),
-                    ),
-                  ],
-                ]),
-                const SizedBox(height: WsSpace.s4),
-                Text(stockLabel, style: text.labelMedium!.copyWith(color: stockColor)),
-              ]),
-            ),
-            Semantics(
-              label: p.isActive ? l10n.productLive : l10n.productHidden,
-              // Switching a draft on publishes it (the provider clears isDraft).
-              child: Switch(value: p.isActive && !p.isDraft, onChanged: onLive),
-            ),
+            Expanded(child: Text(p.name, style: text.titleSmall, maxLines: 2, overflow: TextOverflow.ellipsis)),
+            if (p.isDraft) ...[const SizedBox(width: SellerSpace.s8), SellerTag(label: l10n.draftBadge.toUpperCase())],
           ]),
-          const Divider(height: WsSpace.s16),
-          Row(mainAxisAlignment: MainAxisAlignment.end, children: [
-            TextButton.icon(onPressed: onStock, icon: const Icon(AgIcons.inventory), label: Text(l10n.productStock)),
-            TextButton.icon(onPressed: onEdit, icon: const Icon(AgIcons.edit), label: Text(l10n.productEdit)),
-            TextButton.icon(
-              onPressed: onDelete,
-              icon: const Icon(AgIcons.delete),
-              label: Text(l10n.productDelete),
-              style: TextButton.styleFrom(foregroundColor: t.errorFg),
-            ),
+          if ((p.categoryName ?? '').isNotEmpty) Text(p.categoryName!, style: text.bodyMedium),
+          const SizedBox(height: SellerSpace.s4),
+          productStockBadge(l10n, p),
+          const SizedBox(height: SellerSpace.s4),
+          Wrap(crossAxisAlignment: WrapCrossAlignment.end, spacing: SellerSpace.s8, children: [
+            Text(SellerFormat.money(p.salePrice), style: text.titleLarge!.tabular),
+            if (original != null && original > p.salePrice)
+              Text(
+                l10n.productMrp(SellerFormat.money(original)),
+                style: text.bodyMedium!.copyWith(decoration: TextDecoration.lineThrough).tabular,
+              ),
           ]),
         ]),
       ),
+    ]);
+
+    if (selecting) {
+      return SellerCard(
+        onTap: onSelect,
+        onLongPress: onSelect,
+        selected: selected,
+        semanticLabel: '${p.name}, ${selected ? l10n.dsSelected : l10n.dsNotSelected}',
+        child: summary,
+      );
+    }
+
+    return SellerCard(
+      onLongPress: onSelect,
+      child: Column(crossAxisAlignment: CrossAxisAlignment.stretch, children: [
+        summary,
+        const SizedBox(height: SellerSpace.s8),
+        SellerSwitchRow(title: l10n.productLive, subtitle: visible ? null : l10n.productHidden, value: visible, onChanged: onLive),
+        const SizedBox(height: SellerSpace.s8),
+        Row(children: [
+          Expanded(
+            child: SellerButton.secondary(
+              label: l10n.productEdit,
+              icon: SellerIcons.edit,
+              compact: true,
+              semanticLabel: l10n.productEditNamed(p.name),
+              onPressed: onEdit,
+            ),
+          ),
+          const SizedBox(width: SellerSpace.s8),
+          MenuAnchor(
+            builder: (context, controller, _) => SellerIconButton(
+              icon: SellerIcons.moreHorizontal,
+              label: l10n.productMoreActions(p.name),
+              bordered: true,
+              onPressed: () => controller.isOpen ? controller.close() : controller.open(),
+            ),
+            menuChildren: [
+              MenuItemButton(leadingIcon: const Icon(SellerIcons.stock), onPressed: onStock, child: Text(l10n.productStock)),
+              MenuItemButton(
+                leadingIcon: Icon(SellerIcons.delete, color: c.danger),
+                onPressed: onDelete,
+                child: Text(l10n.productDelete, style: text.bodyLarge!.copyWith(color: c.danger)),
+              ),
+            ],
+          ),
+        ]),
+      ]),
     );
   }
 }
 
+/// "Update stock" sheet (board 18-03): product summary, units field, Save.
+/// Saving happens here, so a failure keeps the sheet and what was typed.
 class _StockSheet extends StatefulWidget {
-  const _StockSheet({required this.product});
+  const _StockSheet({required this.product, required this.onSave});
   final ProductModel product;
+  final Future<bool> Function(int value) onSave;
 
   @override
   State<_StockSheet> createState() => _StockSheetState();
@@ -334,6 +378,8 @@ class _StockSheet extends StatefulWidget {
 class _StockSheetState extends State<_StockSheet> {
   late final _value = TextEditingController(text: '${widget.product.stock}');
   bool _invalid = false;
+  bool _saving = false;
+  bool _failed = false;
 
   @override
   void dispose() {
@@ -341,43 +387,69 @@ class _StockSheetState extends State<_StockSheet> {
     super.dispose();
   }
 
-  void _save() {
+  Future<void> _save() async {
     final n = int.tryParse(_value.text.trim());
     if (n == null || n < 0) {
       setState(() => _invalid = true);
       return;
     }
-    Navigator.of(context).pop(n);
+    setState(() {
+      _invalid = false;
+      _failed = false;
+      _saving = true;
+    });
+    final ok = await widget.onSave(n);
+    if (!mounted) return;
+    if (ok) {
+      Navigator.of(context).pop(true);
+    } else {
+      setState(() {
+        _saving = false;
+        _failed = true;
+      });
+    }
   }
 
   @override
   Widget build(BuildContext context) {
     final l10n = AppLocalizations.of(context);
-    final text = context.wsText;
-    return Padding(
-      padding: EdgeInsets.only(bottom: MediaQuery.viewInsetsOf(context).bottom),
-      child: SafeArea(
-        child: Padding(
-          padding: const EdgeInsets.fromLTRB(WsSpace.page, 0, WsSpace.page, WsSpace.s24),
-          child: Column(mainAxisSize: MainAxisSize.min, crossAxisAlignment: CrossAxisAlignment.stretch, children: [
-            Text(l10n.productStockTitle, style: text.titleMedium),
-            const SizedBox(height: WsSpace.s4),
-            Text(widget.product.name, style: text.bodyMedium),
-            const SizedBox(height: WsSpace.s16),
-            TextField(
-              key: const ValueKey('stockValue'),
-              controller: _value,
-              autofocus: true,
-              keyboardType: TextInputType.number,
-              inputFormatters: [FilteringTextInputFormatter.digitsOnly],
-              decoration: InputDecoration(labelText: l10n.productStockLabel, errorText: _invalid ? l10n.counterQtyInvalid : null),
-              onSubmitted: (_) => _save(),
+    final text = context.text;
+    final p = widget.product;
+    return SellerSheetFrame(
+      title: l10n.productStockTitle,
+      body: Column(crossAxisAlignment: CrossAxisAlignment.stretch, children: [
+        SellerCard(
+          tone: SellerCardTone.sunken,
+          child: Row(children: [
+            SellerImage(url: p.primaryImage, size: SellerSize.thumbMd),
+            const SizedBox(width: SellerSpace.s12),
+            Expanded(
+              child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
+                Text(p.name, style: text.titleSmall),
+                Text(SellerFormat.money(p.salePrice), style: text.bodyMedium!.tabular),
+                Text(l10n.productCurrentStock(SellerFormat.count(p.stock)), style: text.bodyMedium),
+              ]),
             ),
-            const SizedBox(height: WsSpace.s16),
-            FilledButton(onPressed: _save, child: Text(l10n.accountSave)),
           ]),
         ),
-      ),
+        const SizedBox(height: SellerSpace.s16),
+        SellerTextField(
+          fieldKey: const ValueKey('stockValue'),
+          label: l10n.productStockLabel,
+          controller: _value,
+          autofocus: true,
+          tabular: true,
+          keyboardType: TextInputType.number,
+          inputFormatters: [FilteringTextInputFormatter.digitsOnly],
+          errorText: _invalid ? l10n.counterQtyInvalid : null,
+          onSubmitted: (_) => _save(),
+        ),
+        if (_failed) ...[
+          const SizedBox(height: SellerSpace.s12),
+          SellerBanner(tone: SellerTone.danger, message: l10n.productStockSaveFailed),
+        ],
+      ]),
+      footer: SellerButton(label: l10n.accountSave, expand: true, loading: _saving, loadingLabel: l10n.saving, onPressed: _save),
     );
   }
 }

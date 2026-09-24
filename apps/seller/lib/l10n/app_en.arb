@@ -1755,5 +1755,77 @@
         "type": "String"
       }
     }
-  }
+  },
+  "bulkPartial": "{done} updated. {failed} couldn't be updated and are still selected.",
+  "@bulkPartial": {
+    "placeholders": {
+      "done": {
+        "type": "int"
+      },
+      "failed": {
+        "type": "int"
+      }
+    }
+  },
+  "bulkHideCount": "Hide ({count})",
+  "@bulkHideCount": {
+    "placeholders": {
+      "count": {
+        "type": "int"
+      }
+    }
+  },
+  "bulkPublishCount": "Publish ({count})",
+  "@bulkPublishCount": {
+    "placeholders": {
+      "count": {
+        "type": "int"
+      }
+    }
+  },
+  "bulkTip": "Long-press a product to select it",
+  "productInStock": "{stock} in stock",
+  "@productInStock": {
+    "placeholders": {
+      "stock": {
+        "type": "String"
+      }
+    }
+  },
+  "productMrp": "MRP {price}",
+  "@productMrp": {
+    "placeholders": {
+      "price": {
+        "type": "String"
+      }
+    }
+  },
+  "productVisibleInfo": "Visible products appear in your store. Stock and visibility are separate.",
+  "productMoreActions": "More actions for {name}",
+  "@productMoreActions": {
+    "placeholders": {
+      "name": {
+        "type": "String"
+      }
+    }
+  },
+  "productCurrentStock": "Current stock: {stock}",
+  "@productCurrentStock": {
+    "placeholders": {
+      "stock": {
+        "type": "String"
+      }
+    }
+  },
+  "productStockSaveFailed": "Couldn't update stock. Try again.",
+  "productStockInvalid": "Enter a valid stock quantity.",
+  "productEditNamed": "Edit {name}",
+  "@productEditNamed": {
+    "placeholders": {
+      "name": {
+        "type": "String"
+      }
+    }
+  },
+  "productVisibilityFailed": "Couldn't update visibility. Try again."
 }

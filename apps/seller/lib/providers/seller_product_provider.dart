@@ -247,6 +247,33 @@ class SellerProductProvider with ChangeNotifier {
     }
   }
 
+  /// Bulk publish / hide with a result per product (decision D8): each
+  /// product is written on its own, so one failure never hides which others
+  /// went through. Returns the ids that could NOT be updated.
+  Future<Set<String>> bulkSetActiveEach(Set<String> productIds, bool isActive) async {
+    final failed = <String>{};
+    await Future.wait(productIds.map((id) async {
+      try {
+        await _firestore.collection('products').doc(id).update({
+          'isActive': isActive,
+          if (isActive) 'isDraft': false,
+          'updatedAt': FieldValue.serverTimestamp(),
+        });
+      } catch (e) {
+        debugPrint('Bulk update failed for $id: $e');
+        failed.add(id);
+      }
+    }));
+    _products = [
+      for (final p in _products)
+        productIds.contains(p.id) && !failed.contains(p.id)
+            ? p.copyWith(isActive: isActive, isDraft: isActive ? false : null)
+            : p,
+    ];
+    notifyListeners();
+    return failed;
+  }
+
   /// Update stock count
   Future<bool> updateStock(
       String productId, int newStock, String sellerId) async {

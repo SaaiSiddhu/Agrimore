@@ -3054,4 +3054,61 @@ class AppLocalizationsEn extends AppLocalizations {
   String orderNumberShort(String number) {
     return '#$number';
   }
+
+  @override
+  String bulkPartial(int done, int failed) {
+    return '$done updated. $failed couldn\'t be updated and are still selected.';
+  }
+
+  @override
+  String bulkHideCount(int count) {
+    return 'Hide ($count)';
+  }
+
+  @override
+  String bulkPublishCount(int count) {
+    return 'Publish ($count)';
+  }
+
+  @override
+  String get bulkTip => 'Long-press a product to select it';
+
+  @override
+  String productInStock(String stock) {
+    return '$stock in stock';
+  }
+
+  @override
+  String productMrp(String price) {
+    return 'MRP $price';
+  }
+
+  @override
+  String get productVisibleInfo =>
+      'Visible products appear in your store. Stock and visibility are separate.';
+
+  @override
+  String productMoreActions(String name) {
+    return 'More actions for $name';
+  }
+
+  @override
+  String productCurrentStock(String stock) {
+    return 'Current stock: $stock';
+  }
+
+  @override
+  String get productStockSaveFailed => 'Couldn\'t update stock. Try again.';
+
+  @override
+  String get productStockInvalid => 'Enter a valid stock quantity.';
+
+  @override
+  String productEditNamed(String name) {
+    return 'Edit $name';
+  }
+
+  @override
+  String get productVisibilityFailed =>
+      'Couldn\'t update visibility. Try again.';
 }
