@@ -5,6 +5,7 @@
 // The rider sees "Seen by the Agrimore team" only after Acknowledge, and the
 // resolution text word for word — so both are deliberate admin actions.
 // Covered by test/rider_incidents_admin_test.dart.
+import 'package:flutter/material.dart';
 
 /// Statuses still needing the team.
 const openIncidentStatuses = ['reported', 'acknowledged'];
@@ -88,3 +89,16 @@ String incidentRefusal(String code, String? reason) => switch (reason) {
       _ =>
         code == 'permission-denied' ? 'Only admins can update incidents.' : 'Could not update the incident. Try again.',
     };
+
+/// A TabBar readable inside the admin's primary-coloured AppBar: the app's
+/// tabBarTheme is primary text for tabs on white, which vanished there.
+TabBar appBarTabs(BuildContext context, List<Widget> tabs, {bool scrollable = false}) {
+  final fg = Theme.of(context).appBarTheme.foregroundColor ?? Colors.white;
+  return TabBar(
+    tabs: tabs,
+    isScrollable: scrollable,
+    labelColor: fg,
+    unselectedLabelColor: fg.withValues(alpha: 0.72),
+    indicatorColor: fg,
+  );
+}

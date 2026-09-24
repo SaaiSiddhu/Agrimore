@@ -22,7 +22,9 @@ class RiderIncidentsScreen extends StatelessWidget {
       child: Scaffold(
         appBar: AppBar(
           title: const Text('Rider Incidents'),
-          bottom: const TabBar(tabs: [Tab(text: 'Open'), Tab(text: 'Resolved')]),
+          // The admin tabBarTheme is primary-on-white (for tabs in page
+          // bodies); inside the primary app bar it was invisible.
+          bottom: appBarTabs(context, const [Tab(text: 'Open'), Tab(text: 'Resolved')]),
         ),
         body: const TabBarView(children: [_IncidentList(open: true), _IncidentList(open: false)]),
       ),
