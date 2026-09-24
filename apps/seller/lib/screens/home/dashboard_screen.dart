@@ -351,9 +351,8 @@ class _DashboardScreenState extends State<DashboardScreen> {
     final name = user?.name.trim() ?? '';
 
     return Scaffold(
-      appBar: SellerAppBar.root(
+      appBar: SellerAppBar.actionsOnly(
         context,
-        title: '',
         actions: [
           SellerIconButton(
             icon: SellerIcons.search,

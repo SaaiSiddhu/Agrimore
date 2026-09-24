@@ -242,6 +242,17 @@ abstract final class SellerAppBar {
     );
   }
 
+  /// Root tab whose heading lives in the page body (Home, board 03): a
+  /// standard-height bar with only the actions, so the greeting can wrap
+  /// at any text size instead of being cut in the bar.
+  static PreferredSizeWidget actionsOnly(BuildContext context, {required List<Widget> actions}) {
+    return AppBar(
+      automaticallyImplyLeading: false,
+      toolbarHeight: SellerSize.navBar,
+      actions: [...actions, const SizedBox(width: SellerSpace.s8)],
+    );
+  }
+
   /// Pushed screen: back arrow (or × for a modal), title, optional status and actions.
   static PreferredSizeWidget detail(
     BuildContext context, {
