@@ -1,7 +1,9 @@
-import 'package:agrimore_ui/agrimore_ui.dart';
+import 'package:agrimore_core/agrimore_core.dart';
 import 'package:flutter/material.dart';
 
+import '../../../design_system/design_system.dart';
 import '../../../l10n/app_localizations.dart';
+import '../order_stage.dart';
 
 /// Reasons a seller can give (keys match REJECT_REASONS in
 /// functions/src/seller/sellerTransitionOrder.ts).
@@ -29,23 +31,26 @@ class OrderReasonChoice {
   final String note;
 }
 
-/// O-03 Reject / cancel sheet (ADR §10.3): a required reason, an optional
-/// note, the consequence spelled out, and a destructive confirm.
-/// [isCancel] = the order was already accepted.
+/// O-03 Reject / cancel sheet (board 17-06): order summary, a required
+/// reason, an optional note, the consequence spelled out, [Keep order] and a
+/// destructive confirm. [isCancel] = the order was already accepted.
 Future<OrderReasonChoice?> showOrderReasonSheet(
   BuildContext context, {
+  OrderModel? order,
   required bool isCancel,
   required bool prepaid,
 }) {
   return showModalBottomSheet<OrderReasonChoice>(
     context: context,
     isScrollControlled: true,
-    builder: (_) => _OrderReasonSheet(isCancel: isCancel, prepaid: prepaid),
+    useSafeArea: true,
+    builder: (_) => _OrderReasonSheet(order: order, isCancel: isCancel, prepaid: prepaid),
   );
 }
 
 class _OrderReasonSheet extends StatefulWidget {
-  const _OrderReasonSheet({required this.isCancel, required this.prepaid});
+  const _OrderReasonSheet({required this.order, required this.isCancel, required this.prepaid});
+  final OrderModel? order;
   final bool isCancel;
   final bool prepaid;
 
@@ -56,6 +61,7 @@ class _OrderReasonSheet extends StatefulWidget {
 class _OrderReasonSheetState extends State<_OrderReasonSheet> {
   static const int _maxNote = 300;
   String? _reason;
+  bool _showError = false;
   final _note = TextEditingController();
 
   @override
@@ -64,67 +70,75 @@ class _OrderReasonSheetState extends State<_OrderReasonSheet> {
     super.dispose();
   }
 
+  void _confirm() {
+    if (_reason == null) {
+      setState(() => _showError = true);
+      return;
+    }
+    Navigator.of(context).pop(OrderReasonChoice(_reason!, _note.text.trim()));
+  }
+
   @override
   Widget build(BuildContext context) {
     final l10n = AppLocalizations.of(context);
-    final t = context.ws;
-    final text = context.wsText;
-    return Padding(
-      padding: EdgeInsets.only(bottom: MediaQuery.viewInsetsOf(context).bottom),
-      child: SafeArea(
-        child: SingleChildScrollView(
-          padding: const EdgeInsets.fromLTRB(WsSpace.page, 0, WsSpace.page, WsSpace.s24),
-          child: Column(
-            mainAxisSize: MainAxisSize.min,
-            crossAxisAlignment: CrossAxisAlignment.stretch,
-            children: [
-              Text(widget.isCancel ? l10n.cancelOrderTitle : l10n.rejectOrderTitle, style: text.titleMedium),
-              const SizedBox(height: WsSpace.s8),
-              Text(l10n.reasonPrompt, style: text.bodyMedium),
-              const SizedBox(height: WsSpace.s8),
-              RadioGroup<String>(
-                groupValue: _reason,
-                onChanged: (v) => setState(() => _reason = v),
-                child: Column(
-                  children: [
-                    for (final r in kOrderReasons)
-                      RadioListTile<String>(
-                        value: r,
-                        contentPadding: EdgeInsets.zero,
-                        title: Text(orderReasonLabel(l10n, r), style: text.bodyLarge),
-                      ),
-                  ],
+    final text = context.text;
+    final o = widget.order;
+    return SellerSheetFrame(
+      title: widget.isCancel ? l10n.cancelOrderTitle : l10n.rejectOrderTitle,
+      subtitle: l10n.reasonPrompt,
+      body: Column(
+        crossAxisAlignment: CrossAxisAlignment.stretch,
+        children: [
+          if (o != null) ...[
+            SellerCard(
+              tone: SellerCardTone.sunken,
+              child: Row(children: [
+                const SellerIconTile(icon: SellerIcons.orders),
+                const SizedBox(width: SellerSpace.s12),
+                Expanded(
+                  child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
+                    Text(l10n.orderNumberTitle(o.orderNumber), style: text.titleSmall),
+                    Text(o.deliveryAddress.name.isEmpty ? l10n.ordersCustomer : o.deliveryAddress.name, style: text.bodyMedium),
+                  ]),
                 ),
-              ),
-              TextField(
-                controller: _note,
-                maxLength: _maxNote,
-                maxLines: 2,
-                decoration: InputDecoration(labelText: l10n.reasonNoteLabel),
-              ),
-              const SizedBox(height: WsSpace.s8),
-              SaInfoBanner(
-                variant: SaBannerVariant.warning,
-                message: widget.prepaid ? l10n.rejectConsequencePrepaid : l10n.rejectConsequence,
-              ),
-              const SizedBox(height: WsSpace.s16),
-              FilledButton(
-                style: FilledButton.styleFrom(backgroundColor: t.errorFg, foregroundColor: t.surface),
-                onPressed: _reason == null
-                    ? null
-                    : () => Navigator.of(context).pop(OrderReasonChoice(_reason!, _note.text.trim())),
-                child: Text(widget.isCancel ? l10n.cancelOrderCta : l10n.rejectOrderCta),
-              ),
-              const SizedBox(height: WsSpace.s8),
-              SaLoadingButton(
-                text: l10n.keepOrder,
-                variant: SaButtonVariant.outlined,
-                onPressed: () => Navigator.of(context).pop(),
-              ),
-            ],
+                Column(crossAxisAlignment: CrossAxisAlignment.end, children: [
+                  Text(SellerFormat.money(o.total), style: text.titleSmall!.tabular),
+                  Text(isPrepaid(o) ? l10n.ordersPrepaid : l10n.ordersCod, style: text.bodyMedium),
+                ]),
+              ]),
+            ),
+            const SizedBox(height: SellerSpace.s16),
+          ],
+          Semantics(
+            container: true,
+            label: l10n.reasonPrompt,
+            child: Column(children: [
+              for (final r in kOrderReasons)
+                SellerChoiceRow<String>(
+                  value: r,
+                  groupValue: _reason,
+                  title: orderReasonLabel(l10n, r),
+                  onChanged: (v) => setState(() {
+                    _reason = v;
+                    _showError = false;
+                  }),
+                ),
+            ]),
           ),
-        ),
+          if (_showError) SellerFieldMessage(message: l10n.orderReasonRequired),
+          const SizedBox(height: SellerSpace.s12),
+          SellerTextField(label: l10n.reasonNoteLabel, controller: _note, maxLength: _maxNote, maxLines: 3, minLines: 2),
+          const SizedBox(height: SellerSpace.s12),
+          SellerBanner(
+            tone: SellerTone.danger,
+            message: widget.prepaid ? l10n.rejectConsequencePrepaid : l10n.rejectConsequence,
+          ),
+        ],
       ),
+      footer: SellerButtonBar(children: [
+        SellerButton.secondary(label: l10n.keepOrder, onPressed: () => Navigator.of(context).pop()),
+        SellerButton.danger(label: widget.isCancel ? l10n.cancelOrderCta : l10n.rejectOrderCta, onPressed: _confirm),
+      ]),
     );
   }
 }

@@ -1,9 +1,9 @@
 import 'dart:io';
 
-import 'package:agrimore_ui/agrimore_ui.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_localizations/flutter_localizations.dart';
 import 'package:flutter_test/flutter_test.dart';
+import 'package:seller/design_system/design_system.dart';
 import 'package:seller/l10n/app_localizations.dart';
 import 'package:seller/screens/orders/invoice_screen.dart';
 import 'package:seller/screens/orders/widgets/order_invoice_card.dart';
@@ -29,7 +29,7 @@ Map<String, dynamic> _invoice({required bool tax}) => {
 Future<AppLocalizations> _pump(WidgetTester tester, Map<String, dynamic> data, {Brightness b = Brightness.light}) async {
   late AppLocalizations l10n;
   await tester.pumpWidget(MaterialApp(
-    theme: WorkspaceTheme.build(WorkspaceBrand.seller, b),
+    theme: b == Brightness.dark ? SellerTheme.dark : SellerTheme.light,
     localizationsDelegates: const [
       AppLocalizations.delegate,
       GlobalMaterialLocalizations.delegate,
@@ -55,7 +55,7 @@ void main() {
     expect(find.text(l10n.invoiceCgst), findsOneWidget);
     expect(find.text(l10n.invoiceSgst), findsOneWidget);
     expect(find.text(l10n.invoiceIgst), findsNothing);
-    expect(find.text(AgFormat.rupees(230)), findsOneWidget);
+    expect(find.text(SellerFormat.money(230)), findsOneWidget);
     expect(tester.takeException(), isNull);
   });
 

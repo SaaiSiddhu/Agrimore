@@ -241,6 +241,7 @@ abstract final class SellerAppBar {
     Widget? status,
     PreferredSizeWidget? bottom,
     bool centerTitle = false,
+    bool showBack = true,
   }) {
     final text = context.text;
     final l10n = AppLocalizations.of(context);
@@ -249,13 +250,17 @@ abstract final class SellerAppBar {
     return AppBar(
       toolbarHeight: height,
       centerTitle: centerTitle,
-      leading: Builder(
-        builder: (ctx) => IconButton(
-          tooltip: close ? l10n.dsClose : l10n.back,
-          icon: Icon(close ? SellerIcons.close : SellerIcons.back),
-          onPressed: onBack ?? () => Navigator.of(ctx).maybePop(),
-        ),
-      ),
+      automaticallyImplyLeading: false,
+      titleSpacing: showBack ? null : SellerSpace.pageWide,
+      leading: showBack
+          ? Builder(
+              builder: (ctx) => IconButton(
+                tooltip: close ? l10n.dsClose : l10n.back,
+                icon: Icon(close ? SellerIcons.close : SellerIcons.back),
+                onPressed: onBack ?? () => Navigator.of(ctx).maybePop(),
+              ),
+            )
+          : null,
       title: Row(
         mainAxisSize: centerTitle ? MainAxisSize.min : MainAxisSize.max,
         children: [

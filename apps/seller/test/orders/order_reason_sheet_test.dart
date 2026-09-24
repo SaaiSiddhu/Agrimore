@@ -1,7 +1,7 @@
-import 'package:agrimore_ui/agrimore_ui.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_localizations/flutter_localizations.dart';
 import 'package:flutter_test/flutter_test.dart';
+import 'package:seller/design_system/design_system.dart';
 import 'package:seller/l10n/app_localizations.dart';
 import 'package:seller/screens/orders/widgets/order_reason_sheet.dart';
 
@@ -16,7 +16,7 @@ void main() {
     result = null;
     closed = false;
     await tester.pumpWidget(MaterialApp(
-      theme: WorkspaceTheme.build(WorkspaceBrand.seller, Brightness.light),
+      theme: SellerTheme.light,
       localizationsDelegates: const [
         AppLocalizations.delegate,
         GlobalMaterialLocalizations.delegate,
@@ -45,11 +45,16 @@ void main() {
     await open(tester, isCancel: false, prepaid: false);
     expect(find.text(l10n.rejectOrderTitle), findsOneWidget);
     final confirm = find.widgetWithText(FilledButton, l10n.rejectOrderCta);
-    expect(tester.widget<FilledButton>(confirm).onPressed, isNull);
+    // Without a reason the sheet stays open and says why (board 17-06).
+    await tester.ensureVisible(confirm);
+    await tester.tap(confirm);
+    await tester.pump();
+    expect(closed, isFalse);
+    expect(find.text(l10n.orderReasonRequired), findsOneWidget);
 
     await tester.tap(find.text(l10n.reasonOutOfStock));
     await tester.pump();
-    expect(tester.widget<FilledButton>(confirm).onPressed, isNotNull);
+    expect(find.text(l10n.orderReasonRequired), findsNothing);
 
     await tester.enterText(find.byType(TextField), 'Tomatoes finished');
     await tester.ensureVisible(confirm);

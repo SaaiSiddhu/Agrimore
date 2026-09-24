@@ -1674,5 +1674,86 @@
     }
   },
   "homeAttentionToday": "Here's what needs your attention today.",
-  "homePaidTo": "Opens Payments"
+  "homePaidTo": "Opens Payments",
+  "orderGuideToAccept": "Waiting for your action",
+  "orderGuideToPack": "Prepare items for packing",
+  "orderGuidePacking": "Items are being packed",
+  "orderGuideReady": "Awaiting pickup",
+  "orderGuideOut": "Delivery in progress",
+  "orderGuideDelivered": "Order complete",
+  "orderGuideCancelled": "Order was cancelled",
+  "orderNoNote": "No note from buyer",
+  "orderPhoneLabel": "Business phone",
+  "orderCallHint": "Opens phone app",
+  "orderMessageHint": "Opens SMS app",
+  "orderItemsHeader": "Items ({count})",
+  "@orderItemsHeader": {
+    "placeholders": {
+      "count": {
+        "type": "int"
+      }
+    }
+  },
+  "orderItemsReadOnly": "Ordered options and quantities stay read-only.",
+  "orderLineQty": "{qty} × {price}",
+  "@orderLineQty": {
+    "placeholders": {
+      "qty": {
+        "type": "String"
+      },
+      "price": {
+        "type": "String"
+      }
+    }
+  },
+  "orderTotalSeparate": "Buyer order total is separate from your settlement.",
+  "orderPrepaidDetail": "Paid by customer online",
+  "orderCodDetail": "Customer pays on delivery",
+  "orderCardSummary": "{items} · {payment}",
+  "@orderCardSummary": {
+    "placeholders": {
+      "items": {
+        "type": "String"
+      },
+      "payment": {
+        "type": "String"
+      }
+    }
+  },
+  "orderNumberTitle": "Order #{number}",
+  "@orderNumberTitle": {
+    "placeholders": {
+      "number": {
+        "type": "String"
+      }
+    }
+  },
+  "orderReasonRequired": "Choose a reason to continue.",
+  "orderSelectPrompt": "Select an order to see its details.",
+  "orderPlacedAt": "Placed {time}",
+  "@orderPlacedAt": {
+    "placeholders": {
+      "time": {
+        "type": "String"
+      }
+    }
+  },
+  "orderMessageBody": "About your AgriMore order {number}",
+  "@orderMessageBody": {
+    "placeholders": {
+      "number": {
+        "type": "String"
+      }
+    }
+  },
+  "invoiceGeneratePrompt": "Generate an invoice for this order.",
+  "invoiceNumberCopied": "Invoice number copied",
+  "orderNumberShort": "#{number}",
+  "@orderNumberShort": {
+    "placeholders": {
+      "number": {
+        "type": "String"
+      }
+    }
+  }
 }

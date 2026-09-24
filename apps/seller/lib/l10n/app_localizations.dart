@@ -5103,6 +5103,162 @@ abstract class AppLocalizations {
   /// In en, this message translates to:
   /// **'Opens Payments'**
   String get homePaidTo;
+
+  /// No description provided for @orderGuideToAccept.
+  ///
+  /// In en, this message translates to:
+  /// **'Waiting for your action'**
+  String get orderGuideToAccept;
+
+  /// No description provided for @orderGuideToPack.
+  ///
+  /// In en, this message translates to:
+  /// **'Prepare items for packing'**
+  String get orderGuideToPack;
+
+  /// No description provided for @orderGuidePacking.
+  ///
+  /// In en, this message translates to:
+  /// **'Items are being packed'**
+  String get orderGuidePacking;
+
+  /// No description provided for @orderGuideReady.
+  ///
+  /// In en, this message translates to:
+  /// **'Awaiting pickup'**
+  String get orderGuideReady;
+
+  /// No description provided for @orderGuideOut.
+  ///
+  /// In en, this message translates to:
+  /// **'Delivery in progress'**
+  String get orderGuideOut;
+
+  /// No description provided for @orderGuideDelivered.
+  ///
+  /// In en, this message translates to:
+  /// **'Order complete'**
+  String get orderGuideDelivered;
+
+  /// No description provided for @orderGuideCancelled.
+  ///
+  /// In en, this message translates to:
+  /// **'Order was cancelled'**
+  String get orderGuideCancelled;
+
+  /// No description provided for @orderNoNote.
+  ///
+  /// In en, this message translates to:
+  /// **'No note from buyer'**
+  String get orderNoNote;
+
+  /// No description provided for @orderPhoneLabel.
+  ///
+  /// In en, this message translates to:
+  /// **'Business phone'**
+  String get orderPhoneLabel;
+
+  /// No description provided for @orderCallHint.
+  ///
+  /// In en, this message translates to:
+  /// **'Opens phone app'**
+  String get orderCallHint;
+
+  /// No description provided for @orderMessageHint.
+  ///
+  /// In en, this message translates to:
+  /// **'Opens SMS app'**
+  String get orderMessageHint;
+
+  /// No description provided for @orderItemsHeader.
+  ///
+  /// In en, this message translates to:
+  /// **'Items ({count})'**
+  String orderItemsHeader(int count);
+
+  /// No description provided for @orderItemsReadOnly.
+  ///
+  /// In en, this message translates to:
+  /// **'Ordered options and quantities stay read-only.'**
+  String get orderItemsReadOnly;
+
+  /// No description provided for @orderLineQty.
+  ///
+  /// In en, this message translates to:
+  /// **'{qty} × {price}'**
+  String orderLineQty(String qty, String price);
+
+  /// No description provided for @orderTotalSeparate.
+  ///
+  /// In en, this message translates to:
+  /// **'Buyer order total is separate from your settlement.'**
+  String get orderTotalSeparate;
+
+  /// No description provided for @orderPrepaidDetail.
+  ///
+  /// In en, this message translates to:
+  /// **'Paid by customer online'**
+  String get orderPrepaidDetail;
+
+  /// No description provided for @orderCodDetail.
+  ///
+  /// In en, this message translates to:
+  /// **'Customer pays on delivery'**
+  String get orderCodDetail;
+
+  /// No description provided for @orderCardSummary.
+  ///
+  /// In en, this message translates to:
+  /// **'{items} · {payment}'**
+  String orderCardSummary(String items, String payment);
+
+  /// No description provided for @orderNumberTitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Order #{number}'**
+  String orderNumberTitle(String number);
+
+  /// No description provided for @orderReasonRequired.
+  ///
+  /// In en, this message translates to:
+  /// **'Choose a reason to continue.'**
+  String get orderReasonRequired;
+
+  /// No description provided for @orderSelectPrompt.
+  ///
+  /// In en, this message translates to:
+  /// **'Select an order to see its details.'**
+  String get orderSelectPrompt;
+
+  /// No description provided for @orderPlacedAt.
+  ///
+  /// In en, this message translates to:
+  /// **'Placed {time}'**
+  String orderPlacedAt(String time);
+
+  /// No description provided for @orderMessageBody.
+  ///
+  /// In en, this message translates to:
+  /// **'About your AgriMore order {number}'**
+  String orderMessageBody(String number);
+
+  /// No description provided for @invoiceGeneratePrompt.
+  ///
+  /// In en, this message translates to:
+  /// **'Generate an invoice for this order.'**
+  String get invoiceGeneratePrompt;
+
+  /// No description provided for @invoiceNumberCopied.
+  ///
+  /// In en, this message translates to:
+  /// **'Invoice number copied'**
+  String get invoiceNumberCopied;
+
+  /// No description provided for @orderNumberShort.
+  ///
+  /// In en, this message translates to:
+  /// **'#{number}'**
+  String orderNumberShort(String number);
 }
 
 class _AppLocalizationsDelegate

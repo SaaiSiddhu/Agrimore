@@ -2960,4 +2960,98 @@ class AppLocalizationsEn extends AppLocalizations {
 
   @override
   String get homePaidTo => 'Opens Payments';
+
+  @override
+  String get orderGuideToAccept => 'Waiting for your action';
+
+  @override
+  String get orderGuideToPack => 'Prepare items for packing';
+
+  @override
+  String get orderGuidePacking => 'Items are being packed';
+
+  @override
+  String get orderGuideReady => 'Awaiting pickup';
+
+  @override
+  String get orderGuideOut => 'Delivery in progress';
+
+  @override
+  String get orderGuideDelivered => 'Order complete';
+
+  @override
+  String get orderGuideCancelled => 'Order was cancelled';
+
+  @override
+  String get orderNoNote => 'No note from buyer';
+
+  @override
+  String get orderPhoneLabel => 'Business phone';
+
+  @override
+  String get orderCallHint => 'Opens phone app';
+
+  @override
+  String get orderMessageHint => 'Opens SMS app';
+
+  @override
+  String orderItemsHeader(int count) {
+    return 'Items ($count)';
+  }
+
+  @override
+  String get orderItemsReadOnly =>
+      'Ordered options and quantities stay read-only.';
+
+  @override
+  String orderLineQty(String qty, String price) {
+    return '$qty × $price';
+  }
+
+  @override
+  String get orderTotalSeparate =>
+      'Buyer order total is separate from your settlement.';
+
+  @override
+  String get orderPrepaidDetail => 'Paid by customer online';
+
+  @override
+  String get orderCodDetail => 'Customer pays on delivery';
+
+  @override
+  String orderCardSummary(String items, String payment) {
+    return '$items · $payment';
+  }
+
+  @override
+  String orderNumberTitle(String number) {
+    return 'Order #$number';
+  }
+
+  @override
+  String get orderReasonRequired => 'Choose a reason to continue.';
+
+  @override
+  String get orderSelectPrompt => 'Select an order to see its details.';
+
+  @override
+  String orderPlacedAt(String time) {
+    return 'Placed $time';
+  }
+
+  @override
+  String orderMessageBody(String number) {
+    return 'About your AgriMore order $number';
+  }
+
+  @override
+  String get invoiceGeneratePrompt => 'Generate an invoice for this order.';
+
+  @override
+  String get invoiceNumberCopied => 'Invoice number copied';
+
+  @override
+  String orderNumberShort(String number) {
+    return '#$number';
+  }
 }

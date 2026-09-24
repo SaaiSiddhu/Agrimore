@@ -1,8 +1,9 @@
-import 'package:agrimore_ui/agrimore_ui.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:cloud_functions/cloud_functions.dart';
 import 'package:flutter/material.dart';
+import 'package:flutter/services.dart';
 
+import '../../../design_system/design_system.dart';
 import '../../../l10n/app_localizations.dart';
 import '../invoice_screen.dart';
 
@@ -91,44 +92,62 @@ class _OrderInvoiceCardState extends State<OrderInvoiceCard> {
     Navigator.of(context).push(MaterialPageRoute<void>(builder: (_) => InvoiceScreen(invoiceId: id)));
   }
 
+  Future<void> _copy() async {
+    final number = _invoiceNumber;
+    if (number == null) return;
+    await Clipboard.setData(ClipboardData(text: number));
+    if (mounted) SellerToast.show(context, AppLocalizations.of(context).invoiceNumberCopied, tone: SellerToastTone.success);
+  }
+
+  /// Board 17-07: before — "Invoice / Generate an invoice for this order."
+  /// [Generate invoice]; after — the number with a copy button and
+  /// [View invoice].
   @override
   Widget build(BuildContext context) {
     final l10n = AppLocalizations.of(context);
-    final text = context.wsText;
+    final text = context.text;
     final issued = _invoiceId != null;
     if (!issued && !kInvoiceableStatuses.contains(widget.orderStatus.toLowerCase())) {
       return const SizedBox.shrink();
     }
-    return Card(
-      child: Padding(
-        padding: const EdgeInsets.all(WsSpace.s16),
-        child: Column(
-          crossAxisAlignment: CrossAxisAlignment.stretch,
-          children: [
-            Row(
-              children: [
-                const Icon(AgIcons.invoice, size: WsIconSize.control),
-                const SizedBox(width: WsSpace.s8),
-                Expanded(child: Text(l10n.invoiceTitle, style: text.titleSmall)),
-                if (issued && _invoiceNumber != null)
-                  Text(_invoiceNumber!, style: text.bodySmall!.copyWith(fontFeatures: WsType.tabularFigures)),
-              ],
-            ),
-            if (_failed) ...[
-              const SizedBox(height: WsSpace.s8),
-              SaInfoBanner(variant: SaBannerVariant.error, message: l10n.invoiceIssueFailed),
+    return SellerCard(
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.stretch,
+        children: [
+          Row(
+            children: [
+              const SellerIconTile(icon: SellerIcons.invoice),
+              const SizedBox(width: SellerSpace.s12),
+              Expanded(
+                child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
+                  Text(l10n.invoiceTitle, style: text.titleSmall),
+                  if (issued && _invoiceNumber != null)
+                    Text(_invoiceNumber!, style: text.bodyLarge!.tabular)
+                  else if (!issued)
+                    Text(l10n.invoiceGeneratePrompt, style: text.bodyMedium),
+                ]),
+              ),
+              if (issued && _invoiceNumber != null)
+                SellerIconButton(icon: SellerIcons.copy, label: l10n.copyInvoiceNumber, onPressed: _copy),
             ],
-            const SizedBox(height: WsSpace.s12),
-            SaLoadingButton(
-              text: issued ? l10n.viewInvoice : l10n.generateInvoice,
-              loadingText: l10n.generatingInvoice,
-              variant: issued ? SaButtonVariant.outlined : SaButtonVariant.primary,
-              icon: issued ? AgIcons.document : AgIcons.invoice,
-              isLoading: _busy,
-              onPressed: _busy ? null : (issued ? _open : _issue),
-            ),
+          ),
+          if (_failed) ...[
+            const SizedBox(height: SellerSpace.s8),
+            SellerBanner(tone: SellerTone.danger, message: l10n.invoiceIssueFailed),
           ],
-        ),
+          const SizedBox(height: SellerSpace.s12),
+          if (issued)
+            SellerButton(label: l10n.viewInvoice, icon: SellerIcons.document, expand: true, onPressed: _open)
+          else
+            SellerButton.secondary(
+              label: l10n.generateInvoice,
+              icon: SellerIcons.invoice,
+              expand: true,
+              loading: _busy,
+              loadingLabel: l10n.generatingInvoice,
+              onPressed: _issue,
+            ),
+        ],
       ),
     );
   }

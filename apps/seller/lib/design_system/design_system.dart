@@ -17,6 +17,7 @@ export 'components/seller_media.dart';
 export 'components/seller_metrics.dart';
 export 'components/seller_nav.dart';
 export 'components/seller_otp.dart';
+export 'components/seller_search.dart';
 export 'components/seller_states.dart';
 export 'components/seller_timeline.dart';
 export 'format/seller_format.dart';
