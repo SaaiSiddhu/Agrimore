@@ -1101,4 +1101,433 @@ class AppLocalizationsEn extends AppLocalizations {
   @override
   String get offerRingPromptBody =>
       'Allow full-screen alerts so a new delivery order rings and shows even when your phone is locked. You can change this later in Settings.';
+
+  @override
+  String offerSummaryPay(String amount) {
+    return 'Earn ~$amount';
+  }
+
+  @override
+  String get offerSummaryNearby => 'Pickup nearby';
+
+  @override
+  String offerSummaryDistance(String km) {
+    return 'Pickup $km km away';
+  }
+
+  @override
+  String offerSummaryItems(int count) {
+    String _temp0 = intl.Intl.pluralLogic(
+      count,
+      locale: localeName,
+      other: '$count items',
+      one: '1 item',
+    );
+    return '$_temp0';
+  }
+
+  @override
+  String offerSummaryCollect(String amount) {
+    return 'Collect $amount';
+  }
+
+  @override
+  String get offerRefusalTaken => 'Another delivery partner took this order.';
+
+  @override
+  String get offerRefusalExpired => 'This offer has expired.';
+
+  @override
+  String get offerRefusalBusy =>
+      'Finish your current delivery before taking another.';
+
+  @override
+  String get offerRefusalNotEligible =>
+      'Your account cannot take orders right now.';
+
+  @override
+  String get offerRefusalNoOffer => 'This order is no longer offered to you.';
+
+  @override
+  String get offerRefusalOffline => 'Go online to accept orders.';
+
+  @override
+  String get offerRefusalCashLimit =>
+      'Deposit the cash you hold with Agrimore before taking cash orders.';
+
+  @override
+  String get offerRefusalSignIn => 'Please sign in again.';
+
+  @override
+  String get offerRefusalFailed =>
+      'Could not update this offer. Please try again.';
+
+  @override
+  String distanceMeters(int meters) {
+    return '$meters m';
+  }
+
+  @override
+  String distanceKm(String km) {
+    return '$km km';
+  }
+
+  @override
+  String stepFarStore(String distance, String action) {
+    return 'You\'re $distance from the store. $action anyway? The delivery team will be told.';
+  }
+
+  @override
+  String stepFarCustomer(String distance, String action) {
+    return 'You\'re $distance from the customer\'s address. $action anyway? The delivery team will be told.';
+  }
+
+  @override
+  String get stepActionArrived => 'Mark arrived';
+
+  @override
+  String get stepActionPickedUp => 'Mark picked up';
+
+  @override
+  String get stepActionComplete => 'Complete the delivery';
+
+  @override
+  String get stepErrBadTransition =>
+      'This step is not possible right now — the order may have changed. Go back and open it again.';
+
+  @override
+  String get stepErrNotAssigned => 'This order is no longer assigned to you.';
+
+  @override
+  String get stepErrAfterPickup =>
+      'The order is already picked up, so it can no longer be released. Contact support if there is a problem.';
+
+  @override
+  String get stepErrNotFound => 'This order could not be found.';
+
+  @override
+  String get stepErrNetwork =>
+      'No internet connection. Check your network and try again.';
+
+  @override
+  String get stepErrSession =>
+      'Your session has expired. Please sign in again.';
+
+  @override
+  String get stepErrUpdate => 'Could not update the order. Please try again.';
+
+  @override
+  String get stepErrRelease => 'Could not release the order. Please try again.';
+
+  @override
+  String get incidentErrTooMany =>
+      'Too many reports in a few minutes. Call 112 or Agrimore support.';
+
+  @override
+  String get incidentErrNotRider =>
+      'This account cannot report here. Call 112 or Agrimore support.';
+
+  @override
+  String get incidentErrNetwork =>
+      'No connection — the report didn\'t go through. Try again, or call 112.';
+
+  @override
+  String get incidentErrSignedOut =>
+      'You are signed out. Call 112 or Agrimore support.';
+
+  @override
+  String get incidentErrFailed =>
+      'The report didn\'t go through. Try again, or call 112.';
+
+  @override
+  String get incidentStatusClosed => 'Closed by the Agrimore team';
+
+  @override
+  String get incidentStatusNoNote => 'No note was added.';
+
+  @override
+  String get incidentStatusSeen => 'Seen by the Agrimore team';
+
+  @override
+  String get incidentStatusSeenDetail =>
+      'A person on the team has opened your report. If you are in danger, call 112.';
+
+  @override
+  String get incidentStatusRecorded => 'Report recorded';
+
+  @override
+  String get incidentStatusRecordedDetail =>
+      'Nobody on the Agrimore team may have seen it yet. If you are in danger, call 112 now.';
+
+  @override
+  String get emergencyTitle => 'Emergency help';
+
+  @override
+  String emergencyIntro(String number) {
+    return 'If you or someone else is in danger, call $number now. This app does not alert the police or Agrimore by itself.';
+  }
+
+  @override
+  String emergencyCall(String number) {
+    return 'Call $number (emergency)';
+  }
+
+  @override
+  String get emergencyCallSupport => 'Call Agrimore support';
+
+  @override
+  String emergencyDialFailed(String number) {
+    return 'Couldn\'t open the phone app. Dial $number directly.';
+  }
+
+  @override
+  String get incidentReportAction => 'Tell the Agrimore team';
+
+  @override
+  String get incidentReportSending => 'Recording your report…';
+
+  @override
+  String get incidentReportHint =>
+      'Records a report for the Agrimore team with your current order and, if the phone has it, your position. It does not call anyone.';
+
+  @override
+  String offerOrderNumber(String number) {
+    return 'Order #$number';
+  }
+
+  @override
+  String get offerSeconds => 'seconds';
+
+  @override
+  String get offerEarnLabel => 'You earn';
+
+  @override
+  String offerEarnValue(String amount) {
+    return '~$amount (final pay adds waiting time)';
+  }
+
+  @override
+  String get offerPaymentLabel => 'Payment';
+
+  @override
+  String offerPaymentCod(String amount) {
+    return 'Collect $amount in cash';
+  }
+
+  @override
+  String get offerPaymentPrepaid => 'Prepaid — nothing to collect';
+
+  @override
+  String get offerPickupLabel => 'Pickup';
+
+  @override
+  String get offerPickupNearby => 'Nearby';
+
+  @override
+  String offerPickupKm(String km) {
+    return '$km km away';
+  }
+
+  @override
+  String get offerDropLabel => 'Drop';
+
+  @override
+  String offerDropKm(String km) {
+    return '$km km from pickup';
+  }
+
+  @override
+  String offerDropPin(String pincode) {
+    return 'PIN $pincode';
+  }
+
+  @override
+  String get offerDropHidden => 'Shown after you accept';
+
+  @override
+  String get offerItemsLabel => 'Items';
+
+  @override
+  String get offerAccept => 'Accept order';
+
+  @override
+  String get offerDecline => 'Decline';
+
+  @override
+  String get offerExpired => 'The offer expired.';
+
+  @override
+  String get offerGone => 'This order is no longer available.';
+
+  @override
+  String get offerAcceptedOpenDashboard =>
+      'Order accepted. Open it from your dashboard.';
+
+  @override
+  String get activeCallCustomer => 'Call customer';
+
+  @override
+  String get activeCall => 'Call';
+
+  @override
+  String get activeNavigate => 'Navigate';
+
+  @override
+  String get activeSectionCustomer => 'Customer';
+
+  @override
+  String get activeSectionAddress => 'Delivery address';
+
+  @override
+  String activeSectionItems(int count) {
+    return 'Items ($count)';
+  }
+
+  @override
+  String activeItemQuantity(int quantity) {
+    return 'x$quantity';
+  }
+
+  @override
+  String get activeSectionPayment => 'Payment';
+
+  @override
+  String get activePaymentCod => 'Cash on delivery';
+
+  @override
+  String get activePaymentPrepaid => 'Prepaid';
+
+  @override
+  String get activeSectionProgress => 'Delivery progress';
+
+  @override
+  String get activeStepAccepted => 'Accepted';
+
+  @override
+  String get activeStepArrived => 'Arrived at the store';
+
+  @override
+  String get activeStepPickedUp => 'Picked up';
+
+  @override
+  String get activeStepOutForDelivery => 'Out for delivery';
+
+  @override
+  String get activeStepDelivered => 'Delivered';
+
+  @override
+  String get activeActionArrived => 'Arrived at store';
+
+  @override
+  String get activeActionPickedUp => 'Picked up';
+
+  @override
+  String get activeActionStart => 'Start delivery';
+
+  @override
+  String get activeActionComplete => 'Complete delivery';
+
+  @override
+  String activeStepDone(String step) {
+    return 'Done: $step';
+  }
+
+  @override
+  String get activeProofTitle => 'Proof of delivery (optional)';
+
+  @override
+  String get activeProofTake => 'Tap to take a delivery photo';
+
+  @override
+  String get activeProofRetake => 'Retake';
+
+  @override
+  String get activeProofRemove => 'Remove';
+
+  @override
+  String get activeSellerNotReady => 'Seller not ready';
+
+  @override
+  String get activeSellerNotReadyTitle => 'Seller not ready?';
+
+  @override
+  String get activeSellerNotReadyBody =>
+      'This releases the order back to the pickup queue and tells the team.';
+
+  @override
+  String get activeSellerNotReadyConfirm => 'Release order';
+
+  @override
+  String get activeSellerNotReadyWait => 'Wait';
+
+  @override
+  String get activeReleased => 'Order released for reassignment';
+
+  @override
+  String get activeFarTitle => 'Are you there?';
+
+  @override
+  String get activeFarNotYet => 'Not yet';
+
+  @override
+  String get verifyTitle => 'Verify delivery';
+
+  @override
+  String get verifyHint => 'Ask the customer for their 6-digit delivery code.';
+
+  @override
+  String verifyDigit(int index) {
+    return 'Digit $index of 6';
+  }
+
+  @override
+  String get verifyIncomplete => 'Enter the full 6-digit code';
+
+  @override
+  String get verifySubmit => 'Verify & complete';
+
+  @override
+  String get verifySubmitting => 'Verifying…';
+
+  @override
+  String get deliverWrongCode => 'Incorrect code. Please try again.';
+
+  @override
+  String get deliverNotActive =>
+      'This order is no longer active and cannot be marked delivered.';
+
+  @override
+  String get deliverNoVerification =>
+      'Verification is not available for this order. Please contact support.';
+
+  @override
+  String deliverLocked(int minutes) {
+    String _temp0 = intl.Intl.pluralLogic(
+      minutes,
+      locale: localeName,
+      other:
+          'Too many incorrect codes. Check the code with the customer and try again in $minutes min.',
+      one:
+          'Too many incorrect codes. Check the code with the customer and try again in 1 min.',
+    );
+    return '$_temp0';
+  }
+
+  @override
+  String get deliverFailed => 'Could not confirm delivery. Please try again.';
+
+  @override
+  String get deliverNotCompletedFar =>
+      'Delivery not completed. Enter the code when you are with the customer.';
+
+  @override
+  String get deliveredTitle => 'Delivery complete';
+
+  @override
+  String deliveredBody(String number) {
+    return 'Order #$number has been delivered.';
+  }
+
+  @override
+  String get deliveredBack => 'Back to dashboard';
 }

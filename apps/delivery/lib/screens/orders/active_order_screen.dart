@@ -1,29 +1,90 @@
 // lib/screens/orders/active_order_screen.dart
-import '../../delivery/delivery_problems.dart';
-import '../../l10n/app_localizations.dart';
-import 'delivery_problem_panel.dart';
+//
+// The rider's order from acceptance to delivery: progress, a problem report
+// after pickup (DLV-E1), the route (DLV-3B), the customer and the steps. Every
+// step goes through a callable with where the rider is (DLV-3C); delivery is
+// confirmed by the customer's code on the server (FIX-5) — this client never
+// sees the expected code. DLV-P1: Workspace tokens and kit, lib/l10n strings.
 import 'dart:io';
-import 'package:flutter/material.dart';
-import 'package:flutter/services.dart';
-import 'package:provider/provider.dart';
-import 'package:url_launcher/url_launcher.dart';
-import 'package:image_picker/image_picker.dart';
-import 'package:cloud_functions/cloud_functions.dart';
+
 import 'package:agrimore_core/agrimore_core.dart';
 import 'package:agrimore_ui/agrimore_ui.dart';
-import '../../providers/order_provider.dart';
-import '../../navigation/rider_navigation.dart';
-import 'widgets/rider_route_card.dart';
-import '../../delivery/rider_steps.dart';
+import 'package:cloud_functions/cloud_functions.dart';
+import 'package:flutter/material.dart';
+import 'package:flutter/services.dart';
+import 'package:image_picker/image_picker.dart';
+import 'package:provider/provider.dart';
+import 'package:url_launcher/url_launcher.dart';
 
-/// Delivery workflow states — each maps to a Firestore orderStatus
+import '../../delivery/delivery_problems.dart';
+import '../../delivery/rider_steps.dart';
+import '../../l10n/app_localizations.dart';
+import '../../navigation/rider_navigation.dart';
+import '../../providers/order_provider.dart';
+import 'delivery_problem_panel.dart';
+import 'widgets/rider_route_card.dart';
+
+/// Delivery workflow states — each maps to a Firestore orderStatus.
 enum DeliveryStep {
   accepted, // "delivery_accepted"
   arrivedAtStore, // "arrived_at_store"
   pickedUp, // "picked_up"
   outForDelivery, // "out_for_delivery"
-  delivered, // "delivered" (requires verification code)
+  delivered, // "delivered" (requires the customer's code)
 }
+
+/// DLV-E1: through the shared status helper — this screen's own list missed
+/// the `outForDelivery` spelling and showed such an order as just accepted.
+DeliveryStep deliveryStepOf(String status) =>
+    switch (DeliveryTaskStatus.fromOrderStatus(orderStatus: status, status: null, hasPartner: true)) {
+      DeliveryTaskStatus.atPickup => DeliveryStep.arrivedAtStore,
+      DeliveryTaskStatus.pickedUp => DeliveryStep.pickedUp,
+      DeliveryTaskStatus.enRoute || DeliveryTaskStatus.atDrop || DeliveryTaskStatus.failedAttempt =>
+        DeliveryStep.outForDelivery,
+      DeliveryTaskStatus.delivered => DeliveryStep.delivered,
+      _ => DeliveryStep.accepted,
+    };
+
+String _statusOf(DeliveryStep step) => switch (step) {
+      DeliveryStep.accepted => 'delivery_accepted',
+      DeliveryStep.arrivedAtStore => 'arrived_at_store',
+      DeliveryStep.pickedUp => 'picked_up',
+      DeliveryStep.outForDelivery => 'out_for_delivery',
+      DeliveryStep.delivered => 'delivered',
+    };
+
+/// Same rule as the server (functions/src/seller/sellerTransitionOrder.ts
+/// isCashOnDelivery): what the rider collects depends on it.
+bool isCashOnDeliveryMethod(String method) {
+  final m = method.toLowerCase();
+  return m == 'cod' || m == 'cash_on_delivery' || m.contains('cash');
+}
+
+/// The timeline title of [step].
+String deliveryStepTitle(AppLocalizations l, DeliveryStep step) => switch (step) {
+      DeliveryStep.accepted => l.activeStepAccepted,
+      DeliveryStep.arrivedAtStore => l.activeStepArrived,
+      DeliveryStep.pickedUp => l.activeStepPickedUp,
+      DeliveryStep.outForDelivery => l.activeStepOutForDelivery,
+      DeliveryStep.delivered => l.activeStepDelivered,
+    };
+
+/// The button that moves the order to [next].
+String deliveryStepAction(AppLocalizations l, DeliveryStep next) => switch (next) {
+      DeliveryStep.accepted => l.activeStepAccepted,
+      DeliveryStep.arrivedAtStore => l.activeActionArrived,
+      DeliveryStep.pickedUp => l.activeActionPickedUp,
+      DeliveryStep.outForDelivery => l.activeActionStart,
+      DeliveryStep.delivered => l.activeActionComplete,
+    };
+
+IconData _stepIcon(DeliveryStep next) => switch (next) {
+      DeliveryStep.accepted => AgIcons.success,
+      DeliveryStep.arrivedAtStore => AgIcons.store,
+      DeliveryStep.pickedUp => AgIcons.packed,
+      DeliveryStep.outForDelivery => AgIcons.rider,
+      DeliveryStep.delivered => AgIcons.shieldCheck,
+    };
 
 class ActiveOrderScreen extends StatefulWidget {
   final OrderModel order;
@@ -35,229 +96,162 @@ class ActiveOrderScreen extends StatefulWidget {
 }
 
 class _ActiveOrderScreenState extends State<ActiveOrderScreen> {
-  late DeliveryStep _currentStep;
+  late DeliveryStep _currentStep = deliveryStepOf(widget.order.orderStatus);
   bool _isUpdating = false;
   File? _proofPhoto;
   final ImagePicker _picker = ImagePicker();
 
-  @override
-  void initState() {
-    super.initState();
-    _currentStep = _mapStatusToStep(widget.order.orderStatus);
-  }
-
-  // DLV-E1: through the shared status helper — this screen's own list missed
-  // the `outForDelivery` spelling and showed such an order as just accepted.
-  DeliveryStep _mapStatusToStep(String status) =>
-      switch (DeliveryTaskStatus.fromOrderStatus(orderStatus: status, status: null, hasPartner: true)) {
-        DeliveryTaskStatus.atPickup => DeliveryStep.arrivedAtStore,
-        DeliveryTaskStatus.pickedUp => DeliveryStep.pickedUp,
-        DeliveryTaskStatus.enRoute || DeliveryTaskStatus.atDrop || DeliveryTaskStatus.failedAttempt =>
-          DeliveryStep.outForDelivery,
-        DeliveryTaskStatus.delivered => DeliveryStep.delivered,
-        _ => DeliveryStep.accepted,
-      };
-
-  String _stepToStatus(DeliveryStep step) {
-    switch (step) {
-      case DeliveryStep.accepted:
-        return 'delivery_accepted';
-      case DeliveryStep.arrivedAtStore:
-        return 'arrived_at_store';
-      case DeliveryStep.pickedUp:
-        return 'picked_up';
-      case DeliveryStep.outForDelivery:
-        return 'out_for_delivery';
-      case DeliveryStep.delivered:
-        return 'delivered';
-    }
-  }
+  OrderModel get _order => widget.order;
 
   @override
   Widget build(BuildContext context) {
-    final theme = Theme.of(context);
-    final colorScheme = theme.colorScheme;
+    final l = AppLocalizations.of(context);
+    final t = context.ws;
+    final text = Theme.of(context).textTheme;
+    final address = _order.deliveryAddress;
 
     return Scaffold(
       appBar: AppBar(
-        title: Text('Order #${widget.order.orderNumber}'),
+        title: Text(l.offerOrderNumber(_order.orderNumber)),
         centerTitle: true,
         actions: [
-          IconButton(
-            tooltip: 'Call customer',
-            onPressed: _callCustomer,
-            icon: const Icon(Icons.call_rounded),
-          ),
+          IconButton(tooltip: l.activeCallCustomer, onPressed: _callCustomer, icon: const Icon(AgIcons.call)),
         ],
       ),
       body: SingleChildScrollView(
-        padding: const EdgeInsets.all(20),
+        padding: const EdgeInsets.all(WsSpace.page),
         child: Column(
-          crossAxisAlignment: CrossAxisAlignment.start,
+          crossAxisAlignment: CrossAxisAlignment.stretch,
           children: [
-            // ── Delivery Progress Stepper ──
-            _buildDeliveryStepper(colorScheme),
-            const SizedBox(height: 16),
+            _Section(
+              title: l.activeSectionProgress,
+              icon: AgIcons.delivery,
+              child: WsTimeline(steps: [
+                for (final s in DeliveryStep.values)
+                  WsTimelineStep(
+                    title: deliveryStepTitle(l, s),
+                    state: s.index < _currentStep.index
+                        ? WsTimelineState.done
+                        : s == _currentStep
+                            ? (s == DeliveryStep.delivered ? WsTimelineState.done : WsTimelineState.current)
+                            : WsTimelineState.upcoming,
+                  ),
+              ]),
+            ),
+            const SizedBox(height: WsSpace.s16),
 
             // ── Report a problem after pickup / its state (DLV-E1) ──
             if (_currentStep != DeliveryStep.delivered) ...[
-              DeliveryProblemPanel(orderId: widget.order.id),
+              DeliveryProblemPanel(orderId: _order.id),
               const SizedBox(height: WsSpace.s16),
             ],
 
             // ── Route: to the store, then to the customer (DLV-3B) ──
             if (_currentStep != DeliveryStep.delivered) ...[
               RiderRouteCard(
-                orderId: widget.order.id,
+                orderId: _order.id,
                 stepIndex: _currentStep.index,
-                customerName: widget.order.deliveryAddress.name,
-                dropFallback: widget.order.deliveryAddress.latitude != null &&
-                        widget.order.deliveryAddress.longitude != null
-                    ? DeliveryPoint(
-                        lat: widget.order.deliveryAddress.latitude!,
-                        lng: widget.order.deliveryAddress.longitude!,
-                      )
+                customerName: address.name,
+                dropFallback: address.latitude != null && address.longitude != null
+                    ? DeliveryPoint(lat: address.latitude!, lng: address.longitude!)
                     : null,
               ),
-              const SizedBox(height: 16),
+              const SizedBox(height: WsSpace.s16),
             ],
 
-            // ── Customer Info ──
-            _buildSection(
-              'Customer',
-              Icons.person_outline_rounded,
-              colorScheme,
+            _Section(
+              title: l.activeSectionCustomer,
+              icon: AgIcons.user,
               child: Column(
-                crossAxisAlignment: CrossAxisAlignment.start,
+                crossAxisAlignment: CrossAxisAlignment.stretch,
                 children: [
-                  Text(
-                    widget.order.deliveryAddress.name,
-                    style: TextStyle(
-                      fontSize: 16,
-                      fontWeight: FontWeight.w700,
-                      color: colorScheme.onSurface,
-                    ),
-                  ),
-                  if (widget.order.deliveryAddress.phone.isNotEmpty) ...[
-                    const SizedBox(height: 8),
+                  Text(address.name, style: text.titleMedium),
+                  if (address.phone.isNotEmpty) ...[
+                    const SizedBox(height: WsSpace.s8),
                     // DLV-A1: Workspace buttons are full-width (Size.fromHeight);
                     // unwrapped in a Row they failed to lay out (DLV-C1 theme).
-                    Row(
-                      children: [
-                        Expanded(
-                          child: OutlinedButton.icon(
-                            onPressed: () => _callCustomer(),
-                            icon: const Icon(Icons.call, size: 16),
-                            label: const Text('Call'),
-                          ),
+                    Row(children: [
+                      Expanded(
+                        child: OutlinedButton.icon(
+                          onPressed: _callCustomer,
+                          icon: const Icon(AgIcons.call, size: WsIconSize.supporting),
+                          label: Text(l.activeCall),
                         ),
-                        const SizedBox(width: 8),
-                        Expanded(
-                          child: OutlinedButton.icon(
-                            onPressed: () => _navigateToAddress(),
-                            icon: const Icon(Icons.navigation, size: 16),
-                            label: const Text('Navigate'),
-                          ),
+                      ),
+                      const SizedBox(width: WsSpace.s8),
+                      Expanded(
+                        child: OutlinedButton.icon(
+                          onPressed: _navigateToAddress,
+                          icon: const Icon(AgIcons.navigate, size: WsIconSize.supporting),
+                          label: Text(l.activeNavigate),
                         ),
-                      ],
-                    ),
+                      ),
+                    ]),
                   ],
                 ],
               ),
             ),
-            const SizedBox(height: 16),
+            const SizedBox(height: WsSpace.s16),
 
-            // ── Delivery Address ──
-            _buildSection(
-              'Delivery Address',
-              Icons.location_on_outlined,
-              colorScheme,
-              child: Text(
-                widget.order.deliveryAddress.fullAddress,
-                style: TextStyle(
-                  fontSize: 14,
-                  color: colorScheme.onSurface,
-                  height: 1.5,
-                ),
-              ),
+            _Section(
+              title: l.activeSectionAddress,
+              icon: AgIcons.location,
+              child: Text(address.fullAddress, style: text.bodyMedium?.copyWith(color: t.textPrimary)),
             ),
-            const SizedBox(height: 16),
+            const SizedBox(height: WsSpace.s16),
 
-            // ── Order Items ──
-            _buildSection(
-              'Items (${widget.order.items.length})',
-              Icons.shopping_bag_outlined,
-              colorScheme,
-              child: Column(
-                children: widget.order.items
-                    .map(
-                      (item) => Padding(
-                        padding: const EdgeInsets.only(bottom: 8),
-                        child: Row(
-                          children: [
-                            Expanded(
-                              child: Text(
-                                item.productName,
-                                style: const TextStyle(fontSize: 14),
-                                maxLines: 1,
-                                overflow: TextOverflow.ellipsis,
-                              ),
-                            ),
-                            Text(
-                              'x${item.quantity}',
-                              style: TextStyle(
-                                fontWeight: FontWeight.w600,
-                                color: colorScheme.primary,
-                              ),
-                            ),
-                          ],
-                        ),
+            _Section(
+              title: l.activeSectionItems(_order.items.length),
+              icon: AgIcons.orders,
+              child: Column(children: [
+                for (final item in _order.items)
+                  Padding(
+                    padding: const EdgeInsets.only(bottom: WsSpace.s8),
+                    child: Row(children: [
+                      Expanded(
+                        child: Text(item.productName,
+                            style: text.bodyMedium, maxLines: 1, overflow: TextOverflow.ellipsis),
                       ),
-                    )
-                    .toList(),
-              ),
-            ),
-            const SizedBox(height: 16),
-
-            // ── Payment Info ──
-            _buildSection(
-              'Payment',
-              Icons.payment_outlined,
-              colorScheme,
-              child: Row(
-                mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                children: [
-                  Text(
-                    widget.order.paymentMethod.toUpperCase(),
-                    style: const TextStyle(
-                      fontSize: 14,
-                      fontWeight: FontWeight.w600,
-                    ),
+                      Text(l.activeItemQuantity(item.quantity), style: text.labelLarge?.copyWith(color: t.primary)),
+                    ]),
                   ),
-                  Text(
-                    '₹${widget.order.total.toStringAsFixed(0)}',
-                    style: TextStyle(
-                      fontSize: 20,
-                      fontWeight: FontWeight.w900,
-                      color: colorScheme.primary,
-                    ),
-                  ),
-                ],
-              ),
+              ]),
             ),
-            const SizedBox(height: 16),
+            const SizedBox(height: WsSpace.s16),
 
-            // ── Proof of Delivery Photo ──
-            if (_currentStep == DeliveryStep.outForDelivery)
-              _buildProofOfDeliverySection(colorScheme),
+            _Section(
+              title: l.activeSectionPayment,
+              icon: AgIcons.rupee,
+              child: Row(children: [
+                Expanded(
+                  child: Text(
+                    isCashOnDeliveryMethod(_order.paymentMethod) ? l.activePaymentCod : l.activePaymentPrepaid,
+                    style: text.labelLarge,
+                  ),
+                ),
+                Text(AgFormat.rupees(_order.total), style: text.titleLarge?.copyWith(color: t.primary)),
+              ]),
+            ),
+            const SizedBox(height: WsSpace.s16),
 
-            const SizedBox(height: 24),
+            if (_currentStep == DeliveryStep.outForDelivery) ...[
+              _proofSection(l),
+              const SizedBox(height: WsSpace.s16),
+            ],
+            const SizedBox(height: WsSpace.s8),
 
-            // ── Action Button ──
-            _buildNextStepButton(context, colorScheme),
-            if (_canReleaseForSellerNotReady()) ...[
-              const SizedBox(height: 10),
-              _buildSellerNotReadyButton(context, colorScheme),
+            if (_currentStep != DeliveryStep.delivered) _nextStepButton(l),
+            if (_currentStep == DeliveryStep.accepted || _currentStep == DeliveryStep.arrivedAtStore) ...[
+              const SizedBox(height: WsSpace.s12),
+              OutlinedButton.icon(
+                onPressed: _isUpdating ? null : _confirmSellerNotReady,
+                style: OutlinedButton.styleFrom(
+                  foregroundColor: t.warningFg,
+                  side: BorderSide(color: t.warningFg, width: WsSize.outline),
+                ),
+                icon: const Icon(AgIcons.clock),
+                label: Text(l.activeSellerNotReady),
+              ),
             ],
           ],
         ),
@@ -265,638 +259,177 @@ class _ActiveOrderScreenState extends State<ActiveOrderScreen> {
     );
   }
 
-  // ════════════════════════════════════════════
-  // DELIVERY PROGRESS STEPPER
-  // ════════════════════════════════════════════
-  Widget _buildDeliveryStepper(ColorScheme colorScheme) {
-    final steps = [
-      _StepInfo('Accepted', Icons.check_circle_rounded),
-      _StepInfo('Arrived\nStore', Icons.store_rounded),
-      _StepInfo('Picked\nUp', Icons.inventory_2_rounded),
-      _StepInfo('Out for\nDelivery', Icons.delivery_dining_rounded),
-      _StepInfo('Delivered', Icons.done_all_rounded),
-    ];
-
-    final currentIndex = _currentStep.index;
-
-    return Container(
-      padding: const EdgeInsets.all(16),
-      decoration: BoxDecoration(
-        color: colorScheme.surfaceContainerLowest,
-        borderRadius: BorderRadius.circular(16),
-        border: Border.all(color: colorScheme.outline.withValues(alpha: 0.1)),
-      ),
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
-          Text(
-            'Delivery Progress',
-            style: TextStyle(
-              fontSize: 14,
-              fontWeight: FontWeight.w800,
-              color: colorScheme.onSurface,
-            ),
-          ),
-          const SizedBox(height: 16),
-          Row(
-            children: List.generate(steps.length * 2 - 1, (index) {
-              if (index.isOdd) {
-                // Connector line
-                final stepIndex = index ~/ 2;
-                final isCompleted = stepIndex < currentIndex;
-                return Expanded(
-                  child: Container(
-                    height: 3,
-                    decoration: BoxDecoration(
-                      color: isCompleted
-                          ? Colors.green
-                          : colorScheme.outline.withValues(alpha: 0.2),
-                      borderRadius: BorderRadius.circular(2),
-                    ),
-                  ),
-                );
-              }
-
-              // Step circle
-              final stepIndex = index ~/ 2;
-              final step = steps[stepIndex];
-              final isCompleted = stepIndex < currentIndex;
-              final isCurrent = stepIndex == currentIndex;
-
-              return Column(
-                children: [
-                  Container(
-                    width: 36,
-                    height: 36,
-                    decoration: BoxDecoration(
-                      shape: BoxShape.circle,
-                      color: isCompleted
-                          ? Colors.green
-                          : isCurrent
-                              ? colorScheme.primary
-                              : colorScheme.surfaceContainerHighest,
-                      border: isCurrent
-                          ? Border.all(color: colorScheme.primary, width: 3)
-                          : null,
-                      boxShadow: isCurrent
-                          ? [
-                              BoxShadow(
-                                color: colorScheme.primary.withValues(
-                                  alpha: 0.3,
-                                ),
-                                blurRadius: 8,
-                                spreadRadius: 2,
-                              ),
-                            ]
-                          : null,
-                    ),
-                    child: Icon(
-                      isCompleted ? Icons.check : step.icon,
-                      size: 18,
-                      color: isCompleted || isCurrent
-                          ? Colors.white
-                          : colorScheme.outline,
-                    ),
-                  ),
-                  const SizedBox(height: 6),
-                  Text(
-                    step.label,
-                    textAlign: TextAlign.center,
-                    style: TextStyle(
-                      fontSize: 9,
-                      fontWeight: isCurrent ? FontWeight.w800 : FontWeight.w500,
-                      color: isCurrent
-                          ? colorScheme.primary
-                          : isCompleted
-                              ? Colors.green
-                              : colorScheme.outline,
-                    ),
-                  ),
-                ],
-              );
-            }),
-          ),
-        ],
-      ),
-    );
-  }
-
-  // ════════════════════════════════════════════
-  // PROOF OF DELIVERY SECTION
-  // ════════════════════════════════════════════
-  Widget _buildProofOfDeliverySection(ColorScheme colorScheme) {
-    return _buildSection(
-      'Proof of Delivery (Optional)',
-      Icons.camera_alt_outlined,
-      colorScheme,
-      child: Column(
-        children: [
-          if (_proofPhoto != null) ...[
-            ClipRRect(
-              borderRadius: BorderRadius.circular(12),
-              child: Image.file(
-                _proofPhoto!,
-                height: 200,
-                width: double.infinity,
-                fit: BoxFit.cover,
+  Widget _proofSection(AppLocalizations l) {
+    final t = context.ws;
+    final text = Theme.of(context).textTheme;
+    final photo = _proofPhoto;
+    return _Section(
+      title: l.activeProofTitle,
+      icon: AgIcons.camera,
+      child: photo != null
+          ? Column(crossAxisAlignment: CrossAxisAlignment.stretch, children: [
+              ClipRRect(
+                borderRadius: BorderRadius.circular(WsRadius.card),
+                child: AspectRatio(aspectRatio: 16 / 9, child: Image.file(photo, fit: BoxFit.cover)),
               ),
-            ),
-            const SizedBox(height: 12),
-            Row(
-              children: [
+              const SizedBox(height: WsSpace.s12),
+              Row(children: [
                 Expanded(
                   child: OutlinedButton.icon(
-                    onPressed: () => _takePhoto(),
-                    icon: const Icon(Icons.refresh, size: 16),
-                    label: const Text('Retake'),
+                    onPressed: _takePhoto,
+                    icon: const Icon(AgIcons.refresh, size: WsIconSize.supporting),
+                    label: Text(l.activeProofRetake),
                   ),
                 ),
-                const SizedBox(width: 12),
+                const SizedBox(width: WsSpace.s12),
                 Expanded(
                   child: OutlinedButton.icon(
                     onPressed: () => setState(() => _proofPhoto = null),
-                    icon: const Icon(Icons.delete_outline, size: 16),
-                    label: const Text('Remove'),
-                    style: OutlinedButton.styleFrom(
-                      foregroundColor: Colors.red,
-                    ),
+                    style: OutlinedButton.styleFrom(foregroundColor: t.errorFg),
+                    icon: const Icon(AgIcons.delete, size: WsIconSize.supporting),
+                    label: Text(l.activeProofRemove),
                   ),
                 ),
-              ],
-            ),
-          ] else ...[
-            GestureDetector(
-              onTap: () => _takePhoto(),
-              child: Container(
-                height: 120,
-                width: double.infinity,
+              ]),
+            ])
+          : InkWell(
+              onTap: _takePhoto,
+              borderRadius: BorderRadius.circular(WsRadius.card),
+              child: Ink(
+                padding: const EdgeInsets.symmetric(vertical: WsSpace.s24),
                 decoration: BoxDecoration(
-                  color: colorScheme.surfaceContainerHighest.withValues(
-                    alpha: 0.5,
-                  ),
-                  borderRadius: BorderRadius.circular(12),
-                  border: Border.all(
-                    color: colorScheme.outline.withValues(alpha: 0.3),
-                    style: BorderStyle.solid,
-                  ),
+                  color: t.surfaceSunken,
+                  borderRadius: BorderRadius.circular(WsRadius.card),
+                  border: Border.all(color: t.inputBorder, width: WsSize.hairline),
                 ),
-                child: Column(
-                  mainAxisAlignment: MainAxisAlignment.center,
-                  children: [
-                    Icon(
-                      Icons.add_a_photo_rounded,
-                      size: 36,
-                      color: colorScheme.outline,
-                    ),
-                    const SizedBox(height: 8),
-                    Text(
-                      'Tap to take delivery photo',
-                      style: TextStyle(
-                        fontSize: 13,
-                        fontWeight: FontWeight.w600,
-                        color: colorScheme.outline,
-                      ),
-                    ),
-                  ],
-                ),
+                child: Column(children: [
+                  Icon(AgIcons.addPhoto, size: WsIconSize.feature, color: t.textSecondary),
+                  const SizedBox(height: WsSpace.s8),
+                  Text(l.activeProofTake, style: text.labelLarge?.copyWith(color: t.textSecondary)),
+                ]),
               ),
             ),
-          ],
-        ],
-      ),
     );
   }
 
-  // ════════════════════════════════════════════
-  // NEXT STEP ACTION BUTTON
-  // ════════════════════════════════════════════
-  Widget _buildNextStepButton(BuildContext context, ColorScheme colorScheme) {
-    if (_currentStep == DeliveryStep.delivered) {
-      return const SizedBox.shrink();
-    }
-
-    final nextStep = DeliveryStep.values[_currentStep.index + 1];
-    final buttonLabel = _getButtonLabel(nextStep);
-    final buttonColor =
-        nextStep == DeliveryStep.delivered ? Colors.green : colorScheme.primary;
-
-    return FilledButton(
-      onPressed: _isUpdating ? null : () => _handleNextStep(nextStep),
-      style: FilledButton.styleFrom(
-        minimumSize: const Size.fromHeight(52),
-        backgroundColor: buttonColor,
-        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
-      ),
-      child: _isUpdating
-          ? const SizedBox(
-              height: 24,
-              width: 24,
-              child: CircularProgressIndicator(
-                color: Colors.white,
-                strokeWidth: 2.5,
-              ),
-            )
-          : Row(
-              mainAxisAlignment: MainAxisAlignment.center,
-              children: [
-                Icon(_getButtonIcon(nextStep), size: 20),
-                const SizedBox(width: 8),
-                Text(
-                  buttonLabel,
-                  style: const TextStyle(
-                    fontSize: 16,
-                    fontWeight: FontWeight.w700,
-                  ),
-                ),
-              ],
-            ),
+  Widget _nextStepButton(AppLocalizations l) {
+    final next = DeliveryStep.values[_currentStep.index + 1];
+    return FilledButton.icon(
+      onPressed: _isUpdating ? null : () => _handleNextStep(next),
+      icon: _isUpdating
+          ? const SizedBox.square(
+              dimension: WsIconSize.control, child: CircularProgressIndicator(strokeWidth: WsSize.focusRing))
+          : Icon(_stepIcon(next)),
+      label: Text(deliveryStepAction(l, next)),
     );
   }
 
-  bool _canReleaseForSellerNotReady() {
-    return _currentStep == DeliveryStep.accepted ||
-        _currentStep == DeliveryStep.arrivedAtStore;
-  }
-
-  Widget _buildSellerNotReadyButton(
-    BuildContext context,
-    ColorScheme colorScheme,
-  ) {
-    return SizedBox(
-      width: double.infinity,
-      height: 50,
-      child: OutlinedButton.icon(
-        onPressed: _isUpdating ? null : _confirmSellerNotReady,
-        style: OutlinedButton.styleFrom(
-          foregroundColor: Colors.orange.shade800,
-          side: BorderSide(color: Colors.orange.shade700),
-          shape: RoundedRectangleBorder(
-            borderRadius: BorderRadius.circular(12),
-          ),
-        ),
-        icon: const Icon(Icons.schedule_rounded),
-        label: const Text(
-          'Seller Not Ready',
-          style: TextStyle(fontWeight: FontWeight.w800),
-        ),
-      ),
-    );
-  }
-
-  String _getButtonLabel(DeliveryStep step) {
-    switch (step) {
-      case DeliveryStep.accepted:
-        return 'Accept Order';
-      case DeliveryStep.arrivedAtStore:
-        return 'Arrived at Store';
-      case DeliveryStep.pickedUp:
-        return 'Picked Up';
-      case DeliveryStep.outForDelivery:
-        return 'Start Delivery';
-      case DeliveryStep.delivered:
-        return 'Complete Delivery';
-    }
-  }
-
-  IconData _getButtonIcon(DeliveryStep step) {
-    switch (step) {
-      case DeliveryStep.accepted:
-        return Icons.check_circle;
-      case DeliveryStep.arrivedAtStore:
-        return Icons.store;
-      case DeliveryStep.pickedUp:
-        return Icons.inventory_2;
-      case DeliveryStep.outForDelivery:
-        return Icons.delivery_dining;
-      case DeliveryStep.delivered:
-        return Icons.verified;
-    }
-  }
-
-  // ════════════════════════════════════════════
-  // HANDLE NEXT STEP
-  // ════════════════════════════════════════════
-  Future<void> _handleNextStep(DeliveryStep nextStep) async {
-    if (nextStep == DeliveryStep.delivered) {
-      // Final step — show verification code dialog
-      _showVerificationDialog(context);
+  Future<void> _handleNextStep(DeliveryStep next) async {
+    if (next == DeliveryStep.delivered) {
+      _showVerificationSheet();
     } else {
-      // All other steps — simple status update
-      await _updateToStep(nextStep);
+      await _updateToStep(next);
     }
   }
 
   Future<void> _updateToStep(DeliveryStep step) async {
+    final l = AppLocalizations.of(context);
     setState(() => _isUpdating = true);
     HapticFeedback.mediumImpact();
-
     final orderProvider = context.read<DeliveryOrderProvider>();
-    final status = _stepToStatus(step);
 
     // Phase DLV-3C: the step goes to the server with where the rider is. At
     // the store steps a far tap is asked about first (allowed, flagged —
     // D-DLV-GEOFENCE); "out for delivery" is often tapped after leaving.
     final fix = await currentRiderFix();
     if (step == DeliveryStep.arrivedAtStore || step == DeliveryStep.pickedUp) {
-      final places = await stepPlaces(widget.order.id, widget.order);
+      final places = await stepPlaces(_order.id, _order);
+      if (!mounted) return;
       final question = farTapQuestion(
+        l,
         metersTo(fix?.latitude, fix?.longitude, places.store),
         atStore: true,
-        action: step == DeliveryStep.arrivedAtStore ? 'Mark arrived' : 'Mark picked up',
+        action: step == DeliveryStep.arrivedAtStore ? FarTapAction.arrived : FarTapAction.pickedUp,
       );
-      if (question != null && mounted && !await _confirmFarTap(question)) {
+      if (question != null && !await _confirmFarTap(question)) {
         if (mounted) setState(() => _isUpdating = false);
         return;
       }
     }
     if (!mounted) return;
-    final error = await orderProvider.advanceStep(widget.order.id, status, positionPayload(fix));
-    final success = error == null;
-
-    if (mounted) {
-      setState(() {
-        _isUpdating = false;
-        if (success) _currentStep = step;
-      });
-
-      ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(
-          content: Text(success ? '✅ ${_getButtonLabel(step)}' : error),
-          backgroundColor: success ? Colors.green : Colors.red.shade700,
-          behavior: SnackBarBehavior.floating,
-          shape: RoundedRectangleBorder(
-            borderRadius: BorderRadius.circular(10),
-          ),
-        ),
-      );
+    final failure = await orderProvider.advanceStep(_order.id, _statusOf(step), positionPayload(fix));
+    if (!mounted) return;
+    setState(() {
+      _isUpdating = false;
+      if (failure == null) _currentStep = step;
+    });
+    if (failure == null) {
+      WsToast.show(context, l.activeStepDone(deliveryStepTitle(l, step)), tone: WsToastTone.success);
+    } else {
+      WsToast.show(context, failure.message(l), tone: WsToastTone.error);
     }
   }
 
   /// "You're 1.2 km from the store. Mark arrived anyway?" — true to go ahead.
-  Future<bool> _confirmFarTap(String question) async {
-    final go = await showDialog<bool>(
-      context: context,
-      builder: (ctx) => AlertDialog(
-        icon: const Icon(Icons.wrong_location_outlined, color: Colors.orange, size: 32),
-        title: const Text('Are you there?'),
-        content: Text(question),
-        actions: [
-          TextButton(
-            onPressed: () => Navigator.pop(ctx, false),
-            child: const Text('Not yet'),
-          ),
-          FilledButton(
-            onPressed: () => Navigator.pop(ctx, true),
-            child: const Text('Continue'),
-          ),
-        ],
-      ),
+  Future<bool> _confirmFarTap(String question) {
+    final l = AppLocalizations.of(context);
+    return wsConfirm(
+      context,
+      icon: AgIcons.locationOff,
+      title: l.activeFarTitle,
+      message: question,
+      confirmLabel: l.actionContinue,
+      cancelLabel: l.activeFarNotYet,
     );
-    return go == true;
   }
 
   Future<void> _confirmSellerNotReady() async {
-    final confirmed = await showDialog<bool>(
-      context: context,
-      builder: (ctx) => AlertDialog(
-        title: const Text('Seller not ready?'),
-        content: const Text(
-          'This will release the order back to pickup-ready queue and notify the team.',
-        ),
-        actions: [
-          TextButton(
-            onPressed: () => Navigator.pop(ctx, false),
-            child: const Text('Wait'),
-          ),
-          FilledButton(
-            onPressed: () => Navigator.pop(ctx, true),
-            child: const Text('Release Order'),
-          ),
-        ],
-      ),
+    final l = AppLocalizations.of(context);
+    final confirmed = await wsConfirm(
+      context,
+      title: l.activeSellerNotReadyTitle,
+      message: l.activeSellerNotReadyBody,
+      confirmLabel: l.activeSellerNotReadyConfirm,
+      cancelLabel: l.activeSellerNotReadyWait,
     );
-
-    if (confirmed != true || !mounted) return;
+    if (!confirmed || !mounted) return;
 
     setState(() => _isUpdating = true);
     final provider = context.read<DeliveryOrderProvider>();
     // Phase DLV-3C: releaseDeliveryOrder (the direct write was always denied).
-    final error = await provider.releaseOrder(widget.order.id, reason: 'seller_not_ready');
-    final success = error == null;
+    final failure = await provider.releaseOrder(_order.id, reason: 'seller_not_ready');
     if (!mounted) return;
-
     setState(() => _isUpdating = false);
-    ScaffoldMessenger.of(context).showSnackBar(
-      SnackBar(
-        content: Text(success ? 'Order released for reassignment' : error),
-        backgroundColor: success ? Colors.orange.shade700 : Colors.red,
-      ),
-    );
-    if (success) Navigator.pop(context);
+    if (failure == null) {
+      WsToast.show(context, l.activeReleased);
+      Navigator.pop(context);
+    } else {
+      WsToast.show(context, failure.message(l), tone: WsToastTone.error);
+    }
   }
 
-  // ════════════════════════════════════════════
-  // 🔐 VERIFICATION CODE DIALOG
-  // The delivery boy does NOT see the code.
-  // They must ask the customer for it.
-  // We validate it against Firestore.
-  // ════════════════════════════════════════════
-  void _showVerificationDialog(BuildContext context) {
-    final codeController = TextEditingController();
-    String? errorText;
-    // Phase FIX-5 (finding N-5). The check used to be one local Firestore read
-    // and a string compare — effectively instant, so an always-enabled button
-    // was fine. It is now a round trip to the confirmDelivery callable, which
-    // runs at minInstances: 0 and can cold-start. Without a busy state the
-    // partner sees nothing happen for seconds and taps again. The callable is
-    // idempotent (phase29 scenario 5), so a double tap cannot double-deliver —
-    // but "nothing appears to be happening" is still the wrong thing to show
-    // someone standing at a customer's door.
-    bool submitting = false;
+  // ── The customer's code (the rider never sees the expected value) ──
 
-    showDialog(
+  void _showVerificationSheet() {
+    showModalBottomSheet<void>(
       context: context,
-      barrierDismissible: false,
-      builder: (ctx) => StatefulBuilder(
-        builder: (context, setDialogState) {
-          return AlertDialog(
-            shape: RoundedRectangleBorder(
-              borderRadius: BorderRadius.circular(20),
-            ),
-            title: Row(
-              children: [
-                Container(
-                  padding: const EdgeInsets.all(8),
-                  decoration: BoxDecoration(
-                    color: Colors.green.shade100,
-                    borderRadius: BorderRadius.circular(10),
-                  ),
-                  child: Icon(
-                    Icons.verified_user,
-                    color: Colors.green.shade700,
-                    size: 20,
-                  ),
-                ),
-                const SizedBox(width: 12),
-                const Expanded(
-                  child: Text(
-                    'Verify Delivery',
-                    style: TextStyle(fontSize: 18, fontWeight: FontWeight.w800),
-                  ),
-                ),
-              ],
-            ),
-            content: Column(
-              mainAxisSize: MainAxisSize.min,
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                Container(
-                  padding: const EdgeInsets.all(12),
-                  decoration: BoxDecoration(
-                    color: Colors.blue.shade50,
-                    borderRadius: BorderRadius.circular(10),
-                    border: Border.all(color: Colors.blue.shade200),
-                  ),
-                  child: Row(
-                    children: [
-                      Icon(
-                        Icons.info_outline,
-                        size: 18,
-                        color: Colors.blue.shade700,
-                      ),
-                      const SizedBox(width: 8),
-                      Expanded(
-                        child: Text(
-                          'Ask the customer for their 6-digit delivery verification code.',
-                          style: TextStyle(
-                            fontSize: 12,
-                            fontWeight: FontWeight.w600,
-                            color: Colors.blue.shade800,
-                          ),
-                        ),
-                      ),
-                    ],
-                  ),
-                ),
-                const SizedBox(height: 20),
-                TextField(
-                  controller: codeController,
-                  keyboardType: TextInputType.number,
-                  maxLength: 6,
-                  textAlign: TextAlign.center,
-                  style: const TextStyle(
-                    fontSize: 24,
-                    fontWeight: FontWeight.w900,
-                    letterSpacing: 8,
-                  ),
-                  decoration: InputDecoration(
-                    hintText: '• • • • • •',
-                    hintStyle: TextStyle(
-                      fontSize: 24,
-                      letterSpacing: 8,
-                      color: Colors.grey.shade400,
-                    ),
-                    errorText: errorText,
-                    counterText: '',
-                    border: OutlineInputBorder(
-                      borderRadius: BorderRadius.circular(12),
-                    ),
-                    focusedBorder: OutlineInputBorder(
-                      borderRadius: BorderRadius.circular(12),
-                      borderSide: BorderSide(
-                        color: Colors.green.shade600,
-                        width: 2,
-                      ),
-                    ),
-                  ),
-                  onChanged: (val) {
-                    if (errorText != null) {
-                      setDialogState(() => errorText = null);
-                    }
-                  },
-                ),
-              ],
-            ),
-            actions: [
-              TextButton(
-                onPressed: submitting ? null : () => Navigator.pop(ctx),
-                child: const Text('Cancel'),
-              ),
-              FilledButton.icon(
-                onPressed: submitting
-                    ? null
-                    : () async {
-                        final inputCode = codeController.text.trim();
-
-                        if (inputCode.isEmpty || inputCode.length < 6) {
-                          setDialogState(
-                            () => errorText = 'Enter the full 6-digit code',
-                          );
-                          return;
-                        }
-
-                        // Phase FIX-5 (finding N-5, P1). This used to FETCH the real
-                        // code from Firestore into this client and compare it here —
-                        // handing the answer to the very party being verified, and
-                        // leaving the whole check skippable because the status write
-                        // that follows was a plain client write.
-                        //
-                        // The code now goes to the confirmDelivery callable, which
-                        // compares it inside the Admin SDK and performs the transition
-                        // itself. This client never learns the expected value, and a
-                        // wrong code comes back as a server refusal.
-                        setDialogState(() {
-                          submitting = true;
-                          errorText = null;
-                        });
-                        final error = await _completeDelivery(inputCode);
-
-                        if (!ctx.mounted) return;
-                        if (error == null) {
-                          // Close the code dialog FIRST, then celebrate:
-                          // _completeDelivery used to open the success
-                          // dialog itself, and this pop then closed THAT
-                          // (the top route), leaving "Verifying…" on screen
-                          // after a good delivery (seen in the DLV-3C run).
-                          Navigator.pop(ctx);
-                          _showDeliveredDialog();
-                        } else {
-                          HapticFeedback.heavyImpact();
-                          setDialogState(() {
-                            submitting = false;
-                            errorText = error;
-                          });
-                        }
-                      },
-                icon: submitting
-                    ? const SizedBox(
-                        width: 18,
-                        height: 18,
-                        child: CircularProgressIndicator(
-                          strokeWidth: 2,
-                          color: Colors.white,
-                        ),
-                      )
-                    : const Icon(Icons.check, size: 18),
-                label: Text(submitting ? 'Verifying…' : 'Verify & Complete'),
-                style: FilledButton.styleFrom(backgroundColor: Colors.green),
-              ),
-            ],
-          );
-        },
+      isScrollControlled: true,
+      isDismissible: false,
+      enableDrag: false,
+      showDragHandle: true,
+      builder: (_) => _VerifySheet(
+        orderNumber: _order.orderNumber,
+        submit: _completeDelivery,
+        onDelivered: _showDelivered,
       ),
     );
   }
 
-  // ════════════════════════════════════════════
-  // COMPLETE THE DELIVERY
-  // ════════════════════════════════════════════
-  /// Phase FIX-5 (finding N-5, P1). Returns `null` on success, or a user-safe
-  /// sentence to show in the dialog. The verification code is now sent to the
-  /// `confirmDelivery` callable, which compares it server-side and performs the
-  /// status transition itself — this client never sees the expected value and no
-  /// longer writes the delivered status directly.
+  /// Phase FIX-5 (finding N-5, P1). Returns null on success, or a sentence to
+  /// show. The code goes to the confirmDelivery callable, which compares it
+  /// server-side and performs the transition itself.
   Future<String?> _completeDelivery(String code) async {
+    final l = AppLocalizations.of(context);
     setState(() => _isUpdating = true);
     HapticFeedback.heavyImpact();
 
@@ -905,77 +438,36 @@ class _ActiveOrderScreenState extends State<ActiveOrderScreen> {
     // Phase DLV-3C: where the rider is when the code is entered — recorded by
     // confirmDelivery, flagged beyond 300 m; a far entry is asked about first.
     final fix = await currentRiderFix();
-    final places = await stepPlaces(widget.order.id, widget.order);
+    final places = await stepPlaces(_order.id, _order);
+    if (!mounted) return l.deliverFailed;
     final question = farTapQuestion(
+      l,
       metersTo(fix?.latitude, fix?.longitude, places.customer),
       atStore: false,
-      action: 'Complete the delivery',
+      action: FarTapAction.complete,
     );
-    if (question != null && mounted && !await _confirmFarTap(question)) {
+    if (question != null && !await _confirmFarTap(question)) {
       if (mounted) setState(() => _isUpdating = false);
-      return 'Delivery not completed. Enter the code when you are with the customer.';
+      return l.deliverNotCompletedFar;
     }
 
-    bool success = false;
-    String? errorMessage;
     try {
-      final callable =
-          FirebaseFunctions.instance.httpsCallable('confirmDelivery');
-      await callable.call<Map<String, dynamic>>({
-        'orderId': widget.order.id,
+      await FirebaseFunctions.instance.httpsCallable('confirmDelivery').call<Map<String, dynamic>>({
+        'orderId': _order.id,
         'code': code,
         ...positionPayload(fix),
       });
-      success = true;
     } on FirebaseFunctionsException catch (e) {
-      // feedback.md §2: never render the raw provider message. Map the codes
-      // this callable actually returns to sentences a delivery partner can act
-      // on; log the detail.
-      debugPrint('❌ confirmDelivery failed: ${e.code} ${e.message}');
-      switch (e.code) {
-        case 'permission-denied':
-          errorMessage = 'Incorrect code. Please try again.';
-          break;
-        case 'not-found':
-          errorMessage = 'This order could not be found.';
-          break;
-        case 'failed-precondition':
-          // Two different situations, two different things for the partner to
-          // do, so the callable tags which one it is rather than making this
-          // client guess from prose. Unknown/absent tag falls back to the
-          // support wording, which is safe for either.
-          final reason = (e.details is Map)
-              ? (e.details as Map)['reason'] as String?
-              : null;
-          errorMessage = reason == 'not_deliverable'
-              ? 'This order is no longer active and cannot be marked delivered.'
-              : 'Verification is not available for this order. Please contact support.';
-          break;
-        case 'resource-exhausted':
-          // Phase DLV-0: five wrong codes lock this order for 15 minutes on
-          // the server. Tell the partner how long, and that the customer's
-          // code is what to check — retrying sooner is refused even with the
-          // right code.
-          final retryAfter = (e.details is Map)
-              ? (e.details as Map)['retryAfterSec']
-              : null;
-          final minutes = retryAfter is num
-              ? (retryAfter / 60).ceil().clamp(1, 60)
-              : 15;
-          errorMessage =
-              'Too many incorrect codes. Check the code with the customer and try again in $minutes min.';
-          break;
-        default:
-          errorMessage = 'Could not confirm delivery. Please try again.';
-      }
-    } catch (e) {
-      debugPrint('❌ confirmDelivery error: $e');
-      errorMessage = 'Could not confirm delivery. Please try again.';
-    }
-
-    if (!success) {
+      // feedback.md §2: never render the raw provider message; log the detail.
+      debugPrint('confirmDelivery failed: ${e.code} ${e.message}');
+      final details = e.details is Map ? e.details as Map : const {};
       if (mounted) setState(() => _isUpdating = false);
-      return errorMessage ?? 'Could not confirm delivery. Please try again.';
+      return deliveryConfirmError(l, e.code,
+          reason: details['reason'] as String?, retryAfterSec: details['retryAfterSec']);
+    } catch (e) {
+      debugPrint('confirmDelivery error: $e');
+      if (mounted) setState(() => _isUpdating = false);
+      return l.deliverFailed;
     }
 
     // DLV-E1: never throws — a photo that does not save is told as that,
@@ -983,168 +475,222 @@ class _ActiveOrderScreenState extends State<ActiveOrderScreen> {
     final photo = _proofPhoto;
     if (photo != null) {
       final saved = await saveDeliveryProof(
-        FirebaseDeliveryProblemBackend(),
-        widget.order.id,
-        await photo.readAsBytes(),
-        'image/jpeg',
-      );
-      if (!saved && mounted) {
-        WsToast.show(context, AppLocalizations.of(context).proofNotSaved, tone: WsToastTone.error);
-      }
+          FirebaseDeliveryProblemBackend(), _order.id, await photo.readAsBytes(), 'image/jpeg');
+      if (!saved && mounted) WsToast.show(context, l.proofNotSaved, tone: WsToastTone.error);
     }
-
     if (mounted) {
       setState(() {
         _isUpdating = false;
-        if (success) _currentStep = DeliveryStep.delivered;
+        _currentStep = DeliveryStep.delivered;
       });
     }
-
-    // Confirmed by the server. The caller closes the verification dialog,
-    // then shows _showDeliveredDialog.
     return null;
   }
 
-  /// "Delivery Complete!" — shown after the code dialog has closed.
-  void _showDeliveredDialog() {
+  /// Shown after the code sheet has closed; its button returns to the dashboard.
+  void _showDelivered() {
     if (!mounted) return;
-    showDialog(
+    showModalBottomSheet<void>(
       context: context,
-      barrierDismissible: false,
-      builder: (ctx) => AlertDialog(
-        shape: RoundedRectangleBorder(
-          borderRadius: BorderRadius.circular(20),
-        ),
-        content: Column(
-          mainAxisSize: MainAxisSize.min,
-          children: [
-            Container(
-              padding: const EdgeInsets.all(20),
-              decoration: BoxDecoration(
-                color: Colors.green.shade50,
-                shape: BoxShape.circle,
+      isDismissible: false,
+      enableDrag: false,
+      builder: (ctx) {
+        final l = AppLocalizations.of(ctx);
+        final t = ctx.ws;
+        final text = Theme.of(ctx).textTheme;
+        return SafeArea(
+          child: Padding(
+            padding: const EdgeInsets.all(WsSpace.s24),
+            child: Column(mainAxisSize: MainAxisSize.min, crossAxisAlignment: CrossAxisAlignment.stretch, children: [
+              Icon(AgIcons.allDone, size: WsIconSize.empty, color: t.successFg),
+              const SizedBox(height: WsSpace.s16),
+              Text(l.deliveredTitle, textAlign: TextAlign.center, style: text.titleLarge),
+              const SizedBox(height: WsSpace.s8),
+              Text(l.deliveredBody(_order.orderNumber),
+                  textAlign: TextAlign.center, style: text.bodyMedium?.copyWith(color: t.textSecondary)),
+              const SizedBox(height: WsSpace.s24),
+              FilledButton(
+                onPressed: () {
+                  Navigator.pop(ctx);
+                  Navigator.pop(context);
+                },
+                child: Text(l.deliveredBack),
               ),
-              child: Icon(
-                Icons.done_all_rounded,
-                size: 48,
-                color: Colors.green.shade600,
-              ),
-            ),
-            const SizedBox(height: 20),
-            const Text(
-              'Delivery Complete! 🎉',
-              style: TextStyle(fontSize: 20, fontWeight: FontWeight.w900),
-            ),
-            const SizedBox(height: 8),
-            Text(
-              'Order #${widget.order.orderNumber} has been successfully delivered.',
-              textAlign: TextAlign.center,
-              style: TextStyle(fontSize: 14, color: Colors.grey.shade600),
-            ),
-          ],
-        ),
-        actions: [
-          FilledButton(
-            onPressed: () {
-              Navigator.pop(ctx); // Close dialog
-              Navigator.pop(context); // Go back to dashboard
-            },
-            style: FilledButton.styleFrom(
-              minimumSize: const Size.fromHeight(48),
-              backgroundColor: Colors.green,
-            ),
-            child: const Text('Back to Dashboard'),
+            ]),
           ),
-        ],
-      ),
+        );
+      },
     );
   }
 
-  // ════════════════════════════════════════════
-  // TAKE PROOF PHOTO
-  // ════════════════════════════════════════════
   Future<void> _takePhoto() async {
     try {
-      final XFile? photo = await _picker.pickImage(
-        source: ImageSource.camera,
-        imageQuality: 70,
-        maxWidth: 1200,
-      );
+      final photo = await _picker.pickImage(source: ImageSource.camera, imageQuality: 70, maxWidth: 1200);
       if (photo != null && mounted) {
         setState(() => _proofPhoto = File(photo.path));
         HapticFeedback.mediumImpact();
       }
     } catch (e) {
-      debugPrint('📸 Camera error: $e');
+      debugPrint('Camera error: $e');
     }
   }
 
-  // ════════════════════════════════════════════
-  // UI HELPERS
-  // ════════════════════════════════════════════
-  Widget _buildSection(
-    String title,
-    IconData icon,
-    ColorScheme colorScheme, {
-    required Widget child,
-  }) {
-    return Container(
-      padding: const EdgeInsets.all(16),
-      decoration: BoxDecoration(
-        color: colorScheme.surfaceContainerLowest,
-        borderRadius: BorderRadius.circular(12),
-        border: Border.all(color: colorScheme.outline.withValues(alpha: 0.1)),
-      ),
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
-          Row(
-            children: [
-              Icon(icon, size: 18, color: colorScheme.primary),
-              const SizedBox(width: 8),
-              Text(
-                title,
-                style: TextStyle(
-                  fontSize: 13,
-                  fontWeight: FontWeight.w700,
-                  color: colorScheme.onSurfaceVariant,
-                ),
-              ),
-            ],
-          ),
-          const SizedBox(height: 12),
-          child,
-        ],
-      ),
-    );
-  }
-
-  void _callCustomer() async {
-    final phone = widget.order.deliveryAddress.phone;
+  Future<void> _callCustomer() async {
+    final phone = _order.deliveryAddress.phone;
     if (phone.isNotEmpty) {
       final url = Uri.parse('tel:$phone');
       if (await canLaunchUrl(url)) await launchUrl(url);
     }
   }
 
-  void _navigateToAddress() async {
-    final address = widget.order.deliveryAddress;
+  Future<void> _navigateToAddress() async {
+    final address = _order.deliveryAddress;
     if (address.latitude != null && address.longitude != null) {
       // DLV-3B: two-wheeler turn-by-turn, like the route card's Navigate.
       final dest = DeliveryPoint(lat: address.latitude!, lng: address.longitude!);
-      final opened = await launchUrl(turnByTurnUri(dest), mode: LaunchMode.externalApplication)
-          .catchError((_) => false);
+      final opened =
+          await launchUrl(turnByTurnUri(dest), mode: LaunchMode.externalApplication).catchError((_) => false);
       if (!opened) await launchUrl(directionsUri(dest), mode: LaunchMode.externalApplication);
     }
   }
 
   // Phase DLV-S1: the Chat icon created a threads document from this
   // client and said "Chat thread is ready" with no chat screen behind it.
-  // Removed until an authorised rider conversation exists (programme K1).
+  // Removed; DLV-K1 hardened thread rules, and a rider chat needs a
+  // customer-side chat first (owner decision).
 }
 
-class _StepInfo {
-  final String label;
+/// The code entry. Stays open (with the error) until the server confirms.
+class _VerifySheet extends StatefulWidget {
+  const _VerifySheet({required this.orderNumber, required this.submit, required this.onDelivered});
+  final String orderNumber;
+  final Future<String?> Function(String code) submit;
+  final VoidCallback onDelivered;
+
+  @override
+  State<_VerifySheet> createState() => _VerifySheetState();
+}
+
+class _VerifySheetState extends State<_VerifySheet> {
+  final _code = TextEditingController();
+  bool _submitting = false;
+  String? _error;
+
+  @override
+  void dispose() {
+    _code.dispose();
+    super.dispose();
+  }
+
+  Future<void> _go() async {
+    final l = AppLocalizations.of(context);
+    final code = _code.text.trim();
+    if (code.length < 6) {
+      setState(() => _error = l.verifyIncomplete);
+      return;
+    }
+    setState(() {
+      _submitting = true;
+      _error = null;
+    });
+    final error = await widget.submit(code);
+    if (!mounted) return;
+    if (error == null) {
+      // Close the code sheet FIRST, then celebrate (a pop after the success
+      // dialog opened used to close THAT one — seen in the DLV-3C run).
+      Navigator.pop(context);
+      widget.onDelivered();
+    } else {
+      HapticFeedback.heavyImpact();
+      setState(() {
+        _submitting = false;
+        _error = error;
+      });
+    }
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    final l = AppLocalizations.of(context);
+    final t = context.ws;
+    final text = Theme.of(context).textTheme;
+    return Padding(
+      padding: EdgeInsets.fromLTRB(
+          WsSpace.page, 0, WsSpace.page, MediaQuery.of(context).viewInsets.bottom + WsSpace.s24),
+      child: SingleChildScrollView(
+        child: Column(mainAxisSize: MainAxisSize.min, crossAxisAlignment: CrossAxisAlignment.stretch, children: [
+          Row(children: [
+            Icon(AgIcons.shieldCheck, color: t.successFg),
+            const SizedBox(width: WsSpace.s12),
+            Expanded(child: Text(l.verifyTitle, style: text.titleLarge)),
+          ]),
+          const SizedBox(height: WsSpace.s12),
+          Container(
+            padding: const EdgeInsets.all(WsSpace.s12),
+            decoration: BoxDecoration(color: t.infoBg, borderRadius: BorderRadius.circular(WsRadius.small)),
+            child: Row(children: [
+              Icon(AgIcons.info, size: WsIconSize.supporting, color: t.infoFg),
+              const SizedBox(width: WsSpace.s8),
+              Expanded(child: Text(l.verifyHint, style: text.bodySmall?.copyWith(color: t.infoFg))),
+            ]),
+          ),
+          const SizedBox(height: WsSpace.s20),
+          WsOtpInput(
+            controller: _code,
+            digitSemanticsLabel: (i) => l.verifyDigit(i + 1),
+            hasError: _error != null,
+            enabled: !_submitting,
+            onChanged: (_) {
+              if (_error != null) setState(() => _error = null);
+            },
+          ),
+          if (_error != null) ...[
+            const SizedBox(height: WsSpace.s8),
+            Text(_error!, style: text.bodyMedium?.copyWith(color: t.errorFg)),
+          ],
+          const SizedBox(height: WsSpace.s20),
+          FilledButton.icon(
+            onPressed: _submitting ? null : _go,
+            icon: _submitting
+                ? const SizedBox.square(
+                    dimension: WsIconSize.supporting, child: CircularProgressIndicator(strokeWidth: WsSize.focusRing))
+                : const Icon(AgIcons.success),
+            label: Text(_submitting ? l.verifySubmitting : l.verifySubmit),
+          ),
+          const SizedBox(height: WsSpace.s8),
+          TextButton(onPressed: _submitting ? null : () => Navigator.pop(context), child: Text(l.cancel)),
+        ]),
+      ),
+    );
+  }
+}
+
+class _Section extends StatelessWidget {
+  const _Section({required this.title, required this.icon, required this.child});
+  final String title;
   final IconData icon;
-  const _StepInfo(this.label, this.icon);
+  final Widget child;
+
+  @override
+  Widget build(BuildContext context) {
+    final t = context.ws;
+    final text = Theme.of(context).textTheme;
+    return Container(
+      padding: const EdgeInsets.all(WsSpace.s16),
+      decoration: BoxDecoration(
+        color: t.surface,
+        borderRadius: BorderRadius.circular(WsRadius.card),
+        border: Border.all(color: t.divider, width: WsSize.hairline),
+      ),
+      child: Column(crossAxisAlignment: CrossAxisAlignment.stretch, children: [
+        Row(children: [
+          Icon(icon, size: WsIconSize.supporting, color: t.primary),
+          const SizedBox(width: WsSpace.s8),
+          Expanded(child: Text(title, style: text.labelLarge?.copyWith(color: t.textSecondary))),
+        ]),
+        const SizedBox(height: WsSpace.s12),
+        child,
+      ]),
+    );
+  }
 }

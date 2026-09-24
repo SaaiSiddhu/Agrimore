@@ -1,4 +1,6 @@
 // Phase DLV-2B — the rider app's offer rules and the incoming-offer screen.
+import 'package:agrimore_ui/agrimore_ui.dart';
+import 'package:delivery/l10n/app_localizations.dart';
 import 'package:delivery/offers/delivery_offer.dart';
 import 'package:delivery/offers/offer_launch.dart';
 import 'package:delivery/providers/offer_provider.dart';
@@ -59,6 +61,7 @@ DeliveryOffer offer({int secondsLeft = 25, double cod = 450}) => DeliveryOffer(
     );
 
 void main() {
+  final l = lookupAppLocalizations(const Locale('en'));
   group('DeliveryOffer', () {
     test('parses the dispatch.ts offer document', () {
       final o = DeliveryOffer.fromMap({
@@ -104,28 +107,28 @@ void main() {
     });
 
     test('summary mirrors the server push body', () {
-      expect(offer().summary, 'Pickup 1.2 km away · 3 items · Collect ₹450');
-      expect(offer(cod: 0).summary, 'Pickup 1.2 km away · 3 items');
+      expect(offer().summary(l), 'Pickup 1.2 km away · 3 items · Collect ₹450');
+      expect(offer(cod: 0).summary(l), 'Pickup 1.2 km away · 3 items');
     });
   });
 
   group('refusal wording (never raw server text)', () {
     test('each dispatch reason has its own sentence', () {
       for (final r in ['taken', 'expired', 'busy', 'not_eligible', 'no_offer']) {
-        final m = offerRefusalMessage(code: 'failed-precondition', reason: r);
+        final m = offerRefusalMessage(l, code: 'failed-precondition', reason: r);
         // A sentence for a person, not a code or the server's own message.
         expect(m, isNot(contains('_')));
         expect(m, isNot(contains('failed-precondition')));
-        expect(m, isNot(offerRefusalMessage(code: 'internal')));
+        expect(m, isNot(offerRefusalMessage(l, code: 'internal')));
         expect(m.endsWith('.'), isTrue);
       }
-      expect(offerRefusalMessage(code: 'failed-precondition', reason: 'taken'),
+      expect(offerRefusalMessage(l, code: 'failed-precondition', reason: 'taken'),
           'Another delivery partner took this order.');
     });
     test('anything else is generic', () {
-      expect(offerRefusalMessage(code: 'internal'),
+      expect(offerRefusalMessage(l, code: 'internal'),
           'Could not update this offer. Please try again.');
-      expect(offerRefusalMessage(code: 'unavailable'),
+      expect(offerRefusalMessage(l, code: 'unavailable'),
           startsWith('No connection'));
     });
   });
@@ -158,6 +161,9 @@ void main() {
         value: p,
         child: MaterialApp(
           navigatorKey: deliveryNavigatorKey,
+          theme: WorkspaceTheme.build(WorkspaceBrand.delivery, Brightness.light),
+          localizationsDelegates: AppLocalizations.localizationsDelegates,
+          supportedLocales: AppLocalizations.supportedLocales,
           home: Builder(
             builder: (context) => Scaffold(
               body: Center(
@@ -202,8 +208,7 @@ void main() {
       final p = await pump(
           tester,
           FakeOfferProvider([offer()],
-              acceptResult: const OfferActionResult.failure(
-                  'Another delivery partner took this order.')));
+              acceptResult: const OfferActionResult.failure('failed-precondition', 'taken')));
       await tester.tap(find.text('Accept order'));
       await tester.pumpAndSettle();
       expect(p.calls, ['accept:o1']);
@@ -232,7 +237,7 @@ void main() {
 
   // DLV-D1: the accept's new refusals are worded, not the generic fallback.
   test('offline and cash-limit refusals are worded', () {
-    expect(offerRefusalMessage(code: 'failed-precondition', reason: 'offline'), 'Go online to accept orders.');
-    expect(offerRefusalMessage(code: 'failed-precondition', reason: 'cash_limit'), contains('Deposit the cash'));
+    expect(offerRefusalMessage(l, code: 'failed-precondition', reason: 'offline'), 'Go online to accept orders.');
+    expect(offerRefusalMessage(l, code: 'failed-precondition', reason: 'cash_limit'), contains('Deposit the cash'));
   });
 }

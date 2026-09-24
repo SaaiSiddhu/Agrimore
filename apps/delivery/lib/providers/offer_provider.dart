@@ -7,6 +7,7 @@
 //
 // The listener is an equality-only query (riderId + status), so it needs no
 // composite index; expiry is applied here.
+import '../l10n/app_localizations.dart';
 import 'package:agrimore_core/agrimore_core.dart';
 import 'dart:async';
 
@@ -17,11 +18,16 @@ import 'package:flutter/foundation.dart';
 import '../offers/delivery_offer.dart';
 
 /// The outcome of an accept/decline, already in the rider's words.
+/// An accept/decline outcome; a refusal keeps the callable's code and
+/// details.reason, and is worded by [message].
 class OfferActionResult {
   final bool ok;
-  final String? message;
-  const OfferActionResult.success() : ok = true, message = null;
-  const OfferActionResult.failure(this.message) : ok = false;
+  final String? code;
+  final String? reason;
+  const OfferActionResult.success() : ok = true, code = null, reason = null;
+  const OfferActionResult.failure(String this.code, [this.reason]) : ok = false;
+
+  String? message(AppLocalizations l) => ok ? null : offerRefusalMessage(l, code: code!, reason: reason);
 }
 
 class OfferProvider extends ChangeNotifier {
@@ -134,12 +140,10 @@ class OfferProvider extends ChangeNotifier {
       debugPrint('$name failed: ${e.code} ${e.message} ${e.details}');
       final reason =
           e.details is Map ? (e.details as Map)['reason'] as String? : null;
-      return OfferActionResult.failure(
-          offerRefusalMessage(code: e.code, reason: reason));
+      return OfferActionResult.failure(e.code, reason);
     } catch (e) {
       debugPrint('$name failed: $e');
-      return OfferActionResult.failure(
-          offerRefusalMessage(code: 'unknown'));
+      return const OfferActionResult.failure('unknown');
     }
   }
 

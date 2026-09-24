@@ -8,9 +8,11 @@
 // alerted or sent a location. "Tell the Agrimore team" (DLV-S2) records a
 // report on the server and shows its real state (incident_report.dart).
 import 'package:agrimore_core/agrimore_core.dart' show AppConstants, DeliveryTiming;
+import 'package:agrimore_ui/agrimore_ui.dart';
 import 'package:flutter/material.dart';
 import 'package:url_launcher/url_launcher.dart';
 
+import '../l10n/app_localizations.dart';
 import 'incident_report.dart';
 
 /// India's single emergency number (Emergency Response Support System).
@@ -79,13 +81,14 @@ class EmergencySheet extends StatefulWidget {
 }
 
 class _EmergencySheetState extends State<EmergencySheet> {
-  String? _problem;
+  /// The number the dialer could not be handed, if any.
+  String? _dialFailedFor;
 
   // One request id per sheet, reused on retry: a report whose answer was
   // lost is found again by the server, not recorded twice.
   final String _requestId = newIncidentRequestId();
   bool _sending = false;
-  String? _reportError;
+  IncidentReportException? _reportError;
   Stream<Map<String, dynamic>?>? _record;
 
   Future<void> _report() async {
@@ -112,36 +115,35 @@ class _EmergencySheetState extends State<EmergencySheet> {
       if (!mounted) return;
       setState(() {
         _sending = false;
-        _reportError = e.message;
+        _reportError = e;
       });
     } catch (e) {
       debugPrint('Incident report failed: $e');
       if (!mounted) return;
       setState(() {
         _sending = false;
-        _reportError = incidentErrorMessage('unknown', null);
+        _reportError = const IncidentReportException('unknown');
       });
     }
   }
 
-  Widget _reportSection(ColorScheme cs) {
+  Widget _reportSection(AppLocalizations l) {
+    final t = context.ws;
+    final text = Theme.of(context).textTheme;
     if (_record != null) {
       return StreamBuilder<Map<String, dynamic>?>(
         stream: _record,
         builder: (context, snap) {
-          final t = incidentStatusText(snap.data);
+          final s = incidentStatusText(l, snap.data);
           return Container(
-            padding: const EdgeInsets.all(12),
-            decoration: BoxDecoration(
-              color: cs.surfaceContainerHighest,
-              borderRadius: BorderRadius.circular(12),
-            ),
+            padding: const EdgeInsets.all(WsSpace.s12),
+            decoration: BoxDecoration(color: t.surfaceSunken, borderRadius: BorderRadius.circular(WsRadius.card)),
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
-                Text(t.title, style: const TextStyle(fontWeight: FontWeight.w800)),
-                const SizedBox(height: 4),
-                Text(t.detail, style: TextStyle(color: cs.onSurfaceVariant, height: 1.35)),
+                Text(s.title, style: text.titleSmall),
+                const SizedBox(height: WsSpace.s4),
+                Text(s.detail, style: text.bodyMedium?.copyWith(color: t.textSecondary)),
               ],
             ),
           );
@@ -153,88 +155,76 @@ class _EmergencySheetState extends State<EmergencySheet> {
       children: [
         OutlinedButton.icon(
           onPressed: _sending ? null : _report,
-          style: OutlinedButton.styleFrom(padding: const EdgeInsets.symmetric(vertical: 14)),
           icon: _sending
-              ? const SizedBox(width: 18, height: 18, child: CircularProgressIndicator(strokeWidth: 2))
-              : const Icon(Icons.report_rounded),
-          label: Text(
-              _sending ? 'Recording your report…' : (_reportError != null ? 'Try again' : 'Tell the Agrimore team')),
+              ? const SizedBox.square(
+                  dimension: WsIconSize.control, child: CircularProgressIndicator(strokeWidth: WsSize.focusRing))
+              : const Icon(AgIcons.report),
+          label: Text(_sending
+              ? l.incidentReportSending
+              : (_reportError != null ? l.actionRetry : l.incidentReportAction)),
         ),
-        const SizedBox(height: 6),
-        Text(
-          'Records a report for the Agrimore team with your current order and, if the phone has it, your position. '
-          'It does not call anyone.',
-          style: TextStyle(fontSize: 12, color: cs.onSurfaceVariant),
-        ),
+        const SizedBox(height: WsSpace.s8),
+        Text(l.incidentReportHint, style: text.bodySmall?.copyWith(color: t.textSecondary)),
         if (_reportError != null) ...[
-          const SizedBox(height: 8),
-          Text(_reportError!, style: TextStyle(color: cs.error, fontWeight: FontWeight.w600)),
+          const SizedBox(height: WsSpace.s8),
+          Text(_reportError!.message(l), style: text.bodyMedium?.copyWith(color: t.errorFg)),
         ],
       ],
     );
   }
 
   Future<void> _dial(Uri uri, String numberShown) async {
-    setState(() => _problem = null);
+    setState(() => _dialFailedFor = null);
     final opened = await widget.launcher(uri);
     if (!mounted) return;
-    if (!opened) {
-      setState(() => _problem = "Couldn't open the phone app. Dial $numberShown directly.");
-    }
+    if (!opened) setState(() => _dialFailedFor = numberShown);
   }
 
   @override
   Widget build(BuildContext context) {
-    final cs = Theme.of(context).colorScheme;
+    final l = AppLocalizations.of(context);
+    final t = context.ws;
+    final text = Theme.of(context).textTheme;
     final support = dialUri(widget.supportPhone);
     return SafeArea(
       child: SingleChildScrollView(
         child: Padding(
-          padding: const EdgeInsets.fromLTRB(20, 0, 20, 20),
+          padding: const EdgeInsets.fromLTRB(WsSpace.page, 0, WsSpace.page, WsSpace.s20),
           child: Column(
             mainAxisSize: MainAxisSize.min,
             crossAxisAlignment: CrossAxisAlignment.stretch,
             children: [
               Row(
                 children: [
-                  Icon(Icons.sos_rounded, color: cs.error, size: 28),
-                  const SizedBox(width: 10),
-                  const Text('Emergency help', style: TextStyle(fontSize: 20, fontWeight: FontWeight.w800)),
+                  Icon(AgIcons.emergency, color: t.errorFg, size: WsIconSize.feature),
+                  const SizedBox(width: WsSpace.s12),
+                  Expanded(child: Text(l.emergencyTitle, style: text.titleLarge)),
                 ],
               ),
-              const SizedBox(height: 8),
-              Text(
-                'If you or someone else is in danger, call $kEmergencyNumber now. '
-                'This app does not alert the police or Agrimore by itself.',
-                style: TextStyle(color: cs.onSurfaceVariant, height: 1.4),
-              ),
-              const SizedBox(height: 16),
+              const SizedBox(height: WsSpace.s8),
+              Text(l.emergencyIntro(kEmergencyNumber), style: text.bodyMedium?.copyWith(color: t.textSecondary)),
+              const SizedBox(height: WsSpace.s16),
               FilledButton.icon(
                 onPressed: () => _dial(dialUri(kEmergencyNumber)!, kEmergencyNumber),
-                style: FilledButton.styleFrom(
-                  backgroundColor: cs.error,
-                  foregroundColor: cs.onError,
-                  padding: const EdgeInsets.symmetric(vertical: 14),
-                ),
-                icon: const Icon(Icons.call_rounded),
-                label: const Text('Call $kEmergencyNumber (emergency)', style: TextStyle(fontWeight: FontWeight.w800)),
+                style: FilledButton.styleFrom(backgroundColor: t.errorFg, foregroundColor: t.surface),
+                icon: const Icon(AgIcons.call),
+                label: Text(l.emergencyCall(kEmergencyNumber)),
               ),
               if (support != null) ...[
-                const SizedBox(height: 10),
+                const SizedBox(height: WsSpace.s12),
                 OutlinedButton.icon(
                   onPressed: () => _dial(support, widget.supportPhone!),
-                  style: OutlinedButton.styleFrom(padding: const EdgeInsets.symmetric(vertical: 14)),
-                  icon: const Icon(Icons.support_agent_rounded),
-                  label: const Text('Call Agrimore support'),
+                  icon: const Icon(AgIcons.support),
+                  label: Text(l.emergencyCallSupport),
                 ),
               ],
               if (widget.reporter != null) ...[
-                const SizedBox(height: 16),
-                _reportSection(cs),
+                const SizedBox(height: WsSpace.s16),
+                _reportSection(l),
               ],
-              if (_problem != null) ...[
-                const SizedBox(height: 12),
-                Text(_problem!, style: TextStyle(color: cs.error, fontWeight: FontWeight.w600)),
+              if (_dialFailedFor != null) ...[
+                const SizedBox(height: WsSpace.s12),
+                Text(l.emergencyDialFailed(_dialFailedFor!), style: text.bodyMedium?.copyWith(color: t.errorFg)),
               ],
             ],
           ),

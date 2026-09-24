@@ -63,6 +63,9 @@ abstract final class DeliveryTiming {
 
   // ── offers on the device ──
 
+  /// How often the offer screen redraws its countdown.
+  static const Duration offerCountdownTick = Duration(milliseconds: 250);
+
   /// An offer is removed just after its expiry, never just before.
   static const Duration offerExpirySlack = Duration(milliseconds: 50);
 

@@ -11,6 +11,7 @@
 //
 // The pure parts (payload, distance wording, error wording) are covered by
 // test/rider_steps_test.dart.
+import '../l10n/app_localizations.dart';
 import 'package:agrimore_core/agrimore_core.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:cloud_functions/cloud_functions.dart';
@@ -40,52 +41,88 @@ double? metersTo(double? lat, double? lng, DeliveryPoint? place) {
 }
 
 /// "350 m" / "1.2 km".
-String distanceLabel(double meters) {
+String distanceLabel(AppLocalizations l, double meters) {
   final tens = (meters / 10).round() * 10;
-  return tens < 1000 ? '$tens m' : '${(meters / 1000).toStringAsFixed(1)} km';
+  return tens < 1000 ? l.distanceMeters(tens) : l.distanceKm((meters / 1000).toStringAsFixed(1));
 }
+
+/// What the rider is about to do when asked about a far tap.
+enum FarTapAction { arrived, pickedUp, complete }
 
 /// The question to ask before a far tap, or null when the rider is close
 /// enough (or the distance is unknown — then the server simply records it).
-String? farTapQuestion(double? meters, {required bool atStore, required String action}) {
+String? farTapQuestion(AppLocalizations l, double? meters, {required bool atStore, required FarTapAction action}) {
   if (meters == null || meters <= kGeofenceMeters) return null;
-  final place = atStore ? 'the store' : "the customer's address";
-  return "You're ${distanceLabel(meters)} from $place. $action anyway? "
-      'The delivery team will be told.';
+  final verb = switch (action) {
+    FarTapAction.arrived => l.stepActionArrived,
+    FarTapAction.pickedUp => l.stepActionPickedUp,
+    FarTapAction.complete => l.stepActionComplete,
+  };
+  final distance = distanceLabel(l, meters);
+  return atStore ? l.stepFarStore(distance, verb) : l.stepFarCustomer(distance, verb);
 }
 
 /// A sentence a rider can act on, for a refusal from the step callables
 /// (feedback.md: never the raw provider message).
-String stepErrorMessage(String code, String? reason) {
+String stepErrorMessage(AppLocalizations l, String code, String? reason) {
   switch (reason) {
     case 'bad_transition':
-      return 'This step is not possible right now — the order may have changed. Go back and open it again.';
+      return l.stepErrBadTransition;
     case 'not_assigned':
-      return 'This order is no longer assigned to you.';
+      return l.stepErrNotAssigned;
     case 'after_pickup':
-      return 'The order is already picked up, so it can no longer be released. Contact support if there is a problem.';
+      return l.stepErrAfterPickup;
     case 'not_found':
-      return 'This order could not be found.';
+      return l.stepErrNotFound;
   }
   switch (code) {
     case 'unavailable':
     case 'deadline-exceeded':
-      return 'No internet connection. Check your network and try again.';
+      return l.stepErrNetwork;
     case 'unauthenticated':
-      return 'Your session has expired. Please sign in again.';
+      return l.stepErrSession;
     case 'permission-denied':
-      return 'This order is no longer assigned to you.';
+      return l.stepErrNotAssigned;
     default:
-      return 'Could not update the order. Please try again.';
+      return l.stepErrUpdate;
   }
 }
 
-/// A refusal the screen shows as-is.
+/// A sentence for a confirmDelivery refusal (feedback.md §2: never the raw
+/// provider message). [retryAfterSec] is details.retryAfterSec on a lockout —
+/// DLV-0: five wrong codes lock the order for 15 minutes on the server.
+String deliveryConfirmError(AppLocalizations l, String code, {String? reason, Object? retryAfterSec}) {
+  switch (code) {
+    case 'permission-denied':
+      return l.deliverWrongCode;
+    case 'not-found':
+      return l.stepErrNotFound;
+    case 'failed-precondition':
+      // Two situations, two things to do; the callable tags which.
+      return reason == 'not_deliverable' ? l.deliverNotActive : l.deliverNoVerification;
+    case 'resource-exhausted':
+      final minutes = retryAfterSec is num ? (retryAfterSec / 60).ceil().clamp(1, 60) : 15;
+      return l.deliverLocked(minutes);
+    default:
+      return l.deliverFailed;
+  }
+}
+
+/// A refused step or release: the callable's code and details.reason
+/// ('unknown' when the call itself failed), worded by [message].
 class RiderStepException implements Exception {
-  final String message;
-  const RiderStepException(this.message);
+  final String code;
+  final String? reason;
+
+  /// A release ("Seller not ready") rather than a step.
+  final bool release;
+  const RiderStepException(this.code, [this.reason, this.release = false]);
+
+  String message(AppLocalizations l) =>
+      release && code == 'unknown' ? l.stepErrRelease : stepErrorMessage(l, code, reason);
+
   @override
-  String toString() => message;
+  String toString() => 'RiderStepException($code, $reason)';
 }
 
 /// The rider's position right now, or null (no permission, no signal).
@@ -133,7 +170,7 @@ Future<({DeliveryPoint? store, DeliveryPoint? customer})> stepPlaces(String orde
 Never _rethrow(FirebaseFunctionsException e) {
   final reason = e.details is Map ? (e.details as Map)['reason'] as String? : null;
   debugPrint('Rider step refused: ${e.code} $reason ${e.message}');
-  throw RiderStepException(stepErrorMessage(e.code, reason));
+  throw RiderStepException(e.code, reason);
 }
 
 /// advanceDeliveryStep. [status]: arrived_at_store, picked_up or out_for_delivery.
@@ -146,7 +183,7 @@ Future<void> advanceDeliveryStep(String orderId, String status, Map<String, dyna
     _rethrow(e);
   } catch (e) {
     debugPrint('advanceDeliveryStep error: $e');
-    throw const RiderStepException('Could not update the order. Please try again.');
+    throw const RiderStepException('unknown');
   }
 }
 
@@ -160,6 +197,6 @@ Future<void> releaseDeliveryOrder(String orderId, {String reason = 'seller_not_r
     _rethrow(e);
   } catch (e) {
     debugPrint('releaseDeliveryOrder error: $e');
-    throw const RiderStepException('Could not release the order. Please try again.');
+    throw const RiderStepException('unknown', null, true);
   }
 }

@@ -78,7 +78,7 @@ class DeliveryOrderProvider extends ChangeNotifier {
   ActiveWork _work = const ActiveWork.loading();
   int? _todayDelivered;
   Set<String> _lastActiveIds = const {};
-  String? _error;
+  steps.RiderStepException? _error;
 
   String? get riderId => _riderId;
   ActiveWork get work => _work;
@@ -95,7 +95,7 @@ class DeliveryOrderProvider extends ChangeNotifier {
   int? get todayDelivered => _todayDelivered;
 
   /// The last step/release refusal, as a sentence.
-  String? get error => _error;
+  steps.RiderStepException? get error => _error;
 
   /// Binds to [riderId] (null = signed out): drops the previous rider's data
   /// and listeners first. Calling it again with the same id does nothing.
@@ -164,29 +164,29 @@ class DeliveryOrderProvider extends ChangeNotifier {
 
   /// Phase DLV-3C: a rider step (arrived_at_store, picked_up,
   /// out_for_delivery) through advanceDeliveryStep. Returns null on success,
-  /// or a sentence to show the rider.
-  Future<String?> advanceStep(String orderId, String status, Map<String, dynamic> fix) async {
+  /// or the refusal (worded by RiderStepException.message).
+  Future<steps.RiderStepException?> advanceStep(String orderId, String status, Map<String, dynamic> fix) async {
     try {
       await steps.advanceDeliveryStep(orderId, status, fix);
       return null;
     } on steps.RiderStepException catch (e) {
-      _error = e.message;
+      _error = e;
       notifyListeners();
-      return e.message;
+      return e;
     }
   }
 
   /// Phase DLV-3C: "Seller not ready" through releaseDeliveryOrder, before
   /// pickup only. The active-work listener drops the order when the server
   /// has released it — no local guess.
-  Future<String?> releaseOrder(String orderId, {required String reason}) async {
+  Future<steps.RiderStepException?> releaseOrder(String orderId, {required String reason}) async {
     try {
       await steps.releaseDeliveryOrder(orderId, reason: reason);
       return null;
     } on steps.RiderStepException catch (e) {
-      _error = e.message;
+      _error = e;
       notifyListeners();
-      return e.message;
+      return e;
     }
   }
 

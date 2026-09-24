@@ -2001,6 +2001,702 @@ abstract class AppLocalizations {
   /// In en, this message translates to:
   /// **'Allow full-screen alerts so a new delivery order rings and shows even when your phone is locked. You can change this later in Settings.'**
   String get offerRingPromptBody;
+
+  /// Offer line: estimated pay
+  ///
+  /// In en, this message translates to:
+  /// **'Earn ~{amount}'**
+  String offerSummaryPay(String amount);
+
+  /// Offer line: pickup distance unknown
+  ///
+  /// In en, this message translates to:
+  /// **'Pickup nearby'**
+  String get offerSummaryNearby;
+
+  /// Offer line: pickup distance
+  ///
+  /// In en, this message translates to:
+  /// **'Pickup {km} km away'**
+  String offerSummaryDistance(String km);
+
+  /// Offer line: item count
+  ///
+  /// In en, this message translates to:
+  /// **'{count, plural, =1{1 item} other{{count} items}}'**
+  String offerSummaryItems(int count);
+
+  /// Offer line: cash to collect
+  ///
+  /// In en, this message translates to:
+  /// **'Collect {amount}'**
+  String offerSummaryCollect(String amount);
+
+  /// Accept refused: taken
+  ///
+  /// In en, this message translates to:
+  /// **'Another delivery partner took this order.'**
+  String get offerRefusalTaken;
+
+  /// Accept refused: expired
+  ///
+  /// In en, this message translates to:
+  /// **'This offer has expired.'**
+  String get offerRefusalExpired;
+
+  /// Accept refused: busy
+  ///
+  /// In en, this message translates to:
+  /// **'Finish your current delivery before taking another.'**
+  String get offerRefusalBusy;
+
+  /// Accept refused: not eligible
+  ///
+  /// In en, this message translates to:
+  /// **'Your account cannot take orders right now.'**
+  String get offerRefusalNotEligible;
+
+  /// Accept refused: no offer
+  ///
+  /// In en, this message translates to:
+  /// **'This order is no longer offered to you.'**
+  String get offerRefusalNoOffer;
+
+  /// Accept refused: rider offline
+  ///
+  /// In en, this message translates to:
+  /// **'Go online to accept orders.'**
+  String get offerRefusalOffline;
+
+  /// Accept refused: COD cash limit
+  ///
+  /// In en, this message translates to:
+  /// **'Deposit the cash you hold with Agrimore before taking cash orders.'**
+  String get offerRefusalCashLimit;
+
+  /// Offer call: signed out
+  ///
+  /// In en, this message translates to:
+  /// **'Please sign in again.'**
+  String get offerRefusalSignIn;
+
+  /// Offer call: other failure
+  ///
+  /// In en, this message translates to:
+  /// **'Could not update this offer. Please try again.'**
+  String get offerRefusalFailed;
+
+  /// A distance under 1 km
+  ///
+  /// In en, this message translates to:
+  /// **'{meters} m'**
+  String distanceMeters(int meters);
+
+  /// A distance in km
+  ///
+  /// In en, this message translates to:
+  /// **'{km} km'**
+  String distanceKm(String km);
+
+  /// Far-tap question at the store
+  ///
+  /// In en, this message translates to:
+  /// **'You\'re {distance} from the store. {action} anyway? The delivery team will be told.'**
+  String stepFarStore(String distance, String action);
+
+  /// Far-tap question at the customer
+  ///
+  /// In en, this message translates to:
+  /// **'You\'re {distance} from the customer\'s address. {action} anyway? The delivery team will be told.'**
+  String stepFarCustomer(String distance, String action);
+
+  /// Far-tap question: the arrived step
+  ///
+  /// In en, this message translates to:
+  /// **'Mark arrived'**
+  String get stepActionArrived;
+
+  /// Far-tap question: the picked-up step
+  ///
+  /// In en, this message translates to:
+  /// **'Mark picked up'**
+  String get stepActionPickedUp;
+
+  /// Far-tap question: completing the delivery
+  ///
+  /// In en, this message translates to:
+  /// **'Complete the delivery'**
+  String get stepActionComplete;
+
+  /// Step refused: bad transition
+  ///
+  /// In en, this message translates to:
+  /// **'This step is not possible right now — the order may have changed. Go back and open it again.'**
+  String get stepErrBadTransition;
+
+  /// Step refused: not assigned
+  ///
+  /// In en, this message translates to:
+  /// **'This order is no longer assigned to you.'**
+  String get stepErrNotAssigned;
+
+  /// Release refused after pickup
+  ///
+  /// In en, this message translates to:
+  /// **'The order is already picked up, so it can no longer be released. Contact support if there is a problem.'**
+  String get stepErrAfterPickup;
+
+  /// Step refused: order missing
+  ///
+  /// In en, this message translates to:
+  /// **'This order could not be found.'**
+  String get stepErrNotFound;
+
+  /// Step call offline
+  ///
+  /// In en, this message translates to:
+  /// **'No internet connection. Check your network and try again.'**
+  String get stepErrNetwork;
+
+  /// Step call signed out
+  ///
+  /// In en, this message translates to:
+  /// **'Your session has expired. Please sign in again.'**
+  String get stepErrSession;
+
+  /// Step call other failure
+  ///
+  /// In en, this message translates to:
+  /// **'Could not update the order. Please try again.'**
+  String get stepErrUpdate;
+
+  /// Release call other failure
+  ///
+  /// In en, this message translates to:
+  /// **'Could not release the order. Please try again.'**
+  String get stepErrRelease;
+
+  /// Safety report refused: rate limit
+  ///
+  /// In en, this message translates to:
+  /// **'Too many reports in a few minutes. Call 112 or Agrimore support.'**
+  String get incidentErrTooMany;
+
+  /// Safety report refused: not a rider
+  ///
+  /// In en, this message translates to:
+  /// **'This account cannot report here. Call 112 or Agrimore support.'**
+  String get incidentErrNotRider;
+
+  /// Safety report offline
+  ///
+  /// In en, this message translates to:
+  /// **'No connection — the report didn\'t go through. Try again, or call 112.'**
+  String get incidentErrNetwork;
+
+  /// Safety report signed out
+  ///
+  /// In en, this message translates to:
+  /// **'You are signed out. Call 112 or Agrimore support.'**
+  String get incidentErrSignedOut;
+
+  /// Safety report other failure
+  ///
+  /// In en, this message translates to:
+  /// **'The report didn\'t go through. Try again, or call 112.'**
+  String get incidentErrFailed;
+
+  /// Safety report state: resolved
+  ///
+  /// In en, this message translates to:
+  /// **'Closed by the Agrimore team'**
+  String get incidentStatusClosed;
+
+  /// Safety report resolved without a note
+  ///
+  /// In en, this message translates to:
+  /// **'No note was added.'**
+  String get incidentStatusNoNote;
+
+  /// Safety report state: acknowledged
+  ///
+  /// In en, this message translates to:
+  /// **'Seen by the Agrimore team'**
+  String get incidentStatusSeen;
+
+  /// Safety report acknowledged detail
+  ///
+  /// In en, this message translates to:
+  /// **'A person on the team has opened your report. If you are in danger, call 112.'**
+  String get incidentStatusSeenDetail;
+
+  /// Safety report state: reported
+  ///
+  /// In en, this message translates to:
+  /// **'Report recorded'**
+  String get incidentStatusRecorded;
+
+  /// Safety report reported detail
+  ///
+  /// In en, this message translates to:
+  /// **'Nobody on the Agrimore team may have seen it yet. If you are in danger, call 112 now.'**
+  String get incidentStatusRecordedDetail;
+
+  /// Emergency sheet title
+  ///
+  /// In en, this message translates to:
+  /// **'Emergency help'**
+  String get emergencyTitle;
+
+  /// Emergency sheet intro — makes no claim that anyone was alerted
+  ///
+  /// In en, this message translates to:
+  /// **'If you or someone else is in danger, call {number} now. This app does not alert the police or Agrimore by itself.'**
+  String emergencyIntro(String number);
+
+  /// Hands the emergency number to the dialer
+  ///
+  /// In en, this message translates to:
+  /// **'Call {number} (emergency)'**
+  String emergencyCall(String number);
+
+  /// Hands the support number to the dialer
+  ///
+  /// In en, this message translates to:
+  /// **'Call Agrimore support'**
+  String get emergencyCallSupport;
+
+  /// The dialer did not open
+  ///
+  /// In en, this message translates to:
+  /// **'Couldn\'t open the phone app. Dial {number} directly.'**
+  String emergencyDialFailed(String number);
+
+  /// Records a safety report
+  ///
+  /// In en, this message translates to:
+  /// **'Tell the Agrimore team'**
+  String get incidentReportAction;
+
+  /// While the safety report is being sent
+  ///
+  /// In en, this message translates to:
+  /// **'Recording your report…'**
+  String get incidentReportSending;
+
+  /// What the safety report does and does not do
+  ///
+  /// In en, this message translates to:
+  /// **'Records a report for the Agrimore team with your current order and, if the phone has it, your position. It does not call anyone.'**
+  String get incidentReportHint;
+
+  /// Offer screen: which order
+  ///
+  /// In en, this message translates to:
+  /// **'Order #{number}'**
+  String offerOrderNumber(String number);
+
+  /// Under the countdown number
+  ///
+  /// In en, this message translates to:
+  /// **'seconds'**
+  String get offerSeconds;
+
+  /// Offer row label: pay
+  ///
+  /// In en, this message translates to:
+  /// **'You earn'**
+  String get offerEarnLabel;
+
+  /// Offer row value: estimated pay
+  ///
+  /// In en, this message translates to:
+  /// **'~{amount} (final pay adds waiting time)'**
+  String offerEarnValue(String amount);
+
+  /// Offer row label: payment
+  ///
+  /// In en, this message translates to:
+  /// **'Payment'**
+  String get offerPaymentLabel;
+
+  /// Offer row value: COD
+  ///
+  /// In en, this message translates to:
+  /// **'Collect {amount} in cash'**
+  String offerPaymentCod(String amount);
+
+  /// Offer row value: prepaid
+  ///
+  /// In en, this message translates to:
+  /// **'Prepaid — nothing to collect'**
+  String get offerPaymentPrepaid;
+
+  /// Offer row label: pickup
+  ///
+  /// In en, this message translates to:
+  /// **'Pickup'**
+  String get offerPickupLabel;
+
+  /// Offer row: pickup distance unknown
+  ///
+  /// In en, this message translates to:
+  /// **'Nearby'**
+  String get offerPickupNearby;
+
+  /// Offer row: pickup distance
+  ///
+  /// In en, this message translates to:
+  /// **'{km} km away'**
+  String offerPickupKm(String km);
+
+  /// Offer row label: drop
+  ///
+  /// In en, this message translates to:
+  /// **'Drop'**
+  String get offerDropLabel;
+
+  /// Offer row: drop distance
+  ///
+  /// In en, this message translates to:
+  /// **'{km} km from pickup'**
+  String offerDropKm(String km);
+
+  /// Offer row: drop pincode
+  ///
+  /// In en, this message translates to:
+  /// **'PIN {pincode}'**
+  String offerDropPin(String pincode);
+
+  /// Offer row: drop not disclosed before acceptance
+  ///
+  /// In en, this message translates to:
+  /// **'Shown after you accept'**
+  String get offerDropHidden;
+
+  /// Offer row label: item count
+  ///
+  /// In en, this message translates to:
+  /// **'Items'**
+  String get offerItemsLabel;
+
+  /// Accept the offer
+  ///
+  /// In en, this message translates to:
+  /// **'Accept order'**
+  String get offerAccept;
+
+  /// Decline the offer
+  ///
+  /// In en, this message translates to:
+  /// **'Decline'**
+  String get offerDecline;
+
+  /// The offer screen closed at expiry
+  ///
+  /// In en, this message translates to:
+  /// **'The offer expired.'**
+  String get offerExpired;
+
+  /// The offer was withdrawn or taken
+  ///
+  /// In en, this message translates to:
+  /// **'This order is no longer available.'**
+  String get offerGone;
+
+  /// Accepted but the order could not be opened
+  ///
+  /// In en, this message translates to:
+  /// **'Order accepted. Open it from your dashboard.'**
+  String get offerAcceptedOpenDashboard;
+
+  /// Tooltip: call the customer
+  ///
+  /// In en, this message translates to:
+  /// **'Call customer'**
+  String get activeCallCustomer;
+
+  /// Call the customer
+  ///
+  /// In en, this message translates to:
+  /// **'Call'**
+  String get activeCall;
+
+  /// Open turn-by-turn directions
+  ///
+  /// In en, this message translates to:
+  /// **'Navigate'**
+  String get activeNavigate;
+
+  /// Section: the customer
+  ///
+  /// In en, this message translates to:
+  /// **'Customer'**
+  String get activeSectionCustomer;
+
+  /// Section: where to deliver
+  ///
+  /// In en, this message translates to:
+  /// **'Delivery address'**
+  String get activeSectionAddress;
+
+  /// Section: order items
+  ///
+  /// In en, this message translates to:
+  /// **'Items ({count})'**
+  String activeSectionItems(int count);
+
+  /// Quantity of an item
+  ///
+  /// In en, this message translates to:
+  /// **'x{quantity}'**
+  String activeItemQuantity(int quantity);
+
+  /// Section: payment
+  ///
+  /// In en, this message translates to:
+  /// **'Payment'**
+  String get activeSectionPayment;
+
+  /// Payment method: COD
+  ///
+  /// In en, this message translates to:
+  /// **'Cash on delivery'**
+  String get activePaymentCod;
+
+  /// Payment method: paid online
+  ///
+  /// In en, this message translates to:
+  /// **'Prepaid'**
+  String get activePaymentPrepaid;
+
+  /// Section: step timeline
+  ///
+  /// In en, this message translates to:
+  /// **'Delivery progress'**
+  String get activeSectionProgress;
+
+  /// Timeline step
+  ///
+  /// In en, this message translates to:
+  /// **'Accepted'**
+  String get activeStepAccepted;
+
+  /// Timeline step
+  ///
+  /// In en, this message translates to:
+  /// **'Arrived at the store'**
+  String get activeStepArrived;
+
+  /// Timeline step
+  ///
+  /// In en, this message translates to:
+  /// **'Picked up'**
+  String get activeStepPickedUp;
+
+  /// Timeline step
+  ///
+  /// In en, this message translates to:
+  /// **'Out for delivery'**
+  String get activeStepOutForDelivery;
+
+  /// Timeline step
+  ///
+  /// In en, this message translates to:
+  /// **'Delivered'**
+  String get activeStepDelivered;
+
+  /// Next-step button
+  ///
+  /// In en, this message translates to:
+  /// **'Arrived at store'**
+  String get activeActionArrived;
+
+  /// Next-step button
+  ///
+  /// In en, this message translates to:
+  /// **'Picked up'**
+  String get activeActionPickedUp;
+
+  /// Next-step button
+  ///
+  /// In en, this message translates to:
+  /// **'Start delivery'**
+  String get activeActionStart;
+
+  /// Next-step button
+  ///
+  /// In en, this message translates to:
+  /// **'Complete delivery'**
+  String get activeActionComplete;
+
+  /// Toast after a step is recorded
+  ///
+  /// In en, this message translates to:
+  /// **'Done: {step}'**
+  String activeStepDone(String step);
+
+  /// Section: delivery photo
+  ///
+  /// In en, this message translates to:
+  /// **'Proof of delivery (optional)'**
+  String get activeProofTitle;
+
+  /// Empty photo tile
+  ///
+  /// In en, this message translates to:
+  /// **'Tap to take a delivery photo'**
+  String get activeProofTake;
+
+  /// Retake the photo
+  ///
+  /// In en, this message translates to:
+  /// **'Retake'**
+  String get activeProofRetake;
+
+  /// Remove the photo
+  ///
+  /// In en, this message translates to:
+  /// **'Remove'**
+  String get activeProofRemove;
+
+  /// Release the order before pickup
+  ///
+  /// In en, this message translates to:
+  /// **'Seller not ready'**
+  String get activeSellerNotReady;
+
+  /// Confirm releasing the order
+  ///
+  /// In en, this message translates to:
+  /// **'Seller not ready?'**
+  String get activeSellerNotReadyTitle;
+
+  /// What releasing does
+  ///
+  /// In en, this message translates to:
+  /// **'This releases the order back to the pickup queue and tells the team.'**
+  String get activeSellerNotReadyBody;
+
+  /// Confirm release
+  ///
+  /// In en, this message translates to:
+  /// **'Release order'**
+  String get activeSellerNotReadyConfirm;
+
+  /// Keep the order
+  ///
+  /// In en, this message translates to:
+  /// **'Wait'**
+  String get activeSellerNotReadyWait;
+
+  /// Toast after release
+  ///
+  /// In en, this message translates to:
+  /// **'Order released for reassignment'**
+  String get activeReleased;
+
+  /// Far-tap confirmation title
+  ///
+  /// In en, this message translates to:
+  /// **'Are you there?'**
+  String get activeFarTitle;
+
+  /// Far-tap: do not go ahead
+  ///
+  /// In en, this message translates to:
+  /// **'Not yet'**
+  String get activeFarNotYet;
+
+  /// Code sheet title
+  ///
+  /// In en, this message translates to:
+  /// **'Verify delivery'**
+  String get verifyTitle;
+
+  /// Code sheet instruction
+  ///
+  /// In en, this message translates to:
+  /// **'Ask the customer for their 6-digit delivery code.'**
+  String get verifyHint;
+
+  /// Screen-reader label for a code cell
+  ///
+  /// In en, this message translates to:
+  /// **'Digit {index} of 6'**
+  String verifyDigit(int index);
+
+  /// Code shorter than 6 digits
+  ///
+  /// In en, this message translates to:
+  /// **'Enter the full 6-digit code'**
+  String get verifyIncomplete;
+
+  /// Submit the code
+  ///
+  /// In en, this message translates to:
+  /// **'Verify & complete'**
+  String get verifySubmit;
+
+  /// While the code is checked
+  ///
+  /// In en, this message translates to:
+  /// **'Verifying…'**
+  String get verifySubmitting;
+
+  /// confirmDelivery: wrong code
+  ///
+  /// In en, this message translates to:
+  /// **'Incorrect code. Please try again.'**
+  String get deliverWrongCode;
+
+  /// confirmDelivery: not deliverable
+  ///
+  /// In en, this message translates to:
+  /// **'This order is no longer active and cannot be marked delivered.'**
+  String get deliverNotActive;
+
+  /// confirmDelivery: other precondition
+  ///
+  /// In en, this message translates to:
+  /// **'Verification is not available for this order. Please contact support.'**
+  String get deliverNoVerification;
+
+  /// confirmDelivery: locked out
+  ///
+  /// In en, this message translates to:
+  /// **'{minutes, plural, =1{Too many incorrect codes. Check the code with the customer and try again in 1 min.} other{Too many incorrect codes. Check the code with the customer and try again in {minutes} min.}}'**
+  String deliverLocked(int minutes);
+
+  /// confirmDelivery: other failure
+  ///
+  /// In en, this message translates to:
+  /// **'Could not confirm delivery. Please try again.'**
+  String get deliverFailed;
+
+  /// The rider declined a far code entry
+  ///
+  /// In en, this message translates to:
+  /// **'Delivery not completed. Enter the code when you are with the customer.'**
+  String get deliverNotCompletedFar;
+
+  /// After a confirmed delivery
+  ///
+  /// In en, this message translates to:
+  /// **'Delivery complete'**
+  String get deliveredTitle;
+
+  /// After a confirmed delivery
+  ///
+  /// In en, this message translates to:
+  /// **'Order #{number} has been delivered.'**
+  String deliveredBody(String number);
+
+  /// Leave the finished order
+  ///
+  /// In en, this message translates to:
+  /// **'Back to dashboard'**
+  String get deliveredBack;
 }
 
 class _AppLocalizationsDelegate

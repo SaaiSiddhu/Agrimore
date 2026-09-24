@@ -14,8 +14,9 @@ import 'package:flutter/services.dart';
 import 'package:flutter_local_notifications/flutter_local_notifications.dart';
 import 'package:provider/provider.dart';
 import 'package:agrimore_core/agrimore_core.dart';
-import 'package:agrimore_ui/agrimore_ui.dart' show SnackbarHelper;
+import 'package:agrimore_ui/agrimore_ui.dart';
 
+import '../../l10n/app_localizations.dart';
 import '../../offers/delivery_offer.dart';
 import '../../offers/offer_alerts.dart';
 import '../../offers/offer_launch.dart';
@@ -46,7 +47,7 @@ class _IncomingOfferScreenState extends State<IncomingOfferScreen> {
     super.initState();
     IncomingOfferScreen.openOrderId = widget.orderId;
     OfferPlatform.showOverLockScreen(true);
-    _tick = Timer.periodic(const Duration(milliseconds: 250), (_) {
+    _tick = Timer.periodic(DeliveryTiming.offerCountdownTick, (_) {
       if (mounted) setState(() {});
     });
   }
@@ -71,11 +72,12 @@ class _IncomingOfferScreenState extends State<IncomingOfferScreen> {
     if (navigator.canPop()) navigator.pop();
     if (message != null) {
       final ctx = deliveryNavigatorKey.currentContext;
-      if (ctx != null) SnackbarHelper.showInfo(ctx, message);
+      if (ctx != null) WsToast.show(ctx, message);
     }
   }
 
   Future<void> _accept() async {
+    final l = AppLocalizations.of(context);
     setState(() => _busy = true);
     HapticFeedback.mediumImpact();
     final provider = context.read<OfferProvider>();
@@ -83,16 +85,13 @@ class _IncomingOfferScreenState extends State<IncomingOfferScreen> {
     if (!mounted) return;
     if (!result.ok) {
       setState(() => _busy = false);
-      _close(result.message);
+      _close(result.message(l));
       return;
     }
     await cancelOfferAlert(FlutterLocalNotificationsPlugin(), widget.orderId);
     // The order is now this rider's, so its full details are readable.
     try {
-      final doc = await FirebaseFirestore.instance
-          .collection('orders')
-          .doc(widget.orderId)
-          .get();
+      final doc = await FirebaseFirestore.instance.collection('orders').doc(widget.orderId).get();
       if (!mounted) return;
       final order = OrderModel.fromMap(doc.data() ?? {}, doc.id);
       _closing = true;
@@ -103,20 +102,24 @@ class _IncomingOfferScreenState extends State<IncomingOfferScreen> {
       debugPrint('Opening accepted order failed: $e');
       if (!mounted) return;
       // Accepted all the same: the dashboard's active-order card opens it.
-      _close('Order accepted. Open it from your dashboard.');
+      _close(l.offerAcceptedOpenDashboard);
     }
   }
 
   Future<void> _decline() async {
+    final l = AppLocalizations.of(context);
     setState(() => _busy = true);
     final provider = context.read<OfferProvider>();
     final result = await provider.decline(widget.orderId);
     if (!mounted) return;
-    _close(result.ok ? null : result.message);
+    _close(result.message(l));
   }
 
   @override
   Widget build(BuildContext context) {
+    final l = AppLocalizations.of(context);
+    final t = context.ws;
+    final text = Theme.of(context).textTheme;
     final provider = context.watch<OfferProvider>();
     final now = DateTime.now();
     final offer = provider.byOrderId(widget.orderId);
@@ -127,30 +130,27 @@ class _IncomingOfferScreenState extends State<IncomingOfferScreen> {
     if (!_busy && !_closing && (offer == null || !offer.isLive(now))) {
       final expired = _last != null && !_last!.isLive(now);
       WidgetsBinding.instance.addPostFrameCallback((_) {
-        if (mounted) {
-          _close(_last == null
-              ? null
-              : expired
-                  ? 'The offer expired.'
-                  : 'This order is no longer available.');
-        }
+        if (mounted) _close(_last == null ? null : (expired ? l.offerExpired : l.offerGone));
       });
     }
 
     final shown = offer ?? _last;
-    final cs = Theme.of(context).colorScheme;
     if (shown == null) {
       return const Scaffold(body: Center(child: CircularProgressIndicator()));
     }
     final secondsLeft = (shown.remaining(now).inMilliseconds / 1000).ceil();
+    final drop = [
+      if (shown.dropDistanceKm != null) l.offerDropKm(shown.dropDistanceKm!.toStringAsFixed(1)),
+      if (shown.dropPincode != null) l.offerDropPin(shown.dropPincode!),
+    ].join(' · ');
 
     return PopScope(
       canPop: !_busy,
       child: Scaffold(
-        backgroundColor: cs.surface,
+        backgroundColor: t.surface,
         body: SafeArea(
           child: Padding(
-            padding: const EdgeInsets.all(24),
+            padding: const EdgeInsets.all(WsSpace.s24),
             // Details scroll; Accept/Decline stay pinned at the bottom so a
             // small phone can never push them off-screen (the widget test
             // caught a 29 px overflow at 600 px height).
@@ -160,131 +160,60 @@ class _IncomingOfferScreenState extends State<IncomingOfferScreen> {
                   child: SingleChildScrollView(
                     child: Column(
                       children: [
-                        const SizedBox(height: 12),
-                        Text(
-                          'New delivery request',
-                          style: TextStyle(
-                            fontSize: 22,
-                            fontWeight: FontWeight.w800,
-                            color: cs.onSurface,
-                          ),
+                        const SizedBox(height: WsSpace.s12),
+                        Text(l.offerNotificationTitle, style: text.headlineSmall?.copyWith(color: t.textPrimary)),
+                        const SizedBox(height: WsSpace.s4),
+                        Text(l.offerOrderNumber(shown.orderNumber), style: text.bodyMedium?.copyWith(color: t.textSecondary)),
+                        const SizedBox(height: WsSpace.s24),
+                        WsCountdownRing(
+                          fractionLeft: shown.fractionLeft(now),
+                          secondsLeft: secondsLeft,
+                          unitLabel: l.offerSeconds,
+                          urgent: secondsLeft <= 10,
                         ),
-                        const SizedBox(height: 4),
-                        Text(
-                          'Order #${shown.orderNumber}',
-                          style: TextStyle(color: cs.onSurfaceVariant),
-                        ),
-                        const SizedBox(height: 28),
-                        SizedBox(
-                          width: 150,
-                          height: 150,
-                          child: Stack(
-                            fit: StackFit.expand,
-                            children: [
-                              CircularProgressIndicator(
-                                value: shown.fractionLeft(now),
-                                strokeWidth: 10,
-                                backgroundColor: cs.surfaceContainerHighest,
-                                color:
-                                    secondsLeft <= 10 ? cs.error : cs.primary,
-                              ),
-                              Center(
-                                child: Column(
-                                  mainAxisSize: MainAxisSize.min,
-                                  children: [
-                                    Text(
-                                      '$secondsLeft',
-                                      style: TextStyle(
-                                        fontSize: 44,
-                                        fontWeight: FontWeight.w900,
-                                        color: cs.onSurface,
-                                      ),
-                                    ),
-                                    Text(
-                                      'seconds',
-                                      style:
-                                          TextStyle(color: cs.onSurfaceVariant),
-                                    ),
-                                  ],
-                                ),
-                              ),
-                            ],
-                          ),
-                        ),
-                        const SizedBox(height: 28),
+                        const SizedBox(height: WsSpace.s24),
                         // DLV-4B: what this order pays, before the rider decides.
                         if (shown.estimatedPay != null)
                           _Row(
-                            icon: Icons.account_balance_wallet_rounded,
-                            label: 'You earn',
-                            value: '~₹${shown.estimatedPay!.round()} (final pay adds waiting time)',
+                            icon: AgIcons.wallet,
+                            label: l.offerEarnLabel,
+                            value: l.offerEarnValue(AgFormat.rupeesWhole(shown.estimatedPay!.round())),
                             emphasise: true,
                           ),
                         _Row(
-                          icon: Icons.payments_rounded,
-                          label: 'Payment',
+                          icon: AgIcons.rupee,
+                          label: l.offerPaymentLabel,
                           value: shown.isCod
-                              ? 'Collect ₹${shown.codAmount.round()} in cash'
-                              : 'Prepaid — nothing to collect',
+                              ? l.offerPaymentCod(AgFormat.rupeesWhole(shown.codAmount.round()))
+                              : l.offerPaymentPrepaid,
                           emphasise: shown.isCod,
                         ),
                         _Row(
-                          icon: Icons.storefront_rounded,
-                          label: 'Pickup',
+                          icon: AgIcons.store,
+                          label: l.offerPickupLabel,
                           value: [
                             shown.pickupDistanceKm == null
-                                ? 'Nearby'
-                                : '${shown.pickupDistanceKm!.toStringAsFixed(1)} km away',
+                                ? l.offerPickupNearby
+                                : l.offerPickupKm(shown.pickupDistanceKm!.toStringAsFixed(1)),
                             if (shown.pickupArea != null) shown.pickupArea!,
                           ].join(' · '),
                         ),
-                        _Row(
-                          icon: Icons.location_on_rounded,
-                          label: 'Drop',
-                          value: [
-                            if (shown.dropDistanceKm != null)
-                              '${shown.dropDistanceKm!.toStringAsFixed(1)} km from pickup',
-                            if (shown.dropPincode != null)
-                              'PIN ${shown.dropPincode}',
-                          ].join(' · ').ifEmpty('Shown after you accept'),
-                        ),
-                        _Row(
-                          icon: Icons.inventory_2_rounded,
-                          label: 'Items',
-                          value: '${shown.itemCount}',
-                        ),
+                        _Row(icon: AgIcons.location, label: l.offerDropLabel, value: drop.isEmpty ? l.offerDropHidden : drop),
+                        _Row(icon: AgIcons.product, label: l.offerItemsLabel, value: '${shown.itemCount}'),
                       ],
                     ),
                   ),
                 ),
-                const SizedBox(height: 16),
-                SizedBox(
-                  width: double.infinity,
-                  height: 56,
-                  child: FilledButton(
-                    onPressed: _busy ? null : _accept,
-                    child: _busy
-                        ? const SizedBox(
-                            width: 22,
-                            height: 22,
-                            child: CircularProgressIndicator(strokeWidth: 2.5),
-                          )
-                        : const Text(
-                            'Accept order',
-                            style: TextStyle(
-                                fontSize: 17, fontWeight: FontWeight.w800),
-                          ),
-                  ),
+                const SizedBox(height: WsSpace.s16),
+                FilledButton(
+                  onPressed: _busy ? null : _accept,
+                  child: _busy
+                      ? const SizedBox.square(
+                          dimension: WsIconSize.control, child: CircularProgressIndicator(strokeWidth: WsSize.focusRing))
+                      : Text(l.offerAccept),
                 ),
-                const SizedBox(height: 12),
-                SizedBox(
-                  width: double.infinity,
-                  height: 48,
-                  child: OutlinedButton(
-                    onPressed: _busy ? null : _decline,
-                    child: const Text('Decline'),
-                  ),
-                ),
+                const SizedBox(height: WsSpace.s12),
+                OutlinedButton(onPressed: _busy ? null : _decline, child: Text(l.offerDecline)),
               ],
             ),
           ),
@@ -295,12 +224,7 @@ class _IncomingOfferScreenState extends State<IncomingOfferScreen> {
 }
 
 class _Row extends StatelessWidget {
-  const _Row({
-    required this.icon,
-    required this.label,
-    required this.value,
-    this.emphasise = false,
-  });
+  const _Row({required this.icon, required this.label, required this.value, this.emphasise = false});
 
   final IconData icon;
   final String label;
@@ -309,32 +233,29 @@ class _Row extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final cs = Theme.of(context).colorScheme;
+    final t = context.ws;
+    final text = Theme.of(context).textTheme;
     // Label above value: at large font scales a side-by-side label squeezed
     // the value into three lines (seen on the emulator).
     return Padding(
-      padding: const EdgeInsets.symmetric(vertical: 6),
+      padding: const EdgeInsets.symmetric(vertical: WsSpace.s8),
       child: Row(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
           Padding(
-            padding: const EdgeInsets.only(top: 2),
-            child: Icon(icon, color: cs.primary),
+            padding: const EdgeInsets.only(top: WsSpace.s2),
+            child: Icon(icon, color: t.primary),
           ),
-          const SizedBox(width: 12),
+          const SizedBox(width: WsSpace.s12),
           Expanded(
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
-                Text(label,
-                    style: TextStyle(fontSize: 12, color: cs.onSurfaceVariant)),
+                Text(label, style: text.bodySmall?.copyWith(color: t.textSecondary)),
                 Text(
                   value,
-                  style: TextStyle(
-                    fontSize: emphasise ? 18 : 15,
-                    fontWeight: emphasise ? FontWeight.w800 : FontWeight.w600,
-                    color: emphasise ? cs.primary : cs.onSurface,
-                  ),
+                  style: (emphasise ? text.titleMedium : text.bodyLarge)
+                      ?.copyWith(color: emphasise ? t.primary : t.textPrimary),
                 ),
               ],
             ),
@@ -343,8 +264,4 @@ class _Row extends StatelessWidget {
       ),
     );
   }
-}
-
-extension on String {
-  String ifEmpty(String fallback) => isEmpty ? fallback : this;
 }

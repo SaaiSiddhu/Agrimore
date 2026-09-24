@@ -11,6 +11,7 @@
 //
 // The pure parts (request id, status wording, refusal wording) are covered by
 // test/incident_report_test.dart.
+import '../l10n/app_localizations.dart';
 import 'package:agrimore_core/agrimore_core.dart';
 import 'dart:async';
 import 'dart:math';
@@ -22,12 +23,15 @@ import 'package:geolocator/geolocator.dart';
 
 import '../delivery/rider_steps.dart' show fixPayload;
 
-/// A report that did not go through, with a sentence the rider can act on.
+/// A report that did not go through: the callable's code and details.reason,
+/// worded by [message] ('unavailable' when the call itself failed).
 class IncidentReportException implements Exception {
-  const IncidentReportException(this.message);
-  final String message;
+  const IncidentReportException(this.code, [this.reason]);
+  final String code;
+  final String? reason;
+  String message(AppLocalizations l) => incidentErrorMessage(l, code, reason);
   @override
-  String toString() => message;
+  String toString() => 'IncidentReportException($code, $reason)';
 }
 
 /// Sends the report; returns the incident id. Throws [IncidentReportException].
@@ -52,40 +56,32 @@ String newIncidentRequestId([Random? random]) {
 }
 
 /// A sentence for a refusal from reportRiderIncident (never the raw message).
-String incidentErrorMessage(String code, String? reason) {
+String incidentErrorMessage(AppLocalizations l, String code, String? reason) {
   switch (reason) {
     case 'too_many':
-      return 'Too many reports in a few minutes. Call 112 or Agrimore support.';
+      return l.incidentErrTooMany;
     case 'not_a_rider':
-      return 'This account cannot report here. Call 112 or Agrimore support.';
+      return l.incidentErrNotRider;
   }
   switch (code) {
     case 'unavailable':
     case 'deadline-exceeded':
-      return "No connection — the report didn't go through. Try again, or call 112.";
+      return l.incidentErrNetwork;
     case 'unauthenticated':
-      return 'You are signed out. Call 112 or Agrimore support.';
+      return l.incidentErrSignedOut;
   }
-  return "The report didn't go through. Try again, or call 112.";
+  return l.incidentErrFailed;
 }
 
 /// What the rider sees for the record's state: a title and a line under it.
-({String title, String detail}) incidentStatusText(Map<String, dynamic>? data) {
+({String title, String detail}) incidentStatusText(AppLocalizations l, Map<String, dynamic>? data) {
   final status = data?['status'];
   if (status == 'resolved') {
     final r = (data?['resolution'] as String?)?.trim() ?? '';
-    return (title: 'Closed by the Agrimore team', detail: r.isEmpty ? 'No note was added.' : r);
+    return (title: l.incidentStatusClosed, detail: r.isEmpty ? l.incidentStatusNoNote : r);
   }
-  if (status == 'acknowledged') {
-    return (
-      title: 'Seen by the Agrimore team',
-      detail: 'A person on the team has opened your report. If you are in danger, call 112.',
-    );
-  }
-  return (
-    title: 'Report recorded',
-    detail: 'Nobody on the Agrimore team may have seen it yet. If you are in danger, call 112 now.',
-  );
+  if (status == 'acknowledged') return (title: l.incidentStatusSeen, detail: l.incidentStatusSeenDetail);
+  return (title: l.incidentStatusRecorded, detail: l.incidentStatusRecordedDetail);
 }
 
 Future<String> reportIncidentCallable(Map<String, dynamic> payload) async {
@@ -95,16 +91,16 @@ Future<String> reportIncidentCallable(Map<String, dynamic> payload) async {
         .call<Map<String, dynamic>>(payload);
     final id = r.data['incidentId'];
     if (id is String && id.isNotEmpty) return id;
-    throw const IncidentReportException("The report didn't go through. Try again, or call 112.");
+    throw const IncidentReportException('internal');
   } on FirebaseFunctionsException catch (e) {
     final reason = e.details is Map ? (e.details as Map)['reason'] as String? : null;
     debugPrint('reportRiderIncident refused: ${e.code} $reason');
-    throw IncidentReportException(incidentErrorMessage(e.code, reason));
+    throw IncidentReportException(e.code, reason);
   } on IncidentReportException {
     rethrow;
   } catch (e) {
     debugPrint('reportRiderIncident error: $e');
-    throw IncidentReportException(incidentErrorMessage('unavailable', null));
+    throw const IncidentReportException('unavailable');
   }
 }
 

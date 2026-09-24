@@ -6,6 +6,7 @@
 // screen for each new one, and honours OfferLaunch requests from notification
 // taps and full-screen launches. One offer screen at a time; when it closes,
 // the next live offer (if any) opens.
+import '../app/device_localizations.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_local_notifications/flutter_local_notifications.dart';
 import 'package:provider/provider.dart';
@@ -54,7 +55,7 @@ class _OfferCoordinatorState extends State<OfferCoordinator> {
       FlutterLocalNotificationsPlugin(),
       orderId: offer.orderId,
       expiresAt: offer.expiresAt,
-      body: offer.summary,
+      body: offer.summary(deviceLocalizations()),
     );
     _open(offer.orderId);
   }
