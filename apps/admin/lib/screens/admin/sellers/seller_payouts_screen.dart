@@ -4,6 +4,9 @@ import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:agrimore_ui/agrimore_ui.dart';
 
+import '../delivery/rider_incidents_admin.dart' show appBarTabs;
+import 'seller_wallet_admin.dart';
+
 /// SELLER-MONEY-1: settles seller payouts. `seller_payouts` rows are created
 /// server-side when an order is delivered (sellerNotifications.ts) — before
 /// this screen nothing ever marked them paid, so sellers saw every payout as
@@ -112,54 +115,78 @@ class _SellerPayoutsScreenState extends State<SellerPayoutsScreen> {
 
   @override
   Widget build(BuildContext context) {
-    return Scaffold(
-      appBar: AppBar(title: const Text('Seller Payouts')),
-      body: Column(
-        children: [
-          Padding(
-            padding: const EdgeInsets.fromLTRB(16, 12, 16, 4),
-            child: SegmentedButton<String>(
-              segments: const [
-                ButtonSegment(value: 'pending', label: Text('Pending')),
-                ButtonSegment(value: 'paid', label: Text('Paid')),
+    // SELLER-WALLET-1: sellers now request withdrawals and change their
+    // bank/UPI from the seller app; those come first. The per-order list
+    // stays for payouts settled one by one.
+    return DefaultTabController(
+      length: 3,
+      child: Scaffold(
+        appBar: AppBar(
+          title: const Text('Seller Payouts'),
+          bottom: appBarTabs(
+              context,
+              const [
+                Tab(text: 'Withdrawals'),
+                Tab(text: 'Bank/UPI changes'),
+                Tab(text: 'Order payouts'),
               ],
-              selected: {_status},
-              onSelectionChanged: (s) => setState(() => _status = s.first),
-            ),
-          ),
-          Expanded(
-            child: StreamBuilder<QuerySnapshot<Map<String, dynamic>>>(
-              stream: _db
-                  .collection('seller_payouts')
-                  .where('status', isEqualTo: _status)
-                  .orderBy('createdAt', descending: true)
-                  .limit(200)
-                  .snapshots(),
-              builder: (context, snap) {
-                if (snap.hasError) {
-                  debugPrint('Seller payouts load failed: ${snap.error}');
-                  return const Center(child: Text("Couldn't load payouts. Check your connection and try again."));
-                }
-                if (!snap.hasData) return const Center(child: CircularProgressIndicator());
-                final docs = snap.data!.docs;
-                if (docs.isEmpty) {
-                  return Center(child: Text(_status == 'pending' ? 'No pending payouts' : 'No paid payouts yet'));
-                }
-                final total = docs.fold<double>(0, (a, d) => a + _num(d.data()['netAmount'] ?? d.data()['amount']));
-                return ListView(
-                  padding: const EdgeInsets.all(16),
-                  children: [
-                    Text('${docs.length} payouts · ${AgFormat.rupees(total)}',
-                        style: Theme.of(context).textTheme.titleMedium),
-                    const SizedBox(height: 12),
-                    for (final doc in docs) _tile(doc.id, doc.data()),
-                  ],
-                );
-              },
-            ),
-          ),
-        ],
+              scrollable: true),
+        ),
+        body: TabBarView(children: [
+          const SellerWithdrawalsTab(),
+          const SellerPayoutChangesTab(),
+          _orderPayouts(context),
+        ]),
       ),
+    );
+  }
+
+  Widget _orderPayouts(BuildContext context) {
+    return Column(
+      children: [
+        Padding(
+          padding: const EdgeInsets.fromLTRB(16, 12, 16, 4),
+          child: SegmentedButton<String>(
+            segments: const [
+              ButtonSegment(value: 'pending', label: Text('Pending')),
+              ButtonSegment(value: 'paid', label: Text('Paid')),
+            ],
+            selected: {_status},
+            onSelectionChanged: (s) => setState(() => _status = s.first),
+          ),
+        ),
+        Expanded(
+          child: StreamBuilder<QuerySnapshot<Map<String, dynamic>>>(
+            stream: _db
+                .collection('seller_payouts')
+                .where('status', isEqualTo: _status)
+                .orderBy('createdAt', descending: true)
+                .limit(200)
+                .snapshots(),
+            builder: (context, snap) {
+              if (snap.hasError) {
+                debugPrint('Seller payouts load failed: ${snap.error}');
+                return const Center(child: Text("Couldn't load payouts. Check your connection and try again."));
+              }
+              if (!snap.hasData) return const Center(child: CircularProgressIndicator());
+              final docs = snap.data!.docs;
+              if (docs.isEmpty) {
+                return Center(child: Text(_status == 'pending' ? 'No pending payouts' : 'No paid payouts yet'));
+              }
+              final total = docs.fold<double>(0, (a, d) => a + _num(d.data()['netAmount'] ?? d.data()['amount']));
+              return ListView(
+                padding: const EdgeInsets.all(16),
+                children: [
+                  Text('${docs.length} payouts · ${AgFormat.rupees(total)}',
+                      style: Theme.of(context).textTheme.titleMedium),
+                  const SizedBox(height: 12),
+                  for (final doc in docs) _tile(doc.id, doc.data()),
+                ],
+              );
+            },
+          ),
+        ),
+      ],
     );
   }
 
