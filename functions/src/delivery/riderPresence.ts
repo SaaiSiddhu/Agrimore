@@ -19,7 +19,7 @@
 // (phaseDLV2A_trigger_test, P0-FIELDVALUE).
 
 import * as admin from "firebase-admin";
-import { FieldValue, Timestamp } from "firebase-admin/firestore";
+import { FieldPath, FieldValue, Timestamp } from "firebase-admin/firestore";
 import { RIDER_ACTIVE_ORDER_STATUSES } from "./dispatch";
 
 type Db = FirebaseFirestore.Firestore;
@@ -48,14 +48,32 @@ export function lastHeardMs(p: FirebaseFirestore.DocumentData): number | null {
   return Math.max(a, b);
 }
 
-/** Takes silent online riders offline. Returns the riders taken offline. */
-export async function sweepSilentRiders(db: Db, nowMs: number, limit = 400): Promise<string[]> {
-  const online = await db.collection("delivery_partners").where("isOnline", "==", true).limit(limit).get();
-  if (online.empty) return [];
-  const silent = online.docs.filter((d) => {
-    const heard = lastHeardMs(d.data());
-    return heard === null || nowMs - heard > SILENT_OFFLINE_MS;
-  });
+/**
+ * Takes silent online riders offline. Returns the riders taken offline.
+ *
+ * DLV-D1: pages through EVERY online rider (it read only the first 400, so
+ * riders beyond that were never swept), and each offline write carries the
+ * document's update time as a precondition — a location that arrives after
+ * the sweep read the rider makes that write fail, and the rider stays online
+ * (it used to be overwritten). `beforeWrite` exists for the race suite only.
+ */
+export async function sweepSilentRiders(
+  db: Db, nowMs: number, pageSize = 400, opts: { beforeWrite?: () => Promise<unknown> } = {}
+): Promise<string[]> {
+  const silent: FirebaseFirestore.QueryDocumentSnapshot[] = [];
+  let last: FirebaseFirestore.QueryDocumentSnapshot | null = null;
+  for (;;) {
+    let q = db.collection("delivery_partners").where("isOnline", "==", true)
+      .orderBy(FieldPath.documentId()).limit(pageSize);
+    if (last) q = q.startAfter(last);
+    const page = await q.get();
+    for (const d of page.docs) {
+      const heard = lastHeardMs(d.data());
+      if (heard === null || nowMs - heard > SILENT_OFFLINE_MS) silent.push(d);
+    }
+    if (page.size < pageSize) break;
+    last = page.docs[page.docs.length - 1];
+  }
   if (!silent.length) return [];
 
   const active = await db.collection("orders")
@@ -66,22 +84,32 @@ export async function sweepSilentRiders(db: Db, nowMs: number, limit = 400): Pro
     if (typeof id === "string" && id) busy.add(id);
   });
 
-  const off = silent.filter((d) => !busy.has(d.id));
-  if (!off.length) return [];
-  const batch = db.batch();
-  off.forEach((d) => batch.update(d.ref, {
-    isOnline: false,
-    offlineReason: "no_location",
-    offlineAt: Timestamp.fromMillis(nowMs),
-    lastStatusUpdate: Timestamp.fromMillis(nowMs),
+  const candidates = silent.filter((d) => !busy.has(d.id));
+  if (!candidates.length) return [];
+  if (opts.beforeWrite) await opts.beforeWrite();
+  const off: string[] = [];
+  await Promise.all(candidates.map(async (d) => {
+    try {
+      await d.ref.update({
+        isOnline: false,
+        offlineReason: "no_location",
+        offlineAt: Timestamp.fromMillis(nowMs),
+        lastStatusUpdate: Timestamp.fromMillis(nowMs),
+      }, { lastUpdateTime: d.updateTime });
+      off.push(d.id);
+    } catch (e: unknown) {
+      // FAILED_PRECONDITION: the rider changed since we read it (a new
+      // location, or they went offline themselves) — leave them be.
+      const code = (e as { code?: number | string })?.code;
+      if (code !== 9 && code !== "failed-precondition") throw e;
+    }
   }));
-  await batch.commit();
-  await Promise.all(off.map((d) => sendRiderPush(db, d.id, {
+  await Promise.all(off.map((id) => sendRiderPush(db, id, {
     title: "You're offline",
     body: "We haven't received your location for 15 minutes. Open the app to go online again.",
     data: { type: "rider_offline" },
-  }).catch((e) => console.warn(`[presence] offline push to ${d.id} failed: ${e?.message ?? e}`))));
-  return off.map((d) => d.id);
+  }).catch((e) => console.warn(`[presence] offline push to ${id} failed: ${e?.message ?? e}`))));
+  return off.sort();
 }
 
 function tokensOf(data: FirebaseFirestore.DocumentData | undefined): string[] {
