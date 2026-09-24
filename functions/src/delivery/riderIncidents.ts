@@ -29,6 +29,7 @@ import { Timestamp } from "firebase-admin/firestore";
 import { RIDER_ACTIVE_ORDER_STATUSES } from "./dispatch";
 import { parseFix } from "./riderSteps";
 import { resolveIsAdmin } from "../admin/complianceGate";
+import { incidentNotice, tellRider } from "./riderNotices";
 
 type Db = FirebaseFirestore.Firestore;
 
@@ -203,5 +204,11 @@ export const updateRiderIncident = onCall({ minInstances: 0, memory: "256MiB" },
   if (!incidentId) throw new HttpsError("invalid-argument", "incidentId is required");
   const v = await updateIncidentCore(admin.firestore(), request.auth.uid, incidentId, d.action, d.resolution, Date.now());
   if (v.kind === "refused") refuse(v.reason);
+  if (v.kind === "updated") {
+    const db = admin.firestore();
+    const i = (await db.collection("rider_incidents").doc(incidentId).get()).data() ?? {};
+    await tellRider(db, typeof i.riderId === "string" ? i.riderId : null,
+      incidentNotice(incidentId, v.status === "resolved" ? "resolved" : "acknowledged"), Date.now());
+  }
   return { success: true, status: v.status, changed: v.kind === "updated" };
 });

@@ -946,4 +946,69 @@ class AppLocalizationsEn extends AppLocalizations {
 
   @override
   String get moneyAmountLoading => '…';
+
+  @override
+  String get inboxTitle => 'Inbox';
+
+  @override
+  String get inboxOpen => 'Inbox';
+
+  @override
+  String inboxOpenUnread(int count) {
+    return 'Inbox, $count unread';
+  }
+
+  @override
+  String get inboxEmpty =>
+      'Nothing here yet. Orders, statements and payments you should know about show here.';
+
+  @override
+  String get inboxLoadError =>
+      'Could not load your inbox. Check your connection.';
+
+  @override
+  String get inboxMarkAllRead => 'Mark all read';
+
+  @override
+  String inboxLimitNote(int count) {
+    return 'Showing your latest $count notices.';
+  }
+
+  @override
+  String get inboxMarkReadFailed => 'Could not update your inbox. Try again.';
+
+  @override
+  String get historyFilterAll => 'All';
+
+  @override
+  String get historyFilterDelivered => 'Delivered';
+
+  @override
+  String get historyFilterNotDelivered => 'Cancelled or returned';
+
+  @override
+  String get historyEmptyFiltered => 'No orders here';
+
+  @override
+  String get historyDetailPay => 'Your pay for this order';
+
+  @override
+  String get historyDetailPayPending =>
+      'Pay shows here once the order is delivered.';
+
+  @override
+  String get historyDetailCash => 'Cash collected';
+
+  @override
+  String get historyDetailInStatement => 'In a weekly statement';
+
+  @override
+  String get historyDetailNotInStatement =>
+      'Goes into next Monday\'s statement';
+
+  @override
+  String get historyDetailOrderTotal => 'Order amount';
+
+  @override
+  String get historyDetailPayError => 'Could not load your pay for this order.';
 }

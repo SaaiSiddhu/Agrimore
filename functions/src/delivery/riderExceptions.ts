@@ -34,6 +34,7 @@ import { FieldValue, Timestamp } from "firebase-admin/firestore";
 import { onCall, HttpsError } from "firebase-functions/v2/https";
 import { resolveIsAdmin } from "../admin/complianceGate";
 import { parseFix } from "./riderSteps";
+import { problemResolvedNotice, tellRider } from "./riderNotices";
 
 if (admin.apps.length === 0) admin.initializeApp();
 
@@ -245,6 +246,12 @@ export const updateDeliveryException = onCall({ minInstances: 0, memory: "256MiB
   if (v.kind === "refused") {
     refuse(v.reason === "not_found" ? "not-found" : v.reason === "already_resolved" ? "failed-precondition" : "invalid-argument",
       "The problem could not be updated", v.reason);
+  }
+  if (v.kind === "updated" && v.status === "resolved") {
+    const db = admin.firestore();
+    const e = (await db.collection("delivery_exceptions").doc(id).get()).data() ?? {};
+    await tellRider(db, typeof e.riderId === "string" ? e.riderId : null, problemResolvedNotice(id, String(e.orderId ?? ""),
+      String(e.orderNumber ?? e.orderId ?? ""), String(e.disposition ?? "")), Date.now());
   }
   return { success: true, status: v.status, changed: v.kind === "updated" };
 });

@@ -1731,6 +1731,120 @@ abstract class AppLocalizations {
   /// In en, this message translates to:
   /// **'…'**
   String get moneyAmountLoading;
+
+  /// Inbox screen title
+  ///
+  /// In en, this message translates to:
+  /// **'Inbox'**
+  String get inboxTitle;
+
+  /// Tooltip: open the inbox
+  ///
+  /// In en, this message translates to:
+  /// **'Inbox'**
+  String get inboxOpen;
+
+  /// Tooltip: open the inbox with unread notices
+  ///
+  /// In en, this message translates to:
+  /// **'Inbox, {count} unread'**
+  String inboxOpenUnread(int count);
+
+  /// Empty inbox
+  ///
+  /// In en, this message translates to:
+  /// **'Nothing here yet. Orders, statements and payments you should know about show here.'**
+  String get inboxEmpty;
+
+  /// Inbox stream failed
+  ///
+  /// In en, this message translates to:
+  /// **'Could not load your inbox. Check your connection.'**
+  String get inboxLoadError;
+
+  /// Mark every shown notice read
+  ///
+  /// In en, this message translates to:
+  /// **'Mark all read'**
+  String get inboxMarkAllRead;
+
+  /// Inbox shows only the newest N
+  ///
+  /// In en, this message translates to:
+  /// **'Showing your latest {count} notices.'**
+  String inboxLimitNote(int count);
+
+  /// Mark read failed
+  ///
+  /// In en, this message translates to:
+  /// **'Could not update your inbox. Try again.'**
+  String get inboxMarkReadFailed;
+
+  /// History filter: every order
+  ///
+  /// In en, this message translates to:
+  /// **'All'**
+  String get historyFilterAll;
+
+  /// History filter: delivered orders
+  ///
+  /// In en, this message translates to:
+  /// **'Delivered'**
+  String get historyFilterDelivered;
+
+  /// History filter: orders not delivered
+  ///
+  /// In en, this message translates to:
+  /// **'Cancelled or returned'**
+  String get historyFilterNotDelivered;
+
+  /// History with a filter and no match
+  ///
+  /// In en, this message translates to:
+  /// **'No orders here'**
+  String get historyEmptyFiltered;
+
+  /// History detail: rider's earning
+  ///
+  /// In en, this message translates to:
+  /// **'Your pay for this order'**
+  String get historyDetailPay;
+
+  /// History detail: no earning yet
+  ///
+  /// In en, this message translates to:
+  /// **'Pay shows here once the order is delivered.'**
+  String get historyDetailPayPending;
+
+  /// History detail: COD cash collected
+  ///
+  /// In en, this message translates to:
+  /// **'Cash collected'**
+  String get historyDetailCash;
+
+  /// History detail: earning already in a statement
+  ///
+  /// In en, this message translates to:
+  /// **'In a weekly statement'**
+  String get historyDetailInStatement;
+
+  /// History detail: earning not yet in a statement
+  ///
+  /// In en, this message translates to:
+  /// **'Goes into next Monday\'s statement'**
+  String get historyDetailNotInStatement;
+
+  /// History detail: order total
+  ///
+  /// In en, this message translates to:
+  /// **'Order amount'**
+  String get historyDetailOrderTotal;
+
+  /// History detail: earning read failed
+  ///
+  /// In en, this message translates to:
+  /// **'Could not load your pay for this order.'**
+  String get historyDetailPayError;
 }
 
 class _AppLocalizationsDelegate

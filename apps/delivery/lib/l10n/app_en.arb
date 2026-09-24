@@ -1258,5 +1258,91 @@
   "moneyAmountLoading": "…",
   "@moneyAmountLoading": {
     "description": "Stands in for an amount while it loads"
+  },
+  "inboxTitle": "Inbox",
+  "@inboxTitle": {
+    "description": "Inbox screen title"
+  },
+  "inboxOpen": "Inbox",
+  "@inboxOpen": {
+    "description": "Tooltip: open the inbox"
+  },
+  "inboxOpenUnread": "Inbox, {count} unread",
+  "@inboxOpenUnread": {
+    "description": "Tooltip: open the inbox with unread notices",
+    "placeholders": {
+      "count": {
+        "type": "int"
+      }
+    }
+  },
+  "inboxEmpty": "Nothing here yet. Orders, statements and payments you should know about show here.",
+  "@inboxEmpty": {
+    "description": "Empty inbox"
+  },
+  "inboxLoadError": "Could not load your inbox. Check your connection.",
+  "@inboxLoadError": {
+    "description": "Inbox stream failed"
+  },
+  "inboxMarkAllRead": "Mark all read",
+  "@inboxMarkAllRead": {
+    "description": "Mark every shown notice read"
+  },
+  "inboxLimitNote": "Showing your latest {count} notices.",
+  "@inboxLimitNote": {
+    "description": "Inbox shows only the newest N",
+    "placeholders": {
+      "count": {
+        "type": "int"
+      }
+    }
+  },
+  "inboxMarkReadFailed": "Could not update your inbox. Try again.",
+  "@inboxMarkReadFailed": {
+    "description": "Mark read failed"
+  },
+  "historyFilterAll": "All",
+  "@historyFilterAll": {
+    "description": "History filter: every order"
+  },
+  "historyFilterDelivered": "Delivered",
+  "@historyFilterDelivered": {
+    "description": "History filter: delivered orders"
+  },
+  "historyFilterNotDelivered": "Cancelled or returned",
+  "@historyFilterNotDelivered": {
+    "description": "History filter: orders not delivered"
+  },
+  "historyEmptyFiltered": "No orders here",
+  "@historyEmptyFiltered": {
+    "description": "History with a filter and no match"
+  },
+  "historyDetailPay": "Your pay for this order",
+  "@historyDetailPay": {
+    "description": "History detail: rider's earning"
+  },
+  "historyDetailPayPending": "Pay shows here once the order is delivered.",
+  "@historyDetailPayPending": {
+    "description": "History detail: no earning yet"
+  },
+  "historyDetailCash": "Cash collected",
+  "@historyDetailCash": {
+    "description": "History detail: COD cash collected"
+  },
+  "historyDetailInStatement": "In a weekly statement",
+  "@historyDetailInStatement": {
+    "description": "History detail: earning already in a statement"
+  },
+  "historyDetailNotInStatement": "Goes into next Monday's statement",
+  "@historyDetailNotInStatement": {
+    "description": "History detail: earning not yet in a statement"
+  },
+  "historyDetailOrderTotal": "Order amount",
+  "@historyDetailOrderTotal": {
+    "description": "History detail: order total"
+  },
+  "historyDetailPayError": "Could not load your pay for this order.",
+  "@historyDetailPayError": {
+    "description": "History detail: earning read failed"
   }
 }

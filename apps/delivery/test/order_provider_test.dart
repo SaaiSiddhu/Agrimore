@@ -130,7 +130,7 @@ void main() {
     test('pages continue after the cursor; a second tap while loading does nothing', () async {
       final calls = <Object?>[];
       final answers = <Completer<HistoryPage>>[];
-      final p = make(history: (rider, cursor, size) {
+      final p = make(history: (rider, filter, cursor, size) {
         calls.add(cursor);
         final c = Completer<HistoryPage>();
         answers.add(c);
@@ -158,7 +158,7 @@ void main() {
 
     test('a page for the previous rider is dropped', () async {
       final answers = <Completer<HistoryPage>>[];
-      final p = make(history: (rider, cursor, size) {
+      final p = make(history: (rider, filter, cursor, size) {
         final c = Completer<HistoryPage>();
         answers.add(c);
         return c.future;
@@ -173,7 +173,7 @@ void main() {
 
     test('a failed page reports the error and can be retried', () async {
       var fail = true;
-      final p = make(history: (rider, cursor, size) async {
+      final p = make(history: (rider, filter, cursor, size) async {
         if (fail) throw FirebaseException(plugin: 'cloud_firestore', code: 'permission-denied');
         return (items: <OrderModel>[], cursor: null, hasMore: false);
       })..bind('r1');
