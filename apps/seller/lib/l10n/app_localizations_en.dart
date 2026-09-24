@@ -3584,4 +3584,98 @@ class AppLocalizationsEn extends AppLocalizations {
   String postTaggedProduct(String name) {
     return 'Tagged: $name';
   }
+
+  @override
+  String get supportCallTitle => 'Call support';
+
+  @override
+  String get supportEmailTitle => 'Email support';
+
+  @override
+  String get supportOpensApps => 'Opens your phone or email app.';
+
+  @override
+  String get supportSubtitle => 'Get help with your seller account.';
+
+  @override
+  String helpResults(int count) {
+    String _temp0 = intl.Intl.pluralLogic(
+      count,
+      locale: localeName,
+      other: '$count results',
+      one: '1 result',
+    );
+    return '$_temp0';
+  }
+
+  @override
+  String get helpNoMatchTitle => 'No matching FAQs';
+
+  @override
+  String get helpNoMatchBody => 'Try a different search.';
+
+  @override
+  String get settingsAppearance => 'Appearance';
+
+  @override
+  String get settingsThemeSystemHint => 'Follows your device appearance.';
+
+  @override
+  String get settingsThemeLightHint => 'Always use light appearance.';
+
+  @override
+  String get settingsThemeDarkHint => 'Always use dark appearance.';
+
+  @override
+  String get policiesLegalDocs => 'Legal documents';
+
+  @override
+  String get policiesOpensBrowser => 'Opens in your browser.';
+
+  @override
+  String get notificationsEmptyTitle => 'You are all caught up';
+
+  @override
+  String get notificationsReadLabel => 'Read';
+
+  @override
+  String prefQuietRange(String from, String until) {
+    return '$from – $until';
+  }
+
+  @override
+  String get prefQuietNextMorning =>
+      'Notifications remain in your inbox. Quiet hours end the following morning.';
+
+  @override
+  String get aiGreeting =>
+      'Hi! I\'m your AgriMore AI assistant. Ask me about your products, orders or store — for example, \"How many orders came in this week?\"';
+
+  @override
+  String get aiOffline =>
+      'Your AI assistant isn\'t connected, or your key was rejected. Check the AI connection.';
+
+  @override
+  String get aiChatError =>
+      'Couldn\'t get an answer. Check your connection and try again.';
+
+  @override
+  String get aiRetry => 'Try again';
+
+  @override
+  String get aiStatusConnected => 'Connected';
+
+  @override
+  String get aiConnectedBody =>
+      'Your assistant is ready to help with your business questions.';
+
+  @override
+  String get aiKeyNeverShown =>
+      'Your key is stored securely and never shown again.';
+
+  @override
+  String get aiConnectionTitle => 'AI connection';
+
+  @override
+  String get aiConnecting => 'Connecting…';
 }

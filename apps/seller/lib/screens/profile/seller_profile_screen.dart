@@ -8,6 +8,7 @@ import '../../providers/seller_auth_provider.dart';
 import '../../providers/seller_order_provider.dart';
 import '../../providers/seller_product_provider.dart';
 import '../account/help_screen.dart';
+import '../account/policies_screen.dart';
 import '../account/notification_settings_screen.dart';
 import '../account/settings_screen.dart';
 import '../ai/seller_ai_chat_screen.dart';
@@ -195,11 +196,6 @@ class _SellerProfileScreenState extends State<SellerProfileScreen> {
                 l10n.accountPayoutChangeHint,
               ];
     _infoSheet(l10n.payoutAccountTitle, lines);
-  }
-
-  void _showLegal() {
-    final l10n = AppLocalizations.of(context);
-    _infoSheet(l10n.accountLegal, [l10n.legalAccurate, l10n.legalPackOnTime, l10n.legalPayouts]);
   }
 
   void _infoSheet(String title, List<String> lines) {
@@ -404,7 +400,7 @@ class _SellerProfileScreenState extends State<SellerProfileScreen> {
                     SellerListRow(icon: SellerIcons.bell, title: l10n.prefTitle, onTap: () => _push(const NotificationSettingsScreen())),
                     SellerListRow(icon: SellerIcons.support, title: l10n.helpTitle, onTap: () => _push(const HelpScreen())),
                     SellerListRow(icon: SellerIcons.settings, title: l10n.settingsTitle, subtitle: l10n.settingsMenuSubtitle, onTap: () => _push(const SellerSettingsScreen())),
-                    SellerListRow(icon: SellerIcons.policy, title: l10n.accountLegal, onTap: _showLegal),
+                    SellerListRow(icon: SellerIcons.policy, title: l10n.accountLegal, onTap: () => _push(const SellerPoliciesScreen())),
                   ]),
                   SellerButton.dangerOutline(label: l10n.accountSignOut, icon: SellerIcons.logOut, expand: true, onPressed: _signOut),
                 ],

@@ -1,8 +1,8 @@
-import 'package:agrimore_ui/agrimore_ui.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 
+import '../../design_system/design_system.dart';
 import '../../l10n/app_localizations.dart';
 import '../../providers/seller_auth_provider.dart';
 import 'notification_prefs.dart';
@@ -102,61 +102,65 @@ class _NotificationSettingsScreenState extends State<NotificationSettingsScreen>
   String _time(BuildContext context, int minutes) =>
       MaterialLocalizations.of(context).formatTimeOfDay(TimeOfDay(hour: minutes ~/ 60, minute: minutes % 60));
 
+  IconData _icon(String c) => switch (c) {
+        'orders' => SellerIcons.orders,
+        'quotes' => SellerIcons.quote,
+        'payments' => SellerIcons.payments,
+        'stock' => SellerIcons.stock,
+        'reviews' => SellerIcons.star,
+        _ => SellerIcons.bell,
+      };
+
+  /// Board 23-02/23-03: a switch per category, quiet hours with From/Until
+  /// time rows and a range summary; a failed save rolls back and says so.
   @override
   Widget build(BuildContext context) {
     final l10n = AppLocalizations.of(context);
-    final text = context.wsText;
-    final t = context.ws;
+    final text = context.text;
     final p = _prefs;
     return Scaffold(
-      appBar: AppBar(
-        leading: IconButton(
-          tooltip: l10n.back,
-          icon: const Icon(AgIcons.arrowLeft),
-          onPressed: () => Navigator.of(context).maybePop(),
-        ),
-        title: Text(l10n.prefTitle),
-      ),
+      appBar: SellerAppBar.detail(context, title: l10n.prefTitle),
       body: p == null
-          ? const Center(child: CircularProgressIndicator())
-          : ListView(
-              padding: const EdgeInsets.symmetric(vertical: WsSpace.s16),
+          ? SellerLoadingView(label: l10n.dsLoading)
+          : SellerPage(
+              gap: SellerSpace.s16,
               children: [
-                if (_failed)
-                  Padding(
-                    padding: const EdgeInsets.fromLTRB(WsSpace.page, 0, WsSpace.page, WsSpace.s12),
-                    child: SaInfoBanner(variant: SaBannerVariant.error, message: l10n.prefSaveFailed),
-                  ),
-                Padding(
-                  padding: const EdgeInsets.symmetric(horizontal: WsSpace.page),
-                  child: Text(l10n.prefIntro, style: text.bodyMedium!.copyWith(color: t.textSecondary)),
+                if (_failed) SellerBanner(tone: SellerTone.danger, message: l10n.prefSaveFailed, announce: true),
+                Text(l10n.prefIntro, style: text.bodyLarge),
+                SellerMenuGroup(children: [
+                  for (final c in kNotificationCategories)
+                    SellerSwitchRow(title: _label(l10n, c), icon: _icon(c), value: p.isOn(c), onChanged: (on) => _update(p.toggled(c, on))),
+                ]),
+                SellerCard(
+                  child: Column(crossAxisAlignment: CrossAxisAlignment.stretch, children: [
+                    SellerSwitchRow(
+                      title: l10n.prefQuietHours,
+                      subtitle: l10n.prefQuietHoursHint,
+                      icon: SellerIcons.moon,
+                      value: p.quietHours,
+                      onChanged: (on) => _update(p.copyWith(quietHours: on)),
+                    ),
+                    if (p.quietHours) ...[
+                      const SizedBox(height: SellerSpace.s8),
+                      SellerPickerField(label: l10n.prefQuietFrom, icon: SellerIcons.clock, value: _time(context, p.quietStartMin), onTap: () => _pickTime(true)),
+                      const SizedBox(height: SellerSpace.s12),
+                      SellerPickerField(label: l10n.prefQuietUntil, icon: SellerIcons.clock, value: _time(context, p.quietEndMin), onTap: () => _pickTime(false)),
+                      const SizedBox(height: SellerSpace.s12),
+                      Align(
+                        alignment: AlignmentDirectional.centerStart,
+                        child: SellerStatusBadge(
+                          label: l10n.prefQuietRange(_time(context, p.quietStartMin), _time(context, p.quietEndMin)),
+                          tone: SellerTone.brand,
+                          icon: SellerIcons.moon,
+                        ),
+                      ),
+                      if (p.quietEndMin < p.quietStartMin) ...[
+                        const SizedBox(height: SellerSpace.s8),
+                        Text(l10n.prefQuietNextMorning, style: text.bodyMedium),
+                      ],
+                    ],
+                  ]),
                 ),
-                const SizedBox(height: WsSpace.s8),
-                for (final c in kNotificationCategories)
-                  SwitchListTile(
-                    value: p.isOn(c),
-                    onChanged: (on) => _update(p.toggled(c, on)),
-                    title: Text(_label(l10n, c), style: text.bodyLarge),
-                  ),
-                const Divider(height: WsSpace.s32),
-                SwitchListTile(
-                  value: p.quietHours,
-                  onChanged: (on) => _update(p.copyWith(quietHours: on)),
-                  title: Text(l10n.prefQuietHours, style: text.bodyLarge),
-                  subtitle: Text(l10n.prefQuietHoursHint, style: text.bodySmall),
-                ),
-                if (p.quietHours) ...[
-                  ListTile(
-                    title: Text(l10n.prefQuietFrom, style: text.bodyLarge),
-                    trailing: Text(_time(context, p.quietStartMin), style: text.titleSmall),
-                    onTap: () => _pickTime(true),
-                  ),
-                  ListTile(
-                    title: Text(l10n.prefQuietUntil, style: text.bodyLarge),
-                    trailing: Text(_time(context, p.quietEndMin), style: text.titleSmall),
-                    onTap: () => _pickTime(false),
-                  ),
-                ],
               ],
             ),
     );

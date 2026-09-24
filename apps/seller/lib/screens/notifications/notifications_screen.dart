@@ -1,5 +1,4 @@
 import 'package:agrimore_core/agrimore_core.dart';
-import 'package:agrimore_ui/agrimore_ui.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
@@ -148,123 +147,82 @@ class _NotificationsScreenState extends State<NotificationsScreen> {
     );
   }
 
-  Widget _scaffold(BuildContext context, AppLocalizations l10n, List<InboxEntry> all,
-      {bool loading = false, bool failed = false}) {
-    final t = context.ws;
-    final text = context.wsText;
+  Widget _scaffold(BuildContext context, AppLocalizations l10n, List<InboxEntry> all, {bool loading = false, bool failed = false}) {
+    final text = context.text;
     final now = widget.now ?? DateTime.now();
     final shown = _filter == null ? all : all.where((e) => e.category == _filter).toList();
     final today = shown.where((e) => e.isToday(now)).toList();
     final earlier = shown.where((e) => !e.isToday(now)).toList();
     final anyUnread = all.any((e) => e.unread);
 
-    Widget section(String title, List<InboxEntry> items) => Column(
-          crossAxisAlignment: CrossAxisAlignment.stretch,
-          children: [
-            Padding(
-              padding: const EdgeInsets.fromLTRB(WsSpace.page, WsSpace.s16, WsSpace.page, WsSpace.s8),
-              child: Text(title, style: text.labelLarge!.copyWith(color: t.textSecondary)),
-            ),
-            for (final e in items) _tile(context, e),
-          ],
-        );
+    Widget section(String title, List<InboxEntry> items) => Column(crossAxisAlignment: CrossAxisAlignment.stretch, children: [
+          Padding(
+            padding: const EdgeInsets.fromLTRB(SellerSpace.s4, SellerSpace.s8, SellerSpace.s4, SellerSpace.s8),
+            child: Semantics(header: true, child: Text(title, style: text.labelLarge!.copyWith(color: context.colors.textSecondary))),
+          ),
+          SellerMenuGroup(children: [for (final e in items) _tile(context, e)]),
+        ]);
+
+    Widget body;
+    if (failed) {
+      body = SellerErrorState(title: l10n.notificationsLoadFailed);
+    } else if (loading) {
+      body = SellerSkeletonList(label: l10n.dsLoading, thumbnail: false);
+    } else if (shown.isEmpty) {
+      body = SellerEmptyState(icon: SellerIcons.bell, title: l10n.notificationsEmptyTitle, message: l10n.notificationsEmpty);
+    } else {
+      body = ListView(
+        padding: EdgeInsets.fromLTRB(context.pageInset, 0, context.pageInset, SellerSpace.s24),
+        children: [
+          if (today.isNotEmpty) section(l10n.notificationsToday, today),
+          if (earlier.isNotEmpty) section(l10n.notificationsEarlier, earlier),
+        ],
+      );
+    }
 
     return Scaffold(
-      appBar: AppBar(
-        leading: IconButton(
-          tooltip: l10n.back,
-          icon: const Icon(AgIcons.arrowLeft),
-          onPressed: () => Navigator.of(context).maybePop(),
-        ),
-        title: Text(l10n.notificationsTitle),
-        actions: [
-          if (anyUnread) TextButton(onPressed: () => _markAllRead(all), child: Text(l10n.notificationsMarkAllRead)),
-        ],
-      ),
+      appBar: SellerAppBar.detail(context, title: l10n.notificationsTitle, actions: [
+        if (anyUnread) SellerButton.tertiary(label: l10n.notificationsMarkAllRead, compact: true, onPressed: () => _markAllRead(all)),
+      ]),
       body: Column(children: [
-        SizedBox(
-          height: WsSize.chipHeight + WsSpace.s16,
-          child: ListView(
-            scrollDirection: Axis.horizontal,
-            padding: const EdgeInsets.symmetric(horizontal: WsSpace.page, vertical: WsSpace.s8),
-            children: [
-              for (final c in <InboxCategory?>[null, ...InboxCategory.values])
-                Padding(
-                  padding: const EdgeInsets.only(right: WsSpace.s8),
-                  child: ChoiceChip(
-                    label: Text(_chip(l10n, c)),
-                    selected: _filter == c,
-                    onSelected: (_) => setState(() => _filter = c),
-                  ),
-                ),
-            ],
-          ),
-        ),
+        SellerChipBar(padding: EdgeInsets.fromLTRB(context.pageInset, 0, context.pageInset, SellerSpace.s4), children: [
+          for (final c in <InboxCategory?>[null, ...InboxCategory.values])
+            SellerChip(label: _chip(l10n, c), selected: _filter == c, onSelected: (_) => setState(() => _filter = c)),
+        ]),
         if (_actionFailed)
           Padding(
-            padding: const EdgeInsets.fromLTRB(WsSpace.page, 0, WsSpace.page, WsSpace.s8),
-            child: SaInfoBanner(variant: SaBannerVariant.error, message: l10n.notificationsActionFailed),
+            padding: EdgeInsets.fromLTRB(context.pageInset, 0, context.pageInset, SellerSpace.s8),
+            child: SellerBanner(tone: SellerTone.danger, message: l10n.notificationsActionFailed),
           ),
-        Expanded(
-          child: failed
-              ? Padding(
-                  padding: const EdgeInsets.all(WsSpace.page),
-                  child: SaInfoBanner(variant: SaBannerVariant.error, message: l10n.notificationsLoadFailed),
-                )
-              : loading
-                  ? const Center(child: CircularProgressIndicator())
-                  : shown.isEmpty
-                      ? Center(
-                          child: Padding(
-                            padding: const EdgeInsets.all(WsSpace.s32),
-                            child: Column(mainAxisSize: MainAxisSize.min, children: [
-                              Icon(AgIcons.bell, size: WsIconSize.empty, color: t.textTertiary),
-                              const SizedBox(height: WsSpace.s12),
-                              Text(l10n.notificationsEmpty, style: text.bodyMedium, textAlign: TextAlign.center),
-                            ]),
-                          ),
-                        )
-                      : ListView(children: [
-                          if (today.isNotEmpty) section(l10n.notificationsToday, today),
-                          if (earlier.isNotEmpty) section(l10n.notificationsEarlier, earlier),
-                        ]),
-        ),
+        Expanded(child: body),
       ]),
     );
   }
 
+  /// Unread = teal dot + bold title (and "unread" spoken); read = no dot.
+  /// Swipe left or tap marks it read.
   Widget _tile(BuildContext context, InboxEntry e) {
     final l10n = AppLocalizations.of(context);
-    final t = context.ws;
-    final text = context.wsText;
+    final c = context.colors;
     final icon = switch (e.category) {
-      InboxCategory.orders => AgIcons.orders,
-      InboxCategory.quotes => AgIcons.quote,
-      InboxCategory.payments => AgIcons.wallet,
-      InboxCategory.account => AgIcons.info,
+      InboxCategory.orders => SellerIcons.orders,
+      InboxCategory.quotes => SellerIcons.quote,
+      InboxCategory.payments => SellerIcons.payments,
+      InboxCategory.account => SellerIcons.info,
     };
-    final tile = ListTile(
+    final subtitle = [
+      if (e.body.isNotEmpty) e.body,
+      if (e.createdAt != null) SellerFormat.dateTime(e.createdAt!),
+    ].join('\n');
+    final row = SellerListRow(
+      icon: icon,
+      iconTone: e.unread ? SellerTone.brand : SellerTone.neutral,
+      title: e.title,
+      subtitle: subtitle.isEmpty ? null : subtitle,
+      trailing: e.unread ? SellerDot(color: c.primary, semanticLabel: l10n.notificationsUnreadLabel) : null,
       onTap: () => _open(e),
-      tileColor: e.unread ? t.primarySubtle : null,
-      leading: Icon(icon, color: e.unread ? t.primary : t.textTertiary),
-      title: Text(e.title, style: e.unread ? text.titleSmall : text.bodyLarge),
-      subtitle: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
-        if (e.body.isNotEmpty) Text(e.body, style: text.bodyMedium),
-        if (e.createdAt != null)
-          Text(AgFormat.dateTime(e.createdAt!), style: text.bodySmall!.copyWith(color: t.textTertiary)),
-      ]),
-      trailing: e.unread
-          ? Semantics(
-              label: l10n.notificationsUnreadLabel,
-              child: Container(
-                width: WsSpace.s8,
-                height: WsSpace.s8,
-                decoration: BoxDecoration(color: t.primary, shape: BoxShape.circle),
-              ),
-            )
-          : null,
     );
-    if (!e.unread) return tile;
+    if (!e.unread) return row;
     return Dismissible(
       key: ValueKey('n-${e.id}'),
       direction: DismissDirection.endToStart,
@@ -273,12 +231,12 @@ class _NotificationsScreenState extends State<NotificationsScreen> {
         return false; // Stays in the list, now read.
       },
       background: Container(
-        color: t.surfaceSunken,
-        alignment: Alignment.centerRight,
-        padding: const EdgeInsets.symmetric(horizontal: WsSpace.page),
-        child: Text(l10n.notificationsMarkRead, style: text.labelLarge),
+        color: c.primarySubtle,
+        alignment: AlignmentDirectional.centerEnd,
+        padding: const EdgeInsets.symmetric(horizontal: SellerSpace.s16),
+        child: Text(l10n.notificationsMarkRead, style: context.text.labelLarge!.copyWith(color: c.primary)),
       ),
-      child: tile,
+      child: row,
     );
   }
 }

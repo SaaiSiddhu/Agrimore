@@ -2152,5 +2152,48 @@
         "type": "String"
       }
     }
-  }
+  },
+  "supportCallTitle": "Call support",
+  "supportEmailTitle": "Email support",
+  "supportOpensApps": "Opens your phone or email app.",
+  "supportSubtitle": "Get help with your seller account.",
+  "helpResults": "{count, plural, =1{1 result} other{{count} results}}",
+  "@helpResults": {
+    "placeholders": {
+      "count": {
+        "type": "int"
+      }
+    }
+  },
+  "helpNoMatchTitle": "No matching FAQs",
+  "helpNoMatchBody": "Try a different search.",
+  "settingsAppearance": "Appearance",
+  "settingsThemeSystemHint": "Follows your device appearance.",
+  "settingsThemeLightHint": "Always use light appearance.",
+  "settingsThemeDarkHint": "Always use dark appearance.",
+  "policiesLegalDocs": "Legal documents",
+  "policiesOpensBrowser": "Opens in your browser.",
+  "notificationsEmptyTitle": "You are all caught up",
+  "notificationsReadLabel": "Read",
+  "prefQuietRange": "{from} – {until}",
+  "@prefQuietRange": {
+    "placeholders": {
+      "from": {
+        "type": "String"
+      },
+      "until": {
+        "type": "String"
+      }
+    }
+  },
+  "prefQuietNextMorning": "Notifications remain in your inbox. Quiet hours end the following morning.",
+  "aiGreeting": "Hi! I'm your AgriMore AI assistant. Ask me about your products, orders or store — for example, \"How many orders came in this week?\"",
+  "aiOffline": "Your AI assistant isn't connected, or your key was rejected. Check the AI connection.",
+  "aiChatError": "Couldn't get an answer. Check your connection and try again.",
+  "aiRetry": "Try again",
+  "aiStatusConnected": "Connected",
+  "aiConnectedBody": "Your assistant is ready to help with your business questions.",
+  "aiKeyNeverShown": "Your key is stored securely and never shown again.",
+  "aiConnectionTitle": "AI connection",
+  "aiConnecting": "Connecting…"
 }

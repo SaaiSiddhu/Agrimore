@@ -2,7 +2,6 @@ import 'package:flutter/material.dart';
 import 'package:flutter_localizations/flutter_localizations.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:provider/provider.dart';
-import 'package:seller/app/legacy_auth_theme.dart';
 import 'package:seller/design_system/design_system.dart';
 import 'package:seller/l10n/app_localizations.dart';
 import 'package:seller/providers/seller_auth_provider.dart';
@@ -23,7 +22,7 @@ Future<AppLocalizations> _pump(WidgetTester tester, Widget child, {SellerSetting
       ChangeNotifierProvider<SellerSettingsProvider>(create: (_) => settings ?? SellerSettingsProvider()),
     ],
     child: MaterialApp(
-      theme: withLegacyWorkspaceTokens(SellerTheme.light),
+      theme: SellerTheme.light,
       localizationsDelegates: const [
         AppLocalizations.delegate,
         GlobalMaterialLocalizations.delegate,
@@ -71,7 +70,7 @@ void main() {
     await tester.pump();
     await tester.pump();
     expect(find.text(l10n.prefSaveFailed), findsOneWidget);
-    final paymentsSwitch = tester.widget<SwitchListTile>(find.widgetWithText(SwitchListTile, l10n.prefPayments));
+    final paymentsSwitch = tester.widget<SellerSwitchRow>(find.widgetWithText(SellerSwitchRow, l10n.prefPayments));
     expect(paymentsSwitch.value, isTrue);
     await tester.tap(find.text(l10n.prefQuietHours));
     await tester.pump();
@@ -100,7 +99,7 @@ void main() {
     expect(find.text(l10n.faqInvoiceQ), findsOneWidget);
     await tester.enterText(find.byType(TextField), 'zzzz');
     await tester.pump();
-    expect(find.text(l10n.helpNoMatch), findsOneWidget);
+    expect(find.text(l10n.helpNoMatchTitle), findsOneWidget);
     expect(tester.takeException(), isNull);
   });
 }

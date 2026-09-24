@@ -6087,6 +6087,162 @@ abstract class AppLocalizations {
   /// In en, this message translates to:
   /// **'Tagged: {name}'**
   String postTaggedProduct(String name);
+
+  /// No description provided for @supportCallTitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Call support'**
+  String get supportCallTitle;
+
+  /// No description provided for @supportEmailTitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Email support'**
+  String get supportEmailTitle;
+
+  /// No description provided for @supportOpensApps.
+  ///
+  /// In en, this message translates to:
+  /// **'Opens your phone or email app.'**
+  String get supportOpensApps;
+
+  /// No description provided for @supportSubtitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Get help with your seller account.'**
+  String get supportSubtitle;
+
+  /// No description provided for @helpResults.
+  ///
+  /// In en, this message translates to:
+  /// **'{count, plural, =1{1 result} other{{count} results}}'**
+  String helpResults(int count);
+
+  /// No description provided for @helpNoMatchTitle.
+  ///
+  /// In en, this message translates to:
+  /// **'No matching FAQs'**
+  String get helpNoMatchTitle;
+
+  /// No description provided for @helpNoMatchBody.
+  ///
+  /// In en, this message translates to:
+  /// **'Try a different search.'**
+  String get helpNoMatchBody;
+
+  /// No description provided for @settingsAppearance.
+  ///
+  /// In en, this message translates to:
+  /// **'Appearance'**
+  String get settingsAppearance;
+
+  /// No description provided for @settingsThemeSystemHint.
+  ///
+  /// In en, this message translates to:
+  /// **'Follows your device appearance.'**
+  String get settingsThemeSystemHint;
+
+  /// No description provided for @settingsThemeLightHint.
+  ///
+  /// In en, this message translates to:
+  /// **'Always use light appearance.'**
+  String get settingsThemeLightHint;
+
+  /// No description provided for @settingsThemeDarkHint.
+  ///
+  /// In en, this message translates to:
+  /// **'Always use dark appearance.'**
+  String get settingsThemeDarkHint;
+
+  /// No description provided for @policiesLegalDocs.
+  ///
+  /// In en, this message translates to:
+  /// **'Legal documents'**
+  String get policiesLegalDocs;
+
+  /// No description provided for @policiesOpensBrowser.
+  ///
+  /// In en, this message translates to:
+  /// **'Opens in your browser.'**
+  String get policiesOpensBrowser;
+
+  /// No description provided for @notificationsEmptyTitle.
+  ///
+  /// In en, this message translates to:
+  /// **'You are all caught up'**
+  String get notificationsEmptyTitle;
+
+  /// No description provided for @notificationsReadLabel.
+  ///
+  /// In en, this message translates to:
+  /// **'Read'**
+  String get notificationsReadLabel;
+
+  /// No description provided for @prefQuietRange.
+  ///
+  /// In en, this message translates to:
+  /// **'{from} – {until}'**
+  String prefQuietRange(String from, String until);
+
+  /// No description provided for @prefQuietNextMorning.
+  ///
+  /// In en, this message translates to:
+  /// **'Notifications remain in your inbox. Quiet hours end the following morning.'**
+  String get prefQuietNextMorning;
+
+  /// No description provided for @aiGreeting.
+  ///
+  /// In en, this message translates to:
+  /// **'Hi! I\'m your AgriMore AI assistant. Ask me about your products, orders or store — for example, \"How many orders came in this week?\"'**
+  String get aiGreeting;
+
+  /// No description provided for @aiOffline.
+  ///
+  /// In en, this message translates to:
+  /// **'Your AI assistant isn\'t connected, or your key was rejected. Check the AI connection.'**
+  String get aiOffline;
+
+  /// No description provided for @aiChatError.
+  ///
+  /// In en, this message translates to:
+  /// **'Couldn\'t get an answer. Check your connection and try again.'**
+  String get aiChatError;
+
+  /// No description provided for @aiRetry.
+  ///
+  /// In en, this message translates to:
+  /// **'Try again'**
+  String get aiRetry;
+
+  /// No description provided for @aiStatusConnected.
+  ///
+  /// In en, this message translates to:
+  /// **'Connected'**
+  String get aiStatusConnected;
+
+  /// No description provided for @aiConnectedBody.
+  ///
+  /// In en, this message translates to:
+  /// **'Your assistant is ready to help with your business questions.'**
+  String get aiConnectedBody;
+
+  /// No description provided for @aiKeyNeverShown.
+  ///
+  /// In en, this message translates to:
+  /// **'Your key is stored securely and never shown again.'**
+  String get aiKeyNeverShown;
+
+  /// No description provided for @aiConnectionTitle.
+  ///
+  /// In en, this message translates to:
+  /// **'AI connection'**
+  String get aiConnectionTitle;
+
+  /// No description provided for @aiConnecting.
+  ///
+  /// In en, this message translates to:
+  /// **'Connecting…'**
+  String get aiConnecting;
 }
 
 class _AppLocalizationsDelegate

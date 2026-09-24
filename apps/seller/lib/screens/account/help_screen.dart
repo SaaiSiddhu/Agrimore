@@ -1,11 +1,12 @@
-import 'package:agrimore_ui/agrimore_ui.dart';
 import 'package:flutter/material.dart';
 
+import '../../design_system/design_system.dart';
 import '../../l10n/app_localizations.dart';
-import '../auth/widgets/support_contact_card.dart';
+import 'policies_screen.dart';
+import 'widgets/support_card.dart';
 
-/// M-10 Help & support (ADR §10.6, SELLER-ACCOUNT-1b): searchable FAQs and
-/// the support contacts.
+/// Help & support (boards 23-05, 23-06; one screen): contact card, FAQ
+/// search with a result count, expandable answers, and seller policies.
 class HelpScreen extends StatefulWidget {
   const HelpScreen({super.key});
 
@@ -25,8 +26,7 @@ class _HelpScreenState extends State<HelpScreen> {
   @override
   Widget build(BuildContext context) {
     final l10n = AppLocalizations.of(context);
-    final t = context.ws;
-    final text = context.wsText;
+    final text = context.text;
     final faqs = <(String, String)>[
       (l10n.faqPayoutQ, l10n.faqPayoutA),
       (l10n.faqOrderQ, l10n.faqOrderA),
@@ -36,51 +36,28 @@ class _HelpScreenState extends State<HelpScreen> {
       (l10n.faqStorefrontQ, l10n.faqStorefrontA),
     ];
     final q = _query.text.trim().toLowerCase();
-    final shown = q.isEmpty
-        ? faqs
-        : faqs.where((f) => f.$1.toLowerCase().contains(q) || f.$2.toLowerCase().contains(q)).toList();
+    final shown = q.isEmpty ? faqs : faqs.where((f) => f.$1.toLowerCase().contains(q) || f.$2.toLowerCase().contains(q)).toList();
     return Scaffold(
-      appBar: AppBar(
-        leading: IconButton(
-          tooltip: l10n.back,
-          icon: const Icon(AgIcons.arrowLeft),
-          onPressed: () => Navigator.of(context).maybePop(),
-        ),
-        title: Text(l10n.helpTitle),
-      ),
-      body: ListView(
-        padding: const EdgeInsets.all(WsSpace.page),
+      appBar: SellerAppBar.detail(context, title: l10n.helpTitle),
+      body: SellerPage(
+        gap: SellerSpace.s16,
         children: [
-          TextField(
-            controller: _query,
-            onChanged: (_) => setState(() {}),
-            decoration: InputDecoration(prefixIcon: const Icon(AgIcons.search), hintText: l10n.helpSearch),
-          ),
-          const SizedBox(height: WsSpace.s16),
-          Text(l10n.helpFaqTitle, style: text.titleMedium),
-          const SizedBox(height: WsSpace.s8),
+          const SellerSupportCard(),
+          const Divider(),
+          SellerSectionHeader(title: l10n.helpFaqTitle),
+          SellerSearchField(controller: _query, hint: l10n.helpSearch, onChanged: (_) => setState(() {})),
+          if (q.isNotEmpty) Semantics(liveRegion: true, child: Text(l10n.helpResults(shown.length), style: text.bodyMedium)),
           if (shown.isEmpty)
-            Padding(
-              padding: const EdgeInsets.symmetric(vertical: WsSpace.s16),
-              child: Text(l10n.helpNoMatch, style: text.bodyMedium!.copyWith(color: t.textSecondary)),
-            )
+            SellerEmptyState(icon: SellerIcons.search, title: l10n.helpNoMatchTitle, message: l10n.helpNoMatchBody, compact: true)
           else
-            Card(
-              clipBehavior: Clip.antiAlias,
-              child: Column(children: [
-                for (final f in shown)
-                  ExpansionTile(
-                    title: Text(f.$1, style: text.titleSmall),
-                    childrenPadding: const EdgeInsets.fromLTRB(WsSpace.s16, 0, WsSpace.s16, WsSpace.s16),
-                    expandedCrossAxisAlignment: CrossAxisAlignment.start,
-                    children: [Text(f.$2, style: text.bodyMedium)],
-                  ),
-              ]),
+            for (final f in shown) SellerExpandableRow(title: f.$1, child: Text(f.$2)),
+          SellerMenuGroup(children: [
+            SellerListRow(
+              icon: SellerIcons.policy,
+              title: l10n.accountLegal,
+              onTap: () => Navigator.of(context).push(MaterialPageRoute<void>(builder: (_) => const SellerPoliciesScreen())),
             ),
-          const SizedBox(height: WsSpace.s24),
-          Text(l10n.helpContactTitle, style: text.titleMedium),
-          const SizedBox(height: WsSpace.s8),
-          const SupportContactCard(),
+          ]),
         ],
       ),
     );

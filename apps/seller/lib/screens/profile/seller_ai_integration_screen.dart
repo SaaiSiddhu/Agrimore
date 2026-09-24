@@ -1,4 +1,3 @@
-import 'package:agrimore_ui/agrimore_ui.dart';
 import 'package:cloud_functions/cloud_functions.dart';
 import 'package:firebase_auth/firebase_auth.dart';
 import 'package:flutter/foundation.dart' show kIsWeb;
@@ -11,6 +10,7 @@ import 'package:flutter/material.dart';
 // mirroring D2). This screen's own payment button is ALSO kIsWeb-gated
 // below -- belt and suspenders, not either/or.
 import '../../services/razorpay_web.dart' if (dart.library.io) '../../services/razorpay_stub.dart';
+import '../../design_system/design_system.dart';
 import '../../l10n/app_localizations.dart';
 import '../../providers/seller_ai_connection_provider.dart';
 
@@ -113,7 +113,7 @@ class _SellerAiIntegrationScreenState extends State<SellerAiIntegrationScreen> {
       if (!mounted) return;
       setState(() {
         _phase = _Phase.error;
-        _errorMessage = e.message ?? AppLocalizations.of(context).aiStartFailed;
+        _errorMessage = e.code == 'unauthenticated' ? AppLocalizations.of(context).aiSignInAgain : AppLocalizations.of(context).aiStartFailed;
       });
       return;
     } catch (e) {
@@ -143,7 +143,7 @@ class _SellerAiIntegrationScreenState extends State<SellerAiIntegrationScreen> {
         } else {
           setState(() {
             _phase = _Phase.error;
-            _errorMessage = error;
+            _errorMessage = AppLocalizations.of(context).aiStartFailed;
           });
         }
       },
@@ -222,8 +222,9 @@ class _SellerAiIntegrationScreenState extends State<SellerAiIntegrationScreen> {
       // a key-validation or transient error, not a lost payment, so this
       // does NOT go to moneyTakenNotConnected (the payment is still
       // available to retry connectSellerAiProvider with the same paymentId).
+      debugPrint('connectSellerAiProvider failed: ${e.code}');
       setState(() {
-        _errorMessage = e.message ?? AppLocalizations.of(context).aiConnectFailed;
+        _errorMessage = AppLocalizations.of(context).aiConnectFailed;
       });
     }
   }
@@ -239,7 +240,8 @@ class _SellerAiIntegrationScreenState extends State<SellerAiIntegrationScreen> {
       });
     } on FirebaseFunctionsException catch (e) {
       if (!mounted) return;
-      setState(() => _errorMessage = e.message ?? AppLocalizations.of(context).aiDisconnectFailed);
+      debugPrint('disconnect failed: ${e.code}');
+      setState(() => _errorMessage = AppLocalizations.of(context).aiDisconnectFailed);
     }
   }
 
@@ -247,21 +249,14 @@ class _SellerAiIntegrationScreenState extends State<SellerAiIntegrationScreen> {
   Widget build(BuildContext context) {
     final l10n = AppLocalizations.of(context);
     return Scaffold(
-      appBar: AppBar(
-        leading: IconButton(tooltip: l10n.back, icon: const Icon(AgIcons.arrowLeft), onPressed: () => Navigator.of(context).maybePop()),
-        title: Text(l10n.aiTitle),
-      ),
-      body: SingleChildScrollView(
-        padding: const EdgeInsets.all(WsSpace.page),
-        child: _buildBody(),
-      ),
+      appBar: SellerAppBar.detail(context, title: l10n.aiConnectionTitle),
+      body: SellerPage(gap: SellerSpace.s16, children: [_buildBody()]),
     );
   }
 
   Widget _buildBody() {
-    if (_connectionProvider.isLoading) {
-      return const Center(child: Padding(padding: EdgeInsets.all(WsSpace.s32), child: CircularProgressIndicator()));
-    }
+    final l10n = AppLocalizations.of(context);
+    if (_connectionProvider.isLoading) return SellerLoadingView(label: l10n.dsLoading);
     if (_phase == _Phase.connected || (_connectionProvider.connected && _phase != _Phase.connecting)) {
       return _buildConnectedCard();
     }
@@ -270,124 +265,99 @@ class _SellerAiIntegrationScreenState extends State<SellerAiIntegrationScreen> {
     return _buildActivationCard();
   }
 
-  Widget _card(List<Widget> children) => Card(
-        margin: EdgeInsets.zero,
-        child: Padding(
-          padding: const EdgeInsets.all(WsSpace.s16),
-          child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: children),
-        ),
-      );
+  Widget _card(List<Widget> children) => SellerCard(child: Column(crossAxisAlignment: CrossAxisAlignment.stretch, children: children));
 
+  /// Board 23-01 "not activated": sparkles, what it does, and — on the
+  /// phone — the website-only notice (D-SELLER-AI-WEB-ONLY: no payment
+  /// surface exists in a non-web build).
   Widget _buildActivationCard() {
     final l10n = AppLocalizations.of(context);
-    final t = context.ws;
-    final text = context.wsText;
-    // D-SELLER-AI-WEB-ONLY -- the payment surface itself does not exist on
-    // a non-web build. This branch is the ONLY thing rendered on Android;
-    // no payment button, no code path that can initiate a charge.
+    final text = context.text;
+    final header = [
+      const Center(child: SellerIconTile(icon: SellerIcons.ai, circle: true, size: SellerSize.avatarXl)),
+      const SizedBox(height: SellerSpace.s12),
+      Text(l10n.aiActivateTitle, style: text.titleLarge, textAlign: TextAlign.center),
+      const SizedBox(height: SellerSpace.s4),
+      Text(l10n.aiActivateBody, style: text.bodyLarge!.copyWith(color: context.colors.textSecondary), textAlign: TextAlign.center),
+      const SizedBox(height: SellerSpace.s16),
+    ];
     if (!kIsWeb) {
-      return SaInfoBanner(variant: SaBannerVariant.info, message: l10n.aiWebOnly);
+      return _card([...header, SellerBanner(tone: SellerTone.info, message: l10n.aiWebOnly)]);
     }
     return _card([
-      Text(l10n.aiActivateTitle, style: text.titleMedium),
-      const SizedBox(height: WsSpace.s4),
-      Text(l10n.aiActivateBody, style: text.bodySmall!.copyWith(color: t.textSecondary)),
+      ...header,
       if (_phase == _Phase.error && _errorMessage != null) ...[
-        const SizedBox(height: WsSpace.s12),
-        SaInfoBanner(variant: SaBannerVariant.error, message: _errorMessage!),
+        SellerBanner(tone: SellerTone.danger, message: _errorMessage!, announce: true),
+        const SizedBox(height: SellerSpace.s12),
       ],
-      const SizedBox(height: WsSpace.s16),
-      SaLoadingButton(
-        text: l10n.aiActivateCta,
-        loadingText: _phaseLabel(l10n),
-        isLoading: _busy,
-        onPressed: _busy ? null : _startPayment,
-      ),
+      SellerButton(label: l10n.aiActivateCta, loading: _busy, loadingLabel: _phaseLabel(l10n), onPressed: _startPayment),
     ]);
   }
 
   Widget _buildConnectForm() {
     final l10n = AppLocalizations.of(context);
-    final t = context.ws;
-    final text = context.wsText;
+    final text = context.text;
     return _card([
       Row(children: [
-        Icon(AgIcons.success, color: t.successFg),
-        const SizedBox(width: WsSpace.s8),
-        Text(l10n.aiPaymentReceived, style: text.titleMedium),
+        const SellerIconTile(icon: SellerIcons.success, tone: SellerTone.success, circle: true),
+        const SizedBox(width: SellerSpace.s12),
+        Expanded(child: Text(l10n.aiPaymentReceived, style: text.titleMedium)),
       ]),
-      const SizedBox(height: WsSpace.s4),
-      Text(l10n.aiConnectHint, style: text.bodySmall!.copyWith(color: t.textSecondary)),
-      const SizedBox(height: WsSpace.s16),
-      DropdownButtonFormField<String>(
-        initialValue: _selectedProvider,
-        decoration: InputDecoration(labelText: l10n.aiProvider),
-        items: [
-          DropdownMenuItem(value: 'gemini', child: Text(l10n.aiProviderGemini)),
-          DropdownMenuItem(value: 'chatgpt', child: Text(l10n.aiProviderChatgpt)),
-        ],
+      const SizedBox(height: SellerSpace.s8),
+      Text(l10n.aiConnectHint, style: text.bodyMedium),
+      const SizedBox(height: SellerSpace.s16),
+      SellerSelectField<String>(
+        label: l10n.aiProvider,
+        value: _selectedProvider,
+        options: [SellerOption('gemini', l10n.aiProviderGemini), SellerOption('chatgpt', l10n.aiProviderChatgpt)],
         onChanged: (v) => setState(() => _selectedProvider = v ?? _selectedProvider),
       ),
-      const SizedBox(height: WsSpace.s16),
-      TextField(
+      const SizedBox(height: SellerSpace.s16),
+      SellerTextField(
+        label: l10n.aiApiKey,
+        hint: l10n.aiApiKeyHint,
         controller: _apiKeyController,
-        obscureText: true,
-        autocorrect: false,
-        enableSuggestions: false,
-        decoration: InputDecoration(labelText: l10n.aiApiKey, hintText: l10n.aiApiKeyHint),
+        obscure: true,
+        helper: l10n.aiKeyNeverShown,
       ),
       if (_errorMessage != null) ...[
-        const SizedBox(height: WsSpace.s12),
-        SaInfoBanner(variant: SaBannerVariant.error, message: _errorMessage!),
+        const SizedBox(height: SellerSpace.s12),
+        SellerBanner(tone: SellerTone.danger, message: _errorMessage!, announce: true),
       ],
-      const SizedBox(height: WsSpace.s16),
-      SaLoadingButton(
-        text: l10n.aiConnect,
-        isLoading: _connectionProvider.isSubmitting,
-        onPressed: _connectionProvider.isSubmitting ? null : _submitConnect,
-      ),
+      const SizedBox(height: SellerSpace.s16),
+      SellerButton(label: l10n.aiConnect, loading: _connectionProvider.isSubmitting, loadingLabel: l10n.aiConnecting, onPressed: _submitConnect),
     ]);
   }
 
   Widget _buildConnectedCard() {
     final l10n = AppLocalizations.of(context);
-    final t = context.ws;
-    final text = context.wsText;
+    final text = context.text;
     final providerLabel = _connectionProvider.provider == 'chatgpt' ? l10n.aiProviderChatgpt : l10n.aiProviderGemini;
     return _card([
-      Row(children: [
-        CircleAvatar(
-          radius: WsSize.avatarMd / 2,
-          backgroundColor: t.primarySubtle,
-          child: Icon(AgIcons.sparkles, color: t.primary),
-        ),
-        const SizedBox(width: WsSpace.s12),
-        Expanded(
-          child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
-            Text(l10n.aiConnected, style: text.titleMedium),
-            Text(providerLabel, style: text.bodySmall!.copyWith(color: t.textSecondary)),
-          ]),
-        ),
-      ]),
+      const Center(child: SellerIconTile(icon: SellerIcons.success, tone: SellerTone.success, circle: true, size: SellerSize.avatarXl)),
+      const SizedBox(height: SellerSpace.s12),
+      Text(l10n.aiConnected, style: text.titleLarge, textAlign: TextAlign.center),
+      Text(l10n.aiConnectedBody, style: text.bodyLarge!.copyWith(color: context.colors.textSecondary), textAlign: TextAlign.center),
+      const SizedBox(height: SellerSpace.s16),
+      SellerKeyValueRow(label: l10n.aiProvider, value: providerLabel),
+      Text(l10n.aiKeyNeverShown, style: text.bodySmall),
       if (_errorMessage != null) ...[
-        const SizedBox(height: WsSpace.s12),
-        SaInfoBanner(variant: SaBannerVariant.error, message: _errorMessage!),
+        const SizedBox(height: SellerSpace.s12),
+        SellerBanner(tone: SellerTone.danger, message: _errorMessage!, announce: true),
       ],
-      const SizedBox(height: WsSpace.s16),
-      SizedBox(
-        width: double.infinity,
-        child: OutlinedButton(
-          onPressed: _connectionProvider.isSubmitting ? null : _confirmDisconnect,
-          style: OutlinedButton.styleFrom(foregroundColor: t.errorFg),
-          child: Text(l10n.aiDisconnect),
-        ),
+      const SizedBox(height: SellerSpace.s16),
+      SellerButton.dangerOutline(
+        label: l10n.aiDisconnect,
+        icon: SellerIcons.logOut,
+        loading: _connectionProvider.isSubmitting,
+        onPressed: _confirmDisconnect,
       ),
     ]);
   }
 
   Future<void> _confirmDisconnect() async {
     final l10n = AppLocalizations.of(context);
-    final yes = await wsConfirm(
+    final yes = await sellerConfirm(
       context,
       title: l10n.aiDisconnectTitle,
       message: l10n.aiDisconnectBody,
@@ -398,29 +368,25 @@ class _SellerAiIntegrationScreenState extends State<SellerAiIntegrationScreen> {
     if (yes) await _disconnect();
   }
 
-  /// Worded like onboarding_payment_step.dart's own _buildMoneyTakenNotice:
-  /// never a bare failure when money was taken. The seller can simply retry
-  /// connecting with the same, still-verified paymentId (connectSellerAiProvider
-  /// checks verified_payments, not a one-shot consumption at this stage).
+  /// Never a bare failure when money was taken: the seller can retry
+  /// connecting with the same, still-verified payment.
   Widget _buildMoneyTakenNotice() {
     final l10n = AppLocalizations.of(context);
-    final text = context.wsText;
+    final text = context.text;
     return _card([
-      SaInfoBanner(variant: SaBannerVariant.info, title: l10n.aiPaymentReceived, message: l10n.aiMoneyTaken),
+      SellerBanner(tone: SellerTone.info, title: l10n.aiPaymentReceived, message: l10n.aiMoneyTaken),
       if (_verifiedPaymentId != null) ...[
-        const SizedBox(height: WsSpace.s12),
-        SelectableText(l10n.aiPaymentReference(_verifiedPaymentId!), style: text.labelLarge),
+        const SizedBox(height: SellerSpace.s12),
+        SelectableText(l10n.aiPaymentReference(_verifiedPaymentId!), style: text.labelLarge!.tabular),
       ],
-      const SizedBox(height: WsSpace.s12),
-      SizedBox(
-        width: double.infinity,
-        child: OutlinedButton(
-          onPressed: () => setState(() {
-            _phase = _Phase.connecting;
-            _errorMessage = null;
-          }),
-          child: Text(l10n.aiRetryConnect),
-        ),
+      const SizedBox(height: SellerSpace.s12),
+      SellerButton.secondary(
+        label: l10n.aiRetryConnect,
+        icon: SellerIcons.refresh,
+        onPressed: () => setState(() {
+          _phase = _Phase.connecting;
+          _errorMessage = null;
+        }),
       ),
     ]);
   }
