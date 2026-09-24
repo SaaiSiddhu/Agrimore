@@ -3678,4 +3678,52 @@ class AppLocalizationsEn extends AppLocalizations {
 
   @override
   String get aiConnecting => 'Connecting…';
+
+  @override
+  String get applicationTitle => 'Seller application';
+
+  @override
+  String get docIdProofHint => 'Aadhaar, PAN, voter ID or driving licence';
+
+  @override
+  String get docShopPhotoHint =>
+      'A clear photo of your shop, farm or business location';
+
+  @override
+  String get docGstHint => 'Upload your GST certificate if you have one';
+
+  @override
+  String get docUploadedNote => 'Uploaded means received, not yet approved.';
+
+  @override
+  String get applyAbout => 'About 5 minutes · Stop and continue anytime.';
+
+  @override
+  String get stepBusinessHelp => 'Tell us who you are and what you sell.';
+
+  @override
+  String get stepLocationHelp =>
+      'Where buyers can find you and how far you deliver.';
+
+  @override
+  String get applySignOut => 'Sign out';
+
+  @override
+  String get applySignOutTitle => 'Sign out?';
+
+  @override
+  String get applySignOutBody =>
+      'Your application draft is saved. You\'ll need your phone number to sign in again.';
+
+  @override
+  String get statusCheckHint => 'Check back here for your application status.';
+
+  @override
+  String get statusCompleted => 'Completed';
+
+  @override
+  String get statusInProgress => 'In progress';
+
+  @override
+  String get statusPending => 'Pending';
 }

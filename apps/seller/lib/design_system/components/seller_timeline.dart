@@ -289,7 +289,8 @@ class SellerStepProgress extends StatelessWidget {
           Row(
             children: [
               Expanded(child: Text(caption, style: text.labelLarge!.copyWith(color: c.primary))),
-              if (stepTitle != null && style == SellerStepProgressStyle.segments) Text(stepTitle!, style: text.bodySmall),
+              if (stepTitle != null && style == SellerStepProgressStyle.segments)
+                Flexible(child: Text(stepTitle!, style: text.bodySmall, textAlign: TextAlign.end)),
             ],
           ),
           const SizedBox(height: SellerSpace.s8),

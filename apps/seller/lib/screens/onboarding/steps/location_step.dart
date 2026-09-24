@@ -1,9 +1,9 @@
-import 'package:agrimore_ui/agrimore_ui.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:geolocator/geolocator.dart';
 import 'package:provider/provider.dart';
 
+import '../../../design_system/design_system.dart';
 import '../../../l10n/app_localizations.dart';
 import '../../../providers/seller_application_provider.dart';
 import '../application_rules.dart';
@@ -97,96 +97,81 @@ class _LocationStepState extends State<LocationStep> {
   Widget build(BuildContext context) {
     final l10n = AppLocalizations.of(context);
     final app = context.watch<SellerApplicationProvider>();
-    final t = context.ws;
-    final text = context.wsText;
-    String? required(String? v) => ApplicationRules.text(v) ? null : l10n.errRequired;
+    String? required(String v) => ApplicationRules.text(v) ? null : l10n.errRequired;
+    final city = SellerTextField(
+      label: l10n.fieldCity,
+      required: true,
+      controller: _city,
+      textCapitalization: TextCapitalization.words,
+      autofillHints: const [AutofillHints.addressCity],
+      validator: required,
+    );
+    final pin = SellerTextField(
+      label: l10n.fieldPincode,
+      required: true,
+      controller: _pincode,
+      tabular: true,
+      keyboardType: TextInputType.number,
+      maxLength: _pincodeLength,
+      inputFormatters: [FilteringTextInputFormatter.digitsOnly],
+      autofillHints: const [AutofillHints.postalCode],
+      validator: (v) => ApplicationRules.pincode.hasMatch(v) ? null : l10n.errPincode,
+    );
 
     return StepBody(
-      footer: StepFooter(
-        primaryLabel: l10n.saveContinue,
-        busyLabel: l10n.saving,
-        busy: app.isSaving,
-        onPrimary: _continue,
-        onBack: app.back,
-      ),
+      footer: StepFooter(primaryLabel: l10n.saveContinue, busyLabel: l10n.saving, busy: app.isSaving, onPrimary: _continue, onBack: app.back),
       children: [
         Form(
           key: _form,
-          child: Column(
-            crossAxisAlignment: CrossAxisAlignment.stretch,
-            children: [
-              TextFormField(
-                controller: _address,
-                maxLines: 3,
-                minLines: 2,
-                autofillHints: const [AutofillHints.fullStreetAddress],
-                decoration: InputDecoration(labelText: l10n.fieldAddress),
-                validator: (v) =>
-                    ApplicationRules.text(v, min: ApplicationRules.addressMin) ? null : l10n.errRequired,
-              ),
-              const SizedBox(height: WsSpace.s16),
-              Row(
-                crossAxisAlignment: CrossAxisAlignment.start,
-                children: [
-                  Expanded(
-                    child: TextFormField(
-                      controller: _city,
-                      textCapitalization: TextCapitalization.words,
-                      autofillHints: const [AutofillHints.addressCity],
-                      decoration: InputDecoration(labelText: l10n.fieldCity),
-                      validator: required,
-                    ),
-                  ),
-                  const SizedBox(width: WsSpace.s12),
-                  Expanded(
-                    child: TextFormField(
-                      controller: _pincode,
-                      keyboardType: TextInputType.number,
-                      maxLength: _pincodeLength,
-                      inputFormatters: [FilteringTextInputFormatter.digitsOnly],
-                      autofillHints: const [AutofillHints.postalCode],
-                      decoration: InputDecoration(labelText: l10n.fieldPincode, counterText: ''),
-                      validator: (v) => ApplicationRules.pincode.hasMatch(v ?? '') ? null : l10n.errPincode,
-                    ),
-                  ),
-                ],
-              ),
-              const SizedBox(height: WsSpace.s16),
-              TextFormField(
-                controller: _state,
-                textCapitalization: TextCapitalization.words,
-                autofillHints: const [AutofillHints.addressState],
-                decoration: InputDecoration(labelText: l10n.fieldState),
-                validator: required,
-              ),
-              const SizedBox(height: WsSpace.s16),
-              OutlinedButton.icon(
-                onPressed: _locating ? null : _useLocation,
-                icon: Icon(_lat != null ? AgIcons.success : AgIcons.location, size: WsIconSize.control),
-                label: Text(_lat != null ? l10n.locationCaptured : l10n.useCurrentLocation),
-              ),
-              if (_locationFailed) ...[
-                const SizedBox(height: WsSpace.s8),
-                Text(l10n.locationFailed, style: text.bodySmall!.copyWith(color: t.warningFg)),
-              ],
-              const SizedBox(height: WsSpace.s24),
-              Row(
-                children: [
-                  Expanded(child: Text(l10n.fieldRadius, style: text.titleSmall)),
-                  Text(l10n.radiusKm(_radius.round()),
-                      style: text.titleSmall!.copyWith(color: t.primary, fontFeatures: WsType.tabularFigures)),
-                ],
-              ),
-              Slider(
-                value: _radius,
-                min: _minRadiusKm.toDouble(),
-                max: ApplicationRules.maxRadiusKm.toDouble(),
-                divisions: ApplicationRules.maxRadiusKm - _minRadiusKm,
-                label: l10n.radiusKm(_radius.round()),
-                onChanged: (v) => setState(() => _radius = v),
-              ),
+          child: Column(crossAxisAlignment: CrossAxisAlignment.stretch, children: [
+            SellerButton.secondary(
+              label: _lat != null ? l10n.locationCaptured : l10n.useCurrentLocation,
+              icon: _lat != null ? SellerIcons.success : SellerIcons.locate,
+              loading: _locating,
+              onPressed: _useLocation,
+            ),
+            if (_locationFailed) ...[
+              const SizedBox(height: SellerSpace.s8),
+              SellerBanner(tone: SellerTone.warning, message: l10n.locationFailed),
             ],
-          ),
+            const SizedBox(height: SellerSpace.s16),
+            SellerTextField(
+              label: l10n.fieldAddress,
+              required: true,
+              controller: _address,
+              maxLines: 3,
+              minLines: 2,
+              autofillHints: const [AutofillHints.fullStreetAddress],
+              validator: (v) => ApplicationRules.text(v, min: ApplicationRules.addressMin) ? null : l10n.errRequired,
+            ),
+            const SizedBox(height: SellerSpace.s16),
+            if (context.largeText) ...[city, const SizedBox(height: SellerSpace.s16), pin]
+            else
+              Row(crossAxisAlignment: CrossAxisAlignment.start, children: [
+                Expanded(child: city),
+                const SizedBox(width: SellerSpace.s12),
+                Expanded(child: pin),
+              ]),
+            const SizedBox(height: SellerSpace.s16),
+            SellerTextField(
+              label: l10n.fieldState,
+              required: true,
+              controller: _state,
+              textCapitalization: TextCapitalization.words,
+              autofillHints: const [AutofillHints.addressState],
+              validator: required,
+            ),
+            const SizedBox(height: SellerSpace.s24),
+            SellerSliderField(
+              label: l10n.fieldRadius,
+              value: _radius,
+              min: _minRadiusKm.toDouble(),
+              max: ApplicationRules.maxRadiusKm.toDouble(),
+              divisions: ApplicationRules.maxRadiusKm - _minRadiusKm,
+              valueLabel: l10n.radiusKm(_radius.round()),
+              onChanged: (v) => setState(() => _radius = v),
+            ),
+          ]),
         ),
       ],
     );

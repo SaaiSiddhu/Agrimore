@@ -2195,5 +2195,20 @@
   "aiConnectedBody": "Your assistant is ready to help with your business questions.",
   "aiKeyNeverShown": "Your key is stored securely and never shown again.",
   "aiConnectionTitle": "AI connection",
-  "aiConnecting": "Connecting…"
+  "aiConnecting": "Connecting…",
+  "applicationTitle": "Seller application",
+  "docIdProofHint": "Aadhaar, PAN, voter ID or driving licence",
+  "docShopPhotoHint": "A clear photo of your shop, farm or business location",
+  "docGstHint": "Upload your GST certificate if you have one",
+  "docUploadedNote": "Uploaded means received, not yet approved.",
+  "applyAbout": "About 5 minutes · Stop and continue anytime.",
+  "stepBusinessHelp": "Tell us who you are and what you sell.",
+  "stepLocationHelp": "Where buyers can find you and how far you deliver.",
+  "applySignOut": "Sign out",
+  "applySignOutTitle": "Sign out?",
+  "applySignOutBody": "Your application draft is saved. You'll need your phone number to sign in again.",
+  "statusCheckHint": "Check back here for your application status.",
+  "statusCompleted": "Completed",
+  "statusInProgress": "In progress",
+  "statusPending": "Pending"
 }

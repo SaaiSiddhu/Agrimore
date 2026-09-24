@@ -4,7 +4,7 @@ import 'package:flutter_localizations/flutter_localizations.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:provider/provider.dart';
 import 'package:seller/app/app.dart';
-import 'package:seller/design_system/design_system.dart' show SellerProgressLabel;
+import 'package:seller/design_system/design_system.dart' show SellerProgressLabel, SellerTimeline;
 import 'package:seller/l10n/app_localizations.dart';
 import 'package:seller/providers/seller_auth_provider.dart';
 import 'package:seller/screens/auth/account_restricted_screen.dart';
@@ -163,7 +163,7 @@ void main() {
             brightness: b, size: size, textScale: scale);
         expect(tester.takeException(), isNull);
         expect(find.text(l10n.statusTitle), findsOneWidget);
-        expect(find.byType(WsTimeline), findsOneWidget);
+        expect(find.byType(SellerTimeline), findsOneWidget);
         expect(find.text(l10n.supportTitle), findsOneWidget);
         expect(find.text(l10n.signOut), findsOneWidget);
       });

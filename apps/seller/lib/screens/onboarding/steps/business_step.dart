@@ -1,7 +1,7 @@
-import 'package:agrimore_ui/agrimore_ui.dart';
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 
+import '../../../design_system/design_system.dart';
 import '../../../l10n/app_localizations.dart';
 import '../../../providers/seller_application_provider.dart';
 import '../application_rules.dart';
@@ -57,63 +57,55 @@ class _BusinessStepState extends State<BusinessStep> {
   Widget build(BuildContext context) {
     final l10n = AppLocalizations.of(context);
     final app = context.watch<SellerApplicationProvider>();
-    String? required(String? v) => ApplicationRules.text(v) ? null : l10n.errRequired;
+    String? required(String v) => ApplicationRules.text(v) ? null : l10n.errRequired;
 
     return StepBody(
-      footer: StepFooter(
-        primaryLabel: l10n.saveContinue,
-        busyLabel: l10n.saving,
-        busy: app.isSaving,
-        onPrimary: _continue,
-      ),
+      footer: StepFooter(primaryLabel: l10n.saveContinue, busyLabel: l10n.saving, busy: app.isSaving, onPrimary: _continue),
       children: [
         Form(
           key: _form,
-          child: Column(
-            crossAxisAlignment: CrossAxisAlignment.stretch,
-            children: [
-              TextFormField(
-                controller: _name,
-                textCapitalization: TextCapitalization.words,
-                autofillHints: const [AutofillHints.name],
-                decoration: InputDecoration(labelText: l10n.fieldOwnerName),
-                validator: required,
-              ),
-              const SizedBox(height: WsSpace.s16),
-              TextFormField(
-                controller: _shop,
-                textCapitalization: TextCapitalization.words,
-                decoration: InputDecoration(
-                  labelText: l10n.fieldShopName,
-                  prefixIcon: const Icon(AgIcons.store, size: WsIconSize.control),
-                ),
-                validator: required,
-              ),
-              const SizedBox(height: WsSpace.s16),
-              DropdownButtonFormField<String>(
-                initialValue: _category,
-                isExpanded: true,
-                decoration: InputDecoration(labelText: l10n.fieldCategory),
-                items: [
-                  for (final c in ApplicationRules.categories)
-                    DropdownMenuItem(value: c, child: Text(ApplicationCopy.category(l10n, c))),
-                ],
-                onChanged: (v) => setState(() => _category = v),
-                validator: (v) => v == null ? l10n.errRequired : null,
-              ),
-              const SizedBox(height: WsSpace.s16),
-              TextFormField(
-                controller: _gstin,
-                textCapitalization: TextCapitalization.characters,
-                decoration: InputDecoration(labelText: l10n.fieldGstin, helperText: l10n.fieldGstinHelp),
-                validator: (v) {
-                  final value = (v ?? '').trim().toUpperCase();
-                  if (value.isEmpty) return null;
-                  return ApplicationRules.gstin.hasMatch(value) ? null : l10n.errGstin;
-                },
-              ),
-            ],
-          ),
+          child: Column(crossAxisAlignment: CrossAxisAlignment.stretch, children: [
+            SellerTextField(
+              label: l10n.fieldOwnerName,
+              required: true,
+              controller: _name,
+              textCapitalization: TextCapitalization.words,
+              autofillHints: const [AutofillHints.name],
+              validator: required,
+            ),
+            const SizedBox(height: SellerSpace.s16),
+            SellerTextField(
+              label: l10n.fieldShopName,
+              required: true,
+              controller: _shop,
+              prefixIcon: SellerIcons.store,
+              textCapitalization: TextCapitalization.words,
+              validator: required,
+            ),
+            const SizedBox(height: SellerSpace.s16),
+            SellerSelectField<String>(
+              label: l10n.fieldCategory,
+              required: true,
+              prefixIcon: SellerIcons.sprout,
+              value: _category,
+              options: [for (final c in ApplicationRules.categories) SellerOption(c, ApplicationCopy.category(l10n, c))],
+              onChanged: (v) => setState(() => _category = v),
+              validator: (v) => v == null ? l10n.errRequired : null,
+            ),
+            const SizedBox(height: SellerSpace.s16),
+            SellerTextField(
+              label: l10n.fieldGstin,
+              optional: true,
+              controller: _gstin,
+              helper: l10n.fieldGstinHelp,
+              textCapitalization: TextCapitalization.characters,
+              validator: (v) {
+                final value = v.trim().toUpperCase();
+                if (value.isEmpty) return null;
+                return ApplicationRules.gstin.hasMatch(value) ? null : l10n.errGstin;
+              },
+            ),
+          ]),
         ),
       ],
     );

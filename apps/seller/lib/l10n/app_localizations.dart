@@ -6243,6 +6243,96 @@ abstract class AppLocalizations {
   /// In en, this message translates to:
   /// **'Connecting…'**
   String get aiConnecting;
+
+  /// No description provided for @applicationTitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Seller application'**
+  String get applicationTitle;
+
+  /// No description provided for @docIdProofHint.
+  ///
+  /// In en, this message translates to:
+  /// **'Aadhaar, PAN, voter ID or driving licence'**
+  String get docIdProofHint;
+
+  /// No description provided for @docShopPhotoHint.
+  ///
+  /// In en, this message translates to:
+  /// **'A clear photo of your shop, farm or business location'**
+  String get docShopPhotoHint;
+
+  /// No description provided for @docGstHint.
+  ///
+  /// In en, this message translates to:
+  /// **'Upload your GST certificate if you have one'**
+  String get docGstHint;
+
+  /// No description provided for @docUploadedNote.
+  ///
+  /// In en, this message translates to:
+  /// **'Uploaded means received, not yet approved.'**
+  String get docUploadedNote;
+
+  /// No description provided for @applyAbout.
+  ///
+  /// In en, this message translates to:
+  /// **'About 5 minutes · Stop and continue anytime.'**
+  String get applyAbout;
+
+  /// No description provided for @stepBusinessHelp.
+  ///
+  /// In en, this message translates to:
+  /// **'Tell us who you are and what you sell.'**
+  String get stepBusinessHelp;
+
+  /// No description provided for @stepLocationHelp.
+  ///
+  /// In en, this message translates to:
+  /// **'Where buyers can find you and how far you deliver.'**
+  String get stepLocationHelp;
+
+  /// No description provided for @applySignOut.
+  ///
+  /// In en, this message translates to:
+  /// **'Sign out'**
+  String get applySignOut;
+
+  /// No description provided for @applySignOutTitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Sign out?'**
+  String get applySignOutTitle;
+
+  /// No description provided for @applySignOutBody.
+  ///
+  /// In en, this message translates to:
+  /// **'Your application draft is saved. You\'ll need your phone number to sign in again.'**
+  String get applySignOutBody;
+
+  /// No description provided for @statusCheckHint.
+  ///
+  /// In en, this message translates to:
+  /// **'Check back here for your application status.'**
+  String get statusCheckHint;
+
+  /// No description provided for @statusCompleted.
+  ///
+  /// In en, this message translates to:
+  /// **'Completed'**
+  String get statusCompleted;
+
+  /// No description provided for @statusInProgress.
+  ///
+  /// In en, this message translates to:
+  /// **'In progress'**
+  String get statusInProgress;
+
+  /// No description provided for @statusPending.
+  ///
+  /// In en, this message translates to:
+  /// **'Pending'**
+  String get statusPending;
 }
 
 class _AppLocalizationsDelegate

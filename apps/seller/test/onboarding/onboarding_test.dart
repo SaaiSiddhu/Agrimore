@@ -1,8 +1,8 @@
-import 'package:agrimore_ui/agrimore_ui.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_localizations/flutter_localizations.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:provider/provider.dart';
+import 'package:seller/design_system/design_system.dart';
 import 'package:seller/l10n/app_localizations.dart';
 import 'package:seller/providers/seller_application_provider.dart';
 import 'package:seller/providers/seller_auth_provider.dart';
@@ -52,7 +52,7 @@ Future<AppLocalizations> _pump(
   await tester.pumpWidget(ChangeNotifierProvider<SellerAuthProvider>.value(
     value: SellerAuthProvider.preview(access: SellerAccess.draft),
     child: MaterialApp(
-      theme: WorkspaceTheme.build(WorkspaceBrand.seller, brightness),
+      theme: (brightness == Brightness.dark ? SellerTheme.dark : SellerTheme.light),
       localizationsDelegates: const [
         AppLocalizations.delegate,
         GlobalMaterialLocalizations.delegate,
@@ -116,7 +116,7 @@ void main() {
           final app = SellerApplicationProvider.preview(data: _complete(), uid: _uid, step: step);
           await _pump(tester, ApplicationScreen(provider: app), brightness: b, textScale: scale);
           expect(tester.takeException(), isNull);
-          expect(find.byType(WsStepHeader), findsOneWidget);
+          expect(find.byType(SellerStepProgress), findsOneWidget);
         });
       }
     }
@@ -157,13 +157,14 @@ void main() {
       await tester.tap(find.text(l10n.saveContinue));
       await tester.pump();
       expect(app.step, 2);
-      expect(find.text(l10n.errDocument), findsNWidgets(2));
+      // Two tiles plus the summary banner.
+      expect(find.text(l10n.errDocument), findsNWidgets(3));
     });
 
     testWidgets('payout: mismatched account numbers are caught', (tester) async {
       final app = SellerApplicationProvider.preview(data: _complete(), uid: _uid, step: 3);
       final l10n = await _pump(tester, ApplicationScreen(provider: app));
-      await tester.enterText(find.widgetWithText(TextFormField, l10n.fieldAccountNumberConfirm), '999999999');
+      await tester.enterText(find.descendant(of: find.byWidgetPredicate((w) => w is SellerTextField && w.label == l10n.fieldAccountNumberConfirm), matching: find.byType(TextField)), '999999999');
       await tester.tap(find.text(l10n.saveContinue));
       await tester.pump();
       expect(app.step, 3);
@@ -174,7 +175,7 @@ void main() {
       final app = SellerApplicationProvider.preview(data: _complete(), uid: _uid, step: 4);
       final l10n = await _pump(tester, ApplicationScreen(provider: app));
       expect(find.textContaining('123456789012'), findsNothing);
-      expect(find.textContaining(AgFormat.maskAccount('123456789012')), findsOneWidget);
+      expect(find.textContaining(SellerFormat.maskAccount('123456789012')), findsOneWidget);
       expect(find.text(l10n.reviewEdit), findsNWidgets(4));
       await tester.tap(find.text(l10n.reviewEdit).first);
       await tester.pumpAndSettle();
