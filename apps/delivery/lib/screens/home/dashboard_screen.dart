@@ -461,11 +461,15 @@ class _DashboardScreenState extends State<DashboardScreen> {
     final l = AppLocalizations.of(context);
     final t = context.ws;
     final text = Theme.of(context).textTheme;
-    return Container(
-      margin: const EdgeInsets.all(WsSpace.page),
-      padding: const EdgeInsets.all(WsSpace.s20),
-      decoration: BoxDecoration(color: t.primarySubtle, borderRadius: BorderRadius.circular(WsRadius.card)),
-      child: Column(
+    // DLV-INT: top-aligned — as the body of an Expanded it filled the screen.
+    return Align(
+      alignment: Alignment.topCenter,
+      child: Container(
+        margin: const EdgeInsets.all(WsSpace.page),
+        padding: const EdgeInsets.all(WsSpace.s20),
+        decoration: BoxDecoration(color: t.primarySubtle, borderRadius: BorderRadius.circular(WsRadius.card)),
+        child: Column(
+        mainAxisSize: MainAxisSize.min,
         crossAxisAlignment: CrossAxisAlignment.stretch,
         children: [
           Row(
@@ -487,6 +491,7 @@ class _DashboardScreenState extends State<DashboardScreen> {
           const SizedBox(height: WsSpace.s20),
           FilledButton(onPressed: () => _openOrder(order), child: Text(l.dashViewDetails)),
         ],
+        ),
       ),
     );
   }
