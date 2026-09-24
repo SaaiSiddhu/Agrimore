@@ -942,3 +942,4 @@ Scope `apps/seller/lib/**`, excluding `lib/l10n/**`. Output `path:line RULE`; ex
 | 2026-09-23 | Initial ADR — owner approved plan A–D; system = Sales Associate, UX bar = tier-1 seller platform, brand = teal. |
 | 2026-09-23 | UI-TEAL-0: dark `textTertiary` corrected to `#8594AA` after the automated WCAG test failed `#64748B`. |
 | 2026-09-23 | SEC-P0: test-mode config moved to Console-only `auth_test_mode/config` (7-day cap, allowlist only); §9, §14 E4, §17 updated. |
+| 2026-09-24 | OWNER_DECISION D-SELLER-OWN-DS (SELLER-REDESIGN-1): the seller app gets its **own** design system in `apps/seller/lib/design_system/` (palette and type from the 86 seller mockups, `docs/seller-redesign/`); ADR-S01/S02/S06/S07 and §5 no longer describe the seller app. Other apps keep theirs. |

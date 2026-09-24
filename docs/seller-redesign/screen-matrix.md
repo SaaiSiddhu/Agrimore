@@ -6,29 +6,29 @@ screenshot inspected) · J (end-to-end journey executed) · iOS column is BLOCKE
 machine, see verification report). L/D = light/dark verified. Evidence paths are under `evidence/android/`.
 Board ids are `NN-MM` = `apps/seller/assets/ui-mockups/<phase folder>/<MM>-….png`.
 
-## Foundations (phases 01–15, 24)
+## Foundations (phases 01–15, 24) — the seller's own design system, `apps/seller/lib/design_system/` (D0)
 
 | ID | Item | Boards | Where | Func | Impl | Verified | Evidence / tests | Blockers |
 |---|---|---|---|---|---|---|---|---|
-| F-01 | Seller palette light + dark | 01-01, 02-01, 03-01 | `agrimore_ui/lib/workspace/ws_tokens.dart` | N | TODO | — | `seller_palette_test.dart` | — |
-| F-02 | Type scale (Inter, tabular money) | 02-01, 05-01 | `ws_brand_style.dart`, `ws_theme.dart` | N | TODO | — | theme tests | — |
-| F-03 | Shape & density (48 dp, radius 8/12/20) | 02-01, 08-01 | `ws_brand_style.dart` | N | TODO | — | theme tests | — |
-| F-04 | Lucide icon set additions | 06-01 | `ws_icons.dart` | E+N | TODO | — | — | concurrent DLV-P1 edit |
-| F-05 | Avatars, thumbnails, image states | 06-01, 15-01 | `kit/ws_media.dart` | N | TODO | — | kit tests | — |
-| F-06 | Responsive: bar < 600, rail ≥ 600, list+detail ≥ 840 | 04-01, 07-01 | `kit/ws_nav.dart`, `seller_shell.dart` | N | TODO | — | shell tests | — |
-| F-07 | Single-border keyboard focus, every control | 24-01 (superseded ring), 24-02 | `ws_theme.dart`, `kit/ws_focus.dart` | N | TODO | — | `focus_test.dart` | — |
-| F-08 | Motion + reduced motion | 02-01, 24-05 | `ws_theme.dart`, kit | N | TODO | — | reduced-motion tests | — |
-| F-09 | Feedback: banners, toasts, submit states | 13-01 | `kit/ws_banner.dart`, `ws_feedback.dart` | E+N | TODO | — | kit tests | toast restyle waits for DLV-P1 |
-| F-10 | Overlays: sheets, confirm dialogs, discard guard | 14-01 | `kit/ws_sheet.dart` | E+N | TODO | — | kit tests | — |
-| F-11 | Forms: persistent labels, required/optional, errors, pickers | 09-01, 24-07 | `kit/ws_fields.dart` | N | TODO | — | field tests | — |
-| F-12 | Status badges, progress, timelines, non-colour cues | 12-01, 24-06 | `kit/ws_status.dart`, `kit/ws_timeline.dart` | E+N | TODO | — | kit tests | — |
-| F-13 | Cards, lists, key/value, money breakdown | 11-01 | `kit/ws_card.dart`, `kit/ws_list.dart` | N | TODO | — | kit tests | — |
-| F-14 | Search / filter chips / sort menus | 10-01 | `kit/ws_filters.dart` | N | TODO | — | screen tests | — |
+| F-01 | Seller palette light + dark | 01-01, 02-01, 03-01 | `design_system/tokens/seller_colors.dart` | N | TODO | — | `seller_colors_test.dart` | — |
+| F-02 | Type scale (Inter, tabular money) | 02-01, 05-01 | `design_system/tokens/seller_typography.dart`, `theme/seller_theme.dart` | N | TODO | — | theme tests | — |
+| F-03 | Shape & density (48 dp, radius 8/12/20) | 02-01, 08-01 | `design_system/tokens/seller_tokens.dart` | N | TODO | — | theme tests | — |
+| F-04 | Lucide icon set additions | 06-01 | `design_system/icons/seller_icons.dart` | N | TODO | — | — | — |
+| F-05 | Avatars, thumbnails, image states | 06-01, 15-01 | `components/seller_media.dart` | N | TODO | — | component tests | — |
+| F-06 | Responsive: bar < 600, rail ≥ 600, list+detail ≥ 840 | 04-01, 07-01 | `components/seller_nav.dart`, `seller_shell.dart` | N | TODO | — | shell tests | — |
+| F-07 | Single-border keyboard focus, every control | 24-01 (superseded ring), 24-02 | `theme/seller_theme.dart`, components | N | TODO | — | `focus_test.dart` | — |
+| F-08 | Motion + reduced motion | 02-01, 24-05 | `theme/seller_theme.dart`, `tokens/seller_motion.dart` | N | TODO | — | reduced-motion tests | — |
+| F-09 | Feedback: banners, toasts, submit states | 13-01 | `components/seller_banner.dart`, `components/seller_feedback.dart` | N | TODO | — | component tests | — |
+| F-10 | Overlays: sheets, confirm dialogs, discard guard | 14-01 | `components/seller_feedback.dart` | E+N | TODO | — | component tests | — |
+| F-11 | Forms: persistent labels, required/optional, errors, pickers | 09-01, 24-07 | `components/seller_fields.dart` | N | TODO | — | field tests | — |
+| F-12 | Status badges, progress, timelines, non-colour cues | 12-01, 24-06 | `components/seller_badge.dart`, `components/seller_timeline.dart` | E+N | TODO | — | component tests | — |
+| F-13 | Cards, lists, key/value, money breakdown | 11-01 | `components/seller_card.dart`, `components/seller_list.dart` | N | TODO | — | component tests | — |
+| F-14 | Search / filter chips / sort menus | 10-01 | `components/seller_chips.dart` | N | TODO | — | screen tests | — |
 | F-15 | Media picking, permission, location states | 15-01 | seller screens | E+N | TODO | — | screen tests | — |
-| F-16 | Buttons & selection controls (loading, disabled, destructive) | 08-01 | `kit/ws_button.dart` | N | TODO | — | `button_test.dart` | — |
+| F-16 | Buttons & selection controls (loading, disabled, destructive) | 08-01 | `components/seller_button.dart` | N | TODO | — | `button_test.dart` | — |
 | F-17 | Screen-reader names/roles/states, grouping | 24-03 | all | E+N | TODO | — | semantics tests | TalkBack pass manual |
 | F-18 | Contrast, 48 dp targets, text scaling | 24-04 | all | N | TODO | — | contrast + 2.0× tests | — |
-| F-19 | Accessible charts (summary + table) & form error summary | 24-07 | `kit/ws_charts.dart`, `kit/ws_fields.dart` | N | TODO | — | tests | — |
+| F-19 | Accessible charts (summary + table) & form error summary | 24-07 | `components/seller_charts.dart`, `components/seller_fields.dart` | N | TODO | — | tests | — |
 
 ## Shell & system
 

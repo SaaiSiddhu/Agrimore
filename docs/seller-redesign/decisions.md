@@ -8,11 +8,31 @@ Tags: `OWNER_DECISION` (quoted from the brief or a recorded owner answer) · `DE
 reversible) · `CONTRACT` (dictated by existing server/rules behaviour) · `DEVIATION` (intentional
 difference from a raster concept, with the reason).
 
-## D1 — Seller palette (DESIGN_DECISION from boards 01–03, supersedes ADR §5.1–5.3 for the seller brand)
+## D0 — The seller app has its own design system (OWNER_DECISION 2026-09-24, chat)
+
+Owner, verbatim: *"seller app should be canonical but not to make canonical other apps also,.. seller app
+should have its own desgin system , and other apps should have its own system,."*
+
+- The seller's tokens, theme, typography, icons, formatting and components live **inside the seller app**:
+  `apps/seller/lib/design_system/` (the seller's "system itself" — the only place in `apps/seller/lib`
+  where literal colours/sizes are allowed; `canon_check.sh` skips it like it skips `lib/l10n/`).
+- `packages/agrimore_ui` (the shared Workspace system used by the Sales Associate and Delivery apps, plus
+  the marketplace/admin themes) is **not modified** by this phase. Edits made to it earlier in this session
+  (never committed) were reverted before any commit.
+- End state: `apps/seller/lib` imports nothing visual from `agrimore_ui`; the seller keeps using only the
+  shared *non-visual* packages (`agrimore_core` models/constants, `agrimore_services` auth/notifications).
+- Supersedes, for `apps/seller` only: ADR-S01/S02 (Sales Associate as the canonical system / one Workspace
+  theme with two brands), ADR-S06 (shared `AgIcons`), ADR-S07 ("a component may only be created in the
+  shared kit") and the uiux lane's "reuse `agrimore_ui` before you build" rule. The zero-literal rule
+  (ADR-S04) and every functional/security contract still apply.
+- The unused `WorkspaceBrand.seller` constants stay in the shared package (removing them would edit a
+  package other active phases are changing); a later clean-up is the owner's call.
+
+## D1 — Seller palette (DESIGN_DECISION from boards 01–03, supersedes ADR §5.1–5.3 for the seller app)
 
 The boards define a seller-specific neutral set (green-tinted, not the Sales Associate slate) and a
-black-and-teal dark theme. ADR §5 values (dark slate `#0F172A`, dark primary `#2DD4BF`) are superseded
-for `WorkspaceBrand.seller` only; Sales Associate and Delivery keep their tokens.
+black-and-teal dark theme. Implemented as `SellerColors` in `apps/seller/lib/design_system/tokens/`
+(D0); no other app's colours change.
 
 | Role | Light | Dark | Source |
 |---|---|---|---|
@@ -37,7 +57,7 @@ for `WorkspaceBrand.seller` only; Sales Associate and Delivery keep their tokens
 | focus border | `#0F766E` | `#5EEAD4` | 24-02 |
 | focus stroke on filled controls | `#0B1513` | `#0F766E` | derived (D2) |
 
-Measured contrast (scratch script, re-asserted by `packages/agrimore_ui/test/workspace/seller_palette_test.dart`):
+Measured contrast (scratch script, re-asserted by `apps/seller/test/design_system/seller_colors_test.dart`):
 every text role on every surface it is used on ≥ 4.5:1 (lowest: light tertiary on mint 4.68, light success
 on its tint 4.62); control boundaries ≥ 3:1 (light input border 3.42 on surface / 3.20 on canvas; dark 4.13);
 focus borders ≥ 3:1 against the page in both themes.
@@ -58,9 +78,9 @@ focus borders ≥ 3:1 against the page in both themes.
   fields, whose focused border is the normal editing state.
 - Platform screen-reader focus (TalkBack/VoiceOver rectangles) is never imitated.
 
-## D3 — Brand shape & type (DESIGN_DECISION, boards 02, 05, 08)
+## D3 — Shape & type (DESIGN_DECISION, boards 02, 05, 08)
 
-Seller only (new `WsBrandStyle`, Sales Associate/Delivery unchanged): controls 48 dp tall
+In the seller design system (D0): controls 48 dp tall
 (compact 40), control radius 8, card radius 12, sheet radius 20, chips pill. Type (Inter, bundled):
 Display 32/40 w700 · Heading 24/32 w600 · Title 20/28 w600 · Section 18/24 w600 · List title 16/24 w600 ·
 Body 16/24 · Label 14/20 w600 · Caption 12/16 · Micro 11/16. Money/IDs use tabular figures.
@@ -71,7 +91,7 @@ Body 16/24 · Label 14/20 w600 · Caption 12/16 · Micro 11/16. Money/IDs use ta
   left title and **no back arrow** (23-08's back arrow on "Account" is a mockup inconsistency — `DEVIATION`).
 - Bottom bar below 600 dp; navigation rail from 600 dp (board 04 "Medium 600–839 = rail"; supersedes the
   ADR's 840 dp rail breakpoint); list + detail for Orders from 840 dp.
-- Custom `WsNavBar` / `WsNavRail` in the kit (not Material `NavigationBar`) so a focused destination can
+- Custom `SellerNavBar` / `SellerNavRail` (not Material `NavigationBar`) so a focused destination can
   show the single-border focus on its indicator and announce "Orders, 3 need action, tab 2 of 5".
 - Quotes stay reachable from Home's action queue and the Account/Orders entry points (ADR-S08: a quote is
   a pre-order); Insights from Home.
@@ -80,7 +100,7 @@ Body 16/24 · Label 14/20 w600 · Caption 12/16 · Micro 11/16. Money/IDs use ta
 
 - Field boundaries use `inputBorder` (≥ 3:1) instead of the very light border drawn on the boards, so
   inputs are identifiable in both themes (WCAG 1.4.11).
-- Persistent labels above fields (`WsTextField`) exactly as the boards show; the label and field are
+- Persistent labels above fields (`SellerTextField`) exactly as the boards show; the label and field are
   merged for screen readers.
 - Chips and nav items are drawn at the board sizes but keep a 48 × 48 dp hit area.
 - No `FittedBox` shrinking of amounts: large values wrap or the layout reflows (brief §5 "do not shrink
@@ -146,6 +166,14 @@ at the local emulators and routes the shared `AuthService` OTP/Google-resolve HT
 emulator instead of the hard-coded production URL (compile-time constant; release builds are
 bit-identical). Without it the OTP journey could only be tested against production, which the brief and
 `agrimore-near-miss-real-otp-via-partial-emulator-isolation` forbid.
+
+## D14b — Brand mark, illustrations and font
+
+No asset in the repository matches the boards' two-leaf "AgriMore SELLER" mark (`assets/images/seller_logo.png`
+is the older green-awning launcher icon; the untracked `app_icons/` folder is the marketplace brand). The seller
+design system draws the leaf mark and the simple organic illustrations (mint blob + leaves + a Lucide glyph) as
+theme-aware vectors, so they work in light and dark. The launcher icon is unchanged (a store-listing asset — owner's
+call). Inter 4.1 (SIL OFL 1.1) is bundled in `apps/seller/assets/fonts/` with its licence.
 
 ## D14 — Mockup collection is not committed
 
