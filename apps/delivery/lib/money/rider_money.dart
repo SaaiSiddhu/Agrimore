@@ -20,6 +20,18 @@ import 'package:agrimore_ui/agrimore_ui.dart' show AgFormat;
 double _num(Object? v) => (v as num?)?.toDouble() ?? 0;
 DateTime? _date(Object? v) => v is Timestamp ? v.toDate() : v is DateTime ? v : null;
 
+/// A money field as rupees: the exact integer paise the server writes since
+/// DLV-M1 (`<field>Paise`), else the older rupee field rounded to the paisa
+/// (it could hold 430.70000000000005).
+double moneyField(Map<String, dynamic>? m, String field) {
+  final p = m?['${field}Paise'];
+  if (p is num) return p.toInt() / 100;
+  return (_num(m?[field]) * 100).round() / 100;
+}
+
+/// Adds rupee amounts in whole paise, so a week of ₹0.10s adds up exactly.
+double sumRupees(Iterable<double> amounts) => amounts.fold<int>(0, (s, a) => s + (a * 100).round()) / 100;
+
 /// One delivered order's pay.
 class RiderEarning {
   final String orderId;
@@ -58,13 +70,13 @@ class RiderEarning {
     return RiderEarning(
       orderId: (m['orderId'] as String?) ?? id,
       orderNumber: m['orderNumber'] as String?,
-      total: _num(m['total']),
+      total: moneyField(m, 'total'),
       basePay: line('trip_base'),
       distancePay: line('distance'),
       waitingPay: line('waiting'),
       km: _num(m['km']),
       waitMinutes: (m['waitMinutes'] as num?)?.toInt() ?? 0,
-      codCollected: _num(m['codCollected']),
+      codCollected: moneyField(m, 'codCollected'),
       statementId: m['statementId'] as String?,
       createdAt: _date(m['createdAt']),
     );
@@ -87,6 +99,14 @@ class RiderPayout {
   final DateTime? paidAt;
   final DateTime? createdAt;
 
+  /// Where the money went (markRiderPayoutPaid, DLV-M1): 'bank' or 'upi'.
+  final String? paidToMethod;
+  final String? paidToAccountLast4;
+  final String? paidToUpi;
+
+  /// A week with more than 400 deliveries is split into numbered parts.
+  final int part;
+
   const RiderPayout({
     required this.id,
     required this.weekKey,
@@ -101,15 +121,19 @@ class RiderPayout {
     this.periodEnd,
     this.paidAt,
     this.createdAt,
+    this.paidToMethod,
+    this.paidToAccountLast4,
+    this.paidToUpi,
+    this.part = 1,
   });
 
   factory RiderPayout.fromMap(String id, Map<String, dynamic> m) => RiderPayout(
         id: id,
         weekKey: (m['weekKey'] as String?) ?? '',
-        earned: _num(m['earned']),
-        netted: _num(m['netted']),
-        amount: _num(m['amount']),
-        cashHeldAfter: _num(m['cashHeldAfter']),
+        earned: moneyField(m, 'earned'),
+        netted: moneyField(m, 'netted'),
+        amount: moneyField(m, 'amount'),
+        cashHeldAfter: moneyField(m, 'cashHeldAfter'),
         orderCount: (m['orderCount'] as num?)?.toInt() ?? 0,
         status: (m['status'] as String?) ?? 'pending',
         holdReason: m['holdReason'] as String?,
@@ -117,6 +141,10 @@ class RiderPayout {
         periodEnd: _date(m['periodEnd']),
         paidAt: _date(m['paidAt']),
         createdAt: _date(m['createdAt']),
+        paidToMethod: (m['paidTo'] as Map?)?['method'] as String? ?? m['payoutMethod'] as String?,
+        paidToAccountLast4: (m['paidTo'] as Map?)?['accountLast4'] as String?,
+        paidToUpi: (m['paidTo'] as Map?)?['upiId'] as String?,
+        part: (m['part'] as num?)?.toInt() ?? 1,
       );
 }
 
@@ -127,8 +155,8 @@ class RiderAccount {
   final String? bankChangePending;
   const RiderAccount({this.cashHeld = 0, this.earningsUnsettled = 0, this.bankChangePending});
   factory RiderAccount.fromMap(Map<String, dynamic>? m) => RiderAccount(
-        cashHeld: _num(m?['cashHeld']),
-        earningsUnsettled: _num(m?['earningsUnsettled']),
+        cashHeld: moneyField(m, 'cashHeld'),
+        earningsUnsettled: moneyField(m, 'earningsUnsettled'),
         bankChangePending: (m?['bankChangePending'] as String?)?.isNotEmpty == true ? m!['bankChangePending'] as String : null,
       );
 }
@@ -161,6 +189,12 @@ String? maskAccount(String? number) =>
 /// Rupees in the house style (AgFormat).
 String rupees(double v) => AgFormat.rupees(v);
 
+/// The last four digits of an account number, for "sent to ••1234".
+String? accountLast4(String? number) {
+  final d = (number ?? '').replaceAll(RegExp(r'\D'), '');
+  return d.length < 4 ? null : d.substring(d.length - 4);
+}
+
 /// Start of "today" in India time, as a UTC instant — the server's week and
 /// the rider's day are both Indian calendar days.
 DateTime istDayStart(DateTime now) {
@@ -170,51 +204,55 @@ DateTime istDayStart(DateTime now) {
 
 /// Pay earned today (India time) among [earnings].
 double earnedSince(Iterable<RiderEarning> earnings, DateTime since) =>
-    earnings.where((e) => e.createdAt != null && !e.createdAt!.isBefore(since)).fold(0.0, (s, e) => s + e.total);
+    sumRupees(earnings.where((e) => e.createdAt != null && !e.createdAt!.isBefore(since)).map((e) => e.total));
 
-/// What a statement's status means to a rider.
-String payoutStatusLabel(RiderPayout p) {
-  switch (p.status) {
-    case 'paid':
-      return p.paymentReference == null ? 'Paid' : 'Paid · Ref ${p.paymentReference}';
-    case 'pending':
-      return 'Being paid';
-    case 'on_hold':
-      return p.holdReason == 'bank_change_pending'
-          ? 'On hold — your new payout details are being checked'
-          : 'On hold — add your bank or UPI details';
-    case 'nothing_to_pay':
-      return p.cashHeldAfter > 0
-          ? 'Nothing to pay — cash you hold covered it (${rupees(p.cashHeldAfter)} still with you)'
-          : 'Nothing to pay';
-    default:
-      return p.status;
-  }
-}
+/// Where a statement is, from the rider's side. A statement being made is not
+/// money sent: only [paid] means the Agrimore team has transferred it.
+enum PayoutStage { paid, awaitingTransfer, heldForReview, heldNoDetails, nothingToPay, unknown }
 
-/// The week a statement covers, e.g. "Week ending 20 Sep".
-String payoutWeekLabel(RiderPayout p) {
+PayoutStage payoutStage(RiderPayout p) => switch (p.status) {
+      'paid' => PayoutStage.paid,
+      'pending' => PayoutStage.awaitingTransfer,
+      'on_hold' => p.holdReason == 'bank_change_pending' ? PayoutStage.heldForReview : PayoutStage.heldNoDetails,
+      'nothing_to_pay' => PayoutStage.nothingToPay,
+      _ => PayoutStage.unknown,
+    };
+
+/// The last day a statement covers (the Sunday before periodEnd, Monday 00:00
+/// IST), as an Indian calendar date; null for a statement without periodEnd.
+DateTime? payoutWeekEnding(RiderPayout p) {
   final end = p.periodEnd;
-  if (end == null) return p.weekKey;
-  // periodEnd is Monday 00:00 IST; the last day covered is the Sunday before.
+  if (end == null) return null;
   final sunday = end.toUtc().add(const Duration(hours: 5, minutes: 30)).subtract(const Duration(days: 1));
-  const m = ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', 'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec'];
-  return 'Week ending ${sunday.day} ${m[sunday.month - 1]}';
+  return DateTime(sunday.year, sunday.month, sunday.day);
 }
 
-/// Client-side check before sending a bank change (the server validates again).
-String? bankFormError({String? name, String? account, String? ifsc, String? upi}) {
+/// What is wrong with a bank-change form (the server checks again).
+enum BankFormProblem { empty, holderName, accountDigits, ifsc, upi }
+
+BankFormProblem? bankFormProblem({String? name, String? account, String? ifsc, String? upi}) {
   final n = name?.trim() ?? '', a = (account ?? '').replaceAll(RegExp(r'\s'), ''), i = (ifsc ?? '').trim().toUpperCase();
   final u = (upi ?? '').trim().toLowerCase();
   final anyBank = n.isNotEmpty || a.isNotEmpty || i.isNotEmpty;
-  if (!anyBank && u.isEmpty) return 'Enter bank details or a UPI ID';
+  if (!anyBank && u.isEmpty) return BankFormProblem.empty;
   if (anyBank) {
-    if (n.length < 2) return 'Enter the account holder name';
-    if (!RegExp(r'^\d{9,18}$').hasMatch(a)) return 'Account number should be 9–18 digits';
-    if (!RegExp(r'^[A-Z]{4}0[A-Z0-9]{6}$').hasMatch(i)) return 'IFSC looks wrong (e.g. SBIN0001234)';
+    if (n.length < 2) return BankFormProblem.holderName;
+    if (!RegExp(r'^\d{9,18}$').hasMatch(a)) return BankFormProblem.accountDigits;
+    if (!RegExp(r'^[A-Z]{4}0[A-Z0-9]{6}$').hasMatch(i)) return BankFormProblem.ifsc;
   }
-  if (u.isNotEmpty && !RegExp(r'^[a-z0-9._-]{2,256}@[a-z]{2,64}$').hasMatch(u)) return 'UPI ID looks wrong (e.g. name@okaxis)';
+  if (u.isNotEmpty && !RegExp(r'^[a-z0-9._-]{2,256}@[a-z]{2,64}$').hasMatch(u)) return BankFormProblem.upi;
   return null;
+}
+
+/// Why requestRiderBankChange did not go through.
+enum BankChangeFailure { alreadyPending, invalid, network, other }
+
+/// One page of a statement's deliveries.
+class StatementPage {
+  const StatementPage(this.lines, this.cursor, this.hasMore);
+  final List<RiderEarning> lines;
+  final DocumentSnapshot<Map<String, dynamic>>? cursor;
+  final bool hasMore;
 }
 
 // ── streams and calls ──
@@ -280,10 +318,39 @@ class RiderMoneyService {
     );
   });
 
-  /// requestRiderBankChange; returns null or a sentence to show.
-  static Future<String?> requestBankChange({String? name, String? account, String? ifsc, String? upi}) async {
-    final local = bankFormError(name: name, account: account, ifsc: ifsc, upi: upi);
-    if (local != null) return local;
+  /// A statement's deliveries, newest first, a page at a time (index:
+  /// rider_earnings riderId + statementId + createdAt desc).
+  Future<StatementPage> statementLines(String statementId,
+      {DocumentSnapshot<Map<String, dynamic>>? after, int pageSize = statementPageSize}) async {
+    Query<Map<String, dynamic>> q = _db
+        .collection('rider_earnings')
+        .where('riderId', isEqualTo: riderId)
+        .where('statementId', isEqualTo: statementId)
+        .orderBy('createdAt', descending: true)
+        .limit(pageSize);
+    if (after != null) q = q.startAfterDocument(after);
+    final s = await q.get();
+    return StatementPage(s.docs.map((d) => RiderEarning.fromMap(d.id, d.data())).toList(),
+        s.docs.isEmpty ? after : s.docs.last, s.docs.length == pageSize);
+  }
+
+  static const int statementPageSize = 50;
+
+  /// The COD cash limit the server enforces on offers (riderMoneySummary);
+  /// null when it could not be read — the card then shows the cash alone.
+  static Future<double?> codCashLimit() async {
+    try {
+      final r = await FirebaseFunctions.instance.httpsCallable('riderMoneySummary').call<Map<String, dynamic>>();
+      final v = r.data['codCashLimit'];
+      return v is num ? v.toDouble() : null;
+    } catch (e) {
+      debugPrint('riderMoneySummary: $e');
+      return null;
+    }
+  }
+
+  /// requestRiderBankChange; null when sent. Check [bankFormProblem] first.
+  static Future<BankChangeFailure?> requestBankChange({String? name, String? account, String? ifsc, String? upi}) async {
     try {
       await FirebaseFunctions.instance.httpsCallable('requestRiderBankChange').call<Map<String, dynamic>>({
         if ((name ?? '').trim().isNotEmpty) 'accountHolderName': name!.trim(),
@@ -295,13 +362,13 @@ class RiderMoneyService {
     } on FirebaseFunctionsException catch (e) {
       debugPrint('requestRiderBankChange: ${e.code} ${e.details}');
       final reason = e.details is Map ? (e.details as Map)['reason'] as String? : null;
-      if (reason == 'already_pending') return 'A change is already waiting for review.';
-      if (reason != null && reason.startsWith('invalid_')) return 'Please check the details and try again.';
-      if (e.code == 'unavailable' || e.code == 'deadline-exceeded') return 'No internet connection. Try again.';
-      return 'Could not send the change. Please try again.';
+      if (reason == 'already_pending') return BankChangeFailure.alreadyPending;
+      if (reason != null && reason.startsWith('invalid_')) return BankChangeFailure.invalid;
+      if (e.code == 'unavailable' || e.code == 'deadline-exceeded') return BankChangeFailure.network;
+      return BankChangeFailure.other;
     } catch (e) {
       debugPrint('requestRiderBankChange: $e');
-      return 'Could not send the change. Please try again.';
+      return BankChangeFailure.other;
     }
   }
 }

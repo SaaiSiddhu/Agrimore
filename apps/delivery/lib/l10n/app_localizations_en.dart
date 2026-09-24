@@ -655,4 +655,295 @@ class AppLocalizationsEn extends AppLocalizations {
   @override
   String get proofNotSaved =>
       'Delivered. The proof photo couldn\'t be saved — the delivery still counts.';
+
+  @override
+  String get moneyTitle => 'Earnings';
+
+  @override
+  String get moneyThisWeek => 'This week';
+
+  @override
+  String get moneyToday => 'Today';
+
+  @override
+  String moneyDeliveries(int count) {
+    String _temp0 = intl.Intl.pluralLogic(
+      count,
+      locale: localeName,
+      other: '$count deliveries',
+      one: '1 delivery',
+    );
+    return '$_temp0';
+  }
+
+  @override
+  String get moneyPaidMondays => 'Paid every Monday';
+
+  @override
+  String get moneyLoadError =>
+      'Could not load your earnings. Check your connection.';
+
+  @override
+  String get moneyNoDeliveriesYet =>
+      'No deliveries yet this week. Pay for each delivery shows here as soon as it is delivered.';
+
+  @override
+  String get moneyCashNone => 'No cash with you';
+
+  @override
+  String get moneyCashNoneHint => 'Cash you collect on COD orders shows here.';
+
+  @override
+  String moneyCashHeld(String amount) {
+    return 'Cash with you: $amount';
+  }
+
+  @override
+  String get moneyCashHint =>
+      'Cash from COD orders is taken off your Monday payout. Hand larger amounts to the Agrimore team.';
+
+  @override
+  String moneyCashUnderLimit(String limit) {
+    return 'You get cash-on-delivery orders while you hold less than $limit.';
+  }
+
+  @override
+  String moneyCashOverLimit(String limit) {
+    return 'You hold $limit or more, so you won\'t get cash-on-delivery orders until you hand cash to the Agrimore team.';
+  }
+
+  @override
+  String moneyEarningTitle(String number) {
+    return 'Order #$number';
+  }
+
+  @override
+  String moneyLineBase(String amount) {
+    return 'Base $amount';
+  }
+
+  @override
+  String moneyLineDistance(String km, String amount) {
+    return '$km km $amount';
+  }
+
+  @override
+  String moneyLineWaiting(int minutes, String amount) {
+    return 'Waiting $minutes min $amount';
+  }
+
+  @override
+  String moneyLineCash(String amount) {
+    return 'Collected $amount cash';
+  }
+
+  @override
+  String get moneyStatementsTitle => 'Weekly statements';
+
+  @override
+  String get moneyStatementsError => 'Could not load statements.';
+
+  @override
+  String get moneyStatementsEmpty =>
+      'Your first statement is made on Monday for the week before. Pay is sent to your bank or UPI.';
+
+  @override
+  String moneyWeekEnding(String date) {
+    return 'Week ending $date';
+  }
+
+  @override
+  String moneyWeekEndingPart(String date, int part) {
+    return 'Week ending $date · part $part';
+  }
+
+  @override
+  String moneyStatementEarned(String amount) {
+    return 'earned $amount';
+  }
+
+  @override
+  String moneyStatementCashOff(String amount) {
+    return 'cash taken off $amount';
+  }
+
+  @override
+  String stagePaid(String reference) {
+    return 'Money sent · Ref $reference';
+  }
+
+  @override
+  String get stagePaidNoRef => 'Money sent';
+
+  @override
+  String get stageAwaiting =>
+      'Statement ready — the Agrimore team will send the money';
+
+  @override
+  String get stageHeldReview =>
+      'On hold — your new payout details are being checked';
+
+  @override
+  String get stageHeldNoDetails => 'On hold — add your bank or UPI details';
+
+  @override
+  String get stageNothing => 'Nothing to pay';
+
+  @override
+  String stageNothingCash(String amount) {
+    return 'Nothing to pay — cash you hold covered it ($amount still with you)';
+  }
+
+  @override
+  String stageUnknown(String status) {
+    return 'Status: $status';
+  }
+
+  @override
+  String get payoutDetailsTitle => 'Payout details';
+
+  @override
+  String get payoutDetailsNone =>
+      'No bank or UPI details yet — your pay will wait until you add them.';
+
+  @override
+  String payoutDetailsBank(String account) {
+    return 'Bank $account';
+  }
+
+  @override
+  String payoutDetailsBankIfsc(String account, String ifsc) {
+    return 'Bank $account · $ifsc';
+  }
+
+  @override
+  String payoutDetailsUpi(String upi) {
+    return 'UPI $upi';
+  }
+
+  @override
+  String get bankChangeReviewing =>
+      'Your change is being checked by the Agrimore team.';
+
+  @override
+  String bankChangeRejected(String reason) {
+    return 'Your last change was not approved: $reason';
+  }
+
+  @override
+  String get bankChangeRejectedNoReason => 'Your last change was not approved.';
+
+  @override
+  String get bankChangeButton => 'Change payout details';
+
+  @override
+  String get bankChangeWaiting => 'Change waiting for review';
+
+  @override
+  String get bankChangeSent =>
+      'Sent. The Agrimore team will check it; your pay waits until then.';
+
+  @override
+  String get bankFormTitle => 'Change payout details';
+
+  @override
+  String get bankFormIntro =>
+      'The Agrimore team checks every change before any money is sent to it.';
+
+  @override
+  String get bankFormHolder => 'Account holder name';
+
+  @override
+  String get bankFormAccount => 'Bank account number';
+
+  @override
+  String get bankFormIfsc => 'IFSC';
+
+  @override
+  String get bankFormOr => 'and / or';
+
+  @override
+  String get bankFormUpi => 'UPI ID (e.g. name@okaxis)';
+
+  @override
+  String get bankFormSend => 'Send for review';
+
+  @override
+  String get bankProblemEmpty => 'Enter bank details or a UPI ID';
+
+  @override
+  String get bankProblemHolder => 'Enter the account holder name';
+
+  @override
+  String get bankProblemAccount => 'Account number should be 9–18 digits';
+
+  @override
+  String get bankProblemIfsc => 'IFSC looks wrong (e.g. SBIN0001234)';
+
+  @override
+  String get bankProblemUpi => 'UPI ID looks wrong (e.g. name@okaxis)';
+
+  @override
+  String get bankFailAlreadyPending =>
+      'A change is already waiting for review.';
+
+  @override
+  String get bankFailInvalid => 'Please check the details and try again.';
+
+  @override
+  String get bankFailOther => 'Could not send the change. Please try again.';
+
+  @override
+  String get statementTitle => 'Statement';
+
+  @override
+  String get statementEarned => 'Earned';
+
+  @override
+  String get statementCashOff => 'Cash you held, taken off';
+
+  @override
+  String get statementToPay => 'To be sent to you';
+
+  @override
+  String get statementSent => 'Sent to you';
+
+  @override
+  String get statementCashAfter => 'Cash still with you';
+
+  @override
+  String statementSentToBank(String last4) {
+    return 'Sent to bank account ending $last4';
+  }
+
+  @override
+  String statementSentToUpi(String upi) {
+    return 'Sent to UPI $upi';
+  }
+
+  @override
+  String statementSentOn(String date) {
+    return 'Sent on $date';
+  }
+
+  @override
+  String statementMadeOn(String date) {
+    return 'Statement made on $date';
+  }
+
+  @override
+  String get statementDeliveries => 'Deliveries in this statement';
+
+  @override
+  String get statementLinesEmpty => 'No deliveries in this statement.';
+
+  @override
+  String get statementLinesError =>
+      'Could not load the deliveries. Check your connection.';
+
+  @override
+  String get statementLoadMore => 'Load more';
+
+  @override
+  String get moneyAmountLoading => '…';
 }

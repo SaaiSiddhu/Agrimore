@@ -1,12 +1,17 @@
 // lib/screens/money/money_screen.dart
 //
-// Phase DLV-4B — the rider's earnings as the server records them (DLV-4A):
-// this week's pay order by order, today's total, cash in hand from COD
-// orders, weekly statements with the paid reference, and the payout details
-// with a change request that admin approves (D-DLV-BANK).
+// The rider's earnings as the server records them (DLV-4A/4B, DLV-M1): this
+// week's pay order by order, today's total, cash in hand from COD orders
+// against the COD cash limit, weekly statements (each opens its detail), and
+// the payout details with a change request that admin approves (D-DLV-BANK).
+// DLV-M1: Workspace tokens and lib/l10n strings; amounts are exact paise.
+import 'package:agrimore_ui/agrimore_ui.dart';
 import 'package:flutter/material.dart';
 
+import '../../l10n/app_localizations.dart';
+import '../../money/money_text.dart';
 import '../../money/rider_money.dart';
+import 'statement_screen.dart';
 
 class MoneyScreen extends StatefulWidget {
   const MoneyScreen({super.key, required this.riderId});
@@ -22,254 +27,68 @@ class _MoneyScreenState extends State<MoneyScreen> {
   late final Stream<RiderAccount> _account = _money.account();
   late final Stream<List<RiderPayout>> _payouts = _money.payouts();
   late final Stream<BankChangeRequest?> _bankChange = _money.latestBankChange();
-  late final Stream<({String? maskedAccount, String? ifsc, String? upiId, String? holder})> _details = _money.payoutDetails();
+  late final Stream<({String? maskedAccount, String? ifsc, String? upiId, String? holder})> _details =
+      _money.payoutDetails();
+  late final Future<double?> _cashLimit = RiderMoneyService.codCashLimit();
 
   @override
   Widget build(BuildContext context) {
-    final cs = Theme.of(context).colorScheme;
+    final l = AppLocalizations.of(context);
     return Scaffold(
-      appBar: AppBar(title: const Text('Earnings')),
+      appBar: AppBar(title: Text(l.moneyTitle)),
       body: ListView(
-        padding: const EdgeInsets.fromLTRB(16, 8, 16, 32),
+        padding: const EdgeInsets.fromLTRB(WsSpace.page, WsSpace.s8, WsSpace.page, WsSpace.s32),
         children: [
           StreamBuilder<List<RiderEarning>>(
             stream: _earnings,
             builder: (context, snap) {
-              if (snap.hasError) return _error('Could not load your earnings. Check your connection.');
+              if (snap.hasError) return _ErrorLine(text: l.moneyLoadError);
               final list = snap.data ?? const <RiderEarning>[];
-              final week = list.fold(0.0, (s, e) => s + e.total);
-              final today = earnedSince(list, istDayStart(DateTime.now()));
               return Column(
                 crossAxisAlignment: CrossAxisAlignment.stretch,
                 children: [
-                  _summary(cs, week: week, today: today, orders: list.length, loading: !snap.hasData),
-                  const SizedBox(height: 12),
-                  _cashCard(cs),
-                  const SizedBox(height: 20),
-                  _heading(cs, 'This week', list.isEmpty ? null : '${list.length} ${list.length == 1 ? 'delivery' : 'deliveries'}'),
-                  if (snap.hasData && list.isEmpty)
-                    _muted(cs, 'No deliveries yet this week. Pay for each delivery shows here as soon as it is delivered.'),
-                  for (final e in list) _earningTile(cs, e),
+                  _Summary(
+                    week: sumRupees(list.map((e) => e.total)),
+                    today: earnedSince(list, istDayStart(DateTime.now())),
+                    orders: list.length,
+                    loading: !snap.hasData,
+                  ),
+                  const SizedBox(height: WsSpace.s12),
+                  _CashCard(account: _account, limit: _cashLimit),
+                  const SizedBox(height: WsSpace.s20),
+                  _Heading(text: l.moneyThisWeek, trailing: list.isEmpty ? null : l.moneyDeliveries(list.length)),
+                  if (snap.hasData && list.isEmpty) _Muted(text: l.moneyNoDeliveriesYet),
+                  for (final e in list) EarningTile(earning: e),
                 ],
               );
             },
           ),
-          const SizedBox(height: 20),
-          _heading(cs, 'Weekly statements', null),
+          const SizedBox(height: WsSpace.s20),
+          _Heading(text: l.moneyStatementsTitle),
           StreamBuilder<List<RiderPayout>>(
             stream: _payouts,
             builder: (context, snap) {
-              if (snap.hasError) return _error('Could not load statements.');
-              if (!snap.hasData) return const Padding(padding: EdgeInsets.all(12), child: LinearProgressIndicator());
-              if (snap.data!.isEmpty) {
-                return _muted(cs, 'Your first statement is made on Monday for the week before. Pay is sent to your bank or UPI.');
+              if (snap.hasError) return _ErrorLine(text: l.moneyStatementsError);
+              if (!snap.hasData) {
+                return const Padding(padding: EdgeInsets.all(WsSpace.s12), child: LinearProgressIndicator());
               }
-              return Column(children: [for (final p in snap.data!) _payoutTile(cs, p)]);
+              if (snap.data!.isEmpty) return _Muted(text: l.moneyStatementsEmpty);
+              return Column(children: [
+                for (final p in snap.data!)
+                  _PayoutTile(
+                    payout: p,
+                    onTap: () => Navigator.of(context).push(MaterialPageRoute<void>(
+                        builder: (_) => StatementScreen(
+                            payout: p, load: (after) => _money.statementLines(p.id, after: after)))),
+                  ),
+              ]);
             },
           ),
-          const SizedBox(height: 20),
-          _heading(cs, 'Payout details', null),
-          _payoutDetails(cs),
+          const SizedBox(height: WsSpace.s20),
+          _Heading(text: l.payoutDetailsTitle),
+          _PayoutDetails(details: _details, bankChange: _bankChange, account: _account, onChange: _openChangeForm),
         ],
       ),
-    );
-  }
-
-  Widget _summary(ColorScheme cs, {required double week, required double today, required int orders, required bool loading}) {
-    return Container(
-      padding: const EdgeInsets.all(18),
-      decoration: BoxDecoration(
-        gradient: LinearGradient(colors: [Colors.green.shade500, Colors.green.shade700]),
-        borderRadius: BorderRadius.circular(16),
-      ),
-      child: Row(
-        children: [
-          Expanded(
-            child: Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                const Text('This week', style: TextStyle(color: Colors.white70, fontWeight: FontWeight.w600)),
-                const SizedBox(height: 4),
-                Text(loading ? '…' : rupees(week),
-                    style: const TextStyle(color: Colors.white, fontSize: 28, fontWeight: FontWeight.w900)),
-                Text('$orders ${orders == 1 ? 'delivery' : 'deliveries'} · paid every Monday',
-                    style: const TextStyle(color: Colors.white70, fontSize: 12)),
-              ],
-            ),
-          ),
-          Column(
-            crossAxisAlignment: CrossAxisAlignment.end,
-            children: [
-              const Text('Today', style: TextStyle(color: Colors.white70, fontWeight: FontWeight.w600)),
-              const SizedBox(height: 4),
-              Text(loading ? '…' : rupees(today),
-                  style: const TextStyle(color: Colors.white, fontSize: 20, fontWeight: FontWeight.w800)),
-            ],
-          ),
-        ],
-      ),
-    );
-  }
-
-  Widget _cashCard(ColorScheme cs) {
-    return StreamBuilder<RiderAccount>(
-      stream: _account,
-      builder: (context, snap) {
-        final cash = snap.data?.cashHeld ?? 0;
-        final holding = cash > 0.005;
-        return Container(
-          padding: const EdgeInsets.all(14),
-          decoration: BoxDecoration(
-            color: holding ? Colors.orange.shade50 : cs.surfaceContainerLowest,
-            borderRadius: BorderRadius.circular(14),
-            border: Border.all(color: holding ? Colors.orange.shade200 : cs.outline.withValues(alpha: 0.15)),
-          ),
-          child: Row(
-            crossAxisAlignment: CrossAxisAlignment.start,
-            children: [
-              Icon(Icons.payments_rounded, color: holding ? Colors.orange.shade700 : cs.onSurfaceVariant),
-              const SizedBox(width: 12),
-              Expanded(
-                child: Column(
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  children: [
-                    Text(holding ? 'Cash with you: ${rupees(cash)}' : 'No cash with you',
-                        style: const TextStyle(fontWeight: FontWeight.w800, fontSize: 15)),
-                    const SizedBox(height: 4),
-                    Text(
-                      holding
-                          ? 'Cash from COD orders is taken off your Monday payout. Hand larger amounts to the Agrimore team — '
-                              "while you hold too much cash you won't get cash-on-delivery orders."
-                          : 'Cash you collect on COD orders shows here.',
-                      style: TextStyle(fontSize: 12, color: cs.onSurfaceVariant, height: 1.35),
-                    ),
-                  ],
-                ),
-              ),
-            ],
-          ),
-        );
-      },
-    );
-  }
-
-  Widget _earningTile(ColorScheme cs, RiderEarning e) {
-    final parts = <String>[
-      'Base ${rupees(e.basePay)}',
-      // Two decimals: pay is worked out on the km as stored (4.05 km × ₹6 =
-      // ₹24.30); "4.0 km ₹24.30" would not add up for the rider.
-      if (e.km > 0) '${e.km.toStringAsFixed(2)} km ${rupees(e.distancePay)}',
-      if (e.waitMinutes > 0) 'Waiting ${e.waitMinutes} min ${rupees(e.waitingPay)}',
-    ];
-    final when = e.createdAt?.toLocal();
-    return Card(
-      margin: const EdgeInsets.only(bottom: 8),
-      child: ListTile(
-        title: Text('Order #${e.orderNumber ?? e.orderId}', style: const TextStyle(fontWeight: FontWeight.w700)),
-        subtitle: Text([
-          parts.join(' · '),
-          if (e.codCollected > 0) 'Collected ${rupees(e.codCollected)} cash',
-          if (when != null) TimeOfDay.fromDateTime(when).format(context),
-        ].join('\n')),
-        isThreeLine: e.codCollected > 0 || when != null,
-        trailing: Text(rupees(e.total), style: const TextStyle(fontWeight: FontWeight.w900, fontSize: 16)),
-      ),
-    );
-  }
-
-  Widget _payoutTile(ColorScheme cs, RiderPayout p) {
-    final paid = p.status == 'paid';
-    final color = switch (p.status) {
-      'paid' => Colors.green.shade700,
-      'on_hold' => Colors.orange.shade800,
-      _ => cs.onSurfaceVariant,
-    };
-    return Card(
-      margin: const EdgeInsets.only(bottom: 8),
-      child: Padding(
-        padding: const EdgeInsets.all(14),
-        child: Column(
-          crossAxisAlignment: CrossAxisAlignment.start,
-          children: [
-            Row(
-              children: [
-                Expanded(child: Text(payoutWeekLabel(p), style: const TextStyle(fontWeight: FontWeight.w800))),
-                Text(rupees(p.amount), style: const TextStyle(fontWeight: FontWeight.w900, fontSize: 16)),
-              ],
-            ),
-            const SizedBox(height: 4),
-            Text(
-              '${p.orderCount} ${p.orderCount == 1 ? 'delivery' : 'deliveries'} · earned ${rupees(p.earned)}'
-              '${p.netted > 0 ? ' · cash taken off ${rupees(p.netted)}' : ''}',
-              style: TextStyle(fontSize: 12, color: cs.onSurfaceVariant),
-            ),
-            const SizedBox(height: 6),
-            Row(
-              children: [
-                Icon(paid ? Icons.check_circle_rounded : Icons.schedule_rounded, size: 16, color: color),
-                const SizedBox(width: 6),
-                Expanded(child: Text(payoutStatusLabel(p), style: TextStyle(fontSize: 13, color: color, fontWeight: FontWeight.w600))),
-              ],
-            ),
-          ],
-        ),
-      ),
-    );
-  }
-
-  Widget _payoutDetails(ColorScheme cs) {
-    return StreamBuilder<({String? maskedAccount, String? ifsc, String? upiId, String? holder})>(
-      stream: _details,
-      builder: (context, snap) {
-        final d = snap.data;
-        final lines = <String>[
-          if (d?.maskedAccount != null) 'Bank ${d!.maskedAccount}${d.ifsc == null ? '' : ' · ${d.ifsc}'}',
-          if (d?.upiId != null) 'UPI ${d!.upiId}',
-        ];
-        return Card(
-          child: Padding(
-            padding: const EdgeInsets.all(14),
-            child: Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                Text(lines.isEmpty ? 'No bank or UPI details yet — your pay will wait until you add them.' : lines.join('\n'),
-                    style: const TextStyle(fontWeight: FontWeight.w600, height: 1.4)),
-                StreamBuilder<BankChangeRequest?>(
-                  stream: _bankChange,
-                  builder: (context, req) {
-                    final r = req.data;
-                    if (r == null) return const SizedBox.shrink();
-                    final text = switch (r.status) {
-                      'pending' => 'Your change is being checked by the Agrimore team.',
-                      'rejected' => 'Your last change was not approved: ${r.rejectionReason ?? 'no reason given'}',
-                      _ => null,
-                    };
-                    if (text == null) return const SizedBox.shrink();
-                    return Padding(
-                      padding: const EdgeInsets.only(top: 8),
-                      child: Text(text,
-                          style: TextStyle(
-                              fontSize: 13, color: r.status == 'rejected' ? cs.error : Colors.orange.shade800)),
-                    );
-                  },
-                ),
-                const SizedBox(height: 10),
-                StreamBuilder<RiderAccount>(
-                  stream: _account,
-                  builder: (context, acc) {
-                    final pending = acc.data?.bankChangePending != null;
-                    return OutlinedButton.icon(
-                      onPressed: pending ? null : _openChangeForm,
-                      icon: const Icon(Icons.edit_rounded, size: 18),
-                      label: Text(pending ? 'Change waiting for review' : 'Change payout details'),
-                    );
-                  },
-                ),
-              ],
-            ),
-          ),
-        );
-      },
     );
   }
 
@@ -281,30 +100,298 @@ class _MoneyScreenState extends State<MoneyScreen> {
       builder: (ctx) => const _BankChangeForm(),
     );
     if (sent == true && mounted) {
-      ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(content: Text('Sent. The Agrimore team will check it; your pay waits until then.')),
-      );
+      WsToast.show(context, AppLocalizations.of(context).bankChangeSent, tone: WsToastTone.success);
     }
   }
+}
 
-  Widget _heading(ColorScheme cs, String text, String? trailing) => Padding(
-        padding: const EdgeInsets.only(bottom: 8),
-        child: Row(
-          children: [
-            Expanded(child: Text(text, style: const TextStyle(fontSize: 16, fontWeight: FontWeight.w800))),
-            if (trailing != null) Text(trailing, style: TextStyle(color: cs.onSurfaceVariant, fontSize: 12)),
-          ],
+class _Summary extends StatelessWidget {
+  const _Summary({required this.week, required this.today, required this.orders, required this.loading});
+  final double week;
+  final double today;
+  final int orders;
+  final bool loading;
+
+  @override
+  Widget build(BuildContext context) {
+    final l = AppLocalizations.of(context);
+    final t = context.ws;
+    final text = Theme.of(context).textTheme;
+    final on = t.onPrimary;
+    String amount(double v) => loading ? l.moneyAmountLoading : AgFormat.rupees(v);
+    return Container(
+      padding: const EdgeInsets.all(WsSpace.s16),
+      decoration: BoxDecoration(color: t.primary, borderRadius: BorderRadius.circular(WsRadius.card)),
+      child: Row(
+        children: [
+          Expanded(
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Text(l.moneyThisWeek, style: text.labelLarge?.copyWith(color: on)),
+                const SizedBox(height: WsSpace.s4),
+                Text(amount(week), style: text.headlineMedium?.copyWith(color: on)),
+                Text([l.moneyDeliveries(orders), l.moneyPaidMondays].join(' · '), style: text.bodySmall?.copyWith(color: on)),
+              ],
+            ),
+          ),
+          Column(
+            crossAxisAlignment: CrossAxisAlignment.end,
+            children: [
+              Text(l.moneyToday, style: text.labelLarge?.copyWith(color: on)),
+              const SizedBox(height: WsSpace.s4),
+              Text(amount(today), style: text.titleLarge?.copyWith(color: on)),
+            ],
+          ),
+        ],
+      ),
+    );
+  }
+}
+
+class _CashCard extends StatelessWidget {
+  const _CashCard({required this.account, required this.limit});
+  final Stream<RiderAccount> account;
+  final Future<double?> limit;
+
+  @override
+  Widget build(BuildContext context) {
+    final l = AppLocalizations.of(context);
+    final t = context.ws;
+    final text = Theme.of(context).textTheme;
+    return StreamBuilder<RiderAccount>(
+      stream: account,
+      builder: (context, snap) => FutureBuilder<double?>(
+        future: limit,
+        builder: (context, lim) {
+          final cash = snap.data?.cashHeld ?? 0;
+          final holding = cash > 0;
+          final max = lim.data;
+          final over = max != null && cash >= max;
+          final notes = <String>[
+            holding ? l.moneyCashHint : l.moneyCashNoneHint,
+            if (max != null) over ? l.moneyCashOverLimit(AgFormat.rupees(max)) : l.moneyCashUnderLimit(AgFormat.rupees(max)),
+          ];
+          return Container(
+            padding: const EdgeInsets.all(WsSpace.s12),
+            decoration: BoxDecoration(
+              color: over ? t.warningBg : t.surface,
+              borderRadius: BorderRadius.circular(WsRadius.card),
+              border: Border.all(color: over ? t.warningFg : t.divider, width: WsSize.hairline),
+            ),
+            child: Row(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Icon(over ? AgIcons.warning : AgIcons.wallet, color: over ? t.warningFg : t.textSecondary),
+                const SizedBox(width: WsSpace.s12),
+                Expanded(
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      Text(holding ? l.moneyCashHeld(AgFormat.rupees(cash)) : l.moneyCashNone, style: text.titleSmall),
+                      const SizedBox(height: WsSpace.s4),
+                      Text(notes.join(' '), style: text.bodySmall?.copyWith(color: t.textSecondary)),
+                    ],
+                  ),
+                ),
+              ],
+            ),
+          );
+        },
+      ),
+    );
+  }
+}
+
+/// One delivered order's pay (also used by the statement screen).
+class EarningTile extends StatelessWidget {
+  const EarningTile({super.key, required this.earning});
+  final RiderEarning earning;
+
+  @override
+  Widget build(BuildContext context) {
+    final l = AppLocalizations.of(context);
+    final text = Theme.of(context).textTheme;
+    final e = earning;
+    final when = e.createdAt?.toLocal();
+    final lines = [
+      earningBreakdown(l, e),
+      if (e.codCollected > 0) l.moneyLineCash(AgFormat.rupees(e.codCollected)),
+      if (when != null) AgFormat.dateTime(when),
+    ];
+    return Card(
+      margin: const EdgeInsets.only(bottom: WsSpace.s8),
+      child: ListTile(
+        title: Text(l.moneyEarningTitle(e.orderNumber ?? e.orderId), style: text.titleSmall),
+        subtitle: Text(lines.join('\n')),
+        isThreeLine: lines.length > 2,
+        trailing: Text(AgFormat.rupees(e.total), style: text.titleMedium),
+      ),
+    );
+  }
+}
+
+class _PayoutTile extends StatelessWidget {
+  const _PayoutTile({required this.payout, required this.onTap});
+  final RiderPayout payout;
+  final VoidCallback onTap;
+
+  @override
+  Widget build(BuildContext context) {
+    final l = AppLocalizations.of(context);
+    final t = context.ws;
+    final text = Theme.of(context).textTheme;
+    final p = payout;
+    final stage = payoutStage(p);
+    final color = switch (stage) {
+      PayoutStage.paid => t.successFg,
+      PayoutStage.heldForReview || PayoutStage.heldNoDetails => t.warningFg,
+      _ => t.textSecondary,
+    };
+    return Card(
+      margin: const EdgeInsets.only(bottom: WsSpace.s8),
+      child: InkWell(
+        onTap: onTap,
+        borderRadius: BorderRadius.circular(WsRadius.card),
+        child: Padding(
+          padding: const EdgeInsets.all(WsSpace.s12),
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              Row(children: [
+                Expanded(child: Text(payoutTitle(l, p), style: text.titleSmall)),
+                Text(AgFormat.rupees(p.amount), style: text.titleMedium),
+                Icon(AgIcons.chevronRight, size: WsIconSize.supporting, color: t.textTertiary),
+              ]),
+              const SizedBox(height: WsSpace.s4),
+              Text(
+                [
+                  l.moneyDeliveries(p.orderCount),
+                  l.moneyStatementEarned(AgFormat.rupees(p.earned)),
+                  if (p.netted > 0) l.moneyStatementCashOff(AgFormat.rupees(p.netted)),
+                ].join(' · '),
+                style: text.bodySmall?.copyWith(color: t.textSecondary),
+              ),
+              const SizedBox(height: WsSpace.s8),
+              Row(children: [
+                Icon(stage == PayoutStage.paid ? AgIcons.success : AgIcons.clock,
+                    size: WsIconSize.supporting, color: color),
+                const SizedBox(width: WsSpace.s8),
+                Expanded(child: Text(payoutStageText(l, p), style: text.labelMedium?.copyWith(color: color))),
+              ]),
+            ],
+          ),
         ),
-      );
+      ),
+    );
+  }
+}
 
-  Widget _muted(ColorScheme cs, String text) => Padding(
-        padding: const EdgeInsets.symmetric(vertical: 8),
-        child: Text(text, style: TextStyle(color: cs.onSurfaceVariant, height: 1.4)),
-      );
+class _PayoutDetails extends StatelessWidget {
+  const _PayoutDetails({required this.details, required this.bankChange, required this.account, required this.onChange});
+  final Stream<({String? maskedAccount, String? ifsc, String? upiId, String? holder})> details;
+  final Stream<BankChangeRequest?> bankChange;
+  final Stream<RiderAccount> account;
+  final VoidCallback onChange;
 
-  Widget _error(String text) => Padding(
-        padding: const EdgeInsets.all(12),
-        child: Text(text, style: TextStyle(color: Theme.of(context).colorScheme.error)),
+  @override
+  Widget build(BuildContext context) {
+    final l = AppLocalizations.of(context);
+    final t = context.ws;
+    final text = Theme.of(context).textTheme;
+    return StreamBuilder<({String? maskedAccount, String? ifsc, String? upiId, String? holder})>(
+      stream: details,
+      builder: (context, snap) {
+        final d = snap.data;
+        final lines = <String>[
+          if (d?.maskedAccount != null)
+            d!.ifsc == null ? l.payoutDetailsBank(d.maskedAccount!) : l.payoutDetailsBankIfsc(d.maskedAccount!, d.ifsc!),
+          if (d?.upiId != null) l.payoutDetailsUpi(d!.upiId!),
+        ];
+        return Card(
+          child: Padding(
+            padding: const EdgeInsets.all(WsSpace.s12),
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.stretch,
+              children: [
+                Text(lines.isEmpty ? l.payoutDetailsNone : lines.join('\n'), style: text.bodyMedium),
+                StreamBuilder<BankChangeRequest?>(
+                  stream: bankChange,
+                  builder: (context, req) {
+                    final r = req.data;
+                    final note = switch (r?.status) {
+                      'pending' => l.bankChangeReviewing,
+                      'rejected' => (r!.rejectionReason ?? '').isEmpty
+                          ? l.bankChangeRejectedNoReason
+                          : l.bankChangeRejected(r.rejectionReason!),
+                      _ => null,
+                    };
+                    if (note == null) return const SizedBox.shrink();
+                    return Padding(
+                      padding: const EdgeInsets.only(top: WsSpace.s8),
+                      child: Text(note,
+                          style: text.bodySmall?.copyWith(color: r!.status == 'rejected' ? t.errorFg : t.warningFg)),
+                    );
+                  },
+                ),
+                const SizedBox(height: WsSpace.s12),
+                StreamBuilder<RiderAccount>(
+                  stream: account,
+                  builder: (context, acc) {
+                    final pending = acc.data?.bankChangePending != null;
+                    return OutlinedButton.icon(
+                      onPressed: pending ? null : onChange,
+                      icon: const Icon(AgIcons.edit, size: WsIconSize.supporting),
+                      label: Text(pending ? l.bankChangeWaiting : l.bankChangeButton),
+                    );
+                  },
+                ),
+              ],
+            ),
+          ),
+        );
+      },
+    );
+  }
+}
+
+class _Heading extends StatelessWidget {
+  const _Heading({required this.text, this.trailing});
+  final String text;
+  final String? trailing;
+
+  @override
+  Widget build(BuildContext context) {
+    final theme = Theme.of(context).textTheme;
+    return Padding(
+      padding: const EdgeInsets.only(bottom: WsSpace.s8),
+      child: Row(children: [
+        Expanded(child: Text(text, style: theme.titleMedium)),
+        if (trailing != null) Text(trailing!, style: theme.bodySmall?.copyWith(color: context.ws.textSecondary)),
+      ]),
+    );
+  }
+}
+
+class _Muted extends StatelessWidget {
+  const _Muted({required this.text});
+  final String text;
+
+  @override
+  Widget build(BuildContext context) => Padding(
+        padding: const EdgeInsets.symmetric(vertical: WsSpace.s8),
+        child: Text(text, style: Theme.of(context).textTheme.bodyMedium?.copyWith(color: context.ws.textSecondary)),
+      );
+}
+
+class _ErrorLine extends StatelessWidget {
+  const _ErrorLine({required this.text});
+  final String text;
+
+  @override
+  Widget build(BuildContext context) => Padding(
+        padding: const EdgeInsets.all(WsSpace.s12),
+        child: Text(text, style: Theme.of(context).textTheme.bodyMedium?.copyWith(color: context.ws.errorFg)),
       );
 }
 
@@ -331,58 +418,77 @@ class _BankChangeFormState extends State<_BankChangeForm> {
   }
 
   Future<void> _send() async {
+    final l = AppLocalizations.of(context);
+    final problem = bankFormProblem(name: _name.text, account: _account.text, ifsc: _ifsc.text, upi: _upi.text);
+    if (problem != null) {
+      setState(() => _error = bankProblemText(l, problem));
+      return;
+    }
     setState(() {
       _sending = true;
       _error = null;
     });
-    final error = await RiderMoneyService.requestBankChange(
+    final failure = await RiderMoneyService.requestBankChange(
         name: _name.text, account: _account.text, ifsc: _ifsc.text, upi: _upi.text);
     if (!mounted) return;
-    if (error == null) {
+    if (failure == null) {
       Navigator.pop(context, true);
     } else {
       setState(() {
         _sending = false;
-        _error = error;
+        _error = bankFailureText(l, failure);
       });
     }
   }
 
   @override
   Widget build(BuildContext context) {
+    final l = AppLocalizations.of(context);
+    final text = Theme.of(context).textTheme;
     return Padding(
-      padding: EdgeInsets.fromLTRB(20, 0, 20, MediaQuery.of(context).viewInsets.bottom + 20),
+      padding: EdgeInsets.fromLTRB(
+          WsSpace.page, 0, WsSpace.page, MediaQuery.of(context).viewInsets.bottom + WsSpace.s20),
       child: SingleChildScrollView(
         child: Column(
           mainAxisSize: MainAxisSize.min,
           crossAxisAlignment: CrossAxisAlignment.stretch,
           children: [
-            const Text('Change payout details', style: TextStyle(fontSize: 18, fontWeight: FontWeight.w800)),
-            const SizedBox(height: 4),
-            const Text('The Agrimore team checks every change before any money is sent to it.',
-                style: TextStyle(fontSize: 13)),
-            const SizedBox(height: 16),
-            TextField(controller: _name, textCapitalization: TextCapitalization.words,
-                decoration: const InputDecoration(labelText: 'Account holder name')),
-            TextField(controller: _account, keyboardType: TextInputType.number,
-                decoration: const InputDecoration(labelText: 'Bank account number')),
-            TextField(controller: _ifsc, textCapitalization: TextCapitalization.characters,
-                decoration: const InputDecoration(labelText: 'IFSC')),
-            const SizedBox(height: 12),
-            const Text('and / or', textAlign: TextAlign.center, style: TextStyle(fontSize: 12)),
-            TextField(controller: _upi, keyboardType: TextInputType.emailAddress,
-                decoration: const InputDecoration(labelText: 'UPI ID (e.g. name@okaxis)')),
+            Text(l.bankFormTitle, style: text.titleLarge),
+            const SizedBox(height: WsSpace.s4),
+            Text(l.bankFormIntro, style: text.bodySmall),
+            const SizedBox(height: WsSpace.s16),
+            TextField(
+                controller: _name,
+                textCapitalization: TextCapitalization.words,
+                decoration: InputDecoration(labelText: l.bankFormHolder)),
+            const SizedBox(height: WsSpace.s8),
+            TextField(
+                controller: _account,
+                keyboardType: TextInputType.number,
+                decoration: InputDecoration(labelText: l.bankFormAccount)),
+            const SizedBox(height: WsSpace.s8),
+            TextField(
+                controller: _ifsc,
+                textCapitalization: TextCapitalization.characters,
+                decoration: InputDecoration(labelText: l.bankFormIfsc)),
+            const SizedBox(height: WsSpace.s12),
+            Text(l.bankFormOr, textAlign: TextAlign.center, style: text.bodySmall),
+            const SizedBox(height: WsSpace.s8),
+            TextField(
+                controller: _upi,
+                keyboardType: TextInputType.emailAddress,
+                decoration: InputDecoration(labelText: l.bankFormUpi)),
             if (_error != null) ...[
-              const SizedBox(height: 12),
-              Text(_error!, style: TextStyle(color: Theme.of(context).colorScheme.error)),
+              const SizedBox(height: WsSpace.s12),
+              Text(_error!, style: text.bodyMedium?.copyWith(color: context.ws.errorFg)),
             ],
-            const SizedBox(height: 16),
+            const SizedBox(height: WsSpace.s16),
             FilledButton(
               onPressed: _sending ? null : _send,
-              style: FilledButton.styleFrom(padding: const EdgeInsets.symmetric(vertical: 14)),
               child: _sending
-                  ? const SizedBox(height: 20, width: 20, child: CircularProgressIndicator(strokeWidth: 2))
-                  : const Text('Send for review', style: TextStyle(fontWeight: FontWeight.w800)),
+                  ? const SizedBox.square(
+                      dimension: WsIconSize.control, child: CircularProgressIndicator(strokeWidth: WsSize.focusRing))
+                  : Text(l.bankFormSend),
             ),
           ],
         ),

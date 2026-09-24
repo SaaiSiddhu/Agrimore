@@ -6,6 +6,8 @@
 // them here rather than saving a number that silently does nothing.
 // Covered by test/rider_money_admin_test.dart.
 
+import 'dart:math';
+
 class RateField {
   final String key;
   final String label;
@@ -75,6 +77,12 @@ String? paymentReferenceError(String ref) {
 /// Refusals from recordRiderCashDeposit / reviewRiderBankChange (riderMoney.ts).
 String riderMoneyRefusal(String code, String? reason) => switch (reason) {
       'more_than_held' => 'That is more cash than the rider holds.',
+      'request_reused' => 'This deposit was already recorded with different details. Check the rider\'s cash before recording again.',
+      'bad_request_id' => 'Could not record that. Please try again.',
+      'payout_not_pending' => 'This statement is not waiting to be paid — it may already be settled.',
+      'bank_change_pending' => 'The rider has a payout-detail change waiting. Review it first.',
+      'no_destination' => 'The rider has no payout details for that method.',
+      'bad_method' => 'Choose bank or UPI.',
       'bad_amount' => 'Enter an amount greater than zero.',
       'bad_reference' => 'Enter a receipt or reference (2–64 characters).',
       'not_pending' => 'This request has already been reviewed.',
@@ -86,3 +94,39 @@ String riderMoneyRefusal(String code, String? reason) => switch (reason) {
               ? 'No connection. Try again.'
               : 'Could not complete that. Please try again.',
     };
+
+/// A balance as rupees: the exact integer paise field when the server wrote
+/// one (DLV-M1), else the older rupee field.
+double accountRupees(Map<String, dynamic> m, String field) {
+  final p = m['${field}Paise'];
+  if (p is num) return p.toInt() / 100;
+  final r = m[field];
+  return r is num ? (r.toDouble() * 100).round() / 100 : 0;
+}
+
+/// DLV-M1: an idempotency key per deposit. A failed call whose outcome is
+/// unknown (no connection, timeout) keeps its key, and recording the same
+/// amount and reference for that rider again reuses it — so the server
+/// records it once however many times admin retries. Anything else, and any
+/// definite answer, starts a new key.
+class DepositAttempts {
+  DepositAttempts([Random? rng]) : _rng = rng ?? Random.secure();
+  final Random _rng;
+  final Map<String, ({String requestId, int paise, String reference})> _unsure = {};
+
+  String keyFor(String riderId, int paise, String reference) {
+    final u = _unsure[riderId];
+    if (u != null && u.paise == paise && u.reference == reference) return u.requestId;
+    const chars = 'abcdefghijklmnopqrstuvwxyz0123456789';
+    return 'dep_${List.generate(20, (_) => chars[_rng.nextInt(chars.length)]).join()}';
+  }
+
+  void unsure(String riderId, String requestId, int paise, String reference) =>
+      _unsure[riderId] = (requestId: requestId, paise: paise, reference: reference);
+
+  void settled(String riderId) => _unsure.remove(riderId);
+}
+
+/// An outcome the admin cannot know (the call may or may not have run).
+bool outcomeUnknown(String code) =>
+    code == 'unavailable' || code == 'deadline-exceeded' || code == 'internal' || code == 'unknown';

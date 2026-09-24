@@ -4,4 +4,4 @@
 # removes literals.
 apps/seller/lib 0
 apps/employee/lib 655
-apps/delivery/lib 484
+apps/delivery/lib 394

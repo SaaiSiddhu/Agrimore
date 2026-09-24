@@ -486,7 +486,7 @@ class _DashboardScreenState extends State<DashboardScreen> {
         stream: _accountStream,
         builder: (context, account) {
           final list = earnings.data;
-          final week = list == null ? '…' : rupees(list.fold(0.0, (s, e) => s + e.total));
+          final week = list == null ? '…' : rupees(sumRupees(list.map((e) => e.total)));
           final today = list == null ? '…' : rupees(earnedSince(list, istDayStart(DateTime.now())));
           final cash = account.data == null ? '…' : rupees(account.data!.cashHeld);
           return child(week, today, cash);

@@ -2060,9 +2060,13 @@ service cloud.firestore {
       // bank/UPI reference the rider will see — the seller_payouts rule.
       // Amounts, the rider and the week never change; on_hold statements are
       // released only by reviewRiderBankChange.
+      // DLV-M1: refused while the rider has a payout-detail change pending
+      // (markRiderPayoutPaid is the callable path; this rule serves older
+      // admin clients and must not pay a stale destination either).
       allow update: if isAdmin()
         && resource.data.status == 'pending'
         && request.resource.data.status == 'paid'
+        && get(/databases/$(database)/documents/rider_accounts/$(resource.data.riderId)).data.get('bankChangePending', null) == null
         && request.resource.data.diff(resource.data).affectedKeys()
              .hasOnly(['status', 'paidAt', 'paymentReference', 'paidBy', 'payoutMethod', 'updatedAt'])
         && request.resource.data.paymentReference is string

@@ -10,9 +10,11 @@ import 'rider_money_admin.dart';
 
 /// Phase DLV-4B: rider money for the delivery team, on top of DLV-4A
 /// (functions/src/delivery/riderMoney.ts).
-///  - Statements: weekly rider_payouts; firestore.rules allow exactly one
-///    admin write — pending → paid with a UTR (the seller payouts rule).
-///  - Cash: riders holding COD cash; record a deposit (recordRiderCashDeposit).
+///  - Statements: weekly rider_payouts; marked paid with a UTR through
+///    markRiderPayoutPaid (DLV-M1), which records the reviewed destination
+///    and refuses while a payout-detail change is pending.
+///  - Cash: riders holding COD cash; record a deposit (recordRiderCashDeposit)
+///    with a per-attempt request id, so a retried call records once.
 ///  - Payout details: riders' bank/UPI change requests (reviewRiderBankChange).
 ///  - Pay rates: settings/rider_pay, bounded as the server bounds them.
 class RiderPayoutsScreen extends StatelessWidget {
@@ -230,22 +232,28 @@ class _StatementsTabState extends State<_StatementsTab> {
       return;
     }
     try {
-      await _db.collection('rider_payouts').doc(id).update({
-        'status': 'paid',
-        'paidAt': FieldValue.serverTimestamp(),
-        'paymentReference': reference,
-        'paidBy': FirebaseAuth.instance.currentUser?.uid,
-        'payoutMethod': method, // rules accept bank | upi only
-        'updatedAt': FieldValue.serverTimestamp(),
-      });
+      final res = await FirebaseFunctions.instance
+          .httpsCallable('markRiderPayoutPaid')
+          .call<Map<String, dynamic>>(
+              {'payoutId': id, 'reference': reference, 'method': method});
       if (mounted) {
-        SnackbarHelper.showSuccess(context, 'Statement marked as paid');
+        SnackbarHelper.showSuccess(
+            context,
+            res.data['alreadyPaid'] == true
+                ? 'Already marked paid with this reference'
+                : 'Statement marked as paid');
+      }
+    } on FirebaseFunctionsException catch (e) {
+      debugPrint('markRiderPayoutPaid: ${e.code} ${e.details}');
+      final reason =
+          e.details is Map ? (e.details as Map)['reason'] as String? : null;
+      if (mounted) {
+        SnackbarHelper.showError(context, riderMoneyRefusal(e.code, reason));
       }
     } catch (e) {
-      debugPrint('Rider payout mark paid failed: $e');
+      debugPrint('markRiderPayoutPaid: $e');
       if (mounted) {
-        SnackbarHelper.showError(context,
-            "Couldn't mark it paid. It may already be settled — refresh and try again.");
+        SnackbarHelper.showError(context, riderMoneyRefusal('unknown', null));
       }
     }
   }
@@ -367,6 +375,8 @@ class _StatementsTabState extends State<_StatementsTab> {
 
 // ── Cash with riders ──
 
+final _depositAttempts = DepositAttempts();
+
 class _CashTab extends StatelessWidget {
   const _CashTab();
 
@@ -413,16 +423,32 @@ class _CashTab extends StatelessWidget {
       SnackbarHelper.showError(context, 'Enter an amount greater than zero.');
       return;
     }
+    final paise = (value * 100).round();
+    final requestId = _depositAttempts.keyFor(riderId, paise, reference);
     try {
-      await FirebaseFunctions.instance
+      final res = await FirebaseFunctions.instance
           .httpsCallable('recordRiderCashDeposit')
-          .call<Map<String, dynamic>>(
-              {'riderId': riderId, 'amount': value, 'reference': reference});
+          .call<Map<String, dynamic>>({
+        'riderId': riderId,
+        'amount': paise / 100,
+        'reference': reference,
+        'requestId': requestId,
+      });
+      _depositAttempts.settled(riderId);
       if (context.mounted) {
-        SnackbarHelper.showSuccess(context, 'Deposit recorded');
+        SnackbarHelper.showSuccess(
+            context,
+            res.data['alreadyRecorded'] == true
+                ? 'This deposit was already recorded'
+                : 'Deposit recorded');
       }
     } on FirebaseFunctionsException catch (e) {
       debugPrint('recordRiderCashDeposit: ${e.code} ${e.details}');
+      if (outcomeUnknown(e.code)) {
+        _depositAttempts.unsure(riderId, requestId, paise, reference);
+      } else {
+        _depositAttempts.settled(riderId);
+      }
       final reason =
           e.details is Map ? (e.details as Map)['reason'] as String? : null;
       if (context.mounted) {
@@ -430,6 +456,7 @@ class _CashTab extends StatelessWidget {
       }
     } catch (e) {
       debugPrint('recordRiderCashDeposit: $e');
+      _depositAttempts.unsure(riderId, requestId, paise, reference);
       if (context.mounted) {
         SnackbarHelper.showError(context, riderMoneyRefusal('unknown', null));
       }
@@ -458,11 +485,11 @@ class _CashTab extends StatelessWidget {
         // 430.70000000000005) are not cash — a full deposit must not leave a
         // rider listed as holding ₹0.00.
         final docs = snap.data!.docs
-            .where((d) => _num(d.data()['cashHeld']) >= 0.005)
+            .where((d) => accountRupees(d.data(), 'cashHeld') >= 0.005)
             .toList();
         if (docs.isEmpty) return _message('No rider is holding COD cash.');
         final total =
-            docs.fold<double>(0, (a, d) => a + _num(d.data()['cashHeld']));
+            docs.fold<double>(0, (a, d) => a + accountRupees(d.data(), 'cashHeld'));
         return ListView(
           padding: const EdgeInsets.all(16),
           children: [
@@ -480,10 +507,10 @@ class _CashTab extends StatelessWidget {
                 child: ListTile(
                   title: _RiderLine(d.id),
                   subtitle: Text(
-                      'Holding ${AgFormat.rupees(_num(d.data()['cashHeld']))}'),
+                      'Holding ${AgFormat.rupees(accountRupees(d.data(), 'cashHeld'))}'),
                   trailing: OutlinedButton(
                     onPressed: () => _recordDeposit(
-                        context, d.id, _num(d.data()['cashHeld'])),
+                        context, d.id, accountRupees(d.data(), 'cashHeld')),
                     child: const Text('Record deposit'),
                   ),
                 ),
