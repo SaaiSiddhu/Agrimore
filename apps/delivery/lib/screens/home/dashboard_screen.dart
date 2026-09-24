@@ -10,6 +10,7 @@ import '../../providers/location_provider.dart';
 import '../orders/active_order_screen.dart';
 import '../money/money_screen.dart';
 import '../../money/rider_money.dart';
+import '../../safety/emergency_sheet.dart';
 import '../../offers/offer_alerts.dart';
 import '../../offers/offer_launch.dart';
 import '../../offers/offer_platform.dart';
@@ -227,15 +228,14 @@ class _DashboardScreenState extends State<DashboardScreen> {
                   ],
                 ),
               ),
+              // Phase DLV-S1: this used to show "SOS Alert Sent! Live
+              // location shared with authorities and admin." and send
+              // nothing. It now opens a sheet that only hands off to the
+              // phone dialer (112, Agrimore support) and says so.
               IconButton(
-                onPressed: () {
-                  SnackbarHelper.showError(
-                    context,
-                    'SOS Alert Sent! Live location shared with authorities and admin.',
-                  );
-                },
+                onPressed: () => showEmergencySheet(context),
                 icon: const Icon(Icons.sos_rounded, color: Colors.red),
-                tooltip: 'Emergency SOS',
+                tooltip: 'Emergency help',
               ),
               IconButton(
                 onPressed: () => _showLogoutDialog(),
@@ -404,34 +404,18 @@ class _DashboardScreenState extends State<DashboardScreen> {
           ),
           const SizedBox(height: 12),
           _buildActionCard(
-            'My Deliveries & Analytics',
-            'View your delivery history and detailed earnings',
-            Icons.analytics_rounded,
+            'Delivery history',
+            'Your last 50 delivered orders',
+            Icons.history_rounded,
             colorScheme,
             onTap: () {
               _showDeliveryHistory();
             },
           ),
-          const SizedBox(height: 12),
-          _buildActionCard(
-            'Demand Heat Map',
-            'View high demand zones to get more orders',
-            Icons.map_rounded,
-            colorScheme,
-            onTap: () {
-              SnackbarHelper.showInfo(context, 'Heat Map loading...');
-            },
-          ),
-          const SizedBox(height: 12),
-          _buildActionCard(
-            'Smart Route Optimization',
-            'Optimize routes for stacked orders',
-            Icons.route_rounded,
-            colorScheme,
-            onTap: () {
-              SnackbarHelper.showInfo(context, 'Calculating best route...');
-            },
-          ),
+          // Phase DLV-S1: "Demand Heat Map" and "Smart Route Optimization"
+          // were placeholders ("Heat Map loading...", "Calculating best
+          // route...") with nothing behind them — removed until real data
+          // exists.
         ],
       ),
     );
