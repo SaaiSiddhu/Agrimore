@@ -170,7 +170,7 @@ class WorkspaceTokens extends ThemeExtension<WorkspaceTokens> {
     primaryPressed: SaTokens.darkPrimaryPressed,
     primarySubtle: SaTokens.darkPrimarySubtle,
     primaryMuted: Color(0xFF1E3A8A), // new, blue-900
-    onPrimary: Color(0xFFFFFFFF),
+    onPrimary: SaTokens.darkOnPrimary, // UI-SA1: white was 3.68:1
     focusRing: Color(0x803B82F6), // primary @ 50 %
     pageBackground: SaTokens.darkPageBackground,
     surface: SaTokens.darkSurface,

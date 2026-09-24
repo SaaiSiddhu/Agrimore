@@ -319,7 +319,7 @@ abstract final class SalesAssociateTheme {
 
     const colorScheme = ColorScheme.dark(
       primary: SaTokens.darkPrimary,
-      onPrimary: Colors.white,
+      onPrimary: SaTokens.darkOnPrimary,
       primaryContainer: SaTokens.darkPrimarySubtle,
       onPrimaryContainer: SaTokens.darkPrimary,
       surface: SaTokens.darkSurface,
@@ -373,7 +373,7 @@ abstract final class SalesAssociateTheme {
         style: ElevatedButton.styleFrom(
           minimumSize: const Size.fromHeight(SaTokens.controlHeight),
           backgroundColor: SaTokens.darkPrimary,
-          foregroundColor: Colors.white,
+          foregroundColor: SaTokens.darkOnPrimary,
           disabledBackgroundColor: SaTokens.darkDisabledContainer,
           disabledForegroundColor: SaTokens.darkDisabledContent,
           elevation: 0,
