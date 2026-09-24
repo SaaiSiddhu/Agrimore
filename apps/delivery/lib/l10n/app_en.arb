@@ -1,0 +1,162 @@
+{
+  "@@locale": "en",
+  "appName": "Agrimore Delivery",
+  "@appName": {
+    "description": "App title in the task switcher"
+  },
+  "loadingAccount": "Loading your account",
+  "@loadingAccount": {
+    "description": "Screen-reader label while the account loads"
+  },
+  "authWrongCredentials": "Email or password is incorrect.",
+  "@authWrongCredentials": {
+    "description": "Sign-in refused: wrong email/password"
+  },
+  "authInvalidEmail": "Enter a valid email address.",
+  "@authInvalidEmail": {
+    "description": "Sign-in refused: malformed email"
+  },
+  "authTooManyAttempts": "Too many attempts. Wait a few minutes, then try again.",
+  "@authTooManyAttempts": {
+    "description": "Sign-in throttled"
+  },
+  "authNetwork": "No connection. Check your internet and try again.",
+  "@authNetwork": {
+    "description": "Sign-in failed offline"
+  },
+  "authAccountDisabled": "This account is turned off. Contact Agrimore support.",
+  "@authAccountDisabled": {
+    "description": "Firebase account disabled"
+  },
+  "authNotDeliveryPartner": "This account is not a delivery partner account.",
+  "@authNotDeliveryPartner": {
+    "description": "Signed in with a non-rider account"
+  },
+  "authNoPartnerRecord": "We couldn't find your delivery partner details. Contact Agrimore support.",
+  "@authNoPartnerRecord": {
+    "description": "users doc is a rider but delivery_partners doc is missing"
+  },
+  "authNoProfile": "We couldn't find your account profile. Contact Agrimore support.",
+  "@authNoProfile": {
+    "description": "users doc missing on the server"
+  },
+  "authProfileUnavailable": "Couldn't load your account. Check your connection.",
+  "@authProfileUnavailable": {
+    "description": "Profile read only reached the device cache / failed"
+  },
+  "authUnknown": "Sign-in didn't work. Try again.",
+  "@authUnknown": {
+    "description": "Any other sign-in failure"
+  },
+  "actionRetry": "Try again",
+  "@actionRetry": {
+    "description": "Retry button"
+  },
+  "actionSignOut": "Sign out",
+  "@actionSignOut": {
+    "description": "Sign-out button"
+  },
+  "sessionLoadFailedTitle": "Account not loaded",
+  "@sessionLoadFailedTitle": {
+    "description": "Title when the profile can't be read"
+  },
+  "activeWorkLoading": "Loading your orders",
+  "@activeWorkLoading": {
+    "description": "Screen-reader label while active orders load"
+  },
+  "activeWorkOffline": "Showing saved data — reconnecting",
+  "@activeWorkOffline": {
+    "description": "Active orders came from the device cache"
+  },
+  "activeWorkErrorPermission": "Your account can't read orders right now. Sign out and in again, or contact support.",
+  "@activeWorkErrorPermission": {
+    "description": "Active-work read refused by rules"
+  },
+  "activeWorkErrorOffline": "Couldn't reach Agrimore. Check your connection.",
+  "@activeWorkErrorOffline": {
+    "description": "Active-work read failed offline"
+  },
+  "activeWorkErrorUnknown": "Couldn't load your orders.",
+  "@activeWorkErrorUnknown": {
+    "description": "Active-work read failed otherwise"
+  },
+  "activeWorkMultipleTitle": "{count} orders are assigned to you",
+  "@activeWorkMultipleTitle": {
+    "description": "Rider holds more than one active order",
+    "placeholders": {
+      "count": {
+        "type": "int"
+      }
+    }
+  },
+  "activeWorkMultipleBody": "Finish them one at a time. If you did not accept all of them, call Agrimore support.",
+  "@activeWorkMultipleBody": {
+    "description": "Explains multiple active orders"
+  },
+  "activeWorkOpen": "Open order {number}",
+  "@activeWorkOpen": {
+    "description": "Button opening one of several active orders",
+    "placeholders": {
+      "number": {
+        "type": "String"
+      }
+    }
+  },
+  "todayDeliveredUnknown": "—",
+  "@todayDeliveredUnknown": {
+    "description": "Today's count before it is known"
+  },
+  "historyTitle": "Delivery history",
+  "@historyTitle": {
+    "description": "History screen title"
+  },
+  "historyEmpty": "No orders yet",
+  "@historyEmpty": {
+    "description": "History with no orders"
+  },
+  "historyLoadMore": "Load more",
+  "@historyLoadMore": {
+    "description": "Load the next history page"
+  },
+  "historyEnd": "That's all your orders",
+  "@historyEnd": {
+    "description": "End of history"
+  },
+  "historyOrderNumber": "Order {number}",
+  "@historyOrderNumber": {
+    "description": "History row title",
+    "placeholders": {
+      "number": {
+        "type": "String"
+      }
+    }
+  },
+  "historyStatusDelivered": "Delivered",
+  "@historyStatusDelivered": {
+    "description": "History status label"
+  },
+  "historyStatusActive": "In progress",
+  "@historyStatusActive": {
+    "description": "History status label"
+  },
+  "historyStatusCancelled": "Cancelled",
+  "@historyStatusCancelled": {
+    "description": "History status label"
+  },
+  "historyStatusReturned": "Returned",
+  "@historyStatusReturned": {
+    "description": "History status label"
+  },
+  "historyStatusOther": "Other status",
+  "@historyStatusOther": {
+    "description": "History status: no longer this rider's / unknown state"
+  },
+  "historyHint": "Newest first. Totals on this screen cover only the orders loaded.",
+  "@historyHint": {
+    "description": "Explains that the list is paged"
+  },
+  "splashTagline": "Delivery Partner",
+  "@splashTagline": {
+    "description": "Splash screen tagline"
+  }
+}

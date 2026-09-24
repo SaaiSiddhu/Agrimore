@@ -1,5 +1,8 @@
 // lib/screens/auth/login_screen.dart
 import 'package:flutter/material.dart';
+import '../../auth/auth_copy.dart';
+import '../../l10n/app_localizations.dart';
+import 'package:agrimore_ui/agrimore_ui.dart';
 import 'package:flutter/services.dart';
 import 'package:provider/provider.dart';
 import '../../providers/auth_provider.dart';
@@ -174,35 +177,38 @@ class _LoginScreenState extends State<LoginScreen> {
                         ),
                         const SizedBox(height: 24),
                         
-                        // Error Message
+                        // DLV-C1: a typed problem, worded from the ARB file.
                         Consumer<DeliveryAuthProvider>(
                           builder: (context, auth, _) {
-                            if (auth.error != null) {
-                              return Container(
-                                padding: const EdgeInsets.all(12),
-                                margin: const EdgeInsets.only(bottom: 16),
+                            final problem = auth.problem;
+                            if (problem == null) return const SizedBox.shrink();
+                            final t = context.ws;
+                            return Semantics(
+                              liveRegion: true,
+                              child: Container(
+                                padding: const EdgeInsets.all(WsSpace.s12),
+                                margin: const EdgeInsets.only(bottom: WsSpace.s16),
                                 decoration: BoxDecoration(
-                                  color: Colors.red.withValues(alpha: 0.1),
-                                  borderRadius: BorderRadius.circular(8),
+                                  color: t.errorBg,
+                                  borderRadius: BorderRadius.circular(WsRadius.input),
                                 ),
                                 child: Row(
                                   children: [
-                                    Icon(Icons.error_outline, color: Colors.red, size: 20),
-                                    const SizedBox(width: 8),
+                                    Icon(AgIcons.error, color: t.errorFg, size: WsIconSize.control),
+                                    const SizedBox(width: WsSpace.s8),
                                     Expanded(
                                       child: Text(
-                                        auth.error!,
-                                        style: TextStyle(color: Colors.red, fontSize: 13),
+                                        authProblemText(AppLocalizations.of(context), problem),
+                                        style: Theme.of(context).textTheme.bodyMedium?.copyWith(color: t.errorFg),
                                       ),
                                     ),
                                   ],
                                 ),
-                              );
-                            }
-                            return const SizedBox.shrink();
+                              ),
+                            );
                           },
                         ),
-                        
+
                         // Login Button
                         Consumer<DeliveryAuthProvider>(
                           builder: (context, auth, _) {
@@ -277,10 +283,7 @@ class _LoginScreenState extends State<LoginScreen> {
       HapticFeedback.lightImpact();
       final auth = context.read<DeliveryAuthProvider>();
       auth.clearError();
-      await auth.signIn(
-        _emailController.text.trim(),
-        _passwordController.text,
-      );
+      await auth.signIn(_emailController.text, _passwordController.text);
     }
   }
 }
