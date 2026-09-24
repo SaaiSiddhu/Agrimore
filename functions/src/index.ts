@@ -261,3 +261,4 @@ export {
 export { reportRiderIncident, updateRiderIncident } from "./delivery/riderIncidents";
 export { submitRiderApplication } from "./delivery/riderApplication";
 export { updateRiderContact } from "./delivery/riderProfile";
+export { attachDeliveryProof, reportDeliveryException, updateDeliveryException } from "./delivery/riderExceptions";

@@ -501,7 +501,9 @@ service cloud.firestore {
       return !request.resource.data.diff(resource.data).affectedKeys()
         .hasAny(['subtotal', 'discount', 'deliveryCharge', 'tax', 'total', 'items', 'paymentStatus', 'employeeUid', 'employeeCode',
                  'productCreditApplied', 'productCreditHoldId', 'productCreditReversed', 'productCreditLedgerEntryId', 'rfqId',
-                 'commissionReversed']);
+                 'commissionReversed',
+                 // DLV-E1: server-written exception marker and proof path.
+                 'openDeliveryException', 'lastDeliveryException', 'deliveryProofPath', 'deliveryProofAttachedAt', 'deliveryProofAttachedBy']);
     }
 
     // Phase 5b fix: the financial-fields guard above did not restrict
@@ -612,7 +614,9 @@ service cloud.firestore {
         'rfqId',
         // Phase DLV-3C: server-written step evidence and location flags
         // (functions/src/delivery/riderSteps.ts) — a rider must not erase a flag.
-        'deliveryFlags', 'deliveryFlagged', 'deliveryStepChecks', 'deliveryReleasedBy'
+        'deliveryFlags', 'deliveryFlagged', 'deliveryStepChecks', 'deliveryReleasedBy',
+        // DLV-E1: server-written (functions/src/delivery/riderExceptions.ts).
+        'openDeliveryException', 'lastDeliveryException', 'deliveryProofPath', 'deliveryProofAttachedAt', 'deliveryProofAttachedBy'
       ]);
     }
 
@@ -637,7 +641,9 @@ service cloud.firestore {
         'orderMode', 'commissionPaid', 'commissionAmount', 'commissionReversed', 'deliveryVerificationCode',
         'productCreditApplied', 'productCreditHoldId', 'productCreditReversed', 'productCreditLedgerEntryId',
         'rfqId',
-        'deliveryFlags', 'deliveryFlagged', 'deliveryStepChecks', 'deliveryReleasedBy'
+        'deliveryFlags', 'deliveryFlagged', 'deliveryStepChecks', 'deliveryReleasedBy',
+        // DLV-E1: server-written (functions/src/delivery/riderExceptions.ts).
+        'openDeliveryException', 'lastDeliveryException', 'deliveryProofPath', 'deliveryProofAttachedAt', 'deliveryProofAttachedBy'
       ]);
     }
 
@@ -2019,6 +2025,14 @@ service cloud.firestore {
       allow write: if false;
     }
     // Per-rider report timestamps for the rate bound: server-only.
+    // DLV-E1 — a rider's report of a failed delivery attempt after pickup.
+    // Written only by reportDeliveryException / updateDeliveryException;
+    // read by the reporting rider and admins.
+    match /delivery_exceptions/{exceptionId} {
+      allow read: if isAuthenticated() && (resource.data.riderId == request.auth.uid || isAdmin());
+      allow write: if false;
+    }
+
     match /rider_incident_limits/{riderId} {
       allow read, write: if false;
     }
