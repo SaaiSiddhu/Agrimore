@@ -102,7 +102,7 @@ class _ActiveOrderScreenState extends State<ActiveOrderScreen> {
             // ── Report a problem after pickup / its state (DLV-E1) ──
             if (_currentStep != DeliveryStep.delivered) ...[
               DeliveryProblemPanel(orderId: widget.order.id),
-              const SizedBox(height: 16),
+              const SizedBox(height: WsSpace.s16),
             ],
 
             // ── Route: to the store, then to the customer (DLV-3B) ──

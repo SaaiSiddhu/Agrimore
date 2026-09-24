@@ -180,7 +180,7 @@ class _ProblemReportSheetState extends State<ProblemReportSheet> {
     });
     Map<String, dynamic> fix = const {};
     try {
-      fix = await (widget.fix ?? _defaultFix)().timeout(const Duration(seconds: 5));
+      fix = await (widget.fix ?? _defaultFix)().timeout(DeliveryTiming.reportFixTimeout);
     } catch (_) {}
     try {
       await widget.backend.report({

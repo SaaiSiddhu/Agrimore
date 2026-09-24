@@ -21,6 +21,7 @@ export 'models/order_model.dart';
 export 'models/delivery_partner_model.dart';
 export 'models/delivery/delivery_task_status.dart';
 export 'models/delivery/delivery_enums.dart';
+export 'models/delivery/delivery_timing.dart';
 export 'models/delivery/delivery_task_model.dart';
 export 'models/delivery/delivery_eta.dart';
 export 'models/order_status.dart';
