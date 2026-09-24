@@ -393,4 +393,179 @@ class AppLocalizationsEn extends AppLocalizations {
   @override
   String get resetFailed =>
       'Couldn\'t send the reset link. Try again, or contact Agrimore support.';
+
+  @override
+  String get profileTitle => 'Your profile';
+
+  @override
+  String get profileOpen => 'Open your profile';
+
+  @override
+  String get profileDetails => 'Your details';
+
+  @override
+  String get profileContact => 'Contact and address';
+
+  @override
+  String get profileDocuments => 'Documents';
+
+  @override
+  String get profilePayout => 'Payout details';
+
+  @override
+  String get profileSupport => 'Help and support';
+
+  @override
+  String get profileAccount => 'Account';
+
+  @override
+  String get profileVehicle => 'Vehicle';
+
+  @override
+  String get profileVehicleNumber => 'Registration number';
+
+  @override
+  String get profileLicence => 'Driving licence';
+
+  @override
+  String get profileAadhaar => 'Aadhaar';
+
+  @override
+  String get profilePhone => 'Mobile';
+
+  @override
+  String get profileAltPhone => 'Alternate mobile';
+
+  @override
+  String get profileAddress => 'Address';
+
+  @override
+  String get profileNotSet => 'Not added';
+
+  @override
+  String get profileEditContact => 'Edit contact and address';
+
+  @override
+  String get profileLockedNote =>
+      'To change your name, mobile number, vehicle, licence or Aadhaar, contact Agrimore support — an admin reviews those changes.';
+
+  @override
+  String get docSubmitted => 'Submitted';
+
+  @override
+  String get docNotSubmitted => 'Not submitted';
+
+  @override
+  String payoutBank(String masked) {
+    return 'Bank account $masked';
+  }
+
+  @override
+  String payoutUpi(String upi) {
+    return 'UPI $upi';
+  }
+
+  @override
+  String get payoutNone => 'No payout details yet';
+
+  @override
+  String get payoutChange => 'Change payout details';
+
+  @override
+  String get supportCall => 'Call Agrimore support';
+
+  @override
+  String get supportEmail => 'Email Agrimore support';
+
+  @override
+  String supportOpenFailed(String contact) {
+    return 'Couldn\'t open that. Support: $contact';
+  }
+
+  @override
+  String get deleteAccount => 'Delete my account';
+
+  @override
+  String get deleteConfirmTitle => 'Delete your account?';
+
+  @override
+  String get deleteConfirmBody =>
+      'Your profile, documents and payout details are removed and you are signed out. Records of deliveries and payments are kept, as the law requires. This cannot be undone.';
+
+  @override
+  String get deleteConfirm => 'Delete';
+
+  @override
+  String get cancel => 'Cancel';
+
+  @override
+  String get deleteDone => 'Your account was deleted.';
+
+  @override
+  String get failActiveOrder =>
+      'You still have an order assigned. Deliver it or ask Agrimore to reassign it first.';
+
+  @override
+  String get failCashHeld =>
+      'You still hold customers\' cash. Deposit it with Agrimore first.';
+
+  @override
+  String get failPayOwed =>
+      'Agrimore still owes you delivery pay. Wait until your statement is paid.';
+
+  @override
+  String get failOtherBalance =>
+      'This account still has an open balance or order. Contact Agrimore support.';
+
+  @override
+  String get failInvalid => 'Some details need fixing — they\'re marked.';
+
+  @override
+  String get failNetwork => 'No connection. Try again.';
+
+  @override
+  String get failUnknown => 'That didn\'t go through. Try again.';
+
+  @override
+  String get save => 'Save';
+
+  @override
+  String get contactSaved => 'Contact details saved.';
+
+  @override
+  String get statusPendingTitle => 'Application under review';
+
+  @override
+  String get statusPendingBody =>
+      'An Agrimore admin is checking your details and documents. You\'ll be able to go online once approved.';
+
+  @override
+  String get statusRejectedTitle => 'Application not approved';
+
+  @override
+  String get statusRejectedBody =>
+      'Your application was not approved. You can correct it and submit again.';
+
+  @override
+  String get statusSuspendedTitle => 'Account suspended';
+
+  @override
+  String get statusSuspendedBody =>
+      'You can\'t go online or accept orders until an admin reinstates your account.';
+
+  @override
+  String get statusDeactivatedTitle => 'Account deactivated';
+
+  @override
+  String get statusDeactivatedBody =>
+      'This delivery partner account is no longer active.';
+
+  @override
+  String get statusReason => 'Reason';
+
+  @override
+  String get statusUpdateApplication => 'Update and resubmit';
+
+  @override
+  String get statusEditApplication => 'Edit application';
 }

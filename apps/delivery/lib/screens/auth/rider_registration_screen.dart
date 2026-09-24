@@ -72,7 +72,11 @@ int stepOfProblem(String key) => switch (key) {
     };
 
 class RiderRegistrationScreen extends StatefulWidget {
-  const RiderRegistrationScreen({super.key, this.service, this.pickPhoto});
+  const RiderRegistrationScreen({super.key, this.service, this.pickPhoto, this.initial});
+
+  /// DLV-A2: the rider's existing delivery_partners record, when a pending or
+  /// rejected rider corrects and resubmits (null for a new registration).
+  final Map<String, dynamic>? initial;
 
   /// Injected in tests.
   final RegistrationService? service;
@@ -90,6 +94,40 @@ class _RiderRegistrationScreenState extends State<RiderRegistrationScreen> {
   RegistrationFailure? _failure;
   bool _submitting = false;
   late int _step = _needsAccount ? 0 : 1;
+
+  /// Photos already on file at their fixed paths (a resubmission); an older
+  /// URL-only record's photos must be added again.
+  final Set<RiderDocument> _onFile = {};
+
+  @override
+  void initState() {
+    super.initState();
+    final d = widget.initial;
+    if (d == null) return;
+    String v(String k) => (d[k] as String?) ?? '';
+    _form
+      ..name = v('name')
+      ..phone = v('phone')
+      ..altPhone = v('altPhone')
+      ..vehicleType = VehicleType.fromWire(d['vehicleType'] as String?)
+      ..vehicleNumber = v('vehicleNumber')
+      ..licenseNumber = v('licenseNumber')
+      ..aadhaarNumber = v('aadhaarNumber')
+      ..address = v('address')
+      ..city = v('city')
+      ..pincode = v('pincode')
+      ..accountHolderName = v('accountHolderName')
+      ..bankAccountNumber = v('bankAccountNumber')
+      ..ifscCode = v('ifscCode')
+      ..upiId = v('upiId');
+    final paths = d['kycDocuments'] is Map ? d['kycDocuments'] as Map : const {};
+    for (final doc in RiderDocument.values) {
+      if (paths[doc.key] is String) {
+        _onFile.add(doc);
+        _service.uploaded.add(doc);
+      }
+    }
+  }
 
   bool get _needsAccount => _service.backend.currentUid == null;
 
@@ -118,7 +156,7 @@ class _RiderRegistrationScreenState extends State<RiderRegistrationScreen> {
       ...accountProblems(_form, needsAccount: _needsAccount),
       ...applicationProblems(_form),
       for (final d in RiderDocument.values)
-        if (!_photos.containsKey(d)) 'documents.${d.key}',
+        if (!_photos.containsKey(d) && !_onFile.contains(d)) 'documents.${d.key}',
     ];
     return all.where((k) => stepOfProblem(k) == step).toList();
   }
@@ -165,7 +203,10 @@ class _RiderRegistrationScreenState extends State<RiderRegistrationScreen> {
         _failure = e.failure;
         _problems = e.problems.toSet();
         if (e.problems.isNotEmpty) _step = e.problems.map(stepOfProblem).reduce((a, b) => a < b ? a : b);
-        if (e.failure == RegistrationFailure.documentsMissing) _service.uploaded.clear();
+        if (e.failure == RegistrationFailure.documentsMissing) {
+          _service.uploaded.clear();
+          _onFile.clear();
+        }
       });
     } catch (e) {
       debugPrint('Registration failed: $e');
@@ -204,6 +245,7 @@ class _RiderRegistrationScreenState extends State<RiderRegistrationScreen> {
     final l = AppLocalizations.of(context);
     final t = context.ws;
     final photo = _photos[doc];
+    final onFile = _onFile.contains(doc) && photo == null;
     final missing = _problems.contains('documents.${doc.key}');
     return Semantics(
       button: true,
@@ -226,7 +268,8 @@ class _RiderRegistrationScreenState extends State<RiderRegistrationScreen> {
                 height: WsSize.thumbLg,
                 width: double.infinity,
                 child: photo == null
-                    ? Icon(AgIcons.camera, color: t.textTertiary, size: WsIconSize.feature)
+                    ? Icon(onFile ? AgIcons.success : AgIcons.camera,
+                        color: onFile ? t.successFg : t.textTertiary, size: WsIconSize.feature)
                     : ClipRRect(
                         borderRadius: BorderRadius.circular(WsRadius.small),
                         child: Image.memory(photo.bytes, fit: BoxFit.cover),
@@ -235,7 +278,7 @@ class _RiderRegistrationScreenState extends State<RiderRegistrationScreen> {
               const SizedBox(height: WsSpace.s4),
               Text(label, style: Theme.of(context).textTheme.labelMedium),
               Text(
-                missing ? l.docMissing : (photo == null ? l.docAdd : l.docChange),
+                missing ? l.docMissing : (photo == null && !onFile ? l.docAdd : l.docChange),
                 style: Theme.of(context).textTheme.bodySmall?.copyWith(color: missing ? t.errorFg : t.primary),
               ),
             ],
