@@ -1,12 +1,17 @@
-// A MaterialApp the rider app's screens can render in: the Workspace delivery
-// theme (context.ws) and lib/l10n.
-import 'package:agrimore_ui/agrimore_ui.dart';
+import 'package:delivery/design_system/design_system.dart';
 import 'package:delivery/l10n/app_localizations.dart';
 import 'package:flutter/material.dart';
 
-MaterialApp wsApp({required Widget home, Brightness brightness = Brightness.light}) => MaterialApp(
-      theme: WorkspaceTheme.build(WorkspaceBrand.delivery, brightness),
-      localizationsDelegates: AppLocalizations.localizationsDelegates,
-      supportedLocales: AppLocalizations.supportedLocales,
-      home: home,
-    );
+/// MaterialApp wrapper for delivery widget tests with [AppLocalizations] and
+/// the burnt-orange [DeliveryTheme] installed.
+Widget wsApp({
+  required Widget home,
+  Brightness brightness = Brightness.light,
+}) {
+  return MaterialApp(
+    theme: DeliveryTheme.of(brightness),
+    localizationsDelegates: AppLocalizations.localizationsDelegates,
+    supportedLocales: AppLocalizations.supportedLocales,
+    home: home,
+  );
+}
