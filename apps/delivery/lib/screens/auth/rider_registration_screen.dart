@@ -1,24 +1,21 @@
 // lib/screens/auth/rider_registration_screen.dart
 //
-// Phase DLV-A1 — rider registration on the server-owned contract
-// (registration/rider_application.dart → submitRiderApplication). Replaces
-// partner_registration_screen.dart, which trimmed the password, named the
-// user "<name> Partner", stored public download URLs for Aadhaar and the
-// licence, wrote two Firestore documents from the client, deleted the new
-// account on any failure and showed raw exception text.
-//
+// Phase DLV-A1 / Phase 16 — rider registration on the server-owned contract
+// (registration/rider_application.dart → submitRiderApplication).
 // The form keeps everything typed across steps and failures; a resumed
 // registration (signed in, no rider record yet) skips the account step.
-import 'package:agrimore_ui/agrimore_ui.dart';
+import 'package:agrimore_core/agrimore_core.dart' show VehicleType;
 import 'package:flutter/material.dart';
 import 'package:image_picker/image_picker.dart';
 import 'package:provider/provider.dart';
 
+import '../../design_system/design_system.dart';
 import '../../l10n/app_localizations.dart';
 import '../../providers/auth_provider.dart';
 import '../../registration/rider_application.dart';
 
-String registrationFailureText(AppLocalizations l, RegistrationFailure f) => switch (f) {
+String registrationFailureText(AppLocalizations l, RegistrationFailure f) =>
+    switch (f) {
       RegistrationFailure.emailInUse => l.regFailEmailInUse,
       RegistrationFailure.weakPassword => l.regFailWeakPassword,
       RegistrationFailure.invalidEmail => l.regFailInvalidEmail,
@@ -71,7 +68,12 @@ int stepOfProblem(String key) => switch (key) {
     };
 
 class RiderRegistrationScreen extends StatefulWidget {
-  const RiderRegistrationScreen({super.key, this.service, this.pickPhoto, this.initial});
+  const RiderRegistrationScreen({
+    super.key,
+    this.service,
+    this.pickPhoto,
+    this.initial,
+  });
 
   /// DLV-A2: the rider's existing delivery_partners record, when a pending or
   /// rejected rider corrects and resubmits (null for a new registration).
@@ -82,11 +84,13 @@ class RiderRegistrationScreen extends StatefulWidget {
   final Future<PickedPhoto?> Function(RiderDocument doc)? pickPhoto;
 
   @override
-  State<RiderRegistrationScreen> createState() => _RiderRegistrationScreenState();
+  State<RiderRegistrationScreen> createState() =>
+      _RiderRegistrationScreenState();
 }
 
 class _RiderRegistrationScreenState extends State<RiderRegistrationScreen> {
-  late final RegistrationService _service = widget.service ?? RegistrationService();
+  late final RegistrationService _service =
+      widget.service ?? RegistrationService();
   final RiderApplicationForm _form = RiderApplicationForm();
   final Map<RiderDocument, PickedPhoto> _photos = {};
   Set<String> _problems = {};
@@ -132,12 +136,16 @@ class _RiderRegistrationScreenState extends State<RiderRegistrationScreen> {
 
   Future<PickedPhoto?> _defaultPick(RiderDocument doc) async {
     final file = await ImagePicker().pickImage(
-      source: doc == RiderDocument.selfie ? ImageSource.camera : ImageSource.gallery,
+      source:
+          doc == RiderDocument.selfie ? ImageSource.camera : ImageSource.gallery,
       maxWidth: 1600,
       imageQuality: 80,
     );
     if (file == null) return null;
-    return (bytes: await file.readAsBytes(), contentType: file.mimeType ?? 'image/jpeg');
+    return (
+      bytes: await file.readAsBytes(),
+      contentType: file.mimeType ?? 'image/jpeg',
+    );
   }
 
   Future<void> _pick(RiderDocument doc) async {
@@ -155,7 +163,8 @@ class _RiderRegistrationScreenState extends State<RiderRegistrationScreen> {
       ...accountProblems(_form, needsAccount: _needsAccount),
       ...applicationProblems(_form),
       for (final d in RiderDocument.values)
-        if (!_photos.containsKey(d) && !_onFile.contains(d)) 'documents.${d.key}',
+        if (!_photos.containsKey(d) && !_onFile.contains(d))
+          'documents.${d.key}',
     ];
     return all.where((k) => stepOfProblem(k) == step).toList();
   }
@@ -163,7 +172,10 @@ class _RiderRegistrationScreenState extends State<RiderRegistrationScreen> {
   void _next() {
     final problems = _problemsForStep(_step);
     setState(() {
-      _problems = {..._problems.where((k) => stepOfProblem(k) != _step), ...problems};
+      _problems = {
+        ..._problems.where((k) => stepOfProblem(k) != _step),
+        ...problems,
+      };
       _failure = null;
     });
     if (problems.isNotEmpty) return;
@@ -201,7 +213,9 @@ class _RiderRegistrationScreenState extends State<RiderRegistrationScreen> {
       setState(() {
         _failure = e.failure;
         _problems = e.problems.toSet();
-        if (e.problems.isNotEmpty) _step = e.problems.map(stepOfProblem).reduce((a, b) => a < b ? a : b);
+        if (e.problems.isNotEmpty) {
+          _step = e.problems.map(stepOfProblem).reduce((a, b) => a < b ? a : b);
+        }
         if (e.failure == RegistrationFailure.documentsMissing) {
           _service.uploaded.clear();
           _onFile.clear();
@@ -215,11 +229,19 @@ class _RiderRegistrationScreenState extends State<RiderRegistrationScreen> {
     }
   }
 
-  Widget _field(String key, String label, String initial, ValueChanged<String> onChanged,
-      {TextInputType? keyboard, bool obscure = false, int maxLines = 1, TextCapitalization caps = TextCapitalization.none}) {
+  Widget _field(
+    String key,
+    String label,
+    String initial,
+    ValueChanged<String> onChanged, {
+    TextInputType? keyboard,
+    bool obscure = false,
+    int maxLines = 1,
+    TextCapitalization caps = TextCapitalization.none,
+  }) {
     final l = AppLocalizations.of(context);
     return Padding(
-      padding: const EdgeInsets.only(bottom: WsSpace.s12),
+      padding: const EdgeInsets.only(bottom: DeliverySpace.md),
       child: TextFormField(
         key: ValueKey('field-$key'),
         initialValue: initial,
@@ -242,43 +264,68 @@ class _RiderRegistrationScreenState extends State<RiderRegistrationScreen> {
 
   Widget _photoTile(RiderDocument doc, String label) {
     final l = AppLocalizations.of(context);
-    final t = context.ws;
+    final c = context.colors;
+    final t = context.text;
     final photo = _photos[doc];
     final onFile = _onFile.contains(doc) && photo == null;
     final missing = _problems.contains('documents.${doc.key}');
     return Semantics(
       button: true,
-      label: label,
       child: InkWell(
         key: ValueKey('photo-${doc.key}'),
         onTap: _submitting ? null : () => _pick(doc),
-        borderRadius: BorderRadius.circular(WsRadius.card),
+        borderRadius: DeliveryRadius.rMd,
         child: Container(
-          width: WsSize.thumbLg + WsSize.thumbMd,
-          padding: const EdgeInsets.all(WsSpace.s8),
+          width: DeliverySize.thumbLg + DeliverySize.thumbMd,
+          padding: const EdgeInsets.all(DeliverySpace.sm),
           decoration: BoxDecoration(
-            borderRadius: BorderRadius.circular(WsRadius.card),
-            border: Border.all(color: missing ? t.errorFg : t.inputBorder, width: WsSize.hairline),
+            color: c.surface,
+            borderRadius: DeliveryRadius.rMd,
+            border: Border.all(
+              color: missing ? c.danger.border : c.borderStrong,
+              width: missing ? DeliverySize.outline : DeliverySize.hairline,
+            ),
           ),
           child: Column(
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
               SizedBox(
-                height: WsSize.thumbLg,
+                height: DeliverySize.thumbLg,
                 width: double.infinity,
                 child: photo == null
-                    ? Icon(onFile ? AgIcons.success : AgIcons.camera,
-                        color: onFile ? t.successFg : t.textTertiary, size: WsIconSize.feature)
+                    ? Container(
+                        decoration: BoxDecoration(
+                          color: onFile
+                              ? c.success.container
+                              : c.surfaceVariant,
+                          borderRadius: DeliveryRadius.rSm,
+                        ),
+                        alignment: Alignment.center,
+                        child: Icon(
+                          onFile
+                              ? DeliveryIcons.checkCircle
+                              : DeliveryIcons.camera,
+                          color: onFile ? c.success.icon : c.textTertiary,
+                          size: DeliveryIconSize.xl,
+                        ),
+                      )
                     : ClipRRect(
-                        borderRadius: BorderRadius.circular(WsRadius.small),
+                        borderRadius: DeliveryRadius.rSm,
                         child: Image.memory(photo.bytes, fit: BoxFit.cover),
                       ),
               ),
-              const SizedBox(height: WsSpace.s4),
-              Text(label, style: Theme.of(context).textTheme.labelMedium),
+              const SizedBox(height: DeliverySpace.xxs),
               Text(
-                missing ? l.docMissing : (photo == null && !onFile ? l.docAdd : l.docChange),
-                style: Theme.of(context).textTheme.bodySmall?.copyWith(color: missing ? t.errorFg : t.primary),
+                label,
+                style: t.labelMedium.copyWith(color: c.textPrimary),
+              ),
+              Text(
+                missing
+                    ? l.docMissing
+                    : (photo == null && !onFile ? l.docAdd : l.docChange),
+                style: t.bodySmall.copyWith(
+                  color: missing ? c.danger.text : c.brand,
+                ),
               ),
             ],
           ),
@@ -287,137 +334,352 @@ class _RiderRegistrationScreenState extends State<RiderRegistrationScreen> {
     );
   }
 
+  DeliveryVehicleKind _kindOf(VehicleType v) => switch (v) {
+        VehicleType.bicycle => DeliveryVehicleKind.bicycle,
+        VehicleType.bike => DeliveryVehicleKind.motorcycle,
+        VehicleType.scooter => DeliveryVehicleKind.scooter,
+        VehicleType.ev => DeliveryVehicleKind.evTwoWheeler,
+        VehicleType.threeWheeler => DeliveryVehicleKind.autoThreeWheeler,
+        VehicleType.car || VehicleType.van => DeliveryVehicleKind.miniTruck,
+      };
+
+  VehicleType _typeOf(DeliveryVehicleKind k) => switch (k) {
+        DeliveryVehicleKind.bicycle => VehicleType.bicycle,
+        DeliveryVehicleKind.motorcycle => VehicleType.bike,
+        DeliveryVehicleKind.scooter => VehicleType.scooter,
+        DeliveryVehicleKind.evTwoWheeler => VehicleType.ev,
+        DeliveryVehicleKind.autoThreeWheeler => VehicleType.threeWheeler,
+        DeliveryVehicleKind.miniTruck => VehicleType.van,
+      };
+
   @override
   Widget build(BuildContext context) {
     final l = AppLocalizations.of(context);
-    final t = context.ws;
+    final c = context.colors;
+    final t = context.text;
     final f = _form;
+
     final steps = <Step>[
       Step(
         title: Text(l.regStepAccount),
         isActive: _step == 0,
         state: _needsAccount ? StepState.indexed : StepState.complete,
         content: _needsAccount
-            ? Column(children: [
-                _field('email', l.fieldEmail, f.email, (v) => f.email = v, keyboard: TextInputType.emailAddress),
-                _field('password', l.fieldPassword, f.password, (v) => f.password = v, obscure: true),
-              ])
+            ? Column(
+                children: [
+                  _field(
+                    'email',
+                    l.fieldEmail,
+                    f.email,
+                    (v) => f.email = v,
+                    keyboard: TextInputType.emailAddress,
+                  ),
+                  _field(
+                    'password',
+                    l.fieldPassword,
+                    f.password,
+                    (v) => f.password = v,
+                    obscure: true,
+                  ),
+                ],
+              )
             : const SizedBox.shrink(),
       ),
       Step(
         title: Text(l.regStepAbout),
         isActive: _step == 1,
-        content: Column(children: [
-          _field('name', l.fieldName, f.name, (v) => f.name = v, caps: TextCapitalization.words),
-          _field('phone', l.fieldPhone, f.phone, (v) => f.phone = v, keyboard: TextInputType.phone),
-          _field('altPhone', l.fieldAltPhone, f.altPhone, (v) => f.altPhone = v, keyboard: TextInputType.phone),
-          _field('address', l.fieldAddress, f.address, (v) => f.address = v, maxLines: 2),
-          _field('city', l.fieldCity, f.city, (v) => f.city = v, caps: TextCapitalization.words),
-          _field('pincode', l.fieldPincode, f.pincode, (v) => f.pincode = v, keyboard: TextInputType.number),
-        ]),
+        content: Column(
+          children: [
+            _field(
+              'name',
+              l.fieldName,
+              f.name,
+              (v) => f.name = v,
+              caps: TextCapitalization.words,
+            ),
+            _field(
+              'phone',
+              l.fieldPhone,
+              f.phone,
+              (v) => f.phone = v,
+              keyboard: TextInputType.phone,
+            ),
+            _field(
+              'altPhone',
+              l.fieldAltPhone,
+              f.altPhone,
+              (v) => f.altPhone = v,
+              keyboard: TextInputType.phone,
+            ),
+            _field(
+              'address',
+              l.fieldAddress,
+              f.address,
+              (v) => f.address = v,
+              maxLines: 2,
+            ),
+            _field(
+              'city',
+              l.fieldCity,
+              f.city,
+              (v) => f.city = v,
+              caps: TextCapitalization.words,
+            ),
+            _field(
+              'pincode',
+              l.fieldPincode,
+              f.pincode,
+              (v) => f.pincode = v,
+              keyboard: TextInputType.number,
+            ),
+          ],
+        ),
       ),
       Step(
         title: Text(l.regStepVehicle),
         isActive: _step == 2,
-        content: Column(children: [
-          Padding(
-            padding: const EdgeInsets.only(bottom: WsSpace.s12),
-            child: DropdownButtonFormField<VehicleType>(
-              key: const ValueKey('field-vehicleType'),
-              initialValue: f.vehicleType,
-              decoration: InputDecoration(labelText: l.fieldVehicleType),
-              items: [
-                for (final v in VehicleType.values) DropdownMenuItem(value: v, child: Text(vehicleLabel(l, v))),
+        content: Column(
+          crossAxisAlignment: CrossAxisAlignment.stretch,
+          children: [
+            DeliveryVehicleSelector(
+              selected: _kindOf(f.vehicleType),
+              onSelected: (k) => setState(() => f.vehicleType = _typeOf(k)),
+              options: [
+                DeliveryVehicleOption(
+                  kind: DeliveryVehicleKind.bicycle,
+                  label: l.vehicleBicycle,
+                  subtitle: l.vehicleBicycleSub,
+                ),
+                DeliveryVehicleOption(
+                  kind: DeliveryVehicleKind.motorcycle,
+                  label: l.vehicleBike,
+                  subtitle: l.vehicleMotorcycleSub,
+                ),
+                DeliveryVehicleOption(
+                  kind: DeliveryVehicleKind.scooter,
+                  label: l.vehicleScooter,
+                  subtitle: l.vehicleScooterSub,
+                ),
+                DeliveryVehicleOption(
+                  kind: DeliveryVehicleKind.evTwoWheeler,
+                  label: l.vehicleEv,
+                  subtitle: l.vehicleEvSub,
+                ),
+                DeliveryVehicleOption(
+                  kind: DeliveryVehicleKind.autoThreeWheeler,
+                  label: l.vehicleThreeWheeler,
+                  subtitle: l.vehicleAutoSub,
+                ),
+                DeliveryVehicleOption(
+                  kind: DeliveryVehicleKind.miniTruck,
+                  label: l.vehicleVan,
+                  subtitle: l.vehicleMiniTruckSub,
+                ),
               ],
-              onChanged: (v) => setState(() => f.vehicleType = v ?? f.vehicleType),
             ),
-          ),
-          if (f.needsPlate)
-            _field('vehicleNumber', l.fieldVehicleNumber, f.vehicleNumber, (v) => f.vehicleNumber = v,
-                caps: TextCapitalization.characters),
-          _field('licenseNumber', l.fieldLicenseNumber, f.licenseNumber, (v) => f.licenseNumber = v,
-              caps: TextCapitalization.characters),
-        ]),
+            const SizedBox(height: DeliverySpace.md),
+            Padding(
+              padding: const EdgeInsets.only(bottom: DeliverySpace.md),
+              child: DropdownButtonFormField<VehicleType>(
+                key: const ValueKey('field-vehicleType'),
+                initialValue: f.vehicleType,
+                decoration: InputDecoration(labelText: l.fieldVehicleType),
+                items: [
+                  for (final v in VehicleType.values)
+                    DropdownMenuItem(value: v, child: Text(vehicleLabel(l, v))),
+                ],
+                onChanged: (v) =>
+                    setState(() => f.vehicleType = v ?? f.vehicleType),
+              ),
+            ),
+            if (f.needsPlate)
+              _field(
+                'vehicleNumber',
+                l.fieldVehicleNumber,
+                f.vehicleNumber,
+                (v) => f.vehicleNumber = v,
+                caps: TextCapitalization.characters,
+              ),
+            _field(
+              'licenseNumber',
+              l.fieldLicenseNumber,
+              f.licenseNumber,
+              (v) => f.licenseNumber = v,
+              caps: TextCapitalization.characters,
+            ),
+          ],
+        ),
       ),
       Step(
         title: Text(l.regStepDocuments),
         isActive: _step == 3,
-        content: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
-          _field('aadhaarNumber', l.fieldAadhaarNumber, f.aadhaarNumber, (v) => f.aadhaarNumber = v,
-              keyboard: TextInputType.number),
-          Wrap(spacing: WsSpace.s8, runSpacing: WsSpace.s8, children: [
-            _photoTile(RiderDocument.aadhaarFront, l.docAadhaarFront),
-            _photoTile(RiderDocument.aadhaarBack, l.docAadhaarBack),
-            _photoTile(RiderDocument.selfie, l.docSelfie),
-            _photoTile(RiderDocument.license, l.docLicense),
-          ]),
-          const SizedBox(height: WsSpace.s8),
-          Text(l.docsPrivacy, style: Theme.of(context).textTheme.bodySmall?.copyWith(color: t.textSecondary)),
-        ]),
+        content: Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            _field(
+              'aadhaarNumber',
+              l.fieldAadhaarNumber,
+              f.aadhaarNumber,
+              (v) => f.aadhaarNumber = v,
+              keyboard: TextInputType.number,
+            ),
+            Wrap(
+              spacing: DeliverySpace.sm,
+              runSpacing: DeliverySpace.sm,
+              children: [
+                _photoTile(RiderDocument.aadhaarFront, l.docAadhaarFront),
+                _photoTile(RiderDocument.aadhaarBack, l.docAadhaarBack),
+                _photoTile(RiderDocument.selfie, l.docSelfie),
+                _photoTile(RiderDocument.license, l.docLicense),
+              ],
+            ),
+            const SizedBox(height: DeliverySpace.sm),
+            Text(
+              l.docsPrivacy,
+              style: t.bodySmall.copyWith(color: c.textSecondary),
+            ),
+          ],
+        ),
       ),
       Step(
         title: Text(l.regStepPayout),
         isActive: _step == 4,
-        content: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
-          Padding(
-            padding: const EdgeInsets.only(bottom: WsSpace.s12),
-            child: Text(l.payoutHint, style: Theme.of(context).textTheme.bodySmall?.copyWith(color: t.textSecondary)),
-          ),
-          _field('accountHolderName', l.fieldAccountHolder, f.accountHolderName, (v) => f.accountHolderName = v,
-              caps: TextCapitalization.words),
-          _field('bankAccountNumber', l.fieldAccountNumber, f.bankAccountNumber, (v) => f.bankAccountNumber = v,
-              keyboard: TextInputType.number),
-          _field('ifscCode', l.fieldIfsc, f.ifscCode, (v) => f.ifscCode = v, caps: TextCapitalization.characters),
-          _field('upiId', l.fieldUpi, f.upiId, (v) => f.upiId = v, keyboard: TextInputType.emailAddress),
-        ]),
+        content: Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            Padding(
+              padding: const EdgeInsets.only(bottom: DeliverySpace.md),
+              child: Text(
+                l.payoutHint,
+                style: t.bodySmall.copyWith(color: c.textSecondary),
+              ),
+            ),
+            _field(
+              'accountHolderName',
+              l.fieldAccountHolder,
+              f.accountHolderName,
+              (v) => f.accountHolderName = v,
+              caps: TextCapitalization.words,
+            ),
+            _field(
+              'bankAccountNumber',
+              l.fieldAccountNumber,
+              f.bankAccountNumber,
+              (v) => f.bankAccountNumber = v,
+              keyboard: TextInputType.number,
+            ),
+            _field(
+              'ifscCode',
+              l.fieldIfsc,
+              f.ifscCode,
+              (v) => f.ifscCode = v,
+              caps: TextCapitalization.characters,
+            ),
+            _field(
+              'upiId',
+              l.fieldUpi,
+              f.upiId,
+              (v) => f.upiId = v,
+              keyboard: TextInputType.emailAddress,
+            ),
+          ],
+        ),
       ),
     ];
 
     return Scaffold(
+      backgroundColor: c.background,
       appBar: AppBar(title: Text(l.regTitle)),
-      body: Column(children: [
-        if (!_needsAccount)
-          Container(
-            width: double.infinity,
-            color: t.infoBg,
-            padding: const EdgeInsets.symmetric(horizontal: WsSpace.page, vertical: WsSpace.s8),
-            child: Text(widget.initial != null ? l.regResubmitNote : l.regResumeNote, style: Theme.of(context).textTheme.bodySmall?.copyWith(color: t.infoFg)),
+      body: Column(
+        children: [
+          Padding(
+            padding: const EdgeInsets.symmetric(
+              horizontal: DeliverySpace.page,
+              vertical: DeliverySpace.sm,
+            ),
+            child: DeliveryStepIndicator(
+              currentStep: _step,
+              labels: [
+                l.regStepAccount,
+                l.regStepAbout,
+                l.regStepVehicle,
+                l.regStepDocuments,
+                l.regStepPayout,
+              ],
+            ),
           ),
-        if (_failure != null)
-          Semantics(
-            liveRegion: true,
-            child: Container(
-              key: const ValueKey('registration-failure'),
+          if (!_needsAccount)
+            Container(
               width: double.infinity,
-              color: t.errorBg,
-              padding: const EdgeInsets.symmetric(horizontal: WsSpace.page, vertical: WsSpace.s12),
-              child: Text(registrationFailureText(l, _failure!),
-                  style: Theme.of(context).textTheme.bodyMedium?.copyWith(color: t.errorFg)),
+              color: c.info.container,
+              padding: const EdgeInsets.symmetric(
+                horizontal: DeliverySpace.page,
+                vertical: DeliverySpace.sm,
+              ),
+              child: Text(
+                widget.initial != null ? l.regResubmitNote : l.regResumeNote,
+                style: t.bodySmall.copyWith(color: c.info.text),
+              ),
             ),
-          ),
-        Expanded(
-          child: Stepper(
-            currentStep: _step,
-            onStepTapped: _submitting ? null : (s) => setState(() => _step = (s == 0 && !_needsAccount) ? 1 : s),
-            onStepContinue: _submitting ? null : _next,
-            onStepCancel: _submitting || _step <= (_needsAccount ? 0 : 1) ? null : () => setState(() => _step--),
-            controlsBuilder: (context, details) => Padding(
-              padding: const EdgeInsets.only(top: WsSpace.s8),
-              // Workspace buttons are full-width: stacked, never in a Row.
-              child: Column(crossAxisAlignment: CrossAxisAlignment.stretch, children: [
-                FilledButton(
-                  key: ValueKey('registration-continue-${details.stepIndex}'),
-                  onPressed: details.onStepContinue,
-                  child: Text(_step == 4 ? (_submitting ? l.regSubmitting : l.regSubmit) : l.regNext),
+          if (_failure != null)
+            Semantics(
+              liveRegion: true,
+              child: Container(
+                key: const ValueKey('registration-failure'),
+                width: double.infinity,
+                color: c.danger.container,
+                padding: const EdgeInsets.symmetric(
+                  horizontal: DeliverySpace.page,
+                  vertical: DeliverySpace.md,
                 ),
-                if (details.onStepCancel != null)
-                  TextButton(onPressed: details.onStepCancel, child: Text(l.regBack)),
-              ]),
+                child: Text(
+                  registrationFailureText(l, _failure!),
+                  style: t.bodyMedium.copyWith(color: c.danger.text),
+                ),
+              ),
             ),
-            steps: steps,
+          Expanded(
+            child: Stepper(
+              currentStep: _step,
+              onStepTapped: _submitting
+                  ? null
+                  : (s) => setState(
+                        () => _step = (s == 0 && !_needsAccount) ? 1 : s,
+                      ),
+              onStepContinue: _submitting ? null : _next,
+              onStepCancel: _submitting || _step <= (_needsAccount ? 0 : 1)
+                  ? null
+                  : () => setState(() => _step--),
+              controlsBuilder: (context, details) => Padding(
+                padding: const EdgeInsets.only(top: DeliverySpace.sm),
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.stretch,
+                  children: [
+                    DeliveryButton.primary(
+                      key: ValueKey(
+                        'registration-continue-${details.stepIndex}',
+                      ),
+                      label: _step == 4
+                          ? (_submitting ? l.regSubmitting : l.regSubmit)
+                          : l.regNext,
+                      isLoading: _submitting && _step == 4,
+                      onPressed: details.onStepContinue,
+                    ),
+                    if (details.onStepCancel != null) ...[
+                      const SizedBox(height: DeliverySpace.xs),
+                      DeliveryButton.ghost(
+                        label: l.regBack,
+                        onPressed: details.onStepCancel,
+                      ),
+                    ],
+                  ],
+                ),
+              ),
+              steps: steps,
+            ),
           ),
-        ),
-      ]),
+        ],
+      ),
     );
   }
 }

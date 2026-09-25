@@ -1,23 +1,29 @@
 // lib/screens/money/statement_screen.dart
 //
-// Phase DLV-M1 — one weekly statement: what was earned, the COD cash taken
-// off, what is sent (or was sent, with the reference and the destination
-// admin paid), and the deliveries in it a page at a time. A statement being
-// made is not money sent — the stage line says which.
-import 'package:agrimore_ui/agrimore_ui.dart';
+// Phase DLV-M1 / Phase 28 — one weekly statement: what was earned, the COD
+// cash taken off, what is sent (or was sent, with the reference and the
+// destination admin paid), and the deliveries in it a page at a time. A
+// statement being made is not money sent — the stage line says which.
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:flutter/material.dart';
 
+import '../../design_system/design_system.dart';
 import '../../l10n/app_localizations.dart';
 import '../../money/money_text.dart';
 import '../../money/rider_money.dart';
 import 'money_screen.dart' show EarningTile;
 
 /// Loads the page after [after] (null: the first page).
-typedef StatementLoader = Future<StatementPage> Function(DocumentSnapshot<Map<String, dynamic>>? after);
+typedef StatementLoader = Future<StatementPage> Function(
+  DocumentSnapshot<Map<String, dynamic>>? after,
+);
 
 class StatementScreen extends StatefulWidget {
-  const StatementScreen({super.key, required this.payout, required this.load});
+  const StatementScreen({
+    super.key,
+    required this.payout,
+    required this.load,
+  });
   final RiderPayout payout;
   final StatementLoader load;
 
@@ -67,36 +73,59 @@ class _StatementScreenState extends State<StatementScreen> {
   @override
   Widget build(BuildContext context) {
     final l = AppLocalizations.of(context);
-    final t = context.ws;
-    final text = Theme.of(context).textTheme;
+    final c = context.colors;
+    final t = context.text;
     final p = widget.payout;
     return Scaffold(
+      backgroundColor: c.background,
       appBar: AppBar(title: Text(l.statementTitle)),
       body: ListView(
-        padding: const EdgeInsets.fromLTRB(WsSpace.page, WsSpace.s8, WsSpace.page, WsSpace.s32),
+        padding: const EdgeInsets.fromLTRB(
+          DeliverySpace.page,
+          DeliverySpace.sm,
+          DeliverySpace.page,
+          DeliverySpace.xxxl,
+        ),
         children: [
-          Text(payoutTitle(l, p), style: text.titleLarge),
-          const SizedBox(height: WsSpace.s4),
-          Text(l.moneyDeliveries(p.orderCount), style: text.bodySmall?.copyWith(color: t.textSecondary)),
-          const SizedBox(height: WsSpace.s12),
-          Card(
-            child: Padding(
-              padding: const EdgeInsets.all(WsSpace.s12),
-              child: Column(children: [
+          Text(
+            payoutTitle(l, p),
+            style: t.titleLarge.copyWith(color: c.textPrimary),
+          ),
+          const SizedBox(height: DeliverySpace.xxs),
+          Text(
+            l.moneyDeliveries(p.orderCount),
+            style: t.bodySmall.copyWith(color: c.textSecondary),
+          ),
+          const SizedBox(height: DeliverySpace.md),
+          DeliveryCard(
+            padding: const EdgeInsets.all(DeliverySpace.md),
+            child: Column(
+              children: [
                 _AmountRow(label: l.statementEarned, amount: p.earned),
-                if (p.netted > 0) _AmountRow(label: l.statementCashOff, amount: -p.netted),
-                const Divider(height: WsSpace.s16),
+                if (p.netted > 0)
+                  _AmountRow(label: l.statementCashOff, amount: -p.netted),
+                const Divider(height: DeliverySpace.lg),
                 _AmountRow(
-                    label: p.status == 'paid' ? l.statementSent : l.statementToPay, amount: p.amount, strong: true),
-                if (p.cashHeldAfter > 0) _AmountRow(label: l.statementCashAfter, amount: p.cashHeldAfter),
-              ]),
+                  label: p.status == 'paid' ? l.statementSent : l.statementToPay,
+                  amount: p.amount,
+                  strong: true,
+                ),
+                if (p.cashHeldAfter > 0)
+                  _AmountRow(
+                    label: l.statementCashAfter,
+                    amount: p.cashHeldAfter,
+                  ),
+              ],
             ),
           ),
-          const SizedBox(height: WsSpace.s12),
+          const SizedBox(height: DeliverySpace.md),
           _StageBlock(payout: p),
-          const SizedBox(height: WsSpace.s20),
-          Text(l.statementDeliveries, style: text.titleMedium),
-          const SizedBox(height: WsSpace.s8),
+          const SizedBox(height: DeliverySpace.xl),
+          Text(
+            l.statementDeliveries,
+            style: t.titleMedium.copyWith(color: c.textPrimary),
+          ),
+          const SizedBox(height: DeliverySpace.sm),
           for (final e in _lines) EarningTile(earning: e),
           _footer(l),
         ],
@@ -105,44 +134,75 @@ class _StatementScreenState extends State<StatementScreen> {
   }
 
   Widget _footer(AppLocalizations l) {
-    final text = Theme.of(context).textTheme;
+    final c = context.colors;
+    final t = context.text;
     final Widget child;
     if (_loading) {
       child = const CircularProgressIndicator();
     } else if (_failed) {
-      child = Column(children: [
-        Text(l.statementLinesError, textAlign: TextAlign.center, style: text.bodyMedium),
-        const SizedBox(height: WsSpace.s8),
-        OutlinedButton(onPressed: _loadMore, child: Text(l.actionRetry)),
-      ]);
+      child = Column(
+        children: [
+          Text(
+            l.statementLinesError,
+            textAlign: TextAlign.center,
+            style: t.bodyMedium.copyWith(color: c.textPrimary),
+          ),
+          const SizedBox(height: DeliverySpace.sm),
+          DeliveryButton.secondary(
+            label: l.actionRetry,
+            fullWidth: false,
+            onPressed: _loadMore,
+          ),
+        ],
+      );
     } else if (_hasMore) {
-      child = OutlinedButton(onPressed: _loadMore, child: Text(l.statementLoadMore));
+      child = DeliveryButton.secondary(
+        label: l.statementLoadMore,
+        fullWidth: false,
+        onPressed: _loadMore,
+      );
     } else if (_lines.isEmpty) {
-      child = Text(l.statementLinesEmpty, style: text.bodyMedium?.copyWith(color: context.ws.textSecondary));
+      child = Text(
+        l.statementLinesEmpty,
+        style: t.bodyMedium.copyWith(color: c.textSecondary),
+      );
     } else {
       child = const SizedBox.shrink();
     }
-    return Padding(padding: const EdgeInsets.all(WsSpace.s16), child: Center(child: child));
+    return Padding(
+      padding: const EdgeInsets.all(DeliverySpace.lg),
+      child: Center(child: child),
+    );
   }
 }
 
 class _AmountRow extends StatelessWidget {
-  const _AmountRow({required this.label, required this.amount, this.strong = false});
+  const _AmountRow({
+    required this.label,
+    required this.amount,
+    this.strong = false,
+  });
   final String label;
   final double amount;
   final bool strong;
 
   @override
   Widget build(BuildContext context) {
-    final text = Theme.of(context).textTheme;
-    final style = strong ? text.titleMedium : text.bodyMedium;
-    final value = amount < 0 ? '− ${AgFormat.rupees(-amount)}' : AgFormat.rupees(amount);
+    final c = context.colors;
+    final t = context.text;
+    final style =
+        (strong ? t.titleMedium : t.bodyMedium).copyWith(color: c.textPrimary);
+    final value = amount < 0
+        ? '− ${DeliveryFormat.rupees(-amount)}'
+        : DeliveryFormat.rupees(amount);
     return Padding(
-      padding: const EdgeInsets.symmetric(vertical: WsSpace.s4),
-      child: Row(children: [
-        Expanded(child: Text(label, style: style)),
-        Text(value, style: style),
-      ]),
+      padding: const EdgeInsets.symmetric(vertical: DeliverySpace.xxs),
+      child: Row(
+        children: [
+          Expanded(child: Text(label, style: style)),
+          Text(value, style: style),
+        ],
+      ),
     );
   }
 }
@@ -154,36 +214,62 @@ class _StageBlock extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final l = AppLocalizations.of(context);
-    final t = context.ws;
-    final text = Theme.of(context).textTheme;
+    final c = context.colors;
+    final t = context.text;
     final p = payout;
     final stage = payoutStage(p);
     final (Color fg, Color bg, IconData icon) = switch (stage) {
-      PayoutStage.paid => (t.successFg, t.successBg, AgIcons.success),
-      PayoutStage.heldForReview || PayoutStage.heldNoDetails => (t.warningFg, t.warningBg, AgIcons.warning),
-      _ => (t.infoFg, t.infoBg, AgIcons.clock),
+      PayoutStage.paid => (
+          c.success.text,
+          c.success.container,
+          DeliveryIcons.checkCircle,
+        ),
+      PayoutStage.heldForReview || PayoutStage.heldNoDetails => (
+          c.warning.text,
+          c.warning.container,
+          DeliveryIcons.warning,
+        ),
+      _ => (c.info.text, c.info.container, DeliveryIcons.clock),
     };
     final notes = <String>[
-      if (stage == PayoutStage.paid && payoutDestinationText(l, p) != null) payoutDestinationText(l, p)!,
-      if (stage == PayoutStage.paid && p.paidAt != null) l.statementSentOn(AgFormat.dateTime(p.paidAt!.toLocal())),
-      if (p.createdAt != null) l.statementMadeOn(AgFormat.dateTime(p.createdAt!.toLocal())),
+      if (stage == PayoutStage.paid && payoutDestinationText(l, p) != null)
+        payoutDestinationText(l, p)!,
+      if (stage == PayoutStage.paid && p.paidAt != null)
+        l.statementSentOn(DeliveryFormat.dateTime(p.paidAt!.toLocal())),
+      if (p.createdAt != null)
+        l.statementMadeOn(DeliveryFormat.dateTime(p.createdAt!.toLocal())),
     ];
     return Container(
-      padding: const EdgeInsets.all(WsSpace.s12),
-      decoration: BoxDecoration(color: bg, borderRadius: BorderRadius.circular(WsRadius.card)),
-      child: Row(crossAxisAlignment: CrossAxisAlignment.start, children: [
-        Icon(icon, color: fg),
-        const SizedBox(width: WsSpace.s12),
-        Expanded(
-          child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
-            Text(payoutStageText(l, p), style: text.titleSmall?.copyWith(color: fg)),
-            for (final n in notes) ...[
-              const SizedBox(height: WsSpace.s4),
-              Text(n, style: text.bodySmall?.copyWith(color: t.textSecondary)),
-            ],
-          ]),
-        ),
-      ]),
+      padding: const EdgeInsets.all(DeliverySpace.md),
+      decoration: BoxDecoration(
+        color: bg,
+        borderRadius: DeliveryRadius.rMd,
+      ),
+      child: Row(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Icon(icon, color: fg),
+          const SizedBox(width: DeliverySpace.md),
+          Expanded(
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Text(
+                  payoutStageText(l, p),
+                  style: t.titleSmall.copyWith(color: fg),
+                ),
+                for (final n in notes) ...[
+                  const SizedBox(height: DeliverySpace.xxs),
+                  Text(
+                    n,
+                    style: t.bodySmall.copyWith(color: c.textSecondary),
+                  ),
+                ],
+              ],
+            ),
+          ),
+        ],
+      ),
     );
   }
 }

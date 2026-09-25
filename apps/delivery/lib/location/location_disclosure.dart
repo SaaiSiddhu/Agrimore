@@ -1,13 +1,14 @@
 // lib/location/location_disclosure.dart
 //
-// Phase DLV-3A — the prominent disclosure Google Play requires before an app
-// collects location while it is closed or not in use. Shown once, before the
-// first location permission prompt; a rider who declines cannot go online
-// (orders are offered by distance), and is asked again next time.
-import 'package:agrimore_ui/agrimore_ui.dart';
+// Phase DLV-3A / Phase 19 — the prominent disclosure Google Play requires
+// before an app collects location while it is closed or not in use. Shown
+// once, before the first location permission prompt; a rider who declines
+// cannot go online (orders are offered by distance), and is asked again next
+// time.
 import 'package:flutter/material.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 
+import '../design_system/design_system.dart';
 import '../l10n/app_localizations.dart';
 import 'rider_platform.dart';
 
@@ -28,14 +29,49 @@ Future<bool> ensureLocationDisclosure(BuildContext context) async {
   if (await locationDisclosureAccepted()) return true;
   if (!context.mounted) return false;
   final l = AppLocalizations.of(context);
-  final ok = await wsConfirm(
-    context,
-    icon: AgIcons.location,
+  final c = context.colors;
+  final t = context.text;
+
+  final ok = await showDeliveryDisclosureDialog(
+    context: context,
+    icon: DeliveryIcons.location,
     title: l.locationDisclosureTitle,
-    message: l.locationDisclosureBody,
     confirmLabel: l.actionContinue,
     cancelLabel: l.actionNotNow,
-    dismissible: false,
+    content: Column(
+      mainAxisSize: MainAxisSize.min,
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        Text(
+          l.locationDisclosureBody,
+          style: t.bodyMedium.copyWith(color: c.textSecondary),
+        ),
+        const SizedBox(height: DeliverySpace.md),
+        DeliveryCard(
+          variant: DeliveryCardVariant.brand,
+          padding: const EdgeInsets.all(DeliverySpace.md),
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              _DisclosurePoint(
+                icon: DeliveryIcons.compass,
+                text: l.locDisclosureBullet1,
+              ),
+              const SizedBox(height: DeliverySpace.sm),
+              _DisclosurePoint(
+                icon: DeliveryIcons.route,
+                text: l.locDisclosureBullet2,
+              ),
+              const SizedBox(height: DeliverySpace.sm),
+              _DisclosurePoint(
+                icon: DeliveryIcons.shield,
+                text: l.locDisclosureBullet3,
+              ),
+            ],
+          ),
+        ),
+      ],
+    ),
   );
   if (!ok) return false;
   try {
@@ -56,13 +92,44 @@ Future<bool> ensureBackgroundLocation(BuildContext context) async {
   if (await RiderPlatform.hasBackgroundLocation()) return true;
   if (!context.mounted) return false;
   final l = AppLocalizations.of(context);
-  final ok = await wsConfirm(
-    context,
-    icon: AgIcons.locate,
+  final c = context.colors;
+  final t = context.text;
+
+  final ok = await showDeliveryDisclosureDialog(
+    context: context,
+    icon: DeliveryIcons.locate,
     title: l.backgroundLocationTitle,
-    message: l.backgroundLocationBody,
     confirmLabel: l.actionContinue,
     cancelLabel: l.actionNotNow,
+    content: Column(
+      mainAxisSize: MainAxisSize.min,
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        Text(
+          l.backgroundLocationBody,
+          style: t.bodyMedium.copyWith(color: c.textSecondary),
+        ),
+        const SizedBox(height: DeliverySpace.md),
+        DeliveryCard(
+          variant: DeliveryCardVariant.muted,
+          padding: const EdgeInsets.all(DeliverySpace.md),
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              _DisclosurePoint(
+                icon: DeliveryIcons.settings,
+                text: l.locBackgroundStep1,
+              ),
+              const SizedBox(height: DeliverySpace.sm),
+              _DisclosurePoint(
+                icon: DeliveryIcons.check,
+                text: l.locBackgroundStep2,
+              ),
+            ],
+          ),
+        ),
+      ],
+    ),
   );
   if (!ok) return false;
   // Not Geolocator.requestPermission(): it bundles background with the
@@ -87,13 +154,42 @@ Future<void> maybeShowBatteryGuide(BuildContext context) async {
   }
   if (!context.mounted) return;
   final l = AppLocalizations.of(context);
-  final open = await wsConfirm(
-    context,
-    icon: AgIcons.battery,
+  final open = await showDeliveryConfirmDialog(
+    context: context,
+    icon: DeliveryIcons.battery,
     title: l.batteryGuideTitle,
-    message: l.batteryGuideBody,
+    body: l.batteryGuideBody,
     confirmLabel: l.actionOpenSettings,
     cancelLabel: l.actionLater,
   );
   if (open) await RiderPlatform.openBatterySettings();
+}
+
+class _DisclosurePoint extends StatelessWidget {
+  const _DisclosurePoint({
+    required this.icon,
+    required this.text,
+  });
+
+  final IconData icon;
+  final String text;
+
+  @override
+  Widget build(BuildContext context) {
+    final c = context.colors;
+    final t = context.text;
+    return Row(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        Icon(icon, size: DeliveryIconSize.sm, color: c.brand),
+        const SizedBox(width: DeliverySpace.sm),
+        Expanded(
+          child: Text(
+            text,
+            style: t.bodySmall.copyWith(color: c.textPrimary),
+          ),
+        ),
+      ],
+    );
+  }
 }

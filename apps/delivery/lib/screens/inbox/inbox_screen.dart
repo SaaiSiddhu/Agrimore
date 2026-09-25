@@ -1,16 +1,20 @@
 // lib/screens/inbox/inbox_screen.dart
 //
-// Phase DLV-N1 — the rider's inbox (lib/inbox/rider_inbox.dart). Tapping a
-// notice marks it read and, for money notices, opens Earnings.
-import 'package:agrimore_ui/agrimore_ui.dart';
+// Phase DLV-N1 / Phase 30 — the rider's inbox (lib/inbox/rider_inbox.dart).
+// Tapping a notice marks it read and, for money notices, opens Earnings.
 import 'package:flutter/material.dart';
 
+import '../../design_system/design_system.dart';
 import '../../inbox/rider_inbox.dart';
 import '../../l10n/app_localizations.dart';
 import '../money/money_screen.dart';
 
 class InboxScreen extends StatefulWidget {
-  const InboxScreen({super.key, required this.riderId, required this.source});
+  const InboxScreen({
+    super.key,
+    required this.riderId,
+    required this.source,
+  });
   final String riderId;
   final RiderInboxSource source;
 
@@ -19,7 +23,8 @@ class InboxScreen extends StatefulWidget {
 }
 
 class _InboxScreenState extends State<InboxScreen> {
-  late final Stream<List<RiderNotice>> _latest = widget.source.latest(widget.riderId);
+  late final Stream<List<RiderNotice>> _latest =
+      widget.source.latest(widget.riderId);
   List<RiderNotice> _shown = const [];
 
   Future<void> _markRead(Iterable<String> ids) async {
@@ -28,28 +33,40 @@ class _InboxScreenState extends State<InboxScreen> {
       await widget.source.markRead(widget.riderId, ids);
     } catch (e) {
       debugPrint('Inbox mark read: $e');
-      if (mounted) WsToast.show(context, AppLocalizations.of(context).inboxMarkReadFailed, tone: WsToastTone.error);
+      if (mounted) {
+        showDeliveryToast(
+          context,
+          message: AppLocalizations.of(context).inboxMarkReadFailed,
+          tone: DeliveryBannerTone.danger,
+        );
+      }
     }
   }
 
   void _open(RiderNotice n) {
     if (n.unread) _markRead([n.id]);
     if (n.target == NoticeTarget.money) {
-      Navigator.of(context).push(MaterialPageRoute<void>(builder: (_) => MoneyScreen(riderId: widget.riderId)));
+      Navigator.of(context).push(
+        MaterialPageRoute<void>(
+          builder: (_) => MoneyScreen(riderId: widget.riderId),
+        ),
+      );
     }
   }
 
   @override
   Widget build(BuildContext context) {
     final l = AppLocalizations.of(context);
-    final t = context.ws;
-    final text = Theme.of(context).textTheme;
+    final c = context.colors;
+    final t = context.text;
     return Scaffold(
+      backgroundColor: c.background,
       appBar: AppBar(
         title: Text(l.inboxTitle),
         actions: [
           TextButton(
-            onPressed: () => _markRead(_shown.where((n) => n.unread).map((n) => n.id)),
+            onPressed: () =>
+                _markRead(_shown.where((n) => n.unread).map((n) => n.id)),
             child: Text(l.inboxMarkAllRead),
           ),
         ],
@@ -58,36 +75,68 @@ class _InboxScreenState extends State<InboxScreen> {
         stream: _latest,
         builder: (context, snap) {
           if (snap.hasError) {
-            return _Centered(icon: AgIcons.offline, text: l.inboxLoadError);
+            return _Centered(
+              icon: DeliveryIcons.offline,
+              text: l.inboxLoadError,
+            );
           }
-          if (!snap.hasData) return const Center(child: CircularProgressIndicator());
+          if (!snap.hasData) {
+            return const Center(child: CircularProgressIndicator());
+          }
           final list = _shown = snap.data!;
-          if (list.isEmpty) return _Centered(icon: AgIcons.bell, text: l.inboxEmpty);
+          if (list.isEmpty) {
+            return _Centered(
+              icon: DeliveryIcons.bell,
+              text: l.inboxEmpty,
+            );
+          }
           return ListView.separated(
-            padding: const EdgeInsets.symmetric(vertical: WsSpace.s8),
+            padding: const EdgeInsets.symmetric(vertical: DeliverySpace.sm),
             itemCount: list.length + (list.length >= kInboxSize ? 1 : 0),
-            separatorBuilder: (_, __) => const Divider(height: WsSize.hairline),
+            separatorBuilder: (_, __) =>
+                const Divider(height: DeliverySize.hairline),
             itemBuilder: (context, i) {
               if (i == list.length) {
                 return Padding(
-                  padding: const EdgeInsets.all(WsSpace.s16),
-                  child: Text(l.inboxLimitNote(kInboxSize),
-                      textAlign: TextAlign.center, style: text.bodySmall?.copyWith(color: t.textTertiary)),
+                  padding: const EdgeInsets.all(DeliverySpace.lg),
+                  child: Text(
+                    l.inboxLimitNote(kInboxSize),
+                    textAlign: TextAlign.center,
+                    style: t.bodySmall.copyWith(color: c.textTertiary),
+                  ),
                 );
               }
               final n = list[i];
               return ListTile(
-                contentPadding: const EdgeInsets.symmetric(horizontal: WsSpace.page, vertical: WsSpace.s4),
-                leading: Icon(n.unread ? AgIcons.bell : AgIcons.success,
-                    color: n.unread ? t.primary : t.textTertiary),
-                title: Text(n.title, style: n.unread ? text.titleSmall : text.bodyLarge),
+                contentPadding: const EdgeInsets.symmetric(
+                  horizontal: DeliverySpace.page,
+                  vertical: DeliverySpace.xxs,
+                ),
+                leading: Icon(
+                  n.unread ? DeliveryIcons.bell : DeliveryIcons.checkCircle,
+                  color: n.unread ? c.brand : c.textTertiary,
+                ),
+                title: Text(
+                  n.title,
+                  style: (n.unread ? t.titleSmall : t.bodyLarge).copyWith(
+                    color: c.textPrimary,
+                  ),
+                ),
                 subtitle: Text(
-                  [n.body, if (n.createdAt != null) AgFormat.dateTime(n.createdAt!.toLocal())].join('\n'),
-                  style: text.bodySmall?.copyWith(color: t.textSecondary),
+                  [
+                    n.body,
+                    if (n.createdAt != null)
+                      DeliveryFormat.dateTime(n.createdAt!.toLocal()),
+                  ].join('\n'),
+                  style: t.bodySmall.copyWith(color: c.textSecondary),
                 ),
                 isThreeLine: n.createdAt != null,
                 trailing: n.target == NoticeTarget.money
-                    ? Icon(AgIcons.chevronRight, size: WsIconSize.supporting, color: t.textTertiary)
+                    ? Icon(
+                        DeliveryIcons.chevronRight,
+                        size: DeliveryIconSize.sm,
+                        color: c.textTertiary,
+                      )
                     : null,
                 onTap: () => _open(n),
               );
@@ -106,16 +155,23 @@ class _Centered extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final t = context.ws;
+    final c = context.colors;
+    final t = context.text;
     return Center(
       child: Padding(
-        padding: const EdgeInsets.all(WsSpace.s24),
-        child: Column(mainAxisSize: MainAxisSize.min, children: [
-          Icon(icon, size: WsIconSize.empty, color: t.textTertiary),
-          const SizedBox(height: WsSpace.s12),
-          Text(text, textAlign: TextAlign.center,
-              style: Theme.of(context).textTheme.bodyLarge?.copyWith(color: t.textSecondary)),
-        ]),
+        padding: const EdgeInsets.all(DeliverySpace.xxl),
+        child: Column(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            Icon(icon, size: DeliveryIconSize.hero, color: c.textTertiary),
+            const SizedBox(height: DeliverySpace.md),
+            Text(
+              text,
+              textAlign: TextAlign.center,
+              style: t.bodyLarge.copyWith(color: c.textSecondary),
+            ),
+          ],
+        ),
       ),
     );
   }
@@ -123,7 +179,11 @@ class _Centered extends StatelessWidget {
 
 /// The dashboard's inbox icon with the unread count.
 class InboxButton extends StatefulWidget {
-  const InboxButton({super.key, required this.riderId, required this.source});
+  const InboxButton({
+    super.key,
+    required this.riderId,
+    required this.source,
+  });
   final String riderId;
   final RiderInboxSource source;
 
@@ -137,7 +197,9 @@ class _InboxButtonState extends State<InboxButton> {
   @override
   void didUpdateWidget(InboxButton old) {
     super.didUpdateWidget(old);
-    if (old.riderId != widget.riderId) _unread = widget.source.unreadCount(widget.riderId);
+    if (old.riderId != widget.riderId) {
+      _unread = widget.source.unreadCount(widget.riderId);
+    }
   }
 
   @override
@@ -150,9 +212,19 @@ class _InboxButtonState extends State<InboxButton> {
         return IconButton(
           key: const ValueKey('open-inbox'),
           tooltip: n > 0 ? l.inboxOpenUnread(n) : l.inboxOpen,
-          onPressed: () => Navigator.of(context).push(MaterialPageRoute<void>(
-              builder: (_) => InboxScreen(riderId: widget.riderId, source: widget.source))),
-          icon: Badge(isLabelVisible: n > 0, label: Text(unreadBadgeText(n)), child: const Icon(AgIcons.bell)),
+          onPressed: () => Navigator.of(context).push(
+            MaterialPageRoute<void>(
+              builder: (_) => InboxScreen(
+                riderId: widget.riderId,
+                source: widget.source,
+              ),
+            ),
+          ),
+          icon: Badge(
+            isLabelVisible: n > 0,
+            label: Text(unreadBadgeText(n)),
+            child: const Icon(DeliveryIcons.bell),
+          ),
         );
       },
     );

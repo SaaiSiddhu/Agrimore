@@ -1,15 +1,15 @@
 // lib/app/app.dart
 //
-// Phase DLV-C1 — the delivery app on the shared Workspace theme (delivery
-// brand: the app's existing green) with ARB localisation, and a session gate
-// that binds rider data to exactly one signed-in rider.
-import 'package:agrimore_ui/agrimore_ui.dart';
+// Delivery Partner root application on the owned burnt-orange Delivery Design
+// System (`D-SELLER-OWN-DS`) with ARB localisation, appearance persistence,
+// and a session gate that binds rider data to one signed-in rider at a time.
 import 'package:flutter/material.dart';
 import 'package:flutter_local_notifications/flutter_local_notifications.dart';
 import 'package:flutter_localizations/flutter_localizations.dart';
 import 'package:provider/provider.dart';
 
 import '../auth/auth_copy.dart';
+import '../design_system/design_system.dart';
 import '../l10n/app_localizations.dart';
 import '../offers/offer_coordinator.dart';
 import '../offers/offer_launch.dart';
@@ -21,47 +21,44 @@ import '../screens/auth/pending_approval_screen.dart';
 import '../screens/auth/rider_registration_screen.dart';
 import '../screens/home/dashboard_screen.dart';
 
-class App extends StatelessWidget {
-  const App({super.key});
+class App extends StatefulWidget {
+  const App({super.key, this.appearance});
+
+  final DeliveryAppearanceController? appearance;
 
   @override
-  Widget build(BuildContext context) {
-    return MaterialApp(
-      navigatorKey: deliveryNavigatorKey,
-      onGenerateTitle: (context) => AppLocalizations.of(context).appName,
-      debugShowCheckedModeBanner: false,
-      theme: WorkspaceTheme.build(WorkspaceBrand.delivery, Brightness.light),
-      darkTheme: WorkspaceTheme.build(WorkspaceBrand.delivery, Brightness.dark),
-      themeMode: ThemeMode.system,
-      localizationsDelegates: const [
-        AppLocalizations.delegate,
-        GlobalMaterialLocalizations.delegate,
-        GlobalWidgetsLocalizations.delegate,
-        GlobalCupertinoLocalizations.delegate,
-      ],
-      supportedLocales: AppLocalizations.supportedLocales,
-      home: const _DeliverySplashWrapper(),
-    );
-  }
+  State<App> createState() => _AppState();
 }
 
-class _DeliverySplashWrapper extends StatelessWidget {
-  const _DeliverySplashWrapper();
+class _AppState extends State<App> {
+  late final DeliveryAppearanceController _appearance =
+      widget.appearance ?? DeliveryAppearanceController();
 
   @override
   Widget build(BuildContext context) {
-    final l10n = AppLocalizations.of(context);
-    return PremiumSplashScreen(
-      appName: l10n.appName,
-      tagline: l10n.splashTagline,
-      logoPath: 'packages/agrimore_ui/assets/icons/delivery_logo.png',
-      animationType: SplashAnimationType.delivery,
-      onNavigation: (ctx) async {
-        if (!ctx.mounted) return;
-        Navigator.of(ctx).pushReplacement(
-          MaterialPageRoute(builder: (_) => const RiderSessionGate()),
-        );
-      },
+    return DeliveryAppearanceScope(
+      controller: _appearance,
+      child: ListenableBuilder(
+        listenable: _appearance,
+        builder: (context, _) {
+          return MaterialApp(
+            navigatorKey: deliveryNavigatorKey,
+            onGenerateTitle: (context) => AppLocalizations.of(context).appName,
+            debugShowCheckedModeBanner: false,
+            theme: DeliveryTheme.light(),
+            darkTheme: DeliveryTheme.dark(),
+            themeMode: _appearance.mode,
+            localizationsDelegates: const [
+              AppLocalizations.delegate,
+              GlobalMaterialLocalizations.delegate,
+              GlobalWidgetsLocalizations.delegate,
+              GlobalCupertinoLocalizations.delegate,
+            ],
+            supportedLocales: AppLocalizations.supportedLocales,
+            home: const RiderSessionGate(),
+          );
+        },
+      ),
     );
   }
 }
@@ -96,7 +93,9 @@ class _RiderSessionGateState extends State<RiderSessionGate> {
 
   void _sync() {
     if (!mounted) return;
-    final working = _auth.isAuthenticated && _auth.isDeliveryPartner ? _auth.user!.uid : null;
+    final working = _auth.isAuthenticated && _auth.isDeliveryPartner
+        ? _auth.user!.uid
+        : null;
     if (working == _boundUid) return;
     final ended = _boundUid != null;
     _boundUid = working;
@@ -139,11 +138,21 @@ class _LoadingAccount extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final l = AppLocalizations.of(context);
+    final c = context.colors;
     return Scaffold(
+      backgroundColor: c.background,
       body: Center(
         child: Semantics(
-          label: AppLocalizations.of(context).loadingAccount,
-          child: const CircularProgressIndicator(),
+          label: l.loadingAccount,
+          child: Column(
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              const DeliveryBrandMark(size: DeliverySize.avatarXl),
+              const SizedBox(height: DeliverySpace.lg),
+              DeliveryLoadingState(label: l.loadingAccount),
+            ],
+          ),
         ),
       ),
     );
@@ -158,29 +167,69 @@ class _AccountUnavailable extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final l10n = AppLocalizations.of(context);
-    final t = context.ws;
+    final c = context.colors;
+    final t = context.text;
     final auth = context.read<DeliveryAuthProvider>();
     return Scaffold(
+      backgroundColor: c.background,
       body: SafeArea(
-        child: Padding(
-          padding: const EdgeInsets.all(WsSpace.page),
-          child: Column(
-            mainAxisAlignment: MainAxisAlignment.center,
-            crossAxisAlignment: CrossAxisAlignment.stretch,
-            children: [
-              Icon(AgIcons.offline, size: WsIconSize.empty, color: t.textTertiary),
-              const SizedBox(height: WsSpace.s16),
-              Text(l10n.sessionLoadFailedTitle,
-                  textAlign: TextAlign.center, style: Theme.of(context).textTheme.titleLarge),
-              const SizedBox(height: WsSpace.s8),
-              Text(authProblemText(l10n, RiderAuthProblem.profileUnavailable),
-                  textAlign: TextAlign.center,
-                  style: Theme.of(context).textTheme.bodyMedium?.copyWith(color: t.textSecondary)),
-              const SizedBox(height: WsSpace.s24),
-              FilledButton(onPressed: auth.retryProfile, child: Text(l10n.actionRetry)),
-              const SizedBox(height: WsSpace.s8),
-              OutlinedButton(onPressed: auth.signOut, child: Text(l10n.actionSignOut)),
-            ],
+        child: Center(
+          child: SingleChildScrollView(
+            padding: const EdgeInsets.all(DeliverySpace.page),
+            child: ConstrainedBox(
+              constraints: const BoxConstraints(
+                maxWidth: DeliverySize.formMaxWidth,
+              ),
+              child: DeliveryCard(
+                padding: const EdgeInsets.all(DeliverySpace.xxl),
+                child: Column(
+                  mainAxisSize: MainAxisSize.min,
+                  crossAxisAlignment: CrossAxisAlignment.stretch,
+                  children: [
+                    Center(
+                      child: Container(
+                        width: DeliverySize.avatarXl,
+                        height: DeliverySize.avatarXl,
+                        decoration: BoxDecoration(
+                          color: c.warning.container,
+                          shape: BoxShape.circle,
+                        ),
+                        alignment: Alignment.center,
+                        child: Icon(
+                          DeliveryIcons.offline,
+                          size: DeliveryIconSize.xl,
+                          color: c.warning.icon,
+                        ),
+                      ),
+                    ),
+                    const SizedBox(height: DeliverySpace.lg),
+                    Text(
+                      l10n.sessionLoadFailedTitle,
+                      textAlign: TextAlign.center,
+                      style: t.headlineMedium.copyWith(color: c.textPrimary),
+                    ),
+                    const SizedBox(height: DeliverySpace.sm),
+                    Text(
+                      authProblemText(l10n, RiderAuthProblem.profileUnavailable),
+                      textAlign: TextAlign.center,
+                      style: t.bodyMedium.copyWith(color: c.textSecondary),
+                    ),
+                    const SizedBox(height: DeliverySpace.xxl),
+                    DeliveryButton.primary(
+                      label: l10n.actionRetry,
+                      icon: DeliveryIcons.refresh,
+                      onPressed: auth.retryProfile,
+                    ),
+                    const SizedBox(height: DeliverySpace.sm),
+                    DeliveryButton.secondary(
+                      label: l10n.actionSignOut,
+                      icon: DeliveryIcons.logout,
+                      onPressed: auth.signOut,
+                    ),
+                  ],
+                ),
+              ),
+            ),
           ),
         ),
       ),

@@ -1,16 +1,15 @@
 // lib/screens/auth/login_screen.dart
 //
-// Phase DLV-A1 — sign-in on the Workspace foundation: typed problems from the
-// ARB file (never a raw FirebaseAuthException message), the password used
-// exactly as typed, forgot-password with an account-safe reply, and the
-// server-owned registration. The layout is the existing one (logo, title,
-// card); the visual redesign is a separate, later pass.
-import 'package:agrimore_ui/agrimore_ui.dart';
+// Phase DLV-A1 / Phase 15 — sign-in on the burnt-orange Delivery Design System:
+// typed problems from the ARB file (never a raw FirebaseAuthException message),
+// the password used exactly as typed, forgot-password with an account-safe
+// reply, and the server-owned registration.
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:provider/provider.dart';
 
 import '../../auth/auth_copy.dart';
+import '../../design_system/design_system.dart';
 import '../../l10n/app_localizations.dart';
 import '../../providers/auth_provider.dart';
 import 'rider_registration_screen.dart';
@@ -53,166 +52,225 @@ class _LoginScreenState extends State<LoginScreen> {
       isScrollControlled: true,
       showDragHandle: true,
       builder: (ctx) => StatefulBuilder(
-        builder: (ctx, setD) => Padding(
-          padding: EdgeInsets.fromLTRB(
-              WsSpace.page, 0, WsSpace.page, MediaQuery.of(ctx).viewInsets.bottom + WsSpace.s24),
-          child: SingleChildScrollView(
-            child: Column(mainAxisSize: MainAxisSize.min, crossAxisAlignment: CrossAxisAlignment.stretch, children: [
-              Text(l.resetTitle, style: Theme.of(ctx).textTheme.titleLarge),
-              const SizedBox(height: WsSpace.s8),
-              Text(l.resetBody),
-              const SizedBox(height: WsSpace.s12),
-              TextField(
-                key: const ValueKey('reset-email'),
-                controller: email,
-                keyboardType: TextInputType.emailAddress,
-                decoration: InputDecoration(
-                  labelText: l.fieldEmail,
-                  errorText: problem == null
-                      ? null
-                      : (problem == RiderAuthProblem.unknown ? l.resetFailed : authProblemText(l, problem!)),
-                ),
+        builder: (ctx, setD) {
+          final c = ctx.colors;
+          final t = ctx.text;
+          return Padding(
+            padding: EdgeInsets.fromLTRB(
+              DeliverySpace.page,
+              DeliverySpace.xxs,
+              DeliverySpace.page,
+              MediaQuery.of(ctx).viewInsets.bottom + DeliverySpace.xxl,
+            ),
+            child: SingleChildScrollView(
+              child: Column(
+                mainAxisSize: MainAxisSize.min,
+                crossAxisAlignment: CrossAxisAlignment.stretch,
+                children: [
+                  Text(
+                    l.resetTitle,
+                    style: t.headlineSmall.copyWith(color: c.textPrimary),
+                  ),
+                  const SizedBox(height: DeliverySpace.sm),
+                  Text(
+                    l.resetBody,
+                    style: t.bodyMedium.copyWith(color: c.textSecondary),
+                  ),
+                  const SizedBox(height: DeliverySpace.md),
+                  TextField(
+                    key: const ValueKey('reset-email'),
+                    controller: email,
+                    keyboardType: TextInputType.emailAddress,
+                    decoration: InputDecoration(
+                      labelText: l.fieldEmail,
+                      prefixIcon: const Icon(DeliveryIcons.mail),
+                      errorText: problem == null
+                          ? null
+                          : (problem == RiderAuthProblem.unknown
+                              ? l.resetFailed
+                              : authProblemText(l, problem!)),
+                    ),
+                  ),
+                  const SizedBox(height: DeliverySpace.lg),
+                  DeliveryButton.primary(
+                    key: const ValueKey('reset-send'),
+                    label: l.resetSend,
+                    isLoading: sending,
+                    onPressed: sending
+                        ? null
+                        : () async {
+                            setD(() => sending = true);
+                            final p = await auth.sendPasswordReset(email.text);
+                            if (!ctx.mounted) return;
+                            if (p == null) {
+                              Navigator.pop(ctx, true);
+                            } else {
+                              setD(() {
+                                problem = p;
+                                sending = false;
+                              });
+                            }
+                          },
+                  ),
+                  const SizedBox(height: DeliverySpace.sm),
+                  DeliveryButton.ghost(
+                    label: l.resetCancel,
+                    onPressed: () => Navigator.pop(ctx, false),
+                  ),
+                ],
               ),
-              const SizedBox(height: WsSpace.s16),
-              FilledButton(
-                key: const ValueKey('reset-send'),
-                onPressed: sending
-                    ? null
-                    : () async {
-                        setD(() => sending = true);
-                        final p = await auth.sendPasswordReset(email.text);
-                        if (!ctx.mounted) return;
-                        if (p == null) {
-                          Navigator.pop(ctx, true);
-                        } else {
-                          setD(() {
-                            problem = p;
-                            sending = false;
-                          });
-                        }
-                      },
-                child: Text(l.resetSend),
-              ),
-              const SizedBox(height: WsSpace.s8),
-              TextButton(onPressed: () => Navigator.pop(ctx, false), child: Text(l.resetCancel)),
-            ]),
-          ),
-        ),
+            ),
+          );
+        },
       ),
     );
     email.dispose();
-    if (sent == true && mounted) WsToast.show(context, l.resetSent, tone: WsToastTone.success);
+    if (sent == true && mounted) {
+      showDeliveryToast(
+        context,
+        message: l.resetSent,
+        tone: DeliveryBannerTone.success,
+      );
+    }
   }
 
   @override
   Widget build(BuildContext context) {
     final l = AppLocalizations.of(context);
-    final t = context.ws;
-    final text = Theme.of(context).textTheme;
+    final c = context.colors;
+    final t = context.text;
     return Scaffold(
+      backgroundColor: c.background,
       body: SafeArea(
         child: Center(
           child: SingleChildScrollView(
-            padding: const EdgeInsets.all(WsSpace.page),
+            padding: const EdgeInsets.all(DeliverySpace.page),
             child: ConstrainedBox(
-              constraints: const BoxConstraints(maxWidth: WsSize.formMaxWidth),
+              constraints: const BoxConstraints(
+                maxWidth: DeliverySize.formMaxWidth,
+              ),
               child: Form(
                 key: _formKey,
                 child: Column(
                   crossAxisAlignment: CrossAxisAlignment.stretch,
                   children: [
-                    Image.asset('assets/images/logo.png', width: WsSize.thumbLg, height: WsSize.thumbLg),
-                    const SizedBox(height: WsSpace.s16),
-                    Text(l.appName, textAlign: TextAlign.center, style: text.headlineMedium?.copyWith(color: t.textPrimary)),
-                    Text(l.splashTagline, textAlign: TextAlign.center, style: text.bodyLarge?.copyWith(color: t.textSecondary)),
-                    const SizedBox(height: WsSpace.s32),
-                    Card(
-                      child: Padding(
-                        padding: const EdgeInsets.all(WsSpace.s24),
-                        child: Column(
-                          crossAxisAlignment: CrossAxisAlignment.stretch,
-                          children: [
-                            Text(l.signInTitle, style: text.titleLarge?.copyWith(color: t.textPrimary)),
-                            const SizedBox(height: WsSpace.s4),
-                            Text(l.signInSubtitle, style: text.bodyMedium?.copyWith(color: t.textSecondary)),
-                            const SizedBox(height: WsSpace.s24),
-                            TextFormField(
-                              key: const ValueKey('login-email'),
-                              controller: _emailController,
-                              keyboardType: TextInputType.emailAddress,
-                              autofillHints: const [AutofillHints.email],
-                              decoration: InputDecoration(labelText: l.fieldEmail, prefixIcon: const Icon(AgIcons.mail)),
-                              validator: (v) => (v == null || !v.contains('@')) ? l.errEmail : null,
-                            ),
-                            const SizedBox(height: WsSpace.s16),
-                            TextFormField(
-                              key: const ValueKey('login-password'),
-                              controller: _passwordController,
-                              obscureText: _obscurePassword,
-                              autofillHints: const [AutofillHints.password],
-                              onFieldSubmitted: (_) => _handleLogin(),
-                              decoration: InputDecoration(
-                                labelText: l.fieldPassword,
-                                prefixIcon: const Icon(AgIcons.lock),
-                                suffixIcon: IconButton(
-                                  tooltip: _obscurePassword ? l.showPassword : l.hidePassword,
-                                  icon: Icon(_obscurePassword ? AgIcons.eye : AgIcons.eyeOff),
-                                  onPressed: () => setState(() => _obscurePassword = !_obscurePassword),
-                                ),
-                              ),
-                              validator: (v) => (v == null || v.isEmpty) ? l.errPasswordEmpty : null,
-                            ),
-                            Align(
-                              alignment: Alignment.centerRight,
-                              child: TextButton(
-                                key: const ValueKey('forgot-password'),
-                                onPressed: _forgotPassword,
-                                child: Text(l.forgotPassword),
-                              ),
-                            ),
-                            Consumer<DeliveryAuthProvider>(builder: (context, auth, _) {
-                              final problem = auth.problem;
-                              if (problem == null) return const SizedBox.shrink();
-                              return Semantics(
-                                liveRegion: true,
-                                child: Container(
-                                  padding: const EdgeInsets.all(WsSpace.s12),
-                                  margin: const EdgeInsets.only(bottom: WsSpace.s16),
-                                  decoration: BoxDecoration(
-                                    color: t.errorBg,
-                                    borderRadius: BorderRadius.circular(WsRadius.input),
-                                  ),
-                                  child: Row(children: [
-                                    Icon(AgIcons.error, color: t.errorFg, size: WsIconSize.control),
-                                    const SizedBox(width: WsSpace.s8),
-                                    Expanded(
-                                      child: Text(authProblemText(l, problem),
-                                          style: text.bodyMedium?.copyWith(color: t.errorFg)),
-                                    ),
-                                  ]),
-                                ),
-                              );
-                            }),
-                            Consumer<DeliveryAuthProvider>(
-                              builder: (context, auth, _) => FilledButton(
-                                key: const ValueKey('login-submit'),
-                                onPressed: auth.signingIn ? null : _handleLogin,
-                                child: auth.signingIn
-                                    ? Semantics(label: l.signingIn, child: const CircularProgressIndicator.adaptive())
-                                    : Text(l.signInAction),
-                              ),
-                            ),
-                          ],
-                        ),
+                    Center(
+                      child: DeliveryLogo(
+                        title: l.appName,
+                        subtitle: l.splashTagline,
+                        markSize: DeliverySize.avatarXl,
                       ),
                     ),
-                    const SizedBox(height: WsSpace.s24),
-                    OutlinedButton(
-                      key: const ValueKey('register'),
-                      onPressed: () => Navigator.of(context).push(
-                        MaterialPageRoute<void>(builder: (_) => const RiderRegistrationScreen()),
+                    const SizedBox(height: DeliverySpace.lg),
+                    const DeliveryHeroIllustration(
+                      height: DeliverySize.illustration,
+                    ),
+                    const SizedBox(height: DeliverySpace.lg),
+                    DeliveryCard(
+                      padding: const EdgeInsets.all(DeliverySpace.xxl),
+                      child: Column(
+                        crossAxisAlignment: CrossAxisAlignment.stretch,
+                        children: [
+                          Text(
+                            l.signInTitle,
+                            style:
+                                t.headlineSmall.copyWith(color: c.textPrimary),
+                          ),
+                          const SizedBox(height: DeliverySpace.xxs),
+                          Text(
+                            l.signInSubtitle,
+                            style:
+                                t.bodyMedium.copyWith(color: c.textSecondary),
+                          ),
+                          const SizedBox(height: DeliverySpace.xxl),
+                          TextFormField(
+                            key: const ValueKey('login-email'),
+                            controller: _emailController,
+                            keyboardType: TextInputType.emailAddress,
+                            autofillHints: const [AutofillHints.email],
+                            decoration: InputDecoration(
+                              labelText: l.fieldEmail,
+                              prefixIcon: const Icon(DeliveryIcons.mail),
+                            ),
+                            validator: (v) =>
+                                (v == null || !v.contains('@')) ? l.errEmail : null,
+                          ),
+                          const SizedBox(height: DeliverySpace.lg),
+                          TextFormField(
+                            key: const ValueKey('login-password'),
+                            controller: _passwordController,
+                            obscureText: _obscurePassword,
+                            autofillHints: const [AutofillHints.password],
+                            onFieldSubmitted: (_) => _handleLogin(),
+                            decoration: InputDecoration(
+                              labelText: l.fieldPassword,
+                              prefixIcon: const Icon(DeliveryIcons.lock),
+                              suffixIcon: IconButton(
+                                tooltip: _obscurePassword
+                                    ? l.showPassword
+                                    : l.hidePassword,
+                                icon: Icon(
+                                  _obscurePassword
+                                      ? DeliveryIcons.eye
+                                      : DeliveryIcons.eyeOff,
+                                ),
+                                onPressed: () => setState(
+                                  () => _obscurePassword = !_obscurePassword,
+                                ),
+                              ),
+                            ),
+                            validator: (v) => (v == null || v.isEmpty)
+                                ? l.errPasswordEmpty
+                                : null,
+                          ),
+                          Align(
+                            alignment: Alignment.centerRight,
+                            child: TextButton(
+                              key: const ValueKey('forgot-password'),
+                              onPressed: _forgotPassword,
+                              child: Text(l.forgotPassword),
+                            ),
+                          ),
+                          Consumer<DeliveryAuthProvider>(
+                            builder: (context, auth, _) {
+                              final problem = auth.problem;
+                              if (problem == null) {
+                                return const SizedBox.shrink();
+                              }
+                              return Padding(
+                                padding: const EdgeInsets.only(
+                                  bottom: DeliverySpace.lg,
+                                ),
+                                child: DeliveryBanner(
+                                  tone: DeliveryBannerTone.danger,
+                                  body: authProblemText(l, problem),
+                                ),
+                              );
+                            },
+                          ),
+                          Consumer<DeliveryAuthProvider>(
+                            builder: (context, auth, _) =>
+                                DeliveryButton.primary(
+                              key: const ValueKey('login-submit'),
+                              label: l.signInAction,
+                              icon: DeliveryIcons.login,
+                              isLoading: auth.signingIn,
+                              onPressed: auth.signingIn ? null : _handleLogin,
+                            ),
+                          ),
+                        ],
                       ),
-                      child: Text(l.registerAction),
+                    ),
+                    const SizedBox(height: DeliverySpace.xxl),
+                    DeliveryButton.secondary(
+                      key: const ValueKey('register'),
+                      label: l.registerAction,
+                      icon: DeliveryIcons.rider,
+                      onPressed: () => Navigator.of(context).push(
+                        MaterialPageRoute<void>(
+                          builder: (_) => const RiderRegistrationScreen(),
+                        ),
+                      ),
                     ),
                   ],
                 ),

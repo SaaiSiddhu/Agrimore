@@ -1,13 +1,13 @@
 // lib/screens/orders/delivery_problem_panel.dart
 //
-// Phase DLV-E1 — on the active order, after pickup: "Report a problem", and
-// once reported, the record's real state (reported / seen / resolved as
-// reattempt or returned to seller) with Agrimore's words verbatim.
-import 'package:agrimore_ui/agrimore_ui.dart';
+// Phase DLV-E1 / Phase 25 — reporting a delivery problem after pickup and
+// showing the exception record's real state.
+import 'package:agrimore_core/agrimore_core.dart' show DeliveryFailureReason;
 import 'package:flutter/material.dart';
 
 import '../../delivery/delivery_problems.dart';
-import '../../delivery/rider_steps.dart' show currentRiderFix, positionPayload;
+import '../../delivery/rider_steps.dart';
+import '../../design_system/design_system.dart';
 import '../../l10n/app_localizations.dart';
 
 String reasonText(AppLocalizations l, DeliveryFailureReason r) => switch (r) {
@@ -52,14 +52,31 @@ class DeliveryProblemPanel extends StatefulWidget {
 }
 
 class _DeliveryProblemPanelState extends State<DeliveryProblemPanel> {
-  late final Stream<Map<String, dynamic>?> _order = widget.orderStream ?? watchOrder(widget.orderId);
+  late final Stream<Map<String, dynamic>?> _order =
+      widget.orderStream ?? _safeWatchOrder(widget.orderId);
   String? _watchedId;
   Stream<Map<String, dynamic>?>? _exception;
+
+  static Stream<Map<String, dynamic>?> _safeWatchOrder(String id) {
+    try {
+      return watchOrder(id);
+    } catch (_) {
+      return Stream.value(const {});
+    }
+  }
+
+  static Stream<Map<String, dynamic>?> _safeWatchException(String id) {
+    try {
+      return watchException(id);
+    } catch (_) {
+      return Stream.value(null);
+    }
+  }
 
   Stream<Map<String, dynamic>?> _exceptionFor(String id) {
     if (id != _watchedId) {
       _watchedId = id;
-      _exception = (widget.exceptionStream ?? watchException)(id);
+      _exception = (widget.exceptionStream ?? _safeWatchException)(id);
     }
     return _exception!;
   }
@@ -87,12 +104,14 @@ class _DeliveryProblemPanelState extends State<DeliveryProblemPanel> {
         if (order == null) return const SizedBox.shrink();
         final openId = openExceptionIdOf(order);
         if (openId == null) {
-          if (!isAfterPickup((order['orderStatus'] as String?) ?? '')) return const SizedBox.shrink();
-          return OutlinedButton.icon(
+          if (!isAfterPickup((order['orderStatus'] as String?) ?? '')) {
+            return const SizedBox.shrink();
+          }
+          return DeliveryButton.secondary(
             key: const ValueKey('report-problem'),
+            label: l.problemReport,
+            icon: DeliveryIcons.warning,
             onPressed: _report,
-            icon: const Icon(AgIcons.warning),
-            label: Text(l.problemReport),
           );
         }
         return StreamBuilder<Map<String, dynamic>?>(
@@ -111,8 +130,8 @@ class _ProblemState extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final l = AppLocalizations.of(context);
-    final t = context.ws;
-    final text = Theme.of(context).textTheme;
+    final c = context.colors;
+    final t = context.text;
     final state = problemStateOf(data);
     final (title, body) = switch (state) {
       ProblemState.reported => (l.problemReported, l.problemReportedBody),
@@ -126,26 +145,62 @@ class _ProblemState extends StatelessWidget {
       child: Container(
         key: const ValueKey('problem-state'),
         width: double.infinity,
-        padding: const EdgeInsets.all(WsSpace.s12),
-        decoration: BoxDecoration(color: t.warningBg, borderRadius: BorderRadius.circular(WsRadius.card)),
-        child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
-          Text(title, style: text.titleSmall?.copyWith(color: t.warningFg)),
-          if (body != null) ...[
-            const SizedBox(height: WsSpace.s4),
-            Text(body, style: text.bodyMedium?.copyWith(color: t.textPrimary)),
+        padding: const EdgeInsets.all(DeliverySpace.md),
+        decoration: BoxDecoration(
+          color: c.warning.container,
+          borderRadius: DeliveryRadius.rMd,
+          border: Border.all(
+            color: c.warning.border,
+            width: DeliverySize.hairline,
+          ),
+        ),
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            Row(
+              children: [
+                Icon(
+                  DeliveryIcons.warning,
+                  size: DeliveryIconSize.sm,
+                  color: c.warning.icon,
+                ),
+                const SizedBox(width: DeliverySpace.sm),
+                Expanded(
+                  child: Text(
+                    title,
+                    style: t.titleSmall.copyWith(color: c.warning.text),
+                  ),
+                ),
+              ],
+            ),
+            if (body != null) ...[
+              const SizedBox(height: DeliverySpace.xxs),
+              Text(
+                body,
+                style: t.bodyMedium.copyWith(color: c.textPrimary),
+              ),
+            ],
+            if (note != null && note.isNotEmpty) ...[
+              const SizedBox(height: DeliverySpace.xxs),
+              Text(
+                l.problemResolutionNote(note),
+                style: t.bodyMedium.copyWith(color: c.textPrimary),
+              ),
+            ],
           ],
-          if (note != null && note.isNotEmpty) ...[
-            const SizedBox(height: WsSpace.s4),
-            Text(l.problemResolutionNote(note), style: text.bodyMedium?.copyWith(color: t.textPrimary)),
-          ],
-        ]),
+        ),
       ),
     );
   }
 }
 
 class ProblemReportSheet extends StatefulWidget {
-  const ProblemReportSheet({super.key, required this.orderId, required this.backend, this.fix});
+  const ProblemReportSheet({
+    super.key,
+    required this.orderId,
+    required this.backend,
+    this.fix,
+  });
   final String orderId;
   final DeliveryProblemBackend backend;
   final Future<Map<String, dynamic>> Function()? fix;
@@ -168,7 +223,8 @@ class _ProblemReportSheetState extends State<ProblemReportSheet> {
     super.dispose();
   }
 
-  Future<Map<String, dynamic>> _defaultFix() async => positionPayload(await currentRiderFix());
+  Future<Map<String, dynamic>> _defaultFix() async =>
+      positionPayload(await currentRiderFix());
 
   Future<void> _send() async {
     final reason = _reason;
@@ -179,7 +235,9 @@ class _ProblemReportSheetState extends State<ProblemReportSheet> {
     });
     Map<String, dynamic> fix = const {};
     try {
-      fix = await (widget.fix ?? _defaultFix)().timeout(DeliveryTiming.reportFixTimeout);
+      fix = await (widget.fix ?? _defaultFix)().timeout(
+        DeliveryMotion.locationTimeout,
+      );
     } catch (_) {}
     try {
       await widget.backend.report({
@@ -203,47 +261,64 @@ class _ProblemReportSheetState extends State<ProblemReportSheet> {
   @override
   Widget build(BuildContext context) {
     final l = AppLocalizations.of(context);
-    final t = context.ws;
+    final c = context.colors;
+    final t = context.text;
     return Padding(
-      padding: EdgeInsets.fromLTRB(WsSpace.page, 0, WsSpace.page, MediaQuery.of(context).viewInsets.bottom + WsSpace.page),
+      padding: EdgeInsets.fromLTRB(
+        DeliverySpace.page,
+        0,
+        DeliverySpace.page,
+        MediaQuery.of(context).viewInsets.bottom + DeliverySpace.page,
+      ),
       child: SingleChildScrollView(
-        child: Column(mainAxisSize: MainAxisSize.min, crossAxisAlignment: CrossAxisAlignment.stretch, children: [
-          Text(l.problemSheetTitle, style: Theme.of(context).textTheme.titleMedium),
-          const SizedBox(height: WsSpace.s8),
-          RadioGroup<DeliveryFailureReason>(
-            groupValue: _reason,
-            onChanged: (v) {
-              if (!_sending) setState(() => _reason = v);
-            },
-            child: Column(children: [
-              for (final r in afterPickupReasons)
-                RadioListTile<DeliveryFailureReason>(
-                  key: ValueKey('reason-${r.wire}'),
-                  value: r,
-                  enabled: !_sending,
-                  title: Text(reasonText(l, r)),
-                  contentPadding: EdgeInsets.zero,
-                ),
-            ]),
-          ),
-          TextField(
-            controller: _note,
-            maxLength: 500,
-            maxLines: 2,
-            decoration: InputDecoration(labelText: l.problemNoteLabel),
-          ),
-          if (_failure != null)
-            Padding(
-              padding: const EdgeInsets.only(bottom: WsSpace.s8),
-              child: Text(problemFailureText(l, _failure!),
-                  style: Theme.of(context).textTheme.bodyMedium?.copyWith(color: t.errorFg)),
+        child: Column(
+          mainAxisSize: MainAxisSize.min,
+          crossAxisAlignment: CrossAxisAlignment.stretch,
+          children: [
+            Text(
+              l.problemSheetTitle,
+              style: t.titleMedium.copyWith(color: c.textPrimary),
             ),
-          FilledButton(
-            key: const ValueKey('problem-send'),
-            onPressed: _reason == null || _sending ? null : _send,
-            child: Text(l.problemSend),
-          ),
-        ]),
+            const SizedBox(height: DeliverySpace.sm),
+            RadioGroup<DeliveryFailureReason>(
+              groupValue: _reason,
+              onChanged: (v) {
+                if (!_sending) setState(() => _reason = v);
+              },
+              child: Column(
+                children: [
+                  for (final r in afterPickupReasons)
+                    RadioListTile<DeliveryFailureReason>(
+                      key: ValueKey('reason-${r.wire}'),
+                      value: r,
+                      enabled: !_sending,
+                      title: Text(reasonText(l, r)),
+                      contentPadding: EdgeInsets.zero,
+                    ),
+                ],
+              ),
+            ),
+            TextField(
+              controller: _note,
+              maxLength: 500,
+              maxLines: 2,
+              decoration: InputDecoration(labelText: l.problemNoteLabel),
+            ),
+            if (_failure != null)
+              Padding(
+                padding: const EdgeInsets.only(bottom: DeliverySpace.sm),
+                child: Text(
+                  problemFailureText(l, _failure!),
+                  style: t.bodyMedium.copyWith(color: c.danger.text),
+                ),
+              ),
+            FilledButton(
+              key: const ValueKey('problem-send'),
+              onPressed: _reason == null || _sending ? null : _send,
+              child: Text(l.problemSend),
+            ),
+          ],
+        ),
       ),
     );
   }

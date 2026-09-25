@@ -1,16 +1,15 @@
 // lib/safety/emergency_sheet.dart
 //
-// Phase DLV-S1 — what the SOS button honestly does. It used to show "SOS
-// Alert Sent! Live location shared with authorities and admin." and send
-// nothing at all. This sheet only hands the rider to the phone's dialer:
-// 112 (India's single emergency number, ERSS) and Agrimore support. Opening
-// the dialer is not a completed call, so nothing here says anyone was called,
-// alerted or sent a location. "Tell the Agrimore team" (DLV-S2) records a
-// report on the server and shows its real state (incident_report.dart).
-import 'package:agrimore_ui/agrimore_ui.dart';
+// Phase DLV-S1 / Phase 26 — the emergency sheet opened from the dashboard's
+// SOS icon. Dialing 112 and Agrimore support only hands the number to the
+// OS phone dialer and never claims anyone has been alerted or sent a
+// location. "Tell the Agrimore team" (DLV-S2) records a report on the server
+// and shows its real state (incident_report.dart).
+import 'package:agrimore_core/agrimore_core.dart' show AppConstants;
 import 'package:flutter/material.dart';
 import 'package:url_launcher/url_launcher.dart';
 
+import '../design_system/design_system.dart';
 import '../l10n/app_localizations.dart';
 import 'incident_report.dart';
 
@@ -100,15 +99,20 @@ class _EmergencySheetState extends State<EmergencySheet> {
     Map<String, dynamic> fix = const {};
     if (widget.fix != null) {
       try {
-        fix = await widget.fix!().timeout(DeliveryTiming.reportFixTimeout);
+        fix = await widget.fix!().timeout(DeliveryMotion.locationTimeout);
       } catch (_) {}
     }
     try {
-      final id = await widget.reporter!({'requestId': _requestId, 'kind': 'sos', ...fix});
+      final id = await widget.reporter!({
+        'requestId': _requestId,
+        'kind': 'sos',
+        ...fix,
+      });
       if (!mounted) return;
       setState(() {
         _sending = false;
-        _record = widget.watcher?.call(id).asBroadcastStream() ?? Stream.value(null);
+        _record =
+            widget.watcher?.call(id).asBroadcastStream() ?? Stream.value(null);
       });
     } on IncidentReportException catch (e) {
       if (!mounted) return;
@@ -127,22 +131,41 @@ class _EmergencySheetState extends State<EmergencySheet> {
   }
 
   Widget _reportSection(AppLocalizations l) {
-    final t = context.ws;
-    final text = Theme.of(context).textTheme;
+    final c = context.colors;
+    final t = context.text;
     if (_record != null) {
       return StreamBuilder<Map<String, dynamic>?>(
         stream: _record,
         builder: (context, snap) {
           final s = incidentStatusText(l, snap.data);
-          return Container(
-            padding: const EdgeInsets.all(WsSpace.s12),
-            decoration: BoxDecoration(color: t.surfaceSunken, borderRadius: BorderRadius.circular(WsRadius.card)),
-            child: Column(
+          return DeliveryCard(
+            variant: DeliveryCardVariant.muted,
+            padding: const EdgeInsets.all(DeliverySpace.md),
+            child: Row(
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
-                Text(s.title, style: text.titleSmall),
-                const SizedBox(height: WsSpace.s4),
-                Text(s.detail, style: text.bodyMedium?.copyWith(color: t.textSecondary)),
+                Icon(
+                  DeliveryIcons.shield,
+                  size: DeliveryIconSize.md,
+                  color: c.brand,
+                ),
+                const SizedBox(width: DeliverySpace.md),
+                Expanded(
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      Text(
+                        s.title,
+                        style: t.titleSmall.copyWith(color: c.textPrimary),
+                      ),
+                      const SizedBox(height: DeliverySpace.xxs),
+                      Text(
+                        s.detail,
+                        style: t.bodyMedium.copyWith(color: c.textSecondary),
+                      ),
+                    ],
+                  ),
+                ),
               ],
             ),
           );
@@ -152,21 +175,25 @@ class _EmergencySheetState extends State<EmergencySheet> {
     return Column(
       crossAxisAlignment: CrossAxisAlignment.stretch,
       children: [
-        OutlinedButton.icon(
-          onPressed: _sending ? null : _report,
-          icon: _sending
-              ? const SizedBox.square(
-                  dimension: WsIconSize.control, child: CircularProgressIndicator(strokeWidth: WsSize.focusRing))
-              : const Icon(AgIcons.report),
-          label: Text(_sending
+        DeliveryButton.secondary(
+          label: _sending
               ? l.incidentReportSending
-              : (_reportError != null ? l.actionRetry : l.incidentReportAction)),
+              : (_reportError != null ? l.actionRetry : l.incidentReportAction),
+          icon: DeliveryIcons.report,
+          isLoading: _sending,
+          onPressed: _sending ? null : _report,
         ),
-        const SizedBox(height: WsSpace.s8),
-        Text(l.incidentReportHint, style: text.bodySmall?.copyWith(color: t.textSecondary)),
+        const SizedBox(height: DeliverySpace.sm),
+        Text(
+          l.incidentReportHint,
+          style: t.bodySmall.copyWith(color: c.textSecondary),
+        ),
         if (_reportError != null) ...[
-          const SizedBox(height: WsSpace.s8),
-          Text(_reportError!.message(l), style: text.bodyMedium?.copyWith(color: t.errorFg)),
+          const SizedBox(height: DeliverySpace.sm),
+          DeliveryBanner(
+            tone: DeliveryBannerTone.danger,
+            body: _reportError!.message(l),
+          ),
         ],
       ],
     );
@@ -182,48 +209,77 @@ class _EmergencySheetState extends State<EmergencySheet> {
   @override
   Widget build(BuildContext context) {
     final l = AppLocalizations.of(context);
-    final t = context.ws;
-    final text = Theme.of(context).textTheme;
+    final c = context.colors;
+    final t = context.text;
     final support = dialUri(widget.supportPhone);
     return SafeArea(
       child: SingleChildScrollView(
         child: Padding(
-          padding: const EdgeInsets.fromLTRB(WsSpace.page, 0, WsSpace.page, WsSpace.s20),
+          padding: const EdgeInsets.fromLTRB(
+            DeliverySpace.page,
+            DeliverySpace.xxs,
+            DeliverySpace.page,
+            DeliverySpace.xl,
+          ),
           child: Column(
             mainAxisSize: MainAxisSize.min,
             crossAxisAlignment: CrossAxisAlignment.stretch,
             children: [
               Row(
                 children: [
-                  Icon(AgIcons.emergency, color: t.errorFg, size: WsIconSize.feature),
-                  const SizedBox(width: WsSpace.s12),
-                  Expanded(child: Text(l.emergencyTitle, style: text.titleLarge)),
+                  Container(
+                    width: DeliverySize.avatarMd,
+                    height: DeliverySize.avatarMd,
+                    decoration: BoxDecoration(
+                      color: c.danger.container,
+                      borderRadius: DeliveryRadius.rSm,
+                    ),
+                    alignment: Alignment.center,
+                    child: Icon(
+                      DeliveryIcons.emergency,
+                      color: c.danger.icon,
+                      size: DeliveryIconSize.lg,
+                    ),
+                  ),
+                  const SizedBox(width: DeliverySpace.md),
+                  Expanded(
+                    child: Text(
+                      l.emergencyTitle,
+                      style: t.headlineSmall.copyWith(color: c.textPrimary),
+                    ),
+                  ),
                 ],
               ),
-              const SizedBox(height: WsSpace.s8),
-              Text(l.emergencyIntro(kEmergencyNumber), style: text.bodyMedium?.copyWith(color: t.textSecondary)),
-              const SizedBox(height: WsSpace.s16),
-              FilledButton.icon(
-                onPressed: () => _dial(dialUri(kEmergencyNumber)!, kEmergencyNumber),
-                style: FilledButton.styleFrom(backgroundColor: t.errorFg, foregroundColor: t.surface),
-                icon: const Icon(AgIcons.call),
-                label: Text(l.emergencyCall(kEmergencyNumber)),
+              const SizedBox(height: DeliverySpace.sm),
+              Text(
+                l.emergencyIntro(kEmergencyNumber),
+                style: t.bodyMedium.copyWith(color: c.textSecondary),
+              ),
+              const SizedBox(height: DeliverySpace.lg),
+              DeliveryButton.danger(
+                label: l.emergencyCall(kEmergencyNumber),
+                icon: DeliveryIcons.phone,
+                onPressed: () =>
+                    _dial(dialUri(kEmergencyNumber)!, kEmergencyNumber),
               ),
               if (support != null) ...[
-                const SizedBox(height: WsSpace.s12),
-                OutlinedButton.icon(
+                const SizedBox(height: DeliverySpace.md),
+                DeliveryButton.secondary(
+                  label: l.emergencyCallSupport,
+                  icon: DeliveryIcons.support,
                   onPressed: () => _dial(support, widget.supportPhone!),
-                  icon: const Icon(AgIcons.support),
-                  label: Text(l.emergencyCallSupport),
                 ),
               ],
               if (widget.reporter != null) ...[
-                const SizedBox(height: WsSpace.s16),
+                const SizedBox(height: DeliverySpace.lg),
                 _reportSection(l),
               ],
               if (_dialFailedFor != null) ...[
-                const SizedBox(height: WsSpace.s12),
-                Text(l.emergencyDialFailed(_dialFailedFor!), style: text.bodyMedium?.copyWith(color: t.errorFg)),
+                const SizedBox(height: DeliverySpace.md),
+                DeliveryBanner(
+                  tone: DeliveryBannerTone.danger,
+                  body: l.emergencyDialFailed(_dialFailedFor!),
+                ),
               ],
             ],
           ),
