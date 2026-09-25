@@ -2955,6 +2955,1278 @@ abstract class AppLocalizations {
   /// In en, this message translates to:
   /// **'Can\'t go online yet'**
   String get goOnlineBlockedTitle;
+
+  /// No description provided for @dsBrandName.
+  ///
+  /// In en, this message translates to:
+  /// **'AgriMore'**
+  String get dsBrandName;
+
+  /// No description provided for @dsBrandRole.
+  ///
+  /// In en, this message translates to:
+  /// **'DELIVERY PARTNER'**
+  String get dsBrandRole;
+
+  /// No description provided for @dsRequired.
+  ///
+  /// In en, this message translates to:
+  /// **'required'**
+  String get dsRequired;
+
+  /// No description provided for @dsOptional.
+  ///
+  /// In en, this message translates to:
+  /// **'(optional)'**
+  String get dsOptional;
+
+  /// No description provided for @dsLoading.
+  ///
+  /// In en, this message translates to:
+  /// **'Loading…'**
+  String get dsLoading;
+
+  /// No description provided for @dsTryAgain.
+  ///
+  /// In en, this message translates to:
+  /// **'Try again'**
+  String get dsTryAgain;
+
+  /// No description provided for @dsClose.
+  ///
+  /// In en, this message translates to:
+  /// **'Close'**
+  String get dsClose;
+
+  /// No description provided for @dsBack.
+  ///
+  /// In en, this message translates to:
+  /// **'Back'**
+  String get dsBack;
+
+  /// No description provided for @dsCancel.
+  ///
+  /// In en, this message translates to:
+  /// **'Cancel'**
+  String get dsCancel;
+
+  /// No description provided for @dsSearchClear.
+  ///
+  /// In en, this message translates to:
+  /// **'Clear search'**
+  String get dsSearchClear;
+
+  /// No description provided for @dsShowPassword.
+  ///
+  /// In en, this message translates to:
+  /// **'Show password'**
+  String get dsShowPassword;
+
+  /// No description provided for @dsHidePassword.
+  ///
+  /// In en, this message translates to:
+  /// **'Hide password'**
+  String get dsHidePassword;
+
+  /// No description provided for @dsStepCompleted.
+  ///
+  /// In en, this message translates to:
+  /// **'Completed'**
+  String get dsStepCompleted;
+
+  /// No description provided for @dsStepCurrent.
+  ///
+  /// In en, this message translates to:
+  /// **'Current'**
+  String get dsStepCurrent;
+
+  /// No description provided for @dsStepUpcoming.
+  ///
+  /// In en, this message translates to:
+  /// **'Upcoming'**
+  String get dsStepUpcoming;
+
+  /// No description provided for @dsStepFailed.
+  ///
+  /// In en, this message translates to:
+  /// **'Needs attention'**
+  String get dsStepFailed;
+
+  /// No description provided for @dsStepOf.
+  ///
+  /// In en, this message translates to:
+  /// **'Step {current} of {total}'**
+  String dsStepOf(int current, int total);
+
+  /// No description provided for @dsOtpFieldLabel.
+  ///
+  /// In en, this message translates to:
+  /// **'Verification code, {length} digits'**
+  String dsOtpFieldLabel(int length);
+
+  /// No description provided for @dsFieldsNeedAttention.
+  ///
+  /// In en, this message translates to:
+  /// **'{count, plural, =1{Check 1 field} other{Check {count} fields}}'**
+  String dsFieldsNeedAttention(int count);
+
+  /// No description provided for @dsDiscardTitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Discard changes?'**
+  String get dsDiscardTitle;
+
+  /// No description provided for @dsDiscardBody.
+  ///
+  /// In en, this message translates to:
+  /// **'Your unsaved changes will be lost.'**
+  String get dsDiscardBody;
+
+  /// No description provided for @dsDiscard.
+  ///
+  /// In en, this message translates to:
+  /// **'Discard'**
+  String get dsDiscard;
+
+  /// No description provided for @dsKeepEditing.
+  ///
+  /// In en, this message translates to:
+  /// **'Keep editing'**
+  String get dsKeepEditing;
+
+  /// No description provided for @dsExpandHint.
+  ///
+  /// In en, this message translates to:
+  /// **'Tap to expand'**
+  String get dsExpandHint;
+
+  /// No description provided for @dsCollapseHint.
+  ///
+  /// In en, this message translates to:
+  /// **'Tap to collapse'**
+  String get dsCollapseHint;
+
+  /// No description provided for @dsNoImage.
+  ///
+  /// In en, this message translates to:
+  /// **'No photo'**
+  String get dsNoImage;
+
+  /// No description provided for @dsImageFailed.
+  ///
+  /// In en, this message translates to:
+  /// **'Photo unavailable'**
+  String get dsImageFailed;
+
+  /// No description provided for @dsTabPosition.
+  ///
+  /// In en, this message translates to:
+  /// **'Tab {index} of {count}'**
+  String dsTabPosition(int index, int count);
+
+  /// No description provided for @dsTestDataRibbon.
+  ///
+  /// In en, this message translates to:
+  /// **'TEST DATA · Local emulator'**
+  String get dsTestDataRibbon;
+
+  /// No description provided for @dsUnreadDot.
+  ///
+  /// In en, this message translates to:
+  /// **'Unread'**
+  String get dsUnreadDot;
+
+  /// No description provided for @dsSaved.
+  ///
+  /// In en, this message translates to:
+  /// **'Saved'**
+  String get dsSaved;
+
+  /// No description provided for @dsSubmitting.
+  ///
+  /// In en, this message translates to:
+  /// **'Submitting…'**
+  String get dsSubmitting;
+
+  /// No description provided for @appearanceTitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Appearance'**
+  String get appearanceTitle;
+
+  /// No description provided for @appearanceSystem.
+  ///
+  /// In en, this message translates to:
+  /// **'System'**
+  String get appearanceSystem;
+
+  /// No description provided for @appearanceLight.
+  ///
+  /// In en, this message translates to:
+  /// **'Light'**
+  String get appearanceLight;
+
+  /// No description provided for @appearanceDark.
+  ///
+  /// In en, this message translates to:
+  /// **'Dark'**
+  String get appearanceDark;
+
+  /// No description provided for @appearanceSubtitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Match your phone or choose a theme for day and night riding'**
+  String get appearanceSubtitle;
+
+  /// No description provided for @authCheckingSession.
+  ///
+  /// In en, this message translates to:
+  /// **'Checking your session…'**
+  String get authCheckingSession;
+
+  /// No description provided for @authSigningOut.
+  ///
+  /// In en, this message translates to:
+  /// **'Signing out…'**
+  String get authSigningOut;
+
+  /// No description provided for @authTagline.
+  ///
+  /// In en, this message translates to:
+  /// **'Deliver farm-fresh orders in your city'**
+  String get authTagline;
+
+  /// No description provided for @authNewPartnerHeading.
+  ///
+  /// In en, this message translates to:
+  /// **'New to AgriMore Delivery?'**
+  String get authNewPartnerHeading;
+
+  /// No description provided for @authNewPartnerBody.
+  ///
+  /// In en, this message translates to:
+  /// **'Register with your vehicle and documents to start delivering.'**
+  String get authNewPartnerBody;
+
+  /// No description provided for @regStepProgress.
+  ///
+  /// In en, this message translates to:
+  /// **'Step {current} of {total}'**
+  String regStepProgress(int current, int total);
+
+  /// No description provided for @regSaveExit.
+  ///
+  /// In en, this message translates to:
+  /// **'Cancel'**
+  String get regSaveExit;
+
+  /// No description provided for @regDiscardTitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Leave registration?'**
+  String get regDiscardTitle;
+
+  /// No description provided for @regDiscardBody.
+  ///
+  /// In en, this message translates to:
+  /// **'Your progress on this screen will be discarded.'**
+  String get regDiscardBody;
+
+  /// No description provided for @regDiscardConfirm.
+  ///
+  /// In en, this message translates to:
+  /// **'Leave'**
+  String get regDiscardConfirm;
+
+  /// No description provided for @regPhotoTake.
+  ///
+  /// In en, this message translates to:
+  /// **'Take photo'**
+  String get regPhotoTake;
+
+  /// No description provided for @regPhotoGallery.
+  ///
+  /// In en, this message translates to:
+  /// **'Choose from gallery'**
+  String get regPhotoGallery;
+
+  /// No description provided for @regPhotoRetake.
+  ///
+  /// In en, this message translates to:
+  /// **'Retake'**
+  String get regPhotoRetake;
+
+  /// No description provided for @regPhotoReplace.
+  ///
+  /// In en, this message translates to:
+  /// **'Replace'**
+  String get regPhotoReplace;
+
+  /// No description provided for @regPhotoUploaded.
+  ///
+  /// In en, this message translates to:
+  /// **'Uploaded'**
+  String get regPhotoUploaded;
+
+  /// No description provided for @regPhotoUploading.
+  ///
+  /// In en, this message translates to:
+  /// **'Uploading…'**
+  String get regPhotoUploading;
+
+  /// No description provided for @regPhotoFailed.
+  ///
+  /// In en, this message translates to:
+  /// **'Upload failed'**
+  String get regPhotoFailed;
+
+  /// No description provided for @regPayoutOptionalBadge.
+  ///
+  /// In en, this message translates to:
+  /// **'Optional'**
+  String get regPayoutOptionalBadge;
+
+  /// No description provided for @regPayoutWhyTitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Why add payout details?'**
+  String get regPayoutWhyTitle;
+
+  /// No description provided for @regPayoutWhyBody.
+  ///
+  /// In en, this message translates to:
+  /// **'Your weekly earnings are sent every Monday to your bank account or UPI ID. You can also add or change this later.'**
+  String get regPayoutWhyBody;
+
+  /// No description provided for @regPayoutMethodBank.
+  ///
+  /// In en, this message translates to:
+  /// **'Bank account'**
+  String get regPayoutMethodBank;
+
+  /// No description provided for @regPayoutMethodUpi.
+  ///
+  /// In en, this message translates to:
+  /// **'UPI ID'**
+  String get regPayoutMethodUpi;
+
+  /// No description provided for @regPayoutMethodSkip.
+  ///
+  /// In en, this message translates to:
+  /// **'Add later'**
+  String get regPayoutMethodSkip;
+
+  /// No description provided for @regReviewSummaryTitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Application summary'**
+  String get regReviewSummaryTitle;
+
+  /// No description provided for @kycTimelineSubmitted.
+  ///
+  /// In en, this message translates to:
+  /// **'Application submitted'**
+  String get kycTimelineSubmitted;
+
+  /// No description provided for @kycTimelineReview.
+  ///
+  /// In en, this message translates to:
+  /// **'Document & vehicle review'**
+  String get kycTimelineReview;
+
+  /// No description provided for @kycTimelineDecision.
+  ///
+  /// In en, this message translates to:
+  /// **'Approval decision'**
+  String get kycTimelineDecision;
+
+  /// No description provided for @kycRefreshStatus.
+  ///
+  /// In en, this message translates to:
+  /// **'Refresh status'**
+  String get kycRefreshStatus;
+
+  /// No description provided for @kycRefreshing.
+  ///
+  /// In en, this message translates to:
+  /// **'Checking status…'**
+  String get kycRefreshing;
+
+  /// No description provided for @kycWhatToFix.
+  ///
+  /// In en, this message translates to:
+  /// **'What to fix'**
+  String get kycWhatToFix;
+
+  /// No description provided for @kycSuspensionDetails.
+  ///
+  /// In en, this message translates to:
+  /// **'Suspension details'**
+  String get kycSuspensionDetails;
+
+  /// No description provided for @kycSupportNote.
+  ///
+  /// In en, this message translates to:
+  /// **'Contact Agrimore support if you have questions about your account status.'**
+  String get kycSupportNote;
+
+  /// No description provided for @dashNavHome.
+  ///
+  /// In en, this message translates to:
+  /// **'Home'**
+  String get dashNavHome;
+
+  /// No description provided for @dashNavDeliveries.
+  ///
+  /// In en, this message translates to:
+  /// **'Deliveries'**
+  String get dashNavDeliveries;
+
+  /// No description provided for @dashNavEarnings.
+  ///
+  /// In en, this message translates to:
+  /// **'Earnings'**
+  String get dashNavEarnings;
+
+  /// No description provided for @dashNavInbox.
+  ///
+  /// In en, this message translates to:
+  /// **'Inbox'**
+  String get dashNavInbox;
+
+  /// No description provided for @dashNavProfile.
+  ///
+  /// In en, this message translates to:
+  /// **'Profile'**
+  String get dashNavProfile;
+
+  /// No description provided for @dashAvailabilityLabel.
+  ///
+  /// In en, this message translates to:
+  /// **'Work availability'**
+  String get dashAvailabilityLabel;
+
+  /// No description provided for @dashGoingOnline.
+  ///
+  /// In en, this message translates to:
+  /// **'Going online…'**
+  String get dashGoingOnline;
+
+  /// No description provided for @dashGoingOffline.
+  ///
+  /// In en, this message translates to:
+  /// **'Going offline…'**
+  String get dashGoingOffline;
+
+  /// No description provided for @dashOfflineBannerTitle.
+  ///
+  /// In en, this message translates to:
+  /// **'You have no internet connection'**
+  String get dashOfflineBannerTitle;
+
+  /// No description provided for @dashOfflineBannerBody.
+  ///
+  /// In en, this message translates to:
+  /// **'Showing last saved data. Live offers require a connection.'**
+  String get dashOfflineBannerBody;
+
+  /// No description provided for @dashCachedDataNote.
+  ///
+  /// In en, this message translates to:
+  /// **'Cached data · pull to refresh'**
+  String get dashCachedDataNote;
+
+  /// No description provided for @dashMultipleActiveWarning.
+  ///
+  /// In en, this message translates to:
+  /// **'{count} active deliveries assigned'**
+  String dashMultipleActiveWarning(int count);
+
+  /// No description provided for @dashMultipleActiveHint.
+  ///
+  /// In en, this message translates to:
+  /// **'Select an order below to continue'**
+  String get dashMultipleActiveHint;
+
+  /// No description provided for @dashOpenOrder.
+  ///
+  /// In en, this message translates to:
+  /// **'Open order'**
+  String get dashOpenOrder;
+
+  /// No description provided for @dashCodLimitWarningTitle.
+  ///
+  /// In en, this message translates to:
+  /// **'COD cash limit reached'**
+  String get dashCodLimitWarningTitle;
+
+  /// No description provided for @dashCodLimitWarningBody.
+  ///
+  /// In en, this message translates to:
+  /// **'Settle {amount} cash with the Agrimore team to receive new cash-on-delivery offers. Prepaid orders continue.'**
+  String dashCodLimitWarningBody(String amount);
+
+  /// No description provided for @locStep1Badge.
+  ///
+  /// In en, this message translates to:
+  /// **'Step 1 of 2 · Foreground & background location'**
+  String get locStep1Badge;
+
+  /// No description provided for @locStep2Badge.
+  ///
+  /// In en, this message translates to:
+  /// **'Step 2 of 2 · Background reliability'**
+  String get locStep2Badge;
+
+  /// No description provided for @locPurposeNearby.
+  ///
+  /// In en, this message translates to:
+  /// **'Match you with nearby pickup orders'**
+  String get locPurposeNearby;
+
+  /// No description provided for @locPurposeTracking.
+  ///
+  /// In en, this message translates to:
+  /// **'Share live delivery progress with the store and customer'**
+  String get locPurposeTracking;
+
+  /// No description provided for @locPurposeStop.
+  ///
+  /// In en, this message translates to:
+  /// **'Location sharing stops immediately when you go offline'**
+  String get locPurposeStop;
+
+  /// No description provided for @locBatteryOemHint.
+  ///
+  /// In en, this message translates to:
+  /// **'On Xiaomi, Oppo, Vivo, Realme and Samsung phones, set Battery to Unrestricted and allow Autostart so your phone does not stop location while you are on a delivery.'**
+  String get locBatteryOemHint;
+
+  /// No description provided for @locReducedBannerTitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Background location not set to Always'**
+  String get locReducedBannerTitle;
+
+  /// No description provided for @locReducedBannerBody.
+  ///
+  /// In en, this message translates to:
+  /// **'If the app closes, location sharing may stop and take you offline.'**
+  String get locReducedBannerBody;
+
+  /// No description provided for @locFixInSettings.
+  ///
+  /// In en, this message translates to:
+  /// **'Fix in Settings'**
+  String get locFixInSettings;
+
+  /// No description provided for @offerUrgentSeconds.
+  ///
+  /// In en, this message translates to:
+  /// **'Hurry · {seconds}s left'**
+  String offerUrgentSeconds(int seconds);
+
+  /// No description provided for @offerAccepting.
+  ///
+  /// In en, this message translates to:
+  /// **'Accepting…'**
+  String get offerAccepting;
+
+  /// No description provided for @offerDeclining.
+  ///
+  /// In en, this message translates to:
+  /// **'Declining…'**
+  String get offerDeclining;
+
+  /// No description provided for @offerDeclineTitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Decline this offer?'**
+  String get offerDeclineTitle;
+
+  /// No description provided for @offerDeclineBody.
+  ///
+  /// In en, this message translates to:
+  /// **'This order will be offered to another delivery partner.'**
+  String get offerDeclineBody;
+
+  /// No description provided for @offerDeclineConfirm.
+  ///
+  /// In en, this message translates to:
+  /// **'Decline offer'**
+  String get offerDeclineConfirm;
+
+  /// No description provided for @offerKeepOrder.
+  ///
+  /// In en, this message translates to:
+  /// **'Keep viewing'**
+  String get offerKeepOrder;
+
+  /// No description provided for @offerPrepaidBadge.
+  ///
+  /// In en, this message translates to:
+  /// **'PREPAID'**
+  String get offerPrepaidBadge;
+
+  /// No description provided for @offerCodBadge.
+  ///
+  /// In en, this message translates to:
+  /// **'COD · {amount}'**
+  String offerCodBadge(String amount);
+
+  /// No description provided for @offerPrivacyNote.
+  ///
+  /// In en, this message translates to:
+  /// **'Customer name, phone and full address are shown after you accept.'**
+  String get offerPrivacyNote;
+
+  /// No description provided for @activeOrderHeader.
+  ///
+  /// In en, this message translates to:
+  /// **'Order #{number}'**
+  String activeOrderHeader(String number);
+
+  /// No description provided for @activePickupSection.
+  ///
+  /// In en, this message translates to:
+  /// **'Pickup store'**
+  String get activePickupSection;
+
+  /// No description provided for @activeDropSection.
+  ///
+  /// In en, this message translates to:
+  /// **'Customer drop-off'**
+  String get activeDropSection;
+
+  /// No description provided for @activeCallStore.
+  ///
+  /// In en, this message translates to:
+  /// **'Call store'**
+  String get activeCallStore;
+
+  /// No description provided for @activeCopyAddress.
+  ///
+  /// In en, this message translates to:
+  /// **'Copy address'**
+  String get activeCopyAddress;
+
+  /// No description provided for @activeAddressCopied.
+  ///
+  /// In en, this message translates to:
+  /// **'Address copied'**
+  String get activeAddressCopied;
+
+  /// No description provided for @activeInstructionsLabel.
+  ///
+  /// In en, this message translates to:
+  /// **'Delivery instructions'**
+  String get activeInstructionsLabel;
+
+  /// No description provided for @activeCollectCashTitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Collect {amount} cash from customer'**
+  String activeCollectCashTitle(String amount);
+
+  /// No description provided for @activeCollectCashBody.
+  ///
+  /// In en, this message translates to:
+  /// **'Count the cash before entering the 6-digit delivery verification code.'**
+  String get activeCollectCashBody;
+
+  /// No description provided for @activePrepaidTitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Prepaid — do not collect cash'**
+  String get activePrepaidTitle;
+
+  /// No description provided for @activePrepaidBody.
+  ///
+  /// In en, this message translates to:
+  /// **'The customer has already paid online.'**
+  String get activePrepaidBody;
+
+  /// No description provided for @activeStepUpdating.
+  ///
+  /// In en, this message translates to:
+  /// **'Updating…'**
+  String get activeStepUpdating;
+
+  /// No description provided for @activeVerifyOtpAction.
+  ///
+  /// In en, this message translates to:
+  /// **'Enter delivery OTP'**
+  String get activeVerifyOtpAction;
+
+  /// No description provided for @routeViewMap.
+  ///
+  /// In en, this message translates to:
+  /// **'Map'**
+  String get routeViewMap;
+
+  /// No description provided for @routeViewList.
+  ///
+  /// In en, this message translates to:
+  /// **'Route details'**
+  String get routeViewList;
+
+  /// No description provided for @routeRefresh.
+  ///
+  /// In en, this message translates to:
+  /// **'Refresh route'**
+  String get routeRefresh;
+
+  /// No description provided for @routeRefreshing.
+  ///
+  /// In en, this message translates to:
+  /// **'Refreshing route…'**
+  String get routeRefreshing;
+
+  /// No description provided for @routeLastUpdated.
+  ///
+  /// In en, this message translates to:
+  /// **'Updated just now'**
+  String get routeLastUpdated;
+
+  /// No description provided for @routeLiveGps.
+  ///
+  /// In en, this message translates to:
+  /// **'Live GPS'**
+  String get routeLiveGps;
+
+  /// No description provided for @routeCachedBanner.
+  ///
+  /// In en, this message translates to:
+  /// **'Offline · showing last known route'**
+  String get routeCachedBanner;
+
+  /// No description provided for @routeCopyCoords.
+  ///
+  /// In en, this message translates to:
+  /// **'Copy coordinates'**
+  String get routeCopyCoords;
+
+  /// No description provided for @routeCoordsCopied.
+  ///
+  /// In en, this message translates to:
+  /// **'Coordinates copied'**
+  String get routeCoordsCopied;
+
+  /// No description provided for @routeStepPickup.
+  ///
+  /// In en, this message translates to:
+  /// **'1. Pickup'**
+  String get routeStepPickup;
+
+  /// No description provided for @routeStepDrop.
+  ///
+  /// In en, this message translates to:
+  /// **'2. Drop-off'**
+  String get routeStepDrop;
+
+  /// No description provided for @waitTimerLabel.
+  ///
+  /// In en, this message translates to:
+  /// **'Waiting at store'**
+  String get waitTimerLabel;
+
+  /// No description provided for @waitTimerNote.
+  ///
+  /// In en, this message translates to:
+  /// **'Waiting time pay applies after the grace period'**
+  String get waitTimerNote;
+
+  /// No description provided for @releaseReasonStoreClosed.
+  ///
+  /// In en, this message translates to:
+  /// **'Store is closed'**
+  String get releaseReasonStoreClosed;
+
+  /// No description provided for @releaseReasonLongWait.
+  ///
+  /// In en, this message translates to:
+  /// **'Order taking too long to prepare'**
+  String get releaseReasonLongWait;
+
+  /// No description provided for @releaseReasonVehicleProblem.
+  ///
+  /// In en, this message translates to:
+  /// **'Vehicle issue before pickup'**
+  String get releaseReasonVehicleProblem;
+
+  /// No description provided for @releaseReasonOther.
+  ///
+  /// In en, this message translates to:
+  /// **'Other reason'**
+  String get releaseReasonOther;
+
+  /// No description provided for @releaseWarningNote.
+  ///
+  /// In en, this message translates to:
+  /// **'Only available before you mark Picked up. Releasing returns the order to the dispatch queue.'**
+  String get releaseWarningNote;
+
+  /// No description provided for @verifyCodReminder.
+  ///
+  /// In en, this message translates to:
+  /// **'Confirm you collected {amount} in cash before verifying'**
+  String verifyCodReminder(String amount);
+
+  /// No description provided for @verifyAttemptsRemaining.
+  ///
+  /// In en, this message translates to:
+  /// **'{count, plural, =1{1 attempt remaining before temporary lock} other{{count} attempts remaining}}'**
+  String verifyAttemptsRemaining(int count);
+
+  /// No description provided for @verifyLockedTitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Verification temporarily locked'**
+  String get verifyLockedTitle;
+
+  /// No description provided for @verifyContactSupport.
+  ///
+  /// In en, this message translates to:
+  /// **'Contact support'**
+  String get verifyContactSupport;
+
+  /// No description provided for @deliveredEarnedLabel.
+  ///
+  /// In en, this message translates to:
+  /// **'Estimated earnings'**
+  String get deliveredEarnedLabel;
+
+  /// No description provided for @deliveredCodRecordedLabel.
+  ///
+  /// In en, this message translates to:
+  /// **'COD cash recorded'**
+  String get deliveredCodRecordedLabel;
+
+  /// No description provided for @deliveredProofSaved.
+  ///
+  /// In en, this message translates to:
+  /// **'Delivery proof photo saved'**
+  String get deliveredProofSaved;
+
+  /// No description provided for @proofUploadTitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Proof of delivery photo'**
+  String get proofUploadTitle;
+
+  /// No description provided for @proofUploadHint.
+  ///
+  /// In en, this message translates to:
+  /// **'Optional photo of the delivered package at the drop-off'**
+  String get proofUploadHint;
+
+  /// No description provided for @proofUploading.
+  ///
+  /// In en, this message translates to:
+  /// **'Saving photo…'**
+  String get proofUploading;
+
+  /// No description provided for @proofSavedBadge.
+  ///
+  /// In en, this message translates to:
+  /// **'Saved'**
+  String get proofSavedBadge;
+
+  /// No description provided for @problemNoteHint.
+  ///
+  /// In en, this message translates to:
+  /// **'Describe what happened so the Agrimore team can help'**
+  String get problemNoteHint;
+
+  /// No description provided for @problemReturnToStoreHint.
+  ///
+  /// In en, this message translates to:
+  /// **'Return the items to the pickup store as instructed by Agrimore.'**
+  String get problemReturnToStoreHint;
+
+  /// No description provided for @emergencyBannerNote.
+  ///
+  /// In en, this message translates to:
+  /// **'Calls open your phone dialer. Safety reports record an entry for the Agrimore team.'**
+  String get emergencyBannerNote;
+
+  /// No description provided for @incidentNoteLabel.
+  ///
+  /// In en, this message translates to:
+  /// **'What happened? (optional)'**
+  String get incidentNoteLabel;
+
+  /// No description provided for @incidentNoteHint.
+  ///
+  /// In en, this message translates to:
+  /// **'Add brief details if it is safe to do so'**
+  String get incidentNoteHint;
+
+  /// No description provided for @incidentLocationIncluded.
+  ///
+  /// In en, this message translates to:
+  /// **'Includes your current order and GPS fix if available'**
+  String get incidentLocationIncluded;
+
+  /// No description provided for @incidentLocationUnavailable.
+  ///
+  /// In en, this message translates to:
+  /// **'GPS fix unavailable — report will still be recorded'**
+  String get incidentLocationUnavailable;
+
+  /// No description provided for @moneyNetRuleNote.
+  ///
+  /// In en, this message translates to:
+  /// **'Weekly payout = Gross delivery earnings − COD cash held'**
+  String get moneyNetRuleNote;
+
+  /// No description provided for @moneySettlementHistoryTitle.
+  ///
+  /// In en, this message translates to:
+  /// **'How COD cash is settled'**
+  String get moneySettlementHistoryTitle;
+
+  /// No description provided for @moneySettlementHistoryBody.
+  ///
+  /// In en, this message translates to:
+  /// **'COD cash you collect is deducted from your Monday statement, or you can hand over cash directly to the Agrimore team.'**
+  String get moneySettlementHistoryBody;
+
+  /// No description provided for @moneyOrderWaitingLine.
+  ///
+  /// In en, this message translates to:
+  /// **'Waiting ({minutes}m): {amount}'**
+  String moneyOrderWaitingLine(int minutes, String amount);
+
+  /// No description provided for @moneyOrderDistanceLine.
+  ///
+  /// In en, this message translates to:
+  /// **'Distance ({km} km): {amount}'**
+  String moneyOrderDistanceLine(String km, String amount);
+
+  /// No description provided for @statementFormulaNote.
+  ///
+  /// In en, this message translates to:
+  /// **'Net payout = Gross earned − COD cash offset'**
+  String get statementFormulaNote;
+
+  /// No description provided for @statementCarryoverNote.
+  ///
+  /// In en, this message translates to:
+  /// **'Remaining cash ({amount}) stays in your cash-in-hand balance for next week.'**
+  String statementCarryoverNote(String amount);
+
+  /// No description provided for @statementHoldFixAction.
+  ///
+  /// In en, this message translates to:
+  /// **'Review payout details'**
+  String get statementHoldFixAction;
+
+  /// No description provided for @payoutSingleActiveNote.
+  ///
+  /// In en, this message translates to:
+  /// **'Only one payout destination (bank account or UPI ID) is active per payout.'**
+  String get payoutSingleActiveNote;
+
+  /// No description provided for @payoutMethodLabel.
+  ///
+  /// In en, this message translates to:
+  /// **'Destination type'**
+  String get payoutMethodLabel;
+
+  /// No description provided for @payoutBankMethod.
+  ///
+  /// In en, this message translates to:
+  /// **'Bank account'**
+  String get payoutBankMethod;
+
+  /// No description provided for @payoutUpiMethod.
+  ///
+  /// In en, this message translates to:
+  /// **'UPI ID'**
+  String get payoutUpiMethod;
+
+  /// No description provided for @payoutConfirmAccount.
+  ///
+  /// In en, this message translates to:
+  /// **'Confirm account number'**
+  String get payoutConfirmAccount;
+
+  /// No description provided for @payoutProblemAccountMismatch.
+  ///
+  /// In en, this message translates to:
+  /// **'Account numbers do not match'**
+  String get payoutProblemAccountMismatch;
+
+  /// No description provided for @payoutReviewTitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Review payout changes'**
+  String get payoutReviewTitle;
+
+  /// No description provided for @payoutReviewSubtitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Submission is not bank verification. Your current destination remains active until the Agrimore team approves this request.'**
+  String get payoutReviewSubtitle;
+
+  /// No description provided for @payoutCurrentDestination.
+  ///
+  /// In en, this message translates to:
+  /// **'Current active destination'**
+  String get payoutCurrentDestination;
+
+  /// No description provided for @payoutProposedDestination.
+  ///
+  /// In en, this message translates to:
+  /// **'Proposed new destination (pending review)'**
+  String get payoutProposedDestination;
+
+  /// No description provided for @payoutEditDetails.
+  ///
+  /// In en, this message translates to:
+  /// **'Edit details'**
+  String get payoutEditDetails;
+
+  /// No description provided for @payoutTimelineSubmitted.
+  ///
+  /// In en, this message translates to:
+  /// **'Request submitted'**
+  String get payoutTimelineSubmitted;
+
+  /// No description provided for @payoutTimelineReview.
+  ///
+  /// In en, this message translates to:
+  /// **'Agrimore team review'**
+  String get payoutTimelineReview;
+
+  /// No description provided for @payoutTimelineApplied.
+  ///
+  /// In en, this message translates to:
+  /// **'Applied to future payouts'**
+  String get payoutTimelineApplied;
+
+  /// No description provided for @historySearchHint.
+  ///
+  /// In en, this message translates to:
+  /// **'Search by order number (e.g. ORD-104)'**
+  String get historySearchHint;
+
+  /// No description provided for @historyDetailTitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Order details'**
+  String get historyDetailTitle;
+
+  /// No description provided for @historyTimelineTitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Delivery timeline'**
+  String get historyTimelineTitle;
+
+  /// No description provided for @inboxFilterAll.
+  ///
+  /// In en, this message translates to:
+  /// **'All'**
+  String get inboxFilterAll;
+
+  /// No description provided for @inboxFilterUnread.
+  ///
+  /// In en, this message translates to:
+  /// **'Unread'**
+  String get inboxFilterUnread;
+
+  /// No description provided for @inboxGroupToday.
+  ///
+  /// In en, this message translates to:
+  /// **'Today'**
+  String get inboxGroupToday;
+
+  /// No description provided for @inboxGroupEarlier.
+  ///
+  /// In en, this message translates to:
+  /// **'Earlier'**
+  String get inboxGroupEarlier;
+
+  /// No description provided for @inboxDestinationUnavailable.
+  ///
+  /// In en, this message translates to:
+  /// **'This item is no longer available.'**
+  String get inboxDestinationUnavailable;
+
+  /// No description provided for @profileIdentitySection.
+  ///
+  /// In en, this message translates to:
+  /// **'Identity & KYC (read-only)'**
+  String get profileIdentitySection;
+
+  /// No description provided for @profileIdentityNote.
+  ///
+  /// In en, this message translates to:
+  /// **'Name, phone, Aadhaar and driving licence are verified by Agrimore. Contact support to request a correction.'**
+  String get profileIdentityNote;
+
+  /// No description provided for @profileContactSection.
+  ///
+  /// In en, this message translates to:
+  /// **'Contact & address'**
+  String get profileContactSection;
+
+  /// No description provided for @profileVehicleSection.
+  ///
+  /// In en, this message translates to:
+  /// **'Vehicle & documents'**
+  String get profileVehicleSection;
+
+  /// No description provided for @profileSupportSection.
+  ///
+  /// In en, this message translates to:
+  /// **'Help & support'**
+  String get profileSupportSection;
+
+  /// No description provided for @profileAccountSection.
+  ///
+  /// In en, this message translates to:
+  /// **'Account actions'**
+  String get profileAccountSection;
+
+  /// No description provided for @profileDeleteWarningTitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Before you request deletion'**
+  String get profileDeleteWarningTitle;
+
+  /// No description provided for @profileDeleteWarningBody.
+  ///
+  /// In en, this message translates to:
+  /// **'You must have no active delivery, ₹0 COD cash in hand, and no unsettled earnings.'**
+  String get profileDeleteWarningBody;
+
+  /// No description provided for @profileDeleteConfirmCheck.
+  ///
+  /// In en, this message translates to:
+  /// **'I understand that deleting my account permanently removes my rider access.'**
+  String get profileDeleteConfirmCheck;
+
+  /// No description provided for @a11yRouteToggleLabel.
+  ///
+  /// In en, this message translates to:
+  /// **'Route view mode'**
+  String get a11yRouteToggleLabel;
+
+  /// No description provided for @a11yOnlineSwitchHint.
+  ///
+  /// In en, this message translates to:
+  /// **'Double-tap to toggle work availability'**
+  String get a11yOnlineSwitchHint;
+
+  /// No description provided for @locDisclosureBullet1.
+  ///
+  /// In en, this message translates to:
+  /// **'Match you with nearby pickup orders while you are online'**
+  String get locDisclosureBullet1;
+
+  /// No description provided for @locDisclosureBullet2.
+  ///
+  /// In en, this message translates to:
+  /// **'Share live delivery progress with the pickup store and customer'**
+  String get locDisclosureBullet2;
+
+  /// No description provided for @locDisclosureBullet3.
+  ///
+  /// In en, this message translates to:
+  /// **'Location sharing stops immediately when you go offline'**
+  String get locDisclosureBullet3;
+
+  /// No description provided for @locBackgroundStep1.
+  ///
+  /// In en, this message translates to:
+  /// **'Select Permissions → Location → Allow all the time so tracking continues when your screen locks during a delivery.'**
+  String get locBackgroundStep1;
+
+  /// No description provided for @locBackgroundStep2.
+  ///
+  /// In en, this message translates to:
+  /// **'On Xiaomi, Oppo, Vivo, Realme and Samsung phones, set Battery to Unrestricted so your phone does not pause active deliveries.'**
+  String get locBackgroundStep2;
+
+  /// No description provided for @kycBadgeActionRequired.
+  ///
+  /// In en, this message translates to:
+  /// **'Action required'**
+  String get kycBadgeActionRequired;
+
+  /// No description provided for @kycBadgeSuspended.
+  ///
+  /// In en, this message translates to:
+  /// **'Suspended'**
+  String get kycBadgeSuspended;
+
+  /// No description provided for @kycBadgeUnderReview.
+  ///
+  /// In en, this message translates to:
+  /// **'Under review'**
+  String get kycBadgeUnderReview;
+
+  /// No description provided for @vehicleBicycleSub.
+  ///
+  /// In en, this message translates to:
+  /// **'Short trips · no licence required'**
+  String get vehicleBicycleSub;
+
+  /// No description provided for @vehicleMotorcycleSub.
+  ///
+  /// In en, this message translates to:
+  /// **'Standard city deliveries'**
+  String get vehicleMotorcycleSub;
+
+  /// No description provided for @vehicleScooterSub.
+  ///
+  /// In en, this message translates to:
+  /// **'Gearless two-wheeler'**
+  String get vehicleScooterSub;
+
+  /// No description provided for @vehicleEvSub.
+  ///
+  /// In en, this message translates to:
+  /// **'Electric two-wheeler'**
+  String get vehicleEvSub;
+
+  /// No description provided for @vehicleAutoSub.
+  ///
+  /// In en, this message translates to:
+  /// **'Three-wheeler cargo / auto'**
+  String get vehicleAutoSub;
+
+  /// No description provided for @vehicleMiniTruckSub.
+  ///
+  /// In en, this message translates to:
+  /// **'Bulk & crate orders'**
+  String get vehicleMiniTruckSub;
+
+  /// No description provided for @profileAppearanceHeading.
+  ///
+  /// In en, this message translates to:
+  /// **'Appearance'**
+  String get profileAppearanceHeading;
+
+  /// No description provided for @profileThemeSystem.
+  ///
+  /// In en, this message translates to:
+  /// **'System'**
+  String get profileThemeSystem;
+
+  /// No description provided for @profileThemeLight.
+  ///
+  /// In en, this message translates to:
+  /// **'Light'**
+  String get profileThemeLight;
+
+  /// No description provided for @profileThemeDark.
+  ///
+  /// In en, this message translates to:
+  /// **'Dark'**
+  String get profileThemeDark;
 }
 
 class _AppLocalizationsDelegate

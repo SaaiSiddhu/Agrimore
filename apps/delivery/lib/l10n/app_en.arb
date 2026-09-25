@@ -2225,5 +2225,304 @@
   "goOnlineBlockedTitle": "Can't go online yet",
   "@goOnlineBlockedTitle": {
     "description": "Going online needs a phone setting"
-  }
+  },
+  "dsBrandName": "AgriMore",
+  "dsBrandRole": "DELIVERY PARTNER",
+  "dsRequired": "required",
+  "dsOptional": "(optional)",
+  "dsLoading": "Loading…",
+  "dsTryAgain": "Try again",
+  "dsClose": "Close",
+  "dsBack": "Back",
+  "dsCancel": "Cancel",
+  "dsSearchClear": "Clear search",
+  "dsShowPassword": "Show password",
+  "dsHidePassword": "Hide password",
+  "dsStepCompleted": "Completed",
+  "dsStepCurrent": "Current",
+  "dsStepUpcoming": "Upcoming",
+  "dsStepFailed": "Needs attention",
+  "dsStepOf": "Step {current} of {total}",
+  "@dsStepOf": {
+    "placeholders": {
+      "current": { "type": "int" },
+      "total": { "type": "int" }
+    }
+  },
+  "dsOtpFieldLabel": "Verification code, {length} digits",
+  "@dsOtpFieldLabel": {
+    "placeholders": {
+      "length": { "type": "int" }
+    }
+  },
+  "dsFieldsNeedAttention": "{count, plural, =1{Check 1 field} other{Check {count} fields}}",
+  "@dsFieldsNeedAttention": {
+    "placeholders": {
+      "count": { "type": "int" }
+    }
+  },
+  "dsDiscardTitle": "Discard changes?",
+  "dsDiscardBody": "Your unsaved changes will be lost.",
+  "dsDiscard": "Discard",
+  "dsKeepEditing": "Keep editing",
+  "dsExpandHint": "Tap to expand",
+  "dsCollapseHint": "Tap to collapse",
+  "dsNoImage": "No photo",
+  "dsImageFailed": "Photo unavailable",
+  "dsTabPosition": "Tab {index} of {count}",
+  "@dsTabPosition": {
+    "placeholders": {
+      "index": { "type": "int" },
+      "count": { "type": "int" }
+    }
+  },
+  "dsTestDataRibbon": "TEST DATA · Local emulator",
+  "dsUnreadDot": "Unread",
+  "dsSaved": "Saved",
+  "dsSubmitting": "Submitting…",
+  "appearanceTitle": "Appearance",
+  "appearanceSystem": "System",
+  "appearanceLight": "Light",
+  "appearanceDark": "Dark",
+  "appearanceSubtitle": "Match your phone or choose a theme for day and night riding",
+  "authCheckingSession": "Checking your session…",
+  "authSigningOut": "Signing out…",
+  "authTagline": "Deliver farm-fresh orders in your city",
+  "authNewPartnerHeading": "New to AgriMore Delivery?",
+  "authNewPartnerBody": "Register with your vehicle and documents to start delivering.",
+  "regStepProgress": "Step {current} of {total}",
+  "@regStepProgress": {
+    "placeholders": {
+      "current": { "type": "int" },
+      "total": { "type": "int" }
+    }
+  },
+  "regSaveExit": "Cancel",
+  "regDiscardTitle": "Leave registration?",
+  "regDiscardBody": "Your progress on this screen will be discarded.",
+  "regDiscardConfirm": "Leave",
+  "regPhotoTake": "Take photo",
+  "regPhotoGallery": "Choose from gallery",
+  "regPhotoRetake": "Retake",
+  "regPhotoReplace": "Replace",
+  "regPhotoUploaded": "Uploaded",
+  "regPhotoUploading": "Uploading…",
+  "regPhotoFailed": "Upload failed",
+  "regPayoutOptionalBadge": "Optional",
+  "regPayoutWhyTitle": "Why add payout details?",
+  "regPayoutWhyBody": "Your weekly earnings are sent every Monday to your bank account or UPI ID. You can also add or change this later.",
+  "regPayoutMethodBank": "Bank account",
+  "regPayoutMethodUpi": "UPI ID",
+  "regPayoutMethodSkip": "Add later",
+  "regReviewSummaryTitle": "Application summary",
+  "kycTimelineSubmitted": "Application submitted",
+  "kycTimelineReview": "Document & vehicle review",
+  "kycTimelineDecision": "Approval decision",
+  "kycRefreshStatus": "Refresh status",
+  "kycRefreshing": "Checking status…",
+  "kycWhatToFix": "What to fix",
+  "kycSuspensionDetails": "Suspension details",
+  "kycSupportNote": "Contact Agrimore support if you have questions about your account status.",
+  "dashNavHome": "Home",
+  "dashNavDeliveries": "Deliveries",
+  "dashNavEarnings": "Earnings",
+  "dashNavInbox": "Inbox",
+  "dashNavProfile": "Profile",
+  "dashAvailabilityLabel": "Work availability",
+  "dashGoingOnline": "Going online…",
+  "dashGoingOffline": "Going offline…",
+  "dashOfflineBannerTitle": "You have no internet connection",
+  "dashOfflineBannerBody": "Showing last saved data. Live offers require a connection.",
+  "dashCachedDataNote": "Cached data · pull to refresh",
+  "dashMultipleActiveWarning": "{count} active deliveries assigned",
+  "@dashMultipleActiveWarning": {
+    "placeholders": {
+      "count": { "type": "int" }
+    }
+  },
+  "dashMultipleActiveHint": "Select an order below to continue",
+  "dashOpenOrder": "Open order",
+  "dashCodLimitWarningTitle": "COD cash limit reached",
+  "dashCodLimitWarningBody": "Settle {amount} cash with the Agrimore team to receive new cash-on-delivery offers. Prepaid orders continue.",
+  "@dashCodLimitWarningBody": {
+    "placeholders": {
+      "amount": { "type": "String" }
+    }
+  },
+  "locStep1Badge": "Step 1 of 2 · Foreground & background location",
+  "locStep2Badge": "Step 2 of 2 · Background reliability",
+  "locPurposeNearby": "Match you with nearby pickup orders",
+  "locPurposeTracking": "Share live delivery progress with the store and customer",
+  "locPurposeStop": "Location sharing stops immediately when you go offline",
+  "locBatteryOemHint": "On Xiaomi, Oppo, Vivo, Realme and Samsung phones, set Battery to Unrestricted and allow Autostart so your phone does not stop location while you are on a delivery.",
+  "locReducedBannerTitle": "Background location not set to Always",
+  "locReducedBannerBody": "If the app closes, location sharing may stop and take you offline.",
+  "locFixInSettings": "Fix in Settings",
+  "offerUrgentSeconds": "Hurry · {seconds}s left",
+  "@offerUrgentSeconds": {
+    "placeholders": {
+      "seconds": { "type": "int" }
+    }
+  },
+  "offerAccepting": "Accepting…",
+  "offerDeclining": "Declining…",
+  "offerDeclineTitle": "Decline this offer?",
+  "offerDeclineBody": "This order will be offered to another delivery partner.",
+  "offerDeclineConfirm": "Decline offer",
+  "offerKeepOrder": "Keep viewing",
+  "offerPrepaidBadge": "PREPAID",
+  "offerCodBadge": "COD · {amount}",
+  "@offerCodBadge": {
+    "placeholders": {
+      "amount": { "type": "String" }
+    }
+  },
+  "offerPrivacyNote": "Customer name, phone and full address are shown after you accept.",
+  "activeOrderHeader": "Order #{number}",
+  "@activeOrderHeader": {
+    "placeholders": {
+      "number": { "type": "String" }
+    }
+  },
+  "activePickupSection": "Pickup store",
+  "activeDropSection": "Customer drop-off",
+  "activeCallStore": "Call store",
+  "activeCopyAddress": "Copy address",
+  "activeAddressCopied": "Address copied",
+  "activeInstructionsLabel": "Delivery instructions",
+  "activeCollectCashTitle": "Collect {amount} cash from customer",
+  "@activeCollectCashTitle": {
+    "placeholders": {
+      "amount": { "type": "String" }
+    }
+  },
+  "activeCollectCashBody": "Count the cash before entering the 6-digit delivery verification code.",
+  "activePrepaidTitle": "Prepaid — do not collect cash",
+  "activePrepaidBody": "The customer has already paid online.",
+  "activeStepUpdating": "Updating…",
+  "activeVerifyOtpAction": "Enter delivery OTP",
+  "routeViewMap": "Map",
+  "routeViewList": "Route details",
+  "routeRefresh": "Refresh route",
+  "routeRefreshing": "Refreshing route…",
+  "routeLastUpdated": "Updated just now",
+  "routeLiveGps": "Live GPS",
+  "routeCachedBanner": "Offline · showing last known route",
+  "routeCopyCoords": "Copy coordinates",
+  "routeCoordsCopied": "Coordinates copied",
+  "routeStepPickup": "1. Pickup",
+  "routeStepDrop": "2. Drop-off",
+  "waitTimerLabel": "Waiting at store",
+  "waitTimerNote": "Waiting time pay applies after the grace period",
+  "releaseReasonStoreClosed": "Store is closed",
+  "releaseReasonLongWait": "Order taking too long to prepare",
+  "releaseReasonVehicleProblem": "Vehicle issue before pickup",
+  "releaseReasonOther": "Other reason",
+  "releaseWarningNote": "Only available before you mark Picked up. Releasing returns the order to the dispatch queue.",
+  "verifyCodReminder": "Confirm you collected {amount} in cash before verifying",
+  "@verifyCodReminder": {
+    "placeholders": {
+      "amount": { "type": "String" }
+    }
+  },
+  "verifyAttemptsRemaining": "{count, plural, =1{1 attempt remaining before temporary lock} other{{count} attempts remaining}}",
+  "@verifyAttemptsRemaining": {
+    "placeholders": {
+      "count": { "type": "int" }
+    }
+  },
+  "verifyLockedTitle": "Verification temporarily locked",
+  "verifyContactSupport": "Contact support",
+  "deliveredEarnedLabel": "Estimated earnings",
+  "deliveredCodRecordedLabel": "COD cash recorded",
+  "deliveredProofSaved": "Delivery proof photo saved",
+  "proofUploadTitle": "Proof of delivery photo",
+  "proofUploadHint": "Optional photo of the delivered package at the drop-off",
+  "proofUploading": "Saving photo…",
+  "proofSavedBadge": "Saved",
+  "problemNoteHint": "Describe what happened so the Agrimore team can help",
+  "problemReturnToStoreHint": "Return the items to the pickup store as instructed by Agrimore.",
+  "emergencyBannerNote": "Calls open your phone dialer. Safety reports record an entry for the Agrimore team.",
+  "incidentNoteLabel": "What happened? (optional)",
+  "incidentNoteHint": "Add brief details if it is safe to do so",
+  "incidentLocationIncluded": "Includes your current order and GPS fix if available",
+  "incidentLocationUnavailable": "GPS fix unavailable — report will still be recorded",
+  "moneyNetRuleNote": "Weekly payout = Gross delivery earnings − COD cash held",
+  "moneySettlementHistoryTitle": "How COD cash is settled",
+  "moneySettlementHistoryBody": "COD cash you collect is deducted from your Monday statement, or you can hand over cash directly to the Agrimore team.",
+  "moneyOrderWaitingLine": "Waiting ({minutes}m): {amount}",
+  "@moneyOrderWaitingLine": {
+    "placeholders": {
+      "minutes": { "type": "int" },
+      "amount": { "type": "String" }
+    }
+  },
+  "moneyOrderDistanceLine": "Distance ({km} km): {amount}",
+  "@moneyOrderDistanceLine": {
+    "placeholders": {
+      "km": { "type": "String" },
+      "amount": { "type": "String" }
+    }
+  },
+  "statementFormulaNote": "Net payout = Gross earned − COD cash offset",
+  "statementCarryoverNote": "Remaining cash ({amount}) stays in your cash-in-hand balance for next week.",
+  "@statementCarryoverNote": {
+    "placeholders": {
+      "amount": { "type": "String" }
+    }
+  },
+  "statementHoldFixAction": "Review payout details",
+  "payoutSingleActiveNote": "Only one payout destination (bank account or UPI ID) is active per payout.",
+  "payoutMethodLabel": "Destination type",
+  "payoutBankMethod": "Bank account",
+  "payoutUpiMethod": "UPI ID",
+  "payoutConfirmAccount": "Confirm account number",
+  "payoutProblemAccountMismatch": "Account numbers do not match",
+  "payoutReviewTitle": "Review payout changes",
+  "payoutReviewSubtitle": "Submission is not bank verification. Your current destination remains active until the Agrimore team approves this request.",
+  "payoutCurrentDestination": "Current active destination",
+  "payoutProposedDestination": "Proposed new destination (pending review)",
+  "payoutEditDetails": "Edit details",
+  "payoutTimelineSubmitted": "Request submitted",
+  "payoutTimelineReview": "Agrimore team review",
+  "payoutTimelineApplied": "Applied to future payouts",
+  "historyTitle": "Delivery history",
+  "historySearchHint": "Search by order number (e.g. ORD-104)",
+  "historyDetailTitle": "Order details",
+  "historyTimelineTitle": "Delivery timeline",
+  "inboxFilterAll": "All",
+  "inboxFilterUnread": "Unread",
+  "inboxGroupToday": "Today",
+  "inboxGroupEarlier": "Earlier",
+  "inboxDestinationUnavailable": "This item is no longer available.",
+  "profileIdentitySection": "Identity & KYC (read-only)",
+  "profileIdentityNote": "Name, phone, Aadhaar and driving licence are verified by Agrimore. Contact support to request a correction.",
+  "profileContactSection": "Contact & address",
+  "profileVehicleSection": "Vehicle & documents",
+  "profileSupportSection": "Help & support",
+  "profileAccountSection": "Account actions",
+  "profileDeleteWarningTitle": "Before you request deletion",
+  "profileDeleteWarningBody": "You must have no active delivery, ₹0 COD cash in hand, and no unsettled earnings.",
+  "profileDeleteConfirmCheck": "I understand that deleting my account permanently removes my rider access.",
+  "a11yRouteToggleLabel": "Route view mode",
+  "a11yOnlineSwitchHint": "Double-tap to toggle work availability",
+  "locDisclosureBullet1": "Match you with nearby pickup orders while you are online",
+  "locDisclosureBullet2": "Share live delivery progress with the pickup store and customer",
+  "locDisclosureBullet3": "Location sharing stops immediately when you go offline",
+  "locBackgroundStep1": "Select Permissions → Location → Allow all the time so tracking continues when your screen locks during a delivery.",
+  "locBackgroundStep2": "On Xiaomi, Oppo, Vivo, Realme and Samsung phones, set Battery to Unrestricted so your phone does not pause active deliveries.",
+  "kycBadgeActionRequired": "Action required",
+  "kycBadgeSuspended": "Suspended",
+  "kycBadgeUnderReview": "Under review",
+  "vehicleBicycleSub": "Short trips · no licence required",
+  "vehicleMotorcycleSub": "Standard city deliveries",
+  "vehicleScooterSub": "Gearless two-wheeler",
+  "vehicleEvSub": "Electric two-wheeler",
+  "vehicleAutoSub": "Three-wheeler cargo / auto",
+  "vehicleMiniTruckSub": "Bulk & crate orders",
+  "profileAppearanceHeading": "Appearance",
+  "profileThemeSystem": "System",
+  "profileThemeLight": "Light",
+  "profileThemeDark": "Dark"
 }
+

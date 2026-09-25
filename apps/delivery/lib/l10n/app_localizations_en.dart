@@ -1671,4 +1671,718 @@ class AppLocalizationsEn extends AppLocalizations {
 
   @override
   String get goOnlineBlockedTitle => 'Can\'t go online yet';
+
+  @override
+  String get dsBrandName => 'AgriMore';
+
+  @override
+  String get dsBrandRole => 'DELIVERY PARTNER';
+
+  @override
+  String get dsRequired => 'required';
+
+  @override
+  String get dsOptional => '(optional)';
+
+  @override
+  String get dsLoading => 'Loading…';
+
+  @override
+  String get dsTryAgain => 'Try again';
+
+  @override
+  String get dsClose => 'Close';
+
+  @override
+  String get dsBack => 'Back';
+
+  @override
+  String get dsCancel => 'Cancel';
+
+  @override
+  String get dsSearchClear => 'Clear search';
+
+  @override
+  String get dsShowPassword => 'Show password';
+
+  @override
+  String get dsHidePassword => 'Hide password';
+
+  @override
+  String get dsStepCompleted => 'Completed';
+
+  @override
+  String get dsStepCurrent => 'Current';
+
+  @override
+  String get dsStepUpcoming => 'Upcoming';
+
+  @override
+  String get dsStepFailed => 'Needs attention';
+
+  @override
+  String dsStepOf(int current, int total) {
+    return 'Step $current of $total';
+  }
+
+  @override
+  String dsOtpFieldLabel(int length) {
+    return 'Verification code, $length digits';
+  }
+
+  @override
+  String dsFieldsNeedAttention(int count) {
+    String _temp0 = intl.Intl.pluralLogic(
+      count,
+      locale: localeName,
+      other: 'Check $count fields',
+      one: 'Check 1 field',
+    );
+    return '$_temp0';
+  }
+
+  @override
+  String get dsDiscardTitle => 'Discard changes?';
+
+  @override
+  String get dsDiscardBody => 'Your unsaved changes will be lost.';
+
+  @override
+  String get dsDiscard => 'Discard';
+
+  @override
+  String get dsKeepEditing => 'Keep editing';
+
+  @override
+  String get dsExpandHint => 'Tap to expand';
+
+  @override
+  String get dsCollapseHint => 'Tap to collapse';
+
+  @override
+  String get dsNoImage => 'No photo';
+
+  @override
+  String get dsImageFailed => 'Photo unavailable';
+
+  @override
+  String dsTabPosition(int index, int count) {
+    return 'Tab $index of $count';
+  }
+
+  @override
+  String get dsTestDataRibbon => 'TEST DATA · Local emulator';
+
+  @override
+  String get dsUnreadDot => 'Unread';
+
+  @override
+  String get dsSaved => 'Saved';
+
+  @override
+  String get dsSubmitting => 'Submitting…';
+
+  @override
+  String get appearanceTitle => 'Appearance';
+
+  @override
+  String get appearanceSystem => 'System';
+
+  @override
+  String get appearanceLight => 'Light';
+
+  @override
+  String get appearanceDark => 'Dark';
+
+  @override
+  String get appearanceSubtitle =>
+      'Match your phone or choose a theme for day and night riding';
+
+  @override
+  String get authCheckingSession => 'Checking your session…';
+
+  @override
+  String get authSigningOut => 'Signing out…';
+
+  @override
+  String get authTagline => 'Deliver farm-fresh orders in your city';
+
+  @override
+  String get authNewPartnerHeading => 'New to AgriMore Delivery?';
+
+  @override
+  String get authNewPartnerBody =>
+      'Register with your vehicle and documents to start delivering.';
+
+  @override
+  String regStepProgress(int current, int total) {
+    return 'Step $current of $total';
+  }
+
+  @override
+  String get regSaveExit => 'Cancel';
+
+  @override
+  String get regDiscardTitle => 'Leave registration?';
+
+  @override
+  String get regDiscardBody =>
+      'Your progress on this screen will be discarded.';
+
+  @override
+  String get regDiscardConfirm => 'Leave';
+
+  @override
+  String get regPhotoTake => 'Take photo';
+
+  @override
+  String get regPhotoGallery => 'Choose from gallery';
+
+  @override
+  String get regPhotoRetake => 'Retake';
+
+  @override
+  String get regPhotoReplace => 'Replace';
+
+  @override
+  String get regPhotoUploaded => 'Uploaded';
+
+  @override
+  String get regPhotoUploading => 'Uploading…';
+
+  @override
+  String get regPhotoFailed => 'Upload failed';
+
+  @override
+  String get regPayoutOptionalBadge => 'Optional';
+
+  @override
+  String get regPayoutWhyTitle => 'Why add payout details?';
+
+  @override
+  String get regPayoutWhyBody =>
+      'Your weekly earnings are sent every Monday to your bank account or UPI ID. You can also add or change this later.';
+
+  @override
+  String get regPayoutMethodBank => 'Bank account';
+
+  @override
+  String get regPayoutMethodUpi => 'UPI ID';
+
+  @override
+  String get regPayoutMethodSkip => 'Add later';
+
+  @override
+  String get regReviewSummaryTitle => 'Application summary';
+
+  @override
+  String get kycTimelineSubmitted => 'Application submitted';
+
+  @override
+  String get kycTimelineReview => 'Document & vehicle review';
+
+  @override
+  String get kycTimelineDecision => 'Approval decision';
+
+  @override
+  String get kycRefreshStatus => 'Refresh status';
+
+  @override
+  String get kycRefreshing => 'Checking status…';
+
+  @override
+  String get kycWhatToFix => 'What to fix';
+
+  @override
+  String get kycSuspensionDetails => 'Suspension details';
+
+  @override
+  String get kycSupportNote =>
+      'Contact Agrimore support if you have questions about your account status.';
+
+  @override
+  String get dashNavHome => 'Home';
+
+  @override
+  String get dashNavDeliveries => 'Deliveries';
+
+  @override
+  String get dashNavEarnings => 'Earnings';
+
+  @override
+  String get dashNavInbox => 'Inbox';
+
+  @override
+  String get dashNavProfile => 'Profile';
+
+  @override
+  String get dashAvailabilityLabel => 'Work availability';
+
+  @override
+  String get dashGoingOnline => 'Going online…';
+
+  @override
+  String get dashGoingOffline => 'Going offline…';
+
+  @override
+  String get dashOfflineBannerTitle => 'You have no internet connection';
+
+  @override
+  String get dashOfflineBannerBody =>
+      'Showing last saved data. Live offers require a connection.';
+
+  @override
+  String get dashCachedDataNote => 'Cached data · pull to refresh';
+
+  @override
+  String dashMultipleActiveWarning(int count) {
+    return '$count active deliveries assigned';
+  }
+
+  @override
+  String get dashMultipleActiveHint => 'Select an order below to continue';
+
+  @override
+  String get dashOpenOrder => 'Open order';
+
+  @override
+  String get dashCodLimitWarningTitle => 'COD cash limit reached';
+
+  @override
+  String dashCodLimitWarningBody(String amount) {
+    return 'Settle $amount cash with the Agrimore team to receive new cash-on-delivery offers. Prepaid orders continue.';
+  }
+
+  @override
+  String get locStep1Badge => 'Step 1 of 2 · Foreground & background location';
+
+  @override
+  String get locStep2Badge => 'Step 2 of 2 · Background reliability';
+
+  @override
+  String get locPurposeNearby => 'Match you with nearby pickup orders';
+
+  @override
+  String get locPurposeTracking =>
+      'Share live delivery progress with the store and customer';
+
+  @override
+  String get locPurposeStop =>
+      'Location sharing stops immediately when you go offline';
+
+  @override
+  String get locBatteryOemHint =>
+      'On Xiaomi, Oppo, Vivo, Realme and Samsung phones, set Battery to Unrestricted and allow Autostart so your phone does not stop location while you are on a delivery.';
+
+  @override
+  String get locReducedBannerTitle => 'Background location not set to Always';
+
+  @override
+  String get locReducedBannerBody =>
+      'If the app closes, location sharing may stop and take you offline.';
+
+  @override
+  String get locFixInSettings => 'Fix in Settings';
+
+  @override
+  String offerUrgentSeconds(int seconds) {
+    return 'Hurry · ${seconds}s left';
+  }
+
+  @override
+  String get offerAccepting => 'Accepting…';
+
+  @override
+  String get offerDeclining => 'Declining…';
+
+  @override
+  String get offerDeclineTitle => 'Decline this offer?';
+
+  @override
+  String get offerDeclineBody =>
+      'This order will be offered to another delivery partner.';
+
+  @override
+  String get offerDeclineConfirm => 'Decline offer';
+
+  @override
+  String get offerKeepOrder => 'Keep viewing';
+
+  @override
+  String get offerPrepaidBadge => 'PREPAID';
+
+  @override
+  String offerCodBadge(String amount) {
+    return 'COD · $amount';
+  }
+
+  @override
+  String get offerPrivacyNote =>
+      'Customer name, phone and full address are shown after you accept.';
+
+  @override
+  String activeOrderHeader(String number) {
+    return 'Order #$number';
+  }
+
+  @override
+  String get activePickupSection => 'Pickup store';
+
+  @override
+  String get activeDropSection => 'Customer drop-off';
+
+  @override
+  String get activeCallStore => 'Call store';
+
+  @override
+  String get activeCopyAddress => 'Copy address';
+
+  @override
+  String get activeAddressCopied => 'Address copied';
+
+  @override
+  String get activeInstructionsLabel => 'Delivery instructions';
+
+  @override
+  String activeCollectCashTitle(String amount) {
+    return 'Collect $amount cash from customer';
+  }
+
+  @override
+  String get activeCollectCashBody =>
+      'Count the cash before entering the 6-digit delivery verification code.';
+
+  @override
+  String get activePrepaidTitle => 'Prepaid — do not collect cash';
+
+  @override
+  String get activePrepaidBody => 'The customer has already paid online.';
+
+  @override
+  String get activeStepUpdating => 'Updating…';
+
+  @override
+  String get activeVerifyOtpAction => 'Enter delivery OTP';
+
+  @override
+  String get routeViewMap => 'Map';
+
+  @override
+  String get routeViewList => 'Route details';
+
+  @override
+  String get routeRefresh => 'Refresh route';
+
+  @override
+  String get routeRefreshing => 'Refreshing route…';
+
+  @override
+  String get routeLastUpdated => 'Updated just now';
+
+  @override
+  String get routeLiveGps => 'Live GPS';
+
+  @override
+  String get routeCachedBanner => 'Offline · showing last known route';
+
+  @override
+  String get routeCopyCoords => 'Copy coordinates';
+
+  @override
+  String get routeCoordsCopied => 'Coordinates copied';
+
+  @override
+  String get routeStepPickup => '1. Pickup';
+
+  @override
+  String get routeStepDrop => '2. Drop-off';
+
+  @override
+  String get waitTimerLabel => 'Waiting at store';
+
+  @override
+  String get waitTimerNote => 'Waiting time pay applies after the grace period';
+
+  @override
+  String get releaseReasonStoreClosed => 'Store is closed';
+
+  @override
+  String get releaseReasonLongWait => 'Order taking too long to prepare';
+
+  @override
+  String get releaseReasonVehicleProblem => 'Vehicle issue before pickup';
+
+  @override
+  String get releaseReasonOther => 'Other reason';
+
+  @override
+  String get releaseWarningNote =>
+      'Only available before you mark Picked up. Releasing returns the order to the dispatch queue.';
+
+  @override
+  String verifyCodReminder(String amount) {
+    return 'Confirm you collected $amount in cash before verifying';
+  }
+
+  @override
+  String verifyAttemptsRemaining(int count) {
+    String _temp0 = intl.Intl.pluralLogic(
+      count,
+      locale: localeName,
+      other: '$count attempts remaining',
+      one: '1 attempt remaining before temporary lock',
+    );
+    return '$_temp0';
+  }
+
+  @override
+  String get verifyLockedTitle => 'Verification temporarily locked';
+
+  @override
+  String get verifyContactSupport => 'Contact support';
+
+  @override
+  String get deliveredEarnedLabel => 'Estimated earnings';
+
+  @override
+  String get deliveredCodRecordedLabel => 'COD cash recorded';
+
+  @override
+  String get deliveredProofSaved => 'Delivery proof photo saved';
+
+  @override
+  String get proofUploadTitle => 'Proof of delivery photo';
+
+  @override
+  String get proofUploadHint =>
+      'Optional photo of the delivered package at the drop-off';
+
+  @override
+  String get proofUploading => 'Saving photo…';
+
+  @override
+  String get proofSavedBadge => 'Saved';
+
+  @override
+  String get problemNoteHint =>
+      'Describe what happened so the Agrimore team can help';
+
+  @override
+  String get problemReturnToStoreHint =>
+      'Return the items to the pickup store as instructed by Agrimore.';
+
+  @override
+  String get emergencyBannerNote =>
+      'Calls open your phone dialer. Safety reports record an entry for the Agrimore team.';
+
+  @override
+  String get incidentNoteLabel => 'What happened? (optional)';
+
+  @override
+  String get incidentNoteHint => 'Add brief details if it is safe to do so';
+
+  @override
+  String get incidentLocationIncluded =>
+      'Includes your current order and GPS fix if available';
+
+  @override
+  String get incidentLocationUnavailable =>
+      'GPS fix unavailable — report will still be recorded';
+
+  @override
+  String get moneyNetRuleNote =>
+      'Weekly payout = Gross delivery earnings − COD cash held';
+
+  @override
+  String get moneySettlementHistoryTitle => 'How COD cash is settled';
+
+  @override
+  String get moneySettlementHistoryBody =>
+      'COD cash you collect is deducted from your Monday statement, or you can hand over cash directly to the Agrimore team.';
+
+  @override
+  String moneyOrderWaitingLine(int minutes, String amount) {
+    return 'Waiting (${minutes}m): $amount';
+  }
+
+  @override
+  String moneyOrderDistanceLine(String km, String amount) {
+    return 'Distance ($km km): $amount';
+  }
+
+  @override
+  String get statementFormulaNote =>
+      'Net payout = Gross earned − COD cash offset';
+
+  @override
+  String statementCarryoverNote(String amount) {
+    return 'Remaining cash ($amount) stays in your cash-in-hand balance for next week.';
+  }
+
+  @override
+  String get statementHoldFixAction => 'Review payout details';
+
+  @override
+  String get payoutSingleActiveNote =>
+      'Only one payout destination (bank account or UPI ID) is active per payout.';
+
+  @override
+  String get payoutMethodLabel => 'Destination type';
+
+  @override
+  String get payoutBankMethod => 'Bank account';
+
+  @override
+  String get payoutUpiMethod => 'UPI ID';
+
+  @override
+  String get payoutConfirmAccount => 'Confirm account number';
+
+  @override
+  String get payoutProblemAccountMismatch => 'Account numbers do not match';
+
+  @override
+  String get payoutReviewTitle => 'Review payout changes';
+
+  @override
+  String get payoutReviewSubtitle =>
+      'Submission is not bank verification. Your current destination remains active until the Agrimore team approves this request.';
+
+  @override
+  String get payoutCurrentDestination => 'Current active destination';
+
+  @override
+  String get payoutProposedDestination =>
+      'Proposed new destination (pending review)';
+
+  @override
+  String get payoutEditDetails => 'Edit details';
+
+  @override
+  String get payoutTimelineSubmitted => 'Request submitted';
+
+  @override
+  String get payoutTimelineReview => 'Agrimore team review';
+
+  @override
+  String get payoutTimelineApplied => 'Applied to future payouts';
+
+  @override
+  String get historySearchHint => 'Search by order number (e.g. ORD-104)';
+
+  @override
+  String get historyDetailTitle => 'Order details';
+
+  @override
+  String get historyTimelineTitle => 'Delivery timeline';
+
+  @override
+  String get inboxFilterAll => 'All';
+
+  @override
+  String get inboxFilterUnread => 'Unread';
+
+  @override
+  String get inboxGroupToday => 'Today';
+
+  @override
+  String get inboxGroupEarlier => 'Earlier';
+
+  @override
+  String get inboxDestinationUnavailable => 'This item is no longer available.';
+
+  @override
+  String get profileIdentitySection => 'Identity & KYC (read-only)';
+
+  @override
+  String get profileIdentityNote =>
+      'Name, phone, Aadhaar and driving licence are verified by Agrimore. Contact support to request a correction.';
+
+  @override
+  String get profileContactSection => 'Contact & address';
+
+  @override
+  String get profileVehicleSection => 'Vehicle & documents';
+
+  @override
+  String get profileSupportSection => 'Help & support';
+
+  @override
+  String get profileAccountSection => 'Account actions';
+
+  @override
+  String get profileDeleteWarningTitle => 'Before you request deletion';
+
+  @override
+  String get profileDeleteWarningBody =>
+      'You must have no active delivery, ₹0 COD cash in hand, and no unsettled earnings.';
+
+  @override
+  String get profileDeleteConfirmCheck =>
+      'I understand that deleting my account permanently removes my rider access.';
+
+  @override
+  String get a11yRouteToggleLabel => 'Route view mode';
+
+  @override
+  String get a11yOnlineSwitchHint => 'Double-tap to toggle work availability';
+
+  @override
+  String get locDisclosureBullet1 =>
+      'Match you with nearby pickup orders while you are online';
+
+  @override
+  String get locDisclosureBullet2 =>
+      'Share live delivery progress with the pickup store and customer';
+
+  @override
+  String get locDisclosureBullet3 =>
+      'Location sharing stops immediately when you go offline';
+
+  @override
+  String get locBackgroundStep1 =>
+      'Select Permissions → Location → Allow all the time so tracking continues when your screen locks during a delivery.';
+
+  @override
+  String get locBackgroundStep2 =>
+      'On Xiaomi, Oppo, Vivo, Realme and Samsung phones, set Battery to Unrestricted so your phone does not pause active deliveries.';
+
+  @override
+  String get kycBadgeActionRequired => 'Action required';
+
+  @override
+  String get kycBadgeSuspended => 'Suspended';
+
+  @override
+  String get kycBadgeUnderReview => 'Under review';
+
+  @override
+  String get vehicleBicycleSub => 'Short trips · no licence required';
+
+  @override
+  String get vehicleMotorcycleSub => 'Standard city deliveries';
+
+  @override
+  String get vehicleScooterSub => 'Gearless two-wheeler';
+
+  @override
+  String get vehicleEvSub => 'Electric two-wheeler';
+
+  @override
+  String get vehicleAutoSub => 'Three-wheeler cargo / auto';
+
+  @override
+  String get vehicleMiniTruckSub => 'Bulk & crate orders';
+
+  @override
+  String get profileAppearanceHeading => 'Appearance';
+
+  @override
+  String get profileThemeSystem => 'System';
+
+  @override
+  String get profileThemeLight => 'Light';
+
+  @override
+  String get profileThemeDark => 'Dark';
 }
