@@ -413,7 +413,7 @@ class _PayoutAccountScreenState extends State<PayoutAccountScreen> {
         children: [
           Row(
             children: [
-              Icon(Icons.hourglass_top_rounded, color: tokens.textSecondary, size: 20),
+              Icon(SaIcons.info, color: tokens.textSecondary, size: SaTokens.iconControl),
               const SizedBox(width: SaTokens.space8),
               Expanded(
                 child: Text(
