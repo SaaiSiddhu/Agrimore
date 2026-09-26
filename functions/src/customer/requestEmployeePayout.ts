@@ -34,6 +34,10 @@ export const requestEmployeePayout = functions.https.onCall(async (data, context
       "Only approved employees can request a payout"
     );
   }
+  const employeeData = employeeSnap.data() ?? {};
+  const payoutMethod = employeeData.payoutMethod ?? null;
+  const accountNumber = employeeData.accountNumber ?? null;
+  const upiId = employeeData.upiId ?? null;
 
   const walletRef = db.collection("wallets").doc(uid);
   const walletTransactionRef = db.collection("wallet_transactions").doc();
@@ -85,6 +89,16 @@ export const requestEmployeePayout = functions.https.onCall(async (data, context
       employeeId: uid,
       amount,
       status: "requested",
+      // Snapshot the destination at request time (same rationale as
+      // walletTransactionRef's balanceAfter/coinsAfter above): apps/employee's
+      // payout_history_screen.dart and payout_details_screen.dart read these
+      // exact field names directly off this document with no live join, so a
+      // later change to the associate's registered payout account must not
+      // silently rewrite where an already-completed payout appears to have
+      // gone.
+      payoutMethod,
+      accountNumber,
+      upiId,
       createdAt: admin.firestore.FieldValue.serverTimestamp(),
     });
   });
