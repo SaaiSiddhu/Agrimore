@@ -41,8 +41,10 @@
 // only incrementer of wallets/{employeeUid}.balance for this purpose.
 
 import * as functions from "firebase-functions/v1";
+import { onCall, HttpsError } from "firebase-functions/v2/https";
 import * as admin from "firebase-admin";
 import { FieldValue } from "firebase-admin/firestore";
+import { resolveIsAdmin } from "../admin/complianceGate";
 
 // Matches OrderModel.isDelivered exactly (packages/agrimore_core/lib/models/order_model.dart),
 // which treats 'delivered' and 'completed' as equivalent terminal states — NOT just the
@@ -149,6 +151,104 @@ export function resolveCommissionRate(params: {
   return { resolved: true, rate: configuredRaw, source: "configured_mode_rate" };
 }
 
+// Extracted from payEmployeeCommissionOnDelivery's own transaction body
+// (Phase ADMR-19) so retryCommissionException below can apply an identical,
+// atomic payment — no duplicated transaction logic between the automatic
+// trigger and an admin-triggered retry of a previously-unresolvable order.
+export function applyEmployeeCommissionPayment(
+  tx: FirebaseFirestore.Transaction,
+  params: {
+    orderRef: FirebaseFirestore.DocumentReference;
+    walletRef: FirebaseFirestore.DocumentReference;
+    walletTransactionRef: FirebaseFirestore.DocumentReference;
+    walletSnap: FirebaseFirestore.DocumentSnapshot;
+    employeeUid: string;
+    orderId: string;
+    orderNumber: unknown;
+    orderMode: "B2C" | "B2B";
+    commissionRate: number;
+    rateSource: "employee_override" | "configured_mode_rate";
+    grossAmount: number;
+  }
+): void {
+  const {
+    orderRef, walletRef, walletTransactionRef, walletSnap, employeeUid,
+    orderId, orderNumber, orderMode, commissionRate, rateSource, grossAmount,
+  } = params;
+  const commissionAmount = Math.round(grossAmount * (commissionRate / 100) * 100) / 100;
+
+  if (commissionAmount <= 0) {
+    // A validly-resolved (necessarily > 0) rate applied to a
+    // zero-or-negative order total — a genuine, rare edge case (e.g. a
+    // fully-discounted order), not an unresolved rate. This order really
+    // does owe nothing further, so it's fine to mark it handled.
+    tx.update(orderRef, {
+      commissionPaid: true,
+      commissionAmount: 0,
+      commissionPaidAt: FieldValue.serverTimestamp(),
+    });
+    return;
+  }
+
+  const currentBalance = (walletSnap.data()?.balance as number | undefined) ?? 0;
+  const balanceAfter = currentBalance + commissionAmount;
+
+  tx.set(
+    walletRef,
+    {
+      userId: employeeUid,
+      balance: FieldValue.increment(commissionAmount),
+      lifetimeEarnings: FieldValue.increment(commissionAmount),
+      isActive: true,
+      updatedAt: FieldValue.serverTimestamp(),
+      // Phase ADMR-19 fix: the previous `walletSnap.exists ? ... :
+      // FieldValue.serverTimestamp()` crashed this whole transaction
+      // ("Cannot use \"undefined\" as a Firestore value") the moment a
+      // wallet existed WITHOUT a createdAt field — a real, reachable state:
+      // requestEmployeePayout.ts's own {merge: true} wallet write never
+      // sets createdAt either, so an associate whose first-ever wallet
+      // touch is a payout REQUEST (debit) before their first commission
+      // CREDIT would hit this exact crash. Checking the field itself,
+      // not just document existence, covers both "no document" and
+      // "document exists but this field was never set".
+      createdAt: walletSnap.data()?.createdAt ?? FieldValue.serverTimestamp(),
+    },
+    { merge: true }
+  );
+
+  // Phase 16D-1, Workstream 2c: orderMode + the resolved rate/source
+  // recorded in metadata so retail and B2B earnings are distinguishable in
+  // the wallet ledger and in any future statement — not just inferable
+  // from the order itself.
+  tx.set(walletTransactionRef, {
+    walletId: employeeUid,
+    userId: employeeUid,
+    type: "credit",
+    source: "commission",
+    amount: commissionAmount,
+    coins: 0,
+    balanceAfter,
+    coinsAfter: walletSnap.data()?.coins ?? 0,
+    orderId,
+    description: `Commission on ${orderMode} order ${orderNumber || orderId}`,
+    referenceId: orderId,
+    createdAt: FieldValue.serverTimestamp(),
+    expiresAt: null,
+    metadata: {
+      commissionRate,
+      grossAmount,
+      orderMode,
+      rateSource,
+    },
+  });
+
+  tx.update(orderRef, {
+    commissionPaid: true,
+    commissionAmount,
+    commissionPaidAt: FieldValue.serverTimestamp(),
+  });
+}
+
 export const payEmployeeCommissionOnDelivery = functions.firestore
   .document("orders/{orderId}")
   .onUpdate(async (change, context) => {
@@ -225,6 +325,14 @@ export const payEmployeeCommissionOnDelivery = functions.firestore
           // silently marked as "handled" with nothing paid. See the
           // module comment: silently inventing a percentage on real
           // money is worse than paying nothing and flagging it.
+          //
+          // Phase ADMR-19: `status: "unresolved"` makes this record
+          // findable by the admin app's Commission Exceptions screen and by
+          // retryCommissionException below — before this phase, nothing in
+          // the codebase ever read this collection at all (confirmed by
+          // exhaustive grep), so "retryable once configured" was aspirational
+          // text describing no actual mechanism; this field plus that
+          // callable are what make the claim true.
           tx.set(db.collection("commission_exceptions").doc(), {
             orderId,
             orderNumber: after.orderNumber || null,
@@ -232,6 +340,7 @@ export const payEmployeeCommissionOnDelivery = functions.firestore
             orderMode,
             total: (after.total as number | undefined) ?? null,
             reason: resolution.reason,
+            status: "unresolved",
             createdAt: FieldValue.serverTimestamp(),
           });
           return;
@@ -257,70 +366,11 @@ export const payEmployeeCommissionOnDelivery = functions.firestore
           0,
           ((after.subtotal as number | undefined) ?? 0) - ((after.discount as number | undefined) ?? 0)
         );
-        const commissionAmount = Math.round(grossAmount * (commissionRate / 100) * 100) / 100;
 
-        if (commissionAmount <= 0) {
-          // A validly-resolved (necessarily > 0) rate applied to a
-          // zero-or-negative order total — a genuine, rare edge case
-          // (e.g. a fully-discounted order), not an unresolved rate. This
-          // order really does owe nothing further, so it's fine to mark
-          // it handled.
-          tx.update(orderRef, {
-            commissionPaid: true,
-            commissionAmount: 0,
-            commissionPaidAt: FieldValue.serverTimestamp(),
-          });
-          return;
-        }
-
-        const currentBalance = (walletSnap.data()?.balance as number | undefined) ?? 0;
-        const balanceAfter = currentBalance + commissionAmount;
-
-        tx.set(
-          walletRef,
-          {
-            userId: employeeUid,
-            balance: FieldValue.increment(commissionAmount),
-            lifetimeEarnings: FieldValue.increment(commissionAmount),
-            isActive: true,
-            updatedAt: FieldValue.serverTimestamp(),
-            createdAt: walletSnap.exists
-              ? walletSnap.data()?.createdAt
-              : FieldValue.serverTimestamp(),
-          },
-          { merge: true }
-        );
-
-        // Phase 16D-1, Workstream 2c: orderMode + the resolved rate/source
-        // recorded in metadata so retail and B2B earnings are
-        // distinguishable in the wallet ledger and in any future
-        // statement — not just inferable from the order itself.
-        tx.set(walletTransactionRef, {
-          walletId: employeeUid,
-          userId: employeeUid,
-          type: "credit",
-          source: "commission",
-          amount: commissionAmount,
-          coins: 0,
-          balanceAfter,
-          coinsAfter: walletSnap.data()?.coins ?? 0,
-          orderId,
-          description: `Commission on ${orderMode} order ${after.orderNumber || orderId}`,
-          referenceId: orderId,
-          createdAt: FieldValue.serverTimestamp(),
-          expiresAt: null,
-          metadata: {
-            commissionRate,
-            grossAmount,
-            orderMode,
-            rateSource,
-          },
-        });
-
-        tx.update(orderRef, {
-          commissionPaid: true,
-          commissionAmount,
-          commissionPaidAt: FieldValue.serverTimestamp(),
+        applyEmployeeCommissionPayment(tx, {
+          orderRef, walletRef, walletTransactionRef, walletSnap,
+          employeeUid, orderId, orderNumber: after.orderNumber,
+          orderMode, commissionRate, rateSource, grossAmount,
         });
       });
 
@@ -333,6 +383,145 @@ export const payEmployeeCommissionOnDelivery = functions.firestore
 
     return null;
   });
+
+// ============================================================
+//  retryCommissionException (Phase ADMR-19)
+// ============================================================
+//
+// PROBLEM: payEmployeeCommissionOnDelivery only fires on the TRANSITION
+// into a delivered-equivalent status (`before` not delivered, `after`
+// delivered) — an already-delivered order whose commission_exceptions
+// record was written because no rate could be resolved has no way to
+// naturally re-trigger: nothing else ever flips `orderStatus` away from
+// delivered and back. Before this phase, nothing anywhere read
+// commission_exceptions at all (confirmed by exhaustive grep) despite
+// firestore.rules already gating it `allow read: if isAdmin()` "for admin
+// visibility" — the rule anticipated a screen that was never built. The
+// only working recovery path in the repository was
+// functions/scripts/phase_process_pending_commissions.js, a manual,
+// --apply-gated script that talks directly to the LIVE Firestore REST API
+// with the runner's own firebase-tools OAuth token and performs three
+// separate, non-atomic REST calls (wallet PATCH, wallet_transactions POST,
+// order PATCH) instead of one transaction — not something this skill's own
+// rules permit running, not discoverable by an admin, and not atomic.
+//
+// FIX: an admin-only callable that re-resolves the rate against CURRENT
+// employees/settings data and, if resolvable, applies payment through the
+// exact same applyEmployeeCommissionPayment() the automatic trigger uses —
+// one atomic transaction, no duplicated logic. Safe to call repeatedly:
+// re-checks the exception's own status and the order's live commissionPaid
+// flag inside the transaction before doing anything.
+export const retryCommissionException = onCall(
+  { minInstances: 0, memory: "256MiB" as const },
+  async (request) => {
+    if (!request.auth) {
+      throw new HttpsError("unauthenticated", "Sign in required");
+    }
+    const isAdmin = await resolveIsAdmin(
+      admin.firestore(),
+      request.auth.uid,
+      request.auth.token.admin === true
+    );
+    if (!isAdmin) {
+      throw new HttpsError("permission-denied", "Admins only");
+    }
+    const adminUid = request.auth.uid;
+
+    const exceptionId =
+      typeof (request.data as Record<string, unknown> | undefined)?.exceptionId === "string"
+        ? (request.data as Record<string, string>).exceptionId.trim()
+        : "";
+    if (!exceptionId) {
+      throw new HttpsError("invalid-argument", "exceptionId is required");
+    }
+
+    const db = admin.firestore();
+    const exceptionRef = db.collection("commission_exceptions").doc(exceptionId);
+
+    return db.runTransaction(async (tx) => {
+      const exceptionSnap = await tx.get(exceptionRef);
+      if (!exceptionSnap.exists) {
+        throw new HttpsError("not-found", "Exception record not found");
+      }
+      const exception = exceptionSnap.data()!;
+      if (exception.status === "resolved") {
+        return { success: true, alreadyResolved: true };
+      }
+
+      const orderId = String(exception.orderId);
+      const employeeUid = String(exception.employeeUid);
+      const orderMode: "B2C" | "B2B" = exception.orderMode === "B2B" ? "B2B" : "B2C";
+
+      const orderRef = db.collection("orders").doc(orderId);
+      const employeeRef = db.collection("employees").doc(employeeUid);
+      const walletRef = db.collection("wallets").doc(employeeUid);
+      const walletTransactionRef = db.collection("wallet_transactions").doc();
+      const settingsRef = db.collection("settings").doc("commission");
+
+      const [orderSnap, employeeSnap, walletSnap, settingsSnap] = await Promise.all([
+        tx.get(orderRef),
+        tx.get(employeeRef),
+        tx.get(walletRef),
+        tx.get(settingsRef),
+      ]);
+
+      if (!orderSnap.exists) {
+        throw new HttpsError("not-found", "The order this exception refers to no longer exists");
+      }
+      const order = orderSnap.data()!;
+
+      if (order.commissionPaid === true) {
+        // Resolved some other way since this exception was recorded (e.g.
+        // the manual reconciliation script) — close the loop here too
+        // rather than leaving a stale "unresolved" row for an already-paid
+        // order.
+        tx.update(exceptionRef, {
+          status: "resolved",
+          resolvedAt: FieldValue.serverTimestamp(),
+          resolvedBy: adminUid,
+          resolution: "already_paid_elsewhere",
+        });
+        return { success: true, alreadyResolved: true };
+      }
+
+      const resolution = resolveCommissionRate({
+        employeeOverride: employeeSnap.data()?.commissionRate,
+        settings: settingsSnap.data(),
+        orderMode,
+      });
+
+      if (!resolution.resolved) {
+        throw new HttpsError(
+          "failed-precondition",
+          `Still unresolved: ${resolution.reason}`,
+          { reason: resolution.reason }
+        );
+      }
+
+      const grossAmount = Math.max(
+        0,
+        (Number(order.subtotal) || 0) - (Number(order.discount) || 0)
+      );
+
+      applyEmployeeCommissionPayment(tx, {
+        orderRef, walletRef, walletTransactionRef, walletSnap,
+        employeeUid, orderId, orderNumber: order.orderNumber,
+        orderMode, commissionRate: resolution.rate, rateSource: resolution.source,
+        grossAmount,
+      });
+
+      tx.update(exceptionRef, {
+        status: "resolved",
+        resolvedAt: FieldValue.serverTimestamp(),
+        resolvedBy: adminUid,
+        resolvedRate: resolution.rate,
+        resolvedRateSource: resolution.source,
+      });
+
+      return { success: true, alreadyResolved: false };
+    });
+  }
+);
 
 // ============================================================
 //  reverseEmployeeCommissionOnCancellation (Phase FIX-4B, N-9)

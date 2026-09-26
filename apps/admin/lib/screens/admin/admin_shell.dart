@@ -142,6 +142,12 @@ class _AdminShellState extends State<AdminShell> {
       'Rider Support',
       AdminRoutes.riderSupport,
     ),
+    // ADMR-19. Appended at the end, same index-stability rule.
+    _NavItem(
+      Icons.warning_amber_rounded,
+      'Commission Exceptions',
+      AdminRoutes.commissionExceptions,
+    ),
   ];
 
   int get _currentIndex {

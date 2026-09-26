@@ -42,6 +42,7 @@ import '../screens/admin/employees/employee_management_screen.dart';
 import '../screens/admin/employees/add_employee_screen.dart';
 import '../screens/admin/employees/employee_payouts_screen.dart';
 import '../screens/admin/employees/employee_payout_account_review_screen.dart';
+import '../screens/admin/employees/commission_exceptions_screen.dart';
 import '../screens/admin/sellers/seller_payouts_screen.dart';
 import '../screens/admin/employees/employee_payout_detail_screen.dart';
 import '../screens/admin/benefit_program/compliance_control_screen.dart';
@@ -131,6 +132,9 @@ class AdminRoutes {
   static const String employeePayouts = '/employee-payouts';
   static const String employeePayoutDetail = '/employee-payouts/:id';
   static const String employeePayoutAccountReview = '/employee-payout-account-review';
+  // ADMR-19: delivered orders whose commission rate could not be resolved —
+  // see functions/src/customer/employeeCommission.ts's retryCommissionException.
+  static const String commissionExceptions = '/commission-exceptions';
 
   // Customer Product Benefit Program — compliance & feature-flag control
   // plane (Phase A). Appended at the end, mirroring D5's rule for
@@ -542,6 +546,13 @@ class AppRouter {
               name: 'employee-payout-account-review',
               pageBuilder: (context, state) =>
                   _buildPage(const EmployeePayoutAccountReviewScreen(), state),
+            ),
+
+            GoRoute(
+              path: AdminRoutes.commissionExceptions,
+              name: 'commission-exceptions',
+              pageBuilder: (context, state) =>
+                  _buildPage(const CommissionExceptionsScreen(), state),
             ),
 
             GoRoute(

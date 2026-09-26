@@ -122,6 +122,7 @@ export { notifyFollowersOnNewProduct } from "./customer/sellerFollowNotification
 export {
   payEmployeeCommissionOnDelivery,
   reverseEmployeeCommissionOnCancellation,
+  retryCommissionException,
 } from "./customer/employeeCommission";
 export { requestEmployeePayout } from "./customer/requestEmployeePayout";
 // Phase ADMR-3: the only path for an admin to review a payout request —
