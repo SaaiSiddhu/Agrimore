@@ -163,7 +163,16 @@ class _RewardsScreenState extends State<RewardsScreen> {
                             SizedBox(height: 10),
                             Text('No rewards yet', style: TextStyle(fontSize: 20, fontWeight: FontWeight.w900, color: Color(0xFF111827))),
                             SizedBox(height: 8),
-                            Text('Place an order to win scratch cards!', style: TextStyle(fontSize: 14, color: Color(0xFF6B7280))),
+                            // ADMR-22: the previous copy here asserted a specific
+                            // shopping action would result in a scratch card — a
+                            // promise nothing in the backend keeps. Exhaustive grep
+                            // (functions/src) found exactly one file touching
+                            // scratchCards at all: claimScratchCard.ts, the
+                            // claim/redemption side only. No automated process
+                            // grants one for any activity today. See ADMR-9's own
+                            // admin-side disclosure of the same root cause. This
+                            // copy makes no claim about what triggers a card.
+                            Text('Scratch cards will show up here when you\'re awarded one.', style: TextStyle(fontSize: 14, color: Color(0xFF6B7280))),
                           ],
                         ),
                       )
