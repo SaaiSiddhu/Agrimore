@@ -33,6 +33,10 @@ import 'package:delivery/screens/orders/active_order_screen.dart';
 import 'package:delivery/screens/orders/delivery_problem_panel.dart';
 import 'package:delivery/screens/profile/identity_change_screen.dart';
 import 'package:delivery/screens/profile/rider_profile_screen.dart';
+import 'package:delivery/screens/support/help_support_screen.dart';
+import 'package:delivery/screens/support/submit_support_request_screen.dart';
+import 'package:delivery/screens/support/support_request_status_screen.dart';
+import 'package:delivery/support/rider_support.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:integration_test/integration_test.dart';
@@ -883,7 +887,58 @@ void main() {
       ),
       brightness: Brightness.dark,
     );
+
+    // 11d. DLVSUP1: Help & support topic list, the submit-a-request form,
+    // and the request-status timeline for a seen (not yet closed) ticket.
+    await shot(tester, '27_help_support_light', const HelpSupportScreen());
+    await shot(
+      tester,
+      '28_submit_support_request_light',
+      SubmitSupportRequestScreen(
+        category: kSupportCategoryDeliveryIssue,
+        backend: _FakeSupportBackend(),
+      ),
+    );
+    await shot(
+      tester,
+      '29_support_request_status_dark',
+      SupportRequestStatusScreen(
+        ticketId: 'r-tour_req1',
+        backend: _FakeSupportBackend(
+          current: SupportTicket(
+            id: 'r-tour_req1',
+            category: kSupportCategoryDeliveryIssue,
+            message: 'The customer was not reachable at the address.',
+            status: SupportTicketStatus.seen,
+            createdAt: DateTime(2026, 9, 27, 10, 24),
+            seenAt: DateTime(2026, 9, 27, 13, 12),
+          ),
+        ),
+      ),
+      brightness: Brightness.dark,
+    );
   });
+}
+
+class _FakeSupportBackend implements RiderSupportBackend {
+  _FakeSupportBackend({this.current});
+  final SupportTicket? current;
+  @override
+  String? get currentUid => 'r-tour';
+  @override
+  Future<String> uploadAttachment(String requestId, Uint8List bytes, String contentType) async =>
+      'support_attachments/r-tour/$requestId.jpg';
+  @override
+  Future<String> submit({
+    required String requestId,
+    required String category,
+    required String message,
+    RelatedTo? relatedTo,
+    String? attachmentPath,
+  }) async =>
+      'r-tour_$requestId';
+  @override
+  Stream<SupportTicket?> ticket(String ticketId) => Stream.value(current);
 }
 
 class _FakeIdentityBackend implements RiderIdentityBackend {

@@ -539,6 +539,122 @@
   "@profileSupport": {
     "description": "Section"
   },
+  "profileGetHelp": "Get help",
+  "@profileGetHelp": {
+    "description": "Button opening the Help & support screen"
+  },
+  "helpSupportSubtitle": "Get help for delivery, earnings, account and documents. Call support, or submit a request and we'll get back to you.",
+  "@helpSupportSubtitle": {
+    "description": "Help & support screen subtitle"
+  },
+  "helpSupportQuestion": "What do you need help with?",
+  "@helpSupportQuestion": {
+    "description": "Help & support screen heading"
+  },
+  "helpTopicDeliveryIssue": "Delivery issue",
+  "@helpTopicDeliveryIssue": {
+    "description": "Support category"
+  },
+  "helpTopicDeliveryIssueSub": "Report a problem with an order",
+  "@helpTopicDeliveryIssueSub": {
+    "description": "Support category subtitle"
+  },
+  "helpTopicEarningsPayouts": "Earnings & payouts",
+  "@helpTopicEarningsPayouts": {
+    "description": "Support category"
+  },
+  "helpTopicEarningsPayoutsSub": "Questions about a payout or statement",
+  "@helpTopicEarningsPayoutsSub": {
+    "description": "Support category subtitle"
+  },
+  "helpTopicAccountDocuments": "Account & documents",
+  "@helpTopicAccountDocuments": {
+    "description": "Support category"
+  },
+  "helpTopicAccountDocumentsSub": "Request support",
+  "@helpTopicAccountDocumentsSub": {
+    "description": "Support category subtitle"
+  },
+  "helpImmediateDanger": "Immediate danger?",
+  "@helpImmediateDanger": {
+    "description": "Emergency row title on the Help & support screen"
+  },
+  "supportSubmitTitle": "Submit a request",
+  "@supportSubmitTitle": {
+    "description": "Screen title"
+  },
+  "supportCategoryLabel": "Category",
+  "@supportCategoryLabel": {
+    "description": "Field label"
+  },
+  "supportMessageLabel": "Message",
+  "@supportMessageLabel": {
+    "description": "Field label"
+  },
+  "supportMessageHint": "Describe what you need help with",
+  "@supportMessageHint": {
+    "description": "Field hint"
+  },
+  "supportAttachmentLabel": "Attachment (optional)",
+  "@supportAttachmentLabel": {
+    "description": "Field label"
+  },
+  "supportAddAttachment": "Add a photo",
+  "@supportAddAttachment": {
+    "description": "Button"
+  },
+  "supportRemoveAttachment": "Remove",
+  "@supportRemoveAttachment": {
+    "description": "Button"
+  },
+  "supportAttachmentFailed": "Could not attach that file. You can still submit without it.",
+  "@supportAttachmentFailed": {
+    "description": "Toast when the attachment upload fails"
+  },
+  "supportSubmitButton": "Submit request",
+  "@supportSubmitButton": {
+    "description": "Button"
+  },
+  "errSupportMessage": "Write at least 3 characters (up to 500).",
+  "@errSupportMessage": {
+    "description": "Field validation error"
+  },
+  "supportStatusTitle": "Request status",
+  "@supportStatusTitle": {
+    "description": "Screen title"
+  },
+  "supportStatusSubmitted": "Submitted",
+  "@supportStatusSubmitted": {
+    "description": "Status timeline label"
+  },
+  "supportStatusSeen": "Seen",
+  "@supportStatusSeen": {
+    "description": "Status timeline label"
+  },
+  "supportStatusClosed": "Closed",
+  "@supportStatusClosed": {
+    "description": "Status timeline label"
+  },
+  "supportStatusSubmittedBody": "Your request has been recorded.",
+  "@supportStatusSubmittedBody": {
+    "description": "Status timeline body"
+  },
+  "supportStatusSeenBody": "Your request has been viewed.",
+  "@supportStatusSeenBody": {
+    "description": "Status timeline body"
+  },
+  "supportStatusClosedBody": "Request closed. View the outcome below.",
+  "@supportStatusClosedBody": {
+    "description": "Status timeline body"
+  },
+  "supportOutcomeLabel": "Outcome",
+  "@supportOutcomeLabel": {
+    "description": "Field label, shown once a request is closed"
+  },
+  "supportNewRequest": "New request",
+  "@supportNewRequest": {
+    "description": "Button"
+  },
   "profileAccount": "Account",
   "@profileAccount": {
     "description": "Section"

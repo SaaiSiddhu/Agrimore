@@ -312,6 +312,22 @@ service firebase.storage {
     }
 
     // ============================================
+    // RIDER SUPPORT TICKET ATTACHMENTS (Phase DLVSUP1)
+    // ============================================
+    // Mirrors delivery_documents' owner-write/size/image-only shape rather
+    // than opening a laxer new path (the FIX-11-hardened convention). An
+    // attachment is uploaded once, at submission time, before the ticket
+    // doc itself exists (submitSupportRequest takes the path as an already-
+    // uploaded string) -- no update, since a ticket's own record is
+    // immutable from the rider's side too; only an admin may delete one.
+    match /support_attachments/{riderId}/{fileName} {
+      allow read: if isAuthenticated() && (request.auth.uid == riderId || isAdmin());
+      allow create: if isAuthenticated() && request.auth.uid == riderId && isValidFileSize() && isImage();
+      allow update: if false;
+      allow delete: if isAuthenticated() && isAdmin();
+    }
+
+    // ============================================
     // BUSINESS POST IMAGES (Phase BUSINESS-NETWORK-2, slice 2)
     // ============================================
     // Mirrors product_images/{fileName} above exactly: public read, write

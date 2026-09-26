@@ -880,6 +880,180 @@ abstract class AppLocalizations {
   /// **'Help and support'**
   String get profileSupport;
 
+  /// Button opening the Help & support screen
+  ///
+  /// In en, this message translates to:
+  /// **'Get help'**
+  String get profileGetHelp;
+
+  /// Help & support screen subtitle
+  ///
+  /// In en, this message translates to:
+  /// **'Get help for delivery, earnings, account and documents. Call support, or submit a request and we\'ll get back to you.'**
+  String get helpSupportSubtitle;
+
+  /// Help & support screen heading
+  ///
+  /// In en, this message translates to:
+  /// **'What do you need help with?'**
+  String get helpSupportQuestion;
+
+  /// Support category
+  ///
+  /// In en, this message translates to:
+  /// **'Delivery issue'**
+  String get helpTopicDeliveryIssue;
+
+  /// Support category subtitle
+  ///
+  /// In en, this message translates to:
+  /// **'Report a problem with an order'**
+  String get helpTopicDeliveryIssueSub;
+
+  /// Support category
+  ///
+  /// In en, this message translates to:
+  /// **'Earnings & payouts'**
+  String get helpTopicEarningsPayouts;
+
+  /// Support category subtitle
+  ///
+  /// In en, this message translates to:
+  /// **'Questions about a payout or statement'**
+  String get helpTopicEarningsPayoutsSub;
+
+  /// Support category
+  ///
+  /// In en, this message translates to:
+  /// **'Account & documents'**
+  String get helpTopicAccountDocuments;
+
+  /// Support category subtitle
+  ///
+  /// In en, this message translates to:
+  /// **'Request support'**
+  String get helpTopicAccountDocumentsSub;
+
+  /// Emergency row title on the Help & support screen
+  ///
+  /// In en, this message translates to:
+  /// **'Immediate danger?'**
+  String get helpImmediateDanger;
+
+  /// Screen title
+  ///
+  /// In en, this message translates to:
+  /// **'Submit a request'**
+  String get supportSubmitTitle;
+
+  /// Field label
+  ///
+  /// In en, this message translates to:
+  /// **'Category'**
+  String get supportCategoryLabel;
+
+  /// Field label
+  ///
+  /// In en, this message translates to:
+  /// **'Message'**
+  String get supportMessageLabel;
+
+  /// Field hint
+  ///
+  /// In en, this message translates to:
+  /// **'Describe what you need help with'**
+  String get supportMessageHint;
+
+  /// Field label
+  ///
+  /// In en, this message translates to:
+  /// **'Attachment (optional)'**
+  String get supportAttachmentLabel;
+
+  /// Button
+  ///
+  /// In en, this message translates to:
+  /// **'Add a photo'**
+  String get supportAddAttachment;
+
+  /// Button
+  ///
+  /// In en, this message translates to:
+  /// **'Remove'**
+  String get supportRemoveAttachment;
+
+  /// Toast when the attachment upload fails
+  ///
+  /// In en, this message translates to:
+  /// **'Could not attach that file. You can still submit without it.'**
+  String get supportAttachmentFailed;
+
+  /// Button
+  ///
+  /// In en, this message translates to:
+  /// **'Submit request'**
+  String get supportSubmitButton;
+
+  /// Field validation error
+  ///
+  /// In en, this message translates to:
+  /// **'Write at least 3 characters (up to 500).'**
+  String get errSupportMessage;
+
+  /// Screen title
+  ///
+  /// In en, this message translates to:
+  /// **'Request status'**
+  String get supportStatusTitle;
+
+  /// Status timeline label
+  ///
+  /// In en, this message translates to:
+  /// **'Submitted'**
+  String get supportStatusSubmitted;
+
+  /// Status timeline label
+  ///
+  /// In en, this message translates to:
+  /// **'Seen'**
+  String get supportStatusSeen;
+
+  /// Status timeline label
+  ///
+  /// In en, this message translates to:
+  /// **'Closed'**
+  String get supportStatusClosed;
+
+  /// Status timeline body
+  ///
+  /// In en, this message translates to:
+  /// **'Your request has been recorded.'**
+  String get supportStatusSubmittedBody;
+
+  /// Status timeline body
+  ///
+  /// In en, this message translates to:
+  /// **'Your request has been viewed.'**
+  String get supportStatusSeenBody;
+
+  /// Status timeline body
+  ///
+  /// In en, this message translates to:
+  /// **'Request closed. View the outcome below.'**
+  String get supportStatusClosedBody;
+
+  /// Field label, shown once a request is closed
+  ///
+  /// In en, this message translates to:
+  /// **'Outcome'**
+  String get supportOutcomeLabel;
+
+  /// Button
+  ///
+  /// In en, this message translates to:
+  /// **'New request'**
+  String get supportNewRequest;
+
   /// Section
   ///
   /// In en, this message translates to:

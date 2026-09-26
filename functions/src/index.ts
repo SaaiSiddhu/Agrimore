@@ -290,3 +290,9 @@ export { attachDeliveryProof, reportDeliveryException, updateDeliveryException }
 // rejects. Modelled on requestRiderBankChange/reviewRiderBankChange above.
 // See delivery/riderIdentity.ts.
 export { requestRiderIdentityChange, reviewRiderIdentityChange } from "./delivery/riderIdentity";
+// Phase DLVSUP1: a rider files a support request (delivery/earnings/account
+// category, a message, an optional attachment); admins mark it seen and
+// close it with a written outcome. Modelled on reportRiderIncident/
+// updateRiderIncident above, not the change-request pair: several tickets
+// may be open on one rider at once. See delivery/riderSupport.ts.
+export { submitSupportRequest, updateSupportRequest } from "./delivery/riderSupport";

@@ -16,7 +16,8 @@ export type RiderNoticeType =
   | "rider_offline" | "delivery_assigned" | "delivery_unassigned"
   | "statement_ready" | "payout_sent" | "bank_change_approved" | "bank_change_rejected"
   | "identity_change_approved" | "identity_change_rejected"
-  | "delivery_problem_resolved" | "incident_acknowledged" | "incident_resolved";
+  | "delivery_problem_resolved" | "incident_acknowledged" | "incident_resolved"
+  | "support_request_seen" | "support_request_closed";
 
 export interface RiderNotice {
   id: string;
@@ -123,6 +124,16 @@ export function problemResolvedNotice(exceptionId: string, orderId: string, orde
   return { id: `problem_${exceptionId}`, type: "delivery_problem_resolved", title: `Order #${orderNumber}: problem handled`,
     body: DISPOSITION_TEXT[disposition] ?? "The Agrimore team has handled the problem you reported.",
     data: { type: "delivery_problem_resolved", orderId, orderNumber } };
+}
+
+export function supportRequestNotice(ticketId: string, status: "seen" | "closed", resolutionNote: string | null): RiderNotice {
+  return status === "closed"
+    ? { id: `support_${ticketId}_closed`, type: "support_request_closed", title: "Your support request is closed",
+      body: resolutionNote ? `Outcome: ${resolutionNote}` : "Your request has been closed.",
+      data: { type: "support_request_closed", ticketId } }
+    : { id: `support_${ticketId}_seen`, type: "support_request_seen", title: "Your support request was seen",
+      body: "The Agrimore team has seen your request and is looking into it.",
+      data: { type: "support_request_seen", ticketId } };
 }
 
 export function incidentNotice(incidentId: string, status: "acknowledged" | "resolved"): RiderNotice {
