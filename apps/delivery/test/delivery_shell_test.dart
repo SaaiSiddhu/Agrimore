@@ -93,6 +93,8 @@ class _FakeInbox implements RiderInboxSource {
   Stream<int> unreadCount(String riderId) => Stream.value(2);
   @override
   Future<void> markRead(String riderId, Iterable<String> ids) async {}
+  @override
+  Future<void> markAllRead(String riderId) async {}
 }
 
 DeliveryOrderProvider _fakeOrders(String uid) => DeliveryOrderProvider(
