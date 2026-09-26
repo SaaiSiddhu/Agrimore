@@ -221,6 +221,10 @@ export { quoteOrderWithCredit, releaseProductCreditHold } from "./customer/produ
 // this trigger reverses that entry (a REVERSAL) when the order it was
 // spent on is cancelled. See customer/productCreditReversal.ts's header.
 export { reverseProductCreditOnCancellation } from "./customer/productCreditReversal";
+// Phase ADMR-1: stock restoration on cancellation, generalized to every
+// cancellation path (seller, customer, admin) and made variant-aware — see
+// customer/restoreStockOnCancellation.ts's header for the full rationale.
+export { restoreStockOnCancellation } from "./customer/restoreStockOnCancellation";
 
 // ============================================
 // ASSOCIATE ONBOARDING (Phase 16A — ₹500 one-time Registration &
