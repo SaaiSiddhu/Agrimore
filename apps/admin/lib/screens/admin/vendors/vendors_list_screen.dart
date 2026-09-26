@@ -4,6 +4,13 @@ import 'package:agrimore_core/agrimore_core.dart';
 import '../../../providers/vendor_provider.dart';
 import '../../../app/themes/admin_colors.dart';
 
+// ADMR-13: pulled out of _showUpdateStatusDialog so it is a plain function
+// the test suite can call directly — the dialog must not fire a write (or
+// even prompt) when the admin reselects the vendor's current status.
+bool isVendorStatusChanging(VendorStatus current, VendorStatus selected) {
+  return current != selected;
+}
+
 class VendorsListScreen extends StatelessWidget {
   const VendorsListScreen({super.key});
 
@@ -67,9 +74,7 @@ class VendorsListScreen extends StatelessWidget {
                       ),
                     ),
                   ),
-                  onTap: () {
-                    // Update Status Dialog
-                  },
+                  onTap: () => _showUpdateStatusDialog(context, vendor),
                 ),
               );
             },
@@ -114,6 +119,44 @@ class VendorsListScreen extends StatelessWidget {
             child: const Text('Save'),
           ),
         ],
+      ),
+    );
+  }
+
+  void _showUpdateStatusDialog(BuildContext context, VendorModel vendor) {
+    var selected = vendor.status;
+    showDialog(
+      context: context,
+      builder: (dialogContext) => StatefulBuilder(
+        builder: (dialogContext, setDialogState) => AlertDialog(
+          title: Text('Update Status — ${vendor.name}'),
+          content: Column(
+            mainAxisSize: MainAxisSize.min,
+            children: VendorStatus.values.map((status) {
+              return RadioListTile<VendorStatus>(
+                title: Text(status.name[0].toUpperCase() + status.name.substring(1)),
+                value: status,
+                groupValue: selected,
+                onChanged: (value) => setDialogState(() => selected = value!),
+              );
+            }).toList(),
+          ),
+          actions: [
+            TextButton(
+              onPressed: () => Navigator.pop(dialogContext),
+              child: const Text('Cancel'),
+            ),
+            ElevatedButton(
+              onPressed: !isVendorStatusChanging(vendor.status, selected)
+                  ? null
+                  : () {
+                      context.read<VendorProvider>().updateVendor(vendor.copyWith(status: selected));
+                      Navigator.pop(dialogContext);
+                    },
+              child: const Text('Update'),
+            ),
+          ],
+        ),
       ),
     );
   }
