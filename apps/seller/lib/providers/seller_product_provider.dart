@@ -11,7 +11,21 @@ enum ProductListFilter { all, active, draft, lowStock, outOfStock, inactive }
 
 /// SELLER-OPS-1: low stock uses the product's own alert level.
 const int kDefaultLowStockThreshold = 10;
-bool isLowStock(ProductModel p) => !p.isDraft && p.isActive && p.stock > 0 && p.stock <= (p.lowStockThreshold ?? kDefaultLowStockThreshold);
+
+bool _unitIsLow(int stock, int threshold) => stock > 0 && stock <= threshold;
+
+/// Phase ADMR-4: previously checked only `p.stock` — the base field, which a
+/// variant-line sale never moves (createOrder.ts decrements a variant's own
+/// stock inside product.variants[]). A product whose only stock lives in its
+/// variants therefore never showed as low/out of stock here, in either the
+/// "Low stock" listing tab or the dashboard's lowStockProducts count. Now
+/// true when the base stock is low OR any variant's own stock is.
+bool isLowStock(ProductModel p) {
+  if (p.isDraft || !p.isActive) return false;
+  final threshold = p.lowStockThreshold ?? kDefaultLowStockThreshold;
+  if (_unitIsLow(p.stock, threshold)) return true;
+  return p.variants.any((v) => _unitIsLow(v.stock, threshold));
+}
 
 class SellerProductProvider with ChangeNotifier {
   SellerProductProvider() : _preview = false;
