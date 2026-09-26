@@ -235,10 +235,16 @@ OrderModel _sampleOrder({String status = 'arrived_at_store'}) =>
       'deliveryFee': 48.0,
       'total': 468.0,
       'deliveryEarning': 54.0,
-      'shippingAddress': {
+      // DLV-Q1 fix: OrderModel.fromMap only reads 'deliveryAddress' (matching
+      // createOrder.ts) and AddressModel.fromMap only reads 'addressLine1'
+      // (not 'street') — the previous 'shippingAddress'/'street' keys here
+      // silently produced an empty AddressModel, so this fixture's Customer
+      // card and Delivery address section screenshotted misleadingly blank
+      // ("Delivery address: India" — the model's country-only default).
+      'deliveryAddress': {
         'name': 'Meenakshi Sundaram',
         'phone': '+91 98421 55120',
-        'street': '44, West Masi Street, Near Temple Tower',
+        'addressLine1': '44, West Masi Street, Near Temple Tower',
         'city': 'Madurai',
         'state': 'Tamil Nadu',
         'pincode': '625001',
@@ -268,6 +274,7 @@ void main() {
     double scale = 1.0,
     String partnerStatus = 'approved',
     String? rejectionReason,
+    Future<void> Function(WidgetTester tester)? before,
   }) async {
     final auth = DeliveryAuthProvider(
       gateway: _TourAuth(),
@@ -317,6 +324,9 @@ void main() {
     if (!converted) {
       await binding.convertFlutterSurfaceToImage();
       converted = true;
+    }
+    if (before != null) {
+      await before(tester);
     }
     await tester.pump(const Duration(milliseconds: 200));
     await binding.takeScreenshot(name);
@@ -398,6 +408,50 @@ void main() {
       '12_active_order_dropoff_dark',
       ActiveOrderScreen(order: _sampleOrder(status: 'out_for_delivery')),
       brightness: Brightness.dark,
+    );
+
+    // 5b. Delivery-code verification sheet — DLV-Q1: proves the 6-digit
+    // fix (DeliveryOtpField previously defaulted to 4 while the server
+    // issues 6-digit codes; the field could never be completed enough to
+    // submit). Reached by tapping the real "Complete delivery" button
+    // exposed at the out_for_delivery step — no network call is made
+    // before the sheet opens.
+    Future<void> openVerifySheet(WidgetTester t) async {
+      await t.ensureVisible(find.text('Complete delivery'));
+      await t.pumpAndSettle();
+      await t.tap(find.text('Complete delivery'), warnIfMissed: false);
+      await t.pumpAndSettle();
+    }
+
+    // Best-effort: these two shots exist to visually prove the DLV-Q1
+    // 6-digit fix. A hiccup opening the sheet must never abort the rest of
+    // this tour (shots 13-23 below), so failures are logged, not thrown.
+    await shot(
+      tester,
+      '24_verify_code_sheet_empty_light',
+      ActiveOrderScreen(order: _sampleOrder(status: 'out_for_delivery')),
+      before: (t) async {
+        try {
+          await openVerifySheet(t);
+        } catch (e) {
+          debugPrint('24_verify_code_sheet_empty_light: sheet not opened: $e');
+        }
+      },
+    );
+    await shot(
+      tester,
+      '25_verify_code_sheet_filled_dark',
+      ActiveOrderScreen(order: _sampleOrder(status: 'out_for_delivery')),
+      brightness: Brightness.dark,
+      before: (t) async {
+        try {
+          await openVerifySheet(t);
+          await t.enterText(find.byType(TextField), '482910');
+          await t.pump();
+        } catch (e) {
+          debugPrint('25_verify_code_sheet_filled_dark: sheet not opened: $e');
+        }
+      },
     );
 
     // 6. Active Work States, Route Header & Multiple Orders Showcase
