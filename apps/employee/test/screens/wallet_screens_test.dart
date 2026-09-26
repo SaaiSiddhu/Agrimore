@@ -115,6 +115,39 @@ void main() {
       expect(find.text('Save UPI Details'), findsOneWidget);
     });
 
+    // ADMR-5: while a submitted bank/UPI change is pending review, the
+    // associate sees its status instead of the edit form.
+    testWidgets('PayoutAccountScreen shows the pending card instead of the form while a change is under review', (tester) async {
+      final employeeSnap = FakeDocumentSnapshot({
+        'payoutMethod': 'bank',
+        'accountNumber': '987654321000',
+        'bankName': 'SBI',
+        'accountHolderName': 'Suresh Kumar',
+        'ifscCode': 'SBIN0001234',
+      });
+      final walletSnap = FakeDocumentSnapshot({'payoutChangePending': 'req-123'});
+
+      await tester.pumpWidget(
+        MaterialApp(
+          theme: SalesAssociateTheme.lightTheme,
+          home: PayoutAccountScreen(
+            employeeUid: 'test-associate-uid',
+            employeeStream: Stream.value(employeeSnap),
+            walletStream: Stream.value(walletSnap),
+          ),
+        ),
+      );
+      await tester.pump();
+      await tester.pump();
+
+      // The pending card is shown...
+      expect(find.text('Change Waiting For Review'), findsOneWidget);
+      expect(find.text('Cancel Request'), findsOneWidget);
+      // ...and the edit form is not.
+      expect(find.text('Save Bank Details'), findsNothing);
+      expect(find.text('Bank Account'), findsNothing);
+    });
+
     testWidgets('PayoutReviewScreen renders balance deduction breakdown and destination', (tester) async {
       await tester.pumpWidget(
         MaterialApp(
