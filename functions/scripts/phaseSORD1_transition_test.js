@@ -122,17 +122,23 @@ async function main() {
     check("c7_cannot_cancel_once_ready", !r.ok && r.code === "failed-precondition", JSON.stringify(r));
   }
   {
+    // Phase ADMR-1: sellerTransitionOrder no longer restores stock itself
+    // — that invariant moved to restoreStockOnCancellation.ts (a generic
+    // trigger, so it also covers the customer/admin cancellation paths
+    // this callable never did), proven in phase57_stock_restoration_test.js.
+    // This callable's own remaining contract is: transition to cancelled,
+    // record provenance, leave stock and stockRestored strictly alone.
     await order("o2");
     const a = await stockOf("pA");
     const b = await stockOf("pB");
     const r = await call(SELLER, { orderId: "o2", action: "reject", reason: "out_of_stock", note: "Tomatoes finished" });
     const o = (await db.collection("orders").doc("o2").get()).data();
-    check("c8_reject_restores_stock_once_summed_per_product",
+    check("c8_reject_records_cancellation_but_leaves_stock_to_the_trigger",
       r.ok && o.orderStatus === "cancelled" && o.cancelledBy === "seller" && o.cancellationReason === "out_of_stock" &&
-        o.stockRestored === true && (await stockOf("pA")) === a + 3 && (await stockOf("pB")) === b + 1,
-      `status=${o.orderStatus} pA ${a}->${await stockOf("pA")} pB ${b}->${await stockOf("pB")}`);
+        !o.stockRestored && (await stockOf("pA")) === a && (await stockOf("pB")) === b,
+      `status=${o.orderStatus} stockRestored=${o.stockRestored} pA ${a}->${await stockOf("pA")} pB ${b}->${await stockOf("pB")}`);
     const again = await call(SELLER, { orderId: "o2", action: "cancel", reason: "other" });
-    check("c9_no_second_restore", !again.ok && (await stockOf("pA")) === a + 3, JSON.stringify(again));
+    check("c9_cannot_cancel_an_already_cancelled_order", !again.ok && (await stockOf("pA")) === a, JSON.stringify(again));
   }
   {
     await order("o3", { paymentMethod: "razorpay", paymentStatus: "paid" });
