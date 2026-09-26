@@ -31,6 +31,7 @@ import 'package:delivery/screens/money/statement_screen.dart';
 import 'package:delivery/screens/offers/incoming_offer_screen.dart';
 import 'package:delivery/screens/orders/active_order_screen.dart';
 import 'package:delivery/screens/orders/delivery_problem_panel.dart';
+import 'package:delivery/screens/orders/widgets/rider_route_card.dart' show StaleLocationBanner;
 import 'package:delivery/screens/profile/identity_change_screen.dart';
 import 'package:delivery/screens/profile/rider_profile_screen.dart';
 import 'package:delivery/screens/support/help_support_screen.dart';
@@ -913,6 +914,36 @@ void main() {
             createdAt: DateTime(2026, 9, 27, 10, 24),
             seenAt: DateTime(2026, 9, 27, 13, 12),
           ),
+        ),
+      ),
+      brightness: Brightness.dark,
+    );
+
+    // 11e. DLVMAP1: the stale rider-location banner (21.6), refreshable and
+    // native-service (no manual refresh offered) variants.
+    await shot(
+      tester,
+      '30_stale_location_refreshable_light',
+      Scaffold(
+        body: StaleLocationBanner(
+          minutesAgo: 5,
+          canRefresh: true,
+          refreshing: false,
+          onRefresh: () {},
+          onCheckSettings: () {},
+        ),
+      ),
+    );
+    await shot(
+      tester,
+      '31_stale_location_native_dark',
+      Scaffold(
+        body: StaleLocationBanner(
+          minutesAgo: 8,
+          canRefresh: false,
+          refreshing: false,
+          onRefresh: () {},
+          onCheckSettings: () {},
         ),
       ),
       brightness: Brightness.dark,
