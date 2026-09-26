@@ -985,6 +985,12 @@ class AppLocalizationsEn extends AppLocalizations {
   String get inboxMarkAllRead => 'Mark all read';
 
   @override
+  String get inboxMarkingAllRead => 'Marking all read…';
+
+  @override
+  String get inboxMarkAllReadSuccess => 'All notifications marked as read.';
+
+  @override
   String inboxLimitNote(int count) {
     return 'Showing your latest $count notices.';
   }

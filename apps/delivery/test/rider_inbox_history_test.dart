@@ -36,6 +36,17 @@ class FakeInbox implements RiderInboxSource {
 
   @override
   Future<void> markRead(String riderId, Iterable<String> ids) async => marked.addAll(ids);
+
+  var markAllCalls = 0;
+  Object? markAllError;
+  Completer<void>? markAllGate;
+  @override
+  Future<void> markAllRead(String riderId) async {
+    markAllCalls++;
+    if (markAllGate != null) await markAllGate!.future;
+    if (markAllError != null) throw markAllError!;
+    marked.addAll(current.where((n) => n.unread).map((n) => n.id));
+  }
 }
 
 Widget host(Widget child) => MaterialApp(
@@ -222,6 +233,72 @@ void main() {
       await t.pumpAndSettle();
       expect(t.takeException(), isNull);
       expect(find.byType(StatementScreen), findsOneWidget);
+    });
+  });
+
+  group('mark all read (DLVI2)', () {
+    testWidgets('marks every unread notice, not only a read one, in a single call', (t) async {
+      final src = FakeInbox()
+        ..current = [
+          n('a', 'rider_offline'),
+          n('b', 'payout_sent', unread: false),
+          n('c', 'cod_settled'),
+        ];
+      await t.pumpWidget(host(InboxScreen(riderId: 'r1', source: src)));
+      await t.pumpAndSettle();
+      await t.tap(find.text('Mark all read'));
+      await t.pumpAndSettle();
+      expect(src.markAllCalls, 1);
+      expect(src.marked, containsAll(['a', 'c']));
+      expect(src.marked, isNot(contains('b')));
+    });
+
+    testWidgets('shows a disabled loading state in flight and ignores a second tap', (t) async {
+      final gate = Completer<void>();
+      final src = FakeInbox()
+        ..current = [n('a', 'rider_offline')]
+        ..markAllGate = gate;
+      await t.pumpWidget(host(InboxScreen(riderId: 'r1', source: src)));
+      await t.pumpAndSettle();
+      await t.tap(find.text('Mark all read'));
+      await t.pump();
+      expect(find.text('Marking all read…'), findsOneWidget);
+      expect(find.text('Mark all read'), findsNothing);
+      await t.tap(find.text('Marking all read…'));
+      await t.pump();
+      expect(src.markAllCalls, 1);
+      gate.complete();
+      await t.pumpAndSettle();
+      expect(find.text('Mark all read'), findsOneWidget);
+      expect(find.text('Marking all read…'), findsNothing);
+    });
+
+    testWidgets('shows a success toast only after the server confirms, never before', (t) async {
+      final gate = Completer<void>();
+      final src = FakeInbox()
+        ..current = [n('a', 'rider_offline')]
+        ..markAllGate = gate;
+      await t.pumpWidget(host(InboxScreen(riderId: 'r1', source: src)));
+      await t.pumpAndSettle();
+      await t.tap(find.text('Mark all read'));
+      await t.pump();
+      expect(find.text('All notifications marked as read.'), findsNothing);
+      gate.complete();
+      await t.pumpAndSettle();
+      expect(find.text('All notifications marked as read.'), findsOneWidget);
+    });
+
+    testWidgets('a failed mark-all-read shows the existing failure toast, not a false success', (t) async {
+      final src = FakeInbox()
+        ..current = [n('a', 'rider_offline')]
+        ..markAllError = Exception('offline');
+      await t.pumpWidget(host(InboxScreen(riderId: 'r1', source: src)));
+      await t.pumpAndSettle();
+      await t.tap(find.text('Mark all read'));
+      await t.pumpAndSettle();
+      expect(find.text('Could not update your inbox. Try again.'), findsOneWidget);
+      expect(find.text('All notifications marked as read.'), findsNothing);
+      expect(find.text('Mark all read'), findsOneWidget);
     });
   });
 

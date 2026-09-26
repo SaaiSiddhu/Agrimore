@@ -1306,7 +1306,15 @@
   },
   "inboxMarkAllRead": "Mark all read",
   "@inboxMarkAllRead": {
-    "description": "Mark every shown notice read"
+    "description": "Mark every unread notice read, not only the ones currently shown"
+  },
+  "inboxMarkingAllRead": "Marking all read…",
+  "@inboxMarkingAllRead": {
+    "description": "Mark-all-read button label while the request is in flight"
+  },
+  "inboxMarkAllReadSuccess": "All notifications marked as read.",
+  "@inboxMarkAllReadSuccess": {
+    "description": "Mark-all-read succeeded, shown only after server confirmation"
   },
   "inboxLimitNote": "Showing your latest {count} notices.",
   "@inboxLimitNote": {

@@ -1792,11 +1792,23 @@ abstract class AppLocalizations {
   /// **'Could not load your inbox. Check your connection.'**
   String get inboxLoadError;
 
-  /// Mark every shown notice read
+  /// Mark every unread notice read, not only the ones currently shown
   ///
   /// In en, this message translates to:
   /// **'Mark all read'**
   String get inboxMarkAllRead;
+
+  /// Mark-all-read button label while the request is in flight
+  ///
+  /// In en, this message translates to:
+  /// **'Marking all read…'**
+  String get inboxMarkingAllRead;
+
+  /// Mark-all-read succeeded, shown only after server confirmation
+  ///
+  /// In en, this message translates to:
+  /// **'All notifications marked as read.'**
+  String get inboxMarkAllReadSuccess;
 
   /// Inbox shows only the newest N
   ///

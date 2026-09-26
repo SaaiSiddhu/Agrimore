@@ -73,6 +73,12 @@ abstract class RiderInboxSource {
   Stream<List<RiderNotice>> latest(String riderId);
   Stream<int> unreadCount(String riderId);
   Future<void> markRead(String riderId, Iterable<String> ids);
+
+  /// DLVI2: unlike [markRead], this must reach every unread notice, not
+  /// just whichever page [latest] last emitted (capped at [kInboxSize]) --
+  /// a rider with more notices than that would otherwise have older unread
+  /// ones a "mark all" control could never actually clear.
+  Future<void> markAllRead(String riderId);
 }
 
 class FirestoreRiderInbox implements RiderInboxSource {
@@ -94,7 +100,15 @@ class FirestoreRiderInbox implements RiderInboxSource {
       _col(riderId).where('unread', isEqualTo: true).limit(kInboxSize).snapshots().map((s) => s.size);
 
   @override
-  Future<void> markRead(String riderId, Iterable<String> ids) async {
+  Future<void> markRead(String riderId, Iterable<String> ids) => _markIds(riderId, ids);
+
+  @override
+  Future<void> markAllRead(String riderId) async {
+    final unread = await _col(riderId).where('unread', isEqualTo: true).get();
+    await _markIds(riderId, unread.docs.map((d) => d.id));
+  }
+
+  Future<void> _markIds(String riderId, Iterable<String> ids) async {
     final list = ids.toList();
     for (var i = 0; i < list.length; i += 400) {
       final batch = _db.batch();

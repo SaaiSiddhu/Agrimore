@@ -74,7 +74,7 @@ class InboxScreen extends StatefulWidget {
 class _InboxScreenState extends State<InboxScreen> {
   late final Stream<List<RiderNotice>> _latest =
       widget.source.latest(widget.riderId);
-  List<RiderNotice> _shown = const [];
+  bool _markingAll = false;
 
   Future<void> _markRead(Iterable<String> ids) async {
     if (ids.isEmpty) return;
@@ -90,6 +90,33 @@ class _InboxScreenState extends State<InboxScreen> {
         );
       }
     }
+  }
+
+  /// Unlike [_markRead], reaches every unread notice server-side, not just
+  /// whichever page [_latest] last emitted (capped at [kInboxSize]) — a
+  /// rider with more notices than that would otherwise have older unread
+  /// ones this button could never actually clear. Guards against duplicate
+  /// taps while a request is already in flight, matching the mockup's own
+  /// disabled/loading button state; shows a success toast only after the
+  /// server has actually confirmed, never before.
+  Future<void> _markAllRead() async {
+    if (_markingAll) return;
+    setState(() => _markingAll = true);
+    final l = AppLocalizations.of(context);
+    var failed = false;
+    try {
+      await widget.source.markAllRead(widget.riderId);
+    } catch (e) {
+      debugPrint('Inbox mark all read: $e');
+      failed = true;
+    }
+    if (!mounted) return;
+    setState(() => _markingAll = false);
+    showDeliveryToast(
+      context,
+      message: failed ? l.inboxMarkReadFailed : l.inboxMarkAllReadSuccess,
+      tone: failed ? DeliveryBannerTone.danger : DeliveryBannerTone.success,
+    );
   }
 
   void _open(RiderNotice n) {
@@ -238,9 +265,21 @@ class _InboxScreenState extends State<InboxScreen> {
         title: Text(l.inboxTitle),
         actions: [
           TextButton(
-            onPressed: () =>
-                _markRead(_shown.where((n) => n.unread).map((n) => n.id)),
-            child: Text(l.inboxMarkAllRead),
+            onPressed: _markingAll ? null : _markAllRead,
+            child: _markingAll
+                ? Row(
+                    mainAxisSize: MainAxisSize.min,
+                    children: [
+                      SizedBox(
+                        width: DeliveryIconSize.sm,
+                        height: DeliveryIconSize.sm,
+                        child: CircularProgressIndicator(strokeWidth: 2),
+                      ),
+                      const SizedBox(width: DeliverySpace.xs),
+                      Text(l.inboxMarkingAllRead),
+                    ],
+                  )
+                : Text(l.inboxMarkAllRead),
           ),
         ],
       ),
@@ -256,7 +295,7 @@ class _InboxScreenState extends State<InboxScreen> {
           if (!snap.hasData) {
             return const Center(child: CircularProgressIndicator());
           }
-          final list = _shown = snap.data!;
+          final list = snap.data!;
           if (list.isEmpty) {
             return _Centered(
               icon: DeliveryIcons.bell,
