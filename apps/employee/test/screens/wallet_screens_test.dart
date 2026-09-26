@@ -1,4 +1,5 @@
 import 'dart:async';
+import 'dart:io';
 import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:firebase_core/firebase_core.dart';
@@ -172,6 +173,45 @@ void main() {
       expect(find.textContaining('12,500'), findsWidgets);
       expect(find.textContaining('7,500'), findsWidgets); // remaining balance
       expect(find.text('HDFC Bank'), findsOneWidget);
+    });
+  });
+
+  group('ADMR-18 dead payout_screen.dart removed', () {
+    // PayoutScreen (payout_screen.dart) was a complete, self-contained, older
+    // predecessor of this file's own PayoutRequestScreen/PayoutReviewScreen
+    // flow: no destination-account display, no client-side balance check,
+    // and no confirmation step before an irreversible immediate wallet
+    // debit. Confirmed zero references anywhere (no import, no route table
+    // in this app at all, no test) before deletion — superseded scaffolding,
+    // the same signature as the admin app's dead marketing/seller screens.
+    test('payout_screen.dart no longer exists', () {
+      final file = File('${Directory.current.path}/lib/screens/wallet/payout_screen.dart');
+      expect(
+        file.existsSync(),
+        isFalse,
+        reason: 'payout_screen.dart is back — it was a confirmed-dead, '
+            'zero-reference predecessor of the real PayoutRequestScreen -> '
+            'PayoutReviewScreen flow (no destination display, no balance '
+            'check, no confirmation before an immediate wallet debit). If '
+            'it is being reintroduced deliberately, this guard should be '
+            'removed on purpose, not silently defeated.',
+      );
+    });
+
+    test('the real payout flow files it was superseded by are untouched', () {
+      for (final relPath in [
+        'lib/screens/wallet/payout_request_screen.dart',
+        'lib/screens/wallet/payout_review_screen.dart',
+        'lib/screens/wallet/payout_history_screen.dart',
+        'lib/screens/wallet/payout_details_screen.dart',
+        'lib/screens/wallet/payout_account_screen.dart',
+        'lib/screens/wallet/wallet_screen.dart',
+      ]) {
+        final file = File('${Directory.current.path}/$relPath');
+        expect(file.existsSync(), isTrue,
+            reason: '$relPath is missing — this phase deletes only the dead '
+                'predecessor, not any file in the real, active payout flow.');
+      }
     });
   });
 }
