@@ -170,17 +170,49 @@ class _LocationSettingsScreenState extends State<LocationSettingsScreen> {
                   ),
                   const SizedBox(height: 8),
                   const Text(
-                    'Configure where products are available and how far users can see products from their GPS location.',
+                    'Serviceability today is decided by the city list below, not GPS distance — see the notice.',
                     style: TextStyle(color: Colors.grey),
                   ),
-                  const SizedBox(height: 24),
+                  const SizedBox(height: 16),
+
+                  // ADMR-15: this section's toggle and slider captions used
+                  // to assert a GPS-distance-based product filter was live
+                  // and tunable here — grepped fresh across every app and
+                  // functions/src: isHyperlocalEnabled/maxRadiusKm are read
+                  // nowhere. LocationSettingsProvider.isServiceable()
+                  // (apps/marketplace) is a plain city-name match against
+                  // activeLocations below; there is no distance calculation
+                  // anywhere in this codebase. Saving these two values has
+                  // never changed anything a customer sees.
+                  Container(
+                    margin: const EdgeInsets.only(bottom: 16),
+                    padding: const EdgeInsets.all(12),
+                    decoration: BoxDecoration(
+                      color: Colors.amber.withOpacity(0.12),
+                      borderRadius: BorderRadius.circular(10),
+                      border: Border.all(color: Colors.amber.shade700, width: 1),
+                    ),
+                    child: Row(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [
+                        Icon(Icons.info_outline_rounded, size: 18, color: Colors.amber.shade900),
+                        const SizedBox(width: 8),
+                        Expanded(
+                          child: Text(
+                            'Not yet connected to live behaviour: no GPS-radius product filtering exists in the app. Saving the toggle and slider below has no effect on what customers see — serviceability is decided by the "Active Service Locations" city list further down this screen.',
+                            style: TextStyle(fontSize: 12, color: Colors.amber.shade900),
+                          ),
+                        ),
+                      ],
+                    ),
+                  ),
 
                   // Hyperlocal Toggle
                   Card(
                     shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
                     child: SwitchListTile(
                       title: const Text('Enable Hyperlocal Mode (GPS based)'),
-                      subtitle: const Text('If enabled, users only see products within the set radius.'),
+                      subtitle: const Text('Saved for future use — not yet connected to any filtering logic.'),
                       value: _isHyperlocalEnabled,
                       onChanged: (val) => setState(() => _isHyperlocalEnabled = val),
                     ),
@@ -210,7 +242,7 @@ class _LocationSettingsScreenState extends State<LocationSettingsScreen> {
                               onChanged: (val) => setState(() => _maxRadiusKm = val),
                             ),
                             const Text(
-                              'Users cannot view products if they are beyond this radius from the seller or active area.',
+                              'Saved for future use — no product or visibility filtering currently reads this value.',
                               style: TextStyle(fontSize: 12, color: Colors.grey),
                             ),
                           ],
