@@ -139,7 +139,7 @@ class OnboardingStatusScreen extends StatelessWidget {
                 const SaInfoBanner(
                   title: 'How to pay the onboarding fee',
                   message:
-                      'Open the AgriMore customer app where you submitted your associate application. Under Profile > Associate Status, tap "Pay Onboarding Fee" to complete verification.',
+                      'Open the AgriMore customer app where you submitted your associate application. Under Profile, tap "Become a Sales Associate" — you will be taken straight to the payment step to complete your ₹500 fee.',
                   variant: SaBannerVariant.info,
                 ),
                 const SizedBox(height: SaTokens.space24),

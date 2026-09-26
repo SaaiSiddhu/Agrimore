@@ -137,5 +137,38 @@ void main() {
       expect(find.text('B2B Wholesale Orders'), findsOneWidget);
       expect(find.text('Retail (B2C) Orders'), findsOneWidget);
     });
+
+    // ADMR-21: an unpaid associate's banner previously named a menu path and
+    // button ("Profile > Associate Status" / "Pay Onboarding Fee") that do
+    // not exist anywhere in apps/marketplace — the real, only entry point
+    // (profile_screen.dart's single _MenuItem for this flow) is always
+    // labelled "Become a Sales Associate", regardless of onboarding status.
+    testWidgets('OnboardingStatusScreen tells an unpaid associate the real menu item, not a fabricated one', (tester) async {
+      final employeeSnap = FakeDocumentSnapshot({
+        'employeeCode': 'AGRI-EMP-999',
+        'onboardingWaived': false,
+        'onboardingPaid': false,
+        'createdAt': Timestamp.now(),
+      });
+
+      await tester.pumpWidget(
+        MaterialApp(
+          theme: SalesAssociateTheme.lightTheme,
+          home: OnboardingStatusScreen(
+            employeeUid: 'test-associate-uid-unpaid',
+            employeeStream: Stream.value(employeeSnap),
+          ),
+        ),
+      );
+      await tester.pump();
+      await tester.pump();
+
+      expect(find.textContaining('Become a Sales Associate'), findsOneWidget,
+          reason: 'must name the real, only menu item for this flow');
+      expect(find.textContaining('Associate Status'), findsNothing,
+          reason: '"Profile > Associate Status" does not exist anywhere in apps/marketplace');
+      expect(find.textContaining('Pay Onboarding Fee'), findsNothing,
+          reason: 'no button with this exact label exists at the real entry point');
+    });
   });
 }
