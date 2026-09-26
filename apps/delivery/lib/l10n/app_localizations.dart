@@ -3280,11 +3280,17 @@ abstract class AppLocalizations {
   /// **'Navigate to customer'**
   String get routeNavigateCustomer;
 
-  /// Maps did not open
+  /// Fallback sheet title when external navigation could not be launched at all
   ///
   /// In en, this message translates to:
-  /// **'Could not open Google Maps. Please install it and try again.'**
-  String get routeMapsMissing;
+  /// **'Could not open navigation'**
+  String get navFailedTitle;
+
+  /// Fallback sheet body
+  ///
+  /// In en, this message translates to:
+  /// **'We couldn\'t find a compatible navigation app on this device.'**
+  String get navFailedBody;
 
   /// Dashboard greeting
   ///

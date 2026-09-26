@@ -1845,8 +1845,11 @@ class AppLocalizationsEn extends AppLocalizations {
   String get routeNavigateCustomer => 'Navigate to customer';
 
   @override
-  String get routeMapsMissing =>
-      'Could not open Google Maps. Please install it and try again.';
+  String get navFailedTitle => 'Could not open navigation';
+
+  @override
+  String get navFailedBody =>
+      'We couldn\'t find a compatible navigation app on this device.';
 
   @override
   String dashGreeting(String name) {

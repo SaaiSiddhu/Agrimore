@@ -21,7 +21,7 @@ import '../../delivery/delivery_problems.dart';
 import '../../delivery/rider_steps.dart';
 import '../../design_system/design_system.dart';
 import '../../l10n/app_localizations.dart';
-import '../../navigation/rider_navigation.dart';
+import '../../navigation/navigation_launch.dart';
 import '../../providers/order_provider.dart';
 import '../../safety/emergency_sheet.dart';
 import 'delivery_problem_panel.dart';
@@ -722,22 +722,9 @@ class _ActiveOrderScreenState extends State<ActiveOrderScreen> {
 
   Future<void> _navigateToAddress() async {
     final address = _order.deliveryAddress;
-    if (address.latitude != null && address.longitude != null) {
-      final dest = DeliveryPoint(
-        lat: address.latitude!,
-        lng: address.longitude!,
-      );
-      final opened = await launchUrl(
-        turnByTurnUri(dest),
-        mode: LaunchMode.externalApplication,
-      ).catchError((_) => false);
-      if (!opened) {
-        await launchUrl(
-          directionsUri(dest),
-          mode: LaunchMode.externalApplication,
-        );
-      }
-    }
+    if (address.latitude == null || address.longitude == null || !mounted) return;
+    final dest = DeliveryPoint(lat: address.latitude!, lng: address.longitude!);
+    await launchExternalNavigationWithFallback(context, dest);
   }
 }
 
