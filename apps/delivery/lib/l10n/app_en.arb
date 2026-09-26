@@ -1377,6 +1377,14 @@
   "@historyDetailNotInStatement": {
     "description": "History detail: earning not yet in a statement"
   },
+  "historyDetailStatementUnavailable": "This statement is no longer available.",
+  "@historyDetailStatementUnavailable": {
+    "description": "History detail: the linked statement is missing, deleted, or not this rider's own"
+  },
+  "historyDetailStatementNetworkError": "Could not open this statement. Try again.",
+  "@historyDetailStatementNetworkError": {
+    "description": "History detail: the statement lookup failed (network)"
+  },
   "historyDetailOrderTotal": "Order amount",
   "@historyDetailOrderTotal": {
     "description": "History detail: order total"

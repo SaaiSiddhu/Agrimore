@@ -12,6 +12,7 @@ import 'package:delivery/l10n/app_localizations.dart';
 import 'package:delivery/money/rider_money.dart';
 import 'package:delivery/screens/history/rider_history_screen.dart';
 import 'package:delivery/screens/inbox/inbox_screen.dart';
+import 'package:delivery/screens/money/statement_screen.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
 
@@ -170,7 +171,8 @@ void main() {
               order: order,
               loadEarning: (id) async => RiderEarning(
                   orderId: id, total: 55.46, basePay: 25, distancePay: 23.46, km: 3.91, codCollected: 480),
-              loadTimeline: (id) async => const []))));
+              loadTimeline: (id) async => const [],
+              loadPayout: (id) async => null))));
       await t.pumpAndSettle();
       expect(t.takeException(), isNull);
       expect(find.text('₹55.46'), findsOneWidget);
@@ -185,7 +187,8 @@ void main() {
           body: HistoryDetail(
               order: order,
               loadEarning: (id) async { reads++; return null; },
-              loadTimeline: (id) async => const []))));
+              loadTimeline: (id) async => const [],
+              loadPayout: (id) async => null))));
       await t.pumpAndSettle();
       expect(reads, 0, reason: 'cancelled never has a rider_earnings record; no point reading');
       expect(find.text('No earnings — this order was cancelled.'), findsOneWidget);
@@ -198,7 +201,8 @@ void main() {
           body: HistoryDetail(
               order: order,
               loadEarning: (id) async { reads++; return null; },
-              loadTimeline: (id) async => const []))));
+              loadTimeline: (id) async => const [],
+              loadPayout: (id) async => null))));
       await t.pumpAndSettle();
       expect(reads, 1, reason: 'unlike cancelled, a returned order DOES attempt a read (forward-compatible with future return-handling pay)');
       expect(find.text('No earnings recorded for this returned order.'), findsOneWidget);
@@ -224,7 +228,8 @@ void main() {
                       detail: 'The delivery partner reported a problem (customer unreachable).',
                       timestamp: DateTime(2026, 9, 18, 13, 40),
                     ),
-                  ]))));
+                  ],
+              loadPayout: (id) async => null))));
       await t.pumpAndSettle();
       expect(t.takeException(), isNull);
       expect(find.text('Delivery Accepted'), findsOneWidget);
@@ -242,7 +247,8 @@ void main() {
           body: HistoryDetail(
               order: order,
               loadEarning: (id) async => null,
-              loadTimeline: (id) async => const []))));
+              loadTimeline: (id) async => const [],
+              loadPayout: (id) async => null))));
       await t.pumpAndSettle();
       expect(find.text('No recorded timeline for this order.'), findsOneWidget);
     });
@@ -264,7 +270,8 @@ void main() {
           body: HistoryDetail(
               order: order,
               loadEarning: (id) async => null,
-              loadTimeline: (id) async => const []))));
+              loadTimeline: (id) async => const [],
+              loadPayout: (id) async => null))));
       await t.pumpAndSettle();
       expect(find.text('Customer'), findsOneWidget);
       expect(find.text('Meenakshi Sundaram'), findsOneWidget);
@@ -275,6 +282,83 @@ void main() {
       // Read-only: no Call/Navigate actions for a completed record.
       expect(find.text('Call'), findsNothing);
       expect(find.text('Navigate'), findsNothing);
+    });
+
+    testWidgets('tapping "In a weekly statement" opens the real statement it names', (t) async {
+      final order = historyOrder('o3', {
+        'orderStatus': 'delivered',
+        'orderNumber': 'ORD-3',
+        'total': 200,
+        'deliveryPartnerId': 'r1',
+      });
+      final payout = RiderPayout(
+        id: 'stmt-1',
+        weekKey: '2026-W38',
+        earned: 1000,
+        netted: 0,
+        amount: 1000,
+        cashHeldAfter: 0,
+        orderCount: 10,
+        status: 'paid',
+      );
+      await t.pumpWidget(host(Scaffold(
+          body: HistoryDetail(
+              order: order,
+              loadEarning: (id) async => RiderEarning(orderId: id, total: 55, statementId: 'stmt-1'),
+              loadTimeline: (id) async => const [],
+              loadPayout: (id) async {
+                expect(id, 'stmt-1');
+                return payout;
+              }))));
+      await t.pumpAndSettle();
+      expect(find.byType(StatementScreen), findsNothing);
+      await t.tap(find.text('In a weekly statement'));
+      await t.pump(); // loading frame
+      await t.pumpAndSettle();
+      expect(t.takeException(), isNull);
+      expect(find.byType(StatementScreen), findsOneWidget);
+    });
+
+    testWidgets('a deleted or inaccessible statement says so instead of doing nothing', (t) async {
+      final order = historyOrder('o2', {
+        'orderStatus': 'delivered',
+        'orderNumber': 'ORD-2',
+        'total': 200,
+        'deliveryPartnerId': 'r1',
+      });
+      await t.pumpWidget(host(Scaffold(
+          body: HistoryDetail(
+              order: order,
+              loadEarning: (id) async => RiderEarning(orderId: id, total: 55, statementId: 'stmt-gone'),
+              loadTimeline: (id) async => const [],
+              loadPayout: (id) async => null))));
+      await t.pumpAndSettle();
+      await t.tap(find.text('In a weekly statement'));
+      await t.pumpAndSettle();
+      expect(find.text('This statement is no longer available.'), findsOneWidget);
+      expect(find.byType(StatementScreen), findsNothing);
+      // The row is tappable again, not stuck showing a spinner forever.
+      expect(find.text('In a weekly statement'), findsOneWidget);
+    });
+
+    testWidgets('a failed statement lookup says so distinctly, not as if it were missing', (t) async {
+      final order = historyOrder('o1', {
+        'orderStatus': 'delivered',
+        'orderNumber': 'ORD-1',
+        'total': 200,
+        'deliveryPartnerId': 'r1',
+      });
+      await t.pumpWidget(host(Scaffold(
+          body: HistoryDetail(
+              order: order,
+              loadEarning: (id) async => RiderEarning(orderId: id, total: 55, statementId: 'stmt-1'),
+              loadTimeline: (id) async => const [],
+              loadPayout: (id) async => throw Exception('network unavailable')))));
+      await t.pumpAndSettle();
+      await t.tap(find.text('In a weekly statement'));
+      await t.pumpAndSettle();
+      expect(find.text('Could not open this statement. Try again.'), findsOneWidget);
+      expect(find.text('This statement is no longer available.'), findsNothing);
     });
   });
 }

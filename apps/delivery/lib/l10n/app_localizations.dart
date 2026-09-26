@@ -1894,6 +1894,18 @@ abstract class AppLocalizations {
   /// **'Goes into next Monday\'s statement'**
   String get historyDetailNotInStatement;
 
+  /// History detail: the linked statement is missing, deleted, or not this rider's own
+  ///
+  /// In en, this message translates to:
+  /// **'This statement is no longer available.'**
+  String get historyDetailStatementUnavailable;
+
+  /// History detail: the statement lookup failed (network)
+  ///
+  /// In en, this message translates to:
+  /// **'Could not open this statement. Try again.'**
+  String get historyDetailStatementNetworkError;
+
   /// History detail: order total
   ///
   /// In en, this message translates to:
