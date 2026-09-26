@@ -20,10 +20,10 @@ import 'package:flutter/material.dart';
 import 'package:geolocator/geolocator.dart' show Geolocator;
 import 'package:google_maps_flutter/google_maps_flutter.dart';
 import 'package:provider/provider.dart';
-import 'package:url_launcher/url_launcher.dart';
 
 import '../../../design_system/design_system.dart';
 import '../../../l10n/app_localizations.dart';
+import '../../../navigation/navigation_launch.dart';
 import '../../../navigation/rider_navigation.dart';
 import '../../../providers/location_provider.dart';
 
@@ -219,31 +219,8 @@ class _RiderRouteCardState extends State<RiderRouteCard> {
 
   Future<void> _navigate() async {
     final dest = _target;
-    if (dest == null) return;
-    var opened = false;
-    if (!kIsWeb) {
-      try {
-        opened = await launchUrl(
-          turnByTurnUri(dest),
-          mode: LaunchMode.externalApplication,
-        );
-      } catch (_) {
-        opened = false;
-      }
-    }
-    if (!opened) {
-      opened = await launchUrl(
-        directionsUri(dest),
-        mode: LaunchMode.externalApplication,
-      );
-    }
-    if (!opened && mounted) {
-      showDeliveryToast(
-        context,
-        message: AppLocalizations.of(context).routeMapsMissing,
-        tone: DeliveryBannerTone.danger,
-      );
-    }
+    if (dest == null || !mounted) return;
+    await launchExternalNavigationWithFallback(context, dest);
   }
 
   Future<void> _refreshLocation() async {

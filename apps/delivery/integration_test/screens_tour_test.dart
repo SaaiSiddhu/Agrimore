@@ -1,7 +1,7 @@
 import 'dart:async';
 import 'dart:typed_data';
 
-import 'package:agrimore_core/agrimore_core.dart' show OrderModel, VehicleType;
+import 'package:agrimore_core/agrimore_core.dart' show DeliveryPoint, OrderModel, VehicleType;
 import 'package:delivery/account/rider_account.dart';
 import 'package:delivery/app/delivery_shell.dart';
 import 'package:delivery/data/order_timeline.dart';
@@ -31,6 +31,7 @@ import 'package:delivery/screens/money/statement_screen.dart';
 import 'package:delivery/screens/offers/incoming_offer_screen.dart';
 import 'package:delivery/screens/orders/active_order_screen.dart';
 import 'package:delivery/screens/orders/delivery_problem_panel.dart';
+import 'package:delivery/navigation/navigation_launch.dart' show NavigationFailedSheet;
 import 'package:delivery/screens/orders/widgets/rider_route_card.dart' show StaleLocationBanner;
 import 'package:delivery/screens/profile/identity_change_screen.dart';
 import 'package:delivery/screens/profile/rider_profile_screen.dart';
@@ -950,6 +951,16 @@ void main() {
         ),
       ),
       brightness: Brightness.dark,
+    );
+
+    // 11f. DLVMAP2: the external-navigation "could not open" fallback
+    // (21.7 panels 3-4) -- Try again / Copy coordinates.
+    await shot(
+      tester,
+      '32_navigation_failed_sheet_light',
+      const Scaffold(
+        body: NavigationFailedSheet(dest: DeliveryPoint(lat: 9.925201, lng: 78.119775)),
+      ),
     );
   });
 }

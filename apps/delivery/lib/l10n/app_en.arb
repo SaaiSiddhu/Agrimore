@@ -2432,9 +2432,13 @@
   "@routeNavigateCustomer": {
     "description": "Open Maps to the customer"
   },
-  "routeMapsMissing": "Could not open Google Maps. Please install it and try again.",
-  "@routeMapsMissing": {
-    "description": "Maps did not open"
+  "navFailedTitle": "Could not open navigation",
+  "@navFailedTitle": {
+    "description": "Fallback sheet title when external navigation could not be launched at all"
+  },
+  "navFailedBody": "We couldn't find a compatible navigation app on this device.",
+  "@navFailedBody": {
+    "description": "Fallback sheet body"
   },
   "dashGreeting": "Hello, {name}",
   "@dashGreeting": {
