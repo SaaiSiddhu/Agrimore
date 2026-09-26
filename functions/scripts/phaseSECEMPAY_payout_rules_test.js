@@ -2,6 +2,22 @@
 //  Phase SEC-EMPPAYOUT-1 — employee payouts: one admin transition, immutable amounts
 // ============================================================
 //
+// UPDATED by Phase ADMR-5 (2026-09-26). Phase ADMR-3 replaced this
+// collection's entire conditional update rule with `allow update: if false`
+// — the rules regression this update fixes: e1/e2 below asserted a direct
+// admin write to 'paid' SUCCEEDED (the SEC-EMPPAYOUT-1-era shape), which
+// this repo's own `gate.sh --full --emulator` would have shown red the
+// first time it ran after ADMR-3 merged, undetected until ADMR-5 happened
+// to read this file for a pattern to mirror. markEmployeePayoutPaid and
+// rejectEmployeePayout (functions/src/customer/reviewEmployeePayout.ts) are
+// now the ONLY path for either transition, using the Admin SDK, which
+// bypasses these rules entirely — their own positive-control coverage lives
+// in phase59_employee_payout_review_test.js, not here. This file now proves
+// the negative: NO client write reaches this collection any more, in any
+// shape, from anyone — e3-e9 still hold (trivially, but not wrongly) for
+// the same reason; e10 (read scoping) is unaffected and still the one
+// genuine positive control this file itself can offer.
+//
 // Run with: JAVA_HOME=/opt/homebrew/opt/openjdk@21 firebase emulators:exec
 //             --only firestore "node scripts/phaseSECEMPAY_payout_rules_test.js"
 
@@ -32,9 +48,11 @@ async function main() {
     // Exactly what apps/admin/.../employee_payouts_screen.dart _markPaid writes.
     const adminAppWrite = () => ({ status: "paid", paidAt: serverTimestamp(), updatedAt: serverTimestamp() });
 
-    await record("e1_positive_admin_app_mark_paid", assertSucceeds(doc(adminDb, "q1").update(adminAppWrite())));
-    await record("e2_positive_pending_with_reference_and_payer",
-      assertSucceeds(doc(adminDb, "pend1").update({ ...adminAppWrite(), paymentReference: "UTR123456", paidBy: "admin1" })));
+    // ADMR-5: flipped from assertSucceeds — ADMR-3's `allow update: if false`
+    // means even this exact, previously-legitimate admin write is denied now.
+    await record("e1_negative_direct_admin_write_now_denied_use_the_callable", assertFails(doc(adminDb, "q1").update(adminAppWrite())));
+    await record("e2_negative_direct_write_with_reference_and_payer_also_denied",
+      assertFails(doc(adminDb, "pend1").update({ ...adminAppWrite(), paymentReference: "UTR123456", paidBy: "admin1" })));
     await record("e3_negative_admin_cannot_change_amount", assertFails(doc(adminDb, "q2").update({ ...adminAppWrite(), amount: 99999 })));
     await record("e4_negative_admin_cannot_reassign_employee", assertFails(doc(adminDb, "q3").update({ ...adminAppWrite(), employeeId: "emp2" })));
     await record("e5_negative_cannot_unpay_paid", assertFails(doc(adminDb, "paid1").update({ status: "requested" })));
