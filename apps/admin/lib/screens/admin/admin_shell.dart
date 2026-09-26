@@ -136,6 +136,12 @@ class _AdminShellState extends State<AdminShell> {
       'Delivery Problems',
       AdminRoutes.deliveryProblems,
     ),
+    // DLVSUP1. Appended at the end, same index-stability rule.
+    _NavItem(
+      Icons.support_agent_rounded,
+      'Rider Support',
+      AdminRoutes.riderSupport,
+    ),
   ];
 
   int get _currentIndex {
