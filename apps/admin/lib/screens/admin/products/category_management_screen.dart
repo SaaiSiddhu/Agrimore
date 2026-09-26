@@ -1550,16 +1550,38 @@ class _CategoryFormDialogState extends State<_CategoryFormDialog> {
       final timestamp = DateTime.now().millisecondsSinceEpoch;
       final categorySlug = CategoryModel.generateSlug(_nameController.text.trim());
       
-      // ✅ Upload icon if selected
+      // Phase ADMR-2: _uploadImage returns null on ANY failure (including a
+      // Storage-rules denial). Assigning that null straight over the
+      // previous valid iconUrl/bannerUrl — the old behavior — silently
+      // destroyed a working image on a transient failure. Abort the whole
+      // save instead: nothing is persisted, the previous image and every
+      // other field the admin edited stay exactly as entered, and they can
+      // retry immediately.
       String? iconUrl = _iconUrl;
       if (_iconFile != null) {
-        iconUrl = await _uploadImage(_iconFile!, 'icons', '${categorySlug}_$timestamp.jpg');
+        final uploaded = await _uploadImage(_iconFile!, 'icons', '${categorySlug}_$timestamp.jpg');
+        if (uploaded == null) {
+          if (mounted) {
+            SnackbarHelper.showError(context,
+                'Could not upload the category icon. The previous icon was kept — please try again.');
+          }
+          return;
+        }
+        iconUrl = uploaded;
       }
-      
+
       // ✅ Upload banner if selected
       String? bannerUrl = _bannerUrl;
       if (_bannerFile != null) {
-        bannerUrl = await _uploadImage(_bannerFile!, 'banners', '${categorySlug}_$timestamp.jpg');
+        final uploaded = await _uploadImage(_bannerFile!, 'banners', '${categorySlug}_$timestamp.jpg');
+        if (uploaded == null) {
+          if (mounted) {
+            SnackbarHelper.showError(context,
+                'Could not upload the category banner. The previous banner was kept — please try again.');
+          }
+          return;
+        }
+        bannerUrl = uploaded;
       }
 
       // Resolve level from the ACTUAL selected parent, not from
