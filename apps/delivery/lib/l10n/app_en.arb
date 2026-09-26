@@ -2734,6 +2734,39 @@
   "routeRefresh": "Refresh route",
   "routeRefreshing": "Refreshing route…",
   "routeLastUpdated": "Updated just now",
+  "routeUpdatedMinAgo": "Updated {minutes} min ago",
+  "@routeUpdatedMinAgo": {
+    "description": "Position freshness caption near the map",
+    "placeholders": {
+      "minutes": {
+        "type": "int"
+      }
+    }
+  },
+  "routeStaleTitle": "Your location is out of date",
+  "@routeStaleTitle": {
+    "description": "Stale-location banner title"
+  },
+  "routeStaleBodyRefreshable": "Refresh your location to update the route.",
+  "@routeStaleBodyRefreshable": {
+    "description": "Stale-location banner body when Refresh location is offered"
+  },
+  "routeStaleBodyNative": "Location updates automatically in the background. If this continues, check your settings.",
+  "@routeStaleBodyNative": {
+    "description": "Stale-location banner body when the native service owns sending and no manual refresh is offered"
+  },
+  "routeRefreshLocation": "Refresh location",
+  "@routeRefreshLocation": {
+    "description": "Button"
+  },
+  "routeCheckSettings": "Check settings",
+  "@routeCheckSettings": {
+    "description": "Button"
+  },
+  "routeRefreshFailed": "Could not refresh your location. Try again.",
+  "@routeRefreshFailed": {
+    "description": "Toast when refreshNow() fails"
+  },
   "routeLiveGps": "Live GPS",
   "routeCachedBanner": "Offline · showing last known route",
   "routeCopyCoords": "Copy coordinates",

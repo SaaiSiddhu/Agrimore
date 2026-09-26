@@ -62,7 +62,7 @@ import 'app_localizations_en.dart';
 /// property.
 abstract class AppLocalizations {
   AppLocalizations(String locale)
-      : localeName = intl.Intl.canonicalizedLocale(locale.toString());
+    : localeName = intl.Intl.canonicalizedLocale(locale.toString());
 
   final String localeName;
 
@@ -85,11 +85,11 @@ abstract class AppLocalizations {
   /// of delegates is preferred or required.
   static const List<LocalizationsDelegate<dynamic>> localizationsDelegates =
       <LocalizationsDelegate<dynamic>>[
-    delegate,
-    GlobalMaterialLocalizations.delegate,
-    GlobalCupertinoLocalizations.delegate,
-    GlobalWidgetsLocalizations.delegate,
-  ];
+        delegate,
+        GlobalMaterialLocalizations.delegate,
+        GlobalCupertinoLocalizations.delegate,
+        GlobalWidgetsLocalizations.delegate,
+      ];
 
   /// A list of this localizations delegate's supported locales.
   static const List<Locale> supportedLocales = <Locale>[Locale('en')];
@@ -4180,6 +4180,48 @@ abstract class AppLocalizations {
   /// **'Updated just now'**
   String get routeLastUpdated;
 
+  /// Position freshness caption near the map
+  ///
+  /// In en, this message translates to:
+  /// **'Updated {minutes} min ago'**
+  String routeUpdatedMinAgo(int minutes);
+
+  /// Stale-location banner title
+  ///
+  /// In en, this message translates to:
+  /// **'Your location is out of date'**
+  String get routeStaleTitle;
+
+  /// Stale-location banner body when Refresh location is offered
+  ///
+  /// In en, this message translates to:
+  /// **'Refresh your location to update the route.'**
+  String get routeStaleBodyRefreshable;
+
+  /// Stale-location banner body when the native service owns sending and no manual refresh is offered
+  ///
+  /// In en, this message translates to:
+  /// **'Location updates automatically in the background. If this continues, check your settings.'**
+  String get routeStaleBodyNative;
+
+  /// Button
+  ///
+  /// In en, this message translates to:
+  /// **'Refresh location'**
+  String get routeRefreshLocation;
+
+  /// Button
+  ///
+  /// In en, this message translates to:
+  /// **'Check settings'**
+  String get routeCheckSettings;
+
+  /// Toast when refreshNow() fails
+  ///
+  /// In en, this message translates to:
+  /// **'Could not refresh your location. Try again.'**
+  String get routeRefreshFailed;
+
   /// No description provided for @routeLiveGps.
   ///
   /// In en, this message translates to:
@@ -4746,8 +4788,9 @@ AppLocalizations lookupAppLocalizations(Locale locale) {
   }
 
   throw FlutterError(
-      'AppLocalizations.delegate failed to load unsupported locale "$locale". This is likely '
-      'an issue with the localizations generation tool. Please file an issue '
-      'on GitHub with a reproducible sample app and the gen-l10n configuration '
-      'that was used.');
+    'AppLocalizations.delegate failed to load unsupported locale "$locale". This is likely '
+    'an issue with the localizations generation tool. Please file an issue '
+    'on GitHub with a reproducible sample app and the gen-l10n configuration '
+    'that was used.',
+  );
 }

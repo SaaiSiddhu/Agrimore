@@ -329,6 +329,34 @@ class LocationProvider extends ChangeNotifier with WidgetsBindingObserver {
     }
   }
 
+  /// Phase DLVMAP1: a rider-initiated refresh when the map shows the last
+  /// position as stale. Only meaningful on the Dart-uploader path -- on
+  /// native Android [usesNativeService] is true and RiderLocationService
+  /// alone decides when to send, independent of this provider entirely, so
+  /// this returns false immediately there rather than pretending to help
+  /// (callers should offer "Check settings" instead when this is the case).
+  /// A one-shot [Geolocator.getCurrentPosition] first, never a stream
+  /// restart -- restarting cancels the foreground service and Android 12+
+  /// then refuses to start a new one from the background.
+  Future<bool> refreshNow() async {
+    if (_native || !_isTracking) return false;
+    try {
+      _currentPosition = await Geolocator.getCurrentPosition(
+        locationSettings: const LocationSettings(
+          accuracy: LocationAccuracy.high,
+          timeLimit: DeliveryTiming.goOnlineFixTimeout,
+        ),
+      );
+      _hasUnsentFix = true;
+      notifyListeners();
+      await _maybeUpload(force: true);
+      return true;
+    } catch (e) {
+      debugPrint('LocationProvider.refreshNow: $e');
+      return false;
+    }
+  }
+
   /// Stops the stream, the foreground service and the heartbeat.
   void stopTracking() {
     if (RiderPlatform.available) RiderPlatform.stop();

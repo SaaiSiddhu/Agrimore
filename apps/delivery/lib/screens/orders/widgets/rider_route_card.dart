@@ -17,12 +17,32 @@ import 'package:agrimore_core/agrimore_core.dart'
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:flutter/foundation.dart' show kIsWeb;
 import 'package:flutter/material.dart';
+import 'package:geolocator/geolocator.dart' show Geolocator;
 import 'package:google_maps_flutter/google_maps_flutter.dart';
+import 'package:provider/provider.dart';
 import 'package:url_launcher/url_launcher.dart';
 
 import '../../../design_system/design_system.dart';
 import '../../../l10n/app_localizations.dart';
 import '../../../navigation/rider_navigation.dart';
+import '../../../providers/location_provider.dart';
+
+/// Below this, the rider's live position is shown as stale. Matches
+/// riderIncidents.ts's own FRESH_LOCATION_MS server-side constant for
+/// consistency (a position is "fresh" by the same definition whether the
+/// context is a safety incident or an active-delivery map) -- independent
+/// client/server constants, not a shared import.
+const Duration kStaleLocationThreshold = Duration(minutes: 2);
+
+/// Re-evaluate staleness on a timer, not only on a new Firestore event --
+/// the whole point is to notice when NOTHING has arrived in a while.
+const Duration kStaleLocationCheckInterval = Duration(seconds: 30);
+
+/// Pure (no Firebase, no widget) so it is unit-testable directly: null [at]
+/// (no live point recorded yet) is never stale -- there is nothing yet to
+/// be out of date.
+bool isPositionStale(DateTime? at, DateTime now, {Duration threshold = kStaleLocationThreshold}) =>
+    at != null && now.difference(at) > threshold;
 
 class RiderRouteCard extends StatefulWidget {
   const RiderRouteCard({
@@ -50,6 +70,9 @@ class _RiderRouteCardState extends State<RiderRouteCard> {
   final _subs = <StreamSubscription<dynamic>>[];
   DeliveryTaskModel? _task;
   DeliveryPoint? _rider;
+  DateTime? _riderAt;
+  Timer? _staleTicker;
+  bool _refreshing = false;
   GoogleMapController? _map;
   Size? _mapSize;
   String? _framedFor;
@@ -59,9 +82,18 @@ class _RiderRouteCardState extends State<RiderRouteCard> {
           .collection('delivery_tasks')
           .doc(widget.orderId);
 
+  /// _target/_rider being null already drives the screen's own "waiting for
+  /// position" state, so there is nothing stale to additionally report then.
+  bool get _isStale => isPositionStale(_riderAt, DateTime.now());
+
   @override
   void initState() {
     super.initState();
+    // Re-evaluate staleness even when nothing new arrives -- the whole
+    // point of "stale" is that the position stream has gone quiet.
+    _staleTicker = Timer.periodic(kStaleLocationCheckInterval, (_) {
+      if (mounted) setState(() {});
+    });
     try {
       _subs.add(
         _taskRef.snapshots().listen(
@@ -80,10 +112,10 @@ class _RiderRouteCardState extends State<RiderRouteCard> {
           (s) {
             if (!mounted) return;
             final p = RiderLivePoint.fromMap(s.data());
-            setState(
-              () => _rider =
-                  p == null ? null : DeliveryPoint(lat: p.lat, lng: p.lng),
-            );
+            setState(() {
+              _rider = p == null ? null : DeliveryPoint(lat: p.lat, lng: p.lng);
+              _riderAt = p?.at;
+            });
             _frame();
           },
           onError: (Object e) => debugPrint('Rider route: live stream: $e'),
@@ -105,6 +137,7 @@ class _RiderRouteCardState extends State<RiderRouteCard> {
     for (final s in _subs) {
       s.cancel();
     }
+    _staleTicker?.cancel();
     super.dispose();
   }
 
@@ -213,6 +246,27 @@ class _RiderRouteCardState extends State<RiderRouteCard> {
     }
   }
 
+  Future<void> _refreshLocation() async {
+    setState(() => _refreshing = true);
+    final ok = await context.read<LocationProvider>().refreshNow();
+    if (!mounted) return;
+    setState(() => _refreshing = false);
+    if (!ok) {
+      showDeliveryToast(
+        context,
+        message: AppLocalizations.of(context).routeRefreshFailed,
+        tone: DeliveryBannerTone.danger,
+      );
+    }
+  }
+
+  Future<void> _checkSettings() async {
+    final issue = context.read<LocationProvider>().issue;
+    await (issue == LocationIssue.servicesOff
+        ? Geolocator.openLocationSettings()
+        : Geolocator.openAppSettings());
+  }
+
   @override
   Widget build(BuildContext context) {
     final l = AppLocalizations.of(context);
@@ -318,11 +372,21 @@ class _RiderRouteCardState extends State<RiderRouteCard> {
                 : l.routePending;
 
     final start = target ?? _rider ?? _drop ?? _pickup;
+    final staleMinutes = _riderAt == null ? 0 : DateTime.now().difference(_riderAt!).inMinutes;
+    final usesNativeService = context.watch<LocationProvider>().usesNativeService;
     return DeliveryCard(
       padding: EdgeInsets.zero,
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.stretch,
         children: [
+          if (_isStale)
+            StaleLocationBanner(
+              minutesAgo: staleMinutes,
+              canRefresh: !usesNativeService,
+              refreshing: _refreshing,
+              onRefresh: _refreshLocation,
+              onCheckSettings: _checkSettings,
+            ),
           Container(
             height: DeliverySize.mapHeight,
             color: c.surfaceVariant,
@@ -412,6 +476,93 @@ class _RiderRouteCardState extends State<RiderRouteCard> {
               icon: DeliveryIcons.navigation,
               onPressed: target == null ? null : _navigate,
             ),
+          ),
+        ],
+      ),
+    );
+  }
+}
+
+/// Phase DLVMAP1 (21.6 Stale rider location). [canRefresh] is false on
+/// native Android, where RiderLocationService alone decides when to send --
+/// LocationProvider.refreshNow() is a no-op there, so only "Check settings"
+/// is offered instead of a button that would silently do nothing.
+/// Public (not private): directly widget-tested without needing
+/// RiderRouteCard's own Firestore-backed state (test/rider_route_stale_test.dart).
+class StaleLocationBanner extends StatelessWidget {
+  const StaleLocationBanner({
+    super.key,
+    required this.minutesAgo,
+    required this.canRefresh,
+    required this.refreshing,
+    required this.onRefresh,
+    required this.onCheckSettings,
+  });
+  final int minutesAgo;
+  final bool canRefresh;
+  final bool refreshing;
+  final VoidCallback onRefresh;
+  final VoidCallback onCheckSettings;
+
+  @override
+  Widget build(BuildContext context) {
+    final l = AppLocalizations.of(context);
+    final c = context.colors;
+    final t = context.text;
+    final pair = c.tone(DeliveryTone.warning);
+    return Container(
+      color: pair.container,
+      padding: const EdgeInsets.all(DeliverySpace.md),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Row(
+            children: [
+              Icon(DeliveryIcons.pending, color: pair.text, size: DeliveryIconSize.md),
+              const SizedBox(width: DeliverySpace.sm),
+              Expanded(
+                child: Text(
+                  l.routeStaleTitle,
+                  style: t.titleSmall.copyWith(color: pair.text),
+                ),
+              ),
+            ],
+          ),
+          const SizedBox(height: DeliverySpace.s2),
+          Text(
+            // This banner only renders when _isStale, which itself requires
+            // more than kStaleLocationThreshold (2 min) to have passed.
+            l.routeUpdatedMinAgo(minutesAgo),
+            style: t.bodySmall.copyWith(color: c.textSecondary),
+          ),
+          Text(
+            canRefresh ? l.routeStaleBodyRefreshable : l.routeStaleBodyNative,
+            style: t.bodySmall.copyWith(color: c.textSecondary),
+          ),
+          const SizedBox(height: DeliverySpace.sm),
+          Row(
+            children: [
+              if (canRefresh) ...[
+                Expanded(
+                  child: DeliveryButton.secondary(
+                    key: const ValueKey('route-refresh-location'),
+                    label: l.routeRefreshLocation,
+                    icon: DeliveryIcons.refresh,
+                    isLoading: refreshing,
+                    onPressed: refreshing ? null : onRefresh,
+                  ),
+                ),
+                const SizedBox(width: DeliverySpace.sm),
+              ],
+              Expanded(
+                child: DeliveryButton.secondary(
+                  key: const ValueKey('route-check-settings'),
+                  label: l.routeCheckSettings,
+                  icon: DeliveryIcons.settings,
+                  onPressed: onCheckSettings,
+                ),
+              ),
+            ],
           ),
         ],
       ),

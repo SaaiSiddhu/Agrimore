@@ -5,14 +5,21 @@
 // the screen that wires it up is never exercised at all.
 import 'package:agrimore_core/agrimore_core.dart' show OrderModel;
 import 'package:delivery/l10n/app_localizations.dart';
+import 'package:delivery/providers/location_provider.dart';
 import 'package:delivery/screens/orders/active_order_screen.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
+import 'package:provider/provider.dart';
 
-Widget _wrap(Widget home) => MaterialApp(
-      localizationsDelegates: AppLocalizations.localizationsDelegates,
-      supportedLocales: AppLocalizations.supportedLocales,
-      home: home,
+// RiderRouteCard (DLVMAP1) reads LocationProvider for the stale-location
+// banner's Refresh-location/native-service branching.
+Widget _wrap(Widget home) => ChangeNotifierProvider<LocationProvider>(
+      create: (_) => LocationProvider(),
+      child: MaterialApp(
+        localizationsDelegates: AppLocalizations.localizationsDelegates,
+        supportedLocales: AppLocalizations.supportedLocales,
+        home: home,
+      ),
     );
 
 OrderModel _order({required String status}) => OrderModel.fromMap({
