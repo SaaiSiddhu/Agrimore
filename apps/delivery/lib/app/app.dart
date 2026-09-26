@@ -19,7 +19,7 @@ import '../providers/order_provider.dart';
 import '../screens/auth/login_screen.dart';
 import '../screens/auth/pending_approval_screen.dart';
 import '../screens/auth/rider_registration_screen.dart';
-import '../screens/home/dashboard_screen.dart';
+import 'delivery_shell.dart';
 
 class App extends StatefulWidget {
   const App({super.key, this.appearance});
@@ -118,11 +118,13 @@ class _RiderSessionGateState extends State<RiderSessionGate> {
     if (auth.isLoading) return const _LoadingAccount();
     if (auth.isAuthenticated && auth.isDeliveryPartner) {
       // Phase DLV-2B: the coordinator listens for this rider's offers and
-      // opens the incoming-offer screen above the dashboard.
+      // opens the incoming-offer screen above whichever tab is showing.
+      // DLVNAV1: moved from wrapping DashboardScreen alone to wrapping the
+      // whole shell, so an offer interrupts safely from any tab.
       return OfferCoordinator(
         key: ValueKey(auth.user!.uid),
         riderId: auth.user!.uid,
-        child: const DashboardScreen(),
+        child: const DeliveryShell(),
       );
     }
     if (auth.isBlocked) return const DeliveryPendingApprovalScreen();

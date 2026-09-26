@@ -19,12 +19,12 @@ import '../../location/location_policy.dart';
 import '../../money/rider_money.dart';
 import '../../offers/offer_alerts.dart';
 import '../../offers/offer_launch.dart';
-import '../../offers/offer_platform.dart';
 import '../../providers/auth_provider.dart';
 import '../../providers/location_provider.dart';
 import '../../providers/offer_provider.dart';
 import '../../providers/order_provider.dart';
 import '../../safety/emergency_sheet.dart';
+import '../../app/delivery_tab.dart';
 import '../history/rider_history_screen.dart';
 import '../inbox/inbox_screen.dart';
 import '../money/money_screen.dart';
@@ -38,12 +38,20 @@ class DashboardScreen extends StatefulWidget {
     this.inboxSource,
     this.earningsSource,
     this.accountSource,
+    this.onOpenTab,
   });
 
   /// Injected in tests.
   final RiderInboxSource? inboxSource;
   final Stream<List<RiderEarning>> Function(String riderId)? earningsSource;
   final Stream<RiderAccount> Function(String riderId)? accountSource;
+
+  /// DLVNAV1: when this screen runs as the shell's Home tab, its four
+  /// internal destinations (profile, inbox, earnings, deliveries) switch
+  /// tabs through this instead of pushing a duplicate tab-root route. Null
+  /// when this screen is not inside a shell (standalone, tests): falls back
+  /// to the original push behaviour unchanged.
+  final void Function(DeliveryTab tab)? onOpenTab;
 
   @override
   State<DashboardScreen> createState() => _DashboardScreenState();
@@ -171,60 +179,66 @@ class _DashboardScreenState extends State<DashboardScreen> {
   @override
   Widget build(BuildContext context) {
     final c = context.colors;
-    return PopScope(
-      canPop: !_isOnline,
-      onPopInvokedWithResult: (didPop, _) async {
-        if (didPop) return;
-        if (!await OfferPlatform.moveToBackground()) {
-          await SystemNavigator.pop();
-        }
-      },
-      child: Scaffold(
-        backgroundColor: c.background,
-        body: SafeArea(
-          child: Column(
-            children: [
-              _buildHeader(),
-              _buildOnlineToggle(),
-              Expanded(
-                child: Consumer<DeliveryOrderProvider>(
-                  builder: (context, orderProvider, _) {
-                    final work = orderProvider.work;
-                    final Widget body;
-                    if (!work.loaded) {
-                      body = const ActiveWorkLoading();
-                    } else if (work.hasMultiple) {
-                      body = MultipleActiveOrders(
-                        orders: work.orders,
-                        onOpen: _openOrder,
-                      );
-                    } else if (work.single != null) {
-                      body = _buildActiveOrderCard(work.single!);
-                    } else if (work.error != null) {
-                      body = ActiveWorkError(
-                        error: work.error!,
-                        onRetry: orderProvider.retry,
-                      );
-                    } else {
-                      body = _buildDashboardContent();
-                    }
-                    return Column(
-                      children: [
-                        if (work.loaded &&
-                            (work.fromCache || work.error != null) &&
-                            work.orders.isNotEmpty)
-                          const StaleDataBanner(),
-                        Expanded(child: body),
-                      ],
+    return Scaffold(
+      backgroundColor: c.background,
+      body: SafeArea(
+        child: Column(
+          children: [
+            _buildHeader(),
+            _buildOnlineToggle(),
+            Expanded(
+              child: Consumer<DeliveryOrderProvider>(
+                builder: (context, orderProvider, _) {
+                  final work = orderProvider.work;
+                  final Widget body;
+                  if (!work.loaded) {
+                    body = const ActiveWorkLoading();
+                  } else if (work.hasMultiple) {
+                    body = MultipleActiveOrders(
+                      orders: work.orders,
+                      onOpen: _openOrder,
                     );
-                  },
-                ),
+                  } else if (work.single != null) {
+                    body = ActiveOrderSummaryCard(
+                      order: work.single!,
+                      onOpen: _openOrder,
+                    );
+                  } else if (work.error != null) {
+                    body = ActiveWorkError(
+                      error: work.error!,
+                      onRetry: orderProvider.retry,
+                    );
+                  } else {
+                    body = _buildDashboardContent();
+                  }
+                  return Column(
+                    children: [
+                      if (work.loaded &&
+                          (work.fromCache || work.error != null) &&
+                          work.orders.isNotEmpty)
+                        const StaleDataBanner(),
+                      Expanded(child: body),
+                    ],
+                  );
+                },
               ),
-            ],
-          ),
+            ),
+          ],
         ),
       ),
     );
+  }
+
+  /// DLVNAV1: switches to [tab] when running inside the shell, else falls
+  /// back to pushing [fallback] (the original standalone behaviour).
+  void _openTab(DeliveryTab tab, Widget Function() fallback) {
+    final go = widget.onOpenTab;
+    if (go != null) {
+      go(tab);
+      return;
+    }
+    Navigator.of(context)
+        .push(MaterialPageRoute<void>(builder: (_) => fallback()));
   }
 
   Widget _buildHeader() {
@@ -247,10 +261,9 @@ class _DashboardScreenState extends State<DashboardScreen> {
               IconButton(
                 key: const ValueKey('open-profile'),
                 tooltip: l.profileOpen,
-                onPressed: () => Navigator.of(context).push(
-                  MaterialPageRoute<void>(
-                    builder: (_) => const RiderProfileScreen(),
-                  ),
+                onPressed: () => _openTab(
+                  DeliveryTab.profile,
+                  () => const RiderProfileScreen(),
                 ),
                 icon: CircleAvatar(
                   radius: DeliverySize.avatarMd / 2,
@@ -286,7 +299,14 @@ class _DashboardScreenState extends State<DashboardScreen> {
                 ),
               ),
               if (auth.user != null)
-                InboxButton(riderId: auth.user!.uid, source: _inbox),
+                InboxButton(
+                  riderId: auth.user!.uid,
+                  source: _inbox,
+                  onOpen: () => _openTab(
+                    DeliveryTab.inbox,
+                    () => InboxScreen(riderId: auth.user!.uid, source: _inbox),
+                  ),
+                ),
               IconButton(
                 onPressed: () => showEmergencySheet(context),
                 icon: Icon(DeliveryIcons.emergency, color: c.danger.icon),
@@ -457,10 +477,7 @@ class _DashboardScreenState extends State<DashboardScreen> {
   void _openMoney() {
     final uid = _auth?.user?.uid;
     if (uid == null) return;
-    Navigator.push(
-      context,
-      MaterialPageRoute(builder: (_) => MoneyScreen(riderId: uid)),
-    );
+    _openTab(DeliveryTab.earnings, () => MoneyScreen(riderId: uid));
   }
 
   /// Builds [child] with this week's pay, today's pay and cash held, formatted.
@@ -543,67 +560,6 @@ class _DashboardScreenState extends State<DashboardScreen> {
     );
   }
 
-  Widget _buildActiveOrderCard(OrderModel order) {
-    final l = AppLocalizations.of(context);
-    final c = context.colors;
-    final t = context.text;
-    return Center(
-      child: Padding(
-        padding: const EdgeInsets.all(DeliverySpace.page),
-        child: DeliveryCard(
-          variant: DeliveryCardVariant.brand,
-          padding: const EdgeInsets.all(DeliverySpace.xl),
-          child: Column(
-            mainAxisSize: MainAxisSize.min,
-            crossAxisAlignment: CrossAxisAlignment.stretch,
-            children: [
-              Row(
-                children: [
-                  Container(
-                    width: DeliverySize.avatarLg,
-                    height: DeliverySize.avatarLg,
-                    decoration: BoxDecoration(
-                      color: c.brand,
-                      borderRadius: DeliveryRadius.rMd,
-                    ),
-                    alignment: Alignment.center,
-                    child: Icon(
-                      DeliveryIcons.rider,
-                      color: c.onBrand,
-                      size: DeliveryIconSize.lg,
-                    ),
-                  ),
-                  const SizedBox(width: DeliverySpace.md),
-                  Expanded(
-                    child: Column(
-                      crossAxisAlignment: CrossAxisAlignment.start,
-                      children: [
-                        Text(
-                          l.dashActiveTitle,
-                          style: t.titleMedium.copyWith(color: c.textPrimary),
-                        ),
-                        Text(
-                          l.offerOrderNumber(order.orderNumber),
-                          style: t.bodySmall.copyWith(color: c.textSecondary),
-                        ),
-                      ],
-                    ),
-                  ),
-                ],
-              ),
-              const SizedBox(height: DeliverySpace.xl),
-              DeliveryButton.primary(
-                label: l.dashViewDetails,
-                icon: DeliveryIcons.chevronRight,
-                onPressed: () => _openOrder(order),
-              ),
-            ],
-          ),
-        ),
-      ),
-    );
-  }
-
   void _openOrder(OrderModel order) {
     Navigator.of(context).push(
       MaterialPageRoute<void>(builder: (_) => ActiveOrderScreen(order: order)),
@@ -611,9 +567,7 @@ class _DashboardScreenState extends State<DashboardScreen> {
   }
 
   void _showDeliveryHistory() {
-    Navigator.of(context).push(
-      MaterialPageRoute<void>(builder: (_) => const RiderHistoryScreen()),
-    );
+    _openTab(DeliveryTab.deliveries, () => const RiderHistoryScreen());
   }
 
   void _toggleOnline(bool value) async {

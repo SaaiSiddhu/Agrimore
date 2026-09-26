@@ -106,6 +106,36 @@ abstract class AppLocalizations {
   /// **'Loading your account'**
   String get loadingAccount;
 
+  /// Bottom navigation label: the dashboard tab
+  ///
+  /// In en, this message translates to:
+  /// **'Home'**
+  String get navHome;
+
+  /// Bottom navigation label: active work and delivery history
+  ///
+  /// In en, this message translates to:
+  /// **'Deliveries'**
+  String get navDeliveries;
+
+  /// Bottom navigation label: pay, cash and statements
+  ///
+  /// In en, this message translates to:
+  /// **'Earnings'**
+  String get navEarnings;
+
+  /// Bottom navigation label: notifications
+  ///
+  /// In en, this message translates to:
+  /// **'Inbox'**
+  String get navInbox;
+
+  /// Bottom navigation label: the rider's own account
+  ///
+  /// In en, this message translates to:
+  /// **'Profile'**
+  String get navProfile;
+
   /// Sign-in refused: wrong email/password
   ///
   /// In en, this message translates to:

@@ -12,9 +12,36 @@ import '../../money/money_text.dart';
 import '../../money/rider_money.dart';
 import 'statement_screen.dart';
 
+/// A rider's payout destination, as far as the app may show it.
+typedef PayoutDetails = ({
+  String? maskedAccount,
+  String? ifsc,
+  String? upiId,
+  String? holder,
+});
+
 class MoneyScreen extends StatefulWidget {
-  const MoneyScreen({super.key, required this.riderId});
+  const MoneyScreen({
+    super.key,
+    required this.riderId,
+    this.earningsSource,
+    this.accountSource,
+    this.payoutsSource,
+    this.bankChangeSource,
+    this.payoutDetailsSource,
+    this.cashLimit,
+  });
   final String riderId;
+
+  /// Injectable in tests, the same seam DLV-S1 established for
+  /// DashboardScreen: null keeps the real Firestore-backed defaults, so
+  /// production behaviour is unchanged.
+  final Stream<List<RiderEarning>> Function(String riderId)? earningsSource;
+  final Stream<RiderAccount> Function(String riderId)? accountSource;
+  final Stream<List<RiderPayout>> Function(String riderId)? payoutsSource;
+  final Stream<BankChangeRequest?> Function(String riderId)? bankChangeSource;
+  final Stream<PayoutDetails> Function(String riderId)? payoutDetailsSource;
+  final Future<double?> Function()? cashLimit;
 
   @override
   State<MoneyScreen> createState() => _MoneyScreenState();
@@ -22,18 +49,18 @@ class MoneyScreen extends StatefulWidget {
 
 class _MoneyScreenState extends State<MoneyScreen> {
   late final RiderMoneyService _money = RiderMoneyService(widget.riderId);
-  late final Stream<List<RiderEarning>> _earnings = _money.unsettledEarnings();
-  late final Stream<RiderAccount> _account = _money.account();
-  late final Stream<List<RiderPayout>> _payouts = _money.payouts();
-  late final Stream<BankChangeRequest?> _bankChange = _money.latestBankChange();
-  late final Stream<
-      ({
-        String? maskedAccount,
-        String? ifsc,
-        String? upiId,
-        String? holder,
-      })> _details = _money.payoutDetails();
-  late final Future<double?> _cashLimit = RiderMoneyService.codCashLimit();
+  late final Stream<List<RiderEarning>> _earnings =
+      widget.earningsSource?.call(widget.riderId) ?? _money.unsettledEarnings();
+  late final Stream<RiderAccount> _account =
+      widget.accountSource?.call(widget.riderId) ?? _money.account();
+  late final Stream<List<RiderPayout>> _payouts =
+      widget.payoutsSource?.call(widget.riderId) ?? _money.payouts();
+  late final Stream<BankChangeRequest?> _bankChange =
+      widget.bankChangeSource?.call(widget.riderId) ?? _money.latestBankChange();
+  late final Stream<PayoutDetails> _details =
+      widget.payoutDetailsSource?.call(widget.riderId) ?? _money.payoutDetails();
+  late final Future<double?> _cashLimit =
+      widget.cashLimit?.call() ?? RiderMoneyService.codCashLimit();
 
   @override
   Widget build(BuildContext context) {

@@ -4,6 +4,7 @@
 // Tapping a notice marks it read and, for money notices, opens Earnings.
 import 'package:flutter/material.dart';
 
+import '../../app/delivery_tab.dart';
 import '../../design_system/design_system.dart';
 import '../../inbox/rider_inbox.dart';
 import '../../l10n/app_localizations.dart';
@@ -14,9 +15,16 @@ class InboxScreen extends StatefulWidget {
     super.key,
     required this.riderId,
     required this.source,
+    this.onOpenTab,
   });
   final String riderId;
   final RiderInboxSource source;
+
+  /// DLVNAV1: when this screen runs as the shell's Inbox tab, a money
+  /// notice switches to the Earnings tab through this instead of pushing a
+  /// duplicate tab-root route. Null when not inside a shell (standalone,
+  /// tests): falls back to the original push behaviour unchanged.
+  final void Function(DeliveryTab tab)? onOpenTab;
 
   @override
   State<InboxScreen> createState() => _InboxScreenState();
@@ -46,6 +54,11 @@ class _InboxScreenState extends State<InboxScreen> {
   void _open(RiderNotice n) {
     if (n.unread) _markRead([n.id]);
     if (n.target == NoticeTarget.money) {
+      final go = widget.onOpenTab;
+      if (go != null) {
+        go(DeliveryTab.earnings);
+        return;
+      }
       Navigator.of(context).push(
         MaterialPageRoute<void>(
           builder: (_) => MoneyScreen(riderId: widget.riderId),
@@ -183,9 +196,15 @@ class InboxButton extends StatefulWidget {
     super.key,
     required this.riderId,
     required this.source,
+    this.onOpen,
   });
   final String riderId;
   final RiderInboxSource source;
+
+  /// DLVNAV1: overrides the default push-to-InboxScreen tap behaviour (used
+  /// when this button sits inside the shell and tapping it should switch
+  /// to the Inbox tab instead). Null keeps the original push.
+  final VoidCallback? onOpen;
 
   @override
   State<InboxButton> createState() => _InboxButtonState();
@@ -212,14 +231,15 @@ class _InboxButtonState extends State<InboxButton> {
         return IconButton(
           key: const ValueKey('open-inbox'),
           tooltip: n > 0 ? l.inboxOpenUnread(n) : l.inboxOpen,
-          onPressed: () => Navigator.of(context).push(
-            MaterialPageRoute<void>(
-              builder: (_) => InboxScreen(
-                riderId: widget.riderId,
-                source: widget.source,
-              ),
-            ),
-          ),
+          onPressed: widget.onOpen ??
+              () => Navigator.of(context).push(
+                    MaterialPageRoute<void>(
+                      builder: (_) => InboxScreen(
+                        riderId: widget.riderId,
+                        source: widget.source,
+                      ),
+                    ),
+                  ),
           icon: Badge(
             isLabelVisible: n > 0,
             label: Text(unreadBadgeText(n)),

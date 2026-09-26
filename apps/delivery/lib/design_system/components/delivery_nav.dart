@@ -21,8 +21,9 @@ class DeliveryNavDestination {
   final int badgeCount;
 }
 
-/// 4-tab bottom navigation bar (`Orders`, `Money`, `History`, `Profile`)
-/// with burnt-orange active indicator pill and tabular badge counts.
+/// The 5-tab bottom navigation bar (`Home`, `Deliveries`, `Earnings`,
+/// `Inbox`, `Profile` — see `DeliveryShell`) with burnt-orange active
+/// indicator pill and tabular badge counts.
 class DeliveryBottomNav extends StatelessWidget {
   const DeliveryBottomNav({
     super.key,

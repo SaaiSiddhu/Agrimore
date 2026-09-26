@@ -14,6 +14,7 @@ import '../../money/money_text.dart';
 import '../../money/rider_money.dart';
 import '../../providers/order_provider.dart';
 import '../home/active_work_states.dart';
+import '../orders/active_order_screen.dart';
 
 String historyStatusText(AppLocalizations l, String orderStatus) {
   final s = DeliveryTaskStatus.fromOrderStatus(
@@ -71,66 +72,89 @@ class _RiderHistoryScreenState extends State<RiderHistoryScreen> {
     );
   }
 
+  void _openOrder(OrderModel order) {
+    Navigator.of(context).push(
+      MaterialPageRoute<void>(builder: (_) => ActiveOrderScreen(order: order)),
+    );
+  }
+
   @override
   Widget build(BuildContext context) {
     final l10n = AppLocalizations.of(context);
     final c = context.colors;
+    // DLVNAV1: this is the shell's Deliveries tab — "active work and
+    // delivery history" (brief §4) — so active work leads, independent of
+    // whatever state the history list below is in.
+    final work = context.watch<DeliveryOrderProvider>().work;
     return Scaffold(
       backgroundColor: c.background,
       appBar: AppBar(title: Text(l10n.historyTitle)),
-      body: ListenableBuilder(
-        listenable: _history,
-        builder: (context, _) {
-          final items = _history.items;
-          if (items.isEmpty && _history.loading) {
-            return const ActiveWorkLoading();
-          }
-          if (items.isEmpty && _history.error != null) {
-            return ActiveWorkError(
-              error: _history.error!,
-              onRetry: _history.refresh,
-            );
-          }
-          if (items.isEmpty && !_history.hasMore) {
-            return Column(
-              children: [
-                _Filters(history: _history),
-                Expanded(
-                  child: _Empty(
-                    text: _history.filter == HistoryFilter.all
-                        ? l10n.historyEmpty
-                        : l10n.historyEmptyFiltered,
-                  ),
-                ),
-              ],
-            );
-          }
-          return RefreshIndicator(
-            onRefresh: _history.refresh,
-            child: ListView.separated(
-              padding: const EdgeInsets.symmetric(vertical: DeliverySpace.sm),
-              itemCount: items.length + 2,
-              separatorBuilder: (_, i) => i == 0
-                  ? const SizedBox.shrink()
-                  : const Divider(height: DeliverySize.hairline),
-              itemBuilder: (context, i) {
-                if (i == 0) {
+      body: Column(
+        children: [
+          if (work.hasMultiple)
+            MultipleActiveOrders(orders: work.orders, onOpen: _openOrder)
+          else if (work.single != null)
+            ActiveOrderSummaryCard(order: work.single!, onOpen: _openOrder),
+          Expanded(
+            child: ListenableBuilder(
+              listenable: _history,
+              builder: (context, _) {
+                final items = _history.items;
+                if (items.isEmpty && _history.loading) {
+                  return const ActiveWorkLoading();
+                }
+                if (items.isEmpty && _history.error != null) {
+                  return ActiveWorkError(
+                    error: _history.error!,
+                    onRetry: _history.refresh,
+                  );
+                }
+                if (items.isEmpty && !_history.hasMore) {
                   return Column(
                     children: [
                       _Filters(history: _history),
-                      _Hint(text: l10n.historyHint),
+                      Expanded(
+                        child: _Empty(
+                          text: _history.filter == HistoryFilter.all
+                              ? l10n.historyEmpty
+                              : l10n.historyEmptyFiltered,
+                        ),
+                      ),
                     ],
                   );
                 }
-                if (i == items.length + 1) return _Footer(history: _history);
-                return _HistoryRow(
-                  order: items[i - 1],
-                  onTap: () => _openDetail(items[i - 1]),
+                return RefreshIndicator(
+                  onRefresh: _history.refresh,
+                  child: ListView.separated(
+                    padding:
+                        const EdgeInsets.symmetric(vertical: DeliverySpace.sm),
+                    itemCount: items.length + 2,
+                    separatorBuilder: (_, i) => i == 0
+                        ? const SizedBox.shrink()
+                        : const Divider(height: DeliverySize.hairline),
+                    itemBuilder: (context, i) {
+                      if (i == 0) {
+                        return Column(
+                          children: [
+                            _Filters(history: _history),
+                            _Hint(text: l10n.historyHint),
+                          ],
+                        );
+                      }
+                      if (i == items.length + 1) {
+                        return _Footer(history: _history);
+                      }
+                      return _HistoryRow(
+                        order: items[i - 1],
+                        onTap: () => _openDetail(items[i - 1]),
+                      );
+                    },
+                  ),
                 );
               },
             ),
-          );
-        },
+          ),
+        ],
       ),
     );
   }

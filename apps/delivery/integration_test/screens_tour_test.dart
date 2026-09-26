@@ -3,6 +3,7 @@ import 'dart:typed_data';
 
 import 'package:agrimore_core/agrimore_core.dart' show OrderModel;
 import 'package:delivery/account/rider_account.dart';
+import 'package:delivery/app/delivery_shell.dart';
 import 'package:delivery/auth/rider_account_source.dart';
 import 'package:delivery/data/rider_work.dart';
 import 'package:delivery/delivery/delivery_problems.dart';
@@ -379,6 +380,39 @@ void main() {
       '00b_dashboard_waiting_dark',
       dashboardFixture(),
       brightness: Brightness.dark,
+    );
+
+    // 0c/0d. DLVNAV1: the five-tab shell itself -- DeliveryBottomNav had
+    // zero instantiations anywhere in the app before this phase. Same
+    // fixture pattern as the dashboard shots above, reused for the shell's
+    // own Home tab and, via `before:`, the real Deliveries tab reached by
+    // tapping the bottom nav -- proving the nav bar is visible, correctly
+    // selected, and switches to a real production screen, not just that
+    // the widget tests pass.
+    Widget shellFixture() => MultiProvider(
+          providers: [
+            ChangeNotifierProvider<DeliveryOrderProvider>.value(value: fakeOrders()),
+            ChangeNotifierProvider<LocationProvider>(create: (_) => LocationProvider()),
+          ],
+          child: DeliveryShell(
+            inboxSource: _FakeInbox(),
+            earningsSource: (_) => Stream.value(const <RiderEarning>[]),
+            accountSource: (_) => Stream.value(
+              RiderAccount.fromMap(const {'cashHeld': 0}),
+            ),
+          ),
+        );
+
+    await shot(tester, '00c_shell_home_light', shellFixture());
+    await shot(
+      tester,
+      '00d_shell_deliveries_dark',
+      shellFixture(),
+      brightness: Brightness.dark,
+      before: (t) async {
+        await t.tap(find.text('Deliveries'));
+        await t.pumpAndSettle();
+      },
     );
 
     // 1. Login Light, Dark & 200% Text Scale
