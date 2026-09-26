@@ -462,10 +462,13 @@ class AppLocalizationsEn extends AppLocalizations {
 
   @override
   String get profileLockedNote =>
-      'To change your mobile number, vehicle, licence or Aadhaar, contact Agrimore support — an admin reviews those changes.';
+      'To change your mobile number, licence or Aadhaar, contact Agrimore support — an admin reviews those changes.';
 
   @override
   String get profileRequestNameChange => 'Request name change';
+
+  @override
+  String get profileRequestVehicleChange => 'Request vehicle update';
 
   @override
   String get identityChangeTitle => 'Request identity change';
@@ -475,6 +478,15 @@ class AppLocalizationsEn extends AppLocalizations {
 
   @override
   String get identityChangeProposedName => 'New name';
+
+  @override
+  String get identityChangeCurrentVehicle => 'Current vehicle';
+
+  @override
+  String get identityChangeProposedVehicleType => 'New vehicle type';
+
+  @override
+  String get identityChangeProposedVehicleNumber => 'New registration number';
 
   @override
   String get identityChangeReasonLabel => 'Reason for change';
@@ -510,8 +522,11 @@ class AppLocalizationsEn extends AppLocalizations {
   String get identityChangeInvalid => 'Check your details and try again.';
 
   @override
-  String get errIdentityProposedValue =>
+  String get errIdentityName =>
       'Enter your full legal name (2–100 characters).';
+
+  @override
+  String get errIdentityVehicleType => 'Choose a vehicle type.';
 
   @override
   String get errIdentityReason => 'Enter a reason (3–250 characters).';

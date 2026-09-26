@@ -1,7 +1,7 @@
 import 'dart:async';
 import 'dart:typed_data';
 
-import 'package:agrimore_core/agrimore_core.dart' show OrderModel;
+import 'package:agrimore_core/agrimore_core.dart' show OrderModel, VehicleType;
 import 'package:delivery/account/rider_account.dart';
 import 'package:delivery/app/delivery_shell.dart';
 import 'package:delivery/data/order_timeline.dart';
@@ -837,10 +837,46 @@ void main() {
           current: IdentityChangeRequest(
             id: 'req-1',
             changeType: kIdentityChangeTypeName,
-            proposedValue: 'Ravikumar S',
+            proposedValues: const {'name': 'Ravikumar S'},
             reason: 'Name updated as per new government ID',
             status: IdentityChangeStatus.rejected,
             rejectionReason: 'Supporting document is unclear',
+            createdAt: DateTime(2026, 9, 18),
+          ),
+        ),
+      ),
+      brightness: Brightness.dark,
+    );
+
+    // 11c. DLVID2: the same mechanism generalized to a vehicle change --
+    // form, then a rejected request showing both fields together.
+    await shot(
+      tester,
+      '23d_identity_change_vehicle_form_light',
+      IdentityChangeScreen(
+        riderId: 'r-tour',
+        changeType: kIdentityChangeTypeVehicle,
+        currentVehicleType: VehicleType.bike,
+        currentVehicleNumber: 'TN01AB1234',
+        backend: _FakeIdentityBackend(),
+      ),
+    );
+    await shot(
+      tester,
+      '23e_identity_change_vehicle_rejected_dark',
+      IdentityChangeScreen(
+        riderId: 'r-tour',
+        changeType: kIdentityChangeTypeVehicle,
+        currentVehicleType: VehicleType.bike,
+        currentVehicleNumber: 'TN01AB1234',
+        backend: _FakeIdentityBackend(
+          current: IdentityChangeRequest(
+            id: 'req-2',
+            changeType: kIdentityChangeTypeVehicle,
+            proposedValues: const {'vehicleType': 'car', 'vehicleNumber': 'TN09XY5678'},
+            reason: 'Upgraded to a car',
+            status: IdentityChangeStatus.rejected,
+            rejectionReason: 'Registration number does not match the RC copy on file',
             createdAt: DateTime(2026, 9, 18),
           ),
         ),
@@ -856,7 +892,7 @@ class _FakeIdentityBackend implements RiderIdentityBackend {
   @override
   Future<String> requestChange({
     required String changeType,
-    required String proposedValue,
+    required Map<String, String> proposedValues,
     required String reason,
   }) async =>
       'req-tour';

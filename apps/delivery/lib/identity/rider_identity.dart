@@ -6,32 +6,39 @@
 // (backend interface + real callable-backed default) and rider_money.dart's
 // BankChangeRequest (same pending/approved/rejected + rejectionReason shape,
 // server-managed, firestore.rules lets only the owner or admin read it).
+//
+// Phase DLVID2 generalized the stored shape from one proposedValue string to
+// a proposedValues map, and added "vehicle" (vehicleType + vehicleNumber
+// together) as a second change type -- see riderIdentity.ts for why "vehicle
+// registration" / "insurance" documents and per-document status are not.
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:cloud_functions/cloud_functions.dart';
 import 'package:flutter/foundation.dart';
 
-/// The only change type this phase offers. `delivery_partners` has no
-/// dateOfBirth field to change at all -- adding one is a product/schema
-/// decision out of scope here, not a small gap.
 const String kIdentityChangeTypeName = 'name';
+const String kIdentityChangeTypeVehicle = 'vehicle';
 
 enum IdentityChangeStatus { pending, approved, rejected }
+
+Map<String, String> _asStringMap(dynamic v) => v is Map
+    ? v.map((k, val) => MapEntry(k.toString(), val?.toString() ?? ''))
+    : const {};
 
 class IdentityChangeRequest {
   const IdentityChangeRequest({
     required this.id,
     required this.changeType,
-    required this.proposedValue,
+    required this.proposedValues,
     required this.reason,
     required this.status,
-    this.currentValue,
+    this.currentValues = const {},
     this.rejectionReason,
     this.createdAt,
   });
   final String id;
   final String changeType;
-  final String? currentValue;
-  final String proposedValue;
+  final Map<String, String> currentValues;
+  final Map<String, String> proposedValues;
   final String reason;
   final IdentityChangeStatus status;
   final String? rejectionReason;
@@ -41,8 +48,8 @@ class IdentityChangeRequest {
       IdentityChangeRequest(
         id: id,
         changeType: (m['changeType'] as String?) ?? '',
-        currentValue: m['currentValue'] as String?,
-        proposedValue: (m['proposedValue'] as String?) ?? '',
+        currentValues: _asStringMap(m['currentValues']),
+        proposedValues: _asStringMap(m['proposedValues']),
         reason: (m['reason'] as String?) ?? '',
         status: switch (m['status'] as String?) {
           'approved' => IdentityChangeStatus.approved,
@@ -63,9 +70,9 @@ class IdentityRequestException implements Exception {
   const IdentityRequestException(this.failure, [this.field]);
   final IdentityRequestFailure failure;
 
-  /// Which field was invalid ('proposedValue' or 'reason'), when
-  /// [failure] is [IdentityRequestFailure.invalid] and the server named
-  /// one -- lets the form show the error inline, matching
+  /// Which field was invalid ('name', 'vehicleType', 'vehicleNumber' or
+  /// 'reason'), when [failure] is [IdentityRequestFailure.invalid] and the
+  /// server named one -- lets the form show the error inline, matching
   /// ContactEditSheet's own established convention, rather than one
   /// generic toast for every kind of invalid input.
   final String? field;
@@ -88,10 +95,12 @@ IdentityRequestException identityRequestExceptionOf(String code, String? reason)
 }
 
 abstract class RiderIdentityBackend {
-  /// Returns the new request's id.
+  /// Returns the new request's id. [proposedValues] carries every field this
+  /// [changeType] touches at once (e.g. vehicleType + vehicleNumber
+  /// together for 'vehicle').
   Future<String> requestChange({
     required String changeType,
-    required String proposedValue,
+    required Map<String, String> proposedValues,
     required String reason,
   });
 
@@ -111,7 +120,7 @@ class CallableRiderIdentityBackend implements RiderIdentityBackend {
   @override
   Future<String> requestChange({
     required String changeType,
-    required String proposedValue,
+    required Map<String, String> proposedValues,
     required String reason,
   }) async {
     try {
@@ -119,7 +128,7 @@ class CallableRiderIdentityBackend implements RiderIdentityBackend {
           .httpsCallable('requestRiderIdentityChange')
           .call<dynamic>({
         'changeType': changeType,
-        'proposedValue': proposedValue,
+        'proposedValues': proposedValues,
         'reason': reason,
       });
       return (r.data as Map)['requestId'] as String;

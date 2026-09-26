@@ -579,13 +579,17 @@
   "@profileEditContact": {
     "description": "Button"
   },
-  "profileLockedNote": "To change your mobile number, vehicle, licence or Aadhaar, contact Agrimore support — an admin reviews those changes.",
+  "profileLockedNote": "To change your mobile number, licence or Aadhaar, contact Agrimore support — an admin reviews those changes.",
   "@profileLockedNote": {
     "description": "Explains which fields are reviewed"
   },
   "profileRequestNameChange": "Request name change",
   "@profileRequestNameChange": {
     "description": "Button opening the identity change screen"
+  },
+  "profileRequestVehicleChange": "Request vehicle update",
+  "@profileRequestVehicleChange": {
+    "description": "Button opening the identity change screen for the vehicle type/number"
   },
   "identityChangeTitle": "Request identity change",
   "@identityChangeTitle": {
@@ -597,6 +601,18 @@
   },
   "identityChangeProposedName": "New name",
   "@identityChangeProposedName": {
+    "description": "Field label"
+  },
+  "identityChangeCurrentVehicle": "Current vehicle",
+  "@identityChangeCurrentVehicle": {
+    "description": "Field label"
+  },
+  "identityChangeProposedVehicleType": "New vehicle type",
+  "@identityChangeProposedVehicleType": {
+    "description": "Field label"
+  },
+  "identityChangeProposedVehicleNumber": "New registration number",
+  "@identityChangeProposedVehicleNumber": {
     "description": "Field label"
   },
   "identityChangeReasonLabel": "Reason for change",
@@ -639,8 +655,12 @@
   "@identityChangeInvalid": {
     "description": "Submission refused: generic invalid, no specific field named"
   },
-  "errIdentityProposedValue": "Enter your full legal name (2–100 characters).",
-  "@errIdentityProposedValue": {
+  "errIdentityName": "Enter your full legal name (2–100 characters).",
+  "@errIdentityName": {
+    "description": "Field validation error"
+  },
+  "errIdentityVehicleType": "Choose a vehicle type.",
+  "@errIdentityVehicleType": {
     "description": "Field validation error"
   },
   "errIdentityReason": "Enter a reason (3–250 characters).",
