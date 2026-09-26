@@ -14,14 +14,20 @@
 //       pack    confirmed          → processing
 //       ready   processing         → ready_for_pickup
 //       cancel  confirmed|processing → cancelled      (reason required)
-//   - never touches stock on accept; on reject/cancel it restores the stock
-//     createOrder took, exactly once (stockRestored flag), for products whose
-//     stock is a number (the same "enforceable" test createOrder.ts uses),
+//   - never touches stock, at all, for any action (Phase ADMR-1). It used to
+//     restore stock itself on reject/cancel, base-field-only — wrong for a
+//     variant line, and a silent no-op for every OTHER cancellation path (a
+//     customer's own cancel, or apps/admin's direct orderStatus write,
+//     neither of which ever went through this callable). Restoration is now
+//     restoreStockOnCancellation.ts's job: a generic trigger that fires on
+//     ANY transition into 'cancelled' and restores the exact unit
+//     createOrder.ts took — base or variant — exactly once, regardless of
+//     who wrote it. See that file's header for the full rationale.
 //   - marks prepaid cancellations refundStatus: 'pending' for the refund
 //     process (automation is an open owner decision, D-REFUND-AUTOMATION),
 //   - writes the order timeline. The buyer push is sent by the existing
-//     onOrderStatusChanged trigger; credit and commission reversals by the
-//     existing cancellation triggers.
+//     onOrderStatusChanged trigger; credit, commission and stock reversals
+//     by the existing cancellation triggers.
 //
 // Generation: v2 onCall, no secrets.
 
@@ -134,21 +140,6 @@ export const sellerTransitionOrder = onCall(
       const t = TRANSITIONS[action as SellerOrderAction];
       const cancelling = t.to === "cancelled";
 
-      // All reads before writes: the product docs to restore stock into.
-      type Item = { productId?: string; quantity?: number };
-      const items: Item[] = Array.isArray(order.items) ? order.items : [];
-      const restore = cancelling && order.stockRestored !== true;
-      // One read (and one increment) per distinct product, even if the order
-      // lists the same product twice — quantities are summed below.
-      const productIds = [...new Set(
-        items
-          .map((i) => i.productId)
-          .filter((id): id is string => typeof id === "string" && id.length > 0)
-      )];
-      const productSnaps = restore
-        ? await Promise.all(productIds.map((id) => tx.get(db.collection("products").doc(id))))
-        : [];
-
       const now = admin.firestore.FieldValue.serverTimestamp();
       const update: Record<string, unknown> = {
         orderStatus: t.to,
@@ -170,23 +161,8 @@ export const sellerTransitionOrder = onCall(
             : {}),
         });
       }
-
-      if (restore) {
-        for (const productSnap of productSnaps) {
-          if (!productSnap.exists) continue;
-          const stock = productSnap.data()?.stock;
-          if (typeof stock !== "number" || !Number.isFinite(stock)) continue; // mirrors createOrder
-          const qty = items
-            .filter((i) => i.productId === productSnap.id)
-            .reduce((sum, i) => sum + (typeof i.quantity === "number" ? i.quantity : 0), 0);
-          if (qty <= 0) continue;
-          tx.update(productSnap.ref, {
-            stock: admin.firestore.FieldValue.increment(qty),
-            updatedAt: now,
-          });
-        }
-        update.stockRestored = true;
-      }
+      // Stock restoration on cancel/reject is NOT done here — see the
+      // header comment above and restoreStockOnCancellation.ts.
 
       tx.update(orderRef, update);
       tx.set(orderRef.collection("timeline").doc(), {
