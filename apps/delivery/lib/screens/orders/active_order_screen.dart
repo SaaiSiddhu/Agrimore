@@ -112,6 +112,14 @@ class _ActiveOrderScreenState extends State<ActiveOrderScreen> {
   OrderModel get _order => widget.order;
 
   @override
+  void didUpdateWidget(ActiveOrderScreen oldWidget) {
+    super.didUpdateWidget(oldWidget);
+    if (oldWidget.order.orderStatus != widget.order.orderStatus) {
+      _currentStep = deliveryStepOf(widget.order.orderStatus);
+    }
+  }
+
+  @override
   Widget build(BuildContext context) {
     final l = AppLocalizations.of(context);
     final c = context.colors;
@@ -787,6 +795,7 @@ class _VerifySheetState extends State<_VerifySheet> {
             const SizedBox(height: DeliverySpace.xl),
             DeliveryOtpField(
               controller: _code,
+              length: 6,
               digitSemanticsLabel: (i) => l.verifyDigit(i + 1),
               errorText: _error,
               enabled: !_submitting,
