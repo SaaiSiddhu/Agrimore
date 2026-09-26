@@ -1263,6 +1263,19 @@ class AppLocalizationsEn extends AppLocalizations {
   String get emergencyTitle => 'Emergency help';
 
   @override
+  String get activeHelpTooltip => 'Help';
+
+  @override
+  String get activeHelpSheetTitle => 'Help with this delivery';
+
+  @override
+  String get activeHelpSheetSubtitle =>
+      'Your current delivery will remain active.';
+
+  @override
+  String get activeHelpBackToDelivery => 'Back to delivery';
+
+  @override
   String emergencyIntro(String number) {
     return 'If you or someone else is in danger, call $number now. This app does not alert the police or Agrimore by itself.';
   }

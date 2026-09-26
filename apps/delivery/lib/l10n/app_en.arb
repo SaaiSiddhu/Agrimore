@@ -1659,6 +1659,22 @@
   "@emergencyTitle": {
     "description": "Emergency sheet title"
   },
+  "activeHelpTooltip": "Help",
+  "@activeHelpTooltip": {
+    "description": "Active-delivery AppBar action opening the help sheet"
+  },
+  "activeHelpSheetTitle": "Help with this delivery",
+  "@activeHelpSheetTitle": {
+    "description": "Help sheet title, opened from the active-delivery screen"
+  },
+  "activeHelpSheetSubtitle": "Your current delivery will remain active.",
+  "@activeHelpSheetSubtitle": {
+    "description": "Reassures the rider that opening the help sheet does not affect the delivery in progress"
+  },
+  "activeHelpBackToDelivery": "Back to delivery",
+  "@activeHelpBackToDelivery": {
+    "description": "Dismisses the help sheet, returning to the active-delivery screen"
+  },
   "emergencyIntro": "If you or someone else is in danger, call {number} now. This app does not alert the police or Agrimore by itself.",
   "@emergencyIntro": {
     "description": "Emergency sheet intro — makes no claim that anyone was alerted",
