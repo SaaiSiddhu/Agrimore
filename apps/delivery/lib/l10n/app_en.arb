@@ -8,6 +8,26 @@
   "@loadingAccount": {
     "description": "Screen-reader label while the account loads"
   },
+  "navHome": "Home",
+  "@navHome": {
+    "description": "Bottom navigation label: the dashboard tab"
+  },
+  "navDeliveries": "Deliveries",
+  "@navDeliveries": {
+    "description": "Bottom navigation label: active work and delivery history"
+  },
+  "navEarnings": "Earnings",
+  "@navEarnings": {
+    "description": "Bottom navigation label: pay, cash and statements"
+  },
+  "navInbox": "Inbox",
+  "@navInbox": {
+    "description": "Bottom navigation label: notifications"
+  },
+  "navProfile": "Profile",
+  "@navProfile": {
+    "description": "Bottom navigation label: the rider's own account"
+  },
   "authWrongCredentials": "Email or password is incorrect.",
   "@authWrongCredentials": {
     "description": "Sign-in refused: wrong email/password"

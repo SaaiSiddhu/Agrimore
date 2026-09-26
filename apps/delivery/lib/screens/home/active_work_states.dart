@@ -95,6 +95,84 @@ class MultipleActiveOrders extends StatelessWidget {
   }
 }
 
+/// One active order, front and centre with a way to open it. Used by both
+/// the dashboard (single active order) and the Deliveries tab (active work
+/// above the history list) — phase DLVNAV1 extracted this out of what was
+/// `_DashboardScreenState._buildActiveOrderCard` so both screens share it
+/// instead of the Deliveries tab growing a second copy.
+class ActiveOrderSummaryCard extends StatelessWidget {
+  const ActiveOrderSummaryCard({
+    super.key,
+    required this.order,
+    required this.onOpen,
+  });
+
+  final OrderModel order;
+  final void Function(OrderModel order) onOpen;
+
+  @override
+  Widget build(BuildContext context) {
+    final l = AppLocalizations.of(context);
+    final c = context.colors;
+    final t = context.text;
+    return Center(
+      child: Padding(
+        padding: const EdgeInsets.all(DeliverySpace.page),
+        child: DeliveryCard(
+          variant: DeliveryCardVariant.brand,
+          padding: const EdgeInsets.all(DeliverySpace.xl),
+          child: Column(
+            mainAxisSize: MainAxisSize.min,
+            crossAxisAlignment: CrossAxisAlignment.stretch,
+            children: [
+              Row(
+                children: [
+                  Container(
+                    width: DeliverySize.avatarLg,
+                    height: DeliverySize.avatarLg,
+                    decoration: BoxDecoration(
+                      color: c.brand,
+                      borderRadius: DeliveryRadius.rMd,
+                    ),
+                    alignment: Alignment.center,
+                    child: Icon(
+                      DeliveryIcons.rider,
+                      color: c.onBrand,
+                      size: DeliveryIconSize.lg,
+                    ),
+                  ),
+                  const SizedBox(width: DeliverySpace.md),
+                  Expanded(
+                    child: Column(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [
+                        Text(
+                          l.dashActiveTitle,
+                          style: t.titleMedium.copyWith(color: c.textPrimary),
+                        ),
+                        Text(
+                          l.offerOrderNumber(order.orderNumber),
+                          style: t.bodySmall.copyWith(color: c.textSecondary),
+                        ),
+                      ],
+                    ),
+                  ),
+                ],
+              ),
+              const SizedBox(height: DeliverySpace.xl),
+              DeliveryButton.primary(
+                label: l.dashViewDetails,
+                icon: DeliveryIcons.chevronRight,
+                onPressed: () => onOpen(order),
+              ),
+            ],
+          ),
+        ),
+      ),
+    );
+  }
+}
+
 /// The orders on screen came from the device cache or a failed refresh.
 class StaleDataBanner extends StatelessWidget {
   const StaleDataBanner({super.key});

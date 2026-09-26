@@ -15,6 +15,21 @@ class AppLocalizationsEn extends AppLocalizations {
   String get loadingAccount => 'Loading your account';
 
   @override
+  String get navHome => 'Home';
+
+  @override
+  String get navDeliveries => 'Deliveries';
+
+  @override
+  String get navEarnings => 'Earnings';
+
+  @override
+  String get navInbox => 'Inbox';
+
+  @override
+  String get navProfile => 'Profile';
+
+  @override
   String get authWrongCredentials => 'Email or password is incorrect.';
 
   @override
