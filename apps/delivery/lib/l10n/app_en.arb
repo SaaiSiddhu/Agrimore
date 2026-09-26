@@ -1329,9 +1329,29 @@
   "@historyFilterDelivered": {
     "description": "History filter: delivered orders"
   },
-  "historyFilterNotDelivered": "Cancelled or returned",
-  "@historyFilterNotDelivered": {
-    "description": "History filter: orders not delivered"
+  "historyFilterCancelled": "Cancelled",
+  "@historyFilterCancelled": {
+    "description": "History filter: cancelled orders"
+  },
+  "historyFilterReturned": "Returned",
+  "@historyFilterReturned": {
+    "description": "History filter: returned orders"
+  },
+  "historyRangeAllTime": "All time",
+  "@historyRangeAllTime": {
+    "description": "History date-range filter: no cutoff"
+  },
+  "historyRangeLast7Days": "Last 7 days",
+  "@historyRangeLast7Days": {
+    "description": "History date-range filter: the last week"
+  },
+  "historyRangeLast30Days": "Last 30 days",
+  "@historyRangeLast30Days": {
+    "description": "History date-range filter: the last month"
+  },
+  "historyClearFilters": "Clear filters",
+  "@historyClearFilters": {
+    "description": "Resets the status and date-range filters to their defaults"
   },
   "historyEmptyFiltered": "No orders here",
   "@historyEmptyFiltered": {

@@ -19,17 +19,38 @@ import 'rider_work.dart';
 /// page exists.
 typedef HistoryPage = ({List<OrderModel> items, Object? cursor, bool hasMore});
 
-/// DLV-N1: which orders the history lists.
-enum HistoryFilter { all, delivered, notDelivered }
+/// DLV-N1 / DLVH1: which orders the history lists. Split from a single
+/// `notDelivered` bucket into `cancelled`/`returned` — the domain model
+/// (DeliveryTaskStatus) and this file's own `historyStatusText` already
+/// distinguished them; only the filter itself was coarser than the data.
+enum HistoryFilter { all, delivered, cancelled, returned }
+
+/// DLVH1: a preset lower bound on `createdAt`, applied in addition to
+/// [HistoryFilter]. Presets only (no custom range) for this phase.
+enum HistoryDateRange { allTime, last7Days, last30Days }
+
+extension HistoryDateRangeSince on HistoryDateRange {
+  /// The cutoff for this preset, relative to [now]; null for "all time".
+  DateTime? since(DateTime now) => switch (this) {
+        HistoryDateRange.allTime => null,
+        HistoryDateRange.last7Days => now.subtract(const Duration(days: 7)),
+        HistoryDateRange.last30Days => now.subtract(const Duration(days: 30)),
+      };
+}
+
+/// What to ask the server for: a status bucket and an optional `createdAt`
+/// cutoff, combined.
+typedef HistoryQuery = ({HistoryFilter filter, DateTime? since});
 
 // Terminal order statuses as they may be stored (Firestore `in` is
 // case-sensitive) — the spellings DeliveryTaskStatus.fromOrderStatus reads.
 // Either field may carry it: seller/admin panels write only `status`.
 const List<String> _deliveredStored = ['delivered', 'completed', 'Delivered', 'Completed'];
-const List<String> _notDeliveredStored = [
-  'cancelled', 'canceled', 'rejected', 'refunded', 'returned',
-  'Cancelled', 'Canceled', 'Rejected', 'Refunded', 'Returned',
+const List<String> _cancelledStored = [
+  'cancelled', 'canceled', 'rejected', 'refunded',
+  'Cancelled', 'Canceled', 'Rejected', 'Refunded',
 ];
+const List<String> _returnedStored = ['returned', 'Returned'];
 
 /// An order read for history. OrderModel keeps one status (`orderStatus`,
 /// else `status`); an order an admin delivered or cancelled through `status`
@@ -51,24 +72,42 @@ OrderModel historyOrder(String id, Map<String, dynamic> raw) {
 bool historyMatches(OrderModel o, HistoryFilter f) {
   if (f == HistoryFilter.all) return true;
   final s = DeliveryTaskStatus.fromOrderStatus(orderStatus: o.orderStatus, status: null, hasPartner: true);
-  return f == HistoryFilter.delivered
-      ? s == DeliveryTaskStatus.delivered
-      : s == DeliveryTaskStatus.cancelled || s == DeliveryTaskStatus.returned;
+  return switch (f) {
+    HistoryFilter.all => true,
+    HistoryFilter.delivered => s == DeliveryTaskStatus.delivered,
+    HistoryFilter.cancelled => s == DeliveryTaskStatus.cancelled,
+    HistoryFilter.returned => s == DeliveryTaskStatus.returned,
+  };
 }
 
-/// Fetches a page of [riderId]'s orders under [filter] after [cursor] (null = first page).
-typedef HistoryFetch = Future<HistoryPage> Function(String riderId, HistoryFilter filter, Object? cursor, int size);
+/// Fetches a page of [riderId]'s orders under [query] after [cursor] (null = first page).
+typedef HistoryFetch = Future<HistoryPage> Function(String riderId, HistoryQuery query, Object? cursor, int size);
 
-Future<HistoryPage> firestoreHistoryPage(String riderId, HistoryFilter filter, Object? cursor, int size) async {
-  final mine = Filter('deliveryPartnerId', isEqualTo: riderId);
-  final values = filter == HistoryFilter.delivered ? _deliveredStored : _notDeliveredStored;
+Future<HistoryPage> firestoreHistoryPage(String riderId, HistoryQuery query, Object? cursor, int size) async {
+  Filter where = Filter('deliveryPartnerId', isEqualTo: riderId);
+  final statusValues = switch (query.filter) {
+    HistoryFilter.all => null,
+    HistoryFilter.delivered => _deliveredStored,
+    HistoryFilter.cancelled => _cancelledStored,
+    HistoryFilter.returned => _returnedStored,
+  };
   // Indexes: orders (deliveryPartnerId, orderStatus, createdAt desc) and
-  // (deliveryPartnerId, status, createdAt desc).
+  // (deliveryPartnerId, status, createdAt desc). A `createdAt` lower bound
+  // needs no separate index: it is a range filter on the same field the
+  // query already orders by.
+  if (statusValues != null) {
+    where = Filter.and(
+      where,
+      Filter.or(Filter('orderStatus', whereIn: statusValues), Filter('status', whereIn: statusValues)),
+    );
+  }
+  final since = query.since;
+  if (since != null) {
+    where = Filter.and(where, Filter('createdAt', isGreaterThanOrEqualTo: Timestamp.fromDate(since)));
+  }
   Query<Map<String, dynamic>> q = FirebaseFirestore.instance
       .collection('orders')
-      .where(filter == HistoryFilter.all
-          ? mine
-          : Filter.and(mine, Filter.or(Filter('orderStatus', whereIn: values), Filter('status', whereIn: values))))
+      .where(where)
       .orderBy('createdAt', descending: true);
   if (cursor is DocumentSnapshot) q = q.startAfterDocument(cursor);
   // One extra row tells whether another page exists.
@@ -76,7 +115,7 @@ Future<HistoryPage> firestoreHistoryPage(String riderId, HistoryFilter filter, O
   final docs = snap.docs;
   final page = docs.take(size).toList();
   return (
-    items: page.map((d) => historyOrder(d.id, d.data())).where((o) => historyMatches(o, filter)).toList(),
+    items: page.map((d) => historyOrder(d.id, d.data())).where((o) => historyMatches(o, query.filter)).toList(),
     cursor: page.isEmpty ? cursor : page.last,
     hasMore: docs.length > size,
   );
@@ -90,6 +129,8 @@ class RiderHistory extends ChangeNotifier {
 
   String? _riderId;
   HistoryFilter _filter = HistoryFilter.all;
+  HistoryDateRange _dateRange = HistoryDateRange.allTime;
+  DateTime? _since;
   int _generation = 0;
   final List<OrderModel> _items = [];
   Object? _cursor;
@@ -99,6 +140,8 @@ class RiderHistory extends ChangeNotifier {
 
   List<OrderModel> get items => List.unmodifiable(_items);
   HistoryFilter get filter => _filter;
+  HistoryDateRange get dateRange => _dateRange;
+  bool get hasActiveFilter => _filter != HistoryFilter.all || _dateRange != HistoryDateRange.allTime;
 
   /// Shows [f] from its first page.
   Future<void> setFilter(HistoryFilter f) {
@@ -106,6 +149,26 @@ class RiderHistory extends ChangeNotifier {
     _filter = f;
     return refresh();
   }
+
+  /// Shows [r] from its first page. The cutoff is computed once here (not
+  /// re-derived from `DateTime.now()` on every page) so a session that
+  /// crosses midnight mid-scroll keeps a stable window.
+  Future<void> setDateRange(HistoryDateRange r) {
+    if (r == _dateRange) return Future.value();
+    _dateRange = r;
+    _since = r.since(DateTime.now());
+    return refresh();
+  }
+
+  /// Back to no status filter and no date range, in one reload.
+  Future<void> clearFilters() {
+    if (!hasActiveFilter) return Future.value();
+    _filter = HistoryFilter.all;
+    _dateRange = HistoryDateRange.allTime;
+    _since = null;
+    return refresh();
+  }
+
   bool get hasMore => _hasMore;
   bool get loading => _loading;
   RiderDataError? get error => _error;
@@ -143,7 +206,7 @@ class RiderHistory extends ChangeNotifier {
     _error = null;
     notifyListeners();
     try {
-      final page = await _fetch(riderId, _filter, _cursor, pageSize);
+      final page = await _fetch(riderId, (filter: _filter, since: _since), _cursor, pageSize);
       if (gen != _generation) return; // another session since
       final seen = _items.map((o) => o.id).toSet();
       _items.addAll(page.items.where((o) => !seen.contains(o.id)));

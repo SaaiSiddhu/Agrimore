@@ -97,19 +97,22 @@ void main() {
       expect(historyOrder('o4', {'orderStatus': 'picked_up', 'orderNumber': 'D'}).orderStatus, 'picked_up');
     });
 
-    test('filters keep only canonical matches', () {
+    test('filters keep only canonical matches, cancelled and returned separately', () {
       final delivered = historyOrder('a', {'orderStatus': 'delivered'});
       final returned = historyOrder('b', {'orderStatus': 'returned', 'status': 'delivered'});
-      final active = historyOrder('c', {'orderStatus': 'picked_up'});
-      expect([delivered, returned, active].where((o) => historyMatches(o, HistoryFilter.delivered)).map((o) => o.id), ['a']);
-      expect([delivered, returned, active].where((o) => historyMatches(o, HistoryFilter.notDelivered)).map((o) => o.id), ['b']);
-      expect([delivered, returned, active].where((o) => historyMatches(o, HistoryFilter.all)).length, 3);
+      final cancelled = historyOrder('c', {'orderStatus': 'cancelled'});
+      final active = historyOrder('d', {'orderStatus': 'picked_up'});
+      final all = [delivered, returned, cancelled, active];
+      expect(all.where((o) => historyMatches(o, HistoryFilter.delivered)).map((o) => o.id), ['a']);
+      expect(all.where((o) => historyMatches(o, HistoryFilter.returned)).map((o) => o.id), ['b']);
+      expect(all.where((o) => historyMatches(o, HistoryFilter.cancelled)).map((o) => o.id), ['c']);
+      expect(all.where((o) => historyMatches(o, HistoryFilter.all)).length, 4);
     });
 
     test('changing the filter reloads from the first page with that filter', () async {
       final asked = <HistoryFilter>[];
-      final h = RiderHistory(fetch: (rider, filter, cursor, size) async {
-        asked.add(filter);
+      final h = RiderHistory(fetch: (rider, query, cursor, size) async {
+        asked.add(query.filter);
         return (items: <OrderModel>[], cursor: null, hasMore: false);
       })
         ..bind('r1');
@@ -117,6 +120,45 @@ void main() {
       await h.setFilter(HistoryFilter.delivered);
       expect(asked, [HistoryFilter.all, HistoryFilter.delivered]);
       expect(h.filter, HistoryFilter.delivered);
+    });
+
+    test('changing the date range reloads from the first page with that cutoff', () async {
+      final asked = <DateTime?>[];
+      final h = RiderHistory(fetch: (rider, query, cursor, size) async {
+        asked.add(query.since);
+        return (items: <OrderModel>[], cursor: null, hasMore: false);
+      })
+        ..bind('r1');
+      await h.loadMore();
+      await h.setDateRange(HistoryDateRange.last7Days);
+      expect(asked, hasLength(2));
+      expect(asked[0], isNull, reason: 'all time: no cutoff');
+      expect(asked[1], isNotNull);
+      expect(DateTime.now().difference(asked[1]!).inDays, 7);
+      expect(h.dateRange, HistoryDateRange.last7Days);
+      expect(h.hasActiveFilter, isTrue);
+    });
+
+    test('clearFilters resets status and date range together, in one reload', () async {
+      var calls = 0;
+      final h = RiderHistory(fetch: (rider, query, cursor, size) async {
+        calls++;
+        return (items: <OrderModel>[], cursor: null, hasMore: false);
+      })
+        ..bind('r1');
+      await h.loadMore();
+      await h.setFilter(HistoryFilter.cancelled);
+      await h.setDateRange(HistoryDateRange.last30Days);
+      expect(h.hasActiveFilter, isTrue);
+      final before = calls;
+      await h.clearFilters();
+      expect(calls, before + 1, reason: 'exactly one reload, not one per field');
+      expect(h.filter, HistoryFilter.all);
+      expect(h.dateRange, HistoryDateRange.allTime);
+      expect(h.hasActiveFilter, isFalse);
+      // A second clear with nothing active does not reload again.
+      await h.clearFilters();
+      expect(calls, before + 1);
     });
 
     testWidgets('detail shows this order\'s pay and whether it is in a statement', (t) async {
