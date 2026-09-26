@@ -4,6 +4,7 @@ import 'dart:typed_data';
 import 'package:agrimore_core/agrimore_core.dart' show OrderModel;
 import 'package:delivery/account/rider_account.dart';
 import 'package:delivery/app/delivery_shell.dart';
+import 'package:delivery/data/order_timeline.dart';
 import 'package:delivery/auth/rider_account_source.dart';
 import 'package:delivery/data/rider_work.dart';
 import 'package:delivery/delivery/delivery_problems.dart';
@@ -21,6 +22,7 @@ import 'package:delivery/safety/emergency_sheet.dart';
 import 'package:delivery/screens/auth/login_screen.dart';
 import 'package:delivery/screens/auth/pending_approval_screen.dart';
 import 'package:delivery/screens/auth/rider_registration_screen.dart';
+import 'package:delivery/screens/history/rider_history_screen.dart';
 import 'package:delivery/screens/home/active_work_states.dart';
 import 'package:delivery/screens/home/dashboard_screen.dart';
 import 'package:delivery/screens/inbox/inbox_screen.dart';
@@ -429,6 +431,54 @@ void main() {
         await t.tap(find.text('Last 7 days'));
         await t.pumpAndSettle();
       },
+    );
+
+    // 0f. DLVH2: the read-only historical delivery detail — a delivery
+    // timeline (orders/{orderId}/timeline, a real backend collection that
+    // existed before this phase but was never read by the app), the
+    // customer's contact details (already on OrderModel.deliveryAddress,
+    // no new fetch) and a Get help section (SupportContactButtons, reused
+    // verbatim). Matches assets/ui-mockups/30-delivery-history-inbox/
+    // 02-delivered-cancelled-returned.png's own "Delivered" example.
+    await shot(
+      tester,
+      '00f_history_detail_delivered_light',
+      Scaffold(
+        body: HistoryDetail(
+          order: _sampleOrder(status: 'delivered'),
+          loadEarning: (id) async => RiderEarning(
+            orderId: id,
+            total: 80,
+            basePay: 50,
+            distancePay: 20,
+            waitingPay: 10,
+            km: 3.2,
+          ),
+          loadTimeline: (id) async => [
+            OrderTimelineEvent(
+              id: 'e1',
+              status: 'delivery_accepted',
+              title: 'Delivery Accepted',
+              detail: 'You accepted this delivery',
+              timestamp: DateTime(2026, 9, 18, 13, 5),
+            ),
+            OrderTimelineEvent(
+              id: 'e2',
+              status: 'picked_up',
+              title: 'Picked up from store',
+              detail: 'Fresh Fields, T. Nagar',
+              timestamp: DateTime(2026, 9, 18, 13, 28),
+            ),
+            OrderTimelineEvent(
+              id: 'e3',
+              status: 'delivered',
+              title: 'Delivered',
+              detail: 'Signature / OTP confirmed',
+              timestamp: DateTime(2026, 9, 18, 14, 42),
+            ),
+          ],
+        ),
+      ),
     );
 
     // 1. Login Light, Dark & 200% Text Scale

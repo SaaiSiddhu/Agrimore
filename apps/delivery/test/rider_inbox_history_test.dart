@@ -4,6 +4,8 @@ import 'dart:async';
 
 import 'package:agrimore_ui/agrimore_ui.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
+import 'package:delivery/account/support_card.dart';
+import 'package:delivery/data/order_timeline.dart';
 import 'package:delivery/data/rider_history.dart';
 import 'package:delivery/inbox/rider_inbox.dart';
 import 'package:delivery/l10n/app_localizations.dart';
@@ -167,7 +169,8 @@ void main() {
           body: HistoryDetail(
               order: order,
               loadEarning: (id) async => RiderEarning(
-                  orderId: id, total: 55.46, basePay: 25, distancePay: 23.46, km: 3.91, codCollected: 480)))));
+                  orderId: id, total: 55.46, basePay: 25, distancePay: 23.46, km: 3.91, codCollected: 480),
+              loadTimeline: (id) async => const []))));
       await t.pumpAndSettle();
       expect(t.takeException(), isNull);
       expect(find.text('₹55.46'), findsOneWidget);
@@ -175,13 +178,103 @@ void main() {
       expect(find.text("Goes into next Monday's statement"), findsOneWidget);
     });
 
-    testWidgets('detail of an order not delivered says pay comes later, without a read', (t) async {
+    testWidgets('a cancelled order shows a static no-earnings line, without a read', (t) async {
       var reads = 0;
       final order = historyOrder('o8', {'orderStatus': 'cancelled', 'orderNumber': 'ORD-8', 'total': 100});
-      await t.pumpWidget(host(Scaffold(body: HistoryDetail(order: order, loadEarning: (id) async { reads++; return null; }))));
+      await t.pumpWidget(host(Scaffold(
+          body: HistoryDetail(
+              order: order,
+              loadEarning: (id) async { reads++; return null; },
+              loadTimeline: (id) async => const []))));
       await t.pumpAndSettle();
-      expect(reads, 0);
-      expect(find.text('Pay shows here once the order is delivered.'), findsOneWidget);
+      expect(reads, 0, reason: 'cancelled never has a rider_earnings record; no point reading');
+      expect(find.text('No earnings — this order was cancelled.'), findsOneWidget);
+    });
+
+    testWidgets('a returned order still attempts a read, showing a distinct no-earnings line when none exists', (t) async {
+      var reads = 0;
+      final order = historyOrder('o7', {'orderStatus': 'returned', 'status': 'delivered', 'orderNumber': 'ORD-7', 'total': 200});
+      await t.pumpWidget(host(Scaffold(
+          body: HistoryDetail(
+              order: order,
+              loadEarning: (id) async { reads++; return null; },
+              loadTimeline: (id) async => const []))));
+      await t.pumpAndSettle();
+      expect(reads, 1, reason: 'unlike cancelled, a returned order DOES attempt a read (forward-compatible with future return-handling pay)');
+      expect(find.text('No earnings recorded for this returned order.'), findsOneWidget);
+    });
+
+    testWidgets('the delivery timeline shows recorded events in order, oldest first', (t) async {
+      final order = historyOrder('o6', {'orderStatus': 'delivered', 'orderNumber': 'ORD-6', 'total': 300});
+      await t.pumpWidget(host(Scaffold(
+          body: HistoryDetail(
+              order: order,
+              loadEarning: (id) async => null,
+              loadTimeline: (id) async => [
+                    OrderTimelineEvent(
+                      id: 'e1',
+                      status: 'delivery_accepted',
+                      title: 'Delivery Accepted',
+                      timestamp: DateTime(2026, 9, 18, 13, 5),
+                    ),
+                    OrderTimelineEvent(
+                      id: 'e2',
+                      status: 'delivery_problem',
+                      title: 'Delivery problem reported',
+                      detail: 'The delivery partner reported a problem (customer unreachable).',
+                      timestamp: DateTime(2026, 9, 18, 13, 40),
+                    ),
+                  ]))));
+      await t.pumpAndSettle();
+      expect(t.takeException(), isNull);
+      expect(find.text('Delivery Accepted'), findsOneWidget);
+      expect(find.text('Delivery problem reported'), findsOneWidget);
+      expect(find.textContaining('customer unreachable'), findsOneWidget);
+      // Oldest first: Accepted's node paints above Problem's.
+      final acceptedY = t.getTopLeft(find.text('Delivery Accepted')).dy;
+      final problemY = t.getTopLeft(find.text('Delivery problem reported')).dy;
+      expect(acceptedY, lessThan(problemY));
+    });
+
+    testWidgets('an empty timeline says so instead of showing nothing', (t) async {
+      final order = historyOrder('o5', {'orderStatus': 'delivered', 'orderNumber': 'ORD-5', 'total': 50});
+      await t.pumpWidget(host(Scaffold(
+          body: HistoryDetail(
+              order: order,
+              loadEarning: (id) async => null,
+              loadTimeline: (id) async => const []))));
+      await t.pumpAndSettle();
+      expect(find.text('No recorded timeline for this order.'), findsOneWidget);
+    });
+
+    testWidgets('the customer section reads from the order\'s own delivery address, and Get help is present', (t) async {
+      final order = historyOrder('o4', {
+        'orderStatus': 'delivered',
+        'orderNumber': 'ORD-4',
+        'total': 90,
+        'deliveryAddress': {
+          'name': 'Meenakshi Sundaram',
+          'phone': '+91 98765 43210',
+          'addressLine1': '44, West Masi Street',
+          'city': 'Madurai',
+          'zipcode': '625001',
+        },
+      });
+      await t.pumpWidget(host(Scaffold(
+          body: HistoryDetail(
+              order: order,
+              loadEarning: (id) async => null,
+              loadTimeline: (id) async => const []))));
+      await t.pumpAndSettle();
+      expect(find.text('Customer'), findsOneWidget);
+      expect(find.text('Meenakshi Sundaram'), findsOneWidget);
+      expect(find.text('+91 98765 43210'), findsOneWidget);
+      expect(find.textContaining('West Masi Street'), findsOneWidget);
+      expect(find.text('Need help with this order?'), findsOneWidget);
+      expect(find.byType(SupportContactButtons), findsOneWidget);
+      // Read-only: no Call/Navigate actions for a completed record.
+      expect(find.text('Call'), findsNothing);
+      expect(find.text('Navigate'), findsNothing);
     });
   });
 }

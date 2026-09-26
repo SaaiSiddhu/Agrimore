@@ -1385,6 +1385,34 @@
   "@historyDetailPayError": {
     "description": "History detail: earning read failed"
   },
+  "historyDetailNoEarningsCancelled": "No earnings — this order was cancelled.",
+  "@historyDetailNoEarningsCancelled": {
+    "description": "History detail: a cancelled order never has a recorded earning"
+  },
+  "historyDetailNoEarningsReturned": "No earnings recorded for this returned order.",
+  "@historyDetailNoEarningsReturned": {
+    "description": "History detail: a returned order has no recorded earning today"
+  },
+  "historyDetailTimelineTitle": "Delivery timeline",
+  "@historyDetailTimelineTitle": {
+    "description": "History detail: section heading for the recorded status timeline"
+  },
+  "historyDetailTimelineEmpty": "No recorded timeline for this order.",
+  "@historyDetailTimelineEmpty": {
+    "description": "History detail: the timeline subcollection had no entries"
+  },
+  "historyDetailTimelineError": "Could not load this order's timeline.",
+  "@historyDetailTimelineError": {
+    "description": "History detail: timeline read failed"
+  },
+  "historyDetailCustomerTitle": "Customer",
+  "@historyDetailCustomerTitle": {
+    "description": "History detail: section heading for the customer's contact details"
+  },
+  "historyDetailGetHelpTitle": "Need help with this order?",
+  "@historyDetailGetHelpTitle": {
+    "description": "History detail: section heading above the support contact buttons"
+  },
   "actionNotNow": "Not now",
   "@actionNotNow": {
     "description": "Decline for now"

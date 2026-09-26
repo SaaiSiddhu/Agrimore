@@ -1906,6 +1906,48 @@ abstract class AppLocalizations {
   /// **'Could not load your pay for this order.'**
   String get historyDetailPayError;
 
+  /// History detail: a cancelled order never has a recorded earning
+  ///
+  /// In en, this message translates to:
+  /// **'No earnings — this order was cancelled.'**
+  String get historyDetailNoEarningsCancelled;
+
+  /// History detail: a returned order has no recorded earning today
+  ///
+  /// In en, this message translates to:
+  /// **'No earnings recorded for this returned order.'**
+  String get historyDetailNoEarningsReturned;
+
+  /// History detail: section heading for the recorded status timeline
+  ///
+  /// In en, this message translates to:
+  /// **'Delivery timeline'**
+  String get historyDetailTimelineTitle;
+
+  /// History detail: the timeline subcollection had no entries
+  ///
+  /// In en, this message translates to:
+  /// **'No recorded timeline for this order.'**
+  String get historyDetailTimelineEmpty;
+
+  /// History detail: timeline read failed
+  ///
+  /// In en, this message translates to:
+  /// **'Could not load this order\'s timeline.'**
+  String get historyDetailTimelineError;
+
+  /// History detail: section heading for the customer's contact details
+  ///
+  /// In en, this message translates to:
+  /// **'Customer'**
+  String get historyDetailCustomerTitle;
+
+  /// History detail: section heading above the support contact buttons
+  ///
+  /// In en, this message translates to:
+  /// **'Need help with this order?'**
+  String get historyDetailGetHelpTitle;
+
   /// Decline for now
   ///
   /// In en, this message translates to:
