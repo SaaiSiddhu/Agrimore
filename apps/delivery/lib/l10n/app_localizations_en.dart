@@ -993,6 +993,14 @@ class AppLocalizationsEn extends AppLocalizations {
   String get inboxMarkReadFailed => 'Could not update your inbox. Try again.';
 
   @override
+  String get inboxDeliveryUnavailable =>
+      'This delivery is no longer available to you.';
+
+  @override
+  String get inboxDeliveryNetworkError =>
+      'Could not open this delivery. Try again.';
+
+  @override
   String get historyFilterAll => 'All';
 
   @override
