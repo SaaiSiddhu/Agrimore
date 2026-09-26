@@ -11,7 +11,6 @@ import '../../../providers/coupon_provider.dart';
 import '../../../providers/product_provider.dart';
 import '../../../providers/theme_provider.dart';
 import '../../../providers/address_provider.dart';
-import '../../../providers/wallet_provider.dart';
 import '../../../providers/wishlist_provider.dart';
 import '../../../providers/market_mode_provider.dart';
 import 'package:agrimore_core/agrimore_core.dart';
@@ -72,7 +71,6 @@ class _MobileCartScreenState extends State<MobileCartScreen>
   bool _showFab = false;
   bool _isProcessingBogo = false;
   bool _expressDeliverySelected = false;
-  double _selectedTipAmount = 0;
 
   // Audio recording
   final AudioRecorder _audioRecorder = AudioRecorder();
@@ -107,7 +105,6 @@ class _MobileCartScreenState extends State<MobileCartScreen>
   bool _showAssociateCodeField = false;
 
   // Wallet & Checkout
-  bool _useWalletBalance = false;
   bool _isPlacingOrder = false;
   RazorpayService? _razorpayService;
   final Map<String, CartItemModel> _bogoFreeItems = {};
@@ -532,12 +529,6 @@ class _MobileCartScreenState extends State<MobileCartScreen>
                           _buildDeliveryInstructions(
                               isDark, cardColor, accentColor),
 
-                          // Tip Section
-                          _buildTipSection(isDark, cardColor, accentColor),
-
-                          // Wallet Section
-                          _buildWalletSection(isDark, cardColor, accentColor),
-
                           // Bottom spacing for sticky bar
                           const SizedBox(height: 120),
                         ],
@@ -546,16 +537,11 @@ class _MobileCartScreenState extends State<MobileCartScreen>
                   ),
                 ),
 
-                // Sticky Bottom Bar
-                // Passes the true chargeable total (subtotal - coupon +
-                // delivery, no wallet subtraction, no tip) — this is what
-                // createOrder.ts will actually verify/charge. finalTotal
-                // alone subtracts a client-side wallet discount that
-                // createOrder doesn't know about (see the comment on
-                // _createOrderInFirestore for why).
+                // Sticky Bottom Bar — the true chargeable total (subtotal -
+                // coupon + delivery), the same figure createOrder.ts
+                // computes and verifies server-side.
                 _buildBlinkitBottomBar(
-                  (pricingData['finalTotal'] ?? 0.0) +
-                      (pricingData['walletDiscount'] ?? 0.0),
+                  pricingData['finalTotal'] ?? 0.0,
                   cartProvider.cartMode,
                   isDark,
                   accentColor,
@@ -2117,31 +2103,6 @@ class _MobileCartScreenState extends State<MobileCartScreen>
                     valueColor: Colors.green.shade600,
                   ),
                 ],
-
-                // Tip if added
-                if (_selectedTipAmount > 0) ...[
-                  const SizedBox(height: 10),
-                  _buildBillRow(
-                    emoji: '💝',
-                    label: 'Delivery partner tip',
-                    value: '₹${_selectedTipAmount.toStringAsFixed(0)}',
-                    isDark: isDark,
-                  ),
-                ],
-
-                // Wallet discount
-                if (_useWalletBalance &&
-                    pricing['walletDiscount'] != null &&
-                    pricing['walletDiscount']! > 0) ...[
-                  const SizedBox(height: 10),
-                  _buildBillRow(
-                    emoji: '👛',
-                    label: 'Wallet credits used',
-                    value: '-₹${pricing['walletDiscount']!.toStringAsFixed(0)}',
-                    isDark: isDark,
-                    valueColor: Colors.green.shade600,
-                  ),
-                ],
               ],
             ),
           ),
@@ -2170,14 +2131,6 @@ class _MobileCartScreenState extends State<MobileCartScreen>
                         color: isDark ? Colors.white : Colors.black87,
                       ),
                     ),
-                    if (_selectedTipAmount > 0)
-                      Text(
-                        'Includes ₹${_selectedTipAmount.toStringAsFixed(0)} tip',
-                        style: TextStyle(
-                          fontSize: 10,
-                          color: Colors.grey[500],
-                        ),
-                      ),
                   ],
                 ),
                 Row(
@@ -2206,7 +2159,7 @@ class _MobileCartScreenState extends State<MobileCartScreen>
                         borderRadius: BorderRadius.circular(8),
                       ),
                       child: Text(
-                        '₹${(total + _selectedTipAmount).toStringAsFixed(0)}',
+                        '₹${total.toStringAsFixed(0)}',
                         style: const TextStyle(
                           fontSize: 15,
                           fontWeight: FontWeight.w800,
@@ -3064,12 +3017,7 @@ class _MobileCartScreenState extends State<MobileCartScreen>
       // computes or sends a total. The amount actually charged via Razorpay
       // (for non-COD orders) is fixed *before* this function runs, at the
       // "Pay"/"Place Order" button's call to _buildBlinkitBottomBar/
-      // _placeOrder. It must equal what createOrder computes, so it excludes
-      // the client-side wallet discount and the tip amount, neither of which
-      // createOrder.ts knows how to validate. Wallet debit and tip support
-      // are both out of scope for this fix — see the comments where
-      // _useWalletBalance and _selectedTipAmount are read elsewhere in this
-      // file.
+      // _placeOrder, and must equal what createOrder computes.
 
       // paymentMethod values in this screen's UI are 'COD'/'Razorpay'
       // (display casing); createOrder.ts compares paymentMethod against the
@@ -3232,543 +3180,6 @@ class _MobileCartScreenState extends State<MobileCartScreen>
         behavior: SnackBarBehavior.floating,
         margin: const EdgeInsets.all(16),
         shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(10)),
-      ),
-    );
-  }
-
-  // --- Wallet Section ---
-  Widget _buildWalletSection(bool isDark, Color cardColor, Color accentColor) {
-    return Consumer<WalletProvider>(
-      builder: (context, walletProvider, _) {
-        final walletBalance = walletProvider.balance;
-
-        if (walletBalance <= 0) return const SizedBox.shrink();
-
-        return Container(
-          margin: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
-          decoration: BoxDecoration(
-            gradient: LinearGradient(
-              begin: Alignment.topLeft,
-              end: Alignment.bottomRight,
-              colors: isDark
-                  ? [const Color(0xFF1E3A2F), const Color(0xFF152A22)]
-                  : [const Color(0xFFE8F5E9), const Color(0xFFC8E6C9)],
-            ),
-            borderRadius: BorderRadius.circular(14),
-            border: Border.all(
-              color: Colors.green.shade300.withValues(alpha: 0.5),
-            ),
-            boxShadow: [
-              BoxShadow(
-                color: Colors.green.withValues(alpha: 0.15),
-                blurRadius: 8,
-                offset: const Offset(0, 2),
-              ),
-            ],
-          ),
-          child: Column(
-            children: [
-              // Header
-              Container(
-                padding: const EdgeInsets.fromLTRB(14, 12, 14, 10),
-                decoration: BoxDecoration(
-                  border: Border(
-                    bottom: BorderSide(
-                      color: Colors.green.shade200.withValues(alpha: 0.3),
-                    ),
-                  ),
-                ),
-                child: Row(
-                  children: [
-                    Container(
-                      padding: const EdgeInsets.all(8),
-                      decoration: BoxDecoration(
-                        color: Colors.green.shade600,
-                        borderRadius: BorderRadius.circular(8),
-                      ),
-                      child: const Text('👛', style: TextStyle(fontSize: 16)),
-                    ),
-                    const SizedBox(width: 10),
-                    Expanded(
-                      child: Column(
-                        crossAxisAlignment: CrossAxisAlignment.start,
-                        children: [
-                          Text(
-                            'Wallet Credits',
-                            style: TextStyle(
-                              fontSize: 14,
-                              fontWeight: FontWeight.w800,
-                              color: isDark ? Colors.white : Colors.black87,
-                            ),
-                          ),
-                          Text(
-                            'Available: ₹${walletBalance.toStringAsFixed(0)}',
-                            style: TextStyle(
-                              fontSize: 11,
-                              fontWeight: FontWeight.w600,
-                              color: Colors.green.shade700,
-                            ),
-                          ),
-                        ],
-                      ),
-                    ),
-                    // Toggle switch
-                    Transform.scale(
-                      scale: 0.85,
-                      child: Switch.adaptive(
-                        value: _useWalletBalance,
-                        onChanged: (value) {
-                          HapticFeedback.selectionClick();
-                          setState(() => _useWalletBalance = value);
-                        },
-                        activeColor: Colors.green.shade600,
-                        activeTrackColor: Colors.green.shade200,
-                      ),
-                    ),
-                  ],
-                ),
-              ),
-              // Info row
-              if (_useWalletBalance)
-                Padding(
-                  padding: const EdgeInsets.all(12),
-                  child: Row(
-                    children: [
-                      Icon(Icons.check_circle,
-                          color: Colors.green.shade600, size: 16),
-                      const SizedBox(width: 8),
-                      Expanded(
-                        child: Text(
-                          'Wallet credits will be applied at checkout',
-                          style: TextStyle(
-                            fontSize: 12,
-                            fontWeight: FontWeight.w600,
-                            color: isDark
-                                ? Colors.green.shade300
-                                : Colors.green.shade700,
-                          ),
-                        ),
-                      ),
-                    ],
-                  ),
-                ),
-            ],
-          ),
-        );
-      },
-    );
-  }
-
-  // --- Tip Section ---
-  Widget _buildTipSection(bool isDark, Color cardColor, Color accentColor) {
-    final tipOptions = [20.0, 30.0, 50.0, 0.0]; // 0.0 represents custom
-
-    return Container(
-      margin: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
-      padding: const EdgeInsets.all(14),
-      decoration: BoxDecoration(
-        gradient: LinearGradient(
-          begin: Alignment.topLeft,
-          end: Alignment.bottomRight,
-          colors: isDark
-              ? [const Color(0xFF3D2E1E), const Color(0xFF2A2117)]
-              : [const Color(0xFFFFF8E1), const Color(0xFFFFECB3)],
-        ),
-        borderRadius: BorderRadius.circular(14),
-        border: Border.all(
-          color: Colors.amber.shade300.withValues(alpha: 0.5),
-        ),
-        boxShadow: [
-          BoxShadow(
-            color: Colors.amber.withValues(alpha: 0.15),
-            blurRadius: 8,
-            offset: const Offset(0, 2),
-          ),
-        ],
-      ),
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
-          Row(
-            children: [
-              // Premium delivery icon
-              Container(
-                width: 42,
-                height: 42,
-                decoration: BoxDecoration(
-                  gradient: LinearGradient(
-                    colors: [Colors.amber.shade400, Colors.amber.shade600],
-                  ),
-                  borderRadius: BorderRadius.circular(10),
-                  boxShadow: [
-                    BoxShadow(
-                      color: Colors.amber.withValues(alpha: 0.4),
-                      blurRadius: 6,
-                      offset: const Offset(0, 2),
-                    ),
-                  ],
-                ),
-                child: const Center(
-                  child: Text('🏍️', style: TextStyle(fontSize: 20)),
-                ),
-              ),
-              const SizedBox(width: 10),
-              Expanded(
-                child: Column(
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  children: [
-                    Text(
-                      'Tip your delivery partner',
-                      style: TextStyle(
-                        fontSize: 13,
-                        fontWeight: FontWeight.w700,
-                        color: isDark
-                            ? Colors.amber.shade200
-                            : Colors.amber.shade900,
-                      ),
-                    ),
-                    Text(
-                      '100% goes to your partner 💛',
-                      style: TextStyle(
-                        fontSize: 10,
-                        color: isDark
-                            ? Colors.amber.shade300
-                            : Colors.amber.shade700,
-                      ),
-                    ),
-                  ],
-                ),
-              ),
-              if (_selectedTipAmount > 0)
-                Container(
-                  padding:
-                      const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
-                  decoration: BoxDecoration(
-                    color: Colors.green.shade500,
-                    borderRadius: BorderRadius.circular(12),
-                  ),
-                  child: Text(
-                    '₹${_selectedTipAmount.toInt()} added',
-                    style: const TextStyle(
-                      fontSize: 10,
-                      fontWeight: FontWeight.w700,
-                      color: Colors.white,
-                    ),
-                  ),
-                ),
-            ],
-          ),
-          const SizedBox(height: 12),
-          // Tip buttons row
-          Row(
-            children: [
-              _buildTipButton('😊', 20, isDark),
-              const SizedBox(width: 6),
-              _buildTipButton('😄', 30, isDark),
-              const SizedBox(width: 6),
-              _buildTipButton('🤩', 50, isDark),
-              const SizedBox(width: 6),
-              _buildCustomTipButton(isDark),
-            ],
-          ),
-        ],
-      ),
-    );
-  }
-
-  Widget _buildTipButton(String emoji, double amount, bool isDark) {
-    final isSelected = _selectedTipAmount == amount;
-
-    return Expanded(
-      child: GestureDetector(
-        onTap: () {
-          HapticFeedback.selectionClick();
-          setState(() {
-            _selectedTipAmount = isSelected ? 0 : amount;
-          });
-        },
-        child: AnimatedContainer(
-          duration: const Duration(milliseconds: 200),
-          padding: const EdgeInsets.symmetric(vertical: 10),
-          decoration: BoxDecoration(
-            gradient: isSelected
-                ? LinearGradient(
-                    colors: [Colors.green.shade400, Colors.green.shade600])
-                : null,
-            color:
-                isSelected ? null : (isDark ? Colors.grey[800] : Colors.white),
-            borderRadius: BorderRadius.circular(10),
-            border: Border.all(
-              color: isSelected
-                  ? Colors.green.shade400
-                  : (isDark ? Colors.grey[600]! : Colors.grey.shade300),
-              width: isSelected ? 2 : 1,
-            ),
-            boxShadow: isSelected
-                ? [
-                    BoxShadow(
-                      color: Colors.green.withValues(alpha: 0.3),
-                      blurRadius: 4,
-                      offset: const Offset(0, 2),
-                    ),
-                  ]
-                : null,
-          ),
-          child: Column(
-            mainAxisSize: MainAxisSize.min,
-            children: [
-              Text(emoji, style: const TextStyle(fontSize: 16)),
-              const SizedBox(height: 2),
-              Text(
-                '₹${amount.toInt()}',
-                style: TextStyle(
-                  fontSize: 11,
-                  fontWeight: FontWeight.w700,
-                  color: isSelected
-                      ? Colors.white
-                      : (isDark ? Colors.grey[300] : Colors.grey.shade800),
-                ),
-              ),
-            ],
-          ),
-        ),
-      ),
-    );
-  }
-
-  Widget _buildCustomTipButton(bool isDark) {
-    final isCustomSelected = _selectedTipAmount > 0 &&
-        _selectedTipAmount != 20 &&
-        _selectedTipAmount != 30 &&
-        _selectedTipAmount != 50;
-
-    return Expanded(
-      child: GestureDetector(
-        onTap: () {
-          HapticFeedback.selectionClick();
-          _showCustomTipDialog(isDark);
-        },
-        child: AnimatedContainer(
-          duration: const Duration(milliseconds: 200),
-          padding: const EdgeInsets.symmetric(vertical: 10),
-          decoration: BoxDecoration(
-            gradient: isCustomSelected
-                ? LinearGradient(
-                    colors: [Colors.green.shade400, Colors.green.shade600])
-                : null,
-            color: isCustomSelected
-                ? null
-                : (isDark ? Colors.grey[800] : Colors.white),
-            borderRadius: BorderRadius.circular(10),
-            border: Border.all(
-              color: isCustomSelected
-                  ? Colors.green.shade400
-                  : (isDark ? Colors.grey[600]! : Colors.grey.shade300),
-              width: isCustomSelected ? 2 : 1,
-            ),
-            boxShadow: isCustomSelected
-                ? [
-                    BoxShadow(
-                      color: Colors.green.withValues(alpha: 0.3),
-                      blurRadius: 4,
-                      offset: const Offset(0, 2),
-                    ),
-                  ]
-                : null,
-          ),
-          child: Column(
-            mainAxisSize: MainAxisSize.min,
-            children: [
-              Text('✏️', style: const TextStyle(fontSize: 16)),
-              const SizedBox(height: 2),
-              Text(
-                isCustomSelected ? '₹${_selectedTipAmount.toInt()}' : 'Other',
-                style: TextStyle(
-                  fontSize: 11,
-                  fontWeight: FontWeight.w700,
-                  color: isCustomSelected
-                      ? Colors.white
-                      : (isDark ? Colors.grey[300] : Colors.grey.shade800),
-                ),
-              ),
-            ],
-          ),
-        ),
-      ),
-    );
-  }
-
-  void _showCustomTipDialog(bool isDark) {
-    final controller = TextEditingController();
-    final accentColor = isDark ? AppColors.primaryLight : AppColors.primary;
-
-    showModalBottomSheet(
-      context: context,
-      isScrollControlled: true,
-      backgroundColor: Colors.transparent,
-      builder: (context) => Padding(
-        padding: EdgeInsets.only(
-          bottom: MediaQuery.of(context).viewInsets.bottom,
-        ),
-        child: Container(
-          padding: const EdgeInsets.all(20),
-          decoration: BoxDecoration(
-            color: isDark ? const Color(0xFF1E1E1E) : Colors.white,
-            borderRadius: const BorderRadius.vertical(top: Radius.circular(20)),
-          ),
-          child: Column(
-            mainAxisSize: MainAxisSize.min,
-            crossAxisAlignment: CrossAxisAlignment.start,
-            children: [
-              // Handle bar
-              Center(
-                child: Container(
-                  width: 40,
-                  height: 4,
-                  decoration: BoxDecoration(
-                    color: Colors.grey[400],
-                    borderRadius: BorderRadius.circular(2),
-                  ),
-                ),
-              ),
-              const SizedBox(height: 16),
-
-              // Title
-              Row(
-                children: [
-                  Container(
-                    width: 36,
-                    height: 36,
-                    decoration: BoxDecoration(
-                      gradient: LinearGradient(
-                        colors: [Colors.amber.shade400, Colors.amber.shade600],
-                      ),
-                      borderRadius: BorderRadius.circular(8),
-                    ),
-                    child: const Center(
-                      child: Text('💰', style: TextStyle(fontSize: 18)),
-                    ),
-                  ),
-                  const SizedBox(width: 12),
-                  Text(
-                    'Enter custom tip',
-                    style: TextStyle(
-                      fontSize: 18,
-                      fontWeight: FontWeight.w700,
-                      color: isDark ? Colors.white : Colors.black87,
-                    ),
-                  ),
-                ],
-              ),
-              const SizedBox(height: 16),
-
-              // Input field
-              TextField(
-                controller: controller,
-                keyboardType: TextInputType.number,
-                autofocus: true,
-                style: TextStyle(
-                  fontSize: 24,
-                  fontWeight: FontWeight.w700,
-                  color: isDark ? Colors.white : Colors.black87,
-                ),
-                decoration: InputDecoration(
-                  prefixText: '₹ ',
-                  prefixStyle: TextStyle(
-                    fontSize: 24,
-                    fontWeight: FontWeight.w700,
-                    color: isDark ? Colors.grey[400] : Colors.grey[600],
-                  ),
-                  hintText: '0',
-                  hintStyle: TextStyle(
-                    fontSize: 24,
-                    fontWeight: FontWeight.w700,
-                    color: Colors.grey[400],
-                  ),
-                  filled: true,
-                  fillColor: isDark ? Colors.grey[800] : Colors.grey[100],
-                  border: OutlineInputBorder(
-                    borderRadius: BorderRadius.circular(12),
-                    borderSide: BorderSide.none,
-                  ),
-                  contentPadding:
-                      const EdgeInsets.symmetric(horizontal: 16, vertical: 16),
-                ),
-              ),
-              const SizedBox(height: 12),
-
-              // Quick amounts
-              Row(
-                children: [
-                  _buildQuickTipChip('₹10', 10, controller, isDark),
-                  const SizedBox(width: 8),
-                  _buildQuickTipChip('₹40', 40, controller, isDark),
-                  const SizedBox(width: 8),
-                  _buildQuickTipChip('₹100', 100, controller, isDark),
-                ],
-              ),
-              const SizedBox(height: 20),
-
-              // Confirm button
-              SizedBox(
-                width: double.infinity,
-                child: ElevatedButton(
-                  onPressed: () {
-                    final amount = double.tryParse(controller.text) ?? 0;
-                    Navigator.pop(context);
-                    if (amount > 0) {
-                      setState(() {
-                        _selectedTipAmount = amount;
-                      });
-                      HapticFeedback.mediumImpact();
-                    }
-                  },
-                  style: ElevatedButton.styleFrom(
-                    backgroundColor: accentColor,
-                    foregroundColor: Colors.white,
-                    padding: const EdgeInsets.symmetric(vertical: 14),
-                    shape: RoundedRectangleBorder(
-                      borderRadius: BorderRadius.circular(10),
-                    ),
-                  ),
-                  child: const Text(
-                    'Add tip',
-                    style: TextStyle(
-                      fontSize: 15,
-                      fontWeight: FontWeight.w700,
-                    ),
-                  ),
-                ),
-              ),
-              const SizedBox(height: 8),
-            ],
-          ),
-        ),
-      ),
-    );
-  }
-
-  Widget _buildQuickTipChip(String label, double amount,
-      TextEditingController controller, bool isDark) {
-    return GestureDetector(
-      onTap: () {
-        HapticFeedback.selectionClick();
-        controller.text = amount.toInt().toString();
-      },
-      child: Container(
-        padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 8),
-        decoration: BoxDecoration(
-          color: isDark ? Colors.grey[700] : Colors.grey[200],
-          borderRadius: BorderRadius.circular(20),
-        ),
-        child: Text(
-          label,
-          style: TextStyle(
-            fontSize: 13,
-            fontWeight: FontWeight.w600,
-            color: isDark ? Colors.white : Colors.grey[700],
-          ),
-        ),
       ),
     );
   }
@@ -4091,12 +3502,9 @@ class _MobileCartScreenState extends State<MobileCartScreen>
                                 }
                                 // `total` here is already the true
                                 // chargeable amount (see the call site of
-                                // _buildBlinkitBottomBar) — tip is
-                                // intentionally not added; createOrder.ts has
-                                // no tip field, and including it would make
-                                // the Razorpay-captured amount diverge from
-                                // createOrder's server-computed grandTotal,
-                                // failing payment verification.
+                                // _buildBlinkitBottomBar) — the same figure
+                                // createOrder.ts computes and verifies
+                                // server-side.
                                 _placeOrder(total, address);
                               },
                         style: ElevatedButton.styleFrom(
@@ -4206,27 +3614,10 @@ class _MobileCartScreenState extends State<MobileCartScreen>
         ? (shippingInfo.expressDeliveryFee ?? 0.0)
         : 0.0;
 
-    // Calculate wallet discount
-    double walletDiscount = 0;
-    if (_useWalletBalance) {
-      try {
-        final walletProvider = context.read<WalletProvider>();
-        final availableBalance = walletProvider.balance;
-        final remainingAmount =
-            subtotal - couponDiscount + shippingFee + expressDeliveryFee;
-        walletDiscount = availableBalance > remainingAmount
-            ? remainingAmount
-            : availableBalance;
-      } catch (e) {
-        debugPrint('Wallet provider not available: $e');
-      }
-    }
-
     final finalTotal = subtotal -
         couponDiscount +
         shippingFee +
-        expressDeliveryFee -
-        walletDiscount;
+        expressDeliveryFee;
 
     return {
       'subtotal': subtotal,
@@ -4236,7 +3627,6 @@ class _MobileCartScreenState extends State<MobileCartScreen>
       'percentageDiscount': percentageDiscount,
       'shippingFee': shippingFee,
       'expressDeliveryFee': expressDeliveryFee,
-      'walletDiscount': walletDiscount,
       'finalTotal': finalTotal < 0 ? 0 : finalTotal,
     };
   }
