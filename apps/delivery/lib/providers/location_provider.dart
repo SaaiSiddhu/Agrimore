@@ -35,7 +35,12 @@ class LocationProvider extends ChangeNotifier with WidgetsBindingObserver {
     WidgetsBinding.instance.addObserver(this);
   }
 
-  final FirebaseFirestore _firestore = FirebaseFirestore.instance;
+  // late: deferred to first access, not construction. LocationProvider is
+  // constructed well before any code path that actually needs Firestore
+  // (setActiveOrders, the constructor itself) touches it; forcing it eager
+  // meant the provider could never be constructed at all without a live
+  // Firebase app, even for a passive read of unrelated state.
+  late final FirebaseFirestore _firestore = FirebaseFirestore.instance;
 
   Position? _currentPosition;
   bool _isTracking = false;
