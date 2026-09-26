@@ -33,14 +33,24 @@ import '../profile/rider_profile_screen.dart';
 import 'active_work_states.dart';
 
 class DashboardScreen extends StatefulWidget {
-  const DashboardScreen({super.key});
+  const DashboardScreen({
+    super.key,
+    this.inboxSource,
+    this.earningsSource,
+    this.accountSource,
+  });
+
+  /// Injected in tests.
+  final RiderInboxSource? inboxSource;
+  final Stream<List<RiderEarning>> Function(String riderId)? earningsSource;
+  final Stream<RiderAccount> Function(String riderId)? accountSource;
 
   @override
   State<DashboardScreen> createState() => _DashboardScreenState();
 }
 
 class _DashboardScreenState extends State<DashboardScreen> {
-  final RiderInboxSource _inbox = FirestoreRiderInbox();
+  late final RiderInboxSource _inbox = widget.inboxSource ?? FirestoreRiderInbox();
   bool _isOnline = false;
 
   @override
@@ -419,19 +429,29 @@ class _DashboardScreenState extends State<DashboardScreen> {
 
   // ── Phase DLV-4B: money from the server (rider_earnings / rider_accounts) ──
 
-  RiderMoneyService? _money;
+  String? _moneyBoundUid;
   Stream<List<RiderEarning>>? _earningsStream;
   Stream<RiderAccount>? _accountStream;
 
-  RiderMoneyService? get _moneyService {
+  static Stream<List<RiderEarning>> _defaultEarnings(String uid) =>
+      RiderMoneyService(uid).unsettledEarnings();
+  static Stream<RiderAccount> _defaultAccount(String uid) =>
+      RiderMoneyService(uid).account();
+
+  /// True once bound; false when signed out. Splitting the two streams
+  /// (rather than exposing the RiderMoneyService instance) is what makes
+  /// this injectable in tests without a live Firestore.
+  bool get _moneyBound {
     final uid = context.read<DeliveryAuthProvider>().user?.uid;
-    if (uid == null) return null;
-    if (_money?.riderId != uid) {
-      _money = RiderMoneyService(uid);
-      _earningsStream = _money!.unsettledEarnings().asBroadcastStream();
-      _accountStream = _money!.account().asBroadcastStream();
+    if (uid == null) return false;
+    if (_moneyBoundUid != uid) {
+      _moneyBoundUid = uid;
+      _earningsStream =
+          (widget.earningsSource ?? _defaultEarnings)(uid).asBroadcastStream();
+      _accountStream =
+          (widget.accountSource ?? _defaultAccount)(uid).asBroadcastStream();
     }
-    return _money;
+    return true;
   }
 
   void _openMoney() {
@@ -448,7 +468,7 @@ class _DashboardScreenState extends State<DashboardScreen> {
     Widget Function(String week, String today, String cash) child,
   ) {
     final l = AppLocalizations.of(context);
-    if (_moneyService == null) {
+    if (!_moneyBound) {
       return child(
         l.todayDeliveredUnknown,
         l.todayDeliveredUnknown,

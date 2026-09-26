@@ -12,13 +12,16 @@ import 'package:delivery/l10n/app_localizations.dart';
 import 'package:delivery/money/rider_money.dart';
 import 'package:delivery/offers/delivery_offer.dart';
 import 'package:delivery/providers/auth_provider.dart';
+import 'package:delivery/providers/location_provider.dart';
 import 'package:delivery/providers/offer_provider.dart';
+import 'package:delivery/providers/order_provider.dart';
 import 'package:delivery/registration/rider_application.dart';
 import 'package:delivery/safety/emergency_sheet.dart';
 import 'package:delivery/screens/auth/login_screen.dart';
 import 'package:delivery/screens/auth/pending_approval_screen.dart';
 import 'package:delivery/screens/auth/rider_registration_screen.dart';
 import 'package:delivery/screens/home/active_work_states.dart';
+import 'package:delivery/screens/home/dashboard_screen.dart';
 import 'package:delivery/screens/inbox/inbox_screen.dart';
 import 'package:delivery/screens/money/statement_screen.dart';
 import 'package:delivery/screens/offers/incoming_offer_screen.dart';
@@ -333,6 +336,51 @@ void main() {
   }
 
   testWidgets('AgriMore Delivery Partner complete visual QA tour', (tester) async {
+    // 0. DashboardScreen itself -- never screenshotted before (shot 13's
+    // "active work and route" scaffold hand-assembles the same widgets in a
+    // bespoke Scaffold, not the real production screen). Deliberately FIRST,
+    // before any shot that opens a modal bottom sheet: a leftover open sheet
+    // from an earlier shot was observed bleeding through pumpWidget's tree
+    // replacement into this one when placed later in the sequence -- a
+    // test-harness ordering issue, not a DashboardScreen defect (confirmed by
+    // moving it here). bind() with injectable fakes so no real Firestore call
+    // is needed for the order provider; DashboardScreen's own hardcoded
+    // FirestoreRiderInbox for the inbox badge is now also injectable
+    // (DLV-S1) so this touches no Firebase at all.
+    DeliveryOrderProvider fakeOrders() => DeliveryOrderProvider(
+          activeSource: (_) => Stream.value((docs: <OrderDoc>[], fromCache: false)),
+          deliveredCount: (_, __) async => 8,
+          historyFetch: (_, __, ___, ____) async =>
+              (items: const <OrderModel>[], cursor: null, hasMore: false),
+        )..bind('r-tour');
+
+    // LocationProvider's constructor reads FirebaseFirestore.instance eagerly
+    // (a real Firebase app is always live by then in production, via
+    // main.dart's init order) -- it must be lazy (create:, not .value) here
+    // so it is never actually constructed unless DashboardScreen reads it,
+    // which only happens from interaction handlers, not initial build.
+    Widget dashboardFixture() => MultiProvider(
+          providers: [
+            ChangeNotifierProvider<DeliveryOrderProvider>.value(value: fakeOrders()),
+            ChangeNotifierProvider<LocationProvider>(create: (_) => LocationProvider()),
+          ],
+          child: DashboardScreen(
+            inboxSource: _FakeInbox(),
+            earningsSource: (_) => Stream.value(const <RiderEarning>[]),
+            accountSource: (_) => Stream.value(
+              RiderAccount.fromMap(const {'cashHeld': 0}),
+            ),
+          ),
+        );
+
+    await shot(tester, '00_dashboard_waiting_light', dashboardFixture());
+    await shot(
+      tester,
+      '00b_dashboard_waiting_dark',
+      dashboardFixture(),
+      brightness: Brightness.dark,
+    );
+
     // 1. Login Light, Dark & 200% Text Scale
     await shot(tester, '01_login_light', const LoginScreen());
     await shot(
@@ -652,5 +700,6 @@ void main() {
         ),
       ),
     );
+
   });
 }
