@@ -1153,6 +1153,22 @@ service cloud.firestore {
     // employees/{uid} directly at all) — so this rule changes nothing
     // about that real, live flow. See functions/scripts/
     // phase16a_onboarding_rules_test.js for the emulator proof of both.
+    // Phase ADMR-5: no legitimate client write of ANY value to ANY payout
+    // destination field any more — accountNumber/ifscCode/bankName/upiId/
+    // payoutMethod land only via reviewEmployeePayoutChange's Admin-SDK
+    // approval (functions/src/employee/employeePayoutAccount.ts), after an
+    // admin reviews the associate's own submitted request. Before this
+    // phase the associate wrote these fields directly, with no review, no
+    // hold and no audit trail. Blanket denylist, mirroring
+    // ownerCannotSetOnboardingFields()'s identical shape immediately below.
+    function ownerCannotSetPayoutFields() {
+      let changedKeys = request.resource.data.diff(resource.data).affectedKeys();
+      return !changedKeys.hasAny([
+        'accountNumber', 'ifscCode', 'bankName', 'upiId', 'payoutMethod',
+        'payoutAccountUpdatedAt', 'payoutAccountVerifiedBy'
+      ]);
+    }
+
     function ownerCannotSetOnboardingFields() {
       let changedKeys = request.resource.data.diff(resource.data).affectedKeys();
       return !changedKeys.hasAny([
@@ -1190,9 +1206,29 @@ service cloud.firestore {
       allow update: if isAdmin() ||
         (isOwner(employeeId) &&
          ownerCannotApproveEmployeeStatusOrCommission() &&
-         ownerCannotSetOnboardingFields());
+         ownerCannotSetOnboardingFields() &&
+         ownerCannotSetPayoutFields());
 
       allow delete: if isAdmin();
+    }
+
+    // ============================================
+    // ASSOCIATE PAYOUT ACCOUNT CHANGES (Phase ADMR-5)
+    // ============================================
+    // Mirrors seller_payout_change_requests / seller_wallets exactly (see
+    // functions/src/seller/sellerWallet.ts's own header). Cloud-Functions-only:
+    // requestEmployeePayoutChange creates a request and sets the pending
+    // marker; reviewEmployeePayoutChange (admin) or cancelEmployeePayoutChange
+    // (the associate themself) resolve it. employee_wallets holds ONLY the
+    // payoutChangePending marker — never money; the associate's real balance
+    // stays in the shared wallets/{uid} (see reviewEmployeePayout.ts, ADMR-3).
+    match /employee_payout_change_requests/{requestId} {
+      allow read: if isAuthenticated() && (resource.data.employeeId == request.auth.uid || isAdmin());
+      allow write: if false;
+    }
+    match /employee_wallets/{employeeId} {
+      allow read: if isAuthenticated() && (isOwner(employeeId) || isAdmin());
+      allow write: if false;
     }
 
     // ============================================
