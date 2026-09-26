@@ -14,6 +14,7 @@ import 'package:delivery/screens/history/rider_history_screen.dart';
 import 'package:delivery/screens/inbox/inbox_screen.dart';
 import 'package:delivery/screens/money/statement_screen.dart';
 import 'package:delivery/screens/orders/active_order_screen.dart';
+import 'package:delivery/screens/profile/identity_change_screen.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
 
@@ -233,6 +234,26 @@ void main() {
       await t.pumpAndSettle();
       expect(t.takeException(), isNull);
       expect(find.byType(StatementScreen), findsOneWidget);
+    });
+  });
+
+  group('identity change notices (DLVID1)', () {
+    testWidgets('an identity-change notice opens the request status screen', (t) async {
+      final src = FakeInbox()
+        ..current = [
+          RiderNotice.fromMap('n3', {
+            'type': 'identity_change_approved',
+            'title': 'Your name was updated',
+            'unread': true,
+            'data': {'type': 'identity_change_approved', 'requestId': 'req-1'},
+          }),
+        ];
+      await t.pumpWidget(host(InboxScreen(riderId: 'r1', source: src)));
+      await t.pumpAndSettle();
+      await t.tap(find.text('Your name was updated'));
+      await t.pumpAndSettle();
+      expect(t.takeException(), isNull);
+      expect(find.byType(IdentityChangeScreen), findsOneWidget);
     });
   });
 

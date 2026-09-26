@@ -943,8 +943,104 @@ abstract class AppLocalizations {
   /// Explains which fields are reviewed
   ///
   /// In en, this message translates to:
-  /// **'To change your name, mobile number, vehicle, licence or Aadhaar, contact Agrimore support — an admin reviews those changes.'**
+  /// **'To change your mobile number, vehicle, licence or Aadhaar, contact Agrimore support — an admin reviews those changes.'**
   String get profileLockedNote;
+
+  /// Button opening the identity change screen
+  ///
+  /// In en, this message translates to:
+  /// **'Request name change'**
+  String get profileRequestNameChange;
+
+  /// Screen title and form heading
+  ///
+  /// In en, this message translates to:
+  /// **'Request identity change'**
+  String get identityChangeTitle;
+
+  /// Field label
+  ///
+  /// In en, this message translates to:
+  /// **'Current name'**
+  String get identityChangeCurrentName;
+
+  /// Field label
+  ///
+  /// In en, this message translates to:
+  /// **'New name'**
+  String get identityChangeProposedName;
+
+  /// Field label
+  ///
+  /// In en, this message translates to:
+  /// **'Reason for change'**
+  String get identityChangeReasonLabel;
+
+  /// Button
+  ///
+  /// In en, this message translates to:
+  /// **'Submit request'**
+  String get identityChangeSubmit;
+
+  /// Success toast
+  ///
+  /// In en, this message translates to:
+  /// **'Your request has been submitted.'**
+  String get identityChangeSubmitted;
+
+  /// Status card heading while status == pending
+  ///
+  /// In en, this message translates to:
+  /// **'Request pending review'**
+  String get identityChangePendingTitle;
+
+  /// Status card body while status == pending
+  ///
+  /// In en, this message translates to:
+  /// **'Your current details remain unchanged while this is reviewed.'**
+  String get identityChangePendingBody;
+
+  /// Status card heading when status == rejected
+  ///
+  /// In en, this message translates to:
+  /// **'Request not approved'**
+  String get identityChangeRejectedTitle;
+
+  /// Button on a rejected request, opens the form again prefilled
+  ///
+  /// In en, this message translates to:
+  /// **'Correct and resend'**
+  String get identityChangeCorrect;
+
+  /// Submission refused: already_pending
+  ///
+  /// In en, this message translates to:
+  /// **'You already have a request waiting for review.'**
+  String get identityChangeAlreadyPending;
+
+  /// Submission refused: network
+  ///
+  /// In en, this message translates to:
+  /// **'Could not submit your request. Try again.'**
+  String get identityChangeNetworkError;
+
+  /// Submission refused: generic invalid, no specific field named
+  ///
+  /// In en, this message translates to:
+  /// **'Check your details and try again.'**
+  String get identityChangeInvalid;
+
+  /// Field validation error
+  ///
+  /// In en, this message translates to:
+  /// **'Enter your full legal name (2–100 characters).'**
+  String get errIdentityProposedValue;
+
+  /// Field validation error
+  ///
+  /// In en, this message translates to:
+  /// **'Enter a reason (3–250 characters).'**
+  String get errIdentityReason;
 
   /// Document state
   ///

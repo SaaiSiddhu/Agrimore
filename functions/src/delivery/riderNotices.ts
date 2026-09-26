@@ -15,6 +15,7 @@ type Db = admin.firestore.Firestore;
 export type RiderNoticeType =
   | "rider_offline" | "delivery_assigned" | "delivery_unassigned"
   | "statement_ready" | "payout_sent" | "bank_change_approved" | "bank_change_rejected"
+  | "identity_change_approved" | "identity_change_rejected"
   | "delivery_problem_resolved" | "incident_acknowledged" | "incident_resolved";
 
 export interface RiderNotice {
@@ -102,6 +103,15 @@ export function bankReviewNotice(requestId: string, approved: boolean, reason: s
     : { id: `bank_change_${requestId}`, type: "bank_change_rejected", title: "Payout details not changed",
       body: reason ? `Your change was not approved: ${reason}` : "Your change was not approved.",
       data: { type: "bank_change_rejected" } };
+}
+
+export function identityChangeNotice(requestId: string, approved: boolean, reason: string | null): RiderNotice {
+  return approved
+    ? { id: `identity_change_${requestId}`, type: "identity_change_approved", title: "Your name was updated",
+      body: "Your identity change request was approved.", data: { type: "identity_change_approved", requestId } }
+    : { id: `identity_change_${requestId}`, type: "identity_change_rejected", title: "Identity change not approved",
+      body: reason ? `Your request was not approved: ${reason}` : "Your request was not approved.",
+      data: { type: "identity_change_rejected", requestId } };
 }
 
 const DISPOSITION_TEXT: Record<string, string> = {

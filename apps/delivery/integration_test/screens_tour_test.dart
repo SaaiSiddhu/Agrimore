@@ -9,6 +9,7 @@ import 'package:delivery/auth/rider_account_source.dart';
 import 'package:delivery/data/rider_work.dart';
 import 'package:delivery/delivery/delivery_problems.dart';
 import 'package:delivery/design_system/design_system.dart';
+import 'package:delivery/identity/rider_identity.dart';
 import 'package:delivery/inbox/rider_inbox.dart';
 import 'package:delivery/l10n/app_localizations.dart';
 import 'package:delivery/money/rider_money.dart';
@@ -30,6 +31,7 @@ import 'package:delivery/screens/money/statement_screen.dart';
 import 'package:delivery/screens/offers/incoming_offer_screen.dart';
 import 'package:delivery/screens/orders/active_order_screen.dart';
 import 'package:delivery/screens/orders/delivery_problem_panel.dart';
+import 'package:delivery/screens/profile/identity_change_screen.dart';
 import 'package:delivery/screens/profile/rider_profile_screen.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
@@ -814,5 +816,51 @@ void main() {
       ),
     );
 
+    // 11b. DLVID1: identity change request — form, then a rejected request
+    // with its own "Correct and resend" action.
+    await shot(
+      tester,
+      '23b_identity_change_form_light',
+      IdentityChangeScreen(
+        riderId: 'r-tour',
+        currentName: 'Ravi Kumar',
+        backend: _FakeIdentityBackend(),
+      ),
+    );
+    await shot(
+      tester,
+      '23c_identity_change_rejected_dark',
+      IdentityChangeScreen(
+        riderId: 'r-tour',
+        currentName: 'Ravi Kumar',
+        backend: _FakeIdentityBackend(
+          current: IdentityChangeRequest(
+            id: 'req-1',
+            changeType: kIdentityChangeTypeName,
+            proposedValue: 'Ravikumar S',
+            reason: 'Name updated as per new government ID',
+            status: IdentityChangeStatus.rejected,
+            rejectionReason: 'Supporting document is unclear',
+            createdAt: DateTime(2026, 9, 18),
+          ),
+        ),
+      ),
+      brightness: Brightness.dark,
+    );
   });
+}
+
+class _FakeIdentityBackend implements RiderIdentityBackend {
+  _FakeIdentityBackend({this.current});
+  final IdentityChangeRequest? current;
+  @override
+  Future<String> requestChange({
+    required String changeType,
+    required String proposedValue,
+    required String reason,
+  }) async =>
+      'req-tour';
+  @override
+  Stream<IdentityChangeRequest?> latestRequest(String riderId) =>
+      Stream.value(current);
 }

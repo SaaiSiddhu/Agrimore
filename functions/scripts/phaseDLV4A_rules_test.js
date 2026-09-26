@@ -1,11 +1,14 @@
 // Phase DLV-4A — firestore.rules for the rider money collections.
+// Phase DLVID1 added rider_identity_change_requests to the same generic
+// loop below (identical shape: owner-or-admin read, no client write).
 //
 // rider_earnings, rider_accounts, rider_cash_ledger, rider_bank_change_requests,
-// rider_payouts: a rider reads only their own, admin reads all, no client
-// writes anything — except admin moving a PENDING statement to paid with a
-// bank/UPI reference (the seller_payouts rule). Riders still cannot write
-// their own bank fields on delivery_partners (DLV-0; changes go through
-// requestRiderBankChange).
+// rider_identity_change_requests, rider_payouts: a rider reads only their
+// own, admin reads all, no client writes anything — except admin moving a
+// PENDING statement to paid with a bank/UPI reference (the seller_payouts
+// rule). Riders still cannot write their own bank fields on
+// delivery_partners (DLV-0; changes go through requestRiderBankChange /
+// requestRiderIdentityChange).
 //
 // Run with:
 //   firebase emulators:exec --only firestore "node scripts/phaseDLV4A_rules_test.js"
@@ -53,6 +56,7 @@ async function main() {
       await f.doc(`rider_accounts/${r}`).set({ riderId: r, cashHeld: 480 });
       await f.doc(`rider_cash_ledger/l-${r}`).set({ riderId: r, type: "cash_collected", amount: 480 });
       await f.doc(`rider_bank_change_requests/b-${r}`).set({ riderId: r, status: "pending", upiId: "x@upi" });
+      await f.doc(`rider_identity_change_requests/i-${r}`).set({ riderId: r, status: "pending", changeType: "name", proposedValue: "New Name" });
       for (const st of ["pending", "on_hold", "paid"]) {
         await f.doc(`rider_payouts/${r}_${st}`).set({ riderId: r, weekKey: "2026-W38", amount: 100, status: st });
       }
@@ -62,7 +66,8 @@ async function main() {
 
   console.log("=== PHASE DLV-4A — rider money rules ===");
   const cols = [["rider_earnings", (r) => `o-${r}`], ["rider_accounts", (r) => r], ["rider_cash_ledger", (r) => `l-${r}`],
-    ["rider_bank_change_requests", (r) => `b-${r}`], ["rider_payouts", (r) => `${r}_pending`]];
+    ["rider_bank_change_requests", (r) => `b-${r}`], ["rider_identity_change_requests", (r) => `i-${r}`],
+    ["rider_payouts", (r) => `${r}_pending`]];
   for (const [col, id] of cols) {
     await scenario(`r_${col}_own_read`, "allow", () => r1.doc(`${col}/${id(R1)}`).get());
     await scenario(`r_${col}_other_riders_read`, "deny", () => r1.doc(`${col}/${id(R2)}`).get());
@@ -79,6 +84,7 @@ async function main() {
   await scenario("w_rider_creates_own_account", "deny", () => r1.doc("rider_accounts/new").set({ riderId: "new", cashHeld: -500 }));
   await scenario("w_rider_deletes_ledger_line", "deny", () => r1.doc(`rider_cash_ledger/l-${R1}`).delete());
   await scenario("w_rider_approves_own_bank_change", "deny", () => r1.doc(`rider_bank_change_requests/b-${R1}`).update({ status: "approved" }));
+  await scenario("w_rider_approves_own_identity_change", "deny", () => r1.doc(`rider_identity_change_requests/i-${R1}`).update({ status: "approved" }));
   await scenario("w_rider_marks_own_payout_paid", "deny", () => r1.doc(`rider_payouts/${R1}_pending`).update({
     status: "paid", paidAt: Timestamp.now(), paymentReference: "UTR123456", paidBy: R1 }));
   await scenario("w_admin_edits_cash_directly", "deny", () => adm.doc(`rider_accounts/${R1}`).update({ cashHeld: 0 }));

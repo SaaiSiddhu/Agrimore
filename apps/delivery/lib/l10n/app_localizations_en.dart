@@ -462,7 +462,59 @@ class AppLocalizationsEn extends AppLocalizations {
 
   @override
   String get profileLockedNote =>
-      'To change your name, mobile number, vehicle, licence or Aadhaar, contact Agrimore support — an admin reviews those changes.';
+      'To change your mobile number, vehicle, licence or Aadhaar, contact Agrimore support — an admin reviews those changes.';
+
+  @override
+  String get profileRequestNameChange => 'Request name change';
+
+  @override
+  String get identityChangeTitle => 'Request identity change';
+
+  @override
+  String get identityChangeCurrentName => 'Current name';
+
+  @override
+  String get identityChangeProposedName => 'New name';
+
+  @override
+  String get identityChangeReasonLabel => 'Reason for change';
+
+  @override
+  String get identityChangeSubmit => 'Submit request';
+
+  @override
+  String get identityChangeSubmitted => 'Your request has been submitted.';
+
+  @override
+  String get identityChangePendingTitle => 'Request pending review';
+
+  @override
+  String get identityChangePendingBody =>
+      'Your current details remain unchanged while this is reviewed.';
+
+  @override
+  String get identityChangeRejectedTitle => 'Request not approved';
+
+  @override
+  String get identityChangeCorrect => 'Correct and resend';
+
+  @override
+  String get identityChangeAlreadyPending =>
+      'You already have a request waiting for review.';
+
+  @override
+  String get identityChangeNetworkError =>
+      'Could not submit your request. Try again.';
+
+  @override
+  String get identityChangeInvalid => 'Check your details and try again.';
+
+  @override
+  String get errIdentityProposedValue =>
+      'Enter your full legal name (2–100 characters).';
+
+  @override
+  String get errIdentityReason => 'Enter a reason (3–250 characters).';
 
   @override
   String get docSubmitted => 'Submitted';
