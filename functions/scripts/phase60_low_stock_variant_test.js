@@ -41,7 +41,11 @@ function baseProduct(overrides) {
     sellerId: overrides.sellerId ?? "phase60-seller",
     lowStockThreshold: overrides.lowStockThreshold ?? 5,
     stock: overrides.stock,
-    variants: overrides.variants,
+    // Firestore (including the test snapshot encoder) rejects an explicit
+    // `undefined` value — omit the key entirely rather than set it, so
+    // `baseProduct({ ..., variants: undefined })` behaves like "no variants
+    // field", not a malformed write.
+    ...(overrides.variants !== undefined ? { variants: overrides.variants } : {}),
     ...overrides.extra,
   };
 }
