@@ -40,6 +40,7 @@ import '../screens/admin/wallet/wallet_tracking_screen.dart';
 import '../screens/admin/employees/employee_management_screen.dart';
 import '../screens/admin/employees/add_employee_screen.dart';
 import '../screens/admin/employees/employee_payouts_screen.dart';
+import '../screens/admin/employees/employee_payout_account_review_screen.dart';
 import '../screens/admin/sellers/seller_payouts_screen.dart';
 import '../screens/admin/employees/employee_payout_detail_screen.dart';
 import '../screens/admin/benefit_program/compliance_control_screen.dart';
@@ -127,6 +128,7 @@ class AdminRoutes {
 
   static const String employeePayouts = '/employee-payouts';
   static const String employeePayoutDetail = '/employee-payouts/:id';
+  static const String employeePayoutAccountReview = '/employee-payout-account-review';
 
   // Customer Product Benefit Program — compliance & feature-flag control
   // plane (Phase A). Appended at the end, mirroring D5's rule for
@@ -523,6 +525,13 @@ class AppRouter {
               name: 'employee-payouts',
               pageBuilder: (context, state) =>
                   _buildPage(const EmployeePayoutsScreen(), state),
+            ),
+
+            GoRoute(
+              path: AdminRoutes.employeePayoutAccountReview,
+              name: 'employee-payout-account-review',
+              pageBuilder: (context, state) =>
+                  _buildPage(const EmployeePayoutAccountReviewScreen(), state),
             ),
 
             GoRoute(
