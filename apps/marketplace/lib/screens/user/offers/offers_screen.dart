@@ -1,7 +1,23 @@
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
-import 'package:cloud_firestore/cloud_firestore.dart';
+import 'package:provider/provider.dart';
+import 'package:agrimore_core/agrimore_core.dart';
+import '../../../providers/coupon_provider.dart';
 
+// ADMR-23: this screen previously ran its own separate, unfiltered Firestore
+// read of the coupons collection and read field names that do not exist on
+// the real coupon schema (a differently-named minimum-order key, a
+// differently-named usage-limit key, a differently-named expiry key --
+// instead of the real minOrderAmount/usageLimit/validTo) -- so a real,
+// admin-created coupon always rendered "Min ₹0", "Expires N/A" and a
+// unit-less discount number. Its "Apply" button also only ever set a local
+// widget field, never read by checkout, lost the instant this screen closed.
+// Now sources from the same CouponProvider.availableCoupons the real,
+// working coupon-selection screens already use (coupon_selection_screen.dart,
+// blinkit_coupon_screen.dart) -- already parsed via CouponModel.fromMap and
+// pre-filtered to valid coupons only -- and "Apply" calls the real
+// CouponProvider.applyCoupon(coupon), safe here specifically because the
+// source list is pre-filtered, the same property the real screens rely on.
 class OffersScreen extends StatefulWidget {
   const OffersScreen({Key? key}) : super(key: key);
 
@@ -10,27 +26,12 @@ class OffersScreen extends StatefulWidget {
 }
 
 class _OffersScreenState extends State<OffersScreen> {
-  List<Map<String, dynamic>> _coupons = [];
-  bool _loading = true;
-  String? _appliedCode;
-
   @override
   void initState() {
     super.initState();
-    _fetchCoupons();
-  }
-
-  Future<void> _fetchCoupons() async {
-    try {
-      final snap = await FirebaseFirestore.instance.collection('coupons').get();
-      setState(() {
-        _coupons = snap.docs.map((d) => {'id': d.id, ...d.data()}).toList();
-        _loading = false;
-      });
-    } catch (e) {
-      debugPrint('Error fetching coupons: $e');
-      setState(() => _loading = false);
-    }
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      context.read<CouponProvider>().fetchAvailableCoupons();
+    });
   }
 
   void _copyCode(String code) {
@@ -38,6 +39,18 @@ class _OffersScreenState extends State<OffersScreen> {
     ScaffoldMessenger.of(context).showSnackBar(
       SnackBar(
         content: Text('Coupon code "$code" copied!'),
+        backgroundColor: const Color(0xFF145A32),
+        behavior: SnackBarBehavior.floating,
+        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+      ),
+    );
+  }
+
+  void _applyCoupon(CouponModel coupon) {
+    context.read<CouponProvider>().applyCoupon(coupon);
+    ScaffoldMessenger.of(context).showSnackBar(
+      SnackBar(
+        content: Text('"${coupon.code}" applied — it will be used at checkout'),
         backgroundColor: const Color(0xFF145A32),
         behavior: SnackBarBehavior.floating,
         shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
@@ -86,82 +99,88 @@ class _OffersScreenState extends State<OffersScreen> {
 
           // Body
           Expanded(
-            child: _loading
-                ? const Center(child: CircularProgressIndicator(color: Color(0xFF145A32)))
-                : RefreshIndicator(
-                    onRefresh: _fetchCoupons,
-                    child: ListView(
-                      padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 24),
-                      children: [
-                        // Banner
-                        Container(
-                          padding: const EdgeInsets.all(20),
-                          decoration: BoxDecoration(
-                            color: const Color(0x1ED4A843),
-                            borderRadius: BorderRadius.circular(20),
-                            border: Border.all(color: const Color(0x4DD4A843)),
-                          ),
-                          child: Row(
-                            children: [
-                              const Text('🎉', style: TextStyle(fontSize: 40)),
-                              const SizedBox(width: 16),
-                              Expanded(
-                                child: Column(
-                                  crossAxisAlignment: CrossAxisAlignment.start,
-                                  children: const [
-                                    Text('Save Big Today!',
-                                      style: TextStyle(fontSize: 18, fontWeight: FontWeight.w900, color: Color(0xFF145A32))),
-                                    SizedBox(height: 4),
-                                    Text('Apply coupons at checkout to save more',
-                                      style: TextStyle(fontSize: 13, color: Color(0xFF6B7280))),
-                                  ],
-                                ),
+            child: Consumer<CouponProvider>(
+              builder: (context, couponProvider, _) {
+                if (couponProvider.isLoading) {
+                  return const Center(child: CircularProgressIndicator(color: Color(0xFF145A32)));
+                }
+                final coupons = couponProvider.availableCoupons;
+                return RefreshIndicator(
+                  onRefresh: couponProvider.fetchAvailableCoupons,
+                  child: ListView(
+                    padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 24),
+                    children: [
+                      // Banner
+                      Container(
+                        padding: const EdgeInsets.all(20),
+                        decoration: BoxDecoration(
+                          color: const Color(0x1ED4A843),
+                          borderRadius: BorderRadius.circular(20),
+                          border: Border.all(color: const Color(0x4DD4A843)),
+                        ),
+                        child: Row(
+                          children: [
+                            const Text('🎉', style: TextStyle(fontSize: 40)),
+                            const SizedBox(width: 16),
+                            Expanded(
+                              child: Column(
+                                crossAxisAlignment: CrossAxisAlignment.start,
+                                children: const [
+                                  Text('Save Big Today!',
+                                    style: TextStyle(fontSize: 18, fontWeight: FontWeight.w900, color: Color(0xFF145A32))),
+                                  SizedBox(height: 4),
+                                  Text('Apply coupons at checkout to save more',
+                                    style: TextStyle(fontSize: 13, color: Color(0xFF6B7280))),
+                                ],
                               ),
+                            ),
+                          ],
+                        ),
+                      ),
+                      const SizedBox(height: 24),
+
+                      if (coupons.isEmpty)
+                        Center(
+                          child: Column(
+                            children: const [
+                              SizedBox(height: 40),
+                              Text('🏷️', style: TextStyle(fontSize: 48)),
+                              SizedBox(height: 12),
+                              Text('No Coupons Yet',
+                                style: TextStyle(fontSize: 18, fontWeight: FontWeight.w900, color: Color(0xFF1F2937))),
+                              SizedBox(height: 6),
+                              Text('Check back later for exciting offers!',
+                                style: TextStyle(fontSize: 13, color: Color(0xFF9CA3AF))),
                             ],
                           ),
-                        ),
-                        const SizedBox(height: 24),
-
-                        if (_coupons.isEmpty)
-                          Center(
-                            child: Column(
-                              children: const [
-                                SizedBox(height: 40),
-                                Text('🏷️', style: TextStyle(fontSize: 48)),
-                                SizedBox(height: 12),
-                                Text('No Coupons Yet',
-                                  style: TextStyle(fontSize: 18, fontWeight: FontWeight.w900, color: Color(0xFF1F2937))),
-                                SizedBox(height: 6),
-                                Text('Check back later for exciting offers!',
-                                  style: TextStyle(fontSize: 13, color: Color(0xFF9CA3AF))),
-                              ],
-                            ),
-                          )
-                        else
-                          ..._coupons.map((coupon) => _buildCouponCard(coupon)),
-                      ],
-                    ),
+                        )
+                      else
+                        ...coupons.map((coupon) => _buildCouponCard(coupon, couponProvider)),
+                    ],
                   ),
+                );
+              },
+            ),
           ),
         ],
       ),
     );
   }
 
-  Widget _buildCouponCard(Map<String, dynamic> coupon) {
-    final code = coupon['code'] ?? 'CODE';
-    final isApplied = _appliedCode == code;
-    final discount = coupon['discount'] ?? '0%';
-    final description = coupon['description'] ?? '';
-    final minOrder = coupon['minOrder'] ?? 0;
-    final usedCount = coupon['usedCount'] ?? 0;
-    final maxUses = coupon['maxUses'] ?? 1;
-
-    String expiryStr = 'N/A';
-    if (coupon['expiry'] is Timestamp) {
-      final dt = (coupon['expiry'] as Timestamp).toDate();
-      expiryStr = '${dt.day}/${dt.month}/${dt.year}';
+  String _discountLabel(CouponModel coupon) {
+    switch (coupon.type) {
+      case CouponType.percentage:
+        return '${coupon.discount.toStringAsFixed(0)}% OFF';
+      case CouponType.flat:
+        return '₹${coupon.discount.toStringAsFixed(0)} OFF';
+      case CouponType.buyOneGetOne:
+        return 'BUY 1 GET 1';
     }
+  }
+
+  Widget _buildCouponCard(CouponModel coupon, CouponProvider couponProvider) {
+    final isApplied = couponProvider.appliedCoupon?.code == coupon.code;
+    final expiryStr = '${coupon.validTo.day}/${coupon.validTo.month}/${coupon.validTo.year}';
 
     return Container(
       margin: const EdgeInsets.only(bottom: 16),
@@ -182,7 +201,7 @@ class _OffersScreenState extends State<OffersScreen> {
             mainAxisAlignment: MainAxisAlignment.spaceBetween,
             children: [
               GestureDetector(
-                onTap: () => _copyCode(code),
+                onTap: () => _copyCode(coupon.code),
                 child: Container(
                   padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
                   decoration: BoxDecoration(
@@ -193,7 +212,7 @@ class _OffersScreenState extends State<OffersScreen> {
                   child: Row(
                     mainAxisSize: MainAxisSize.min,
                     children: [
-                      Text(code,
+                      Text(coupon.code,
                           style: const TextStyle(fontSize: 14, fontWeight: FontWeight.w900, color: Color(0xFF145A32), letterSpacing: 1)),
                       const SizedBox(width: 8),
                       const Icon(Icons.copy, size: 14, color: Color(0xFF145A32)),
@@ -204,14 +223,14 @@ class _OffersScreenState extends State<OffersScreen> {
               Container(
                 padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
                 decoration: BoxDecoration(color: const Color(0xFFD4A843), borderRadius: BorderRadius.circular(10)),
-                child: Text('$discount OFF',
+                child: Text(_discountLabel(coupon),
                     style: const TextStyle(color: Color(0xFF145A32), fontSize: 13, fontWeight: FontWeight.w900)),
               ),
             ],
           ),
-          if (description.isNotEmpty) ...[
+          if (coupon.description.isNotEmpty) ...[
             const SizedBox(height: 12),
-            Text(description, style: const TextStyle(fontSize: 14, color: Color(0xFF4B5563), height: 1.4)),
+            Text(coupon.description, style: const TextStyle(fontSize: 14, color: Color(0xFF4B5563), height: 1.4)),
           ],
           const SizedBox(height: 12),
           // Meta
@@ -219,24 +238,26 @@ class _OffersScreenState extends State<OffersScreen> {
             spacing: 16,
             runSpacing: 4,
             children: [
-              Row(mainAxisSize: MainAxisSize.min, children: [
-                const Icon(Icons.local_offer, size: 12, color: Color(0xFF9CA3AF)),
-                const SizedBox(width: 4),
-                Text('Min ₹$minOrder', style: const TextStyle(fontSize: 11, color: Color(0xFF9CA3AF))),
-              ]),
+              if (coupon.minOrderAmount > 0)
+                Row(mainAxisSize: MainAxisSize.min, children: [
+                  const Icon(Icons.local_offer, size: 12, color: Color(0xFF9CA3AF)),
+                  const SizedBox(width: 4),
+                  Text('Min ₹${coupon.minOrderAmount.toStringAsFixed(0)}', style: const TextStyle(fontSize: 11, color: Color(0xFF9CA3AF))),
+                ]),
               Row(mainAxisSize: MainAxisSize.min, children: [
                 const Icon(Icons.access_time, size: 12, color: Color(0xFF9CA3AF)),
                 const SizedBox(width: 4),
                 Text('Expires $expiryStr', style: const TextStyle(fontSize: 11, color: Color(0xFF9CA3AF))),
               ]),
-              Text('$usedCount/$maxUses used',
-                  style: const TextStyle(fontSize: 11, color: Color(0xFFD4A843), fontWeight: FontWeight.w700)),
+              if (coupon.usageLimit > 0)
+                Text('${coupon.usedCount}/${coupon.usageLimit} used',
+                    style: const TextStyle(fontSize: 11, color: Color(0xFFD4A843), fontWeight: FontWeight.w700)),
             ],
           ),
           const SizedBox(height: 14),
           // Apply button
           GestureDetector(
-            onTap: () => setState(() => _appliedCode = code),
+            onTap: () => _applyCoupon(coupon),
             child: Container(
               width: double.infinity,
               padding: const EdgeInsets.symmetric(vertical: 12),
