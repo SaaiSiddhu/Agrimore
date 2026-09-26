@@ -318,6 +318,9 @@ void main() {
           providers: [
             ChangeNotifierProvider<DeliveryAuthProvider>.value(value: auth),
             ChangeNotifierProvider<OfferProvider>.value(value: offerProvider),
+            // DLVMAP1: RiderRouteCard (rendered by every ActiveOrderScreen
+            // shot) reads LocationProvider for the stale-location banner.
+            ChangeNotifierProvider<LocationProvider>(create: (_) => LocationProvider()),
           ],
           child: MaterialApp(
             debugShowCheckedModeBanner: false,
