@@ -1,14 +1,45 @@
 // lib/screens/inbox/inbox_screen.dart
 //
 // Phase DLV-N1 / Phase 30 — the rider's inbox (lib/inbox/rider_inbox.dart).
-// Tapping a notice marks it read and, for money notices, opens Earnings.
+// Phase DLVI1 — tapping a notice re-reads its real target fresh (never
+// trusts the payload as authorization) and opens it: a delivery (active or
+// historical), a statement, or the payout-details section of Earnings.
+import 'package:agrimore_core/agrimore_core.dart'
+    show DeliveryTaskStatus, OrderModel;
+import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:flutter/material.dart';
 
 import '../../app/delivery_tab.dart';
+import '../../data/order_timeline.dart';
+import '../../data/rider_history.dart';
 import '../../design_system/design_system.dart';
 import '../../inbox/rider_inbox.dart';
 import '../../l10n/app_localizations.dart';
+import '../../money/rider_money.dart';
+import '../history/rider_history_screen.dart';
 import '../money/money_screen.dart';
+import '../money/statement_screen.dart';
+import '../orders/active_order_screen.dart';
+
+/// Fetches one order fresh (never trusts a notice's own payload): the
+/// security rule (`deliveryPartnerId == request.auth.uid`, among others)
+/// is what actually authorizes it, not this call succeeding on its own.
+typedef OrderLoader = Future<OrderModel?> Function(String orderId);
+
+/// Null for "not there" (deleted, or no longer this rider's — the exact
+/// `delivery_unassigned` case, enforced by the security rule itself, not by
+/// this code); anything else rethrown, matching the shape of
+/// [RiderMoneyService.earningFor]/[RiderMoneyService.payoutById].
+Future<OrderModel?> _firestoreOrder(String orderId) async {
+  try {
+    final doc = await FirebaseFirestore.instance.collection('orders').doc(orderId).get();
+    final data = doc.data();
+    return data == null ? null : historyOrder(orderId, data);
+  } on FirebaseException catch (e) {
+    if (e.code == 'permission-denied' || e.code == 'not-found') return null;
+    rethrow;
+  }
+}
 
 class InboxScreen extends StatefulWidget {
   const InboxScreen({
@@ -16,15 +47,25 @@ class InboxScreen extends StatefulWidget {
     required this.riderId,
     required this.source,
     this.onOpenTab,
+    this.loadOrder,
+    this.loadPayout,
   });
   final String riderId;
   final RiderInboxSource source;
 
-  /// DLVNAV1: when this screen runs as the shell's Inbox tab, a money
-  /// notice switches to the Earnings tab through this instead of pushing a
-  /// duplicate tab-root route. Null when not inside a shell (standalone,
-  /// tests): falls back to the original push behaviour unchanged.
+  /// DLVNAV1: when this screen runs as the shell's Inbox tab, a
+  /// payout-details notice switches to the Earnings tab through this
+  /// instead of pushing a duplicate tab-root route. Null when not inside a
+  /// shell (standalone, tests): falls back to the original push behaviour
+  /// unchanged.
   final void Function(DeliveryTab tab)? onOpenTab;
+
+  /// DLVI1: injectable for tests; defaults to a real orders/{orderId} read.
+  final OrderLoader? loadOrder;
+
+  /// DLVI1: injectable for tests; defaults to rider_payouts/{statementId}
+  /// (the same PayoutLoader shape DLVH3 already established).
+  final PayoutLoader? loadPayout;
 
   @override
   State<InboxScreen> createState() => _InboxScreenState();
@@ -53,15 +94,134 @@ class _InboxScreenState extends State<InboxScreen> {
 
   void _open(RiderNotice n) {
     if (n.unread) _markRead([n.id]);
-    if (n.target == NoticeTarget.money) {
-      final go = widget.onOpenTab;
-      if (go != null) {
-        go(DeliveryTab.earnings);
-        return;
-      }
+    switch (n.target) {
+      case NoticeTarget.payoutDetails:
+        _openPayoutDetails();
+      case NoticeTarget.statement:
+        _openStatement(n.payoutId!);
+      case NoticeTarget.delivery:
+        _openDelivery(n.orderId!);
+      case NoticeTarget.none:
+        break;
+    }
+  }
+
+  void _openPayoutDetails() {
+    final go = widget.onOpenTab;
+    if (go != null) {
+      go(DeliveryTab.earnings);
+      return;
+    }
+    Navigator.of(context).push(
+      MaterialPageRoute<void>(
+        builder: (_) => MoneyScreen(riderId: widget.riderId),
+      ),
+    );
+  }
+
+  /// Deferred to first invocation (never constructed until actually called):
+  /// bare construction touches `FirebaseFirestore.instance`, which must not
+  /// happen on a code path a test means to short-circuit with its own
+  /// `widget.loadPayout` / `widget.loadOrder` override.
+  Future<RiderEarning?> _defaultLoadEarning(String id) async =>
+      RiderMoneyService(widget.riderId).earningFor(id);
+
+  Future<RiderPayout?> _defaultLoadPayout(String id) async =>
+      RiderMoneyService(widget.riderId).payoutById(id);
+
+  Future<StatementPage> _loadStatementLines(
+    String statementId,
+    DocumentSnapshot<Map<String, dynamic>>? after,
+  ) async =>
+      RiderMoneyService(widget.riderId).statementLines(statementId, after: after);
+
+  Future<void> _openStatement(String payoutId) async {
+    final l = AppLocalizations.of(context);
+    RiderPayout? payout;
+    var failed = false;
+    try {
+      payout = await (widget.loadPayout ?? _defaultLoadPayout)(payoutId);
+    } catch (e) {
+      failed = true;
+    }
+    if (!mounted) return;
+    if (failed) {
+      showDeliveryToast(
+        context,
+        message: l.historyDetailStatementNetworkError,
+        tone: DeliveryBannerTone.danger,
+      );
+      return;
+    }
+    if (payout == null) {
+      showDeliveryToast(
+        context,
+        message: l.historyDetailStatementUnavailable,
+        tone: DeliveryBannerTone.danger,
+      );
+      return;
+    }
+    final resolved = payout;
+    Navigator.of(context).push(
+      MaterialPageRoute<void>(
+        builder: (_) => StatementScreen(
+          payout: resolved,
+          load: (after) => _loadStatementLines(resolved.id, after),
+        ),
+      ),
+    );
+  }
+
+  Future<void> _openDelivery(String orderId) async {
+    final l = AppLocalizations.of(context);
+    OrderModel? order;
+    var failed = false;
+    try {
+      order = await (widget.loadOrder ?? _firestoreOrder)(orderId);
+    } catch (e) {
+      failed = true;
+    }
+    if (!mounted) return;
+    if (failed) {
+      showDeliveryToast(
+        context,
+        message: l.inboxDeliveryNetworkError,
+        tone: DeliveryBannerTone.danger,
+      );
+      return;
+    }
+    if (order == null) {
+      showDeliveryToast(
+        context,
+        message: l.inboxDeliveryUnavailable,
+        tone: DeliveryBannerTone.danger,
+      );
+      return;
+    }
+    final resolved = order;
+    final status = DeliveryTaskStatus.fromOrderStatus(
+      orderStatus: resolved.orderStatus,
+      status: null,
+      hasPartner: true,
+    );
+    if (status != null && status.isTerminal) {
       Navigator.of(context).push(
         MaterialPageRoute<void>(
-          builder: (_) => MoneyScreen(riderId: widget.riderId),
+          builder: (_) => Scaffold(
+            appBar: AppBar(title: Text(l.historyDetailTitle)),
+            body: HistoryDetail(
+              order: resolved,
+              loadEarning: _defaultLoadEarning,
+              loadTimeline: firestoreOrderTimeline,
+              loadPayout: widget.loadPayout ?? _defaultLoadPayout,
+            ),
+          ),
+        ),
+      );
+    } else {
+      Navigator.of(context).push(
+        MaterialPageRoute<void>(
+          builder: (_) => ActiveOrderScreen(order: resolved),
         ),
       );
     }
@@ -144,7 +304,7 @@ class _InboxScreenState extends State<InboxScreen> {
                   style: t.bodySmall.copyWith(color: c.textSecondary),
                 ),
                 isThreeLine: n.createdAt != null,
-                trailing: n.target == NoticeTarget.money
+                trailing: n.target != NoticeTarget.none
                     ? Icon(
                         DeliveryIcons.chevronRight,
                         size: DeliveryIconSize.sm,

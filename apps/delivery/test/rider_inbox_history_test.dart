@@ -13,6 +13,7 @@ import 'package:delivery/money/rider_money.dart';
 import 'package:delivery/screens/history/rider_history_screen.dart';
 import 'package:delivery/screens/inbox/inbox_screen.dart';
 import 'package:delivery/screens/money/statement_screen.dart';
+import 'package:delivery/screens/orders/active_order_screen.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
 
@@ -48,13 +49,35 @@ void main() {
   RiderNotice n(String id, String type, {bool unread = true}) =>
       RiderNotice(id: id, type: type, title: 'T $id', body: 'B $id', unread: unread, createdAt: DateTime(2026, 9, 24, 9));
 
-  test('notices read the server shape; money notices lead to Earnings', () {
+  test('notices read the server shape and resolve their real, typed target', () {
+    // riderNotices.ts's own data map (payoutId), not just type/title/body.
     final a = RiderNotice.fromMap('x', {
       'type': 'payout_sent', 'title': 'Money sent', 'body': '₹10.00 sent', 'unread': true,
       'createdAt': Timestamp.fromDate(DateTime(2026, 9, 24)),
+      'data': {'type': 'payout_sent', 'payoutId': 'stmt-1'},
     });
     expect(a.unread, isTrue);
-    expect(a.target, NoticeTarget.money);
+    expect(a.payoutId, 'stmt-1');
+    expect(a.target, NoticeTarget.statement);
+
+    final assigned = RiderNotice.fromMap('z', {
+      'type': 'delivery_assigned', 'title': 'New order assigned to you', 'unread': true,
+      'data': {'type': 'delivery_assigned', 'orderId': 'ord-9', 'orderNumber': 'AGM-9'},
+    });
+    expect(assigned.orderId, 'ord-9');
+    expect(assigned.target, NoticeTarget.delivery);
+
+    // No identifier in data (an older write, or a type that doesn't carry
+    // one) is a real gap, not silently routed anywhere.
+    final assignedNoData = RiderNotice.fromMap('z2', {'type': 'delivery_assigned', 'title': 'T'});
+    expect(assignedNoData.target, NoticeTarget.none);
+
+    final bankChange = RiderNotice.fromMap('w', {
+      'type': 'bank_change_approved', 'title': 'Payout details updated', 'unread': true,
+      'data': {'type': 'bank_change_approved'},
+    });
+    expect(bankChange.target, NoticeTarget.payoutDetails, reason: 'no per-notice id needed: goes to Earnings');
+
     // An admin broadcast written before N1 (message, read:false) still shows.
     final b = RiderNotice.fromMap('y', {'title': 'Hi', 'message': 'Welcome', 'read': false});
     expect(b.body, 'Welcome');
@@ -90,6 +113,116 @@ void main() {
     await t.pumpAndSettle();
     expect(find.text('2'), findsOneWidget);
     expect(find.byTooltip('Inbox, 2 unread'), findsOneWidget);
+  });
+
+  group('typed notification destinations (DLVI1)', () {
+    RiderNotice deliveryNotice(String orderId) => RiderNotice.fromMap('n1', {
+          'type': 'delivery_assigned',
+          'title': 'New order assigned to you',
+          'unread': true,
+          'data': {'type': 'delivery_assigned', 'orderId': orderId},
+        });
+
+    RiderNotice statementNotice(String payoutId) => RiderNotice.fromMap('n2', {
+          'type': 'statement_ready',
+          'title': 'Your weekly statement is ready',
+          'unread': true,
+          'data': {'type': 'statement_ready', 'payoutId': payoutId},
+        });
+
+    OrderModel order({required String status}) => historyOrder('ord-9', {
+          'orderNumber': 'AGM-9',
+          'orderStatus': status,
+          'total': 200,
+          'deliveryPartnerId': 'r1',
+        });
+
+    testWidgets('a delivery notice for an ACTIVE order opens ActiveOrderScreen', (t) async {
+      final src = FakeInbox()..current = [deliveryNotice('ord-9')];
+      await t.pumpWidget(host(InboxScreen(
+        riderId: 'r1',
+        source: src,
+        loadOrder: (id) async {
+          expect(id, 'ord-9');
+          return order(status: 'out_for_delivery');
+        },
+      )));
+      await t.pumpAndSettle();
+      await t.tap(find.text('New order assigned to you'));
+      await t.pumpAndSettle();
+      expect(t.takeException(), isNull);
+      expect(find.byType(ActiveOrderScreen), findsOneWidget);
+    });
+
+    testWidgets('a delivery notice for a COMPLETED order opens the read-only historical detail', (t) async {
+      final src = FakeInbox()..current = [deliveryNotice('ord-9')];
+      await t.pumpWidget(host(InboxScreen(
+        riderId: 'r1',
+        source: src,
+        loadOrder: (id) async => order(status: 'delivered'),
+      )));
+      await t.pumpAndSettle();
+      await t.tap(find.text('New order assigned to you'));
+      await t.pumpAndSettle();
+      expect(t.takeException(), isNull);
+      expect(find.byType(HistoryDetail), findsOneWidget);
+      expect(find.byType(ActiveOrderScreen), findsNothing);
+      expect(find.text('Order details'), findsOneWidget);
+    });
+
+    testWidgets('a delivery notice for a reassigned/deleted order says so, not silently nothing', (t) async {
+      final src = FakeInbox()..current = [deliveryNotice('ord-9')];
+      await t.pumpWidget(host(InboxScreen(
+        riderId: 'r1',
+        source: src,
+        loadOrder: (id) async => null,
+      )));
+      await t.pumpAndSettle();
+      await t.tap(find.text('New order assigned to you'));
+      await t.pumpAndSettle();
+      expect(find.text('This delivery is no longer available to you.'), findsOneWidget);
+    });
+
+    testWidgets('a failed delivery lookup says so distinctly, not as if it were missing', (t) async {
+      final src = FakeInbox()..current = [deliveryNotice('ord-9')];
+      await t.pumpWidget(host(InboxScreen(
+        riderId: 'r1',
+        source: src,
+        loadOrder: (id) async => throw Exception('offline'),
+      )));
+      await t.pumpAndSettle();
+      await t.tap(find.text('New order assigned to you'));
+      await t.pumpAndSettle();
+      expect(find.text('Could not open this delivery. Try again.'), findsOneWidget);
+      expect(find.text('This delivery is no longer available to you.'), findsNothing);
+    });
+
+    testWidgets('a statement notice opens the real statement it names', (t) async {
+      final src = FakeInbox()..current = [statementNotice('stmt-1')];
+      final payout = RiderPayout(
+        id: 'stmt-1',
+        weekKey: '2026-W38',
+        earned: 1000,
+        netted: 0,
+        amount: 1000,
+        cashHeldAfter: 0,
+        orderCount: 10,
+        status: 'paid',
+      );
+      await t.pumpWidget(host(InboxScreen(
+        riderId: 'r1',
+        source: src,
+        loadPayout: (id) async {
+          expect(id, 'stmt-1');
+          return payout;
+        },
+      )));
+      await t.pumpAndSettle();
+      await t.tap(find.text('Your weekly statement is ready'));
+      await t.pumpAndSettle();
+      expect(t.takeException(), isNull);
+      expect(find.byType(StatementScreen), findsOneWidget);
+    });
   });
 
   group('history', () {

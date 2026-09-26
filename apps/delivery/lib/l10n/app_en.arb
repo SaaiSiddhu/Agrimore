@@ -1321,6 +1321,14 @@
   "@inboxMarkReadFailed": {
     "description": "Mark read failed"
   },
+  "inboxDeliveryUnavailable": "This delivery is no longer available to you.",
+  "@inboxDeliveryUnavailable": {
+    "description": "Inbox: the order a notice points to is deleted or no longer this rider's own"
+  },
+  "inboxDeliveryNetworkError": "Could not open this delivery. Try again.",
+  "@inboxDeliveryNetworkError": {
+    "description": "Inbox: the order lookup for a notice failed (network)"
+  },
   "historyFilterAll": "All",
   "@historyFilterAll": {
     "description": "History filter: every order"

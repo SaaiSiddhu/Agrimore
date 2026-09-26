@@ -1810,6 +1810,18 @@ abstract class AppLocalizations {
   /// **'Could not update your inbox. Try again.'**
   String get inboxMarkReadFailed;
 
+  /// Inbox: the order a notice points to is deleted or no longer this rider's own
+  ///
+  /// In en, this message translates to:
+  /// **'This delivery is no longer available to you.'**
+  String get inboxDeliveryUnavailable;
+
+  /// Inbox: the order lookup for a notice failed (network)
+  ///
+  /// In en, this message translates to:
+  /// **'Could not open this delivery. Try again.'**
+  String get inboxDeliveryNetworkError;
+
   /// History filter: every order
   ///
   /// In en, this message translates to:
