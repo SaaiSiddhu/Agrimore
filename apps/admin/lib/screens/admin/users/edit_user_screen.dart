@@ -5,6 +5,14 @@ import 'package:agrimore_ui/agrimore_ui.dart';
 import '../../../providers/admin_provider.dart';
 import 'package:agrimore_ui/agrimore_ui.dart';
 
+// ADMR-12: pulled out of _handleUpdate so it is a plain, Firebase-free
+// function the test suite can call directly — see the confirmation dialog
+// this guards for why a role change here is always consequential (the only
+// two roles this screen offers are 'user' and 'admin').
+bool isRoleChanging(String currentRole, String selectedRole) {
+  return currentRole != selectedRole;
+}
+
 class EditUserScreen extends StatefulWidget {
   final UserModel user;
 
@@ -46,13 +54,54 @@ class _EditUserScreenState extends State<EditUserScreen> {
     super.dispose();
   }
 
+  // ADMR-12: updateUserRole (AdminService, packages/agrimore_services) is a
+  // bare client Firestore write with no server-side validation and no audit
+  // trail — firestore.rules correctly requires the caller to already be an
+  // admin, but grants that admin unrestricted access to any user's role
+  // field (same "admin unrestricted" shape ADMR-8 found for orders). The
+  // only two roles this screen ever offers are 'user' and 'admin', so a
+  // change here is always a grant or revocation of full platform access —
+  // this must not fire on every save, only when the role is actually
+  // changing, and only after the admin confirms deliberately.
+  Future<bool> _confirmRoleChange(String from, String to) async {
+    final grantingAdmin = to == 'admin';
+    final result = await showDialog<bool>(
+      context: context,
+      builder: (ctx) => AlertDialog(
+        title: Text(grantingAdmin ? 'Grant Administrator access?' : 'Revoke Administrator access?'),
+        content: Text(
+          grantingAdmin
+              ? '${widget.user.name} (${widget.user.email}) will become an Administrator with full platform access — every screen and every user\'s data. Continue?'
+              : '${widget.user.name} (${widget.user.email}) will lose Administrator access. Continue?',
+        ),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.pop(ctx, false),
+            child: const Text('Cancel'),
+          ),
+          ElevatedButton(
+            onPressed: () => Navigator.pop(ctx, true),
+            style: ElevatedButton.styleFrom(backgroundColor: grantingAdmin ? Colors.red : AppColors.primary),
+            child: Text(grantingAdmin ? 'Grant Admin' : 'Revoke Admin'),
+          ),
+        ],
+      ),
+    );
+    return result ?? false;
+  }
+
   Future<void> _handleUpdate() async {
     if (_formKey.currentState!.validate()) {
+      if (isRoleChanging(widget.user.role, _selectedRole)) {
+        final confirmed = await _confirmRoleChange(widget.user.role, _selectedRole);
+        if (!confirmed || !mounted) return;
+      }
+
       setState(() => _isProcessing = true);
 
       try {
         final adminProvider = Provider.of<AdminProvider>(context, listen: false);
-        
+
         // Update user role
         await adminProvider.updateUserRole(widget.user.uid, _selectedRole);
         
