@@ -2170,21 +2170,16 @@ service cloud.firestore {
       // Only Cloud Functions (admin SDK) create payouts — no client writes
       allow create: if false;
 
-      // SEC-EMPPAYOUT-1: exactly one admin transition — an open request →
-      // paid (what apps/admin's employee_payouts_screen does). Before this,
-      // any admin update was allowed: the amount, the employee, or un-paying
-      // a paid row. The wallet debit already happened in
-      // requestEmployeePayout, so amount/employeeId are immutable.
-      allow update: if isAdmin()
-        && resource.data.status in ['requested', 'pending', 'processing']
-        && request.resource.data.status == 'paid'
-        && request.resource.data.diff(resource.data).affectedKeys()
-             .hasOnly(['status', 'paidAt', 'updatedAt', 'paymentReference', 'paidBy'])
-        && request.resource.data.paidAt is timestamp
-        && (!('paidBy' in request.resource.data) || request.resource.data.paidBy == request.auth.uid)
-        && (!('paymentReference' in request.resource.data)
-            || (request.resource.data.paymentReference is string
-                && request.resource.data.paymentReference.size() <= 64));
+      // Phase ADMR-3: the SEC-EMPPAYOUT-1 rule below only ever permitted a
+      // transition INTO 'paid' — there was no branch for 'rejected' at all,
+      // so every reject attempt from employee_payout_detail_screen.dart had
+      // always failed with permission-denied, and a rejected associate's
+      // already-debited wallet amount had no path back. markEmployeePayoutPaid
+      // and rejectEmployeePayout (Admin SDK, bypasses rules) are now the ONLY
+      // way either transition happens — reject additionally credits
+      // wallets/{employeeId}.balance back, exactly once, inside the same
+      // transaction. No client write is correct for either outcome any more.
+      allow update: if false;
 
       allow delete: if false;
     }
