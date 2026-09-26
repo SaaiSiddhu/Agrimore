@@ -943,7 +943,7 @@ abstract class AppLocalizations {
   /// Explains which fields are reviewed
   ///
   /// In en, this message translates to:
-  /// **'To change your mobile number, vehicle, licence or Aadhaar, contact Agrimore support — an admin reviews those changes.'**
+  /// **'To change your mobile number, licence or Aadhaar, contact Agrimore support — an admin reviews those changes.'**
   String get profileLockedNote;
 
   /// Button opening the identity change screen
@@ -951,6 +951,12 @@ abstract class AppLocalizations {
   /// In en, this message translates to:
   /// **'Request name change'**
   String get profileRequestNameChange;
+
+  /// Button opening the identity change screen for the vehicle type/number
+  ///
+  /// In en, this message translates to:
+  /// **'Request vehicle update'**
+  String get profileRequestVehicleChange;
 
   /// Screen title and form heading
   ///
@@ -969,6 +975,24 @@ abstract class AppLocalizations {
   /// In en, this message translates to:
   /// **'New name'**
   String get identityChangeProposedName;
+
+  /// Field label
+  ///
+  /// In en, this message translates to:
+  /// **'Current vehicle'**
+  String get identityChangeCurrentVehicle;
+
+  /// Field label
+  ///
+  /// In en, this message translates to:
+  /// **'New vehicle type'**
+  String get identityChangeProposedVehicleType;
+
+  /// Field label
+  ///
+  /// In en, this message translates to:
+  /// **'New registration number'**
+  String get identityChangeProposedVehicleNumber;
 
   /// Field label
   ///
@@ -1034,7 +1058,13 @@ abstract class AppLocalizations {
   ///
   /// In en, this message translates to:
   /// **'Enter your full legal name (2–100 characters).'**
-  String get errIdentityProposedValue;
+  String get errIdentityName;
+
+  /// Field validation error
+  ///
+  /// In en, this message translates to:
+  /// **'Choose a vehicle type.'**
+  String get errIdentityVehicleType;
 
   /// Field validation error
   ///

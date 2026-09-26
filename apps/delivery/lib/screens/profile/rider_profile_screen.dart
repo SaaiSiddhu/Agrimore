@@ -13,6 +13,7 @@ import 'package:provider/provider.dart';
 import '../../account/rider_account.dart';
 import '../../account/support_card.dart';
 import '../../design_system/design_system.dart';
+import '../../identity/rider_identity.dart' show kIdentityChangeTypeVehicle;
 import '../../l10n/app_localizations.dart';
 import '../../money/rider_money.dart';
 import '../../providers/auth_provider.dart';
@@ -312,6 +313,24 @@ class _RiderProfileScreenState extends State<RiderProfileScreen> {
                   ),
                   if (v('vehicleNumber').isNotEmpty)
                     _row(l.profileVehicleNumber, v('vehicleNumber')),
+                  const SizedBox(height: DeliverySpace.sm),
+                  DeliveryButton.secondary(
+                    key: const ValueKey('request-vehicle-change'),
+                    label: l.profileRequestVehicleChange,
+                    icon: DeliveryIcons.edit,
+                    onPressed: () => Navigator.of(context).push(
+                      MaterialPageRoute<void>(
+                        builder: (_) => IdentityChangeScreen(
+                          riderId: auth.user!.uid,
+                          changeType: kIdentityChangeTypeVehicle,
+                          currentVehicleType: VehicleType.fromWire(
+                            data['vehicleType'] as String?,
+                          ),
+                          currentVehicleNumber: v('vehicleNumber'),
+                        ),
+                      ),
+                    ),
+                  ),
                   _row(
                     l.profileLicence,
                     v('licenseNumber').isEmpty

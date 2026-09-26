@@ -1,5 +1,5 @@
 // ============================================================
-//  Rider identity change requests (Phase DLVID1)
+//  Rider identity change requests (Phase DLVID1, generalized DLVID2)
 // ============================================================
 //
 // A rider's locked identity fields (name, phone, vehicle, licence, Aadhaar)
@@ -10,37 +10,63 @@
 // write-false shape): a request is created pending, a second request is
 // blocked while one is already pending (a field on delivery_partners, not a
 // query), review sets approved/rejected + reviewedBy/reviewedAt/
-// rejectionReason, approval writes the real field, and the rider is told
+// rejectionReason, approval writes the real field(s), and the rider is told
 // either way via riderNotices.ts's tellRider.
 //
-// Only "name" is offered: delivery_partners (riderApplication.ts) has no
-// dateOfBirth field at all, and the profile screen has never displayed one
-// — the mockup's own "Date of birth" change type does not correspond to
-// anything real to change. Inventing that field would be a genuine
-// product/schema decision (does the business need to collect DOB, and
-// why), out of proportion for this phase; flagged for the owner instead.
+// Stored shape is a map (proposedValues / currentValues: Record<string,
+// string>) rather than a single value, because DLVID2 added "vehicle" as a
+// second change type whose request touches two fields (vehicleType +
+// vehicleNumber) at once — reshaped before any owner deploy, so there is no
+// live document under the old single-value shape to migrate.
+//
+// Only "name" and "vehicle" are offered:
+// - delivery_partners (riderApplication.ts) has no dateOfBirth field at all,
+//   and the profile screen has never displayed one — the mockup's own "Date
+//   of birth" change type does not correspond to anything real to change.
+// - The mockup (31.2) also shows per-document status (Approved / Under
+//   review / Action needed) for three named documents including "Vehicle
+//   registration" and "Insurance" — delivery_partners/RIDER_DOCUMENTS has no
+//   such document types and no per-document status field at all (`status`
+//   is one value for the whole application). Not built.
+// Inventing any of the above would be a genuine product/schema/compliance
+// decision, out of proportion for this phase; flagged for the owner instead.
 import * as admin from "firebase-admin";
 import { onCall, HttpsError } from "firebase-functions/v2/https";
 import { Timestamp } from "firebase-admin/firestore";
 import { resolveIsAdmin } from "../admin/complianceGate";
 import { identityChangeNotice, tellRider } from "./riderNotices";
+import { VEHICLE_TYPES, VEHICLE_NO } from "./riderApplication";
 
 type Db = FirebaseFirestore.Firestore;
 
-export const RIDER_IDENTITY_CHANGE_TYPES = ["name"] as const;
+export const RIDER_IDENTITY_CHANGE_TYPES = ["name", "vehicle"] as const;
 export type RiderIdentityChangeType = (typeof RIDER_IDENTITY_CHANGE_TYPES)[number];
 
 function validateIdentityChange(data: unknown):
-  | { ok: true; value: { changeType: RiderIdentityChangeType; proposedValue: string; reason: string } }
+  | { ok: true; value: { changeType: RiderIdentityChangeType; proposedValues: Record<string, string>; reason: string } }
   | { ok: false; error: string } {
   const d = (data ?? {}) as Record<string, unknown>;
   const changeType = typeof d.changeType === "string" ? d.changeType.trim() : "";
   if (!(RIDER_IDENTITY_CHANGE_TYPES as readonly string[]).includes(changeType)) return { ok: false, error: "changeType" };
-  const proposedValue = typeof d.proposedValue === "string" ? d.proposedValue.trim() : "";
-  if (proposedValue.length < 2 || proposedValue.length > 100) return { ok: false, error: "proposedValue" };
+  const pv = (d.proposedValues ?? {}) as Record<string, unknown>;
+
+  let proposedValues: Record<string, string>;
+  if (changeType === "name") {
+    const name = typeof pv.name === "string" ? pv.name.trim() : "";
+    if (name.length < 2 || name.length > 100) return { ok: false, error: "name" };
+    proposedValues = { name };
+  } else {
+    const vehicleType = typeof pv.vehicleType === "string" ? pv.vehicleType.trim().toLowerCase() : "";
+    if (!(VEHICLE_TYPES as readonly string[]).includes(vehicleType)) return { ok: false, error: "vehicleType" };
+    const needsPlate = vehicleType !== "bicycle";
+    const vehicleNumber = typeof pv.vehicleNumber === "string" ? pv.vehicleNumber.trim().toUpperCase() : "";
+    if (needsPlate && !VEHICLE_NO.test(vehicleNumber)) return { ok: false, error: "vehicleNumber" };
+    proposedValues = { vehicleType, vehicleNumber: needsPlate ? vehicleNumber : "" };
+  }
+
   const reason = typeof d.reason === "string" ? d.reason.trim() : "";
   if (reason.length < 3 || reason.length > 250) return { ok: false, error: "reason" };
-  return { ok: true, value: { changeType: changeType as RiderIdentityChangeType, proposedValue, reason } };
+  return { ok: true, value: { changeType: changeType as RiderIdentityChangeType, proposedValues, reason } };
 }
 
 export type IdentityRequestVerdict = { kind: "requested"; id: string } | { kind: "refused"; reason: string };
@@ -60,12 +86,14 @@ export async function requestIdentityChangeCore(
     if (typeof p.identityChangePending === "string" && p.identityChangePending) {
       return { kind: "refused", reason: "already_pending" };
     }
+    const currentValues: Record<string, string | null> = {};
+    for (const key of Object.keys(v.value.proposedValues)) currentValues[key] = (p[key] as string | undefined) ?? null;
     const at = Timestamp.fromMillis(nowMs);
     tx.create(reqRef, {
       riderId,
       changeType: v.value.changeType,
-      currentValue: p[v.value.changeType] ?? null,
-      proposedValue: v.value.proposedValue,
+      currentValues,
+      proposedValues: v.value.proposedValues,
       reason: v.value.reason,
       status: "pending",
       createdAt: at,
@@ -101,7 +129,10 @@ export async function reviewIdentityChangeCore(
       updatedAt: at,
     });
     const partnerUpdate: Record<string, unknown> = { identityChangePending: null, updatedAt: at };
-    if (approve) partnerUpdate[r.changeType as string] = r.proposedValue;
+    if (approve) {
+      const proposedValues = (r.proposedValues ?? {}) as Record<string, string>;
+      for (const [key, value] of Object.entries(proposedValues)) partnerUpdate[key] = value;
+    }
     tx.set(partnerRef, partnerUpdate, { merge: true });
     return { kind: approve ? "approved" : "rejected" };
   });

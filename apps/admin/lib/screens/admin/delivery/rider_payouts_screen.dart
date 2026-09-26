@@ -663,6 +663,19 @@ class _BankChangesTab extends StatelessWidget {
 // requests, Approve/Reject calling one review callable
 // (reviewRiderIdentityChange, functions/src/delivery/riderIdentity.ts).
 
+/// Reasonably ordered for the two fields a vehicle change always sends
+/// together; any other key (a future change type) still renders, just
+/// under its own raw name -- never dropped silently.
+String _identityFieldLabel(String key) => switch (key) {
+      'name' => 'Name',
+      'vehicleType' => 'Vehicle type',
+      'vehicleNumber' => 'Registration number',
+      _ => key,
+    };
+
+Map<String, dynamic> _asStringKeyedMap(dynamic v) =>
+    v is Map ? Map<String, dynamic>.from(v) : const {};
+
 class _IdentityChangesTab extends StatelessWidget {
   const _IdentityChangesTab();
 
@@ -760,9 +773,16 @@ class _IdentityChangesTab extends StatelessWidget {
                       const Divider(),
                       Text('Change: ${d.data()['changeType'] ?? ''}',
                           style: const TextStyle(fontWeight: FontWeight.w700)),
-                      SelectableText(
-                          'From: ${d.data()['currentValue'] ?? '(not set)'}'),
-                      SelectableText('To: ${d.data()['proposedValue'] ?? ''}'),
+                      for (final key
+                          in _asStringKeyedMap(d.data()['proposedValues']).keys)
+                        Padding(
+                          padding: const EdgeInsets.only(top: 2),
+                          child: SelectableText(
+                            '${_identityFieldLabel(key)}: '
+                            '${_asStringKeyedMap(d.data()['currentValues'])[key] ?? '(not set)'} '
+                            '→ ${_asStringKeyedMap(d.data()['proposedValues'])[key] ?? ''}',
+                          ),
+                        ),
                       const SizedBox(height: 6),
                       Text('Reason: ${d.data()['reason'] ?? ''}'),
                       const SizedBox(height: 8),
