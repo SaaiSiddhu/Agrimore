@@ -50,7 +50,7 @@ const PINCODE = /^[1-9]\d{5}$/;
 const IFSC = /^[A-Z]{4}0[A-Z0-9]{6}$/;
 const ACCOUNT = /^\d{9,18}$/;
 const UPI = /^[a-zA-Z0-9._-]{2,256}@[a-zA-Z]{2,64}$/;
-const VEHICLE_NO = /^[A-Z0-9]{4,12}$/;
+export const VEHICLE_NO = /^[A-Z0-9]{4,12}$/;
 const LICENCE_NO = /^[A-Z0-9-]{6,20}$/;
 
 /** Statuses from which a rider may (re)submit. */

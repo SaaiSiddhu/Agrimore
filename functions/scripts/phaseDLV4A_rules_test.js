@@ -56,7 +56,7 @@ async function main() {
       await f.doc(`rider_accounts/${r}`).set({ riderId: r, cashHeld: 480 });
       await f.doc(`rider_cash_ledger/l-${r}`).set({ riderId: r, type: "cash_collected", amount: 480 });
       await f.doc(`rider_bank_change_requests/b-${r}`).set({ riderId: r, status: "pending", upiId: "x@upi" });
-      await f.doc(`rider_identity_change_requests/i-${r}`).set({ riderId: r, status: "pending", changeType: "name", proposedValue: "New Name" });
+      await f.doc(`rider_identity_change_requests/i-${r}`).set({ riderId: r, status: "pending", changeType: "name", proposedValues: { name: "New Name" } });
       for (const st of ["pending", "on_hold", "paid"]) {
         await f.doc(`rider_payouts/${r}_${st}`).set({ riderId: r, weekKey: "2026-W38", amount: 100, status: st });
       }
