@@ -2344,6 +2344,32 @@ class AppLocalizationsEn extends AppLocalizations {
   String get routeLastUpdated => 'Updated just now';
 
   @override
+  String routeUpdatedMinAgo(int minutes) {
+    return 'Updated $minutes min ago';
+  }
+
+  @override
+  String get routeStaleTitle => 'Your location is out of date';
+
+  @override
+  String get routeStaleBodyRefreshable =>
+      'Refresh your location to update the route.';
+
+  @override
+  String get routeStaleBodyNative =>
+      'Location updates automatically in the background. If this continues, check your settings.';
+
+  @override
+  String get routeRefreshLocation => 'Refresh location';
+
+  @override
+  String get routeCheckSettings => 'Check settings';
+
+  @override
+  String get routeRefreshFailed =>
+      'Could not refresh your location. Try again.';
+
+  @override
   String get routeLiveGps => 'Live GPS';
 
   @override

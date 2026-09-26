@@ -10,6 +10,7 @@ import 'package:delivery/data/rider_history.dart';
 import 'package:delivery/inbox/rider_inbox.dart';
 import 'package:delivery/l10n/app_localizations.dart';
 import 'package:delivery/money/rider_money.dart';
+import 'package:delivery/providers/location_provider.dart';
 import 'package:delivery/screens/history/rider_history_screen.dart';
 import 'package:delivery/screens/inbox/inbox_screen.dart';
 import 'package:delivery/screens/money/statement_screen.dart';
@@ -17,6 +18,7 @@ import 'package:delivery/screens/orders/active_order_screen.dart';
 import 'package:delivery/screens/profile/identity_change_screen.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
+import 'package:provider/provider.dart';
 
 class FakeInbox implements RiderInboxSource {
   final notices = StreamController<List<RiderNotice>>.broadcast();
@@ -50,11 +52,17 @@ class FakeInbox implements RiderInboxSource {
   }
 }
 
-Widget host(Widget child) => MaterialApp(
-      theme: WorkspaceTheme.build(WorkspaceBrand.delivery, Brightness.light),
-      localizationsDelegates: AppLocalizations.localizationsDelegates,
-      supportedLocales: AppLocalizations.supportedLocales,
-      home: child,
+// RiderRouteCard (DLVMAP1) reads LocationProvider for the stale-location
+// banner's Refresh-location/native-service branching -- needed here since
+// some cases navigate to the real ActiveOrderScreen, which renders it.
+Widget host(Widget child) => ChangeNotifierProvider<LocationProvider>(
+      create: (_) => LocationProvider(),
+      child: MaterialApp(
+        theme: WorkspaceTheme.build(WorkspaceBrand.delivery, Brightness.light),
+        localizationsDelegates: AppLocalizations.localizationsDelegates,
+        supportedLocales: AppLocalizations.supportedLocales,
+        home: child,
+      ),
     );
 
 void main() {
