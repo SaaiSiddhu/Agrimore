@@ -1,4 +1,5 @@
 import 'package:cloud_firestore/cloud_firestore.dart';
+import 'package:cloud_functions/cloud_functions.dart';
 import 'package:firebase_auth/firebase_auth.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
@@ -7,19 +8,45 @@ import '../../utils/sa_formatters.dart';
 
 enum _AccountType { bank, upi }
 
+/// Refusals from requestEmployeePayoutChange/cancelEmployeePayoutChange, in
+/// associate-facing words. Mirrors seller_wallet_admin.dart's own refusal
+/// pattern (functions/src/employee/employeePayoutAccount.ts).
+String _payoutChangeRefusal(String code, String? reason) => switch (reason) {
+      'already_pending' => 'A change is already waiting for review.',
+      'not_pending' => 'This request has already been reviewed.',
+      'invalid_accountHolder' => 'Enter the account holder name (2–100 characters).',
+      'invalid_bankName' => 'Enter a valid bank name.',
+      'invalid_accountNumber' => 'Enter a valid account number.',
+      'invalid_ifsc' => 'Enter a valid 11-character IFSC code.',
+      'invalid_upiId' => 'Enter a valid UPI ID (e.g. name@bank).',
+      _ => code == 'unauthenticated'
+          ? 'Sign in again to continue.'
+          : (code == 'unavailable' || code == 'deadline-exceeded')
+              ? 'No connection. Try again.'
+              : 'Could not submit that. Please try again.',
+    };
+
 /// Screen allowing a Sales Associate to manage and register their payout destination.
 ///
 /// Supports Bank Account details (Account Number, IFSC, Bank Name) and UPI ID.
-/// Writes directly to `employees/{uid}` per firestore.rules:
-/// allow update: if isAuthenticated() && (isOwner(employeeId) || isAdmin());
+///
+/// Phase ADMR-5: previously wrote straight to `employees/{uid}` with no
+/// review step at all — an associate could redirect their own payout
+/// destination the instant before an admin paid them out. Now submits a
+/// request via `requestEmployeePayoutChange`; an admin must approve it
+/// (`reviewEmployeePayoutChange`) before it takes effect. While a request is
+/// pending (`employee_wallets/{uid}.payoutChangePending`), the associate sees
+/// its status instead of the edit form and may cancel it.
 class PayoutAccountScreen extends StatefulWidget {
   final String? employeeUid;
   final Stream<DocumentSnapshot<Map<String, dynamic>>>? employeeStream;
+  final Stream<DocumentSnapshot<Map<String, dynamic>>>? walletStream;
 
   const PayoutAccountScreen({
     super.key,
     this.employeeUid,
     this.employeeStream,
+    this.walletStream,
   });
 
   @override
@@ -76,38 +103,36 @@ class _PayoutAccountScreenState extends State<PayoutAccountScreen> {
     _upiIdController.text = data['upiId']?.toString() ?? '';
   }
 
-  Future<void> _saveBankDetails(String uid) async {
-    if (!_bankFormKey.currentState!.validate()) return;
-
+  Future<void> _submitChange(Map<String, dynamic> payload) async {
     HapticFeedback.lightImpact();
     FocusScope.of(context).unfocus();
 
     setState(() => _isSaving = true);
     try {
-      await FirebaseFirestore.instance.collection('employees').doc(uid).update({
-        'payoutMethod': 'bank',
-        'accountHolderName': _holderNameController.text.trim(),
-        'accountNumber': _accountNumberController.text.trim(),
-        'ifscCode': _ifscController.text.trim().toUpperCase(),
-        'bankName': _bankNameController.text.trim(),
-        'payoutAccountUpdatedAt': FieldValue.serverTimestamp(),
-      });
-
+      await FirebaseFunctions.instance
+          .httpsCallable('requestEmployeePayoutChange')
+          .call<Map<String, dynamic>>(payload);
       if (mounted) {
         ScaffoldMessenger.of(context).showSnackBar(
           const SnackBar(
-            content: Text('Bank account details saved successfully'),
+            content: Text('Submitted for review. An admin will approve it before it takes effect.'),
             behavior: SnackBarBehavior.floating,
           ),
         );
       }
-    } catch (e) {
+    } on FirebaseFunctionsException catch (e) {
+      debugPrint('requestEmployeePayoutChange: ${e.code} ${e.details}');
+      final reason = e.details is Map ? (e.details as Map)['reason'] as String? : null;
       if (mounted) {
         ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(
-            content: Text('Failed to save bank details: $e'),
-            behavior: SnackBarBehavior.floating,
-          ),
+          SnackBar(content: Text(_payoutChangeRefusal(e.code, reason)), behavior: SnackBarBehavior.floating),
+        );
+      }
+    } catch (e) {
+      debugPrint('requestEmployeePayoutChange: $e');
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(content: Text(_payoutChangeRefusal('unknown', null)), behavior: SnackBarBehavior.floating),
         );
       }
     } finally {
@@ -115,36 +140,43 @@ class _PayoutAccountScreenState extends State<PayoutAccountScreen> {
     }
   }
 
+  Future<void> _saveBankDetails(String uid) async {
+    if (!_bankFormKey.currentState!.validate()) return;
+    await _submitChange({
+      'payoutMethod': 'bank',
+      'accountHolder': _holderNameController.text.trim(),
+      'accountNumber': _accountNumberController.text.trim(),
+      'ifsc': _ifscController.text.trim().toUpperCase(),
+      'bankName': _bankNameController.text.trim(),
+    });
+  }
+
   Future<void> _saveUpiDetails(String uid) async {
     if (!_upiFormKey.currentState!.validate()) return;
+    await _submitChange({
+      'payoutMethod': 'upi',
+      'accountHolder': _upiHolderController.text.trim(),
+      'upiId': _upiIdController.text.trim().toLowerCase(),
+    });
+  }
 
-    HapticFeedback.lightImpact();
-    FocusScope.of(context).unfocus();
-
+  Future<void> _cancelPendingRequest(String requestId) async {
     setState(() => _isSaving = true);
     try {
-      await FirebaseFirestore.instance.collection('employees').doc(uid).update({
-        'payoutMethod': 'upi',
-        'accountHolderName': _upiHolderController.text.trim(),
-        'upiId': _upiIdController.text.trim().toLowerCase(),
-        'payoutAccountUpdatedAt': FieldValue.serverTimestamp(),
-      });
-
+      await FirebaseFunctions.instance
+          .httpsCallable('cancelEmployeePayoutChange')
+          .call<Map<String, dynamic>>({'requestId': requestId});
       if (mounted) {
         ScaffoldMessenger.of(context).showSnackBar(
-          const SnackBar(
-            content: Text('UPI details saved successfully'),
-            behavior: SnackBarBehavior.floating,
-          ),
+          const SnackBar(content: Text('Request cancelled'), behavior: SnackBarBehavior.floating),
         );
       }
-    } catch (e) {
+    } on FirebaseFunctionsException catch (e) {
+      debugPrint('cancelEmployeePayoutChange: ${e.code} ${e.details}');
+      final reason = e.details is Map ? (e.details as Map)['reason'] as String? : null;
       if (mounted) {
         ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(
-            content: Text('Failed to save UPI details: $e'),
-            behavior: SnackBarBehavior.floating,
-          ),
+          SnackBar(content: Text(_payoutChangeRefusal(e.code, reason)), behavior: SnackBarBehavior.floating),
         );
       }
     } finally {
@@ -210,69 +242,89 @@ class _PayoutAccountScreenState extends State<PayoutAccountScreen> {
           final hasSavedUpi = savedMethod == 'upi' &&
               (data?['upiId']?.toString().isNotEmpty ?? false);
 
-          return SingleChildScrollView(
-            padding: const EdgeInsets.all(SaTokens.space16),
-            child: Column(
-              crossAxisAlignment: CrossAxisAlignment.stretch,
-              children: [
-                // Active Account Card if already registered
-                if (hasSavedBank || hasSavedUpi) ...[
-                  _buildRegisteredCard(tokens, data!),
-                  const SizedBox(height: SaTokens.space24),
-                ],
+          // Phase ADMR-5: a pending bank/UPI change blocks the edit form —
+          // the associate sees what they submitted and may cancel it, but
+          // cannot submit a second one until this is resolved (the same
+          // one-at-a-time rule requestEmployeePayoutChangeCore enforces
+          // server-side; this is the honest reflection of that, not a
+          // client-only convenience).
+          return StreamBuilder<DocumentSnapshot<Map<String, dynamic>>>(
+            stream: widget.walletStream ??
+                FirebaseFirestore.instance.collection('employee_wallets').doc(uid).snapshots(),
+            builder: (context, walletSnap) {
+              final pendingId = walletSnap.data?.data()?['payoutChangePending']?.toString();
+              final hasPending = pendingId != null && pendingId.isNotEmpty;
 
-                Text(
-                  'Payout Destination',
-                  style: Theme.of(context).textTheme.titleMedium?.copyWith(
-                        color: tokens.textPrimary,
+              return SingleChildScrollView(
+                padding: const EdgeInsets.all(SaTokens.space16),
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.stretch,
+                  children: [
+                    // Active Account Card if already registered
+                    if (hasSavedBank || hasSavedUpi) ...[
+                      _buildRegisteredCard(tokens, data!),
+                      const SizedBox(height: SaTokens.space24),
+                    ],
+
+                    if (hasPending) ...[
+                      _buildPendingCard(tokens, pendingId),
+                      const SizedBox(height: SaTokens.space24),
+                    ] else ...[
+                      Text(
+                        'Payout Destination',
+                        style: Theme.of(context).textTheme.titleMedium?.copyWith(
+                              color: tokens.textPrimary,
+                            ),
                       ),
-                ),
-                const SizedBox(height: SaTokens.space4),
-                Text(
-                  'Select your preferred payout method. Payouts requested from your wallet will be sent here.',
-                  style: Theme.of(context).textTheme.bodySmall?.copyWith(
-                        color: tokens.textSecondary,
+                      const SizedBox(height: SaTokens.space4),
+                      Text(
+                        'Select your preferred payout method. Payouts requested from your wallet will be sent here.',
+                        style: Theme.of(context).textTheme.bodySmall?.copyWith(
+                              color: tokens.textSecondary,
+                            ),
                       ),
-                ),
-                const SizedBox(height: SaTokens.space16),
+                      const SizedBox(height: SaTokens.space16),
 
-                // Method Selector Toggle
-                _buildMethodToggle(tokens),
-                const SizedBox(height: SaTokens.space24),
+                      // Method Selector Toggle
+                      _buildMethodToggle(tokens),
+                      const SizedBox(height: SaTokens.space24),
 
-                // Form Container
-                Container(
-                  padding: const EdgeInsets.all(SaTokens.space16),
-                  decoration: BoxDecoration(
-                    color: tokens.surface,
-                    borderRadius: BorderRadius.circular(SaTokens.radiusCard),
-                    border: Border.all(color: tokens.divider),
-                  ),
-                  child: _accountType == _AccountType.bank
-                      ? _buildBankForm(uid)
-                      : _buildUpiForm(uid),
-                ),
-                const SizedBox(height: SaTokens.space24),
+                      // Form Container
+                      Container(
+                        padding: const EdgeInsets.all(SaTokens.space16),
+                        decoration: BoxDecoration(
+                          color: tokens.surface,
+                          borderRadius: BorderRadius.circular(SaTokens.radiusCard),
+                          border: Border.all(color: tokens.divider),
+                        ),
+                        child: _accountType == _AccountType.bank
+                            ? _buildBankForm(uid)
+                            : _buildUpiForm(uid),
+                      ),
+                      const SizedBox(height: SaTokens.space24),
+                    ],
 
-                // Ownership disclaimer
-                const SaInfoBanner(
-                  title: 'Account Verification Notice',
-                  message:
-                      'Saving account details does not verify ownership automatically. Ensure the account name matches your legal identity to avoid settlement delays.',
-                  variant: SaBannerVariant.info,
-                ),
-                const SizedBox(height: SaTokens.space12),
+                    // Ownership disclaimer
+                    const SaInfoBanner(
+                      title: 'Account Verification Notice',
+                      message:
+                          'Saving account details does not verify ownership automatically. Ensure the account name matches your legal identity to avoid settlement delays.',
+                      variant: SaBannerVariant.info,
+                    ),
+                    const SizedBox(height: SaTokens.space12),
 
-                // Security notice
-                const SaInfoBanner(
-                  title: 'Security Notice',
-                  message:
-                      'Never enter your UPI PIN. Receiving payouts NEVER requires you to enter a PIN or authorise a payment.',
-                  variant: SaBannerVariant.warning,
+                    // Security notice
+                    const SaInfoBanner(
+                      title: 'Security Notice',
+                      message:
+                          'Never enter your UPI PIN. Receiving payouts NEVER requires you to enter a PIN or authorise a payment.',
+                      variant: SaBannerVariant.warning,
+                    ),
+                    const SizedBox(height: SaTokens.space32),
+                  ],
                 ),
-                const SizedBox(height: SaTokens.space32),
-              ],
-            ),
+              );
+            },
           );
         },
       ),
@@ -340,6 +392,52 @@ class _PayoutAccountScreenState extends State<PayoutAccountScreen> {
               fontSize: SaTokens.fsCaption,
               color: tokens.textSecondary,
             ),
+          ),
+        ],
+      ),
+    );
+  }
+
+  /// Phase ADMR-5: shown instead of the edit form while a submitted change
+  /// waits for an admin to approve or reject it.
+  Widget _buildPendingCard(SalesAssociateTokens tokens, String requestId) {
+    return Container(
+      padding: const EdgeInsets.all(SaTokens.space16),
+      decoration: BoxDecoration(
+        color: tokens.surface,
+        borderRadius: BorderRadius.circular(SaTokens.radiusCard),
+        border: Border.all(color: tokens.divider),
+      ),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Row(
+            children: [
+              Icon(SaIcons.info, color: tokens.textSecondary, size: SaTokens.iconControl),
+              const SizedBox(width: SaTokens.space8),
+              Expanded(
+                child: Text(
+                  'Change Waiting For Review',
+                  style: TextStyle(
+                    fontSize: SaTokens.fsBody,
+                    fontWeight: FontWeight.w700,
+                    color: tokens.textPrimary,
+                  ),
+                ),
+              ),
+            ],
+          ),
+          const SizedBox(height: SaTokens.space8),
+          Text(
+            'An admin needs to approve your new bank/UPI details before payouts move there. '
+            'Your current payout destination (if any) still applies until then.',
+            style: TextStyle(fontSize: SaTokens.fsCaption, color: tokens.textSecondary),
+          ),
+          const SizedBox(height: SaTokens.space16),
+          SaLoadingButton(
+            text: 'Cancel Request',
+            isLoading: _isSaving,
+            onPressed: () => _cancelPendingRequest(requestId),
           ),
         ],
       ),

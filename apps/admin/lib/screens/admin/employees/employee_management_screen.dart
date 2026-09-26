@@ -120,6 +120,14 @@ class EmployeeManagementScreen extends StatelessWidget {
         title: const Text('Employees'),
         backgroundColor: AppColors.primary,
         foregroundColor: Colors.white,
+        actions: [
+          // Phase ADMR-5: pending associate bank/UPI change requests.
+          IconButton(
+            icon: const Icon(Icons.account_balance_outlined),
+            tooltip: 'Bank/UPI changes',
+            onPressed: () => context.push(AdminRoutes.employeePayoutAccountReview),
+          ),
+        ],
       ),
       floatingActionButton: FloatingActionButton.extended(
         onPressed: () => context.push(AdminRoutes.addEmployee),

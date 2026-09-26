@@ -41,14 +41,18 @@ import { onCall, HttpsError } from "firebase-functions/v2/https";
 import * as admin from "firebase-admin";
 import { FieldValue, Timestamp } from "firebase-admin/firestore";
 import { resolveIsAdmin } from "../admin/complianceGate";
+import { employeeWalletRef } from "../employee/employeePayoutAccount";
 
 type Db = FirebaseFirestore.Firestore;
 
 type ReviewVerdict =
   | { kind: "paid" | "rejected" | "already"; employeeId: string; amount: number }
-  | { kind: "refused"; reason: "not_found" | "not_requested" | "bad_reference" | "reason_required" };
+  | { kind: "refused"; reason: "not_found" | "not_requested" | "bad_reference" | "reason_required" | "payout_change_pending" };
 
-/** Admin: the money was sent. Idempotent on an identical (payoutId, reference) retry. */
+/** Admin: the money was sent. Idempotent on an identical (payoutId, reference) retry.
+ * Phase ADMR-5: refuses while a bank/UPI change is pending review — the same
+ * protection markWithdrawalPaidCore already gives sellers, so a stale admin
+ * tab cannot pay out to a destination that is about to change. */
 async function markEmployeePayoutPaidCore(
   db: Db, adminUid: string, payoutId: string, reference: string, nowMs: number
 ): Promise<ReviewVerdict> {
@@ -63,6 +67,10 @@ async function markEmployeePayoutPaidCore(
     const amount = Number(d.amount ?? 0);
     if (d.status === "paid" && d.paymentReference === ref) return { kind: "already", employeeId, amount };
     if (d.status !== "requested") return { kind: "refused", reason: "not_requested" };
+    const wallet = await tx.get(employeeWalletRef(db, employeeId));
+    if (typeof wallet.data()?.payoutChangePending === "string" && wallet.data()?.payoutChangePending) {
+      return { kind: "refused", reason: "payout_change_pending" };
+    }
     const at = Timestamp.fromMillis(nowMs);
     tx.update(payoutRef, {
       status: "paid", paidAt: at, paidBy: adminUid, paymentReference: ref, updatedAt: at,
@@ -127,6 +135,7 @@ const REFUSAL_TEXT: Record<string, string> = {
   not_requested: "This payout has already been reviewed",
   bad_reference: "Enter a payment reference (4–64 characters)",
   reason_required: "Give a reason (3–200 characters)",
+  payout_change_pending: "This associate has a bank/UPI change waiting for review. Review it first.",
 };
 function refuse(reason: string): never {
   const message = REFUSAL_TEXT[reason] ?? "Not possible";

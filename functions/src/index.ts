@@ -130,6 +130,13 @@ export { requestEmployeePayout } from "./customer/requestEmployeePayout";
 // (paid) silently discarded any entered payment reference. See
 // customer/reviewEmployeePayout.ts's header for the full rationale.
 export { markEmployeePayoutPaid, rejectEmployeePayout } from "./customer/reviewEmployeePayout";
+// Phase ADMR-5: an associate's own bank/UPI change request-review workflow —
+// see employee/employeePayoutAccount.ts's header for the full rationale.
+export {
+  requestEmployeePayoutChange,
+  cancelEmployeePayoutChange,
+  reviewEmployeePayoutChange,
+} from "./employee/employeePayoutAccount";
 export { deleteUserData } from "./customer/deleteUserData";
 
 // ============================================
