@@ -1,7 +1,24 @@
 import 'package:cloud_firestore/cloud_firestore.dart';
+import 'package:cloud_functions/cloud_functions.dart';
 import 'package:flutter/material.dart';
 import 'package:agrimore_ui/agrimore_ui.dart';
 import 'employee_payout_detail_screen.dart';
+
+/// Phase ADMR-20. Refusals from markEmployeePayoutPaid, in admin words —
+/// the subset relevant to THIS screen's own action (it never rejects, only
+/// marks paid). Deliberately duplicated rather than imported from
+/// employee_payout_detail_screen.dart's private `_employeePayoutRefusal`
+/// (file-private, and reject's `reason_required` case does not apply here).
+String _employeePayoutPaidRefusal(String code, String? reason) => switch (reason) {
+      'not_requested' => 'This payout has already been reviewed — it may already be settled.',
+      'bad_reference' => 'Enter the UTR / payment reference (4–64 characters).',
+      'not_found' => 'Not found — it may have been removed.',
+      _ => code == 'permission-denied'
+          ? 'Only admins can do this.'
+          : (code == 'unavailable' || code == 'deadline-exceeded')
+              ? 'No connection. Try again.'
+              : 'Could not complete that. Please try again.',
+    };
 
 /// Lists `employee_payouts` documents with real-time status, payment mode
 /// badges (UPI/Bank), search/filter chips, and one-tap navigation to the
@@ -17,18 +34,88 @@ class _EmployeePayoutsScreenState extends State<EmployeePayoutsScreen> {
   static final FirebaseFirestore _firestore = FirebaseFirestore.instance;
   String _selectedFilter = 'all'; // all, pending, paid, rejected
 
-  Future<void> _markPaid(BuildContext context, String payoutId) async {
+  Future<void> _markPaid(
+    BuildContext context,
+    String payoutId,
+    double amount,
+  ) async {
+    final utrController = TextEditingController();
+    final confirmed = await showDialog<bool>(
+      context: context,
+      builder: (ctx) => AlertDialog(
+        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
+        title: const Row(
+          children: [
+            Icon(Icons.check_circle_outline, color: Color(0xFF15803D)),
+            SizedBox(width: 8),
+            Text('Mark as Paid'),
+          ],
+        ),
+        content: Column(
+          mainAxisSize: MainAxisSize.min,
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            Text(
+              'Confirm that ${_formatMoney(amount)} has been transferred to this associate?',
+              style: const TextStyle(fontSize: 14),
+            ),
+            const SizedBox(height: 16),
+            TextField(
+              controller: utrController,
+              decoration: InputDecoration(
+                labelText: 'UTR / Transaction Reference',
+                hintText: 'e.g. 423589234823',
+                helperText: 'Required — this is the only record of where the money went.',
+                border: OutlineInputBorder(
+                  borderRadius: BorderRadius.circular(10),
+                ),
+                prefixIcon: const Icon(Icons.receipt_long_outlined),
+              ),
+            ),
+          ],
+        ),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.of(ctx).pop(false),
+            child: const Text('Cancel'),
+          ),
+          FilledButton(
+            onPressed: () => Navigator.of(ctx).pop(true),
+            style: FilledButton.styleFrom(
+              backgroundColor: const Color(0xFF15803D),
+            ),
+            child: const Text('Confirm Paid'),
+          ),
+        ],
+      ),
+    );
+    if (confirmed != true || !context.mounted) return;
+
+    final utr = utrController.text.trim();
     try {
-      await _firestore.collection('employee_payouts').doc(payoutId).update({
-        'status': 'paid',
-        'paidAt': FieldValue.serverTimestamp(),
-        'updatedAt': FieldValue.serverTimestamp(),
-      });
+      // Phase ADMR-20: this screen's own "Mark Paid" button previously wrote
+      // directly to Firestore (`employee_payouts` doc `.update({status:
+      // 'paid', ...})`) — firestore.rules' employee_payouts collection has
+      // had `allow update: if false` since Phase ADMR-3 (Admin SDK only, via
+      // this exact callable), so every click of that button has always
+      // failed with permission-denied. The sibling detail screen
+      // (employee_payout_detail_screen.dart) was fixed in ADMR-3; this list
+      // screen's own copy of the same action was missed.
+      await FirebaseFunctions.instance
+          .httpsCallable('markEmployeePayoutPaid')
+          .call<Map<String, dynamic>>({'payoutId': payoutId, 'paymentReference': utr});
       if (context.mounted) {
-        SnackbarHelper.showSuccess(context, 'Payout marked as paid');
+        SnackbarHelper.showSuccess(context, 'Payout marked as paid successfully');
+      }
+    } on FirebaseFunctionsException catch (e) {
+      final reason = e.details is Map ? (e.details as Map)['reason'] as String? : null;
+      if (context.mounted) {
+        SnackbarHelper.showError(context, _employeePayoutPaidRefusal(e.code, reason));
       }
     } catch (e) {
-      if (context.mounted) SnackbarHelper.showError(context, 'Failed: $e');
+      if (context.mounted) {
+        SnackbarHelper.showError(context, _employeePayoutPaidRefusal('unknown', null));
+      }
     }
   }
 
@@ -276,7 +363,7 @@ class _EmployeePayoutsScreenState extends State<EmployeePayoutsScreen> {
                                       if (!isPaid && !isRejected) ...[
                                         FilledButton(
                                           onPressed: () =>
-                                              _markPaid(context, doc.id),
+                                              _markPaid(context, doc.id, amount),
                                           style: FilledButton.styleFrom(
                                             backgroundColor:
                                                 const Color(0xFF15803D),
