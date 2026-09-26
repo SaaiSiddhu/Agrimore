@@ -8,7 +8,14 @@ import 'package:seller/providers/seller_product_provider.dart';
 import 'package:seller/screens/products/widgets/product_tax_section.dart';
 
 /// SELLER-CATALOGUE-1: listing tabs, tax fields and draft semantics.
-ProductModel _p({bool isActive = true, bool isDraft = false, int stock = 5, String? hsn, double? gst}) =>
+ProductModel _p({
+  bool isActive = true,
+  bool isDraft = false,
+  int stock = 5,
+  String? hsn,
+  double? gst,
+  List<ProductVariant> variants = const [],
+}) =>
     ProductModel(
       id: 'p',
       name: 'Tomato',
@@ -17,6 +24,7 @@ ProductModel _p({bool isActive = true, bool isDraft = false, int stock = 5, Stri
       categoryId: 'veg',
       images: const [],
       stock: stock,
+      variants: variants,
       sellerId: 's1',
       isActive: isActive,
       isDraft: isDraft,
@@ -24,6 +32,15 @@ ProductModel _p({bool isActive = true, bool isDraft = false, int stock = 5, Stri
       gstRate: gst,
       createdAt: DateTime(2026, 9, 23),
       updatedAt: DateTime(2026, 9, 23),
+    );
+
+/// ADMR-4: a minimal variant fixture — only `stock` varies across tests.
+ProductVariant _variant(String id, int stock) => ProductVariant(
+      id: id,
+      name: id,
+      salePrice: 40,
+      stock: stock,
+      options: const {},
     );
 
 void main() {
@@ -69,6 +86,26 @@ void main() {
       expect(m(_p(stock: 50), ProductListFilter.lowStock), isFalse);
       expect(m(_p(stock: 0), ProductListFilter.lowStock), isFalse);
       expect(m(_p(stock: 3, isActive: false), ProductListFilter.lowStock), isFalse);
+    });
+
+    // ADMR-4: isLowStock previously read only the base `stock` field, so a
+    // product whose stock lives entirely in its variants never matched this
+    // filter, however low any variant actually was.
+    test('low stock is true when a VARIANT is low, even if base stock is not', () {
+      final p = _p(stock: 50, variants: [_variant('v1', 40), _variant('v2', 2)]);
+      expect(m(p, ProductListFilter.lowStock), isTrue);
+    });
+    test('low stock is false when neither base nor any variant is low', () {
+      final p = _p(stock: 50, variants: [_variant('v1', 40), _variant('v2', 30)]);
+      expect(m(p, ProductListFilter.lowStock), isFalse);
+    });
+    test('a variant at exactly zero does not count as low (matches the base-stock semantics above)', () {
+      final p = _p(stock: 50, variants: [_variant('v1', 0)]);
+      expect(m(p, ProductListFilter.lowStock), isFalse);
+    });
+    test('an inactive product with a low variant is still not low stock', () {
+      final p = _p(stock: 50, isActive: false, variants: [_variant('v1', 2)]);
+      expect(m(p, ProductListFilter.lowStock), isFalse);
     });
   });
 
