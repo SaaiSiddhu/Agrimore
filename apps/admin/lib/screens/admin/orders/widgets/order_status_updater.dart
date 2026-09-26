@@ -4,6 +4,14 @@ import 'package:agrimore_ui/agrimore_ui.dart';
 import '../../../../app/themes/admin_colors.dart';
 import '../../../../providers/order_provider.dart';
 
+// ADMR-8: pulled out of _updateStatus so it is a plain, Firebase-free
+// function the test suite can call directly — see order_status_updater.dart
+// for why this specific transition needs a confirmation before it fires.
+bool isDangerousOrderStatusTransition(String currentStatus, String nextStatus) {
+  return currentStatus.toLowerCase() == 'delivered' &&
+      nextStatus.toLowerCase() != 'delivered';
+}
+
 class OrderStatusUpdater extends StatefulWidget {
   final dynamic order;
 
@@ -296,12 +304,68 @@ class _OrderStatusUpdaterState extends State<OrderStatusUpdater> {
     );
   }
 
-  Future<void> _updateStatus(BuildContext context) async {
-    setState(() => _isUpdating = true);
-    
-    try {
-      final orderProvider = Provider.of<OrderProvider>(context, listen: false);
+  // ADMR-8: orders/{orderId}'s three cancellation-triggered reversals —
+  // restoreStockOnCancellation, reverseEmployeeCommissionOnCancellation,
+  // reverseProductCreditOnCancellation (functions/src/customer/*.ts) — all
+  // guard only on "wasn't already cancelled/reversed before this write",
+  // never on what the PRIOR status actually was. Firestore rules give admin
+  // an unrestricted update on orders (firestore.rules:773, "admin
+  // unrestricted", a deliberate trust decision, not a bug), and this widget
+  // let any status chip be tapped from any current status with no
+  // transition check and no confirmation at all. Tapping "Cancelled" (or
+  // any other status) on an already-DELIVERED order — goods already
+  // handed over, stock already consumed, commission/product-credit likely
+  // already paid — silently fires all three reversals: phantom stock
+  // restored, an associate's already-earned commission clawed back, a
+  // customer's already-earned product credit reversed. This does not
+  // change that admin CAN do this deliberately (a genuine return/refund
+  // case legitimately needs exactly this), only that doing it by accident
+  // (a mis-tap, wrong order selected) previously had zero friction. Scoped
+  // narrowly to leaving 'delivered' specifically, since that is the exact,
+  // evidenced case all three triggers fire on — not a general transition
+  // state machine this phase has no authority to invent.
+  Future<bool> _confirmLeavingDelivered(BuildContext context) async {
+    final result = await showDialog<bool>(
+      context: context,
+      builder: (context) => AlertDialog(
+        title: const Text('Change status of a delivered order?'),
+        content: Text(
+          'This order is already DELIVERED. Changing its status to '
+          '"${_selectedStatus.toUpperCase()}" will restore its stock and '
+          'reverse any commission or product credit already paid on it, '
+          'exactly as a genuine cancellation would. Only continue if this '
+          'order is actually being cancelled or returned.',
+        ),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.pop(context, false),
+            child: const Text('Cancel'),
+          ),
+          ElevatedButton(
+            onPressed: () => Navigator.pop(context, true),
+            style: ElevatedButton.styleFrom(backgroundColor: Colors.red),
+            child: const Text('Change status', style: TextStyle(color: Colors.white)),
+          ),
+        ],
+      ),
+    );
+    return result ?? false;
+  }
 
+  Future<void> _updateStatus(BuildContext context) async {
+    // Fetched before the confirmation dialog's own await, below, so this
+    // lookup itself never uses `context` across an async gap.
+    final orderProvider = Provider.of<OrderProvider>(context, listen: false);
+
+    final currentStatus = widget.order.orderStatus.toLowerCase();
+    if (isDangerousOrderStatusTransition(currentStatus, _selectedStatus)) {
+      final confirmed = await _confirmLeavingDelivered(context);
+      if (!confirmed || !mounted) return;
+    }
+
+    setState(() => _isUpdating = true);
+
+    try {
       await orderProvider.updateOrderStatus(
         widget.order.id,
         _selectedStatus,
