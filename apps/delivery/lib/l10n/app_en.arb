@@ -634,9 +634,29 @@
       }
     }
   },
+  "signOutConfirmTitle": "Sign out of this device?",
+  "@signOutConfirmTitle": {
+    "description": "Sign-out confirmation dialog title"
+  },
+  "signOutConfirmBody": "You'll be signed out from this device only. Your account and data remain safe, and you can sign in again anytime.",
+  "@signOutConfirmBody": {
+    "description": "Sign-out confirmation dialog body"
+  },
   "deleteAccount": "Delete my account",
   "@deleteAccount": {
     "description": "Button"
+  },
+  "deleteBlockedTitle": "Account deletion isn't available yet",
+  "@deleteBlockedTitle": {
+    "description": "Shared title for every proactive account-deletion blocker dialog"
+  },
+  "deleteBlockedViewDelivery": "View delivery",
+  "@deleteBlockedViewDelivery": {
+    "description": "Blocker dialog action: open the active order that is blocking deletion"
+  },
+  "deleteBlockedViewEarnings": "View earnings",
+  "@deleteBlockedViewEarnings": {
+    "description": "Blocker dialog action: open Earnings for held cash or unpaid earnings blocking deletion"
   },
   "deleteConfirmTitle": "Delete your account?",
   "@deleteConfirmTitle": {

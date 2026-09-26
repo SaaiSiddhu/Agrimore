@@ -258,65 +258,125 @@ class StatementPage {
 // ── streams and calls ──
 
 class RiderMoneyService {
-  RiderMoneyService(this.riderId, {FirebaseFirestore? db}) : _db = db ?? FirebaseFirestore.instance;
+  RiderMoneyService(this.riderId, {FirebaseFirestore? db}) : _dbOverride = db;
   final String riderId;
-  final FirebaseFirestore _db;
+  final FirebaseFirestore? _dbOverride;
+
+  /// Deferred to first actual use (DLVP1; the same class of bug DLV-S1 fixed
+  /// for `LocationProvider` and DLVI1 fixed at each of this class's own
+  /// callers): bare construction must not touch `FirebaseFirestore.instance`
+  /// — a widget that constructs this eagerly and only conditionally calls a
+  /// method on it (e.g. behind an eligibility check) must not crash in a
+  /// test with no Firebase app just for having been constructed.
+  late final FirebaseFirestore _db = _dbOverride ?? FirebaseFirestore.instance;
 
   /// Pay not yet in a statement (this week's), newest first.
-  Stream<List<RiderEarning>> unsettledEarnings() => _db
-      .collection('rider_earnings')
-      .where('riderId', isEqualTo: riderId)
-      .where('statementId', isNull: true)
-      .snapshots()
-      .map((s) => s.docs.map((d) => RiderEarning.fromMap(d.id, d.data())).toList()
-        ..sort((a, b) => (b.createdAt ?? DateTime(0)).compareTo(a.createdAt ?? DateTime(0))));
+  ///
+  /// DLVP1: `Stream.multi` (not a plain `=>`/`.snapshots()` expression) so
+  /// `_db` -- and so `FirebaseFirestore.instance` -- is only touched once
+  /// something actually subscribes, not the moment this method is called: a
+  /// widget that reaches this call only behind a conditional (e.g.
+  /// `MoneyScreen`, pushed only from certain flows) must not crash in a test
+  /// with no Firebase app just because the screen was built. `Stream.multi`
+  /// specifically (not an `async*` generator) because `MoneyScreen` attaches
+  /// more than one listener to the very same stream instance (its cash card
+  /// and its payout-details section both read `_account`) -- a generator's
+  /// stream only supports a single listener and would throw "Stream has
+  /// already been listened to" the moment the second one attached; each
+  /// `Stream.multi` listener re-runs `onListen`, so this creates one
+  /// `snapshots()` listener per UI consumer rather than sharing one, a minor
+  /// cost against Firestore's own client-side cache, not a correctness
+  /// issue. Same reasoning for every other stream method below.
+  Stream<List<RiderEarning>> unsettledEarnings() => Stream.multi((controller) {
+        try {
+          controller.addStream(_db
+              .collection('rider_earnings')
+              .where('riderId', isEqualTo: riderId)
+              .where('statementId', isNull: true)
+              .snapshots()
+              .map((s) => s.docs.map((d) => RiderEarning.fromMap(d.id, d.data())).toList()
+                ..sort((a, b) => (b.createdAt ?? DateTime(0)).compareTo(a.createdAt ?? DateTime(0)))));
+        } catch (e, st) {
+          controller.addError(e, st);
+          controller.close();
+        }
+      });
 
   /// Only answers the server has confirmed: when the backend is slow the web
   /// SDK goes offline and reports an uncached document as missing, which
   /// would read as "no cash with you" / "no payout details" (DLV-4B).
   static bool _known(DocumentSnapshot<Map<String, dynamic>> s) => s.exists || !s.metadata.isFromCache;
 
-  Stream<RiderAccount> account() => _db
-      .collection('rider_accounts')
-      .doc(riderId)
-      .snapshots()
-      .where(_known)
-      .map((s) => RiderAccount.fromMap(s.data()));
+  Stream<RiderAccount> account() => Stream.multi((controller) {
+        try {
+          controller.addStream(_db
+              .collection('rider_accounts')
+              .doc(riderId)
+              .snapshots()
+              .where(_known)
+              .map((s) => RiderAccount.fromMap(s.data())));
+        } catch (e, st) {
+          controller.addError(e, st);
+          controller.close();
+        }
+      });
 
   /// Statements, newest first.
-  Stream<List<RiderPayout>> payouts() => _db
-      .collection('rider_payouts')
-      .where('riderId', isEqualTo: riderId)
-      .snapshots()
-      .map((s) => s.docs.map((d) => RiderPayout.fromMap(d.id, d.data())).toList()
-        ..sort((a, b) => (b.createdAt ?? DateTime(0)).compareTo(a.createdAt ?? DateTime(0))));
+  Stream<List<RiderPayout>> payouts() => Stream.multi((controller) {
+        try {
+          controller.addStream(_db
+              .collection('rider_payouts')
+              .where('riderId', isEqualTo: riderId)
+              .snapshots()
+              .map((s) => s.docs.map((d) => RiderPayout.fromMap(d.id, d.data())).toList()
+                ..sort((a, b) => (b.createdAt ?? DateTime(0)).compareTo(a.createdAt ?? DateTime(0)))));
+        } catch (e, st) {
+          controller.addError(e, st);
+          controller.close();
+        }
+      });
 
   /// The latest bank-change request, if any.
-  Stream<BankChangeRequest?> latestBankChange() => _db
-      .collection('rider_bank_change_requests')
-      .where('riderId', isEqualTo: riderId)
-      .snapshots()
-      .map((s) {
-    final all = s.docs.map((d) => BankChangeRequest.fromMap(d.id, d.data())).toList()
-      ..sort((a, b) => (b.createdAt ?? DateTime(0)).compareTo(a.createdAt ?? DateTime(0)));
-    return all.isEmpty ? null : all.first;
-  });
+  Stream<BankChangeRequest?> latestBankChange() => Stream.multi((controller) {
+        try {
+          controller.addStream(_db
+              .collection('rider_bank_change_requests')
+              .where('riderId', isEqualTo: riderId)
+              .snapshots()
+              .map((s) {
+            final all = s.docs.map((d) => BankChangeRequest.fromMap(d.id, d.data())).toList()
+              ..sort((a, b) => (b.createdAt ?? DateTime(0)).compareTo(a.createdAt ?? DateTime(0)));
+            return all.isEmpty ? null : all.first;
+          }));
+        } catch (e, st) {
+          controller.addError(e, st);
+          controller.close();
+        }
+      });
 
   /// The payout destination on file (the rider may read their own profile).
-  Stream<({String? maskedAccount, String? ifsc, String? upiId, String? holder})> payoutDetails() => _db
-      .collection('delivery_partners')
-      .doc(riderId)
-      .snapshots()
-      .where(_known)
-      .map((s) {
-    final d = s.data() ?? const {};
-    return (
-      maskedAccount: maskAccount(d['bankAccountNumber'] as String?),
-      ifsc: d['ifscCode'] as String?,
-      upiId: (d['upiId'] as String?)?.isNotEmpty == true ? d['upiId'] as String : null,
-      holder: d['accountHolderName'] as String?,
-    );
-  });
+  Stream<({String? maskedAccount, String? ifsc, String? upiId, String? holder})> payoutDetails() =>
+      Stream.multi((controller) {
+        try {
+          controller.addStream(_db
+              .collection('delivery_partners')
+              .doc(riderId)
+              .snapshots()
+              .where(_known)
+              .map((s) {
+            final d = s.data() ?? const {};
+            return (
+              maskedAccount: maskAccount(d['bankAccountNumber'] as String?),
+              ifsc: d['ifscCode'] as String?,
+              upiId: (d['upiId'] as String?)?.isNotEmpty == true ? d['upiId'] as String : null,
+              holder: d['accountHolderName'] as String?,
+            );
+          }));
+        } catch (e, st) {
+          controller.addError(e, st);
+          controller.close();
+        }
+      });
 
   /// DLV-N1: this rider's pay for one order, or null when there is none yet.
   /// A missing document reads as permission-denied under the owner-only rule.

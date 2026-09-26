@@ -4,7 +4,8 @@
 // them (Aadhaar and bank masked), document and payout state, the contact
 // details they may edit themselves (updateRiderContact), appearance switcher,
 // support, sign-out and account deletion.
-import 'package:agrimore_core/agrimore_core.dart' show VehicleType;
+import 'package:agrimore_core/agrimore_core.dart'
+    show OrderModel, VehicleType;
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
@@ -13,10 +14,13 @@ import '../../account/rider_account.dart';
 import '../../account/support_card.dart';
 import '../../design_system/design_system.dart';
 import '../../l10n/app_localizations.dart';
+import '../../money/rider_money.dart';
 import '../../providers/auth_provider.dart';
+import '../../providers/order_provider.dart';
 import '../../registration/rider_application.dart';
 import '../auth/rider_registration_screen.dart' show vehicleLabel;
 import '../money/money_screen.dart';
+import '../orders/active_order_screen.dart';
 
 String accountFailureText(AppLocalizations l, AccountActionFailure f) =>
     switch (f) {
@@ -51,9 +55,20 @@ Map<RiderDocument, bool> documentsOnFile(Map<String, dynamic> d) {
 }
 
 class RiderProfileScreen extends StatefulWidget {
-  const RiderProfileScreen({super.key, this.backend, this.partnerData});
+  const RiderProfileScreen({
+    super.key,
+    this.backend,
+    this.partnerData,
+    this.accountSource,
+  });
   final RiderAccountBackend? backend;
   final Map<String, dynamic>? partnerData;
+
+  /// DLVP1: injectable for tests; defaults to a real `rider_accounts/{uid}`
+  /// read (the same stream `MoneyScreen` already uses), so the proactive
+  /// deletion-eligibility check reads cash-held/unsettled-earnings without
+  /// a second, ad-hoc query shape.
+  final Stream<RiderAccount> Function(String riderId)? accountSource;
 
   @override
   State<RiderProfileScreen> createState() => _RiderProfileScreenState();
@@ -63,6 +78,7 @@ class _RiderProfileScreenState extends State<RiderProfileScreen> {
   late final RiderAccountBackend _backend =
       widget.backend ?? CallableRiderAccountBackend();
   late final Stream<Map<String, dynamic>?> _partner = _resolvePartnerStream();
+  late final Stream<RiderAccount> _account = _resolveAccountStream();
   bool _busy = false;
 
   Stream<Map<String, dynamic>?> _resolvePartnerStream() {
@@ -82,6 +98,18 @@ class _RiderProfileScreenState extends State<RiderProfileScreen> {
     }
   }
 
+  /// `RiderMoneyService.account()` is itself deferred to first subscription
+  /// (`Stream.multi`), so a test that never needs the real account (e.g.
+  /// testing sign-out alone) never touches Firebase just because this
+  /// screen was built.
+  Stream<RiderAccount> _resolveAccountStream() {
+    final own = widget.accountSource;
+    final uid = context.read<DeliveryAuthProvider>().user?.uid;
+    if (uid == null) return const Stream.empty();
+    if (own != null) return own(uid);
+    return RiderMoneyService(uid).account();
+  }
+
   Future<void> _editContact(Map<String, dynamic> d) async {
     final saved = await showModalBottomSheet<bool>(
       context: context,
@@ -98,8 +126,64 @@ class _RiderProfileScreenState extends State<RiderProfileScreen> {
     }
   }
 
-  Future<void> _delete() async {
+  Future<void> _signOut() async {
     final l = AppLocalizations.of(context);
+    final ok = await showDeliveryConfirmDialog(
+      context: context,
+      title: l.signOutConfirmTitle,
+      body: l.signOutConfirmBody,
+      confirmLabel: l.actionSignOut,
+      cancelLabel: l.cancel,
+    );
+    if (ok && mounted) await riderSignOut(context);
+  }
+
+  /// Checks the SAME three reasons `riderDeletionRefusal` enforces
+  /// server-side (active order / cash held / pay owed), proactively and
+  /// before any deletion attempt, so a blocked rider learns why — and can
+  /// go straight to the thing blocking them — instead of confirming a
+  /// generic dialog first only to be refused after. The server check
+  /// remains the actual safety net for a race between this read and the
+  /// real attempt.
+  Future<void> _delete(List<OrderModel> activeOrders, RiderAccount? account) async {
+    final l = AppLocalizations.of(context);
+    if (activeOrders.isNotEmpty) {
+      final view = await showDeliveryConfirmDialog(
+        context: context,
+        title: l.deleteBlockedTitle,
+        body: l.failActiveOrder,
+        confirmLabel: l.deleteBlockedViewDelivery,
+        cancelLabel: l.cancel,
+      );
+      if (view && mounted) {
+        Navigator.of(context).push(
+          MaterialPageRoute<void>(
+            builder: (_) => ActiveOrderScreen(order: activeOrders.first),
+          ),
+        );
+      }
+      return;
+    }
+    if (account != null &&
+        (account.cashHeld > 0.005 || account.earningsUnsettled > 0.005)) {
+      final view = await showDeliveryConfirmDialog(
+        context: context,
+        title: l.deleteBlockedTitle,
+        body: account.cashHeld > 0.005 ? l.failCashHeld : l.failPayOwed,
+        confirmLabel: l.deleteBlockedViewEarnings,
+        cancelLabel: l.cancel,
+      );
+      if (view && mounted) {
+        Navigator.of(context).push(
+          MaterialPageRoute<void>(
+            builder: (_) => MoneyScreen(
+              riderId: context.read<DeliveryAuthProvider>().user!.uid,
+            ),
+          ),
+        );
+      }
+      return;
+    }
     final ok = await showDeliveryConfirmDialog(
       context: context,
       title: l.deleteConfirmTitle,
@@ -340,16 +424,25 @@ class _RiderProfileScreenState extends State<RiderProfileScreen> {
                 l.profileAccount,
                 [
                   DeliveryButton.secondary(
+                    key: const ValueKey('sign-out'),
                     label: l.actionSignOut,
                     icon: DeliveryIcons.logout,
-                    onPressed: _busy ? null : () => riderSignOut(context),
+                    onPressed: _busy ? null : _signOut,
                   ),
                   const SizedBox(height: DeliverySpace.sm),
-                  DeliveryButton.ghost(
-                    key: const ValueKey('delete-account'),
-                    label: l.deleteAccount,
-                    icon: DeliveryIcons.delete,
-                    onPressed: _busy ? null : _delete,
+                  StreamBuilder<RiderAccount>(
+                    stream: _account,
+                    builder: (context, accountSnap) => DeliveryButton.ghost(
+                      key: const ValueKey('delete-account'),
+                      label: l.deleteAccount,
+                      icon: DeliveryIcons.delete,
+                      onPressed: _busy
+                          ? null
+                          : () => _delete(
+                                context.read<DeliveryOrderProvider>().activeOrders,
+                                accountSnap.data,
+                              ),
+                    ),
                   ),
                 ],
               ),
