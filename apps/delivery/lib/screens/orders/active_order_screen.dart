@@ -16,12 +16,14 @@ import 'package:image_picker/image_picker.dart';
 import 'package:provider/provider.dart';
 import 'package:url_launcher/url_launcher.dart';
 
+import '../../account/support_card.dart';
 import '../../delivery/delivery_problems.dart';
 import '../../delivery/rider_steps.dart';
 import '../../design_system/design_system.dart';
 import '../../l10n/app_localizations.dart';
 import '../../navigation/rider_navigation.dart';
 import '../../providers/order_provider.dart';
+import '../../safety/emergency_sheet.dart';
 import 'delivery_problem_panel.dart';
 import 'widgets/rider_route_card.dart';
 
@@ -136,6 +138,11 @@ class _ActiveOrderScreenState extends State<ActiveOrderScreen> {
             tooltip: l.activeCallCustomer,
             onPressed: _callCustomer,
             icon: const Icon(DeliveryIcons.phone),
+          ),
+          IconButton(
+            tooltip: l.activeHelpTooltip,
+            onPressed: _showHelp,
+            icon: const Icon(DeliveryIcons.help),
           ),
         ],
       ),
@@ -528,6 +535,33 @@ class _ActiveOrderScreenState extends State<ActiveOrderScreen> {
     }
   }
 
+  void _showHelp() {
+    showModalBottomSheet<void>(
+      context: context,
+      isScrollControlled: true,
+      showDragHandle: true,
+      builder: (_) => _HelpSheet(
+        canReportProblem: isAfterPickup(_order.orderStatus),
+        onReportProblem: () {
+          Navigator.of(context).pop();
+          showModalBottomSheet<void>(
+            context: context,
+            isScrollControlled: true,
+            showDragHandle: true,
+            builder: (_) => ProblemReportSheet(
+              orderId: _order.id,
+              backend: FirebaseDeliveryProblemBackend(),
+            ),
+          );
+        },
+        onEmergency: () {
+          Navigator.of(context).pop();
+          showEmergencySheet(context);
+        },
+      ),
+    );
+  }
+
   void _showVerificationSheet() {
     showModalBottomSheet<void>(
       context: context,
@@ -857,6 +891,83 @@ class _Section extends StatelessWidget {
           const SizedBox(height: DeliverySpace.md),
           child,
         ],
+      ),
+    );
+  }
+}
+
+/// Opened from the active-delivery AppBar (phase 20.7 / DLV-R1): a way to
+/// reach problem-reporting and emergency help without leaving the active
+/// order. Every action here reuses an already-built, already-tested widget
+/// (ProblemReportSheet, showEmergencySheet, SupportContactButtons) — this
+/// sheet is only the menu in front of them.
+class _HelpSheet extends StatelessWidget {
+  const _HelpSheet({
+    required this.canReportProblem,
+    required this.onReportProblem,
+    required this.onEmergency,
+  });
+
+  final bool canReportProblem;
+  final VoidCallback onReportProblem;
+  final VoidCallback onEmergency;
+
+  @override
+  Widget build(BuildContext context) {
+    final l = AppLocalizations.of(context);
+    final c = context.colors;
+    final t = context.text;
+    return Padding(
+      padding: EdgeInsets.fromLTRB(
+        DeliverySpace.page,
+        DeliverySpace.xxs,
+        DeliverySpace.page,
+        MediaQuery.of(context).viewInsets.bottom + DeliverySpace.xxl,
+      ),
+      child: SingleChildScrollView(
+        child: Column(
+          mainAxisSize: MainAxisSize.min,
+          crossAxisAlignment: CrossAxisAlignment.stretch,
+          children: [
+            Text(
+              l.activeHelpSheetTitle,
+              style: t.headlineSmall.copyWith(color: c.textPrimary),
+            ),
+            const SizedBox(height: DeliverySpace.xxs),
+            Text(
+              l.activeHelpSheetSubtitle,
+              style: t.bodyMedium.copyWith(color: c.textSecondary),
+            ),
+            const SizedBox(height: DeliverySpace.lg),
+            if (canReportProblem) ...[
+              DeliveryButton.secondary(
+                key: const ValueKey('help-report-problem'),
+                label: l.problemReport,
+                icon: DeliveryIcons.warning,
+                onPressed: onReportProblem,
+              ),
+              const SizedBox(height: DeliverySpace.sm),
+            ],
+            DeliveryButton.secondary(
+              key: const ValueKey('help-emergency'),
+              label: l.emergencyTitle,
+              icon: DeliveryIcons.emergency,
+              onPressed: onEmergency,
+            ),
+            const SizedBox(height: DeliverySpace.xl),
+            Text(
+              l.verifyContactSupport,
+              style: t.labelMedium.copyWith(color: c.textSecondary),
+            ),
+            const SizedBox(height: DeliverySpace.sm),
+            const SupportContactButtons(),
+            const SizedBox(height: DeliverySpace.lg),
+            DeliveryButton.ghost(
+              label: l.activeHelpBackToDelivery,
+              onPressed: () => Navigator.of(context).pop(),
+            ),
+          ],
+        ),
       ),
     );
   }

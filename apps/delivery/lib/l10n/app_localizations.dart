@@ -2248,6 +2248,30 @@ abstract class AppLocalizations {
   /// **'Emergency help'**
   String get emergencyTitle;
 
+  /// Active-delivery AppBar action opening the help sheet
+  ///
+  /// In en, this message translates to:
+  /// **'Help'**
+  String get activeHelpTooltip;
+
+  /// Help sheet title, opened from the active-delivery screen
+  ///
+  /// In en, this message translates to:
+  /// **'Help with this delivery'**
+  String get activeHelpSheetTitle;
+
+  /// Reassures the rider that opening the help sheet does not affect the delivery in progress
+  ///
+  /// In en, this message translates to:
+  /// **'Your current delivery will remain active.'**
+  String get activeHelpSheetSubtitle;
+
+  /// Dismisses the help sheet, returning to the active-delivery screen
+  ///
+  /// In en, this message translates to:
+  /// **'Back to delivery'**
+  String get activeHelpBackToDelivery;
+
   /// Emergency sheet intro — makes no claim that anyone was alerted
   ///
   /// In en, this message translates to:
