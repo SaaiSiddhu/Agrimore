@@ -1037,6 +1037,14 @@ class AppLocalizationsEn extends AppLocalizations {
       'Goes into next Monday\'s statement';
 
   @override
+  String get historyDetailStatementUnavailable =>
+      'This statement is no longer available.';
+
+  @override
+  String get historyDetailStatementNetworkError =>
+      'Could not open this statement. Try again.';
+
+  @override
   String get historyDetailOrderTotal => 'Order amount';
 
   @override

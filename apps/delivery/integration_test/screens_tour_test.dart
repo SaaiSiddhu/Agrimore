@@ -453,6 +453,7 @@ void main() {
             distancePay: 20,
             waitingPay: 10,
             km: 3.2,
+            statementId: 'stmt-2026-w38',
           ),
           loadTimeline: (id) async => [
             OrderTimelineEvent(
@@ -477,6 +478,16 @@ void main() {
               timestamp: DateTime(2026, 9, 18, 14, 42),
             ),
           ],
+          loadPayout: (id) async => RiderPayout(
+            id: id,
+            weekKey: '2026-W38',
+            earned: 3840,
+            netted: 1500,
+            amount: 2340,
+            cashHeldAfter: 0,
+            orderCount: 48,
+            status: 'paid',
+          ),
         ),
       ),
     );

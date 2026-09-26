@@ -331,6 +331,20 @@ class RiderMoneyService {
     }
   }
 
+  /// DLVH2: one statement by id (history-detail linkage), or null when it is
+  /// missing, deleted, or not this rider's own — the same shape as
+  /// [earningFor] above.
+  Future<RiderPayout?> payoutById(String id) async {
+    try {
+      final d = await _db.collection('rider_payouts').doc(id).get();
+      final m = d.data();
+      return m == null || m['riderId'] != riderId ? null : RiderPayout.fromMap(d.id, m);
+    } on FirebaseException catch (e) {
+      if (e.code == 'permission-denied' || e.code == 'not-found') return null;
+      rethrow;
+    }
+  }
+
   /// A statement's deliveries, newest first, a page at a time (index:
   /// rider_earnings riderId + statementId + createdAt desc).
   Future<StatementPage> statementLines(String statementId,

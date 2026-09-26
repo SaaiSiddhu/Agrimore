@@ -16,6 +16,7 @@ import '../../money/money_text.dart';
 import '../../money/rider_money.dart';
 import '../../providers/order_provider.dart';
 import '../home/active_work_states.dart';
+import '../money/statement_screen.dart';
 import '../orders/active_order_screen.dart';
 
 String historyStatusText(AppLocalizations l, String orderStatus) {
@@ -36,14 +37,26 @@ String historyStatusText(AppLocalizations l, String orderStatus) {
 /// Loads this rider's pay for an order (null: none yet).
 typedef EarningLoader = Future<RiderEarning?> Function(String orderId);
 
+/// Loads one weekly statement by id (null: missing, deleted, or not this
+/// rider's own).
+typedef PayoutLoader = Future<RiderPayout?> Function(String statementId);
+
 class RiderHistoryScreen extends StatefulWidget {
-  const RiderHistoryScreen({super.key, this.loadEarning, this.loadTimeline});
+  const RiderHistoryScreen({
+    super.key,
+    this.loadEarning,
+    this.loadTimeline,
+    this.loadPayout,
+  });
 
   /// DLV-N1: injectable for tests; defaults to rider_earnings/{orderId}.
   final EarningLoader? loadEarning;
 
   /// DLVH2: injectable for tests; defaults to orders/{orderId}/timeline.
   final OrderTimelineLoader? loadTimeline;
+
+  /// DLVH3: injectable for tests; defaults to rider_payouts/{statementId}.
+  final PayoutLoader? loadPayout;
 
   @override
   State<RiderHistoryScreen> createState() => _RiderHistoryScreenState();
@@ -67,9 +80,18 @@ class _RiderHistoryScreenState extends State<RiderHistoryScreen> {
     return (orderId) async => money?.earningFor(orderId);
   }
 
+  PayoutLoader _payoutLoader() {
+    final own = widget.loadPayout;
+    if (own != null) return own;
+    final uid = context.read<DeliveryOrderProvider>().riderId;
+    final money = uid == null ? null : RiderMoneyService(uid);
+    return (statementId) async => money?.payoutById(statementId);
+  }
+
   void _openDetail(OrderModel order) {
     final load = _earningLoader();
     final timeline = widget.loadTimeline ?? firestoreOrderTimeline;
+    final payout = _payoutLoader();
     showModalBottomSheet<void>(
       context: context,
       showDragHandle: true,
@@ -78,6 +100,7 @@ class _RiderHistoryScreenState extends State<RiderHistoryScreen> {
         order: order,
         loadEarning: load,
         loadTimeline: timeline,
+        loadPayout: payout,
       ),
     );
   }
@@ -368,10 +391,12 @@ class HistoryDetail extends StatelessWidget {
     required this.order,
     required this.loadEarning,
     required this.loadTimeline,
+    required this.loadPayout,
   });
   final OrderModel order;
   final EarningLoader loadEarning;
   final OrderTimelineLoader loadTimeline;
+  final PayoutLoader loadPayout;
 
   @override
   Widget build(BuildContext context) {
@@ -466,12 +491,17 @@ class HistoryDetail extends StatelessWidget {
                             value: DeliveryFormat.rupees(e.codCollected),
                           ),
                         const SizedBox(height: DeliverySpace.sm),
-                        Text(
-                          e.statementId == null
-                              ? l10n.historyDetailNotInStatement
-                              : l10n.historyDetailInStatement,
-                          style: t.bodySmall.copyWith(color: c.textSecondary),
-                        ),
+                        if (e.statementId == null)
+                          Text(
+                            l10n.historyDetailNotInStatement,
+                            style: t.bodySmall.copyWith(color: c.textSecondary),
+                          )
+                        else
+                          _StatementLink(
+                            riderId: order.deliveryPartnerId!,
+                            statementId: e.statementId!,
+                            loadPayout: loadPayout,
+                          ),
                       ],
                     );
                   },
@@ -559,6 +589,102 @@ class _SectionHeading extends StatelessWidget {
         text,
         style: context.text.titleMedium.copyWith(color: context.colors.textPrimary),
       );
+}
+
+/// DLVH3: "In a weekly statement" used to be static text — `statementId`
+/// was read only as a boolean (is it null), never as a navigable
+/// identifier. Resolves the real statement on tap and opens it; a missing/
+/// inaccessible statement or a network failure each say so distinctly
+/// rather than doing nothing or crashing, and the row is tappable again
+/// either way (a retry needs no dedicated affordance beyond that).
+class _StatementLink extends StatefulWidget {
+  const _StatementLink({
+    required this.riderId,
+    required this.statementId,
+    required this.loadPayout,
+  });
+  final String riderId;
+  final String statementId;
+  final PayoutLoader loadPayout;
+
+  @override
+  State<_StatementLink> createState() => _StatementLinkState();
+}
+
+class _StatementLinkState extends State<_StatementLink> {
+  bool _loading = false;
+
+  Future<void> _open() async {
+    if (_loading) return;
+    setState(() => _loading = true);
+    RiderPayout? payout;
+    var failed = false;
+    try {
+      payout = await widget.loadPayout(widget.statementId);
+    } catch (e) {
+      failed = true;
+    }
+    if (!mounted) return;
+    setState(() => _loading = false);
+    final l = AppLocalizations.of(context);
+    if (failed) {
+      showDeliveryToast(
+        context,
+        message: l.historyDetailStatementNetworkError,
+        tone: DeliveryBannerTone.danger,
+      );
+      return;
+    }
+    if (payout == null) {
+      showDeliveryToast(
+        context,
+        message: l.historyDetailStatementUnavailable,
+        tone: DeliveryBannerTone.danger,
+      );
+      return;
+    }
+    final resolved = payout;
+    final riderId = widget.riderId;
+    Navigator.of(context).push(
+      MaterialPageRoute<void>(
+        builder: (_) => StatementScreen(
+          payout: resolved,
+          load: (after) =>
+              RiderMoneyService(riderId).statementLines(resolved.id, after: after),
+        ),
+      ),
+    );
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    final l = AppLocalizations.of(context);
+    final c = context.colors;
+    final t = context.text;
+    return InkWell(
+      key: const ValueKey('history-open-statement'),
+      onTap: _open,
+      child: Row(
+        children: [
+          Expanded(
+            child: Text(
+              l.historyDetailInStatement,
+              style: t.bodySmall.copyWith(color: c.brand),
+            ),
+          ),
+          const SizedBox(width: DeliverySpace.xxs),
+          if (_loading)
+            SizedBox(
+              width: DeliveryIconSize.sm,
+              height: DeliveryIconSize.sm,
+              child: CircularProgressIndicator(strokeWidth: 2, color: c.brand),
+            )
+          else
+            Icon(DeliveryIcons.chevronRight, size: DeliveryIconSize.sm, color: c.brand),
+        ],
+      ),
+    );
+  }
 }
 
 class _Line extends StatelessWidget {
