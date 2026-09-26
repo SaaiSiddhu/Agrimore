@@ -454,6 +454,19 @@ void main() {
       },
     );
 
+    // 5c. DLV-R1: the active-delivery Help sheet (phase 20 image 07,
+    // "support-access") -- the Help icon lives in the AppBar, always
+    // tappable regardless of scroll position, so this is not best-effort.
+    await shot(
+      tester,
+      '26_help_sheet_light',
+      ActiveOrderScreen(order: _sampleOrder(status: 'out_for_delivery')),
+      before: (t) async {
+        await t.tap(find.byTooltip('Help'));
+        await t.pumpAndSettle();
+      },
+    );
+
     // 6. Active Work States, Route Header & Multiple Orders Showcase
     await shot(
       tester,
