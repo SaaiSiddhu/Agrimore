@@ -1000,11 +1000,41 @@ abstract class AppLocalizations {
   /// **'Couldn\'t open that. Support: {contact}'**
   String supportOpenFailed(String contact);
 
+  /// Sign-out confirmation dialog title
+  ///
+  /// In en, this message translates to:
+  /// **'Sign out of this device?'**
+  String get signOutConfirmTitle;
+
+  /// Sign-out confirmation dialog body
+  ///
+  /// In en, this message translates to:
+  /// **'You\'ll be signed out from this device only. Your account and data remain safe, and you can sign in again anytime.'**
+  String get signOutConfirmBody;
+
   /// Button
   ///
   /// In en, this message translates to:
   /// **'Delete my account'**
   String get deleteAccount;
+
+  /// Shared title for every proactive account-deletion blocker dialog
+  ///
+  /// In en, this message translates to:
+  /// **'Account deletion isn\'t available yet'**
+  String get deleteBlockedTitle;
+
+  /// Blocker dialog action: open the active order that is blocking deletion
+  ///
+  /// In en, this message translates to:
+  /// **'View delivery'**
+  String get deleteBlockedViewDelivery;
+
+  /// Blocker dialog action: open Earnings for held cash or unpaid earnings blocking deletion
+  ///
+  /// In en, this message translates to:
+  /// **'View earnings'**
+  String get deleteBlockedViewEarnings;
 
   /// Dialog title
   ///

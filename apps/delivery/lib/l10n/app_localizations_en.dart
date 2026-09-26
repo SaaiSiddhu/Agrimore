@@ -498,7 +498,23 @@ class AppLocalizationsEn extends AppLocalizations {
   }
 
   @override
+  String get signOutConfirmTitle => 'Sign out of this device?';
+
+  @override
+  String get signOutConfirmBody =>
+      'You\'ll be signed out from this device only. Your account and data remain safe, and you can sign in again anytime.';
+
+  @override
   String get deleteAccount => 'Delete my account';
+
+  @override
+  String get deleteBlockedTitle => 'Account deletion isn\'t available yet';
+
+  @override
+  String get deleteBlockedViewDelivery => 'View delivery';
+
+  @override
+  String get deleteBlockedViewEarnings => 'View earnings';
 
   @override
   String get deleteConfirmTitle => 'Delete your account?';
