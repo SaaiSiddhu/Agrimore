@@ -1,7 +1,23 @@
 import 'package:cloud_firestore/cloud_firestore.dart';
+import 'package:cloud_functions/cloud_functions.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:agrimore_ui/agrimore_ui.dart';
+
+/// Refusals from markEmployeePayoutPaid/rejectEmployeePayout, in admin words.
+/// Mirrors seller_wallet_admin.dart's sellerWalletRefusal exactly — same
+/// callable-error shape (functions/src/customer/reviewEmployeePayout.ts).
+String _employeePayoutRefusal(String code, String? reason) => switch (reason) {
+      'not_requested' => 'This payout has already been reviewed — it may already be settled.',
+      'bad_reference' => 'Enter the UTR / payment reference (4–64 characters).',
+      'reason_required' => 'Give a reason (3–200 characters) — required to reject a request.',
+      'not_found' => 'Not found — it may have been removed.',
+      _ => code == 'permission-denied'
+          ? 'Only admins can do this.'
+          : (code == 'unavailable' || code == 'deadline-exceeded')
+              ? 'No connection. Try again.'
+              : 'Could not complete that. Please try again.',
+    };
 
 /// Screen displaying complete details for an individual employee payout request,
 /// including payment mode (Bank/UPI) with one-tap copy buttons, employee info,
@@ -90,8 +106,9 @@ class _EmployeePayoutDetailScreenState
             TextField(
               controller: utrController,
               decoration: InputDecoration(
-                labelText: 'UTR / Transaction Reference (Optional)',
+                labelText: 'UTR / Transaction Reference',
                 hintText: 'e.g. 423589234823',
+                helperText: 'Required — this is the only record of where the money went.',
                 border: OutlineInputBorder(
                   borderRadius: BorderRadius.circular(10),
                 ),
@@ -116,23 +133,31 @@ class _EmployeePayoutDetailScreenState
       ),
     );
 
+    final utr = utrController.text.trim();
+    if (confirmed == true && utr.isEmpty && mounted) {
+      SnackbarHelper.showError(context, 'Enter the UTR / payment reference (4–64 characters).');
+      return;
+    }
     if (confirmed == true && mounted) {
       setState(() => _isProcessing = true);
       try {
-        final utr = utrController.text.trim();
-        await _firestore.collection('employee_payouts').doc(widget.payoutId).update({
-          'status': 'paid',
-          'paidAt': FieldValue.serverTimestamp(),
-          'updatedAt': FieldValue.serverTimestamp(),
-          if (utr.isNotEmpty) 'transactionRef': utr,
-        });
+        // Phase ADMR-3: the only path — see reviewEmployeePayout.ts's header
+        // for why the previous direct Firestore write always failed the
+        // moment a UTR was entered (the rules' hasOnly() allowlist named a
+        // different field, paymentReference, not transactionRef).
+        await FirebaseFunctions.instance
+            .httpsCallable('markEmployeePayoutPaid')
+            .call<Map<String, dynamic>>({'payoutId': widget.payoutId, 'paymentReference': utr});
         if (mounted) {
           SnackbarHelper.showSuccess(context, 'Payout marked as paid successfully');
         }
+      } on FirebaseFunctionsException catch (e) {
+        debugPrint('markEmployeePayoutPaid: ${e.code} ${e.details}');
+        final reason = e.details is Map ? (e.details as Map)['reason'] as String? : null;
+        if (mounted) SnackbarHelper.showError(context, _employeePayoutRefusal(e.code, reason));
       } catch (e) {
-        if (mounted) {
-          SnackbarHelper.showError(context, 'Failed to update payout: $e');
-        }
+        debugPrint('markEmployeePayoutPaid: $e');
+        if (mounted) SnackbarHelper.showError(context, _employeePayoutRefusal('unknown', null));
       } finally {
         if (mounted) setState(() => _isProcessing = false);
       }
@@ -164,8 +189,9 @@ class _EmployeePayoutDetailScreenState
             TextField(
               controller: reasonController,
               decoration: InputDecoration(
-                labelText: 'Reason for rejection (Optional)',
+                labelText: 'Reason for rejection',
                 hintText: 'e.g. Incorrect bank details',
+                helperText: 'Required — the associate sees this.',
                 border: OutlineInputBorder(
                   borderRadius: BorderRadius.circular(10),
                 ),
@@ -188,23 +214,33 @@ class _EmployeePayoutDetailScreenState
       ),
     );
 
+    final reason = reasonController.text.trim();
+    if (confirmed == true && reason.isEmpty && mounted) {
+      SnackbarHelper.showError(context, 'Give a reason (3–200 characters) — required to reject a request.');
+      return;
+    }
     if (confirmed == true && mounted) {
       setState(() => _isProcessing = true);
       try {
-        final reason = reasonController.text.trim();
-        await _firestore.collection('employee_payouts').doc(widget.payoutId).update({
-          'status': 'rejected',
-          'rejectedAt': FieldValue.serverTimestamp(),
-          'updatedAt': FieldValue.serverTimestamp(),
-          if (reason.isNotEmpty) 'rejectionReason': reason,
-        });
+        // Phase ADMR-3: the only path — see reviewEmployeePayout.ts's header.
+        // The previous direct Firestore write had ALWAYS failed
+        // permission-denied (firestore.rules never had a branch permitting a
+        // transition to 'rejected'), so the associate's already-debited
+        // wallet amount had no way back. This callable credits it back,
+        // exactly once, in the same transaction that records the rejection.
+        await FirebaseFunctions.instance
+            .httpsCallable('rejectEmployeePayout')
+            .call<Map<String, dynamic>>({'payoutId': widget.payoutId, 'reason': reason});
         if (mounted) {
-          SnackbarHelper.showSuccess(context, 'Payout request rejected');
+          SnackbarHelper.showSuccess(context, 'Payout request rejected — the amount was returned to their wallet');
         }
+      } on FirebaseFunctionsException catch (e) {
+        debugPrint('rejectEmployeePayout: ${e.code} ${e.details}');
+        final r = e.details is Map ? (e.details as Map)['reason'] as String? : null;
+        if (mounted) SnackbarHelper.showError(context, _employeePayoutRefusal(e.code, r));
       } catch (e) {
-        if (mounted) {
-          SnackbarHelper.showError(context, 'Failed to reject payout: $e');
-        }
+        debugPrint('rejectEmployeePayout: $e');
+        if (mounted) SnackbarHelper.showError(context, _employeePayoutRefusal('unknown', null));
       } finally {
         if (mounted) setState(() => _isProcessing = false);
       }

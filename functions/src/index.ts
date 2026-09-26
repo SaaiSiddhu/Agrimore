@@ -124,6 +124,12 @@ export {
   reverseEmployeeCommissionOnCancellation,
 } from "./customer/employeeCommission";
 export { requestEmployeePayout } from "./customer/requestEmployeePayout";
+// Phase ADMR-3: the only path for an admin to review a payout request —
+// replaces employee_payout_detail_screen.dart's two direct Firestore writes,
+// one of which (reject) had always failed outright, the other of which
+// (paid) silently discarded any entered payment reference. See
+// customer/reviewEmployeePayout.ts's header for the full rationale.
+export { markEmployeePayoutPaid, rejectEmployeePayout } from "./customer/reviewEmployeePayout";
 export { deleteUserData } from "./customer/deleteUserData";
 
 // ============================================
