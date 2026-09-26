@@ -22,6 +22,7 @@ import '../../registration/rider_application.dart';
 import '../auth/rider_registration_screen.dart' show vehicleLabel;
 import '../money/money_screen.dart';
 import '../orders/active_order_screen.dart';
+import '../support/help_support_screen.dart';
 import 'identity_change_screen.dart';
 
 String accountFailureText(AppLocalizations l, AccountActionFailure f) =>
@@ -453,7 +454,23 @@ class _RiderProfileScreenState extends State<RiderProfileScreen> {
                     ),
                   ],
                 ),
-              _section(l.profileSupport, const [SupportContactButtons()]),
+              _section(
+                l.profileSupport,
+                [
+                  DeliveryButton.secondary(
+                    key: const ValueKey('get-help'),
+                    label: l.profileGetHelp,
+                    icon: DeliveryIcons.document,
+                    onPressed: () => Navigator.of(context).push(
+                      MaterialPageRoute<void>(
+                        builder: (_) => const HelpSupportScreen(),
+                      ),
+                    ),
+                  ),
+                  const SizedBox(height: DeliverySpace.sm),
+                  const SupportContactButtons(),
+                ],
+              ),
               _section(
                 l.profileAccount,
                 [

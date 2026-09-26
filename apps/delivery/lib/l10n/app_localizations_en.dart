@@ -431,6 +431,97 @@ class AppLocalizationsEn extends AppLocalizations {
   String get profileSupport => 'Help and support';
 
   @override
+  String get profileGetHelp => 'Get help';
+
+  @override
+  String get helpSupportSubtitle =>
+      'Get help for delivery, earnings, account and documents. Call support, or submit a request and we\'ll get back to you.';
+
+  @override
+  String get helpSupportQuestion => 'What do you need help with?';
+
+  @override
+  String get helpTopicDeliveryIssue => 'Delivery issue';
+
+  @override
+  String get helpTopicDeliveryIssueSub => 'Report a problem with an order';
+
+  @override
+  String get helpTopicEarningsPayouts => 'Earnings & payouts';
+
+  @override
+  String get helpTopicEarningsPayoutsSub =>
+      'Questions about a payout or statement';
+
+  @override
+  String get helpTopicAccountDocuments => 'Account & documents';
+
+  @override
+  String get helpTopicAccountDocumentsSub => 'Request support';
+
+  @override
+  String get helpImmediateDanger => 'Immediate danger?';
+
+  @override
+  String get supportSubmitTitle => 'Submit a request';
+
+  @override
+  String get supportCategoryLabel => 'Category';
+
+  @override
+  String get supportMessageLabel => 'Message';
+
+  @override
+  String get supportMessageHint => 'Describe what you need help with';
+
+  @override
+  String get supportAttachmentLabel => 'Attachment (optional)';
+
+  @override
+  String get supportAddAttachment => 'Add a photo';
+
+  @override
+  String get supportRemoveAttachment => 'Remove';
+
+  @override
+  String get supportAttachmentFailed =>
+      'Could not attach that file. You can still submit without it.';
+
+  @override
+  String get supportSubmitButton => 'Submit request';
+
+  @override
+  String get errSupportMessage => 'Write at least 3 characters (up to 500).';
+
+  @override
+  String get supportStatusTitle => 'Request status';
+
+  @override
+  String get supportStatusSubmitted => 'Submitted';
+
+  @override
+  String get supportStatusSeen => 'Seen';
+
+  @override
+  String get supportStatusClosed => 'Closed';
+
+  @override
+  String get supportStatusSubmittedBody => 'Your request has been recorded.';
+
+  @override
+  String get supportStatusSeenBody => 'Your request has been viewed.';
+
+  @override
+  String get supportStatusClosedBody =>
+      'Request closed. View the outcome below.';
+
+  @override
+  String get supportOutcomeLabel => 'Outcome';
+
+  @override
+  String get supportNewRequest => 'New request';
+
+  @override
   String get profileAccount => 'Account';
 
   @override
