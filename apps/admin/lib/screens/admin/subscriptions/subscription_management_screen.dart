@@ -130,16 +130,6 @@ class _SubscriptionManagementScreenState extends State<SubscriptionManagementScr
       appBar: AppBar(
         title: const Text('Subscriptions Management'),
         backgroundColor: AppColors.primary,
-        actions: [
-          IconButton(
-            icon: const Icon(Icons.download),
-            onPressed: () {
-              ScaffoldMessenger.of(context).showSnackBar(
-                const SnackBar(content: Text('Exporting data...')),
-              );
-            },
-          ),
-        ],
       ),
       body: SafeArea(
         child: Padding(
@@ -191,7 +181,36 @@ class _SubscriptionManagementScreenState extends State<SubscriptionManagementScr
 
               // Subscription Plans
               const Text('Subscription Plans', style: TextStyle(fontSize: 16, fontWeight: FontWeight.bold)),
-              const SizedBox(height: 12),
+              const SizedBox(height: 8),
+              // ADMR-11: the actual customer subscription flow
+              // (subscription_setup_screen.dart, apps/marketplace) is
+              // per-product and ad-hoc -- it has never read this
+              // subscription_plans collection, confirmed by grep across
+              // functions/src and every app. Creating or toggling a plan
+              // here has no effect on what any customer can subscribe to.
+              Container(
+                margin: const EdgeInsets.only(bottom: 4),
+                padding: const EdgeInsets.all(12),
+                decoration: BoxDecoration(
+                  color: Colors.amber.withOpacity(0.12),
+                  borderRadius: BorderRadius.circular(10),
+                  border: Border.all(color: Colors.amber.shade700, width: 1),
+                ),
+                child: Row(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Icon(Icons.info_outline_rounded, size: 18, color: Colors.amber.shade900),
+                    const SizedBox(width: 8),
+                    Expanded(
+                      child: Text(
+                        'Not yet connected to checkout: customers subscribe to individual products directly, not from these named plans.',
+                        style: TextStyle(fontSize: 12, color: Colors.amber.shade900),
+                      ),
+                    ),
+                  ],
+                ),
+              ),
+              const SizedBox(height: 8),
               Expanded(
                 child: StreamBuilder<QuerySnapshot>(
                   stream: _firestore.collection('subscription_plans').orderBy('createdAt', descending: true).snapshots(),
