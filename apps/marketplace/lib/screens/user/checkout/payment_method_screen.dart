@@ -12,7 +12,6 @@ import 'package:agrimore_core/agrimore_core.dart';
 import '../../../providers/cart_provider.dart';
 import '../../../providers/coupon_provider.dart';
 import '../../../providers/theme_provider.dart';
-import '../../../providers/wallet_provider.dart';
 import '../../../providers/market_mode_provider.dart';
 import 'package:agrimore_services/settings/delivery_slot_service.dart';
 import '../../../services/razorpay_service.dart';
@@ -42,11 +41,6 @@ class _PaymentMethodScreenState extends State<PaymentMethodScreen> {
   RazorpayService? _razorpayService;
   bool _isProcessing = false;
   String _selectedPaymentMethod = 'razorpay';
-
-  // Wallet state
-  bool _useWalletBalance = false;
-  bool _useCoins = false;
-  int _coinsToUse = 0;
 
   // âœ… NEW: Order notes / special instructions
   final TextEditingController _notesController = TextEditingController();
@@ -506,7 +500,6 @@ class _PaymentMethodScreenState extends State<PaymentMethodScreen> {
 
     final cart = context.watch<CartProvider>();
     final coupon = context.watch<CouponProvider>();
-    final walletProvider = context.watch<WalletProvider>();
 
     // Calculate discount with proper parameters
     final subtotal = cart.subtotal;
@@ -519,16 +512,6 @@ class _PaymentMethodScreenState extends State<PaymentMethodScreen> {
       deliveryCharge: widget.deliveryCharge,
       tax: widget.tax,
     );
-
-    // Calculate wallet/coins discount
-    double walletDiscount = 0;
-    if (_useWalletBalance && walletProvider.balance > 0) {
-      walletDiscount += walletProvider.balance.clamp(0, total);
-    }
-    if (_useCoins && _coinsToUse > 0) {
-      walletDiscount += _coinsToUse.toDouble();
-    }
-    final finalAmount = (total - walletDiscount).clamp(0.0, total).toDouble();
 
     return Scaffold(
       backgroundColor: backgroundColor,
@@ -556,11 +539,7 @@ class _PaymentMethodScreenState extends State<PaymentMethodScreen> {
                       cardColor: cardColor,
                       accentColor: accentColor,
                       coupon: coupon,
-                      walletDiscount: walletDiscount,
-                      finalAmount: finalAmount,
                     ),
-                    const SizedBox(height: 12),
-                    _buildWalletSection(isDark, cardColor, accentColor, total),
                     const SizedBox(height: 12),
                     _buildPaymentCard(isDark, cardColor, accentColor),
                     const SizedBox(height: 12),
@@ -582,7 +561,7 @@ class _PaymentMethodScreenState extends State<PaymentMethodScreen> {
           if (_currentStep == 2)
             _buildSlotBottomBar(isDark, accentColor, cardColor)
           else
-            _buildBottomBar(finalAmount, isDark, accentColor, cardColor),
+            _buildBottomBar(total, isDark, accentColor, cardColor),
         ],
       ),
     );
@@ -1233,8 +1212,6 @@ class _PaymentMethodScreenState extends State<PaymentMethodScreen> {
     required Color cardColor,
     required Color accentColor,
     required CouponProvider coupon,
-    double walletDiscount = 0,
-    double finalAmount = 0,
   }) {
     return _buildCardSection(
       isDark: isDark,
@@ -1250,11 +1227,6 @@ class _PaymentMethodScreenState extends State<PaymentMethodScreen> {
             _priceRow("Coupon Discount", -discount, isDark,
                 color: Colors.green.shade600),
           ],
-          if (walletDiscount > 0) ...[
-            const SizedBox(height: 10),
-            _priceRow("Wallet/Coins", -walletDiscount, isDark,
-                color: Colors.amber.shade700),
-          ],
           Padding(
             padding: const EdgeInsets.symmetric(vertical: 14),
             child: Divider(
@@ -1262,8 +1234,7 @@ class _PaymentMethodScreenState extends State<PaymentMethodScreen> {
               height: 1,
             ),
           ),
-          _priceRow(
-              "Total Amount", finalAmount > 0 ? finalAmount : total, isDark,
+          _priceRow("Total Amount", total, isDark,
               isTotal: true, color: accentColor),
 
           // Coupon Applied Badge
@@ -1298,7 +1269,7 @@ class _PaymentMethodScreenState extends State<PaymentMethodScreen> {
           ],
 
           // Savings Badge
-          if (discount > 0 || walletDiscount > 0) ...[
+          if (discount > 0) ...[
             const SizedBox(height: 8),
             Container(
               padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 6),
@@ -1316,7 +1287,7 @@ class _PaymentMethodScreenState extends State<PaymentMethodScreen> {
                   ),
                   const SizedBox(width: 6),
                   Text(
-                    'You saved â‚¹${(discount + walletDiscount).toStringAsFixed(2)}!',
+                    'You saved â‚¹${discount.toStringAsFixed(2)}!',
                     style: TextStyle(
                       fontSize: 12,
                       fontWeight: FontWeight.w700,
@@ -1327,343 +1298,6 @@ class _PaymentMethodScreenState extends State<PaymentMethodScreen> {
               ),
             ),
           ],
-        ],
-      ),
-    );
-  }
-
-  Widget _buildWalletSection(
-      bool isDark, Color cardColor, Color accentColor, double orderTotal) {
-    final walletProvider = context.watch<WalletProvider>();
-
-    final balance = walletProvider.balance;
-    final coins = walletProvider.coins;
-    final maxCoins = walletProvider.maxCoinsUsableForOrder(orderTotal);
-    final isWalletEnabled = walletProvider.isWalletEnabled;
-    final isCoinsEnabled = walletProvider.isCoinsEnabled;
-    final minOrderForCoins = walletProvider.minOrderForCoins;
-
-    return _buildCardSection(
-      isDark: isDark,
-      cardColor: cardColor,
-      title: 'Pay with Wallet',
-      icon: Icons.account_balance_wallet_rounded,
-      accentColor: accentColor,
-      child: Column(
-        children: [
-          // Wallet Balance Toggle
-          if (isWalletEnabled && balance > 0) ...[
-            GestureDetector(
-              onTap: () {
-                HapticFeedback.selectionClick();
-                setState(() => _useWalletBalance = !_useWalletBalance);
-              },
-              child: Container(
-                padding: const EdgeInsets.all(14),
-                decoration: BoxDecoration(
-                  color: _useWalletBalance
-                      ? accentColor.withValues(alpha: 0.1)
-                      : (isDark ? const Color(0xFF303030) : Colors.grey[50]),
-                  borderRadius: BorderRadius.circular(10),
-                  border: Border.all(
-                    color: _useWalletBalance
-                        ? accentColor
-                        : (isDark ? Colors.grey[700]! : Colors.grey[300]!),
-                    width: _useWalletBalance ? 2 : 1,
-                  ),
-                ),
-                child: Row(
-                  children: [
-                    Container(
-                      padding: const EdgeInsets.all(8),
-                      decoration: BoxDecoration(
-                        color: const Color(0xFF1E3A5F).withValues(alpha: 0.15),
-                        borderRadius: BorderRadius.circular(8),
-                      ),
-                      child: const Icon(
-                        Icons.account_balance_wallet,
-                        color: Color(0xFF1E3A5F),
-                        size: 20,
-                      ),
-                    ),
-                    const SizedBox(width: 12),
-                    Expanded(
-                      child: Column(
-                        crossAxisAlignment: CrossAxisAlignment.start,
-                        children: [
-                          Text(
-                            'Use Wallet Balance',
-                            style: TextStyle(
-                              fontSize: 15,
-                              fontWeight: FontWeight.w800,
-                              color: isDark ? Colors.white : Colors.black87,
-                            ),
-                          ),
-                          const SizedBox(height: 3),
-                          Text(
-                            'â‚¹${balance.toStringAsFixed(2)} available',
-                            style: TextStyle(
-                              fontSize: 12,
-                              fontWeight: FontWeight.w600,
-                              color:
-                                  isDark ? Colors.grey[400] : Colors.grey[600],
-                            ),
-                          ),
-                        ],
-                      ),
-                    ),
-                    Switch(
-                      value: _useWalletBalance,
-                      onChanged: (value) {
-                        HapticFeedback.selectionClick();
-                        setState(() => _useWalletBalance = value);
-                      },
-                      activeColor: accentColor,
-                    ),
-                  ],
-                ),
-              ),
-            ),
-            const SizedBox(height: 10),
-          ],
-
-          // Coins Section
-          if (isCoinsEnabled && coins > 0) ...[
-            // Show coins toggle if usable
-            if (maxCoins > 0) ...[
-              GestureDetector(
-                onTap: () {
-                  HapticFeedback.selectionClick();
-                  setState(() {
-                    _useCoins = !_useCoins;
-                    if (_useCoins) {
-                      _coinsToUse = maxCoins;
-                    } else {
-                      _coinsToUse = 0;
-                    }
-                  });
-                },
-                child: Container(
-                  padding: const EdgeInsets.all(14),
-                  decoration: BoxDecoration(
-                    color: _useCoins
-                        ? Colors.amber.withValues(alpha: 0.1)
-                        : (isDark ? const Color(0xFF303030) : Colors.grey[50]),
-                    borderRadius: BorderRadius.circular(10),
-                    border: Border.all(
-                      color: _useCoins
-                          ? Colors.amber[700]!
-                          : (isDark ? Colors.grey[700]! : Colors.grey[300]!),
-                      width: _useCoins ? 2 : 1,
-                    ),
-                  ),
-                  child: Column(
-                    children: [
-                      Row(
-                        children: [
-                          Container(
-                            padding: const EdgeInsets.all(8),
-                            decoration: BoxDecoration(
-                              color: Colors.amber.withValues(alpha: 0.2),
-                              borderRadius: BorderRadius.circular(8),
-                            ),
-                            child: Icon(
-                              Icons.monetization_on,
-                              color: Colors.amber[700],
-                              size: 20,
-                            ),
-                          ),
-                          const SizedBox(width: 12),
-                          Expanded(
-                            child: Column(
-                              crossAxisAlignment: CrossAxisAlignment.start,
-                              children: [
-                                Text(
-                                  'Use Coins',
-                                  style: TextStyle(
-                                    fontSize: 15,
-                                    fontWeight: FontWeight.w800,
-                                    color:
-                                        isDark ? Colors.white : Colors.black87,
-                                  ),
-                                ),
-                                const SizedBox(height: 3),
-                                Text(
-                                  '$coins coins available (max $maxCoins usable)',
-                                  style: TextStyle(
-                                    fontSize: 12,
-                                    fontWeight: FontWeight.w600,
-                                    color: isDark
-                                        ? Colors.grey[400]
-                                        : Colors.grey[600],
-                                  ),
-                                ),
-                              ],
-                            ),
-                          ),
-                          Switch(
-                            value: _useCoins,
-                            onChanged: (value) {
-                              HapticFeedback.selectionClick();
-                              setState(() {
-                                _useCoins = value;
-                                if (value) {
-                                  _coinsToUse = maxCoins;
-                                } else {
-                                  _coinsToUse = 0;
-                                }
-                              });
-                            },
-                            activeColor: Colors.amber[700],
-                          ),
-                        ],
-                      ),
-
-                      // Coins slider when enabled
-                      if (_useCoins && maxCoins > 1) ...[
-                        const SizedBox(height: 12),
-                        Row(
-                          children: [
-                            Text(
-                              '1',
-                              style: TextStyle(
-                                fontSize: 12,
-                                color: isDark
-                                    ? Colors.grey[500]
-                                    : Colors.grey[600],
-                              ),
-                            ),
-                            Expanded(
-                              child: Slider(
-                                value: _coinsToUse.toDouble(),
-                                min: 1,
-                                max: maxCoins.toDouble(),
-                                divisions: maxCoins - 1,
-                                activeColor: Colors.amber[700],
-                                inactiveColor: Colors.amber.withValues(alpha: 0.2),
-                                onChanged: (value) {
-                                  setState(() => _coinsToUse = value.round());
-                                },
-                              ),
-                            ),
-                            Text(
-                              '$maxCoins',
-                              style: TextStyle(
-                                fontSize: 12,
-                                color: isDark
-                                    ? Colors.grey[500]
-                                    : Colors.grey[600],
-                              ),
-                            ),
-                          ],
-                        ),
-                        Container(
-                          padding: const EdgeInsets.symmetric(
-                              horizontal: 12, vertical: 6),
-                          decoration: BoxDecoration(
-                            color: Colors.amber.withValues(alpha: 0.15),
-                            borderRadius: BorderRadius.circular(8),
-                          ),
-                          child: Text(
-                            'Using $_coinsToUse coins = â‚¹$_coinsToUse discount',
-                            style: TextStyle(
-                              fontSize: 13,
-                              fontWeight: FontWeight.w700,
-                              color: Colors.amber[800],
-                            ),
-                          ),
-                        ),
-                      ],
-                    ],
-                  ),
-                ),
-              ),
-            ] else ...[
-              // Show message when coins available but order below minimum
-              Container(
-                padding: const EdgeInsets.all(14),
-                decoration: BoxDecoration(
-                  color: Colors.orange.withValues(alpha: 0.1),
-                  borderRadius: BorderRadius.circular(10),
-                  border: Border.all(
-                    color: Colors.orange.withValues(alpha: 0.3),
-                  ),
-                ),
-                child: Row(
-                  children: [
-                    Container(
-                      padding: const EdgeInsets.all(8),
-                      decoration: BoxDecoration(
-                        color: Colors.orange.withValues(alpha: 0.2),
-                        borderRadius: BorderRadius.circular(8),
-                      ),
-                      child: Icon(
-                        Icons.info_outline,
-                        color: Colors.orange[700],
-                        size: 20,
-                      ),
-                    ),
-                    const SizedBox(width: 12),
-                    Expanded(
-                      child: Column(
-                        crossAxisAlignment: CrossAxisAlignment.start,
-                        children: [
-                          Text(
-                            '$coins coins available',
-                            style: TextStyle(
-                              fontSize: 14,
-                              fontWeight: FontWeight.w700,
-                              color: isDark ? Colors.white : Colors.black87,
-                            ),
-                          ),
-                          const SizedBox(height: 3),
-                          Text(
-                            'Add â‚¹${(minOrderForCoins - orderTotal).toStringAsFixed(0)} more to use coins (min order: â‚¹${minOrderForCoins.toStringAsFixed(0)})',
-                            style: TextStyle(
-                              fontSize: 12,
-                              color: Colors.orange[700],
-                            ),
-                          ),
-                        ],
-                      ),
-                    ),
-                  ],
-                ),
-              ),
-            ],
-          ],
-
-          // No balance/coins state
-          if (balance <= 0 && coins <= 0)
-            Container(
-              padding: const EdgeInsets.all(16),
-              child: Column(
-                children: [
-                  Icon(
-                    Icons.account_balance_wallet_outlined,
-                    size: 40,
-                    color: isDark ? Colors.grey[600] : Colors.grey[400],
-                  ),
-                  const SizedBox(height: 8),
-                  Text(
-                    'No wallet balance or coins available',
-                    style: TextStyle(
-                      fontSize: 13,
-                      color: isDark ? Colors.grey[500] : Colors.grey[600],
-                    ),
-                  ),
-                  const SizedBox(height: 4),
-                  Text(
-                    'Earn coins by referring friends!',
-                    style: TextStyle(
-                      fontSize: 12,
-                      color: accentColor,
-                      fontWeight: FontWeight.w600,
-                    ),
-                  ),
-                ],
-              ),
-            ),
         ],
       ),
     );
