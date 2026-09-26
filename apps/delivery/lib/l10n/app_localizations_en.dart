@@ -1043,6 +1043,31 @@ class AppLocalizationsEn extends AppLocalizations {
   String get historyDetailPayError => 'Could not load your pay for this order.';
 
   @override
+  String get historyDetailNoEarningsCancelled =>
+      'No earnings — this order was cancelled.';
+
+  @override
+  String get historyDetailNoEarningsReturned =>
+      'No earnings recorded for this returned order.';
+
+  @override
+  String get historyDetailTimelineTitle => 'Delivery timeline';
+
+  @override
+  String get historyDetailTimelineEmpty =>
+      'No recorded timeline for this order.';
+
+  @override
+  String get historyDetailTimelineError =>
+      'Could not load this order\'s timeline.';
+
+  @override
+  String get historyDetailCustomerTitle => 'Customer';
+
+  @override
+  String get historyDetailGetHelpTitle => 'Need help with this order?';
+
+  @override
   String get actionNotNow => 'Not now';
 
   @override

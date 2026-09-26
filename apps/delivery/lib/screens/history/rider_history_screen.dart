@@ -7,6 +7,8 @@ import 'package:agrimore_core/agrimore_core.dart'
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 
+import '../../account/support_card.dart';
+import '../../data/order_timeline.dart';
 import '../../data/rider_history.dart';
 import '../../design_system/design_system.dart';
 import '../../l10n/app_localizations.dart';
@@ -35,10 +37,13 @@ String historyStatusText(AppLocalizations l, String orderStatus) {
 typedef EarningLoader = Future<RiderEarning?> Function(String orderId);
 
 class RiderHistoryScreen extends StatefulWidget {
-  const RiderHistoryScreen({super.key, this.loadEarning});
+  const RiderHistoryScreen({super.key, this.loadEarning, this.loadTimeline});
 
   /// DLV-N1: injectable for tests; defaults to rider_earnings/{orderId}.
   final EarningLoader? loadEarning;
+
+  /// DLVH2: injectable for tests; defaults to orders/{orderId}/timeline.
+  final OrderTimelineLoader? loadTimeline;
 
   @override
   State<RiderHistoryScreen> createState() => _RiderHistoryScreenState();
@@ -64,11 +69,16 @@ class _RiderHistoryScreenState extends State<RiderHistoryScreen> {
 
   void _openDetail(OrderModel order) {
     final load = _earningLoader();
+    final timeline = widget.loadTimeline ?? firestoreOrderTimeline;
     showModalBottomSheet<void>(
       context: context,
       showDragHandle: true,
       isScrollControlled: true,
-      builder: (_) => HistoryDetail(order: order, loadEarning: load),
+      builder: (_) => HistoryDetail(
+        order: order,
+        loadEarning: load,
+        loadTimeline: timeline,
+      ),
     );
   }
 
@@ -348,115 +358,207 @@ class _Filters extends StatelessWidget {
   }
 }
 
-/// DLV-N1: one order from the rider's side — no customer details.
+/// DLV-N1 / DLVH2: one order from the rider's side — read-only, no active
+/// delivery actions (matches the mockup's own "No active delivery actions
+/// are available for completed records"): the delivery timeline, the
+/// customer's contact details, recorded earnings and a way to get help.
 class HistoryDetail extends StatelessWidget {
   const HistoryDetail({
     super.key,
     required this.order,
     required this.loadEarning,
+    required this.loadTimeline,
   });
   final OrderModel order;
   final EarningLoader loadEarning;
+  final OrderTimelineLoader loadTimeline;
 
   @override
   Widget build(BuildContext context) {
     final l10n = AppLocalizations.of(context);
     final c = context.colors;
     final t = context.text;
-    final delivered = DeliveryTaskStatus.fromOrderStatus(
-          orderStatus: order.orderStatus,
-          status: null,
-          hasPartner: true,
-        ) ==
-        DeliveryTaskStatus.delivered;
+    final status = DeliveryTaskStatus.fromOrderStatus(
+      orderStatus: order.orderStatus,
+      status: null,
+      hasPartner: true,
+    );
+    final address = order.deliveryAddress;
     return SafeArea(
-      child: Padding(
-        padding: const EdgeInsets.fromLTRB(
-          DeliverySpace.page,
-          0,
-          DeliverySpace.page,
-          DeliverySpace.xxl,
-        ),
-        child: Column(
-          mainAxisSize: MainAxisSize.min,
-          crossAxisAlignment: CrossAxisAlignment.stretch,
-          children: [
-            Text(
-              l10n.historyOrderNumber(order.orderNumber),
-              style: t.titleLarge.copyWith(color: c.textPrimary),
-            ),
-            const SizedBox(height: DeliverySpace.xxs),
-            Text(
-              [
-                DeliveryFormat.dateTime(order.createdAt),
-                historyStatusText(l10n, order.orderStatus),
-              ].join(' · '),
-              style: t.bodySmall.copyWith(color: c.textSecondary),
-            ),
-            const SizedBox(height: DeliverySpace.lg),
-            _Line(
-              label: l10n.historyDetailOrderTotal,
-              value: DeliveryFormat.rupees(order.total),
-            ),
-            const Divider(height: DeliverySpace.xxl),
-            if (!delivered)
+      child: SingleChildScrollView(
+        child: Padding(
+          padding: const EdgeInsets.fromLTRB(
+            DeliverySpace.page,
+            0,
+            DeliverySpace.page,
+            DeliverySpace.xxl,
+          ),
+          child: Column(
+            mainAxisSize: MainAxisSize.min,
+            crossAxisAlignment: CrossAxisAlignment.stretch,
+            children: [
               Text(
-                l10n.historyDetailPayPending,
-                style: t.bodyMedium.copyWith(color: c.textSecondary),
-              )
-            else
-              FutureBuilder<RiderEarning?>(
-                future: loadEarning(order.id),
+                l10n.historyOrderNumber(order.orderNumber),
+                style: t.titleLarge.copyWith(color: c.textPrimary),
+              ),
+              const SizedBox(height: DeliverySpace.xxs),
+              Text(
+                [
+                  DeliveryFormat.dateTime(order.createdAt),
+                  historyStatusText(l10n, order.orderStatus),
+                ].join(' · '),
+                style: t.bodySmall.copyWith(color: c.textSecondary),
+              ),
+              const SizedBox(height: DeliverySpace.lg),
+              _Line(
+                label: l10n.historyDetailOrderTotal,
+                value: DeliveryFormat.rupees(order.total),
+              ),
+              const Divider(height: DeliverySpace.xxl),
+              // Cancelled structurally never has a rider_earnings record
+              // (recordDeliveryEarningCore is delivered-only) — shown
+              // directly, no read attempted. Returned STILL attempts the
+              // read: it has none today either, but if the owner later
+              // approves paying for a return, this starts working with no
+              // client change. Delivered is unchanged.
+              if (status == DeliveryTaskStatus.cancelled)
+                Text(
+                  l10n.historyDetailNoEarningsCancelled,
+                  style: t.bodyMedium.copyWith(color: c.textSecondary),
+                )
+              else
+                FutureBuilder<RiderEarning?>(
+                  future: loadEarning(order.id),
+                  builder: (context, snap) {
+                    if (snap.hasError) {
+                      return Text(
+                        l10n.historyDetailPayError,
+                        style: t.bodyMedium.copyWith(color: c.danger.text),
+                      );
+                    }
+                    if (snap.connectionState != ConnectionState.done) {
+                      return const LinearProgressIndicator();
+                    }
+                    final e = snap.data;
+                    if (e == null) {
+                      return Text(
+                        status == DeliveryTaskStatus.returned
+                            ? l10n.historyDetailNoEarningsReturned
+                            : l10n.historyDetailPayPending,
+                        style: t.bodyMedium.copyWith(color: c.textSecondary),
+                      );
+                    }
+                    return Column(
+                      crossAxisAlignment: CrossAxisAlignment.stretch,
+                      children: [
+                        _Line(
+                          label: l10n.historyDetailPay,
+                          value: DeliveryFormat.rupees(e.total),
+                          strong: true,
+                        ),
+                        Text(
+                          earningBreakdown(l10n, e),
+                          style: t.bodySmall.copyWith(color: c.textSecondary),
+                        ),
+                        if (e.codCollected > 0)
+                          _Line(
+                            label: l10n.historyDetailCash,
+                            value: DeliveryFormat.rupees(e.codCollected),
+                          ),
+                        const SizedBox(height: DeliverySpace.sm),
+                        Text(
+                          e.statementId == null
+                              ? l10n.historyDetailNotInStatement
+                              : l10n.historyDetailInStatement,
+                          style: t.bodySmall.copyWith(color: c.textSecondary),
+                        ),
+                      ],
+                    );
+                  },
+                ),
+              const SizedBox(height: DeliverySpace.xl),
+              _SectionHeading(l10n.historyDetailTimelineTitle),
+              const SizedBox(height: DeliverySpace.md),
+              FutureBuilder<List<OrderTimelineEvent>>(
+                future: loadTimeline(order.id),
                 builder: (context, snap) {
                   if (snap.hasError) {
                     return Text(
-                      l10n.historyDetailPayError,
-                      style: t.bodyMedium.copyWith(color: c.danger.text),
+                      l10n.historyDetailTimelineError,
+                      style: t.bodySmall.copyWith(color: c.danger.text),
                     );
                   }
                   if (snap.connectionState != ConnectionState.done) {
                     return const LinearProgressIndicator();
                   }
-                  final e = snap.data;
-                  if (e == null) {
+                  final events = snap.data ?? const <OrderTimelineEvent>[];
+                  if (events.isEmpty) {
                     return Text(
-                      l10n.historyDetailPayPending,
-                      style: t.bodyMedium.copyWith(color: c.textSecondary),
+                      l10n.historyDetailTimelineEmpty,
+                      style: t.bodySmall.copyWith(color: c.textSecondary),
                     );
                   }
-                  return Column(
-                    crossAxisAlignment: CrossAxisAlignment.stretch,
-                    children: [
-                      _Line(
-                        label: l10n.historyDetailPay,
-                        value: DeliveryFormat.rupees(e.total),
-                        strong: true,
-                      ),
-                      Text(
-                        earningBreakdown(l10n, e),
-                        style: t.bodySmall.copyWith(color: c.textSecondary),
-                      ),
-                      if (e.codCollected > 0)
-                        _Line(
-                          label: l10n.historyDetailCash,
-                          value: DeliveryFormat.rupees(e.codCollected),
+                  return DeliveryRouteTimeline(
+                    steps: [
+                      for (final ev in events)
+                        DeliveryTimelineStep(
+                          title: ev.title,
+                          subtitle: [
+                            if (ev.timestamp != null)
+                              DeliveryFormat.dateTime(ev.timestamp!),
+                            if (ev.detail != null) ev.detail!,
+                          ].join('\n'),
+                          state: ev.isProblem
+                              ? DeliveryTimelineStepState.error
+                              : DeliveryTimelineStepState.completed,
                         ),
-                      const SizedBox(height: DeliverySpace.sm),
-                      Text(
-                        e.statementId == null
-                            ? l10n.historyDetailNotInStatement
-                            : l10n.historyDetailInStatement,
-                        style: t.bodySmall.copyWith(color: c.textSecondary),
-                      ),
                     ],
                   );
                 },
               ),
-          ],
+              const SizedBox(height: DeliverySpace.xl),
+              _SectionHeading(l10n.historyDetailCustomerTitle),
+              const SizedBox(height: DeliverySpace.sm),
+              if (address.name.isNotEmpty)
+                Text(
+                  address.name,
+                  style: t.bodyMedium.copyWith(color: c.textPrimary),
+                ),
+              if (address.phone.isNotEmpty)
+                Text(
+                  address.phone,
+                  style: t.bodySmall.copyWith(color: c.textSecondary),
+                ),
+              Text(
+                [
+                  address.addressLine1,
+                  address.addressLine2,
+                  address.city,
+                  address.zipcode,
+                ].where((s) => s.isNotEmpty).join(', '),
+                style: t.bodySmall.copyWith(color: c.textSecondary),
+              ),
+              const SizedBox(height: DeliverySpace.xl),
+              _SectionHeading(l10n.historyDetailGetHelpTitle),
+              const SizedBox(height: DeliverySpace.sm),
+              const SupportContactButtons(),
+            ],
+          ),
         ),
       ),
     );
   }
+}
+
+class _SectionHeading extends StatelessWidget {
+  const _SectionHeading(this.text);
+  final String text;
+
+  @override
+  Widget build(BuildContext context) => Text(
+        text,
+        style: context.text.titleMedium.copyWith(color: context.colors.textPrimary),
+      );
 }
 
 class _Line extends StatelessWidget {
