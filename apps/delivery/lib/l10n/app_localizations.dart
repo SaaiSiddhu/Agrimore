@@ -1822,11 +1822,41 @@ abstract class AppLocalizations {
   /// **'Delivered'**
   String get historyFilterDelivered;
 
-  /// History filter: orders not delivered
+  /// History filter: cancelled orders
   ///
   /// In en, this message translates to:
-  /// **'Cancelled or returned'**
-  String get historyFilterNotDelivered;
+  /// **'Cancelled'**
+  String get historyFilterCancelled;
+
+  /// History filter: returned orders
+  ///
+  /// In en, this message translates to:
+  /// **'Returned'**
+  String get historyFilterReturned;
+
+  /// History date-range filter: no cutoff
+  ///
+  /// In en, this message translates to:
+  /// **'All time'**
+  String get historyRangeAllTime;
+
+  /// History date-range filter: the last week
+  ///
+  /// In en, this message translates to:
+  /// **'Last 7 days'**
+  String get historyRangeLast7Days;
+
+  /// History date-range filter: the last month
+  ///
+  /// In en, this message translates to:
+  /// **'Last 30 days'**
+  String get historyRangeLast30Days;
+
+  /// Resets the status and date-range filters to their defaults
+  ///
+  /// In en, this message translates to:
+  /// **'Clear filters'**
+  String get historyClearFilters;
 
   /// History with a filter and no match
   ///

@@ -279,10 +279,18 @@ class _Filters extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final l10n = AppLocalizations.of(context);
-    final labels = {
+    final c = context.colors;
+    final t = context.text;
+    final statusLabels = {
       HistoryFilter.all: l10n.historyFilterAll,
       HistoryFilter.delivered: l10n.historyFilterDelivered,
-      HistoryFilter.notDelivered: l10n.historyFilterNotDelivered,
+      HistoryFilter.cancelled: l10n.historyFilterCancelled,
+      HistoryFilter.returned: l10n.historyFilterReturned,
+    };
+    final rangeLabels = {
+      HistoryDateRange.allTime: l10n.historyRangeAllTime,
+      HistoryDateRange.last7Days: l10n.historyRangeLast7Days,
+      HistoryDateRange.last30Days: l10n.historyRangeLast30Days,
     };
     return Padding(
       padding: const EdgeInsets.fromLTRB(
@@ -291,17 +299,49 @@ class _Filters extends StatelessWidget {
         DeliverySpace.page,
         0,
       ),
-      child: Wrap(
-        spacing: DeliverySpace.sm,
-        runSpacing: DeliverySpace.sm,
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.stretch,
         children: [
-          for (final f in HistoryFilter.values)
-            ChoiceChip(
-              key: ValueKey('history-filter-${f.name}'),
-              label: Text(labels[f]!),
-              selected: history.filter == f,
-              onSelected: (_) => history.setFilter(f),
-            ),
+          Wrap(
+            spacing: DeliverySpace.sm,
+            runSpacing: DeliverySpace.sm,
+            children: [
+              for (final f in HistoryFilter.values)
+                ChoiceChip(
+                  key: ValueKey('history-filter-${f.name}'),
+                  label: Text(statusLabels[f]!),
+                  selected: history.filter == f,
+                  onSelected: (_) => history.setFilter(f),
+                ),
+            ],
+          ),
+          const SizedBox(height: DeliverySpace.sm),
+          Row(
+            children: [
+              Expanded(
+                child: Wrap(
+                  spacing: DeliverySpace.sm,
+                  runSpacing: DeliverySpace.sm,
+                  children: [
+                    for (final r in HistoryDateRange.values)
+                      ChoiceChip(
+                        key: ValueKey('history-range-${r.name}'),
+                        label: Text(rangeLabels[r]!),
+                        selected: history.dateRange == r,
+                        onSelected: (_) => history.setDateRange(r),
+                      ),
+                  ],
+                ),
+              ),
+              if (history.hasActiveFilter)
+                TextButton.icon(
+                  key: const ValueKey('history-clear-filters'),
+                  onPressed: history.clearFilters,
+                  icon: Icon(DeliveryIcons.close, size: DeliveryIconSize.sm, color: c.textSecondary),
+                  label: Text(l10n.historyClearFilters, style: t.bodyMedium.copyWith(color: c.textSecondary)),
+                ),
+            ],
+          ),
         ],
       ),
     );

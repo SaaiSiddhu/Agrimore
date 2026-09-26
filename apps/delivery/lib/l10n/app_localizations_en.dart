@@ -999,7 +999,22 @@ class AppLocalizationsEn extends AppLocalizations {
   String get historyFilterDelivered => 'Delivered';
 
   @override
-  String get historyFilterNotDelivered => 'Cancelled or returned';
+  String get historyFilterCancelled => 'Cancelled';
+
+  @override
+  String get historyFilterReturned => 'Returned';
+
+  @override
+  String get historyRangeAllTime => 'All time';
+
+  @override
+  String get historyRangeLast7Days => 'Last 7 days';
+
+  @override
+  String get historyRangeLast30Days => 'Last 30 days';
+
+  @override
+  String get historyClearFilters => 'Clear filters';
 
   @override
   String get historyEmptyFiltered => 'No orders here';

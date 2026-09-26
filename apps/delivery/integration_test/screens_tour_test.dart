@@ -414,6 +414,22 @@ void main() {
         await t.pumpAndSettle();
       },
     );
+    // 0e. DLVH1: the 4-way status split (was a single "Cancelled or
+    // returned" bucket) plus the new date-range chips and the
+    // "Clear filters" control that appears once either is non-default.
+    await shot(
+      tester,
+      '00e_shell_deliveries_filtered_light',
+      shellFixture(),
+      before: (t) async {
+        await t.tap(find.text('Deliveries'));
+        await t.pumpAndSettle();
+        await t.tap(find.text('Cancelled'));
+        await t.pumpAndSettle();
+        await t.tap(find.text('Last 7 days'));
+        await t.pumpAndSettle();
+      },
+    );
 
     // 1. Login Light, Dark & 200% Text Scale
     await shot(tester, '01_login_light', const LoginScreen());
