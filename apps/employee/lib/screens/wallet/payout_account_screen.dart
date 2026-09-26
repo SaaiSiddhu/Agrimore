@@ -40,11 +40,13 @@ String _payoutChangeRefusal(String code, String? reason) => switch (reason) {
 class PayoutAccountScreen extends StatefulWidget {
   final String? employeeUid;
   final Stream<DocumentSnapshot<Map<String, dynamic>>>? employeeStream;
+  final Stream<DocumentSnapshot<Map<String, dynamic>>>? walletStream;
 
   const PayoutAccountScreen({
     super.key,
     this.employeeUid,
     this.employeeStream,
+    this.walletStream,
   });
 
   @override
@@ -247,7 +249,8 @@ class _PayoutAccountScreenState extends State<PayoutAccountScreen> {
           // server-side; this is the honest reflection of that, not a
           // client-only convenience).
           return StreamBuilder<DocumentSnapshot<Map<String, dynamic>>>(
-            stream: FirebaseFirestore.instance.collection('employee_wallets').doc(uid).snapshots(),
+            stream: widget.walletStream ??
+                FirebaseFirestore.instance.collection('employee_wallets').doc(uid).snapshots(),
             builder: (context, walletSnap) {
               final pendingId = walletSnap.data?.data()?['payoutChangePending']?.toString();
               final hasPending = pendingId != null && pendingId.isNotEmpty;
