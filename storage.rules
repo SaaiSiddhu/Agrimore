@@ -143,6 +143,42 @@ service firebase.storage {
       allow read: if true;
       allow write: if isAdmin() && isValidFileSize() && isImage();
     }
+    // Phase ADMR-2: category_management_screen.dart's icon/banner uploader
+    // (`_uploadImage`) writes to the NESTED categories/icons/{name} and
+    // categories/banners/{name} — two path segments, which the flat rule
+    // above (one segment) never matched, so both uploads fell through to
+    // the file's own final `match /{allPaths=**} { allow read, write: if
+    // false; }` and had been silently failing. `folder` is restricted to
+    // the two literal values the client ever passes — not an open segment
+    // — so this does not become a general admin-writable subtree.
+    match /categories/{folder}/{fileName} {
+      allow read: if true;
+      allow write: if isAdmin() && folder in ['icons', 'banners'] &&
+        isValidFileSize() && isImage();
+    }
+
+    // ============================================
+    // SECTION BANNER IMAGES — Admin Only (Phase ADMR-2)
+    // ============================================
+    // section_banner_provider.dart uploads here; no block existed at all,
+    // so every section-banner image upload fell through to the deny-all.
+    // Mirrors /banners/{fileName} above exactly.
+    match /section_banners/{fileName} {
+      allow read: if true;
+      allow write: if isAdmin() && isValidFileSize() && isImage();
+    }
+
+    // ============================================
+    // SPONSORED BANNER IMAGES — corrected path (Phase ADMR-2)
+    // ============================================
+    // add_edit_sponsored_banner_dialog.dart uploads to
+    // sponsored_banners/{fileName} — NOT sponsored/{fileName} (below),
+    // which nothing actually writes to (confirmed: zero callers) and is
+    // left as-is, out of this phase's scope. Same admin-only shape.
+    match /sponsored_banners/{fileName} {
+      allow read: if true;
+      allow write: if isAdmin() && isValidFileSize() && isImage();
+    }
 
     // ============================================
     // CHAT ATTACHMENTS — Authenticated with size limit
