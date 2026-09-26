@@ -21,6 +21,7 @@ import '../../registration/rider_application.dart';
 import '../auth/rider_registration_screen.dart' show vehicleLabel;
 import '../money/money_screen.dart';
 import '../orders/active_order_screen.dart';
+import 'identity_change_screen.dart';
 
 String accountFailureText(AppLocalizations l, AccountActionFailure f) =>
     switch (f) {
@@ -322,6 +323,20 @@ class _RiderProfileScreenState extends State<RiderProfileScreen> {
                     v('aadhaarNumber').isEmpty
                         ? notSet
                         : maskAadhaar(v('aadhaarNumber')),
+                  ),
+                  const SizedBox(height: DeliverySpace.sm),
+                  DeliveryButton.secondary(
+                    key: const ValueKey('request-name-change'),
+                    label: l.profileRequestNameChange,
+                    icon: DeliveryIcons.edit,
+                    onPressed: () => Navigator.of(context).push(
+                      MaterialPageRoute<void>(
+                        builder: (_) => IdentityChangeScreen(
+                          riderId: auth.user!.uid,
+                          currentName: v('name'),
+                        ),
+                      ),
+                    ),
                   ),
                   const SizedBox(height: DeliverySpace.sm),
                   Text(

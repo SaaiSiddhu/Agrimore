@@ -285,3 +285,8 @@ export { reportRiderIncident, updateRiderIncident } from "./delivery/riderIncide
 export { submitRiderApplication } from "./delivery/riderApplication";
 export { updateRiderContact } from "./delivery/riderProfile";
 export { attachDeliveryProof, reportDeliveryException, updateDeliveryException } from "./delivery/riderExceptions";
+// Phase DLVID1: a rider requests a change to a locked identity field (name
+// only — delivery_partners has no dateOfBirth field); admin approves or
+// rejects. Modelled on requestRiderBankChange/reviewRiderBankChange above.
+// See delivery/riderIdentity.ts.
+export { requestRiderIdentityChange, reviewRiderIdentityChange } from "./delivery/riderIdentity";

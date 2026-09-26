@@ -23,7 +23,7 @@ class RiderPayoutsScreen extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return DefaultTabController(
-      length: 4,
+      length: 5,
       child: Scaffold(
         appBar: AppBar(
           title: const Text('Rider Payouts'),
@@ -31,6 +31,7 @@ class RiderPayoutsScreen extends StatelessWidget {
               Tab(text: 'Statements'),
               Tab(text: 'Cash with riders'),
               Tab(text: 'Payout details'),
+              Tab(text: 'Identity changes'),
               Tab(text: 'Pay rates'),
             ], scrollable: true),
         ),
@@ -39,6 +40,7 @@ class RiderPayoutsScreen extends StatelessWidget {
             _StatementsTab(),
             _CashTab(),
             _BankChangesTab(),
+            _IdentityChangesTab(),
             _RatesTab()
           ],
         ),
@@ -631,6 +633,138 @@ class _BankChangesTab extends StatelessWidget {
                             '${d.data()['accountHolderName'] ?? ''}\n${d.data()['bankAccountNumber']} · ${d.data()['ifscCode'] ?? ''}'),
                       if (((d.data()['upiId'] as String?) ?? '').isNotEmpty)
                         SelectableText('UPI ${d.data()['upiId']}'),
+                      const SizedBox(height: 8),
+                      Row(
+                        mainAxisAlignment: MainAxisAlignment.end,
+                        children: [
+                          TextButton(
+                              onPressed: () => _review(context, d.id, false),
+                              child: const Text('Reject')),
+                          const SizedBox(width: 8),
+                          FilledButton(
+                              onPressed: () => _review(context, d.id, true),
+                              child: const Text('Approve')),
+                        ],
+                      ),
+                    ],
+                  ),
+                ),
+              ),
+          ],
+        );
+      },
+    );
+  }
+}
+
+// ── Identity changes (DLVID1) ──
+//
+// Mirrors _BankChangesTab exactly: a plain StreamBuilder over pending
+// requests, Approve/Reject calling one review callable
+// (reviewRiderIdentityChange, functions/src/delivery/riderIdentity.ts).
+
+class _IdentityChangesTab extends StatelessWidget {
+  const _IdentityChangesTab();
+
+  Future<void> _review(
+      BuildContext context, String requestId, bool approve) async {
+    String? reason;
+    if (!approve) {
+      final c = TextEditingController();
+      final ok = await showDialog<bool>(
+        context: context,
+        builder: (ctx) => AlertDialog(
+          title: const Text('Reject change'),
+          content: TextField(
+              controller: c,
+              autofocus: true,
+              decoration: const InputDecoration(
+                  labelText: 'Reason (shown to the rider)')),
+          actions: [
+            TextButton(
+                onPressed: () => Navigator.pop(ctx, false),
+                child: const Text('Cancel')),
+            FilledButton(
+                onPressed: () => Navigator.pop(ctx, true),
+                child: const Text('Reject')),
+          ],
+        ),
+      );
+      reason = c.text.trim();
+      c.dispose();
+      if (ok != true) return;
+    }
+    try {
+      await FirebaseFunctions.instance
+          .httpsCallable('reviewRiderIdentityChange')
+          .call<Map<String, dynamic>>({
+        'requestId': requestId,
+        'approve': approve,
+        if (reason != null) 'reason': reason
+      });
+      if (context.mounted) {
+        SnackbarHelper.showSuccess(context, approve ? 'Approved' : 'Rejected');
+      }
+    } on FirebaseFunctionsException catch (e) {
+      debugPrint('reviewRiderIdentityChange: ${e.code} ${e.details}');
+      final why =
+          e.details is Map ? (e.details as Map)['reason'] as String? : null;
+      if (context.mounted) {
+        SnackbarHelper.showError(context, riderMoneyRefusal(e.code, why));
+      }
+    } catch (e) {
+      debugPrint('reviewRiderIdentityChange: $e');
+      if (context.mounted) {
+        SnackbarHelper.showError(context, riderMoneyRefusal('unknown', null));
+      }
+    }
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    return StreamBuilder<QuerySnapshot<Map<String, dynamic>>>(
+      stream: _db
+          .collection('rider_identity_change_requests')
+          .where('status', isEqualTo: 'pending')
+          .limit(200)
+          .snapshots(),
+      builder: (context, snap) {
+        if (snap.hasError) {
+          debugPrint('Identity change requests load failed: ${snap.error}');
+          return _message(
+              "Couldn't load requests. Check your connection and try again.");
+        }
+        if (!snap.hasData) {
+          return const Center(child: CircularProgressIndicator());
+        }
+        final docs = snap.data!.docs;
+        if (docs.isEmpty) return _message('No identity changes waiting.');
+        return ListView(
+          padding: const EdgeInsets.all(16),
+          children: [
+            const Text(
+                'Check the reason (and any supporting document) before approving — '
+                'approving replaces the field on the rider\'s own record.',
+                style: TextStyle(fontSize: 12)),
+            const SizedBox(height: 12),
+            for (final d in docs)
+              Card(
+                margin: const EdgeInsets.only(bottom: 8),
+                child: Padding(
+                  padding: const EdgeInsets.all(14),
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      _RiderLine((d.data()['riderId'] ?? '').toString(),
+                          showDestination: false),
+                      const Divider(),
+                      Text('Change: ${d.data()['changeType'] ?? ''}',
+                          style: const TextStyle(fontWeight: FontWeight.w700)),
+                      SelectableText(
+                          'From: ${d.data()['currentValue'] ?? '(not set)'}'),
+                      SelectableText('To: ${d.data()['proposedValue'] ?? ''}'),
+                      const SizedBox(height: 6),
+                      Text('Reason: ${d.data()['reason'] ?? ''}'),
                       const SizedBox(height: 8),
                       Row(
                         mainAxisAlignment: MainAxisAlignment.end,

@@ -11,7 +11,7 @@ import 'package:cloud_firestore/cloud_firestore.dart';
 /// identifier to get there (never trust the payload alone — the delivery
 /// destination re-reads its order fresh, and the server's own security rule
 /// is what actually authorizes it).
-enum NoticeTarget { delivery, statement, payoutDetails, none }
+enum NoticeTarget { delivery, statement, payoutDetails, identityRequest, none }
 
 class RiderNotice {
   const RiderNotice({
@@ -62,6 +62,7 @@ class RiderNotice {
         'statement_ready' || 'payout_sent' =>
           payoutId != null ? NoticeTarget.statement : NoticeTarget.none,
         'bank_change_approved' || 'bank_change_rejected' => NoticeTarget.payoutDetails,
+        'identity_change_approved' || 'identity_change_rejected' => NoticeTarget.identityRequest,
         _ => NoticeTarget.none,
       };
 }

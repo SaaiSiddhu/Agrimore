@@ -20,6 +20,7 @@ import '../history/rider_history_screen.dart';
 import '../money/money_screen.dart';
 import '../money/statement_screen.dart';
 import '../orders/active_order_screen.dart';
+import '../profile/identity_change_screen.dart';
 
 /// Fetches one order fresh (never trusts a notice's own payload): the
 /// security rule (`deliveryPartnerId == request.auth.uid`, among others)
@@ -128,9 +129,19 @@ class _InboxScreenState extends State<InboxScreen> {
         _openStatement(n.payoutId!);
       case NoticeTarget.delivery:
         _openDelivery(n.orderId!);
+      case NoticeTarget.identityRequest:
+        _openIdentityRequest();
       case NoticeTarget.none:
         break;
     }
+  }
+
+  void _openIdentityRequest() {
+    Navigator.of(context).push(
+      MaterialPageRoute<void>(
+        builder: (_) => IdentityChangeScreen(riderId: widget.riderId),
+      ),
+    );
   }
 
   void _openPayoutDetails() {
