@@ -67,13 +67,22 @@ class FakeInbox implements RiderInboxSource {
 // source is safe for every case in this file: DLVMAP3's own grace period
 // keeps that silent (RecoveryPhase.normal) unless a test waits out
 // kAssignmentConfirmGrace, which none here do.
-Widget host(Widget child) => MultiProvider(
+Widget host(
+  Widget child, {
+  HistoryFetch? historyFetch,
+  CountsFetch? historyCounts,
+  SearchFetch? historySearch,
+}) =>
+    MultiProvider(
       providers: [
         ChangeNotifierProvider<LocationProvider>(create: (_) => LocationProvider()),
         ChangeNotifierProvider<DeliveryOrderProvider>(
           create: (_) => DeliveryOrderProvider(
             activeSource: (_) => Stream.value((docs: const <OrderDoc>[], fromCache: false)),
             deliveredCount: (_, __) async => 0,
+            historyFetch: historyFetch,
+            historyCounts: historyCounts ?? (_, __) async => (all: 0, delivered: 0, cancelled: 0, returned: 0),
+            historySearch: historySearch ?? (_, __) async => null,
           )..bind('r1'),
         ),
       ],
@@ -84,6 +93,12 @@ Widget host(Widget child) => MultiProvider(
         home: child,
       ),
     );
+
+/// DLVH7: `RiderHistory.loadMore()` deliberately does not await its own
+/// fire-and-forget counts refresh (a slow count query must never hold up the
+/// main list) -- so a plain `test()` (no widget pump to ride along on) needs
+/// an explicit microtask turn before asserting on `counts`.
+Future<void> flushMicrotasks() => Future<void>.delayed(Duration.zero);
 
 void main() {
   RiderNotice n(String id, String type, {bool unread = true}) =>
@@ -577,6 +592,150 @@ void main() {
       expect(calls, before + 1);
     });
 
+    group('DLVH7: per-status counts scoped to the active date range', () {
+      test('counts load once on the first page, not again on later pages of the same scope', () async {
+        var calls = 0;
+        final h = RiderHistory(
+          fetch: (rider, query, cursor, size) async =>
+              (items: <OrderModel>[historyOrder('o1', {'orderNumber': 'A'})], cursor: 'c1', hasMore: true),
+          counts: (rider, since) async {
+            calls++;
+            return (all: 5, delivered: 3, cancelled: 1, returned: 1);
+          },
+        )..bind('r1');
+        await h.loadMore();
+        await flushMicrotasks(); // counts are deliberately not awaited by loadMore itself
+        expect(calls, 1);
+        expect(h.counts, (all: 5, delivered: 3, cancelled: 1, returned: 1));
+        await h.loadMore(); // a second page, same rider/date scope
+        await flushMicrotasks();
+        expect(calls, 1, reason: 'paging further must not recompute date-scoped counts');
+      });
+
+      test('counts reload when the date range changes, but not when only the status chip does', () async {
+        var calls = 0;
+        final h = RiderHistory(
+          fetch: (rider, query, cursor, size) async => (items: <OrderModel>[], cursor: null, hasMore: false),
+          counts: (rider, since) async {
+            calls++;
+            return (all: 0, delivered: 0, cancelled: 0, returned: 0);
+          },
+        )..bind('r1');
+        await h.loadMore();
+        await flushMicrotasks();
+        expect(calls, 1);
+        await h.setFilter(HistoryFilter.delivered);
+        await flushMicrotasks();
+        expect(calls, 1, reason: 'a status-chip tap must not recompute date-scoped counts');
+        await h.setDateRange(HistoryDateRange.last7Days);
+        await flushMicrotasks();
+        expect(calls, 2);
+      });
+
+      test('a counts failure clears them to unavailable rather than showing a stale number', () async {
+        var fail = false;
+        final h = RiderHistory(
+          fetch: (rider, query, cursor, size) async => (items: <OrderModel>[], cursor: null, hasMore: false),
+          counts: (rider, since) async {
+            if (fail) throw Exception('offline');
+            return (all: 9, delivered: 9, cancelled: 0, returned: 0);
+          },
+        )..bind('r1');
+        await h.loadMore();
+        await flushMicrotasks();
+        expect(h.counts, isNotNull);
+        fail = true;
+        await h.setDateRange(HistoryDateRange.last30Days);
+        await flushMicrotasks();
+        expect(h.counts, isNull);
+      });
+    });
+
+    group('DLVH7: exact Order ID search', () {
+      test('finds an order by its exact Order ID, independent of the currently-active filter', () async {
+        final order = historyOrder('o9', {'orderNumber': 'AGM-9', 'orderStatus': 'cancelled'});
+        final h = RiderHistory(
+          fetch: (rider, query, cursor, size) async => (items: <OrderModel>[], cursor: null, hasMore: false),
+          search: (rider, orderNumber) async {
+            expect(rider, 'r1');
+            expect(orderNumber, 'AGM-9');
+            return order;
+          },
+        )..bind('r1');
+        await h.setFilter(HistoryFilter.delivered); // deliberately not the found order's own status
+        await h.search('AGM-9');
+        expect(h.searchResult, order);
+        expect(h.searchNotFound, isFalse);
+        expect(h.isSearchActive, isTrue);
+        expect(h.filter, HistoryFilter.delivered, reason: 'search must not silently change the status filter underneath');
+      });
+
+      test('a search with no match reports not-found, not a silent empty state', () async {
+        final h = RiderHistory(
+          fetch: (rider, query, cursor, size) async => (items: <OrderModel>[], cursor: null, hasMore: false),
+          search: (rider, orderNumber) async => null,
+        )..bind('r1');
+        await h.search('DOES-NOT-EXIST');
+        expect(h.searchResult, isNull);
+        expect(h.searchNotFound, isTrue);
+      });
+
+      test('clearing search, including by submitting an empty string, returns to the un-searched state', () async {
+        final h = RiderHistory(
+          fetch: (rider, query, cursor, size) async => (items: <OrderModel>[], cursor: null, hasMore: false),
+          search: (rider, orderNumber) async => historyOrder('o1', {'orderNumber': orderNumber}),
+        )..bind('r1');
+        await h.search('AGM-1');
+        expect(h.isSearchActive, isTrue);
+        h.clearSearch();
+        expect(h.isSearchActive, isFalse);
+        expect(h.searchResult, isNull);
+        await h.search('AGM-2');
+        expect(h.isSearchActive, isTrue);
+        await h.search(''); // an empty submission clears exactly like the X button
+        expect(h.isSearchActive, isFalse);
+      });
+
+      test('a newer search supersedes a slower, still-in-flight older one', () async {
+        final gates = <String, Completer<OrderModel?>>{};
+        final h = RiderHistory(
+          fetch: (rider, query, cursor, size) async => (items: <OrderModel>[], cursor: null, hasMore: false),
+          search: (rider, orderNumber) {
+            final c = Completer<OrderModel?>();
+            gates[orderNumber] = c;
+            return c.future;
+          },
+        )..bind('r1');
+        final first = h.search('AAA');
+        await Future<void>.delayed(Duration.zero);
+        final second = h.search('BBB');
+        await Future<void>.delayed(Duration.zero);
+        gates['BBB']!.complete(historyOrder('o2', {'orderNumber': 'BBB'}));
+        await second;
+        gates['AAA']!.complete(historyOrder('o1', {'orderNumber': 'AAA'})); // resolves late, after BBB already won
+        await first;
+        expect(h.searchText, 'BBB');
+        expect(h.searchResult?.orderNumber, 'BBB', reason: 'the late AAA response must not overwrite the newer BBB result');
+      });
+
+      test('binding to a different rider clears both counts and search', () async {
+        final h = RiderHistory(
+          fetch: (rider, query, cursor, size) async => (items: <OrderModel>[], cursor: null, hasMore: false),
+          counts: (rider, since) async => (all: 1, delivered: 1, cancelled: 0, returned: 0),
+          search: (rider, orderNumber) async => historyOrder('o1', {'orderNumber': orderNumber}),
+        )..bind('r1');
+        await h.loadMore();
+        await flushMicrotasks();
+        await h.search('AGM-1');
+        expect(h.counts, isNotNull);
+        expect(h.isSearchActive, isTrue);
+        h.bind('r2');
+        expect(h.counts, isNull);
+        expect(h.isSearchActive, isFalse);
+        expect(h.searchResult, isNull);
+      });
+    });
+
     testWidgets('detail shows this order\'s pay and whether it is in a statement', (t) async {
       final order = historyOrder('o9', {'orderStatus': 'delivered', 'orderNumber': 'ORD-9', 'total': 480});
       await t.pumpWidget(host(Scaffold(
@@ -913,6 +1072,76 @@ void main() {
       await t.pumpAndSettle();
       expect(find.text('Could not open this statement. Try again.'), findsOneWidget);
       expect(find.text('This statement is no longer available.'), findsNothing);
+    });
+
+    group('DLVH7: history screen -- count-annotated chips and Order ID search', () {
+      testWidgets('status chips show counts once loaded, plain labels before that', (t) async {
+        final gate = Completer<HistoryCounts>();
+        await t.pumpWidget(host(
+          const RiderHistoryScreen(),
+          historyFetch: (rider, query, cursor, size) async => (items: <OrderModel>[], cursor: null, hasMore: false),
+          historyCounts: (rider, since) => gate.future,
+        ));
+        await t.pump();
+        expect(find.text('All'), findsOneWidget, reason: 'no count yet: the plain label');
+        expect(find.text('All (4)'), findsNothing);
+        gate.complete((all: 4, delivered: 3, cancelled: 1, returned: 0));
+        await t.pumpAndSettle();
+        expect(find.text('All (4)'), findsOneWidget);
+        expect(find.text('Delivered (3)'), findsOneWidget);
+        expect(find.text('Cancelled (1)'), findsOneWidget);
+        expect(find.text('Returned (0)'), findsOneWidget);
+      });
+
+      testWidgets('entering a matching Order ID shows exactly that order, regardless of the active filter', (t) async {
+        final found = historyOrder('o1', {'orderNumber': 'AGM-42', 'orderStatus': 'cancelled', 'total': 250});
+        await t.pumpWidget(host(
+          const RiderHistoryScreen(),
+          historyFetch: (rider, query, cursor, size) async =>
+              (items: <OrderModel>[historyOrder('o2', {'orderNumber': 'AGM-1', 'orderStatus': 'delivered'})], cursor: null, hasMore: false),
+          historySearch: (rider, orderNumber) async {
+            expect(orderNumber, 'AGM-42');
+            return found;
+          },
+        ));
+        await t.pumpAndSettle();
+        expect(find.text('Order AGM-1'), findsOneWidget);
+        await t.enterText(find.byKey(const ValueKey('history-search-field')), 'AGM-42');
+        await t.pumpAndSettle();
+        expect(t.takeException(), isNull);
+        expect(find.text('Order AGM-42'), findsOneWidget);
+        expect(find.text('Order AGM-1'), findsNothing, reason: 'search replaces the filtered list, not merges with it');
+      });
+
+      testWidgets('a non-matching Order ID says so, not a blank or generic empty state', (t) async {
+        await t.pumpWidget(host(
+          const RiderHistoryScreen(),
+          historyFetch: (rider, query, cursor, size) async => (items: <OrderModel>[], cursor: null, hasMore: false),
+          historySearch: (rider, orderNumber) async => null,
+        ));
+        await t.pumpAndSettle();
+        await t.enterText(find.byKey(const ValueKey('history-search-field')), 'NO-SUCH-ORDER');
+        await t.pumpAndSettle();
+        expect(find.text('No delivery found with that Order ID'), findsOneWidget);
+      });
+
+      testWidgets('clearing the search field restores the normal filtered list', (t) async {
+        await t.pumpWidget(host(
+          const RiderHistoryScreen(),
+          historyFetch: (rider, query, cursor, size) async =>
+              (items: <OrderModel>[historyOrder('o3', {'orderNumber': 'AGM-3', 'orderStatus': 'delivered'})], cursor: null, hasMore: false),
+          historySearch: (rider, orderNumber) async => null,
+        ));
+        await t.pumpAndSettle();
+        await t.enterText(find.byKey(const ValueKey('history-search-field')), 'NO-SUCH-ORDER');
+        await t.pumpAndSettle();
+        expect(find.text('No delivery found with that Order ID'), findsOneWidget);
+        await t.tap(find.byIcon(DeliveryIcons.close).last);
+        await t.pumpAndSettle();
+        expect(t.takeException(), isNull);
+        expect(find.text('Order AGM-3'), findsOneWidget);
+        expect(find.text('No delivery found with that Order ID'), findsNothing);
+      });
     });
   });
 

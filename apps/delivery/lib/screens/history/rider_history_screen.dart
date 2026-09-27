@@ -132,6 +132,14 @@ class _RiderHistoryScreenState extends State<RiderHistoryScreen> {
             child: ListenableBuilder(
               listenable: _history,
               builder: (context, _) {
+                if (_history.isSearchActive) {
+                  return Column(
+                    children: [
+                      _Filters(history: _history),
+                      Expanded(child: _SearchResult(history: _history, onTap: _openDetail)),
+                    ],
+                  );
+                }
                 final items = _history.items;
                 if (items.isEmpty && _history.loading) {
                   return const ActiveWorkLoading();
@@ -305,15 +313,37 @@ class _Empty extends StatelessWidget {
   }
 }
 
-class _Filters extends StatelessWidget {
+class _Filters extends StatefulWidget {
   const _Filters({required this.history});
   final RiderHistory history;
+
+  @override
+  State<_Filters> createState() => _FiltersState();
+}
+
+class _FiltersState extends State<_Filters> {
+  late final TextEditingController _searchController =
+      TextEditingController(text: widget.history.searchText);
+
+  @override
+  void dispose() {
+    _searchController.dispose();
+    super.dispose();
+  }
 
   @override
   Widget build(BuildContext context) {
     final l10n = AppLocalizations.of(context);
     final c = context.colors;
     final t = context.text;
+    final history = widget.history;
+    final counts = history.counts;
+    final countFor = {
+      HistoryFilter.all: counts?.all,
+      HistoryFilter.delivered: counts?.delivered,
+      HistoryFilter.cancelled: counts?.cancelled,
+      HistoryFilter.returned: counts?.returned,
+    };
     final statusLabels = {
       HistoryFilter.all: l10n.historyFilterAll,
       HistoryFilter.delivered: l10n.historyFilterDelivered,
@@ -335,6 +365,14 @@ class _Filters extends StatelessWidget {
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.stretch,
         children: [
+          DeliverySearchField(
+            key: const ValueKey('history-search-field'),
+            controller: _searchController,
+            hintText: l10n.historyOrderIdSearchHint,
+            onChanged: history.search,
+            clearTooltip: l10n.historyOrderIdSearchClear,
+          ),
+          const SizedBox(height: DeliverySpace.sm),
           Wrap(
             spacing: DeliverySpace.sm,
             runSpacing: DeliverySpace.sm,
@@ -342,7 +380,9 @@ class _Filters extends StatelessWidget {
               for (final f in HistoryFilter.values)
                 ChoiceChip(
                   key: ValueKey('history-filter-${f.name}'),
-                  label: Text(statusLabels[f]!),
+                  label: Text(
+                    countFor[f] == null ? statusLabels[f]! : '${statusLabels[f]} (${countFor[f]})',
+                  ),
                   selected: history.filter == f,
                   onSelected: (_) => history.setFilter(f),
                 ),
@@ -377,6 +417,33 @@ class _Filters extends StatelessWidget {
           ),
         ],
       ),
+    );
+  }
+}
+
+/// DLVH7: shown instead of the normal paginated list while a search is
+/// active -- an exact match is at most one order, regardless of the current
+/// status/date filters (see this phase's own ledger row for why those
+/// cannot be combined with the search in one Firestore query).
+class _SearchResult extends StatelessWidget {
+  const _SearchResult({required this.history, required this.onTap});
+  final RiderHistory history;
+  final ValueChanged<OrderModel> onTap;
+
+  @override
+  Widget build(BuildContext context) {
+    final l10n = AppLocalizations.of(context);
+    if (history.searching) return const ActiveWorkLoading();
+    final result = history.searchResult;
+    if (result != null) {
+      return ListView(
+        padding: const EdgeInsets.symmetric(vertical: DeliverySpace.sm),
+        children: [_HistoryRow(order: result, onTap: () => onTap(result))],
+      );
+    }
+    return DeliveryEmptyState(
+      kind: DeliveryIllustrationKind.empty,
+      title: l10n.historySearchNotFound,
     );
   }
 }

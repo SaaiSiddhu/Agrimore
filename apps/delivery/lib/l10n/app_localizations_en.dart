@@ -1360,6 +1360,15 @@ class AppLocalizationsEn extends AppLocalizations {
   String get historyEmptyFiltered => 'No orders here';
 
   @override
+  String get historyOrderIdSearchHint => 'Search by Order ID';
+
+  @override
+  String get historyOrderIdSearchClear => 'Clear search';
+
+  @override
+  String get historySearchNotFound => 'No delivery found with that Order ID';
+
+  @override
   String get historyDetailPay => 'Your pay for this order';
 
   @override
