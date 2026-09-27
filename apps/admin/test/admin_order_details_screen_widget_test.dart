@@ -143,4 +143,94 @@ void main() {
       expect(provider.isLoading, isFalse);
     });
   });
+
+  // ADMR-64 additions below: the new Support Cases card stacks one
+  // ActorSupportCasesSection per actor role this specific order actually
+  // carries (customer always; seller/rider/associate only when present).
+  group('Support Cases card (ADMR-64)', () {
+    Map<String, dynamic> _orderMap({
+      String? sellerId,
+      String? deliveryPartnerId,
+      String? employeeUid,
+    }) =>
+        {
+          'orderNumber': 'ORD-CASE1',
+          'orderStatus': 'processing',
+          'total': 300.0,
+          'subtotal': 300.0,
+          'paymentMethod': 'cod',
+          'userId': 'cust_order1',
+          if (sellerId != null) 'sellerId': sellerId,
+          if (deliveryPartnerId != null) 'deliveryPartnerId': deliveryPartnerId,
+          if (employeeUid != null) 'employeeUid': employeeUid,
+          'items': <Map<String, dynamic>>[],
+          'deliveryAddress': {
+            'name': 'Arun Kumar',
+            'phone': '9988776655',
+            'addressLine1': '9 Mount Road',
+            'addressLine2': '',
+            'city': 'Chennai',
+            'state': 'Tamil Nadu',
+            'zipcode': '600006',
+          },
+          'createdAt': Timestamp.fromDate(DateTime(2026, 9, 10)),
+        };
+
+    testWidgets('an order with no seller/rider/associate shows only the Customer section',
+        (tester) async {
+      final firestore = FakeFirebaseFirestore();
+      final doc = await firestore.collection('orders').add(_orderMap());
+
+      await tester.pumpWidget(
+        MaterialApp(
+          home: ChangeNotifierProvider<OrderProvider>(
+            create: (_) => OrderProvider(firestore: firestore),
+            child: AdminOrderDetailsScreen(orderId: doc.id),
+          ),
+        ),
+      );
+      await tester.pumpAndSettle();
+
+      expect(find.text('Customer'), findsOneWidget);
+      expect(find.text('Seller'), findsNothing);
+      expect(find.text('Delivery Partner'), findsNothing);
+      expect(find.text('Sales Associate'), findsNothing);
+      expect(tester.takeException(), isNull);
+    });
+
+    testWidgets(
+        'an order with all four actor ids shows all four sections, and a real case for one of them',
+        (tester) async {
+      final firestore = FakeFirebaseFirestore();
+      final doc = await firestore.collection('orders').add(_orderMap(
+            sellerId: 'seller_order1',
+            deliveryPartnerId: 'rider_order1',
+            employeeUid: 'assoc_order1',
+          ));
+      await firestore.collection('support_cases').add({
+        'title': 'Seller shipped the wrong item',
+        'category': 'product_issue',
+        'primaryActor': {'type': 'seller', 'id': 'seller_order1'},
+        'status': 'open',
+        'updatedAt': Timestamp.fromDate(DateTime(2026, 9, 11)),
+      });
+
+      await tester.pumpWidget(
+        MaterialApp(
+          home: ChangeNotifierProvider<OrderProvider>(
+            create: (_) => OrderProvider(firestore: firestore),
+            child: AdminOrderDetailsScreen(orderId: doc.id),
+          ),
+        ),
+      );
+      await tester.pumpAndSettle();
+
+      expect(find.text('Customer'), findsOneWidget);
+      expect(find.text('Seller'), findsOneWidget);
+      expect(find.text('Delivery Partner'), findsOneWidget);
+      expect(find.text('Sales Associate'), findsOneWidget);
+      expect(find.text('Seller shipped the wrong item'), findsOneWidget);
+      expect(tester.takeException(), isNull);
+    });
+  });
 }
