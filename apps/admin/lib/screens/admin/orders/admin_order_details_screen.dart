@@ -227,6 +227,10 @@ class _AdminOrderDetailsScreenState extends State<AdminOrderDetailsScreen> {
         _buildDeliveryVerificationCard(order),
         const SizedBox(height: 16),
       ],
+      _buildSectionTitle('Seller Settlement', Icons.storefront_rounded),
+      const SizedBox(height: 12),
+      _buildSellerSettlementCard(orderProvider),
+      const SizedBox(height: 16),
       _buildSectionTitle('Order Timeline', Icons.timeline_rounded),
       const SizedBox(height: 12),
       _buildTimelineCard(orderProvider),
@@ -435,6 +439,143 @@ class _AdminOrderDetailsScreenState extends State<AdminOrderDetailsScreen> {
         ],
       ),
     );
+  }
+
+  // =========================
+  // Seller Settlement Card (ADMR-30)
+  // =========================
+  Widget _buildSellerSettlementCard(OrderProvider orderProvider) {
+    final isLoading = orderProvider.isLoadingSellerPayouts;
+    final error = orderProvider.sellerPayoutsError;
+    final payouts = orderProvider.selectedOrderSellerPayouts;
+
+    Widget content;
+    if (isLoading) {
+      content = const Padding(
+        padding: EdgeInsets.symmetric(vertical: 24),
+        child: Center(child: CircularProgressIndicator()),
+      );
+    } else if (error != null) {
+      content = Padding(
+        padding: const EdgeInsets.symmetric(vertical: 20),
+        child: Center(
+          child: Column(
+            children: [
+              Icon(Icons.error_outline_rounded, color: Colors.red.shade300, size: 32),
+              const SizedBox(height: 8),
+              Text('Could not load seller settlement', style: TextStyle(color: Colors.grey.shade600, fontSize: 13)),
+            ],
+          ),
+        ),
+      );
+    } else if (payouts.isEmpty) {
+      content = Padding(
+        padding: const EdgeInsets.symmetric(vertical: 24),
+        child: Center(
+          child: Column(
+            children: [
+              Icon(Icons.storefront_outlined, size: 32, color: Colors.grey.shade300),
+              const SizedBox(height: 8),
+              Text('No settlement recorded yet for this order', style: TextStyle(color: Colors.grey.shade500, fontSize: 12)),
+            ],
+          ),
+        ),
+      );
+    } else {
+      content = Column(
+        children: payouts
+            .map((p) => _sellerPayoutRow(p))
+            .expand((row) => [row, const Divider(height: 20)])
+            .toList()
+          ..removeLast(),
+      );
+    }
+
+    return Container(
+      decoration: BoxDecoration(
+        color: Colors.white,
+        borderRadius: BorderRadius.circular(16),
+        boxShadow: [BoxShadow(color: Colors.black.withOpacity(0.04), blurRadius: 10, offset: const Offset(0, 4))],
+      ),
+      padding: const EdgeInsets.all(16),
+      child: content,
+    );
+  }
+
+  Widget _sellerPayoutRow(SellerPayoutRecord payout) {
+    final color = _payoutStatusColor(payout.status);
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        Row(
+          mainAxisAlignment: MainAxisAlignment.spaceBetween,
+          children: [
+            Expanded(
+              child: Text(
+                'Seller ${payout.sellerId.length > 8 ? payout.sellerId.substring(0, 8) : payout.sellerId}',
+                style: const TextStyle(fontWeight: FontWeight.w600, fontSize: 13),
+                overflow: TextOverflow.ellipsis,
+              ),
+            ),
+            Container(
+              padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 3),
+              decoration: BoxDecoration(color: color.withOpacity(0.12), borderRadius: BorderRadius.circular(6)),
+              child: Text(
+                payout.statusLabel,
+                style: TextStyle(color: color, fontWeight: FontWeight.w700, fontSize: 10),
+              ),
+            ),
+          ],
+        ),
+        const SizedBox(height: 6),
+        Row(
+          mainAxisAlignment: MainAxisAlignment.spaceBetween,
+          children: [
+            Text('Gross', style: TextStyle(color: Colors.grey.shade500, fontSize: 11)),
+            Text('₹${payout.grossAmount.toStringAsFixed(2)}', style: const TextStyle(fontSize: 12)),
+          ],
+        ),
+        const SizedBox(height: 2),
+        Row(
+          mainAxisAlignment: MainAxisAlignment.spaceBetween,
+          children: [
+            Text('Commission (${payout.commissionRate.toStringAsFixed(1)}%)',
+                style: TextStyle(color: Colors.grey.shade500, fontSize: 11)),
+            Text('-₹${payout.commissionAmount.toStringAsFixed(2)}', style: const TextStyle(fontSize: 12)),
+          ],
+        ),
+        const SizedBox(height: 2),
+        Row(
+          mainAxisAlignment: MainAxisAlignment.spaceBetween,
+          children: [
+            const Text('Net to seller', style: TextStyle(fontWeight: FontWeight.bold, fontSize: 12)),
+            Text('₹${payout.netAmount.toStringAsFixed(2)}',
+                style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 13, color: Colors.green)),
+          ],
+        ),
+        if (payout.status == 'paid' && payout.paidAt != null) ...[
+          const SizedBox(height: 6),
+          Text(
+            'Paid ${DateFormat('MMM d, yyyy').format(payout.paidAt!)}'
+            '${payout.paymentReference != null ? ' • Ref ${payout.paymentReference}' : ''}',
+            style: TextStyle(color: Colors.grey.shade500, fontSize: 11),
+          ),
+        ],
+      ],
+    );
+  }
+
+  Color _payoutStatusColor(String status) {
+    switch (status) {
+      case 'paid':
+        return Colors.green;
+      case 'requested':
+        return Colors.blue;
+      case 'pending':
+        return Colors.orange;
+      default:
+        return Colors.grey;
+    }
   }
 
   // =========================

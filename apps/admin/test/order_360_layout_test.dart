@@ -208,4 +208,76 @@ void main() {
       expect(offer.statusDisplayName, 'some_future_status');
     });
   });
+
+  // ADMR-30 additions below.
+  group('SellerPayoutRecord.fromMap', () {
+    test('parses a real seller_payouts-shaped pending document', () {
+      final payout = SellerPayoutRecord.fromMap({
+        'sellerId': 'seller-1',
+        'orderId': 'order1',
+        'orderNumber': 'ORD1',
+        'grossAmount': 500.0,
+        'commissionRate': 10.0,
+        'commissionAmount': 50.0,
+        'netAmount': 450.0,
+        'status': 'pending',
+        'itemCount': 3,
+      }, 'order1_seller-1');
+
+      expect(payout.id, 'order1_seller-1');
+      expect(payout.sellerId, 'seller-1');
+      expect(payout.statusLabel, 'Pending');
+      expect(payout.grossAmount, 500.0);
+      expect(payout.netAmount, 450.0);
+      expect(payout.paidAt, isNull);
+    });
+
+    test('a paid document carries its real payment reference and method', () {
+      final payout = SellerPayoutRecord.fromMap({
+        'sellerId': 'seller-1',
+        'orderId': 'order1',
+        'grossAmount': 500.0,
+        'commissionRate': 10.0,
+        'commissionAmount': 50.0,
+        'netAmount': 450.0,
+        'status': 'paid',
+        'paidBy': 'admin-uid-1',
+        'paymentReference': 'UTR123456',
+        'payoutMethod': 'upi',
+        'withdrawalId': 'wd-1',
+      }, 'order1_seller-1');
+
+      expect(payout.statusLabel, 'Paid');
+      expect(payout.paymentReference, 'UTR123456');
+      expect(payout.payoutMethod, 'upi');
+      expect(payout.withdrawalId, 'wd-1');
+    });
+
+    test('falls back to the legacy amount field when netAmount is absent', () {
+      final payout = SellerPayoutRecord.fromMap({
+        'sellerId': 'seller-1',
+        'orderId': 'order1',
+        'grossAmount': 100.0,
+        'commissionRate': 0.0,
+        'commissionAmount': 0.0,
+        'amount': 100.0,
+        'status': 'pending',
+      }, 'order1_seller-1');
+      expect(payout.netAmount, 100.0);
+    });
+
+    test('an unrecognized status falls back to the raw string rather than '
+        'hiding it', () {
+      final payout = SellerPayoutRecord.fromMap({
+        'sellerId': 'seller-1',
+        'orderId': 'order1',
+        'grossAmount': 0.0,
+        'commissionRate': 0.0,
+        'commissionAmount': 0.0,
+        'netAmount': 0.0,
+        'status': 'some_future_status',
+      }, 'id1');
+      expect(payout.statusLabel, 'some_future_status');
+    });
+  });
 }
