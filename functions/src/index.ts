@@ -47,6 +47,17 @@ export {
   syncUserRoleClaims,
   syncEmployeeRoleClaims
 } from "./admin/roleClaims";
+// ADMR-61: unified admin support cases -- the investigation layer, never
+// a competing source of truth for rider_support_tickets/rider_incidents/
+// delivery_exceptions, which keep their own statuses authoritative.
+export {
+  createSupportCase,
+  assignSupportCase,
+  changeSupportCaseStatus,
+  addSupportCaseNote,
+  resolveSupportCase,
+  reopenSupportCase,
+} from "./admin/supportCases";
 
 // ============================================
 // CUSTOMER MODULE

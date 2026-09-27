@@ -2418,6 +2418,30 @@ service cloud.firestore {
     }
 
     // ============================================
+    // UNIFIED ADMIN SUPPORT CASES (ADMR-61)
+    // ============================================
+    // The investigation layer, not a competing source of truth for
+    // rider_support_tickets/rider_incidents/delivery_exceptions, which keep
+    // their own statuses. Admin-only for this first release -- no
+    // participant-visible communication yet. All writes go through
+    // functions/src/admin/supportCases.ts (Admin SDK, bypasses rules),
+    // never a direct client write, matching every other admin-mutated
+    // collection in this file (rider_support_tickets, commission_exceptions,
+    // rider_bank_change_requests, etc.).
+    match /support_cases/{caseId} {
+      allow read: if isAdmin();
+      allow write: if false;
+    }
+    match /support_case_notes/{noteId} {
+      allow read: if isAdmin();
+      allow write: if false;
+    }
+    match /support_case_events/{eventId} {
+      allow read: if isAdmin();
+      allow write: if false;
+    }
+
+    // ============================================
     // SUBSCRIPTIONS COLLECTION (Phase FIX-6B — D-COLLECTION-COVERAGE)
     // ============================================
     // Auto-Delivery. Two live client create sites (payment_method_screen.dart's
