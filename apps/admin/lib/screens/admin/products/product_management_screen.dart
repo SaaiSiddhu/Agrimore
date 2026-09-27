@@ -130,7 +130,11 @@ class _ProductManagementScreenState extends State<ProductManagementScreen>
         filtered = filtered.where((p) => p.isActive).toList();
         break;
       case 2:
-        filtered = filtered.where((p) => p.stock < 10).toList();
+        // ADMR-31: was p.stock < 10 — base-stock-only, no threshold
+        // override, no draft/inactive exclusion, and counted out-of-stock
+        // (0) as "low". isLowStock() is the same shared, canonical check
+        // now used by the admin dashboard and the seller app.
+        filtered = filtered.where(isLowStock).toList();
         break;
       case 3:
         filtered = filtered.where((p) => p.isFeatured).toList();
@@ -148,7 +152,7 @@ class _ProductManagementScreenState extends State<ProductManagementScreen>
 
         final total = allProducts.length;
         final active = allProducts.where((p) => p.isActive).length;
-        final lowStock = allProducts.where((p) => p.stock < 10).length;
+        final lowStock = allProducts.where(isLowStock).length;
         final featured = allProducts.where((p) => p.isFeatured).length;
 
         return Scaffold(
