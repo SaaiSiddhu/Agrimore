@@ -1360,6 +1360,54 @@ abstract class AppLocalizations {
   /// **'This document couldn\'t be loaded right now.'**
   String get docPreviewUnavailable;
 
+  /// A replacement document is awaiting admin review
+  ///
+  /// In en, this message translates to:
+  /// **'Pending review'**
+  String get docReviewPending;
+
+  /// A replacement document was rejected
+  ///
+  /// In en, this message translates to:
+  /// **'Not approved'**
+  String get docReviewRejected;
+
+  /// Button to submit a replacement for an on-file document
+  ///
+  /// In en, this message translates to:
+  /// **'Replace'**
+  String get docReplaceAction;
+
+  /// Shown while a document replacement is being submitted
+  ///
+  /// In en, this message translates to:
+  /// **'Submitting…'**
+  String get docReplaceSubmitting;
+
+  /// Confirmation after a document replacement is submitted
+  ///
+  /// In en, this message translates to:
+  /// **'Submitted for review'**
+  String get docReplaceSubmitted;
+
+  /// Shown when a rider tries to replace a document that already has a pending submission
+  ///
+  /// In en, this message translates to:
+  /// **'A replacement for this document is already being reviewed.'**
+  String get docReplaceAlreadyPending;
+
+  /// Shown when a document replacement fails to upload
+  ///
+  /// In en, this message translates to:
+  /// **'Couldn\'t submit — check your connection and try again.'**
+  String get docReplaceNetworkError;
+
+  /// Generic failure submitting a document replacement
+  ///
+  /// In en, this message translates to:
+  /// **'Couldn\'t submit this replacement right now.'**
+  String get docReplaceFailed;
+
   /// Payout destination
   ///
   /// In en, this message translates to:
