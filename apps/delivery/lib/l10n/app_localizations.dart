@@ -62,7 +62,7 @@ import 'app_localizations_en.dart';
 /// property.
 abstract class AppLocalizations {
   AppLocalizations(String locale)
-      : localeName = intl.Intl.canonicalizedLocale(locale.toString());
+    : localeName = intl.Intl.canonicalizedLocale(locale.toString());
 
   final String localeName;
 
@@ -85,11 +85,11 @@ abstract class AppLocalizations {
   /// of delegates is preferred or required.
   static const List<LocalizationsDelegate<dynamic>> localizationsDelegates =
       <LocalizationsDelegate<dynamic>>[
-    delegate,
-    GlobalMaterialLocalizations.delegate,
-    GlobalCupertinoLocalizations.delegate,
-    GlobalWidgetsLocalizations.delegate,
-  ];
+        delegate,
+        GlobalMaterialLocalizations.delegate,
+        GlobalCupertinoLocalizations.delegate,
+        GlobalWidgetsLocalizations.delegate,
+      ];
 
   /// A list of this localizations delegate's supported locales.
   static const List<Locale> supportedLocales = <Locale>[Locale('en')];
@@ -5085,6 +5085,108 @@ abstract class AppLocalizations {
   /// In en, this message translates to:
   /// **'Dark'**
   String get profileThemeDark;
+
+  /// No description provided for @profileReadinessHeading.
+  ///
+  /// In en, this message translates to:
+  /// **'Delivery readiness'**
+  String get profileReadinessHeading;
+
+  /// No description provided for @readinessOpen.
+  ///
+  /// In en, this message translates to:
+  /// **'Check delivery readiness'**
+  String get readinessOpen;
+
+  /// No description provided for @readinessScreenTitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Delivery readiness'**
+  String get readinessScreenTitle;
+
+  /// No description provided for @readinessScreenIntro.
+  ///
+  /// In en, this message translates to:
+  /// **'These affect whether you actually see and can accept new delivery offers. Going online still works even if some are off.'**
+  String get readinessScreenIntro;
+
+  /// No description provided for @readinessReady.
+  ///
+  /// In en, this message translates to:
+  /// **'Ready'**
+  String get readinessReady;
+
+  /// No description provided for @readinessActionNeeded.
+  ///
+  /// In en, this message translates to:
+  /// **'Action needed'**
+  String get readinessActionNeeded;
+
+  /// No description provided for @readinessFix.
+  ///
+  /// In en, this message translates to:
+  /// **'Fix'**
+  String get readinessFix;
+
+  /// No description provided for @readinessNotificationsTitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Notifications'**
+  String get readinessNotificationsTitle;
+
+  /// No description provided for @readinessNotificationsBody.
+  ///
+  /// In en, this message translates to:
+  /// **'Lets the app alert you when a new order arrives.'**
+  String get readinessNotificationsBody;
+
+  /// No description provided for @readinessFullScreenTitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Full-screen ring alert'**
+  String get readinessFullScreenTitle;
+
+  /// No description provided for @readinessFullScreenBody.
+  ///
+  /// In en, this message translates to:
+  /// **'Lets an incoming order ring and show even while your phone is locked.'**
+  String get readinessFullScreenBody;
+
+  /// No description provided for @readinessLocationTitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Location'**
+  String get readinessLocationTitle;
+
+  /// No description provided for @readinessLocationBody.
+  ///
+  /// In en, this message translates to:
+  /// **'Needed so nearby orders can be offered to you at all.'**
+  String get readinessLocationBody;
+
+  /// No description provided for @readinessBackgroundLocationTitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Background location'**
+  String get readinessBackgroundLocationTitle;
+
+  /// No description provided for @readinessBackgroundLocationBody.
+  ///
+  /// In en, this message translates to:
+  /// **'Keeps sharing your location while online even if the app closes.'**
+  String get readinessBackgroundLocationBody;
+
+  /// No description provided for @readinessBatteryTitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Battery settings'**
+  String get readinessBatteryTitle;
+
+  /// No description provided for @readinessBatteryBody.
+  ///
+  /// In en, this message translates to:
+  /// **'Stops your phone closing the app in the background, which would take you offline.'**
+  String get readinessBatteryBody;
 }
 
 class _AppLocalizationsDelegate
@@ -5112,8 +5214,9 @@ AppLocalizations lookupAppLocalizations(Locale locale) {
   }
 
   throw FlutterError(
-      'AppLocalizations.delegate failed to load unsupported locale "$locale". This is likely '
-      'an issue with the localizations generation tool. Please file an issue '
-      'on GitHub with a reproducible sample app and the gen-l10n configuration '
-      'that was used.');
+    'AppLocalizations.delegate failed to load unsupported locale "$locale". This is likely '
+    'an issue with the localizations generation tool. Please file an issue '
+    'on GitHub with a reproducible sample app and the gen-l10n configuration '
+    'that was used.',
+  );
 }

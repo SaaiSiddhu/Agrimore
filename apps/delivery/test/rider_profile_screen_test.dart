@@ -143,7 +143,9 @@ void main() {
       ));
       await t.pumpAndSettle();
       await t.scrollUntilVisible(find.byKey(const ValueKey('sign-out')), 400);
-      await t.tap(find.text('Sign out'));
+      await t.ensureVisible(find.byKey(const ValueKey('sign-out')));
+      await t.pumpAndSettle();
+      await t.tap(find.byKey(const ValueKey('sign-out')));
       await t.pumpAndSettle();
       expect(find.text('Sign out of this device?'), findsOneWidget);
       await t.tap(find.text('Cancel'));
@@ -163,7 +165,9 @@ void main() {
       ));
       await t.pumpAndSettle();
       await t.scrollUntilVisible(find.byKey(const ValueKey('sign-out')), 400);
-      await t.tap(find.text('Sign out'));
+      await t.ensureVisible(find.byKey(const ValueKey('sign-out')));
+      await t.pumpAndSettle();
+      await t.tap(find.byKey(const ValueKey('sign-out')));
       await t.pumpAndSettle();
       await t.tap(find.text('Sign out').last);
       await t.pumpAndSettle();
@@ -185,7 +189,9 @@ void main() {
       ));
       await t.pumpAndSettle();
       await t.scrollUntilVisible(find.byKey(const ValueKey('delete-account')), 400);
-      await t.tap(find.text('Delete my account'));
+      await t.ensureVisible(find.byKey(const ValueKey('delete-account')));
+      await t.pumpAndSettle();
+      await t.tap(find.byKey(const ValueKey('delete-account')));
       await t.pumpAndSettle();
       expect(
         find.text('You still have an order assigned. Deliver it or ask Agrimore to reassign it first.'),
@@ -209,7 +215,9 @@ void main() {
       ));
       await t.pumpAndSettle();
       await t.scrollUntilVisible(find.byKey(const ValueKey('delete-account')), 400);
-      await t.tap(find.text('Delete my account'));
+      await t.ensureVisible(find.byKey(const ValueKey('delete-account')));
+      await t.pumpAndSettle();
+      await t.tap(find.byKey(const ValueKey('delete-account')));
       await t.pumpAndSettle();
       expect(
         find.text("You still hold customers' cash. Deposit it with Agrimore first."),
@@ -233,7 +241,9 @@ void main() {
       ));
       await t.pumpAndSettle();
       await t.scrollUntilVisible(find.byKey(const ValueKey('delete-account')), 400);
-      await t.tap(find.text('Delete my account'));
+      await t.ensureVisible(find.byKey(const ValueKey('delete-account')));
+      await t.pumpAndSettle();
+      await t.tap(find.byKey(const ValueKey('delete-account')));
       await t.pumpAndSettle();
       expect(
         find.text('Agrimore still owes you delivery pay. Wait until your statement is paid.'),
@@ -255,7 +265,9 @@ void main() {
       ));
       await t.pumpAndSettle();
       await t.scrollUntilVisible(find.byKey(const ValueKey('delete-account')), 400);
-      await t.tap(find.text('Delete my account'));
+      await t.ensureVisible(find.byKey(const ValueKey('delete-account')));
+      await t.pumpAndSettle();
+      await t.tap(find.byKey(const ValueKey('delete-account')));
       await t.pumpAndSettle();
       expect(find.text('Delete your account?'), findsOneWidget);
       await t.tap(find.text('Delete'));

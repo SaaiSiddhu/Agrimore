@@ -2859,4 +2859,61 @@ class AppLocalizationsEn extends AppLocalizations {
 
   @override
   String get profileThemeDark => 'Dark';
+
+  @override
+  String get profileReadinessHeading => 'Delivery readiness';
+
+  @override
+  String get readinessOpen => 'Check delivery readiness';
+
+  @override
+  String get readinessScreenTitle => 'Delivery readiness';
+
+  @override
+  String get readinessScreenIntro =>
+      'These affect whether you actually see and can accept new delivery offers. Going online still works even if some are off.';
+
+  @override
+  String get readinessReady => 'Ready';
+
+  @override
+  String get readinessActionNeeded => 'Action needed';
+
+  @override
+  String get readinessFix => 'Fix';
+
+  @override
+  String get readinessNotificationsTitle => 'Notifications';
+
+  @override
+  String get readinessNotificationsBody =>
+      'Lets the app alert you when a new order arrives.';
+
+  @override
+  String get readinessFullScreenTitle => 'Full-screen ring alert';
+
+  @override
+  String get readinessFullScreenBody =>
+      'Lets an incoming order ring and show even while your phone is locked.';
+
+  @override
+  String get readinessLocationTitle => 'Location';
+
+  @override
+  String get readinessLocationBody =>
+      'Needed so nearby orders can be offered to you at all.';
+
+  @override
+  String get readinessBackgroundLocationTitle => 'Background location';
+
+  @override
+  String get readinessBackgroundLocationBody =>
+      'Keeps sharing your location while online even if the app closes.';
+
+  @override
+  String get readinessBatteryTitle => 'Battery settings';
+
+  @override
+  String get readinessBatteryBody =>
+      'Stops your phone closing the app in the background, which would take you offline.';
 }
