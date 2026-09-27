@@ -52,6 +52,31 @@ export function isDangerousOrderStatusTransition(
   );
 }
 
+// ADMR-26 — the two transitions with NO plausible legitimate use and NO
+// supporting precedent anywhere in this codebase (see this phase's own
+// ledger row for the full evidence): 'cancelled' is a terminal state
+// everywhere else (sellerTransitionOrder.ts's own TRANSITIONS table never
+// lists it as a `from`), and the only evidenced, intentional reason to
+// ever leave 'delivered' is a return/refund into 'cancelled' — not a claim
+// that every OTHER transition is safe, only that these two are not.
+// Pure and exported so it is unit-testable without an emulator, mirroring
+// sellerTransitionOrder.ts's own checkTransition shape.
+export function checkOrderTransitionAllowed(
+  currentStatus: string,
+  nextStatus: string
+): string | null {
+  const from = currentStatus.toLowerCase();
+  const to = nextStatus.toLowerCase();
+  if (from === to) return null; // the no-op branch handles this separately
+  if (from === "cancelled") {
+    return "Cannot change the status of a cancelled order.";
+  }
+  if (from === "delivered" && to !== "cancelled") {
+    return 'A delivered order can only be moved to "cancelled" (for a return/refund) — no other transition from delivered is supported.';
+  }
+  return null;
+}
+
 function statusTitle(status: OrderStatus): string {
   switch (status) {
     case "pending":
@@ -179,6 +204,11 @@ export const adminUpdateOrderStatus = onCall(
           fromStatus: currentStatus,
           toStatus: newStatus,
         };
+      }
+
+      const transitionProblem = checkOrderTransitionAllowed(currentStatus, newStatus);
+      if (transitionProblem) {
+        return { outcome: "validation_failed", message: transitionProblem };
       }
 
       if (isDangerousOrderStatusTransition(currentStatus, newStatus) && !reason) {
