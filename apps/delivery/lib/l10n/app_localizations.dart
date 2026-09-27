@@ -2326,6 +2326,12 @@ abstract class AppLocalizations {
   /// **'Nothing here yet. Orders, statements and payments you should know about show here.'**
   String get inboxEmpty;
 
+  /// DLVI5: shown when the inbox has notices but none are unread and the Unread filter tab is selected
+  ///
+  /// In en, this message translates to:
+  /// **'No unread notifications.'**
+  String get inboxEmptyUnread;
+
   /// Inbox stream failed
   ///
   /// In en, this message translates to:

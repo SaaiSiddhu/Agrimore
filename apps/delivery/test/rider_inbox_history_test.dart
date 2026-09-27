@@ -876,4 +876,74 @@ void main() {
       expect(find.text('Earlier'), findsOneWidget);
     });
   });
+
+  group('DLVI5: inbox All/Unread filter tabs', () {
+    test('filteredInboxNotices: all is the list unchanged, unread keeps only unread', () {
+      final notices = [
+        RiderNotice(id: 'r1', type: 'payout_sent', title: 'R1', body: 'B', unread: true, createdAt: DateTime(2026, 9, 27)),
+        RiderNotice(id: 'r2', type: 'statement_ready', title: 'R2', body: 'B', unread: false, createdAt: DateTime(2026, 9, 26)),
+        RiderNotice(id: 'r3', type: 'rider_offline', title: 'R3', body: 'B', unread: true, createdAt: DateTime(2026, 9, 25)),
+      ];
+      expect(filteredInboxNotices(notices, InboxFilter.all), same(notices));
+      expect(filteredInboxNotices(notices, InboxFilter.unread), [notices[0], notices[2]]);
+    });
+
+    testWidgets('defaults to All: both read and unread notices are visible', (t) async {
+      final src = FakeInbox()
+        ..current = [n('u1', 'payout_sent'), n('r1', 'statement_ready', unread: false)];
+      await t.pumpWidget(host(InboxScreen(riderId: 'r1', source: src)));
+      await t.pumpAndSettle();
+      expect(find.text('T u1'), findsOneWidget);
+      expect(find.text('T r1'), findsOneWidget);
+    });
+
+    testWidgets('selecting Unread hides read notices; selecting All restores them', (t) async {
+      final src = FakeInbox()
+        ..current = [n('u1', 'payout_sent'), n('r1', 'statement_ready', unread: false)];
+      await t.pumpWidget(host(InboxScreen(riderId: 'r1', source: src)));
+      await t.pumpAndSettle();
+
+      await t.tap(find.byKey(const ValueKey('inbox-filter-unread')));
+      await t.pumpAndSettle();
+      expect(find.text('T u1'), findsOneWidget);
+      expect(find.text('T r1'), findsNothing);
+
+      await t.tap(find.byKey(const ValueKey('inbox-filter-all')));
+      await t.pumpAndSettle();
+      expect(find.text('T u1'), findsOneWidget);
+      expect(find.text('T r1'), findsOneWidget);
+    });
+
+    testWidgets('Unread with nothing unread shows a distinct empty state, not the generic one', (t) async {
+      final src = FakeInbox()..current = [n('r1', 'statement_ready', unread: false)];
+      await t.pumpWidget(host(InboxScreen(riderId: 'r1', source: src)));
+      await t.pumpAndSettle();
+
+      await t.tap(find.byKey(const ValueKey('inbox-filter-unread')));
+      await t.pumpAndSettle();
+      expect(t.takeException(), isNull);
+      expect(find.text('No unread notifications.'), findsOneWidget);
+      expect(find.text('Nothing here yet. Orders, statements and payments you should know about show here.'), findsNothing);
+    });
+
+    testWidgets('filtering happens before grouping: a read Today notice never shows under either header', (t) async {
+      final now = DateTime.now();
+      final src = FakeInbox()
+        ..current = [
+          RiderNotice(id: 'ut', type: 'rider_offline', title: 'Unread today', body: 'B', unread: true, createdAt: now),
+          RiderNotice(id: 'rt', type: 'statement_ready', title: 'Read today', body: 'B', unread: false, createdAt: now),
+          RiderNotice(id: 'ue', type: 'payout_sent', title: 'Unread earlier', body: 'B', unread: true, createdAt: DateTime(2020, 1, 1)),
+        ];
+      await t.pumpWidget(host(InboxScreen(riderId: 'r1', source: src)));
+      await t.pumpAndSettle();
+
+      await t.tap(find.byKey(const ValueKey('inbox-filter-unread')));
+      await t.pumpAndSettle();
+      expect(find.text('Today'), findsOneWidget);
+      expect(find.text('Earlier'), findsOneWidget);
+      expect(find.text('Unread today'), findsOneWidget);
+      expect(find.text('Unread earlier'), findsOneWidget);
+      expect(find.text('Read today'), findsNothing);
+    });
+  });
 }
