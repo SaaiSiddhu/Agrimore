@@ -2,7 +2,9 @@
 import 'dart:async';
 import 'package:flutter/material.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
+import 'package:go_router/go_router.dart';
 import 'package:agrimore_ui/agrimore_ui.dart';
+import '../../../app/app_router.dart';
 import '../../../app/themes/admin_colors.dart';
 import 'add_delivery_partner_dialog.dart';
 import 'rider_review_sheet.dart';
@@ -353,10 +355,7 @@ class _DeliveryPartnerManagementScreenState
   }
 
   void _openReview(_PartnerEntry entry) {
-    DialogHelper.showBottomSheet<void>(
-      context,
-      child: RiderReviewSheet(uid: entry.id, data: entry.data),
-    );
+    context.push(AdminRoutes.deliveryPartnerDetail.replaceFirst(':id', entry.id));
   }
 
   void _showAddPartnerDialog() {

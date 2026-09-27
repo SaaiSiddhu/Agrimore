@@ -13,6 +13,7 @@ import '../screens/admin/products/product_management_screen.dart';
 import '../screens/admin/products/product_form_screen.dart';
 import '../screens/admin/orders/order_management_screen.dart';
 import '../screens/admin/delivery/delivery_partner_management_screen.dart';
+import '../screens/admin/delivery/rider_detail_screen.dart';
 import '../screens/admin/delivery/dispatch_queue_screen.dart';
 import '../screens/admin/delivery/rider_payouts_screen.dart';
 import '../screens/admin/delivery/rider_incidents_screen.dart';
@@ -69,6 +70,9 @@ class AdminRoutes {
 
   // Delivery Partners
   static const String deliveryPartners = '/delivery-partners';
+
+  /// Delivery Partner 360 (ADMR-58) — deep-linkable, mirrors userDetail/sellerDetail.
+  static const String deliveryPartnerDetail = '/delivery-partners/:id';
   // Phase DLV-2C: orders waiting for a rider (delivery_dispatch).
   static const String deliveryDispatch = '/delivery-dispatch';
   static const String riderPayouts = '/rider-payouts';
@@ -387,6 +391,15 @@ class AppRouter {
               name: 'delivery-partners',
               pageBuilder: (context, state) =>
                   _buildPage(const DeliveryPartnerManagementScreen(), state),
+            ),
+
+            GoRoute(
+              path: AdminRoutes.deliveryPartnerDetail,
+              name: 'delivery-partner-detail',
+              pageBuilder: (context, state) => _buildPage(
+                RiderDetailScreen(riderId: state.pathParameters['id']!),
+                state,
+              ),
             ),
 
             // Dispatch queue (DLV-2C)
