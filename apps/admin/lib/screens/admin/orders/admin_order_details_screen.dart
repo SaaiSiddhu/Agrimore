@@ -83,6 +83,28 @@ bool orderShowsStockRestoredNote(OrderModel order) =>
     order.stockRestorePending != true &&
     order.stockRestored == true;
 
+/// ADMR-42: `createOrder.ts` sets `paymentStatus` purely from
+/// `paymentMethod` at creation time — `'cod' ? 'pending' : 'paid'` — and
+/// never updates it again for a COD order (confirmed by repo-wide grep:
+/// no writer anywhere ever sets a COD order's paymentStatus to 'paid').
+/// riderMoney.ts's own `codSettlementStatus` is the real, separate signal
+/// for whether COD cash was actually collected — already shown honestly
+/// by the Delivery Verification card (ADMR-36). Showing this permanent,
+/// by-design 'pending' with the SAME alarming color/label a genuinely
+/// stuck non-COD payment would get conflates two very different
+/// situations: a normal COD order awaiting delivery, and a real payment
+/// problem.
+enum PaymentCardState { paidOnline, cod, paymentIssue }
+
+PaymentCardState paymentCardState(OrderModel order) {
+  final isCod = order.paymentMethod.toLowerCase() == 'cod' ||
+      order.paymentMethod.toLowerCase().contains('cash');
+  if (isCod) return PaymentCardState.cod;
+  return order.paymentStatus.toLowerCase() == 'paid'
+      ? PaymentCardState.paidOnline
+      : PaymentCardState.paymentIssue;
+}
+
 /// Maps the raw `updatedBy` role string (written by adminUpdateOrderStatus
 /// today; sellerTransitionOrder.ts does not yet populate this field at all,
 /// a separate, disclosed gap) to a human-readable actor label.
@@ -1487,6 +1509,24 @@ class _AdminOrderDetailsScreenState extends State<AdminOrderDetailsScreen> {
   // Quick Stats Row
   // =========================
   Widget _buildQuickStats(OrderModel order) {
+    // ADMR-42: see paymentCardState's own header — a COD order's
+    // permanent, by-design paymentStatus 'pending' is not the same
+    // situation as a genuinely stuck non-COD payment.
+    final state = paymentCardState(order);
+    final paymentLabel = switch (state) {
+      PaymentCardState.cod => 'COD',
+      _ => order.paymentStatus.toUpperCase(),
+    };
+    final paymentIcon = switch (state) {
+      PaymentCardState.paidOnline => Icons.check_circle_outline_rounded,
+      PaymentCardState.cod => Icons.payments_outlined,
+      PaymentCardState.paymentIssue => Icons.pending_outlined,
+    };
+    final paymentColor = switch (state) {
+      PaymentCardState.paidOnline => Colors.green,
+      PaymentCardState.cod => Colors.blue,
+      PaymentCardState.paymentIssue => Colors.orange,
+    };
     return Row(
       children: [
         Expanded(child: _statTile(
@@ -1504,12 +1544,10 @@ class _AdminOrderDetailsScreenState extends State<AdminOrderDetailsScreen> {
         )),
         const SizedBox(width: 12),
         Expanded(child: _statTile(
-          order.paymentStatus.toUpperCase(),
+          paymentLabel,
           'Payment',
-          order.paymentStatus.toLowerCase() == 'paid' 
-              ? Icons.check_circle_outline_rounded 
-              : Icons.pending_outlined,
-          order.paymentStatus.toLowerCase() == 'paid' ? Colors.green : Colors.orange,
+          paymentIcon,
+          paymentColor,
         )),
       ],
     );
@@ -2070,8 +2108,31 @@ class _AdminOrderDetailsScreenState extends State<AdminOrderDetailsScreen> {
   // Payment Card
   // =========================
   Widget _buildPaymentCard(OrderModel order) {
-    final isPaid = order.paymentStatus.toLowerCase() == 'paid';
-    
+    final state = paymentCardState(order);
+    final MaterialColor color = switch (state) {
+      PaymentCardState.paidOnline => Colors.green,
+      PaymentCardState.cod => Colors.blue,
+      PaymentCardState.paymentIssue => Colors.orange,
+    };
+    final String headline = switch (state) {
+      PaymentCardState.paidOnline => 'Payment Received',
+      PaymentCardState.cod => 'Cash on Delivery',
+      PaymentCardState.paymentIssue => 'Payment Pending',
+    };
+    final IconData icon = switch (state) {
+      PaymentCardState.paidOnline => Icons.check_circle_rounded,
+      PaymentCardState.cod => Icons.payments_rounded,
+      PaymentCardState.paymentIssue => Icons.pending_rounded,
+    };
+    // ADMR-42: the badge shows a real, distinct label for COD ("COD") —
+    // never the raw paymentStatus string ("PENDING"), which is this
+    // field's own permanent, by-design value for every COD order and
+    // reads as an alarm, not a normal state.
+    final String badgeText = switch (state) {
+      PaymentCardState.cod => 'COD',
+      _ => order.paymentStatus.toUpperCase(),
+    };
+
     return Container(
       decoration: BoxDecoration(
         color: Colors.white,
@@ -2092,10 +2153,10 @@ class _AdminOrderDetailsScreenState extends State<AdminOrderDetailsScreen> {
             Container(
               padding: const EdgeInsets.all(14),
               decoration: BoxDecoration(
-                color: (isPaid ? Colors.green : Colors.orange).withOpacity(0.1),
+                color: color.withOpacity(0.1),
                 borderRadius: BorderRadius.circular(12),
                 border: Border.all(
-                  color: (isPaid ? Colors.green : Colors.orange).withOpacity(0.3),
+                  color: color.withOpacity(0.3),
                 ),
               ),
               child: Row(
@@ -2103,12 +2164,12 @@ class _AdminOrderDetailsScreenState extends State<AdminOrderDetailsScreen> {
                   Container(
                     padding: const EdgeInsets.all(8),
                     decoration: BoxDecoration(
-                      color: (isPaid ? Colors.green : Colors.orange).withOpacity(0.2),
+                      color: color.withOpacity(0.2),
                       borderRadius: BorderRadius.circular(8),
                     ),
                     child: Icon(
-                      isPaid ? Icons.check_circle_rounded : Icons.pending_rounded,
-                      color: isPaid ? Colors.green.shade700 : Colors.orange.shade700,
+                      icon,
+                      color: color.shade700,
                       size: 20,
                     ),
                   ),
@@ -2118,10 +2179,10 @@ class _AdminOrderDetailsScreenState extends State<AdminOrderDetailsScreen> {
                       crossAxisAlignment: CrossAxisAlignment.start,
                       children: [
                         Text(
-                          isPaid ? 'Payment Received' : 'Payment Pending',
+                          headline,
                           style: TextStyle(
                             fontWeight: FontWeight.bold,
-                            color: isPaid ? Colors.green.shade800 : Colors.orange.shade800,
+                            color: color.shade800,
                           ),
                         ),
                         const SizedBox(height: 2),
@@ -2129,7 +2190,7 @@ class _AdminOrderDetailsScreenState extends State<AdminOrderDetailsScreen> {
                           _friendlyPaymentMethod(order.paymentMethod),
                           style: TextStyle(
                             fontSize: 12,
-                            color: isPaid ? Colors.green.shade600 : Colors.orange.shade600,
+                            color: color.shade600,
                           ),
                         ),
                       ],
@@ -2138,11 +2199,11 @@ class _AdminOrderDetailsScreenState extends State<AdminOrderDetailsScreen> {
                   Container(
                     padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
                     decoration: BoxDecoration(
-                      color: isPaid ? Colors.green : Colors.orange,
+                      color: color,
                       borderRadius: BorderRadius.circular(6),
                     ),
                     child: Text(
-                      order.paymentStatus.toUpperCase(),
+                      badgeText,
                       style: const TextStyle(
                         color: Colors.white,
                         fontWeight: FontWeight.bold,
