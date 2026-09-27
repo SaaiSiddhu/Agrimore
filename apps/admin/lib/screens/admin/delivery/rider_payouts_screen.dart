@@ -7,6 +7,7 @@ import 'package:agrimore_ui/agrimore_ui.dart';
 
 import 'rider_incidents_admin.dart' show appBarTabs;
 import 'rider_money_admin.dart';
+import 'rider_cash_ledger_screen.dart';
 
 /// Phase DLV-4B: rider money for the delivery team, on top of DLV-4A
 /// (functions/src/delivery/riderMoney.ts).
@@ -512,6 +513,12 @@ class _CashTab extends StatelessWidget {
                   title: _RiderLine(d.id),
                   subtitle: Text(
                       'Holding ${AgFormat.rupees(accountRupees(d.data(), 'cashHeld'))}'),
+                  onTap: () => Navigator.push(
+                    context,
+                    MaterialPageRoute(
+                      builder: (_) => RiderCashLedgerScreen(riderId: d.id),
+                    ),
+                  ),
                   trailing: OutlinedButton(
                     onPressed: () => _recordDeposit(
                         context, d.id, accountRupees(d.data(), 'cashHeld')),

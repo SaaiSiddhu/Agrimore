@@ -699,6 +699,20 @@
             ]
         },
         {
+            "collectionGroup": "rider_cash_ledger",
+            "queryScope": "COLLECTION",
+            "fields": [
+                {
+                    "fieldPath": "riderId",
+                    "order": "ASCENDING"
+                },
+                {
+                    "fieldPath": "at",
+                    "order": "DESCENDING"
+                }
+            ]
+        },
+        {
             "collectionGroup": "orders",
             "queryScope": "COLLECTION",
             "fields": [
