@@ -773,4 +773,49 @@ void main() {
       expect(noticeIcon('some_future_type_this_client_does_not_know_yet', unread: false), DeliveryIcons.checkCircle);
     });
   });
+
+  group('DLVI4: Today/Earlier inbox time-grouping', () {
+    final now = DateTime(2026, 9, 27, 15, 0);
+
+    test('inboxSectionFor: calendar-day comparison, not a fixed 24h window', () {
+      expect(inboxSectionFor(DateTime(2026, 9, 27, 0, 1), now: now), InboxSection.today);
+      expect(inboxSectionFor(DateTime(2026, 9, 27, 23, 59), now: now), InboxSection.today);
+      // 23:59 yesterday is less than a minute before "today, 00:01" above, but a DIFFERENT calendar day.
+      expect(inboxSectionFor(DateTime(2026, 9, 26, 23, 59), now: now), InboxSection.earlier);
+      expect(inboxSectionFor(DateTime(2026, 9, 20), now: now), InboxSection.earlier);
+      expect(inboxSectionFor(null, now: now), InboxSection.earlier, reason: 'missing createdAt must not crash or default to today');
+    });
+
+    test('groupedInboxItems: one header per group, right before its own first item, never repeated', () {
+      final notices = [
+        RiderNotice(id: 't1', type: 'payout_sent', title: 'T1', body: 'B1', unread: true, createdAt: DateTime(2026, 9, 27, 9)),
+        RiderNotice(id: 't2', type: 'rider_offline', title: 'T2', body: 'B2', unread: true, createdAt: DateTime(2026, 9, 27, 8)),
+        RiderNotice(id: 'e1', type: 'statement_ready', title: 'E1', body: 'B3', unread: false, createdAt: DateTime(2026, 9, 20)),
+      ];
+      final items = groupedInboxItems(notices, now: now);
+      expect(items, [InboxSection.today, notices[0], notices[1], InboxSection.earlier, notices[2]]);
+    });
+
+    test('groupedInboxItems: an all-earlier list gets exactly one header, not one per notice', () {
+      final notices = [
+        RiderNotice(id: 'e1', type: 'statement_ready', title: 'E1', body: 'B', unread: false, createdAt: DateTime(2026, 9, 1)),
+        RiderNotice(id: 'e2', type: 'payout_sent', title: 'E2', body: 'B', unread: false, createdAt: DateTime(2026, 9, 2)),
+      ];
+      final items = groupedInboxItems(notices, now: now);
+      expect(items, [InboxSection.earlier, notices[0], notices[1]]);
+    });
+
+    testWidgets('the real screen renders both section headers when both groups are present', (t) async {
+      final src = FakeInbox()
+        ..current = [
+          RiderNotice(id: 'today1', type: 'rider_offline', title: 'Today one', body: 'B', unread: true, createdAt: DateTime.now()),
+          RiderNotice(id: 'old1', type: 'statement_ready', title: 'Old one', body: 'B', unread: false, createdAt: DateTime(2020, 1, 1)),
+        ];
+      await t.pumpWidget(host(InboxScreen(riderId: 'r1', source: src)));
+      await t.pumpAndSettle();
+      expect(t.takeException(), isNull);
+      expect(find.text('Today'), findsOneWidget);
+      expect(find.text('Earlier'), findsOneWidget);
+    });
+  });
 }

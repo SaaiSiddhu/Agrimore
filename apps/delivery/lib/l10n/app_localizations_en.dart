@@ -1270,6 +1270,12 @@ class AppLocalizationsEn extends AppLocalizations {
       'Could not load your inbox. Check your connection.';
 
   @override
+  String get inboxSectionToday => 'Today';
+
+  @override
+  String get inboxSectionEarlier => 'Earlier';
+
+  @override
   String get inboxMarkAllRead => 'Mark all read';
 
   @override

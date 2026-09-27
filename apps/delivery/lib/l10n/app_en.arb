@@ -1660,6 +1660,14 @@
   "@inboxLoadError": {
     "description": "Inbox stream failed"
   },
+  "inboxSectionToday": "Today",
+  "@inboxSectionToday": {
+    "description": "Inbox section header for notices from today"
+  },
+  "inboxSectionEarlier": "Earlier",
+  "@inboxSectionEarlier": {
+    "description": "Inbox section header for notices from before today"
+  },
   "inboxMarkAllRead": "Mark all read",
   "@inboxMarkAllRead": {
     "description": "Mark every unread notice read, not only the ones currently shown"
