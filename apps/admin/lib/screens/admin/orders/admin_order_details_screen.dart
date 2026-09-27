@@ -23,6 +23,7 @@ import '../../../app/app_router.dart' show AdminRoutes;
 import '../../../providers/order_provider.dart';
 import '../delivery/delivery_flags.dart';
 import '../delivery/order_assignment_screen.dart';
+import '../widgets/actor_support_cases_section.dart';
 
 import 'widgets/order_status_updater.dart';
 
@@ -299,6 +300,10 @@ class _AdminOrderDetailsScreenState extends State<AdminOrderDetailsScreen> {
         _buildCommissionCard(order, orderProvider),
         const SizedBox(height: 16),
       ],
+      _buildSectionTitle('Support Cases', Icons.folder_special_rounded),
+      const SizedBox(height: 12),
+      _buildOrderSupportCasesCard(order, orderProvider),
+      const SizedBox(height: 16),
       _buildSectionTitle('Related Support Tickets', Icons.support_agent_rounded),
       const SizedBox(height: 12),
       _buildSupportTicketsCard(orderProvider),
@@ -783,6 +788,63 @@ class _AdminOrderDetailsScreenState extends State<AdminOrderDetailsScreen> {
           ],
         ],
       ),
+    );
+  }
+
+  // =========================
+  // Support Cases Card (ADMR-64)
+  // =========================
+  // support_cases has no orderId field by design (ADMR-61) -- a case links
+  // to an actor, not an order, and link/unlink of an existing order record
+  // is its own deferred phase. This stacks one real, per-actor
+  // ActorSupportCasesSection (ADMR-63) per actor role this specific order
+  // actually carries, reusing the exact same widget the four People-360
+  // workspaces already use -- never a fabricated order-level case.
+  Widget _buildOrderSupportCasesCard(OrderModel order, OrderProvider orderProvider) {
+    final firestore = orderProvider.firestore;
+    final sections = <Widget>[
+      ActorSupportCasesSection(
+        firestore: firestore,
+        actorType: 'customer',
+        actorId: order.userId,
+        title: 'Customer',
+      ),
+    ];
+    if (order.sellerId != null && order.sellerId!.isNotEmpty) {
+      sections.add(const SizedBox(height: 16));
+      sections.add(ActorSupportCasesSection(
+        firestore: firestore,
+        actorType: 'seller',
+        actorId: order.sellerId!,
+        title: 'Seller',
+      ));
+    }
+    if (order.deliveryPartnerId != null && order.deliveryPartnerId!.isNotEmpty) {
+      sections.add(const SizedBox(height: 16));
+      sections.add(ActorSupportCasesSection(
+        firestore: firestore,
+        actorType: 'rider',
+        actorId: order.deliveryPartnerId!,
+        title: 'Delivery Partner',
+      ));
+    }
+    if (order.employeeUid != null && order.employeeUid!.isNotEmpty) {
+      sections.add(const SizedBox(height: 16));
+      sections.add(ActorSupportCasesSection(
+        firestore: firestore,
+        actorType: 'associate',
+        actorId: order.employeeUid!,
+        title: 'Sales Associate',
+      ));
+    }
+    return Container(
+      decoration: BoxDecoration(
+        color: Colors.white,
+        borderRadius: BorderRadius.circular(16),
+        boxShadow: [BoxShadow(color: Colors.black.withOpacity(0.04), blurRadius: 10, offset: const Offset(0, 4))],
+      ),
+      padding: const EdgeInsets.all(16),
+      child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: sections),
     );
   }
 
