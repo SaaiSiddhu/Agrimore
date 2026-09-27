@@ -42,6 +42,7 @@ import '../screens/admin/rewards/rewards_management_screen.dart';
 import '../screens/admin/reviews/review_management_screen.dart';
 import '../screens/admin/wallet/wallet_tracking_screen.dart';
 import '../screens/admin/employees/employee_management_screen.dart';
+import '../screens/admin/employees/associate_detail_screen.dart';
 import '../screens/admin/employees/add_employee_screen.dart';
 import '../screens/admin/employees/employee_payouts_screen.dart';
 import '../screens/admin/employees/employee_payout_account_review_screen.dart';
@@ -134,6 +135,11 @@ class AdminRoutes {
   static const String sellerPayouts = '/seller-payouts';
 
   static const String employees = '/employees';
+
+  /// Sales Associate 360 (ADMR-59) — deep-linkable, mirrors userDetail/
+  /// sellerDetail/deliveryPartnerDetail. Distinct from employeePayoutDetail
+  /// below, which is about one payout REQUEST, not the associate.
+  static const String associateDetail = '/employees/:id';
 
   /// Admin creates an approved employee (callable `createEmployeeByAdmin`).
   static const String addEmployee = '/add-employee';
@@ -563,6 +569,15 @@ class AppRouter {
               name: 'employees',
               pageBuilder: (context, state) =>
                   _buildPage(const EmployeeManagementScreen(), state),
+            ),
+
+            GoRoute(
+              path: AdminRoutes.associateDetail,
+              name: 'associate-detail',
+              pageBuilder: (context, state) => _buildPage(
+                AssociateDetailScreen(employeeId: state.pathParameters['id']!),
+                state,
+              ),
             ),
 
             GoRoute(

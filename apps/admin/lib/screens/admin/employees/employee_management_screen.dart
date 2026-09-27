@@ -125,7 +125,8 @@ class EmployeeManagementScreen extends StatelessWidget {
           IconButton(
             icon: const Icon(Icons.account_balance_outlined),
             tooltip: 'Bank/UPI changes',
-            onPressed: () => context.push(AdminRoutes.employeePayoutAccountReview),
+            onPressed: () =>
+                context.push(AdminRoutes.employeePayoutAccountReview),
           ),
         ],
       ),
@@ -168,83 +169,86 @@ class EmployeeManagementScreen extends StatelessWidget {
                   (d['commissionRate'] as num?)?.toDouble() ?? 0.0;
 
               return Card(
-                child: Padding(
-                  padding: const EdgeInsets.all(14),
-                  child: Column(
-                    crossAxisAlignment: CrossAxisAlignment.start,
-                    children: [
-                      Row(
-                        children: [
-                          Expanded(
-                            child: Text(
-                              d['name']?.toString() ?? 'Employee',
-                              style: const TextStyle(
-                                fontWeight: FontWeight.w800,
-                                fontSize: 16,
+                child: InkWell(
+                  onTap: () => context.push(
+                      AdminRoutes.associateDetail.replaceFirst(':id', uid)),
+                  child: Padding(
+                    padding: const EdgeInsets.all(14),
+                    child: Column(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [
+                        Row(
+                          children: [
+                            Expanded(
+                              child: Text(
+                                d['name']?.toString() ?? 'Employee',
+                                style: const TextStyle(
+                                  fontWeight: FontWeight.w800,
+                                  fontSize: 16,
+                                ),
                               ),
                             ),
-                          ),
-                          Container(
-                            padding: const EdgeInsets.symmetric(
-                                horizontal: 8, vertical: 4),
-                            decoration: BoxDecoration(
-                              color: status == 'approved'
-                                  ? Colors.green.shade50
-                                  : status == 'suspended'
-                                      ? Colors.red.shade50
-                                      : Colors.amber.shade50,
-                              borderRadius: BorderRadius.circular(8),
-                            ),
-                            child: Text(
-                              status.toUpperCase(),
-                              style: TextStyle(
-                                fontSize: 11,
-                                fontWeight: FontWeight.w800,
+                            Container(
+                              padding: const EdgeInsets.symmetric(
+                                  horizontal: 8, vertical: 4),
+                              decoration: BoxDecoration(
                                 color: status == 'approved'
-                                    ? Colors.green.shade800
+                                    ? Colors.green.shade50
                                     : status == 'suspended'
-                                        ? Colors.red.shade800
-                                        : Colors.amber.shade900,
+                                        ? Colors.red.shade50
+                                        : Colors.amber.shade50,
+                                borderRadius: BorderRadius.circular(8),
                               ),
-                            ),
-                          ),
-                        ],
-                      ),
-                      const SizedBox(height: 6),
-                      Text(
-                          '${d['email'] ?? ''} · ${d['phone'] ?? ''}'),
-                      const SizedBox(height: 4),
-                      Text(
-                        'Code: ${d['employeeCode'] ?? '-'} · Commission: ${commissionRate.toStringAsFixed(1)}%',
-                        style: TextStyle(
-                            color: Colors.grey.shade700, fontSize: 13),
-                      ),
-                      const SizedBox(height: 12),
-                      Row(
-                        children: [
-                          if (status == 'pending') ...[
-                            FilledButton(
-                              onPressed: () => _approve(context, uid),
-                              style: FilledButton.styleFrom(
-                                  backgroundColor: Colors.green.shade700),
-                              child: const Text('Approve'),
-                            ),
-                            const SizedBox(width: 10),
-                            OutlinedButton(
-                              onPressed: () => _reject(context, uid),
-                              child: const Text('Reject'),
-                            ),
-                          ] else ...[
-                            OutlinedButton.icon(
-                              onPressed: () => _editCommissionRate(
-                                  context, uid, commissionRate),
-                              icon: const Icon(Icons.percent, size: 16),
-                              label: const Text('Edit Commission'),
+                              child: Text(
+                                status.toUpperCase(),
+                                style: TextStyle(
+                                  fontSize: 11,
+                                  fontWeight: FontWeight.w800,
+                                  color: status == 'approved'
+                                      ? Colors.green.shade800
+                                      : status == 'suspended'
+                                          ? Colors.red.shade800
+                                          : Colors.amber.shade900,
+                                ),
+                              ),
                             ),
                           ],
-                        ],
-                      ),
-                    ],
+                        ),
+                        const SizedBox(height: 6),
+                        Text('${d['email'] ?? ''} · ${d['phone'] ?? ''}'),
+                        const SizedBox(height: 4),
+                        Text(
+                          'Code: ${d['employeeCode'] ?? '-'} · Commission: ${commissionRate.toStringAsFixed(1)}%',
+                          style: TextStyle(
+                              color: Colors.grey.shade700, fontSize: 13),
+                        ),
+                        const SizedBox(height: 12),
+                        Row(
+                          children: [
+                            if (status == 'pending') ...[
+                              FilledButton(
+                                onPressed: () => _approve(context, uid),
+                                style: FilledButton.styleFrom(
+                                    backgroundColor: Colors.green.shade700),
+                                child: const Text('Approve'),
+                              ),
+                              const SizedBox(width: 10),
+                              OutlinedButton(
+                                onPressed: () => _reject(context, uid),
+                                child: const Text('Reject'),
+                              ),
+                            ] else ...[
+                              OutlinedButton.icon(
+                                onPressed: () => _editCommissionRate(
+                                    context, uid, commissionRate),
+                                icon: const Icon(Icons.percent, size: 16),
+                                label: const Text('Edit Commission'),
+                              ),
+                            ],
+                          ],
+                        ),
+                      ],
+                    ),
                   ),
                 ),
               );
