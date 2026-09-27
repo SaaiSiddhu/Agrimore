@@ -225,7 +225,7 @@ void main() {
     expect(find.textContaining('12 MG Road'), findsOneWidget);
   });
 
-  testWidgets('support tab discloses no case system exists, rather than faking one',
+  testWidgets('support tab shows a real, empty state when this customer has no cases',
       (tester) async {
     final db = FakeFirebaseFirestore();
     await _seedUser(db, 'cust_support');
@@ -233,8 +233,34 @@ void main() {
     await pumpScreen(tester, db, 'cust_support');
     await switchToTab(tester, 'Support & Audit');
 
-    expect(
-        find.textContaining('No dedicated customer support-case system exists yet'),
-        findsOneWidget);
+    expect(find.text('Support cases'), findsOneWidget);
+    expect(find.text('No support cases for this customer yet.'), findsOneWidget);
+  });
+
+  testWidgets('support tab shows a real support case for this customer only (ADMR-63)',
+      (tester) async {
+    final db = FakeFirebaseFirestore();
+    await _seedUser(db, 'cust_support');
+    await db.collection('support_cases').add({
+      'title': 'Missing item in order',
+      'category': 'delivery_issue',
+      'primaryActor': {'type': 'customer', 'id': 'cust_support'},
+      'status': 'open',
+      'updatedAt': Timestamp.fromDate(DateTime(2026, 9, 1)),
+    });
+    // A case for a different customer must never leak in.
+    await db.collection('support_cases').add({
+      'title': 'Someone else\'s case',
+      'category': 'delivery_issue',
+      'primaryActor': {'type': 'customer', 'id': 'some_other_customer'},
+      'status': 'open',
+      'updatedAt': Timestamp.fromDate(DateTime(2026, 9, 1)),
+    });
+
+    await pumpScreen(tester, db, 'cust_support');
+    await switchToTab(tester, 'Support & Audit');
+
+    expect(find.text('Missing item in order'), findsOneWidget);
+    expect(find.text('Someone else\'s case'), findsNothing);
   });
 }

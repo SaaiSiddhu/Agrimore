@@ -22,6 +22,7 @@ import 'package:agrimore_ui/agrimore_ui.dart';
 
 import '../orders/admin_order_details_screen.dart';
 import '../products/product_form_screen.dart';
+import '../widgets/actor_support_cases_section.dart';
 import '../widgets/paginated_query_list.dart';
 import 'edit_seller_screen.dart';
 
@@ -765,13 +766,7 @@ class _SupportTab extends StatelessWidget {
           },
         ),
         const SizedBox(height: 20),
-        const SectionMessage(
-          icon: Icons.support_agent_outlined,
-          message: 'No dedicated seller support-case system exists yet. There is no '
-              'per-seller case or broader audit trail to show here beyond the '
-              'application decision above. This is a disclosed gap, not a missing '
-              'wire-up -- a unified support model is planned as its own later phase.',
-        ),
+        ActorSupportCasesSection(firestore: firestore, actorType: 'seller', actorId: sellerId),
       ],
     );
   }
