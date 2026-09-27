@@ -346,8 +346,8 @@ class _DashboardScreenState extends State<DashboardScreen> {
         isLoading: _toggling,
         onlineTitle: l.dashOnline,
         offlineTitle: l.dashOffline,
-        onlineSubtitle: l.dashReady,
-        offlineSubtitle: l.dashOfflineShort,
+        onlineSubtitle: l.dashOnlineHint,
+        offlineSubtitle: l.dashOfflineHint,
         onChanged: _toggleOnline,
       ),
     );

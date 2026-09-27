@@ -288,4 +288,21 @@ void main() {
       reason: 'on duty: back should background the app via OfferPlatform, never silently exit',
     );
   });
+
+  testWidgets(
+    'DLVDASH1: the online-toggle card has its own explanatory subtitle, not a repeat of the header status',
+    (t) async {
+      final auth = await _authedProvider(t, online: false);
+      await t.pumpWidget(_shellHost(auth, 'r1'));
+      await t.pumpAndSettle();
+
+      // The header's own short status line still reads the bare word.
+      expect(find.text('Offline'), findsOneWidget, reason: 'header status line, unchanged by this phase');
+      // The toggle card no longer repeats it -- it shows genuine explanatory
+      // copy instead (matching the mockup's own distinct third line).
+      expect(find.text('Orders are only offered while you are online.'), findsOneWidget);
+      // The toggle card's own title is still present and distinct from both.
+      expect(find.text('You are offline'), findsOneWidget);
+    },
+  );
 }

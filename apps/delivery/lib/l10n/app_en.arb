@@ -2625,6 +2625,14 @@
   "@dashOffline": {
     "description": "Online toggle while offline"
   },
+  "dashOnlineHint": "We'll show new offers here.",
+  "@dashOnlineHint": {
+    "description": "Online toggle card explanatory subtitle while online (distinct from the header's own status text)"
+  },
+  "dashOfflineHint": "Orders are only offered while you are online.",
+  "@dashOfflineHint": {
+    "description": "Online toggle card explanatory subtitle while offline (distinct from the header's own status text)"
+  },
   "dashSignOutTooltip": "Sign out",
   "@dashSignOutTooltip": {
     "description": "Tooltip: sign out"

@@ -2006,6 +2006,12 @@ class AppLocalizationsEn extends AppLocalizations {
   String get dashOffline => 'You are offline';
 
   @override
+  String get dashOnlineHint => 'We\'ll show new offers here.';
+
+  @override
+  String get dashOfflineHint => 'Orders are only offered while you are online.';
+
+  @override
   String get dashSignOutTooltip => 'Sign out';
 
   @override
