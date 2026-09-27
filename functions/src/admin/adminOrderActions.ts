@@ -18,6 +18,11 @@
 
 import { onCall, HttpsError } from "firebase-functions/v2/https";
 import * as admin from "firebase-admin";
+// ADMR-25: reused verbatim, not reimplemented — sellerTransitionOrder.ts is
+// the one other real canonical order-transition command in this codebase,
+// and its own cancellation branch already establishes what "prepaid,
+// refundable" means for an order.
+import { isPaid, isCashOnDelivery } from "../seller/sellerTransitionOrder";
 
 // Matches apps/admin/lib/screens/admin/orders/widgets/order_status_updater.dart's
 // own _buildStatusChips() list exactly — the only statuses any admin UI can
@@ -184,11 +189,32 @@ export const adminUpdateOrderStatus = onCall(
         };
       }
 
-      tx.update(orderRef, {
+      const cancelling = newStatus === "cancelled";
+      const order = orderSnap.data() || {};
+      const update: Record<string, unknown> = {
         orderStatus: newStatus,
         status: newStatus,
         updatedAt: admin.firestore.FieldValue.serverTimestamp(),
-      });
+      };
+      if (cancelling) {
+        // Mirrors sellerTransitionOrder.ts's own cancelling branch exactly,
+        // so an order carries the same shape regardless of which actor
+        // cancelled it — ADMR-25, closing a confirmed gap: without this,
+        // an admin correcting a prepaid delivered order to cancelled
+        // restored stock and reversed commission/credit (generic triggers,
+        // unaffected either way) but never flagged the order as needing a
+        // refund at all.
+        Object.assign(update, {
+          cancelledBy: "admin",
+          cancelledAt: admin.firestore.FieldValue.serverTimestamp(),
+          cancellationReason: reason || null,
+          ...(isPaid(order.paymentStatus) && !isCashOnDelivery(order.paymentMethod)
+            ? { refundStatus: "pending" }
+            : {}),
+        });
+      }
+
+      tx.update(orderRef, update);
 
       tx.set(orderRef.collection("timeline").doc(), {
         status: newStatus,

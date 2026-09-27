@@ -1,4 +1,10 @@
 // Phase ADMR-24 — adminUpdateOrderStatus (admin/adminOrderActions.ts)
+// Extended by ADMR-25 (scenarios s11-s13) — the callable did not set
+// refundStatus on a prepaid cancellation at all (stock/commission/credit
+// reversal are unaffected generic triggers, but nothing ever flagged the
+// order as needing a refund), and did not stamp cancelledBy/cancelledAt/
+// cancellationReason the way sellerTransitionOrder.ts's own cancelling
+// branch already does for every other actor.
 //
 // FINDING: admin's only order-status write path was a raw client Firestore
 // update (OrderProvider.updateOrderStatus) with no server-side actor stamp,
@@ -37,8 +43,8 @@ const NON_ADMIN_AUTH = { uid: "phase64-not-admin", token: {} };
 let rid = 0;
 const nextRequestId = () => `phase64-req-${++rid}`;
 
-async function seedOrder(id, orderStatus) {
-  await db.collection("orders").doc(id).set({ orderNumber: id, orderStatus, status: orderStatus });
+async function seedOrder(id, orderStatus, extra) {
+  await db.collection("orders").doc(id).set({ orderNumber: id, orderStatus, status: orderStatus, ...(extra || {}) });
 }
 async function orderDoc(id) {
   return (await db.collection("orders").doc(id).get()).data() || {};
@@ -174,6 +180,44 @@ async function main() {
     record("s10_stale_expected_status_refused_no_mutation",
       r.ok && r.result.outcome === "stale_state" && o.orderStatus === "confirmed",
       `outcome=${r.result?.outcome} orderStatus=${o.orderStatus}(expect confirmed, unchanged)`);
+  }
+
+  // 11 — ADMR-25: cancelling a PREPAID, non-COD order sets refundStatus
+  // and stamps the same cancellation shape sellerTransitionOrder.ts uses.
+  {
+    const oid = "phase64-o11";
+    await seedOrder(oid, "delivered", { paymentStatus: "paid", paymentMethod: "razorpay" });
+    const r = await call({ orderId: oid, newStatus: "cancelled", requestId: nextRequestId(), reason: "Customer requested return" }, ADMIN_AUTH);
+    const o = await orderDoc(oid);
+    record("s11_prepaid_cancel_sets_refund_pending_and_cancellation_fields",
+      r.ok && r.result.outcome === "applied" && o.refundStatus === "pending" &&
+      o.cancelledBy === "admin" && o.cancellationReason === "Customer requested return" && !!o.cancelledAt,
+      `outcome=${r.result?.outcome} refundStatus=${o.refundStatus}(expect pending) cancelledBy=${o.cancelledBy} cancellationReason=${o.cancellationReason} cancelledAt=${o.cancelledAt ? "set" : "MISSING"}`);
+  }
+
+  // 12 — a COD order has nothing to refund — cancelling it stamps the same
+  // audit fields but must NOT set refundStatus.
+  {
+    const oid = "phase64-o12";
+    await seedOrder(oid, "delivered", { paymentStatus: "pending", paymentMethod: "cod" });
+    const r = await call({ orderId: oid, newStatus: "cancelled", requestId: nextRequestId(), reason: "Damaged in transit" }, ADMIN_AUTH);
+    const o = await orderDoc(oid);
+    record("s12_cod_cancel_no_refund_status",
+      r.ok && r.result.outcome === "applied" && o.refundStatus === undefined && o.cancelledBy === "admin",
+      `outcome=${r.result?.outcome} refundStatus=${o.refundStatus}(expect undefined) cancelledBy=${o.cancelledBy}`);
+  }
+
+  // 13 — a prepaid order that was never actually confirmed paid
+  // (paymentStatus not in the isPaid() set) also must NOT set refundStatus
+  // — there is nothing captured to refund.
+  {
+    const oid = "phase64-o13";
+    await seedOrder(oid, "confirmed", { paymentStatus: "created", paymentMethod: "razorpay" });
+    const r = await call({ orderId: oid, newStatus: "cancelled", requestId: nextRequestId() }, ADMIN_AUTH);
+    const o = await orderDoc(oid);
+    record("s13_unpaid_prepaid_method_cancel_no_refund_status",
+      r.ok && r.result.outcome === "applied" && o.refundStatus === undefined,
+      `outcome=${r.result?.outcome} paymentStatus=created refundStatus=${o.refundStatus}(expect undefined)`);
   }
 
   console.log("\n=== SUMMARY ===");
