@@ -32,6 +32,12 @@ dependencies:
   # Utilities
   shared_preferences: ^2.3.4
   intl: ^0.20.2
+  # ADMR-43: a stable request ID for requestEmployeePayout, so a retry after
+  # an ambiguous failure binds to the same server-side request instead of
+  # risking a second wallet debit. Pinned to the SAME constraint
+  # apps/admin/pubspec.yaml already ships, so this adds no new version to
+  # resolve anywhere in the workspace.
+  uuid: ^4.5.1
 
   # UI
   cupertino_icons: ^1.0.8
