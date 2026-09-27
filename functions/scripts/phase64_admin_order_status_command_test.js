@@ -286,6 +286,55 @@ async function main() {
       `outcome=${r.result?.outcome} message=${r.result?.message} orderStatus=${o.orderStatus}(expect delivered, unchanged)`);
   }
 
+  // 19 — ADMR-38: reusing the SAME requestId for the IDENTICAL action
+  // (same target status, same reason) is the legitimate retry-after-
+  // ambiguous-failure case — still returns the original cached outcome,
+  // unchanged behavior.
+  {
+    const oid = "phase64-o19";
+    await seedOrder(oid, "pending");
+    const rid = nextRequestId();
+    const r1 = await call({ orderId: oid, newStatus: "confirmed", requestId: rid }, ADMIN_AUTH);
+    const r2 = await call({ orderId: oid, newStatus: "confirmed", requestId: rid }, ADMIN_AUTH);
+    record("s19_same_requestid_same_action_is_idempotent_replay",
+      r1.ok && r1.result.outcome === "applied" && r2.ok && r2.result.outcome === "already_applied",
+      `first=${r1.result?.outcome} second=${r2.result?.outcome}`);
+  }
+
+  // 20 — ADMR-38: reusing the SAME requestId for a DIFFERENT target status
+  // is refused outright, never silently returning the FIRST action's
+  // stale cached result for a mismatched second request.
+  {
+    const oid = "phase64-o20";
+    await seedOrder(oid, "pending");
+    const rid = nextRequestId();
+    const r1 = await call({ orderId: oid, newStatus: "confirmed", requestId: rid }, ADMIN_AUTH);
+    const r2 = await call({ orderId: oid, newStatus: "processing", requestId: rid }, ADMIN_AUTH);
+    const o = await orderDoc(oid);
+    record("s20_same_requestid_different_status_is_refused",
+      r1.ok && r1.result.outcome === "applied" &&
+        r2.ok && r2.result.outcome === "validation_failed" && /different action/i.test(r2.result.message || "") &&
+        o.orderStatus === "confirmed",
+      `first=${r1.result?.outcome} second=${r2.result?.outcome} message=${r2.result?.message} orderStatus=${o.orderStatus}(expect confirmed, NOT processing)`);
+  }
+
+  // 21 — ADMR-38: reusing the SAME requestId for the SAME target status
+  // but a DIFFERENT reason is also refused — the payload changed, so this
+  // is a different action even though the status matches.
+  {
+    const oid = "phase64-o21";
+    await seedOrder(oid, "delivered");
+    const rid = nextRequestId();
+    const r1 = await call({ orderId: oid, newStatus: "cancelled", requestId: rid, reason: "Customer requested a return" }, ADMIN_AUTH);
+    const r2 = await call({ orderId: oid, newStatus: "cancelled", requestId: rid, reason: "Damaged in transit" }, ADMIN_AUTH);
+    const o = await orderDoc(oid);
+    record("s21_same_requestid_different_reason_is_refused",
+      r1.ok && r1.result.outcome === "applied" &&
+        r2.ok && r2.result.outcome === "validation_failed" && /different action/i.test(r2.result.message || "") &&
+        o.cancellationReason === "Customer requested a return",
+      `first=${r1.result?.outcome} second=${r2.result?.outcome} message=${r2.result?.message} cancellationReason=${o.cancellationReason}(expect the FIRST reason, unchanged)`);
+  }
+
   console.log("\n=== SUMMARY ===");
   for (const [k, v] of Object.entries(results)) console.log(`${k}: ${v}`);
   console.log(allPassed ? "\nALL PASSED" : "\nSOME FAILED");

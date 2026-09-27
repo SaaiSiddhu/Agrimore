@@ -168,6 +168,21 @@ export const adminUpdateOrderStatus = onCall(
       const actionSnap = await tx.get(actionRef);
       if (actionSnap.exists) {
         const prior = actionSnap.data() || {};
+        // ADMR-38: this requestId already recorded a DIFFERENT action on
+        // this order (a different target status, or a different reason)
+        // — never silently return that stale result for a mismatched
+        // request. The client is expected to mint a fresh requestId for
+        // any genuinely new action; a client bug or reuse here is refused
+        // outright rather than guessed at.
+        const priorReason = (prior.reason ?? null) as string | null;
+        const currentReason = reason || null;
+        if (prior.toStatus !== newStatus || priorReason !== currentReason) {
+          return {
+            outcome: "validation_failed",
+            message:
+              "This requestId was already used for a different action on this order — retry with a new requestId.",
+          };
+        }
         return {
           outcome: "already_applied",
           fromStatus: prior.fromStatus,
