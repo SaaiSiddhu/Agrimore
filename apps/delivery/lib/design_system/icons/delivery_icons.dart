@@ -76,6 +76,7 @@ abstract final class DeliveryIcons {
   static const IconData dropoff = LucideIcons.mapPinCheck;
   static const IconData locate = LucideIcons.locateFixed;
   static const IconData route = LucideIcons.route;
+  static const IconData list = LucideIcons.list;
   static const IconData store = LucideIcons.store;
   static const IconData package = LucideIcons.package;
   static const IconData packageOpen = LucideIcons.packageOpen;

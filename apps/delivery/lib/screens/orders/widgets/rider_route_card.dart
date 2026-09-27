@@ -17,15 +17,22 @@ import 'package:agrimore_core/agrimore_core.dart'
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:flutter/foundation.dart' show kIsWeb;
 import 'package:flutter/material.dart';
+import 'package:flutter/services.dart' show Clipboard, ClipboardData;
 import 'package:geolocator/geolocator.dart' show Geolocator;
 import 'package:google_maps_flutter/google_maps_flutter.dart';
 import 'package:provider/provider.dart';
+import 'package:url_launcher/url_launcher.dart';
 
 import '../../../design_system/design_system.dart';
 import '../../../l10n/app_localizations.dart';
 import '../../../navigation/navigation_launch.dart';
 import '../../../navigation/rider_navigation.dart';
 import '../../../providers/location_provider.dart';
+import 'route_recovery.dart';
+
+/// Map or the accessible text alternative -- mutually exclusive, matching a
+/// segmented toggle rather than showing both at once.
+enum RouteView { map, details }
 
 /// Below this, the rider's live position is shown as stale. Matches
 /// riderIncidents.ts's own FRESH_LOCATION_MS server-side constant for
@@ -51,6 +58,10 @@ class RiderRouteCard extends StatefulWidget {
     required this.stepIndex,
     this.dropFallback,
     this.customerName,
+    this.customerPhone,
+    this.storeName,
+    this.taskStream,
+    this.riderStream,
   });
 
   final String orderId;
@@ -62,12 +73,32 @@ class RiderRouteCard extends StatefulWidget {
   final DeliveryPoint? dropFallback;
   final String? customerName;
 
+  /// DLVACC1: injectable in tests -- this widget previously read Firestore
+  /// with no seam at all (see test/rider_route_stale_test.dart's own header
+  /// comment), which meant its recovery states and accessible details
+  /// content could never be driven by anything but a real backend. Defaults
+  /// to the real `delivery_tasks/{orderId}` / `.../live/rider` streams.
+  final Stream<DocumentSnapshot<Map<String, dynamic>>>? taskStream;
+  final Stream<DocumentSnapshot<Map<String, dynamic>>>? riderStream;
+
+  /// DLVACC1: for the accessible details view's own "Call" action -- the
+  /// task model deliberately carries no contact text at all.
+  final String? customerPhone;
+
+  /// DLVACC1: `sellers/{sellerId}.shopName`/`businessName`, fetched by the
+  /// parent screen (never here -- a second independent fetch would risk a
+  /// second, divergent data source). Null renders no store-name line at
+  /// all, matching this repo's own established convention elsewhere,
+  /// rather than a broken-looking empty one.
+  final String? storeName;
+
   @override
   State<RiderRouteCard> createState() => _RiderRouteCardState();
 }
 
 class _RiderRouteCardState extends State<RiderRouteCard> {
-  final _subs = <StreamSubscription<dynamic>>[];
+  StreamSubscription<DocumentSnapshot<Map<String, dynamic>>>? _taskSub;
+  StreamSubscription<DocumentSnapshot<Map<String, dynamic>>>? _riderSub;
   DeliveryTaskModel? _task;
   DeliveryPoint? _rider;
   DateTime? _riderAt;
@@ -76,6 +107,12 @@ class _RiderRouteCardState extends State<RiderRouteCard> {
   GoogleMapController? _map;
   Size? _mapSize;
   String? _framedFor;
+  RouteView _view = RouteView.map;
+
+  /// DLVACC1: explicit, so a listener failure is a distinct, retryable
+  /// state rather than a silently-frozen last-good frame.
+  StreamStatus _taskStatus = const StreamStatus.pending();
+  StreamStatus _riderStatus = const StreamStatus.pending();
 
   DocumentReference<Map<String, dynamic>> get _taskRef =>
       FirebaseFirestore.instance
@@ -94,35 +131,66 @@ class _RiderRouteCardState extends State<RiderRouteCard> {
     _staleTicker = Timer.periodic(kStaleLocationCheckInterval, (_) {
       if (mounted) setState(() {});
     });
+    _listenTask();
+    _listenRider();
+  }
+
+  /// DLVACC1: a genuine retry cancels the old subscription and opens a
+  /// fresh one -- Firestore does not always resubscribe itself after
+  /// onError (permission-denied is terminal for that subscription
+  /// instance), so re-observing the same Stream object would just watch a
+  /// stream that will never emit again.
+  void _listenTask() {
+    _taskSub?.cancel();
+    setState(() => _taskStatus = const StreamStatus.pending());
     try {
-      _subs.add(
-        _taskRef.snapshots().listen(
-          (s) {
-            if (!mounted) return;
-            setState(
-              () => _task = s.exists ? DeliveryTaskModel.fromFirestore(s) : null,
-            );
-            _frame();
-          },
-          onError: (Object e) => debugPrint('Rider route: task stream: $e'),
-        ),
-      );
-      _subs.add(
-        _taskRef.collection('live').doc('rider').snapshots().listen(
-          (s) {
-            if (!mounted) return;
-            final p = RiderLivePoint.fromMap(s.data());
-            setState(() {
-              _rider = p == null ? null : DeliveryPoint(lat: p.lat, lng: p.lng);
-              _riderAt = p?.at;
-            });
-            _frame();
-          },
-          onError: (Object e) => debugPrint('Rider route: live stream: $e'),
-        ),
+      _taskSub = (widget.taskStream ?? _taskRef.snapshots()).listen(
+        (s) {
+          if (!mounted) return;
+          setState(() {
+            _task = s.exists ? DeliveryTaskModel.fromFirestore(s) : null;
+            _taskStatus = StreamStatus.ok(fromCache: s.metadata.isFromCache);
+          });
+          _frame();
+        },
+        onError: (Object e) {
+          debugPrint('Rider route: task stream: $e');
+          if (mounted) {
+            setState(() => _taskStatus = StreamStatus.error(e is FirebaseException ? e.code : null));
+          }
+        },
       );
     } catch (e) {
-      debugPrint('Rider route: stream unavailable: $e');
+      debugPrint('Rider route: task stream unavailable: $e');
+      setState(() => _taskStatus = const StreamStatus.error(null));
+    }
+  }
+
+  void _listenRider() {
+    _riderSub?.cancel();
+    setState(() => _riderStatus = const StreamStatus.pending());
+    try {
+      _riderSub = (widget.riderStream ?? _taskRef.collection('live').doc('rider').snapshots()).listen(
+        (s) {
+          if (!mounted) return;
+          final p = RiderLivePoint.fromMap(s.data());
+          setState(() {
+            _rider = p == null ? null : DeliveryPoint(lat: p.lat, lng: p.lng);
+            _riderAt = p?.at;
+            _riderStatus = StreamStatus.ok(fromCache: s.metadata.isFromCache);
+          });
+          _frame();
+        },
+        onError: (Object e) {
+          debugPrint('Rider route: live stream: $e');
+          if (mounted) {
+            setState(() => _riderStatus = StreamStatus.error(e is FirebaseException ? e.code : null));
+          }
+        },
+      );
+    } catch (e) {
+      debugPrint('Rider route: live stream unavailable: $e');
+      setState(() => _riderStatus = const StreamStatus.error(null));
     }
   }
 
@@ -134,9 +202,8 @@ class _RiderRouteCardState extends State<RiderRouteCard> {
 
   @override
   void dispose() {
-    for (final s in _subs) {
-      s.cancel();
-    }
+    _taskSub?.cancel();
+    _riderSub?.cancel();
     _staleTicker?.cancel();
     super.dispose();
   }
@@ -221,6 +288,19 @@ class _RiderRouteCardState extends State<RiderRouteCard> {
     final dest = _target;
     if (dest == null || !mounted) return;
     await launchExternalNavigationWithFallback(context, dest);
+  }
+
+  Future<void> _call() async {
+    final phone = widget.customerPhone;
+    if (phone == null || phone.isEmpty) return;
+    final uri = Uri.parse('tel:$phone');
+    if (await canLaunchUrl(uri)) await launchUrl(uri);
+  }
+
+  void _copyAddress(DeliveryPoint p) {
+    Clipboard.setData(ClipboardData(text: '${p.lat},${p.lng}'));
+    final l = AppLocalizations.of(context);
+    showDeliveryToast(context, message: l.routeCoordsCopied);
   }
 
   Future<void> _refreshLocation() async {
@@ -356,106 +436,352 @@ class _RiderRouteCardState extends State<RiderRouteCard> {
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.stretch,
         children: [
-          if (_isStale)
-            StaleLocationBanner(
-              minutesAgo: staleMinutes,
-              canRefresh: !usesNativeService,
-              refreshing: _refreshing,
-              onRefresh: _refreshLocation,
-              onCheckSettings: _checkSettings,
-            ),
-          Container(
-            height: DeliverySize.mapHeight,
-            color: c.surfaceVariant,
-            child: start == null
-                ? Center(
-                    child: Text(
-                      l.routeWaiting,
-                      style: t.bodyMedium.copyWith(color: c.textSecondary),
-                    ),
-                  )
-                : LayoutBuilder(
-                    builder: (context, box) {
-                      _mapSize = Size(box.maxWidth, box.maxHeight);
-                      return GoogleMap(
-                        initialCameraPosition: CameraPosition(
-                          target: ll(start),
-                          zoom: 14,
-                        ),
-                        markers: markers,
-                        polylines: polylines,
-                        myLocationEnabled: !kIsWeb,
-                        myLocationButtonEnabled: false,
-                        zoomControlsEnabled: false,
-                        mapToolbarEnabled: false,
-                        compassEnabled: false,
-                        onMapCreated: (ctrl) {
-                          _map = ctrl;
-                          _framedFor = null;
-                          Future.delayed(DeliveryMotion.slow, _frame);
-                        },
-                      );
-                    },
-                  ),
-          ),
           Padding(
             padding: const EdgeInsets.fromLTRB(
               DeliverySpace.lg,
               DeliverySpace.md,
               DeliverySpace.lg,
-              DeliverySpace.md,
+              0,
             ),
-            child: Row(
-              children: [
-                Container(
-                  width: DeliverySize.avatarMd,
-                  height: DeliverySize.avatarMd,
-                  decoration: BoxDecoration(
-                    color: c.brandSubtle,
-                    shape: BoxShape.circle,
-                  ),
-                  child: Icon(
-                    toStore ? DeliveryIcons.store : DeliveryIcons.home,
-                    color: routeColor,
-                  ),
+            child: DeliverySegmented<RouteView>(
+              selected: _view,
+              onSelected: (v) => setState(() => _view = v),
+              items: [
+                DeliveryChipItem(
+                  key: const ValueKey('route-view-map'),
+                  value: RouteView.map,
+                  label: l.routeViewMap,
+                  icon: DeliveryIcons.map,
                 ),
-                const SizedBox(width: DeliverySpace.md),
-                Expanded(
-                  child: Column(
-                    crossAxisAlignment: CrossAxisAlignment.start,
-                    children: [
-                      Text(
-                        headline,
-                        maxLines: 2,
-                        overflow: TextOverflow.ellipsis,
-                        style: t.titleMedium.copyWith(color: c.textPrimary),
-                      ),
-                      const SizedBox(height: DeliverySpace.s2),
-                      Text(
-                        sub,
-                        style: t.bodySmall.copyWith(color: c.textSecondary),
-                      ),
-                    ],
-                  ),
+                DeliveryChipItem(
+                  key: const ValueKey('route-view-details'),
+                  value: RouteView.details,
+                  label: l.routeViewDetails,
+                  icon: DeliveryIcons.list,
                 ),
               ],
             ),
           ),
-          Padding(
-            padding: const EdgeInsets.fromLTRB(
-              DeliverySpace.lg,
-              0,
-              DeliverySpace.lg,
-              DeliverySpace.lg,
+          const SizedBox(height: DeliverySpace.sm),
+          if (_taskStatus.health == StreamHealth.error)
+            _streamErrorBanner(l, t, c, status: _taskStatus, onRetry: _listenTask, isTask: true)
+          else if (_riderStatus.health == StreamHealth.error)
+            _streamErrorBanner(l, t, c, status: _riderStatus, onRetry: _listenRider, isTask: false),
+          if (_view == RouteView.map) ...[
+            if (_isStale)
+              StaleLocationBanner(
+                minutesAgo: staleMinutes,
+                canRefresh: !usesNativeService,
+                refreshing: _refreshing,
+                onRefresh: _refreshLocation,
+                onCheckSettings: _checkSettings,
+              ),
+            Container(
+              height: DeliverySize.mapHeight,
+              color: c.surfaceVariant,
+              child: start == null
+                  ? Center(
+                      child: Text(
+                        l.routeWaiting,
+                        style: t.bodyMedium.copyWith(color: c.textSecondary),
+                      ),
+                    )
+                  : LayoutBuilder(
+                      builder: (context, box) {
+                        _mapSize = Size(box.maxWidth, box.maxHeight);
+                        return GoogleMap(
+                          initialCameraPosition: CameraPosition(
+                            target: ll(start),
+                            zoom: 14,
+                          ),
+                          markers: markers,
+                          polylines: polylines,
+                          myLocationEnabled: !kIsWeb,
+                          myLocationButtonEnabled: false,
+                          zoomControlsEnabled: false,
+                          mapToolbarEnabled: false,
+                          compassEnabled: false,
+                          onMapCreated: (ctrl) {
+                            _map = ctrl;
+                            _framedFor = null;
+                            Future.delayed(DeliveryMotion.slow, _frame);
+                          },
+                        );
+                      },
+                    ),
             ),
-            child: DeliveryButton.primary(
-              label: toStore ? l.routeNavigateStore : l.routeNavigateCustomer,
-              icon: DeliveryIcons.navigation,
-              onPressed: target == null ? null : _navigate,
+            Padding(
+              padding: const EdgeInsets.fromLTRB(
+                DeliverySpace.lg,
+                DeliverySpace.md,
+                DeliverySpace.lg,
+                DeliverySpace.md,
+              ),
+              child: Row(
+                children: [
+                  ExcludeSemantics(
+                    child: Container(
+                      width: DeliverySize.avatarMd,
+                      height: DeliverySize.avatarMd,
+                      decoration: BoxDecoration(
+                        color: c.brandSubtle,
+                        shape: BoxShape.circle,
+                      ),
+                      child: Icon(
+                        toStore ? DeliveryIcons.store : DeliveryIcons.home,
+                        color: routeColor,
+                      ),
+                    ),
+                  ),
+                  const SizedBox(width: DeliverySpace.md),
+                  Expanded(
+                    child: Column(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [
+                        Text(
+                          headline,
+                          maxLines: 2,
+                          overflow: TextOverflow.ellipsis,
+                          style: t.titleMedium.copyWith(color: c.textPrimary),
+                        ),
+                        const SizedBox(height: DeliverySpace.s2),
+                        Text(
+                          sub,
+                          style: t.bodySmall.copyWith(color: c.textSecondary),
+                        ),
+                      ],
+                    ),
+                  ),
+                ],
+              ),
             ),
-          ),
+            Padding(
+              padding: const EdgeInsets.fromLTRB(
+                DeliverySpace.lg,
+                0,
+                DeliverySpace.lg,
+                DeliverySpace.lg,
+              ),
+              child: DeliveryButton.primary(
+                label: toStore ? l.routeNavigateStore : l.routeNavigateCustomer,
+                icon: DeliveryIcons.navigation,
+                onPressed: target == null ? null : _navigate,
+              ),
+            ),
+          ] else
+            _buildDetails(
+              l,
+              c,
+              t,
+              toStore: toStore,
+              atStore: atStore,
+              headline: headline,
+            ),
         ],
       ),
+    );
+  }
+
+  Widget _streamErrorBanner(
+    AppLocalizations l,
+    DeliveryType t,
+    DeliveryColors c, {
+    required StreamStatus status,
+    required VoidCallback onRetry,
+    required bool isTask,
+  }) {
+    final body = status.isPermissionDenied
+        ? l.routeErrorPermissionBody
+        : (isTask ? l.routeErrorTaskBody : l.routeErrorPositionBody);
+    return Padding(
+      padding: const EdgeInsets.fromLTRB(DeliverySpace.lg, 0, DeliverySpace.lg, DeliverySpace.sm),
+      child: DeliveryBanner(
+        key: ValueKey(isTask ? 'route-task-error' : 'route-position-error'),
+        tone: DeliveryTone.danger,
+        icon: DeliveryIcons.offline,
+        title: isTask ? l.routeErrorTaskTitle : l.routeErrorPositionTitle,
+        body: body,
+        actionLabel: l.actionRetry,
+        onAction: onRetry,
+      ),
+    );
+  }
+
+  /// DLVACC1 — the accessible, non-map alternative: the same `_task`/
+  /// `_rider`/`_geometry` the map reads, never a second model, so the two
+  /// views can never disagree about the destination.
+  Widget _buildDetails(
+    AppLocalizations l,
+    DeliveryColors c,
+    DeliveryType t, {
+    required bool toStore,
+    required bool atStore,
+    required String headline,
+  }) {
+    // Only genuinely still-pending gets "Loading…" wording -- a confirmed
+    // error (the banner above already explains it) means "unavailable",
+    // never "in progress and about to resolve on its own".
+    final taskPending = _taskStatus.health == StreamHealth.pending;
+    final geo = _geometry;
+    final remaining = geo.ahead == null
+        ? null
+        : legRemaining(leg: geo.legs.first, ahead: geo.ahead!, legSeconds: geo.legSeconds);
+
+    Widget section({
+      required Key key,
+      required IconData icon,
+      required String label,
+      required Widget child,
+    }) =>
+        Padding(
+          padding: const EdgeInsets.fromLTRB(DeliverySpace.lg, 0, DeliverySpace.lg, DeliverySpace.lg),
+          child: Semantics(
+            container: true,
+            child: Column(
+              key: key,
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Row(
+                  children: [
+                    ExcludeSemantics(child: Icon(icon, size: DeliveryIconSize.sm, color: c.textSecondary)),
+                    const SizedBox(width: DeliverySpace.xs),
+                    Text(label, style: t.labelMedium.copyWith(color: c.textSecondary)),
+                  ],
+                ),
+                const SizedBox(height: DeliverySpace.xs),
+                child,
+              ],
+            ),
+          ),
+        );
+
+    Widget actionRow(List<Widget> buttons) => Padding(
+          padding: const EdgeInsets.only(top: DeliverySpace.sm),
+          child: Row(
+            children: [
+              for (var i = 0; i < buttons.length; i++) ...[
+                if (i > 0) const SizedBox(width: DeliverySpace.sm),
+                Expanded(child: buttons[i]),
+              ],
+            ],
+          ),
+        );
+
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.stretch,
+      children: [
+        section(
+          key: const ValueKey('route-details-stage'),
+          icon: DeliveryIcons.activeOrder,
+          label: l.routeDetailsStageLabel,
+          child: Text(
+            headline,
+            style: t.titleMedium.copyWith(color: c.textPrimary),
+          ),
+        ),
+        section(
+          key: const ValueKey('route-details-pickup'),
+          icon: DeliveryIcons.pickup,
+          label: l.routeDetailsPickupLabel,
+          child: _pickup == null
+              ? Text(
+                  taskPending ? l.routeDetailsLoadingPickup : l.routeDetailsPickupUnavailable,
+                  style: t.bodyMedium.copyWith(color: c.textSecondary),
+                )
+              : Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Text(
+                      widget.storeName ?? l.routeStore,
+                      style: t.bodyMedium.copyWith(color: c.textPrimary),
+                    ),
+                    if (_pickup!.pincode != null)
+                      Text(
+                        _pickup!.pincode!,
+                        style: t.bodySmall.copyWith(color: c.textSecondary),
+                      ),
+                    actionRow([
+                      DeliveryButton.secondary(
+                        key: const ValueKey('route-details-pickup-navigate'),
+                        label: l.routeNavigateStore,
+                        icon: DeliveryIcons.navigation,
+                        onPressed: () => launchExternalNavigationWithFallback(context, _pickup!),
+                      ),
+                      DeliveryButton.ghost(
+                        key: const ValueKey('route-details-pickup-copy'),
+                        label: l.routeCopyCoords,
+                        icon: DeliveryIcons.copy,
+                        onPressed: () => _copyAddress(_pickup!),
+                      ),
+                    ]),
+                  ],
+                ),
+        ),
+        section(
+          key: const ValueKey('route-details-drop'),
+          icon: DeliveryIcons.dropoff,
+          label: l.routeDetailsDropLabel,
+          child: _drop == null
+              ? Text(
+                  taskPending ? l.routeDetailsLoadingDrop : l.routeDetailsDropUnavailable,
+                  style: t.bodyMedium.copyWith(color: c.textSecondary),
+                )
+              : Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Text(
+                      widget.customerName ?? l.routeCustomer,
+                      style: t.bodyMedium.copyWith(color: c.textPrimary),
+                    ),
+                    if (_drop!.pincode != null)
+                      Text(
+                        _drop!.pincode!,
+                        style: t.bodySmall.copyWith(color: c.textSecondary),
+                      ),
+                    actionRow([
+                      DeliveryButton.secondary(
+                        key: const ValueKey('route-details-drop-navigate'),
+                        label: l.routeNavigateCustomer,
+                        icon: DeliveryIcons.navigation,
+                        onPressed: () => launchExternalNavigationWithFallback(context, _drop!),
+                      ),
+                      if (widget.customerPhone != null && widget.customerPhone!.isNotEmpty)
+                        DeliveryButton.secondary(
+                          key: const ValueKey('route-details-drop-call'),
+                          label: l.activeCall,
+                          icon: DeliveryIcons.call,
+                          onPressed: _call,
+                        ),
+                      DeliveryButton.ghost(
+                        key: const ValueKey('route-details-drop-copy'),
+                        label: l.routeCopyCoords,
+                        icon: DeliveryIcons.copy,
+                        onPressed: () => _copyAddress(_drop!),
+                      ),
+                    ]),
+                  ],
+                ),
+        ),
+        section(
+          key: const ValueKey('route-details-distance'),
+          icon: DeliveryIcons.route,
+          label: l.routeDetailsDistanceLabel,
+          child: Text(
+            remaining != null
+                ? legSummary(l, remaining)
+                : (taskPending ? l.routeDetailsLoadingRoute : l.routeDetailsRouteUnavailable),
+            style: t.bodyMedium.copyWith(color: c.textPrimary),
+          ),
+        ),
+        if (_taskStatus.fromCache || _riderStatus.fromCache)
+          Padding(
+            padding: const EdgeInsets.fromLTRB(DeliverySpace.lg, 0, DeliverySpace.lg, DeliverySpace.lg),
+            child: Text(
+              l.routeCachedBanner,
+              style: t.bodySmall.copyWith(color: c.textTertiary),
+            ),
+          ),
+      ],
     );
   }
 }
