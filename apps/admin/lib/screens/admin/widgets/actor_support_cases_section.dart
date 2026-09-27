@@ -25,6 +25,7 @@ class ActorSupportCasesSection extends StatefulWidget {
     required this.firestore,
     required this.actorType,
     required this.actorId,
+    this.title = 'Support cases',
   });
 
   final FirebaseFirestore firestore;
@@ -32,6 +33,14 @@ class ActorSupportCasesSection extends StatefulWidget {
   /// One of kSupportCaseActorTypes.
   final String actorType;
   final String actorId;
+
+  /// ADMR-64: overridable so Order 360 can stack one of these per actor
+  /// role present on an order (e.g. "Seller", "Delivery Partner") without
+  /// four identical, undifferentiated "Support cases" headers. Every
+  /// existing People-360 caller leaves this at its default -- there,
+  /// which actor the section is about is already unambiguous from the
+  /// whole screen.
+  final String title;
 
   @override
   State<ActorSupportCasesSection> createState() => _ActorSupportCasesSectionState();
@@ -59,7 +68,7 @@ class _ActorSupportCasesSectionState extends State<ActorSupportCasesSection> {
         Row(
           children: [
             Expanded(
-              child: Text('Support cases',
+              child: Text(widget.title,
                   style: AppTextStyles.titleMedium.copyWith(fontWeight: FontWeight.bold)),
             ),
             OutlinedButton.icon(
