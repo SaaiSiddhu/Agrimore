@@ -220,6 +220,31 @@ async function main() {
       `outcome=${r.result?.outcome} paymentStatus=created refundStatus=${o.refundStatus}(expect undefined)`);
   }
 
+  // 14 — ADMR-26: 'cancelled' is terminal — no transition OUT of it is
+  // allowed, even with a reason, even to a status that would otherwise be
+  // perfectly ordinary.
+  {
+    const oid = "phase64-o14";
+    await seedOrder(oid, "cancelled");
+    const r = await call({ orderId: oid, newStatus: "confirmed", requestId: nextRequestId(), reason: "Customer changed their mind" }, ADMIN_AUTH);
+    const o = await orderDoc(oid);
+    record("s14_cancelled_is_terminal_no_transition_out",
+      r.ok && r.result.outcome === "validation_failed" && /cancelled order/i.test(r.result.message || "") && o.orderStatus === "cancelled",
+      `outcome=${r.result?.outcome} message=${r.result?.message} orderStatus=${o.orderStatus}(expect cancelled, unchanged)`);
+  }
+
+  // 15 — ADMR-26: a delivered order can ONLY leave to 'cancelled' — every
+  // other target is refused, even with a reason supplied.
+  {
+    const oid = "phase64-o15";
+    await seedOrder(oid, "delivered");
+    const r = await call({ orderId: oid, newStatus: "processing", requestId: nextRequestId(), reason: "Reopening for re-packing" }, ADMIN_AUTH);
+    const o = await orderDoc(oid);
+    record("s15_delivered_can_only_leave_to_cancelled",
+      r.ok && r.result.outcome === "validation_failed" && /only be moved to .cancelled./i.test(r.result.message || "") && o.orderStatus === "delivered",
+      `outcome=${r.result?.outcome} message=${r.result?.message} orderStatus=${o.orderStatus}(expect delivered, unchanged)`);
+  }
+
   console.log("\n=== SUMMARY ===");
   for (const [k, v] of Object.entries(results)) console.log(`${k}: ${v}`);
   console.log(allPassed ? "\nALL PASSED" : "\nSOME FAILED");
