@@ -32,6 +32,45 @@ class OrderStatusUpdateResult {
       outcome == OrderStatusUpdateOutcome.alreadyApplied;
 }
 
+// ADMR-38: updateOrderStatus used to generate a fresh UUID on every call,
+// including a RETRY of the exact same admin action after an ambiguous
+// failure (a dropped connection, a timeout) — the one case
+// adminUpdateOrderStatus's own requestId-keyed idempotency exists to
+// protect, defeated by never actually reusing the id. This tracks the
+// single most recent action whose outcome is still unknown, so a retry of
+// that SAME action (same order, same target status, same reason) reuses
+// its requestId instead of minting a new one; any DIFFERENT action always
+// gets a fresh id, whether or not one is pending.
+class PendingStatusUpdate {
+  final String orderId;
+  final String newStatus;
+  final String? description;
+  final String requestId;
+  const PendingStatusUpdate({
+    required this.orderId,
+    required this.newStatus,
+    required this.description,
+    required this.requestId,
+  });
+
+  bool matches(String orderId, String newStatus, String? description) =>
+      this.orderId == orderId &&
+      this.newStatus == newStatus &&
+      this.description == description;
+}
+
+/// Firebase Functions error codes that mean the call's OUTCOME is unknown
+/// (the request may or may not have reached/committed on the server) —
+/// as opposed to a definite rejection (permission-denied, invalid-argument,
+/// failed-precondition, ...) where the server demonstrably did not apply
+/// anything, so a later retry is always safe to treat as a fresh action.
+bool isAmbiguousFunctionsErrorCode(String code) =>
+    code == 'unavailable' ||
+    code == 'deadline-exceeded' ||
+    code == 'internal' ||
+    code == 'cancelled' ||
+    code == 'unknown';
+
 // ADMR-37: typed result for confirmOrderReturnReceived, mirroring
 // functions/src/admin/confirmOrderReturnReceived.ts's own Outcome union.
 enum ConfirmReturnOutcome {
@@ -101,6 +140,9 @@ class OrderProvider with ChangeNotifier {
   bool _isLoadingTimeline = false;
   String? _error;
   StreamSubscription? _ordersSubscription;
+  // ADMR-38: the one in-flight/ambiguous-outcome updateOrderStatus action,
+  // if any — see PendingStatusUpdate's own header.
+  PendingStatusUpdate? _pendingStatusUpdate;
 
   // ============================================
   // GETTERS
@@ -547,6 +589,23 @@ class OrderProvider with ChangeNotifier {
     String? description,
     String? expectedCurrentStatus,
   }) async {
+    // ADMR-38: reuse the SAME requestId only when this call is a retry of
+    // the identical pending action (same order, target status and reason)
+    // — anything else (a genuinely new action, or none pending yet) mints
+    // a fresh one. This is decided BEFORE the try block so it is set
+    // exactly once per logical action, not re-derived after a failure.
+    final pending = _pendingStatusUpdate;
+    final requestId = (pending != null &&
+            pending.matches(orderId, newStatus, description))
+        ? pending.requestId
+        : const Uuid().v4();
+    _pendingStatusUpdate = PendingStatusUpdate(
+      orderId: orderId,
+      newStatus: newStatus,
+      description: description,
+      requestId: requestId,
+    );
+
     try {
       _isLoading = true;
       _error = null;
@@ -554,7 +613,6 @@ class OrderProvider with ChangeNotifier {
 
       debugPrint('📦 Updating order status: $orderId -> $newStatus');
 
-      final requestId = const Uuid().v4();
       final res = await FirebaseFunctions.instance
           .httpsCallable('adminUpdateOrderStatus')
           .call<Map<String, dynamic>>({
@@ -568,6 +626,9 @@ class OrderProvider with ChangeNotifier {
 
       final outcome = res.data['outcome'] as String?;
       _isLoading = false;
+      // A definite server response — success or an explicit rejection —
+      // resolves this action either way; it is no longer pending/ambiguous.
+      _pendingStatusUpdate = null;
 
       if (outcome == 'applied' || outcome == 'already_applied') {
         await loadOrderById(orderId);
@@ -600,6 +661,13 @@ class OrderProvider with ChangeNotifier {
       debugPrint('❌ adminUpdateOrderStatus: ${e.code} ${e.message}');
       _error = e.message ?? e.code;
       _isLoading = false;
+      // Only an ambiguous failure (the call may have reached/committed on
+      // the server) keeps this action pending so a retry reuses
+      // requestId; a definite rejection means nothing was applied, so the
+      // NEXT attempt (even of the same action) is safe to treat as fresh.
+      if (!isAmbiguousFunctionsErrorCode(e.code)) {
+        _pendingStatusUpdate = null;
+      }
       notifyListeners();
       return OrderStatusUpdateResult(
         e.code == 'permission-denied'
@@ -608,6 +676,10 @@ class OrderProvider with ChangeNotifier {
         message: e.message ?? e.code,
       );
     } catch (e) {
+      // A bare exception (no FirebaseFunctionsException code at all — a
+      // dropped connection, a client-side timeout) is the archetypal
+      // ambiguous case: _pendingStatusUpdate deliberately stays set so a
+      // retry of this same action reuses requestId.
       debugPrint('❌ Error updating order status: $e');
       _error = e.toString();
       _isLoading = false;
