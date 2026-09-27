@@ -188,45 +188,4 @@ class AdminColors {
   static const Color shimmerHighlight = Color(0xFFF9FAFB);
   static const Color shimmerBaseDark = Color(0xFF374151);
   static const Color shimmerHighlightDark = Color(0xFF4B5563);
-  
-  // ============================================
-  // HELPER METHODS
-  // ============================================
-  
-  static Color getTextColorForBackground(Color background) {
-    final brightness = ThemeData.estimateBrightnessForColor(background);
-    return brightness == Brightness.dark ? textLight : textPrimary;
-  }
-  
-  static Color getOrderStatusColor(String status) {
-    switch (status.toLowerCase()) {
-      case 'pending':
-        return pending;
-      case 'confirmed':
-        return confirmed;
-      case 'processing':
-        return processing;
-      case 'shipped':
-        return shipped;
-      case 'outfordelivery':
-      case 'out_for_delivery':
-        return outForDelivery;
-      case 'delivered':
-        return delivered;
-      case 'cancelled':
-        return cancelled;
-      case 'returned':
-        return returned;
-      case 'refunded':
-        return refunded;
-      default:
-        return textSecondary;
-    }
-  }
-  
-  static Color getStockStatusColor(int stock, {int lowStockThreshold = 10}) {
-    if (stock <= 0) return outOfStock;
-    if (stock <= lowStockThreshold) return lowStock;
-    return inStock;
-  }
 }
