@@ -6,6 +6,7 @@
 // through jsonEncode/decode (not the bare Dart object), so a bug in
 // RegistrationDraft's own JSON shape would show up here too, not just in
 // registration_draft_test.dart.
+import 'dart:async';
 import 'dart:convert';
 import 'dart:typed_data';
 
@@ -45,9 +46,32 @@ class InMemoryDraftStore implements RegistrationDraftStore {
   }
 }
 
+/// DLVID5: wraps a real store but blocks every `save` on an externally-held
+/// gate, so a test can trigger a save, change the current identity while it
+/// is still in flight, then release it -- proving the write lands under the
+/// key captured when it was triggered, not whatever is current when it
+/// finally completes.
+class _GatedDraftStore implements RegistrationDraftStore {
+  _GatedDraftStore(this._inner, this._gate);
+  final RegistrationDraftStore _inner;
+  final Completer<void> _gate;
+
+  @override
+  Future<RegistrationDraft?> load(String key) => _inner.load(key);
+  @override
+  Future<void> save(String key, RegistrationDraft draft) async {
+    await _gate.future;
+    await _inner.save(key, draft);
+  }
+
+  @override
+  Future<void> clear(String key) => _inner.clear(key);
+}
+
 class FakeBackend implements RegistrationBackend {
   String? uid;
   RegistrationException? failSubmit;
+  Object? failFirstUpload;
   final log = <String>[];
 
   @override
@@ -57,6 +81,11 @@ class FakeBackend implements RegistrationBackend {
   @override
   Future<void> uploadPhoto(String path, Uint8List bytes, String contentType) async {
     log.add('upload $path');
+    final f = failFirstUpload;
+    if (f != null) {
+      failFirstUpload = null;
+      throw f;
+    }
   }
 
   @override
@@ -129,6 +158,7 @@ void main() {
     Map<String, dynamic>? initial,
     Future<PickedPhoto?> Function(RiderDocument doc)? pickPhoto,
     Future<PickedPhoto?> Function(DraftPhoto stored)? resolveDraftPhoto,
+    Future<void> Function(String path)? deleteStagedFile,
   }) async {
     t.view.physicalSize = const Size(1080, 2400);
     t.view.devicePixelRatio = 2.0;
@@ -145,6 +175,10 @@ void main() {
           (stored) async => stored.path.startsWith('missing:')
               ? null
               : (bytes: Uint8List.fromList(_png), contentType: stored.contentType, path: stored.path),
+      // DLVID5: same real-disk-I/O-must-be-injectable reason as
+      // resolveDraftPhoto above -- default to a no-op so no test touches
+      // real dart:io unless it explicitly asks to.
+      deleteStagedFile: deleteStagedFile ?? (path) async {},
     )));
     await t.pumpAndSettle();
   }
@@ -349,6 +383,182 @@ void main() {
       expect(find.text('Add this photo'), findsOneWidget);
       expect(find.text('Change'), findsNWidgets(3));
       expect(find.text('Add photo'), findsNothing);
+    });
+  });
+
+  group('DLVID5: draft ownership', () {
+    testWidgets('a pre-account draft is never offered to a different, already signed-in rider', (t) async {
+      final store = InMemoryDraftStore();
+      await store.save(
+        '_pending',
+        RegistrationDraft(
+          step: 3,
+          form: RiderApplicationForm()
+            ..name = 'Rider A'
+            ..phone = '9876500000'
+            ..aadhaarNumber = '234567890123',
+          photos: const {},
+          savedAt: DateTime.now(),
+        ),
+      );
+      // Rider B: a different, already-signed-in rider with no draft of their own.
+      final backend = FakeBackend()..uid = 'u2';
+      await pumpApp(t, draftStore: store, backend: backend);
+
+      expect(find.text('Resume registration?'), findsNothing);
+      expect(find.widgetWithText(TextFormField, 'Rider A'), findsNothing);
+      // Rider A's own draft is untouched -- not silently claimed by B, not deleted either.
+      expect(await store.load('_pending'), isNotNull);
+    });
+
+    testWidgets("signing in as a different rider does not surface that rider's own PREVIOUS uid-keyed draft", (t) async {
+      final store = InMemoryDraftStore();
+      await store.save(
+        'u1',
+        RegistrationDraft(step: 2, form: RiderApplicationForm()..name = 'Rider A', photos: const {}, savedAt: DateTime.now()),
+      );
+      final backend = FakeBackend()..uid = 'u2';
+      await pumpApp(t, draftStore: store, backend: backend);
+
+      expect(find.text('Resume registration?'), findsNothing);
+      expect(find.widgetWithText(TextFormField, 'Rider A'), findsNothing);
+    });
+
+    testWidgets('a draft older than the retention window is never offered, and is cleared rather than left dangling', (t) async {
+      final store = InMemoryDraftStore();
+      await store.save(
+        '_pending',
+        RegistrationDraft(
+          step: 2,
+          form: RiderApplicationForm()..name = 'Very Old Draft',
+          photos: const {},
+          savedAt: DateTime.now().subtract(const Duration(days: 30)),
+        ),
+      );
+      await pumpApp(t, draftStore: store);
+
+      expect(find.text('Resume registration?'), findsNothing);
+      expect(await store.load('_pending'), isNull);
+    });
+
+    testWidgets('a slow-completing save lands under the key that was current when triggered, not a later one', (t) async {
+      final store = InMemoryDraftStore();
+      final gate = Completer<void>();
+      final slow = _GatedDraftStore(store, gate);
+      final backend = FakeBackend()..uid = 'u1'; // already signed in -> starts at step 1
+      await pumpApp(t, draftStore: slow, backend: backend);
+
+      await t.enterText(find.byKey(const ValueKey('field-name')), 'Priya S');
+      await t.enterText(find.byKey(const ValueKey('field-phone')), '9876543210');
+      await t.enterText(find.byKey(const ValueKey('field-address')), '1 Anna Salai');
+      await t.enterText(find.byKey(const ValueKey('field-city')), 'Chennai');
+      await t.enterText(find.byKey(const ValueKey('field-pincode')), '600001');
+      await t.tap(find.byKey(const ValueKey('registration-continue-1')));
+      await t.pump(); // the save is now in flight, gated on 'u1' -- not yet complete
+
+      // The identity changes underneath the still-in-flight save.
+      backend.uid = 'u2';
+      gate.complete();
+      await t.pumpAndSettle();
+
+      final saved = await store.load('u1');
+      expect(saved, isNotNull, reason: 'the save must land under the key captured at trigger time');
+      expect(saved!.form.name, 'Priya S');
+      expect(await store.load('u2'), isNull, reason: 'never redirected to the identity current when it finally completed');
+    });
+
+    testWidgets('discarding a draft deletes its staged photo file, not just the metadata', (t) async {
+      const stagedPath = 'cache/selfie-staged.jpg';
+      final deleted = <String>[];
+
+      final store = InMemoryDraftStore();
+      await store.save(
+        '_pending',
+        RegistrationDraft(
+          step: 3,
+          form: RiderApplicationForm()..aadhaarNumber = '234567890123',
+          photos: const {RiderDocument.selfie: DraftPhoto(path: stagedPath, contentType: 'image/jpeg')},
+          savedAt: DateTime.now(),
+        ),
+      );
+      await pumpApp(
+        t,
+        draftStore: store,
+        deleteStagedFile: (path) async => deleted.add(path),
+      );
+      await t.tap(find.text('Resume'));
+      await t.pumpAndSettle();
+      expect(deleted, isEmpty);
+
+      await t.tap(find.text('Start over'));
+      await t.pumpAndSettle();
+      await t.tap(find.widgetWithText(DeliveryButton, 'Start over'));
+      await t.pumpAndSettle();
+
+      expect(deleted, [stagedPath]);
+    });
+
+    testWidgets("backgrounding the app saves the current step's in-progress edits", (t) async {
+      final store = InMemoryDraftStore();
+      final backend = FakeBackend()..uid = 'u1'; // already signed in -> starts at step 1
+      await pumpApp(t, draftStore: store, backend: backend);
+
+      await t.enterText(find.byKey(const ValueKey('field-name')), 'Anita K');
+      await t.pump();
+      expect(await store.load('u1'), isNull, reason: 'no save point reached yet');
+
+      t.binding.handleAppLifecycleStateChanged(AppLifecycleState.paused);
+      await t.pumpAndSettle();
+
+      final saved = await store.load('u1');
+      expect(saved, isNotNull);
+      expect(saved!.form.name, 'Anita K');
+    });
+
+    testWidgets("a failure during upload leaves the draft already saved under the new account's own key", (t) async {
+      final store = InMemoryDraftStore();
+      final backend = FakeBackend()..failFirstUpload = Exception('simulated crash mid-upload');
+      await pumpApp(
+        t,
+        draftStore: store,
+        backend: backend,
+        pickPhoto: (_) async => (bytes: Uint8List.fromList(_png), contentType: 'image/png', path: null),
+      );
+
+      await t.enterText(find.byKey(const ValueKey('field-email')), 'rider@example.com');
+      await t.enterText(find.byKey(const ValueKey('field-password')), 'password123');
+      await t.tap(find.byKey(const ValueKey('registration-continue-0')));
+      await t.pumpAndSettle();
+
+      await t.enterText(find.byKey(const ValueKey('field-name')), 'Priya S');
+      await t.enterText(find.byKey(const ValueKey('field-phone')), '9876543210');
+      await t.enterText(find.byKey(const ValueKey('field-address')), '1 Anna Salai');
+      await t.enterText(find.byKey(const ValueKey('field-city')), 'Chennai');
+      await t.enterText(find.byKey(const ValueKey('field-pincode')), '600001');
+      await t.tap(find.byKey(const ValueKey('registration-continue-1')));
+      await t.pumpAndSettle();
+
+      await t.enterText(find.byKey(const ValueKey('field-vehicleNumber')), 'TN58AB1234');
+      await t.enterText(find.byKey(const ValueKey('field-licenseNumber')), 'TN5820200001234');
+      await t.tap(find.byKey(const ValueKey('registration-continue-2')));
+      await t.pumpAndSettle();
+
+      await t.enterText(find.byKey(const ValueKey('field-aadhaarNumber')), '234567890123');
+      for (final key in ['aadhaarFront', 'aadhaarBack', 'selfie', 'license']) {
+        await t.tap(find.byKey(ValueKey('photo-$key')));
+        await t.pumpAndSettle();
+      }
+      await t.tap(find.byKey(const ValueKey('registration-continue-3')));
+      await t.pumpAndSettle();
+
+      await t.tap(find.byKey(const ValueKey('registration-continue-4')));
+      await t.pumpAndSettle();
+
+      // The upload threw, so the submission never completed -- but the
+      // account WAS created, and the draft must already be filed under it.
+      expect(backend.uid, isNotNull);
+      expect(await store.load(backend.uid!), isNotNull);
+      expect(await store.load('_pending'), isNull, reason: 'promoted, not left stranded, the instant the account existed');
     });
   });
 }
