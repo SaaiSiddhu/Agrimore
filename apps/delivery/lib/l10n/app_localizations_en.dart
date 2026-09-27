@@ -680,6 +680,13 @@ class AppLocalizationsEn extends AppLocalizations {
   String get docNotSubmitted => 'Not submitted';
 
   @override
+  String get docPreviewAction => 'View';
+
+  @override
+  String get docPreviewUnavailable =>
+      'This document couldn\'t be loaded right now.';
+
+  @override
   String payoutBank(String masked) {
     return 'Bank account $masked';
   }

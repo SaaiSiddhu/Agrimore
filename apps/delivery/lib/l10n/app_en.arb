@@ -851,6 +851,14 @@
   "@docNotSubmitted": {
     "description": "Document state"
   },
+  "docPreviewAction": "View",
+  "@docPreviewAction": {
+    "description": "Button to preview an already-uploaded document"
+  },
+  "docPreviewUnavailable": "This document couldn't be loaded right now.",
+  "@docPreviewUnavailable": {
+    "description": "Shown when a document preview fails to load"
+  },
   "payoutBank": "Bank account {masked}",
   "@payoutBank": {
     "description": "Payout destination",

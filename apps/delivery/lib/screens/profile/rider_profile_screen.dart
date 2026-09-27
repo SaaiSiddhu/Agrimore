@@ -7,6 +7,7 @@
 import 'package:agrimore_core/agrimore_core.dart'
     show OrderModel, VehicleType;
 import 'package:cloud_firestore/cloud_firestore.dart';
+import 'package:firebase_storage/firebase_storage.dart';
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 
@@ -392,14 +393,23 @@ class _RiderProfileScreenState extends State<RiderProfileScreen> {
                 l.profileDocuments,
                 [
                   for (final e in docs.entries)
-                    _row(
-                      switch (e.key) {
+                    _DocumentPreviewTile(
+                      key: ValueKey('doc-${e.key.key}'),
+                      docKey: e.key.key,
+                      label: switch (e.key) {
                         RiderDocument.aadhaarFront => l.docAadhaarFront,
                         RiderDocument.aadhaarBack => l.docAadhaarBack,
                         RiderDocument.selfie => l.docSelfie,
                         RiderDocument.license => l.docLicense,
                       },
-                      e.value ? l.docSubmitted : l.docNotSubmitted,
+                      onFile: e.value,
+                      // DLVDOC1: a rider's own already-uploaded document is a
+                      // pure read -- storage.rules grants it unconditionally,
+                      // independent of application status -- unlike ADDING or
+                      // REPLACING one after approval, which riderKycEditable()
+                      // deliberately refuses; that stays a resubmission-only
+                      // action, not built here.
+                      storagePath: e.key.pathFor(auth.user!.uid),
                     ),
                 ],
               ),
@@ -648,3 +658,143 @@ String? fieldErrorTextFor(AppLocalizations l, String key) => switch (key) {
       'pincode' => l.errPincode,
       _ => null,
     };
+
+/// DLVDOC1 -- a document row with a "View" action when it is on file.
+/// Read-only: resolves a short-lived download URL only, the same lazy
+/// pattern `rider_review_sheet.dart`'s own `_KycTile` (admin) and
+/// `admin_order_details_screen.dart`'s `_DeliveryProofTile` (ADMR-39)
+/// already use for the identical "owner-readable Storage path" shape.
+class _DocumentPreviewTile extends StatefulWidget {
+  const _DocumentPreviewTile({
+    super.key,
+    required this.docKey,
+    required this.label,
+    required this.onFile,
+    required this.storagePath,
+  });
+
+  /// The document's own stable identifier ('aadhaarFront', ...) -- used for
+  /// the View button's key, deliberately never the localized [label], which
+  /// would make the key locale-dependent.
+  final String docKey;
+  final String label;
+  final bool onFile;
+  final String storagePath;
+
+  @override
+  State<_DocumentPreviewTile> createState() => _DocumentPreviewTileState();
+}
+
+class _DocumentPreviewTileState extends State<_DocumentPreviewTile> {
+  Future<String>? _url;
+
+  Future<String> _resolve() async {
+    try {
+      return await FirebaseStorage.instance.ref(widget.storagePath).getDownloadURL();
+    } catch (e) {
+      debugPrint('Document preview unavailable (${widget.label}): $e');
+      return '';
+    }
+  }
+
+  Future<void> _view() async {
+    _url ??= _resolve();
+    final url = await _url!;
+    if (!mounted) return;
+    if (url.isEmpty) {
+      final l = AppLocalizations.of(context);
+      showDeliveryToast(context, message: l.docPreviewUnavailable, tone: DeliveryBannerTone.warning);
+      return;
+    }
+    if (!context.mounted) return;
+    await showDialog<void>(
+      context: context,
+      builder: (ctx) => _DocumentPreviewDialog(label: widget.label, url: url),
+    );
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    final l = AppLocalizations.of(context);
+    final c = context.colors;
+    final t = context.text;
+    return Padding(
+      padding: const EdgeInsets.symmetric(vertical: DeliverySpace.xxs),
+      child: Row(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Expanded(
+            flex: 2,
+            child: Text(widget.label, style: t.bodyMedium.copyWith(color: c.textSecondary)),
+          ),
+          const SizedBox(width: DeliverySpace.sm),
+          Expanded(
+            flex: 3,
+            child: Text(
+              widget.onFile ? l.docSubmitted : l.docNotSubmitted,
+              style: t.bodyMedium.copyWith(color: c.textPrimary),
+            ),
+          ),
+          if (widget.onFile)
+            TextButton(
+              key: ValueKey('view-${widget.docKey}'),
+              onPressed: _view,
+              child: Text(l.docPreviewAction),
+            ),
+        ],
+      ),
+    );
+  }
+}
+
+class _DocumentPreviewDialog extends StatelessWidget {
+  const _DocumentPreviewDialog({required this.label, required this.url});
+  final String label;
+  final String url;
+
+  @override
+  Widget build(BuildContext context) {
+    final l = AppLocalizations.of(context);
+    return Dialog.fullscreen(
+      backgroundColor: Colors.black,
+      child: Stack(
+        children: [
+          Center(
+            child: InteractiveViewer(
+              minScale: 0.5,
+              maxScale: 4,
+              child: Image.network(
+                url,
+                errorBuilder: (context, error, stackTrace) => Text(
+                  l.docPreviewUnavailable,
+                  style: const TextStyle(color: Colors.white),
+                ),
+                loadingBuilder: (context, child, progress) => progress == null
+                    ? child
+                    : const CircularProgressIndicator(color: Colors.white),
+              ),
+            ),
+          ),
+          Positioned(
+            top: DeliverySpace.md,
+            right: DeliverySpace.md,
+            child: SafeArea(
+              child: IconButton(
+                key: const ValueKey('close-document-preview'),
+                icon: const Icon(Icons.close, color: Colors.white),
+                onPressed: () => Navigator.of(context).pop(),
+              ),
+            ),
+          ),
+          Positioned(
+            top: DeliverySpace.md,
+            left: DeliverySpace.md,
+            child: SafeArea(
+              child: Text(label, style: const TextStyle(color: Colors.white)),
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+}
