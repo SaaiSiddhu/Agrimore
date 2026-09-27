@@ -1,10 +1,13 @@
 // lib/screens/admin/orders/order_management_screen.dart
 import 'dart:convert';
+import 'dart:io';
 import 'package:flutter/material.dart';
 import 'package:flutter/foundation.dart' show kIsWeb;
 import 'package:provider/provider.dart';
 import 'package:agrimore_ui/agrimore_ui.dart';
 import 'package:intl/intl.dart';
+import 'package:path_provider/path_provider.dart';
+import 'package:share_plus/share_plus.dart';
 import '../../../app/themes/admin_colors.dart';
 import '../../../providers/order_provider.dart';
 
@@ -14,6 +17,46 @@ import 'web_download_stub.dart' if (dart.library.html) 'web_download_impl.dart' 
 import 'admin_order_details_screen.dart';
 import 'widgets/admin_order_card.dart';
 import 'widgets/order_reason_dialog.dart';
+
+// ADMR-47: pulled out of _exportToCSV so the header/row/quote-escaping logic
+// is a plain, Firebase-free function the test suite can call directly.
+// OrderModel itself has no live-Firebase construction requirement (unlike
+// the State class this used to live in), matching this project's other
+// Firebase-free guard tests.
+String buildOrdersCsv(List<OrderModel> orders) {
+  final List<String> headers = [
+    'Order ID',
+    'Order Number',
+    'Customer Name',
+    'Phone',
+    'Address',
+    'Status',
+    'Total',
+    'Items Count',
+    'Created At',
+  ];
+
+  final List<List<String>> rows = orders.map((order) {
+    return [
+      order.id,
+      order.orderNumber,
+      order.deliveryAddress.name,
+      order.deliveryAddress.phone,
+      order.deliveryAddress.fullAddress,
+      order.status,
+      order.total.toStringAsFixed(2),
+      order.items.length.toString(),
+      DateFormat('dd/MM/yyyy HH:mm').format(order.createdAt),
+    ];
+  }).toList();
+
+  final csvContent = StringBuffer();
+  csvContent.writeln(headers.join(','));
+  for (final row in rows) {
+    csvContent.writeln(row.map((cell) => '"${cell.replaceAll('"', '""')}"').join(','));
+  }
+  return csvContent.toString();
+}
 
 class OrderManagementScreen extends StatefulWidget {
   const OrderManagementScreen({Key? key}) : super(key: key);
@@ -168,58 +211,48 @@ class _OrderManagementScreenState extends State<OrderManagementScreen> {
   }
 
   // Export to CSV
-  void _exportToCSV(List<OrderModel> orders) {
+  Future<void> _exportToCSV(List<OrderModel> orders) async {
     if (orders.isEmpty) {
       SnackbarHelper.showError(context, 'No orders to export');
       return;
     }
 
-    // Build CSV content
-    final List<String> headers = [
-      'Order ID',
-      'Order Number',
-      'Customer Name',
-      'Phone',
-      'Address',
-      'Status',
-      'Total',
-      'Items Count',
-      'Created At',
-    ];
-
-    final List<List<String>> rows = orders.map((order) {
-      return [
-        order.id,
-        order.orderNumber ?? '',
-        order.deliveryAddress?.name ?? '',
-        order.deliveryAddress?.phone ?? '',
-        order.deliveryAddress?.fullAddress ?? '',
-        order.status,
-        order.total.toStringAsFixed(2),
-        order.items.length.toString(),
-        DateFormat('dd/MM/yyyy HH:mm').format(order.createdAt),
-      ];
-    }).toList();
-
-    // Convert to CSV string
-    final csvContent = StringBuffer();
-    csvContent.writeln(headers.join(','));
-    for (final row in rows) {
-      csvContent.writeln(row.map((cell) => '"${cell.replaceAll('"', '""')}"').join(','));
-    }
+    final csvContent = buildOrdersCsv(orders);
+    final filename = 'orders_${DateFormat('yyyyMMdd_HHmmss').format(DateTime.now())}.csv';
 
     if (kIsWeb) {
       // Web download using conditional import
-      final bytes = utf8.encode(csvContent.toString());
-      final filename = 'orders_${DateFormat('yyyyMMdd_HHmmss').format(DateTime.now())}.csv';
+      final bytes = utf8.encode(csvContent);
       web_download.downloadFile(bytes, filename);
-    } else {
-      // Mobile - show message (could implement share functionality later)
-      SnackbarHelper.showInfo(context, 'CSV export is only available on web');
+      if (!mounted) return;
+      SnackbarHelper.showSuccess(context, 'Exported ${orders.length} orders to CSV');
       return;
     }
 
-    SnackbarHelper.showSuccess(context, 'Exported ${orders.length} orders to CSV');
+    // Mobile: write to a temp file and hand it to the OS share sheet, same
+    // real capability apps/marketplace and apps/employee already use
+    // (Share.share for text) applied to a file instead.
+    try {
+      final dir = await getTemporaryDirectory();
+      final file = File('${dir.path}/$filename');
+      await file.writeAsString(csvContent);
+      if (!mounted) return;
+
+      final result = await Share.shareXFiles(
+        [XFile(file.path)],
+        text: 'Exported ${orders.length} orders',
+      );
+      if (!mounted) return;
+
+      if (result.status == ShareResultStatus.dismissed) {
+        SnackbarHelper.showInfo(context, 'Export cancelled');
+      } else {
+        SnackbarHelper.showSuccess(context, 'Exported ${orders.length} orders to CSV');
+      }
+    } catch (e) {
+      if (!mounted) return;
+      SnackbarHelper.showError(context, 'Could not export CSV: $e');
+    }
   }
 
   List<OrderModel> _filterOrders(List<OrderModel> orders) {
