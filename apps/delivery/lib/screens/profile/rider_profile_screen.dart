@@ -4,16 +4,20 @@
 // them (Aadhaar and bank masked), document and payout state, the contact
 // details they may edit themselves (updateRiderContact), appearance switcher,
 // support, sign-out and account deletion.
+import 'dart:typed_data';
+
 import 'package:agrimore_core/agrimore_core.dart'
     show OrderModel, VehicleType;
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:firebase_storage/firebase_storage.dart';
 import 'package:flutter/material.dart';
+import 'package:image_picker/image_picker.dart';
 import 'package:provider/provider.dart';
 
 import '../../account/rider_account.dart';
 import '../../account/support_card.dart';
 import '../../design_system/design_system.dart';
+import '../../identity/rider_document_review.dart';
 import '../../identity/rider_identity.dart' show kIdentityChangeTypeVehicle;
 import '../../l10n/app_localizations.dart';
 import '../../money/rider_money.dart';
@@ -65,6 +69,8 @@ class RiderProfileScreen extends StatefulWidget {
     this.backend,
     this.partnerData,
     this.accountSource,
+    this.documentReviewBackend,
+    this.pickReplacementPhoto,
   });
   final RiderAccountBackend? backend;
   final Map<String, dynamic>? partnerData;
@@ -75,6 +81,15 @@ class RiderProfileScreen extends StatefulWidget {
   /// a second, ad-hoc query shape.
   final Stream<RiderAccount> Function(String riderId)? accountSource;
 
+  /// DLVDOC3: injectable for tests; defaults to the real
+  /// staged-upload-then-callable backend (functions/src/delivery/
+  /// riderDocumentReview.ts).
+  final RiderDocumentReviewBackend? documentReviewBackend;
+
+  /// DLVDOC3: picks a replacement photo for one document; injectable so
+  /// tests never touch the real image picker.
+  final Future<({Uint8List bytes, String contentType})?> Function(RiderDocument doc)? pickReplacementPhoto;
+
   @override
   State<RiderProfileScreen> createState() => _RiderProfileScreenState();
 }
@@ -84,7 +99,21 @@ class _RiderProfileScreenState extends State<RiderProfileScreen> {
       widget.backend ?? CallableRiderAccountBackend();
   late final Stream<Map<String, dynamic>?> _partner = _resolvePartnerStream();
   late final Stream<RiderAccount> _account = _resolveAccountStream();
+  late final RiderDocumentReviewBackend _documentReviewBackend =
+      widget.documentReviewBackend ?? CallableRiderDocumentReviewBackend();
+  late final Future<({Uint8List bytes, String contentType})?> Function(RiderDocument doc)
+      _pickReplacementPhoto = widget.pickReplacementPhoto ?? _defaultPickReplacementPhoto;
   bool _busy = false;
+
+  Future<({Uint8List bytes, String contentType})?> _defaultPickReplacementPhoto(RiderDocument doc) async {
+    final file = await ImagePicker().pickImage(
+      source: doc == RiderDocument.selfie ? ImageSource.camera : ImageSource.gallery,
+      maxWidth: 1600,
+      imageQuality: 80,
+    );
+    if (file == null) return null;
+    return (bytes: await file.readAsBytes(), contentType: file.mimeType ?? 'image/jpeg');
+  }
 
   Stream<Map<String, dynamic>?> _resolvePartnerStream() {
     if (widget.partnerData != null) {
@@ -396,6 +425,7 @@ class _RiderProfileScreenState extends State<RiderProfileScreen> {
                     _DocumentPreviewTile(
                       key: ValueKey('doc-${e.key.key}'),
                       docKey: e.key.key,
+                      doc: e.key,
                       label: switch (e.key) {
                         RiderDocument.aadhaarFront => l.docAadhaarFront,
                         RiderDocument.aadhaarBack => l.docAadhaarBack,
@@ -405,11 +435,15 @@ class _RiderProfileScreenState extends State<RiderProfileScreen> {
                       onFile: e.value,
                       // DLVDOC1: a rider's own already-uploaded document is a
                       // pure read -- storage.rules grants it unconditionally,
-                      // independent of application status -- unlike ADDING or
-                      // REPLACING one after approval, which riderKycEditable()
-                      // deliberately refuses; that stays a resubmission-only
-                      // action, not built here.
+                      // independent of application status. DLVDOC3: a
+                      // REPLACEMENT (which riderKycEditable() deliberately
+                      // refuses on this live path directly) goes through the
+                      // separate staging-path + review flow below instead of
+                      // ever writing here directly.
                       storagePath: e.key.pathFor(auth.user!.uid),
+                      riderId: auth.user!.uid,
+                      reviewBackend: _documentReviewBackend,
+                      pickReplacementPhoto: _pickReplacementPhoto,
                     ),
                 ],
               ),
@@ -664,22 +698,36 @@ String? fieldErrorTextFor(AppLocalizations l, String key) => switch (key) {
 /// pattern `rider_review_sheet.dart`'s own `_KycTile` (admin) and
 /// `admin_order_details_screen.dart`'s `_DeliveryProofTile` (ADMR-39)
 /// already use for the identical "owner-readable Storage path" shape.
+///
+/// DLVDOC3 adds the per-document review status (distinct from the
+/// whole-application status shown elsewhere on this screen, and from an
+/// identity/vehicle change request) and a "Replace" action: staging the new
+/// photo (a path riderKycEditable() never gates) and submitting it for
+/// review, rather than ever writing to the live path directly.
 class _DocumentPreviewTile extends StatefulWidget {
   const _DocumentPreviewTile({
     super.key,
     required this.docKey,
+    required this.doc,
     required this.label,
     required this.onFile,
     required this.storagePath,
+    required this.riderId,
+    required this.reviewBackend,
+    required this.pickReplacementPhoto,
   });
 
   /// The document's own stable identifier ('aadhaarFront', ...) -- used for
   /// the View button's key, deliberately never the localized [label], which
   /// would make the key locale-dependent.
   final String docKey;
+  final RiderDocument doc;
   final String label;
   final bool onFile;
   final String storagePath;
+  final String riderId;
+  final RiderDocumentReviewBackend reviewBackend;
+  final Future<({Uint8List bytes, String contentType})?> Function(RiderDocument doc) pickReplacementPhoto;
 
   @override
   State<_DocumentPreviewTile> createState() => _DocumentPreviewTileState();
@@ -687,6 +735,7 @@ class _DocumentPreviewTile extends StatefulWidget {
 
 class _DocumentPreviewTileState extends State<_DocumentPreviewTile> {
   Future<String>? _url;
+  bool _replacing = false;
 
   Future<String> _resolve() async {
     try {
@@ -713,36 +762,99 @@ class _DocumentPreviewTileState extends State<_DocumentPreviewTile> {
     );
   }
 
+  Future<void> _replace() async {
+    final l = AppLocalizations.of(context);
+    final photo = await widget.pickReplacementPhoto(widget.doc);
+    if (photo == null || !mounted) return;
+    setState(() => _replacing = true);
+    try {
+      await widget.reviewBackend.submitReplacement(
+        docType: widget.docKey,
+        bytes: photo.bytes,
+        contentType: photo.contentType,
+      );
+      if (mounted) {
+        showDeliveryToast(context, message: l.docReplaceSubmitted, tone: DeliveryBannerTone.success);
+      }
+    } on DocumentReplacementException catch (e) {
+      if (!mounted) return;
+      final message = switch (e.failure) {
+        DocumentReplacementFailure.alreadyPending => l.docReplaceAlreadyPending,
+        DocumentReplacementFailure.network => l.docReplaceNetworkError,
+        _ => l.docReplaceFailed,
+      };
+      showDeliveryToast(context, message: message, tone: DeliveryBannerTone.warning);
+    } finally {
+      if (mounted) setState(() => _replacing = false);
+    }
+  }
+
   @override
   Widget build(BuildContext context) {
     final l = AppLocalizations.of(context);
     final c = context.colors;
     final t = context.text;
-    return Padding(
-      padding: const EdgeInsets.symmetric(vertical: DeliverySpace.xxs),
-      child: Row(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
-          Expanded(
-            flex: 2,
-            child: Text(widget.label, style: t.bodyMedium.copyWith(color: c.textSecondary)),
+    return StreamBuilder<Map<String, DocumentReview>>(
+      stream: widget.reviewBackend.reviewsFor(widget.riderId),
+      builder: (context, snap) {
+        final review = snap.data?[widget.docKey] ?? DocumentReview.none;
+        final pending = review.status == DocumentReviewStatus.pending;
+        final statusText = switch (review.status) {
+          DocumentReviewStatus.pending => l.docReviewPending,
+          DocumentReviewStatus.rejected => l.docReviewRejected,
+          _ => widget.onFile ? l.docSubmitted : l.docNotSubmitted,
+        };
+        return Padding(
+          padding: const EdgeInsets.symmetric(vertical: DeliverySpace.xxs),
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              Row(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  Expanded(
+                    flex: 2,
+                    child: Text(widget.label, style: t.bodyMedium.copyWith(color: c.textSecondary)),
+                  ),
+                  const SizedBox(width: DeliverySpace.sm),
+                  Expanded(
+                    flex: 3,
+                    child: Text(
+                      statusText,
+                      style: t.bodyMedium.copyWith(
+                        color: review.status == DocumentReviewStatus.rejected ? c.danger.icon : c.textPrimary,
+                      ),
+                    ),
+                  ),
+                  if (widget.onFile)
+                    TextButton(
+                      key: ValueKey('view-${widget.docKey}'),
+                      onPressed: _view,
+                      child: Text(l.docPreviewAction),
+                    ),
+                ],
+              ),
+              if (review.status == DocumentReviewStatus.rejected && review.rejectionReason != null)
+                Padding(
+                  padding: const EdgeInsets.only(top: DeliverySpace.xxs),
+                  child: Text(
+                    review.rejectionReason!,
+                    style: t.bodySmall.copyWith(color: c.danger.icon),
+                  ),
+                ),
+              if (widget.onFile)
+                Align(
+                  alignment: Alignment.centerRight,
+                  child: TextButton(
+                    key: ValueKey('replace-${widget.docKey}'),
+                    onPressed: pending || _replacing ? null : _replace,
+                    child: Text(_replacing ? l.docReplaceSubmitting : l.docReplaceAction),
+                  ),
+                ),
+            ],
           ),
-          const SizedBox(width: DeliverySpace.sm),
-          Expanded(
-            flex: 3,
-            child: Text(
-              widget.onFile ? l.docSubmitted : l.docNotSubmitted,
-              style: t.bodyMedium.copyWith(color: c.textPrimary),
-            ),
-          ),
-          if (widget.onFile)
-            TextButton(
-              key: ValueKey('view-${widget.docKey}'),
-              onPressed: _view,
-              child: Text(l.docPreviewAction),
-            ),
-        ],
-      ),
+        );
+      },
     );
   }
 }

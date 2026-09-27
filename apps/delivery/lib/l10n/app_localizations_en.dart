@@ -687,6 +687,32 @@ class AppLocalizationsEn extends AppLocalizations {
       'This document couldn\'t be loaded right now.';
 
   @override
+  String get docReviewPending => 'Pending review';
+
+  @override
+  String get docReviewRejected => 'Not approved';
+
+  @override
+  String get docReplaceAction => 'Replace';
+
+  @override
+  String get docReplaceSubmitting => 'Submitting…';
+
+  @override
+  String get docReplaceSubmitted => 'Submitted for review';
+
+  @override
+  String get docReplaceAlreadyPending =>
+      'A replacement for this document is already being reviewed.';
+
+  @override
+  String get docReplaceNetworkError =>
+      'Couldn\'t submit — check your connection and try again.';
+
+  @override
+  String get docReplaceFailed => 'Couldn\'t submit this replacement right now.';
+
+  @override
   String payoutBank(String masked) {
     return 'Bank account $masked';
   }

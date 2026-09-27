@@ -1,6 +1,7 @@
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:cloud_functions/cloud_functions.dart';
 import 'package:firebase_auth/firebase_auth.dart';
+import 'package:firebase_storage/firebase_storage.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:agrimore_ui/agrimore_ui.dart';
@@ -24,7 +25,7 @@ class RiderPayoutsScreen extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return DefaultTabController(
-      length: 5,
+      length: 6,
       child: Scaffold(
         appBar: AppBar(
           title: const Text('Rider Payouts'),
@@ -33,6 +34,7 @@ class RiderPayoutsScreen extends StatelessWidget {
               Tab(text: 'Cash with riders'),
               Tab(text: 'Payout details'),
               Tab(text: 'Identity changes'),
+              Tab(text: 'Document reviews'),
               Tab(text: 'Pay rates'),
             ], scrollable: true),
         ),
@@ -42,6 +44,7 @@ class RiderPayoutsScreen extends StatelessWidget {
             _CashTab(),
             _BankChangesTab(),
             _IdentityChangesTab(),
+            _DocumentReviewsTab(),
             _RatesTab()
           ],
         ),
@@ -792,6 +795,192 @@ class _IdentityChangesTab extends StatelessWidget {
                         ),
                       const SizedBox(height: 6),
                       Text('Reason: ${d.data()['reason'] ?? ''}'),
+                      const SizedBox(height: 8),
+                      Row(
+                        mainAxisAlignment: MainAxisAlignment.end,
+                        children: [
+                          TextButton(
+                              onPressed: () => _review(context, d.id, false),
+                              child: const Text('Reject')),
+                          const SizedBox(width: 8),
+                          FilledButton(
+                              onPressed: () => _review(context, d.id, true),
+                              child: const Text('Approve')),
+                        ],
+                      ),
+                    ],
+                  ),
+                ),
+              ),
+          ],
+        );
+      },
+    );
+  }
+}
+
+// ── Document reviews (DLVDOC2/DLVDOC3) ──
+//
+// Mirrors _IdentityChangesTab exactly: a plain StreamBuilder over pending
+// requests, Approve/Reject calling one review callable
+// (reviewDocumentSubmission, functions/src/delivery/riderDocumentReview.ts).
+// The one addition identity changes don't need: a lazy-resolved preview of
+// the staged document image, the same pattern rider_review_sheet.dart's own
+// _KycTile already established for the live KYC documents.
+
+String _documentTypeLabel(String docType) => switch (docType) {
+      'aadhaarFront' => 'Aadhaar (front)',
+      'aadhaarBack' => 'Aadhaar (back)',
+      'selfie' => 'Selfie',
+      'license' => 'Driving licence',
+      _ => docType,
+    };
+
+class _StagedDocumentPreview extends StatefulWidget {
+  const _StagedDocumentPreview({required this.stagingPath});
+  final String stagingPath;
+
+  @override
+  State<_StagedDocumentPreview> createState() => _StagedDocumentPreviewState();
+}
+
+class _StagedDocumentPreviewState extends State<_StagedDocumentPreview> {
+  late final Future<String> _url = _resolve();
+
+  Future<String> _resolve() async {
+    try {
+      return await FirebaseStorage.instance.ref(widget.stagingPath).getDownloadURL();
+    } catch (e) {
+      debugPrint('Staged document unavailable: $e');
+      return '';
+    }
+  }
+
+  @override
+  Widget build(BuildContext context) => FutureBuilder<String>(
+        future: _url,
+        builder: (context, snap) {
+          final url = snap.data ?? '';
+          if (url.isEmpty) {
+            return const SizedBox(
+              height: 120,
+              child: Center(child: CircularProgressIndicator()),
+            );
+          }
+          return GestureDetector(
+            onTap: () => showDialog<void>(
+              context: context,
+              builder: (ctx) => Dialog(
+                child: InteractiveViewer(child: Image.network(url)),
+              ),
+            ),
+            child: Image.network(url, height: 160, fit: BoxFit.cover,
+                errorBuilder: (context, error, stackTrace) =>
+                    const SizedBox(height: 120, child: Center(child: Text('Preview unavailable')))),
+          );
+        },
+      );
+}
+
+class _DocumentReviewsTab extends StatelessWidget {
+  const _DocumentReviewsTab();
+
+  Future<void> _review(BuildContext context, String submissionId, bool approve) async {
+    String? reason;
+    if (!approve) {
+      final c = TextEditingController();
+      final ok = await showDialog<bool>(
+        context: context,
+        builder: (ctx) => AlertDialog(
+          title: const Text('Reject document'),
+          content: TextField(
+              controller: c,
+              autofocus: true,
+              decoration: const InputDecoration(
+                  labelText: 'Reason (shown to the rider)')),
+          actions: [
+            TextButton(
+                onPressed: () => Navigator.pop(ctx, false),
+                child: const Text('Cancel')),
+            FilledButton(
+                onPressed: () => Navigator.pop(ctx, true),
+                child: const Text('Reject')),
+          ],
+        ),
+      );
+      reason = c.text.trim();
+      c.dispose();
+      if (ok != true) return;
+    }
+    try {
+      await FirebaseFunctions.instance
+          .httpsCallable('reviewDocumentSubmission')
+          .call<Map<String, dynamic>>({
+        'submissionId': submissionId,
+        'approve': approve,
+        if (reason != null) 'reason': reason
+      });
+      if (context.mounted) {
+        SnackbarHelper.showSuccess(context, approve ? 'Approved' : 'Rejected');
+      }
+    } on FirebaseFunctionsException catch (e) {
+      debugPrint('reviewDocumentSubmission: ${e.code} ${e.details}');
+      final why =
+          e.details is Map ? (e.details as Map)['reason'] as String? : null;
+      if (context.mounted) {
+        SnackbarHelper.showError(context, riderMoneyRefusal(e.code, why));
+      }
+    } catch (e) {
+      debugPrint('reviewDocumentSubmission: $e');
+      if (context.mounted) {
+        SnackbarHelper.showError(context, riderMoneyRefusal('unknown', null));
+      }
+    }
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    return StreamBuilder<QuerySnapshot<Map<String, dynamic>>>(
+      stream: _db
+          .collection('document_review_submissions')
+          .where('status', isEqualTo: 'pending')
+          .limit(200)
+          .snapshots(),
+      builder: (context, snap) {
+        if (snap.hasError) {
+          debugPrint('Document review submissions load failed: ${snap.error}');
+          return _message(
+              "Couldn't load submissions. Check your connection and try again.");
+        }
+        if (!snap.hasData) {
+          return const Center(child: CircularProgressIndicator());
+        }
+        final docs = snap.data!.docs;
+        if (docs.isEmpty) return _message('No documents waiting for review.');
+        return ListView(
+          padding: const EdgeInsets.all(16),
+          children: [
+            const Text(
+                'Check the photo before approving — approving replaces the '
+                'rider\'s document on file.',
+                style: TextStyle(fontSize: 12)),
+            const SizedBox(height: 12),
+            for (final d in docs)
+              Card(
+                margin: const EdgeInsets.only(bottom: 8),
+                child: Padding(
+                  padding: const EdgeInsets.all(14),
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      _RiderLine((d.data()['riderId'] ?? '').toString(),
+                          showDestination: false),
+                      const Divider(),
+                      Text(_documentTypeLabel((d.data()['docType'] ?? '').toString()),
+                          style: const TextStyle(fontWeight: FontWeight.w700)),
+                      const SizedBox(height: 8),
+                      if ((d.data()['stagingPath'] as String?)?.isNotEmpty == true)
+                        _StagedDocumentPreview(stagingPath: d.data()['stagingPath'] as String),
                       const SizedBox(height: 8),
                       Row(
                         mainAxisAlignment: MainAxisAlignment.end,

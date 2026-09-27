@@ -859,6 +859,38 @@
   "@docPreviewUnavailable": {
     "description": "Shown when a document preview fails to load"
   },
+  "docReviewPending": "Pending review",
+  "@docReviewPending": {
+    "description": "A replacement document is awaiting admin review"
+  },
+  "docReviewRejected": "Not approved",
+  "@docReviewRejected": {
+    "description": "A replacement document was rejected"
+  },
+  "docReplaceAction": "Replace",
+  "@docReplaceAction": {
+    "description": "Button to submit a replacement for an on-file document"
+  },
+  "docReplaceSubmitting": "Submitting…",
+  "@docReplaceSubmitting": {
+    "description": "Shown while a document replacement is being submitted"
+  },
+  "docReplaceSubmitted": "Submitted for review",
+  "@docReplaceSubmitted": {
+    "description": "Confirmation after a document replacement is submitted"
+  },
+  "docReplaceAlreadyPending": "A replacement for this document is already being reviewed.",
+  "@docReplaceAlreadyPending": {
+    "description": "Shown when a rider tries to replace a document that already has a pending submission"
+  },
+  "docReplaceNetworkError": "Couldn't submit — check your connection and try again.",
+  "@docReplaceNetworkError": {
+    "description": "Shown when a document replacement fails to upload"
+  },
+  "docReplaceFailed": "Couldn't submit this replacement right now.",
+  "@docReplaceFailed": {
+    "description": "Generic failure submitting a document replacement"
+  },
   "payoutBank": "Bank account {masked}",
   "@payoutBank": {
     "description": "Payout destination",
