@@ -608,4 +608,107 @@ void main() {
       expect(acc.cashHeld, 0.0);
     });
   });
+
+  // ADMR-40 additions below: neither of these two record types was ever
+  // queried by any client before this phase (confirmed by a repo-wide
+  // grep for their collection names outside functions/src).
+  group('DeliveryExceptionRecord.fromMap', () {
+    test('parses a real delivery_exceptions-shaped reported document', () {
+      final exception = DeliveryExceptionRecord.fromMap({
+        'orderId': 'order1',
+        'riderId': 'rider-1',
+        'reason': 'customer_unreachable',
+        'note': 'Called twice, no answer',
+        'status': 'reported',
+        'custody': 'rider',
+      }, 'exc1');
+
+      expect(exception.exceptionId, 'exc1');
+      expect(exception.orderId, 'order1');
+      expect(exception.reasonLabel, 'Customer unreachable');
+      expect(exception.statusLabel, 'Reported');
+      expect(exception.disposition, isNull);
+      expect(exception.resolution, isNull);
+    });
+
+    test('a resolved document carries its real disposition and resolution', () {
+      final exception = DeliveryExceptionRecord.fromMap({
+        'orderId': 'order1',
+        'riderId': 'rider-1',
+        'reason': 'wrong_address',
+        'status': 'resolved',
+        'custody': 'seller',
+        'disposition': 'returned_to_seller',
+        'resolution': 'Customer address was outside serviceable area',
+      }, 'exc2');
+
+      expect(exception.statusLabel, 'Resolved');
+      expect(exception.disposition, 'returned_to_seller');
+      expect(exception.resolution, 'Customer address was outside serviceable area');
+    });
+
+    test('an unrecognized reason or status falls back to the raw string '
+        'rather than hiding it', () {
+      final exception = DeliveryExceptionRecord.fromMap({
+        'orderId': 'order1',
+        'riderId': 'rider-1',
+        'reason': 'some_future_reason',
+        'status': 'some_future_status',
+        'custody': 'rider',
+      }, 'exc3');
+      expect(exception.reasonLabel, 'some_future_reason');
+      expect(exception.statusLabel, 'some_future_status');
+    });
+  });
+
+  group('RiderIncidentRecord.fromMap', () {
+    test('parses a real rider_incidents-shaped document naming this order', () {
+      final incident = RiderIncidentRecord.fromMap({
+        'riderId': 'rider-1',
+        'riderName': 'Test Rider',
+        'kind': 'sos',
+        'note': 'Vehicle broke down',
+        'status': 'acknowledged',
+        'activeOrderIds': ['order1'],
+      }, 'inc1');
+
+      expect(incident.incidentId, 'inc1');
+      expect(incident.riderName, 'Test Rider');
+      expect(incident.kindLabel, 'Emergency (SOS)');
+      expect(incident.statusLabel, 'Acknowledged');
+      expect(incident.activeOrderIds, ['order1']);
+    });
+
+    test('an incident naming more than one active order preserves the '
+        'full list, not just this one', () {
+      final incident = RiderIncidentRecord.fromMap({
+        'riderId': 'rider-1',
+        'kind': 'sos',
+        'status': 'reported',
+        'activeOrderIds': ['order1', 'order2', 'order3'],
+      }, 'inc2');
+      expect(incident.activeOrderIds, ['order1', 'order2', 'order3']);
+    });
+
+    test('a non-list or absent activeOrderIds reads as an empty list, not '
+        'an error', () {
+      final incident = RiderIncidentRecord.fromMap({
+        'riderId': 'rider-1',
+        'kind': 'sos',
+        'status': 'reported',
+      }, 'inc3');
+      expect(incident.activeOrderIds, isEmpty);
+    });
+
+    test('an unrecognized kind or status falls back to the raw string '
+        'rather than hiding it', () {
+      final incident = RiderIncidentRecord.fromMap({
+        'riderId': 'rider-1',
+        'kind': 'some_future_kind',
+        'status': 'some_future_status',
+      }, 'inc4');
+      expect(incident.kindLabel, 'some_future_kind');
+      expect(incident.statusLabel, 'some_future_status');
+    });
+  });
 }

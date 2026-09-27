@@ -281,6 +281,14 @@ class _AdminOrderDetailsScreenState extends State<AdminOrderDetailsScreen> {
       const SizedBox(height: 12),
       _buildSupportTicketsCard(orderProvider),
       const SizedBox(height: 16),
+      _buildSectionTitle('Delivery Exceptions', Icons.report_problem_rounded),
+      const SizedBox(height: 12),
+      _buildDeliveryExceptionsCard(orderProvider),
+      const SizedBox(height: 16),
+      _buildSectionTitle('Rider Incidents', Icons.sos_rounded),
+      const SizedBox(height: 12),
+      _buildRiderIncidentsCard(orderProvider),
+      const SizedBox(height: 16),
       _buildSectionTitle('Seller Settlement', Icons.storefront_rounded),
       const SizedBox(height: 12),
       _buildSellerSettlementCard(orderProvider),
@@ -809,7 +817,13 @@ class _AdminOrderDetailsScreenState extends State<AdminOrderDetailsScreen> {
         boxShadow: [BoxShadow(color: Colors.black.withOpacity(0.04), blurRadius: 10, offset: const Offset(0, 4))],
       ),
       padding: const EdgeInsets.all(16),
-      child: content,
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          content,
+          _viewAllLink('Open Rider Support', Icons.support_agent_outlined, AdminRoutes.riderSupport),
+        ],
+      ),
     );
   }
 
@@ -876,6 +890,299 @@ class _AdminOrderDetailsScreenState extends State<AdminOrderDetailsScreen> {
       default:
         return Colors.grey;
     }
+  }
+
+  // ADMR-40: shared by DeliveryExceptionRecord and RiderIncidentRecord —
+  // both use this exact reported/acknowledged/resolved vocabulary
+  // (functions/src/delivery/riderExceptions.ts's/riderIncidents.ts's own
+  // updateExceptionCore/updateIncidentCore), distinct from support
+  // tickets' own submitted/seen/closed above.
+  Color _reportStatusColor(String status) {
+    switch (status) {
+      case 'reported':
+        return Colors.red;
+      case 'acknowledged':
+        return Colors.orange;
+      case 'resolved':
+        return Colors.green;
+      default:
+        return Colors.grey;
+    }
+  }
+
+  // ADMR-40, ADMR-36: none of rider_support_screen.dart/
+  // delivery_problems_screen.dart/rider_incidents_screen.dart supports a
+  // per-case deep link today (confirmed: all three take no constructor
+  // params) — a plain link to the right screen, not a new per-case
+  // navigation mechanism, is the honest, reuse-not-reinvent action this
+  // card can actually offer.
+  Widget _viewAllLink(String label, IconData icon, String route) {
+    return Padding(
+      padding: const EdgeInsets.only(top: 10),
+      child: Align(
+        alignment: Alignment.centerLeft,
+        child: TextButton.icon(
+          onPressed: () => context.push(route),
+          icon: Icon(icon, size: 16),
+          label: Text(label, style: const TextStyle(fontSize: 12)),
+          style: TextButton.styleFrom(
+            padding: const EdgeInsets.symmetric(horizontal: 4, vertical: 0),
+            minimumSize: const Size(0, 32),
+            tapTargetSize: MaterialTapTargetSize.shrinkWrap,
+          ),
+        ),
+      ),
+    );
+  }
+
+  // =========================
+  // Delivery Exceptions Card (ADMR-40)
+  // =========================
+  Widget _buildDeliveryExceptionsCard(OrderProvider orderProvider) {
+    final isLoading = orderProvider.isLoadingDeliveryExceptions;
+    final error = orderProvider.deliveryExceptionsError;
+    final exceptions = orderProvider.selectedOrderDeliveryExceptions;
+
+    Widget content;
+    if (isLoading) {
+      content = const Padding(
+        padding: EdgeInsets.symmetric(vertical: 24),
+        child: Center(child: CircularProgressIndicator()),
+      );
+    } else if (error != null) {
+      content = Padding(
+        padding: const EdgeInsets.symmetric(vertical: 20),
+        child: Center(
+          child: Column(
+            children: [
+              Icon(Icons.error_outline_rounded, color: Colors.red.shade300, size: 32),
+              const SizedBox(height: 8),
+              Text('Could not load delivery exceptions', style: TextStyle(color: Colors.grey.shade600, fontSize: 13)),
+            ],
+          ),
+        ),
+      );
+    } else if (exceptions.isEmpty) {
+      content = Padding(
+        padding: const EdgeInsets.symmetric(vertical: 24),
+        child: Center(
+          child: Column(
+            children: [
+              Icon(Icons.report_problem_outlined, size: 32, color: Colors.grey.shade300),
+              const SizedBox(height: 8),
+              Text('No failed delivery attempts reported for this order', style: TextStyle(color: Colors.grey.shade500, fontSize: 12)),
+            ],
+          ),
+        ),
+      );
+    } else {
+      content = Column(
+        children: exceptions.map((e) => _deliveryExceptionRow(e)).toList(),
+      );
+    }
+
+    return Container(
+      decoration: BoxDecoration(
+        color: Colors.white,
+        borderRadius: BorderRadius.circular(16),
+        boxShadow: [BoxShadow(color: Colors.black.withOpacity(0.04), blurRadius: 10, offset: const Offset(0, 4))],
+      ),
+      padding: const EdgeInsets.all(16),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          content,
+          _viewAllLink('Open Delivery Problems', Icons.report_problem_outlined, AdminRoutes.deliveryProblems),
+        ],
+      ),
+    );
+  }
+
+  Widget _deliveryExceptionRow(DeliveryExceptionRecord exception) {
+    final color = _reportStatusColor(exception.status);
+    return Padding(
+      padding: const EdgeInsets.symmetric(vertical: 8),
+      child: Row(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Container(
+            width: 8,
+            height: 8,
+            margin: const EdgeInsets.only(top: 5),
+            decoration: BoxDecoration(color: color, shape: BoxShape.circle),
+          ),
+          const SizedBox(width: 10),
+          Expanded(
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Row(
+                  children: [
+                    Expanded(
+                      child: Text(
+                        exception.reasonLabel,
+                        style: const TextStyle(fontWeight: FontWeight.w600, fontSize: 13),
+                        overflow: TextOverflow.ellipsis,
+                      ),
+                    ),
+                    Container(
+                      padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 3),
+                      decoration: BoxDecoration(color: color.withOpacity(0.12), borderRadius: BorderRadius.circular(6)),
+                      child: Text(
+                        exception.statusLabel,
+                        style: TextStyle(color: color, fontWeight: FontWeight.w700, fontSize: 10),
+                      ),
+                    ),
+                  ],
+                ),
+                if (exception.note != null && exception.note!.isNotEmpty) ...[
+                  const SizedBox(height: 3),
+                  Text(
+                    exception.note!,
+                    style: TextStyle(color: Colors.grey.shade500, fontSize: 11),
+                    maxLines: 2,
+                    overflow: TextOverflow.ellipsis,
+                  ),
+                ],
+                if (exception.resolution != null && exception.resolution!.isNotEmpty) ...[
+                  const SizedBox(height: 3),
+                  Text(
+                    'Resolution: ${exception.resolution}',
+                    style: TextStyle(color: Colors.grey.shade600, fontSize: 11, fontStyle: FontStyle.italic),
+                    maxLines: 2,
+                    overflow: TextOverflow.ellipsis,
+                  ),
+                ],
+              ],
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+
+  // =========================
+  // Rider Incidents Card (ADMR-40)
+  // =========================
+  Widget _buildRiderIncidentsCard(OrderProvider orderProvider) {
+    final isLoading = orderProvider.isLoadingRiderIncidents;
+    final error = orderProvider.riderIncidentsError;
+    final incidents = orderProvider.selectedOrderRiderIncidents;
+
+    Widget content;
+    if (isLoading) {
+      content = const Padding(
+        padding: EdgeInsets.symmetric(vertical: 24),
+        child: Center(child: CircularProgressIndicator()),
+      );
+    } else if (error != null) {
+      content = Padding(
+        padding: const EdgeInsets.symmetric(vertical: 20),
+        child: Center(
+          child: Column(
+            children: [
+              Icon(Icons.error_outline_rounded, color: Colors.red.shade300, size: 32),
+              const SizedBox(height: 8),
+              Text('Could not load rider incidents', style: TextStyle(color: Colors.grey.shade600, fontSize: 13)),
+            ],
+          ),
+        ),
+      );
+    } else if (incidents.isEmpty) {
+      content = Padding(
+        padding: const EdgeInsets.symmetric(vertical: 24),
+        child: Center(
+          child: Column(
+            children: [
+              Icon(Icons.sos_outlined, size: 32, color: Colors.grey.shade300),
+              const SizedBox(height: 8),
+              Text('No rider safety incidents named this order', style: TextStyle(color: Colors.grey.shade500, fontSize: 12)),
+            ],
+          ),
+        ),
+      );
+    } else {
+      content = Column(
+        children: incidents.map((i) => _riderIncidentRow(i)).toList(),
+      );
+    }
+
+    return Container(
+      decoration: BoxDecoration(
+        color: Colors.white,
+        borderRadius: BorderRadius.circular(16),
+        boxShadow: [BoxShadow(color: Colors.black.withOpacity(0.04), blurRadius: 10, offset: const Offset(0, 4))],
+      ),
+      padding: const EdgeInsets.all(16),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          content,
+          _viewAllLink('Open Rider Incidents', Icons.sos_outlined, AdminRoutes.riderIncidents),
+        ],
+      ),
+    );
+  }
+
+  Widget _riderIncidentRow(RiderIncidentRecord incident) {
+    final color = _reportStatusColor(incident.status);
+    return Padding(
+      padding: const EdgeInsets.symmetric(vertical: 8),
+      child: Row(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Container(
+            width: 8,
+            height: 8,
+            margin: const EdgeInsets.only(top: 5),
+            decoration: BoxDecoration(color: color, shape: BoxShape.circle),
+          ),
+          const SizedBox(width: 10),
+          Expanded(
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Row(
+                  children: [
+                    Expanded(
+                      child: Text(
+                        '${incident.kindLabel}${incident.riderName != null ? ' — ${incident.riderName}' : ''}',
+                        style: const TextStyle(fontWeight: FontWeight.w600, fontSize: 13),
+                        overflow: TextOverflow.ellipsis,
+                      ),
+                    ),
+                    Container(
+                      padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 3),
+                      decoration: BoxDecoration(color: color.withOpacity(0.12), borderRadius: BorderRadius.circular(6)),
+                      child: Text(
+                        incident.statusLabel,
+                        style: TextStyle(color: color, fontWeight: FontWeight.w700, fontSize: 10),
+                      ),
+                    ),
+                  ],
+                ),
+                if (incident.note != null && incident.note!.isNotEmpty) ...[
+                  const SizedBox(height: 3),
+                  Text(
+                    incident.note!,
+                    style: TextStyle(color: Colors.grey.shade500, fontSize: 11),
+                    maxLines: 2,
+                    overflow: TextOverflow.ellipsis,
+                  ),
+                ],
+                if (incident.activeOrderIds.length > 1) ...[
+                  const SizedBox(height: 3),
+                  Text(
+                    'Also named ${incident.activeOrderIds.length - 1} other active order${incident.activeOrderIds.length - 1 == 1 ? '' : 's'} at report time',
+                    style: TextStyle(color: Colors.grey.shade500, fontSize: 11),
+                  ),
+                ],
+              ],
+            ),
+          ),
+        ],
+      ),
+    );
   }
 
   // =========================

@@ -125,6 +125,15 @@ class OrderProvider with ChangeNotifier {
   List<RiderSupportTicketRecord> _selectedOrderSupportTickets = [];
   bool _isLoadingSupportTickets = false;
   String? _supportTicketsError;
+  // ADMR-40: delivery exceptions (failed delivery attempts) and rider
+  // incidents (SOS/safety reports) for the selected order — each its own
+  // independent loading/error state, same reasoning as support tickets.
+  List<DeliveryExceptionRecord> _selectedOrderDeliveryExceptions = [];
+  bool _isLoadingDeliveryExceptions = false;
+  String? _deliveryExceptionsError;
+  List<RiderIncidentRecord> _selectedOrderRiderIncidents = [];
+  bool _isLoadingRiderIncidents = false;
+  String? _riderIncidentsError;
   // ADMR-30: seller settlement rows for the selected order — its own
   // independent loading/error state, same reasoning as dispatch offers.
   List<SellerPayoutRecord> _selectedOrderSellerPayouts = [];
@@ -162,6 +171,12 @@ class OrderProvider with ChangeNotifier {
   List<RiderSupportTicketRecord> get selectedOrderSupportTickets => _selectedOrderSupportTickets;
   bool get isLoadingSupportTickets => _isLoadingSupportTickets;
   String? get supportTicketsError => _supportTicketsError;
+  List<DeliveryExceptionRecord> get selectedOrderDeliveryExceptions => _selectedOrderDeliveryExceptions;
+  bool get isLoadingDeliveryExceptions => _isLoadingDeliveryExceptions;
+  String? get deliveryExceptionsError => _deliveryExceptionsError;
+  List<RiderIncidentRecord> get selectedOrderRiderIncidents => _selectedOrderRiderIncidents;
+  bool get isLoadingRiderIncidents => _isLoadingRiderIncidents;
+  String? get riderIncidentsError => _riderIncidentsError;
   List<SellerPayoutRecord> get selectedOrderSellerPayouts => _selectedOrderSellerPayouts;
   bool get isLoadingSellerPayouts => _isLoadingSellerPayouts;
   String? get sellerPayoutsError => _sellerPayoutsError;
@@ -247,6 +262,8 @@ class OrderProvider with ChangeNotifier {
         await _loadRiderEarning(orderId);
         await _loadCommissionExceptions(orderId);
         await _loadRelatedSupportTickets(orderId);
+        await _loadDeliveryExceptions(orderId);
+        await _loadRiderIncidents(orderId);
         await _loadSellerPayouts(orderId);
         await _loadRiderCashAccount(_selectedOrder?.deliveryPartnerId);
         debugPrint('✅ Order loaded');
@@ -476,6 +493,88 @@ class OrderProvider with ChangeNotifier {
       debugPrint('❌ Error loading related support tickets: $e');
       _supportTicketsError = e.toString();
       _isLoadingSupportTickets = false;
+      notifyListeners();
+    }
+  }
+
+  // ============================================
+  // LOAD DELIVERY EXCEPTIONS (ADMR-40)
+  // ============================================
+  // delivery_exceptions filtered by orderId (a plain equality field, no
+  // client-side filter needed). functions/src/delivery/riderExceptions.ts's
+  // own reportExceptionCore is the real writer.
+  Future<void> _loadDeliveryExceptions(String orderId) async {
+    try {
+      _isLoadingDeliveryExceptions = true;
+      _deliveryExceptionsError = null;
+      notifyListeners();
+
+      final query = await _firestore
+          .collection('delivery_exceptions')
+          .where('orderId', isEqualTo: orderId)
+          .get();
+
+      final exceptions = query.docs
+          .map((doc) => DeliveryExceptionRecord.fromMap(doc.data(), doc.id))
+          .toList()
+        ..sort((a, b) {
+          final at = a.createdAt;
+          final bt = b.createdAt;
+          if (at == null || bt == null) return 0;
+          return bt.compareTo(at); // newest first
+        });
+
+      _selectedOrderDeliveryExceptions = exceptions;
+      debugPrint('✅ Loaded ${exceptions.length} delivery exceptions');
+
+      _isLoadingDeliveryExceptions = false;
+      notifyListeners();
+    } catch (e) {
+      debugPrint('❌ Error loading delivery exceptions: $e');
+      _deliveryExceptionsError = e.toString();
+      _isLoadingDeliveryExceptions = false;
+      notifyListeners();
+    }
+  }
+
+  // ============================================
+  // LOAD RIDER INCIDENTS (ADMR-40)
+  // ============================================
+  // rider_incidents whose own activeOrderIds (a snapshot taken at report
+  // time, functions/src/delivery/riderIncidents.ts's own
+  // reportIncidentCore) names this order — an incident is a rider-level
+  // SOS/safety report, not order-scoped by nature, so more than one order
+  // (or none) can legitimately be named.
+  Future<void> _loadRiderIncidents(String orderId) async {
+    try {
+      _isLoadingRiderIncidents = true;
+      _riderIncidentsError = null;
+      notifyListeners();
+
+      final query = await _firestore
+          .collection('rider_incidents')
+          .where('activeOrderIds', arrayContains: orderId)
+          .get();
+
+      final incidents = query.docs
+          .map((doc) => RiderIncidentRecord.fromMap(doc.data(), doc.id))
+          .toList()
+        ..sort((a, b) {
+          final at = a.createdAt;
+          final bt = b.createdAt;
+          if (at == null || bt == null) return 0;
+          return bt.compareTo(at); // newest first
+        });
+
+      _selectedOrderRiderIncidents = incidents;
+      debugPrint('✅ Loaded ${incidents.length} rider incidents');
+
+      _isLoadingRiderIncidents = false;
+      notifyListeners();
+    } catch (e) {
+      debugPrint('❌ Error loading rider incidents: $e');
+      _riderIncidentsError = e.toString();
+      _isLoadingRiderIncidents = false;
       notifyListeners();
     }
   }
@@ -841,6 +940,8 @@ class OrderProvider with ChangeNotifier {
     _selectedOrderRiderEarning = null;
     _selectedOrderCommissionExceptions.clear();
     _selectedOrderSupportTickets.clear();
+    _selectedOrderDeliveryExceptions.clear();
+    _selectedOrderRiderIncidents.clear();
     _selectedOrderSellerPayouts.clear();
     _selectedOrderRiderCashAccount = null;
     notifyListeners();
@@ -864,6 +965,8 @@ class OrderProvider with ChangeNotifier {
     _selectedOrderRiderEarning = null;
     _selectedOrderCommissionExceptions.clear();
     _selectedOrderSupportTickets.clear();
+    _selectedOrderDeliveryExceptions.clear();
+    _selectedOrderRiderIncidents.clear();
     _selectedOrderSellerPayouts.clear();
     _selectedOrderRiderCashAccount = null;
     super.dispose();
