@@ -619,6 +619,37 @@ void main() {
       expect(find.text('No recorded timeline for this order.'), findsOneWidget);
     });
 
+    testWidgets('DLVH5: payment method shows for every status, not just when an earning resolves', (t) async {
+      final cod = historyOrder('o6', {'orderStatus': 'cancelled', 'orderNumber': 'ORD-6', 'total': 150});
+      await t.pumpWidget(host(Scaffold(
+          body: HistoryDetail(
+              order: cod,
+              loadEarning: (id) async => null,
+              loadTimeline: (id) async => const [],
+              loadPayout: (id) async => null))));
+      await t.pumpAndSettle();
+      expect(find.text('COD (cash)'), findsOneWidget);
+      expect(find.text('Online Payment'), findsNothing);
+    });
+
+    testWidgets('DLVH5: a non-cod order shows Online Payment, not COD', (t) async {
+      final online = historyOrder('o7', {
+        'orderStatus': 'delivered',
+        'orderNumber': 'ORD-7',
+        'total': 300,
+        'paymentMethod': 'razorpay',
+      });
+      await t.pumpWidget(host(Scaffold(
+          body: HistoryDetail(
+              order: online,
+              loadEarning: (id) async => null,
+              loadTimeline: (id) async => const [],
+              loadPayout: (id) async => null))));
+      await t.pumpAndSettle();
+      expect(find.text('Online Payment'), findsOneWidget);
+      expect(find.text('COD (cash)'), findsNothing);
+    });
+
     testWidgets('the customer section reads from the order\'s own delivery address, and Get help is present', (t) async {
       final order = historyOrder('o4', {
         'orderStatus': 'delivered',

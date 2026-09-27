@@ -1777,6 +1777,18 @@
   "@historyDetailOrderTotal": {
     "description": "History detail: order total"
   },
+  "historyDetailPaymentMethod": "Payment method",
+  "@historyDetailPaymentMethod": {
+    "description": "DLVH5: history detail, label for the order's payment method row"
+  },
+  "historyDetailPaymentMethodCod": "COD (cash)",
+  "@historyDetailPaymentMethodCod": {
+    "description": "DLVH5: history detail, payment method value when order.paymentMethod == 'cod'"
+  },
+  "historyDetailPaymentMethodOnline": "Online Payment",
+  "@historyDetailPaymentMethodOnline": {
+    "description": "DLVH5: history detail, payment method value for any non-cod order.paymentMethod, matching marketplace's own order_success_screen.dart wording"
+  },
   "historyDetailPayError": "Could not load your pay for this order.",
   "@historyDetailPayError": {
     "description": "History detail: earning read failed"

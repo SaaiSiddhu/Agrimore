@@ -2494,6 +2494,24 @@ abstract class AppLocalizations {
   /// **'Order amount'**
   String get historyDetailOrderTotal;
 
+  /// DLVH5: history detail, label for the order's payment method row
+  ///
+  /// In en, this message translates to:
+  /// **'Payment method'**
+  String get historyDetailPaymentMethod;
+
+  /// DLVH5: history detail, payment method value when order.paymentMethod == 'cod'
+  ///
+  /// In en, this message translates to:
+  /// **'COD (cash)'**
+  String get historyDetailPaymentMethodCod;
+
+  /// DLVH5: history detail, payment method value for any non-cod order.paymentMethod, matching marketplace's own order_success_screen.dart wording
+  ///
+  /// In en, this message translates to:
+  /// **'Online Payment'**
+  String get historyDetailPaymentMethodOnline;
+
   /// History detail: earning read failed
   ///
   /// In en, this message translates to:

@@ -1362,6 +1362,15 @@ class AppLocalizationsEn extends AppLocalizations {
   String get historyDetailOrderTotal => 'Order amount';
 
   @override
+  String get historyDetailPaymentMethod => 'Payment method';
+
+  @override
+  String get historyDetailPaymentMethodCod => 'COD (cash)';
+
+  @override
+  String get historyDetailPaymentMethodOnline => 'Online Payment';
+
+  @override
   String get historyDetailPayError => 'Could not load your pay for this order.';
 
   @override

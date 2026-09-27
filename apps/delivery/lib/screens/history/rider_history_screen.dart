@@ -439,6 +439,12 @@ class HistoryDetail extends StatelessWidget {
                 label: l10n.historyDetailOrderTotal,
                 value: DeliveryFormat.rupees(order.total),
               ),
+              _Line(
+                label: l10n.historyDetailPaymentMethod,
+                value: order.paymentMethod == 'cod'
+                    ? l10n.historyDetailPaymentMethodCod
+                    : l10n.historyDetailPaymentMethodOnline,
+              ),
               const Divider(height: DeliverySpace.xxl),
               // Cancelled structurally never has a rider_earnings record
               // (recordDeliveryEarningCore is delivered-only) — shown
