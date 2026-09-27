@@ -1813,6 +1813,10 @@
   "@historyDetailTimelineError": {
     "description": "History detail: timeline read failed"
   },
+  "historyDetailMerchantTitle": "Merchant",
+  "@historyDetailMerchantTitle": {
+    "description": "DLVH6: history detail, section heading for the seller/merchant name"
+  },
   "historyDetailCustomerTitle": "Customer",
   "@historyDetailCustomerTitle": {
     "description": "History detail: section heading for the customer's contact details"

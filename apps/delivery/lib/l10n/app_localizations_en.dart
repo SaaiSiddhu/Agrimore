@@ -1393,6 +1393,9 @@ class AppLocalizationsEn extends AppLocalizations {
       'Could not load this order\'s timeline.';
 
   @override
+  String get historyDetailMerchantTitle => 'Merchant';
+
+  @override
   String get historyDetailCustomerTitle => 'Customer';
 
   @override
