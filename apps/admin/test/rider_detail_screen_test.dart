@@ -95,7 +95,10 @@ void main() {
     expect(find.text('Order #ORD-B1'), findsNothing);
   });
 
-  testWidgets('earnings tab totals this rider\'s own deliveries only', (tester) async {
+  testWidgets(
+      'earnings tab shows this rider\'s own delivery, not a total computed from a '
+      'bounded fetch (ADMR-60: a paginated view must never claim a lifetime total)',
+      (tester) async {
     final db = FakeFirebaseFirestore();
     await _seedRider(db, 'rider_earn');
     await db.collection('rider_earnings').doc('order_1').set({
@@ -114,8 +117,46 @@ void main() {
     await pumpScreen(tester, db, 'rider_earn');
     await switchToTab(tester, 'Earnings');
 
-    expect(find.textContaining('₹55.00 total earned'), findsOneWidget);
     expect(find.text('Order ORD-900'), findsOneWidget);
+    expect(find.text('₹55.00'), findsOneWidget);
+    // No claim of a lifetime/complete total anywhere on this bounded view.
+    expect(find.textContaining('total earned'), findsNothing);
+  });
+
+  testWidgets('P01: earnings tab never shows another rider\'s delivery', (tester) async {
+    final db = FakeFirebaseFirestore();
+    await _seedRider(db, 'rider_earn_a', name: 'Rider Earn A');
+    await _seedRider(db, 'rider_earn_b', name: 'Rider Earn B');
+    await db.collection('rider_earnings').doc('order_a').set({
+      'orderId': 'order_a',
+      'riderId': 'rider_earn_a',
+      'orderNumber': 'ORD-A9',
+      'lines': <Map<String, dynamic>>[],
+      'total': 40.0,
+      'km': 1.0,
+      'kmSource': 'route',
+      'waitMinutes': 0,
+      'codCollected': 0.0,
+      'createdAt': Timestamp.fromDate(DateTime(2026, 9, 1)),
+    });
+    await db.collection('rider_earnings').doc('order_b').set({
+      'orderId': 'order_b',
+      'riderId': 'rider_earn_b',
+      'orderNumber': 'ORD-B9',
+      'lines': <Map<String, dynamic>>[],
+      'total': 60.0,
+      'km': 1.0,
+      'kmSource': 'route',
+      'waitMinutes': 0,
+      'codCollected': 0.0,
+      'createdAt': Timestamp.fromDate(DateTime(2026, 9, 1)),
+    });
+
+    await pumpScreen(tester, db, 'rider_earn_a');
+    await switchToTab(tester, 'Earnings');
+
+    expect(find.text('Order ORD-A9'), findsOneWidget);
+    expect(find.text('Order ORD-B9'), findsNothing);
   });
 
   testWidgets('COD and cash tab shows cash held and a link to the full ledger',

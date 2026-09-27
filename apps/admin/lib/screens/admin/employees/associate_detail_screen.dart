@@ -420,71 +420,45 @@ class _AttributionTab extends StatelessWidget {
 
 // ── Commission ──
 
-class _CommissionTab extends StatefulWidget {
+class _CommissionTab extends StatelessWidget {
   const _CommissionTab({super.key, required this.employeeId, required this.firestore});
   final String employeeId;
   final FirebaseFirestore firestore;
 
   @override
-  State<_CommissionTab> createState() => _CommissionTabState();
-}
-
-class _CommissionTabState extends State<_CommissionTab> {
-  late final Future<QuerySnapshot<Map<String, dynamic>>> _future = widget.firestore
-      .collection('commission_exceptions')
-      .where('employeeUid', isEqualTo: widget.employeeId)
-      .limit(100)
-      .get();
-
-  @override
   Widget build(BuildContext context) {
-    return FutureBuilder<QuerySnapshot<Map<String, dynamic>>>(
-      future: _future,
-      builder: (context, snap) {
-        if (snap.connectionState == ConnectionState.waiting) {
-          return const Center(child: CircularProgressIndicator());
-        }
-        if (snap.hasError) {
-          return const SectionMessage(
-              icon: Icons.error_outline, message: "Couldn't load commission exceptions.");
-        }
-        final docs = (snap.data?.docs ?? const <QueryDocumentSnapshot<Map<String, dynamic>>>[])
-            .toList()
-          ..sort((a, b) {
-            final at = a.data()['createdAt'];
-            final bt = b.data()['createdAt'];
-            final am = at is Timestamp ? at.millisecondsSinceEpoch : 0;
-            final bm = bt is Timestamp ? bt.millisecondsSinceEpoch : 0;
-            return bm.compareTo(am);
-          });
-        return ListView(
-          padding: const EdgeInsets.all(16),
-          children: [
-            Text(
-              'Unresolved commission exceptions mean the delivered order\'s rate could not be '
-              'resolved automatically -- they do not, by themselves, mean commission was lost. '
-              'Retrying one is a global action; open Commission Exceptions to act on it.',
-              style: TextStyle(fontSize: 12, color: Colors.grey.shade600),
-            ),
-            const SizedBox(height: 12),
-            if (docs.isEmpty)
-              const Padding(
-                padding: EdgeInsets.symmetric(vertical: 12),
-                child: Text('No commission exceptions for this associate.'),
-              )
-            else
-              for (final d in docs)
-                Card(
-                  margin: const EdgeInsets.only(bottom: 8),
-                  child: ListTile(
-                    title: Text('Order ${CommissionExceptionRecord.fromMap(d.data(), d.id).orderNumber ?? d.id}'),
-                    subtitle: Text(
-                        '${CommissionExceptionRecord.fromMap(d.data(), d.id).status} · ${CommissionExceptionRecord.fromMap(d.data(), d.id).reason}'),
-                  ),
+    return Column(
+      children: [
+        Padding(
+          padding: const EdgeInsets.all(12),
+          child: Text(
+            'Unresolved commission exceptions mean the delivered order\'s rate could not be '
+            'resolved automatically -- they do not, by themselves, mean commission was lost. '
+            'Retrying one is a global action; open Commission Exceptions to act on it.',
+            style: TextStyle(fontSize: 12, color: Colors.grey.shade600),
+          ),
+        ),
+        Expanded(
+          child: PaginatedQueryList(
+            key: ValueKey('associate-commission-$employeeId'),
+            baseQuery: firestore
+                .collection('commission_exceptions')
+                .where('employeeUid', isEqualTo: employeeId)
+                .orderBy('createdAt', descending: true),
+            emptyLabel: 'No commission exceptions for this associate.',
+            itemBuilder: (context, doc) {
+              final record = CommissionExceptionRecord.fromMap(doc.data(), doc.id);
+              return Card(
+                margin: const EdgeInsets.only(bottom: 8),
+                child: ListTile(
+                  title: Text('Order ${record.orderNumber ?? doc.id}'),
+                  subtitle: Text('${record.status} · ${record.reason}'),
                 ),
-          ],
-        );
-      },
+              );
+            },
+          ),
+        ),
+      ],
     );
   }
 }

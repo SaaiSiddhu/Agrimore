@@ -7,10 +7,19 @@ import 'package:flutter/material.dart';
 
 /// A generic "couldn't load / nothing here" panel, used for empty and
 /// error states across every 360 workspace so they look and read the same.
+/// Pass [onRetry] to add a working "Try again" action -- ADMR-60: an error
+/// state with no way back in wasn't just cosmetic, it was a dead end an
+/// admin could only escape by leaving and reopening the whole screen.
 class SectionMessage extends StatelessWidget {
-  const SectionMessage({super.key, required this.icon, required this.message});
+  const SectionMessage({
+    super.key,
+    required this.icon,
+    required this.message,
+    this.onRetry,
+  });
   final IconData icon;
   final String message;
+  final VoidCallback? onRetry;
 
   @override
   Widget build(BuildContext context) {
@@ -25,6 +34,10 @@ class SectionMessage extends StatelessWidget {
             Text(message,
                 textAlign: TextAlign.center,
                 style: TextStyle(color: Colors.grey.shade600)),
+            if (onRetry != null) ...[
+              const SizedBox(height: 12),
+              OutlinedButton(onPressed: onRetry, child: const Text('Try again')),
+            ],
           ],
         ),
       ),
@@ -44,6 +57,7 @@ class PaginatedQueryList extends StatefulWidget {
     required this.emptyLabel,
     this.pageSize = 20,
     this.shrinkWrapInList = false,
+    this.resetKey,
   });
 
   final Query<Map<String, dynamic>> baseQuery;
@@ -56,6 +70,20 @@ class PaginatedQueryList extends StatefulWidget {
   /// (e.g. a tab's outer ListView) and must size itself instead of
   /// trying to scroll independently.
   final bool shrinkWrapInList;
+
+  /// ADMR-60: identifies the semantic query (e.g. a status/assignee filter
+  /// value), not the [baseQuery] object itself -- Query has no stable
+  /// equality, and every rebuild constructs a new instance regardless of
+  /// whether the filter actually changed, so comparing it directly would
+  /// either never fire or fire every frame. When [resetKey] changes between
+  /// one build and the next, all loaded state clears and a fresh fetch
+  /// starts; any in-flight request tied to the old query is invalidated via
+  /// the existing request-id guard. Every People-360 caller today keys this
+  /// whole widget by entity id instead (a fresh element per entity, so there
+  /// is nothing to reset) and can safely leave this null; a filterable
+  /// queue that reuses the same widget instance across filter changes must
+  /// pass one.
+  final Object? resetKey;
 
   @override
   State<PaginatedQueryList> createState() => _PaginatedQueryListState();
@@ -74,6 +102,21 @@ class _PaginatedQueryListState extends State<PaginatedQueryList> {
   void initState() {
     super.initState();
     _loadMore();
+  }
+
+  @override
+  void didUpdateWidget(covariant PaginatedQueryList oldWidget) {
+    super.didUpdateWidget(oldWidget);
+    if (widget.resetKey != oldWidget.resetKey) {
+      _docs.clear();
+      _cursor = null;
+      _hasMore = true;
+      _initialLoadDone = false;
+      _error = null;
+      _loading = false; // an old in-flight request must not block the new fetch
+      _requestId++; // invalidates any in-flight request from the old query
+      _loadMore();
+    }
   }
 
   Future<void> _loadMore() async {
@@ -115,9 +158,10 @@ class _PaginatedQueryListState extends State<PaginatedQueryList> {
       );
     }
     if (_error != null && _docs.isEmpty) {
-      return const SectionMessage(
+      return SectionMessage(
         icon: Icons.error_outline,
         message: "Couldn't load this. Check your connection and try again.",
+        onRetry: _loadMore,
       );
     }
     if (_docs.isEmpty) {
