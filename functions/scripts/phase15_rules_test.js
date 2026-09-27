@@ -317,6 +317,57 @@ async function main() {
         results.regression_wallet_balance_lock_still_holds = `FAILED — REGRESSION: direct wallet balance write succeeded: ${e.message}`;
       }
     }
+
+    // ============================================
+    // ADMR-44 — characterizing the CURRENT users/{userId} admin-write
+    // boundary (a disclosed, deliberate trust decision this phase did not
+    // change; see admin_service.dart's own ADMR-44 comment). Two facts,
+    // both real and both currently true:
+    //   (a) a non-owner, non-admin caller cannot touch someone else's role
+    //       at all — the update rule's two branches (isAdmin() ||
+    //       (isOwner && ownerCannotChangePrivilegedFields())) leave no
+    //       third path in.
+    //   (b) an admin caller CAN still write role directly and unrestricted
+    //       — apps/admin now routes through setUserRole.ts instead (which
+    //       adds self-demotion/last-admin/audit protections THIS rule does
+    //       not), but the rule itself was deliberately left as-is; nothing
+    //       stops a raw Admin-SDK-bypassing write or a future client bug
+    //       from using this path again. This test exists so that fact is
+    //       verified evidence, not a remembered claim — and so it becomes
+    //       a clear, deliberate regression marker if a later phase decides
+    //       to tighten this rule to route through setUserRole exclusively.
+    // ============================================
+    {
+      const targetUid = "phase15-admr44-target";
+      const outsiderUid = "phase15-admr44-outsider";
+      await testEnv.withSecurityRulesDisabled(async (ctx) => {
+        await ctx.firestore().collection("users").doc(targetUid).set({ email: "admr44-target@phase15-test.example", role: "user" });
+      });
+
+      const outsiderDb = testEnv.authenticatedContext(outsiderUid, unprivilegedClaims("admr44-outsider@phase15-test.example")).firestore();
+      try {
+        await assertFails(outsiderDb.collection("users").doc(targetUid).update({ role: "admin" }));
+        results.admr44_non_admin_cannot_change_a_different_users_role =
+          "PASSED — a non-admin, non-owner caller cannot set role on someone ELSE's user doc";
+      } catch (e) {
+        results.admr44_non_admin_cannot_change_a_different_users_role = `FAILED — a non-admin changed a different user's role: ${e.message}`;
+      }
+
+      const adminDb = testEnv
+        .authenticatedContext(
+          "phase15-admr44-admin",
+          { ...unprivilegedClaims("admr44-admin@phase15-test.example"), admin: true }
+        )
+        .firestore();
+      try {
+        await assertSucceeds(adminDb.collection("users").doc(targetUid).update({ role: "admin" }));
+        results.admr44_admin_can_still_write_role_directly_current_boundary =
+          "PASSED (documents CURRENT behavior, not a target) — an admin claim can still write another user's role field directly and unrestricted; setUserRole.ts is the safer path apps/admin now uses, but this rule itself was not tightened this phase";
+      } catch (e) {
+        results.admr44_admin_can_still_write_role_directly_current_boundary =
+          `FAILED — REGRESSION or rules changed since this phase: an admin direct role write that used to succeed now fails: ${e.message}`;
+      }
+    }
   } finally {
     await testEnv.cleanup();
   }
