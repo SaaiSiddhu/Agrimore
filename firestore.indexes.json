@@ -763,6 +763,20 @@
             ]
         },
         {
+            "collectionGroup": "orders",
+            "queryScope": "COLLECTION",
+            "fields": [
+                {
+                    "fieldPath": "deliveryPartnerId",
+                    "order": "ASCENDING"
+                },
+                {
+                    "fieldPath": "orderNumber",
+                    "order": "ASCENDING"
+                }
+            ]
+        },
+        {
             "collectionGroup": "delivery_exceptions",
             "queryScope": "COLLECTION",
             "fields": [

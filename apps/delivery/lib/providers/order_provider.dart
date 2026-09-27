@@ -59,11 +59,13 @@ class DeliveryOrderProvider extends ChangeNotifier {
     ActiveWorkSource? activeSource,
     DeliveredCount? deliveredCount,
     HistoryFetch? historyFetch,
+    CountsFetch? historyCounts,
+    SearchFetch? historySearch,
     DateTime Function()? clock,
   })  : _activeSource = activeSource ?? firestoreActiveWork,
         _deliveredCount = deliveredCount ?? firestoreDeliveredCount,
         _clock = clock ?? DateTime.now,
-        history = RiderHistory(fetch: historyFetch);
+        history = RiderHistory(fetch: historyFetch, counts: historyCounts, search: historySearch);
 
   final ActiveWorkSource _activeSource;
   final DeliveredCount _deliveredCount;

@@ -1777,6 +1777,18 @@
   "@historyEmptyFiltered": {
     "description": "History with a filter and no match"
   },
+  "historyOrderIdSearchHint": "Search by Order ID",
+  "@historyOrderIdSearchHint": {
+    "description": "History: placeholder for the Order ID search field"
+  },
+  "historyOrderIdSearchClear": "Clear search",
+  "@historyOrderIdSearchClear": {
+    "description": "History: tooltip for the Order ID search field's own clear button"
+  },
+  "historySearchNotFound": "No delivery found with that Order ID",
+  "@historySearchNotFound": {
+    "description": "History: an Order ID search matched nothing of this rider's own"
+  },
   "historyDetailPay": "Your pay for this order",
   "@historyDetailPay": {
     "description": "History detail: rider's earning"

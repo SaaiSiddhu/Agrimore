@@ -8,7 +8,9 @@
 // cursor, so later pages continue exactly after the last row shown.
 //
 // A page result from an older session (signed out, another rider signed in)
-// is dropped. Covered by test/rider_history_test.dart.
+// is dropped. Covered by test/rider_inbox_history_test.dart's 'history' group.
+import 'dart:async';
+
 import 'package:agrimore_core/agrimore_core.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:flutter/foundation.dart';
@@ -83,9 +85,13 @@ bool historyMatches(OrderModel o, HistoryFilter f) {
 /// Fetches a page of [riderId]'s orders under [query] after [cursor] (null = first page).
 typedef HistoryFetch = Future<HistoryPage> Function(String riderId, HistoryQuery query, Object? cursor, int size);
 
-Future<HistoryPage> firestoreHistoryPage(String riderId, HistoryQuery query, Object? cursor, int size) async {
+/// The [deliveryPartnerId] + optional status + optional `createdAt` cutoff
+/// filter `firestoreHistoryPage` and `firestoreHistoryCounts` both need,
+/// shared so the count queries can never drift from what the list actually
+/// fetches.
+Filter _historyWhere(String riderId, HistoryFilter filter, DateTime? since) {
   Filter where = Filter('deliveryPartnerId', isEqualTo: riderId);
-  final statusValues = switch (query.filter) {
+  final statusValues = switch (filter) {
     HistoryFilter.all => null,
     HistoryFilter.delivered => _deliveredStored,
     HistoryFilter.cancelled => _cancelledStored,
@@ -101,13 +107,16 @@ Future<HistoryPage> firestoreHistoryPage(String riderId, HistoryQuery query, Obj
       Filter.or(Filter('orderStatus', whereIn: statusValues), Filter('status', whereIn: statusValues)),
     );
   }
-  final since = query.since;
   if (since != null) {
     where = Filter.and(where, Filter('createdAt', isGreaterThanOrEqualTo: Timestamp.fromDate(since)));
   }
+  return where;
+}
+
+Future<HistoryPage> firestoreHistoryPage(String riderId, HistoryQuery query, Object? cursor, int size) async {
   Query<Map<String, dynamic>> q = FirebaseFirestore.instance
       .collection('orders')
-      .where(where)
+      .where(_historyWhere(riderId, query.filter, query.since))
       .orderBy('createdAt', descending: true);
   if (cursor is DocumentSnapshot) q = q.startAfterDocument(cursor);
   // One extra row tells whether another page exists.
@@ -121,10 +130,66 @@ Future<HistoryPage> firestoreHistoryPage(String riderId, HistoryQuery query, Obj
   );
 }
 
+/// DLVH7: how many of [riderId]'s orders fall under each status, scoped by
+/// the same `createdAt` cutoff the list itself uses -- one count per bucket,
+/// shown together regardless of which chip is selected (the mockup's own
+/// panel always shows all four side by side).
+typedef HistoryCounts = ({int all, int delivered, int cancelled, int returned});
+
+/// Loads [HistoryCounts] for [riderId] as of [since] (null = all time).
+typedef CountsFetch = Future<HistoryCounts> Function(String riderId, DateTime? since);
+
+Future<HistoryCounts> firestoreHistoryCounts(String riderId, DateTime? since) async {
+  Future<int> count(HistoryFilter f) async {
+    final agg = await FirebaseFirestore.instance
+        .collection('orders')
+        .where(_historyWhere(riderId, f, since))
+        .count()
+        .get();
+    return agg.count ?? 0;
+  }
+
+  final results = await Future.wait([
+    count(HistoryFilter.all),
+    count(HistoryFilter.delivered),
+    count(HistoryFilter.cancelled),
+    count(HistoryFilter.returned),
+  ]);
+  return (all: results[0], delivered: results[1], cancelled: results[2], returned: results[3]);
+}
+
+/// DLVH7: looks up exactly one of [riderId]'s orders by its human-facing
+/// Order ID (`orderNumber`, always present -- not the raw Firestore document
+/// id). Ownership-scoped only: independent of whatever status/date filters
+/// happen to be active, so a correct Order ID always finds its order. Null
+/// when no such order exists, or it belongs to another rider.
+typedef SearchFetch = Future<OrderModel?> Function(String riderId, String orderNumber);
+
+Future<OrderModel?> firestoreOrderBySearchId(String riderId, String orderNumber) async {
+  final snap = await FirebaseFirestore.instance
+      .collection('orders')
+      .where('deliveryPartnerId', isEqualTo: riderId)
+      .where('orderNumber', isEqualTo: orderNumber)
+      .limit(1)
+      .get();
+  if (snap.docs.isEmpty) return null;
+  final d = snap.docs.first;
+  return historyOrder(d.id, d.data());
+}
+
 class RiderHistory extends ChangeNotifier {
-  RiderHistory({HistoryFetch? fetch, this.pageSize = kHistoryPageSize}) : _fetch = fetch ?? firestoreHistoryPage;
+  RiderHistory({
+    HistoryFetch? fetch,
+    CountsFetch? counts,
+    SearchFetch? search,
+    this.pageSize = kHistoryPageSize,
+  })  : _fetch = fetch ?? firestoreHistoryPage,
+        _countsFetch = counts ?? firestoreHistoryCounts,
+        _searchFetch = search ?? firestoreOrderBySearchId;
 
   final HistoryFetch _fetch;
+  final CountsFetch _countsFetch;
+  final SearchFetch _searchFetch;
   final int pageSize;
 
   String? _riderId;
@@ -138,10 +203,109 @@ class RiderHistory extends ChangeNotifier {
   bool _loading = false;
   RiderDataError? _error;
 
+  /// DLVH7: per-status counts scoped to [_since] only -- independent of
+  /// [_filter], since the mockup shows all four together regardless of
+  /// which chip is selected. Null while loading or unavailable (chips fall
+  /// back to their plain label rather than showing a stale/fabricated
+  /// number).
+  HistoryCounts? _counts;
+
+  /// True exactly when [_counts] needs recomputing before it is trusted
+  /// again: on a rider (re)bind and on a date-range change, never on a
+  /// plain status-chip tap alone. NOT the same signal as "first page of
+  /// this pagination sequence" ([_cursor] == null) -- [refresh] resets
+  /// [_cursor] on every filter change too, so gating on that would recompute
+  /// counts on a status-chip tap as well, which the mockup does not.
+  bool _countsStale = true;
+
+  /// DLVH7: an exact Order ID lookup, independent of [_filter]/[_dateRange].
+  String _searchText = '';
+  bool _searching = false;
+  OrderModel? _searchResult;
+  bool _searchNotFound = false;
+  int _searchToken = 0;
+
   List<OrderModel> get items => List.unmodifiable(_items);
   HistoryFilter get filter => _filter;
   HistoryDateRange get dateRange => _dateRange;
   bool get hasActiveFilter => _filter != HistoryFilter.all || _dateRange != HistoryDateRange.allTime;
+  HistoryCounts? get counts => _counts;
+
+  bool get isSearchActive => _searchText.isNotEmpty;
+  String get searchText => _searchText;
+  bool get searching => _searching;
+  OrderModel? get searchResult => _searchResult;
+  bool get searchNotFound => _searchNotFound;
+
+  /// Looks up exactly one order by its exact Order ID (`orderNumber`),
+  /// scoped only by rider ownership -- independent of the current status/
+  /// date filters, which stay untouched underneath. The newest call always
+  /// wins over a slower, still-in-flight earlier one.
+  Future<void> search(String orderNumber) async {
+    final trimmed = orderNumber.trim();
+    if (trimmed.isEmpty) {
+      clearSearch();
+      return;
+    }
+    final riderId = _riderId;
+    final token = ++_searchToken;
+    _searchText = trimmed;
+    _searching = true;
+    _searchResult = null;
+    _searchNotFound = false;
+    notifyListeners();
+    if (riderId == null) {
+      _searching = false;
+      _searchNotFound = true;
+      notifyListeners();
+      return;
+    }
+    try {
+      final found = await _searchFetch(riderId, trimmed);
+      if (token != _searchToken) return; // superseded by a newer search/clear
+      _searchResult = found;
+      _searchNotFound = found == null;
+    } catch (e) {
+      if (token != _searchToken) return;
+      debugPrint('History search failed: $e');
+      _searchResult = null;
+      _searchNotFound = true;
+    } finally {
+      if (token == _searchToken) {
+        _searching = false;
+        notifyListeners();
+      }
+    }
+  }
+
+  /// Back to the normal filtered/paginated list already loaded.
+  void clearSearch() {
+    if (_searchText.isEmpty && !_searching) return;
+    _searchToken++;
+    _searchText = '';
+    _searching = false;
+    _searchResult = null;
+    _searchNotFound = false;
+    notifyListeners();
+  }
+
+  /// Recomputes [counts] for the currently-bound rider and [_since]. Errors
+  /// clear [counts] to unavailable rather than showing a stale number.
+  Future<void> _loadCounts() async {
+    final riderId = _riderId;
+    if (riderId == null) return;
+    final gen = _generation;
+    HistoryCounts? result;
+    try {
+      result = await _countsFetch(riderId, _since);
+    } catch (e) {
+      debugPrint('History counts failed: $e');
+      result = null;
+    }
+    if (gen != _generation) return;
+    _counts = result;
+    notifyListeners();
+  }
 
   /// Shows [f] from its first page.
   Future<void> setFilter(HistoryFilter f) {
@@ -157,6 +321,7 @@ class RiderHistory extends ChangeNotifier {
     if (r == _dateRange) return Future.value();
     _dateRange = r;
     _since = r.since(DateTime.now());
+    _countsStale = true;
     return refresh();
   }
 
@@ -166,6 +331,7 @@ class RiderHistory extends ChangeNotifier {
     _filter = HistoryFilter.all;
     _dateRange = HistoryDateRange.allTime;
     _since = null;
+    _countsStale = true;
     return refresh();
   }
 
@@ -176,24 +342,44 @@ class RiderHistory extends ChangeNotifier {
   /// Nothing loaded yet and nothing failed.
   bool get notStarted => _items.isEmpty && !_loading && _error == null && _hasMore;
 
-  /// Binds to [riderId] (null = signed out) and forgets everything else.
-  void bind(String? riderId) {
-    if (riderId == _riderId) return;
-    _riderId = riderId;
-    _generation++;
+  void _resetPagination() {
     _items.clear();
     _cursor = null;
     _hasMore = true;
     _loading = false;
     _error = null;
+  }
+
+  /// Binds to [riderId] (null = signed out) and forgets everything else,
+  /// including counts and search -- a genuinely different rider (or signing
+  /// out) invalidates both, unlike [refresh] below.
+  void bind(String? riderId) {
+    if (riderId == _riderId) return;
+    _riderId = riderId;
+    _generation++;
+    _resetPagination();
+    _counts = null;
+    _countsStale = true;
+    _searchToken++;
+    _searchText = '';
+    _searching = false;
+    _searchResult = null;
+    _searchNotFound = false;
     notifyListeners();
   }
 
-  /// Reloads from the first page.
+  /// Reloads from the first page, for the SAME rider. Deliberately does not
+  /// go through [bind] (which would also invalidate [counts] as if this
+  /// were a different rider) -- every filter-changing setter calls this, and
+  /// only [setDateRange]/[clearFilters] mark counts stale themselves.
+  /// Also clears any active search: a status/date filter change while
+  /// viewing one search result is read as "show me the filtered list",
+  /// not as a silent change underneath an unrelated result still on screen.
   Future<void> refresh() {
-    final id = _riderId;
-    bind(null);
-    bind(id);
+    clearSearch();
+    _generation++;
+    _resetPagination();
+    notifyListeners();
     return loadMore();
   }
 
@@ -205,6 +391,14 @@ class RiderHistory extends ChangeNotifier {
     _loading = true;
     _error = null;
     notifyListeners();
+    // Deliberately not awaited: counts are supplementary (they only
+    // annotate the status chips), so a slow or stuck count query must never
+    // hold up the main list from rendering. It settles on its own and
+    // notifies again when it does.
+    if (_countsStale) {
+      _countsStale = false;
+      unawaited(_loadCounts());
+    }
     try {
       final page = await _fetch(riderId, (filter: _filter, since: _since), _cursor, pageSize);
       if (gen != _generation) return; // another session since

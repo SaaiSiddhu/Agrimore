@@ -2494,6 +2494,24 @@ abstract class AppLocalizations {
   /// **'No orders here'**
   String get historyEmptyFiltered;
 
+  /// History: placeholder for the Order ID search field
+  ///
+  /// In en, this message translates to:
+  /// **'Search by Order ID'**
+  String get historyOrderIdSearchHint;
+
+  /// History: tooltip for the Order ID search field's own clear button
+  ///
+  /// In en, this message translates to:
+  /// **'Clear search'**
+  String get historyOrderIdSearchClear;
+
+  /// History: an Order ID search matched nothing of this rider's own
+  ///
+  /// In en, this message translates to:
+  /// **'No delivery found with that Order ID'**
+  String get historySearchNotFound;
+
   /// History detail: rider's earning
   ///
   /// In en, this message translates to:
