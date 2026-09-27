@@ -2705,30 +2705,26 @@
   "@dashSignOutBody": {
     "description": "Confirm sign-out body"
   },
-  "dashEarnedWeek": "Earned this week",
-  "@dashEarnedWeek": {
-    "description": "Earnings card label"
+  "dashEarnedLabel": "Earned",
+  "@dashEarnedLabel": {
+    "description": "DLVDASH2: earnings toggle card's small label above the amount, period-agnostic (the Today/This week toggle above it says which period)"
   },
-  "dashEarnedTodayLine": "Today {amount} · paid every Monday",
-  "@dashEarnedTodayLine": {
-    "description": "Earnings card line",
+  "dashCompletedDeliveries": "{count, plural, =1{From 1 completed delivery} other{From {count} completed deliveries}}",
+  "@dashCompletedDeliveries": {
+    "description": "DLVDASH2: earnings toggle card's subtitle, count of completed deliveries in the selected period",
     "placeholders": {
-      "amount": {
-        "type": "String"
+      "count": {
+        "type": "int"
       }
     }
   },
   "dashStatToday": "Today",
   "@dashStatToday": {
-    "description": "Stat: deliveries today"
+    "description": "DLVDASH2: earnings toggle card's Today segment label"
   },
   "dashStatWeek": "This week",
   "@dashStatWeek": {
-    "description": "Stat: pay this week"
-  },
-  "dashStatEarnedToday": "Earned today",
-  "@dashStatEarnedToday": {
-    "description": "Stat: pay today"
+    "description": "DLVDASH2: earnings toggle card's This week segment label"
   },
   "dashStatCash": "Cash with you",
   "@dashStatCash": {

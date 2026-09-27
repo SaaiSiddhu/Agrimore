@@ -3682,35 +3682,29 @@ abstract class AppLocalizations {
   /// **'You will go offline and stop getting orders.'**
   String get dashSignOutBody;
 
-  /// Earnings card label
+  /// DLVDASH2: earnings toggle card's small label above the amount, period-agnostic (the Today/This week toggle above it says which period)
   ///
   /// In en, this message translates to:
-  /// **'Earned this week'**
-  String get dashEarnedWeek;
+  /// **'Earned'**
+  String get dashEarnedLabel;
 
-  /// Earnings card line
+  /// DLVDASH2: earnings toggle card's subtitle, count of completed deliveries in the selected period
   ///
   /// In en, this message translates to:
-  /// **'Today {amount} · paid every Monday'**
-  String dashEarnedTodayLine(String amount);
+  /// **'{count, plural, =1{From 1 completed delivery} other{From {count} completed deliveries}}'**
+  String dashCompletedDeliveries(int count);
 
-  /// Stat: deliveries today
+  /// DLVDASH2: earnings toggle card's Today segment label
   ///
   /// In en, this message translates to:
   /// **'Today'**
   String get dashStatToday;
 
-  /// Stat: pay this week
+  /// DLVDASH2: earnings toggle card's This week segment label
   ///
   /// In en, this message translates to:
   /// **'This week'**
   String get dashStatWeek;
-
-  /// Stat: pay today
-  ///
-  /// In en, this message translates to:
-  /// **'Earned today'**
-  String get dashStatEarnedToday;
 
   /// Stat: COD cash held
   ///

@@ -104,6 +104,23 @@ DeliveryOrderProvider _fakeOrders(String uid) => DeliveryOrderProvider(
           (items: const <OrderModel>[], cursor: null, hasMore: false),
     )..bind(uid);
 
+// DLVDASH2: bind() requests a delivered count twice (today, then this week,
+// in that order) -- distinct values prove the earnings card's own toggle
+// switches which period's data is shown, rather than happening to show the
+// same number either way.
+DeliveryOrderProvider _fakeOrdersWithCounts(String uid, {required int today, required int week}) {
+  var calls = 0;
+  return DeliveryOrderProvider(
+    activeSource: (_) => Stream.value((docs: <OrderDoc>[], fromCache: false)),
+    deliveredCount: (_, __) async {
+      calls++;
+      return calls == 1 ? today : week;
+    },
+    historyFetch: (_, __, ___, ____) async =>
+        (items: const <OrderModel>[], cursor: null, hasMore: false),
+  )..bind(uid);
+}
+
 // pumpEventQueue() drives REAL Future.delayed timers, but testWidgets runs
 // under AutomatedTestWidgetsFlutterBinding's fake clock, which only advances
 // on tester.pump() — pumpEventQueue() alone never returns here (it does
@@ -121,11 +138,16 @@ Future<DeliveryAuthProvider> _authedProvider(WidgetTester t, {bool online = fals
   return auth;
 }
 
-Widget _shellHost(DeliveryAuthProvider auth, String uid, {Brightness brightness = Brightness.light}) {
+Widget _shellHost(
+  DeliveryAuthProvider auth,
+  String uid, {
+  Brightness brightness = Brightness.light,
+  DeliveryOrderProvider Function(String uid)? orders,
+}) {
   return MultiProvider(
     providers: [
       ChangeNotifierProvider<DeliveryAuthProvider>.value(value: auth),
-      ChangeNotifierProvider<DeliveryOrderProvider>.value(value: _fakeOrders(uid)),
+      ChangeNotifierProvider<DeliveryOrderProvider>.value(value: (orders ?? _fakeOrders)(uid)),
       ChangeNotifierProvider<LocationProvider>(create: (_) => LocationProvider()),
       ChangeNotifierProvider<OfferProvider>(create: (_) => OfferProvider()),
     ],
@@ -305,4 +327,39 @@ void main() {
       expect(find.text('You are offline'), findsOneWidget);
     },
   );
+
+  testWidgets('DLVDASH2: the earnings card defaults to Today and switches to This week on tap', (t) async {
+    final auth = await _authedProvider(t);
+    await t.pumpWidget(_shellHost(auth, 'r1', orders: (uid) => _fakeOrdersWithCounts(uid, today: 3, week: 42)));
+    await t.pumpAndSettle();
+    expect(t.takeException(), isNull);
+    expect(find.text('From 3 completed deliveries'), findsOneWidget);
+    expect(find.text('From 42 completed deliveries'), findsNothing);
+
+    await t.tap(find.byKey(const ValueKey('earnings-period-week')));
+    await t.pumpAndSettle();
+    expect(find.text('From 42 completed deliveries'), findsOneWidget);
+    expect(find.text('From 3 completed deliveries'), findsNothing);
+
+    await t.tap(find.byKey(const ValueKey('earnings-period-today')));
+    await t.pumpAndSettle();
+    expect(find.text('From 3 completed deliveries'), findsOneWidget);
+  });
+
+  testWidgets('DLVDASH2: exactly one completed delivery uses the singular phrasing', (t) async {
+    final auth = await _authedProvider(t);
+    await t.pumpWidget(_shellHost(auth, 'r1', orders: (uid) => _fakeOrdersWithCounts(uid, today: 1, week: 1)));
+    await t.pumpAndSettle();
+    expect(find.text('From 1 completed delivery'), findsOneWidget);
+    expect(find.text('From 1 completed deliveries'), findsNothing);
+  });
+
+  testWidgets('DLVDASH2: cash held survives as its own tile, and the old duplicated stat labels are gone', (t) async {
+    final auth = await _authedProvider(t);
+    await t.pumpWidget(_shellHost(auth, 'r1', orders: (uid) => _fakeOrdersWithCounts(uid, today: 3, week: 42)));
+    await t.pumpAndSettle();
+    expect(find.text('Cash with you'), findsOneWidget);
+    expect(find.text('Earned today'), findsNothing, reason: 'retired -- the toggle makes a separate "today" label redundant');
+    expect(find.text('Earned this week'), findsNothing, reason: 'retired ARB copy, replaced by the period-agnostic "Earned" label');
+  });
 }

@@ -106,3 +106,9 @@ class ActiveWork {
 
 /// Local midnight of [now] — "today" for the rider's delivered count.
 DateTime startOfLocalDay(DateTime now) => DateTime(now.year, now.month, now.day);
+
+/// DLVDASH2: local midnight of the Monday on or before [now] — "this week"
+/// for the rider's delivered count, matching this app's own established
+/// Monday-aligned week convention (DLVH1's own "This week 14-20 Sep 2026").
+DateTime startOfLocalWeek(DateTime now) =>
+    startOfLocalDay(now).subtract(Duration(days: now.weekday - DateTime.monday));

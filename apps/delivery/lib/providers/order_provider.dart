@@ -77,6 +77,7 @@ class DeliveryOrderProvider extends ChangeNotifier {
   StreamSubscription<ActiveSnapshot>? _activeSub;
   ActiveWork _work = const ActiveWork.loading();
   int? _todayDelivered;
+  int? _weekDelivered;
   Set<String> _lastActiveIds = const {};
   steps.RiderStepException? _error;
 
@@ -94,6 +95,10 @@ class DeliveryOrderProvider extends ChangeNotifier {
   /// Deliveries completed since local midnight; null until known.
   int? get todayDelivered => _todayDelivered;
 
+  /// DLVDASH2: deliveries completed since the Monday on or before now; null
+  /// until known.
+  int? get weekDelivered => _weekDelivered;
+
   /// The last step/release refusal, as a sentence.
   steps.RiderStepException? get error => _error;
 
@@ -107,12 +112,14 @@ class DeliveryOrderProvider extends ChangeNotifier {
     _riderId = riderId;
     _work = const ActiveWork.loading();
     _todayDelivered = null;
+    _weekDelivered = null;
     _lastActiveIds = const {};
     _error = null;
     history.bind(riderId);
     if (riderId != null) {
       _listen(riderId, _generation);
       _refreshToday(riderId, _generation);
+      _refreshWeek(riderId, _generation);
     }
     notifyListeners();
   }
@@ -127,6 +134,7 @@ class DeliveryOrderProvider extends ChangeNotifier {
     notifyListeners();
     _listen(id, _generation);
     _refreshToday(id, _generation);
+    _refreshWeek(id, _generation);
   }
 
   void _listen(String riderId, int gen) {
@@ -135,7 +143,10 @@ class DeliveryOrderProvider extends ChangeNotifier {
       final docs = activeDocsFor(snap.docs, riderId);
       final ids = docs.map((d) => d.id).toSet();
       // An order leaving active work may have just been delivered.
-      if (_lastActiveIds.difference(ids).isNotEmpty) _refreshToday(riderId, gen);
+      if (_lastActiveIds.difference(ids).isNotEmpty) {
+        _refreshToday(riderId, gen);
+        _refreshWeek(riderId, gen);
+      }
       _lastActiveIds = ids;
       _work = ActiveWork.ready(
         docs.map((d) => OrderModel.fromMap(d.data, d.id)).toList(),
@@ -159,6 +170,17 @@ class DeliveryOrderProvider extends ChangeNotifier {
       notifyListeners();
     } catch (e) {
       debugPrint('Delivered count failed: $e');
+    }
+  }
+
+  Future<void> _refreshWeek(String riderId, int gen) async {
+    try {
+      final n = await _deliveredCount(riderId, startOfLocalWeek(_clock()));
+      if (gen != _generation) return;
+      _weekDelivered = n;
+      notifyListeners();
+    } catch (e) {
+      debugPrint('Week delivered count failed: $e');
     }
   }
 

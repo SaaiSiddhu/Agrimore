@@ -2068,11 +2068,17 @@ class AppLocalizationsEn extends AppLocalizations {
   String get dashSignOutBody => 'You will go offline and stop getting orders.';
 
   @override
-  String get dashEarnedWeek => 'Earned this week';
+  String get dashEarnedLabel => 'Earned';
 
   @override
-  String dashEarnedTodayLine(String amount) {
-    return 'Today $amount · paid every Monday';
+  String dashCompletedDeliveries(int count) {
+    String _temp0 = intl.Intl.pluralLogic(
+      count,
+      locale: localeName,
+      other: 'From $count completed deliveries',
+      one: 'From 1 completed delivery',
+    );
+    return '$_temp0';
   }
 
   @override
@@ -2080,9 +2086,6 @@ class AppLocalizationsEn extends AppLocalizations {
 
   @override
   String get dashStatWeek => 'This week';
-
-  @override
-  String get dashStatEarnedToday => 'Earned today';
 
   @override
   String get dashStatCash => 'Cash with you';
