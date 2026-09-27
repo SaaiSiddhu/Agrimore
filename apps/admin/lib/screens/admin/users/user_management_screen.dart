@@ -2,12 +2,13 @@
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
+import 'package:go_router/go_router.dart';
 import 'package:agrimore_ui/agrimore_ui.dart';
 
+import '../../../app/app_router.dart';
 import '../../../providers/admin_provider.dart';
 import 'edit_user_screen.dart';
 import 'widgets/user_card.dart';
-import 'widgets/user_details_modal.dart';
 
 class UserManagementScreen extends StatefulWidget {
   const UserManagementScreen({Key? key}) : super(key: key);
@@ -368,7 +369,7 @@ class _UserManagementScreenState extends State<UserManagementScreen> {
               children: [
                 UserCard(
                   user: user,
-                  onTap: () => _showUserDetails(user),
+                  onTap: () => _openCustomer360(user),
                   onEdit: () => _navigateToEditUser(user),
                   onToggleStatus: () => provider.toggleUserStatus(user.uid, !user.isActive),
                   onDelete: () async {
@@ -397,17 +398,7 @@ class _UserManagementScreenState extends State<UserManagementScreen> {
     Navigator.push(context, MaterialPageRoute(builder: (_) => EditUserScreen(user: user)));
   }
 
-  void _showUserDetails(UserModel user) {
-    showDialog(
-      context: context,
-      builder: (dialogContext) => UserDetailsModal(
-        user: user,
-        onClose: () => Navigator.pop(dialogContext),
-        onEdit: () {
-          Navigator.pop(dialogContext);
-          _navigateToEditUser(user);
-        },
-      ),
-    );
+  void _openCustomer360(UserModel user) {
+    context.push(AdminRoutes.userDetail.replaceFirst(':id', user.uid));
   }
 }
