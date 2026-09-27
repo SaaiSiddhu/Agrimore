@@ -46,6 +46,13 @@ class OrderProvider with ChangeNotifier {
   List<OrderModel> _orders = [];
   OrderModel? _selectedOrder = null;
   List<OrderTimelineModel> _selectedOrderTimeline = [];
+  // ADMR-28: dispatch/assignment history for the selected order — its own
+  // loading/error state, mirroring the timeline's exact pattern, since a
+  // real Firestore query can fail independently of the order document
+  // itself having already loaded successfully.
+  List<DispatchOfferRecord> _selectedOrderDispatchOffers = [];
+  bool _isLoadingDispatchOffers = false;
+  String? _dispatchOffersError;
   bool _isLoading = false;
   bool _isLoadingTimeline = false;
   String? _error;
@@ -57,6 +64,9 @@ class OrderProvider with ChangeNotifier {
   List<OrderModel> get orders => _orders;
   OrderModel? get selectedOrder => _selectedOrder;
   List<OrderTimelineModel> get selectedOrderTimeline => _selectedOrderTimeline;
+  List<DispatchOfferRecord> get selectedOrderDispatchOffers => _selectedOrderDispatchOffers;
+  bool get isLoadingDispatchOffers => _isLoadingDispatchOffers;
+  String? get dispatchOffersError => _dispatchOffersError;
   bool get isLoading => _isLoading;
   bool get isLoadingTimeline => _isLoadingTimeline;
   String? get error => _error;
@@ -132,6 +142,7 @@ class OrderProvider with ChangeNotifier {
       if (orderDoc.exists) {
         _selectedOrder = OrderModel.fromMap(orderDoc.data()!, orderId);
         await _loadOrderTimeline(orderId);
+        await _loadDispatchOffers(orderId);
         debugPrint('✅ Order loaded');
       } else {
         _error = '❌ Order not found';
@@ -173,6 +184,46 @@ class OrderProvider with ChangeNotifier {
     } catch (e) {
       debugPrint('❌ Error loading timeline: $e');
       _isLoadingTimeline = false;
+      notifyListeners();
+    }
+  }
+
+  // ============================================
+  // LOAD DISPATCH/ASSIGNMENT HISTORY (ADMR-28)
+  // ============================================
+  // delivery_requests/{orderId}_{riderId} — one real, already-written
+  // document per rider ever offered this order (functions/src/delivery/
+  // dispatch.ts's sendOffers). Read-only: nothing here writes back.
+  Future<void> _loadDispatchOffers(String orderId) async {
+    try {
+      _isLoadingDispatchOffers = true;
+      _dispatchOffersError = null;
+      notifyListeners();
+
+      final query = await _firestore
+          .collection('delivery_requests')
+          .where('orderId', isEqualTo: orderId)
+          .get();
+
+      final offers = query.docs
+          .map((doc) => DispatchOfferRecord.fromMap(doc.data()))
+          .toList()
+        ..sort((a, b) {
+          final at = a.createdAt;
+          final bt = b.createdAt;
+          if (at == null || bt == null) return 0;
+          return bt.compareTo(at); // newest first
+        });
+
+      _selectedOrderDispatchOffers = offers;
+      debugPrint('✅ Loaded ${offers.length} dispatch offers');
+
+      _isLoadingDispatchOffers = false;
+      notifyListeners();
+    } catch (e) {
+      debugPrint('❌ Error loading dispatch offers: $e');
+      _dispatchOffersError = e.toString();
+      _isLoadingDispatchOffers = false;
       notifyListeners();
     }
   }
@@ -496,6 +547,7 @@ class OrderProvider with ChangeNotifier {
   void clearSelectedOrder() {
     _selectedOrder = null;
     _selectedOrderTimeline.clear();
+    _selectedOrderDispatchOffers.clear();
     notifyListeners();
   }
 
@@ -513,6 +565,7 @@ class OrderProvider with ChangeNotifier {
     _orders.clear();
     _selectedOrder = null;
     _selectedOrderTimeline.clear();
+    _selectedOrderDispatchOffers.clear();
     super.dispose();
   }
 }
