@@ -148,6 +148,15 @@ class _AdminShellState extends State<AdminShell> {
       'Commission Exceptions',
       AdminRoutes.commissionExceptions,
     ),
+    // ADMR-62. Appended at the end, same index-stability rule. Also
+    // covers /support/:id via _currentIndex's own startsWith match, the
+    // same way Users/Sellers/Delivery Partners/Employees cover their own
+    // detail routes without a separate nav entry.
+    _NavItem(
+      Icons.support_agent_rounded,
+      'Support Cases',
+      AdminRoutes.supportCases,
+    ),
   ];
 
   int get _currentIndex {

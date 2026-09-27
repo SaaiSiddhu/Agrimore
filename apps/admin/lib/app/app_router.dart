@@ -51,6 +51,8 @@ import '../screens/admin/sellers/seller_payouts_screen.dart';
 import '../screens/admin/employees/employee_payout_detail_screen.dart';
 import '../screens/admin/benefit_program/compliance_control_screen.dart';
 import '../screens/admin/benefit_program/feature_flags_screen.dart';
+import '../screens/admin/support/support_queue_screen.dart';
+import '../screens/admin/support/support_case_detail_screen.dart';
 
 class AdminRoutes {
   // Auth
@@ -162,6 +164,10 @@ class AdminRoutes {
   // registered in the admin router.
   static const String sellerPanel = '/seller/panel';
   static const String sellerApply = '/seller/apply';
+
+  /// Support case queue + detail (ADMR-62), wired to ADMR-61's backend.
+  static const String supportCases = '/support';
+  static const String supportCaseDetail = '/support/:id';
 }
 
 /// App router configuration using go_router
@@ -636,6 +642,22 @@ class AppRouter {
               name: 'benefit-feature-flags',
               pageBuilder: (context, state) =>
                   _buildPage(const FeatureFlagsScreen(), state),
+            ),
+
+            GoRoute(
+              path: AdminRoutes.supportCases,
+              name: 'support-cases',
+              pageBuilder: (context, state) =>
+                  _buildPage(const SupportQueueScreen(), state),
+            ),
+
+            GoRoute(
+              path: AdminRoutes.supportCaseDetail,
+              name: 'support-case-detail',
+              pageBuilder: (context, state) => _buildPage(
+                SupportCaseDetailScreen(caseId: state.pathParameters['id']!),
+                state,
+              ),
             ),
           ],
         ),
