@@ -2152,6 +2152,15 @@ service cloud.firestore {
       allow read: if isAuthenticated() && (resource.data.riderId == request.auth.uid || isAdmin());
       allow write: if false;
     }
+    // Phase DLVDOC2: a rider's replacement submission for one KYC document,
+    // reviewed independently of the whole-application status. Same shape as
+    // the identity-change request above -- all writes go through
+    // submitDocumentReplacement / reviewDocumentSubmission (Admin SDK,
+    // bypasses rules), never a direct client write.
+    match /document_review_submissions/{submissionId} {
+      allow read: if isAuthenticated() && (resource.data.riderId == request.auth.uid || isAdmin());
+      allow write: if false;
+    }
     match /rider_payouts/{payoutId} {
       allow read: if isAuthenticated() && (resource.data.riderId == request.auth.uid || isAdmin());
       allow create, delete: if false;

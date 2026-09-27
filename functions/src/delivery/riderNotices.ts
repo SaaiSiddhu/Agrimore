@@ -17,7 +17,8 @@ export type RiderNoticeType =
   | "statement_ready" | "payout_sent" | "bank_change_approved" | "bank_change_rejected"
   | "identity_change_approved" | "identity_change_rejected"
   | "delivery_problem_resolved" | "incident_acknowledged" | "incident_resolved"
-  | "support_request_seen" | "support_request_closed";
+  | "support_request_seen" | "support_request_closed"
+  | "document_review_approved" | "document_review_rejected";
 
 export interface RiderNotice {
   id: string;
@@ -144,6 +145,22 @@ export function supportRequestNotice(ticketId: string, status: "seen" | "closed"
     : { id: `support_${ticketId}_seen`, type: "support_request_seen", title: "Your support request was seen",
       body: "The Agrimore team has seen your request and is looking into it.",
       data: { type: "support_request_seen", ticketId } };
+}
+
+const DOCUMENT_LABEL: Record<string, string> = {
+  aadhaarFront: "Aadhaar (front)", aadhaarBack: "Aadhaar (back)", selfie: "Selfie", license: "Driving licence",
+};
+
+/** DLVDOC2: a per-document review outcome -- distinct from identityChangeNotice
+ * above, which covers name/vehicle field changes, not KYC document photos. */
+export function documentReviewNotice(submissionId: string, docType: string, approved: boolean, reason: string | null): RiderNotice {
+  const label = DOCUMENT_LABEL[docType] ?? docType;
+  return approved
+    ? { id: `document_review_${submissionId}`, type: "document_review_approved", title: `${label} approved`,
+      body: "Your replacement document was approved.", data: { type: "document_review_approved", submissionId, docType } }
+    : { id: `document_review_${submissionId}`, type: "document_review_rejected", title: `${label} not approved`,
+      body: reason ? `Your replacement was not approved: ${reason}` : "Your replacement was not approved.",
+      data: { type: "document_review_rejected", submissionId, docType } };
 }
 
 export function incidentNotice(incidentId: string, status: "acknowledged" | "resolved"): RiderNotice {

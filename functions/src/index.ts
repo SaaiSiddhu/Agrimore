@@ -297,6 +297,10 @@ export { attachDeliveryProof, reportDeliveryException, updateDeliveryException }
 // rejects. Modelled on requestRiderBankChange/reviewRiderBankChange above.
 // See delivery/riderIdentity.ts.
 export { requestRiderIdentityChange, reviewRiderIdentityChange } from "./delivery/riderIdentity";
+// Phase DLVDOC2: a rider replaces one KYC document photo after their
+// application was already decided; admin approves or rejects independently
+// of the whole-application status. See delivery/riderDocumentReview.ts.
+export { submitDocumentReplacement, reviewDocumentSubmission } from "./delivery/riderDocumentReview";
 // Phase DLVSUP1: a rider files a support request (delivery/earnings/account
 // category, a message, an optional attachment); admins mark it seen and
 // close it with a written outcome. Modelled on reportRiderIncident/

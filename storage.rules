@@ -277,6 +277,28 @@ service firebase.storage {
                    && (isAdmin() || (request.auth.uid == userId && riderKycEditable(userId)));
     }
 
+    // Phase DLVDOC2: a document-replacement STAGING copy, distinct from the
+    // live delivery_documents/{userId}/{docType} path above -- the rider may
+    // upload here regardless of riderKycEditable (an approved rider
+    // correcting a document is exactly the case that path exists to block),
+    // because nothing here is authoritative until submitDocumentReplacement/
+    // reviewDocumentSubmission (Admin SDK, bypasses these rules entirely)
+    // promotes it onto the live path. Immutable once staged (write-once: the
+    // `resource == null` check, not a create/update split -- Storage rules
+    // do not reliably distinguish the two the way Firestore does, confirmed
+    // by a real emulator scenario, not assumed), and only an admin may
+    // delete (cleanup), so what gets reviewed is exactly what the rider
+    // originally uploaded, never silently swapped afterward.
+    match /delivery_document_submissions/{userId}/{submissionId} {
+      allow read: if isAuthenticated() && (request.auth.uid == userId || isAdmin());
+      allow create, update: if isAuthenticated()
+                   && request.auth.uid == userId
+                   && isValidFileSize()
+                   && isImage()
+                   && resource == null;
+      allow delete: if isAdmin();
+    }
+
     // ============================================
     // DELIVERY PROOF PHOTOS
     // ============================================
