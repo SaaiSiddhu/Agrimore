@@ -57,6 +57,10 @@ dependencies:
   cached_network_image: ^3.4.1
   image_picker: ^1.1.2
   firebase_storage: ^12.3.7
+  # DLVPP1: durably stages a delivery proof photo so it survives a restart --
+  # image_picker's own file lives in an OS temp/cache path with no
+  # persistence guarantee across app launches.
+  path_provider: ^2.1.5
   
   # UI — the delivery partner's own design system (lib/design_system/) uses Lucide icons
   cupertino_icons: ^1.0.8

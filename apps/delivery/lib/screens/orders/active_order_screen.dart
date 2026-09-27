@@ -14,11 +14,13 @@ import 'package:cloud_functions/cloud_functions.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:image_picker/image_picker.dart';
+import 'package:path_provider/path_provider.dart';
 import 'package:provider/provider.dart';
 import 'package:url_launcher/url_launcher.dart';
 
 import '../../account/support_card.dart';
 import '../../delivery/delivery_problems.dart';
+import '../../delivery/proof_photo_recovery.dart';
 import '../../delivery/rider_steps.dart';
 import '../../design_system/design_system.dart';
 import '../../l10n/app_localizations.dart';
@@ -176,7 +178,10 @@ IconData _stepIcon(DeliveryStep next) => switch (next) {
 class ActiveOrderScreen extends StatefulWidget {
   final OrderModel order;
 
-  const ActiveOrderScreen({super.key, required this.order});
+  /// DLVPP1: injected in tests; defaults to real shared_preferences.
+  final PendingProofStore? pendingProofStore;
+
+  const ActiveOrderScreen({super.key, required this.order, this.pendingProofStore});
 
   @override
   State<ActiveOrderScreen> createState() => _ActiveOrderScreenState();
@@ -187,6 +192,8 @@ class _ActiveOrderScreenState extends State<ActiveOrderScreen> {
   bool _isUpdating = false;
   File? _proofPhoto;
   final ImagePicker _picker = ImagePicker();
+  late final PendingProofStore _pendingProofStore =
+      widget.pendingProofStore ?? SharedPreferencesPendingProofStore();
 
   // DLVMAP3: `_order` starts as the static snapshot the screen was pushed
   // with and only ever advances to a later live value once a material
@@ -692,7 +699,12 @@ class _ActiveOrderScreenState extends State<ActiveOrderScreen> {
                       child: DeliveryButton.ghost(
                         label: l.activeProofRemove,
                         icon: DeliveryIcons.delete,
-                        onPressed: () => setState(() => _proofPhoto = null),
+                        onPressed: () {
+                          final removed = photo;
+                          setState(() => _proofPhoto = null);
+                          unawaited(_pendingProofStore.clear(_order.id));
+                          unawaited(discardStagedProofPhoto(removed.path));
+                        },
                       ),
                     ),
                   ],
@@ -942,7 +954,15 @@ class _ActiveOrderScreenState extends State<ActiveOrderScreen> {
         await photo.readAsBytes(),
         'image/jpeg',
       );
-      if (!saved && mounted) {
+      if (saved) {
+        // DLVPP1: confirmed attached -- nothing left to recover.
+        await _pendingProofStore.clear(_order.id);
+        unawaited(discardStagedProofPhoto(photo.path));
+      } else if (mounted) {
+        // DLVPP1: the pending-proof entry saved in _takePhoto() is
+        // deliberately left in place here -- it's the rider's (or a later
+        // session's, if the app dies before this point is ever reached
+        // again) only way back to retrying this specific photo.
         showDeliveryToast(
           context,
           message: l.proofNotSaved,
@@ -1022,10 +1042,25 @@ class _ActiveOrderScreenState extends State<ActiveOrderScreen> {
         imageQuality: 70,
         maxWidth: 1200,
       );
-      if (photo != null && mounted) {
-        setState(() => _proofPhoto = File(photo.path));
-        HapticFeedback.mediumImpact();
-      }
+      if (photo == null || !mounted) return;
+      // DLVPP1: image_picker's own file lives in an OS temp/cache path with
+      // no persistence guarantee across a restart -- copy it somewhere
+      // durable and remember it immediately, before confirmDelivery even
+      // runs, so a crash at any point past this still leaves something to
+      // recover.
+      final bytes = await photo.readAsBytes();
+      final dir = await getApplicationDocumentsDirectory();
+      final path = await stageProofPhotoBytes(dir, _order.id, bytes);
+      if (!mounted) return;
+      await _pendingProofStore.save(PendingProof(
+        orderId: _order.id,
+        photoPath: path,
+        contentType: 'image/jpeg',
+        capturedAt: DateTime.now(),
+      ));
+      if (!mounted) return;
+      setState(() => _proofPhoto = File(path));
+      HapticFeedback.mediumImpact();
     } catch (e) {
       debugPrint('Camera error: $e');
     }

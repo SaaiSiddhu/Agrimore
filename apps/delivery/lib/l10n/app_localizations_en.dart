@@ -897,6 +897,36 @@ class AppLocalizationsEn extends AppLocalizations {
       'Delivered. The proof photo couldn\'t be saved — the delivery still counts.';
 
   @override
+  String get proofRetryTitle => 'Proof photo not saved';
+
+  @override
+  String get proofRetryBody =>
+      'A delivery you completed is missing its proof photo. The delivery still counts — retry to add the photo.';
+
+  @override
+  String get proofRetryAction => 'Retry';
+
+  @override
+  String get proofRetrying => 'Retrying…';
+
+  @override
+  String get proofRetrySucceeded => 'Proof photo saved.';
+
+  @override
+  String get proofRetryMissingFile =>
+      'That photo is no longer on this device and can\'t be recovered.';
+
+  @override
+  String get proofRetryExpiredTitle => 'Proof photo window closed';
+
+  @override
+  String get proofRetryExpiredBody =>
+      'It\'s been too long to add this delivery\'s proof photo. The delivery still counts.';
+
+  @override
+  String get proofRetryDismiss => 'Dismiss';
+
+  @override
   String get moneyTitle => 'Earnings';
 
   @override

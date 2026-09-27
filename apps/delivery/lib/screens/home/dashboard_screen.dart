@@ -11,6 +11,8 @@ import 'package:geolocator/geolocator.dart';
 import 'package:provider/provider.dart';
 
 import '../../account/rider_account.dart';
+import '../../delivery/delivery_problems.dart';
+import '../../delivery/proof_photo_recovery.dart';
 import '../../design_system/design_system.dart';
 import '../../inbox/rider_inbox.dart';
 import '../../l10n/app_localizations.dart';
@@ -31,6 +33,7 @@ import '../money/money_screen.dart';
 import '../orders/active_order_screen.dart';
 import '../profile/rider_profile_screen.dart';
 import 'active_work_states.dart';
+import 'pending_proof_banner.dart';
 
 class DashboardScreen extends StatefulWidget {
   const DashboardScreen({
@@ -39,12 +42,18 @@ class DashboardScreen extends StatefulWidget {
     this.earningsSource,
     this.accountSource,
     this.onOpenTab,
+    this.pendingProofStore,
+    this.pendingProofBackend,
   });
 
   /// Injected in tests.
   final RiderInboxSource? inboxSource;
   final Stream<List<RiderEarning>> Function(String riderId)? earningsSource;
   final Stream<RiderAccount> Function(String riderId)? accountSource;
+
+  /// DLVPP1: injected in tests; forwarded to [PendingProofBanner].
+  final PendingProofStore? pendingProofStore;
+  final DeliveryProblemBackend? pendingProofBackend;
 
   /// DLVNAV1: when this screen runs as the shell's Home tab, its four
   /// internal destinations (profile, inbox, earnings, deliveries) switch
@@ -186,6 +195,10 @@ class _DashboardScreenState extends State<DashboardScreen> {
           children: [
             _buildHeader(),
             _buildOnlineToggle(),
+            // DLVPP1: never behind a completion modal or any other screen --
+            // always visible here whenever a delivery still needs its proof
+            // photo attached, regardless of which tab or order is active.
+            PendingProofBanner(store: widget.pendingProofStore, backend: widget.pendingProofBackend),
             Expanded(
               child: Consumer<DeliveryOrderProvider>(
                 builder: (context, orderProvider, _) {

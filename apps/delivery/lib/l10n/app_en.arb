@@ -1127,6 +1127,42 @@
   "@proofNotSaved": {
     "description": "After delivery when the photo fails"
   },
+  "proofRetryTitle": "Proof photo not saved",
+  "@proofRetryTitle": {
+    "description": "Dashboard banner title for a delivery whose proof photo never attached"
+  },
+  "proofRetryBody": "A delivery you completed is missing its proof photo. The delivery still counts — retry to add the photo.",
+  "@proofRetryBody": {
+    "description": "Dashboard banner body for a delivery whose proof photo never attached"
+  },
+  "proofRetryAction": "Retry",
+  "@proofRetryAction": {
+    "description": "Dashboard banner action to retry attaching a proof photo"
+  },
+  "proofRetrying": "Retrying…",
+  "@proofRetrying": {
+    "description": "Dashboard banner action label while a proof-photo retry is in progress"
+  },
+  "proofRetrySucceeded": "Proof photo saved.",
+  "@proofRetrySucceeded": {
+    "description": "Toast after a proof-photo retry succeeds"
+  },
+  "proofRetryMissingFile": "That photo is no longer on this device and can't be recovered.",
+  "@proofRetryMissingFile": {
+    "description": "Toast when a pending proof photo's local file is gone"
+  },
+  "proofRetryExpiredTitle": "Proof photo window closed",
+  "@proofRetryExpiredTitle": {
+    "description": "Dashboard banner title once a pending proof photo can no longer be attached"
+  },
+  "proofRetryExpiredBody": "It's been too long to add this delivery's proof photo. The delivery still counts.",
+  "@proofRetryExpiredBody": {
+    "description": "Dashboard banner body once a pending proof photo can no longer be attached"
+  },
+  "proofRetryDismiss": "Dismiss",
+  "@proofRetryDismiss": {
+    "description": "Dashboard banner action to dismiss an expired pending proof photo"
+  },
   "moneyTitle": "Earnings",
   "@moneyTitle": {
     "description": "Earnings screen title"
