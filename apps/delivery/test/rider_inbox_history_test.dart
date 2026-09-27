@@ -1032,6 +1032,96 @@ void main() {
       expect(variantOf(1), DeliveryCardVariant.standard);
     });
 
+    testWidgets('DLVH8: a highlighted order beyond the first page is found by auto-loading further pages', (t) async {
+      var calls = 0;
+      await t.pumpWidget(host(StatementScreen(
+        payout: const RiderPayout(
+          id: 'stmt-4', weekKey: '2026-W38', earned: 900, netted: 0, amount: 900,
+          cashHeldAfter: 0, orderCount: 2, status: 'paid',
+        ),
+        load: (after) async {
+          calls++;
+          if (calls == 1) {
+            return const StatementPage(
+              [RiderEarning(orderId: 'o-page1', total: 100, statementId: 'stmt-4')],
+              null, // this fake tracks pages via `calls`, not the cursor's identity
+              true,
+            );
+          }
+          return const StatementPage(
+            [RiderEarning(orderId: 'o-page2-target', total: 200, statementId: 'stmt-4')],
+            null,
+            false,
+          );
+        },
+        highlightOrderId: 'o-page2-target',
+      )));
+      await t.pumpAndSettle();
+      expect(t.takeException(), isNull);
+      expect(calls, 2, reason: 'must auto-continue to the second page without a manual Load More tap');
+
+      final tiles = find.byType(EarningTile);
+      expect(tiles, findsNWidgets(2));
+      DeliveryCardVariant variantOf(int index) => t
+          .widget<DeliveryCard>(find.descendant(of: tiles.at(index), matching: find.byType(DeliveryCard)))
+          .variant;
+      expect(variantOf(0), DeliveryCardVariant.standard, reason: 'o-page1 is not the target');
+      expect(variantOf(1), DeliveryCardVariant.brand, reason: 'o-page2-target, found on the second page');
+      // Fully settled, not stuck loading forever once the target is found.
+      expect(find.byType(CircularProgressIndicator), findsNothing);
+    });
+
+    testWidgets('DLVH8: a highlighted order that never appears exhausts all pages honestly, unhighlighted', (t) async {
+      var calls = 0;
+      await t.pumpWidget(host(StatementScreen(
+        payout: const RiderPayout(
+          id: 'stmt-5', weekKey: '2026-W38', earned: 300, netted: 0, amount: 300,
+          cashHeldAfter: 0, orderCount: 1, status: 'paid',
+        ),
+        load: (after) async {
+          calls++;
+          if (calls == 1) {
+            return const StatementPage(
+              [RiderEarning(orderId: 'o-only', total: 300, statementId: 'stmt-5')],
+              null,
+              true,
+            );
+          }
+          return const StatementPage([], null, false); // exhausted, target never found
+        },
+        highlightOrderId: 'this-id-does-not-exist-in-this-statement',
+      )));
+      await t.pumpAndSettle();
+      expect(t.takeException(), isNull);
+      expect(calls, 2, reason: 'must exhaust every page looking for the target, not stop after the first');
+      final tile = t.widget<DeliveryCard>(
+          find.descendant(of: find.byType(EarningTile), matching: find.byType(DeliveryCard)));
+      expect(tile.variant, DeliveryCardVariant.standard, reason: 'honestly unhighlighted -- the id is not in this statement');
+      expect(find.byType(CircularProgressIndicator), findsNothing, reason: 'settled, not stuck loading forever');
+    });
+
+    testWidgets('DLVH8: a null highlightOrderId never triggers an extra page load beyond what the rider asks for', (t) async {
+      var calls = 0;
+      await t.pumpWidget(host(StatementScreen(
+        payout: const RiderPayout(
+          id: 'stmt-6', weekKey: '2026-W38', earned: 100, netted: 0, amount: 100,
+          cashHeldAfter: 0, orderCount: 1, status: 'paid',
+        ),
+        load: (after) async {
+          calls++;
+          return const StatementPage(
+            [RiderEarning(orderId: 'o-1', total: 100, statementId: 'stmt-6')],
+            null,
+            true, // more pages exist, but nothing should ask for them automatically
+          );
+        },
+        // highlightOrderId deliberately omitted -- the plain, pre-existing case.
+      )));
+      await t.pumpAndSettle();
+      expect(calls, 1, reason: 'no highlight target: exactly the one page the rider is shown, no silent extra fetch');
+      expect(find.text('Load more'), findsOneWidget, reason: 'further pages remain available on manual request, as before');
+    });
+
     testWidgets('a deleted or inaccessible statement says so instead of doing nothing', (t) async {
       final order = historyOrder('o2', {
         'orderStatus': 'delivered',

@@ -57,6 +57,17 @@ class _StatementScreenState extends State<StatementScreen> {
     _loadMore();
   }
 
+  /// DLVH8: [widget.highlightOrderId] must be highlighted wherever in this
+  /// statement it actually is -- not only when it happens to land on the
+  /// first page. Bounded and safe: one rider's one week, at most a small
+  /// number of [RiderMoneyService.statementPageSize]-sized pages, unlike
+  /// history's own unbounded, multi-year scope.
+  bool get _stillLookingForHighlight {
+    final target = widget.highlightOrderId;
+    if (target == null || !_hasMore) return false;
+    return !_lines.any((e) => e.orderId == target);
+  }
+
   Future<void> _loadMore() async {
     if (_loading || !_hasMore) return;
     setState(() {
@@ -72,6 +83,7 @@ class _StatementScreenState extends State<StatementScreen> {
         _hasMore = page.hasMore;
         _loading = false;
       });
+      if (_stillLookingForHighlight) await _loadMore();
     } catch (e) {
       debugPrint('Statement lines ${widget.payout.id}: $e');
       if (mounted) {
