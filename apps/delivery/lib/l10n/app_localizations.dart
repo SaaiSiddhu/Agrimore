@@ -1684,6 +1684,60 @@ abstract class AppLocalizations {
   /// **'Delivered. The proof photo couldn\'t be saved — the delivery still counts.'**
   String get proofNotSaved;
 
+  /// Dashboard banner title for a delivery whose proof photo never attached
+  ///
+  /// In en, this message translates to:
+  /// **'Proof photo not saved'**
+  String get proofRetryTitle;
+
+  /// Dashboard banner body for a delivery whose proof photo never attached
+  ///
+  /// In en, this message translates to:
+  /// **'A delivery you completed is missing its proof photo. The delivery still counts — retry to add the photo.'**
+  String get proofRetryBody;
+
+  /// Dashboard banner action to retry attaching a proof photo
+  ///
+  /// In en, this message translates to:
+  /// **'Retry'**
+  String get proofRetryAction;
+
+  /// Dashboard banner action label while a proof-photo retry is in progress
+  ///
+  /// In en, this message translates to:
+  /// **'Retrying…'**
+  String get proofRetrying;
+
+  /// Toast after a proof-photo retry succeeds
+  ///
+  /// In en, this message translates to:
+  /// **'Proof photo saved.'**
+  String get proofRetrySucceeded;
+
+  /// Toast when a pending proof photo's local file is gone
+  ///
+  /// In en, this message translates to:
+  /// **'That photo is no longer on this device and can\'t be recovered.'**
+  String get proofRetryMissingFile;
+
+  /// Dashboard banner title once a pending proof photo can no longer be attached
+  ///
+  /// In en, this message translates to:
+  /// **'Proof photo window closed'**
+  String get proofRetryExpiredTitle;
+
+  /// Dashboard banner body once a pending proof photo can no longer be attached
+  ///
+  /// In en, this message translates to:
+  /// **'It\'s been too long to add this delivery\'s proof photo. The delivery still counts.'**
+  String get proofRetryExpiredBody;
+
+  /// Dashboard banner action to dismiss an expired pending proof photo
+  ///
+  /// In en, this message translates to:
+  /// **'Dismiss'**
+  String get proofRetryDismiss;
+
   /// Earnings screen title
   ///
   /// In en, this message translates to:
