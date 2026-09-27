@@ -73,11 +73,14 @@ class SellerProductProvider with ChangeNotifier {
       case ProductListFilter.draft:
         return p.isDraft;
       case ProductListFilter.active:
-        return !p.isDraft && p.isActive && p.stock > 0;
+        // ADMR-32: was p.stock > 0 — base-only, so a product still sellable
+        // via a variant (base at 0) was wrongly excluded from Active.
+        return !p.isDraft && p.isActive && !isOutOfStock(p);
       case ProductListFilter.lowStock:
         return isLowStock(p);
       case ProductListFilter.outOfStock:
-        return !p.isDraft && p.isActive && p.stock <= 0;
+        // ADMR-32: was p.stock <= 0 — same base-only gap, mirrored.
+        return !p.isDraft && p.isActive && isOutOfStock(p);
       case ProductListFilter.inactive:
         return !p.isDraft && !p.isActive;
     }

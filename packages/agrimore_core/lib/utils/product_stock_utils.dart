@@ -21,3 +21,17 @@ bool isLowStock(ProductModel p) {
   if (unitIsLow(p.stock, threshold)) return true;
   return p.variants.any((v) => unitIsLow(v.stock, threshold));
 }
+
+/// ADMR-32: the symmetric counterpart to isLowStock — a product is only
+/// genuinely out of stock when the base AND every one of its variants are
+/// all at zero (or below). A product whose base is empty but some variant
+/// still has stock remains sellable via that variant, so it is not "out of
+/// stock" as a whole. Deliberately pure (no draft/inactive exclusion,
+/// unlike isLowStock) — callers already compose that explicitly, matching
+/// how ProductListFilter.active/outOfStock already spell it out themselves.
+/// An empty variants list makes `every` vacuously true, so a non-variant
+/// product's behaviour is unchanged: base <= 0 alone decides it.
+bool isOutOfStock(ProductModel p) {
+  if (p.stock > 0) return false;
+  return p.variants.every((v) => v.stock <= 0);
+}
