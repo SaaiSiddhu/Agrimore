@@ -2326,6 +2326,18 @@ abstract class AppLocalizations {
   /// **'Could not load your inbox. Check your connection.'**
   String get inboxLoadError;
 
+  /// Inbox section header for notices from today
+  ///
+  /// In en, this message translates to:
+  /// **'Today'**
+  String get inboxSectionToday;
+
+  /// Inbox section header for notices from before today
+  ///
+  /// In en, this message translates to:
+  /// **'Earlier'**
+  String get inboxSectionEarlier;
+
   /// Mark every unread notice read, not only the ones currently shown
   ///
   /// In en, this message translates to:

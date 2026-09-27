@@ -48,6 +48,40 @@ IconData noticeIcon(String type, {required bool unread}) => switch (type) {
       _ => unread ? DeliveryIcons.bell : DeliveryIcons.checkCircle,
     };
 
+/// DLVI4: which section a notice belongs in, by its own `createdAt` (in its
+/// own local time) compared against an explicitly-passed [now] -- never a
+/// hidden `DateTime.now()` inside a pure function, matching this session's
+/// own established injectable-clock convention (`order_provider.dart`'s
+/// `clock`, `isDraftExpired`'s `now`). A notice with no `createdAt` (older
+/// data, or a write that hasn't set it) falls into `earlier` rather than
+/// crashing or being miscategorized as `today`.
+enum InboxSection { today, earlier }
+
+InboxSection inboxSectionFor(DateTime? createdAt, {required DateTime now}) {
+  if (createdAt == null) return InboxSection.earlier;
+  final local = createdAt.toLocal();
+  final isToday = local.year == now.year && local.month == now.month && local.day == now.day;
+  return isToday ? InboxSection.today : InboxSection.earlier;
+}
+
+/// DLVI4: [notices] with an [InboxSection] marker inserted immediately
+/// before each group's first item -- a flat `List<Object>` ready for a
+/// single-index `ListView.separated`, never a marker for an empty group,
+/// never repeated within the same still-current group.
+List<Object> groupedInboxItems(List<RiderNotice> notices, {required DateTime now}) {
+  final items = <Object>[];
+  InboxSection? lastSection;
+  for (final n in notices) {
+    final section = inboxSectionFor(n.createdAt, now: now);
+    if (section != lastSection) {
+      items.add(section);
+      lastSection = section;
+    }
+    items.add(n);
+  }
+  return items;
+}
+
 /// Null for "not there" (deleted, or no longer this rider's — the exact
 /// `delivery_unassigned` case, enforced by the security rule itself, not by
 /// this code); anything else rethrown, matching the shape of
@@ -355,13 +389,14 @@ class _InboxScreenState extends State<InboxScreen> {
               text: l.inboxEmpty,
             );
           }
+          final items = groupedInboxItems(list, now: DateTime.now());
           return ListView.separated(
             padding: const EdgeInsets.symmetric(vertical: DeliverySpace.sm),
-            itemCount: list.length + (list.length >= kInboxSize ? 1 : 0),
+            itemCount: items.length + (list.length >= kInboxSize ? 1 : 0),
             separatorBuilder: (_, __) =>
                 const Divider(height: DeliverySize.hairline),
             itemBuilder: (context, i) {
-              if (i == list.length) {
+              if (i == items.length) {
                 return Padding(
                   padding: const EdgeInsets.all(DeliverySpace.lg),
                   child: Text(
@@ -371,7 +406,22 @@ class _InboxScreenState extends State<InboxScreen> {
                   ),
                 );
               }
-              final n = list[i];
+              final item = items[i];
+              if (item is InboxSection) {
+                return Padding(
+                  padding: const EdgeInsets.fromLTRB(
+                    DeliverySpace.page, DeliverySpace.sm, DeliverySpace.page, DeliverySpace.xxs,
+                  ),
+                  child: Text(
+                    switch (item) {
+                      InboxSection.today => l.inboxSectionToday,
+                      InboxSection.earlier => l.inboxSectionEarlier,
+                    },
+                    style: t.titleSmall.copyWith(color: c.textSecondary),
+                  ),
+                );
+              }
+              final n = item as RiderNotice;
               return ListTile(
                 contentPadding: const EdgeInsets.symmetric(
                   horizontal: DeliverySpace.page,
