@@ -499,6 +499,7 @@ class HistoryDetail extends StatelessWidget {
                         else
                           _StatementLink(
                             riderId: order.deliveryPartnerId!,
+                            orderId: order.id,
                             statementId: e.statementId!,
                             loadPayout: loadPayout,
                           ),
@@ -600,10 +601,12 @@ class _SectionHeading extends StatelessWidget {
 class _StatementLink extends StatefulWidget {
   const _StatementLink({
     required this.riderId,
+    required this.orderId,
     required this.statementId,
     required this.loadPayout,
   });
   final String riderId;
+  final String orderId;
   final String statementId;
   final PayoutLoader loadPayout;
 
@@ -645,12 +648,15 @@ class _StatementLinkState extends State<_StatementLink> {
     }
     final resolved = payout;
     final riderId = widget.riderId;
-    Navigator.of(context).push(
+    final navigator = Navigator.of(context);
+    navigator.push(
       MaterialPageRoute<void>(
         builder: (_) => StatementScreen(
           payout: resolved,
           load: (after) =>
               RiderMoneyService(riderId).statementLines(resolved.id, after: after),
+          highlightOrderId: widget.orderId,
+          onBackToDelivery: () => navigator.pop(),
         ),
       ),
     );
