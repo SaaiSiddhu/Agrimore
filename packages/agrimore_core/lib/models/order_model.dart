@@ -56,6 +56,15 @@ class OrderModel {
   final String? productCreditHoldId;
   final bool productCreditReversed;
 
+  // ADMR-25/27: cancellation audit + refund-initiation state, written by
+  // adminUpdateOrderStatus/sellerTransitionOrder's own cancelling branch —
+  // added here purely additively so Order 360 can display data that was
+  // already being written server-side with no client model exposing it.
+  final String? cancelledBy;
+  final DateTime? cancelledAt;
+  final String? cancellationReason;
+  final String? refundStatus;
+
   OrderModel({
     required this.id,
     required this.userId,
@@ -96,6 +105,10 @@ class OrderModel {
     this.productCreditApplied = 0,
     this.productCreditHoldId,
     this.productCreditReversed = false,
+    this.cancelledBy,
+    this.cancelledAt,
+    this.cancellationReason,
+    this.refundStatus,
   }) : createdAt = createdAt ?? DateTime.now();
 
   // ============================================
@@ -269,6 +282,12 @@ class OrderModel {
             (map['productCreditApplied'] as num?)?.toDouble() ?? 0.0,
         productCreditHoldId: map['productCreditHoldId'] as String?,
         productCreditReversed: map['productCreditReversed'] == true,
+        cancelledBy: map['cancelledBy'] as String?,
+        cancelledAt: map['cancelledAt'] != null
+            ? _parseDateTime(map['cancelledAt'])
+            : null,
+        cancellationReason: map['cancellationReason'] as String?,
+        refundStatus: map['refundStatus'] as String?,
       );
 
       debugPrint(
@@ -327,6 +346,11 @@ class OrderModel {
       'productCreditApplied': productCreditApplied,
       'productCreditHoldId': productCreditHoldId,
       'productCreditReversed': productCreditReversed,
+      'cancelledBy': cancelledBy,
+      'cancelledAt':
+          cancelledAt != null ? Timestamp.fromDate(cancelledAt!) : null,
+      'cancellationReason': cancellationReason,
+      'refundStatus': refundStatus,
     };
   }
 
@@ -441,6 +465,10 @@ class OrderModel {
     double? productCreditApplied,
     String? productCreditHoldId,
     bool? productCreditReversed,
+    String? cancelledBy,
+    DateTime? cancelledAt,
+    String? cancellationReason,
+    String? refundStatus,
   }) {
     return OrderModel(
       id: id ?? this.id,
@@ -484,6 +512,10 @@ class OrderModel {
       productCreditApplied: productCreditApplied ?? this.productCreditApplied,
       productCreditHoldId: productCreditHoldId ?? this.productCreditHoldId,
       productCreditReversed: productCreditReversed ?? this.productCreditReversed,
+      cancelledBy: cancelledBy ?? this.cancelledBy,
+      cancelledAt: cancelledAt ?? this.cancelledAt,
+      cancellationReason: cancellationReason ?? this.cancellationReason,
+      refundStatus: refundStatus ?? this.refundStatus,
     );
   }
 

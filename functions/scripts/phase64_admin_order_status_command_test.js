@@ -245,6 +245,20 @@ async function main() {
       `outcome=${r.result?.outcome} message=${r.result?.message} orderStatus=${o.orderStatus}(expect delivered, unchanged)`);
   }
 
+  // 16 — ADMR-27: the timeline entry now populates `updatedBy` (the field
+  // OrderTimelineModel/the admin UI already read but nothing ever wrote),
+  // not just the internal-only `actorUid` on the adminActions doc.
+  {
+    const oid = "phase64-o16";
+    await seedOrder(oid, "pending");
+    const r = await call({ orderId: oid, newStatus: "confirmed", requestId: nextRequestId() }, ADMIN_AUTH);
+    const tlSnap = await db.collection("orders").doc(oid).collection("timeline").get();
+    const entry = tlSnap.docs[0]?.data();
+    record("s16_timeline_entry_populates_updatedBy",
+      r.ok && r.result.outcome === "applied" && entry?.updatedBy === "admin",
+      `outcome=${r.result?.outcome} timelineUpdatedBy=${entry?.updatedBy}(expect admin)`);
+  }
+
   console.log("\n=== SUMMARY ===");
   for (const [k, v] of Object.entries(results)) console.log(`${k}: ${v}`);
   console.log(allPassed ? "\nALL PASSED" : "\nSOME FAILED");

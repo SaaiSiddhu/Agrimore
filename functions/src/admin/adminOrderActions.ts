@@ -251,6 +251,14 @@ export const adminUpdateOrderStatus = onCall(
         title: statusTitle(newStatus),
         description: reason || `Status updated to ${newStatus.toUpperCase()}.`,
         actorUid: request.auth!.uid,
+        // ADMR-27: OrderTimelineModel (apps/admin, and every app sharing
+        // packages/agrimore_core) already has an `updatedBy` field and the
+        // admin UI is now wired to display it — this command was the only
+        // one of the two real order-transition writers this phase touches,
+        // so it is the one populating it. sellerTransitionOrder.ts writes
+        // a differently-named `actor: 'seller'` field on the same
+        // document today — a separate, disclosed, NOT-fixed-here gap.
+        updatedBy: "admin",
         reason: reason || null,
         timestamp: admin.firestore.FieldValue.serverTimestamp(),
       });
