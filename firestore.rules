@@ -1573,11 +1573,17 @@ service cloud.firestore {
     // ============================================
     match /addresses/{addressId} {
       // User can read their own addresses
-      allow read: if isAuthenticated() && resource.data.userId == request.auth.uid;
-      
+      // ADMR-56: admin can also read, for the Customer 360 Addresses
+      // section -- matching every sibling customer-owned collection in
+      // this file (wallet_transactions, verified_payments, razorpay_orders,
+      // coupon_redemptions, product_credit_balances all already grant this).
+      // create/update/delete stay owner-only, unchanged.
+      allow read: if isAuthenticated() &&
+        (resource.data.userId == request.auth.uid || isAdmin());
+
       // User can create addresses for themselves
       allow create: if isAuthenticated() && request.resource.data.userId == request.auth.uid;
-      
+
       // User can update/delete their own addresses
       allow update, delete: if isAuthenticated() && resource.data.userId == request.auth.uid;
     }

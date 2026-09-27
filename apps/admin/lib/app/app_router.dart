@@ -19,6 +19,7 @@ import '../screens/admin/delivery/rider_incidents_screen.dart';
 import '../screens/admin/delivery/delivery_problems_screen.dart';
 import '../screens/admin/delivery/rider_support_screen.dart';
 import '../screens/admin/users/user_management_screen.dart';
+import '../screens/admin/users/customer_detail_screen.dart';
 import '../screens/admin/coupon/coupon_management_screen.dart';
 import '../screens/admin/banners/banner_management_screen.dart';
 import '../screens/admin/sponsored_banners/sponsored_banner_management_screen.dart';
@@ -324,6 +325,17 @@ class AppRouter {
               name: 'users',
               pageBuilder: (context, state) =>
                   _buildPage(const UserManagementScreen(), state),
+            ),
+
+            // Customer 360 (ADMR-56) -- AdminRoutes.userDetail was declared
+            // but never registered until this phase.
+            GoRoute(
+              path: AdminRoutes.userDetail,
+              name: 'user-detail',
+              pageBuilder: (context, state) => _buildPage(
+                CustomerDetailScreen(userId: state.pathParameters['id']!),
+                state,
+              ),
             ),
 
             // Subscriptions
