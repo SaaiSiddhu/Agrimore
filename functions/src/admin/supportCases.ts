@@ -337,10 +337,278 @@ function refuse(reason: string): never {
     version_mismatch: ["failed-precondition", "This case changed since you last viewed it. Refresh and try again."],
     already_resolved: ["failed-precondition", "This case is already resolved"],
     not_resolved: ["failed-precondition", "Only a resolved case can be reopened"],
+    target_not_found: ["invalid-argument", "That record could not be found"],
+    link_not_found: ["failed-precondition", "That record is not linked to this case"],
+    source_not_found: ["not-found", "That ticket, incident or exception could not be found"],
+    source_actor_missing: ["invalid-argument", "That record has no rider it could be linked through"],
   };
   const [code, message] = table[reason] ?? ["internal", "Could not complete that"];
   throw new HttpsError(code as never, message, { reason });
 }
+
+// ── link / unlink an existing record (ADMR-65) ──
+//
+// linkedRecords did not exist on a case at all until this phase -- ADMR-61
+// designed the shape but deliberately shipped without it to stay reviewable.
+// Extends the SAME constrained-reference discipline every field on this
+// file already uses: never an arbitrary client-supplied path, always
+// validated against the record's own real collection first.
+
+export const LINK_RECORD_TYPES = [
+  "order",
+  "rider_ticket",
+  "rider_incident",
+  "delivery_exception",
+  "user",
+  "seller",
+  "rider",
+  "associate",
+] as const;
+export type LinkRecordType = (typeof LINK_RECORD_TYPES)[number];
+export type LinkedRecord = { type: LinkRecordType; id: string };
+
+const LINK_COLLECTION: Record<LinkRecordType, string> = {
+  order: "orders",
+  rider_ticket: "rider_support_tickets",
+  rider_incident: "rider_incidents",
+  delivery_exception: "delivery_exceptions",
+  user: "users",
+  seller: "sellers",
+  rider: "delivery_partners",
+  associate: "employees",
+};
+
+function parseLinkedRecord(v: unknown): LinkedRecord | undefined {
+  if (typeof v !== "object" || v === null) return undefined;
+  const r = v as Record<string, unknown>;
+  if (!(LINK_RECORD_TYPES as readonly string[]).includes(r.type as string)) return undefined;
+  if (typeof r.id !== "string" || !r.id.trim()) return undefined;
+  return { type: r.type as LinkRecordType, id: r.id.trim() };
+}
+
+function sameLinkedRecord(a: LinkedRecord, b: LinkedRecord): boolean {
+  return a.type === b.type && a.id === b.id;
+}
+
+export type LinkSupportCaseRecordVerdict =
+  | { kind: "linked" }
+  | { kind: "already_linked" }
+  | { kind: "refused"; reason: "not_found" | "bad_request" | "version_mismatch" | "target_not_found" };
+
+export async function linkSupportCaseRecordCore(
+  db: Db,
+  adminUid: string,
+  caseId: string,
+  linkInput: unknown,
+  expectedVersion: unknown,
+  nowMs: number
+): Promise<LinkSupportCaseRecordVerdict> {
+  const link = parseLinkedRecord(linkInput);
+  if (!link || typeof expectedVersion !== "number") {
+    return { kind: "refused", reason: "bad_request" };
+  }
+  // Checked once, outside the transaction, since it never changes once
+  // true -- mirrors createSupportCaseCore's own assertActorExists call.
+  const targetSnap = await db.collection(LINK_COLLECTION[link.type]).doc(link.id).get();
+  if (!targetSnap.exists) {
+    return { kind: "refused", reason: "target_not_found" };
+  }
+  const caseRef = db.collection("support_cases").doc(caseId);
+  const result = await db.runTransaction(async (tx): Promise<LinkSupportCaseRecordVerdict> => {
+    const snap = await tx.get(caseRef);
+    if (!snap.exists) return { kind: "refused", reason: "not_found" };
+    const current = snap.data()!;
+    if (current.version !== expectedVersion) return { kind: "refused", reason: "version_mismatch" };
+    const existing: LinkedRecord[] = Array.isArray(current.linkedRecords) ? current.linkedRecords : [];
+    // Idempotent: two admins linking the same record at once both succeed,
+    // neither sees a spurious error for something that's already true.
+    if (existing.some((e) => sameLinkedRecord(e, link))) {
+      return { kind: "already_linked" };
+    }
+    const at = Timestamp.fromMillis(nowMs);
+    tx.update(caseRef, { linkedRecords: [...existing, link], updatedAt: at, version: FieldValue.increment(1) });
+    return { kind: "linked" };
+  });
+  if (result.kind === "linked") {
+    await writeEvent(db, caseId, "link_added", adminUid, Timestamp.fromMillis(nowMs), { link });
+  }
+  return result;
+}
+
+export type UnlinkSupportCaseRecordVerdict =
+  | { kind: "unlinked" }
+  | { kind: "refused"; reason: "not_found" | "bad_request" | "version_mismatch" | "link_not_found" };
+
+export async function unlinkSupportCaseRecordCore(
+  db: Db,
+  adminUid: string,
+  caseId: string,
+  linkInput: unknown,
+  expectedVersion: unknown,
+  nowMs: number
+): Promise<UnlinkSupportCaseRecordVerdict> {
+  const link = parseLinkedRecord(linkInput);
+  if (!link || typeof expectedVersion !== "number") {
+    return { kind: "refused", reason: "bad_request" };
+  }
+  const caseRef = db.collection("support_cases").doc(caseId);
+  const result = await db.runTransaction(async (tx): Promise<UnlinkSupportCaseRecordVerdict> => {
+    const snap = await tx.get(caseRef);
+    if (!snap.exists) return { kind: "refused", reason: "not_found" };
+    const current = snap.data()!;
+    if (current.version !== expectedVersion) return { kind: "refused", reason: "version_mismatch" };
+    const existing: LinkedRecord[] = Array.isArray(current.linkedRecords) ? current.linkedRecords : [];
+    if (!existing.some((e) => sameLinkedRecord(e, link))) {
+      // A genuine mistake worth surfacing -- never silently ignored.
+      return { kind: "refused", reason: "link_not_found" };
+    }
+    const at = Timestamp.fromMillis(nowMs);
+    tx.update(caseRef, {
+      linkedRecords: existing.filter((e) => !sameLinkedRecord(e, link)),
+      updatedAt: at,
+      version: FieldValue.increment(1),
+    });
+    return { kind: "unlinked" };
+  });
+  if (result.kind === "unlinked") {
+    await writeEvent(db, caseId, "link_removed", adminUid, Timestamp.fromMillis(nowMs), { link });
+  }
+  return result;
+}
+
+// ── create from an existing operational record (ADMR-65) ──
+//
+// Restricted to the three real per-rider operational records -- the only
+// ones with a real riderId to derive a primaryActor from (no customer/
+// seller/associate equivalent exists anywhere in this codebase, per
+// ADMR-61's own architecture-decision inventory). A DETERMINISTIC case
+// document id keyed by the source, not a random one, is what actually
+// makes this idempotent under concurrency -- mirroring
+// riderSupport.ts's own `${riderId}_${requestId}` doc-id convention, the
+// original reference this whole file was modeled on. A query-based dedup
+// check (e.g. `linkedRecords array-contains {...}`) reads and writes
+// different keys on each concurrent call, so two racing calls could both
+// see "no existing case" and both create one; a shared deterministic key
+// forces Firestore's own transaction contention detection to serialize
+// them for real.
+
+const SOURCE_TYPES = ["rider_ticket", "rider_incident", "delivery_exception"] as const;
+type SourceType = (typeof SOURCE_TYPES)[number];
+const SOURCE_COLLECTION: Record<SourceType, string> = {
+  rider_ticket: "rider_support_tickets",
+  rider_incident: "rider_incidents",
+  delivery_exception: "delivery_exceptions",
+};
+
+function sourceCaseId(sourceType: SourceType, sourceId: string): string {
+  return `src_${sourceType}_${sourceId}`;
+}
+
+export type CreateSupportCaseFromSourceVerdict =
+  | { kind: "created"; caseId: string }
+  | { kind: "existed"; caseId: string }
+  | { kind: "refused"; reason: "bad_request" | "source_not_found" | "source_actor_missing" };
+
+export async function createSupportCaseFromSourceCore(
+  db: Db,
+  adminUid: string,
+  data: unknown,
+  nowMs: number
+): Promise<CreateSupportCaseFromSourceVerdict> {
+  const d = (data ?? {}) as Record<string, unknown>;
+  const sourceTypeRaw = typeof d.sourceType === "string" ? d.sourceType : "";
+  const sourceId = typeof d.sourceId === "string" ? d.sourceId.trim() : "";
+  const title = typeof d.title === "string" ? d.title.trim() : "";
+  const category = typeof d.category === "string" ? d.category.trim() : "";
+  if (
+    !(SOURCE_TYPES as readonly string[]).includes(sourceTypeRaw) ||
+    !sourceId || !title || title.length > MAX_TITLE || !category
+  ) {
+    return { kind: "refused", reason: "bad_request" };
+  }
+  const sourceType = sourceTypeRaw as SourceType;
+  const link: LinkedRecord = { type: sourceType, id: sourceId };
+  const caseRef = db.collection("support_cases").doc(sourceCaseId(sourceType, sourceId));
+
+  const result = await db.runTransaction(async (tx): Promise<CreateSupportCaseFromSourceVerdict> => {
+    const existingSnap = await tx.get(caseRef);
+    if (existingSnap.exists) {
+      return { kind: "existed", caseId: caseRef.id };
+    }
+    const sourceSnap = await tx.get(db.collection(SOURCE_COLLECTION[sourceType]).doc(sourceId));
+    if (!sourceSnap.exists) {
+      return { kind: "refused", reason: "source_not_found" };
+    }
+    const riderId = sourceSnap.data()?.riderId;
+    if (typeof riderId !== "string" || !riderId.trim()) {
+      return { kind: "refused", reason: "source_actor_missing" };
+    }
+    const primaryActor: ActorRef = { type: "rider", id: riderId.trim() };
+    const actorSnap = await tx.get(db.collection(ACTOR_COLLECTION.rider).doc(primaryActor.id));
+    if (!actorSnap.exists) {
+      return { kind: "refused", reason: "source_actor_missing" };
+    }
+    const at = Timestamp.fromMillis(nowMs);
+    tx.set(caseRef, {
+      caseId: caseRef.id,
+      title,
+      category,
+      primaryActor,
+      status: "open" as SupportCaseStatus,
+      waitingReason: null,
+      assignedTo: null,
+      createdBy: adminUid,
+      createdAt: at,
+      updatedAt: at,
+      resolutionSummary: null,
+      resolvedAt: null,
+      resolvedBy: null,
+      reopenedAt: null,
+      reopenedBy: null,
+      reopenReason: null,
+      linkedRecords: [link],
+      version: 1,
+    });
+    return { kind: "created", caseId: caseRef.id };
+  });
+  if (result.kind === "created") {
+    await writeEvent(db, result.caseId, "created", adminUid, Timestamp.fromMillis(nowMs), {
+      title,
+      category,
+      fromSource: link,
+    });
+  }
+  return result;
+}
+
+// ── link/unlink/create-from-source callables ──
+
+export const linkSupportCaseRecord = onCall({ minInstances: 0, memory: "256MiB" }, async (request) => {
+  const adminUid = await requireAdmin(request);
+  const d = (request.data ?? {}) as Record<string, unknown>;
+  const caseId = typeof d.caseId === "string" ? d.caseId.trim() : "";
+  if (!caseId) throw new HttpsError("invalid-argument", "caseId is required");
+  const v = await linkSupportCaseRecordCore(admin.firestore(), adminUid, caseId, d.link, d.expectedVersion, Date.now());
+  if (v.kind === "refused") refuse(v.reason);
+  return { success: true, alreadyLinked: v.kind === "already_linked" };
+});
+
+export const unlinkSupportCaseRecord = onCall({ minInstances: 0, memory: "256MiB" }, async (request) => {
+  const adminUid = await requireAdmin(request);
+  const d = (request.data ?? {}) as Record<string, unknown>;
+  const caseId = typeof d.caseId === "string" ? d.caseId.trim() : "";
+  if (!caseId) throw new HttpsError("invalid-argument", "caseId is required");
+  const v = await unlinkSupportCaseRecordCore(admin.firestore(), adminUid, caseId, d.link, d.expectedVersion, Date.now());
+  if (v.kind === "refused") refuse(v.reason);
+  return { success: true };
+});
+
+export const createSupportCaseFromSource = onCall({ minInstances: 0, memory: "256MiB" }, async (request) => {
+  const adminUid = await requireAdmin(request);
+  const v = await createSupportCaseFromSourceCore(admin.firestore(), adminUid, request.data, Date.now());
+  if (v.kind === "refused") refuse(v.reason);
+  return { success: true, caseId: v.caseId, alreadyExisted: v.kind === "existed" };
+});
 
 export const createSupportCase = onCall({ minInstances: 0, memory: "256MiB" }, async (request) => {
   const adminUid = await requireAdmin(request);

@@ -57,6 +57,9 @@ export {
   addSupportCaseNote,
   resolveSupportCase,
   reopenSupportCase,
+  linkSupportCaseRecord,
+  unlinkSupportCaseRecord,
+  createSupportCaseFromSource,
 } from "./admin/supportCases";
 
 // ============================================
