@@ -18,6 +18,7 @@ export 'models/india_locations.dart';
 export 'models/notification_model.dart';
 export 'models/order_item_model.dart';
 export 'models/order_model.dart';
+export 'models/dispatch_offer_model.dart';
 export 'models/delivery_partner_model.dart';
 export 'models/delivery/delivery_task_status.dart';
 export 'models/delivery/delivery_enums.dart';

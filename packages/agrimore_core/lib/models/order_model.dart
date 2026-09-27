@@ -65,6 +65,17 @@ class OrderModel {
   final String? cancellationReason;
   final String? refundStatus;
 
+  // ADMR-28: real delivery-verification + COD-settlement fields, written
+  // by confirmDelivery.ts / riderMoney.ts's generic onRiderDelivery
+  // trigger — added purely additively so Order 360 can show data that
+  // already exists server-side with no client model exposing it.
+  final DateTime? deliveredAt;
+  final String? deliveryConfirmedBy;
+  final String? deliveryConfirmedVia;
+  final String? codSettlementStatus;
+  final String? codCollectedBy;
+  final DateTime? codCollectedAt;
+
   OrderModel({
     required this.id,
     required this.userId,
@@ -109,6 +120,12 @@ class OrderModel {
     this.cancelledAt,
     this.cancellationReason,
     this.refundStatus,
+    this.deliveredAt,
+    this.deliveryConfirmedBy,
+    this.deliveryConfirmedVia,
+    this.codSettlementStatus,
+    this.codCollectedBy,
+    this.codCollectedAt,
   }) : createdAt = createdAt ?? DateTime.now();
 
   // ============================================
@@ -288,6 +305,16 @@ class OrderModel {
             : null,
         cancellationReason: map['cancellationReason'] as String?,
         refundStatus: map['refundStatus'] as String?,
+        deliveredAt: map['deliveredAt'] != null
+            ? _parseDateTime(map['deliveredAt'])
+            : null,
+        deliveryConfirmedBy: map['deliveryConfirmedBy'] as String?,
+        deliveryConfirmedVia: map['deliveryConfirmedVia'] as String?,
+        codSettlementStatus: map['codSettlementStatus'] as String?,
+        codCollectedBy: map['codCollectedBy'] as String?,
+        codCollectedAt: map['codCollectedAt'] != null
+            ? _parseDateTime(map['codCollectedAt'])
+            : null,
       );
 
       debugPrint(
@@ -351,6 +378,14 @@ class OrderModel {
           cancelledAt != null ? Timestamp.fromDate(cancelledAt!) : null,
       'cancellationReason': cancellationReason,
       'refundStatus': refundStatus,
+      'deliveredAt':
+          deliveredAt != null ? Timestamp.fromDate(deliveredAt!) : null,
+      'deliveryConfirmedBy': deliveryConfirmedBy,
+      'deliveryConfirmedVia': deliveryConfirmedVia,
+      'codSettlementStatus': codSettlementStatus,
+      'codCollectedBy': codCollectedBy,
+      'codCollectedAt':
+          codCollectedAt != null ? Timestamp.fromDate(codCollectedAt!) : null,
     };
   }
 
@@ -469,6 +504,12 @@ class OrderModel {
     DateTime? cancelledAt,
     String? cancellationReason,
     String? refundStatus,
+    DateTime? deliveredAt,
+    String? deliveryConfirmedBy,
+    String? deliveryConfirmedVia,
+    String? codSettlementStatus,
+    String? codCollectedBy,
+    DateTime? codCollectedAt,
   }) {
     return OrderModel(
       id: id ?? this.id,
@@ -516,6 +557,12 @@ class OrderModel {
       cancelledAt: cancelledAt ?? this.cancelledAt,
       cancellationReason: cancellationReason ?? this.cancellationReason,
       refundStatus: refundStatus ?? this.refundStatus,
+      deliveredAt: deliveredAt ?? this.deliveredAt,
+      deliveryConfirmedBy: deliveryConfirmedBy ?? this.deliveryConfirmedBy,
+      deliveryConfirmedVia: deliveryConfirmedVia ?? this.deliveryConfirmedVia,
+      codSettlementStatus: codSettlementStatus ?? this.codSettlementStatus,
+      codCollectedBy: codCollectedBy ?? this.codCollectedBy,
+      codCollectedAt: codCollectedAt ?? this.codCollectedAt,
     );
   }
 

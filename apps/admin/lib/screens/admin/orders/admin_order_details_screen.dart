@@ -37,6 +37,13 @@ bool isOrder360Wide(double width) => width >= kOrder360WideBreakpoint;
 /// own fields) — the sole condition gating the new Cancellation card.
 bool orderNeedsCancellationCard(OrderModel order) => order.cancelledBy != null;
 
+/// True once a real delivery-confirmation has actually happened (ADMR-28)
+/// — deliberately keyed on `deliveredAt`, not the CURRENT `orderStatus`,
+/// so the section stays visible even if the order was later cancelled/
+/// returned (ADMR-26 already allows delivered->cancelled) rather than
+/// silently hiding real delivery history.
+bool orderHasDeliveryVerification(OrderModel order) => order.deliveredAt != null;
+
 /// Maps the raw `updatedBy` role string (written by adminUpdateOrderStatus
 /// today; sellerTransitionOrder.ts does not yet populate this field at all,
 /// a separate, disclosed gap) to a human-readable actor label.
@@ -210,6 +217,16 @@ class _AdminOrderDetailsScreenState extends State<AdminOrderDetailsScreen> {
 
   List<Widget> _buildSideColumn(OrderModel order, OrderProvider orderProvider) {
     return [
+      _buildSectionTitle('Dispatch & Assignment History', Icons.route_rounded),
+      const SizedBox(height: 12),
+      _buildDispatchHistoryCard(orderProvider),
+      const SizedBox(height: 16),
+      if (orderHasDeliveryVerification(order)) ...[
+        _buildSectionTitle('Delivery Verification & Settlement', Icons.verified_rounded),
+        const SizedBox(height: 12),
+        _buildDeliveryVerificationCard(order),
+        const SizedBox(height: 16),
+      ],
       _buildSectionTitle('Order Timeline', Icons.timeline_rounded),
       const SizedBox(height: 12),
       _buildTimelineCard(orderProvider),
@@ -217,6 +234,207 @@ class _AdminOrderDetailsScreenState extends State<AdminOrderDetailsScreen> {
       _buildActionButtons(order),
       const SizedBox(height: 32),
     ];
+  }
+
+  // =========================
+  // Dispatch & Assignment History Card (ADMR-28)
+  // =========================
+  Widget _buildDispatchHistoryCard(OrderProvider orderProvider) {
+    final isLoading = orderProvider.isLoadingDispatchOffers;
+    final error = orderProvider.dispatchOffersError;
+    final offers = orderProvider.selectedOrderDispatchOffers;
+
+    Widget content;
+    if (isLoading) {
+      content = const Padding(
+        padding: EdgeInsets.symmetric(vertical: 24),
+        child: Center(child: CircularProgressIndicator()),
+      );
+    } else if (error != null) {
+      content = Padding(
+        padding: const EdgeInsets.symmetric(vertical: 20),
+        child: Center(
+          child: Column(
+            children: [
+              Icon(Icons.error_outline_rounded, color: Colors.red.shade300, size: 32),
+              const SizedBox(height: 8),
+              Text('Could not load dispatch history', style: TextStyle(color: Colors.grey.shade600, fontSize: 13)),
+            ],
+          ),
+        ),
+      );
+    } else if (offers.isEmpty) {
+      content = Padding(
+        padding: const EdgeInsets.symmetric(vertical: 24),
+        child: Center(
+          child: Column(
+            children: [
+              Icon(Icons.route_outlined, size: 32, color: Colors.grey.shade300),
+              const SizedBox(height: 8),
+              Text('No rider has been offered this order yet', style: TextStyle(color: Colors.grey.shade500, fontSize: 12)),
+            ],
+          ),
+        ),
+      );
+    } else {
+      content = Column(
+        children: offers.map((o) => _dispatchOfferRow(o)).toList(),
+      );
+    }
+
+    return Container(
+      decoration: BoxDecoration(
+        color: Colors.white,
+        borderRadius: BorderRadius.circular(16),
+        boxShadow: [BoxShadow(color: Colors.black.withOpacity(0.04), blurRadius: 10, offset: const Offset(0, 4))],
+      ),
+      padding: const EdgeInsets.all(16),
+      child: content,
+    );
+  }
+
+  Widget _dispatchOfferRow(DispatchOfferRecord offer) {
+    final color = _dispatchStatusColor(offer.status);
+    return Padding(
+      padding: const EdgeInsets.symmetric(vertical: 8),
+      child: Row(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Container(
+            width: 8,
+            height: 8,
+            margin: const EdgeInsets.only(top: 5),
+            decoration: BoxDecoration(color: color, shape: BoxShape.circle),
+          ),
+          const SizedBox(width: 10),
+          Expanded(
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Row(
+                  children: [
+                    Expanded(
+                      child: Text(
+                        'Rider ${offer.riderId.length > 8 ? offer.riderId.substring(0, 8) : offer.riderId}',
+                        style: const TextStyle(fontWeight: FontWeight.w600, fontSize: 13),
+                        overflow: TextOverflow.ellipsis,
+                      ),
+                    ),
+                    Container(
+                      padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 3),
+                      decoration: BoxDecoration(color: color.withOpacity(0.12), borderRadius: BorderRadius.circular(6)),
+                      child: Text(
+                        offer.statusDisplayName,
+                        style: TextStyle(color: color, fontWeight: FontWeight.w700, fontSize: 10),
+                      ),
+                    ),
+                  ],
+                ),
+                const SizedBox(height: 3),
+                Text(
+                  'Wave ${offer.wave}'
+                  '${offer.pickupDistanceKm != null ? ' • ${offer.pickupDistanceKm!.toStringAsFixed(1)} km' : ''}'
+                  '${offer.estimatedPay != null ? ' • Est. ₹${offer.estimatedPay!.toStringAsFixed(0)}' : ''}',
+                  style: TextStyle(color: Colors.grey.shade500, fontSize: 11),
+                ),
+              ],
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+
+  Color _dispatchStatusColor(String status) {
+    switch (status) {
+      case 'accepted':
+        return Colors.green;
+      case 'declined':
+      case 'expired':
+        return Colors.red;
+      case 'withdrawn':
+        return Colors.grey;
+      case 'offered':
+      case 'dispatching':
+        return Colors.orange;
+      default:
+        return Colors.grey;
+    }
+  }
+
+  // =========================
+  // Delivery Verification & COD Settlement Card (ADMR-28)
+  // =========================
+  Widget _buildDeliveryVerificationCard(OrderModel order) {
+    final isCod = order.paymentMethod.toLowerCase() == 'cod' ||
+        order.paymentMethod.toLowerCase().contains('cash');
+    final collected = order.codSettlementStatus?.toLowerCase() == 'collected';
+
+    return Container(
+      decoration: BoxDecoration(
+        color: Colors.white,
+        borderRadius: BorderRadius.circular(16),
+        boxShadow: [BoxShadow(color: Colors.black.withOpacity(0.04), blurRadius: 10, offset: const Offset(0, 4))],
+      ),
+      padding: const EdgeInsets.all(16),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Row(
+            children: [
+              Icon(Icons.check_circle_rounded, color: Colors.green.shade600, size: 18),
+              const SizedBox(width: 8),
+              Expanded(
+                child: Text(
+                  order.deliveredAt != null
+                      ? 'Delivered ${DateFormat('MMM d, yyyy • hh:mm a').format(order.deliveredAt!)}'
+                      : 'Delivered',
+                  style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 13),
+                ),
+              ),
+            ],
+          ),
+          if (order.deliveryConfirmedVia != null) ...[
+            const SizedBox(height: 6),
+            Text(
+              'Confirmed via ${order.deliveryConfirmedVia == 'confirmDelivery' ? "customer's delivery code" : order.deliveryConfirmedVia}',
+              style: TextStyle(color: Colors.grey.shade600, fontSize: 12),
+            ),
+          ],
+          const SizedBox(height: 12),
+          Container(
+            padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
+            decoration: BoxDecoration(
+              color: (isCod ? (collected ? Colors.green : Colors.orange) : Colors.grey).withOpacity(0.1),
+              borderRadius: BorderRadius.circular(8),
+            ),
+            child: Row(
+              mainAxisSize: MainAxisSize.min,
+              children: [
+                Icon(
+                  !isCod
+                      ? Icons.credit_card_rounded
+                      : (collected ? Icons.check_circle_rounded : Icons.hourglass_top_rounded),
+                  size: 14,
+                  color: !isCod ? Colors.grey.shade600 : (collected ? Colors.green.shade700 : Colors.orange.shade700),
+                ),
+                const SizedBox(width: 8),
+                Text(
+                  !isCod
+                      ? 'Not applicable — paid online, no cash liability'
+                      : (collected ? 'Cash collected & settled' : 'Cash on delivery — settlement pending'),
+                  style: TextStyle(
+                    fontSize: 12,
+                    fontWeight: FontWeight.w700,
+                    color: !isCod ? Colors.grey.shade700 : (collected ? Colors.green.shade800 : Colors.orange.shade800),
+                  ),
+                ),
+              ],
+            ),
+          ),
+        ],
+      ),
+    );
   }
 
   // =========================

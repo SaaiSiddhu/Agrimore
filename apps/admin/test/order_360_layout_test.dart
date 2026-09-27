@@ -27,7 +27,12 @@ AddressModel _address() => AddressModel(
       zipcode: '600001',
     );
 
-OrderModel _order({String? cancelledBy}) => OrderModel(
+OrderModel _order({
+  String? cancelledBy,
+  DateTime? deliveredAt,
+  String paymentMethod = 'razorpay',
+}) =>
+    OrderModel(
       id: 'order1',
       userId: 'user1',
       orderNumber: 'ORD1',
@@ -35,8 +40,9 @@ OrderModel _order({String? cancelledBy}) => OrderModel(
       deliveryAddress: _address(),
       subtotal: 100,
       total: 100,
-      paymentMethod: 'razorpay',
+      paymentMethod: paymentMethod,
       cancelledBy: cancelledBy,
+      deliveredAt: deliveredAt,
     );
 
 void main() {
@@ -110,6 +116,96 @@ void main() {
       expect(restored.cancelledAt, isNull);
       expect(restored.cancellationReason, isNull);
       expect(restored.refundStatus, isNull);
+    });
+  });
+
+  // ADMR-28 additions below.
+  group('orderHasDeliveryVerification', () {
+    test('an order never delivered shows nothing', () {
+      expect(orderHasDeliveryVerification(_order()), isFalse);
+    });
+
+    test('an order with a real deliveredAt shows the section', () {
+      expect(orderHasDeliveryVerification(_order(deliveredAt: DateTime(2026, 9, 27))), isTrue);
+    });
+
+    test('stays visible even after a later cancellation — keyed on '
+        'deliveredAt, not the current orderStatus, so real delivery '
+        'history is never silently hidden by a subsequent return', () {
+      final order = _order(deliveredAt: DateTime(2026, 9, 27), cancelledBy: 'admin');
+      expect(orderHasDeliveryVerification(order), isTrue);
+    });
+  });
+
+  group('OrderModel delivery/COD-settlement fields (ADMR-28)', () {
+    test('round-trip through toMap/fromMap preserves all six fields', () {
+      final deliveredAt = DateTime(2026, 9, 27, 14, 0);
+      final codCollectedAt = DateTime(2026, 9, 27, 18, 0);
+      final original = _order(deliveredAt: deliveredAt, paymentMethod: 'cod').copyWith(
+        deliveryConfirmedBy: 'customer-uid-1',
+        deliveryConfirmedVia: 'confirmDelivery',
+        codSettlementStatus: 'collected',
+        codCollectedBy: 'rider-uid-1',
+        codCollectedAt: codCollectedAt,
+      );
+
+      final restored = OrderModel.fromMap(original.toMap(), original.id);
+
+      expect(restored.deliveryConfirmedBy, 'customer-uid-1');
+      expect(restored.deliveryConfirmedVia, 'confirmDelivery');
+      expect(restored.codSettlementStatus, 'collected');
+      expect(restored.codCollectedBy, 'rider-uid-1');
+      expect(restored.deliveredAt, isNotNull);
+      expect(restored.codCollectedAt, isNotNull);
+      expect(restored.deliveredAt!.difference(deliveredAt).inSeconds.abs(), lessThan(2));
+      expect(restored.codCollectedAt!.difference(codCollectedAt).inSeconds.abs(), lessThan(2));
+    });
+
+    test('an order never delivered leaves all six fields null', () {
+      final restored = OrderModel.fromMap(_order().toMap(), 'order1');
+      expect(restored.deliveredAt, isNull);
+      expect(restored.deliveryConfirmedBy, isNull);
+      expect(restored.deliveryConfirmedVia, isNull);
+      expect(restored.codSettlementStatus, isNull);
+      expect(restored.codCollectedBy, isNull);
+      expect(restored.codCollectedAt, isNull);
+    });
+  });
+
+  group('DispatchOfferRecord.fromMap', () {
+    test('parses a real delivery_requests-shaped document', () {
+      final offer = DispatchOfferRecord.fromMap({
+        'riderId': 'rider-1',
+        'status': 'accepted',
+        'wave': 2,
+        'pickupDistanceKm': 3.456,
+        'dropDistanceKm': 5.1,
+        'estimatedPay': 62.5,
+        'codAmount': 450.0,
+      });
+      expect(offer.riderId, 'rider-1');
+      expect(offer.status, 'accepted');
+      expect(offer.statusDisplayName, 'Accepted');
+      expect(offer.wave, 2);
+      expect(offer.pickupDistanceKm, 3.456);
+      expect(offer.estimatedPay, 62.5);
+    });
+
+    test('falls back to the legacy partnerId field when riderId is absent '
+        '— dispatch.ts itself writes both, but an older record may not', () {
+      final offer = DispatchOfferRecord.fromMap({
+        'partnerId': 'legacy-rider-2',
+        'status': 'expired',
+        'wave': 1,
+      });
+      expect(offer.riderId, 'legacy-rider-2');
+      expect(offer.statusDisplayName, 'Expired');
+    });
+
+    test('an unrecognized status falls back to the raw string rather than '
+        'hiding it', () {
+      final offer = DispatchOfferRecord.fromMap({'riderId': 'r1', 'status': 'some_future_status', 'wave': 1});
+      expect(offer.statusDisplayName, 'some_future_status');
     });
   });
 }
