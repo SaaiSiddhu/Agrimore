@@ -79,6 +79,7 @@ class RiderRegistrationScreen extends StatefulWidget {
     this.initial,
     this.draftStore,
     this.resolveDraftPhoto,
+    this.deleteStagedFile,
   });
 
   /// DLV-A2: the rider's existing delivery_partners record, when a pending or
@@ -98,18 +99,36 @@ class RiderRegistrationScreen extends StatefulWidget {
   /// triggered from inside a post-frame callback's continuation).
   final Future<PickedPhoto?> Function(DraftPhoto stored)? resolveDraftPhoto;
 
+  /// DLVID5: deletes one staged-photo cache file by path, on the same
+  /// real-disk-I/O-must-be-injectable basis as [resolveDraftPhoto] above.
+  final Future<void> Function(String path)? deleteStagedFile;
+
   @override
   State<RiderRegistrationScreen> createState() =>
       _RiderRegistrationScreenState();
 }
 
-class _RiderRegistrationScreenState extends State<RiderRegistrationScreen> {
+/// DLVID5: a draft older than this is never silently offered -- picked
+/// deliberately generous (a rider who stepped away for a few days should
+/// still get their progress back) while still bounding how long a stale,
+/// possibly-another-person's draft can sit around looking resumable. A pure
+/// constant/function so it's directly unit-testable and tunable without
+/// touching any call site.
+const registrationDraftMaxAge = Duration(days: 14);
+
+bool isDraftExpired(DateTime savedAt, {DateTime? now}) =>
+    (now ?? DateTime.now()).difference(savedAt) > registrationDraftMaxAge;
+
+class _RiderRegistrationScreenState extends State<RiderRegistrationScreen>
+    with WidgetsBindingObserver {
   late final RegistrationService _service =
       widget.service ?? RegistrationService();
   late final RegistrationDraftStore _draftStore =
       widget.draftStore ?? SecureRegistrationDraftStore();
   late final Future<PickedPhoto?> Function(DraftPhoto) _resolveDraftPhoto =
       widget.resolveDraftPhoto ?? _defaultResolveDraftPhoto;
+  late final Future<void> Function(String) _deleteStagedFile =
+      widget.deleteStagedFile ?? _defaultDeleteStagedFile;
   final RiderApplicationForm _form = RiderApplicationForm();
   final Map<RiderDocument, PickedPhoto> _photos = {};
   final Map<RiderDocument, String> _photoPaths = {};
@@ -128,6 +147,7 @@ class _RiderRegistrationScreenState extends State<RiderRegistrationScreen> {
   @override
   void initState() {
     super.initState();
+    WidgetsBinding.instance.addObserver(this);
     final d = widget.initial;
     if (d != null) {
       String v(String k) => (d[k] as String?) ?? '';
@@ -161,26 +181,47 @@ class _RiderRegistrationScreenState extends State<RiderRegistrationScreen> {
     WidgetsBinding.instance.addPostFrameCallback((_) => _checkForDraft());
   }
 
+  @override
+  void dispose() {
+    WidgetsBinding.instance.removeObserver(this);
+    super.dispose();
+  }
+
+  @override
+  void didChangeAppLifecycleState(AppLifecycleState state) {
+    // DLVID5: backgrounding is the one moment current-step edits (not yet
+    // committed by a step-advance, a photo pick, or a submit attempt) would
+    // otherwise be lost to a process kill -- save proactively rather than
+    // waiting for a save point that may never come.
+    if (state == AppLifecycleState.paused || state == AppLifecycleState.inactive) {
+      unawaited(_saveDraft());
+    }
+  }
+
   bool get _needsAccount => _service.backend.currentUid == null;
 
   String get _draftKey => _service.backend.currentUid ?? '_pending';
 
-  /// Prefers the current account's own slot; falls back to the pre-account
-  /// slot so a crash between account creation and the next draft save (e.g.
-  /// mid `submitAll()`) doesn't strand an otherwise-good draft.
-  Future<RegistrationDraft?> _loadResumableDraft() async {
-    final key = _draftKey;
-    final own = await _draftStore.load(key);
-    if (own != null) return own;
-    if (key == '_pending') return null;
-    return _draftStore.load('_pending');
-  }
+  /// DLVID5: ONLY the current identity's own slot -- a signed-in rider's own
+  /// uid, or the shared pre-account `_pending` slot when nobody is signed in
+  /// yet. Never falls back from one to the other: that used to let a
+  /// completely unrelated signed-in rider silently inherit a stranger's
+  /// abandoned pre-account draft on a shared device. The one legitimate
+  /// reason a fallback existed -- a crash between account creation and the
+  /// next incidental save -- is now closed at the source: `_submit()`
+  /// re-keys the draft to the new uid the instant the account exists, before
+  /// any upload/submit step that could crash.
+  Future<RegistrationDraft?> _loadResumableDraft() => _draftStore.load(_draftKey);
 
   Future<void> _checkForDraft() async {
     if (_draftChecked || !mounted) return;
     _draftChecked = true;
     final draft = await _loadResumableDraft();
     if (draft == null || !mounted) return;
+    if (isDraftExpired(draft.savedAt)) {
+      await _clearDraft();
+      return;
+    }
     final l = AppLocalizations.of(context);
     final resume = await showDeliveryConfirmDialog(
       context: context,
@@ -243,6 +284,29 @@ class _RiderRegistrationScreenState extends State<RiderRegistrationScreen> {
   Future<void> _clearDraft() async {
     await _draftStore.clear(_draftKey);
     await _draftStore.clear('_pending');
+    await _deleteStagedPhotoFiles();
+  }
+
+  /// DLVID5: the picked-photo cache files a draft's paths point at are this
+  /// app's own private, otherwise-unreferenced copies -- once the draft they
+  /// belong to is gone (discarded, or successfully submitted), delete them
+  /// too rather than leaving Aadhaar/selfie images sitting in cache
+  /// indefinitely.
+  Future<void> _deleteStagedPhotoFiles() async {
+    for (final path in _photoPaths.values) {
+      await _deleteStagedFile(path);
+    }
+  }
+
+  /// Best-effort: a file already gone, or a path that was never real, is not
+  /// an error.
+  Future<void> _defaultDeleteStagedFile(String path) async {
+    try {
+      final file = File(path);
+      if (await file.exists()) await file.delete();
+    } catch (_) {
+      // best-effort cleanup only
+    }
   }
 
   Future<void> _saveDraft() async {
@@ -398,11 +462,17 @@ class _RiderRegistrationScreenState extends State<RiderRegistrationScreen> {
       _submitting = true;
       _failure = null;
     });
-    // A snapshot taken right before the risky call, so a process kill during
-    // submitAll() (account created, then upload/submit never finishes) still
-    // leaves a draft that _loadResumableDraft's pre-account fallback can find.
+    // A snapshot taken right before the risky calls, matching every other
+    // step-advance save point.
     await _saveDraft();
     try {
+      // DLVID5: create (or reuse) the account FIRST, then immediately re-key
+      // this device's own draft under the account's own uid -- before any
+      // upload or submit step that could crash. A process kill from here on
+      // leaves the draft already correctly owned, so `_loadResumableDraft`
+      // never needs (and no longer has) a cross-key fallback to find it.
+      await _service.ensureAccount(_form);
+      await _saveDraft();
       await _service.submitAll(_form, _photos);
       if (!mounted) return;
       await _clearDraft();

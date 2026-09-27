@@ -5,8 +5,15 @@
 // final step), so for steps 0-3 there is no Firebase Auth UID yet and
 // nothing server-side to key a draft by; this is why the draft lives here,
 // on-device, rather than as a Firestore document. Keyed by
-// currentUid ?? '_pending' so a signed-in rider's draft never leaks to a
-// different account on the same device once one exists.
+// currentUid ?? '_pending'.
+//
+// Phase DLVID5 — that key alone is not enough: the shared pre-account
+// '_pending' slot must never be offered to a DIFFERENT, already signed-in
+// rider sharing the device. The screen (rider_registration_screen.dart)
+// enforces this by never falling back from a signed-in rider's own key to
+// '_pending', and by promoting '_pending' to the real uid itself, the
+// instant an account is created, rather than leaving that as a later,
+// opportunistic guess.
 //
 // Never persists RiderApplicationForm.password: a stored draft that could
 // hand back a rider's login credentials from disk is a bigger risk than
