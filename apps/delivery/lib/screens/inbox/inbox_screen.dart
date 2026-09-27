@@ -28,6 +28,26 @@ import '../support/support_request_status_screen.dart';
 /// is what actually authorizes it, not this call succeeding on its own.
 typedef OrderLoader = Future<OrderModel?> Function(String orderId);
 
+/// DLVI3: a notice's own icon, by its real `RiderNoticeType` (server-defined
+/// in `functions/src/delivery/riderNotices.ts`) rather than only read/unread
+/// — every case here names an actual, currently-written type, not an
+/// invented one. Falls back to the pre-existing read/unread pair for a type
+/// this client doesn't recognise (empty, or older than this mapping).
+IconData noticeIcon(String type, {required bool unread}) => switch (type) {
+      'delivery_assigned' => DeliveryIcons.package,
+      'delivery_unassigned' => DeliveryIcons.packageX,
+      'delivery_problem_resolved' => DeliveryIcons.documentWarning,
+      'statement_ready' => DeliveryIcons.statement,
+      'payout_sent' => DeliveryIcons.rupee,
+      'bank_change_approved' || 'bank_change_rejected' => DeliveryIcons.bank,
+      'identity_change_approved' || 'identity_change_rejected' => DeliveryIcons.idCard,
+      'document_review_approved' || 'document_review_rejected' => DeliveryIcons.document,
+      'incident_acknowledged' || 'incident_resolved' => DeliveryIcons.shieldCheck,
+      'support_request_seen' || 'support_request_closed' => DeliveryIcons.support,
+      'rider_offline' => DeliveryIcons.offline,
+      _ => unread ? DeliveryIcons.bell : DeliveryIcons.checkCircle,
+    };
+
 /// Null for "not there" (deleted, or no longer this rider's — the exact
 /// `delivery_unassigned` case, enforced by the security rule itself, not by
 /// this code); anything else rethrown, matching the shape of
@@ -358,7 +378,7 @@ class _InboxScreenState extends State<InboxScreen> {
                   vertical: DeliverySpace.xxs,
                 ),
                 leading: Icon(
-                  n.unread ? DeliveryIcons.bell : DeliveryIcons.checkCircle,
+                  noticeIcon(n.type, unread: n.unread),
                   color: n.unread ? c.brand : c.textTertiary,
                 ),
                 title: Text(
