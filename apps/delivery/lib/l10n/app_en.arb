@@ -1660,6 +1660,10 @@
   "@inboxEmpty": {
     "description": "Empty inbox"
   },
+  "inboxEmptyUnread": "No unread notifications.",
+  "@inboxEmptyUnread": {
+    "description": "DLVI5: shown when the inbox has notices but none are unread and the Unread filter tab is selected"
+  },
   "inboxLoadError": "Could not load your inbox. Check your connection.",
   "@inboxLoadError": {
     "description": "Inbox stream failed"

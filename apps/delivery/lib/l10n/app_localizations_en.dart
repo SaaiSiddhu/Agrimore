@@ -1269,6 +1269,9 @@ class AppLocalizationsEn extends AppLocalizations {
       'Nothing here yet. Orders, statements and payments you should know about show here.';
 
   @override
+  String get inboxEmptyUnread => 'No unread notifications.';
+
+  @override
   String get inboxLoadError =>
       'Could not load your inbox. Check your connection.';
 

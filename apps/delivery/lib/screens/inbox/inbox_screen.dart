@@ -48,6 +48,19 @@ IconData noticeIcon(String type, {required bool unread}) => switch (type) {
       _ => unread ? DeliveryIcons.bell : DeliveryIcons.checkCircle,
     };
 
+/// DLVI5: which notices are shown, independent of [InboxSection] grouping.
+enum InboxFilter { all, unread }
+
+/// DLVI5: [notices] restricted to [filter] -- `all` is the identity (never
+/// allocates a new list), `unread` keeps only `n.unread`. Applied BEFORE
+/// [groupedInboxItems] so Today/Earlier headers reflect what is actually
+/// visible, never counting a filtered-out notice.
+List<RiderNotice> filteredInboxNotices(List<RiderNotice> notices, InboxFilter filter) =>
+    switch (filter) {
+      InboxFilter.all => notices,
+      InboxFilter.unread => [for (final n in notices) if (n.unread) n],
+    };
+
 /// DLVI4: which section a notice belongs in, by its own `createdAt` (in its
 /// own local time) compared against an explicitly-passed [now] -- never a
 /// hidden `DateTime.now()` inside a pure function, matching this session's
@@ -131,6 +144,7 @@ class _InboxScreenState extends State<InboxScreen> {
   late final Stream<List<RiderNotice>> _latest =
       widget.source.latest(widget.riderId);
   bool _markingAll = false;
+  InboxFilter _filter = InboxFilter.all;
 
   Future<void> _markRead(Iterable<String> ids) async {
     if (ids.isEmpty) return;
@@ -370,94 +384,136 @@ class _InboxScreenState extends State<InboxScreen> {
           ),
         ],
       ),
-      body: StreamBuilder<List<RiderNotice>>(
-        stream: _latest,
-        builder: (context, snap) {
-          if (snap.hasError) {
-            return _Centered(
-              icon: DeliveryIcons.offline,
-              text: l.inboxLoadError,
-            );
-          }
-          if (!snap.hasData) {
-            return const Center(child: CircularProgressIndicator());
-          }
-          final list = snap.data!;
-          if (list.isEmpty) {
-            return _Centered(
-              icon: DeliveryIcons.bell,
-              text: l.inboxEmpty,
-            );
-          }
-          final items = groupedInboxItems(list, now: DateTime.now());
-          return ListView.separated(
-            padding: const EdgeInsets.symmetric(vertical: DeliverySpace.sm),
-            itemCount: items.length + (list.length >= kInboxSize ? 1 : 0),
-            separatorBuilder: (_, __) =>
-                const Divider(height: DeliverySize.hairline),
-            itemBuilder: (context, i) {
-              if (i == items.length) {
-                return Padding(
-                  padding: const EdgeInsets.all(DeliverySpace.lg),
-                  child: Text(
-                    l.inboxLimitNote(kInboxSize),
-                    textAlign: TextAlign.center,
-                    style: t.bodySmall.copyWith(color: c.textTertiary),
+      body: Column(
+        children: [
+          Padding(
+            padding: const EdgeInsets.fromLTRB(
+              DeliverySpace.page,
+              DeliverySpace.sm,
+              DeliverySpace.page,
+              DeliverySpace.xs,
+            ),
+            child: DeliverySegmented<InboxFilter>(
+              selected: _filter,
+              onSelected: (f) => setState(() => _filter = f),
+              items: [
+                DeliveryChipItem(
+                  value: InboxFilter.all,
+                  label: l.inboxFilterAll,
+                  key: const ValueKey('inbox-filter-all'),
+                ),
+                DeliveryChipItem(
+                  value: InboxFilter.unread,
+                  label: l.inboxFilterUnread,
+                  key: const ValueKey('inbox-filter-unread'),
+                ),
+              ],
+            ),
+          ),
+          Expanded(
+            child: StreamBuilder<List<RiderNotice>>(
+              stream: _latest,
+              builder: (context, snap) {
+                if (snap.hasError) {
+                  return _Centered(
+                    icon: DeliveryIcons.offline,
+                    text: l.inboxLoadError,
+                  );
+                }
+                if (!snap.hasData) {
+                  return const Center(child: CircularProgressIndicator());
+                }
+                final list = snap.data!;
+                if (list.isEmpty) {
+                  return _Centered(
+                    icon: DeliveryIcons.bell,
+                    text: l.inboxEmpty,
+                  );
+                }
+                final visible = filteredInboxNotices(list, _filter);
+                if (visible.isEmpty) {
+                  return _Centered(
+                    icon: DeliveryIcons.bell,
+                    text: l.inboxEmptyUnread,
+                  );
+                }
+                final items = groupedInboxItems(visible, now: DateTime.now());
+                return ListView.separated(
+                  padding: const EdgeInsets.symmetric(
+                    vertical: DeliverySpace.sm,
                   ),
+                  itemCount: items.length + (list.length >= kInboxSize ? 1 : 0),
+                  separatorBuilder: (_, __) =>
+                      const Divider(height: DeliverySize.hairline),
+                  itemBuilder: (context, i) {
+                    if (i == items.length) {
+                      return Padding(
+                        padding: const EdgeInsets.all(DeliverySpace.lg),
+                        child: Text(
+                          l.inboxLimitNote(kInboxSize),
+                          textAlign: TextAlign.center,
+                          style: t.bodySmall.copyWith(color: c.textTertiary),
+                        ),
+                      );
+                    }
+                    final item = items[i];
+                    if (item is InboxSection) {
+                      return Padding(
+                        padding: const EdgeInsets.fromLTRB(
+                          DeliverySpace.page,
+                          DeliverySpace.sm,
+                          DeliverySpace.page,
+                          DeliverySpace.xxs,
+                        ),
+                        child: Text(
+                          switch (item) {
+                            InboxSection.today => l.inboxSectionToday,
+                            InboxSection.earlier => l.inboxSectionEarlier,
+                          },
+                          style: t.titleSmall.copyWith(color: c.textSecondary),
+                        ),
+                      );
+                    }
+                    final n = item as RiderNotice;
+                    return ListTile(
+                      contentPadding: const EdgeInsets.symmetric(
+                        horizontal: DeliverySpace.page,
+                        vertical: DeliverySpace.xxs,
+                      ),
+                      leading: Icon(
+                        noticeIcon(n.type, unread: n.unread),
+                        color: n.unread ? c.brand : c.textTertiary,
+                      ),
+                      title: Text(
+                        n.title,
+                        style: (n.unread ? t.titleSmall : t.bodyLarge).copyWith(
+                          color: c.textPrimary,
+                        ),
+                      ),
+                      subtitle: Text(
+                        [
+                          n.body,
+                          if (n.createdAt != null)
+                            DeliveryFormat.dateTime(n.createdAt!.toLocal()),
+                        ].join('\n'),
+                        style: t.bodySmall.copyWith(color: c.textSecondary),
+                      ),
+                      isThreeLine: n.createdAt != null,
+                      trailing: n.target != NoticeTarget.none
+                          ? Icon(
+                              DeliveryIcons.chevronRight,
+                              size: DeliveryIconSize.sm,
+                              color: c.textTertiary,
+                            )
+                          : null,
+                      onTap: () => _open(n),
+                    );
+                  },
                 );
-              }
-              final item = items[i];
-              if (item is InboxSection) {
-                return Padding(
-                  padding: const EdgeInsets.fromLTRB(
-                    DeliverySpace.page, DeliverySpace.sm, DeliverySpace.page, DeliverySpace.xxs,
-                  ),
-                  child: Text(
-                    switch (item) {
-                      InboxSection.today => l.inboxSectionToday,
-                      InboxSection.earlier => l.inboxSectionEarlier,
-                    },
-                    style: t.titleSmall.copyWith(color: c.textSecondary),
-                  ),
-                );
-              }
-              final n = item as RiderNotice;
-              return ListTile(
-                contentPadding: const EdgeInsets.symmetric(
-                  horizontal: DeliverySpace.page,
-                  vertical: DeliverySpace.xxs,
-                ),
-                leading: Icon(
-                  noticeIcon(n.type, unread: n.unread),
-                  color: n.unread ? c.brand : c.textTertiary,
-                ),
-                title: Text(
-                  n.title,
-                  style: (n.unread ? t.titleSmall : t.bodyLarge).copyWith(
-                    color: c.textPrimary,
-                  ),
-                ),
-                subtitle: Text(
-                  [
-                    n.body,
-                    if (n.createdAt != null)
-                      DeliveryFormat.dateTime(n.createdAt!.toLocal()),
-                  ].join('\n'),
-                  style: t.bodySmall.copyWith(color: c.textSecondary),
-                ),
-                isThreeLine: n.createdAt != null,
-                trailing: n.target != NoticeTarget.none
-                    ? Icon(
-                        DeliveryIcons.chevronRight,
-                        size: DeliveryIconSize.sm,
-                        color: c.textTertiary,
-                      )
-                    : null,
-                onTap: () => _open(n),
-              );
-            },
-          );
-        },
+              },
+            ),
+          ),
+        ],
       ),
     );
   }
