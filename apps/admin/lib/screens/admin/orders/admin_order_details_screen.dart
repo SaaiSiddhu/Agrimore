@@ -5,6 +5,7 @@ import 'dart:typed_data';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:provider/provider.dart';
+import 'package:go_router/go_router.dart';
 import 'package:intl/intl.dart';
 import 'package:timeline_tile/timeline_tile.dart';
 import 'package:url_launcher/url_launcher.dart';
@@ -17,6 +18,7 @@ import 'package:path_provider/path_provider.dart';
 
 import 'package:agrimore_ui/agrimore_ui.dart';
 import '../../../app/themes/admin_colors.dart';
+import '../../../app/app_router.dart' show AdminRoutes;
 import '../../../providers/order_provider.dart';
 import '../delivery/delivery_flags.dart';
 import '../delivery/order_assignment_screen.dart';
@@ -49,6 +51,19 @@ bool orderHasDeliveryVerification(OrderModel order) => order.deliveredAt != null
 /// unattributed order can never carry commission data.
 bool orderHasCommissionAttribution(OrderModel order) =>
     order.employeeUid != null && order.employeeUid!.trim().isNotEmpty;
+
+/// ADMR-36: `order.codSettlementStatus == 'collected'` means exactly one
+/// thing — functions/src/delivery/riderMoney.ts's recordDeliveryEarningCore
+/// has recorded this order's cash against the rider's own account. It is
+/// never written to mean AgriMore has received or reconciled that cash.
+/// The label must say only what is actually known, never "settled".
+String codLiabilityLabel({required bool isCod, required bool collected}) {
+  if (!isCod) return 'Not applicable — paid online, no cash liability';
+  if (collected) {
+    return 'Cash collected by rider — held as their liability, not yet AgriMore\'s';
+  }
+  return 'Cash on delivery — not yet collected by rider';
+}
 
 /// Maps the raw `updatedBy` role string (written by adminUpdateOrderStatus
 /// today; sellerTransitionOrder.ts does not yet populate this field at all,
@@ -230,7 +245,7 @@ class _AdminOrderDetailsScreenState extends State<AdminOrderDetailsScreen> {
       if (orderHasDeliveryVerification(order)) ...[
         _buildSectionTitle('Delivery Verification & Settlement', Icons.verified_rounded),
         const SizedBox(height: 12),
-        _buildDeliveryVerificationCard(order),
+        _buildDeliveryVerificationCard(order, orderProvider),
         const SizedBox(height: 16),
       ],
       _buildSectionTitle('Rider Earnings', Icons.payments_rounded),
@@ -387,12 +402,19 @@ class _AdminOrderDetailsScreenState extends State<AdminOrderDetailsScreen> {
   }
 
   // =========================
-  // Delivery Verification & COD Settlement Card (ADMR-28)
+  // Delivery Verification & COD Settlement Card (ADMR-28, honest labels ADMR-36)
   // =========================
-  Widget _buildDeliveryVerificationCard(OrderModel order) {
+  Widget _buildDeliveryVerificationCard(OrderModel order, OrderProvider orderProvider) {
     final isCod = order.paymentMethod.toLowerCase() == 'cod' ||
         order.paymentMethod.toLowerCase().contains('cash');
+    // ADMR-36: "collected" only ever means the rider now personally holds
+    // this cash as their own liability (functions/src/delivery/riderMoney.ts's
+    // recordDeliveryEarningCore) — it is never set, and never meant, to imply
+    // AgriMore has received or reconciled it. The old label here claimed
+    // "& settled", which this field cannot support.
     final collected = order.codSettlementStatus?.toLowerCase() == 'collected';
+    final cashAccount = orderProvider.selectedOrderRiderCashAccount;
+    final isLoadingCashAccount = orderProvider.isLoadingRiderCashAccount;
 
     return Container(
       decoration: BoxDecoration(
@@ -443,19 +465,72 @@ class _AdminOrderDetailsScreenState extends State<AdminOrderDetailsScreen> {
                   color: !isCod ? Colors.grey.shade600 : (collected ? Colors.green.shade700 : Colors.orange.shade700),
                 ),
                 const SizedBox(width: 8),
-                Text(
-                  !isCod
-                      ? 'Not applicable — paid online, no cash liability'
-                      : (collected ? 'Cash collected & settled' : 'Cash on delivery — settlement pending'),
-                  style: TextStyle(
-                    fontSize: 12,
-                    fontWeight: FontWeight.w700,
-                    color: !isCod ? Colors.grey.shade700 : (collected ? Colors.green.shade800 : Colors.orange.shade800),
+                Expanded(
+                  child: Text(
+                    codLiabilityLabel(isCod: isCod, collected: collected),
+                    style: TextStyle(
+                      fontSize: 12,
+                      fontWeight: FontWeight.w700,
+                      color: !isCod ? Colors.grey.shade700 : (collected ? Colors.green.shade800 : Colors.orange.shade800),
+                    ),
                   ),
                 ),
               ],
             ),
           ),
+          if (isCod && collected) ...[
+            const SizedBox(height: 8),
+            Text(
+              'See Rider Earnings below for this order\'s own collected amount and whether it has been included in a payout statement.',
+              style: TextStyle(color: Colors.grey.shade500, fontSize: 11),
+            ),
+            const SizedBox(height: 10),
+            if (isLoadingCashAccount)
+              const Padding(
+                padding: EdgeInsets.symmetric(vertical: 8),
+                child: SizedBox(
+                  height: 16,
+                  width: 16,
+                  child: CircularProgressIndicator(strokeWidth: 2),
+                ),
+              )
+            else if (cashAccount != null)
+              Container(
+                padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
+                decoration: BoxDecoration(
+                  color: Colors.blueGrey.withOpacity(0.08),
+                  borderRadius: BorderRadius.circular(8),
+                ),
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Text(
+                      'Rider\'s outstanding cash liability (all orders): ₹${cashAccount.cashHeld.toStringAsFixed(2)}',
+                      style: TextStyle(fontSize: 12, fontWeight: FontWeight.w700, color: Colors.blueGrey.shade800),
+                    ),
+                    const SizedBox(height: 2),
+                    Text(
+                      'This is the rider\'s combined running balance, not an amount tracked per order.',
+                      style: TextStyle(color: Colors.grey.shade500, fontSize: 11),
+                    ),
+                  ],
+                ),
+              ),
+            const SizedBox(height: 4),
+            Align(
+              alignment: Alignment.centerLeft,
+              child: TextButton.icon(
+                onPressed: () => context.push(AdminRoutes.riderPayouts),
+                icon: const Icon(Icons.account_balance_wallet_outlined, size: 16),
+                label: const Text('Open Rider Cash & Payouts', style: TextStyle(fontSize: 12)),
+                style: TextButton.styleFrom(
+                  padding: const EdgeInsets.symmetric(horizontal: 4, vertical: 0),
+                  minimumSize: const Size(0, 32),
+                  tapTargetSize: MaterialTapTargetSize.shrinkWrap,
+                ),
+              ),
+            ),
+          ],
         ],
       ),
     );

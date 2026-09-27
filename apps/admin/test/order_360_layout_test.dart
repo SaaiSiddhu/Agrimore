@@ -443,4 +443,68 @@ void main() {
       expect(payout.statusLabel, 'some_future_status');
     });
   });
+
+  // ADMR-36 additions below: `order.codSettlementStatus == 'collected'`
+  // (functions/src/delivery/riderMoney.ts's recordDeliveryEarningCore) means
+  // only that the rider now personally holds this order's cash as their own
+  // liability — never that AgriMore has received or reconciled it. The old
+  // label here ("Cash collected & settled") could not be justified by that
+  // field; codLiabilityLabel is the pure decision this phase adds so the
+  // wording is directly testable without constructing the screen.
+  group('codLiabilityLabel', () {
+    test('a non-COD order carries no cash liability at all', () {
+      expect(
+        codLiabilityLabel(isCod: false, collected: false),
+        'Not applicable — paid online, no cash liability',
+      );
+      // Even if some future bug set codSettlementStatus on a non-COD order,
+      // isCod alone gates this branch — never claim a liability that
+      // paymentMethod says cannot exist.
+      expect(
+        codLiabilityLabel(isCod: false, collected: true),
+        'Not applicable — paid online, no cash liability',
+      );
+    });
+
+    test('a COD order not yet collected never says "settlement pending" — '
+        'settlement is a rider-account concept this state knows nothing '
+        'about', () {
+      final label = codLiabilityLabel(isCod: true, collected: false);
+      expect(label, 'Cash on delivery — not yet collected by rider');
+      expect(label.toLowerCase(), isNot(contains('settl')));
+    });
+
+    test('a COD order the rider has collected never says "settled" — that '
+        'would claim AgriMore has received/reconciled cash this field '
+        'cannot prove', () {
+      final label = codLiabilityLabel(isCod: true, collected: true);
+      expect(label, contains('rider'));
+      expect(label, contains('liability'));
+      expect(label.toLowerCase(), isNot(contains('settled')));
+    });
+  });
+
+  group('RiderCashAccountRecord.fromMap', () {
+    test('reads the authoritative paise field when present (DLV-M1: whole '
+        'paise, no float drift)', () {
+      final acc = RiderCashAccountRecord.fromMap({
+        'cashHeld': 999.99, // stale/derived rupee field — paise must win
+        'cashHeldPaise': 43050,
+      }, 'rider-1');
+      expect(acc.riderId, 'rider-1');
+      expect(acc.cashHeld, 430.5);
+    });
+
+    test('falls back to the legacy rupee field for an account written '
+        'before the DLV-M1 migration', () {
+      final acc = RiderCashAccountRecord.fromMap({'cashHeld': 120.5}, 'rider-2');
+      expect(acc.cashHeld, 120.5);
+    });
+
+    test('an account that has never held cash reads as a real zero, not '
+        'an error', () {
+      final acc = RiderCashAccountRecord.fromMap(const {}, 'rider-3');
+      expect(acc.cashHeld, 0.0);
+    });
+  });
 }
