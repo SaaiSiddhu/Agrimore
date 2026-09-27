@@ -65,6 +65,11 @@ class OrderProvider with ChangeNotifier {
   List<RiderSupportTicketRecord> _selectedOrderSupportTickets = [];
   bool _isLoadingSupportTickets = false;
   String? _supportTicketsError;
+  // ADMR-30: seller settlement rows for the selected order — its own
+  // independent loading/error state, same reasoning as dispatch offers.
+  List<SellerPayoutRecord> _selectedOrderSellerPayouts = [];
+  bool _isLoadingSellerPayouts = false;
+  String? _sellerPayoutsError;
   bool _isLoading = false;
   bool _isLoadingTimeline = false;
   String? _error;
@@ -88,6 +93,9 @@ class OrderProvider with ChangeNotifier {
   List<RiderSupportTicketRecord> get selectedOrderSupportTickets => _selectedOrderSupportTickets;
   bool get isLoadingSupportTickets => _isLoadingSupportTickets;
   String? get supportTicketsError => _supportTicketsError;
+  List<SellerPayoutRecord> get selectedOrderSellerPayouts => _selectedOrderSellerPayouts;
+  bool get isLoadingSellerPayouts => _isLoadingSellerPayouts;
+  String? get sellerPayoutsError => _sellerPayoutsError;
   bool get isLoading => _isLoading;
   bool get isLoadingTimeline => _isLoadingTimeline;
   String? get error => _error;
@@ -167,6 +175,7 @@ class OrderProvider with ChangeNotifier {
         await _loadRiderEarning(orderId);
         await _loadCommissionExceptions(orderId);
         await _loadRelatedSupportTickets(orderId);
+        await _loadSellerPayouts(orderId);
         debugPrint('✅ Order loaded');
       } else {
         _error = '❌ Order not found';
@@ -357,6 +366,40 @@ class OrderProvider with ChangeNotifier {
       debugPrint('❌ Error loading related support tickets: $e');
       _supportTicketsError = e.toString();
       _isLoadingSupportTickets = false;
+      notifyListeners();
+    }
+  }
+
+  // ============================================
+  // LOAD SELLER SETTLEMENT (ADMR-30)
+  // ============================================
+  // seller_payouts filtered by orderId (single equality field, no
+  // composite index needed) — functions/src/customer/sellerNotifications.ts
+  // writes one per distinct seller among the order's items on delivery; a
+  // genuinely multi-vendor order can produce more than one row, so this is
+  // always a list, never a single-doc get.
+  Future<void> _loadSellerPayouts(String orderId) async {
+    try {
+      _isLoadingSellerPayouts = true;
+      _sellerPayoutsError = null;
+      notifyListeners();
+
+      final query = await _firestore
+          .collection('seller_payouts')
+          .where('orderId', isEqualTo: orderId)
+          .get();
+
+      _selectedOrderSellerPayouts = query.docs
+          .map((doc) => SellerPayoutRecord.fromMap(doc.data(), doc.id))
+          .toList();
+      debugPrint('✅ Loaded ${_selectedOrderSellerPayouts.length} seller payouts');
+
+      _isLoadingSellerPayouts = false;
+      notifyListeners();
+    } catch (e) {
+      debugPrint('❌ Error loading seller payouts: $e');
+      _sellerPayoutsError = e.toString();
+      _isLoadingSellerPayouts = false;
       notifyListeners();
     }
   }
@@ -684,6 +727,7 @@ class OrderProvider with ChangeNotifier {
     _selectedOrderRiderEarning = null;
     _selectedOrderCommissionExceptions.clear();
     _selectedOrderSupportTickets.clear();
+    _selectedOrderSellerPayouts.clear();
     notifyListeners();
   }
 
@@ -705,6 +749,7 @@ class OrderProvider with ChangeNotifier {
     _selectedOrderRiderEarning = null;
     _selectedOrderCommissionExceptions.clear();
     _selectedOrderSupportTickets.clear();
+    _selectedOrderSellerPayouts.clear();
     super.dispose();
   }
 }

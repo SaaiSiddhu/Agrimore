@@ -22,6 +22,7 @@ export 'models/dispatch_offer_model.dart';
 export 'models/rider_earning_model.dart';
 export 'models/rider_support_ticket_model.dart';
 export 'models/commission_exception_model.dart';
+export 'models/seller_payout_model.dart';
 export 'models/delivery_partner_model.dart';
 export 'models/delivery/delivery_task_status.dart';
 export 'models/delivery/delivery_enums.dart';
