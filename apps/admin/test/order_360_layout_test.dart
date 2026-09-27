@@ -558,6 +558,33 @@ void main() {
     });
   });
 
+  // ADMR-39 additions below: riderExceptions.ts's attachProofCore already
+  // writes these three fields (already covered server-side by
+  // phaseDLVE1_exceptions_test.js) — this only proves the client's own
+  // round-trip of them, since nothing read them before this phase.
+  group('OrderModel delivery-proof fields (ADMR-39)', () {
+    test('round-trip through toMap/fromMap preserves all three fields', () {
+      final attachedAt = DateTime(2026, 9, 27, 19, 30);
+      final original = _order(deliveredAt: DateTime(2026, 9, 27)).copyWith(
+        deliveryProofPath: 'delivery_proofs/order1_proof',
+        deliveryProofAttachedAt: attachedAt,
+        deliveryProofAttachedBy: 'rider-uid-1',
+      );
+      final restored = OrderModel.fromMap(original.toMap(), original.id);
+      expect(restored.deliveryProofPath, 'delivery_proofs/order1_proof');
+      expect(restored.deliveryProofAttachedBy, 'rider-uid-1');
+      expect(restored.deliveryProofAttachedAt, isNotNull);
+      expect(restored.deliveryProofAttachedAt!.difference(attachedAt).inSeconds.abs(), lessThan(2));
+    });
+
+    test('an order with no proof attached leaves all three fields null', () {
+      final restored = OrderModel.fromMap(_order().toMap(), 'order1');
+      expect(restored.deliveryProofPath, isNull);
+      expect(restored.deliveryProofAttachedAt, isNull);
+      expect(restored.deliveryProofAttachedBy, isNull);
+    });
+  });
+
   group('RiderCashAccountRecord.fromMap', () {
     test('reads the authoritative paise field when present (DLV-M1: whole '
         'paise, no float drift)', () {

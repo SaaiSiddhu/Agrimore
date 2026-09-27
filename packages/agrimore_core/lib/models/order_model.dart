@@ -76,6 +76,13 @@ class OrderModel {
   final String? codCollectedBy;
   final DateTime? codCollectedAt;
 
+  // ADMR-39: riderExceptions.ts's own real, already-live attachProofCore
+  // fields — added purely additively so the order details screen can show
+  // the delivery-proof photo it already writes but no client ever read.
+  final String? deliveryProofPath;
+  final DateTime? deliveryProofAttachedAt;
+  final String? deliveryProofAttachedBy;
+
   // ADMR-37: restoreStockOnCancellation.ts's/confirmOrderReturnReceived.ts's
   // own real, already-live fields — added purely additively so the order
   // details screen can show honestly whether a delivered→cancelled order's
@@ -143,6 +150,9 @@ class OrderModel {
     this.codSettlementStatus,
     this.codCollectedBy,
     this.codCollectedAt,
+    this.deliveryProofPath,
+    this.deliveryProofAttachedAt,
+    this.deliveryProofAttachedBy,
     this.stockRestored,
     this.stockRestorePending,
     this.commissionPaid,
@@ -339,6 +349,11 @@ class OrderModel {
         codCollectedAt: map['codCollectedAt'] != null
             ? _parseDateTime(map['codCollectedAt'])
             : null,
+        deliveryProofPath: map['deliveryProofPath'] as String?,
+        deliveryProofAttachedAt: map['deliveryProofAttachedAt'] != null
+            ? _parseDateTime(map['deliveryProofAttachedAt'])
+            : null,
+        deliveryProofAttachedBy: map['deliveryProofAttachedBy'] as String?,
         stockRestored: map['stockRestored'] as bool?,
         stockRestorePending: map['stockRestorePending'] as bool?,
         commissionPaid: map['commissionPaid'] as bool?,
@@ -421,6 +436,11 @@ class OrderModel {
       'codCollectedBy': codCollectedBy,
       'codCollectedAt':
           codCollectedAt != null ? Timestamp.fromDate(codCollectedAt!) : null,
+      'deliveryProofPath': deliveryProofPath,
+      'deliveryProofAttachedAt': deliveryProofAttachedAt != null
+          ? Timestamp.fromDate(deliveryProofAttachedAt!)
+          : null,
+      'deliveryProofAttachedBy': deliveryProofAttachedBy,
       'stockRestored': stockRestored,
       'stockRestorePending': stockRestorePending,
       'commissionPaid': commissionPaid,
@@ -556,6 +576,9 @@ class OrderModel {
     String? codSettlementStatus,
     String? codCollectedBy,
     DateTime? codCollectedAt,
+    String? deliveryProofPath,
+    DateTime? deliveryProofAttachedAt,
+    String? deliveryProofAttachedBy,
     bool? stockRestored,
     bool? stockRestorePending,
     bool? commissionPaid,
@@ -616,6 +639,9 @@ class OrderModel {
       codSettlementStatus: codSettlementStatus ?? this.codSettlementStatus,
       codCollectedBy: codCollectedBy ?? this.codCollectedBy,
       codCollectedAt: codCollectedAt ?? this.codCollectedAt,
+      deliveryProofPath: deliveryProofPath ?? this.deliveryProofPath,
+      deliveryProofAttachedAt: deliveryProofAttachedAt ?? this.deliveryProofAttachedAt,
+      deliveryProofAttachedBy: deliveryProofAttachedBy ?? this.deliveryProofAttachedBy,
       stockRestored: stockRestored ?? this.stockRestored,
       stockRestorePending: stockRestorePending ?? this.stockRestorePending,
       commissionPaid: commissionPaid ?? this.commissionPaid,

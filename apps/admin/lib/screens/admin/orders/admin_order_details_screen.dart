@@ -9,6 +9,7 @@ import 'package:go_router/go_router.dart';
 import 'package:intl/intl.dart';
 import 'package:timeline_tile/timeline_tile.dart';
 import 'package:url_launcher/url_launcher.dart';
+import 'package:firebase_storage/firebase_storage.dart';
 import 'package:flutter_animate/flutter_animate.dart';
 import 'package:font_awesome_flutter/font_awesome_flutter.dart';
 import 'package:pdf/widgets.dart' as pw;
@@ -464,6 +465,12 @@ class _AdminOrderDetailsScreenState extends State<AdminOrderDetailsScreen> {
               'Confirmed via ${order.deliveryConfirmedVia == 'confirmDelivery' ? "customer's delivery code" : order.deliveryConfirmedVia}',
               style: TextStyle(color: Colors.grey.shade600, fontSize: 12),
             ),
+          ],
+          // ADMR-39: riderExceptions.ts's attachProofCore already writes
+          // this photo's path — no client ever read it until now.
+          if (order.deliveryProofPath != null) ...[
+            const SizedBox(height: 10),
+            _DeliveryProofTile(order: order),
           ],
           const SizedBox(height: 12),
           Container(
@@ -2552,5 +2559,106 @@ class _AdminOrderDetailsScreenState extends State<AdminOrderDetailsScreen> {
     } finally {
       setState(() => _loadingInvoice = false);
     }
+  }
+}
+
+/// ADMR-39: resolves the delivery-proof Storage PATH riderExceptions.ts's
+/// attachProofCore writes into a short-lived download URL, only when
+/// shown — mirrors rider_review_sheet.dart's own `_KycTile` pattern
+/// exactly (the established way this app already handles a stored
+/// Storage path that needs admin's own read permission to resolve).
+class _DeliveryProofTile extends StatefulWidget {
+  const _DeliveryProofTile({required this.order});
+  final OrderModel order;
+
+  @override
+  State<_DeliveryProofTile> createState() => _DeliveryProofTileState();
+}
+
+class _DeliveryProofTileState extends State<_DeliveryProofTile> {
+  late final Future<String> _url = _resolve();
+
+  Future<String> _resolve() async {
+    final path = widget.order.deliveryProofPath;
+    if (path == null) return '';
+    try {
+      return await FirebaseStorage.instance.ref(path).getDownloadURL();
+    } catch (e) {
+      debugPrint('Delivery proof unavailable: $e');
+      return '';
+    }
+  }
+
+  Future<void> _open(String url) async {
+    await launchUrl(Uri.parse(url), mode: LaunchMode.externalApplication);
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    final order = widget.order;
+    return FutureBuilder<String>(
+      future: _url,
+      builder: (context, snap) {
+        final loading = snap.connectionState != ConnectionState.done;
+        final url = snap.data ?? '';
+        return InkWell(
+          onTap: url.isEmpty ? null : () => _open(url),
+          borderRadius: BorderRadius.circular(10),
+          child: Row(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              ClipRRect(
+                borderRadius: BorderRadius.circular(10),
+                child: Container(
+                  width: 64,
+                  height: 64,
+                  color: Colors.grey.shade100,
+                  child: loading
+                      ? const Center(
+                          child: SizedBox(
+                            width: 16,
+                            height: 16,
+                            child: CircularProgressIndicator(strokeWidth: 2),
+                          ),
+                        )
+                      : url.isEmpty
+                          ? Center(child: Icon(Icons.image_not_supported_outlined, color: Colors.grey.shade400, size: 20))
+                          : Image.network(
+                              url,
+                              fit: BoxFit.cover,
+                              errorBuilder: (_, __, ___) => Center(
+                                child: Icon(Icons.broken_image_outlined, color: Colors.grey.shade400, size: 20),
+                              ),
+                            ),
+                ),
+              ),
+              const SizedBox(width: 10),
+              Expanded(
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Text('Delivery proof photo',
+                        style: TextStyle(fontWeight: FontWeight.w700, fontSize: 12, color: Colors.grey.shade800)),
+                    if (order.deliveryProofAttachedAt != null) ...[
+                      const SizedBox(height: 2),
+                      Text(
+                        'Attached ${DateFormat('MMM d, yyyy • hh:mm a').format(order.deliveryProofAttachedAt!)}'
+                        '${order.deliveryProofAttachedBy != null ? ' by rider ${order.deliveryProofAttachedBy!.length > 8 ? order.deliveryProofAttachedBy!.substring(0, 8) : order.deliveryProofAttachedBy}' : ''}',
+                        style: TextStyle(color: Colors.grey.shade500, fontSize: 11),
+                      ),
+                    ],
+                    if (!loading && url.isNotEmpty) ...[
+                      const SizedBox(height: 2),
+                      const Text('Tap to view full size',
+                          style: TextStyle(color: AdminColors.primary, fontSize: 11, fontWeight: FontWeight.w600)),
+                    ],
+                  ],
+                ),
+              ),
+            ],
+          ),
+        );
+      },
+    );
   }
 }
