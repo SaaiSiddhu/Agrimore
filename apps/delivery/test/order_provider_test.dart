@@ -18,7 +18,12 @@ void main() {
   late Map<String, StreamController<ActiveSnapshot>> streams;
   late List<String> subscribed;
   late List<(String, DateTime)> counts;
-  late Map<String, Completer<int>> countAnswers;
+  // DLVDASH2: bind()/retry() now fire BOTH a today- and a week-since count
+  // request per rider, back to back with no scheduling boundary between them
+  // — a single "last completer wins" slot can no longer address the first
+  // (today) request once the second (week) request overwrites it, so this
+  // keeps every completer for a rider in call order instead.
+  late Map<String, List<Completer<int>>> countAnswers;
 
   DeliveryOrderProvider make({HistoryFetch? history, DateTime? now}) => DeliveryOrderProvider(
         activeSource: (rider) {
@@ -27,7 +32,9 @@ void main() {
         },
         deliveredCount: (rider, since) {
           counts.add((rider, since));
-          return (countAnswers[rider] = Completer<int>()).future;
+          final c = Completer<int>();
+          (countAnswers[rider] ??= []).add(c);
+          return c.future;
         },
         historyFetch: history,
         clock: () => now ?? DateTime(2026, 9, 24, 15, 30),
@@ -62,7 +69,7 @@ void main() {
   test('account switch: rider A\'s late snapshot and count never reach rider B', () async {
     final p = make()..bind('rA');
     final aStream = streams['rA']!;
-    final aCount = countAnswers['rA']!;
+    final aCount = countAnswers['rA']!.first;
     p.bind('rB');
     aStream.add((docs: [active('secretA', 'rA')], fromCache: false));
     aCount.complete(7);
@@ -115,15 +122,24 @@ void main() {
 
   test('today counts from local midnight and refreshes when an order leaves active work', () async {
     final p = make(now: DateTime(2026, 9, 24, 15, 30))..bind('r1');
-    expect(counts.single, ('r1', DateTime(2026, 9, 24)));
-    countAnswers['r1']!.complete(3);
+    expect(counts, [('r1', DateTime(2026, 9, 24)), ('r1', DateTime(2026, 9, 21))],
+        reason: 'today (local midnight) then this week (the Monday on or before now)');
+    countAnswers['r1']![0].complete(3);
     await pumpEventQueue();
     expect(p.todayDelivered, 3);
     streams['r1']!.add((docs: [active('o1', 'r1')], fromCache: false));
     await pumpEventQueue();
     streams['r1']!.add((docs: [], fromCache: false));
     await pumpEventQueue();
-    expect(counts, hasLength(2), reason: 'o1 left active work — maybe delivered');
+    expect(counts, hasLength(4), reason: 'o1 left active work — maybe delivered: today AND week each refresh again');
+  });
+
+  test('this week counts from the Monday on or before now', () async {
+    final p = make(now: DateTime(2026, 9, 24, 15, 30))..bind('r1');
+    countAnswers['r1']![1].complete(11);
+    await pumpEventQueue();
+    expect(p.weekDelivered, 11);
+    expect(p.todayDelivered, isNull, reason: 'only the week completer was resolved');
   });
 
   group('history', () {

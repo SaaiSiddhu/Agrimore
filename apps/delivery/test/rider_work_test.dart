@@ -50,4 +50,15 @@ void main() {
     expect(startOfLocalDay(DateTime(2026, 9, 24, 23, 59)), DateTime(2026, 9, 24));
     expect(startOfLocalDay(DateTime(2026, 9, 25, 0, 0, 1)), DateTime(2026, 9, 25));
   });
+
+  test('DLVDASH2: this week starts at the Monday on or before now, never a Sunday-start week', () {
+    // Sep 24 2026 is a Thursday; Sep 21 2026 is the Monday of that same week.
+    expect(startOfLocalWeek(DateTime(2026, 9, 24, 15, 30)), DateTime(2026, 9, 21));
+    // Monday itself: the week already started today.
+    expect(startOfLocalWeek(DateTime(2026, 9, 21, 0, 0, 1)), DateTime(2026, 9, 21));
+    // Sunday: the LAST day of the week that started the PRECEDING Monday,
+    // not the first day of a new one -- a naive Sunday-start week would
+    // wrongly return Sep 27 here instead of Sep 21.
+    expect(startOfLocalWeek(DateTime(2026, 9, 27, 23, 59)), DateTime(2026, 9, 21));
+  });
 }

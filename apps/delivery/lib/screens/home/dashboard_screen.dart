@@ -66,9 +66,13 @@ class DashboardScreen extends StatefulWidget {
   State<DashboardScreen> createState() => _DashboardScreenState();
 }
 
+/// DLVDASH2: which period the earnings card's own toggle shows.
+enum _EarningsPeriod { today, week }
+
 class _DashboardScreenState extends State<DashboardScreen> {
   late final RiderInboxSource _inbox = widget.inboxSource ?? FirestoreRiderInbox();
   bool _isOnline = false;
+  _EarningsPeriod _earningsPeriod = _EarningsPeriod.today;
 
   @override
   void initState() {
@@ -365,52 +369,10 @@ class _DashboardScreenState extends State<DashboardScreen> {
           _buildEarningsCard(),
           const SizedBox(height: DeliverySpace.xl),
           _moneyStats(
-            (week, today, cash) => Consumer<DeliveryOrderProvider>(
-              builder: (context, orderProvider, _) => Column(
-                children: [
-                  Row(
-                    children: [
-                      Expanded(
-                        child: _StatCard(
-                          label: l.dashStatToday,
-                          value: orderProvider.todayDelivered?.toString() ??
-                              l.todayDeliveredUnknown,
-                          icon: DeliveryIcons.invoice,
-                        ),
-                      ),
-                      const SizedBox(width: DeliverySpace.md),
-                      Expanded(
-                        child: _StatCard(
-                          label: l.dashStatWeek,
-                          value: week,
-                          icon: DeliveryIcons.calendar,
-                        ),
-                      ),
-                    ],
-                  ),
-                  const SizedBox(height: DeliverySpace.md),
-                  Row(
-                    children: [
-                      Expanded(
-                        child: _StatCard(
-                          label: l.dashStatEarnedToday,
-                          value: today,
-                          icon: DeliveryIcons.wallet,
-                          highlight: true,
-                        ),
-                      ),
-                      const SizedBox(width: DeliverySpace.md),
-                      Expanded(
-                        child: _StatCard(
-                          label: l.dashStatCash,
-                          value: cash,
-                          icon: DeliveryIcons.rupee,
-                        ),
-                      ),
-                    ],
-                  ),
-                ],
-              ),
+            (_, __, cash) => _StatCard(
+              label: l.dashStatCash,
+              value: cash,
+              icon: DeliveryIcons.rupee,
             ),
           ),
           const SizedBox(height: DeliverySpace.md),
@@ -532,43 +494,75 @@ class _DashboardScreenState extends State<DashboardScreen> {
     final t = context.text;
     final on = c.onBrand;
     return _moneyStats(
-      (week, today, _) => Material(
-        color: c.brand,
-        borderRadius: DeliveryRadius.rMd,
-        child: InkWell(
-          onTap: _openMoney,
-          borderRadius: DeliveryRadius.rMd,
-          child: Padding(
-            padding: const EdgeInsets.all(DeliverySpace.lg),
-            child: Row(
-              children: [
-                Icon(DeliveryIcons.rupee, color: on, size: DeliveryIconSize.xl),
-                const SizedBox(width: DeliverySpace.lg),
-                Expanded(
-                  child: Column(
-                    crossAxisAlignment: CrossAxisAlignment.start,
-                    children: [
-                      Text(
-                        l.dashEarnedWeek,
-                        style: t.labelMedium.copyWith(color: on),
-                      ),
-                      const SizedBox(height: DeliverySpace.xxs),
-                      Text(
-                        week,
-                        style: t.headlineSmall.copyWith(color: on),
-                      ),
-                      Text(
-                        l.dashEarnedTodayLine(today),
-                        style: t.bodySmall.copyWith(color: on),
-                      ),
-                    ],
+      (week, today, _) => Consumer<DeliveryOrderProvider>(
+        builder: (context, orderProvider, _) {
+          final amount = _earningsPeriod == _EarningsPeriod.today ? today : week;
+          final count = _earningsPeriod == _EarningsPeriod.today
+              ? orderProvider.todayDelivered
+              : orderProvider.weekDelivered;
+          final completedText =
+              count == null ? l.todayDeliveredUnknown : l.dashCompletedDeliveries(count);
+          return Column(
+            crossAxisAlignment: CrossAxisAlignment.stretch,
+            children: [
+              DeliverySegmented<_EarningsPeriod>(
+                selected: _earningsPeriod,
+                onSelected: (p) => setState(() => _earningsPeriod = p),
+                items: [
+                  DeliveryChipItem(
+                    value: _EarningsPeriod.today,
+                    label: l.dashStatToday,
+                    key: const ValueKey('earnings-period-today'),
+                  ),
+                  DeliveryChipItem(
+                    value: _EarningsPeriod.week,
+                    label: l.dashStatWeek,
+                    key: const ValueKey('earnings-period-week'),
+                  ),
+                ],
+              ),
+              const SizedBox(height: DeliverySpace.sm),
+              Material(
+                color: c.brand,
+                borderRadius: DeliveryRadius.rMd,
+                child: InkWell(
+                  onTap: _openMoney,
+                  borderRadius: DeliveryRadius.rMd,
+                  child: Padding(
+                    padding: const EdgeInsets.all(DeliverySpace.lg),
+                    child: Row(
+                      children: [
+                        Icon(DeliveryIcons.rupee, color: on, size: DeliveryIconSize.xl),
+                        const SizedBox(width: DeliverySpace.lg),
+                        Expanded(
+                          child: Column(
+                            crossAxisAlignment: CrossAxisAlignment.start,
+                            children: [
+                              Text(
+                                l.dashEarnedLabel,
+                                style: t.labelMedium.copyWith(color: on),
+                              ),
+                              const SizedBox(height: DeliverySpace.xxs),
+                              Text(
+                                amount,
+                                style: t.headlineSmall.copyWith(color: on),
+                              ),
+                              Text(
+                                completedText,
+                                style: t.bodySmall.copyWith(color: on),
+                              ),
+                            ],
+                          ),
+                        ),
+                        Icon(DeliveryIcons.chevronRight, color: on),
+                      ],
+                    ),
                   ),
                 ),
-                Icon(DeliveryIcons.chevronRight, color: on),
-              ],
-            ),
-          ),
-        ),
+              ),
+            ],
+          );
+        },
       ),
     );
   }
@@ -674,36 +668,29 @@ class _StatCard extends StatelessWidget {
     required this.label,
     required this.value,
     required this.icon,
-    this.highlight = false,
   });
   final String label;
   final String value;
   final IconData icon;
-  final bool highlight;
 
   @override
   Widget build(BuildContext context) {
     final c = context.colors;
     final t = context.text;
     return DeliveryCard(
-      variant: highlight
-          ? DeliveryCardVariant.brand
-          : DeliveryCardVariant.standard,
       padding: const EdgeInsets.all(DeliverySpace.lg),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
           Icon(
             icon,
-            color: highlight ? c.brand : c.textSecondary,
+            color: c.textSecondary,
             size: DeliveryIconSize.md,
           ),
           const SizedBox(height: DeliverySpace.md),
           Text(
             value,
-            style: t.titleLarge.copyWith(
-              color: highlight ? c.brand : c.textPrimary,
-            ),
+            style: t.titleLarge.copyWith(color: c.textPrimary),
           ),
           Text(
             label,
