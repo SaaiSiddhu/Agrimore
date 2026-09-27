@@ -76,4 +76,31 @@ void main() {
       expect(isLowStock(_product(stock: 1, isActive: false)), isFalse);
     });
   });
+
+  group('isOutOfStock (ADMR-32)', () {
+    test('a healthy base stock, no variants, is not out of stock', () {
+      expect(isOutOfStock(_product(stock: 20)), isFalse);
+    });
+
+    test('zero base stock, no variants, is out of stock', () {
+      expect(isOutOfStock(_product(stock: 0)), isTrue);
+    });
+
+    test('empty base but a variant still has stock is NOT out of stock — '
+        'sellable via that variant', () {
+      final p = _product(stock: 0, variants: [_variant(stock: 5)]);
+      expect(isOutOfStock(p), isFalse);
+    });
+
+    test('empty base and every variant also empty IS out of stock', () {
+      final p = _product(stock: 0, variants: [_variant(stock: 0), _variant(stock: 0)]);
+      expect(isOutOfStock(p), isTrue);
+    });
+
+    test('a healthy base with an empty variant is not out of stock — '
+        'mirrors isLowStock\'s own base-OR-variant semantics', () {
+      final p = _product(stock: 50, variants: [_variant(stock: 0)]);
+      expect(isOutOfStock(p), isFalse);
+    });
+  });
 }

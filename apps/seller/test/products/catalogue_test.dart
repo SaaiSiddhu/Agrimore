@@ -5,6 +5,7 @@ import 'package:flutter_test/flutter_test.dart';
 import 'package:seller/design_system/design_system.dart';
 import 'package:seller/l10n/app_localizations.dart';
 import 'package:seller/providers/seller_product_provider.dart';
+import 'package:seller/screens/products/seller_products_screen.dart';
 import 'package:seller/screens/products/widgets/product_tax_section.dart';
 
 /// SELLER-CATALOGUE-1: listing tabs, tax fields and draft semantics.
@@ -106,6 +107,47 @@ void main() {
     test('an inactive product with a low variant is still not low stock', () {
       final p = _p(stock: 50, isActive: false, variants: [_variant('v1', 2)]);
       expect(m(p, ProductListFilter.lowStock), isFalse);
+    });
+
+    // ADMR-32: the symmetric out-of-stock gap — active/outOfStock previously
+    // read only the base `stock` field too, so a product sellable purely via
+    // a variant (base at 0) was wrongly filed as Out of Stock, not Active.
+    test('Active when the base is empty but a variant still has stock', () {
+      final p = _p(stock: 0, variants: [_variant('v1', 5)]);
+      expect(m(p, ProductListFilter.active), isTrue);
+      expect(m(p, ProductListFilter.outOfStock), isFalse);
+    });
+    test('Out of Stock only when the base AND every variant are empty', () {
+      final p = _p(stock: 0, variants: [_variant('v1', 0), _variant('v2', 0)]);
+      expect(m(p, ProductListFilter.outOfStock), isTrue);
+      expect(m(p, ProductListFilter.active), isFalse);
+    });
+    test('a healthy base with an empty variant is still Active (mirrors the low-stock case above)', () {
+      final p = _p(stock: 50, variants: [_variant('v1', 0)]);
+      expect(m(p, ProductListFilter.active), isTrue);
+      expect(m(p, ProductListFilter.outOfStock), isFalse);
+    });
+  });
+
+  group('productStockBadge (ADMR-32)', () {
+    late AppLocalizations l10n;
+    setUpAll(() async {
+      l10n = await AppLocalizations.delegate.load(const Locale('en'));
+    });
+
+    SellerTone tone(ProductModel p) => (productStockBadge(l10n, p) as SellerStatusBadge).tone;
+
+    test('a product sellable only via a variant (base empty) is not danger-toned', () {
+      final p = _p(stock: 0, variants: [_variant('v1', 40)]);
+      expect(tone(p), isNot(SellerTone.danger));
+    });
+    test('a product truly out of stock everywhere is danger-toned', () {
+      final p = _p(stock: 0, variants: [_variant('v1', 0)]);
+      expect(tone(p), SellerTone.danger);
+    });
+    test('a healthy base with a low variant is warning-toned, not success', () {
+      final p = _p(stock: 50, variants: [_variant('v1', 2)]);
+      expect(tone(p), SellerTone.warning);
     });
   });
 

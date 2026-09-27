@@ -11,14 +11,21 @@ import '../home/add_product_screen.dart';
 import '../posts/create_post_screen.dart';
 import 'widgets/product_list_controls.dart';
 
-/// Stock levels (SellerProductProvider.lowStockProducts uses the same line).
-const int kLowStockLine = 10;
-
 /// Stock badge: "25 in stock" · "Only 3 left" · "Out of stock" — text, icon
 /// and tone (board 12).
+///
+/// ADMR-32: classification now goes through the shared, variant-aware
+/// isOutOfStock/isLowStock (this file previously reimplemented its own,
+/// FOURTH independent copy of the base-only threshold check, via a local
+/// kLowStockLine that a stale comment claimed — inaccurately — already
+/// matched the provider's shared logic). The displayed NUMBER still reads
+/// the base stock only; for a product whose classification is now driven
+/// by a variant instead, the label may show a healthier base count than
+/// the tone implies — a separate, disclosed display question, not fixed
+/// here.
 Widget productStockBadge(AppLocalizations l10n, ProductModel p) {
-  if (p.stock <= 0) return SellerStatusBadge(label: l10n.productOutOfStock, tone: SellerTone.danger, icon: SellerIcons.cancelled);
-  if (p.stock < kLowStockLine) {
+  if (isOutOfStock(p)) return SellerStatusBadge(label: l10n.productOutOfStock, tone: SellerTone.danger, icon: SellerIcons.cancelled);
+  if (isLowStock(p)) {
     return SellerStatusBadge(label: l10n.productLowStock(SellerFormat.count(p.stock)), tone: SellerTone.warning, icon: SellerIcons.warning);
   }
   return SellerStatusBadge(label: l10n.searchStock(SellerFormat.count(p.stock)), tone: SellerTone.success, icon: SellerIcons.success);
