@@ -11,6 +11,7 @@ import '../home_sections/home_product_section_management_screen.dart';
 import 'home_grocery_strip_settings_screen.dart';
 import 'home_section_order_settings_screen.dart';
 import '../security/payment_security_logs_screen.dart';
+import '../security/verified_payment_lookup_screen.dart';
 
 // ADMR-46: these controls used to claim effects that do not exist anywhere
 // in the system (an enforced maintenance mode, a saved payment/shipping
@@ -326,6 +327,20 @@ class _AdminSettingsScreenState extends State<AdminSettingsScreen> {
                     context,
                     MaterialPageRoute(
                       builder: (_) => PaymentSecurityLogsScreen(),
+                    ),
+                  );
+                },
+              ),
+              _buildNavigationTile(
+                icon: Icons.receipt_long_rounded,
+                title: 'Verified Payment Lookup',
+                subtitle: 'Look up a Razorpay payment by ID',
+                color: const Color(0xFF0EA5E9),
+                onTap: () {
+                  Navigator.push(
+                    context,
+                    MaterialPageRoute(
+                      builder: (_) => VerifiedPaymentLookupScreen(),
                     ),
                   );
                 },
