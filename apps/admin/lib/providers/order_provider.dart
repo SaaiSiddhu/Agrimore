@@ -178,6 +178,11 @@ class OrderProvider with ChangeNotifier {
   // ============================================
   // GETTERS
   // ============================================
+  // ADMR-51: read-only visibility of the already-injected instance (since
+  // ADMR-48), so a caller that embeds another Firebase-touching widget
+  // (DeliveryFlagsCard) can hand it the SAME instance rather than that
+  // widget falling back to the real FirebaseFirestore.instance regardless.
+  FirebaseFirestore get firestore => _firestore;
   List<OrderModel> get orders => _orders;
   OrderModel? get selectedOrder => _selectedOrder;
   List<OrderTimelineModel> get selectedOrderTimeline => _selectedOrderTimeline;

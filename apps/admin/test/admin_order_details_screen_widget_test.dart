@@ -1,28 +1,24 @@
-// ADMR-50 — closes part of the disclosed Order 360 widget-test gap.
+// ADMR-50/51 — closes the disclosed Order 360 widget-test gap.
 //
 // order_360_layout_test.dart's own header comment documented this exact,
 // long-standing constraint: "admin_order_details_screen.dart's own
 // StatefulWidget cannot be constructed here at all outside a real Firebase
 // app... this file proves [pure functions], not the widget tree." ADMR-48
-// already made OrderProvider's _firestore injectable and removed its two
-// dead DatabaseService/AuthService fields; a fresh grep confirms
-// loadOrderById and all 9 of its own sub-loaders reach Firebase through
-// _firestore alone, with no other dependency.
+// made OrderProvider's _firestore injectable and removed its two dead
+// DatabaseService/AuthService fields; a fresh grep confirmed loadOrderById
+// and all 9 of its own sub-loaders reach Firebase through _firestore
+// alone, with no other dependency.
 //
-// A genuinely full widget-level render of a FOUND order is still blocked —
-// but by a separate, newly-discovered constraint, not the one ADMR-48
-// closed: DeliveryFlagsCard (admin/lib/screens/admin/delivery/
-// delivery_flags.dart), embedded unconditionally in this screen's main
-// column, reads FirebaseFirestore.instance directly in its own build()
-// when its own optional `data` parameter isn't supplied — a completely
-// separate Firebase touchpoint from OrderProvider, out of this phase's own
-// claimed scope (must_not_touch admin_order_details_screen.dart /
-// delivery_flags.dart). Disclosed, not silently worked around: this file
-// proves what's actually achievable within that scope — a real widget test
-// for the "order not found" path (which returns before ever building
-// DeliveryFlagsCard), and a real provider-level integration test proving
-// the FULL loadOrderById chain — the actual data pipeline, not the pixels
-// — works end to end against a seeded fake Firestore for a found order.
+// ADMR-50 found one more, separate blocker on the happy path: DeliveryFlagsCard
+// (admin/lib/screens/admin/delivery/delivery_flags.dart), embedded
+// unconditionally in this screen's main column, read FirebaseFirestore.instance
+// directly in its own build() whenever its own optional `data` parameter
+// wasn't supplied — independent of OrderProvider entirely. ADMR-51 closed
+// that: DeliveryFlagsCard now also takes an injectable firestore, exposed
+// from OrderProvider via a new `firestore` getter and threaded through
+// admin_order_details_screen.dart's own call site. This file now covers
+// both the not-found path and a full, genuinely pixel-level render of a
+// found order — the actual data pipeline AND the actual widget tree.
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:fake_cloud_firestore/fake_cloud_firestore.dart';
 import 'package:flutter/material.dart';
@@ -33,6 +29,49 @@ import 'package:agrimore_admin/providers/order_provider.dart';
 import 'package:agrimore_admin/screens/admin/orders/admin_order_details_screen.dart';
 
 void main() {
+  testWidgets(
+    'AdminOrderDetailsScreen: a seeded order renders through the real provider/9-loader-chain/widget pipeline, including DeliveryFlagsCard',
+    (tester) async {
+      final firestore = FakeFirebaseFirestore();
+      final doc = await firestore.collection('orders').add({
+        'orderNumber': 'ORD-9101',
+        'orderStatus': 'processing',
+        'total': 750.0,
+        'subtotal': 750.0,
+        'paymentMethod': 'cod',
+        'items': <Map<String, dynamic>>[],
+        'deliveryAddress': {
+          'name': 'Arun Kumar',
+          'phone': '9988776655',
+          'addressLine1': '9 Mount Road',
+          'addressLine2': '',
+          'city': 'Chennai',
+          'state': 'Tamil Nadu',
+          'zipcode': '600006',
+        },
+        'createdAt': Timestamp.fromDate(DateTime(2026, 9, 10)),
+      });
+
+      await tester.pumpWidget(
+        MaterialApp(
+          home: ChangeNotifierProvider<OrderProvider>(
+            create: (_) => OrderProvider(firestore: firestore),
+            child: AdminOrderDetailsScreen(orderId: doc.id),
+          ),
+        ),
+      );
+      await tester.pumpAndSettle();
+
+      expect(find.text('Order #ORD-9101'), findsOneWidget);
+      expect(find.text('Order not found'), findsNothing);
+      // DeliveryFlagsCard renders nothing for an order with no
+      // deliveryStepChecks (SizedBox.shrink) — the point of this
+      // assertion is that the screen finished building at all, with no
+      // FirebaseException from that embedded widget.
+      expect(tester.takeException(), isNull);
+    },
+  );
+
   testWidgets(
     'AdminOrderDetailsScreen: a genuinely absent order id renders the existing empty state, not a crash',
     (tester) async {

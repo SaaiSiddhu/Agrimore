@@ -82,18 +82,27 @@ String distanceText(int? meters) {
 /// The step-by-step record, flagged steps first-class. Renders nothing for an
 /// order the new rider app never touched.
 class DeliveryFlagsCard extends StatelessWidget {
-  const DeliveryFlagsCard({super.key, required this.orderId, this.data});
+  // ADMR-51: an injectable Firestore instance, same pattern ADMR-48/49
+  // established -- defaults to the real FirebaseFirestore.instance exactly
+  // as the old field initializer did (zero behavior change for the one
+  // real caller, admin_order_details_screen.dart), overridable in tests so
+  // this widget no longer blocks a full happy-path render of the screen it
+  // is embedded in.
+  DeliveryFlagsCard({super.key, required this.orderId, this.data, FirebaseFirestore? firestore})
+      : _firestore = firestore ?? FirebaseFirestore.instance;
 
   final String orderId;
 
   /// The order document when the caller already streams it; else streamed here.
   final Map<String, dynamic>? data;
 
+  final FirebaseFirestore _firestore;
+
   @override
   Widget build(BuildContext context) {
     if (data != null) return _body(data!);
     return StreamBuilder<DocumentSnapshot<Map<String, dynamic>>>(
-      stream: FirebaseFirestore.instance.collection('orders').doc(orderId).snapshots(),
+      stream: _firestore.collection('orders').doc(orderId).snapshots(),
       builder: (context, snap) => _body(snap.data?.data()),
     );
   }
