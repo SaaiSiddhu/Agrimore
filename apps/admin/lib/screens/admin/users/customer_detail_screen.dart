@@ -18,6 +18,7 @@ import 'package:agrimore_ui/agrimore_ui.dart';
 
 import '../../../providers/admin_provider.dart';
 import '../orders/admin_order_details_screen.dart';
+import '../widgets/paginated_query_list.dart';
 import 'edit_user_screen.dart';
 
 class CustomerDetailScreen extends StatefulWidget {
@@ -100,14 +101,14 @@ class _CustomerDetailScreenState extends State<CustomerDetailScreen>
             return const Center(child: CircularProgressIndicator());
           }
           if (snap.hasError) {
-            return _SectionMessage(
+            return SectionMessage(
               icon: Icons.error_outline,
               message: "Couldn't load this customer. Check your connection "
                   'and try again.',
             );
           }
           if (!snap.hasData || !snap.data!.exists) {
-            return const _SectionMessage(
+            return const SectionMessage(
               icon: Icons.person_off_outlined,
               message: 'Customer not found. They may have been removed.',
             );
@@ -368,7 +369,7 @@ class _OrdersTab extends StatelessWidget {
         .where('userId', isEqualTo: userId)
         .orderBy('createdAt', descending: true);
 
-    return _PaginatedQueryList(
+    return PaginatedQueryList(
       key: ValueKey('orders-list-$userId'),
       baseQuery: query,
       emptyLabel: 'No orders yet.',
@@ -412,7 +413,7 @@ class _WalletTab extends StatelessWidget {
           stream: firestore.collection('wallets').doc(userId).snapshots(),
           builder: (context, snap) {
             if (snap.hasError) {
-              return const _SectionMessage(
+              return const SectionMessage(
                   icon: Icons.error_outline,
                   message: "Couldn't load the wallet.");
             }
@@ -423,7 +424,7 @@ class _WalletTab extends StatelessWidget {
               );
             }
             if (!snap.data!.exists) {
-              return const _SectionMessage(
+              return const SectionMessage(
                   icon: Icons.account_balance_wallet_outlined,
                   message: 'No wallet yet for this customer.');
             }
@@ -469,7 +470,7 @@ class _WalletTab extends StatelessWidget {
               );
             }
             if (snap.hasError) {
-              return const _SectionMessage(
+              return const SectionMessage(
                   icon: Icons.error_outline,
                   message: "Couldn't load Product Credit.");
             }
@@ -497,7 +498,7 @@ class _WalletTab extends StatelessWidget {
         ),
         const SizedBox(height: 20),
         _SectionHeader('Wallet transaction history'),
-        _PaginatedQueryList(
+        PaginatedQueryList(
           key: ValueKey('wallet-tx-$userId'),
           baseQuery: firestore
               .collection('wallet_transactions')
@@ -520,7 +521,7 @@ class _WalletTab extends StatelessWidget {
         ),
         const SizedBox(height: 20),
         _SectionHeader('Product Credit ledger'),
-        _PaginatedQueryList(
+        PaginatedQueryList(
           key: ValueKey('pc-ledger-$userId'),
           baseQuery: firestore
               .collection('product_credit_ledger')
@@ -603,7 +604,7 @@ class _PaymentsTab extends StatelessWidget {
           ),
         ),
         Expanded(
-          child: _PaginatedQueryList(
+          child: PaginatedQueryList(
             key: ValueKey('verified-payments-$userId'),
             baseQuery: firestore
                 .collection('verified_payments')
@@ -651,7 +652,7 @@ class _AddressesTab extends StatelessWidget {
           .snapshots(),
       builder: (context, snap) {
         if (snap.hasError) {
-          return _SectionMessage(
+          return SectionMessage(
             icon: Icons.error_outline,
             message: "Couldn't load addresses. This needs the addresses "
                 'collection\'s admin-read rule deployed '
@@ -664,7 +665,7 @@ class _AddressesTab extends StatelessWidget {
         }
         final docs = snap.data!.docs;
         if (docs.isEmpty) {
-          return const _SectionMessage(
+          return const SectionMessage(
               icon: Icons.location_off_outlined,
               message: 'No saved addresses.');
         }
@@ -697,7 +698,7 @@ class _SupportTab extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    return const _SectionMessage(
+    return const SectionMessage(
       icon: Icons.support_agent_outlined,
       message: 'No dedicated customer support-case system exists yet. '
           'Rider support tickets are a separate, rider-only system; there '
@@ -762,148 +763,6 @@ class _InfoTile extends StatelessWidget {
   }
 }
 
-class _SectionMessage extends StatelessWidget {
-  const _SectionMessage({required this.icon, required this.message});
-  final IconData icon;
-  final String message;
-
-  @override
-  Widget build(BuildContext context) {
-    return Center(
-      child: Padding(
-        padding: const EdgeInsets.all(32),
-        child: Column(
-          mainAxisSize: MainAxisSize.min,
-          children: [
-            Icon(icon, size: 48, color: Colors.grey.shade400),
-            const SizedBox(height: 12),
-            Text(message,
-                textAlign: TextAlign.center,
-                style: TextStyle(color: Colors.grey.shade600)),
-          ],
-        ),
-      ),
-    );
-  }
-}
-
-/// A cursor-based (startAfterDocument), stale-response-guarded paginated
-/// list over any already-ordered query. Reused by Orders, wallet
-/// transactions, the Product Credit ledger and verified payments so each
-/// gets real pagination (never a flat `limit`) without four copies of the
-/// same logic. One section's failure never affects a sibling section
-/// because each owns its own instance and its own error state.
-class _PaginatedQueryList extends StatefulWidget {
-  const _PaginatedQueryList({
-    super.key,
-    required this.baseQuery,
-    required this.itemBuilder,
-    required this.emptyLabel,
-    this.pageSize = 20,
-    this.shrinkWrapInList = false,
-  });
-
-  final Query<Map<String, dynamic>> baseQuery;
-  final Widget Function(BuildContext, QueryDocumentSnapshot<Map<String, dynamic>>)
-      itemBuilder;
-  final String emptyLabel;
-  final int pageSize;
-
-  /// True when this list is itself placed inside another scrollable
-  /// (e.g. the Wallet tab's outer ListView) and must size itself instead
-  /// of trying to scroll independently.
-  final bool shrinkWrapInList;
-
-  @override
-  State<_PaginatedQueryList> createState() => _PaginatedQueryListState();
-}
-
-class _PaginatedQueryListState extends State<_PaginatedQueryList> {
-  final List<QueryDocumentSnapshot<Map<String, dynamic>>> _docs = [];
-  DocumentSnapshot<Map<String, dynamic>>? _cursor;
-  bool _loading = false;
-  bool _hasMore = true;
-  bool _initialLoadDone = false;
-  Object? _error;
-  int _requestId = 0;
-
-  @override
-  void initState() {
-    super.initState();
-    _loadMore();
-  }
-
-  Future<void> _loadMore() async {
-    if (_loading || !_hasMore) return;
-    final myRequest = ++_requestId;
-    setState(() {
-      _loading = true;
-      _error = null;
-    });
-    try {
-      var q = widget.baseQuery.limit(widget.pageSize);
-      final cursor = _cursor;
-      if (cursor != null) q = q.startAfterDocument(cursor);
-      final snap = await q.get();
-      if (!mounted || myRequest != _requestId) return;
-      setState(() {
-        _docs.addAll(snap.docs);
-        _hasMore = snap.docs.length == widget.pageSize;
-        if (snap.docs.isNotEmpty) _cursor = snap.docs.last;
-        _initialLoadDone = true;
-        _loading = false;
-      });
-    } catch (e) {
-      if (!mounted || myRequest != _requestId) return;
-      setState(() {
-        _error = e;
-        _loading = false;
-        _initialLoadDone = true;
-      });
-    }
-  }
-
-  @override
-  Widget build(BuildContext context) {
-    if (!_initialLoadDone && _loading) {
-      return const Padding(
-        padding: EdgeInsets.symmetric(vertical: 24),
-        child: Center(child: CircularProgressIndicator()),
-      );
-    }
-    if (_error != null && _docs.isEmpty) {
-      return _SectionMessage(
-        icon: Icons.error_outline,
-        message: "Couldn't load this. Check your connection and try again.",
-      );
-    }
-    if (_docs.isEmpty) {
-      return _SectionMessage(
-          icon: Icons.inbox_outlined, message: widget.emptyLabel);
-    }
-
-    final content = Column(
-      mainAxisSize: MainAxisSize.min,
-      children: [
-        for (final d in _docs) widget.itemBuilder(context, d),
-        if (_hasMore)
-          Padding(
-            padding: const EdgeInsets.all(12),
-            child: _loading
-                ? const CircularProgressIndicator()
-                : OutlinedButton(
-                    onPressed: _loadMore, child: const Text('Load more')),
-          ),
-        if (_error != null && _docs.isNotEmpty)
-          Padding(
-            padding: const EdgeInsets.all(8),
-            child: Text('Could not load more -- retry above',
-                style: TextStyle(color: Colors.red.shade700, fontSize: 12)),
-          ),
-      ],
-    );
-
-    if (widget.shrinkWrapInList) return content;
-    return ListView(padding: const EdgeInsets.only(top: 8), children: [content]);
-  }
-}
+// SectionMessage and PaginatedQueryList moved to
+// ../widgets/paginated_query_list.dart (ADMR-57) so Seller/Delivery
+// Partner/Sales Associate 360 can share them too.
