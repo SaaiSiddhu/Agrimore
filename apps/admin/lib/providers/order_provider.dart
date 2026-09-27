@@ -96,9 +96,25 @@ class OrderProvider with ChangeNotifier {
   // ============================================
   // SERVICES
   // ============================================
-  final DatabaseService _databaseService = DatabaseService();
-  final AuthService _authService = AuthService();
-  final FirebaseFirestore _firestore = FirebaseFirestore.instance;
+  final FirebaseFirestore _firestore;
+
+  // ADMR-48: _databaseService/_authService fields (DatabaseService(),
+  // AuthService()) removed here as confirmed dead -- zero reads anywhere in
+  // this class (grep-confirmed), the one method that used to use
+  // DatabaseService (createOrder) was already itself removed as dead by
+  // FIX-15 above, leaving these two field initializers as orphans that
+  // still eagerly touched live Firebase on every OrderProvider construction
+  // for no purpose. Their removal, not just this constructor, is what
+  // actually makes OrderProvider constructible outside a real Firebase app:
+  // _firestore is the only remaining dependency, and it is now injectable.
+  // Every method that reaches Firebase still does so through _firestore
+  // directly (or FirebaseFunctions.instance for the order-status command)
+  // and remains real-Firebase-only; main.dart's own `OrderProvider()` (the
+  // only construction site in the app) is unaffected, since firestore
+  // defaults to FirebaseFirestore.instance exactly as the old field
+  // initializer did.
+  OrderProvider({FirebaseFirestore? firestore})
+      : _firestore = firestore ?? FirebaseFirestore.instance;
 
   // ============================================
   // STATE VARIABLES
