@@ -3,6 +3,7 @@ import 'package:provider/provider.dart';
 import 'package:agrimore_ui/agrimore_ui.dart';
 import '../../../../app/themes/admin_colors.dart';
 import '../../../../providers/order_provider.dart';
+import 'order_reason_dialog.dart';
 
 // ADMR-8: pulled out of _updateStatus so it is a plain, Firebase-free
 // function the test suite can call directly — see order_status_updater.dart
@@ -324,32 +325,24 @@ class _OrderStatusUpdaterState extends State<OrderStatusUpdater> {
   // narrowly to leaving 'delivered' specifically, since that is the exact,
   // evidenced case all three triggers fire on — not a general transition
   // state machine this phase has no authority to invent.
-  Future<bool> _confirmLeavingDelivered(BuildContext context) async {
-    final result = await showDialog<bool>(
+  // ADMR-35: was a plain yes/no confirmation whose result the caller then
+  // paired with a client-generated "Status updated to X." string sent as
+  // the callable's own `reason` — satisfying the backend's non-empty check
+  // without ever capturing why. Now returns the operator's own real
+  // explanation (or null if they cancelled), which becomes the actual
+  // `reason` sent.
+  Future<String?> _confirmLeavingDelivered(BuildContext context) {
+    return promptOrderActionReason(
       context: context,
-      builder: (context) => AlertDialog(
-        title: const Text('Change status of a delivered order?'),
-        content: Text(
+      title: 'Change status of a delivered order?',
+      message:
           'This order is already DELIVERED. Changing its status to '
           '"${_selectedStatus.toUpperCase()}" will restore its stock and '
           'reverse any commission or product credit already paid on it, '
           'exactly as a genuine cancellation would. Only continue if this '
           'order is actually being cancelled or returned.',
-        ),
-        actions: [
-          TextButton(
-            onPressed: () => Navigator.pop(context, false),
-            child: const Text('Cancel'),
-          ),
-          ElevatedButton(
-            onPressed: () => Navigator.pop(context, true),
-            style: ElevatedButton.styleFrom(backgroundColor: Colors.red),
-            child: const Text('Change status', style: TextStyle(color: Colors.white)),
-          ),
-        ],
-      ),
+      confirmLabel: 'Change status',
     );
-    return result ?? false;
   }
 
   Future<void> _updateStatus(BuildContext context) async {
@@ -358,9 +351,15 @@ class _OrderStatusUpdaterState extends State<OrderStatusUpdater> {
     final orderProvider = Provider.of<OrderProvider>(context, listen: false);
 
     final currentStatus = widget.order.orderStatus.toLowerCase();
+    // ADMR-35: a real reason is only required — and only ever asked for —
+    // for the one dangerous transition. Every ordinary transition sends no
+    // reason at all; the callable's own fallback generates a plain
+    // "Status updated to X." timeline description for those, unchanged
+    // from what the admin previously saw.
+    String? reason;
     if (isDangerousOrderStatusTransition(currentStatus, _selectedStatus)) {
-      final confirmed = await _confirmLeavingDelivered(context);
-      if (!confirmed || !mounted) return;
+      reason = await _confirmLeavingDelivered(context);
+      if (reason == null || !mounted) return;
     }
 
     setState(() => _isUpdating = true);
@@ -369,7 +368,7 @@ class _OrderStatusUpdaterState extends State<OrderStatusUpdater> {
       final result = await orderProvider.updateOrderStatus(
         widget.order.id,
         _selectedStatus,
-        description: 'Status updated to ${_selectedStatus.toUpperCase()}.',
+        description: reason,
         expectedCurrentStatus: currentStatus,
       );
 

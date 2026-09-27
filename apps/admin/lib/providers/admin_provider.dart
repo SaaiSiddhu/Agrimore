@@ -124,13 +124,10 @@ class AdminProvider with ChangeNotifier {
     });
   }
 
-  Future<void> updateOrderStatus(String orderId, String status) async {
-    try {
-      await _adminService.updateOrderStatus(orderId, status);
-    } catch (e) {
-      rethrow;
-    }
-  }
+  // ADMR-35: updateOrderStatus (wrapping AdminService's own raw-write
+  // method below) removed — zero callers anywhere in the admin app. Every
+  // real order-status change goes through OrderProvider.updateOrderStatus,
+  // which calls the canonical adminUpdateOrderStatus command.
 
   // ============================================
   // USERS (FIXED - Single method)

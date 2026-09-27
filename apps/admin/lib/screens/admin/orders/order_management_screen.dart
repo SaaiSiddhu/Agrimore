@@ -13,6 +13,7 @@ import 'web_download_stub.dart' if (dart.library.html) 'web_download_impl.dart' 
 
 import 'admin_order_details_screen.dart';
 import 'widgets/admin_order_card.dart';
+import 'widgets/order_reason_dialog.dart';
 
 class OrderManagementScreen extends StatefulWidget {
   const OrderManagementScreen({Key? key}) : super(key: key);
@@ -123,45 +124,45 @@ class _OrderManagementScreenState extends State<OrderManagementScreen> {
     }
   }
 
+  // ADMR-35: previously called OrderProvider.cancelOrder — a raw Firestore
+  // write bypassing adminUpdateOrderStatus entirely (no idempotency, no
+  // transition guard, no refund-status parity, no actor stamp) — with a
+  // single hardcoded reason string for every order regardless of why, and
+  // a try/catch around the whole loop that reported total failure (and
+  // skipped refreshing) the moment any single order threw. Now routes
+  // through the same canonical `updateOrderStatus` path `_bulkUpdateStatus`
+  // already uses, with a real operator-supplied reason and honest
+  // per-item accounting.
   Future<void> _bulkCancelOrders(OrderProvider provider) async {
     if (_selectedOrderIds.isEmpty) return;
 
-    final confirmed = await showDialog<bool>(
+    final reason = await promptOrderActionReason(
       context: context,
-      builder: (ctx) => AlertDialog(
-        title: const Text('Cancel Orders'),
-        content: Text(
-          'Cancel ${_selectedOrderIds.length} order(s)? This action cannot be undone.',
-        ),
-        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
-        actions: [
-          TextButton(
-            onPressed: () => Navigator.pop(ctx, false),
-            child: const Text('No'),
-          ),
-          ElevatedButton(
-            onPressed: () => Navigator.pop(ctx, true),
-            style: ElevatedButton.styleFrom(backgroundColor: Colors.red),
-            child: const Text('Yes, Cancel'),
-          ),
-        ],
-      ),
+      title: 'Cancel Orders',
+      message:
+          'Cancel ${_selectedOrderIds.length} order(s)? This action cannot '
+          'be undone. Any of these already delivered will also have their '
+          'stock restored and any commission or product credit reversed.',
+      confirmLabel: 'Yes, Cancel',
     );
+    if (reason == null || !mounted) return;
 
-    if (confirmed != true) return;
-
-    try {
-      for (final id in _selectedOrderIds) {
-        await provider.cancelOrder(id, 'Cancelled by admin');
-      }
-      _clearSelection();
-      provider.loadOrders();
-      if (mounted) {
-        SnackbarHelper.showSuccess(context, 'Cancelled ${_selectedOrderIds.length} order(s)');
-      }
-    } catch (e) {
-      if (mounted) {
-        SnackbarHelper.showError(context, 'Failed to cancel orders');
+    var succeeded = 0;
+    final ids = List<String>.from(_selectedOrderIds);
+    for (final id in ids) {
+      final result = await provider.updateOrderStatus(id, 'cancelled', description: reason);
+      if (result.isSuccess) succeeded++;
+    }
+    _clearSelection();
+    provider.loadOrders();
+    if (mounted) {
+      if (succeeded == ids.length) {
+        SnackbarHelper.showSuccess(context, 'Cancelled ${ids.length} order(s)');
+      } else if (succeeded == 0) {
+        SnackbarHelper.showError(context, 'Failed to cancel ${ids.length} order(s)');
+      } else {
+        SnackbarHelper.showError(
+            context, 'Cancelled $succeeded of ${ids.length} order(s) — ${ids.length - succeeded} failed');
       }
     }
   }
@@ -349,8 +350,12 @@ class _OrderManagementScreenState extends State<OrderManagementScreen> {
           ),
           const Spacer(),
           // Bulk actions - compact buttons
-          _buildCompactAction(Icons.check_circle, 'Done', Colors.green, 
-              () => _bulkUpdateStatus(provider, 'completed')),
+          // ADMR-35: was 'completed' — not a member of adminUpdateOrderStatus's
+          // own VALID_STATUSES, so this button has always failed validation
+          // for every order; 'delivered' is the real terminal, non-cancelled
+          // status this button's own icon/label always meant.
+          _buildCompactAction(Icons.check_circle, 'Done', Colors.green,
+              () => _bulkUpdateStatus(provider, 'delivered')),
           const SizedBox(width: 8),
           _buildCompactAction(Icons.local_shipping, 'Ship', Colors.teal,
               () => _bulkUpdateStatus(provider, 'shipped')),
