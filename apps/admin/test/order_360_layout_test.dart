@@ -31,6 +31,7 @@ OrderModel _order({
   String? cancelledBy,
   DateTime? deliveredAt,
   String paymentMethod = 'razorpay',
+  String? employeeUid,
 }) =>
     OrderModel(
       id: 'order1',
@@ -43,6 +44,7 @@ OrderModel _order({
       paymentMethod: paymentMethod,
       cancelledBy: cancelledBy,
       deliveredAt: deliveredAt,
+      employeeUid: employeeUid,
     );
 
 void main() {
@@ -206,6 +208,167 @@ void main() {
         'hiding it', () {
       final offer = DispatchOfferRecord.fromMap({'riderId': 'r1', 'status': 'some_future_status', 'wave': 1});
       expect(offer.statusDisplayName, 'some_future_status');
+    });
+  });
+
+  // ADMR-29 additions below.
+  group('orderHasCommissionAttribution', () {
+    test('an order with no employeeUid is not attributed', () {
+      expect(orderHasCommissionAttribution(_order()), isFalse);
+    });
+
+    test('an order with a blank employeeUid is not attributed', () {
+      expect(orderHasCommissionAttribution(_order(employeeUid: '  ')), isFalse);
+    });
+
+    test('an order with a real employeeUid is attributed', () {
+      expect(orderHasCommissionAttribution(_order(employeeUid: 'assoc-1')), isTrue);
+    });
+  });
+
+  group('OrderModel commission fields (ADMR-29)', () {
+    test('round-trip through toMap/fromMap preserves all five fields', () {
+      final paidAt = DateTime(2026, 9, 27, 9, 0);
+      final reversedAt = DateTime(2026, 9, 28, 9, 0);
+      final original = _order(employeeUid: 'assoc-1').copyWith(
+        commissionPaid: true,
+        commissionAmount: 42.5,
+        commissionPaidAt: paidAt,
+        commissionReversed: true,
+        commissionReversedAt: reversedAt,
+      );
+
+      final restored = OrderModel.fromMap(original.toMap(), original.id);
+
+      expect(restored.commissionPaid, isTrue);
+      expect(restored.commissionAmount, 42.5);
+      expect(restored.commissionReversed, isTrue);
+      expect(restored.commissionPaidAt, isNotNull);
+      expect(restored.commissionReversedAt, isNotNull);
+      expect(restored.commissionPaidAt!.difference(paidAt).inSeconds.abs(), lessThan(2));
+      expect(restored.commissionReversedAt!.difference(reversedAt).inSeconds.abs(), lessThan(2));
+    });
+
+    test('an unattributed order leaves all five fields null', () {
+      final restored = OrderModel.fromMap(_order().toMap(), 'order1');
+      expect(restored.commissionPaid, isNull);
+      expect(restored.commissionAmount, isNull);
+      expect(restored.commissionPaidAt, isNull);
+      expect(restored.commissionReversed, isNull);
+      expect(restored.commissionReversedAt, isNull);
+    });
+  });
+
+  group('RiderEarningRecord.fromMap', () {
+    test('parses a real rider_earnings-shaped document', () {
+      final earning = RiderEarningRecord.fromMap({
+        'riderId': 'rider-1',
+        'orderNumber': 'ORD1',
+        'lines': [
+          {'type': 'trip_base', 'amount': 20.0},
+          {'type': 'distance', 'amount': 15.0, 'km': 3.2},
+          {'type': 'waiting', 'amount': 5.0, 'minutes': 4},
+        ],
+        'total': 40.0,
+        'km': 3.2,
+        'kmSource': 'route',
+        'waitMinutes': 4,
+        'codCollected': 250.0,
+        'statementId': null,
+      }, 'order1');
+
+      expect(earning.orderId, 'order1');
+      expect(earning.riderId, 'rider-1');
+      expect(earning.lines, hasLength(3));
+      expect(earning.lines[0].label, 'Trip base');
+      expect(earning.lines[1].label, 'Distance');
+      expect(earning.lines[2].label, 'Waiting');
+      expect(earning.total, 40.0);
+      expect(earning.codCollected, 250.0);
+      expect(earning.isSettled, isFalse);
+    });
+
+    test('a statementId marks the earning as settled', () {
+      final earning = RiderEarningRecord.fromMap({
+        'riderId': 'rider-1',
+        'lines': [],
+        'total': 40.0,
+        'km': 0.0,
+        'kmSource': 'none',
+        'waitMinutes': 0,
+        'codCollected': 0.0,
+        'statementId': 'rider-1_2026-W39',
+      }, 'order1');
+      expect(earning.isSettled, isTrue);
+    });
+
+    test('an unrecognized pay-line type falls back to the raw string '
+        'rather than hiding it', () {
+      final line = PayLineRecord.fromMap({'type': 'future_line', 'amount': 1.0});
+      expect(line.label, 'future_line');
+    });
+  });
+
+  group('RiderSupportTicketRecord.fromMap', () {
+    test('parses a real rider_support_tickets-shaped document, including '
+        'a relatedTo order link', () {
+      final ticket = RiderSupportTicketRecord.fromMap({
+        'riderId': 'rider-1',
+        'category': 'delivery_issue',
+        'relatedTo': {'type': 'order', 'id': 'order1'},
+        'message': 'Customer address was wrong',
+        'status': 'submitted',
+      }, 'ticket1');
+
+      expect(ticket.ticketId, 'ticket1');
+      expect(ticket.categoryLabel, 'Delivery issue');
+      expect(ticket.relatedToType, 'order');
+      expect(ticket.relatedToId, 'order1');
+      expect(ticket.statusLabel, 'Submitted');
+    });
+
+    test('a ticket with no relatedTo leaves both fields null — the '
+        'per-order query filters these out before display', () {
+      final ticket = RiderSupportTicketRecord.fromMap({
+        'riderId': 'rider-1',
+        'category': 'earnings_payouts',
+        'message': 'Where is my payout?',
+        'status': 'closed',
+      }, 'ticket2');
+      expect(ticket.relatedToType, isNull);
+      expect(ticket.relatedToId, isNull);
+      expect(ticket.statusLabel, 'Closed');
+    });
+
+    test('an unrecognized category falls back to the raw string rather '
+        'than hiding it', () {
+      final ticket = RiderSupportTicketRecord.fromMap({
+        'riderId': 'rider-1',
+        'category': 'some_future_category',
+        'message': 'm',
+        'status': 'submitted',
+      }, 'ticket3');
+      expect(ticket.categoryLabel, 'some_future_category');
+    });
+  });
+
+  group('CommissionExceptionRecord.fromMap', () {
+    test('parses a real commission_exceptions-shaped document', () {
+      final exception = CommissionExceptionRecord.fromMap({
+        'orderId': 'order1',
+        'orderNumber': 'ORD1',
+        'employeeUid': 'assoc-1',
+        'orderMode': 'B2C',
+        'total': 500.0,
+        'reason': 'no_configured_rate',
+        'status': 'unresolved',
+      }, 'exc1');
+
+      expect(exception.id, 'exc1');
+      expect(exception.orderId, 'order1');
+      expect(exception.employeeUid, 'assoc-1');
+      expect(exception.reason, 'no_configured_rate');
+      expect(exception.status, 'unresolved');
     });
   });
 }

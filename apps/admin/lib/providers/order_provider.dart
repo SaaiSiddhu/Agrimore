@@ -53,6 +53,18 @@ class OrderProvider with ChangeNotifier {
   List<DispatchOfferRecord> _selectedOrderDispatchOffers = [];
   bool _isLoadingDispatchOffers = false;
   String? _dispatchOffersError;
+  // ADMR-29: rider earnings, associate commission exceptions and
+  // order-linked support tickets for the selected order — each its own
+  // independent loading/error state, same reasoning as dispatch offers.
+  RiderEarningRecord? _selectedOrderRiderEarning;
+  bool _isLoadingRiderEarning = false;
+  String? _riderEarningError;
+  List<CommissionExceptionRecord> _selectedOrderCommissionExceptions = [];
+  bool _isLoadingCommissionExceptions = false;
+  String? _commissionExceptionsError;
+  List<RiderSupportTicketRecord> _selectedOrderSupportTickets = [];
+  bool _isLoadingSupportTickets = false;
+  String? _supportTicketsError;
   bool _isLoading = false;
   bool _isLoadingTimeline = false;
   String? _error;
@@ -67,6 +79,15 @@ class OrderProvider with ChangeNotifier {
   List<DispatchOfferRecord> get selectedOrderDispatchOffers => _selectedOrderDispatchOffers;
   bool get isLoadingDispatchOffers => _isLoadingDispatchOffers;
   String? get dispatchOffersError => _dispatchOffersError;
+  RiderEarningRecord? get selectedOrderRiderEarning => _selectedOrderRiderEarning;
+  bool get isLoadingRiderEarning => _isLoadingRiderEarning;
+  String? get riderEarningError => _riderEarningError;
+  List<CommissionExceptionRecord> get selectedOrderCommissionExceptions => _selectedOrderCommissionExceptions;
+  bool get isLoadingCommissionExceptions => _isLoadingCommissionExceptions;
+  String? get commissionExceptionsError => _commissionExceptionsError;
+  List<RiderSupportTicketRecord> get selectedOrderSupportTickets => _selectedOrderSupportTickets;
+  bool get isLoadingSupportTickets => _isLoadingSupportTickets;
+  String? get supportTicketsError => _supportTicketsError;
   bool get isLoading => _isLoading;
   bool get isLoadingTimeline => _isLoadingTimeline;
   String? get error => _error;
@@ -143,6 +164,9 @@ class OrderProvider with ChangeNotifier {
         _selectedOrder = OrderModel.fromMap(orderDoc.data()!, orderId);
         await _loadOrderTimeline(orderId);
         await _loadDispatchOffers(orderId);
+        await _loadRiderEarning(orderId);
+        await _loadCommissionExceptions(orderId);
+        await _loadRelatedSupportTickets(orderId);
         debugPrint('✅ Order loaded');
       } else {
         _error = '❌ Order not found';
@@ -224,6 +248,115 @@ class OrderProvider with ChangeNotifier {
       debugPrint('❌ Error loading dispatch offers: $e');
       _dispatchOffersError = e.toString();
       _isLoadingDispatchOffers = false;
+      notifyListeners();
+    }
+  }
+
+  // ============================================
+  // LOAD RIDER EARNINGS (ADMR-29)
+  // ============================================
+  // rider_earnings/{orderId} — exactly one real, already-written document
+  // per delivered order (functions/src/delivery/riderMoney.ts's own
+  // recordDeliveryEarningCore); the order id IS the doc id, so this is a
+  // direct get, never a query. Absent = genuinely not yet earned (not
+  // delivered by a rider yet, or the trigger hasn't fired) — not an error.
+  Future<void> _loadRiderEarning(String orderId) async {
+    try {
+      _isLoadingRiderEarning = true;
+      _riderEarningError = null;
+      notifyListeners();
+
+      final doc = await _firestore.collection('rider_earnings').doc(orderId).get();
+
+      _selectedOrderRiderEarning =
+          doc.exists ? RiderEarningRecord.fromMap(doc.data()!, orderId) : null;
+      debugPrint(_selectedOrderRiderEarning != null
+          ? '✅ Loaded rider earning record'
+          : 'ℹ️ No rider earning record yet for this order');
+
+      _isLoadingRiderEarning = false;
+      notifyListeners();
+    } catch (e) {
+      debugPrint('❌ Error loading rider earning: $e');
+      _riderEarningError = e.toString();
+      _isLoadingRiderEarning = false;
+      notifyListeners();
+    }
+  }
+
+  // ============================================
+  // LOAD COMMISSION EXCEPTIONS (ADMR-29)
+  // ============================================
+  // commission_exceptions filtered by orderId (single equality field, no
+  // composite index needed) — functions/src/customer/employeeCommission.ts
+  // writes one when a commission rate could not be resolved for an
+  // attributed order, instead of silently paying nothing.
+  Future<void> _loadCommissionExceptions(String orderId) async {
+    try {
+      _isLoadingCommissionExceptions = true;
+      _commissionExceptionsError = null;
+      notifyListeners();
+
+      final query = await _firestore
+          .collection('commission_exceptions')
+          .where('orderId', isEqualTo: orderId)
+          .get();
+
+      _selectedOrderCommissionExceptions = query.docs
+          .map((doc) => CommissionExceptionRecord.fromMap(doc.data(), doc.id))
+          .toList();
+      debugPrint(
+          '✅ Loaded ${_selectedOrderCommissionExceptions.length} commission exceptions');
+
+      _isLoadingCommissionExceptions = false;
+      notifyListeners();
+    } catch (e) {
+      debugPrint('❌ Error loading commission exceptions: $e');
+      _commissionExceptionsError = e.toString();
+      _isLoadingCommissionExceptions = false;
+      notifyListeners();
+    }
+  }
+
+  // ============================================
+  // LOAD RELATED SUPPORT TICKETS (ADMR-29)
+  // ============================================
+  // rider_support_tickets filtered by relatedTo.id (single equality field),
+  // client-filtered for relatedTo.type=='order' — sidesteps any composite-
+  // index question entirely, same risk-averse pattern as dispatch offers'
+  // own client sort. functions/src/delivery/riderSupport.ts's own
+  // submitSupportRequestCore is the real writer of relatedTo.
+  Future<void> _loadRelatedSupportTickets(String orderId) async {
+    try {
+      _isLoadingSupportTickets = true;
+      _supportTicketsError = null;
+      notifyListeners();
+
+      final query = await _firestore
+          .collection('rider_support_tickets')
+          .where('relatedTo.id', isEqualTo: orderId)
+          .get();
+
+      final tickets = query.docs
+          .map((doc) => RiderSupportTicketRecord.fromMap(doc.data(), doc.id))
+          .where((t) => t.relatedToType == 'order')
+          .toList()
+        ..sort((a, b) {
+          final at = a.createdAt;
+          final bt = b.createdAt;
+          if (at == null || bt == null) return 0;
+          return bt.compareTo(at); // newest first
+        });
+
+      _selectedOrderSupportTickets = tickets;
+      debugPrint('✅ Loaded ${tickets.length} related support tickets');
+
+      _isLoadingSupportTickets = false;
+      notifyListeners();
+    } catch (e) {
+      debugPrint('❌ Error loading related support tickets: $e');
+      _supportTicketsError = e.toString();
+      _isLoadingSupportTickets = false;
       notifyListeners();
     }
   }
@@ -548,6 +681,9 @@ class OrderProvider with ChangeNotifier {
     _selectedOrder = null;
     _selectedOrderTimeline.clear();
     _selectedOrderDispatchOffers.clear();
+    _selectedOrderRiderEarning = null;
+    _selectedOrderCommissionExceptions.clear();
+    _selectedOrderSupportTickets.clear();
     notifyListeners();
   }
 
@@ -566,6 +702,9 @@ class OrderProvider with ChangeNotifier {
     _selectedOrder = null;
     _selectedOrderTimeline.clear();
     _selectedOrderDispatchOffers.clear();
+    _selectedOrderRiderEarning = null;
+    _selectedOrderCommissionExceptions.clear();
+    _selectedOrderSupportTickets.clear();
     super.dispose();
   }
 }

@@ -44,6 +44,12 @@ bool orderNeedsCancellationCard(OrderModel order) => order.cancelledBy != null;
 /// silently hiding real delivery history.
 bool orderHasDeliveryVerification(OrderModel order) => order.deliveredAt != null;
 
+/// True when this order is attributed to a Sales Associate (ADMR-29) — the
+/// sole condition gating the new Associate Commission card, since an
+/// unattributed order can never carry commission data.
+bool orderHasCommissionAttribution(OrderModel order) =>
+    order.employeeUid != null && order.employeeUid!.trim().isNotEmpty;
+
 /// Maps the raw `updatedBy` role string (written by adminUpdateOrderStatus
 /// today; sellerTransitionOrder.ts does not yet populate this field at all,
 /// a separate, disclosed gap) to a human-readable actor label.
@@ -227,6 +233,20 @@ class _AdminOrderDetailsScreenState extends State<AdminOrderDetailsScreen> {
         _buildDeliveryVerificationCard(order),
         const SizedBox(height: 16),
       ],
+      _buildSectionTitle('Rider Earnings', Icons.payments_rounded),
+      const SizedBox(height: 12),
+      _buildRiderEarningsCard(orderProvider),
+      const SizedBox(height: 16),
+      if (orderHasCommissionAttribution(order)) ...[
+        _buildSectionTitle('Associate Commission', Icons.percent_rounded),
+        const SizedBox(height: 12),
+        _buildCommissionCard(order, orderProvider),
+        const SizedBox(height: 16),
+      ],
+      _buildSectionTitle('Related Support Tickets', Icons.support_agent_rounded),
+      const SizedBox(height: 12),
+      _buildSupportTicketsCard(orderProvider),
+      const SizedBox(height: 16),
       _buildSectionTitle('Order Timeline', Icons.timeline_rounded),
       const SizedBox(height: 12),
       _buildTimelineCard(orderProvider),
@@ -435,6 +455,323 @@ class _AdminOrderDetailsScreenState extends State<AdminOrderDetailsScreen> {
         ],
       ),
     );
+  }
+
+  // =========================
+  // Rider Earnings Card (ADMR-29)
+  // =========================
+  Widget _buildRiderEarningsCard(OrderProvider orderProvider) {
+    final isLoading = orderProvider.isLoadingRiderEarning;
+    final error = orderProvider.riderEarningError;
+    final earning = orderProvider.selectedOrderRiderEarning;
+
+    Widget content;
+    if (isLoading) {
+      content = const Padding(
+        padding: EdgeInsets.symmetric(vertical: 24),
+        child: Center(child: CircularProgressIndicator()),
+      );
+    } else if (error != null) {
+      content = Padding(
+        padding: const EdgeInsets.symmetric(vertical: 20),
+        child: Center(
+          child: Column(
+            children: [
+              Icon(Icons.error_outline_rounded, color: Colors.red.shade300, size: 32),
+              const SizedBox(height: 8),
+              Text('Could not load rider earnings', style: TextStyle(color: Colors.grey.shade600, fontSize: 13)),
+            ],
+          ),
+        ),
+      );
+    } else if (earning == null) {
+      content = Padding(
+        padding: const EdgeInsets.symmetric(vertical: 24),
+        child: Center(
+          child: Column(
+            children: [
+              Icon(Icons.payments_outlined, size: 32, color: Colors.grey.shade300),
+              const SizedBox(height: 8),
+              Text('No earnings recorded yet for this order', style: TextStyle(color: Colors.grey.shade500, fontSize: 12)),
+            ],
+          ),
+        ),
+      );
+    } else {
+      content = Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          ...earning.lines.map((line) => Padding(
+                padding: const EdgeInsets.symmetric(vertical: 3),
+                child: Row(
+                  mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                  children: [
+                    Text(
+                      line.label +
+                          (line.km != null ? ' (${line.km!.toStringAsFixed(1)} km)' : '') +
+                          (line.minutes != null ? ' (${line.minutes} min)' : ''),
+                      style: TextStyle(color: Colors.grey.shade600, fontSize: 12),
+                    ),
+                    Text('₹${line.amount.toStringAsFixed(2)}', style: const TextStyle(fontSize: 12, fontWeight: FontWeight.w600)),
+                  ],
+                ),
+              )),
+          const Divider(height: 20),
+          Row(
+            mainAxisAlignment: MainAxisAlignment.spaceBetween,
+            children: [
+              const Text('Total pay', style: TextStyle(fontWeight: FontWeight.bold, fontSize: 13)),
+              Text('₹${earning.total.toStringAsFixed(2)}',
+                  style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 14, color: Colors.green)),
+            ],
+          ),
+          const SizedBox(height: 4),
+          Text(
+            'Distance source: ${earning.kmSource}${earning.waitMinutes > 0 ? ' • ${earning.waitMinutes} min wait' : ''}',
+            style: TextStyle(color: Colors.grey.shade500, fontSize: 11),
+          ),
+          if (earning.codCollected > 0) ...[
+            const SizedBox(height: 10),
+            Container(
+              padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
+              decoration: BoxDecoration(color: Colors.blue.withOpacity(0.08), borderRadius: BorderRadius.circular(8)),
+              child: Text(
+                'Cash collected: ₹${earning.codCollected.toStringAsFixed(2)}',
+                style: TextStyle(fontSize: 12, fontWeight: FontWeight.w700, color: Colors.blue.shade800),
+              ),
+            ),
+          ],
+          const SizedBox(height: 8),
+          Container(
+            padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
+            decoration: BoxDecoration(
+              color: (earning.isSettled ? Colors.green : Colors.orange).withOpacity(0.1),
+              borderRadius: BorderRadius.circular(8),
+            ),
+            child: Text(
+              earning.isSettled ? 'Included in a weekly payout statement' : 'Not yet included in a payout statement',
+              style: TextStyle(
+                fontSize: 12,
+                fontWeight: FontWeight.w700,
+                color: earning.isSettled ? Colors.green.shade800 : Colors.orange.shade800,
+              ),
+            ),
+          ),
+        ],
+      );
+    }
+
+    return Container(
+      decoration: BoxDecoration(
+        color: Colors.white,
+        borderRadius: BorderRadius.circular(16),
+        boxShadow: [BoxShadow(color: Colors.black.withOpacity(0.04), blurRadius: 10, offset: const Offset(0, 4))],
+      ),
+      padding: const EdgeInsets.all(16),
+      child: content,
+    );
+  }
+
+  // =========================
+  // Associate Commission Card (ADMR-29)
+  // =========================
+  Widget _buildCommissionCard(OrderModel order, OrderProvider orderProvider) {
+    final paid = order.commissionPaid == true;
+    final reversed = order.commissionReversed == true;
+    final exceptions = orderProvider.selectedOrderCommissionExceptions;
+    final isLoadingExceptions = orderProvider.isLoadingCommissionExceptions;
+
+    return Container(
+      decoration: BoxDecoration(
+        color: Colors.white,
+        borderRadius: BorderRadius.circular(16),
+        boxShadow: [BoxShadow(color: Colors.black.withOpacity(0.04), blurRadius: 10, offset: const Offset(0, 4))],
+      ),
+      padding: const EdgeInsets.all(16),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Row(
+            children: [
+              Icon(
+                paid ? Icons.check_circle_rounded : Icons.hourglass_top_rounded,
+                color: paid ? Colors.green.shade600 : Colors.orange.shade600,
+                size: 18,
+              ),
+              const SizedBox(width: 8),
+              Expanded(
+                child: Text(
+                  paid
+                      ? 'Commission paid${order.commissionAmount != null ? ' — ₹${order.commissionAmount!.toStringAsFixed(2)}' : ''}'
+                      : 'Commission not yet paid',
+                  style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 13),
+                ),
+              ),
+            ],
+          ),
+          if (paid && order.commissionPaidAt != null) ...[
+            const SizedBox(height: 6),
+            Text(
+              'Paid ${DateFormat('MMM d, yyyy • hh:mm a').format(order.commissionPaidAt!)}',
+              style: TextStyle(color: Colors.grey.shade600, fontSize: 12),
+            ),
+          ],
+          if (reversed) ...[
+            const SizedBox(height: 10),
+            Container(
+              padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
+              decoration: BoxDecoration(color: Colors.red.withOpacity(0.1), borderRadius: BorderRadius.circular(8)),
+              child: Text(
+                'Reversed${order.commissionReversedAt != null ? ' ${DateFormat('MMM d, yyyy').format(order.commissionReversedAt!)}' : ''} — clawed back from the associate\'s wallet',
+                style: TextStyle(fontSize: 12, fontWeight: FontWeight.w700, color: Colors.red.shade800),
+              ),
+            ),
+          ],
+          if (!paid) ...[
+            const SizedBox(height: 10),
+            if (isLoadingExceptions)
+              const Center(child: Padding(padding: EdgeInsets.symmetric(vertical: 8), child: CircularProgressIndicator()))
+            else if (exceptions.isNotEmpty)
+              ...exceptions.map((ex) => Container(
+                    margin: const EdgeInsets.only(bottom: 6),
+                    padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
+                    decoration: BoxDecoration(color: Colors.orange.withOpacity(0.1), borderRadius: BorderRadius.circular(8)),
+                    child: Text(
+                      'Unresolved: ${ex.reason}',
+                      style: TextStyle(fontSize: 12, fontWeight: FontWeight.w700, color: Colors.orange.shade800),
+                    ),
+                  ))
+            else
+              Text(
+                'No commission has been recorded for this order yet',
+                style: TextStyle(color: Colors.grey.shade500, fontSize: 12),
+              ),
+          ],
+        ],
+      ),
+    );
+  }
+
+  // =========================
+  // Related Support Tickets Card (ADMR-29)
+  // =========================
+  Widget _buildSupportTicketsCard(OrderProvider orderProvider) {
+    final isLoading = orderProvider.isLoadingSupportTickets;
+    final error = orderProvider.supportTicketsError;
+    final tickets = orderProvider.selectedOrderSupportTickets;
+
+    Widget content;
+    if (isLoading) {
+      content = const Padding(
+        padding: EdgeInsets.symmetric(vertical: 24),
+        child: Center(child: CircularProgressIndicator()),
+      );
+    } else if (error != null) {
+      content = Padding(
+        padding: const EdgeInsets.symmetric(vertical: 20),
+        child: Center(
+          child: Column(
+            children: [
+              Icon(Icons.error_outline_rounded, color: Colors.red.shade300, size: 32),
+              const SizedBox(height: 8),
+              Text('Could not load support tickets', style: TextStyle(color: Colors.grey.shade600, fontSize: 13)),
+            ],
+          ),
+        ),
+      );
+    } else if (tickets.isEmpty) {
+      content = Padding(
+        padding: const EdgeInsets.symmetric(vertical: 24),
+        child: Center(
+          child: Column(
+            children: [
+              Icon(Icons.support_agent_outlined, size: 32, color: Colors.grey.shade300),
+              const SizedBox(height: 8),
+              Text('No support tickets reference this order', style: TextStyle(color: Colors.grey.shade500, fontSize: 12)),
+            ],
+          ),
+        ),
+      );
+    } else {
+      content = Column(
+        children: tickets.map((t) => _supportTicketRow(t)).toList(),
+      );
+    }
+
+    return Container(
+      decoration: BoxDecoration(
+        color: Colors.white,
+        borderRadius: BorderRadius.circular(16),
+        boxShadow: [BoxShadow(color: Colors.black.withOpacity(0.04), blurRadius: 10, offset: const Offset(0, 4))],
+      ),
+      padding: const EdgeInsets.all(16),
+      child: content,
+    );
+  }
+
+  Widget _supportTicketRow(RiderSupportTicketRecord ticket) {
+    final color = _ticketStatusColor(ticket.status);
+    return Padding(
+      padding: const EdgeInsets.symmetric(vertical: 8),
+      child: Row(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Container(
+            width: 8,
+            height: 8,
+            margin: const EdgeInsets.only(top: 5),
+            decoration: BoxDecoration(color: color, shape: BoxShape.circle),
+          ),
+          const SizedBox(width: 10),
+          Expanded(
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Row(
+                  children: [
+                    Expanded(
+                      child: Text(
+                        ticket.categoryLabel,
+                        style: const TextStyle(fontWeight: FontWeight.w600, fontSize: 13),
+                        overflow: TextOverflow.ellipsis,
+                      ),
+                    ),
+                    Container(
+                      padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 3),
+                      decoration: BoxDecoration(color: color.withOpacity(0.12), borderRadius: BorderRadius.circular(6)),
+                      child: Text(
+                        ticket.statusLabel,
+                        style: TextStyle(color: color, fontWeight: FontWeight.w700, fontSize: 10),
+                      ),
+                    ),
+                  ],
+                ),
+                const SizedBox(height: 3),
+                Text(
+                  ticket.message,
+                  style: TextStyle(color: Colors.grey.shade500, fontSize: 11),
+                  maxLines: 2,
+                  overflow: TextOverflow.ellipsis,
+                ),
+              ],
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+
+  Color _ticketStatusColor(String status) {
+    switch (status) {
+      case 'submitted':
+        return Colors.orange;
+      case 'seen':
+        return Colors.blue;
+      case 'closed':
+        return Colors.green;
+      default:
+        return Colors.grey;
+    }
   }
 
   // =========================
