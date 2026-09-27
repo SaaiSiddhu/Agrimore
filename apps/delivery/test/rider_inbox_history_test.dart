@@ -17,7 +17,8 @@ import 'package:delivery/providers/location_provider.dart';
 import 'package:delivery/providers/order_provider.dart';
 import 'package:delivery/screens/history/rider_history_screen.dart';
 import 'package:delivery/screens/inbox/inbox_screen.dart';
-import 'package:delivery/screens/money/money_screen.dart' show EarningTile;
+import 'package:delivery/screens/money/bank_change_request_screen.dart';
+import 'package:delivery/screens/money/money_screen.dart' show EarningTile, MoneyScreen;
 import 'package:delivery/screens/money/statement_screen.dart';
 import 'package:delivery/screens/orders/active_order_screen.dart';
 import 'package:delivery/screens/profile/identity_change_screen.dart';
@@ -341,6 +342,52 @@ void main() {
       await t.pumpAndSettle();
       expect(t.takeException(), isNull);
       expect(find.byType(IdentityChangeScreen), findsNothing);
+    });
+  });
+
+  group('bank change notice routing (DLVBANK1)', () {
+    RiderNotice bankNotice(String id, String type, {String? requestId}) => RiderNotice.fromMap(id, {
+          'type': type,
+          'title': type == 'bank_change_approved' ? 'Payout details updated' : 'Payout details not changed',
+          'unread': true,
+          'data': {
+            'type': type,
+            if (requestId != null) 'requestId': requestId,
+          },
+        });
+
+    testWidgets('a rejection notice with a requestId opens the screen pinned to THAT exact request', (t) async {
+      final src = FakeInbox()..current = [bankNotice('n9', 'bank_change_rejected', requestId: 'req-77')];
+      await t.pumpWidget(host(InboxScreen(riderId: 'r1', source: src)));
+      await t.pumpAndSettle();
+      await t.tap(find.text('Payout details not changed'));
+      await t.pumpAndSettle();
+      expect(t.takeException(), isNull);
+      final screen = t.widget<BankChangeRequestScreen>(find.byType(BankChangeRequestScreen));
+      expect(screen.requestId, 'req-77');
+      expect(screen.riderId, 'r1');
+    });
+
+    testWidgets('an approval notice with a requestId opens the same pinned screen', (t) async {
+      final src = FakeInbox()..current = [bankNotice('n10', 'bank_change_approved', requestId: 'req-88')];
+      await t.pumpWidget(host(InboxScreen(riderId: 'r1', source: src)));
+      await t.pumpAndSettle();
+      await t.tap(find.text('Payout details updated'));
+      await t.pumpAndSettle();
+      expect(t.takeException(), isNull);
+      final screen = t.widget<BankChangeRequestScreen>(find.byType(BankChangeRequestScreen));
+      expect(screen.requestId, 'req-88');
+    });
+
+    testWidgets('a legacy notice with no requestId keeps the pre-existing generic Earnings destination', (t) async {
+      final src = FakeInbox()..current = [bankNotice('n11', 'bank_change_rejected')];
+      await t.pumpWidget(host(InboxScreen(riderId: 'r1', source: src)));
+      await t.pumpAndSettle();
+      await t.tap(find.text('Payout details not changed'));
+      await t.pumpAndSettle();
+      expect(t.takeException(), isNull);
+      expect(find.byType(MoneyScreen), findsOneWidget);
+      expect(find.byType(BankChangeRequestScreen), findsNothing);
     });
   });
 

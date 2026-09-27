@@ -160,7 +160,7 @@ class _MoneyScreenState extends State<MoneyScreen> {
       context: context,
       isScrollControlled: true,
       showDragHandle: true,
-      builder: (ctx) => const _BankChangeForm(),
+      builder: (ctx) => const BankChangeForm(),
     );
     if (sent == true && mounted) {
       showDeliveryToast(
@@ -589,13 +589,16 @@ class _ErrorLine extends StatelessWidget {
       );
 }
 
-class _BankChangeForm extends StatefulWidget {
-  const _BankChangeForm();
+/// DLVBANK1: made public (was `_BankChangeForm`) so
+/// `BankChangeRequestScreen`'s own "Correct and resend" action can reopen
+/// the SAME real form, rather than duplicating it -- zero behaviour change.
+class BankChangeForm extends StatefulWidget {
+  const BankChangeForm({super.key});
   @override
-  State<_BankChangeForm> createState() => _BankChangeFormState();
+  State<BankChangeForm> createState() => _BankChangeFormState();
 }
 
-class _BankChangeFormState extends State<_BankChangeForm> {
+class _BankChangeFormState extends State<BankChangeForm> {
   final _name = TextEditingController();
   final _account = TextEditingController();
   final _ifsc = TextEditingController();

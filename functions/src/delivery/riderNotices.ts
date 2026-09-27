@@ -98,13 +98,19 @@ export function payoutSentNotice(p: {
     data: { type: "payout_sent", payoutId: p.id } };
 }
 
+// DLVBANK1: requestId must be threaded through so the client can open the
+// EXACT request this notice concerns (RiderNotice.fromMap already parses
+// data.requestId generically -- identity_change_*/document_review_*/
+// support_request_* notices already carry their own id the same way; this
+// was the one review-outcome notice type that never did).
 export function bankReviewNotice(requestId: string, approved: boolean, reason: string | null): RiderNotice {
   return approved
     ? { id: `bank_change_${requestId}`, type: "bank_change_approved", title: "Payout details updated",
-      body: "Your new payout details were approved. Pay on hold is released.", data: { type: "bank_change_approved" } }
+      body: "Your new payout details were approved. Pay on hold is released.",
+      data: { type: "bank_change_approved", requestId } }
     : { id: `bank_change_${requestId}`, type: "bank_change_rejected", title: "Payout details not changed",
       body: reason ? `Your change was not approved: ${reason}` : "Your change was not approved.",
-      data: { type: "bank_change_rejected" } };
+      data: { type: "bank_change_rejected", requestId } };
 }
 
 // DLVID3: changeType must be threaded through so the wording (and the

@@ -62,7 +62,7 @@ import 'app_localizations_en.dart';
 /// property.
 abstract class AppLocalizations {
   AppLocalizations(String locale)
-    : localeName = intl.Intl.canonicalizedLocale(locale.toString());
+      : localeName = intl.Intl.canonicalizedLocale(locale.toString());
 
   final String localeName;
 
@@ -85,11 +85,11 @@ abstract class AppLocalizations {
   /// of delegates is preferred or required.
   static const List<LocalizationsDelegate<dynamic>> localizationsDelegates =
       <LocalizationsDelegate<dynamic>>[
-        delegate,
-        GlobalMaterialLocalizations.delegate,
-        GlobalCupertinoLocalizations.delegate,
-        GlobalWidgetsLocalizations.delegate,
-      ];
+    delegate,
+    GlobalMaterialLocalizations.delegate,
+    GlobalCupertinoLocalizations.delegate,
+    GlobalWidgetsLocalizations.delegate,
+  ];
 
   /// A list of this localizations delegate's supported locales.
   static const List<Locale> supportedLocales = <Locale>[Locale('en')];
@@ -2109,6 +2109,54 @@ abstract class AppLocalizations {
   /// In en, this message translates to:
   /// **'Sent. The Agrimore team will check it; your pay waits until then.'**
   String get bankChangeSent;
+
+  /// DLVBANK1: BankChangeRequestScreen's own AppBar title
+  ///
+  /// In en, this message translates to:
+  /// **'Payout change request'**
+  String get bankChangeRequestTitle;
+
+  /// DLVBANK1: BankChangeRequestScreen, pending state title
+  ///
+  /// In en, this message translates to:
+  /// **'Request pending review'**
+  String get bankChangeRequestPendingTitle;
+
+  /// DLVBANK1: BankChangeRequestScreen, approved state title -- matches bankReviewNotice's own server title
+  ///
+  /// In en, this message translates to:
+  /// **'Payout details updated'**
+  String get bankChangeRequestApprovedTitle;
+
+  /// DLVBANK1: BankChangeRequestScreen, approved state body
+  ///
+  /// In en, this message translates to:
+  /// **'This change has already been applied. Pay that was on hold has been released.'**
+  String get bankChangeRequestApprovedBody;
+
+  /// DLVBANK1: BankChangeRequestScreen, rejected state title -- matches bankReviewNotice's own server title
+  ///
+  /// In en, this message translates to:
+  /// **'Payout details not changed'**
+  String get bankChangeRequestRejectedTitle;
+
+  /// DLVBANK1: BankChangeRequestScreen, rejected state's correction action -- opens a fresh form (never pre-filled with the old raw account/IFSC, which stay masked)
+  ///
+  /// In en, this message translates to:
+  /// **'Enter new details'**
+  String get bankChangeRequestCorrect;
+
+  /// DLVBANK1: BankChangeRequestScreen, not-found state title (deleted, or not this rider's)
+  ///
+  /// In en, this message translates to:
+  /// **'Request not available'**
+  String get bankChangeRequestNotFoundTitle;
+
+  /// DLVBANK1: BankChangeRequestScreen, not-found state body
+  ///
+  /// In en, this message translates to:
+  /// **'This payout change request is no longer available. It may have been removed, or you may no longer have access to it.'**
+  String get bankChangeRequestNotFoundBody;
 
   /// Bank change sheet title
   ///
@@ -5328,9 +5376,8 @@ AppLocalizations lookupAppLocalizations(Locale locale) {
   }
 
   throw FlutterError(
-    'AppLocalizations.delegate failed to load unsupported locale "$locale". This is likely '
-    'an issue with the localizations generation tool. Please file an issue '
-    'on GitHub with a reproducible sample app and the gen-l10n configuration '
-    'that was used.',
-  );
+      'AppLocalizations.delegate failed to load unsupported locale "$locale". This is likely '
+      'an issue with the localizations generation tool. Please file an issue '
+      'on GitHub with a reproducible sample app and the gen-l10n configuration '
+      'that was used.');
 }

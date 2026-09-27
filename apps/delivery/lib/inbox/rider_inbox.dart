@@ -11,7 +11,7 @@ import 'package:cloud_firestore/cloud_firestore.dart';
 /// identifier to get there (never trust the payload alone — the delivery
 /// destination re-reads its order fresh, and the server's own security rule
 /// is what actually authorizes it).
-enum NoticeTarget { delivery, statement, payoutDetails, identityRequest, supportTicket, none }
+enum NoticeTarget { delivery, statement, payoutDetails, bankChangeRequest, identityRequest, supportTicket, none }
 
 class RiderNotice {
   const RiderNotice({
@@ -81,7 +81,14 @@ class RiderNotice {
           orderId != null ? NoticeTarget.delivery : NoticeTarget.none,
         'statement_ready' || 'payout_sent' =>
           payoutId != null ? NoticeTarget.statement : NoticeTarget.none,
-        'bank_change_approved' || 'bank_change_rejected' => NoticeTarget.payoutDetails,
+        // DLVBANK1: an OLD notice (written before requestId was added to the
+        // notice's own data) keeps the pre-existing generic Earnings-tab
+        // behaviour -- an honest fallback to what already worked, never
+        // "nothing happens" (unlike identity's own missing-id fallback,
+        // NoticeTarget.none: bank-change's prior behaviour was imprecise,
+        // not broken, so there is a real, better fallback to keep).
+        'bank_change_approved' || 'bank_change_rejected' =>
+          requestId != null ? NoticeTarget.bankChangeRequest : NoticeTarget.payoutDetails,
         'identity_change_approved' || 'identity_change_rejected' =>
           requestId != null ? NoticeTarget.identityRequest : NoticeTarget.none,
         'support_request_seen' || 'support_request_closed' =>
