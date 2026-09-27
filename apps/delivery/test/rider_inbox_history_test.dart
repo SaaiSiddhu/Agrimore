@@ -9,8 +9,10 @@ import 'package:delivery/data/order_timeline.dart';
 import 'package:delivery/data/rider_history.dart';
 import 'package:delivery/inbox/rider_inbox.dart';
 import 'package:delivery/l10n/app_localizations.dart';
+import 'package:delivery/data/rider_work.dart' show OrderDoc;
 import 'package:delivery/money/rider_money.dart';
 import 'package:delivery/providers/location_provider.dart';
+import 'package:delivery/providers/order_provider.dart';
 import 'package:delivery/screens/history/rider_history_screen.dart';
 import 'package:delivery/screens/inbox/inbox_screen.dart';
 import 'package:delivery/screens/money/statement_screen.dart';
@@ -53,10 +55,23 @@ class FakeInbox implements RiderInboxSource {
 }
 
 // RiderRouteCard (DLVMAP1) reads LocationProvider for the stale-location
-// banner's Refresh-location/native-service branching -- needed here since
-// some cases navigate to the real ActiveOrderScreen, which renders it.
-Widget host(Widget child) => ChangeNotifierProvider<LocationProvider>(
-      create: (_) => LocationProvider(),
+// banner's Refresh-location/native-service branching, and ActiveOrderScreen
+// (DLVMAP3) unconditionally reads DeliveryOrderProvider to reconcile
+// assignment/recovery state -- both needed here since some cases navigate to
+// the real ActiveOrderScreen, which renders it. An always-empty active-work
+// source is safe for every case in this file: DLVMAP3's own grace period
+// keeps that silent (RecoveryPhase.normal) unless a test waits out
+// kAssignmentConfirmGrace, which none here do.
+Widget host(Widget child) => MultiProvider(
+      providers: [
+        ChangeNotifierProvider<LocationProvider>(create: (_) => LocationProvider()),
+        ChangeNotifierProvider<DeliveryOrderProvider>(
+          create: (_) => DeliveryOrderProvider(
+            activeSource: (_) => Stream.value((docs: const <OrderDoc>[], fromCache: false)),
+            deliveredCount: (_, __) async => 0,
+          )..bind('r1'),
+        ),
+      ],
       child: MaterialApp(
         theme: WorkspaceTheme.build(WorkspaceBrand.delivery, Brightness.light),
         localizationsDelegates: AppLocalizations.localizationsDelegates,

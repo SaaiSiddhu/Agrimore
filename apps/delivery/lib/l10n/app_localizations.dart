@@ -62,7 +62,7 @@ import 'app_localizations_en.dart';
 /// property.
 abstract class AppLocalizations {
   AppLocalizations(String locale)
-    : localeName = intl.Intl.canonicalizedLocale(locale.toString());
+      : localeName = intl.Intl.canonicalizedLocale(locale.toString());
 
   final String localeName;
 
@@ -85,11 +85,11 @@ abstract class AppLocalizations {
   /// of delegates is preferred or required.
   static const List<LocalizationsDelegate<dynamic>> localizationsDelegates =
       <LocalizationsDelegate<dynamic>>[
-        delegate,
-        GlobalMaterialLocalizations.delegate,
-        GlobalCupertinoLocalizations.delegate,
-        GlobalWidgetsLocalizations.delegate,
-      ];
+    delegate,
+    GlobalMaterialLocalizations.delegate,
+    GlobalCupertinoLocalizations.delegate,
+    GlobalWidgetsLocalizations.delegate,
+  ];
 
   /// A list of this localizations delegate's supported locales.
   static const List<Locale> supportedLocales = <Locale>[Locale('en')];
@@ -3088,6 +3088,84 @@ abstract class AppLocalizations {
   /// **'Order released for reassignment'**
   String get activeReleased;
 
+  /// DLVMAP3: banner title when the live order differs from what is shown
+  ///
+  /// In en, this message translates to:
+  /// **'Delivery details changed'**
+  String get assignmentChangedTitle;
+
+  /// DLVMAP3: banner body for the changed-details banner
+  ///
+  /// In en, this message translates to:
+  /// **'Review the latest information before continuing.'**
+  String get assignmentChangedBody;
+
+  /// DLVMAP3: dismisses the changed-details banner
+  ///
+  /// In en, this message translates to:
+  /// **'Review changes'**
+  String get assignmentReviewChanges;
+
+  /// DLVMAP3: title when the order has been reassigned away or otherwise lost
+  ///
+  /// In en, this message translates to:
+  /// **'This delivery is no longer assigned to you'**
+  String get assignmentRemovedTitle;
+
+  /// DLVMAP3: body text explaining why details are now hidden
+  ///
+  /// In en, this message translates to:
+  /// **'The assignment has been changed. You can\'t view the delivery details for privacy.'**
+  String get assignmentRemovedBody;
+
+  /// DLVMAP3: primary action on the removed-assignment screen
+  ///
+  /// In en, this message translates to:
+  /// **'Back to dashboard'**
+  String get assignmentBackToDashboard;
+
+  /// DLVMAP3: secondary action on the removed-assignment screen
+  ///
+  /// In en, this message translates to:
+  /// **'Contact support'**
+  String get assignmentContactSupport;
+
+  /// DLVMAP3: safety reminder card title, mockup 20.8
+  ///
+  /// In en, this message translates to:
+  /// **'Already carrying the order?'**
+  String get assignmentSafetyReminderTitle;
+
+  /// DLVMAP3: safety reminder card body, mockup 20.8
+  ///
+  /// In en, this message translates to:
+  /// **'Contact support for handover instructions. Do not deliver to the customer. We\'ll help you with the next steps.'**
+  String get assignmentSafetyReminderBody;
+
+  /// DLVMAP3: title when the live listener has failed (offline/permission)
+  ///
+  /// In en, this message translates to:
+  /// **'Couldn\'t confirm your assignment'**
+  String get assignmentConnectionLostTitle;
+
+  /// DLVMAP3: body text for the connection-lost state
+  ///
+  /// In en, this message translates to:
+  /// **'Reconnect to check the latest status.'**
+  String get assignmentConnectionLostBody;
+
+  /// DLVMAP3: section title for the masked last-known summary
+  ///
+  /// In en, this message translates to:
+  /// **'Last known status'**
+  String get assignmentLastKnownTitle;
+
+  /// DLVMAP3: disabled-actions notice during connection loss
+  ///
+  /// In en, this message translates to:
+  /// **'Delivery actions unavailable while we reconnect.'**
+  String get assignmentActionsUnavailable;
+
   /// Far-tap confirmation title
   ///
   /// In en, this message translates to:
@@ -4794,9 +4872,8 @@ AppLocalizations lookupAppLocalizations(Locale locale) {
   }
 
   throw FlutterError(
-    'AppLocalizations.delegate failed to load unsupported locale "$locale". This is likely '
-    'an issue with the localizations generation tool. Please file an issue '
-    'on GitHub with a reproducible sample app and the gen-l10n configuration '
-    'that was used.',
-  );
+      'AppLocalizations.delegate failed to load unsupported locale "$locale". This is likely '
+      'an issue with the localizations generation tool. Please file an issue '
+      'on GitHub with a reproducible sample app and the gen-l10n configuration '
+      'that was used.');
 }
