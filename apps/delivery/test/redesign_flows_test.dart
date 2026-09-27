@@ -11,6 +11,7 @@ import 'package:delivery/money/rider_money.dart';
 import 'package:delivery/offers/delivery_offer.dart';
 import 'package:delivery/providers/auth_provider.dart';
 import 'package:delivery/providers/offer_provider.dart';
+import 'package:delivery/registration/registration_draft.dart';
 import 'package:delivery/registration/rider_application.dart';
 import 'package:delivery/safety/emergency_sheet.dart';
 import 'package:delivery/screens/auth/login_screen.dart';
@@ -62,6 +63,17 @@ class _NoPush implements RiderPushTokens {
   Stream<String> get refreshed => const Stream.empty();
   @override
   Future<void> forget() async {}
+}
+
+/// DLVID4: none of these responsive-layout checks exercise draft recovery --
+/// keeps the screen from touching real secure storage.
+class _NoDraftStore implements RegistrationDraftStore {
+  @override
+  Future<RegistrationDraft?> load(String key) async => null;
+  @override
+  Future<void> save(String key, RegistrationDraft draft) async {}
+  @override
+  Future<void> clear(String key) async {}
 }
 
 class _FakeReg implements RegistrationBackend {
@@ -213,7 +225,10 @@ void main() {
             t.view.devicePixelRatio = 1.0;
 
             await t.pumpWidget(_host(
-              RiderRegistrationScreen(service: RegistrationService(_FakeReg())),
+              RiderRegistrationScreen(
+                service: RegistrationService(_FakeReg()),
+                draftStore: _NoDraftStore(),
+              ),
               brightness: brightness,
               size: viewport,
             ));

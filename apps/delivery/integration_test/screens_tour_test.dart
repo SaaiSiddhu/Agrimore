@@ -18,6 +18,7 @@ import 'package:delivery/providers/auth_provider.dart';
 import 'package:delivery/providers/location_provider.dart';
 import 'package:delivery/providers/offer_provider.dart';
 import 'package:delivery/providers/order_provider.dart';
+import 'package:delivery/registration/registration_draft.dart';
 import 'package:delivery/registration/rider_application.dart';
 import 'package:delivery/safety/emergency_sheet.dart';
 import 'package:delivery/screens/auth/login_screen.dart';
@@ -137,6 +138,19 @@ class _NoPush implements RiderPushTokens {
   Stream<String> get refreshed => const Stream.empty();
   @override
   Future<void> forget() async {}
+}
+
+/// DLVID4: on-device secure storage is real here (this runs via flutter
+/// drive), so without this, a draft left over from an earlier run -- or a
+/// real in-progress registration on a shared test device -- could pop the
+/// resume dialog over shot 04/05 and break the tour's determinism.
+class _NoDraftStore implements RegistrationDraftStore {
+  @override
+  Future<RegistrationDraft?> load(String key) async => null;
+  @override
+  Future<void> save(String key, RegistrationDraft draft) async {}
+  @override
+  Future<void> clear(String key) async {}
 }
 
 class _FakeReg implements RegistrationBackend {
@@ -555,12 +569,18 @@ void main() {
     await shot(
       tester,
       '04_registration_step1_light',
-      RiderRegistrationScreen(service: RegistrationService(_FakeReg())),
+      RiderRegistrationScreen(
+        service: RegistrationService(_FakeReg()),
+        draftStore: _NoDraftStore(),
+      ),
     );
     await shot(
       tester,
       '05_registration_step1_dark',
-      RiderRegistrationScreen(service: RegistrationService(_FakeReg())),
+      RiderRegistrationScreen(
+        service: RegistrationService(_FakeReg()),
+        draftStore: _NoDraftStore(),
+      ),
       brightness: Brightness.dark,
     );
 

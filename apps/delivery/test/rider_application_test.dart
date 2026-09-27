@@ -7,6 +7,7 @@ import 'dart:typed_data';
 import 'package:delivery/auth/rider_account_source.dart';
 import 'package:delivery/l10n/app_localizations.dart';
 import 'package:delivery/providers/auth_provider.dart';
+import 'package:delivery/registration/registration_draft.dart';
 import 'package:delivery/registration/rider_application.dart';
 import 'package:delivery/screens/auth/rider_registration_screen.dart';
 import 'package:agrimore_ui/agrimore_ui.dart';
@@ -26,6 +27,18 @@ RiderApplicationForm goodForm() => RiderApplicationForm()
   ..address = '12, Main Road'
   ..city = 'Madurai'
   ..pincode = '625020';
+
+/// DLVID4: none of these tests exercise draft recovery -- this keeps the
+/// screen from touching real secure storage (see registration_draft_test.dart
+/// and rider_registration_screen_test.dart for the draft mechanism itself).
+class _NoDraftStore implements RegistrationDraftStore {
+  @override
+  Future<RegistrationDraft?> load(String key) async => null;
+  @override
+  Future<void> save(String key, RegistrationDraft draft) async {}
+  @override
+  Future<void> clear(String key) async {}
+}
 
 class FakeBackend implements RegistrationBackend {
   String? uid;
@@ -65,7 +78,7 @@ class FakeBackend implements RegistrationBackend {
 }
 
 // A real 1x1 PNG (Image.memory decodes it on the photo tile).
-final photo = (bytes: Uint8List.fromList([137, 80, 78, 71, 13, 10, 26, 10, 0, 0, 0, 13, 73, 72, 68, 82, 0, 0, 0, 1, 0, 0, 0, 1, 8, 6, 0, 0, 0, 31, 21, 196, 137, 0, 0, 0, 13, 73, 68, 65, 84, 120, 218, 99, 100, 96, 248, 95, 15, 0, 2, 135, 1, 128, 235, 71, 186, 146, 0, 0, 0, 0, 73, 69, 78, 68, 174, 66, 96, 130]), contentType: 'image/png');
+final photo = (bytes: Uint8List.fromList([137, 80, 78, 71, 13, 10, 26, 10, 0, 0, 0, 13, 73, 72, 68, 82, 0, 0, 0, 1, 0, 0, 0, 1, 8, 6, 0, 0, 0, 31, 21, 196, 137, 0, 0, 0, 13, 73, 68, 65, 84, 120, 218, 99, 100, 96, 248, 95, 15, 0, 2, 135, 1, 128, 235, 71, 186, 146, 0, 0, 0, 0, 73, 69, 78, 68, 174, 66, 96, 130]), contentType: 'image/png', path: null);
 Map<RiderDocument, PickedPhoto> allPhotos() => {for (final d in RiderDocument.values) d: photo};
 
 void main() {
@@ -142,7 +155,11 @@ void main() {
           theme: WorkspaceTheme.build(WorkspaceBrand.delivery, Brightness.light),
           localizationsDelegates: AppLocalizations.localizationsDelegates,
           supportedLocales: AppLocalizations.supportedLocales,
-          home: RiderRegistrationScreen(service: s, pickPhoto: (_) async => photo),
+          home: RiderRegistrationScreen(
+            service: s,
+            pickPhoto: (_) async => photo,
+            draftStore: _NoDraftStore(),
+          ),
         ),
       ));
       await t.pumpAndSettle();
