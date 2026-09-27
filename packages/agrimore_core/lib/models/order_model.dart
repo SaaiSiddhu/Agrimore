@@ -76,6 +76,16 @@ class OrderModel {
   final String? codCollectedBy;
   final DateTime? codCollectedAt;
 
+  // ADMR-29: employeeCommission.ts's own real, already-live writes on this
+  // same order document (applyEmployeeCommissionPayment /
+  // reverseEmployeeCommissionOnCancellation) — added purely additively,
+  // same reasoning as the delivery/COD fields above.
+  final bool? commissionPaid;
+  final double? commissionAmount;
+  final DateTime? commissionPaidAt;
+  final bool? commissionReversed;
+  final DateTime? commissionReversedAt;
+
   OrderModel({
     required this.id,
     required this.userId,
@@ -126,6 +136,11 @@ class OrderModel {
     this.codSettlementStatus,
     this.codCollectedBy,
     this.codCollectedAt,
+    this.commissionPaid,
+    this.commissionAmount,
+    this.commissionPaidAt,
+    this.commissionReversed,
+    this.commissionReversedAt,
   }) : createdAt = createdAt ?? DateTime.now();
 
   // ============================================
@@ -315,6 +330,15 @@ class OrderModel {
         codCollectedAt: map['codCollectedAt'] != null
             ? _parseDateTime(map['codCollectedAt'])
             : null,
+        commissionPaid: map['commissionPaid'] as bool?,
+        commissionAmount: (map['commissionAmount'] as num?)?.toDouble(),
+        commissionPaidAt: map['commissionPaidAt'] != null
+            ? _parseDateTime(map['commissionPaidAt'])
+            : null,
+        commissionReversed: map['commissionReversed'] as bool?,
+        commissionReversedAt: map['commissionReversedAt'] != null
+            ? _parseDateTime(map['commissionReversedAt'])
+            : null,
       );
 
       debugPrint(
@@ -386,6 +410,15 @@ class OrderModel {
       'codCollectedBy': codCollectedBy,
       'codCollectedAt':
           codCollectedAt != null ? Timestamp.fromDate(codCollectedAt!) : null,
+      'commissionPaid': commissionPaid,
+      'commissionAmount': commissionAmount,
+      'commissionPaidAt': commissionPaidAt != null
+          ? Timestamp.fromDate(commissionPaidAt!)
+          : null,
+      'commissionReversed': commissionReversed,
+      'commissionReversedAt': commissionReversedAt != null
+          ? Timestamp.fromDate(commissionReversedAt!)
+          : null,
     };
   }
 
@@ -510,6 +543,11 @@ class OrderModel {
     String? codSettlementStatus,
     String? codCollectedBy,
     DateTime? codCollectedAt,
+    bool? commissionPaid,
+    double? commissionAmount,
+    DateTime? commissionPaidAt,
+    bool? commissionReversed,
+    DateTime? commissionReversedAt,
   }) {
     return OrderModel(
       id: id ?? this.id,
@@ -563,6 +601,11 @@ class OrderModel {
       codSettlementStatus: codSettlementStatus ?? this.codSettlementStatus,
       codCollectedBy: codCollectedBy ?? this.codCollectedBy,
       codCollectedAt: codCollectedAt ?? this.codCollectedAt,
+      commissionPaid: commissionPaid ?? this.commissionPaid,
+      commissionAmount: commissionAmount ?? this.commissionAmount,
+      commissionPaidAt: commissionPaidAt ?? this.commissionPaidAt,
+      commissionReversed: commissionReversed ?? this.commissionReversed,
+      commissionReversedAt: commissionReversedAt ?? this.commissionReversedAt,
     );
   }
 
