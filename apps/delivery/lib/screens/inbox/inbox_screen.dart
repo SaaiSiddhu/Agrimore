@@ -21,6 +21,7 @@ import '../money/money_screen.dart';
 import '../money/statement_screen.dart';
 import '../orders/active_order_screen.dart';
 import '../profile/identity_change_screen.dart';
+import '../support/support_request_status_screen.dart';
 
 /// Fetches one order fresh (never trusts a notice's own payload): the
 /// security rule (`deliveryPartnerId == request.auth.uid`, among others)
@@ -131,9 +132,22 @@ class _InboxScreenState extends State<InboxScreen> {
         _openDelivery(n.orderId!);
       case NoticeTarget.identityRequest:
         _openIdentityRequest();
+      case NoticeTarget.supportTicket:
+        _openSupportTicket(n.ticketId!);
       case NoticeTarget.none:
         break;
     }
+  }
+
+  /// DLVSUP2: routes to the exact ticket the notice named, reusing the same
+  /// status screen the submit flow itself pushes to — never "whichever
+  /// ticket is latest".
+  void _openSupportTicket(String ticketId) {
+    Navigator.of(context).push(
+      MaterialPageRoute<void>(
+        builder: (_) => SupportRequestStatusScreen(ticketId: ticketId),
+      ),
+    );
   }
 
   void _openIdentityRequest() {

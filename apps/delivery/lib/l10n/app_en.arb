@@ -647,6 +647,22 @@
   "@supportStatusClosedBody": {
     "description": "Status timeline body"
   },
+  "mySupportRequestsEntry": "My support requests",
+  "@mySupportRequestsEntry": {
+    "description": "DLVSUP2: entry point on the help screen to the ticket list"
+  },
+  "mySupportRequestsTitle": "My support requests",
+  "@mySupportRequestsTitle": {
+    "description": "DLVSUP2: ticket list screen's own AppBar title"
+  },
+  "mySupportRequestsEmpty": "You haven't filed any support requests yet.",
+  "@mySupportRequestsEmpty": {
+    "description": "DLVSUP2: empty state for the ticket list"
+  },
+  "mySupportRequestsNetworkError": "Couldn't load your support requests. Check your connection and try again.",
+  "@mySupportRequestsNetworkError": {
+    "description": "DLVSUP2: error state for the ticket list"
+  },
   "supportOutcomeLabel": "Outcome",
   "@supportOutcomeLabel": {
     "description": "Field label, shown once a request is closed"

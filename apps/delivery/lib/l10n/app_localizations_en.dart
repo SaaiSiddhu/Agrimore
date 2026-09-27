@@ -516,6 +516,20 @@ class AppLocalizationsEn extends AppLocalizations {
       'Request closed. View the outcome below.';
 
   @override
+  String get mySupportRequestsEntry => 'My support requests';
+
+  @override
+  String get mySupportRequestsTitle => 'My support requests';
+
+  @override
+  String get mySupportRequestsEmpty =>
+      'You haven\'t filed any support requests yet.';
+
+  @override
+  String get mySupportRequestsNetworkError =>
+      'Couldn\'t load your support requests. Check your connection and try again.';
+
+  @override
   String get supportOutcomeLabel => 'Outcome';
 
   @override

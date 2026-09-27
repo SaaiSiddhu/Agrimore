@@ -62,7 +62,7 @@ import 'app_localizations_en.dart';
 /// property.
 abstract class AppLocalizations {
   AppLocalizations(String locale)
-      : localeName = intl.Intl.canonicalizedLocale(locale.toString());
+    : localeName = intl.Intl.canonicalizedLocale(locale.toString());
 
   final String localeName;
 
@@ -85,11 +85,11 @@ abstract class AppLocalizations {
   /// of delegates is preferred or required.
   static const List<LocalizationsDelegate<dynamic>> localizationsDelegates =
       <LocalizationsDelegate<dynamic>>[
-    delegate,
-    GlobalMaterialLocalizations.delegate,
-    GlobalCupertinoLocalizations.delegate,
-    GlobalWidgetsLocalizations.delegate,
-  ];
+        delegate,
+        GlobalMaterialLocalizations.delegate,
+        GlobalCupertinoLocalizations.delegate,
+        GlobalWidgetsLocalizations.delegate,
+      ];
 
   /// A list of this localizations delegate's supported locales.
   static const List<Locale> supportedLocales = <Locale>[Locale('en')];
@@ -1041,6 +1041,30 @@ abstract class AppLocalizations {
   /// In en, this message translates to:
   /// **'Request closed. View the outcome below.'**
   String get supportStatusClosedBody;
+
+  /// DLVSUP2: entry point on the help screen to the ticket list
+  ///
+  /// In en, this message translates to:
+  /// **'My support requests'**
+  String get mySupportRequestsEntry;
+
+  /// DLVSUP2: ticket list screen's own AppBar title
+  ///
+  /// In en, this message translates to:
+  /// **'My support requests'**
+  String get mySupportRequestsTitle;
+
+  /// DLVSUP2: empty state for the ticket list
+  ///
+  /// In en, this message translates to:
+  /// **'You haven\'t filed any support requests yet.'**
+  String get mySupportRequestsEmpty;
+
+  /// DLVSUP2: error state for the ticket list
+  ///
+  /// In en, this message translates to:
+  /// **'Couldn\'t load your support requests. Check your connection and try again.'**
+  String get mySupportRequestsNetworkError;
 
   /// Field label, shown once a request is closed
   ///
@@ -4872,8 +4896,9 @@ AppLocalizations lookupAppLocalizations(Locale locale) {
   }
 
   throw FlutterError(
-      'AppLocalizations.delegate failed to load unsupported locale "$locale". This is likely '
-      'an issue with the localizations generation tool. Please file an issue '
-      'on GitHub with a reproducible sample app and the gen-l10n configuration '
-      'that was used.');
+    'AppLocalizations.delegate failed to load unsupported locale "$locale". This is likely '
+    'an issue with the localizations generation tool. Please file an issue '
+    'on GitHub with a reproducible sample app and the gen-l10n configuration '
+    'that was used.',
+  );
 }

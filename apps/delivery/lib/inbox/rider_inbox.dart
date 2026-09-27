@@ -11,7 +11,7 @@ import 'package:cloud_firestore/cloud_firestore.dart';
 /// identifier to get there (never trust the payload alone — the delivery
 /// destination re-reads its order fresh, and the server's own security rule
 /// is what actually authorizes it).
-enum NoticeTarget { delivery, statement, payoutDetails, identityRequest, none }
+enum NoticeTarget { delivery, statement, payoutDetails, identityRequest, supportTicket, none }
 
 class RiderNotice {
   const RiderNotice({
@@ -23,6 +23,7 @@ class RiderNotice {
     this.createdAt,
     this.orderId,
     this.payoutId,
+    this.ticketId,
   });
   final String id;
   final String type;
@@ -40,6 +41,11 @@ class RiderNotice {
   /// (statement_ready, payout_sent) — same `data` map.
   final String? payoutId;
 
+  /// DLVSUP2: the support ticket this notice is about
+  /// (support_request_seen/closed) — same `data` map; the server
+  /// (`riderNotices.ts`'s `supportRequestNotice`) already writes it.
+  final String? ticketId;
+
   factory RiderNotice.fromMap(String id, Map<String, dynamic> m) {
     final data = m['data'];
     final d = data is Map ? data : const {};
@@ -53,6 +59,7 @@ class RiderNotice {
       createdAt: m['createdAt'] is Timestamp ? (m['createdAt'] as Timestamp).toDate() : null,
       orderId: str(d['orderId']),
       payoutId: str(d['payoutId']),
+      ticketId: str(d['ticketId']),
     );
   }
 
@@ -63,6 +70,8 @@ class RiderNotice {
           payoutId != null ? NoticeTarget.statement : NoticeTarget.none,
         'bank_change_approved' || 'bank_change_rejected' => NoticeTarget.payoutDetails,
         'identity_change_approved' || 'identity_change_rejected' => NoticeTarget.identityRequest,
+        'support_request_seen' || 'support_request_closed' =>
+          ticketId != null ? NoticeTarget.supportTicket : NoticeTarget.none,
         _ => NoticeTarget.none,
       };
 }
