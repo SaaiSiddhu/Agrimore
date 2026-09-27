@@ -6,6 +6,7 @@ import 'package:agrimore_ui/agrimore_ui.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:delivery/account/support_card.dart';
 import 'package:delivery/data/order_timeline.dart';
+import 'package:delivery/design_system/design_system.dart' show DeliveryIcons;
 import 'package:delivery/data/rider_history.dart';
 import 'package:delivery/inbox/rider_inbox.dart';
 import 'package:delivery/l10n/app_localizations.dart';
@@ -722,6 +723,54 @@ void main() {
       await t.pumpAndSettle();
       expect(find.text('Could not open this statement. Try again.'), findsOneWidget);
       expect(find.text('This statement is no longer available.'), findsNothing);
+    });
+  });
+
+  group('DLVI3: noticeIcon distinguishes notification TYPE, not just read/unread', () {
+    test('every real, currently-written RiderNoticeType maps to a distinct-from-generic icon', () {
+      const typed = {
+        'delivery_assigned': DeliveryIcons.package,
+        'delivery_unassigned': DeliveryIcons.packageX,
+        'delivery_problem_resolved': DeliveryIcons.documentWarning,
+        'statement_ready': DeliveryIcons.statement,
+        'payout_sent': DeliveryIcons.rupee,
+        'bank_change_approved': DeliveryIcons.bank,
+        'bank_change_rejected': DeliveryIcons.bank,
+        'identity_change_approved': DeliveryIcons.idCard,
+        'identity_change_rejected': DeliveryIcons.idCard,
+        'document_review_approved': DeliveryIcons.document,
+        'document_review_rejected': DeliveryIcons.document,
+        'incident_acknowledged': DeliveryIcons.shieldCheck,
+        'incident_resolved': DeliveryIcons.shieldCheck,
+        'support_request_seen': DeliveryIcons.support,
+        'support_request_closed': DeliveryIcons.support,
+        'rider_offline': DeliveryIcons.offline,
+      };
+      for (final entry in typed.entries) {
+        expect(noticeIcon(entry.key, unread: true), entry.value, reason: '${entry.key} (unread)');
+        expect(noticeIcon(entry.key, unread: false), entry.value, reason: '${entry.key} (read)');
+      }
+    });
+
+    test('two different types never collapse to the same icon as the generic read/unread pair', () {
+      // Guards against a mapping that accidentally reuses bell/checkCircle
+      // for a real type, which would silently regress to the old behaviour.
+      const typed = [
+        'delivery_assigned', 'delivery_unassigned', 'delivery_problem_resolved', 'statement_ready',
+        'payout_sent', 'bank_change_approved', 'identity_change_approved', 'document_review_approved',
+        'incident_acknowledged', 'support_request_seen', 'rider_offline',
+      ];
+      for (final type in typed) {
+        expect(noticeIcon(type, unread: true), isNot(DeliveryIcons.bell), reason: type);
+        expect(noticeIcon(type, unread: false), isNot(DeliveryIcons.checkCircle), reason: type);
+      }
+    });
+
+    test('an unrecognised or empty type falls back to the pre-existing read/unread pair', () {
+      expect(noticeIcon('', unread: true), DeliveryIcons.bell);
+      expect(noticeIcon('', unread: false), DeliveryIcons.checkCircle);
+      expect(noticeIcon('some_future_type_this_client_does_not_know_yet', unread: true), DeliveryIcons.bell);
+      expect(noticeIcon('some_future_type_this_client_does_not_know_yet', unread: false), DeliveryIcons.checkCircle);
     });
   });
 }
