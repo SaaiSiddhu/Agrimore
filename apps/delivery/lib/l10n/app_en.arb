@@ -3104,6 +3104,23 @@
   "profileAppearanceHeading": "Appearance",
   "profileThemeSystem": "System",
   "profileThemeLight": "Light",
-  "profileThemeDark": "Dark"
+  "profileThemeDark": "Dark",
+  "profileReadinessHeading": "Delivery readiness",
+  "readinessOpen": "Check delivery readiness",
+  "readinessScreenTitle": "Delivery readiness",
+  "readinessScreenIntro": "These affect whether you actually see and can accept new delivery offers. Going online still works even if some are off.",
+  "readinessReady": "Ready",
+  "readinessActionNeeded": "Action needed",
+  "readinessFix": "Fix",
+  "readinessNotificationsTitle": "Notifications",
+  "readinessNotificationsBody": "Lets the app alert you when a new order arrives.",
+  "readinessFullScreenTitle": "Full-screen ring alert",
+  "readinessFullScreenBody": "Lets an incoming order ring and show even while your phone is locked.",
+  "readinessLocationTitle": "Location",
+  "readinessLocationBody": "Needed so nearby orders can be offered to you at all.",
+  "readinessBackgroundLocationTitle": "Background location",
+  "readinessBackgroundLocationBody": "Keeps sharing your location while online even if the app closes.",
+  "readinessBatteryTitle": "Battery settings",
+  "readinessBatteryBody": "Stops your phone closing the app in the background, which would take you offline."
 }
 

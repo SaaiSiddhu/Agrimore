@@ -22,6 +22,7 @@ import '../../registration/rider_application.dart';
 import '../auth/rider_registration_screen.dart' show vehicleLabel;
 import '../money/money_screen.dart';
 import '../orders/active_order_screen.dart';
+import '../settings/device_readiness_screen.dart';
 import '../support/help_support_screen.dart';
 import 'identity_change_screen.dart';
 
@@ -454,6 +455,21 @@ class _RiderProfileScreenState extends State<RiderProfileScreen> {
                     ),
                   ],
                 ),
+              _section(
+                l.profileReadinessHeading,
+                [
+                  DeliveryButton.secondary(
+                    key: const ValueKey('device-readiness'),
+                    label: l.readinessOpen,
+                    icon: DeliveryIcons.bell,
+                    onPressed: () => Navigator.of(context).push(
+                      MaterialPageRoute<void>(
+                        builder: (_) => const DeviceReadinessScreen(),
+                      ),
+                    ),
+                  ),
+                ],
+              ),
               _section(
                 l.profileSupport,
                 [
