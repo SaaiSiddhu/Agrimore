@@ -296,6 +296,19 @@ void main() {
     // a shot can drive ActiveOrderScreen's own live recovery states.
     DeliveryOrderProvider? orderProvider,
   }) async {
+    // DLVTOUR1: pumping a brand new MaterialApp each shot does NOT reliably
+    // tear down the PREVIOUS one's Navigator state -- same widget type, no
+    // key, same tree position, so Flutter's element diffing treats it as an
+    // UPDATE, not a replacement, and reuses the underlying NavigatorState.
+    // An open modal route from a previous shot's `before:` (a bottom sheet,
+    // a dialog) then survives into this "fresh" tree, landing underneath or
+    // in front of whatever this shot builds -- this is the root cause of
+    // the frame-bleed/tap-target failures this tour has intermittently hit
+    // (task_a8bb43d5; also the shot-26 Help-tooltip failure recorded under
+    // DLVMAP3/DLVSUP2/DLVID3's own ledger rows). Pumping a structurally
+    // unrelated widget first forces a full unmount of whatever was there,
+    // Navigator included, before the real tree for THIS shot is built.
+    await tester.pumpWidget(const SizedBox.shrink());
     final auth = DeliveryAuthProvider(
       gateway: _TourAuth(),
       store: _TourStore(status: partnerStatus, reason: rejectionReason),
@@ -1028,32 +1041,41 @@ void main() {
     // live query (via an injected `orderProvider`), not a separate demo
     // widget -- the same screen every rider actually uses.
     final baseline = _sampleOrder(status: 'out_for_delivery');
+    ActiveSnapshot present(Map<String, dynamic> data) =>
+        (docs: [(id: baseline.id, data: data)], fromCache: false);
 
+    // DLVTOUR1: a broadcast StreamController fired BEFORE anything has
+    // subscribed silently drops that value -- broadcast streams never
+    // buffer for a late listener. Each source below is a function that
+    // synthesizes the "present" baseline directly at subscribe time (via
+    // async*, guaranteed delivered to whichever provider binds to it), THEN
+    // continues with whatever the controller emits afterwards -- so
+    // `before:`'s later event is never the FIRST thing the provider sees.
     final changedSource = StreamController<ActiveSnapshot>.broadcast();
-    changedSource.add((
-      docs: [
-        (
-          id: baseline.id,
-          data: {...baseline.toMap(), 'deliveryAddress': {...baseline.toMap()['deliveryAddress'] as Map, 'name': 'Ganesh Moorthy'}},
-        ),
-      ],
-      fromCache: false,
-    ));
+    Stream<ActiveSnapshot> changedWithBaseline(String _) async* {
+      yield present({...baseline.toMap(), 'deliveryAddress': {...baseline.toMap()['deliveryAddress'] as Map, 'name': 'Ganesh Moorthy'}});
+      yield* changedSource.stream;
+    }
+
     await shot(
       tester,
       '33_assignment_changed_light',
       ActiveOrderScreen(order: baseline),
-      orderProvider: DeliveryOrderProvider(activeSource: (_) => changedSource.stream, deliveredCount: (_, __) async => 0)
+      orderProvider: DeliveryOrderProvider(activeSource: changedWithBaseline, deliveredCount: (_, __) async => 0)
         ..bind('r-tour'),
     );
 
     final removedSource = StreamController<ActiveSnapshot>.broadcast();
-    removedSource.add((docs: [(id: baseline.id, data: baseline.toMap())], fromCache: false));
+    Stream<ActiveSnapshot> removedWithBaseline(String _) async* {
+      yield present(baseline.toMap());
+      yield* removedSource.stream;
+    }
+
     await shot(
       tester,
       '34_assignment_removed_light',
       ActiveOrderScreen(order: baseline),
-      orderProvider: DeliveryOrderProvider(activeSource: (_) => removedSource.stream, deliveredCount: (_, __) async => 0)
+      orderProvider: DeliveryOrderProvider(activeSource: removedWithBaseline, deliveredCount: (_, __) async => 0)
         ..bind('r-tour'),
       before: (t) async {
         removedSource.add((docs: const [], fromCache: false));
@@ -1062,12 +1084,16 @@ void main() {
     );
 
     final lostSource = StreamController<ActiveSnapshot>.broadcast();
-    lostSource.add((docs: [(id: baseline.id, data: baseline.toMap())], fromCache: false));
+    Stream<ActiveSnapshot> lostWithBaseline(String _) async* {
+      yield present(baseline.toMap());
+      yield* lostSource.stream;
+    }
+
     await shot(
       tester,
       '35_assignment_connection_lost_light',
       ActiveOrderScreen(order: baseline),
-      orderProvider: DeliveryOrderProvider(activeSource: (_) => lostSource.stream, deliveredCount: (_, __) async => 0)
+      orderProvider: DeliveryOrderProvider(activeSource: lostWithBaseline, deliveredCount: (_, __) async => 0)
         ..bind('r-tour'),
       before: (t) async {
         lostSource.addError(Exception('offline'));
