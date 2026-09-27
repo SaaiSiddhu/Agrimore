@@ -200,7 +200,7 @@ void main() {
     expect(find.textContaining('approved'), findsWidgets);
   });
 
-  testWidgets('support tab discloses no case system exists when there is no application record',
+  testWidgets('support tab shows no application record and a real, empty case list',
       (tester) async {
     final db = FakeFirebaseFirestore();
     await _seedSeller(db, 'seller_noapp');
@@ -209,7 +209,24 @@ void main() {
     await switchToTab(tester, 'Support & Audit');
 
     expect(find.textContaining('No application record found'), findsOneWidget);
-    expect(find.textContaining('No dedicated seller support-case system exists yet'),
-        findsOneWidget);
+    expect(find.text('Support cases'), findsOneWidget);
+    expect(find.text('No support cases for this seller yet.'), findsOneWidget);
+  });
+
+  testWidgets('support tab shows a real support case for this seller (ADMR-63)', (tester) async {
+    final db = FakeFirebaseFirestore();
+    await _seedSeller(db, 'seller_case');
+    await db.collection('support_cases').add({
+      'title': 'Payout dispute',
+      'category': 'payment_issue',
+      'primaryActor': {'type': 'seller', 'id': 'seller_case'},
+      'status': 'open',
+      'updatedAt': Timestamp.fromDate(DateTime(2026, 9, 1)),
+    });
+
+    await pumpScreen(tester, db, 'seller_case');
+    await switchToTab(tester, 'Support & Audit');
+
+    expect(find.text('Payout dispute'), findsOneWidget);
   });
 }

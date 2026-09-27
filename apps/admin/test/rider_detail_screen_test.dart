@@ -222,4 +222,23 @@ void main() {
     expect(find.text('Someone else\'s ticket'), findsNothing);
     expect(find.text('No incidents reported for this rider.'), findsOneWidget);
   });
+
+  testWidgets('support and audit tab also shows this rider\'s real support cases (ADMR-63)',
+      (tester) async {
+    final db = FakeFirebaseFirestore();
+    await _seedRider(db, 'rider_case');
+    await db.collection('support_cases').add({
+      'title': 'Rider reported wrong pickup address',
+      'category': 'delivery_issue',
+      'primaryActor': {'type': 'rider', 'id': 'rider_case'},
+      'status': 'in_progress',
+      'updatedAt': Timestamp.fromDate(DateTime(2026, 9, 1)),
+    });
+
+    await pumpScreen(tester, db, 'rider_case');
+    await switchToTab(tester, 'Support & Audit');
+
+    expect(find.text('Support cases'), findsOneWidget);
+    expect(find.text('Rider reported wrong pickup address'), findsOneWidget);
+  });
 }

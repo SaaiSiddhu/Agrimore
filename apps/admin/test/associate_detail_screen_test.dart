@@ -173,4 +173,23 @@ void main() {
     expect(find.textContaining('ICIC0001'), findsOneWidget);
     expect(find.text('New destination requested'), findsOneWidget);
   });
+
+  testWidgets('support and audit tab shows this associate\'s real support cases (ADMR-63)',
+      (tester) async {
+    final db = FakeFirebaseFirestore();
+    await _seedAssociate(db, 'assoc_case');
+    await db.collection('support_cases').add({
+      'title': 'Commission dispute',
+      'category': 'payment_issue',
+      'primaryActor': {'type': 'associate', 'id': 'assoc_case'},
+      'status': 'open',
+      'updatedAt': Timestamp.fromDate(DateTime(2026, 9, 1)),
+    });
+
+    await pumpScreen(tester, db, 'assoc_case');
+    await switchToTab(tester, 'Support & Audit');
+
+    expect(find.text('Support cases'), findsOneWidget);
+    expect(find.text('Commission dispute'), findsOneWidget);
+  });
 }

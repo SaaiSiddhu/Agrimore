@@ -30,6 +30,7 @@ import 'package:agrimore_core/agrimore_core.dart';
 import 'package:agrimore_ui/agrimore_ui.dart';
 
 import '../orders/admin_order_details_screen.dart';
+import '../widgets/actor_support_cases_section.dart';
 import '../widgets/paginated_query_list.dart';
 
 class AssociateDetailScreen extends StatefulWidget {
@@ -55,7 +56,7 @@ class _AssociateDetailScreenState extends State<AssociateDetailScreen>
   @override
   void initState() {
     super.initState();
-    _tabController = TabController(length: 5, vsync: this);
+    _tabController = TabController(length: 6, vsync: this);
   }
 
   @override
@@ -112,6 +113,7 @@ class _AssociateDetailScreenState extends State<AssociateDetailScreen>
                     Tab(text: 'Commission'),
                     Tab(text: 'Wallet & Payouts'),
                     Tab(text: 'Bank & Payout'),
+                    Tab(text: 'Support & Audit'),
                   ],
                 ),
               ),
@@ -144,6 +146,11 @@ class _AssociateDetailScreenState extends State<AssociateDetailScreen>
                       key: const ValueKey('bank'),
                       employeeId: employeeId,
                       data: data,
+                      firestore: _firestore,
+                    ),
+                    _SupportTab(
+                      key: const ValueKey('support'),
+                      employeeId: employeeId,
                       firestore: _firestore,
                     ),
                   ],
@@ -700,6 +707,24 @@ class _BankPayoutTabState extends State<_BankPayoutTab> {
             );
           },
         ),
+      ],
+    );
+  }
+}
+
+// ── Support & Audit (ADMR-63) ──
+
+class _SupportTab extends StatelessWidget {
+  const _SupportTab({super.key, required this.employeeId, required this.firestore});
+  final String employeeId;
+  final FirebaseFirestore firestore;
+
+  @override
+  Widget build(BuildContext context) {
+    return ListView(
+      padding: const EdgeInsets.all(16),
+      children: [
+        ActorSupportCasesSection(firestore: firestore, actorType: 'associate', actorId: employeeId),
       ],
     );
   }

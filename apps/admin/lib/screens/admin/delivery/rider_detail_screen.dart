@@ -28,6 +28,7 @@ import 'package:agrimore_core/agrimore_core.dart';
 import 'package:agrimore_ui/agrimore_ui.dart';
 
 import '../orders/admin_order_details_screen.dart';
+import '../widgets/actor_support_cases_section.dart';
 import '../widgets/paginated_query_list.dart';
 import 'rider_cash_ledger_screen.dart';
 import 'rider_review_sheet.dart';
@@ -829,6 +830,8 @@ class _SupportTab extends StatelessWidget {
     return ListView(
       padding: const EdgeInsets.all(16),
       children: [
+        ActorSupportCasesSection(firestore: firestore, actorType: 'rider', actorId: riderId),
+        const SizedBox(height: 20),
         Text('Support tickets', style: AppTextStyles.titleMedium.copyWith(fontWeight: FontWeight.bold)),
         const SizedBox(height: 8),
         _list(

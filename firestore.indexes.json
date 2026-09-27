@@ -989,6 +989,24 @@
                     "order": "DESCENDING"
                 }
             ]
+        },
+        {
+            "collectionGroup": "support_cases",
+            "queryScope": "COLLECTION",
+            "fields": [
+                {
+                    "fieldPath": "primaryActor.type",
+                    "order": "ASCENDING"
+                },
+                {
+                    "fieldPath": "primaryActor.id",
+                    "order": "ASCENDING"
+                },
+                {
+                    "fieldPath": "updatedAt",
+                    "order": "DESCENDING"
+                }
+            ]
         }
     ],
     "fieldOverrides": []

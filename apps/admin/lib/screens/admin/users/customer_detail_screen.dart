@@ -18,6 +18,7 @@ import 'package:agrimore_ui/agrimore_ui.dart';
 
 import '../../../providers/admin_provider.dart';
 import '../orders/admin_order_details_screen.dart';
+import '../widgets/actor_support_cases_section.dart';
 import '../widgets/paginated_query_list.dart';
 import 'edit_user_screen.dart';
 
@@ -165,7 +166,11 @@ class _CustomerDetailScreenState extends State<CustomerDetailScreen>
                       userId: user.uid,
                       firestore: _firestore,
                     ),
-                    const _SupportTab(key: ValueKey('support')),
+                    _SupportTab(
+                      key: const ValueKey('support'),
+                      userId: user.uid,
+                      firestore: _firestore,
+                    ),
                   ],
                 ),
               ),
@@ -694,17 +699,17 @@ class _AddressesTab extends StatelessWidget {
 // ── Support & audit ──
 
 class _SupportTab extends StatelessWidget {
-  const _SupportTab({super.key});
+  const _SupportTab({super.key, required this.userId, required this.firestore});
+  final String userId;
+  final FirebaseFirestore firestore;
 
   @override
   Widget build(BuildContext context) {
-    return const SectionMessage(
-      icon: Icons.support_agent_outlined,
-      message: 'No dedicated customer support-case system exists yet. '
-          'Rider support tickets are a separate, rider-only system; there '
-          'is no per-customer case or audit trail to show here today. '
-          'This is a disclosed gap, not a missing wire-up -- a unified '
-          'support model is planned as its own later phase.',
+    return ListView(
+      padding: const EdgeInsets.all(16),
+      children: [
+        ActorSupportCasesSection(firestore: firestore, actorType: 'customer', actorId: userId),
+      ],
     );
   }
 }
