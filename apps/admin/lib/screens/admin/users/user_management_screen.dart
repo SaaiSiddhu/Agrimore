@@ -7,6 +7,7 @@ import 'package:agrimore_ui/agrimore_ui.dart';
 import '../../../providers/admin_provider.dart';
 import 'edit_user_screen.dart';
 import 'widgets/user_card.dart';
+import 'widgets/user_details_modal.dart';
 
 class UserManagementScreen extends StatefulWidget {
   const UserManagementScreen({Key? key}) : super(key: key);
@@ -367,7 +368,7 @@ class _UserManagementScreenState extends State<UserManagementScreen> {
               children: [
                 UserCard(
                   user: user,
-                  onTap: () => _navigateToEditUser(user), // Navigate to edit on tap
+                  onTap: () => _showUserDetails(user),
                   onEdit: () => _navigateToEditUser(user),
                   onToggleStatus: () => provider.toggleUserStatus(user.uid, !user.isActive),
                   onDelete: () async {
@@ -394,5 +395,19 @@ class _UserManagementScreenState extends State<UserManagementScreen> {
 
   void _navigateToEditUser(UserModel user) {
     Navigator.push(context, MaterialPageRoute(builder: (_) => EditUserScreen(user: user)));
+  }
+
+  void _showUserDetails(UserModel user) {
+    showDialog(
+      context: context,
+      builder: (dialogContext) => UserDetailsModal(
+        user: user,
+        onClose: () => Navigator.pop(dialogContext),
+        onEdit: () {
+          Navigator.pop(dialogContext);
+          _navigateToEditUser(user);
+        },
+      ),
+    );
   }
 }

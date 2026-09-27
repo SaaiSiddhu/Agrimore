@@ -1,7 +1,7 @@
+import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:agrimore_ui/agrimore_ui.dart';
-import 'package:agrimore_core/agrimore_core.dart';
 import 'role_badge.dart';
 
 class UserDetailsModal extends StatelessWidget {
@@ -9,12 +9,20 @@ class UserDetailsModal extends StatelessWidget {
   final VoidCallback onEdit;
   final VoidCallback onClose;
 
-  const UserDetailsModal({
+  // ADMR-54: an injectable Firestore instance, same pattern ADMR-48/49/51/
+  //52/53 established -- defaults to the real FirebaseFirestore.instance,
+  // overridable in tests so this revived widget is testWidgets-testable
+  // from day one.
+  UserDetailsModal({
     Key? key,
     required this.user,
     required this.onEdit,
     required this.onClose,
-  }) : super(key: key);
+    FirebaseFirestore? firestore,
+  })  : _firestore = firestore ?? FirebaseFirestore.instance,
+        super(key: key);
+
+  final FirebaseFirestore _firestore;
 
   @override
   Widget build(BuildContext context) {
@@ -158,6 +166,11 @@ class UserDetailsModal extends StatelessWidget {
                       value: user.isActive ? 'Active' : 'Inactive',
                       valueColor: user.isActive ? Colors.green : Colors.red,
                     ),
+
+                    const SizedBox(height: 24),
+                    _buildSectionTitle('Recent Orders'),
+                    const SizedBox(height: 12),
+                    _buildRecentOrders(),
                   ],
                 ),
               ),
@@ -271,6 +284,74 @@ class UserDetailsModal extends StatelessWidget {
             ),
         ],
       ),
+    );
+  }
+
+  Widget _buildRecentOrders() {
+    return StreamBuilder<QuerySnapshot<Map<String, dynamic>>>(
+      stream: _firestore
+          .collection('orders')
+          .where('userId', isEqualTo: user.uid)
+          .orderBy('createdAt', descending: true)
+          .limit(5)
+          .snapshots(),
+      builder: (context, snap) {
+        if (snap.hasError) {
+          return Text(
+            'Could not load recent orders.',
+            style: TextStyle(color: Colors.grey.shade600),
+          );
+        }
+        if (!snap.hasData) {
+          return const Padding(
+            padding: EdgeInsets.symmetric(vertical: 12),
+            child: Center(child: CircularProgressIndicator()),
+          );
+        }
+        final docs = snap.data!.docs;
+        if (docs.isEmpty) {
+          return Text('No orders yet.', style: TextStyle(color: Colors.grey.shade600));
+        }
+        return Column(
+          children: docs.map((doc) {
+            final order = OrderModel.fromMap(doc.data(), doc.id);
+            return Container(
+              margin: const EdgeInsets.only(bottom: 8),
+              padding: const EdgeInsets.all(12),
+              decoration: BoxDecoration(
+                color: Colors.grey.shade50,
+                borderRadius: BorderRadius.circular(10),
+                border: Border.all(color: Colors.grey.shade200),
+              ),
+              child: Row(
+                children: [
+                  Expanded(
+                    child: Column(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [
+                        Text(
+                          'Order #${order.orderNumber}',
+                          style: const TextStyle(fontWeight: FontWeight.w700),
+                        ),
+                        Text(
+                          _formatDate(order.createdAt),
+                          style: TextStyle(color: Colors.grey.shade600, fontSize: 12),
+                        ),
+                      ],
+                    ),
+                  ),
+                  Text(order.status, style: const TextStyle(fontWeight: FontWeight.w600)),
+                  const SizedBox(width: 12),
+                  Text(
+                    '₹${order.total.toStringAsFixed(2)}',
+                    style: const TextStyle(fontWeight: FontWeight.w700),
+                  ),
+                ],
+              ),
+            );
+          }).toList(),
+        );
+      },
     );
   }
 
