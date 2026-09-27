@@ -521,58 +521,36 @@ class _AssignmentsTab extends StatelessWidget {
 
 // ── Earnings ──
 
-class _EarningsTab extends StatefulWidget {
+class _EarningsTab extends StatelessWidget {
   const _EarningsTab({super.key, required this.riderId, required this.firestore});
   final String riderId;
   final FirebaseFirestore firestore;
 
   @override
-  State<_EarningsTab> createState() => _EarningsTabState();
-}
-
-class _EarningsTabState extends State<_EarningsTab> {
-  late final Future<QuerySnapshot<Map<String, dynamic>>> _future = widget.firestore
-      .collection('rider_earnings')
-      .where('riderId', isEqualTo: widget.riderId)
-      .limit(300)
-      .get();
-
-  @override
   Widget build(BuildContext context) {
-    return FutureBuilder<QuerySnapshot<Map<String, dynamic>>>(
-      future: _future,
-      builder: (context, snap) {
-        if (snap.connectionState == ConnectionState.waiting) {
-          return const Center(child: CircularProgressIndicator());
-        }
-        if (snap.hasError) {
-          return const SectionMessage(icon: Icons.error_outline, message: "Couldn't load earnings.");
-        }
-        final docs = (snap.data?.docs ?? const <QueryDocumentSnapshot<Map<String, dynamic>>>[])
-            .toList()
-          ..sort((a, b) {
-            final at = a.data()['createdAt'];
-            final bt = b.data()['createdAt'];
-            final am = at is Timestamp ? at.millisecondsSinceEpoch : 0;
-            final bm = bt is Timestamp ? bt.millisecondsSinceEpoch : 0;
-            return bm.compareTo(am);
-          });
-        if (docs.isEmpty) {
-          return const SectionMessage(
-              icon: Icons.payments_outlined, message: 'No earnings recorded yet.');
-        }
-        final total = docs.fold<double>(
-            0, (a, d) => a + RiderEarningRecord.fromMap(d.data(), d.id).total);
-        return ListView(
-          padding: const EdgeInsets.all(16),
-          children: [
-            Text('${docs.length} deliveries · ${AgFormat.rupees(total)} total earned',
-                style: Theme.of(context).textTheme.titleMedium),
-            const SizedBox(height: 12),
-            for (final d in docs) _EarningTile(record: RiderEarningRecord.fromMap(d.data(), d.id)),
-          ],
-        );
-      },
+    return Column(
+      children: [
+        Padding(
+          padding: const EdgeInsets.all(12),
+          child: Text(
+            'Per-delivery earning lines, newest first. This is history, not a lifetime '
+            'total -- see the rider\'s own statements for settled totals.',
+            style: TextStyle(fontSize: 12, color: Colors.grey.shade600),
+          ),
+        ),
+        Expanded(
+          child: PaginatedQueryList(
+            key: ValueKey('rider-earnings-$riderId'),
+            baseQuery: firestore
+                .collection('rider_earnings')
+                .where('riderId', isEqualTo: riderId)
+                .orderBy('createdAt', descending: true),
+            emptyLabel: 'No earnings recorded yet.',
+            itemBuilder: (context, doc) =>
+                _EarningTile(record: RiderEarningRecord.fromMap(doc.data(), doc.id)),
+          ),
+        ),
+      ],
     );
   }
 }
@@ -826,6 +804,26 @@ class _SupportTab extends StatelessWidget {
   final String riderId;
   final FirebaseFirestore firestore;
 
+  Widget _list({
+    required String collection,
+    required String field,
+    required String emptyLabel,
+    required Widget Function(Map<String, dynamic>) itemBuilder,
+  }) {
+    return PaginatedQueryList(
+      key: ValueKey('rider-$collection-$riderId'),
+      baseQuery: firestore
+          .collection(collection)
+          .where(field, isEqualTo: riderId)
+          .orderBy('createdAt', descending: true),
+      emptyLabel: emptyLabel,
+      pageSize: 10,
+      shrinkWrapInList: true,
+      itemBuilder: (context, doc) =>
+          Card(margin: const EdgeInsets.only(bottom: 6), child: itemBuilder(doc.data())),
+    );
+  }
+
   @override
   Widget build(BuildContext context) {
     return ListView(
@@ -833,11 +831,9 @@ class _SupportTab extends StatelessWidget {
       children: [
         Text('Support tickets', style: AppTextStyles.titleMedium.copyWith(fontWeight: FontWeight.bold)),
         const SizedBox(height: 8),
-        _RiderScopedList(
-          key: ValueKey('rider-tickets-$riderId'),
-          firestore: firestore,
+        _list(
           collection: 'rider_support_tickets',
-          riderId: riderId,
+          field: 'riderId',
           emptyLabel: 'No support tickets from this rider.',
           itemBuilder: (d) => ListTile(
             dense: true,
@@ -848,11 +844,9 @@ class _SupportTab extends StatelessWidget {
         const SizedBox(height: 20),
         Text('Incidents', style: AppTextStyles.titleMedium.copyWith(fontWeight: FontWeight.bold)),
         const SizedBox(height: 8),
-        _RiderScopedList(
-          key: ValueKey('rider-incidents-$riderId'),
-          firestore: firestore,
+        _list(
           collection: 'rider_incidents',
-          riderId: riderId,
+          field: 'riderId',
           emptyLabel: 'No incidents reported for this rider.',
           itemBuilder: (d) => ListTile(
             dense: true,
@@ -864,11 +858,9 @@ class _SupportTab extends StatelessWidget {
         Text('Delivery exceptions',
             style: AppTextStyles.titleMedium.copyWith(fontWeight: FontWeight.bold)),
         const SizedBox(height: 8),
-        _RiderScopedList(
-          key: ValueKey('rider-exceptions-$riderId'),
-          firestore: firestore,
+        _list(
           collection: 'delivery_exceptions',
-          riderId: riderId,
+          field: 'riderId',
           emptyLabel: 'No delivery exceptions reported for this rider.',
           itemBuilder: (d) => ListTile(
             dense: true,
@@ -877,76 +869,6 @@ class _SupportTab extends StatelessWidget {
           ),
         ),
       ],
-    );
-  }
-}
-
-/// riderId-equality-only + client-side sort -- rider_incidents and
-/// delivery_exceptions have only a (status, createdAt) composite index, not
-/// (riderId, createdAt); adding one would be a real deploy consequence, so
-/// this mirrors rider_payouts_screen.dart's own established _StatementsTab
-/// convention instead (equality filter, limit, sort the fetched page).
-class _RiderScopedList extends StatefulWidget {
-  const _RiderScopedList({
-    super.key,
-    required this.firestore,
-    required this.collection,
-    required this.riderId,
-    required this.emptyLabel,
-    required this.itemBuilder,
-  });
-  final FirebaseFirestore firestore;
-  final String collection;
-  final String riderId;
-  final String emptyLabel;
-  final Widget Function(Map<String, dynamic>) itemBuilder;
-
-  @override
-  State<_RiderScopedList> createState() => _RiderScopedListState();
-}
-
-class _RiderScopedListState extends State<_RiderScopedList> {
-  late final Future<QuerySnapshot<Map<String, dynamic>>> _future = widget.firestore
-      .collection(widget.collection)
-      .where('riderId', isEqualTo: widget.riderId)
-      .limit(100)
-      .get();
-
-  @override
-  Widget build(BuildContext context) {
-    return FutureBuilder<QuerySnapshot<Map<String, dynamic>>>(
-      future: _future,
-      builder: (context, snap) {
-        if (snap.connectionState == ConnectionState.waiting) {
-          return const Padding(
-              padding: EdgeInsets.symmetric(vertical: 12),
-              child: Center(child: CircularProgressIndicator()));
-        }
-        if (snap.hasError) {
-          return SectionMessage(
-              icon: Icons.error_outline, message: "Couldn't load ${widget.collection}.");
-        }
-        final docs = (snap.data?.docs ?? const <QueryDocumentSnapshot<Map<String, dynamic>>>[])
-            .toList()
-          ..sort((a, b) {
-            final at = a.data()['createdAt'];
-            final bt = b.data()['createdAt'];
-            final am = at is Timestamp ? at.millisecondsSinceEpoch : 0;
-            final bm = bt is Timestamp ? bt.millisecondsSinceEpoch : 0;
-            return bm.compareTo(am);
-          });
-        if (docs.isEmpty) {
-          return Padding(
-            padding: const EdgeInsets.symmetric(vertical: 8),
-            child: Text(widget.emptyLabel, style: const TextStyle(color: Colors.grey, fontSize: 13)),
-          );
-        }
-        return Column(
-          children: docs
-              .map((d) => Card(margin: const EdgeInsets.only(bottom: 6), child: widget.itemBuilder(d.data())))
-              .toList(),
-        );
-      },
     );
   }
 }
