@@ -1,9 +1,36 @@
 import 'dart:async';
 import 'package:flutter/material.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
+import 'package:cloud_functions/cloud_functions.dart';
 import 'package:firebase_auth/firebase_auth.dart';
+import 'package:uuid/uuid.dart';
 import 'package:agrimore_core/agrimore_core.dart';
 import 'package:agrimore_services/agrimore_services.dart';
+
+// ADMR-24: typed result for updateOrderStatus, replacing a bare bool that
+// every call site (order_status_updater.dart, order_management_screen.dart's
+// bulk action) was ignoring outright — a real failure was shown as success.
+// See functions/src/admin/adminOrderActions.ts's own Outcome union, which
+// this mirrors.
+enum OrderStatusUpdateOutcome {
+  applied,
+  alreadyApplied,
+  staleState,
+  notFound,
+  validationFailed,
+  permissionDenied,
+  networkError,
+}
+
+class OrderStatusUpdateResult {
+  final OrderStatusUpdateOutcome outcome;
+  final String? message;
+  const OrderStatusUpdateResult(this.outcome, {this.message});
+
+  bool get isSuccess =>
+      outcome == OrderStatusUpdateOutcome.applied ||
+      outcome == OrderStatusUpdateOutcome.alreadyApplied;
+}
 
 class OrderProvider with ChangeNotifier {
   // ============================================
@@ -258,10 +285,11 @@ class OrderProvider with ChangeNotifier {
   // ============================================
   // UPDATE ORDER STATUS (FOR ADMIN)
   // ============================================
-  Future<bool> updateOrderStatus(
+  Future<OrderStatusUpdateResult> updateOrderStatus(
     String orderId,
     String newStatus, {
     String? description,
+    String? expectedCurrentStatus,
   }) async {
     try {
       _isLoading = true;
@@ -270,39 +298,66 @@ class OrderProvider with ChangeNotifier {
 
       debugPrint('📦 Updating order status: $orderId -> $newStatus');
 
-      // Update main order document
-      await _firestore.collection('orders').doc(orderId).update({
-        'orderStatus': newStatus,
-        'updatedAt': FieldValue.serverTimestamp(),
+      final requestId = const Uuid().v4();
+      final res = await FirebaseFunctions.instance
+          .httpsCallable('adminUpdateOrderStatus')
+          .call<Map<String, dynamic>>({
+        'orderId': orderId,
+        'newStatus': newStatus,
+        'requestId': requestId,
+        if (description != null && description.isNotEmpty) 'reason': description,
+        if (expectedCurrentStatus != null)
+          'expectedCurrentStatus': expectedCurrentStatus,
       });
 
-      // Add timeline event
-      final timelineData = {
-        'status': newStatus,
-        'title': _getStatusTitle(newStatus),
-        'description': description ?? _getStatusDescription(newStatus),
-        'timestamp': FieldValue.serverTimestamp(),
-      };
+      final outcome = res.data['outcome'] as String?;
+      _isLoading = false;
 
-      await _firestore
-          .collection('orders')
-          .doc(orderId)
-          .collection('timeline')
-          .add(timelineData);
+      if (outcome == 'applied' || outcome == 'already_applied') {
+        await loadOrderById(orderId);
+        debugPrint('✅ Order status updated: $outcome');
+        notifyListeners();
+        return OrderStatusUpdateResult(
+          outcome == 'applied'
+              ? OrderStatusUpdateOutcome.applied
+              : OrderStatusUpdateOutcome.alreadyApplied,
+        );
+      }
 
-      // Reload order
-      await loadOrderById(orderId);
-
-      debugPrint('✅ Order status updated');
+      final message = res.data['message'] as String?;
+      _error = message ?? 'Status update failed ($outcome)';
+      notifyListeners();
+      switch (outcome) {
+        case 'stale_state':
+          return OrderStatusUpdateResult(
+              OrderStatusUpdateOutcome.staleState,
+              message: message);
+        case 'not_found':
+          return OrderStatusUpdateResult(OrderStatusUpdateOutcome.notFound,
+              message: message);
+        default:
+          return OrderStatusUpdateResult(
+              OrderStatusUpdateOutcome.validationFailed,
+              message: message);
+      }
+    } on FirebaseFunctionsException catch (e) {
+      debugPrint('❌ adminUpdateOrderStatus: ${e.code} ${e.message}');
+      _error = e.message ?? e.code;
       _isLoading = false;
       notifyListeners();
-      return true;
+      return OrderStatusUpdateResult(
+        e.code == 'permission-denied'
+            ? OrderStatusUpdateOutcome.permissionDenied
+            : OrderStatusUpdateOutcome.validationFailed,
+        message: e.message ?? e.code,
+      );
     } catch (e) {
       debugPrint('❌ Error updating order status: $e');
       _error = e.toString();
       _isLoading = false;
       notifyListeners();
-      return false;
+      return OrderStatusUpdateResult(OrderStatusUpdateOutcome.networkError,
+          message: e.toString());
     }
   }
 

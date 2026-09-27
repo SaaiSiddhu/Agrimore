@@ -27,8 +27,39 @@
 import 'package:flutter_test/flutter_test.dart';
 
 import 'package:agrimore_admin/screens/admin/orders/widgets/order_status_updater.dart';
+import 'package:agrimore_admin/providers/order_provider.dart';
 
 void main() {
+  // ADMR-24 — OrderStatusUpdateResult.isSuccess, the pure logic every call
+  // site now branches on instead of ignoring updateOrderStatus's return
+  // value outright (the confirmed bug this phase fixes). Real Firestore/
+  // callable behavior for adminUpdateOrderStatus itself is proven against
+  // the emulator by functions/scripts/phase64_admin_order_status_command_test.js
+  // — OrderProvider can't be constructed here at all outside a real
+  // Firebase app (its FirebaseFirestore.instance field initializer),
+  // matching this file's own established note above.
+  group('OrderStatusUpdateResult.isSuccess', () {
+    test('applied and already_applied both count as success', () {
+      expect(const OrderStatusUpdateResult(OrderStatusUpdateOutcome.applied).isSuccess, isTrue);
+      expect(const OrderStatusUpdateResult(OrderStatusUpdateOutcome.alreadyApplied).isSuccess, isTrue);
+    });
+
+    test('every failure outcome counts as NOT success — the exact branch '
+        'order_status_updater.dart and order_management_screen.dart now use '
+        'to decide whether to show a green or red result', () {
+      for (final outcome in [
+        OrderStatusUpdateOutcome.staleState,
+        OrderStatusUpdateOutcome.notFound,
+        OrderStatusUpdateOutcome.validationFailed,
+        OrderStatusUpdateOutcome.permissionDenied,
+        OrderStatusUpdateOutcome.networkError,
+      ]) {
+        expect(OrderStatusUpdateResult(outcome).isSuccess, isFalse,
+            reason: '$outcome must not be reported as success');
+      }
+    });
+  });
+
   group('isDangerousOrderStatusTransition', () {
     test('flags leaving delivered for cancelled — the exact case that '
         'fires stock restoration, commission reversal, and product-credit '

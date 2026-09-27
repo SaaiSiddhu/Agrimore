@@ -366,25 +366,40 @@ class _OrderStatusUpdaterState extends State<OrderStatusUpdater> {
     setState(() => _isUpdating = true);
 
     try {
-      await orderProvider.updateOrderStatus(
+      final result = await orderProvider.updateOrderStatus(
         widget.order.id,
         _selectedStatus,
         description: 'Status updated to ${_selectedStatus.toUpperCase()}.',
+        expectedCurrentStatus: currentStatus,
       );
 
-      if (mounted) {
+      if (!mounted) return;
+
+      if (result.isSuccess) {
         ScaffoldMessenger.of(context).showSnackBar(
           SnackBar(
             content: Row(
               children: [
                 const Icon(Icons.check_circle_rounded, color: Colors.white, size: 18),
                 const SizedBox(width: 10),
-                const Text('Status updated successfully'),
+                Text(
+                  result.outcome == OrderStatusUpdateOutcome.alreadyApplied
+                      ? 'Already at this status'
+                      : 'Status updated successfully',
+                ),
               ],
             ),
             backgroundColor: Colors.green.shade600,
             behavior: SnackBarBehavior.floating,
             shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(10)),
+          ),
+        );
+      } else {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(
+            content: Text(result.message ?? 'Status update failed'),
+            backgroundColor: Colors.red.shade600,
+            behavior: SnackBarBehavior.floating,
           ),
         );
       }

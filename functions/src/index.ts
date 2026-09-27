@@ -34,6 +34,9 @@ export { createEmployeeByAdmin } from "./admin/createEmployeeByAdmin";
 // role now that Phase 14 made users/{uid}.role unwritable by a non-admin
 // client — see setUserRole.ts's header comment.
 export { setUserRole } from "./admin/setUserRole";
+// ADMR-24: canonical, server-authorized, audited, idempotent replacement
+// for admin's own direct orders/{orderId}.orderStatus client write.
+export { adminUpdateOrderStatus } from "./admin/adminOrderActions";
 export {
   refreshUserRoleClaims,
   syncDeliveryRoleClaims,

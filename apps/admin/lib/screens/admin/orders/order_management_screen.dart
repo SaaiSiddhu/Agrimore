@@ -99,18 +99,26 @@ class _OrderManagementScreenState extends State<OrderManagementScreen> {
 
     if (confirmed != true) return;
 
-    try {
-      for (final id in _selectedOrderIds) {
-        await provider.updateOrderStatus(id, newStatus);
-      }
-      _clearSelection();
-      provider.loadOrders();
-      if (mounted) {
-        SnackbarHelper.showSuccess(context, 'Updated ${_selectedOrderIds.length} order(s)');
-      }
-    } catch (e) {
-      if (mounted) {
-        SnackbarHelper.showError(context, 'Failed to update orders');
+    // ADMR-24: this loop used to ignore updateOrderStatus's own result
+    // entirely and always report full success, even if every single update
+    // failed — each call's outcome is now tracked so the count shown is
+    // honest about partial/total failure, matching what actually happened.
+    var succeeded = 0;
+    final ids = List<String>.from(_selectedOrderIds);
+    for (final id in ids) {
+      final result = await provider.updateOrderStatus(id, newStatus);
+      if (result.isSuccess) succeeded++;
+    }
+    _clearSelection();
+    provider.loadOrders();
+    if (mounted) {
+      if (succeeded == ids.length) {
+        SnackbarHelper.showSuccess(context, 'Updated ${ids.length} order(s)');
+      } else if (succeeded == 0) {
+        SnackbarHelper.showError(context, 'Failed to update ${ids.length} order(s)');
+      } else {
+        SnackbarHelper.showError(
+            context, 'Updated $succeeded of ${ids.length} order(s) — ${ids.length - succeeded} failed');
       }
     }
   }
