@@ -165,11 +165,17 @@ class AdminService {
       // Get products count and low stock
       final productsSnapshot = await _firestore.collection('products').get();
       final productsCount = productsSnapshot.docs.length;
+      // ADMR-31: previously a raw `stock < 10` check on `data['stock'] ??
+      // data['quantity']` — missed variant-only stock entirely (the ADMR-4
+      // bug, independently reintroduced here), ignored each product's own
+      // lowStockThreshold, never excluded a draft/inactive listing, and
+      // conflated out-of-stock (0) with genuinely low stock. Parsing through
+      // ProductModel and the shared isLowStock() fixes all four at once by
+      // reusing the one canonical definition instead of a second copy.
       int lowStockCount = 0;
       for (var doc in productsSnapshot.docs) {
-        final data = doc.data();
-        final stock = (data['stock'] ?? data['quantity'] ?? 0) as int;
-        if (stock < 10) lowStockCount++;
+        final product = ProductModel.fromMap(doc.data(), doc.id);
+        if (isLowStock(product)) lowStockCount++;
       }
 
       // Get orders count and pending orders
@@ -187,7 +193,11 @@ class AdminService {
         debugPrint('   Order ${doc.id}: status=$status, total=${data['total']}');
         
         if (status == 'delivered' || status == 'completed') {
-          revenue += (data['total'] ?? data['totalAmount'] ?? 0).toDouble();
+          // ADMR-31: dropped the `totalAmount` fallback — confirmed by grep
+          // that no writer anywhere in functions/src or any app has ever
+          // written that field name; it was dead defensive code, not a live
+          // compatibility need.
+          revenue += (data['total'] ?? 0).toDouble();
         }
         if (status == 'pending' || status == 'processing') {
           pendingOrdersCount++;
