@@ -4,4 +4,10 @@
          to allow setting breakpoints, to provide hot reload, etc.
     -->
     <uses-permission android:name="android.permission.INTERNET"/>
+
+    <!-- Phase DLVPP1E: debug-only cleartext exception for USE_FIREBASE_EMULATOR
+         (see main.dart and the sibling network_security_config.xml). Merged
+         into the main manifest's <application> tag by Gradle; never present
+         in a release build since this file is debug-source-set-only. -->
+    <application android:networkSecurityConfig="@xml/network_security_config" />
 </manifest>

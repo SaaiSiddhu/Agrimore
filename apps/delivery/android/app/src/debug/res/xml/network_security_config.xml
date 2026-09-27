@@ -1,0 +1,16 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!--
+  Phase DLVPP1E — debug-build-only cleartext exception for the local
+  Firebase emulator suite (see main.dart's USE_FIREBASE_EMULATOR wiring).
+  10.0.2.2 is the standard Android-emulator alias for the host machine's
+  loopback; the emulator suite's REST/gRPC endpoints are plain HTTP, which
+  Android refuses by default (Network Security Config, API 28+). This file
+  lives ONLY under src/debug, so Gradle never merges it into a release
+  build; a real build's network security posture is unchanged.
+-->
+<network-security-config>
+    <domain-config cleartextTrafficPermitted="true">
+        <domain includeSubdomains="false">10.0.2.2</domain>
+        <domain includeSubdomains="false">localhost</domain>
+    </domain-config>
+</network-security-config>
