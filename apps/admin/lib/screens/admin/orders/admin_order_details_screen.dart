@@ -190,7 +190,7 @@ class _AdminOrderDetailsScreenState extends State<AdminOrderDetailsScreen> {
                     key: const Key('order360_layout_builder'),
                     builder: (context, constraints) {
                       final isWide = isOrder360Wide(constraints.maxWidth);
-                      final mainColumn = _buildMainColumn(order);
+                      final mainColumn = _buildMainColumn(order, orderProvider);
                       final sideColumn = _buildSideColumn(order, orderProvider);
 
                       if (!isWide) {
@@ -240,7 +240,7 @@ class _AdminOrderDetailsScreenState extends State<AdminOrderDetailsScreen> {
   // Cancellation card, which is inserted right after Payment (only when
   // the order actually has cancellation data) — the same relative order
   // the compact layout always rendered these sections in.
-  List<Widget> _buildMainColumn(OrderModel order) {
+  List<Widget> _buildMainColumn(OrderModel order, OrderProvider orderProvider) {
     final isCancelled = orderNeedsCancellationCard(order);
     return [
       OrderStatusUpdater(order: order),
@@ -251,7 +251,7 @@ class _AdminOrderDetailsScreenState extends State<AdminOrderDetailsScreen> {
       const SizedBox(height: 16),
       _buildQuickStats(order),
       const SizedBox(height: 16),
-      DeliveryFlagsCard(orderId: order.id),
+      DeliveryFlagsCard(orderId: order.id, firestore: orderProvider.firestore),
       _buildSectionTitle('Customer & Delivery', Icons.person_rounded),
       const SizedBox(height: 12),
       _buildCustomerCard(order),
