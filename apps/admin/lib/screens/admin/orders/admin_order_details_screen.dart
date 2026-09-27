@@ -23,6 +23,39 @@ import '../delivery/order_assignment_screen.dart';
 
 import 'widgets/order_status_updater.dart';
 
+// ADMR-27: the one width threshold this screen's responsive split turns
+// on — a top-level const so it is directly testable without constructing
+// the screen itself.
+const double kOrder360WideBreakpoint = 900.0;
+
+/// Pure, top-level, and unit-tested without an emulator — mirrors this
+/// session's own established pattern for logic embedded in a screen that
+/// otherwise cannot be constructed outside a real Firebase app.
+bool isOrder360Wide(double width) => width >= kOrder360WideBreakpoint;
+
+/// True exactly when the order carries real cancellation data (ADMR-25's
+/// own fields) — the sole condition gating the new Cancellation card.
+bool orderNeedsCancellationCard(OrderModel order) => order.cancelledBy != null;
+
+/// Maps the raw `updatedBy` role string (written by adminUpdateOrderStatus
+/// today; sellerTransitionOrder.ts does not yet populate this field at all,
+/// a separate, disclosed gap) to a human-readable actor label.
+String friendlyActorLabel(String updatedBy) {
+  switch (updatedBy.toLowerCase()) {
+    case 'admin':
+      return 'Admin';
+    case 'seller':
+      return 'Seller';
+    case 'rider':
+    case 'delivery_partner':
+      return 'Delivery Partner';
+    case 'system':
+      return 'System';
+    default:
+      return updatedBy;
+  }
+}
+
 class AdminOrderDetailsScreen extends StatefulWidget {
   final String orderId;
 
@@ -74,56 +107,53 @@ class _AdminOrderDetailsScreenState extends State<AdminOrderDetailsScreen> {
             slivers: [
               // Premium Header
               _buildSliverHeader(order),
-              // Content
+              // Content — ADMR-27: a LayoutBuilder splits into a two-column
+              // layout at >=900 logical px (a persistent Timeline/Cancellation
+              // panel beside the main content, so an admin on a desk/tablet-
+              // sized screen doesn't have to scroll past the full item list
+              // to see the audit trail); below that, the exact same widgets
+              // stack into one column, byte-for-byte the prior layout's order
+              // plus the new Cancellation card.
               SliverToBoxAdapter(
                 child: Padding(
                   padding: const EdgeInsets.all(16),
-                  child: Column(
-                    crossAxisAlignment: CrossAxisAlignment.stretch,
-                    children: [
-                      // Status update card
-                      OrderStatusUpdater(order: order),
-                      const SizedBox(height: 12),
-                      // Assign Delivery Partner button
-                      if (order.orderStatus.toLowerCase() == 'processing' || 
-                          order.orderStatus.toLowerCase() == 'confirmed')
-                        _buildAssignPartnerButton(order),
-                      const SizedBox(height: 16),
-                      // Quick stats row
-                      _buildQuickStats(order),
-                      const SizedBox(height: 16),
-                      // Phase DLV-3C: rider location at each step; flagged
-                      // steps (> 300 m, mocked, none) stand out.
-                      DeliveryFlagsCard(orderId: order.id),
-                      // Customer & Delivery section
-                      _buildSectionTitle('Customer & Delivery', Icons.person_rounded),
-                      const SizedBox(height: 12),
-                      _buildCustomerCard(order),
-                      const SizedBox(height: 16),
-                      // Order items
-                      _buildSectionTitle('Order Items', Icons.shopping_bag_rounded),
-                      const SizedBox(height: 12),
-                      _buildItemsCard(order),
-                      const SizedBox(height: 16),
-                      // Price breakdown
-                      _buildSectionTitle('Price Breakdown', Icons.receipt_long_rounded),
-                      const SizedBox(height: 12),
-                      _buildPricingCard(order),
-                      const SizedBox(height: 16),
-                      // Payment details
-                      _buildSectionTitle('Payment Details', Icons.payment_rounded),
-                      const SizedBox(height: 12),
-                      _buildPaymentCard(order),
-                      const SizedBox(height: 16),
-                      // Timeline
-                      _buildSectionTitle('Order Timeline', Icons.timeline_rounded),
-                      const SizedBox(height: 12),
-                      _buildTimelineCard(orderProvider),
-                      const SizedBox(height: 24),
-                      // Action buttons
-                      _buildActionButtons(order),
-                      const SizedBox(height: 32),
-                    ],
+                  child: LayoutBuilder(
+                    key: const Key('order360_layout_builder'),
+                    builder: (context, constraints) {
+                      final isWide = isOrder360Wide(constraints.maxWidth);
+                      final mainColumn = _buildMainColumn(order);
+                      final sideColumn = _buildSideColumn(order, orderProvider);
+
+                      if (!isWide) {
+                        return Column(
+                          key: const Key('order360_compact_layout'),
+                          crossAxisAlignment: CrossAxisAlignment.stretch,
+                          children: [...mainColumn, ...sideColumn],
+                        );
+                      }
+
+                      return Row(
+                        key: const Key('order360_wide_layout'),
+                        crossAxisAlignment: CrossAxisAlignment.start,
+                        children: [
+                          Expanded(
+                            flex: 2,
+                            child: Column(
+                              crossAxisAlignment: CrossAxisAlignment.stretch,
+                              children: mainColumn,
+                            ),
+                          ),
+                          const SizedBox(width: 16),
+                          Expanded(
+                            flex: 1,
+                            child: Column(
+                              crossAxisAlignment: CrossAxisAlignment.stretch,
+                              children: sideColumn,
+                            ),
+                          ),
+                        ],
+                      );
+                    },
                   ),
                 ),
               ),
@@ -132,6 +162,61 @@ class _AdminOrderDetailsScreenState extends State<AdminOrderDetailsScreen> {
         },
       ),
     );
+  }
+
+  // =========================
+  // Responsive column content (ADMR-27)
+  // =========================
+  // Every widget below is unchanged from before this phase except the new
+  // Cancellation card, which is inserted right after Payment (only when
+  // the order actually has cancellation data) — the same relative order
+  // the compact layout always rendered these sections in.
+  List<Widget> _buildMainColumn(OrderModel order) {
+    final isCancelled = orderNeedsCancellationCard(order);
+    return [
+      OrderStatusUpdater(order: order),
+      const SizedBox(height: 12),
+      if (order.orderStatus.toLowerCase() == 'processing' ||
+          order.orderStatus.toLowerCase() == 'confirmed')
+        _buildAssignPartnerButton(order),
+      const SizedBox(height: 16),
+      _buildQuickStats(order),
+      const SizedBox(height: 16),
+      DeliveryFlagsCard(orderId: order.id),
+      _buildSectionTitle('Customer & Delivery', Icons.person_rounded),
+      const SizedBox(height: 12),
+      _buildCustomerCard(order),
+      const SizedBox(height: 16),
+      _buildSectionTitle('Order Items', Icons.shopping_bag_rounded),
+      const SizedBox(height: 12),
+      _buildItemsCard(order),
+      const SizedBox(height: 16),
+      _buildSectionTitle('Price Breakdown', Icons.receipt_long_rounded),
+      const SizedBox(height: 12),
+      _buildPricingCard(order),
+      const SizedBox(height: 16),
+      _buildSectionTitle('Payment Details', Icons.payment_rounded),
+      const SizedBox(height: 12),
+      _buildPaymentCard(order),
+      if (isCancelled) ...[
+        const SizedBox(height: 16),
+        _buildSectionTitle('Cancellation & Refund', Icons.cancel_rounded),
+        const SizedBox(height: 12),
+        _buildCancellationCard(order),
+      ],
+      const SizedBox(height: 16),
+    ];
+  }
+
+  List<Widget> _buildSideColumn(OrderModel order, OrderProvider orderProvider) {
+    return [
+      _buildSectionTitle('Order Timeline', Icons.timeline_rounded),
+      const SizedBox(height: 12),
+      _buildTimelineCard(orderProvider),
+      const SizedBox(height: 24),
+      _buildActionButtons(order),
+      const SizedBox(height: 32),
+    ];
   }
 
   // =========================
@@ -1005,6 +1090,102 @@ class _AdminOrderDetailsScreenState extends State<AdminOrderDetailsScreen> {
   }
 
   // =========================
+  // Cancellation & Refund Card (ADMR-27)
+  // =========================
+  // Shown only when the order actually carries cancellation data —
+  // ADMR-25 started writing cancelledBy/cancelledAt/cancellationReason/
+  // refundStatus, but nothing displayed them until this phase.
+  Widget _buildCancellationCard(OrderModel order) {
+    final hasRefund = order.refundStatus != null && order.refundStatus!.isNotEmpty;
+    final refundPending = order.refundStatus?.toLowerCase() == 'pending';
+
+    return Container(
+      decoration: BoxDecoration(
+        color: Colors.white,
+        borderRadius: BorderRadius.circular(16),
+        border: Border.all(color: Colors.red.withOpacity(0.15)),
+        boxShadow: [
+          BoxShadow(
+            color: Colors.black.withOpacity(0.04),
+            blurRadius: 10,
+            offset: const Offset(0, 4),
+          ),
+        ],
+      ),
+      child: Padding(
+        padding: const EdgeInsets.all(16),
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            Row(
+              children: [
+                Icon(Icons.cancel_rounded, color: Colors.red.shade600, size: 18),
+                const SizedBox(width: 8),
+                const Text(
+                  'Cancelled',
+                  style: TextStyle(fontWeight: FontWeight.bold, fontSize: 14),
+                ),
+                const Spacer(),
+                if (order.cancelledAt != null)
+                  Text(
+                    DateFormat('MMM d, yyyy • hh:mm a').format(order.cancelledAt!),
+                    style: TextStyle(color: Colors.grey.shade500, fontSize: 11),
+                  ),
+              ],
+            ),
+            if (order.cancelledBy != null) ...[
+              const SizedBox(height: 10),
+              Text(
+                'Cancelled by ${friendlyActorLabel(order.cancelledBy!)}',
+                style: TextStyle(color: Colors.grey.shade700, fontSize: 13, fontWeight: FontWeight.w600),
+              ),
+            ],
+            if (order.cancellationReason != null && order.cancellationReason!.isNotEmpty) ...[
+              const SizedBox(height: 6),
+              Text(
+                order.cancellationReason!,
+                style: TextStyle(color: Colors.grey.shade600, fontSize: 13),
+              ),
+            ],
+            const SizedBox(height: 12),
+            Container(
+              padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
+              decoration: BoxDecoration(
+                color: (hasRefund ? (refundPending ? Colors.orange : Colors.green) : Colors.grey)
+                    .withOpacity(0.1),
+                borderRadius: BorderRadius.circular(8),
+              ),
+              child: Row(
+                mainAxisSize: MainAxisSize.min,
+                children: [
+                  Icon(
+                    hasRefund
+                        ? (refundPending ? Icons.hourglass_top_rounded : Icons.check_circle_rounded)
+                        : Icons.money_off_rounded,
+                    size: 14,
+                    color: hasRefund ? (refundPending ? Colors.orange.shade700 : Colors.green.shade700) : Colors.grey.shade600,
+                  ),
+                  const SizedBox(width: 8),
+                  Text(
+                    hasRefund
+                        ? 'Refund ${order.refundStatus!.toUpperCase()}'
+                        : 'No refund due (unpaid or cash on delivery)',
+                    style: TextStyle(
+                      fontSize: 12,
+                      fontWeight: FontWeight.w700,
+                      color: hasRefund ? (refundPending ? Colors.orange.shade800 : Colors.green.shade800) : Colors.grey.shade700,
+                    ),
+                  ),
+                ],
+              ),
+            ),
+          ],
+        ),
+      ),
+    );
+  }
+
+  // =========================
   // Timeline Card
   // =========================
   Widget _buildTimelineCard(OrderProvider orderProvider) {
@@ -1132,12 +1313,35 @@ class _AdminOrderDetailsScreenState extends State<AdminOrderDetailsScreen> {
                             ),
                           ),
                           const SizedBox(height: 6),
-                          Text(
-                            DateFormat('MMM d, yyyy • hh:mm a').format(ev.timestamp),
-                            style: TextStyle(
-                              color: Colors.grey.shade400,
-                              fontSize: 11,
-                            ),
+                          Row(
+                            children: [
+                              Text(
+                                DateFormat('MMM d, yyyy • hh:mm a').format(ev.timestamp),
+                                style: TextStyle(
+                                  color: Colors.grey.shade400,
+                                  fontSize: 11,
+                                ),
+                              ),
+                              // ADMR-27: actor attribution — only shown
+                              // when the writer actually populated it
+                              // (today: adminUpdateOrderStatus only;
+                              // sellerTransitionOrder.ts's own entries
+                              // don't yet, a disclosed, separate gap).
+                              if (ev.updatedBy != null && ev.updatedBy!.isNotEmpty) ...[
+                                Text(
+                                  '  •  ',
+                                  style: TextStyle(color: Colors.grey.shade300, fontSize: 11),
+                                ),
+                                Text(
+                                  'By ${friendlyActorLabel(ev.updatedBy!)}',
+                                  style: TextStyle(
+                                    color: Colors.grey.shade500,
+                                    fontSize: 11,
+                                    fontWeight: FontWeight.w600,
+                                  ),
+                                ),
+                              ],
+                            ],
                           ),
                         ],
                       ),
@@ -1271,6 +1475,7 @@ class _AdminOrderDetailsScreenState extends State<AdminOrderDetailsScreen> {
         return Icons.info_outline_rounded;
     }
   }
+
 
   String _friendlyPaymentMethod(String method) {
     switch (method.toLowerCase()) {
