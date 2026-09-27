@@ -484,6 +484,80 @@ void main() {
     });
   });
 
+  // ADMR-37 additions below: a delivered order cancelled afterward must
+  // never have its stock auto-restored (restoreStockOnCancellation.ts
+  // defers to an explicit admin confirmation instead) — these two
+  // predicates are the pure decision of which honest message (if any) the
+  // cancellation card shows, mirroring codLiabilityLabel's own reasoning
+  // for being pulled out of the widget and made directly testable.
+  group('orderNeedsReturnConfirmation', () {
+    test('an order never delivered never needs return confirmation, '
+        'regardless of any stray stockRestorePending flag', () {
+      expect(orderNeedsReturnConfirmation(_order()), isFalse);
+      expect(
+        orderNeedsReturnConfirmation(_order().copyWith(stockRestorePending: true)),
+        isFalse,
+      );
+    });
+
+    test('a delivered order with no pending flag does not need confirmation '
+        '(the ordinary, unaffected majority of cancellations)', () {
+      final order = _order(deliveredAt: DateTime(2026, 9, 27));
+      expect(orderNeedsReturnConfirmation(order), isFalse);
+    });
+
+    test('a delivered order flagged stockRestorePending needs confirmation', () {
+      final order = _order(deliveredAt: DateTime(2026, 9, 27))
+          .copyWith(stockRestorePending: true);
+      expect(orderNeedsReturnConfirmation(order), isTrue);
+    });
+  });
+
+  group('orderShowsStockRestoredNote', () {
+    test('an order never delivered never shows the note', () {
+      final order = _order().copyWith(stockRestored: true);
+      expect(orderShowsStockRestoredNote(order), isFalse);
+    });
+
+    test('a delivered order not yet marked restored shows nothing', () {
+      final order = _order(deliveredAt: DateTime(2026, 9, 27));
+      expect(orderShowsStockRestoredNote(order), isFalse);
+    });
+
+    test('a delivered order marked restored shows the note', () {
+      final order = _order(deliveredAt: DateTime(2026, 9, 27))
+          .copyWith(stockRestored: true);
+      expect(orderShowsStockRestoredNote(order), isTrue);
+    });
+
+    test('never true at the same time as orderNeedsReturnConfirmation — '
+        'a still-pending order must show the prompt, not the note, even if '
+        'stockRestored was somehow also set on old data', () {
+      final order = _order(deliveredAt: DateTime(2026, 9, 27))
+          .copyWith(stockRestorePending: true, stockRestored: true);
+      expect(orderNeedsReturnConfirmation(order), isTrue);
+      expect(orderShowsStockRestoredNote(order), isFalse);
+    });
+  });
+
+  group('OrderModel stock-restoration fields (ADMR-37)', () {
+    test('round-trip through toMap/fromMap preserves both fields', () {
+      final original = _order(deliveredAt: DateTime(2026, 9, 27)).copyWith(
+        stockRestored: true,
+        stockRestorePending: false,
+      );
+      final restored = OrderModel.fromMap(original.toMap(), original.id);
+      expect(restored.stockRestored, isTrue);
+      expect(restored.stockRestorePending, isFalse);
+    });
+
+    test('an order never delivered leaves both fields null', () {
+      final restored = OrderModel.fromMap(_order().toMap(), 'order1');
+      expect(restored.stockRestored, isNull);
+      expect(restored.stockRestorePending, isNull);
+    });
+  });
+
   group('RiderCashAccountRecord.fromMap', () {
     test('reads the authoritative paise field when present (DLV-M1: whole '
         'paise, no float drift)', () {

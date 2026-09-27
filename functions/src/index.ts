@@ -37,6 +37,9 @@ export { setUserRole } from "./admin/setUserRole";
 // ADMR-24: canonical, server-authorized, audited, idempotent replacement
 // for admin's own direct orders/{orderId}.orderStatus client write.
 export { adminUpdateOrderStatus } from "./admin/adminOrderActions";
+// ADMR-37: the sole path that resolves a delivered→cancelled order's
+// deferred `stockRestorePending` flag (see restoreStockOnCancellation.ts).
+export { confirmOrderReturnReceived } from "./admin/confirmOrderReturnReceived";
 export {
   refreshUserRoleClaims,
   syncDeliveryRoleClaims,
