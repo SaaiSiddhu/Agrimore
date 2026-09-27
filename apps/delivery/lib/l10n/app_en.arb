@@ -2925,6 +2925,74 @@
   "routeCoordsCopied": "Coordinates copied",
   "routeStepPickup": "1. Pickup",
   "routeStepDrop": "2. Drop-off",
+  "routeViewMap": "Map",
+  "@routeViewMap": {
+    "description": "Toggle: show the map view of the route"
+  },
+  "routeViewDetails": "Details",
+  "@routeViewDetails": {
+    "description": "Toggle: show the accessible text view of the route"
+  },
+  "routeErrorTaskTitle": "Route information unavailable",
+  "@routeErrorTaskTitle": {
+    "description": "Banner title when the delivery-task stream fails"
+  },
+  "routeErrorTaskBody": "We couldn't load this delivery's route details.",
+  "@routeErrorTaskBody": {
+    "description": "Banner body when the delivery-task stream fails"
+  },
+  "routeErrorPositionTitle": "Live position unavailable",
+  "@routeErrorPositionTitle": {
+    "description": "Banner title when the rider-position stream fails"
+  },
+  "routeErrorPositionBody": "We couldn't load your current position.",
+  "@routeErrorPositionBody": {
+    "description": "Banner body when the rider-position stream fails"
+  },
+  "routeErrorPermissionBody": "You may no longer have access to this delivery's route.",
+  "@routeErrorPermissionBody": {
+    "description": "Banner body when a route stream fails with permission-denied specifically"
+  },
+  "routeDetailsStageLabel": "Current stage",
+  "@routeDetailsStageLabel": {
+    "description": "Accessible route details section label"
+  },
+  "routeDetailsPickupLabel": "Pickup",
+  "@routeDetailsPickupLabel": {
+    "description": "Accessible route details section label"
+  },
+  "routeDetailsDropLabel": "Drop-off",
+  "@routeDetailsDropLabel": {
+    "description": "Accessible route details section label"
+  },
+  "routeDetailsDistanceLabel": "Estimated distance and time",
+  "@routeDetailsDistanceLabel": {
+    "description": "Accessible route details section label"
+  },
+  "routeDetailsRouteUnavailable": "Route details aren't available for this delivery yet.",
+  "@routeDetailsRouteUnavailable": {
+    "description": "Accessible route details: no route computed, but the connection is healthy"
+  },
+  "routeDetailsLoadingRoute": "Loading route details…",
+  "@routeDetailsLoadingRoute": {
+    "description": "Accessible route details: still waiting for the first delivery-task update"
+  },
+  "routeDetailsPickupUnavailable": "Pickup location isn't available for this delivery.",
+  "@routeDetailsPickupUnavailable": {
+    "description": "Accessible route details: no pickup coordinates, but the connection is healthy"
+  },
+  "routeDetailsDropUnavailable": "Drop-off location isn't available for this delivery.",
+  "@routeDetailsDropUnavailable": {
+    "description": "Accessible route details: no drop-off coordinates, but the connection is healthy"
+  },
+  "routeDetailsLoadingPickup": "Loading pickup location…",
+  "@routeDetailsLoadingPickup": {
+    "description": "Accessible route details: still waiting for the first delivery-task update"
+  },
+  "routeDetailsLoadingDrop": "Loading drop-off location…",
+  "@routeDetailsLoadingDrop": {
+    "description": "Accessible route details: still waiting for the first delivery-task update"
+  },
   "waitTimerLabel": "Waiting at store",
   "waitTimerNote": "Waiting time pay applies after the grace period",
   "releaseReasonStoreClosed": "Store is closed",

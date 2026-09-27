@@ -633,6 +633,30 @@ void main() {
       brightness: Brightness.dark,
     );
 
+    // DLVACC1: the accessible Map/Details toggle on RiderRouteCard --
+    // task/rider streams are not injected here (the tour has no seam for
+    // this screen's own Firestore reads), so this captures the real
+    // loading state honestly rather than a fabricated populated one.
+    await shot(
+      tester,
+      '38_active_order_route_details_light',
+      ActiveOrderScreen(order: _sampleOrder(status: 'arrived_at_store')),
+      before: (t) async {
+        await t.tap(find.text('Details'));
+        await t.pumpAndSettle();
+      },
+    );
+    await shot(
+      tester,
+      '39_active_order_route_details_dark',
+      ActiveOrderScreen(order: _sampleOrder(status: 'out_for_delivery')),
+      brightness: Brightness.dark,
+      before: (t) async {
+        await t.tap(find.text('Details'));
+        await t.pumpAndSettle();
+      },
+    );
+
     // 5b. Delivery-code verification sheet — DLV-Q1: proves the 6-digit
     // fix (DeliveryOtpField previously defaulted to 4 while the server
     // issues 6-digit codes; the field could never be completed enough to

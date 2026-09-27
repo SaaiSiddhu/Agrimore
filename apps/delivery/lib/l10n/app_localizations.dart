@@ -4378,7 +4378,7 @@ abstract class AppLocalizations {
   /// **'Enter delivery OTP'**
   String get activeVerifyOtpAction;
 
-  /// No description provided for @routeViewMap.
+  /// Toggle: show the map view of the route
   ///
   /// In en, this message translates to:
   /// **'Map'**
@@ -4485,6 +4485,102 @@ abstract class AppLocalizations {
   /// In en, this message translates to:
   /// **'2. Drop-off'**
   String get routeStepDrop;
+
+  /// Toggle: show the accessible text view of the route
+  ///
+  /// In en, this message translates to:
+  /// **'Details'**
+  String get routeViewDetails;
+
+  /// Banner title when the delivery-task stream fails
+  ///
+  /// In en, this message translates to:
+  /// **'Route information unavailable'**
+  String get routeErrorTaskTitle;
+
+  /// Banner body when the delivery-task stream fails
+  ///
+  /// In en, this message translates to:
+  /// **'We couldn\'t load this delivery\'s route details.'**
+  String get routeErrorTaskBody;
+
+  /// Banner title when the rider-position stream fails
+  ///
+  /// In en, this message translates to:
+  /// **'Live position unavailable'**
+  String get routeErrorPositionTitle;
+
+  /// Banner body when the rider-position stream fails
+  ///
+  /// In en, this message translates to:
+  /// **'We couldn\'t load your current position.'**
+  String get routeErrorPositionBody;
+
+  /// Banner body when a route stream fails with permission-denied specifically
+  ///
+  /// In en, this message translates to:
+  /// **'You may no longer have access to this delivery\'s route.'**
+  String get routeErrorPermissionBody;
+
+  /// Accessible route details section label
+  ///
+  /// In en, this message translates to:
+  /// **'Current stage'**
+  String get routeDetailsStageLabel;
+
+  /// Accessible route details section label
+  ///
+  /// In en, this message translates to:
+  /// **'Pickup'**
+  String get routeDetailsPickupLabel;
+
+  /// Accessible route details section label
+  ///
+  /// In en, this message translates to:
+  /// **'Drop-off'**
+  String get routeDetailsDropLabel;
+
+  /// Accessible route details section label
+  ///
+  /// In en, this message translates to:
+  /// **'Estimated distance and time'**
+  String get routeDetailsDistanceLabel;
+
+  /// Accessible route details: no route computed, but the connection is healthy
+  ///
+  /// In en, this message translates to:
+  /// **'Route details aren\'t available for this delivery yet.'**
+  String get routeDetailsRouteUnavailable;
+
+  /// Accessible route details: still waiting for the first delivery-task update
+  ///
+  /// In en, this message translates to:
+  /// **'Loading route details…'**
+  String get routeDetailsLoadingRoute;
+
+  /// Accessible route details: no pickup coordinates, but the connection is healthy
+  ///
+  /// In en, this message translates to:
+  /// **'Pickup location isn\'t available for this delivery.'**
+  String get routeDetailsPickupUnavailable;
+
+  /// Accessible route details: no drop-off coordinates, but the connection is healthy
+  ///
+  /// In en, this message translates to:
+  /// **'Drop-off location isn\'t available for this delivery.'**
+  String get routeDetailsDropUnavailable;
+
+  /// Accessible route details: still waiting for the first delivery-task update
+  ///
+  /// In en, this message translates to:
+  /// **'Loading pickup location…'**
+  String get routeDetailsLoadingPickup;
+
+  /// Accessible route details: still waiting for the first delivery-task update
+  ///
+  /// In en, this message translates to:
+  /// **'Loading drop-off location…'**
+  String get routeDetailsLoadingDrop;
 
   /// No description provided for @waitTimerLabel.
   ///

@@ -10,6 +10,7 @@ import 'dart:io';
 
 import 'package:agrimore_core/agrimore_core.dart'
     show DeliveryPoint, DeliveryTaskStatus, OrderModel;
+import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:cloud_functions/cloud_functions.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
@@ -175,13 +176,37 @@ IconData _stepIcon(DeliveryStep next) => switch (next) {
       DeliveryStep.delivered => DeliveryIcons.shieldCheck,
     };
 
+/// DLVACC1: `sellers/{sellerId}.shopName`/`businessName`, publicly readable
+/// (firestore.rules: `allow read: if true`) -- the same field-and-fallback
+/// convention already used elsewhere in this repo (seller_profile_screen.dart,
+/// storefront_rules.dart, product_details_screen.dart), reused verbatim
+/// rather than invented, so the pickup section's store name is never a
+/// second, independently-drifted lookup.
+Future<String?> defaultFetchStoreName(String sellerId) async {
+  final doc = await FirebaseFirestore.instance.collection('sellers').doc(sellerId).get();
+  if (!doc.exists) return null;
+  final data = doc.data();
+  final shopName = (data?['shopName'] as String?)?.trim();
+  if (shopName != null && shopName.isNotEmpty) return shopName;
+  final businessName = (data?['businessName'] as String?)?.trim();
+  return (businessName != null && businessName.isNotEmpty) ? businessName : null;
+}
+
 class ActiveOrderScreen extends StatefulWidget {
   final OrderModel order;
 
   /// DLVPP1: injected in tests; defaults to real shared_preferences.
   final PendingProofStore? pendingProofStore;
 
-  const ActiveOrderScreen({super.key, required this.order, this.pendingProofStore});
+  /// DLVACC1: injected in tests; defaults to a real `sellers/{id}` read.
+  final Future<String?> Function(String sellerId)? fetchStoreName;
+
+  const ActiveOrderScreen({
+    super.key,
+    required this.order,
+    this.pendingProofStore,
+    this.fetchStoreName,
+  });
 
   @override
   State<ActiveOrderScreen> createState() => _ActiveOrderScreenState();
@@ -194,6 +219,7 @@ class _ActiveOrderScreenState extends State<ActiveOrderScreen> {
   final ImagePicker _picker = ImagePicker();
   late final PendingProofStore _pendingProofStore =
       widget.pendingProofStore ?? SharedPreferencesPendingProofStore();
+  String? _storeName;
 
   // DLVMAP3: `_order` starts as the static snapshot the screen was pushed
   // with and only ever advances to a later live value once a material
@@ -212,6 +238,23 @@ class _ActiveOrderScreenState extends State<ActiveOrderScreen> {
     super.didUpdateWidget(oldWidget);
     if (oldWidget.order.orderStatus != widget.order.orderStatus) {
       _currentStep = deliveryStepOf(widget.order.orderStatus);
+    }
+  }
+
+  @override
+  void initState() {
+    super.initState();
+    final sellerId = _order.sellerId;
+    if (sellerId != null && sellerId.isNotEmpty) {
+      try {
+        (widget.fetchStoreName ?? defaultFetchStoreName)(sellerId).then((name) {
+          if (mounted && name != null) setState(() => _storeName = name);
+        }).catchError((Object e) {
+          debugPrint('Store name: $e');
+        });
+      } catch (e) {
+        debugPrint('Store name unavailable: $e');
+      }
     }
   }
 
@@ -410,6 +453,8 @@ class _ActiveOrderScreenState extends State<ActiveOrderScreen> {
                 orderId: _order.id,
                 stepIndex: _currentStep.index,
                 customerName: address.name,
+                customerPhone: address.phone,
+                storeName: _storeName,
                 dropFallback:
                     address.latitude != null && address.longitude != null
                         ? DeliveryPoint(

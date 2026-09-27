@@ -2518,6 +2518,60 @@ class AppLocalizationsEn extends AppLocalizations {
   String get routeStepDrop => '2. Drop-off';
 
   @override
+  String get routeViewDetails => 'Details';
+
+  @override
+  String get routeErrorTaskTitle => 'Route information unavailable';
+
+  @override
+  String get routeErrorTaskBody =>
+      'We couldn\'t load this delivery\'s route details.';
+
+  @override
+  String get routeErrorPositionTitle => 'Live position unavailable';
+
+  @override
+  String get routeErrorPositionBody =>
+      'We couldn\'t load your current position.';
+
+  @override
+  String get routeErrorPermissionBody =>
+      'You may no longer have access to this delivery\'s route.';
+
+  @override
+  String get routeDetailsStageLabel => 'Current stage';
+
+  @override
+  String get routeDetailsPickupLabel => 'Pickup';
+
+  @override
+  String get routeDetailsDropLabel => 'Drop-off';
+
+  @override
+  String get routeDetailsDistanceLabel => 'Estimated distance and time';
+
+  @override
+  String get routeDetailsRouteUnavailable =>
+      'Route details aren\'t available for this delivery yet.';
+
+  @override
+  String get routeDetailsLoadingRoute => 'Loading route details…';
+
+  @override
+  String get routeDetailsPickupUnavailable =>
+      'Pickup location isn\'t available for this delivery.';
+
+  @override
+  String get routeDetailsDropUnavailable =>
+      'Drop-off location isn\'t available for this delivery.';
+
+  @override
+  String get routeDetailsLoadingPickup => 'Loading pickup location…';
+
+  @override
+  String get routeDetailsLoadingDrop => 'Loading drop-off location…';
+
+  @override
   String get waitTimerLabel => 'Waiting at store';
 
   @override
