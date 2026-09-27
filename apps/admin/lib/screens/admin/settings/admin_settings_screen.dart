@@ -11,6 +11,56 @@ import '../home_sections/home_product_section_management_screen.dart';
 import 'home_grocery_strip_settings_screen.dart';
 import 'home_section_order_settings_screen.dart';
 
+// ADMR-46: these controls used to claim effects that do not exist anywhere
+// in the system (an enforced maintenance mode, a saved payment/shipping
+// config, a triggered backup export, enrolled 2FA). Extracted as plain,
+// Firebase-free values/functions so the exact honest copy is unit-tested
+// and can't silently regress back into a false claim.
+
+String? changePasswordFormError({
+  required String currentPassword,
+  required String newPassword,
+  required String confirmPassword,
+}) {
+  if (currentPassword.isEmpty) return 'Enter your current password';
+  if (newPassword.isEmpty) return 'Enter a new password';
+  if (newPassword.length < 6) {
+    return 'New password must be at least 6 characters';
+  }
+  if (newPassword == currentPassword) {
+    return 'New password must be different from the current password';
+  }
+  if (newPassword != confirmPassword) return 'Passwords do not match';
+  return null;
+}
+
+String maintenanceModeConfirmationMessage(bool enabling) {
+  if (enabling) {
+    return 'This records the platform as under maintenance in Firestore. '
+        'No app currently reads this flag, so enabling it will not actually '
+        'block any user or admin from the app -- coordinate real downtime '
+        'with engineering separately.';
+  }
+  return 'This will record the platform as no longer under maintenance.';
+}
+
+const String shippingSettingsDisclosure =
+    'These values reflect the current app configuration and are not yet '
+    'editable from this screen. Contact engineering to change them.';
+
+const String paymentSettingsDisclosure =
+    'These values reflect the current app configuration and are not yet '
+    'editable from this screen. Contact engineering to change them.';
+
+const String twoFactorDisclosure =
+    'Firebase Authentication can support multi-factor sign-in, but no '
+    'second factor is enrolled for admin accounts yet -- this screen does '
+    'not manage 2FA.';
+
+const String backupExportDisclosure =
+    'This screen cannot trigger a Firestore export. Use Firebase Console > '
+    'Firestore > Backups to schedule or run one.';
+
 class AdminSettingsScreen extends StatefulWidget {
   const AdminSettingsScreen({Key? key}) : super(key: key);
 
@@ -25,6 +75,29 @@ class _AdminSettingsScreenState extends State<AdminSettingsScreen> {
   bool _maintenanceMode = false;
   bool _darkMode = false;
   final String _appVersion = '1.0.0 (1)'; // ✅ FIXED - Hardcoded version
+
+  @override
+  void initState() {
+    super.initState();
+    _loadMaintenanceMode();
+  }
+
+  Future<void> _loadMaintenanceMode() async {
+    try {
+      final doc = await FirebaseFirestore.instance
+          .collection('settings')
+          .doc('platform_status')
+          .get();
+      if (!mounted) return;
+      final stored = doc.data()?['maintenanceMode'];
+      if (stored is bool) {
+        setState(() => _maintenanceMode = stored);
+      }
+    } catch (_) {
+      // Leave the default (false) if the read fails; the switch still
+      // reflects reality (off) rather than a stale or fabricated state.
+    }
+  }
 
   @override
   Widget build(BuildContext context) {
@@ -96,7 +169,7 @@ class _AdminSettingsScreenState extends State<AdminSettingsScreen> {
                 subtitle: 'Disable user access temporarily',
                 value: _maintenanceMode,
                 onChanged: (value) {
-                  _showMaintenanceModeDialog(value);
+                  _showMaintenanceModeDialog(value, authProvider);
                 },
                 color: const Color(0xFFEF4444),
               ),
@@ -233,7 +306,7 @@ class _AdminSettingsScreenState extends State<AdminSettingsScreen> {
                 title: 'Change Password',
                 subtitle: 'Update your admin password',
                 color: const Color(0xFF6366F1),
-                onTap: () => _showChangePasswordDialog(),
+                onTap: () => _showChangePasswordDialog(authProvider),
               ),
               _buildNavigationTile(
                 icon: Icons.vpn_key_rounded,
@@ -612,7 +685,7 @@ class _AdminSettingsScreenState extends State<AdminSettingsScreen> {
     );
   }
 
-  void _showMaintenanceModeDialog(bool value) {
+  void _showMaintenanceModeDialog(bool value, AuthProvider authProvider) {
     showDialog(
       context: context,
       builder: (context) => AlertDialog(
@@ -625,9 +698,7 @@ class _AdminSettingsScreenState extends State<AdminSettingsScreen> {
           ],
         ),
         content: Text(
-          value
-              ? 'Enabling maintenance mode will temporarily disable user access to the app. Only admins will be able to access the system.'
-              : 'Are you sure you want to disable maintenance mode?',
+          maintenanceModeConfirmationMessage(value),
           style: AppTextStyles.bodyMedium,
         ),
         actions: [
@@ -636,13 +707,28 @@ class _AdminSettingsScreenState extends State<AdminSettingsScreen> {
             child: const Text('Cancel'),
           ),
           ElevatedButton(
-            onPressed: () {
-              setState(() => _maintenanceMode = value);
-              Navigator.pop(context);
-              SnackbarHelper.showSuccess(
-                context,
-                'Maintenance mode ${value ? 'enabled' : 'disabled'}',
-              );
+            onPressed: () async {
+              try {
+                await FirebaseFirestore.instance
+                    .collection('settings')
+                    .doc('platform_status')
+                    .set({
+                  'maintenanceMode': value,
+                  'maintenanceModeUpdatedAt': FieldValue.serverTimestamp(),
+                  'maintenanceModeUpdatedBy': authProvider.userEmail ?? 'unknown',
+                }, SetOptions(merge: true));
+
+                if (!context.mounted) return;
+                setState(() => _maintenanceMode = value);
+                Navigator.pop(context);
+                SnackbarHelper.showSuccess(
+                  context,
+                  'Maintenance mode ${value ? 'enabled' : 'disabled'}',
+                );
+              } catch (e) {
+                if (!context.mounted) return;
+                SnackbarHelper.showError(context, 'Could not save: $e');
+              }
             },
             style: ElevatedButton.styleFrom(
               backgroundColor: value ? Colors.orange : AppColors.primary,
@@ -654,7 +740,7 @@ class _AdminSettingsScreenState extends State<AdminSettingsScreen> {
     );
   }
 
-  void _showChangePasswordDialog() {
+  void _showChangePasswordDialog(AuthProvider authProvider) {
     final currentPasswordController = TextEditingController();
     final newPasswordController = TextEditingController();
     final confirmPasswordController = TextEditingController();
@@ -701,15 +787,34 @@ class _AdminSettingsScreenState extends State<AdminSettingsScreen> {
             child: const Text('Cancel'),
           ),
           ElevatedButton(
-            onPressed: () {
-              if (newPasswordController.text == confirmPasswordController.text) {
+            onPressed: () async {
+              final formError = changePasswordFormError(
+                currentPassword: currentPasswordController.text,
+                newPassword: newPasswordController.text,
+                confirmPassword: confirmPasswordController.text,
+              );
+              if (formError != null) {
+                SnackbarHelper.showError(context, formError);
+                return;
+              }
+
+              final success = await authProvider.changePassword(
+                currentPassword: currentPasswordController.text,
+                newPassword: newPasswordController.text,
+              );
+              if (!context.mounted) return;
+
+              if (success) {
                 Navigator.pop(context);
                 SnackbarHelper.showSuccess(
                   context,
                   'Password changed successfully!',
                 );
               } else {
-                SnackbarHelper.showError(context, 'Passwords do not match');
+                SnackbarHelper.showError(
+                  context,
+                  authProvider.error ?? 'Failed to change password',
+                );
               }
             },
             child: const Text('Change'),
@@ -797,7 +902,7 @@ class _AdminSettingsScreenState extends State<AdminSettingsScreen> {
               subtitle: const Text('Download Firestore snapshot'),
               onTap: () {
                 Navigator.pop(context);
-                SnackbarHelper.showSuccess(context, 'Backup export initiated. Check Firebase Console for scheduled exports.');
+                SnackbarHelper.showInfo(context, backupExportDisclosure);
               },
             ),
             ListTile(
@@ -891,31 +996,32 @@ class _AdminSettingsScreenState extends State<AdminSettingsScreen> {
         title: const Row(children: [Icon(Icons.local_shipping_rounded, color: Color(0xFF14B8A6)), SizedBox(width: 12), Text('Shipping Settings')]),
         content: Column(
           mainAxisSize: MainAxisSize.min,
+          crossAxisAlignment: CrossAxisAlignment.start,
           children: [
-            ListTile(
-              title: const Text('Standard Delivery', style: TextStyle(fontWeight: FontWeight.w600)),
-              subtitle: const Text('₹40 flat rate, 2-3 business days'),
-              trailing: Switch(value: true, activeColor: AppColors.primary, onChanged: (_) {}),
+            const ListTile(
+              contentPadding: EdgeInsets.zero,
+              title: Text('Standard Delivery', style: TextStyle(fontWeight: FontWeight.w600)),
+              subtitle: Text('₹40 flat rate, 2-3 business days'),
             ),
-            ListTile(
-              title: const Text('Express Delivery', style: TextStyle(fontWeight: FontWeight.w600)),
-              subtitle: const Text('₹49 flat rate, same day'),
-              trailing: Switch(value: true, activeColor: AppColors.primary, onChanged: (_) {}),
+            const ListTile(
+              contentPadding: EdgeInsets.zero,
+              title: Text('Express Delivery', style: TextStyle(fontWeight: FontWeight.w600)),
+              subtitle: Text('₹49 flat rate, same day'),
             ),
-            ListTile(
-              title: const Text('Free Delivery Threshold', style: TextStyle(fontWeight: FontWeight.w600)),
-              subtitle: const Text('Free above ₹499'),
-              trailing: const Icon(Icons.edit_outlined, color: Colors.grey),
+            const ListTile(
+              contentPadding: EdgeInsets.zero,
+              title: Text('Free Delivery Threshold', style: TextStyle(fontWeight: FontWeight.w600)),
+              subtitle: Text('Free above ₹499'),
+            ),
+            const SizedBox(height: 8),
+            Text(
+              shippingSettingsDisclosure,
+              style: AppTextStyles.bodySmall.copyWith(color: Colors.grey.shade600),
             ),
           ],
         ),
         actions: [
           TextButton(onPressed: () => Navigator.pop(context), child: const Text('Close')),
-          ElevatedButton(
-            onPressed: () { Navigator.pop(context); SnackbarHelper.showSuccess(context, 'Shipping settings saved'); },
-            style: ElevatedButton.styleFrom(backgroundColor: AppColors.primary),
-            child: const Text('Save'),
-          ),
         ],
       ),
     );
@@ -929,31 +1035,32 @@ class _AdminSettingsScreenState extends State<AdminSettingsScreen> {
         title: const Row(children: [Icon(Icons.payment_rounded, color: Color(0xFFF59E0B)), SizedBox(width: 12), Text('Payment Methods')]),
         content: Column(
           mainAxisSize: MainAxisSize.min,
+          crossAxisAlignment: CrossAxisAlignment.start,
           children: [
-            ListTile(
-              leading: const Icon(Icons.money, color: Colors.green),
-              title: const Text('Cash on Delivery', style: TextStyle(fontWeight: FontWeight.w600)),
-              trailing: Switch(value: true, activeColor: AppColors.primary, onChanged: (_) {}),
+            const ListTile(
+              contentPadding: EdgeInsets.zero,
+              leading: Icon(Icons.money, color: Colors.green),
+              title: Text('Cash on Delivery', style: TextStyle(fontWeight: FontWeight.w600)),
             ),
-            ListTile(
-              leading: const Icon(Icons.account_balance, color: Colors.blue),
-              title: const Text('UPI / Net Banking', style: TextStyle(fontWeight: FontWeight.w600)),
-              trailing: Switch(value: true, activeColor: AppColors.primary, onChanged: (_) {}),
+            const ListTile(
+              contentPadding: EdgeInsets.zero,
+              leading: Icon(Icons.account_balance, color: Colors.blue),
+              title: Text('UPI / Net Banking', style: TextStyle(fontWeight: FontWeight.w600)),
             ),
-            ListTile(
-              leading: const Icon(Icons.account_balance_wallet, color: Colors.purple),
-              title: const Text('Wallet Payment', style: TextStyle(fontWeight: FontWeight.w600)),
-              trailing: Switch(value: true, activeColor: AppColors.primary, onChanged: (_) {}),
+            const ListTile(
+              contentPadding: EdgeInsets.zero,
+              leading: Icon(Icons.account_balance_wallet, color: Colors.purple),
+              title: Text('Wallet Payment', style: TextStyle(fontWeight: FontWeight.w600)),
+            ),
+            const SizedBox(height: 8),
+            Text(
+              paymentSettingsDisclosure,
+              style: AppTextStyles.bodySmall.copyWith(color: Colors.grey.shade600),
             ),
           ],
         ),
         actions: [
           TextButton(onPressed: () => Navigator.pop(context), child: const Text('Close')),
-          ElevatedButton(
-            onPressed: () { Navigator.pop(context); SnackbarHelper.showSuccess(context, 'Payment settings saved'); },
-            style: ElevatedButton.styleFrom(backgroundColor: AppColors.primary),
-            child: const Text('Save'),
-          ),
         ],
       ),
     );
@@ -973,24 +1080,19 @@ class _AdminSettingsScreenState extends State<AdminSettingsScreen> {
             const SizedBox(height: 20),
             Container(
               padding: const EdgeInsets.all(16),
-              decoration: BoxDecoration(color: const Color(0xFFF0FDF4), borderRadius: BorderRadius.circular(12)),
+              decoration: BoxDecoration(color: const Color(0xFFFFF7ED), borderRadius: BorderRadius.circular(12)),
               child: const Row(
                 children: [
-                  Icon(Icons.check_circle, color: Color(0xFF10B981)),
+                  Icon(Icons.info_outline_rounded, color: Color(0xFFB45309)),
                   SizedBox(width: 12),
-                  Expanded(child: Text('Firebase Auth already provides multi-factor authentication via phone and email verification.', style: TextStyle(fontSize: 13))),
+                  Expanded(child: Text(twoFactorDisclosure, style: TextStyle(fontSize: 13))),
                 ],
               ),
             ),
           ],
         ),
         actions: [
-          TextButton(onPressed: () => Navigator.pop(context), child: const Text('Close')),
-          ElevatedButton(
-            onPressed: () { Navigator.pop(context); SnackbarHelper.showSuccess(context, '2FA is active via Firebase Authentication'); },
-            style: ElevatedButton.styleFrom(backgroundColor: const Color(0xFF10B981)),
-            child: const Text('Understood'),
-          ),
+          TextButton(onPressed: () => Navigator.pop(context), child: const Text('Understood')),
         ],
       ),
     );
