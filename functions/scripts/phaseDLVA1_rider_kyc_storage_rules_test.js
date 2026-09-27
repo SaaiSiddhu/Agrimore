@@ -7,6 +7,10 @@
 // the Aadhaar or licence an admin reviewed. Image-only and owner-only rules
 // from FIX-11 still hold.
 //
+// Phase DLVDOC2 extends this file with delivery_document_submissions/
+// {uid}/{submissionId}, the STAGING path a rider of ANY status can write to
+// (unlike the live path above) -- immutable once staged, admin-delete-only.
+//
 // Run with: firebase emulators:exec --only storage,firestore --project demo-dlva1-kyc \
 //             "node scripts/phaseDLVA1_rider_kyc_storage_rules_test.js"
 // Honours FIRESTORE_EMULATOR_HOST and FIREBASE_STORAGE_EMULATOR_HOST.
@@ -65,6 +69,27 @@ async function main() {
     await scenario("k10_admin_reads", "allow", () => getBytes(ref(st("adm", { admin: true }), "delivery_documents/appr/aadhaarBack")));
     await scenario("k11_admin_may_delete", "allow", del(st("adm", { admin: true }), "delivery_documents/appr/aadhaarBack"));
     await scenario("k12_other_rider_cannot_read", "deny", () => getBytes(ref(st("pend"), "delivery_documents/appr/license")));
+
+    // Phase DLVDOC2 — delivery_document_submissions/{uid}/{submissionId}: a
+    // STAGING copy, deliberately NOT gated by riderKycEditable -- an approved
+    // (or suspended) rider correcting a document is exactly the case that
+    // gate exists to block on the LIVE path; this path is never live until
+    // reviewDocumentSubmission (Admin SDK) promotes it.
+    await scenario("k13_approved_rider_stages_a_replacement", "allow",
+      put(st("appr", { delivery_partner: true }), "delivery_document_submissions/appr/sub-1"));
+    await scenario("k14_suspended_rider_can_also_stage", "allow", put(st("susp"), "delivery_document_submissions/susp/sub-1"));
+    await scenario("k15_other_rider_cannot_stage_into_someone_elses_folder", "deny",
+      put(st("pend"), "delivery_document_submissions/appr/sub-2"));
+    await scenario("k16_non_image_refused", "deny", put(st("appr", { delivery_partner: true }), "delivery_document_submissions/appr/sub-3", PDF));
+    await seedFile("delivery_document_submissions/appr/sub-4");
+    await scenario("k17_owner_cannot_overwrite_a_staged_submission", "deny",
+      put(st("appr", { delivery_partner: true }), "delivery_document_submissions/appr/sub-4"));
+    await scenario("k18_owner_cannot_delete_a_staged_submission", "deny", del(st("appr"), "delivery_document_submissions/appr/sub-4"));
+    await scenario("k19_admin_may_delete_a_staged_submission", "allow", del(st("adm", { admin: true }), "delivery_document_submissions/appr/sub-4"));
+    await seedFile("delivery_document_submissions/appr/sub-5");
+    await scenario("k20_owner_reads_own_staged_submission", "allow", () => getBytes(ref(st("appr"), "delivery_document_submissions/appr/sub-5")));
+    await scenario("k21_admin_reads_any_staged_submission", "allow", () => getBytes(ref(st("adm", { admin: true }), "delivery_document_submissions/appr/sub-5")));
+    await scenario("k22_other_rider_cannot_read_a_staged_submission", "deny", () => getBytes(ref(st("pend"), "delivery_document_submissions/appr/sub-5")));
 
     const passed = results.filter(Boolean).length;
     console.log(`\n${passed}/${results.length} scenarios passed`);
