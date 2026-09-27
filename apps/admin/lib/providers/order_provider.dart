@@ -70,6 +70,12 @@ class OrderProvider with ChangeNotifier {
   List<SellerPayoutRecord> _selectedOrderSellerPayouts = [];
   bool _isLoadingSellerPayouts = false;
   String? _sellerPayoutsError;
+  // ADMR-36: the assigned rider's own current, aggregate cash liability
+  // (independent of this order alone) — its own loading/error state, same
+  // reasoning as the other per-order-detail loaders.
+  RiderCashAccountRecord? _selectedOrderRiderCashAccount;
+  bool _isLoadingRiderCashAccount = false;
+  String? _riderCashAccountError;
   bool _isLoading = false;
   bool _isLoadingTimeline = false;
   String? _error;
@@ -96,6 +102,9 @@ class OrderProvider with ChangeNotifier {
   List<SellerPayoutRecord> get selectedOrderSellerPayouts => _selectedOrderSellerPayouts;
   bool get isLoadingSellerPayouts => _isLoadingSellerPayouts;
   String? get sellerPayoutsError => _sellerPayoutsError;
+  RiderCashAccountRecord? get selectedOrderRiderCashAccount => _selectedOrderRiderCashAccount;
+  bool get isLoadingRiderCashAccount => _isLoadingRiderCashAccount;
+  String? get riderCashAccountError => _riderCashAccountError;
   bool get isLoading => _isLoading;
   bool get isLoadingTimeline => _isLoadingTimeline;
   String? get error => _error;
@@ -176,6 +185,7 @@ class OrderProvider with ChangeNotifier {
         await _loadCommissionExceptions(orderId);
         await _loadRelatedSupportTickets(orderId);
         await _loadSellerPayouts(orderId);
+        await _loadRiderCashAccount(_selectedOrder?.deliveryPartnerId);
         debugPrint('✅ Order loaded');
       } else {
         _error = '❌ Order not found';
@@ -289,6 +299,43 @@ class OrderProvider with ChangeNotifier {
       debugPrint('❌ Error loading rider earning: $e');
       _riderEarningError = e.toString();
       _isLoadingRiderEarning = false;
+      notifyListeners();
+    }
+  }
+
+  // ============================================
+  // LOAD RIDER CASH ACCOUNT (ADMR-36)
+  // ============================================
+  // rider_accounts/{riderId} — the rider's own running cash balance across
+  // every order they have ever collected COD for (functions/src/delivery/
+  // riderMoney.ts's own balanceFields), never specific to this one order.
+  // Loaded only when this order has an assigned rider. A missing document
+  // is a real zero (this rider has never held any COD cash), not an error.
+  Future<void> _loadRiderCashAccount(String? riderId) async {
+    if (riderId == null || riderId.isEmpty) {
+      _selectedOrderRiderCashAccount = null;
+      _riderCashAccountError = null;
+      return;
+    }
+    try {
+      _isLoadingRiderCashAccount = true;
+      _riderCashAccountError = null;
+      notifyListeners();
+
+      final doc = await _firestore.collection('rider_accounts').doc(riderId).get();
+
+      _selectedOrderRiderCashAccount = RiderCashAccountRecord.fromMap(
+        doc.exists ? doc.data()! : const {},
+        riderId,
+      );
+      debugPrint('✅ Loaded rider cash account for $riderId');
+
+      _isLoadingRiderCashAccount = false;
+      notifyListeners();
+    } catch (e) {
+      debugPrint('❌ Error loading rider cash account: $e');
+      _riderCashAccountError = e.toString();
+      _isLoadingRiderCashAccount = false;
       notifyListeners();
     }
   }
@@ -651,6 +698,7 @@ class OrderProvider with ChangeNotifier {
     _selectedOrderCommissionExceptions.clear();
     _selectedOrderSupportTickets.clear();
     _selectedOrderSellerPayouts.clear();
+    _selectedOrderRiderCashAccount = null;
     notifyListeners();
   }
 
@@ -673,6 +721,7 @@ class OrderProvider with ChangeNotifier {
     _selectedOrderCommissionExceptions.clear();
     _selectedOrderSupportTickets.clear();
     _selectedOrderSellerPayouts.clear();
+    _selectedOrderRiderCashAccount = null;
     super.dispose();
   }
 }
