@@ -48,6 +48,10 @@ dependencies:
   
   # Utilities
   shared_preferences: ^2.3.4
+  # DLVID4: durable local storage for an in-progress registration draft
+  # (can carry a bank account / Aadhaar number, so it needs keychain/keystore
+  # protection, not shared_preferences).
+  flutter_secure_storage: ^9.2.2
   url_launcher: ^6.3.1
   intl: ^0.20.2
   cached_network_image: ^3.4.1

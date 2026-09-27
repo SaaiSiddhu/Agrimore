@@ -187,6 +187,34 @@
   "@regResumeNote": {
     "description": "Shown when registration resumes for a signed-in account"
   },
+  "regDraftFoundTitle": "Resume registration?",
+  "@regDraftFoundTitle": {
+    "description": "Dialog title offering to resume an interrupted registration"
+  },
+  "regDraftFoundBody": "You have an unfinished registration. Continue where you left off, or start over and re-enter your details.",
+  "@regDraftFoundBody": {
+    "description": "Dialog body offering to resume an interrupted registration"
+  },
+  "regDraftResume": "Resume",
+  "@regDraftResume": {
+    "description": "Dialog action: continue an interrupted registration"
+  },
+  "regDraftStartOver": "Start over",
+  "@regDraftStartOver": {
+    "description": "Dialog action: discard an interrupted registration and begin again"
+  },
+  "regStartOverAction": "Start over",
+  "@regStartOverAction": {
+    "description": "AppBar action to discard the current registration draft"
+  },
+  "regDraftDiscardTitle": "Start over?",
+  "@regDraftDiscardTitle": {
+    "description": "Confirmation dialog title before discarding a registration draft"
+  },
+  "regDraftDiscardBody": "This clears everything you've entered so far, including any photos you've picked. This can't be undone.",
+  "@regDraftDiscardBody": {
+    "description": "Confirmation dialog body before discarding a registration draft"
+  },
   "regStepAccount": "Account",
   "@regStepAccount": {
     "description": "Stepper step"
@@ -318,6 +346,10 @@
   "docMissing": "Add this photo",
   "@docMissing": {
     "description": "Photo tile error"
+  },
+  "regDraftPhotoMissing": "Please re-select this photo",
+  "@regDraftPhotoMissing": {
+    "description": "Photo tile note when a resumed draft's stored file no longer exists on disk"
   },
   "docsPrivacy": "Photos are visible only to you and Agrimore admins, and are locked once your application is decided.",
   "@docsPrivacy": {

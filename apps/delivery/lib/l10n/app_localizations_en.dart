@@ -152,6 +152,29 @@ class AppLocalizationsEn extends AppLocalizations {
       'Your account is ready — finish your details to apply.';
 
   @override
+  String get regDraftFoundTitle => 'Resume registration?';
+
+  @override
+  String get regDraftFoundBody =>
+      'You have an unfinished registration. Continue where you left off, or start over and re-enter your details.';
+
+  @override
+  String get regDraftResume => 'Resume';
+
+  @override
+  String get regDraftStartOver => 'Start over';
+
+  @override
+  String get regStartOverAction => 'Start over';
+
+  @override
+  String get regDraftDiscardTitle => 'Start over?';
+
+  @override
+  String get regDraftDiscardBody =>
+      'This clears everything you\'ve entered so far, including any photos you\'ve picked. This can\'t be undone.';
+
+  @override
   String get regStepAccount => 'Account';
 
   @override
@@ -250,6 +273,9 @@ class AppLocalizationsEn extends AppLocalizations {
 
   @override
   String get docMissing => 'Add this photo';
+
+  @override
+  String get regDraftPhotoMissing => 'Please re-select this photo';
 
   @override
   String get docsPrivacy =>

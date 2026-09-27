@@ -352,6 +352,48 @@ abstract class AppLocalizations {
   /// **'Your account is ready — finish your details to apply.'**
   String get regResumeNote;
 
+  /// Dialog title offering to resume an interrupted registration
+  ///
+  /// In en, this message translates to:
+  /// **'Resume registration?'**
+  String get regDraftFoundTitle;
+
+  /// Dialog body offering to resume an interrupted registration
+  ///
+  /// In en, this message translates to:
+  /// **'You have an unfinished registration. Continue where you left off, or start over and re-enter your details.'**
+  String get regDraftFoundBody;
+
+  /// Dialog action: continue an interrupted registration
+  ///
+  /// In en, this message translates to:
+  /// **'Resume'**
+  String get regDraftResume;
+
+  /// Dialog action: discard an interrupted registration and begin again
+  ///
+  /// In en, this message translates to:
+  /// **'Start over'**
+  String get regDraftStartOver;
+
+  /// AppBar action to discard the current registration draft
+  ///
+  /// In en, this message translates to:
+  /// **'Start over'**
+  String get regStartOverAction;
+
+  /// Confirmation dialog title before discarding a registration draft
+  ///
+  /// In en, this message translates to:
+  /// **'Start over?'**
+  String get regDraftDiscardTitle;
+
+  /// Confirmation dialog body before discarding a registration draft
+  ///
+  /// In en, this message translates to:
+  /// **'This clears everything you\'ve entered so far, including any photos you\'ve picked. This can\'t be undone.'**
+  String get regDraftDiscardBody;
+
   /// Stepper step
   ///
   /// In en, this message translates to:
@@ -549,6 +591,12 @@ abstract class AppLocalizations {
   /// In en, this message translates to:
   /// **'Add this photo'**
   String get docMissing;
+
+  /// Photo tile note when a resumed draft's stored file no longer exists on disk
+  ///
+  /// In en, this message translates to:
+  /// **'Please re-select this photo'**
+  String get regDraftPhotoMissing;
 
   /// KYC privacy note
   ///

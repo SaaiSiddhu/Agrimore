@@ -4,6 +4,9 @@
 // (registration/rider_application.dart → submitRiderApplication).
 // The form keeps everything typed across steps and failures; a resumed
 // registration (signed in, no rider record yet) skips the account step.
+import 'dart:async';
+import 'dart:io';
+
 import 'package:agrimore_core/agrimore_core.dart' show VehicleType;
 import 'package:flutter/material.dart';
 import 'package:image_picker/image_picker.dart';
@@ -12,6 +15,7 @@ import 'package:provider/provider.dart';
 import '../../design_system/design_system.dart';
 import '../../l10n/app_localizations.dart';
 import '../../providers/auth_provider.dart';
+import '../../registration/registration_draft.dart';
 import '../../registration/rider_application.dart';
 
 String registrationFailureText(AppLocalizations l, RegistrationFailure f) =>
@@ -73,6 +77,8 @@ class RiderRegistrationScreen extends StatefulWidget {
     this.service,
     this.pickPhoto,
     this.initial,
+    this.draftStore,
+    this.resolveDraftPhoto,
   });
 
   /// DLV-A2: the rider's existing delivery_partners record, when a pending or
@@ -83,6 +89,15 @@ class RiderRegistrationScreen extends StatefulWidget {
   final RegistrationService? service;
   final Future<PickedPhoto?> Function(RiderDocument doc)? pickPhoto;
 
+  /// DLVID4: injected in tests; defaults to on-device secure storage.
+  final RegistrationDraftStore? draftStore;
+
+  /// DLVID4: reads a photo staged by an earlier attempt back into memory, or
+  /// null if it's gone -- injected in tests so they never touch real disk
+  /// I/O (flutter_test's fake-async zone can stall a real dart:io read
+  /// triggered from inside a post-frame callback's continuation).
+  final Future<PickedPhoto?> Function(DraftPhoto stored)? resolveDraftPhoto;
+
   @override
   State<RiderRegistrationScreen> createState() =>
       _RiderRegistrationScreenState();
@@ -91,11 +106,19 @@ class RiderRegistrationScreen extends StatefulWidget {
 class _RiderRegistrationScreenState extends State<RiderRegistrationScreen> {
   late final RegistrationService _service =
       widget.service ?? RegistrationService();
+  late final RegistrationDraftStore _draftStore =
+      widget.draftStore ?? SecureRegistrationDraftStore();
+  late final Future<PickedPhoto?> Function(DraftPhoto) _resolveDraftPhoto =
+      widget.resolveDraftPhoto ?? _defaultResolveDraftPhoto;
   final RiderApplicationForm _form = RiderApplicationForm();
   final Map<RiderDocument, PickedPhoto> _photos = {};
+  final Map<RiderDocument, String> _photoPaths = {};
+  final Set<RiderDocument> _missingDraftPhotos = {};
   Set<String> _problems = {};
   RegistrationFailure? _failure;
   bool _submitting = false;
+  bool _draftChecked = false;
+  int _formGeneration = 0;
   late int _step = _needsAccount ? 0 : 1;
 
   /// Photos already on file at their fixed paths (a resubmission); an older
@@ -106,33 +129,198 @@ class _RiderRegistrationScreenState extends State<RiderRegistrationScreen> {
   void initState() {
     super.initState();
     final d = widget.initial;
-    if (d == null) return;
-    String v(String k) => (d[k] as String?) ?? '';
-    _form
-      ..name = v('name')
-      ..phone = v('phone')
-      ..altPhone = v('altPhone')
-      ..vehicleType = VehicleType.fromWire(d['vehicleType'] as String?)
-      ..vehicleNumber = v('vehicleNumber')
-      ..licenseNumber = v('licenseNumber')
-      ..aadhaarNumber = v('aadhaarNumber')
-      ..address = v('address')
-      ..city = v('city')
-      ..pincode = v('pincode')
-      ..accountHolderName = v('accountHolderName')
-      ..bankAccountNumber = v('bankAccountNumber')
-      ..ifscCode = v('ifscCode')
-      ..upiId = v('upiId');
-    final paths = d['kycDocuments'] is Map ? d['kycDocuments'] as Map : const {};
-    for (final doc in RiderDocument.values) {
-      if (paths[doc.key] is String) {
-        _onFile.add(doc);
-        _service.uploaded.add(doc);
+    if (d != null) {
+      String v(String k) => (d[k] as String?) ?? '';
+      _form
+        ..name = v('name')
+        ..phone = v('phone')
+        ..altPhone = v('altPhone')
+        ..vehicleType = VehicleType.fromWire(d['vehicleType'] as String?)
+        ..vehicleNumber = v('vehicleNumber')
+        ..licenseNumber = v('licenseNumber')
+        ..aadhaarNumber = v('aadhaarNumber')
+        ..address = v('address')
+        ..city = v('city')
+        ..pincode = v('pincode')
+        ..accountHolderName = v('accountHolderName')
+        ..bankAccountNumber = v('bankAccountNumber')
+        ..ifscCode = v('ifscCode')
+        ..upiId = v('upiId');
+      final paths = d['kycDocuments'] is Map ? d['kycDocuments'] as Map : const {};
+      for (final doc in RiderDocument.values) {
+        if (paths[doc.key] is String) {
+          _onFile.add(doc);
+          _service.uploaded.add(doc);
+        }
       }
+      return;
     }
+    // DLVID4: a resubmission (above) resumes from the server's own record,
+    // which is authoritative -- a local draft is only offered for a fresh
+    // registration, where nothing server-side exists yet.
+    WidgetsBinding.instance.addPostFrameCallback((_) => _checkForDraft());
   }
 
   bool get _needsAccount => _service.backend.currentUid == null;
+
+  String get _draftKey => _service.backend.currentUid ?? '_pending';
+
+  /// Prefers the current account's own slot; falls back to the pre-account
+  /// slot so a crash between account creation and the next draft save (e.g.
+  /// mid `submitAll()`) doesn't strand an otherwise-good draft.
+  Future<RegistrationDraft?> _loadResumableDraft() async {
+    final key = _draftKey;
+    final own = await _draftStore.load(key);
+    if (own != null) return own;
+    if (key == '_pending') return null;
+    return _draftStore.load('_pending');
+  }
+
+  Future<void> _checkForDraft() async {
+    if (_draftChecked || !mounted) return;
+    _draftChecked = true;
+    final draft = await _loadResumableDraft();
+    if (draft == null || !mounted) return;
+    final l = AppLocalizations.of(context);
+    final resume = await showDeliveryConfirmDialog(
+      context: context,
+      title: l.regDraftFoundTitle,
+      body: l.regDraftFoundBody,
+      confirmLabel: l.regDraftResume,
+      cancelLabel: l.regDraftStartOver,
+    );
+    if (!mounted) return;
+    if (resume) {
+      await _applyDraft(draft);
+    } else {
+      await _clearDraft();
+    }
+  }
+
+  Future<void> _applyDraft(RegistrationDraft draft) async {
+    final photos = <RiderDocument, PickedPhoto>{};
+    final paths = <RiderDocument, String>{};
+    final missing = <RiderDocument>{};
+    for (final entry in draft.photos.entries) {
+      final resolved = await _resolveDraftPhoto(entry.value);
+      if (resolved != null) {
+        photos[entry.key] = resolved;
+        paths[entry.key] = entry.value.path;
+      } else {
+        missing.add(entry.key);
+      }
+    }
+    if (!mounted) return;
+    final minStep = _needsAccount ? 0 : 1;
+    final step = draft.step < minStep ? minStep : (draft.step > 4 ? 4 : draft.step);
+    setState(() {
+      _form
+        ..email = draft.form.email
+        ..name = draft.form.name
+        ..phone = draft.form.phone
+        ..altPhone = draft.form.altPhone
+        ..vehicleType = draft.form.vehicleType
+        ..vehicleNumber = draft.form.vehicleNumber
+        ..licenseNumber = draft.form.licenseNumber
+        ..aadhaarNumber = draft.form.aadhaarNumber
+        ..address = draft.form.address
+        ..city = draft.form.city
+        ..pincode = draft.form.pincode
+        ..accountHolderName = draft.form.accountHolderName
+        ..bankAccountNumber = draft.form.bankAccountNumber
+        ..ifscCode = draft.form.ifscCode
+        ..upiId = draft.form.upiId;
+      _photos.addAll(photos);
+      _photoPaths.addAll(paths);
+      _missingDraftPhotos
+        ..clear()
+        ..addAll(missing);
+      _step = step;
+      _formGeneration++; // force every TextFormField to remount with the restored value
+    });
+  }
+
+  Future<void> _clearDraft() async {
+    await _draftStore.clear(_draftKey);
+    await _draftStore.clear('_pending');
+  }
+
+  Future<void> _saveDraft() async {
+    final key = _draftKey;
+    await _draftStore.save(
+      key,
+      RegistrationDraft(
+        step: _step,
+        form: _form,
+        photos: {
+          for (final e in _photoPaths.entries)
+            if (_photos.containsKey(e.key))
+              e.key: DraftPhoto(path: e.value, contentType: _photos[e.key]!.contentType),
+        },
+        savedAt: DateTime.now(),
+      ),
+    );
+    // Promote: once the account exists, the pre-account slot is stale.
+    if (key != '_pending') await _draftStore.clear('_pending');
+  }
+
+  Future<void> _confirmStartOver() async {
+    final l = AppLocalizations.of(context);
+    final discard = await showDeliveryConfirmDialog(
+      context: context,
+      title: l.regDraftDiscardTitle,
+      body: l.regDraftDiscardBody,
+      confirmLabel: l.regDraftStartOver,
+      destructive: true,
+    );
+    if (!discard || !mounted) return;
+    await _clearDraft();
+    if (!mounted) return;
+    setState(() {
+      _form
+        ..email = ''
+        ..password = ''
+        ..name = ''
+        ..phone = ''
+        ..altPhone = ''
+        ..vehicleType = VehicleType.bike
+        ..vehicleNumber = ''
+        ..licenseNumber = ''
+        ..aadhaarNumber = ''
+        ..address = ''
+        ..city = ''
+        ..pincode = ''
+        ..accountHolderName = ''
+        ..bankAccountNumber = ''
+        ..ifscCode = ''
+        ..upiId = '';
+      _photos.clear();
+      _photoPaths.clear();
+      _missingDraftPhotos.clear();
+      _onFile.clear();
+      _problems = {};
+      _failure = null;
+      _step = _needsAccount ? 0 : 1;
+      _formGeneration++;
+    });
+  }
+
+  bool get _hasDraftableInput =>
+      _form.name.isNotEmpty ||
+      _form.phone.isNotEmpty ||
+      _form.address.isNotEmpty ||
+      _photos.isNotEmpty ||
+      _step > (_needsAccount ? 0 : 1);
+
+  Future<PickedPhoto?> _defaultResolveDraftPhoto(DraftPhoto stored) async {
+    final file = File(stored.path);
+    if (!await file.exists()) return null;
+    return (
+      bytes: await file.readAsBytes(),
+      contentType: stored.contentType,
+      path: stored.path,
+    );
+  }
 
   Future<PickedPhoto?> _defaultPick(RiderDocument doc) async {
     final file = await ImagePicker().pickImage(
@@ -145,6 +333,7 @@ class _RiderRegistrationScreenState extends State<RiderRegistrationScreen> {
     return (
       bytes: await file.readAsBytes(),
       contentType: file.mimeType ?? 'image/jpeg',
+      path: file.path,
     );
   }
 
@@ -153,9 +342,16 @@ class _RiderRegistrationScreenState extends State<RiderRegistrationScreen> {
     if (photo == null || !mounted) return;
     setState(() {
       _photos[doc] = photo;
+      if (photo.path != null) {
+        _photoPaths[doc] = photo.path!;
+      } else {
+        _photoPaths.remove(doc);
+      }
+      _missingDraftPhotos.remove(doc);
       _service.uploaded.remove(doc); // a new photo must be uploaded again
       _problems.remove('documents.${doc.key}');
     });
+    unawaited(_saveDraft());
   }
 
   List<String> _problemsForStep(int step) {
@@ -181,6 +377,7 @@ class _RiderRegistrationScreenState extends State<RiderRegistrationScreen> {
     if (problems.isNotEmpty) return;
     if (_step < 4) {
       setState(() => _step++);
+      unawaited(_saveDraft());
     } else {
       _submit();
     }
@@ -201,8 +398,14 @@ class _RiderRegistrationScreenState extends State<RiderRegistrationScreen> {
       _submitting = true;
       _failure = null;
     });
+    // A snapshot taken right before the risky call, so a process kill during
+    // submitAll() (account created, then upload/submit never finishes) still
+    // leaves a draft that _loadResumableDraft's pre-account fallback can find.
+    await _saveDraft();
     try {
       await _service.submitAll(_form, _photos);
+      if (!mounted) return;
+      await _clearDraft();
       if (!mounted) return;
       final auth = context.read<DeliveryAuthProvider>();
       await auth.registrationSubmitted();
@@ -217,10 +420,30 @@ class _RiderRegistrationScreenState extends State<RiderRegistrationScreen> {
           _step = e.problems.map(stepOfProblem).reduce((a, b) => a < b ? a : b);
         }
         if (e.failure == RegistrationFailure.documentsMissing) {
-          _service.uploaded.clear();
-          _onFile.clear();
+          final missingDocs = e.problems
+              .where((p) => p.startsWith('documents.'))
+              .map((p) => p.substring('documents.'.length))
+              .toSet();
+          if (missingDocs.isEmpty) {
+            // submitAll()'s own client-side check throws with no problem
+            // keys when a doc is simply absent from _photos -- we can't tell
+            // which one was meant, so fall back to the previous behaviour.
+            _service.uploaded.clear();
+            _onFile.clear();
+          } else {
+            // The server named specific documents: only those need
+            // re-uploading, so a rider never has to re-pick photos that
+            // already succeeded.
+            for (final doc in RiderDocument.values) {
+              if (missingDocs.contains(doc.key)) {
+                _service.uploaded.remove(doc);
+                _onFile.remove(doc);
+              }
+            }
+          }
         }
       });
+      unawaited(_saveDraft());
     } catch (e) {
       debugPrint('Registration failed: $e');
       if (mounted) setState(() => _failure = RegistrationFailure.unknown);
@@ -250,8 +473,13 @@ class _RiderRegistrationScreenState extends State<RiderRegistrationScreen> {
         maxLines: maxLines,
         textCapitalization: caps,
         onChanged: (v) {
-          onChanged(v);
-          if (_problems.contains(key)) setState(() => _problems.remove(key));
+          // DLVID4: always rebuilds (not just when clearing a problem) so
+          // _hasDraftableInput -- and the "Start over" action it gates --
+          // stays live as the rider types, not just after a step change.
+          setState(() {
+            onChanged(v);
+            _problems.remove(key);
+          });
         },
         decoration: InputDecoration(
           labelText: label,
@@ -269,6 +497,10 @@ class _RiderRegistrationScreenState extends State<RiderRegistrationScreen> {
     final photo = _photos[doc];
     final onFile = _onFile.contains(doc) && photo == null;
     final missing = _problems.contains('documents.${doc.key}');
+    // DLVID4: a resumed draft whose stored file no longer exists on disk --
+    // distinct from "never picked" (grey) and "done" (green): the rider
+    // previously picked this, but it can't be silently reused.
+    final needsReselect = photo == null && _missingDraftPhotos.contains(doc);
     return Semantics(
       button: true,
       child: InkWell(
@@ -282,8 +514,12 @@ class _RiderRegistrationScreenState extends State<RiderRegistrationScreen> {
             color: c.surface,
             borderRadius: DeliveryRadius.rMd,
             border: Border.all(
-              color: missing ? c.danger.border : c.borderStrong,
-              width: missing ? DeliverySize.outline : DeliverySize.hairline,
+              color: missing
+                  ? c.danger.border
+                  : (needsReselect ? c.warning.border : c.borderStrong),
+              width: missing || needsReselect
+                  ? DeliverySize.outline
+                  : DeliverySize.hairline,
             ),
           ),
           child: Column(
@@ -297,15 +533,21 @@ class _RiderRegistrationScreenState extends State<RiderRegistrationScreen> {
                         decoration: BoxDecoration(
                           color: onFile
                               ? c.success.container
-                              : c.surfaceVariant,
+                              : (needsReselect
+                                  ? c.warning.container
+                                  : c.surfaceVariant),
                           borderRadius: DeliveryRadius.rSm,
                         ),
                         alignment: Alignment.center,
                         child: Icon(
                           onFile
                               ? DeliveryIcons.checkCircle
-                              : DeliveryIcons.camera,
-                          color: onFile ? c.success.icon : c.textTertiary,
+                              : (needsReselect
+                                  ? DeliveryIcons.warning
+                                  : DeliveryIcons.camera),
+                          color: onFile
+                              ? c.success.icon
+                              : (needsReselect ? c.warning.icon : c.textTertiary),
                           size: DeliveryIconSize.xl,
                         ),
                       )
@@ -322,9 +564,13 @@ class _RiderRegistrationScreenState extends State<RiderRegistrationScreen> {
               Text(
                 missing
                     ? l.docMissing
-                    : (photo == null && !onFile ? l.docAdd : l.docChange),
+                    : (needsReselect
+                        ? l.regDraftPhotoMissing
+                        : (photo == null && !onFile ? l.docAdd : l.docChange)),
                 style: t.bodySmall.copyWith(
-                  color: missing ? c.danger.text : c.brand,
+                  color: missing
+                      ? c.danger.text
+                      : (needsReselect ? c.warning.text : c.brand),
                 ),
               ),
             ],
@@ -589,7 +835,16 @@ class _RiderRegistrationScreenState extends State<RiderRegistrationScreen> {
 
     return Scaffold(
       backgroundColor: c.background,
-      appBar: AppBar(title: Text(l.regTitle)),
+      appBar: AppBar(
+        title: Text(l.regTitle),
+        actions: [
+          if (widget.initial == null && _hasDraftableInput)
+            TextButton(
+              onPressed: _submitting ? null : _confirmStartOver,
+              child: Text(l.regStartOverAction),
+            ),
+        ],
+      ),
       body: Column(
         children: [
           Padding(
@@ -640,6 +895,13 @@ class _RiderRegistrationScreenState extends State<RiderRegistrationScreen> {
             ),
           Expanded(
             child: Stepper(
+              // DLVID4: keying the whole Stepper by generation forces every
+              // field beneath it (including each TextFormField, which only
+              // reads `initialValue` on its first build) to be discarded and
+              // rebuilt fresh when a loaded draft changes _form after this
+              // subtree's first build -- without changing any field's own
+              // ValueKey, which existing tests locate by exact string.
+              key: ValueKey('registration-stepper-$_formGeneration'),
               currentStep: _step,
               onStepTapped: _submitting
                   ? null

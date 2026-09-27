@@ -220,8 +220,10 @@ class FirebaseRegistrationBackend implements RegistrationBackend {
   }
 }
 
-/// One photo chosen by the rider.
-typedef PickedPhoto = ({Uint8List bytes, String contentType});
+/// One photo chosen by the rider. [path] is the on-disk file it was read
+/// from, when known -- DLVID4 uses it to stage a resumable draft; a caller
+/// with no real file (e.g. a test double) passes null.
+typedef PickedPhoto = ({Uint8List bytes, String contentType, String? path});
 
 /// Runs the three steps. Every step can be retried: the account is reused,
 /// photos overwrite their fixed paths, the submission updates one record.

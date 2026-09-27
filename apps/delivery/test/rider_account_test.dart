@@ -8,6 +8,7 @@ import 'package:delivery/account/rider_account.dart';
 import 'package:delivery/auth/rider_account_source.dart';
 import 'package:delivery/l10n/app_localizations.dart';
 import 'package:delivery/providers/auth_provider.dart';
+import 'package:delivery/registration/registration_draft.dart';
 import 'package:delivery/registration/rider_application.dart';
 import 'package:delivery/screens/auth/pending_approval_screen.dart' show canResubmit;
 import 'package:delivery/screens/auth/rider_registration_screen.dart';
@@ -100,6 +101,7 @@ void main() {
     final reg = FakeReg();
     await t.pumpWidget(host(RiderRegistrationScreen(
       service: RegistrationService(reg),
+      draftStore: _NoDraftStore(),
       initial: const {
         'name': 'Ravi Kumar', 'phone': '9876543210', 'vehicleType': 'bike', 'vehicleNumber': 'TN58AB1234',
         'licenseNumber': 'TN5820200001234', 'aadhaarNumber': '234567890123', 'address': '12, Main Road',
@@ -119,6 +121,17 @@ void main() {
     }
     expect(reg.log, ['submit Chennai'], reason: 'no photo re-uploaded; corrected city submitted');
   });
+}
+
+/// DLVID4: this test doesn't exercise draft recovery -- keeps the screen
+/// from touching real secure storage.
+class _NoDraftStore implements RegistrationDraftStore {
+  @override
+  Future<RegistrationDraft?> load(String key) async => null;
+  @override
+  Future<void> save(String key, RegistrationDraft draft) async {}
+  @override
+  Future<void> clear(String key) async {}
 }
 
 class _NoAuth implements RiderAuthGateway {
