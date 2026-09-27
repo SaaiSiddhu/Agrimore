@@ -1,6 +1,17 @@
 import 'package:cloud_firestore/cloud_firestore.dart';
+import 'package:cloud_functions/cloud_functions.dart';
 import 'package:flutter/material.dart';
 import 'package:agrimore_core/agrimore_core.dart';
+
+/// ADMR-44: setUserRole.ts's own VALID_ROLES uses 'customer' for the
+/// non-privileged case (roleClaims.ts's own vocabulary); every other part
+/// of this app persists and reads the literal string 'user' for the same
+/// concept (UserModel.isBuyer, edit_user_screen.dart's own role options).
+/// Pure and top-level so a wrong mapping here — which would either fail
+/// validation outright or silently request the wrong role — is directly
+/// testable without constructing AdminService itself.
+String apiRoleForStoredRole(String storedRole) =>
+    storedRole == 'user' ? 'customer' : storedRole;
 
 class AdminService {
   final FirebaseFirestore _firestore = FirebaseFirestore.instance;
@@ -106,12 +117,24 @@ class AdminService {
             .toList());
   }
 
+  // ADMR-44: was a bare client Firestore write — firestore.rules'
+  // `allow update: if isAdmin() || ...` grants ANY admin unrestricted
+  // access to ANY user's role field, with no audit trail, no self-
+  // demotion guard and no last-admin protection (ADMR-12's own comment on
+  // this method already named this gap explicitly; that phase added only
+  // a client-side confirmation dialog, deliberately not this deeper fix).
+  // setUserRole.ts already exists, already deployed, and already provides
+  // all of that server-side — it had zero client callers anywhere in
+  // apps/admin. This routes through it instead of inventing a new command.
   Future<void> updateUserRole(String userId, String role) async {
     try {
-      await _firestore.collection('users').doc(userId).update({
-        'role': role,
-        'updatedAt': FieldValue.serverTimestamp(),
+      await FirebaseFunctions.instance.httpsCallable('setUserRole').call<Map<String, dynamic>>({
+        'userId': userId,
+        'role': apiRoleForStoredRole(role),
       });
+    } on FirebaseFunctionsException catch (e) {
+      debugPrint('setUserRole: ${e.code} ${e.message}');
+      throw Exception(e.message ?? 'Failed to update user role');
     } catch (e) {
       debugPrint('Error updating user role: $e');
       throw Exception('Failed to update user role: $e');
