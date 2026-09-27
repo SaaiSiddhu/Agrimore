@@ -15,12 +15,6 @@ import '../../l10n/app_localizations.dart';
 import '../../support/rider_support.dart';
 import 'support_request_status_screen.dart';
 
-String _categoryLabel(AppLocalizations l, String category) => switch (category) {
-      kSupportCategoryEarningsPayouts => l.helpTopicEarningsPayouts,
-      kSupportCategoryAccountDocuments => l.helpTopicAccountDocuments,
-      _ => l.helpTopicDeliveryIssue,
-    };
-
 class SubmitSupportRequestScreen extends StatefulWidget {
   const SubmitSupportRequestScreen({
     super.key,
@@ -140,7 +134,7 @@ class _SubmitSupportRequestScreenState extends State<SubmitSupportRequestScreen>
               decoration: InputDecoration(labelText: l.supportCategoryLabel),
               items: [
                 for (final cat in kSupportCategories)
-                  DropdownMenuItem(value: cat, child: Text(_categoryLabel(l, cat))),
+                  DropdownMenuItem(value: cat, child: Text(supportCategoryLabel(l, cat))),
               ],
               onChanged: (v) => setState(() => _category = v ?? _category),
             ),

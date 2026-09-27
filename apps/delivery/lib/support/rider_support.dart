@@ -13,6 +13,8 @@ import 'package:firebase_auth/firebase_auth.dart';
 import 'package:firebase_storage/firebase_storage.dart';
 import 'package:flutter/foundation.dart';
 
+import '../l10n/app_localizations.dart';
+
 const String kSupportCategoryDeliveryIssue = 'delivery_issue';
 const String kSupportCategoryEarningsPayouts = 'earnings_payouts';
 const String kSupportCategoryAccountDocuments = 'account_documents';
@@ -120,6 +122,11 @@ abstract class RiderSupportBackend {
   /// One specific ticket's live status, or null if it does not exist.
   Stream<SupportTicket?> ticket(String ticketId);
 
+  /// DLVSUP2: every ticket this rider has ever filed, newest first. An
+  /// equality-only query (`riderId ==`); sorted client-side rather than via
+  /// `orderBy` so no composite index (and no deploy) is needed.
+  Stream<List<SupportTicket>> tickets(String riderId);
+
   /// Uploads to support_attachments/{uid}/{requestId}.jpg, returning that
   /// path for [submit]'s attachmentPath. Mirrors delivery_problems.dart's
   /// own uploadProof: one fixed object per request id, never a client-
@@ -184,4 +191,35 @@ class CallableRiderSupportBackend implements RiderSupportBackend {
           controller.close();
         }
       });
+
+  @override
+  Stream<List<SupportTicket>> tickets(String riderId) => Stream.multi((controller) {
+        try {
+          controller.addStream(_db
+              .collection('rider_support_tickets')
+              .where('riderId', isEqualTo: riderId)
+              .snapshots()
+              .map((s) {
+            final list = s.docs.map((d) => SupportTicket.fromMap(d.id, d.data())).toList();
+            list.sort((a, b) {
+              final at = a.createdAt;
+              final bt = b.createdAt;
+              if (at == null || bt == null) return 0;
+              return bt.compareTo(at);
+            });
+            return list;
+          }));
+        } catch (e, st) {
+          controller.addError(e, st);
+          controller.close();
+        }
+      });
 }
+
+/// The category's display label (shared by the submit form and the request
+/// list, so both read the same wording).
+String supportCategoryLabel(AppLocalizations l, String category) => switch (category) {
+      kSupportCategoryEarningsPayouts => l.helpTopicEarningsPayouts,
+      kSupportCategoryAccountDocuments => l.helpTopicAccountDocuments,
+      _ => l.helpTopicDeliveryIssue,
+    };

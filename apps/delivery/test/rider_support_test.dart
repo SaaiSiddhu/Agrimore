@@ -21,6 +21,15 @@ class FakeSupportBackend implements RiderSupportBackend {
   SupportTicket? current;
   final _ticket = StreamController<SupportTicket?>.broadcast();
 
+  /// DLVSUP2: drives [tickets]. Null means "still loading" (never emits);
+  /// set to a list (possibly empty) to resolve it, or set [ticketsFailWith]
+  /// to make it error instead. [tickets] is re-evaluated on every call (not
+  /// cached), so a test can mutate these fields and call it again to
+  /// simulate a retry resolving differently.
+  List<SupportTicket>? ticketsList;
+  Object? ticketsFailWith;
+  final _neverEmits = StreamController<List<SupportTicket>>.broadcast();
+
   @override
   String? get currentUid => 'r1';
 
@@ -53,6 +62,14 @@ class FakeSupportBackend implements RiderSupportBackend {
   Stream<SupportTicket?> ticket(String ticketId) async* {
     yield current;
     yield* _ticket.stream;
+  }
+
+  @override
+  Stream<List<SupportTicket>> tickets(String riderId) {
+    if (ticketsFailWith != null) return Stream<List<SupportTicket>>.error(ticketsFailWith!);
+    final list = ticketsList;
+    if (list == null) return _neverEmits.stream; // still "loading": never emits, never completes
+    return Stream.value(list);
   }
 }
 

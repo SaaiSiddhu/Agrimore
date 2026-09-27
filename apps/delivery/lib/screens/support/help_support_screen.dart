@@ -14,6 +14,7 @@
 // adopted (Inbox is real, live, heavily-built functionality) -- this screen
 // is reached from Profile instead. Both are flagged for the owner in this
 // phase's ledger row, not decided here.
+import 'package:firebase_auth/firebase_auth.dart';
 import 'package:flutter/material.dart';
 
 import '../../account/support_card.dart';
@@ -21,6 +22,7 @@ import '../../design_system/design_system.dart';
 import '../../l10n/app_localizations.dart';
 import '../../safety/emergency_sheet.dart';
 import '../../support/rider_support.dart';
+import 'my_support_requests_screen.dart';
 import 'submit_support_request_screen.dart';
 
 class HelpSupportScreen extends StatelessWidget {
@@ -40,6 +42,14 @@ class HelpSupportScreen extends StatelessWidget {
           Text(
             l.helpSupportSubtitle,
             style: t.bodyMedium.copyWith(color: c.textSecondary),
+          ),
+          const SizedBox(height: DeliverySpace.lg),
+          _Topic(
+            key: const ValueKey('help-my-requests'),
+            icon: DeliveryIcons.document,
+            title: l.mySupportRequestsEntry,
+            subtitle: '',
+            onTap: () => _openMyRequests(context),
           ),
           const SizedBox(height: DeliverySpace.lg),
           Text(
@@ -96,6 +106,16 @@ class HelpSupportScreen extends StatelessWidget {
     Navigator.of(context).push(
       MaterialPageRoute<void>(
         builder: (_) => SubmitSupportRequestScreen(category: category),
+      ),
+    );
+  }
+
+  void _openMyRequests(BuildContext context) {
+    final uid = FirebaseAuth.instance.currentUser?.uid;
+    if (uid == null) return;
+    Navigator.of(context).push(
+      MaterialPageRoute<void>(
+        builder: (_) => MySupportRequestsScreen(riderId: uid),
       ),
     );
   }

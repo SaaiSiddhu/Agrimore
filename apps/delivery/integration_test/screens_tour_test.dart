@@ -36,6 +36,7 @@ import 'package:delivery/screens/orders/widgets/rider_route_card.dart' show Stal
 import 'package:delivery/screens/profile/identity_change_screen.dart';
 import 'package:delivery/screens/profile/rider_profile_screen.dart';
 import 'package:delivery/screens/support/help_support_screen.dart';
+import 'package:delivery/screens/support/my_support_requests_screen.dart';
 import 'package:delivery/screens/support/submit_support_request_screen.dart';
 import 'package:delivery/screens/support/support_request_status_screen.dart';
 import 'package:delivery/support/rider_support.dart';
@@ -939,6 +940,26 @@ void main() {
       ),
       brightness: Brightness.dark,
     );
+    // DLVSUP2: the persistent "My support requests" list (brief §7.2) --
+    // reuses the same _FakeSupportBackend, just its tickets() method rather
+    // than ticket()/submit().
+    await shot(
+      tester,
+      '36_my_support_requests_light',
+      MySupportRequestsScreen(
+        riderId: 'r-tour',
+        backend: _FakeSupportBackend(
+          current: SupportTicket(
+            id: 'r-tour_req1',
+            category: kSupportCategoryDeliveryIssue,
+            message: 'The customer was not reachable at the address.',
+            status: SupportTicketStatus.seen,
+            createdAt: DateTime(2026, 9, 27, 10, 24),
+            seenAt: DateTime(2026, 9, 27, 13, 12),
+          ),
+        ),
+      ),
+    );
 
     // 11e. DLVMAP1: the stale rider-location banner (21.6), refreshable and
     // native-service (no manual refresh offered) variants.
@@ -1053,6 +1074,9 @@ class _FakeSupportBackend implements RiderSupportBackend {
       'r-tour_$requestId';
   @override
   Stream<SupportTicket?> ticket(String ticketId) => Stream.value(current);
+  @override
+  Stream<List<SupportTicket>> tickets(String riderId) =>
+      Stream.value(current == null ? const [] : [current!]);
 }
 
 class _FakeIdentityBackend implements RiderIdentityBackend {

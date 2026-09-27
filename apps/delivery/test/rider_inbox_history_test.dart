@@ -18,6 +18,7 @@ import 'package:delivery/screens/inbox/inbox_screen.dart';
 import 'package:delivery/screens/money/statement_screen.dart';
 import 'package:delivery/screens/orders/active_order_screen.dart';
 import 'package:delivery/screens/profile/identity_change_screen.dart';
+import 'package:delivery/screens/support/support_request_status_screen.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:provider/provider.dart';
@@ -277,6 +278,54 @@ void main() {
       await t.pumpAndSettle();
       expect(t.takeException(), isNull);
       expect(find.byType(IdentityChangeScreen), findsOneWidget);
+    });
+  });
+
+  group('support ticket notices (DLVSUP2)', () {
+    RiderNotice supportNotice(String type, String ticketId) => RiderNotice.fromMap('n4', {
+          'type': type,
+          'title': 'Your support request was seen',
+          'unread': true,
+          'data': {'type': type, 'ticketId': ticketId},
+        });
+
+    testWidgets('a support-request-seen notice opens the exact ticket', (t) async {
+      final src = FakeInbox()..current = [supportNotice('support_request_seen', 'tk-42')];
+      await t.pumpWidget(host(InboxScreen(riderId: 'r1', source: src)));
+      await t.pumpAndSettle();
+      await t.tap(find.text('Your support request was seen'));
+      await t.pumpAndSettle();
+      expect(t.takeException(), isNull);
+      final screen = t.widget<SupportRequestStatusScreen>(find.byType(SupportRequestStatusScreen));
+      expect(screen.ticketId, 'tk-42');
+    });
+
+    testWidgets('a support-request-closed notice opens the exact ticket', (t) async {
+      final src = FakeInbox()..current = [supportNotice('support_request_closed', 'tk-7')];
+      await t.pumpWidget(host(InboxScreen(riderId: 'r1', source: src)));
+      await t.pumpAndSettle();
+      await t.tap(find.text('Your support request was seen'));
+      await t.pumpAndSettle();
+      final screen = t.widget<SupportRequestStatusScreen>(find.byType(SupportRequestStatusScreen));
+      expect(screen.ticketId, 'tk-7');
+    });
+
+    testWidgets('a support notice with no ticketId (malformed/legacy) does nothing, not crash', (t) async {
+      final src = FakeInbox()
+        ..current = [
+          RiderNotice.fromMap('n5', {
+            'type': 'support_request_seen',
+            'title': 'Your support request was seen',
+            'unread': true,
+            'data': {'type': 'support_request_seen'},
+          }),
+        ];
+      await t.pumpWidget(host(InboxScreen(riderId: 'r1', source: src)));
+      await t.pumpAndSettle();
+      await t.tap(find.text('Your support request was seen'));
+      await t.pumpAndSettle();
+      expect(t.takeException(), isNull);
+      expect(find.byType(SupportRequestStatusScreen), findsNothing);
     });
   });
 
