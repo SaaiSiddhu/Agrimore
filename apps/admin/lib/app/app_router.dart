@@ -33,6 +33,7 @@ import '../screens/admin/settings/delivery_time_slots_management_screen.dart';
 import '../screens/admin/sellers/seller_requests_management_screen.dart';
 import '../screens/admin/sellers/add_seller_screen.dart';
 import '../screens/admin/sellers/manage_sellers_screen.dart';
+import '../screens/admin/sellers/seller_detail_screen.dart';
 import '../screens/admin/section_banners/section_banner_management_screen.dart';
 import '../screens/admin/vendors/vendors_list_screen.dart';
 import '../screens/admin/subscriptions/subscription_management_screen.dart';
@@ -120,6 +121,9 @@ class AdminRoutes {
   /// readability; the _navItems entry itself is appended at the end of
   /// admin_shell.dart's list, mirroring D5's index-stability rule.
   static const String manageSellers = '/manage-sellers';
+
+  /// Seller 360 (ADMR-57) — deep-linkable, mirrors userDetail.
+  static const String sellerDetail = '/sellers/:id';
 
   /// Settle seller_payouts rows (SELLER-MONEY-1). Nav item appended at the
   /// end of admin_shell.dart's list, same index-stability rule.
@@ -523,6 +527,15 @@ class AppRouter {
               name: 'manage-sellers',
               pageBuilder: (context, state) =>
                   _buildPage(const ManageSellersScreen(), state),
+            ),
+
+            GoRoute(
+              path: AdminRoutes.sellerDetail,
+              name: 'seller-detail',
+              pageBuilder: (context, state) => _buildPage(
+                SellerDetailScreen(sellerId: state.pathParameters['id']!),
+                state,
+              ),
             ),
 
             GoRoute(

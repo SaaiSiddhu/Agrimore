@@ -1,9 +1,10 @@
 import 'package:flutter/material.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
+import 'package:go_router/go_router.dart';
 import 'package:agrimore_ui/agrimore_ui.dart';
-import 'edit_seller_screen.dart';
+import '../../../app/app_router.dart';
 
-/// Browse approved sellers and open one for editing (ADMIN-SELLER-CMS-1).
+/// Browse approved sellers and open one's Seller 360 (ADMR-57).
 /// Query matches the existing `sellers(status ASC, createdAt ASC)` composite
 /// index (firestore.indexes.json) — no index change needed.
 class ManageSellersScreen extends StatelessWidget {
@@ -78,11 +79,8 @@ class ManageSellersScreen extends StatelessWidget {
                   ),
                   isThreeLine: (d['shopAddress'] ?? '').toString().isNotEmpty,
                   trailing: const Icon(Icons.chevron_right_rounded),
-                  onTap: () => Navigator.of(context).push(
-                    MaterialPageRoute(
-                      builder: (_) => EditSellerScreen(sellerId: doc.id, initialData: d),
-                    ),
-                  ),
+                  onTap: () =>
+                      context.push(AdminRoutes.sellerDetail.replaceFirst(':id', doc.id)),
                 ),
               );
             },
