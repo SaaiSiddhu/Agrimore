@@ -2278,6 +2278,12 @@ abstract class AppLocalizations {
   /// **'No deliveries in this statement.'**
   String get statementLinesEmpty;
 
+  /// Button returning to the delivery whose statement link opened this screen
+  ///
+  /// In en, this message translates to:
+  /// **'Back to delivery'**
+  String get statementBackToDelivery;
+
   /// Statement lines failed
   ///
   /// In en, this message translates to:

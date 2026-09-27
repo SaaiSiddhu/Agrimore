@@ -23,9 +23,22 @@ class StatementScreen extends StatefulWidget {
     super.key,
     required this.payout,
     required this.load,
+    this.highlightOrderId,
+    this.onBackToDelivery,
   });
   final RiderPayout payout;
   final StatementLoader load;
+
+  /// DLVH4: the order a statement was opened FROM (history's own "in a
+  /// weekly statement" link) -- that one line is highlighted. Null for the
+  /// other two ways this screen is reached (an inbox statement notice, a
+  /// plain tap from the Payouts list), where nothing needs highlighting.
+  final String? highlightOrderId;
+
+  /// DLVH4: shown as an explicit "Back to delivery" action only when set --
+  /// only the history-detail call site has somewhere meaningful to return
+  /// to; the other two callers leave this null and get no such button.
+  final VoidCallback? onBackToDelivery;
 
   @override
   State<StatementScreen> createState() => _StatementScreenState();
@@ -126,8 +139,17 @@ class _StatementScreenState extends State<StatementScreen> {
             style: t.titleMedium.copyWith(color: c.textPrimary),
           ),
           const SizedBox(height: DeliverySpace.sm),
-          for (final e in _lines) EarningTile(earning: e),
+          for (final e in _lines)
+            EarningTile(earning: e, highlighted: e.orderId == widget.highlightOrderId),
           _footer(l),
+          if (widget.onBackToDelivery != null) ...[
+            const SizedBox(height: DeliverySpace.md),
+            DeliveryButton.secondary(
+              key: const ValueKey('back-to-delivery'),
+              label: l.statementBackToDelivery,
+              onPressed: widget.onBackToDelivery,
+            ),
+          ],
         ],
       ),
     );

@@ -1241,6 +1241,9 @@ class AppLocalizationsEn extends AppLocalizations {
   String get statementLinesEmpty => 'No deliveries in this statement.';
 
   @override
+  String get statementBackToDelivery => 'Back to delivery';
+
+  @override
   String get statementLinesError =>
       'Could not load the deliveries. Check your connection.';
 

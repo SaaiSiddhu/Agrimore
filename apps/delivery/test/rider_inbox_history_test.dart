@@ -6,7 +6,8 @@ import 'package:agrimore_ui/agrimore_ui.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:delivery/account/support_card.dart';
 import 'package:delivery/data/order_timeline.dart';
-import 'package:delivery/design_system/design_system.dart' show DeliveryIcons;
+import 'package:delivery/design_system/design_system.dart'
+    show DeliveryCard, DeliveryCardVariant, DeliveryIcons;
 import 'package:delivery/data/rider_history.dart';
 import 'package:delivery/inbox/rider_inbox.dart';
 import 'package:delivery/l10n/app_localizations.dart';
@@ -16,6 +17,7 @@ import 'package:delivery/providers/location_provider.dart';
 import 'package:delivery/providers/order_provider.dart';
 import 'package:delivery/screens/history/rider_history_screen.dart';
 import 'package:delivery/screens/inbox/inbox_screen.dart';
+import 'package:delivery/screens/money/money_screen.dart' show EarningTile;
 import 'package:delivery/screens/money/statement_screen.dart';
 import 'package:delivery/screens/orders/active_order_screen.dart';
 import 'package:delivery/screens/profile/identity_change_screen.dart';
@@ -681,6 +683,62 @@ void main() {
       await t.pumpAndSettle();
       expect(t.takeException(), isNull);
       expect(find.byType(StatementScreen), findsOneWidget);
+
+      // DLVH4: reached from history, so a "Back to delivery" affordance is
+      // offered, and tapping it returns to the same HistoryDetail instance.
+      final backButton = find.byKey(const ValueKey('back-to-delivery'));
+      expect(backButton, findsOneWidget);
+      await t.ensureVisible(backButton);
+      await t.pumpAndSettle();
+      await t.tap(backButton);
+      await t.pumpAndSettle();
+      expect(find.byType(StatementScreen), findsNothing);
+      expect(find.byType(HistoryDetail), findsOneWidget);
+    });
+
+    testWidgets('a statement opened NOT from history has no "Back to delivery" affordance', (t) async {
+      // The inbox-notice and payouts-list call sites have no originating
+      // order to return to -- confirmed by constructing StatementScreen
+      // directly the way those two callers do, neither setting the new
+      // DLVH4 parameters.
+      await t.pumpWidget(host(StatementScreen(
+        payout: const RiderPayout(
+          id: 'stmt-2', weekKey: '2026-W38', earned: 500, netted: 0, amount: 500,
+          cashHeldAfter: 0, orderCount: 3, status: 'paid',
+        ),
+        load: (after) async => const StatementPage([], null, false),
+      )));
+      await t.pumpAndSettle();
+      expect(find.byKey(const ValueKey('back-to-delivery')), findsNothing);
+    });
+
+    testWidgets('the statement line matching highlightOrderId renders with the brand-highlighted card variant', (t) async {
+      await t.pumpWidget(host(StatementScreen(
+        payout: const RiderPayout(
+          id: 'stmt-3', weekKey: '2026-W38', earned: 900, netted: 0, amount: 900,
+          cashHeldAfter: 0, orderCount: 2, status: 'paid',
+        ),
+        load: (after) async => const StatementPage(
+          [
+            RiderEarning(orderId: 'o-highlighted', total: 400, statementId: 'stmt-3'),
+            RiderEarning(orderId: 'o-other', total: 500, statementId: 'stmt-3'),
+          ],
+          null,
+          false,
+        ),
+        highlightOrderId: 'o-highlighted',
+      )));
+      await t.pumpAndSettle();
+
+      final tiles = find.byType(EarningTile);
+      expect(tiles, findsNWidgets(2));
+      DeliveryCardVariant variantOf(int index) => t
+          .widget<DeliveryCard>(find.descendant(
+              of: tiles.at(index), matching: find.byType(DeliveryCard)))
+          .variant;
+
+      expect(variantOf(0), DeliveryCardVariant.brand);
+      expect(variantOf(1), DeliveryCardVariant.standard);
     });
 
     testWidgets('a deleted or inaccessible statement says so instead of doing nothing', (t) async {

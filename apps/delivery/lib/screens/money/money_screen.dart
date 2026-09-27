@@ -304,8 +304,15 @@ class _CashCard extends StatelessWidget {
 
 /// One delivered order's pay (also used by the statement screen).
 class EarningTile extends StatelessWidget {
-  const EarningTile({super.key, required this.earning});
+  const EarningTile({super.key, required this.earning, this.highlighted = false});
   final RiderEarning earning;
+
+  /// DLVH4: true for the one line matching the order a statement was opened
+  /// FROM (e.g. from history's own "in a weekly statement" link) -- the
+  /// mockup's own "Highlight or locate the originating delivery where
+  /// practical." Every other caller (MoneyScreen's own plain list) leaves
+  /// this false, unchanged.
+  final bool highlighted;
 
   @override
   Widget build(BuildContext context) {
@@ -324,6 +331,7 @@ class EarningTile extends StatelessWidget {
       padding: const EdgeInsets.only(bottom: DeliverySpace.sm),
       child: DeliveryCard(
         padding: EdgeInsets.zero,
+        variant: highlighted ? DeliveryCardVariant.brand : DeliveryCardVariant.standard,
         child: ListTile(
           title: Text(
             l.moneyEarningTitle(e.orderNumber ?? e.orderId),

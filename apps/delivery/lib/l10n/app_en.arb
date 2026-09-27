@@ -1623,6 +1623,10 @@
   "@statementLinesEmpty": {
     "description": "Statement without lines"
   },
+  "statementBackToDelivery": "Back to delivery",
+  "@statementBackToDelivery": {
+    "description": "Button returning to the delivery whose statement link opened this screen"
+  },
   "statementLinesError": "Could not load the deliveries. Check your connection.",
   "@statementLinesError": {
     "description": "Statement lines failed"
