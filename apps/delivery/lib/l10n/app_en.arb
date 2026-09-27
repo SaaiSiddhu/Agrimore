@@ -771,6 +771,18 @@
   "@identityChangeRejectedTitle": {
     "description": "Status card heading when status == rejected"
   },
+  "identityChangeNameApprovedTitle": "Your name was updated",
+  "@identityChangeNameApprovedTitle": {
+    "description": "DLVID3: status card heading, a name-change notification's referenced request, approved"
+  },
+  "identityChangeVehicleApprovedTitle": "Your vehicle details were updated",
+  "@identityChangeVehicleApprovedTitle": {
+    "description": "DLVID3: status card heading, a vehicle-change notification's referenced request, approved"
+  },
+  "identityChangeApprovedBody": "This change has already been applied to your profile.",
+  "@identityChangeApprovedBody": {
+    "description": "DLVID3: status card body for the approved-request view"
+  },
   "identityChangeCorrect": "Correct and resend",
   "@identityChangeCorrect": {
     "description": "Button on a rejected request, opens the form again prefilled"

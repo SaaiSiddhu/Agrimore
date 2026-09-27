@@ -613,6 +613,17 @@ class AppLocalizationsEn extends AppLocalizations {
   String get identityChangeRejectedTitle => 'Request not approved';
 
   @override
+  String get identityChangeNameApprovedTitle => 'Your name was updated';
+
+  @override
+  String get identityChangeVehicleApprovedTitle =>
+      'Your vehicle details were updated';
+
+  @override
+  String get identityChangeApprovedBody =>
+      'This change has already been applied to your profile.';
+
+  @override
   String get identityChangeCorrect => 'Correct and resend';
 
   @override

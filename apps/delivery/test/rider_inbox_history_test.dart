@@ -281,6 +281,66 @@ void main() {
     });
   });
 
+  group('identity change notice routing (DLVID3)', () {
+    testWidgets('a vehicle-change notice opens the screen pinned to THAT request, as a vehicle change', (t) async {
+      final src = FakeInbox()
+        ..current = [
+          RiderNotice.fromMap('n6', {
+            'type': 'identity_change_rejected',
+            'title': 'Vehicle change not approved',
+            'unread': true,
+            'data': {'type': 'identity_change_rejected', 'requestId': 'req-9', 'changeType': 'vehicle'},
+          }),
+        ];
+      await t.pumpWidget(host(InboxScreen(riderId: 'r1', source: src)));
+      await t.pumpAndSettle();
+      await t.tap(find.text('Vehicle change not approved'));
+      await t.pumpAndSettle();
+      expect(t.takeException(), isNull);
+      final screen = t.widget<IdentityChangeScreen>(find.byType(IdentityChangeScreen));
+      expect(screen.requestId, 'req-9');
+      expect(screen.changeType, 'vehicle');
+    });
+
+    testWidgets('a legacy notice with no changeType defaults to name, not a crash', (t) async {
+      final src = FakeInbox()
+        ..current = [
+          RiderNotice.fromMap('n7', {
+            'type': 'identity_change_approved',
+            'title': 'Your name was updated',
+            'unread': true,
+            'data': {'type': 'identity_change_approved', 'requestId': 'req-old'},
+          }),
+        ];
+      await t.pumpWidget(host(InboxScreen(riderId: 'r1', source: src)));
+      await t.pumpAndSettle();
+      await t.tap(find.text('Your name was updated'));
+      await t.pumpAndSettle();
+      expect(t.takeException(), isNull);
+      final screen = t.widget<IdentityChangeScreen>(find.byType(IdentityChangeScreen));
+      expect(screen.requestId, 'req-old');
+      expect(screen.changeType, 'name');
+    });
+
+    testWidgets('an identity notice with no requestId (malformed) does nothing, not crash', (t) async {
+      final src = FakeInbox()
+        ..current = [
+          RiderNotice.fromMap('n8', {
+            'type': 'identity_change_approved',
+            'title': 'Your name was updated',
+            'unread': true,
+            'data': {'type': 'identity_change_approved'},
+          }),
+        ];
+      await t.pumpWidget(host(InboxScreen(riderId: 'r1', source: src)));
+      await t.pumpAndSettle();
+      await t.tap(find.text('Your name was updated'));
+      await t.pumpAndSettle();
+      expect(t.takeException(), isNull);
+      expect(find.byType(IdentityChangeScreen), findsNothing);
+    });
+  });
+
   group('support ticket notices (DLVSUP2)', () {
     RiderNotice supportNotice(String type, String ticketId) => RiderNotice.fromMap('n4', {
           'type': type,

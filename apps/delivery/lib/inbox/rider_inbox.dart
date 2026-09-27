@@ -24,6 +24,8 @@ class RiderNotice {
     this.orderId,
     this.payoutId,
     this.ticketId,
+    this.requestId,
+    this.changeType = 'name',
   });
   final String id;
   final String type;
@@ -46,6 +48,15 @@ class RiderNotice {
   /// (`riderNotices.ts`'s `supportRequestNotice`) already writes it.
   final String? ticketId;
 
+  /// DLVID3: the identity-change request this notice is about
+  /// (identity_change_approved/rejected) — same `data` map.
+  final String? requestId;
+
+  /// DLVID3: 'name' or 'vehicle' — which field the referenced request
+  /// changed. Defaults to 'name' for a notice sent before this field
+  /// existed, matching the wording every such notice already carried.
+  final String changeType;
+
   factory RiderNotice.fromMap(String id, Map<String, dynamic> m) {
     final data = m['data'];
     final d = data is Map ? data : const {};
@@ -60,6 +71,8 @@ class RiderNotice {
       orderId: str(d['orderId']),
       payoutId: str(d['payoutId']),
       ticketId: str(d['ticketId']),
+      requestId: str(d['requestId']),
+      changeType: str(d['changeType']) ?? 'name',
     );
   }
 
@@ -69,7 +82,8 @@ class RiderNotice {
         'statement_ready' || 'payout_sent' =>
           payoutId != null ? NoticeTarget.statement : NoticeTarget.none,
         'bank_change_approved' || 'bank_change_rejected' => NoticeTarget.payoutDetails,
-        'identity_change_approved' || 'identity_change_rejected' => NoticeTarget.identityRequest,
+        'identity_change_approved' || 'identity_change_rejected' =>
+          requestId != null ? NoticeTarget.identityRequest : NoticeTarget.none,
         'support_request_seen' || 'support_request_closed' =>
           ticketId != null ? NoticeTarget.supportTicket : NoticeTarget.none,
         _ => NoticeTarget.none,

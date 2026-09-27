@@ -50,12 +50,21 @@ class IdentityChangeScreen extends StatefulWidget {
     this.currentVehicleType,
     this.currentVehicleNumber = '',
     this.backend,
+    this.requestId,
   });
   final String riderId;
 
   /// [kIdentityChangeTypeName] or [kIdentityChangeTypeVehicle]. Fixed by
-  /// which profile button opened this screen.
+  /// which profile button opened this screen (or, when [requestId] is set,
+  /// by the notification that opened it).
   final String changeType;
+
+  /// DLVID3: set only when opened from a notification -- pins this screen
+  /// to that ONE historical request (never "whichever is latest", which can
+  /// silently be a different, newer request of the same type submitted
+  /// since the notification arrived). Null for the normal Profile-button
+  /// entry points, which keep the original "latest request" behaviour.
+  final String? requestId;
 
   /// Blank when opened somewhere the caller does not already have it (e.g.
   /// from an inbox notice) -- only the form state's "Current name" display
@@ -77,10 +86,14 @@ class _IdentityChangeScreenState extends State<IdentityChangeScreen> {
   late final RiderIdentityBackend _backend =
       widget.backend ?? CallableRiderIdentityBackend();
 
-  /// Filtered to this screen's own changeType -- see the file header for why.
-  late final Stream<IdentityChangeRequest?> _latest = _backend
-      .latestRequest(widget.riderId)
-      .map((r) => r?.changeType == widget.changeType ? r : null);
+  /// DLVID3: pinned to the exact referenced request when opened from a
+  /// notification ([requestId] set); otherwise the original "latest request
+  /// of this changeType" behaviour, unchanged.
+  late final Stream<IdentityChangeRequest?> _latest = widget.requestId != null
+      ? _backend.requestById(widget.requestId!)
+      : _backend
+          .latestRequest(widget.riderId)
+          .map((r) => r?.changeType == widget.changeType ? r : null);
 
   final _nameController = TextEditingController();
   final _vehicleNumberController = TextEditingController();
@@ -129,12 +142,21 @@ class _IdentityChangeScreenState extends State<IdentityChangeScreen> {
         reason: _reasonController.text,
       );
       if (mounted) {
-        setState(() => _forceForm = false);
         showDeliveryToast(
           context,
           message: AppLocalizations.of(context).identityChangeSubmitted,
           tone: DeliveryBannerTone.success,
         );
+        // DLVID3: a resubmission from a pinned historical request (opened
+        // via a notification) creates a NEW, separate request this screen's
+        // own by-id stream would never see -- pop rather than keep showing
+        // the old, now-superseded one. The Profile button's own "latest"
+        // flow correctly shows the new request as pending.
+        if (widget.requestId != null) {
+          Navigator.of(context).pop();
+        } else {
+          setState(() => _forceForm = false);
+        }
       }
     } on IdentityRequestException catch (e) {
       if (mounted) {
@@ -168,7 +190,31 @@ class _IdentityChangeScreenState extends State<IdentityChangeScreen> {
       body: StreamBuilder<IdentityChangeRequest?>(
         stream: _latest,
         builder: (context, snap) {
+          final isById = widget.requestId != null;
+          if (isById && snap.connectionState == ConnectionState.waiting) {
+            return const Center(child: CircularProgressIndicator());
+          }
           final latest = snap.data;
+          if (isById && latest == null) {
+            // Deleted, or no longer this rider's (enforced by the security
+            // rule itself, not by this check) -- never fall through to a
+            // blank "start a new request" form for a tap that referenced a
+            // specific, real request.
+            return _StatusCard(
+              icon: DeliveryIcons.close,
+              title: l.identityChangeInvalid,
+              body: '',
+            );
+          }
+          if (!_forceForm && isById && latest?.status == IdentityChangeStatus.approved) {
+            return _StatusCard(
+              icon: DeliveryIcons.checkCircle,
+              title: _isVehicle
+                  ? l.identityChangeVehicleApprovedTitle
+                  : l.identityChangeNameApprovedTitle,
+              body: l.identityChangeApprovedBody,
+            );
+          }
           if (!_forceForm &&
               latest != null &&
               latest.status == IdentityChangeStatus.pending) {
