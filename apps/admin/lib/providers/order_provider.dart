@@ -152,6 +152,12 @@ class OrderProvider with ChangeNotifier {
   // ADMR-38: the one in-flight/ambiguous-outcome updateOrderStatus action,
   // if any — see PendingStatusUpdate's own header.
   PendingStatusUpdate? _pendingStatusUpdate;
+  // ADMR-41: bumped by every loadOrderById call (and by clearSelectedOrder/
+  // dispose) — each of the sub-loaders below takes the generation it was
+  // called with and refuses to write shared state once a NEWER load (or an
+  // explicit clear) has superseded it, so a slow response from an older
+  // call can never overwrite what a faster, later call already showed.
+  int _orderLoadGeneration = 0;
 
   // ============================================
   // GETTERS
@@ -243,6 +249,25 @@ class OrderProvider with ChangeNotifier {
   // LOAD ORDER BY ID
   // ============================================
   Future<void> loadOrderById(String orderId) async {
+    // ADMR-41: a new logical load — reset every subrecord immediately (not
+    // only on success) so a "not found"/error result, or the load simply
+    // still being in flight, never leaves a PREVIOUS order's data on
+    // screen under this order's id. This also invalidates any older,
+    // still-in-flight loadOrderById call: each sub-loader below carries
+    // the generation it was called with and refuses to write once a newer
+    // call (this one) has taken over.
+    final generation = ++_orderLoadGeneration;
+    _selectedOrder = null;
+    _selectedOrderTimeline.clear();
+    _selectedOrderDispatchOffers.clear();
+    _selectedOrderRiderEarning = null;
+    _selectedOrderCommissionExceptions.clear();
+    _selectedOrderSupportTickets.clear();
+    _selectedOrderDeliveryExceptions.clear();
+    _selectedOrderRiderIncidents.clear();
+    _selectedOrderSellerPayouts.clear();
+    _selectedOrderRiderCashAccount = null;
+
     try {
       _isLoading = true;
       _error = null;
@@ -254,18 +279,20 @@ class OrderProvider with ChangeNotifier {
           .collection('orders')
           .doc(orderId)
           .get();
+      if (generation != _orderLoadGeneration) return; // superseded
 
       if (orderDoc.exists) {
         _selectedOrder = OrderModel.fromMap(orderDoc.data()!, orderId);
-        await _loadOrderTimeline(orderId);
-        await _loadDispatchOffers(orderId);
-        await _loadRiderEarning(orderId);
-        await _loadCommissionExceptions(orderId);
-        await _loadRelatedSupportTickets(orderId);
-        await _loadDeliveryExceptions(orderId);
-        await _loadRiderIncidents(orderId);
-        await _loadSellerPayouts(orderId);
-        await _loadRiderCashAccount(_selectedOrder?.deliveryPartnerId);
+        await _loadOrderTimeline(orderId, generation);
+        await _loadDispatchOffers(orderId, generation);
+        await _loadRiderEarning(orderId, generation);
+        await _loadCommissionExceptions(orderId, generation);
+        await _loadRelatedSupportTickets(orderId, generation);
+        await _loadDeliveryExceptions(orderId, generation);
+        await _loadRiderIncidents(orderId, generation);
+        await _loadSellerPayouts(orderId, generation);
+        await _loadRiderCashAccount(_selectedOrder?.deliveryPartnerId, generation);
+        if (generation != _orderLoadGeneration) return; // superseded mid-chain
         debugPrint('✅ Order loaded');
       } else {
         _error = '❌ Order not found';
@@ -274,6 +301,7 @@ class OrderProvider with ChangeNotifier {
       _isLoading = false;
       notifyListeners();
     } catch (e) {
+      if (generation != _orderLoadGeneration) return; // superseded
       debugPrint('❌ Error loading order: $e');
       _error = e.toString();
       _isLoading = false;
@@ -284,7 +312,14 @@ class OrderProvider with ChangeNotifier {
   // ============================================
   // LOAD ORDER TIMELINE
   // ============================================
-  Future<void> _loadOrderTimeline(String orderId) async {
+  // ADMR-41: every one of the nine loaders below takes the generation it
+  // was called with and, the instant its own await resolves, checks it
+  // against the CURRENT _orderLoadGeneration before writing anything —
+  // `if (generation != _orderLoadGeneration) return;`. A newer
+  // loadOrderById call (or an explicit clear) bumps that counter, so an
+  // older call's response — however late it arrives — is silently
+  // discarded instead of overwriting what the newer call already showed.
+  Future<void> _loadOrderTimeline(String orderId, int generation) async {
     try {
       _isLoadingTimeline = true;
       notifyListeners();
@@ -295,6 +330,7 @@ class OrderProvider with ChangeNotifier {
           .collection('timeline')
           .orderBy('timestamp', descending: true)
           .get();
+      if (generation != _orderLoadGeneration) return;
 
       _selectedOrderTimeline = timelineQuery.docs
           .map((doc) => OrderTimelineModel.fromMap(doc.data()))
@@ -305,6 +341,7 @@ class OrderProvider with ChangeNotifier {
       _isLoadingTimeline = false;
       notifyListeners();
     } catch (e) {
+      if (generation != _orderLoadGeneration) return;
       debugPrint('❌ Error loading timeline: $e');
       _isLoadingTimeline = false;
       notifyListeners();
@@ -317,7 +354,7 @@ class OrderProvider with ChangeNotifier {
   // delivery_requests/{orderId}_{riderId} — one real, already-written
   // document per rider ever offered this order (functions/src/delivery/
   // dispatch.ts's sendOffers). Read-only: nothing here writes back.
-  Future<void> _loadDispatchOffers(String orderId) async {
+  Future<void> _loadDispatchOffers(String orderId, int generation) async {
     try {
       _isLoadingDispatchOffers = true;
       _dispatchOffersError = null;
@@ -327,6 +364,7 @@ class OrderProvider with ChangeNotifier {
           .collection('delivery_requests')
           .where('orderId', isEqualTo: orderId)
           .get();
+      if (generation != _orderLoadGeneration) return;
 
       final offers = query.docs
           .map((doc) => DispatchOfferRecord.fromMap(doc.data()))
@@ -344,6 +382,7 @@ class OrderProvider with ChangeNotifier {
       _isLoadingDispatchOffers = false;
       notifyListeners();
     } catch (e) {
+      if (generation != _orderLoadGeneration) return;
       debugPrint('❌ Error loading dispatch offers: $e');
       _dispatchOffersError = e.toString();
       _isLoadingDispatchOffers = false;
@@ -359,13 +398,14 @@ class OrderProvider with ChangeNotifier {
   // recordDeliveryEarningCore); the order id IS the doc id, so this is a
   // direct get, never a query. Absent = genuinely not yet earned (not
   // delivered by a rider yet, or the trigger hasn't fired) — not an error.
-  Future<void> _loadRiderEarning(String orderId) async {
+  Future<void> _loadRiderEarning(String orderId, int generation) async {
     try {
       _isLoadingRiderEarning = true;
       _riderEarningError = null;
       notifyListeners();
 
       final doc = await _firestore.collection('rider_earnings').doc(orderId).get();
+      if (generation != _orderLoadGeneration) return;
 
       _selectedOrderRiderEarning =
           doc.exists ? RiderEarningRecord.fromMap(doc.data()!, orderId) : null;
@@ -376,6 +416,7 @@ class OrderProvider with ChangeNotifier {
       _isLoadingRiderEarning = false;
       notifyListeners();
     } catch (e) {
+      if (generation != _orderLoadGeneration) return;
       debugPrint('❌ Error loading rider earning: $e');
       _riderEarningError = e.toString();
       _isLoadingRiderEarning = false;
@@ -391,8 +432,9 @@ class OrderProvider with ChangeNotifier {
   // riderMoney.ts's own balanceFields), never specific to this one order.
   // Loaded only when this order has an assigned rider. A missing document
   // is a real zero (this rider has never held any COD cash), not an error.
-  Future<void> _loadRiderCashAccount(String? riderId) async {
+  Future<void> _loadRiderCashAccount(String? riderId, int generation) async {
     if (riderId == null || riderId.isEmpty) {
+      if (generation != _orderLoadGeneration) return;
       _selectedOrderRiderCashAccount = null;
       _riderCashAccountError = null;
       return;
@@ -403,6 +445,7 @@ class OrderProvider with ChangeNotifier {
       notifyListeners();
 
       final doc = await _firestore.collection('rider_accounts').doc(riderId).get();
+      if (generation != _orderLoadGeneration) return;
 
       _selectedOrderRiderCashAccount = RiderCashAccountRecord.fromMap(
         doc.exists ? doc.data()! : const {},
@@ -413,6 +456,7 @@ class OrderProvider with ChangeNotifier {
       _isLoadingRiderCashAccount = false;
       notifyListeners();
     } catch (e) {
+      if (generation != _orderLoadGeneration) return;
       debugPrint('❌ Error loading rider cash account: $e');
       _riderCashAccountError = e.toString();
       _isLoadingRiderCashAccount = false;
@@ -427,7 +471,7 @@ class OrderProvider with ChangeNotifier {
   // composite index needed) — functions/src/customer/employeeCommission.ts
   // writes one when a commission rate could not be resolved for an
   // attributed order, instead of silently paying nothing.
-  Future<void> _loadCommissionExceptions(String orderId) async {
+  Future<void> _loadCommissionExceptions(String orderId, int generation) async {
     try {
       _isLoadingCommissionExceptions = true;
       _commissionExceptionsError = null;
@@ -437,6 +481,7 @@ class OrderProvider with ChangeNotifier {
           .collection('commission_exceptions')
           .where('orderId', isEqualTo: orderId)
           .get();
+      if (generation != _orderLoadGeneration) return;
 
       _selectedOrderCommissionExceptions = query.docs
           .map((doc) => CommissionExceptionRecord.fromMap(doc.data(), doc.id))
@@ -447,6 +492,7 @@ class OrderProvider with ChangeNotifier {
       _isLoadingCommissionExceptions = false;
       notifyListeners();
     } catch (e) {
+      if (generation != _orderLoadGeneration) return;
       debugPrint('❌ Error loading commission exceptions: $e');
       _commissionExceptionsError = e.toString();
       _isLoadingCommissionExceptions = false;
@@ -462,7 +508,7 @@ class OrderProvider with ChangeNotifier {
   // index question entirely, same risk-averse pattern as dispatch offers'
   // own client sort. functions/src/delivery/riderSupport.ts's own
   // submitSupportRequestCore is the real writer of relatedTo.
-  Future<void> _loadRelatedSupportTickets(String orderId) async {
+  Future<void> _loadRelatedSupportTickets(String orderId, int generation) async {
     try {
       _isLoadingSupportTickets = true;
       _supportTicketsError = null;
@@ -472,6 +518,7 @@ class OrderProvider with ChangeNotifier {
           .collection('rider_support_tickets')
           .where('relatedTo.id', isEqualTo: orderId)
           .get();
+      if (generation != _orderLoadGeneration) return;
 
       final tickets = query.docs
           .map((doc) => RiderSupportTicketRecord.fromMap(doc.data(), doc.id))
@@ -490,6 +537,7 @@ class OrderProvider with ChangeNotifier {
       _isLoadingSupportTickets = false;
       notifyListeners();
     } catch (e) {
+      if (generation != _orderLoadGeneration) return;
       debugPrint('❌ Error loading related support tickets: $e');
       _supportTicketsError = e.toString();
       _isLoadingSupportTickets = false;
@@ -503,7 +551,7 @@ class OrderProvider with ChangeNotifier {
   // delivery_exceptions filtered by orderId (a plain equality field, no
   // client-side filter needed). functions/src/delivery/riderExceptions.ts's
   // own reportExceptionCore is the real writer.
-  Future<void> _loadDeliveryExceptions(String orderId) async {
+  Future<void> _loadDeliveryExceptions(String orderId, int generation) async {
     try {
       _isLoadingDeliveryExceptions = true;
       _deliveryExceptionsError = null;
@@ -513,6 +561,7 @@ class OrderProvider with ChangeNotifier {
           .collection('delivery_exceptions')
           .where('orderId', isEqualTo: orderId)
           .get();
+      if (generation != _orderLoadGeneration) return;
 
       final exceptions = query.docs
           .map((doc) => DeliveryExceptionRecord.fromMap(doc.data(), doc.id))
@@ -530,6 +579,7 @@ class OrderProvider with ChangeNotifier {
       _isLoadingDeliveryExceptions = false;
       notifyListeners();
     } catch (e) {
+      if (generation != _orderLoadGeneration) return;
       debugPrint('❌ Error loading delivery exceptions: $e');
       _deliveryExceptionsError = e.toString();
       _isLoadingDeliveryExceptions = false;
@@ -545,7 +595,7 @@ class OrderProvider with ChangeNotifier {
   // reportIncidentCore) names this order — an incident is a rider-level
   // SOS/safety report, not order-scoped by nature, so more than one order
   // (or none) can legitimately be named.
-  Future<void> _loadRiderIncidents(String orderId) async {
+  Future<void> _loadRiderIncidents(String orderId, int generation) async {
     try {
       _isLoadingRiderIncidents = true;
       _riderIncidentsError = null;
@@ -555,6 +605,7 @@ class OrderProvider with ChangeNotifier {
           .collection('rider_incidents')
           .where('activeOrderIds', arrayContains: orderId)
           .get();
+      if (generation != _orderLoadGeneration) return;
 
       final incidents = query.docs
           .map((doc) => RiderIncidentRecord.fromMap(doc.data(), doc.id))
@@ -572,6 +623,7 @@ class OrderProvider with ChangeNotifier {
       _isLoadingRiderIncidents = false;
       notifyListeners();
     } catch (e) {
+      if (generation != _orderLoadGeneration) return;
       debugPrint('❌ Error loading rider incidents: $e');
       _riderIncidentsError = e.toString();
       _isLoadingRiderIncidents = false;
@@ -587,7 +639,7 @@ class OrderProvider with ChangeNotifier {
   // writes one per distinct seller among the order's items on delivery; a
   // genuinely multi-vendor order can produce more than one row, so this is
   // always a list, never a single-doc get.
-  Future<void> _loadSellerPayouts(String orderId) async {
+  Future<void> _loadSellerPayouts(String orderId, int generation) async {
     try {
       _isLoadingSellerPayouts = true;
       _sellerPayoutsError = null;
@@ -597,6 +649,7 @@ class OrderProvider with ChangeNotifier {
           .collection('seller_payouts')
           .where('orderId', isEqualTo: orderId)
           .get();
+      if (generation != _orderLoadGeneration) return;
 
       _selectedOrderSellerPayouts = query.docs
           .map((doc) => SellerPayoutRecord.fromMap(doc.data(), doc.id))
@@ -606,6 +659,7 @@ class OrderProvider with ChangeNotifier {
       _isLoadingSellerPayouts = false;
       notifyListeners();
     } catch (e) {
+      if (generation != _orderLoadGeneration) return;
       debugPrint('❌ Error loading seller payouts: $e');
       _sellerPayoutsError = e.toString();
       _isLoadingSellerPayouts = false;
@@ -934,6 +988,10 @@ class OrderProvider with ChangeNotifier {
   // CLEAR SELECTED ORDER
   // ============================================
   void clearSelectedOrder() {
+    // ADMR-41: invalidates any load still in flight for the order being
+    // cleared — its sub-loaders will see a stale generation and refuse to
+    // repopulate what this call just cleared.
+    _orderLoadGeneration++;
     _selectedOrder = null;
     _selectedOrderTimeline.clear();
     _selectedOrderDispatchOffers.clear();
@@ -957,6 +1015,7 @@ class OrderProvider with ChangeNotifier {
 
   @override
   void dispose() {
+    _orderLoadGeneration++;
     _ordersSubscription?.cancel();
     _orders.clear();
     _selectedOrder = null;
