@@ -1,6 +1,7 @@
 import 'package:cloud_functions/cloud_functions.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
+import 'package:uuid/uuid.dart';
 import 'package:agrimore_ui/agrimore_ui.dart';
 import '../../utils/sa_formatters.dart';
 import 'payout_details_screen.dart';
@@ -28,6 +29,13 @@ class PayoutReviewScreen extends StatefulWidget {
 class _PayoutReviewScreenState extends State<PayoutReviewScreen> {
   bool _isSubmitting = false;
   String? _errorMessage;
+  // ADMR-43: one request ID for this screen's entire lifetime — the amount
+  // and destination are fixed (widget's own final fields), so a retry
+  // after an ambiguous failure (a dropped connection, a timeout) is always
+  // a retry of the SAME logical request. Reusing it lets the server's own
+  // requestId-keyed idempotency (once added, see requestEmployeePayout.ts)
+  // recognize the retry instead of debiting the wallet a second time.
+  final String _requestId = const Uuid().v4();
 
   Future<void> _handleSubmit() async {
     if (_isSubmitting) return;
@@ -41,7 +49,10 @@ class _PayoutReviewScreenState extends State<PayoutReviewScreen> {
     try {
       final callable =
           FirebaseFunctions.instance.httpsCallable('requestEmployeePayout');
-      final result = await callable.call({'amount': widget.requestedAmount});
+      final result = await callable.call({
+        'amount': widget.requestedAmount,
+        'requestId': _requestId,
+      });
 
       if (!mounted) return;
 

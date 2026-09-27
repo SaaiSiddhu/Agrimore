@@ -70,7 +70,7 @@ async function main() {
     const uid = "phase62-upi-employee";
     await seedEmployee(uid, { payoutMethod: "upi", upiId: "assoc62@okhdfc" });
     await seedWallet(uid, 1000);
-    const r = await callRequest({ amount: 300 }, { uid, token: {} });
+    const r = await callRequest({ amount: 300, requestId: "phase62-req-s1" }, { uid, token: {} });
     const p = r.ok ? await payoutFor(r.result.payoutId) : {};
     record("s1_upi_associate_snapshot_correct",
       r.ok && p.payoutMethod === "upi" && p.upiId === "assoc62@okhdfc" && p.accountNumber === null,
@@ -83,7 +83,7 @@ async function main() {
     const uid = "phase62-bank-employee";
     await seedEmployee(uid, { payoutMethod: "bank", accountNumber: "000111222333", bankName: "Test Bank" });
     await seedWallet(uid, 1000);
-    const r = await callRequest({ amount: 250 }, { uid, token: {} });
+    const r = await callRequest({ amount: 250, requestId: "phase62-req-s2" }, { uid, token: {} });
     const p = r.ok ? await payoutFor(r.result.payoutId) : {};
     record("s2_bank_associate_snapshot_correct",
       r.ok && p.payoutMethod === "bank" && p.accountNumber === "000111222333" && p.upiId === null,
@@ -98,7 +98,7 @@ async function main() {
     const uid = "phase62-no-account-employee";
     await seedEmployee(uid, {});
     await seedWallet(uid, 1000);
-    const r = await callRequest({ amount: 100 }, { uid, token: {} });
+    const r = await callRequest({ amount: 100, requestId: "phase62-req-s3" }, { uid, token: {} });
     const p = r.ok ? await payoutFor(r.result.payoutId) : {};
     record("s3_no_registered_account_is_honest_null_not_fabricated_bank",
       r.ok && p.payoutMethod === null && p.accountNumber === null && p.upiId === null,
@@ -113,11 +113,77 @@ async function main() {
     await seedEmployee(uid, { payoutMethod: "upi", upiId: "x@y" });
     await seedWallet(uid, 50);
     const before = (await db.collection("employee_payouts").where("employeeId", "==", uid).get()).size;
-    const r = await callRequest({ amount: 999 }, { uid, token: {} });
+    const r = await callRequest({ amount: 999, requestId: "phase62-req-s4" }, { uid, token: {} });
     const after = (await db.collection("employee_payouts").where("employeeId", "==", uid).get()).size;
     record("s4_insufficient_balance_still_refused_no_doc_written",
       !r.ok && r.code === "failed-precondition" && before === 0 && after === 0,
       `ok=${r.ok} code=${r.code} docsBefore=${before} docsAfter=${after}(expect 0/0)`);
+  }
+
+  // 5 — ADMR-43: a retried call with the SAME requestId (an ambiguous
+  // failure followed by a retry) debits the wallet exactly once and
+  // returns the original payoutId, not a second document.
+  {
+    const uid = "phase62-retry-employee";
+    await seedEmployee(uid, { payoutMethod: "upi", upiId: "retry62@okhdfc" });
+    await seedWallet(uid, 1000);
+    const r1 = await callRequest({ amount: 400, requestId: "phase62-req-s5" }, { uid, token: {} });
+    const r2 = await callRequest({ amount: 400, requestId: "phase62-req-s5" }, { uid, token: {} });
+    const walletAfter = (await db.collection("wallets").doc(uid).get()).data() || {};
+    const docCount = (await db.collection("employee_payouts").where("employeeId", "==", uid).get()).size;
+    record("s5_same_requestId_retry_debits_wallet_once",
+      r1.ok && r2.ok && r1.result.payoutId === r2.result.payoutId &&
+        !r1.result.alreadyApplied && r2.result.alreadyApplied === true &&
+        walletAfter.balance === 600 && docCount === 1,
+      `first=${r1.result && r1.result.payoutId} second=${r2.result && r2.result.payoutId}(expect same) ` +
+      `firstAlready=${r1.result && r1.result.alreadyApplied}(expect falsy) secondAlready=${r2.result && r2.result.alreadyApplied}(expect true) ` +
+      `walletBalance=${walletAfter.balance}(expect 600, debited once) docCount=${docCount}(expect 1)`);
+  }
+
+  // 6 — a DIFFERENT requestId for the same associate is a genuinely new
+  // request — debits again, writes a second document.
+  {
+    const uid = "phase62-tworequests-employee";
+    await seedEmployee(uid, { payoutMethod: "upi", upiId: "two62@okhdfc" });
+    await seedWallet(uid, 1000);
+    const r1 = await callRequest({ amount: 200, requestId: "phase62-req-s6a" }, { uid, token: {} });
+    const r2 = await callRequest({ amount: 150, requestId: "phase62-req-s6b" }, { uid, token: {} });
+    const walletAfter = (await db.collection("wallets").doc(uid).get()).data() || {};
+    const docCount = (await db.collection("employee_payouts").where("employeeId", "==", uid).get()).size;
+    record("s6_different_requestId_is_a_genuinely_new_request",
+      r1.ok && r2.ok && r1.result.payoutId !== r2.result.payoutId &&
+        walletAfter.balance === 650 && docCount === 2,
+      `first=${r1.result && r1.result.payoutId} second=${r2.result && r2.result.payoutId}(expect different) ` +
+      `walletBalance=${walletAfter.balance}(expect 650, both debited) docCount=${docCount}(expect 2)`);
+  }
+
+  // 7 — reusing the SAME requestId for a DIFFERENT amount is refused, not
+  // silently replayed with the original (now-mismatched) amount.
+  {
+    const uid = "phase62-mismatch-employee";
+    await seedEmployee(uid, { payoutMethod: "upi", upiId: "mismatch62@okhdfc" });
+    await seedWallet(uid, 1000);
+    const r1 = await callRequest({ amount: 300, requestId: "phase62-req-s7" }, { uid, token: {} });
+    const r2 = await callRequest({ amount: 500, requestId: "phase62-req-s7" }, { uid, token: {} });
+    const walletAfter = (await db.collection("wallets").doc(uid).get()).data() || {};
+    record("s7_same_requestId_different_amount_is_refused",
+      r1.ok && r1.result.amount === 300 &&
+        !r2.ok && r2.code === "invalid-argument" && /different amount/i.test(r2.message || "") &&
+        walletAfter.balance === 700,
+      `first=${r1.ok && r1.result.amount} second_ok=${r2.ok} second_code=${r2.code} second_message=${r2.message} walletBalance=${walletAfter.balance}(expect 700, only the first debit)`);
+  }
+
+  // 8 — a missing/malformed requestId is refused outright, not silently
+  // defaulted (the old, un-idempotent behaviour must not reappear).
+  {
+    const uid = "phase62-norequestid-employee";
+    await seedEmployee(uid, { payoutMethod: "upi", upiId: "none62@okhdfc" });
+    await seedWallet(uid, 1000);
+    const r = await callRequest({ amount: 100 }, { uid, token: {} });
+    const docCount = (await db.collection("employee_payouts").where("employeeId", "==", uid).get()).size;
+    record("s8_missing_requestId_is_refused_not_silently_defaulted",
+      !r.ok && r.code === "invalid-argument" && docCount === 0,
+      `ok=${r.ok} code=${r.code}(expect invalid-argument) docCount=${docCount}(expect 0)`);
   }
 
   console.log("\n=== SUMMARY ===");

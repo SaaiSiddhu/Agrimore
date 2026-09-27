@@ -10,9 +10,21 @@
 // Writes an `employee_payouts` document with the exact field names
 // apps/admin/lib/screens/admin/employees/employee_payouts_screen.dart (Phase 3)
 // already expects: employeeId, amount, status, createdAt.
+//
+// ADMR-43: a fresh Firestore auto-ID on every call meant a retry after an
+// ambiguous failure (a dropped connection, a timeout — the client cannot
+// tell whether the server already committed) had no way to land on the
+// SAME request: it would debit the wallet and create a second payout row
+// a second time. requestId is now required and IS the (actor-scoped) doc
+// id, mirroring riderExceptions.ts's/riderIncidents.ts's own
+// `${actorId}_${requestId}` idempotency-key convention — a retry with the
+// same requestId reads the existing document inside the transaction and
+// returns its original result instead of debiting again.
 
 import * as functions from "firebase-functions/v1";
 import * as admin from "firebase-admin";
+
+const REQUEST_ID = /^[A-Za-z0-9_-]{8,64}$/;
 
 export const requestEmployeePayout = functions.https.onCall(async (data, context) => {
   if (!context.auth) {
@@ -23,6 +35,13 @@ export const requestEmployeePayout = functions.https.onCall(async (data, context
   const amount = Number(data?.amount);
   if (!amount || amount <= 0) {
     throw new functions.https.HttpsError("invalid-argument", "amount must be a positive number");
+  }
+  const requestId = String(data?.requestId || "").trim();
+  if (!REQUEST_ID.test(requestId)) {
+    throw new functions.https.HttpsError(
+      "invalid-argument",
+      "requestId is required (client-generated, one per payout request, for idempotency)"
+    );
   }
 
   const db = admin.firestore();
@@ -41,10 +60,35 @@ export const requestEmployeePayout = functions.https.onCall(async (data, context
 
   const walletRef = db.collection("wallets").doc(uid);
   const walletTransactionRef = db.collection("wallet_transactions").doc();
-  const payoutRef = db.collection("employee_payouts").doc();
+  const payoutRef = db.collection("employee_payouts").doc(`${uid}_${requestId}`);
 
-  await db.runTransaction(async (tx) => {
-    const walletSnap = await tx.get(walletRef);
+  return db.runTransaction(async (tx) => {
+    const [walletSnap, existingPayout] = await Promise.all([
+      tx.get(walletRef),
+      tx.get(payoutRef),
+    ]);
+
+    if (existingPayout.exists) {
+      const prior = existingPayout.data()!;
+      // This requestId was already used for a DIFFERENT amount — never
+      // silently return a stale cached result for a mismatched request
+      // (mirrors adminUpdateOrderStatus's own mismatch-rejection, ADMR-38).
+      if ((prior.amount as number | undefined) !== amount) {
+        throw new functions.https.HttpsError(
+          "invalid-argument",
+          "This requestId was already used for a different amount — retry with a new requestId."
+        );
+      }
+      // Idempotent replay — the SAME request already succeeded. Return
+      // its original result; never debit the wallet a second time.
+      return {
+        success: true,
+        payoutId: payoutRef.id,
+        amount: prior.amount as number,
+        alreadyApplied: true,
+      };
+    }
+
     const currentBalance = (walletSnap.data()?.balance as number | undefined) ?? 0;
 
     if (amount > currentBalance) {
@@ -101,7 +145,7 @@ export const requestEmployeePayout = functions.https.onCall(async (data, context
       upiId,
       createdAt: admin.firestore.FieldValue.serverTimestamp(),
     });
-  });
 
-  return { success: true, payoutId: payoutRef.id, amount };
+    return { success: true, payoutId: payoutRef.id, amount };
+  });
 });
