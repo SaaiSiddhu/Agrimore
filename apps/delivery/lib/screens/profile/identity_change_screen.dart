@@ -200,14 +200,14 @@ class _IdentityChangeScreenState extends State<IdentityChangeScreen> {
             // rule itself, not by this check) -- never fall through to a
             // blank "start a new request" form for a tap that referenced a
             // specific, real request.
-            return _StatusCard(
+            return RequestStatusCard(
               icon: DeliveryIcons.close,
               title: l.identityChangeInvalid,
               body: '',
             );
           }
           if (!_forceForm && isById && latest?.status == IdentityChangeStatus.approved) {
-            return _StatusCard(
+            return RequestStatusCard(
               icon: DeliveryIcons.checkCircle,
               title: _isVehicle
                   ? l.identityChangeVehicleApprovedTitle
@@ -218,7 +218,7 @@ class _IdentityChangeScreenState extends State<IdentityChangeScreen> {
           if (!_forceForm &&
               latest != null &&
               latest.status == IdentityChangeStatus.pending) {
-            return _StatusCard(
+            return RequestStatusCard(
               icon: DeliveryIcons.clock,
               title: l.identityChangePendingTitle,
               body: l.identityChangePendingBody,
@@ -227,7 +227,7 @@ class _IdentityChangeScreenState extends State<IdentityChangeScreen> {
           if (!_forceForm &&
               latest != null &&
               latest.status == IdentityChangeStatus.rejected) {
-            return _StatusCard(
+            return RequestStatusCard(
               icon: DeliveryIcons.close,
               title: l.identityChangeRejectedTitle,
               body: latest.rejectionReason ?? '',
@@ -259,8 +259,12 @@ class _IdentityChangeScreenState extends State<IdentityChangeScreen> {
   }
 }
 
-class _StatusCard extends StatelessWidget {
-  const _StatusCard({
+/// DLVBANK1: made public (was `_StatusCard`) so `BankChangeRequestScreen`
+/// can reuse the same icon+title+body(+action) card shape for its own
+/// pending/approved/rejected/not-found states, rather than duplicating it.
+class RequestStatusCard extends StatelessWidget {
+  const RequestStatusCard({
+    super.key,
     required this.icon,
     required this.title,
     required this.body,

@@ -354,6 +354,26 @@ class RiderMoneyService {
         }
       });
 
+  /// DLVBANK1: one specific, historical request by its own id -- what a
+  /// notification actually referenced, as opposed to [latestBankChange],
+  /// which can resolve to a DIFFERENT, newer request submitted since that
+  /// notification arrived. Null if it does not exist (or is not this
+  /// rider's, enforced by the security rule, not by this call) -- mirrors
+  /// RiderIdentityBackend.requestById exactly.
+  Stream<BankChangeRequest?> bankChangeRequestById(String requestId) =>
+      Stream.multi((controller) {
+        try {
+          controller.addStream(_db
+              .collection('rider_bank_change_requests')
+              .doc(requestId)
+              .snapshots()
+              .map((d) => d.exists ? BankChangeRequest.fromMap(d.id, d.data()!) : null));
+        } catch (e, st) {
+          controller.addError(e, st);
+          controller.close();
+        }
+      });
+
   /// The payout destination on file (the rider may read their own profile).
   Stream<({String? maskedAccount, String? ifsc, String? upiId, String? holder})> payoutDetails() =>
       Stream.multi((controller) {

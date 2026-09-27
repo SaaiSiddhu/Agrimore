@@ -17,6 +17,7 @@ import '../../inbox/rider_inbox.dart';
 import '../../l10n/app_localizations.dart';
 import '../../money/rider_money.dart';
 import '../history/rider_history_screen.dart';
+import '../money/bank_change_request_screen.dart';
 import '../money/money_screen.dart';
 import '../money/statement_screen.dart';
 import '../orders/active_order_screen.dart';
@@ -198,6 +199,8 @@ class _InboxScreenState extends State<InboxScreen> {
         _openStatement(n.payoutId!);
       case NoticeTarget.delivery:
         _openDelivery(n.orderId!);
+      case NoticeTarget.bankChangeRequest:
+        _openBankChangeRequest(n.requestId!);
       case NoticeTarget.identityRequest:
         _openIdentityRequest(n);
       case NoticeTarget.supportTicket:
@@ -214,6 +217,20 @@ class _InboxScreenState extends State<InboxScreen> {
     Navigator.of(context).push(
       MaterialPageRoute<void>(
         builder: (_) => SupportRequestStatusScreen(ticketId: ticketId),
+      ),
+    );
+  }
+
+  /// DLVBANK1: routes to the EXACT bank-change request the notice named
+  /// (never "whichever is latest", which can silently be a different, newer
+  /// request submitted since the notice arrived).
+  void _openBankChangeRequest(String requestId) {
+    Navigator.of(context).push(
+      MaterialPageRoute<void>(
+        builder: (_) => BankChangeRequestScreen(
+          riderId: widget.riderId,
+          requestId: requestId,
+        ),
       ),
     );
   }

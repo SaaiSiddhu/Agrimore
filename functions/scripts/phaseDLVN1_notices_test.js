@@ -93,6 +93,9 @@ async function main() {
   const bn = box.find((n) => n.id === `bank_change_${req.id}`);
   record("n05_rejection_reason_reaches_rider", rej.result?.status === "rejected" && bn?.type === "bank_change_rejected" &&
     bn.body.includes("UPI name does not match"), JSON.stringify({ rej, bn }));
+  // n05b (DLVBANK1): the notice carries the SPECIFIC request's own id, not
+  // just a type -- what makes exact-request routing possible on the client.
+  record("n05b_notice_carries_its_own_requestId", bn?.data?.requestId === req.id, JSON.stringify(bn));
 
   // n06
   await db.doc("orders/n06").set({ deliveryPartnerId: r1.uid, orderNumber: "ORD-606", orderStatus: "out_for_delivery", status: "out_for_delivery", paymentMethod: "cod", total: 200, userId: "c1" });

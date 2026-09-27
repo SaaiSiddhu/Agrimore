@@ -1147,6 +1147,32 @@ class AppLocalizationsEn extends AppLocalizations {
       'Sent. The Agrimore team will check it; your pay waits until then.';
 
   @override
+  String get bankChangeRequestTitle => 'Payout change request';
+
+  @override
+  String get bankChangeRequestPendingTitle => 'Request pending review';
+
+  @override
+  String get bankChangeRequestApprovedTitle => 'Payout details updated';
+
+  @override
+  String get bankChangeRequestApprovedBody =>
+      'This change has already been applied. Pay that was on hold has been released.';
+
+  @override
+  String get bankChangeRequestRejectedTitle => 'Payout details not changed';
+
+  @override
+  String get bankChangeRequestCorrect => 'Enter new details';
+
+  @override
+  String get bankChangeRequestNotFoundTitle => 'Request not available';
+
+  @override
+  String get bankChangeRequestNotFoundBody =>
+      'This payout change request is no longer available. It may have been removed, or you may no longer have access to it.';
+
+  @override
   String get bankFormTitle => 'Change payout details';
 
   @override

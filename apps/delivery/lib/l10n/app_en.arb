@@ -1491,6 +1491,38 @@
   "@bankChangeSent": {
     "description": "Bank change sent"
   },
+  "bankChangeRequestTitle": "Payout change request",
+  "@bankChangeRequestTitle": {
+    "description": "DLVBANK1: BankChangeRequestScreen's own AppBar title"
+  },
+  "bankChangeRequestPendingTitle": "Request pending review",
+  "@bankChangeRequestPendingTitle": {
+    "description": "DLVBANK1: BankChangeRequestScreen, pending state title"
+  },
+  "bankChangeRequestApprovedTitle": "Payout details updated",
+  "@bankChangeRequestApprovedTitle": {
+    "description": "DLVBANK1: BankChangeRequestScreen, approved state title -- matches bankReviewNotice's own server title"
+  },
+  "bankChangeRequestApprovedBody": "This change has already been applied. Pay that was on hold has been released.",
+  "@bankChangeRequestApprovedBody": {
+    "description": "DLVBANK1: BankChangeRequestScreen, approved state body"
+  },
+  "bankChangeRequestRejectedTitle": "Payout details not changed",
+  "@bankChangeRequestRejectedTitle": {
+    "description": "DLVBANK1: BankChangeRequestScreen, rejected state title -- matches bankReviewNotice's own server title"
+  },
+  "bankChangeRequestCorrect": "Enter new details",
+  "@bankChangeRequestCorrect": {
+    "description": "DLVBANK1: BankChangeRequestScreen, rejected state's correction action -- opens a fresh form (never pre-filled with the old raw account/IFSC, which stay masked)"
+  },
+  "bankChangeRequestNotFoundTitle": "Request not available",
+  "@bankChangeRequestNotFoundTitle": {
+    "description": "DLVBANK1: BankChangeRequestScreen, not-found state title (deleted, or not this rider's)"
+  },
+  "bankChangeRequestNotFoundBody": "This payout change request is no longer available. It may have been removed, or you may no longer have access to it.",
+  "@bankChangeRequestNotFoundBody": {
+    "description": "DLVBANK1: BankChangeRequestScreen, not-found state body"
+  },
   "bankFormTitle": "Change payout details",
   "@bankFormTitle": {
     "description": "Bank change sheet title"
