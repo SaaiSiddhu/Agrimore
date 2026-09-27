@@ -10,6 +10,7 @@ import 'location_settings_screen.dart';
 import '../home_sections/home_product_section_management_screen.dart';
 import 'home_grocery_strip_settings_screen.dart';
 import 'home_section_order_settings_screen.dart';
+import '../security/payment_security_logs_screen.dart';
 
 // ADMR-46: these controls used to claim effects that do not exist anywhere
 // in the system (an enforced maintenance mode, a saved payment/shipping
@@ -314,6 +315,20 @@ class _AdminSettingsScreenState extends State<AdminSettingsScreen> {
                 subtitle: 'Enable 2FA for extra security',
                 color: const Color(0xFF10B981),
                 onTap: () => _showTwoFactorDialog(),
+              ),
+              _buildNavigationTile(
+                icon: Icons.gpp_bad_rounded,
+                title: 'Payment Security Logs',
+                subtitle: 'Signature mismatches on payments and top-ups',
+                color: const Color(0xFFEF4444),
+                onTap: () {
+                  Navigator.push(
+                    context,
+                    MaterialPageRoute(
+                      builder: (_) => PaymentSecurityLogsScreen(),
+                    ),
+                  );
+                },
               ),
               _buildNavigationTile(
                 icon: Icons.privacy_tip_rounded,
