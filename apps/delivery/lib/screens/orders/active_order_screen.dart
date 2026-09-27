@@ -5,6 +5,7 @@
 // the steps. Every step goes through a callable with where the rider is
 // (DLV-3C); delivery is confirmed by the customer's code on the server
 // (FIX-5) — this client never sees the expected code.
+import 'dart:async';
 import 'dart:io';
 
 import 'package:agrimore_core/agrimore_core.dart'
@@ -68,6 +69,82 @@ bool isCashOnDeliveryMethod(String method) {
   return m == 'cod' || m == 'cash_on_delivery' || m.contains('cash');
 }
 
+// ============================================================
+//  DLVMAP3 (5.12) — assignment changes & recovery
+// ============================================================
+//
+// ActiveOrderScreen used to take a static OrderModel snapshot and never
+// re-check it: a reassignment, a connection loss or an admin/seller edit
+// mid-session was invisible. These pure helpers plus _RecoveryPhase below
+// drive the live reconciliation against DeliveryOrderProvider (see
+// _onProviderChanged), reusing that provider's own existing live query
+// rather than adding a second listener.
+
+/// How long "not yet seen live" is treated as still-checking before
+/// concluding the assignment was genuinely removed — covers the gap between
+/// an offer's one-off accept read and the live query catching up with the
+/// same new order (the golden path must never flash "removed").
+const Duration kAssignmentConfirmGrace = Duration(seconds: 8);
+
+/// Whether [b] differs from [a] in anything the rider would need to review —
+/// store/customer/items/payment, never `orderStatus` (resynced into
+/// `_currentStep` separately) or other volatile fields.
+bool hasMaterialOrderChange(OrderModel a, OrderModel b) {
+  final aAddr = a.deliveryAddress;
+  final bAddr = b.deliveryAddress;
+  if (aAddr.name != bAddr.name ||
+      aAddr.phone != bAddr.phone ||
+      aAddr.fullAddress != bAddr.fullAddress ||
+      aAddr.latitude != bAddr.latitude ||
+      aAddr.longitude != bAddr.longitude) {
+    return true;
+  }
+  if (a.paymentMethod != b.paymentMethod || a.total != b.total) return true;
+  if (a.items.length != b.items.length) return true;
+  for (var i = 0; i < a.items.length; i++) {
+    if (a.items[i].productName != b.items[i].productName ||
+        a.items[i].quantity != b.items[i].quantity) {
+      return true;
+    }
+  }
+  return false;
+}
+
+/// First name plus last initial ("Arun Kumar" -> "Arun K."); a single-word
+/// name keeps just its own initial ("Arun" -> "A."). Used only while the
+/// connection is lost (mockup 20.8's own key points scope masking to that
+/// case alone, not to a normal detail-changed review).
+String maskCustomerInitials(String fullName) {
+  final parts = fullName.trim().split(RegExp(r'\s+')).where((p) => p.isNotEmpty).toList();
+  if (parts.isEmpty) return '';
+  if (parts.length == 1) return '${parts.first[0].toUpperCase()}.';
+  return '${parts.first[0].toUpperCase()} ${parts.last[0].toUpperCase()}.';
+}
+
+/// The live copy of [orderId] in [provider]'s active work, if still present.
+OrderModel? liveOrderIn(DeliveryOrderProvider provider, String orderId) {
+  for (final o in provider.activeOrders) {
+    if (o.id == orderId) return o;
+  }
+  return null;
+}
+
+/// The screen's own reconciliation state, on top of the normal step flow.
+enum RecoveryPhase {
+  /// The order is (as far as is known) still this rider's.
+  normal,
+
+  /// A live snapshot confirmed the order is no longer this rider's.
+  removed,
+
+  /// The live listener itself failed (offline / permission).
+  connectionLost,
+
+  /// A "Retry" was just tapped from [connectionLost]; the next snapshot
+  /// resolves to one of the other phases.
+  checking,
+}
+
 /// The timeline title of [step].
 String deliveryStepTitle(AppLocalizations l, DeliveryStep step) =>
     switch (step) {
@@ -111,7 +188,17 @@ class _ActiveOrderScreenState extends State<ActiveOrderScreen> {
   File? _proofPhoto;
   final ImagePicker _picker = ImagePicker();
 
-  OrderModel get _order => widget.order;
+  // DLVMAP3: `_order` starts as the static snapshot the screen was pushed
+  // with and only ever advances to a later live value once a material
+  // change is detected (see _onProviderChanged) — so customer/items/payment
+  // never shift silently mid-read, but are never stuck stale once flagged.
+  late OrderModel _order = widget.order;
+  RecoveryPhase _phase = RecoveryPhase.normal;
+  bool _showChangedBanner = false;
+  bool _everConfirmedPresent = false;
+  bool _leavingByOwnAction = false;
+  DeliveryOrderProvider? _liveProvider;
+  Timer? _graceTimer;
 
   @override
   void didUpdateWidget(ActiveOrderScreen oldWidget) {
@@ -122,7 +209,95 @@ class _ActiveOrderScreenState extends State<ActiveOrderScreen> {
   }
 
   @override
+  void didChangeDependencies() {
+    super.didChangeDependencies();
+    final p = context.read<DeliveryOrderProvider>();
+    if (!identical(p, _liveProvider)) {
+      _liveProvider?.removeListener(_onProviderChanged);
+      _liveProvider = p;
+      p.addListener(_onProviderChanged);
+      _onProviderChanged();
+    }
+  }
+
+  @override
+  void dispose() {
+    _liveProvider?.removeListener(_onProviderChanged);
+    _graceTimer?.cancel();
+    super.dispose();
+  }
+
+  /// DLVMAP3: reconciles this screen against the provider's own live query
+  /// on every snapshot. See the phase contract for the full rule set; in
+  /// short: an error means connectionLost; not-yet-loaded resolves the
+  /// checking state entered by Retry; a live match updates `_order`
+  /// (flagging a review banner when it materially changed) and resyncs
+  /// `_currentStep`; a genuine, confirmed absence means removed — but a
+  /// brief, bounded grace period is given before the order has EVER been
+  /// seen live, so the golden path (a freshly accepted offer, pushed here
+  /// ahead of the live query catching up) never flashes "removed".
+  void _onProviderChanged() {
+    if (!mounted || _leavingByOwnAction) return;
+    final provider = _liveProvider;
+    if (provider == null) return;
+    final work = provider.work;
+
+    if (work.error != null) {
+      _graceTimer?.cancel();
+      _graceTimer = null;
+      if (_phase != RecoveryPhase.connectionLost) {
+        setState(() => _phase = RecoveryPhase.connectionLost);
+      }
+      return;
+    }
+
+    if (!work.loaded) {
+      if (_phase == RecoveryPhase.connectionLost) {
+        setState(() => _phase = RecoveryPhase.checking);
+      }
+      return;
+    }
+
+    final live = liveOrderIn(provider, widget.order.id);
+    if (live == null) {
+      if (_everConfirmedPresent) {
+        _graceTimer?.cancel();
+        _graceTimer = null;
+        if (_phase != RecoveryPhase.removed) {
+          setState(() => _phase = RecoveryPhase.removed);
+        }
+      } else {
+        _graceTimer ??= Timer(kAssignmentConfirmGrace, () {
+          _graceTimer = null;
+          if (!mounted || _everConfirmedPresent || _leavingByOwnAction) return;
+          setState(() => _phase = RecoveryPhase.removed);
+        });
+      }
+      return;
+    }
+
+    _graceTimer?.cancel();
+    _graceTimer = null;
+    _everConfirmedPresent = true;
+
+    final changed = hasMaterialOrderChange(_order, live);
+    final nextStep = _isUpdating ? _currentStep : deliveryStepOf(live.orderStatus);
+    if (!changed && nextStep == _currentStep && _phase == RecoveryPhase.normal) {
+      return;
+    }
+    setState(() {
+      _order = live;
+      _currentStep = nextStep;
+      _phase = RecoveryPhase.normal;
+      if (changed) _showChangedBanner = true;
+    });
+  }
+
+  @override
   Widget build(BuildContext context) {
+    if (_phase == RecoveryPhase.removed) return _buildRemovedScaffold();
+    if (_phase == RecoveryPhase.connectionLost) return _buildConnectionLostScaffold();
+
     final l = AppLocalizations.of(context);
     final c = context.colors;
     final t = context.text;
@@ -151,6 +326,17 @@ class _ActiveOrderScreenState extends State<ActiveOrderScreen> {
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.stretch,
           children: [
+            if (_showChangedBanner) ...[
+              DeliveryBanner(
+                tone: DeliveryTone.warning,
+                icon: DeliveryIcons.refresh,
+                title: l.assignmentChangedTitle,
+                body: l.assignmentChangedBody,
+                actionLabel: l.assignmentReviewChanges,
+                onAction: () => setState(() => _showChangedBanner = false),
+              ),
+              const SizedBox(height: DeliverySpace.lg),
+            ],
             _Section(
               title: l.activeSectionProgress,
               icon: DeliveryIcons.activeOrder,
@@ -350,6 +536,129 @@ class _ActiveOrderScreenState extends State<ActiveOrderScreen> {
     );
   }
 
+  /// DLVMAP3 — mockup 20.8 panel 3: a confirmed reassignment/removal. Full
+  /// privacy block: no customer/address/item/payment detail rendered at all.
+  Widget _buildRemovedScaffold() {
+    final l = AppLocalizations.of(context);
+    final c = context.colors;
+    final t = context.text;
+    return Scaffold(
+      backgroundColor: c.background,
+      appBar: AppBar(
+        title: Text(l.offerOrderNumber(_order.orderNumber)),
+        centerTitle: true,
+      ),
+      body: SafeArea(
+        child: SingleChildScrollView(
+          padding: const EdgeInsets.all(DeliverySpace.page),
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.stretch,
+            children: [
+              const SizedBox(height: DeliverySpace.xxl),
+              Center(
+                child: DeliveryIllustration(
+                  kind: DeliveryIllustrationKind.warning,
+                  size: DeliverySize.illustration,
+                ),
+              ),
+              const SizedBox(height: DeliverySpace.lg),
+              Text(
+                l.assignmentRemovedTitle,
+                textAlign: TextAlign.center,
+                style: t.headlineSmall.copyWith(color: c.textPrimary),
+              ),
+              const SizedBox(height: DeliverySpace.sm),
+              Text(
+                l.assignmentRemovedBody,
+                textAlign: TextAlign.center,
+                style: t.bodyMedium.copyWith(color: c.textSecondary),
+              ),
+              const SizedBox(height: DeliverySpace.xxl),
+              DeliveryButton.primary(
+                label: l.assignmentBackToDashboard,
+                icon: DeliveryIcons.home,
+                onPressed: () => Navigator.of(context).pop(),
+              ),
+              const SizedBox(height: DeliverySpace.sm),
+              DeliveryButton.secondary(
+                label: l.assignmentContactSupport,
+                icon: DeliveryIcons.support,
+                onPressed: () => openSupportCall(context),
+              ),
+              const SizedBox(height: DeliverySpace.xl),
+              DeliveryBanner(
+                tone: DeliveryTone.danger,
+                icon: DeliveryIcons.shieldAlert,
+                title: l.assignmentSafetyReminderTitle,
+                body: l.assignmentSafetyReminderBody,
+              ),
+            ],
+          ),
+        ),
+      ),
+    );
+  }
+
+  /// DLVMAP3 — mockup 20.8 panel 4: the live listener itself failed. Shows
+  /// only a masked last-known summary (never raw customer identity) and
+  /// disables delivery actions until "Try again" resolves the read.
+  Widget _buildConnectionLostScaffold() {
+    final l = AppLocalizations.of(context);
+    final c = context.colors;
+    final t = context.text;
+    return Scaffold(
+      backgroundColor: c.background,
+      appBar: AppBar(
+        title: Text(l.offerOrderNumber(_order.orderNumber)),
+        centerTitle: true,
+      ),
+      body: SingleChildScrollView(
+        padding: const EdgeInsets.all(DeliverySpace.page),
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.stretch,
+          children: [
+            DeliveryBanner(
+              tone: DeliveryTone.danger,
+              icon: DeliveryIcons.offline,
+              title: l.assignmentConnectionLostTitle,
+              body: l.assignmentConnectionLostBody,
+              actionLabel: l.actionRetry,
+              onAction: () => _liveProvider?.retry(),
+            ),
+            const SizedBox(height: DeliverySpace.lg),
+            _Section(
+              title: l.assignmentLastKnownTitle,
+              icon: DeliveryIcons.activeOrder,
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.stretch,
+                children: [
+                  Text(
+                    deliveryStepTitle(l, _currentStep),
+                    style: t.titleMedium.copyWith(color: c.textPrimary),
+                  ),
+                  const SizedBox(height: DeliverySpace.sm),
+                  Text(
+                    maskCustomerInitials(_order.deliveryAddress.name),
+                    style: t.bodyMedium.copyWith(color: c.textSecondary),
+                  ),
+                  Text(
+                    l.activeSectionItems(_order.items.length),
+                    style: t.bodyMedium.copyWith(color: c.textSecondary),
+                  ),
+                ],
+              ),
+            ),
+            const SizedBox(height: DeliverySpace.lg),
+            DeliveryBanner(
+              tone: DeliveryTone.neutral,
+              body: l.assignmentActionsUnavailable,
+            ),
+          ],
+        ),
+      ),
+    );
+  }
+
   Widget _proofSection(AppLocalizations l) {
     final c = context.colors;
     final t = context.text;
@@ -516,6 +825,10 @@ class _ActiveOrderScreenState extends State<ActiveOrderScreen> {
     if (!confirmed || !mounted) return;
 
     setState(() => _isUpdating = true);
+    // DLVMAP3: releasing drops this order out of the live provider's active
+    // work just like a genuine reassignment would — suppress the recovery
+    // machine so a successful release is never misread as "removed".
+    _leavingByOwnAction = true;
     final provider = context.read<DeliveryOrderProvider>();
     final failure = await provider.releaseOrder(
       _order.id,
@@ -527,6 +840,7 @@ class _ActiveOrderScreenState extends State<ActiveOrderScreen> {
       showDeliveryToast(context, message: l.activeReleased);
       Navigator.pop(context);
     } else {
+      _leavingByOwnAction = false;
       showDeliveryToast(
         context,
         message: failure.message(l),
@@ -647,6 +961,11 @@ class _ActiveOrderScreenState extends State<ActiveOrderScreen> {
 
   void _showDelivered() {
     if (!mounted) return;
+    // DLVMAP3: a delivered order also drops out of the live provider's
+    // active work (a terminal status), while this sheet keeps the screen
+    // mounted underneath until the rider taps its own "back" — never let a
+    // celebrated delivery flash the "no longer assigned" block screen.
+    _leavingByOwnAction = true;
     showModalBottomSheet<void>(
       context: context,
       isDismissible: false,

@@ -4,17 +4,40 @@
 // for the delivery-code field: a component can be correct in isolation while
 // the screen that wires it up is never exercised at all.
 import 'package:agrimore_core/agrimore_core.dart' show OrderModel;
+import 'package:delivery/data/rider_work.dart' show OrderDoc;
 import 'package:delivery/l10n/app_localizations.dart';
 import 'package:delivery/providers/location_provider.dart';
+import 'package:delivery/providers/order_provider.dart';
 import 'package:delivery/screens/orders/active_order_screen.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:provider/provider.dart';
 
 // RiderRouteCard (DLVMAP1) reads LocationProvider for the stale-location
-// banner's Refresh-location/native-service branching.
-Widget _wrap(Widget home) => ChangeNotifierProvider<LocationProvider>(
-      create: (_) => LocationProvider(),
+// banner's Refresh-location/native-service branching. ActiveOrderScreen
+// (DLVMAP3) unconditionally reads DeliveryOrderProvider in
+// didChangeDependencies to reconcile assignment/recovery state -- the fake
+// source below reports the SAME order back, live and unchanged, so these
+// pre-existing tests stay in RecoveryPhase.normal throughout.
+Widget _wrap(Widget home, {OrderModel? liveOrder}) => MultiProvider(
+      providers: [
+        ChangeNotifierProvider<LocationProvider>(create: (_) => LocationProvider()),
+        ChangeNotifierProvider<DeliveryOrderProvider>(
+          create: (_) {
+            final provider = DeliveryOrderProvider(
+              activeSource: (riderId) => liveOrder == null
+                  ? Stream.value((docs: const <OrderDoc>[], fromCache: false))
+                  : Stream.value((
+                      docs: [(id: liveOrder.id, data: liveOrder.toMap())],
+                      fromCache: false,
+                    )),
+              deliveredCount: (_, __) async => 0,
+            );
+            if (liveOrder != null) provider.bind('r-tour');
+            return provider;
+          },
+        ),
+      ],
       child: MaterialApp(
         localizationsDelegates: AppLocalizations.localizationsDelegates,
         supportedLocales: AppLocalizations.supportedLocales,
@@ -63,6 +86,7 @@ void main() {
       (tester) async {
     await tester.pumpWidget(_wrap(
       ActiveOrderScreen(order: _order(status: 'out_for_delivery')),
+      liveOrder: _order(status: 'out_for_delivery'),
     ));
     await tester.pump(const Duration(milliseconds: 300));
 
@@ -82,6 +106,7 @@ void main() {
       (tester) async {
     await tester.pumpWidget(_wrap(
       ActiveOrderScreen(order: _order(status: 'delivery_accepted')),
+      liveOrder: _order(status: 'delivery_accepted'),
     ));
     await tester.pump(const Duration(milliseconds: 300));
 
@@ -96,6 +121,7 @@ void main() {
       (tester) async {
     await tester.pumpWidget(_wrap(
       ActiveOrderScreen(order: _order(status: 'out_for_delivery')),
+      liveOrder: _order(status: 'out_for_delivery'),
     ));
     await tester.pump(const Duration(milliseconds: 300));
 
@@ -114,6 +140,7 @@ void main() {
       (tester) async {
     await tester.pumpWidget(_wrap(
       ActiveOrderScreen(order: _order(status: 'out_for_delivery')),
+      liveOrder: _order(status: 'out_for_delivery'),
     ));
     await tester.pump(const Duration(milliseconds: 300));
 
@@ -130,6 +157,7 @@ void main() {
       (tester) async {
     await tester.pumpWidget(_wrap(
       ActiveOrderScreen(order: _order(status: 'out_for_delivery')),
+      liveOrder: _order(status: 'out_for_delivery'),
     ));
     await tester.pump(const Duration(milliseconds: 300));
 

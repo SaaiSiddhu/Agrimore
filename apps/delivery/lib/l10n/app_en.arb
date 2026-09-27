@@ -2279,6 +2279,58 @@
   "@activeReleased": {
     "description": "Toast after release"
   },
+  "assignmentChangedTitle": "Delivery details changed",
+  "@assignmentChangedTitle": {
+    "description": "DLVMAP3: banner title when the live order differs from what is shown"
+  },
+  "assignmentChangedBody": "Review the latest information before continuing.",
+  "@assignmentChangedBody": {
+    "description": "DLVMAP3: banner body for the changed-details banner"
+  },
+  "assignmentReviewChanges": "Review changes",
+  "@assignmentReviewChanges": {
+    "description": "DLVMAP3: dismisses the changed-details banner"
+  },
+  "assignmentRemovedTitle": "This delivery is no longer assigned to you",
+  "@assignmentRemovedTitle": {
+    "description": "DLVMAP3: title when the order has been reassigned away or otherwise lost"
+  },
+  "assignmentRemovedBody": "The assignment has been changed. You can't view the delivery details for privacy.",
+  "@assignmentRemovedBody": {
+    "description": "DLVMAP3: body text explaining why details are now hidden"
+  },
+  "assignmentBackToDashboard": "Back to dashboard",
+  "@assignmentBackToDashboard": {
+    "description": "DLVMAP3: primary action on the removed-assignment screen"
+  },
+  "assignmentContactSupport": "Contact support",
+  "@assignmentContactSupport": {
+    "description": "DLVMAP3: secondary action on the removed-assignment screen"
+  },
+  "assignmentSafetyReminderTitle": "Already carrying the order?",
+  "@assignmentSafetyReminderTitle": {
+    "description": "DLVMAP3: safety reminder card title, mockup 20.8"
+  },
+  "assignmentSafetyReminderBody": "Contact support for handover instructions. Do not deliver to the customer. We'll help you with the next steps.",
+  "@assignmentSafetyReminderBody": {
+    "description": "DLVMAP3: safety reminder card body, mockup 20.8"
+  },
+  "assignmentConnectionLostTitle": "Couldn't confirm your assignment",
+  "@assignmentConnectionLostTitle": {
+    "description": "DLVMAP3: title when the live listener has failed (offline/permission)"
+  },
+  "assignmentConnectionLostBody": "Reconnect to check the latest status.",
+  "@assignmentConnectionLostBody": {
+    "description": "DLVMAP3: body text for the connection-lost state"
+  },
+  "assignmentLastKnownTitle": "Last known status",
+  "@assignmentLastKnownTitle": {
+    "description": "DLVMAP3: section title for the masked last-known summary"
+  },
+  "assignmentActionsUnavailable": "Delivery actions unavailable while we reconnect.",
+  "@assignmentActionsUnavailable": {
+    "description": "DLVMAP3: disabled-actions notice during connection loss"
+  },
   "activeFarTitle": "Are you there?",
   "@activeFarTitle": {
     "description": "Far-tap confirmation title"

@@ -291,6 +291,9 @@ void main() {
     String partnerStatus = 'approved',
     String? rejectionReason,
     Future<void> Function(WidgetTester tester)? before,
+    // DLVMAP3: overrides the default always-empty DeliveryOrderProvider, so
+    // a shot can drive ActiveOrderScreen's own live recovery states.
+    DeliveryOrderProvider? orderProvider,
   }) async {
     final auth = DeliveryAuthProvider(
       gateway: _TourAuth(),
@@ -322,6 +325,20 @@ void main() {
             // DLVMAP1: RiderRouteCard (rendered by every ActiveOrderScreen
             // shot) reads LocationProvider for the stale-location banner.
             ChangeNotifierProvider<LocationProvider>(create: (_) => LocationProvider()),
+            // DLVMAP3: ActiveOrderScreen unconditionally reads
+            // DeliveryOrderProvider to reconcile assignment/recovery state.
+            // An always-empty active-work source is safe for every existing
+            // shot: DLVMAP3's own grace period keeps this invisible
+            // (RecoveryPhase.normal) for the tour's brief per-shot duration.
+            // A shot can pass its own `orderProvider` to drive a specific
+            // recovery state instead.
+            ChangeNotifierProvider<DeliveryOrderProvider>.value(
+              value: orderProvider ??
+                  (DeliveryOrderProvider(
+                    activeSource: (_) => Stream.value((docs: const <OrderDoc>[], fromCache: false)),
+                    deliveredCount: (_, __) async => 0,
+                  )..bind('r-tour')),
+            ),
           ],
           child: MaterialApp(
             debugShowCheckedModeBanner: false,
@@ -961,6 +978,58 @@ void main() {
       const Scaffold(
         body: NavigationFailedSheet(dest: DeliveryPoint(lat: 9.925201, lng: 78.119775)),
       ),
+    );
+
+    // 12. DLVMAP3 (5.12): live assignment recovery, mockup 20.8. Each shot
+    // drives the real ActiveOrderScreen through DeliveryOrderProvider's own
+    // live query (via an injected `orderProvider`), not a separate demo
+    // widget -- the same screen every rider actually uses.
+    final baseline = _sampleOrder(status: 'out_for_delivery');
+
+    final changedSource = StreamController<ActiveSnapshot>.broadcast();
+    changedSource.add((
+      docs: [
+        (
+          id: baseline.id,
+          data: {...baseline.toMap(), 'deliveryAddress': {...baseline.toMap()['deliveryAddress'] as Map, 'name': 'Ganesh Moorthy'}},
+        ),
+      ],
+      fromCache: false,
+    ));
+    await shot(
+      tester,
+      '33_assignment_changed_light',
+      ActiveOrderScreen(order: baseline),
+      orderProvider: DeliveryOrderProvider(activeSource: (_) => changedSource.stream, deliveredCount: (_, __) async => 0)
+        ..bind('r-tour'),
+    );
+
+    final removedSource = StreamController<ActiveSnapshot>.broadcast();
+    removedSource.add((docs: [(id: baseline.id, data: baseline.toMap())], fromCache: false));
+    await shot(
+      tester,
+      '34_assignment_removed_light',
+      ActiveOrderScreen(order: baseline),
+      orderProvider: DeliveryOrderProvider(activeSource: (_) => removedSource.stream, deliveredCount: (_, __) async => 0)
+        ..bind('r-tour'),
+      before: (t) async {
+        removedSource.add((docs: const [], fromCache: false));
+        await t.pump(const Duration(milliseconds: 200));
+      },
+    );
+
+    final lostSource = StreamController<ActiveSnapshot>.broadcast();
+    lostSource.add((docs: [(id: baseline.id, data: baseline.toMap())], fromCache: false));
+    await shot(
+      tester,
+      '35_assignment_connection_lost_light',
+      ActiveOrderScreen(order: baseline),
+      orderProvider: DeliveryOrderProvider(activeSource: (_) => lostSource.stream, deliveredCount: (_, __) async => 0)
+        ..bind('r-tour'),
+      before: (t) async {
+        lostSource.addError(Exception('offline'));
+        await t.pump(const Duration(milliseconds: 200));
+      },
     );
   });
 }

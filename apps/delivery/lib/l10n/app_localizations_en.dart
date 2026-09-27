@@ -1728,6 +1728,52 @@ class AppLocalizationsEn extends AppLocalizations {
   String get activeReleased => 'Order released for reassignment';
 
   @override
+  String get assignmentChangedTitle => 'Delivery details changed';
+
+  @override
+  String get assignmentChangedBody =>
+      'Review the latest information before continuing.';
+
+  @override
+  String get assignmentReviewChanges => 'Review changes';
+
+  @override
+  String get assignmentRemovedTitle =>
+      'This delivery is no longer assigned to you';
+
+  @override
+  String get assignmentRemovedBody =>
+      'The assignment has been changed. You can\'t view the delivery details for privacy.';
+
+  @override
+  String get assignmentBackToDashboard => 'Back to dashboard';
+
+  @override
+  String get assignmentContactSupport => 'Contact support';
+
+  @override
+  String get assignmentSafetyReminderTitle => 'Already carrying the order?';
+
+  @override
+  String get assignmentSafetyReminderBody =>
+      'Contact support for handover instructions. Do not deliver to the customer. We\'ll help you with the next steps.';
+
+  @override
+  String get assignmentConnectionLostTitle =>
+      'Couldn\'t confirm your assignment';
+
+  @override
+  String get assignmentConnectionLostBody =>
+      'Reconnect to check the latest status.';
+
+  @override
+  String get assignmentLastKnownTitle => 'Last known status';
+
+  @override
+  String get assignmentActionsUnavailable =>
+      'Delivery actions unavailable while we reconnect.';
+
+  @override
   String get activeFarTitle => 'Are you there?';
 
   @override
