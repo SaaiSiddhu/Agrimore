@@ -180,7 +180,12 @@ export const reviewRiderIdentityChange = onCall({ minInstances: 0, memory: "256M
   const r = (await db.collection("rider_identity_change_requests").doc(requestId).get()).data() ?? {};
   await tellRider(
     db, typeof r.riderId === "string" ? r.riderId : null,
-    identityChangeNotice(requestId, v.kind === "approved", typeof r.rejectionReason === "string" ? r.rejectionReason : null),
+    identityChangeNotice(
+      requestId,
+      r.changeType === "vehicle" ? "vehicle" : "name",
+      v.kind === "approved",
+      typeof r.rejectionReason === "string" ? r.rejectionReason : null
+    ),
     Date.now()
   );
   return { success: true, status: v.kind };

@@ -131,7 +131,7 @@ class _InboxScreenState extends State<InboxScreen> {
       case NoticeTarget.delivery:
         _openDelivery(n.orderId!);
       case NoticeTarget.identityRequest:
-        _openIdentityRequest();
+        _openIdentityRequest(n);
       case NoticeTarget.supportTicket:
         _openSupportTicket(n.ticketId!);
       case NoticeTarget.none:
@@ -150,10 +150,18 @@ class _InboxScreenState extends State<InboxScreen> {
     );
   }
 
-  void _openIdentityRequest() {
+  /// DLVID3: routes to the EXACT request the notice named (never "whichever
+  /// is latest", which can silently be a different, newer request of the
+  /// same type submitted since the notice arrived), with the correct
+  /// changeType so a vehicle-change notice never opens the name-change form.
+  void _openIdentityRequest(RiderNotice n) {
     Navigator.of(context).push(
       MaterialPageRoute<void>(
-        builder: (_) => IdentityChangeScreen(riderId: widget.riderId),
+        builder: (_) => IdentityChangeScreen(
+          riderId: widget.riderId,
+          changeType: n.changeType,
+          requestId: n.requestId,
+        ),
       ),
     );
   }

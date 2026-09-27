@@ -107,6 +107,13 @@ abstract class RiderIdentityBackend {
   /// This rider's most recent request (of any status), or null if they have
   /// never made one.
   Stream<IdentityChangeRequest?> latestRequest(String riderId);
+
+  /// DLVID3: one specific, historical request by its own id -- what a
+  /// notification actually referenced, as opposed to [latestRequest], which
+  /// can resolve to a DIFFERENT, newer request of the same type submitted
+  /// since that notification arrived. Null if it does not exist (or is not
+  /// this rider's, enforced by the security rule, not by this call).
+  Stream<IdentityChangeRequest?> requestById(String requestId);
 }
 
 class CallableRiderIdentityBackend implements RiderIdentityBackend {
@@ -155,6 +162,21 @@ class CallableRiderIdentityBackend implements RiderIdentityBackend {
                   (b.createdAt ?? DateTime(0)).compareTo(a.createdAt ?? DateTime(0)));
             return all.isEmpty ? null : all.first;
           }));
+        } catch (e, st) {
+          controller.addError(e, st);
+          controller.close();
+        }
+      });
+
+  @override
+  Stream<IdentityChangeRequest?> requestById(String requestId) =>
+      Stream.multi((controller) {
+        try {
+          controller.addStream(_db
+              .collection('rider_identity_change_requests')
+              .doc(requestId)
+              .snapshots()
+              .map((d) => d.exists ? IdentityChangeRequest.fromMap(d.id, d.data()!) : null));
         } catch (e, st) {
           controller.addError(e, st);
           controller.close();

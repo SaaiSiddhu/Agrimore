@@ -911,6 +911,28 @@ void main() {
       brightness: Brightness.dark,
     );
 
+    // DLVID3: opened from a notification, pinned to that ONE request by id
+    // -- the vehicle-specific approved wording, never "Your name was updated".
+    await shot(
+      tester,
+      '37_identity_change_vehicle_approved_light',
+      IdentityChangeScreen(
+        riderId: 'r-tour',
+        changeType: kIdentityChangeTypeVehicle,
+        requestId: 'req-3',
+        backend: _FakeIdentityBackend(
+          current: IdentityChangeRequest(
+            id: 'req-3',
+            changeType: kIdentityChangeTypeVehicle,
+            proposedValues: const {'vehicleType': 'car', 'vehicleNumber': 'TN09XY5678'},
+            reason: 'Upgraded to a car',
+            status: IdentityChangeStatus.approved,
+            createdAt: DateTime(2026, 9, 18),
+          ),
+        ),
+      ),
+    );
+
     // 11d. DLVSUP1: Help & support topic list, the submit-a-request form,
     // and the request-status timeline for a seen (not yet closed) ticket.
     await shot(tester, '27_help_support_light', const HelpSupportScreen());
@@ -1091,5 +1113,8 @@ class _FakeIdentityBackend implements RiderIdentityBackend {
       'req-tour';
   @override
   Stream<IdentityChangeRequest?> latestRequest(String riderId) =>
+      Stream.value(current);
+  @override
+  Stream<IdentityChangeRequest?> requestById(String requestId) =>
       Stream.value(current);
 }

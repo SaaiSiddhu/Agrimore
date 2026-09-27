@@ -106,13 +106,23 @@ export function bankReviewNotice(requestId: string, approved: boolean, reason: s
       data: { type: "bank_change_rejected" } };
 }
 
-export function identityChangeNotice(requestId: string, approved: boolean, reason: string | null): RiderNotice {
+// DLVID3: changeType must be threaded through so the wording (and the
+// client's own routing, via the same field in `data`) names the actual
+// field that changed -- a vehicle-update approval must never claim the
+// rider's NAME was updated. "name" is the fallback for any pre-DLVID3
+// notice already in a rider's inbox with no changeType of its own.
+export function identityChangeNotice(
+  requestId: string, changeType: "name" | "vehicle", approved: boolean, reason: string | null
+): RiderNotice {
+  const label = changeType === "vehicle" ? "vehicle details" : "name";
   return approved
-    ? { id: `identity_change_${requestId}`, type: "identity_change_approved", title: "Your name was updated",
-      body: "Your identity change request was approved.", data: { type: "identity_change_approved", requestId } }
-    : { id: `identity_change_${requestId}`, type: "identity_change_rejected", title: "Identity change not approved",
+    ? { id: `identity_change_${requestId}`, type: "identity_change_approved", title: `Your ${label} was updated`,
+      body: "Your identity change request was approved.",
+      data: { type: "identity_change_approved", requestId, changeType } }
+    : { id: `identity_change_${requestId}`, type: "identity_change_rejected",
+      title: changeType === "vehicle" ? "Vehicle change not approved" : "Name change not approved",
       body: reason ? `Your request was not approved: ${reason}` : "Your request was not approved.",
-      data: { type: "identity_change_rejected", requestId } };
+      data: { type: "identity_change_rejected", requestId, changeType } };
 }
 
 const DISPOSITION_TEXT: Record<string, string> = {

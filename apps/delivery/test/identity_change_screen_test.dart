@@ -17,6 +17,19 @@ class FakeIdentityBackend implements RiderIdentityBackend {
   IdentityChangeRequest? current;
   final _latest = StreamController<IdentityChangeRequest?>.broadcast();
 
+  /// DLVID3: keyed by request id, for [requestById]. A key mapped to `null`
+  /// means "exists in the map but not found" (deleted/inaccessible); a
+  /// missing key means "still loading" (never emits).
+  final byId = <String, IdentityChangeRequest?>{};
+  final _byIdControllers = <String, StreamController<IdentityChangeRequest?>>{};
+
+  /// Pushes a new value for [requestId] to any already-open [requestById]
+  /// stream (e.g. simulating approval arriving while the screen is open).
+  void updateById(String requestId, IdentityChangeRequest? value) {
+    byId[requestId] = value;
+    _byIdControllers[requestId]?.add(value);
+  }
+
   @override
   Future<String> requestChange({
     required String changeType,
@@ -36,6 +49,17 @@ class FakeIdentityBackend implements RiderIdentityBackend {
   Stream<IdentityChangeRequest?> latestRequest(String riderId) async* {
     yield current;
     yield* _latest.stream;
+  }
+
+  @override
+  Stream<IdentityChangeRequest?> requestById(String requestId) {
+    final controller = _byIdControllers.putIfAbsent(
+        requestId, () => StreamController<IdentityChangeRequest?>.broadcast());
+    if (!byId.containsKey(requestId)) return controller.stream; // "loading": never emits yet
+    return Stream.multi((c) {
+      c.add(byId[requestId]);
+      c.addStream(controller.stream);
+    });
   }
 }
 
@@ -242,6 +266,105 @@ void main() {
       await t.pumpAndSettle();
       expect(find.text('Enter the registration number, e.g. TN58AB1234'), findsOneWidget);
       expect(find.text('Check your details and try again.'), findsNothing);
+    });
+  });
+
+  group('pinned to a specific request, from a notification (DLVID3)', () {
+    testWidgets('an approved NAME request shows the name-specific wording', (t) async {
+      final backend = FakeIdentityBackend()
+        ..byId['req-1'] = _request(status: IdentityChangeStatus.approved, changeType: kIdentityChangeTypeName);
+      await t.pumpWidget(host(IdentityChangeScreen(
+        riderId: 'r1',
+        changeType: kIdentityChangeTypeName,
+        requestId: 'req-1',
+        backend: backend,
+      )));
+      await t.pumpAndSettle();
+      expect(find.text('Your name was updated'), findsOneWidget);
+      expect(find.text('Your vehicle details were updated'), findsNothing);
+    });
+
+    testWidgets('an approved VEHICLE request shows the vehicle-specific wording, never "name"', (t) async {
+      final backend = FakeIdentityBackend()
+        ..byId['req-1'] = _request(
+          status: IdentityChangeStatus.approved,
+          changeType: kIdentityChangeTypeVehicle,
+          proposedValues: const {'vehicleType': 'bike', 'vehicleNumber': 'TN01AB1234'},
+        );
+      await t.pumpWidget(host(IdentityChangeScreen(
+        riderId: 'r1',
+        changeType: kIdentityChangeTypeVehicle,
+        requestId: 'req-1',
+        backend: backend,
+      )));
+      await t.pumpAndSettle();
+      expect(find.text('Your vehicle details were updated'), findsOneWidget);
+      expect(find.text('Your name was updated'), findsNothing);
+    });
+
+    testWidgets('a rejected referenced request still offers Correct and resend', (t) async {
+      final backend = FakeIdentityBackend()
+        ..byId['req-1'] = _request(status: IdentityChangeStatus.rejected, rejectionReason: 'ID does not match');
+      await t.pumpWidget(host(IdentityChangeScreen(
+        riderId: 'r1',
+        requestId: 'req-1',
+        backend: backend,
+      )));
+      await t.pumpAndSettle();
+      expect(find.text('ID does not match'), findsOneWidget);
+      expect(find.byKey(const ValueKey('identity-correct')), findsOneWidget);
+    });
+
+    testWidgets('a resubmission from a pinned request pops back, rather than reusing the old stream', (t) async {
+      final backend = FakeIdentityBackend()
+        ..byId['req-1'] = _request(status: IdentityChangeStatus.rejected, rejectionReason: 'ID does not match');
+      await t.pumpWidget(host(Builder(builder: (context) {
+        return Scaffold(
+          body: Center(
+            child: ElevatedButton(
+              onPressed: () => Navigator.of(context).push(MaterialPageRoute<void>(
+                builder: (_) => IdentityChangeScreen(riderId: 'r1', requestId: 'req-1', backend: backend),
+              )),
+              child: const Text('open'),
+            ),
+          ),
+        );
+      })));
+      await t.tap(find.text('open'));
+      await t.pumpAndSettle();
+      await t.tap(find.byKey(const ValueKey('identity-correct')));
+      await t.pumpAndSettle();
+      await t.enterText(
+        find.byKey(const ValueKey('identity-reason')),
+        'Correcting my earlier request',
+      );
+      await t.tap(find.byKey(const ValueKey('identity-submit')));
+      await t.pumpAndSettle();
+      expect(find.byType(IdentityChangeScreen), findsNothing);
+      expect(find.text('open'), findsOneWidget);
+    });
+
+    testWidgets('a request that no longer exists shows an error, never a blank new-request form', (t) async {
+      final backend = FakeIdentityBackend()..byId['gone'] = null;
+      await t.pumpWidget(host(IdentityChangeScreen(
+        riderId: 'r1',
+        requestId: 'gone',
+        backend: backend,
+      )));
+      await t.pumpAndSettle();
+      expect(find.text('Check your details and try again.'), findsOneWidget);
+      expect(find.byKey(const ValueKey('identity-name')), findsNothing);
+    });
+
+    testWidgets('the normal Profile-button entry (no requestId) is unaffected', (t) async {
+      final backend = FakeIdentityBackend()..current = null;
+      await t.pumpWidget(host(IdentityChangeScreen(
+        riderId: 'r1',
+        currentName: 'Arjun K.',
+        backend: backend,
+      )));
+      await t.pumpAndSettle();
+      expect(find.byKey(const ValueKey('identity-name')), findsOneWidget);
     });
   });
 }
