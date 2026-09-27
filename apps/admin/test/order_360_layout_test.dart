@@ -711,4 +711,42 @@ void main() {
       expect(incident.statusLabel, 'some_future_status');
     });
   });
+
+  // ADMR-42 additions below: createOrder.ts sets paymentStatus purely from
+  // paymentMethod at creation ('cod' -> 'pending', anything else -> 'paid')
+  // and never updates it again for a COD order (confirmed by repo-wide
+  // grep for a writer that does) — a COD order's paymentStatus is
+  // PERMANENTLY 'pending' for its entire lifecycle, by design, never a
+  // sign of a stuck payment the way it would be for a non-COD order.
+  group('paymentCardState', () {
+    test('a COD order is its own state, regardless of paymentStatus', () {
+      expect(
+        paymentCardState(_order(paymentMethod: 'cod').copyWith(paymentStatus: 'pending')),
+        PaymentCardState.cod,
+      );
+      // Even if some future bug marked a COD order paymentStatus 'paid',
+      // paymentMethod alone gates this branch — a COD order is never
+      // shown as a completed online payment.
+      expect(
+        paymentCardState(_order(paymentMethod: 'cod').copyWith(paymentStatus: 'paid')),
+        PaymentCardState.cod,
+      );
+    });
+
+    test('a non-COD order marked paid is a genuine paid-online state', () {
+      final order = _order(paymentMethod: 'razorpay').copyWith(paymentStatus: 'paid');
+      expect(paymentCardState(order), PaymentCardState.paidOnline);
+    });
+
+    test('a non-COD order NOT marked paid is a genuine payment issue — '
+        'the only case this permanently-orange state should ever mean', () {
+      final order = _order(paymentMethod: 'razorpay').copyWith(paymentStatus: 'pending');
+      expect(paymentCardState(order), PaymentCardState.paymentIssue);
+    });
+
+    test('"cash" (not just the literal "cod") is also recognized', () {
+      final order = _order(paymentMethod: 'cash_on_delivery').copyWith(paymentStatus: 'pending');
+      expect(paymentCardState(order), PaymentCardState.cod);
+    });
+  });
 }
