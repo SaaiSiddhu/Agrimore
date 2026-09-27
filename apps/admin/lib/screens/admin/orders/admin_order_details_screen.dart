@@ -65,6 +65,23 @@ String codLiabilityLabel({required bool isCod, required bool collected}) {
   return 'Cash on delivery — not yet collected by rider';
 }
 
+/// ADMR-37: true only for a delivered order cancelled after the fact —
+/// restoreStockOnCancellation.ts defers auto-restoration for exactly this
+/// transition (the customer already had physical possession), setting
+/// `stockRestorePending` instead of silently assuming a return happened.
+bool orderNeedsReturnConfirmation(OrderModel order) =>
+    order.deliveredAt != null && order.stockRestorePending == true;
+
+/// True once stock has been restored for a delivered-then-cancelled order —
+/// either an admin confirmed the return via confirmOrderReturnReceived, or
+/// (for an order cancelled under the pre-ADMR-37 behavior) it was restored
+/// automatically. Never true at the same time as
+/// orderNeedsReturnConfirmation above.
+bool orderShowsStockRestoredNote(OrderModel order) =>
+    order.deliveredAt != null &&
+    order.stockRestorePending != true &&
+    order.stockRestored == true;
+
 /// Maps the raw `updatedBy` role string (written by adminUpdateOrderStatus
 /// today; sellerTransitionOrder.ts does not yet populate this field at all,
 /// a separate, disclosed gap) to a human-readable actor label.
@@ -97,6 +114,7 @@ class AdminOrderDetailsScreen extends StatefulWidget {
 
 class _AdminOrderDetailsScreenState extends State<AdminOrderDetailsScreen> {
   bool _loadingInvoice = false;
+  bool _confirmingReturn = false;
 
   @override
   void initState() {
@@ -1950,10 +1968,114 @@ class _AdminOrderDetailsScreenState extends State<AdminOrderDetailsScreen> {
                 ],
               ),
             ),
+            // ADMR-37: a delivered order's stock is never auto-restored on
+            // cancellation (see restoreStockOnCancellation.ts's own header)
+            // — the customer already had physical possession, so this is
+            // the ONLY place that fact is ever true. Non-delivered
+            // cancellations (the overwhelming majority) are unaffected and
+            // show nothing new here.
+            if (orderNeedsReturnConfirmation(order)) ...[
+              const SizedBox(height: 12),
+              _buildReturnConfirmationPrompt(order),
+            ] else if (orderShowsStockRestoredNote(order)) ...[
+              const SizedBox(height: 12),
+              _buildStockAlreadyRestoredNote(),
+            ],
           ],
         ),
       ),
     );
+  }
+
+  Widget _buildReturnConfirmationPrompt(OrderModel order) {
+    return Container(
+      padding: const EdgeInsets.all(12),
+      decoration: BoxDecoration(
+        color: Colors.orange.withOpacity(0.08),
+        borderRadius: BorderRadius.circular(8),
+        border: Border.all(color: Colors.orange.withOpacity(0.25)),
+      ),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Row(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              Icon(Icons.inventory_2_outlined, size: 16, color: Colors.orange.shade700),
+              const SizedBox(width: 8),
+              Expanded(
+                child: Text(
+                  'Cancelled after delivery — stock has NOT been restored automatically.',
+                  style: TextStyle(fontSize: 12, fontWeight: FontWeight.w700, color: Colors.orange.shade800),
+                ),
+              ),
+            ],
+          ),
+          const SizedBox(height: 6),
+          Text(
+            'Confirm only once the returned item has actually been received back — this cannot be undone.',
+            style: TextStyle(color: Colors.grey.shade600, fontSize: 11),
+          ),
+          const SizedBox(height: 10),
+          Align(
+            alignment: Alignment.centerLeft,
+            child: ElevatedButton.icon(
+              onPressed: _confirmingReturn ? null : () => _confirmReturnReceived(order.id),
+              icon: _confirmingReturn
+                  ? const SizedBox(
+                      width: 14,
+                      height: 14,
+                      child: CircularProgressIndicator(strokeWidth: 2, color: Colors.white),
+                    )
+                  : const Icon(Icons.inventory_2_rounded, size: 16),
+              label: const Text('Confirm Return Received'),
+              style: ElevatedButton.styleFrom(
+                backgroundColor: Colors.orange.shade600,
+                foregroundColor: Colors.white,
+                padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 8),
+                textStyle: const TextStyle(fontSize: 12, fontWeight: FontWeight.w600),
+              ),
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+
+  Widget _buildStockAlreadyRestoredNote() {
+    return Container(
+      padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
+      decoration: BoxDecoration(color: Colors.blueGrey.withOpacity(0.08), borderRadius: BorderRadius.circular(8)),
+      child: Row(
+        mainAxisSize: MainAxisSize.min,
+        children: [
+          Icon(Icons.inventory_2_rounded, size: 14, color: Colors.blueGrey.shade700),
+          const SizedBox(width: 8),
+          Text(
+            'Stock has been restored for this order',
+            style: TextStyle(fontSize: 12, fontWeight: FontWeight.w700, color: Colors.blueGrey.shade800),
+          ),
+        ],
+      ),
+    );
+  }
+
+  Future<void> _confirmReturnReceived(String orderId) async {
+    setState(() => _confirmingReturn = true);
+    try {
+      final result = await context.read<OrderProvider>().confirmOrderReturnReceived(orderId);
+      if (!mounted) return;
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(
+          content: Text(result.isSuccess
+              ? 'Stock restored for this order.'
+              : (result.message ?? 'Could not confirm the return.')),
+          backgroundColor: result.isSuccess ? Colors.green : Colors.red,
+        ),
+      );
+    } finally {
+      if (mounted) setState(() => _confirmingReturn = false);
+    }
   }
 
   // =========================

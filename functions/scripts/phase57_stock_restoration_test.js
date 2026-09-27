@@ -31,8 +31,20 @@ const db = admin.firestore();
 const test = require("firebase-functions-test")({ projectId: "agrimore-66a4e" });
 const { restoreStockOnCancellation } = require("../lib/customer/restoreStockOnCancellation");
 const { sellerTransitionOrder } = require("../lib/seller/sellerTransitionOrder");
+const { confirmOrderReturnReceived } = require("../lib/admin/confirmOrderReturnReceived");
 const wrapped = test.wrap(restoreStockOnCancellation);
 const wrappedSeller = test.wrap(sellerTransitionOrder);
+const wrappedConfirmReturn = test.wrap(confirmOrderReturnReceived);
+
+async function callConfirmReturn(payload, auth) {
+  try {
+    return { ok: true, result: await wrappedConfirmReturn({ data: payload, auth }) };
+  } catch (e) {
+    return { ok: false, code: e.code, message: e.message };
+  }
+}
+const ADMIN_AUTH = { uid: "phase57-admin", token: { admin: true } };
+const NON_ADMIN_AUTH = { uid: "phase57-not-admin", token: {} };
 
 async function fireCancellation(orderId, beforeData, afterData) {
   const beforeSnap = test.firestore.makeDocumentSnapshot(beforeData, `orders/${orderId}`);
@@ -287,6 +299,132 @@ async function main() {
       calleeLeavesStockAlone && pFinal.stock === 6 && pFinal.variants[0].stock === 7 && oFinal.stockRestored === true,
       `callable untouched stock; trigger then restored vX 2->7, base unchanged`,
       `calleeLeavesStockAlone=${calleeLeavesStockAlone} finalBase=${pFinal.stock}(expect 6) finalVariant=${pFinal.variants && pFinal.variants[0] && pFinal.variants[0].stock}(expect 7)`);
+  }
+
+  // ============================================================
+  // Scenario 9 — ADMR-37: a cancellation reached FROM 'delivered' must NOT
+  // auto-restore stock — the customer already has physical possession.
+  // Instead the order is flagged stockRestorePending, stock is untouched,
+  // and stockRestored stays unset.
+  // ============================================================
+  {
+    const orderId = "phase57-o9";
+    const productId = "phase57-p9";
+    await seedProduct(productId, { stock: 4 });
+    await order(orderId, { orderIdHint: "9", orderStatus: "delivered", items: [{ productId, quantity: 2 }] });
+    const before = await orderDoc(orderId);
+    const after = { ...before, orderStatus: "cancelled", status: "cancelled" };
+    await fireCancellation(orderId, before, after);
+    const p = await product(productId);
+    const o = await orderDoc(orderId);
+    record("s9_delivered_to_cancelled_does_not_auto_restore",
+      p.stock === 4 && o.stockRestorePending === true && !o.stockRestored,
+      `stock=4(untouched) stockRestorePending=true stockRestored=unset`,
+      `stock=${p.stock}(expect 4) stockRestorePending=${o.stockRestorePending} stockRestored=${o.stockRestored}`);
+  }
+
+  // ============================================================
+  // Scenario 10 — confirmOrderReturnReceived: an admin confirming a
+  // pending return actually restores stock (base + variant mix), via the
+  // SAME restoreOrderItemStock the trigger itself uses.
+  // ============================================================
+  {
+    const orderId = "phase57-o10";
+    const productId = "phase57-p10";
+    await seedProduct(productId, { stock: 6, variants: [{ id: "vR", stock: 1 }] });
+    await order(orderId, {
+      orderIdHint: "10",
+      orderStatus: "delivered",
+      items: [
+        { productId, quantity: 2 },
+        { productId, quantity: 3, variantId: "vR" },
+      ],
+    });
+    const before = await orderDoc(orderId);
+    const afterCancel = { ...before, orderStatus: "cancelled", status: "cancelled" };
+    // fireCancellation only feeds the trigger a SYNTHETIC before/after pair —
+    // it does not itself write the real document (matching how a real
+    // caller like adminUpdateOrderStatus already would have, before this
+    // trigger ever fires). confirmOrderReturnReceived reads the REAL
+    // document, so the test must actually write the transition too.
+    await db.collection("orders").doc(orderId).set(afterCancel, { merge: true });
+    await fireCancellation(orderId, before, afterCancel); // sets stockRestorePending, no restore yet
+
+    const r = await callConfirmReturn({ orderId }, ADMIN_AUTH);
+    const p = await product(productId);
+    const o = await orderDoc(orderId);
+    const vR = p.variants && p.variants.find((v) => v.id === "vR");
+    record("s10_admin_confirm_return_restores_base_and_variant",
+      r.ok && r.result.outcome === "restored" &&
+        p.stock === 8 && vR && vR.stock === 4 &&
+        o.stockRestored === true && o.stockRestorePending === false && o.stockRestoreConfirmedBy === ADMIN_AUTH.uid,
+      `outcome=restored base=8 vR=4 stockRestored=true stockRestorePending=false confirmedBy set`,
+      `ok=${r.ok} outcome=${r.result && r.result.outcome} base=${p.stock}(expect 8) vR=${vR && vR.stock}(expect 4) stockRestored=${o.stockRestored} stockRestorePending=${o.stockRestorePending}`);
+  }
+
+  // ============================================================
+  // Scenario 11 — idempotency: confirming twice restores stock once.
+  // ============================================================
+  {
+    const orderId = "phase57-o11";
+    const productId = "phase57-p11";
+    await seedProduct(productId, { stock: 5 });
+    await order(orderId, { orderIdHint: "11", orderStatus: "delivered", items: [{ productId, quantity: 2 }] });
+    const before = await orderDoc(orderId);
+    const afterCancel = { ...before, orderStatus: "cancelled", status: "cancelled" };
+    await db.collection("orders").doc(orderId).set(afterCancel, { merge: true });
+    await fireCancellation(orderId, before, afterCancel);
+
+    const r1 = await callConfirmReturn({ orderId }, ADMIN_AUTH);
+    const r2 = await callConfirmReturn({ orderId }, ADMIN_AUTH);
+    const p = await product(productId);
+    record("s11_confirming_twice_restores_stock_once",
+      r1.ok && r1.result.outcome === "restored" && r2.ok && r2.result.outcome === "already_restored" && p.stock === 7,
+      `first=restored second=already_restored stock=7(once)`,
+      `first=${r1.result && r1.result.outcome} second=${r2.result && r2.result.outcome} stock=${p.stock}(expect 7)`);
+  }
+
+  // ============================================================
+  // Scenario 12 — confirming an order that was never pending (a normal
+  // pre-delivery cancellation, already auto-restored) is refused, not a
+  // silent no-op that could look like success.
+  // ============================================================
+  {
+    const orderId = "phase57-o12";
+    const productId = "phase57-p12";
+    await seedProduct(productId, { stock: 5 });
+    await order(orderId, { orderIdHint: "12", items: [{ productId, quantity: 2 }] }); // default pending
+    const before = await orderDoc(orderId);
+    const afterCancel = { ...before, orderStatus: "cancelled", status: "cancelled" };
+    await fireCancellation(orderId, before, afterCancel); // ordinary path — auto-restores immediately
+
+    const r = await callConfirmReturn({ orderId }, ADMIN_AUTH);
+    const p = await product(productId);
+    record("s12_confirming_a_non_pending_order_is_refused_not_a_silent_noop",
+      r.ok && r.result.outcome === "already_restored" && p.stock === 7,
+      `outcome=already_restored stock=7(unchanged by the confirm call itself)`,
+      `ok=${r.ok} outcome=${r.result && r.result.outcome} stock=${p.stock}(expect 7)`);
+  }
+
+  // ============================================================
+  // Scenario 13 — permission: a non-admin cannot confirm a return.
+  // ============================================================
+  {
+    const orderId = "phase57-o13";
+    const productId = "phase57-p13";
+    await seedProduct(productId, { stock: 3 });
+    await order(orderId, { orderIdHint: "13", orderStatus: "delivered", items: [{ productId, quantity: 1 }] });
+    const before = await orderDoc(orderId);
+    const afterCancel = { ...before, orderStatus: "cancelled", status: "cancelled" };
+    await fireCancellation(orderId, before, afterCancel);
+
+    const r = await callConfirmReturn({ orderId }, NON_ADMIN_AUTH);
+    const p = await product(productId);
+    const o = await orderDoc(orderId);
+    record("s13_non_admin_cannot_confirm_return",
+      !r.ok && r.code === "permission-denied" && p.stock === 3 && o.stockRestorePending === true,
+      `refused permission-denied, stock untouched, still pending`,
+      `ok=${r.ok} code=${r.code} stock=${p.stock}(expect 3) stockRestorePending=${o.stockRestorePending}`);
   }
 
   console.log("\n=== SUMMARY ===");

@@ -76,6 +76,13 @@ class OrderModel {
   final String? codCollectedBy;
   final DateTime? codCollectedAt;
 
+  // ADMR-37: restoreStockOnCancellation.ts's/confirmOrderReturnReceived.ts's
+  // own real, already-live fields — added purely additively so the order
+  // details screen can show honestly whether a delivered→cancelled order's
+  // stock is still awaiting an admin's return confirmation.
+  final bool? stockRestored;
+  final bool? stockRestorePending;
+
   // ADMR-29: employeeCommission.ts's own real, already-live writes on this
   // same order document (applyEmployeeCommissionPayment /
   // reverseEmployeeCommissionOnCancellation) — added purely additively,
@@ -136,6 +143,8 @@ class OrderModel {
     this.codSettlementStatus,
     this.codCollectedBy,
     this.codCollectedAt,
+    this.stockRestored,
+    this.stockRestorePending,
     this.commissionPaid,
     this.commissionAmount,
     this.commissionPaidAt,
@@ -330,6 +339,8 @@ class OrderModel {
         codCollectedAt: map['codCollectedAt'] != null
             ? _parseDateTime(map['codCollectedAt'])
             : null,
+        stockRestored: map['stockRestored'] as bool?,
+        stockRestorePending: map['stockRestorePending'] as bool?,
         commissionPaid: map['commissionPaid'] as bool?,
         commissionAmount: (map['commissionAmount'] as num?)?.toDouble(),
         commissionPaidAt: map['commissionPaidAt'] != null
@@ -410,6 +421,8 @@ class OrderModel {
       'codCollectedBy': codCollectedBy,
       'codCollectedAt':
           codCollectedAt != null ? Timestamp.fromDate(codCollectedAt!) : null,
+      'stockRestored': stockRestored,
+      'stockRestorePending': stockRestorePending,
       'commissionPaid': commissionPaid,
       'commissionAmount': commissionAmount,
       'commissionPaidAt': commissionPaidAt != null
@@ -543,6 +556,8 @@ class OrderModel {
     String? codSettlementStatus,
     String? codCollectedBy,
     DateTime? codCollectedAt,
+    bool? stockRestored,
+    bool? stockRestorePending,
     bool? commissionPaid,
     double? commissionAmount,
     DateTime? commissionPaidAt,
@@ -601,6 +616,8 @@ class OrderModel {
       codSettlementStatus: codSettlementStatus ?? this.codSettlementStatus,
       codCollectedBy: codCollectedBy ?? this.codCollectedBy,
       codCollectedAt: codCollectedAt ?? this.codCollectedAt,
+      stockRestored: stockRestored ?? this.stockRestored,
+      stockRestorePending: stockRestorePending ?? this.stockRestorePending,
       commissionPaid: commissionPaid ?? this.commissionPaid,
       commissionAmount: commissionAmount ?? this.commissionAmount,
       commissionPaidAt: commissionPaidAt ?? this.commissionPaidAt,

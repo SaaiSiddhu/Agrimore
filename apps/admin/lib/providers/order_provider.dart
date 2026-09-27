@@ -32,6 +32,27 @@ class OrderStatusUpdateResult {
       outcome == OrderStatusUpdateOutcome.alreadyApplied;
 }
 
+// ADMR-37: typed result for confirmOrderReturnReceived, mirroring
+// functions/src/admin/confirmOrderReturnReceived.ts's own Outcome union.
+enum ConfirmReturnOutcome {
+  restored,
+  alreadyRestored,
+  notPending,
+  notFound,
+  permissionDenied,
+  networkError,
+}
+
+class ConfirmReturnResult {
+  final ConfirmReturnOutcome outcome;
+  final String? message;
+  const ConfirmReturnResult(this.outcome, {this.message});
+
+  bool get isSuccess =>
+      outcome == ConfirmReturnOutcome.restored ||
+      outcome == ConfirmReturnOutcome.alreadyRestored;
+}
+
 class OrderProvider with ChangeNotifier {
   // ============================================
   // SERVICES
@@ -592,6 +613,57 @@ class OrderProvider with ChangeNotifier {
       _isLoading = false;
       notifyListeners();
       return OrderStatusUpdateResult(OrderStatusUpdateOutcome.networkError,
+          message: e.toString());
+    }
+  }
+
+  // ============================================
+  // CONFIRM ORDER RETURN RECEIVED (ADMR-37)
+  // ============================================
+  // The only path that restores stock for an order cancelled AFTER
+  // delivery — see restoreStockOnCancellation.ts's own header for why that
+  // one transition is never auto-restored. Deliberately does NOT touch
+  // isLoading/error (the shared, whole-screen state updateOrderStatus
+  // above uses) — the calling button owns its own local busy state,
+  // mirroring admin_order_details_screen.dart's own _loadingInvoice
+  // pattern, since a single confirm tap swapping the entire screen to its
+  // loading view would hide the very button that was just pressed.
+  Future<ConfirmReturnResult> confirmOrderReturnReceived(String orderId) async {
+    try {
+      final res = await FirebaseFunctions.instance
+          .httpsCallable('confirmOrderReturnReceived')
+          .call<Map<String, dynamic>>({'orderId': orderId});
+
+      final outcome = res.data['outcome'] as String?;
+
+      if (outcome == 'restored' || outcome == 'already_restored') {
+        await loadOrderById(orderId); // refreshes selectedOrder + notifies
+        debugPrint('✅ Return stock confirmed: $outcome');
+        return ConfirmReturnResult(
+          outcome == 'restored'
+              ? ConfirmReturnOutcome.restored
+              : ConfirmReturnOutcome.alreadyRestored,
+        );
+      }
+
+      final message = res.data['message'] as String?;
+      return ConfirmReturnResult(
+        outcome == 'not_found'
+            ? ConfirmReturnOutcome.notFound
+            : ConfirmReturnOutcome.notPending,
+        message: message,
+      );
+    } on FirebaseFunctionsException catch (e) {
+      debugPrint('❌ confirmOrderReturnReceived: ${e.code} ${e.message}');
+      return ConfirmReturnResult(
+        e.code == 'permission-denied'
+            ? ConfirmReturnOutcome.permissionDenied
+            : ConfirmReturnOutcome.notPending,
+        message: e.message ?? e.code,
+      );
+    } catch (e) {
+      debugPrint('❌ Error confirming order return: $e');
+      return ConfirmReturnResult(ConfirmReturnOutcome.networkError,
           message: e.toString());
     }
   }
