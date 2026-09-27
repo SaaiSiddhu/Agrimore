@@ -392,11 +392,17 @@ class HistoryDetail extends StatelessWidget {
     required this.loadEarning,
     required this.loadTimeline,
     required this.loadPayout,
+    this.fetchStoreName,
   });
   final OrderModel order;
   final EarningLoader loadEarning;
   final OrderTimelineLoader loadTimeline;
   final PayoutLoader loadPayout;
+
+  /// DLVH6: injectable for tests; defaults to the real `sellers/{id}` read
+  /// `ActiveOrderScreen` already established (same name/signature, reused
+  /// verbatim, not reimplemented).
+  final Future<String?> Function(String sellerId)? fetchStoreName;
 
   @override
   Widget build(BuildContext context) {
@@ -553,7 +559,26 @@ class HistoryDetail extends StatelessWidget {
                   );
                 },
               ),
-              const SizedBox(height: DeliverySpace.xl),
+              if (order.sellerId != null)
+                FutureBuilder<String?>(
+                  future: (fetchStoreName ?? defaultFetchStoreName)(order.sellerId!),
+                  builder: (context, snap) {
+                    final name = snap.data?.trim();
+                    if (name == null || name.isEmpty) return const SizedBox.shrink();
+                    return Column(
+                      crossAxisAlignment: CrossAxisAlignment.stretch,
+                      children: [
+                        _SectionHeading(l10n.historyDetailMerchantTitle),
+                        const SizedBox(height: DeliverySpace.sm),
+                        Text(
+                          name,
+                          style: t.bodyMedium.copyWith(color: c.textPrimary),
+                        ),
+                        const SizedBox(height: DeliverySpace.xl),
+                      ],
+                    );
+                  },
+                ),
               _SectionHeading(l10n.historyDetailCustomerTitle),
               const SizedBox(height: DeliverySpace.sm),
               if (address.name.isNotEmpty)

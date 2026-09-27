@@ -2548,6 +2548,12 @@ abstract class AppLocalizations {
   /// **'Could not load this order\'s timeline.'**
   String get historyDetailTimelineError;
 
+  /// DLVH6: history detail, section heading for the seller/merchant name
+  ///
+  /// In en, this message translates to:
+  /// **'Merchant'**
+  String get historyDetailMerchantTitle;
+
   /// History detail: section heading for the customer's contact details
   ///
   /// In en, this message translates to:

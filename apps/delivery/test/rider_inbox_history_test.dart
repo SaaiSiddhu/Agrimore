@@ -681,6 +681,60 @@ void main() {
       expect(find.text('Navigate'), findsNothing);
     });
 
+    testWidgets('DLVH6: the merchant section shows the resolved seller name', (t) async {
+      final order = historyOrder('o8', {
+        'orderStatus': 'delivered',
+        'orderNumber': 'ORD-8',
+        'total': 90,
+        'sellerId': 'seller-1',
+      });
+      await t.pumpWidget(host(Scaffold(
+          body: HistoryDetail(
+              order: order,
+              loadEarning: (id) async => null,
+              loadTimeline: (id) async => const [],
+              loadPayout: (id) async => null,
+              fetchStoreName: (id) async {
+                expect(id, 'seller-1');
+                return 'Fresh Fields';
+              }))));
+      await t.pumpAndSettle();
+      expect(find.text('Merchant'), findsOneWidget);
+      expect(find.text('Fresh Fields'), findsOneWidget);
+    });
+
+    testWidgets('DLVH6: no sellerId shows no merchant section at all', (t) async {
+      final order = historyOrder('o9', {'orderStatus': 'delivered', 'orderNumber': 'ORD-9', 'total': 90});
+      await t.pumpWidget(host(Scaffold(
+          body: HistoryDetail(
+              order: order,
+              loadEarning: (id) async => null,
+              loadTimeline: (id) async => const [],
+              loadPayout: (id) async => null,
+              fetchStoreName: (id) async => fail('must not be called without a sellerId')))));
+      await t.pumpAndSettle();
+      expect(find.text('Merchant'), findsNothing);
+    });
+
+    testWidgets('DLVH6: an unresolvable seller shows no merchant section, not an error state', (t) async {
+      final order = historyOrder('o10', {
+        'orderStatus': 'delivered',
+        'orderNumber': 'ORD-10',
+        'total': 90,
+        'sellerId': 'deleted-seller',
+      });
+      await t.pumpWidget(host(Scaffold(
+          body: HistoryDetail(
+              order: order,
+              loadEarning: (id) async => null,
+              loadTimeline: (id) async => const [],
+              loadPayout: (id) async => null,
+              fetchStoreName: (id) async => null))));
+      await t.pumpAndSettle();
+      expect(t.takeException(), isNull);
+      expect(find.text('Merchant'), findsNothing);
+    });
+
     testWidgets('tapping "In a weekly statement" opens the real statement it names', (t) async {
       final order = historyOrder('o3', {
         'orderStatus': 'delivered',
