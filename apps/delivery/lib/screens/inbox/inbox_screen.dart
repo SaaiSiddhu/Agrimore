@@ -480,9 +480,29 @@ class _InboxScreenState extends State<InboxScreen> {
                         horizontal: DeliverySpace.page,
                         vertical: DeliverySpace.xxs,
                       ),
-                      leading: Icon(
-                        noticeIcon(n.type, unread: n.unread),
-                        color: n.unread ? c.brand : c.textTertiary,
+                      leading: Row(
+                        mainAxisSize: MainAxisSize.min,
+                        children: [
+                          if (n.unread) ...[
+                            Semantics(
+                              label: l.inboxFilterUnread,
+                              container: true,
+                              child: Container(
+                                width: DeliverySpace.sm,
+                                height: DeliverySpace.sm,
+                                decoration: BoxDecoration(
+                                  color: c.brand,
+                                  shape: BoxShape.circle,
+                                ),
+                              ),
+                            ),
+                            const SizedBox(width: DeliverySpace.xs),
+                          ],
+                          Icon(
+                            noticeIcon(n.type, unread: n.unread),
+                            color: n.unread ? c.brand : c.textTertiary,
+                          ),
+                        ],
                       ),
                       title: Text(
                         n.title,

@@ -946,4 +946,29 @@ void main() {
       expect(find.text('Read today'), findsNothing);
     });
   });
+
+  group('DLVI6: unread notice row shows a dot, accessibly labeled', () {
+    testWidgets('an unread notice carries an accessibly-labeled dot; a read one does not', (t) async {
+      final handle = t.ensureSemantics();
+      final src = FakeInbox()
+        ..current = [n('u1', 'payout_sent'), n('r1', 'statement_ready', unread: false)];
+      await t.pumpWidget(host(InboxScreen(riderId: 'r1', source: src)));
+      await t.pumpAndSettle();
+      expect(find.bySemanticsLabel('Unread'), findsOneWidget);
+      handle.dispose();
+    });
+
+    testWidgets('the dot reflects live notice data as it arrives, not a one-time snapshot', (t) async {
+      final handle = t.ensureSemantics();
+      final src = FakeInbox()..current = [n('u1', 'payout_sent')];
+      await t.pumpWidget(host(InboxScreen(riderId: 'r1', source: src)));
+      await t.pumpAndSettle();
+      expect(find.bySemanticsLabel('Unread'), findsOneWidget);
+
+      src.notices.add([n('u1', 'payout_sent', unread: false)]);
+      await t.pumpAndSettle();
+      expect(find.bySemanticsLabel('Unread'), findsNothing);
+      handle.dispose();
+    });
+  });
 }
