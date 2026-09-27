@@ -464,50 +464,11 @@ class OrderProvider with ChangeNotifier {
     return _orders.where((order) => order.orderStatus == 'refunded').toList();
   }
 
-  // ============================================
-  // CANCEL ORDER
-  // ============================================
-  Future<bool> cancelOrder(String orderId, String reason) async {
-    try {
-      _isLoading = true;
-      _error = null;
-      notifyListeners();
-
-      debugPrint('❌ Cancelling order: $orderId');
-
-      await _firestore.collection('orders').doc(orderId).update({
-        'orderStatus': 'cancelled',
-        'updatedAt': FieldValue.serverTimestamp(),
-        'cancellationReason': reason,
-      });
-
-      // Add timeline event
-      await _firestore
-          .collection('orders')
-          .doc(orderId)
-          .collection('timeline')
-          .add({
-        'status': 'cancelled',
-        'title': 'Order Cancelled',
-        'description': reason,
-        'timestamp': FieldValue.serverTimestamp(),
-      });
-
-      // Reload order
-      await loadOrderById(orderId);
-
-      debugPrint('✅ Order cancelled');
-      _isLoading = false;
-      notifyListeners();
-      return true;
-    } catch (e) {
-      debugPrint('❌ Error cancelling order: $e');
-      _error = e.toString();
-      _isLoading = false;
-      notifyListeners();
-      return false;
-    }
-  }
+  // ADMR-35: cancelOrder (a raw Firestore write bypassing
+  // adminUpdateOrderStatus entirely) removed — its only caller,
+  // order_management_screen.dart's bulk-cancel action, now routes through
+  // updateOrderStatus below, the same canonical path every other status
+  // change already uses.
 
   // ============================================
   // UPDATE ORDER STATUS (FOR ADMIN)
@@ -636,50 +597,12 @@ class OrderProvider with ChangeNotifier {
     }
   }
 
-  // ============================================
-  // RETURN ORDER
-  // ============================================
-  Future<bool> returnOrder(String orderId, String reason) async {
-    try {
-      _isLoading = true;
-      _error = null;
-      notifyListeners();
-
-      debugPrint('🔄 Initiating return for order: $orderId');
-
-      await _firestore.collection('orders').doc(orderId).update({
-        'orderStatus': 'returned',
-        'updatedAt': FieldValue.serverTimestamp(),
-        'returnReason': reason,
-        'returnInitiatedAt': FieldValue.serverTimestamp(),
-      });
-
-      // Add timeline event
-      await _firestore
-          .collection('orders')
-          .doc(orderId)
-          .collection('timeline')
-          .add({
-        'status': 'returned',
-        'title': 'Return Initiated',
-        'description': reason,
-        'timestamp': FieldValue.serverTimestamp(),
-      });
-
-      await loadOrderById(orderId);
-
-      debugPrint('✅ Return initiated');
-      _isLoading = false;
-      notifyListeners();
-      return true;
-    } catch (e) {
-      debugPrint('❌ Error initiating return: $e');
-      _error = e.toString();
-      _isLoading = false;
-      notifyListeners();
-      return false;
-    }
-  }
+  // ADMR-35: returnOrder removed — zero callers anywhere in the admin app,
+  // and its own 'returned' status was never a member of
+  // adminUpdateOrderStatus's VALID_STATUSES either, so it could not have
+  // produced a status the rest of the system recognizes even if it were
+  // called. Commercial returns (register domain C11) remain a genuinely
+  // unbuilt policy area, not something this phase invents.
 
   // ============================================
   // SEARCH ORDERS

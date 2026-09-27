@@ -24,6 +24,12 @@ import * as admin from "firebase-admin";
 // refundable" means for an order.
 import { isPaid, isCashOnDelivery } from "../seller/sellerTransitionOrder";
 
+// ADMR-35: bounds for an operator-supplied reason, mirroring
+// riderSupport.ts's own MAX_MESSAGE convention for the same class of
+// free-text field.
+const MIN_REASON_LENGTH = 3;
+const MAX_REASON_LENGTH = 500;
+
 // Matches apps/admin/lib/screens/admin/orders/widgets/order_status_updater.dart's
 // own _buildStatusChips() list exactly — the only statuses any admin UI can
 // currently select from.
@@ -211,12 +217,26 @@ export const adminUpdateOrderStatus = onCall(
         return { outcome: "validation_failed", message: transitionProblem };
       }
 
-      if (isDangerousOrderStatusTransition(currentStatus, newStatus) && !reason) {
-        return {
-          outcome: "validation_failed",
-          message:
-            "A reason is required to change the status of a delivered order.",
-        };
+      if (isDangerousOrderStatusTransition(currentStatus, newStatus)) {
+        // ADMR-35: the client previously always sent a non-empty,
+        // machine-generated description ("Status updated to X."), so this
+        // gate's own `!reason` check could never actually fire — a length
+        // floor here is real defense in depth now that the client only
+        // sends a reason when an operator actually typed one, not just a
+        // client-side nicety. MIN/MAX mirror riderSupport.ts's own
+        // MAX_MESSAGE convention for the same kind of free-text field.
+        if (!reason || reason.length < MIN_REASON_LENGTH) {
+          return {
+            outcome: "validation_failed",
+            message: `A reason of at least ${MIN_REASON_LENGTH} characters is required to change the status of a delivered order.`,
+          };
+        }
+        if (reason.length > MAX_REASON_LENGTH) {
+          return {
+            outcome: "validation_failed",
+            message: `Reason must be at most ${MAX_REASON_LENGTH} characters.`,
+          };
+        }
       }
 
       const cancelling = newStatus === "cancelled";

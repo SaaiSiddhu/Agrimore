@@ -84,17 +84,13 @@ class AdminService {
             .toList());
   }
 
-  Future<void> updateOrderStatus(String orderId, String status) async {
-    try {
-      await _firestore.collection('orders').doc(orderId).update({
-        'status': status,
-        'updatedAt': FieldValue.serverTimestamp(),
-      });
-    } catch (e) {
-      debugPrint('Error updating order status: $e');
-      throw Exception('Failed to update order status: $e');
-    }
-  }
+  // ADMR-35: updateOrderStatus removed — zero callers anywhere in the
+  // repo (confirmed by a repo-wide grep, not just apps/admin), and it only
+  // ever wrote the legacy `status` field, never the canonical `orderStatus`
+  // OrderModel actually reads first — a real inconsistency it never
+  // reached in practice, since nothing called it. The canonical path is
+  // functions/src/admin/adminOrderActions.ts's adminUpdateOrderStatus,
+  // called via OrderProvider.updateOrderStatus.
 
   // ============================================
   // USERS

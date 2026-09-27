@@ -259,6 +259,33 @@ async function main() {
       `outcome=${r.result?.outcome} timelineUpdatedBy=${entry?.updatedBy}(expect admin)`);
   }
 
+  // 17 — ADMR-35: a reason that satisfies the old bare non-empty check but
+  // is obviously not a real explanation (a client-generated one-token
+  // string, or a stray keystroke) is now refused too — the client no
+  // longer ever sends a fake reason, so this is real defense in depth
+  // against any other caller of this same server command.
+  {
+    const oid = "phase64-o17";
+    await seedOrder(oid, "delivered");
+    const r = await call({ orderId: oid, newStatus: "cancelled", requestId: nextRequestId(), reason: "ok" }, ADMIN_AUTH);
+    const o = await orderDoc(oid);
+    record("s17_leaving_delivered_with_too_short_reason_refused",
+      r.ok && r.result.outcome === "validation_failed" && /at least/i.test(r.result.message || "") && o.orderStatus === "delivered",
+      `outcome=${r.result?.outcome} message=${r.result?.message} orderStatus=${o.orderStatus}(expect delivered, unchanged)`);
+  }
+
+  // 18 — an oversized reason is refused too, not silently truncated.
+  {
+    const oid = "phase64-o18";
+    await seedOrder(oid, "delivered");
+    const tooLong = "x".repeat(501);
+    const r = await call({ orderId: oid, newStatus: "cancelled", requestId: nextRequestId(), reason: tooLong }, ADMIN_AUTH);
+    const o = await orderDoc(oid);
+    record("s18_leaving_delivered_with_oversized_reason_refused",
+      r.ok && r.result.outcome === "validation_failed" && /at most/i.test(r.result.message || "") && o.orderStatus === "delivered",
+      `outcome=${r.result?.outcome} message=${r.result?.message} orderStatus=${o.orderStatus}(expect delivered, unchanged)`);
+  }
+
   console.log("\n=== SUMMARY ===");
   for (const [k, v] of Object.entries(results)) console.log(`${k}: ${v}`);
   console.log(allPassed ? "\nALL PASSED" : "\nSOME FAILED");
