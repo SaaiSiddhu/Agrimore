@@ -1,5 +1,6 @@
 // ============================================================
-//  Finance reconciliation — Phase ADMR-80, hardened ADMR-82, extended ADMR-85
+//  Finance reconciliation — Phase ADMR-80, hardened ADMR-82,
+//  extended ADMR-85, cursor contract fixed ADMR-88
 // ============================================================
 //
 // A READ-ONLY admin investigation surface over the three payout paths this
@@ -15,25 +16,57 @@
 // fresh re-read before reporting them).
 //
 // ADMR-85 found and closed two further gaps a fresh full read of this exact
-// file surfaced, plus added real scan continuation:
+// file surfaced, plus added scan continuation — but that continuation
+// contract itself had a real bug, found and fixed here:
 //  - isCandidateStillReal only ever revalidated 3 PARENT fields, and was only
-//    ever called for 3 of the 6 finding kinds — missing_destination_snapshot,
-//    paid_missing_reference (all three actor types) and malformed_amount were
-//    pushed straight into the result with NO revalidation at all. Every
-//    finding kind is now revalidated the same way, via evaluateWithdrawal()
-//    below shared identically between first-pass detection, the scan's own
-//    confirmation re-read, and on-demand recheck — so confirmation can never
-//    silently drift out of sync with what detection actually checks.
+//    ever called for 3 of the 6 finding kinds. Every finding kind is now
+//    revalidated the same way, via evaluateWithdrawal() below shared
+//    identically between first-pass detection, the scan's own confirmation
+//    re-read, and on-demand recheck.
 //  - no check anywhere re-verified a seller_payouts row's own withdrawalId/
-//    sellerId still pointed back at the withdrawal it is listed under — a
-//    payout row that drifted to a different withdrawal or seller produced no
-//    finding at all. New kind: payout_ownership_mismatch.
-//  - RECENT_LIMIT per status per collection had no continuation mechanism —
-//    once 200 more-recent rows existed in a status, an older row could never
-//    be reached. Every bounded query now supports a cursor (compound-ordered
-//    on [orderField desc, documentId desc] for a stable tie-break on equal
-//    timestamps) and the result carries `nextCursor`/`hasMore` for real
-//    pagination past the page limit.
+//    sellerId still pointed back at the withdrawal it is listed under.
+//    New kind: payout_ownership_mismatch.
+//  - RECENT_LIMIT per status per collection had no continuation mechanism.
+//
+// ADMR-88 fixed the continuation contract ADMR-85 itself shipped with a real
+// bug: the scan's own OUTPUT used `null` for "this group is exhausted", but
+// the INPUT parser (`parseStatusCursor`) returned `undefined` for BOTH
+// v===undefined (a key genuinely absent) AND v===null — `!v` is true for
+// both. A client that takes a scan result's own nextCursor and passes it
+// straight back as the next call's cursor (the only sane way to "continue" —
+// and exactly what finance_reconciliation_screen.dart's own _loadMore does)
+// therefore had every already-exhausted group's `null` silently
+// reinterpreted as "absent", restarting that group's query from the very
+// top on every subsequent page — not a rare edge case, but the NORMAL
+// outcome the very first time a scan spans groups of different lengths,
+// which is the ordinary case, not an unusual one. The root cause was never
+// really "a missed null check": JS's null/undefined distinction does not
+// survive a callable's own JSON marshalling reliably in the first place, so
+// encoding a THIRD, load-bearing meaning ("exhausted") into that distinction
+// was unsound from the start. Fixed by replacing the inferred null/undefined
+// encoding with an explicit tagged GroupCursorState — {state:"start"} /
+// {state:"continue", cursor} / {state:"exhausted"} — for both input and
+// output, so "exhausted" can never be silently reinterpreted as "absent"
+// again. The same pass fixed a second, related precision bug: StatusCursor
+// stored only `Timestamp.toMillis()`, which truncates Firestore's own
+// sub-millisecond nanosecond precision (verified empirically: a Timestamp
+// round-tripped through toMillis()/fromMillis() is NOT isEqual() to the
+// original) — StatusCursor now stores {seconds, nanoseconds} directly,
+// Firestore's own lossless representation. A cursor schema version is
+// validated and rejected outright on mismatch, and any other malformed
+// cursor shape is rejected the same way — never silently treated as
+// "start", which would have quietly re-scanned already-covered rows without
+// even the (buggy) intent of resuming them. The same pass also tightened
+// confirmation's own read coherence: a withdrawal's parent and its children
+// used to be re-read via separate, sequential calls (a parent .get(), then
+// a Promise.all of child .get()s) — each could observe a different instant,
+// so "confirmed" was never quite the snapshot-consistent guarantee its own
+// name implied. Both the scan's own confirmation pass and recheckFindingCore
+// now read parent and children together via db.getAll(), a single Firestore
+// call returning a consistent snapshot across multiple documents — sound
+// because payoutIds is set once at request time and never mutated
+// afterward, so the ids already known are still the right ones to read
+// alongside their parent.
 //
 // Reconciliation contract:
 //   source records    seller_withdrawals (+ their own payoutIds' seller_payouts
@@ -48,7 +81,8 @@
 //                      across the whole scan
 //   query strategy     bounded: up to `pageLimit` (default RECENT_LIMIT) rows
 //                      per status per collection, ordered by createdAt/paidAt
-//                      then documentId; cursor-resumable past that page; a
+//                      then documentId; cursor-resumable past that page via
+//                      an explicit, versioned, tagged per-group state; a
 //                      hard CHILD_READ_BUDGET across the whole run
 //   operator action    read the finding, follow its own record ids, decide —
 //                      this function only ever reads
@@ -70,6 +104,13 @@ export const RECENT_LIMIT = 200;
  * withdrawal can legitimately hold up to sellerWallet.ts's own MAX_PAYOUTS_PER_WITHDRAWAL (400)
  * rows, and confirmation re-reads its children a second time, so this budget covers both passes. */
 export const CHILD_READ_BUDGET = 2000;
+
+/** Bumped whenever the query/ordering contract changes in a way that would make an old cursor
+ * unsafe to resume from (a different sort, a different compound index, …). A cursor citing a
+ * different version is REJECTED outright (HttpsError), never silently treated as "start" — a
+ * silent restart would quietly re-scan rows the caller already believed were covered, which is
+ * exactly the class of bug this whole phase exists to close. */
+export const CURSOR_VERSION = 1;
 
 export type ReconciliationFindingKind =
   | "withdrawal_payout_status_mismatch"
@@ -101,7 +142,9 @@ export interface ReconciliationFinding {
 
 /** What was actually inspected for one collection/status, never conflated with the collection's
  * total size. `totalInStatuses` counts only the SAME status this page covers (a cheap aggregate
- * query, not a per-document read), so `truncated` is a real, honest signal, not a guess. */
+ * query, not a per-document read), so `truncated` is a real, honest signal, not a guess. Empty
+ * (inspected 0, statusesCovered []) for a group this page skipped entirely because it was already
+ * exhausted — that skip is itself informative (no cost was spent re-confirming nothing changed). */
 export interface CoverageReport {
   inspected: number;
   statusesCovered: string[];
@@ -110,26 +153,45 @@ export interface CoverageReport {
   totalInStatuses: number;
 }
 
-/** A resume point for one (collection, status) query: the ordered field's own value in
- * milliseconds and the document id, matching the compound [orderField desc, documentId desc]
- * ordering every bounded query now uses — a stable tie-break when many rows share one timestamp. */
+/** A resume point for one (collection, status) query: the ordered field's own value, stored
+ * losslessly (Firestore Timestamps carry sub-millisecond nanosecond precision that a single
+ * milliseconds number cannot represent — ADMR-88's own fix), plus the document id, matching the
+ * compound [orderField desc, documentId desc] ordering every bounded query uses — a stable
+ * tie-break when many rows share one timestamp. */
 export interface StatusCursor {
-  value: number;
+  seconds: number;
+  nanoseconds: number;
   id: string;
 }
 
+/** One group's own continuation state, ALWAYS one of exactly three explicit, tagged
+ * possibilities — never inferred from whether a field is present, null or undefined, which is
+ * the distinction ADMR-85's own bug silently collapsed. "start": no progress yet (a fresh scan,
+ * or the caller explicitly wants to re-scan this group from the top). "continue": resume strictly
+ * after this exact point. "exhausted": every row in this status has already been seen; do not
+ * query it again — this state, once reached, is a fixed point: round-tripping it back in must
+ * reproduce it, never regress to "start". */
+export type GroupCursorState =
+  | { state: "start" }
+  | { state: "continue"; cursor: StatusCursor }
+  | { state: "exhausted" };
+
 export interface ScanCursor {
-  sellerWithdrawals: { paid: StatusCursor | null; requested: StatusCursor | null };
-  riderPayouts: StatusCursor | null;
-  employeePayouts: StatusCursor | null;
+  version: number;
+  sellerWithdrawals: { paid: GroupCursorState; requested: GroupCursorState };
+  riderPayouts: GroupCursorState;
+  employeePayouts: GroupCursorState;
 }
 
-/** What a caller passes IN to resume a scan — any subset; an omitted group/status starts from the
- * most recent row, exactly like a first scan. */
+/** What a caller passes IN to resume a scan — any group may be omitted entirely, which means
+ * "start" for that group (a fresh first scan sends `{}`, or omits sub-fields it has no opinion
+ * on yet). A group that IS present must be a fully-shaped GroupCursorState — never a bare
+ * StatusCursor and never null; either is rejected as malformed, not silently reinterpreted. */
 export interface ScanCursorInput {
-  sellerWithdrawals?: { paid?: StatusCursor; requested?: StatusCursor };
-  riderPayouts?: StatusCursor;
-  employeePayouts?: StatusCursor;
+  version?: number;
+  sellerWithdrawals?: { paid?: GroupCursorState; requested?: GroupCursorState };
+  riderPayouts?: GroupCursorState;
+  employeePayouts?: GroupCursorState;
 }
 
 export interface ReconciliationResult {
@@ -138,9 +200,13 @@ export interface ReconciliationResult {
   incomplete: boolean;
   incompleteReasons: string[];
   findings: ReconciliationFinding[];
-  /** Pass this back as `cursor` to continue past this page; a group with `null` is exhausted. */
+  /** Pass this back VERBATIM, opaquely, as `cursor` to continue past this page — a caller must
+   * never reconstruct or reinterpret it. A group in the "exhausted" state MUST still be included
+   * (not stripped) when passed back; that is precisely the state the fixed parser now honors
+   * instead of silently discarding. */
   nextCursor: ScanCursor;
-  /** True iff any group in `nextCursor` is non-null — a cheap top-level "there is more" signal. */
+  /** True iff any group in `nextCursor` is NOT "exhausted" — a cheap top-level "there is more"
+   * signal. */
   hasMore: boolean;
 }
 
@@ -250,28 +316,45 @@ export function evaluateWithdrawal(
   return out;
 }
 
+function timestampToCursor(t: unknown, id: string): StatusCursor | null {
+  if (!t || typeof t !== "object") return null;
+  const maybe = t as { seconds?: unknown; nanoseconds?: unknown };
+  if (typeof maybe.seconds !== "number" || typeof maybe.nanoseconds !== "number") return null;
+  return { seconds: maybe.seconds, nanoseconds: maybe.nanoseconds, id };
+}
+
 /** One status's own bounded, cursor-resumable query plus its own honest coverage report.
  * Ordered by [orderField desc, documentId desc] — the documentId tiebreak makes paging stable
  * even when many rows share the exact same orderField timestamp, which a single-field order
- * cannot guarantee. `possibleBlindSpot` is a first-page-only, honest signal: this page was NOT
- * full (Firestore says no more rows match the ordered query) yet the status's own total count is
+ * cannot guarantee. An "exhausted" groupState short-circuits to a zero-cost result — no query,
+ * no count, nothing to confirm — matching the whole point of marking a group exhausted in the
+ * first place. `possibleBlindSpot` is a first-page-only, honest signal: this page was NOT full
+ * (Firestore says no more rows match the ordered query) yet the status's own total count is
  * higher — most plausibly because some rows are missing `orderField` entirely (Firestore's
  * orderBy silently excludes documents missing the ordered field), which no cursor can ever reach. */
 async function boundedByStatus(
-  db: Db, collection: string, status: string, orderField: string, limit: number, startAfter?: StatusCursor
+  db: Db, collection: string, status: string, orderField: string, limit: number, groupState: GroupCursorState
 ): Promise<{
   docs: FirebaseFirestore.QueryDocumentSnapshot[];
   coverage: CoverageReport;
-  nextCursor: StatusCursor | null;
+  nextCursor: GroupCursorState;
   possibleBlindSpot: boolean;
 }> {
+  if (groupState.state === "exhausted") {
+    return {
+      docs: [],
+      coverage: { inspected: 0, statusesCovered: [], limit, truncated: false, totalInStatuses: 0 },
+      nextCursor: { state: "exhausted" },
+      possibleBlindSpot: false,
+    };
+  }
   let q: FirebaseFirestore.Query = db
     .collection(collection)
     .where("status", "==", status)
     .orderBy(orderField, "desc")
     .orderBy(FieldPath.documentId(), "desc");
-  if (startAfter) {
-    q = q.startAfter(Timestamp.fromMillis(startAfter.value), startAfter.id);
+  if (groupState.state === "continue") {
+    q = q.startAfter(new Timestamp(groupState.cursor.seconds, groupState.cursor.nanoseconds), groupState.cursor.id);
   }
   const [snap, countSnap] = await Promise.all([
     q.limit(limit).get(),
@@ -279,15 +362,14 @@ async function boundedByStatus(
   ]);
   const total = countSnap.data().count;
   const lastDoc = snap.docs[snap.docs.length - 1];
-  const lastRaw = lastDoc ? lastDoc.get(orderField) : undefined;
-  const lastMs = lastRaw && typeof lastRaw.toMillis === "function" ? lastRaw.toMillis() : null;
-  const nextCursor: StatusCursor | null =
-    snap.docs.length === limit && lastDoc && lastMs !== null ? { value: lastMs, id: lastDoc.id } : null;
+  const lastCursor = lastDoc ? timestampToCursor(lastDoc.get(orderField), lastDoc.id) : null;
+  const nextCursor: GroupCursorState =
+    snap.docs.length === limit && lastCursor ? { state: "continue", cursor: lastCursor } : { state: "exhausted" };
   return {
     docs: snap.docs,
     coverage: { inspected: snap.docs.length, statusesCovered: [status], limit, truncated: total > snap.docs.length, totalInStatuses: total },
     nextCursor,
-    possibleBlindSpot: !startAfter && snap.docs.length < limit && total > snap.docs.length,
+    possibleBlindSpot: groupState.state === "start" && snap.docs.length < limit && total > snap.docs.length,
   };
 }
 
@@ -306,11 +388,11 @@ function mergeCoverage(a: CoverageReport, b: CoverageReport): CoverageReport {
  * across BOTH the first pass and the confirmation pass below. */
 async function checkSellerWithdrawals(
   db: Db, budget: { remaining: number }, incompleteReasons: string[], pageLimit: number,
-  cursorIn: { paid?: StatusCursor; requested?: StatusCursor }
+  cursorIn: { paid: GroupCursorState; requested: GroupCursorState }
 ): Promise<{
   findings: ReconciliationFinding[];
   coverage: CoverageReport;
-  nextCursor: { paid: StatusCursor | null; requested: StatusCursor | null };
+  nextCursor: { paid: GroupCursorState; requested: GroupCursorState };
 }> {
   const initialBudget = budget.remaining;
   const findings: ReconciliationFinding[] = [];
@@ -350,26 +432,41 @@ async function checkSellerWithdrawals(
     const firstPass = evaluateWithdrawal(w.id, d, payoutSnaps);
     if (firstPass.length === 0) continue;
 
-    // Confirmation: an independent, later, targeted fresh re-read of the SAME withdrawal and its
-    // (possibly changed) current children — never a comparison of a few cached fields. Reuses the
-    // exact same evaluation used above, so confirmation cannot drift out of sync with detection.
-    const freshSnap = await db.collection("seller_withdrawals").doc(w.id).get();
-    if (!freshSnap.exists) continue; // the withdrawal itself is gone — nothing left to report
-    const freshD = freshSnap.data()!;
-    const freshPayoutIds: string[] = Array.isArray(freshD.payoutIds) ? freshD.payoutIds.map(String) : [];
+    // Confirmation: an independent, later, SNAPSHOT-CONSISTENT re-read of the SAME withdrawal and
+    // its children via getAll() — one Firestore call reading multiple documents as of a single
+    // consistent moment, strictly stronger than the parent and each child being read by separate
+    // .get() calls that could each observe a different instant. Reuses the exact same evaluation
+    // used above, so confirmation cannot drift out of sync with detection. Reuses THIS withdrawal's
+    // own already-known payoutIds (not a fresh read of them first) rather than reading the parent
+    // alone to discover its current payoutIds before deciding what else to read — sound because
+    // payoutIds is written once at request time and never mutated afterward (requestWithdrawalCore's
+    // own contract; no other write path in this codebase touches it), so the SAME ids the first pass
+    // already has are still the right children to re-read, and reading parent+children together in
+    // one getAll() call is exactly what makes this a genuine snapshot rather than two reads that
+    // could straddle a real write landing in between them.
+    let freshD: FirebaseFirestore.DocumentData | undefined;
     let freshSnaps: FirebaseFirestore.DocumentSnapshot[] | null = null;
     let childrenUnaffordable = false;
-    if (freshPayoutIds.length === 0) {
+    if (payoutIds.length === 0) {
+      const freshSnap = await db.collection("seller_withdrawals").doc(w.id).get();
+      freshD = freshSnap.exists ? freshSnap.data() : undefined;
       freshSnaps = [];
-    } else if (freshPayoutIds.length <= budget.remaining) {
-      budget.remaining -= freshPayoutIds.length;
-      freshSnaps = await Promise.all(freshPayoutIds.map((id) => db.collection("seller_payouts").doc(id).get()));
+    } else if (payoutIds.length <= budget.remaining) {
+      budget.remaining -= payoutIds.length;
+      const refs = [db.collection("seller_withdrawals").doc(w.id), ...payoutIds.map((id) => db.collection("seller_payouts").doc(id))];
+      const snaps = await db.getAll(...refs);
+      const [freshWSnap, ...freshChildSnaps] = snaps;
+      freshD = freshWSnap.exists ? freshWSnap.data() : undefined;
+      freshSnaps = freshChildSnaps;
     } else {
+      const freshSnap = await db.collection("seller_withdrawals").doc(w.id).get();
+      freshD = freshSnap.exists ? freshSnap.data() : undefined;
       childrenUnaffordable = true;
       incompleteReasons.push(
         `Child-read budget (${initialBudget}) reached while re-confirming seller withdrawal ${w.id} — its finding(s) are reported as unconfirmed, not independently re-verified this scan.`
       );
     }
+    if (freshD === undefined) continue; // the withdrawal itself is gone — nothing left to report
     const reconfirmed = new Set(evaluateWithdrawal(w.id, freshD, freshSnaps).map((f) => f.id));
 
     for (const cand of firstPass) {
@@ -391,9 +488,9 @@ async function checkSellerWithdrawals(
  * destination snapshot to cross-check here, so that check does not apply to riders. Every
  * candidate is now confirmed against an independent fresh re-read before being reported. */
 async function checkRiderPayouts(
-  db: Db, pageLimit: number, incompleteReasons: string[], cursorIn?: StatusCursor
-): Promise<{ findings: ReconciliationFinding[]; coverage: CoverageReport; nextCursor: StatusCursor | null }> {
-  const { docs, coverage, nextCursor, possibleBlindSpot } = await boundedByStatus(db, "rider_payouts", "paid", "paidAt", pageLimit, cursorIn);
+  db: Db, pageLimit: number, incompleteReasons: string[], groupState: GroupCursorState
+): Promise<{ findings: ReconciliationFinding[]; coverage: CoverageReport; nextCursor: GroupCursorState }> {
+  const { docs, coverage, nextCursor, possibleBlindSpot } = await boundedByStatus(db, "rider_payouts", "paid", "paidAt", pageLimit, groupState);
   if (possibleBlindSpot) {
     incompleteReasons.push(
       `${coverage.totalInStatuses - coverage.inspected} paid rider payout(s) exist but were never returned by this scan's own ordered query — likely missing a paidAt value.`
@@ -419,9 +516,9 @@ async function checkRiderPayouts(
  * already in rupees (this collection predates the whole-paise convention seller/rider use — see
  * riderMoney.ts's own header comment on that history), so no paise conversion is applied. */
 async function checkEmployeePayouts(
-  db: Db, pageLimit: number, incompleteReasons: string[], cursorIn?: StatusCursor
-): Promise<{ findings: ReconciliationFinding[]; coverage: CoverageReport; nextCursor: StatusCursor | null }> {
-  const { docs, coverage, nextCursor, possibleBlindSpot } = await boundedByStatus(db, "employee_payouts", "paid", "paidAt", pageLimit, cursorIn);
+  db: Db, pageLimit: number, incompleteReasons: string[], groupState: GroupCursorState
+): Promise<{ findings: ReconciliationFinding[]; coverage: CoverageReport; nextCursor: GroupCursorState }> {
+  const { docs, coverage, nextCursor, possibleBlindSpot } = await boundedByStatus(db, "employee_payouts", "paid", "paidAt", pageLimit, groupState);
   if (possibleBlindSpot) {
     incompleteReasons.push(
       `${coverage.totalInStatuses - coverage.inspected} paid associate payout(s) exist but were never returned by this scan's own ordered query — likely missing a paidAt value.`
@@ -446,7 +543,10 @@ async function checkEmployeePayouts(
 
 /** `childReadBudget` defaults to the real CHILD_READ_BUDGET; overridable so a test can prove the
  * exhaustion path fires without seeding thousands of documents. `cursor`/`pageLimit` default to a
- * fresh first page at the real RECENT_LIMIT; overridable the same way, for the same reason. */
+ * fresh first page at the real RECENT_LIMIT; overridable the same way, for the same reason. This
+ * function does NOT validate cursor shape (that is parseScanCursorInput's job, at the onCall
+ * boundary, where a malformed cursor becomes a clear client-facing error) — it only resolves an
+ * omitted group to "start", which is the documented, correct meaning of omission. */
 export async function financeReconciliationScanCore(
   db: Db,
   nowMs: number,
@@ -456,21 +556,26 @@ export async function financeReconciliationScanCore(
 ): Promise<ReconciliationResult> {
   const incompleteReasons: string[] = [];
   const budget = { remaining: childReadBudget };
+  const swPaid: GroupCursorState = cursor.sellerWithdrawals?.paid ?? { state: "start" };
+  const swRequested: GroupCursorState = cursor.sellerWithdrawals?.requested ?? { state: "start" };
+  const riderState: GroupCursorState = cursor.riderPayouts ?? { state: "start" };
+  const employeeState: GroupCursorState = cursor.employeePayouts ?? { state: "start" };
   const [seller, rider, employee] = await Promise.all([
-    checkSellerWithdrawals(db, budget, incompleteReasons, pageLimit, cursor.sellerWithdrawals ?? {}),
-    checkRiderPayouts(db, pageLimit, incompleteReasons, cursor.riderPayouts),
-    checkEmployeePayouts(db, pageLimit, incompleteReasons, cursor.employeePayouts),
+    checkSellerWithdrawals(db, budget, incompleteReasons, pageLimit, { paid: swPaid, requested: swRequested }),
+    checkRiderPayouts(db, pageLimit, incompleteReasons, riderState),
+    checkEmployeePayouts(db, pageLimit, incompleteReasons, employeeState),
   ]);
   const nextCursor: ScanCursor = {
+    version: CURSOR_VERSION,
     sellerWithdrawals: { paid: seller.nextCursor.paid, requested: seller.nextCursor.requested },
     riderPayouts: rider.nextCursor,
     employeePayouts: employee.nextCursor,
   };
   const hasMore =
-    nextCursor.sellerWithdrawals.paid !== null ||
-    nextCursor.sellerWithdrawals.requested !== null ||
-    nextCursor.riderPayouts !== null ||
-    nextCursor.employeePayouts !== null;
+    nextCursor.sellerWithdrawals.paid.state !== "exhausted" ||
+    nextCursor.sellerWithdrawals.requested.state !== "exhausted" ||
+    nextCursor.riderPayouts.state !== "exhausted" ||
+    nextCursor.employeePayouts.state !== "exhausted";
   return {
     observedAt: nowMs,
     coverage: { sellerWithdrawals: seller.coverage, riderPayouts: rider.coverage, employeePayouts: employee.coverage },
@@ -505,11 +610,22 @@ export async function recheckFindingCore(db: Db, input: RecheckInput): Promise<R
   if (actorType === "seller" && SELLER_WITHDRAWAL_KINDS.has(kind)) {
     const w = await db.collection("seller_withdrawals").doc(recordId).get();
     if (!w.exists) return { kind: "not_found" };
-    const d = w.data()!;
-    const payoutIds: string[] = Array.isArray(d.payoutIds) ? d.payoutIds.map(String) : [];
-    const payoutSnaps = payoutIds.length
-      ? await Promise.all(payoutIds.map((id) => db.collection("seller_payouts").doc(id).get()))
-      : [];
+    const payoutIds: string[] = Array.isArray(w.data()!.payoutIds) ? w.data()!.payoutIds.map(String) : [];
+    // payoutIds is set once at request time and never mutated afterward (see the scan's own
+    // confirmation pass for the same reasoning), so re-reading the withdrawal TOGETHER with its
+    // children in one getAll() call gives a genuine snapshot of both as of one consistent moment,
+    // rather than evaluating against the parent and each child each read at a possibly different
+    // instant — the evaluation below always uses this second, snapshot-consistent read, never the
+    // first (which existed only to discover which children to read alongside it).
+    let d = w.data()!;
+    let payoutSnaps: FirebaseFirestore.DocumentSnapshot[] = [];
+    if (payoutIds.length > 0) {
+      const refs = [db.collection("seller_withdrawals").doc(recordId), ...payoutIds.map((id) => db.collection("seller_payouts").doc(id))];
+      const [wSnap2, ...childSnaps] = await db.getAll(...refs);
+      if (!wSnap2.exists) return { kind: "not_found" };
+      d = wSnap2.data()!;
+      payoutSnaps = childSnaps;
+    }
     const found = evaluateWithdrawal(recordId, d, payoutSnaps).find((f) => f.kind === kind);
     return found ? { kind: "confirmed", finding: { ...found, confirmation: "confirmed" } } : { kind: "resolved" };
   }
@@ -578,21 +694,62 @@ export async function recheckFindingCore(db: Db, input: RecheckInput): Promise<R
   return { kind: "not_found" };
 }
 
-function parseStatusCursor(v: unknown): StatusCursor | undefined {
-  if (!v || typeof v !== "object") return undefined;
-  const r = v as Record<string, unknown>;
-  if (typeof r.value !== "number" || typeof r.id !== "string" || !r.id.trim()) return undefined;
-  return { value: r.value, id: r.id };
+/** Parses ONE group's cursor from raw callable input. `undefined` (the key genuinely absent) is
+ * the only value that resolves to "start" implicitly — every other shape must be a fully-formed,
+ * explicitly-tagged GroupCursorState, or this throws. This is the fix for the ADMR-85 bug: a
+ * `null` value (which is what a JSON round-trip of this SAME module's own "exhausted" sentinel
+ * used to produce) is no longer silently accepted as "absent" — it is now simply not a valid
+ * GroupCursorState shape at all, and is rejected with a clear message instead of being
+ * misinterpreted as "start". */
+export function parseGroupCursorState(v: unknown, label: string): GroupCursorState {
+  if (v === undefined) return { state: "start" };
+  if (v && typeof v === "object") {
+    const r = v as Record<string, unknown>;
+    if (r.state === "start") return { state: "start" };
+    if (r.state === "exhausted") return { state: "exhausted" };
+    if (r.state === "continue" && r.cursor && typeof r.cursor === "object") {
+      const c = r.cursor as Record<string, unknown>;
+      if (typeof c.seconds === "number" && typeof c.nanoseconds === "number" && typeof c.id === "string" && c.id.trim()) {
+        return { state: "continue", cursor: { seconds: c.seconds, nanoseconds: c.nanoseconds, id: c.id } };
+      }
+    }
+  }
+  throw new HttpsError(
+    "invalid-argument",
+    `Malformed scan cursor for ${label} — expected {state:"start"}, {state:"exhausted"} or {state:"continue", cursor:{seconds, nanoseconds, id}}.`
+  );
 }
 
-function parseScanCursorInput(v: unknown): ScanCursorInput {
-  if (!v || typeof v !== "object") return {};
+function parseObjectField(v: unknown, label: string): Record<string, unknown> {
+  if (v === undefined) return {};
+  if (v !== null && typeof v === "object") return v as Record<string, unknown>;
+  throw new HttpsError("invalid-argument", `Malformed scan cursor for ${label}.`);
+}
+
+/** Parses and validates a WHOLE cursor from raw callable input — the only place a malformed or
+ * version-mismatched cursor is ever accepted or rejected; financeReconciliationScanCore itself
+ * trusts its own `cursor` parameter completely, exactly like every other already-validated
+ * core-function input in this codebase. Rejects (never silently restarts) a cursor whose own
+ * `version` does not match CURSOR_VERSION — resuming against a query/ordering contract the cursor
+ * was not produced under is unsafe, not merely inconvenient. */
+export function parseScanCursorInput(v: unknown): ScanCursorInput {
+  if (v === undefined || v === null) return {};
+  if (typeof v !== "object") throw new HttpsError("invalid-argument", "Malformed scan cursor.");
   const r = v as Record<string, unknown>;
-  const sw = r.sellerWithdrawals && typeof r.sellerWithdrawals === "object" ? (r.sellerWithdrawals as Record<string, unknown>) : {};
+  if (r.version !== undefined && r.version !== CURSOR_VERSION) {
+    throw new HttpsError(
+      "invalid-argument",
+      `This cursor was produced by a different scan version (${String(r.version)}) than this server runs (${CURSOR_VERSION}) — start a new scan instead of continuing this one.`
+    );
+  }
+  const sw = parseObjectField(r.sellerWithdrawals, "sellerWithdrawals");
   return {
-    sellerWithdrawals: { paid: parseStatusCursor(sw.paid), requested: parseStatusCursor(sw.requested) },
-    riderPayouts: parseStatusCursor(r.riderPayouts),
-    employeePayouts: parseStatusCursor(r.employeePayouts),
+    sellerWithdrawals: {
+      paid: parseGroupCursorState(sw.paid, "sellerWithdrawals.paid"),
+      requested: parseGroupCursorState(sw.requested, "sellerWithdrawals.requested"),
+    },
+    riderPayouts: parseGroupCursorState(r.riderPayouts, "riderPayouts"),
+    employeePayouts: parseGroupCursorState(r.employeePayouts, "employeePayouts"),
   };
 }
 

@@ -46,6 +46,21 @@
 //     underlying record is legitimately fixed; not_found for a vanished one
 //  r19 (ADMR-85) recheckFindingCore for a rider paid_missing_reference —
 //     same confirmed → resolved transition, the non-seller path
+//  r20 (ADMR-88) THE multi-group cursor round-trip regression: one group
+//     exhausts while another still has more; page 2 is requested by
+//     passing page 1's own nextCursor straight back unmodified (the only
+//     realistic client behavior) — the exhausted group must NOT be
+//     rescanned, must cost zero reads, and "exhausted" must be a fixed point
+//  r21 (ADMR-88) sub-millisecond precision survives serialization: two
+//     records sharing the same millisecond when naively truncated but
+//     genuinely different real Firestore timestamps page correctly
+//  r22 (ADMR-88) a cursor citing a mismatched schema version is rejected,
+//     never silently treated as "start"
+//  r23 (ADMR-88) the exact value that caused the original bug — a bare
+//     `null` — is rejected as malformed cursor input, not silently
+//     reinterpreted as "start"; same for other non-object garbage
+//  r24 (ADMR-88) a genuinely absent field (no key at all) is the only value
+//     that resolves to "start" implicitly
 // Run with: firebase emulators:exec --only firestore "node scripts/phaseADMR80_finance_reconciliation_test.js"
 process.env.FIRESTORE_EMULATOR_HOST = process.env.FIRESTORE_EMULATOR_HOST || "127.0.0.1:8080";
 const PROJECT = process.env.GCLOUD_PROJECT || "demo-admr80-reconciliation";
@@ -54,7 +69,10 @@ const admin = require("firebase-admin");
 if (admin.apps.length === 0) admin.initializeApp({ projectId: PROJECT });
 const db = admin.firestore();
 const { Timestamp } = require("firebase-admin/firestore");
-const { financeReconciliationScanCore, evaluateWithdrawal, recheckFindingCore, CHILD_READ_BUDGET } = require("../lib/admin/financeReconciliation");
+const {
+  financeReconciliationScanCore, evaluateWithdrawal, recheckFindingCore, CHILD_READ_BUDGET,
+  parseGroupCursorState, parseScanCursorInput, CURSOR_VERSION,
+} = require("../lib/admin/financeReconciliation");
 
 const results = [];
 const record = (label, pass, detail) => { results.push(pass); console.log(`${pass ? "PASSED" : "FAILED"} — ${label}${pass ? "" : ` :: ${detail}`}`); };
@@ -273,7 +291,9 @@ async function main() {
     const page1 = await financeReconciliationScanCore(db, NOW + 5000, CHILD_READ_BUDGET, {}, 2);
     const page1Ids = seenOn(page1);
     const cursor = page1.nextCursor.sellerWithdrawals.paid;
-    record("r16a_page1_has_a_cursor", cursor !== null && typeof cursor.value === "number" && typeof cursor.id === "string", JSON.stringify(page1.nextCursor));
+    record("r16a_page1_has_a_continue_cursor",
+      cursor.state === "continue" && typeof cursor.cursor.seconds === "number" && typeof cursor.cursor.nanoseconds === "number" && typeof cursor.cursor.id === "string",
+      JSON.stringify(page1.nextCursor));
     record("r16b_page1_is_the_two_newest", page1Ids.includes("r16w-a") && page1Ids.includes("r16w-b") && !page1Ids.includes("r16w-c"), JSON.stringify(page1Ids));
 
     const page2 = await financeReconciliationScanCore(db, NOW + 5001, CHILD_READ_BUDGET, { sellerWithdrawals: { paid: cursor } }, 2);
@@ -330,6 +350,123 @@ async function main() {
     await db.doc("rider_payouts/r19rp").update({ paymentReference: "UTR-R19" });
     const after = await recheckFindingCore(db, { kind: "paid_missing_reference", actorType: "rider", recordId: "r19rp", detail: {} });
     record("r19b_recheck_resolves_after_reference_added", after.kind === "resolved", JSON.stringify(after));
+  }
+
+  // r20 (ADMR-88) — THE multi-group round-trip regression: the real bug
+  // this phase fixes. One group (riderPayouts) exhausts on page 1 while
+  // another (sellerWithdrawals.paid) still has more. Page 2 is requested by
+  // passing page 1's own nextCursor back VERBATIM and UNMODIFIED — exactly
+  // what finance_reconciliation_screen.dart's own _loadMore does, and
+  // exactly the realistic client behavior the old null/undefined-based
+  // contract silently broke (a `null` "exhausted" value round-tripped
+  // through parseStatusCursor(null) as `undefined`, which meant "start",
+  // silently re-scanning the already-finished group from the top). If this
+  // regresses, r20c below fails: the exhausted rider finding would appear
+  // a second time in page 2.
+  {
+    // rider_payouts total is exactly 2 by this point in the file (r6rp + this
+    // scenario's own r20rp) — pageLimit=3 is strictly GREATER than that total,
+    // so the rider query returns both in one page and correctly reports
+    // "exhausted" (a page that exactly FILLS the limit, e.g. limit=2 for a
+    // 2-doc total, correctly defers that determination to the next page
+    // coming back short instead — standard, correct pagination behavior, not
+    // something this scenario needs to exercise). seller_withdrawals paid
+    // already has well over a dozen rows accumulated from r1/r2/r8/r15/r16/
+    // r17 above, so limit=3 leaves it needing continuation regardless.
+    await db.doc("rider_payouts/r20rp").set({
+      riderId: "r20r", status: "paid", amountPaise: 700, paymentReference: null, paidAt: Timestamp.fromMillis(NOW + 50_000_000),
+    });
+    const seenRider = (res) => res.findings.filter((f) => f.kind === "paid_missing_reference" && f.recordId === "r20rp");
+
+    const page1 = await financeReconciliationScanCore(db, NOW + 7000, CHILD_READ_BUDGET, {}, 4);
+    record("r20a_rider_group_exhausts_on_page1_seller_group_does_not",
+      page1.nextCursor.riderPayouts.state === "exhausted" && page1.nextCursor.sellerWithdrawals.paid.state === "continue",
+      JSON.stringify(page1.nextCursor));
+    record("r20b_page1_sees_the_rider_finding_once", seenRider(page1).length === 1, JSON.stringify(seenRider(page1)));
+
+    // The critical step: pass the WHOLE previous nextCursor straight back, unmodified — the only
+    // realistic way a client "continues", and exactly what the old contract silently mishandled.
+    const page2 = await financeReconciliationScanCore(db, NOW + 7001, CHILD_READ_BUDGET, page1.nextCursor, 4);
+    record("r20c_exhausted_rider_group_is_NOT_rescanned_on_continuation",
+      seenRider(page2).length === 0, JSON.stringify({ page2RiderFindings: seenRider(page2), page2Coverage: page2.coverage.riderPayouts }));
+    record("r20d_exhausted_group_costs_zero_reads_on_continuation",
+      page2.coverage.riderPayouts.inspected === 0, JSON.stringify(page2.coverage.riderPayouts));
+    record("r20e_exhausted_state_is_a_fixed_point",
+      page2.nextCursor.riderPayouts.state === "exhausted", JSON.stringify(page2.nextCursor.riderPayouts));
+  }
+
+  // r21 (ADMR-88) — sub-millisecond precision survives serialization. Two
+  // withdrawals share the SAME millisecond when naively truncated
+  // (100.25ms and 100.75ms both floor to 100ms) but are genuinely different
+  // real Firestore timestamps. Built with raw Timestamp(seconds, nanos), not
+  // Timestamp.fromMillis, so this only passes if the cursor preserves real
+  // nanosecond precision rather than a lossy milliseconds-only value.
+  {
+    const S = Math.floor((NOW + 60_000_000) / 1000);
+    const mkPrecise = async (id, nanos) => db.doc(`seller_withdrawals/${id}`).set({
+      sellerId: "r21s", status: "paid", amountPaise: 100, payoutIds: [], paymentReference: "UTR-OK",
+      createdAt: Timestamp.fromMillis(NOW), paidAt: new Timestamp(S, nanos), // no destination — a guaranteed finding
+    });
+    await mkPrecise("r21w-later", 100_750_000); // 100.75ms into second S
+    await mkPrecise("r21w-earlier", 100_250_000); // 100.25ms into second S -- same millisecond if truncated
+    const seenOn = (res) => res.findings.filter((f) => f.kind === "missing_destination_snapshot" && f.recordId.startsWith("r21w-")).map((f) => f.recordId);
+
+    const page1 = await financeReconciliationScanCore(db, NOW + 8000, CHILD_READ_BUDGET, {}, 1);
+    const page1Ids = seenOn(page1);
+    const cursor = page1.nextCursor.sellerWithdrawals.paid;
+    record("r21a_page1_returns_the_later_sub_millisecond_record", page1Ids[0] === "r21w-later", JSON.stringify(page1Ids));
+    record("r21b_cursor_carries_the_real_nanoseconds_value",
+      cursor.state === "continue" && cursor.cursor.nanoseconds === 100_750_000, JSON.stringify(cursor));
+
+    const page2 = await financeReconciliationScanCore(db, NOW + 8001, CHILD_READ_BUDGET, { sellerWithdrawals: { paid: cursor } }, 1);
+    const page2Ids = seenOn(page2);
+    record("r21c_page2_reaches_the_earlier_sub_millisecond_record_not_a_repeat",
+      page2Ids[0] === "r21w-earlier" && !page2Ids.includes("r21w-later"), JSON.stringify(page2Ids));
+  }
+
+  // r22 (ADMR-88) — a cursor citing a different schema version is rejected
+  // outright, never silently treated as "start" (which would quietly
+  // re-scan rows under a query contract the cursor was never validated
+  // against).
+  {
+    let threw = null;
+    try { parseScanCursorInput({ version: CURSOR_VERSION + 1 }); } catch (e) { threw = e; }
+    record("r22_version_mismatch_rejected_not_silently_restarted",
+      threw !== null && /version/i.test(threw.message || ""), String(threw && threw.message));
+  }
+
+  // r23 (ADMR-88) — the exact class of value that caused the original bug —
+  // a bare `null` for one group's own cursor, which is what this module's
+  // OWN "exhausted" sentinel produces once round-tripped through a plain
+  // JSON encoding elsewhere — is REJECTED as malformed, never silently
+  // reinterpreted as "start". This is the precise regression test for the
+  // root cause: `!v` being true for both undefined AND null.
+  {
+    let threw = null;
+    try { parseGroupCursorState(null, "test.group"); } catch (e) { threw = e; }
+    record("r23a_bare_null_cursor_rejected_not_treated_as_start", threw !== null, String(threw && threw.message));
+
+    let threw2 = null;
+    try { parseScanCursorInput({ sellerWithdrawals: { paid: null } }); } catch (e) { threw2 = e; }
+    record("r23b_null_inside_a_full_cursor_object_also_rejected", threw2 !== null, String(threw2 && threw2.message));
+
+    let threw3 = null;
+    try { parseGroupCursorState("garbage", "test.group"); } catch (e) { threw3 = e; }
+    record("r23c_a_non_object_garbage_value_rejected", threw3 !== null, String(threw3 && threw3.message));
+  }
+
+  // r24 (ADMR-88) — a genuinely ABSENT field (the key never sent at all —
+  // what a fresh first scan naturally sends) is the ONLY value that
+  // resolves to "start" implicitly; this is the one case parseGroupCursorState
+  // does NOT throw on.
+  {
+    const parsed = parseGroupCursorState(undefined, "test.group");
+    record("r24_genuinely_absent_field_resolves_to_start", parsed.state === "start", JSON.stringify(parsed));
+    const wholeCursor = parseScanCursorInput({});
+    record("r24b_empty_cursor_object_resolves_every_group_to_start",
+      wholeCursor.sellerWithdrawals.paid.state === "start" && wholeCursor.sellerWithdrawals.requested.state === "start" &&
+        wholeCursor.riderPayouts.state === "start" && wholeCursor.employeePayouts.state === "start",
+      JSON.stringify(wholeCursor));
   }
 
   const failed = results.filter((x) => !x).length;
