@@ -24,6 +24,7 @@ import 'package:delivery/providers/location_provider.dart';
 import 'package:delivery/providers/offer_provider.dart';
 import 'package:delivery/providers/order_provider.dart';
 import 'package:delivery/screens/history/rider_history_screen.dart';
+import 'package:delivery/screens/inbox/inbox_screen.dart';
 import 'package:delivery/screens/money/money_screen.dart';
 import 'package:delivery/screens/profile/rider_profile_screen.dart';
 import 'package:flutter/material.dart';
@@ -159,6 +160,10 @@ Widget _shellHost(
         inboxSource: _FakeInbox(),
         earningsSource: (_) => Stream.value(const <RiderEarning>[]),
         accountSource: (_) => Stream.value(RiderAccount.fromMap(const {'cashHeld': 0})),
+        // DLVHOME1: the real GoogleMap platform view has no plugin
+        // registered under flutter test and hangs pumpAndSettle forever --
+        // the same injectable-seam pattern as the sources above.
+        homeMapBuilder: (_) => const ColoredBox(color: Colors.black12),
       ),
     ),
   );
@@ -179,8 +184,8 @@ void main() {
       0,
       reason: 'Home is the default tab',
     );
-    // Dashboard's own greeting header, not a substitute screen.
-    expect(find.byKey(const ValueKey('open-profile')), findsOneWidget);
+    // DLVHOME1: Home's own compact app bar, not a substitute screen.
+    expect(find.byKey(const ValueKey('home-appbar-availability')), findsOneWidget);
   });
 
   testWidgets('the Inbox destination shows the shared unread badge', (t) async {
@@ -234,27 +239,29 @@ void main() {
     );
 
     // Back to Home: Dashboard's own state (built on first visit) is
-    // still alive, not rebuilt from scratch — its greeting header is
-    // there immediately with no further async wait.
+    // still alive, not rebuilt from scratch — its app bar is there
+    // immediately with no further async wait.
     await t.tap(find.text('Home'));
     await t.pump();
-    expect(find.byKey(const ValueKey('open-profile')), findsOneWidget);
+    expect(find.byKey(const ValueKey('home-appbar-availability')), findsOneWidget);
   });
 
-  testWidgets("Home header's profile avatar switches tabs, not a push", (t) async {
+  testWidgets("Home app bar's inbox button switches tabs, not a push", (t) async {
+    // DLVHOME1: supersedes the old profile-avatar version of this test --
+    // the brief removed the header avatar entirely (Profile is bottom-tab
+    // only); the inbox bell is the header's own remaining internal
+    // navigation and proves the same tab-switch-not-push contract.
     final auth = await _authedProvider(t);
     await t.pumpWidget(_shellHost(auth, 'r1'));
     await t.pumpAndSettle();
 
-    // Not pumpAndSettle: see the note in the destinations test above about
-    // RiderProfileScreen's own permanent spinner in this fixture.
-    await t.tap(find.byKey(const ValueKey('open-profile')));
-    await t.pump();
+    await t.tap(find.byKey(const ValueKey('home-appbar-inbox')));
+    await t.pumpAndSettle();
 
-    expect(find.byType(RiderProfileScreen), findsOneWidget);
+    expect(find.byType(InboxScreen), findsOneWidget);
     expect(
       t.widget<NavigationBar>(find.byType(NavigationBar)).selectedIndex,
-      4,
+      3,
       reason: 'a tab switch changes the shells own selection; a push would not',
     );
     final nav = t.state<NavigatorState>(find.byType(Navigator).first);
@@ -312,26 +319,40 @@ void main() {
   });
 
   testWidgets(
-    'DLVDASH1: the online-toggle card has its own explanatory subtitle, not a repeat of the header status',
+    'DLVHOME1: the compact app-bar toggle shows the real Online/Offline label, never optimistic mid-toggle',
     (t) async {
+      // Supersedes DLVDASH1's own full-width-card version: DLVHOME1 retired
+      // that card from Home (its role is now this one compact toggle, per
+      // the owner's map-first redesign) -- documented as a superseded
+      // behaviour in docs/design-system/DELIVERY_HOME_REDESIGN_2026-09-28.md,
+      // not silently dropped.
       final auth = await _authedProvider(t, online: false);
       await t.pumpWidget(_shellHost(auth, 'r1'));
       await t.pumpAndSettle();
+      expect(find.text('Offline'), findsOneWidget);
 
-      // The header's own short status line still reads the bare word.
-      expect(find.text('Offline'), findsOneWidget, reason: 'header status line, unchanged by this phase');
-      // The toggle card no longer repeats it -- it shows genuine explanatory
-      // copy instead (matching the mockup's own distinct third line).
-      expect(find.text('Orders are only offered while you are online.'), findsOneWidget);
-      // The toggle card's own title is still present and distinct from both.
-      expect(find.text('You are offline'), findsOneWidget);
+      final toggle = find.byKey(const ValueKey('home-appbar-availability'));
+      expect(toggle, findsOneWidget);
+      expect(find.descendant(of: toggle, matching: find.byType(Switch)), findsOneWidget);
     },
   );
+
+  /// DLVHOME1: the dashboard's quick-actions content now lives inside the
+  /// expandable HomeOperationsPanel, collapsed by default (real map behind
+  /// it) -- every DLVDASH2 assertion below first opens the panel exactly as
+  /// a rider would (tapping its own handle), matching this repo's own
+  /// documented below-the-fold-content pattern rather than asserting on
+  /// content that is real but not yet on screen.
+  Future<void> expandPanel(WidgetTester t) async {
+    await t.tap(find.byKey(const ValueKey('home-panel-handle')));
+    await t.pumpAndSettle();
+  }
 
   testWidgets('DLVDASH2: the earnings card defaults to Today and switches to This week on tap', (t) async {
     final auth = await _authedProvider(t);
     await t.pumpWidget(_shellHost(auth, 'r1', orders: (uid) => _fakeOrdersWithCounts(uid, today: 3, week: 42)));
     await t.pumpAndSettle();
+    await expandPanel(t);
     expect(t.takeException(), isNull);
     expect(find.text('From 3 completed deliveries'), findsOneWidget);
     expect(find.text('From 42 completed deliveries'), findsNothing);
@@ -350,6 +371,7 @@ void main() {
     final auth = await _authedProvider(t);
     await t.pumpWidget(_shellHost(auth, 'r1', orders: (uid) => _fakeOrdersWithCounts(uid, today: 1, week: 1)));
     await t.pumpAndSettle();
+    await expandPanel(t);
     expect(find.text('From 1 completed delivery'), findsOneWidget);
     expect(find.text('From 1 completed deliveries'), findsNothing);
   });
@@ -358,6 +380,7 @@ void main() {
     final auth = await _authedProvider(t);
     await t.pumpWidget(_shellHost(auth, 'r1', orders: (uid) => _fakeOrdersWithCounts(uid, today: 3, week: 42)));
     await t.pumpAndSettle();
+    await expandPanel(t);
     expect(find.text('Cash with you'), findsOneWidget);
     expect(find.text('Earned today'), findsNothing, reason: 'retired -- the toggle makes a separate "today" label redundant');
     expect(find.text('Earned this week'), findsNothing, reason: 'retired ARB copy, replaced by the period-agnostic "Earned" label');

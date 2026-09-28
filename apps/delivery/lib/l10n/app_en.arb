@@ -1940,6 +1940,10 @@
   "@actionAllow": {
     "description": "Grant a permission"
   },
+  "actionClose": "Close",
+  "@actionClose": {
+    "description": "DLVHOME1: generic close button on a bottom sheet"
+  },
   "goOnlineServicesOff": "Turn on location (GPS) to go online.",
   "@goOnlineServicesOff": {
     "description": "Going online: location services off"
@@ -2775,6 +2779,54 @@
   "dashOfflineShort": "Offline",
   "@dashOfflineShort": {
     "description": "Under the greeting while offline"
+  },
+  "homeAvailabilityOnline": "Online",
+  "@homeAvailabilityOnline": {
+    "description": "DLVHOME1: compact Home app-bar availability toggle label while online"
+  },
+  "homeAvailabilityOffline": "Offline",
+  "@homeAvailabilityOffline": {
+    "description": "DLVHOME1: compact Home app-bar availability toggle label while offline"
+  },
+  "homeMapLoading": "Finding your map",
+  "@homeMapLoading": {
+    "description": "DLVHOME1: Home map's loading state before any camera target is known"
+  },
+  "homeMapPermissionDeniedTitle": "Location access needed",
+  "@homeMapPermissionDeniedTitle": {
+    "description": "DLVHOME1: Home map banner when location permission is denied"
+  },
+  "homeMapPermissionDeniedBody": "Allow location access to see your position on the map and go online.",
+  "@homeMapPermissionDeniedBody": {
+    "description": "DLVHOME1: Home map banner body when location permission is denied"
+  },
+  "homeMapServicesDisabledTitle": "Location services are off",
+  "@homeMapServicesDisabledTitle": {
+    "description": "DLVHOME1: Home map banner when device location services are disabled"
+  },
+  "homeMapServicesDisabledBody": "Turn on location services to see your position on the map.",
+  "@homeMapServicesDisabledBody": {
+    "description": "DLVHOME1: Home map banner body when device location services are disabled"
+  },
+  "homeMapUnavailableTitle": "Couldn't get your location",
+  "@homeMapUnavailableTitle": {
+    "description": "DLVHOME1: Home map banner when a location fix could not be obtained"
+  },
+  "homeMapUnavailableBody": "Check your signal and try again.",
+  "@homeMapUnavailableBody": {
+    "description": "DLVHOME1: Home map banner body when a location fix could not be obtained"
+  },
+  "homeMapRecenter": "Recenter on my location",
+  "@homeMapRecenter": {
+    "description": "DLVHOME1: Home map recenter button accessible label"
+  },
+  "homePanelExpand": "Expand panel",
+  "@homePanelExpand": {
+    "description": "DLVHOME1: Home's operational panel drag handle, accessible label while collapsed"
+  },
+  "homePanelCollapse": "Collapse panel",
+  "@homePanelCollapse": {
+    "description": "DLVHOME1: Home's operational panel drag handle, accessible label while expanded"
   },
   "dashOnline": "You are online",
   "@dashOnline": {

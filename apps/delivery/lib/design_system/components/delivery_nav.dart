@@ -22,8 +22,10 @@ class DeliveryNavDestination {
 }
 
 /// The 5-tab bottom navigation bar (`Home`, `Deliveries`, `Earnings`,
-/// `Inbox`, `Profile` — see `DeliveryShell`) with burnt-orange active
-/// indicator pill and tabular badge counts.
+/// `Inbox`, `Profile` — see `DeliveryShell`). DLVHOME1: no pill/rectangle
+/// indicator behind the selected icon — selection reads from icon/label
+/// colour (monochrome `primary`) and bold label weight alone, plus tabular
+/// badge counts.
 class DeliveryBottomNav extends StatelessWidget {
   const DeliveryBottomNav({
     super.key,
@@ -73,9 +75,13 @@ class DeliveryBottomNav extends StatelessWidget {
     int count, {
     bool selected = false,
   }) {
+    // DLVHOME1: no filled Lucide variant exists for any of the 5 nav icons
+    // (Lucide is stroke-only) -- emphasis is colour (monochrome `primary`,
+    // full-contrast) plus the bold label weight already applied in
+    // delivery_theme.dart's navigationBarTheme, not a background shape.
     final iconWidget = Icon(
       icon,
-      color: selected ? c.onBrandContainer : c.textSecondary,
+      color: selected ? c.primary : c.textSecondary,
     );
     if (count <= 0) return iconWidget;
     return Badge.count(

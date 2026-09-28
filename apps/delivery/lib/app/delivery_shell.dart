@@ -31,6 +31,7 @@ class DeliveryShell extends StatefulWidget {
     this.inboxSource,
     this.earningsSource,
     this.accountSource,
+    this.homeMapBuilder,
   });
 
   /// Injected in tests; defaults to the real Firestore-backed source. One
@@ -44,6 +45,9 @@ class DeliveryShell extends StatefulWidget {
   /// test never needs a live Firebase app just to reach the Home tab.
   final Stream<List<RiderEarning>> Function(String riderId)? earningsSource;
   final Stream<RiderAccount> Function(String riderId)? accountSource;
+
+  /// DLVHOME1: forwarded to [DashboardScreen] — see its own doc comment.
+  final WidgetBuilder? homeMapBuilder;
 
   @override
   State<DeliveryShell> createState() => _DeliveryShellState();
@@ -92,6 +96,7 @@ class _DeliveryShellState extends State<DeliveryShell> {
             inboxSource: _inbox,
             earningsSource: widget.earningsSource,
             accountSource: widget.accountSource,
+            homeMapBuilder: widget.homeMapBuilder,
             onOpenTab: _goTo,
           ),
         DeliveryTab.deliveries => const RiderHistoryScreen(),

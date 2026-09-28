@@ -40,20 +40,37 @@ Widget _wrap(
 }
 
 void main() {
-  group('DeliveryColors & WCAG AA contrast (Phases 01–03, 14, 32)', () {
-    test('light and dark palettes match canonical Burnt Orange tokens', () {
+  group('DeliveryColors & WCAG AA contrast (Phases 01–03, 14, 32, DLVHOME1)', () {
+    test('light and dark palettes are monochrome (DLVHOME1, 2026-09-28 OWNER_DECISION)', () {
       const light = DeliveryColors.light;
       const dark = DeliveryColors.dark;
 
-      expect(light.primary, const Color(0xFFC2410C));
-      expect(light.background, const Color(0xFFFFFAF5));
+      // Light: white foundation, near-black primary/foreground.
+      expect(light.background, const Color(0xFFFFFFFF));
       expect(light.surface, const Color(0xFFFFFFFF));
-      expect(light.textPrimary, const Color(0xFF241A16));
+      expect(light.primary, const Color(0xFF171717));
+      expect(light.onPrimary, const Color(0xFFFFFFFF));
+      expect(light.textPrimary, const Color(0xFF171717));
 
-      expect(dark.background, const Color(0xFF171210));
-      expect(dark.surface, const Color(0xFF251C17));
-      expect(dark.primary, const Color(0xFFFDBA74));
-      expect(dark.onPrimary, const Color(0xFF2B1206));
+      // Dark: black foundation, near-white primary/foreground.
+      expect(dark.background, const Color(0xFF000000));
+      expect(dark.primary, const Color(0xFFF5F5F5));
+      expect(dark.onPrimary, const Color(0xFF0A0A0A));
+      expect(dark.textPrimary, const Color(0xFFF5F5F5));
+
+      // Burnt orange survives unchanged, only as the restrained accent.
+      expect(light.accent, const Color(0xFFC2410C));
+      expect(dark.accent, const Color(0xFFFDBA74));
+
+      // Status colours are preserved verbatim (brief: never touched).
+      expect(light.successColor, const Color(0xFF15803D));
+      expect(light.warningColor, const Color(0xFFB45309));
+      expect(light.dangerColor, const Color(0xFFB91C1C));
+      expect(light.infoColor, const Color(0xFF1D4ED8));
+      expect(dark.successColor, const Color(0xFF86EFAC));
+      expect(dark.warningColor, const Color(0xFFFCD34D));
+      expect(dark.dangerColor, const Color(0xFFFCA5A5));
+      expect(dark.infoColor, const Color(0xFF93C5FD));
     });
 
     test('text and filled controls meet WCAG AA >= 4.5:1 contrast', () {
@@ -64,11 +81,13 @@ void main() {
       expect(_contrastRatio(light.textPrimary, light.surface), greaterThanOrEqualTo(4.5));
       expect(_contrastRatio(light.textSecondary, light.surface), greaterThanOrEqualTo(4.5));
       expect(_contrastRatio(light.onPrimary, light.primary), greaterThanOrEqualTo(4.5));
+      expect(_contrastRatio(light.onAccent, light.accent), greaterThanOrEqualTo(4.5));
 
       expect(_contrastRatio(dark.textPrimary, dark.background), greaterThanOrEqualTo(4.5));
       expect(_contrastRatio(dark.textPrimary, dark.surface), greaterThanOrEqualTo(4.5));
       expect(_contrastRatio(dark.textSecondary, dark.surface), greaterThanOrEqualTo(4.5));
       expect(_contrastRatio(dark.onPrimary, dark.primary), greaterThanOrEqualTo(4.5));
+      expect(_contrastRatio(dark.onAccent, dark.accent), greaterThanOrEqualTo(4.5));
     });
   });
 

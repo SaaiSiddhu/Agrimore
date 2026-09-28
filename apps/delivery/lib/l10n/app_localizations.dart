@@ -2734,6 +2734,12 @@ abstract class AppLocalizations {
   /// **'Allow'**
   String get actionAllow;
 
+  /// DLVHOME1: generic close button on a bottom sheet
+  ///
+  /// In en, this message translates to:
+  /// **'Close'**
+  String get actionClose;
+
   /// Going online: location services off
   ///
   /// In en, this message translates to:
@@ -3783,6 +3789,78 @@ abstract class AppLocalizations {
   /// In en, this message translates to:
   /// **'Offline'**
   String get dashOfflineShort;
+
+  /// DLVHOME1: compact Home app-bar availability toggle label while online
+  ///
+  /// In en, this message translates to:
+  /// **'Online'**
+  String get homeAvailabilityOnline;
+
+  /// DLVHOME1: compact Home app-bar availability toggle label while offline
+  ///
+  /// In en, this message translates to:
+  /// **'Offline'**
+  String get homeAvailabilityOffline;
+
+  /// DLVHOME1: Home map's loading state before any camera target is known
+  ///
+  /// In en, this message translates to:
+  /// **'Finding your map'**
+  String get homeMapLoading;
+
+  /// DLVHOME1: Home map banner when location permission is denied
+  ///
+  /// In en, this message translates to:
+  /// **'Location access needed'**
+  String get homeMapPermissionDeniedTitle;
+
+  /// DLVHOME1: Home map banner body when location permission is denied
+  ///
+  /// In en, this message translates to:
+  /// **'Allow location access to see your position on the map and go online.'**
+  String get homeMapPermissionDeniedBody;
+
+  /// DLVHOME1: Home map banner when device location services are disabled
+  ///
+  /// In en, this message translates to:
+  /// **'Location services are off'**
+  String get homeMapServicesDisabledTitle;
+
+  /// DLVHOME1: Home map banner body when device location services are disabled
+  ///
+  /// In en, this message translates to:
+  /// **'Turn on location services to see your position on the map.'**
+  String get homeMapServicesDisabledBody;
+
+  /// DLVHOME1: Home map banner when a location fix could not be obtained
+  ///
+  /// In en, this message translates to:
+  /// **'Couldn\'t get your location'**
+  String get homeMapUnavailableTitle;
+
+  /// DLVHOME1: Home map banner body when a location fix could not be obtained
+  ///
+  /// In en, this message translates to:
+  /// **'Check your signal and try again.'**
+  String get homeMapUnavailableBody;
+
+  /// DLVHOME1: Home map recenter button accessible label
+  ///
+  /// In en, this message translates to:
+  /// **'Recenter on my location'**
+  String get homeMapRecenter;
+
+  /// DLVHOME1: Home's operational panel drag handle, accessible label while collapsed
+  ///
+  /// In en, this message translates to:
+  /// **'Expand panel'**
+  String get homePanelExpand;
+
+  /// DLVHOME1: Home's operational panel drag handle, accessible label while expanded
+  ///
+  /// In en, this message translates to:
+  /// **'Collapse panel'**
+  String get homePanelCollapse;
 
   /// Online toggle while online
   ///

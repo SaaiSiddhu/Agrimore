@@ -288,8 +288,10 @@ abstract final class DeliveryTheme {
         height: DeliverySize.navBar,
         backgroundColor: c.surface,
         surfaceTintColor: Colors.transparent,
-        indicatorColor: c.primaryContainer,
-        indicatorShape: const StadiumBorder(),
+        // DLVHOME1: no selection pill / colored rectangle behind the
+        // selected icon -- emphasis comes from icon/label colour and weight
+        // alone (DeliveryBottomNav._badgedIcon, labelTextStyle below).
+        indicatorColor: Colors.transparent,
         labelTextStyle: WidgetStateProperty.resolveWith((s) {
           final selected = s.contains(WidgetState.selected);
           return text.labelSmall!.copyWith(
