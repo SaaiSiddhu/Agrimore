@@ -46,27 +46,34 @@ export const requestEmployeePayout = functions.https.onCall(async (data, context
 
   const db = admin.firestore();
 
-  const employeeSnap = await db.collection("employees").doc(uid).get();
-  if (!employeeSnap.exists || employeeSnap.data()?.status !== "approved") {
-    throw new functions.https.HttpsError(
-      "permission-denied",
-      "Only approved employees can request a payout"
-    );
-  }
-  const employeeData = employeeSnap.data() ?? {};
-  const payoutMethod = employeeData.payoutMethod ?? null;
-  const accountNumber = employeeData.accountNumber ?? null;
-  const upiId = employeeData.upiId ?? null;
-
+  const employeeRef = db.collection("employees").doc(uid);
   const walletRef = db.collection("wallets").doc(uid);
   const walletTransactionRef = db.collection("wallet_transactions").doc();
   const payoutRef = db.collection("employee_payouts").doc(`${uid}_${requestId}`);
 
   return db.runTransaction(async (tx) => {
-    const [walletSnap, existingPayout] = await Promise.all([
+    // ADMR-79: read INSIDE the transaction, not before it — the destination
+    // snapshot below must come from the same consistent read as the balance
+    // check, or an admin-approved bank/UPI change landing in the gap between
+    // an outside-transaction read and this transaction's commit could freeze
+    // this request to a destination that was already stale the moment it was
+    // written (mirrors sellerWallet.ts/riderMoney.ts's own established "all
+    // reads before all writes inside one runTransaction" convention).
+    const [walletSnap, existingPayout, employeeSnap] = await Promise.all([
       tx.get(walletRef),
       tx.get(payoutRef),
+      tx.get(employeeRef),
     ]);
+    if (!employeeSnap.exists || employeeSnap.data()?.status !== "approved") {
+      throw new functions.https.HttpsError(
+        "permission-denied",
+        "Only approved employees can request a payout"
+      );
+    }
+    const employeeData = employeeSnap.data() ?? {};
+    const payoutMethod = employeeData.payoutMethod ?? null;
+    const accountNumber = employeeData.accountNumber ?? null;
+    const upiId = employeeData.upiId ?? null;
 
     if (existingPayout.exists) {
       const prior = existingPayout.data()!;
