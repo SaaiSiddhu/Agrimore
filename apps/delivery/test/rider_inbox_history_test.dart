@@ -22,6 +22,8 @@ import 'package:delivery/screens/money/money_screen.dart' show EarningTile, Mone
 import 'package:delivery/screens/money/statement_screen.dart';
 import 'package:delivery/screens/orders/active_order_screen.dart';
 import 'package:delivery/app/delivery_tab.dart';
+import 'package:delivery/safety/incident_status_screen.dart';
+import 'package:delivery/screens/profile/document_submission_screen.dart';
 import 'package:delivery/screens/profile/identity_change_screen.dart';
 import 'package:delivery/screens/support/support_request_status_screen.dart';
 import 'package:flutter/material.dart';
@@ -455,14 +457,47 @@ void main() {
     });
   });
 
-  group('document review notices (DLVC2)', () {
-    RiderNotice docReviewNotice(String type) => RiderNotice.fromMap('n6', {
+  group('document review notices (DLVC2/DLVC3)', () {
+    RiderNotice docReviewNotice(String type, {String? submissionId = 'sub-1'}) => RiderNotice.fromMap('n6', {
           'type': type,
           'title': type == 'document_review_approved' ? 'Aadhaar (front) approved' : 'Aadhaar (front) not approved',
           'unread': true,
-          'data': {'type': type, 'submissionId': 'sub-1', 'docType': 'aadhaarFront'},
+          'data': {
+            'type': type,
+            if (submissionId != null) 'submissionId': submissionId,
+            'docType': 'aadhaarFront',
+          },
         });
 
+    // DLVC3: a notice carrying a submissionId routes to the EXACT
+    // submission's own detail screen -- never the generic Profile tab,
+    // which cannot tell the rider which specific decision this notice was
+    // about once more than one submission exists for the same document.
+    testWidgets('a document-review-approved notice with an id opens that exact submission', (t) async {
+      final src = FakeInbox()..current = [docReviewNotice('document_review_approved')];
+      await t.pumpWidget(host(InboxScreen(riderId: 'r1', source: src)));
+      await t.pumpAndSettle();
+      await t.tap(find.text('Aadhaar (front) approved'));
+      await t.pumpAndSettle();
+      expect(t.takeException(), isNull);
+      final screen = t.widget<DocumentSubmissionScreen>(find.byType(DocumentSubmissionScreen));
+      expect(screen.submissionId, 'sub-1');
+    });
+
+    testWidgets('a document-review-rejected notice with an id opens that exact submission too', (t) async {
+      final src = FakeInbox()..current = [docReviewNotice('document_review_rejected', submissionId: 'sub-2')];
+      await t.pumpWidget(host(InboxScreen(riderId: 'r1', source: src)));
+      await t.pumpAndSettle();
+      await t.tap(find.text('Aadhaar (front) not approved'));
+      await t.pumpAndSettle();
+      expect(t.takeException(), isNull);
+      final screen = t.widget<DocumentSubmissionScreen>(find.byType(DocumentSubmissionScreen));
+      expect(screen.submissionId, 'sub-2');
+    });
+
+    // A notice written before submissionId existed on this payload has no
+    // exact destination to offer -- an honest fallback to Profile (still
+    // useful: it shows the CURRENT status), never a guessed association.
     // RiderProfileScreen (unlike every other destination InboxScreen routes
     // to) reads its rider id from an ambient DeliveryAuthProvider rather
     // than taking one as a constructor parameter -- true in the real app,
@@ -470,10 +505,9 @@ void main() {
     // provider, but not reproducible in this file's own plain host()
     // without a much larger fixture. Tested here via the SAME onOpenTab
     // switch the shell always wires up in practice (DeliveryTab.profile),
-    // which is the real path every actual rider takes; the screen's own
-    // dedicated rider_profile_screen_test.dart covers the screen itself.
-    testWidgets('a document-review-approved notice switches to the Profile tab, not nothing', (t) async {
-      final src = FakeInbox()..current = [docReviewNotice('document_review_approved')];
+    // which is the real path every actual rider takes.
+    testWidgets('a legacy document-review notice with no id falls back to the Profile tab', (t) async {
+      final src = FakeInbox()..current = [docReviewNotice('document_review_approved', submissionId: null)];
       DeliveryTab? opened;
       await t.pumpWidget(host(InboxScreen(riderId: 'r1', source: src, onOpenTab: (tab) => opened = tab)));
       await t.pumpAndSettle();
@@ -481,18 +515,51 @@ void main() {
       await t.pumpAndSettle();
       expect(t.takeException(), isNull);
       expect(opened, DeliveryTab.profile,
-          reason: 'previously fell through to NoticeTarget.none -- tapping did nothing at all');
+          reason: 'no submissionId to pin to -- the honest fallback, not a crash or a guessed association');
     });
+  });
 
-    testWidgets('a document-review-rejected notice switches to the Profile tab too', (t) async {
-      final src = FakeInbox()..current = [docReviewNotice('document_review_rejected')];
-      DeliveryTab? opened;
-      await t.pumpWidget(host(InboxScreen(riderId: 'r1', source: src, onOpenTab: (tab) => opened = tab)));
+  group('incident notices (DLVC3)', () {
+    RiderNotice incidentNotice(String type, {String? incidentId = 'r1_req1'}) => RiderNotice.fromMap('n7', {
+          'type': type,
+          'title': type == 'incident_acknowledged' ? 'Your safety report was seen' : 'Your safety report was closed',
+          'unread': true,
+          'data': {'type': type, if (incidentId != null) 'incidentId': incidentId},
+        });
+
+    testWidgets('an incident-acknowledged notice with an id opens that exact report', (t) async {
+      final src = FakeInbox()..current = [incidentNotice('incident_acknowledged')];
+      await t.pumpWidget(host(InboxScreen(riderId: 'r1', source: src)));
       await t.pumpAndSettle();
-      await t.tap(find.text('Aadhaar (front) not approved'));
+      await t.tap(find.text('Your safety report was seen'));
       await t.pumpAndSettle();
       expect(t.takeException(), isNull);
-      expect(opened, DeliveryTab.profile);
+      final screen = t.widget<IncidentStatusScreen>(find.byType(IncidentStatusScreen));
+      expect(screen.incidentId, 'r1_req1');
+    });
+
+    testWidgets('an incident-resolved notice with an id opens that exact report too', (t) async {
+      final src = FakeInbox()..current = [incidentNotice('incident_resolved', incidentId: 'r1_req2')];
+      await t.pumpWidget(host(InboxScreen(riderId: 'r1', source: src)));
+      await t.pumpAndSettle();
+      await t.tap(find.text('Your safety report was closed'));
+      await t.pumpAndSettle();
+      expect(t.takeException(), isNull);
+      final screen = t.widget<IncidentStatusScreen>(find.byType(IncidentStatusScreen));
+      expect(screen.incidentId, 'r1_req2');
+    });
+
+    // Unlike document review, there is no generic incident destination to
+    // fall back to -- a legacy notice with no id has nowhere honest to go,
+    // so tapping it must do nothing rather than guess or crash.
+    testWidgets('a legacy incident notice with no id does nothing, not crash', (t) async {
+      final src = FakeInbox()..current = [incidentNotice('incident_acknowledged', incidentId: null)];
+      await t.pumpWidget(host(InboxScreen(riderId: 'r1', source: src)));
+      await t.pumpAndSettle();
+      await t.tap(find.text('Your safety report was seen'));
+      await t.pumpAndSettle();
+      expect(t.takeException(), isNull);
+      expect(find.byType(IncidentStatusScreen), findsNothing);
     });
   });
 
