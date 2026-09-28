@@ -344,7 +344,14 @@ class _RiderProfileScreenState extends State<RiderProfileScreen> {
 
     return Scaffold(
       backgroundColor: c.background,
-      appBar: AppBar(title: Text(l.profileTitle)),
+      // DLVHOME1 Profile redesign: matches the identity header card's own
+      // fill (c.surface) directly below it, per the owner's own follow-up --
+      // the app bar and that first card now read as one continuous surface
+      // instead of two different tones meeting at a seam.
+      appBar: AppBar(
+        title: Text(l.profileTitle),
+        backgroundColor: c.surface,
+      ),
       body: _body(auth, l, c, t, appearance),
     );
   }
@@ -748,7 +755,11 @@ class _RiderProfileScreenState extends State<RiderProfileScreen> {
       // mode does not (surface == background there too).
       decoration: BoxDecoration(
         color: c.surface,
-        border: Border.all(color: c.border, width: DeliverySize.hairline),
+        // Bottom edge only -- the top would sit right where this card
+        // meets the app bar, now the SAME c.surface fill as this card, so a
+        // top border would just draw a stray line across one continuous
+        // surface instead of separating two different ones.
+        border: Border(bottom: BorderSide(color: c.border, width: DeliverySize.hairline)),
         borderRadius: const BorderRadius.vertical(bottom: Radius.circular(DeliveryRadius.dialog)),
         boxShadow: DeliveryElevation.card(c.shadow),
       ),
