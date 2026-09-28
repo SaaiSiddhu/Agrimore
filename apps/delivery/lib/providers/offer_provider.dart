@@ -14,6 +14,7 @@ import 'dart:async';
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:cloud_functions/cloud_functions.dart';
 import 'package:flutter/foundation.dart';
+import 'package:flutter/scheduler.dart';
 
 import '../offers/delivery_offer.dart';
 
@@ -48,6 +49,7 @@ class OfferProvider extends ChangeNotifier {
   String? _riderId;
   List<DeliveryOffer> _offers = const [];
   final Set<String> _announced = {};
+  bool _disposed = false;
 
   /// Called once per newly arrived offer (the coordinator rings and opens it).
   void Function(DeliveryOffer offer)? onNewOffer;
@@ -78,6 +80,25 @@ class OfferProvider extends ChangeNotifier {
     });
   }
 
+  // Section 6 (2026-09-28 continuation review): an account switch rekeys
+  // OfferCoordinator (RiderSessionGate.build() returns a new
+  // ValueKey(uid)), which tears the old element down and mounts the new
+  // one in the SAME build pass -- old.dispose() calls this directly, and
+  // new.initState()'s own start() calls it again first (the same shared
+  // OfferProvider instance still holds the previous rider's _riderId/_sub,
+  // so start()'s own `if (_riderId == riderId && _sub != null) return;`
+  // guard does not short-circuit). A synchronous notifyListeners() here
+  // then tries to mark this provider's InheritedProvider scope -- an
+  // ANCESTOR of RiderSessionGate, not a descendant -- dirty while
+  // RiderSessionGate is still building: Flutter explicitly forbids that
+  // ("a widget can be marked as needing to be built during the build
+  // phase only if one of its ANCESTORS is currently building"), and
+  // throws. Found only by a genuinely connected test driving a real
+  // account switch through the real widget tree -- no existing test
+  // (offers_test.dart, delivery_shell_test.dart) ever called start()/
+  // stop() on a real OfferProvider. The state mutation stays synchronous;
+  // only the notification is deferred a frame, which every real call site
+  // (a fresh start(), a plain sign-out) tolerates identically.
   void stop() {
     _sub?.cancel();
     _sub = null;
@@ -86,7 +107,12 @@ class OfferProvider extends ChangeNotifier {
     _riderId = null;
     _offers = const [];
     _announced.clear();
-    notifyListeners();
+    // Guarded: this callback can outlive the widget tree that scheduled it
+    // (e.g. a test's own teardown replaces the whole tree, disposing this
+    // provider, before the next frame the callback was deferred to).
+    SchedulerBinding.instance.addPostFrameCallback((_) {
+      if (!_disposed) notifyListeners();
+    });
   }
 
   void _onSnapshot(QuerySnapshot<Map<String, dynamic>> snap) {
@@ -149,6 +175,7 @@ class OfferProvider extends ChangeNotifier {
 
   @override
   void dispose() {
+    _disposed = true;
     _sub?.cancel();
     _expiryTimer?.cancel();
     super.dispose();
