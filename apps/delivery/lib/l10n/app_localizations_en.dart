@@ -1360,6 +1360,42 @@ class AppLocalizationsEn extends AppLocalizations {
   String get historyEmptyFiltered => 'No orders here';
 
   @override
+  String get historyRangeCustom => 'Custom';
+
+  @override
+  String get historyRangeCustomSelectDates => 'Select dates';
+
+  @override
+  String get historyFilterSheetTitle => 'Filters';
+
+  @override
+  String get historyFilterSheetDateRangeSection => 'Date range';
+
+  @override
+  String get historyFilterSheetStatusSection => 'Delivery status';
+
+  @override
+  String get historyFilterSheetAllStatuses => 'All statuses';
+
+  @override
+  String get historyFilterSheetApply => 'Apply filters';
+
+  @override
+  String get historyFilterSheetReset => 'Reset filters';
+
+  @override
+  String historyResultsSummary(int count) {
+    String _temp0 = intl.Intl.pluralLogic(
+      count,
+      locale: localeName,
+      other: '$count results',
+      one: '1 result',
+      zero: '0 results',
+    );
+    return '$_temp0';
+  }
+
+  @override
   String get historyOrderIdSearchHint => 'Enter the exact Order ID';
 
   @override

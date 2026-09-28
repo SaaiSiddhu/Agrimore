@@ -606,6 +606,55 @@ void main() {
       expect(askedUntil[2], mondayIstMidnightAtOrBefore(DateTime.now()), reason: 'last week is bounded -- it excludes the current week');
     });
 
+    test('DLVC1: setCustomDateRange -- same-day range, inclusive last day via a correct exclusive upper bound', () async {
+      final askedSince = <DateTime?>[];
+      final askedUntil = <DateTime?>[];
+      final h = RiderHistory(fetch: (rider, query, cursor, size) async {
+        askedSince.add(query.since);
+        askedUntil.add(query.until);
+        return (items: <OrderModel>[], cursor: null, hasMore: false);
+      })
+        ..bind('r1');
+      await h.loadMore();
+      final day = DateTime(2026, 9, 15);
+      await h.setCustomDateRange(day, day);
+      expect(h.dateRange, HistoryDateRange.custom);
+      expect(askedSince[1], DateTime(2026, 9, 15), reason: 'midnight of the chosen day');
+      expect(askedUntil[1], DateTime(2026, 9, 16), reason: 'exclusive upper bound is the NEXT day, not the same day');
+      expect(h.since, askedSince[1]);
+      expect(h.until, askedUntil[1]);
+    });
+
+    test('DLVC1: setCustomDateRange -- month and year boundaries normalize correctly', () async {
+      final askedUntil = <DateTime?>[];
+      final h = RiderHistory(fetch: (rider, query, cursor, size) async {
+        askedUntil.add(query.until);
+        return (items: <OrderModel>[], cursor: null, hasMore: false);
+      })
+        ..bind('r1');
+      await h.loadMore();
+      await h.setCustomDateRange(DateTime(2026, 1, 20), DateTime(2026, 1, 31));
+      expect(askedUntil[1], DateTime(2026, 2, 1), reason: 'day 31 + 1 rolls into the next month');
+      await h.setCustomDateRange(DateTime(2026, 12, 20), DateTime(2026, 12, 31));
+      expect(askedUntil[2], DateTime(2027, 1, 1), reason: 'and across a year boundary too');
+    });
+
+    test('DLVC1: setCustomDateRange is a no-op when the same range is already applied', () async {
+      var calls = 0;
+      final h = RiderHistory(fetch: (rider, query, cursor, size) async {
+        calls++;
+        return (items: <OrderModel>[], cursor: null, hasMore: false);
+      })
+        ..bind('r1');
+      await h.loadMore();
+      final first = DateTime(2026, 9, 1);
+      final last = DateTime(2026, 9, 7);
+      await h.setCustomDateRange(first, last);
+      final before = calls;
+      await h.setCustomDateRange(first, last);
+      expect(calls, before, reason: 'an identical custom range must not trigger a redundant reload');
+    });
+
     test('clearFilters resets status and date range together, in one reload', () async {
       var calls = 0;
       final h = RiderHistory(fetch: (rider, query, cursor, size) async {
@@ -1500,6 +1549,91 @@ void main() {
         expect(t.takeException(), isNull);
         expect(find.text('Order AGM-3'), findsOneWidget);
         expect(find.text('No delivery found with that Order ID'), findsNothing);
+      });
+    });
+
+    group('DLVC1: history filter bottom sheet', () {
+      testWidgets('the funnel action opens the sheet; This week + Apply commits the range', (t) async {
+        await t.pumpWidget(host(
+          const RiderHistoryScreen(),
+          historyFetch: (rider, query, cursor, size) async => (items: <OrderModel>[], cursor: null, hasMore: false),
+        ));
+        await t.pumpAndSettle();
+        expect(find.text('All time'), findsOneWidget, reason: 'the summary bar\'s own default label');
+
+        await t.tap(find.byKey(const ValueKey('history-open-filter-sheet')));
+        await t.pumpAndSettle();
+        expect(find.text('Filters'), findsOneWidget);
+        expect(find.text('Date range'), findsOneWidget);
+        expect(find.text('Delivery status'), findsOneWidget);
+
+        await t.tap(find.byKey(const ValueKey('history-sheet-range-thisWeek')));
+        await t.pumpAndSettle();
+        await t.tap(find.byKey(const ValueKey('history-sheet-apply')));
+        await t.pumpAndSettle();
+        expect(t.takeException(), isNull);
+        expect(find.text('Filters'), findsNothing, reason: 'the sheet closed after Apply');
+        expect(find.text('All time'), findsNothing, reason: 'the summary bar reflects the newly-applied range');
+      });
+
+      testWidgets('closing the sheet without Apply discards the staged selection', (t) async {
+        await t.pumpWidget(host(
+          const RiderHistoryScreen(),
+          historyFetch: (rider, query, cursor, size) async => (items: <OrderModel>[], cursor: null, hasMore: false),
+        ));
+        await t.pumpAndSettle();
+
+        await t.tap(find.byKey(const ValueKey('history-open-filter-sheet')));
+        await t.pumpAndSettle();
+        await t.tap(find.byKey(const ValueKey('history-sheet-range-lastWeek')));
+        await t.pumpAndSettle();
+        await t.tap(find.byKey(const ValueKey('history-sheet-close')));
+        await t.pumpAndSettle();
+
+        expect(t.takeException(), isNull);
+        expect(find.text('All time'), findsOneWidget, reason: 'the staged Last week tap was never applied');
+      });
+
+      testWidgets('Reset filters clears an already-applied filter from inside the sheet', (t) async {
+        await t.pumpWidget(host(
+          const RiderHistoryScreen(),
+          historyFetch: (rider, query, cursor, size) async => (items: <OrderModel>[], cursor: null, hasMore: false),
+        ));
+        await t.pumpAndSettle();
+        await t.tap(find.byKey(const ValueKey('history-open-filter-sheet')));
+        await t.pumpAndSettle();
+        await t.tap(find.byKey(const ValueKey('history-sheet-range-thisWeek')));
+        await t.pumpAndSettle();
+        await t.tap(find.byKey(const ValueKey('history-sheet-apply')));
+        await t.pumpAndSettle();
+        expect(find.text('All time'), findsNothing);
+
+        await t.tap(find.byKey(const ValueKey('history-open-filter-sheet')));
+        await t.pumpAndSettle();
+        await t.tap(find.byKey(const ValueKey('history-sheet-reset')));
+        await t.pumpAndSettle();
+        expect(t.takeException(), isNull);
+        expect(find.text('All time'), findsOneWidget, reason: 'Reset applies immediately, unlike a plain close');
+      });
+
+      testWidgets('a status radio selection combines with a date-range pill in one Apply', (t) async {
+        await t.pumpWidget(host(
+          const RiderHistoryScreen(),
+          historyFetch: (rider, query, cursor, size) async => (items: <OrderModel>[], cursor: null, hasMore: false),
+        ));
+        await t.pumpAndSettle();
+        await t.tap(find.byKey(const ValueKey('history-open-filter-sheet')));
+        await t.pumpAndSettle();
+        await t.tap(find.byKey(const ValueKey('history-sheet-status-delivered')));
+        await t.tap(find.byKey(const ValueKey('history-sheet-range-lastWeek')));
+        await t.pumpAndSettle();
+        await t.tap(find.byKey(const ValueKey('history-sheet-apply')));
+        await t.pumpAndSettle();
+        expect(t.takeException(), isNull);
+        // The inline status chip reflects the same underlying filter the
+        // sheet just staged -- both controls share one RiderHistory.
+        final chip = t.widget<ChoiceChip>(find.byKey(const ValueKey('history-filter-delivered')));
+        expect(chip.selected, isTrue);
       });
     });
   });

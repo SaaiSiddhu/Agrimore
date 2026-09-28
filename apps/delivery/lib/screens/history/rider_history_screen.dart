@@ -19,6 +19,7 @@ import '../../providers/order_provider.dart';
 import '../home/active_work_states.dart';
 import '../money/statement_screen.dart';
 import '../orders/active_order_screen.dart';
+import 'history_filter_sheet.dart';
 
 String historyStatusText(AppLocalizations l, String orderStatus) {
   final s = DeliveryTaskStatus.fromOrderStatus(
@@ -122,7 +123,17 @@ class _RiderHistoryScreenState extends State<RiderHistoryScreen> {
     final work = context.watch<DeliveryOrderProvider>().work;
     return Scaffold(
       backgroundColor: c.background,
-      appBar: AppBar(title: Text(l10n.historyTitle)),
+      appBar: AppBar(
+        title: Text(l10n.historyTitle),
+        actions: [
+          IconButton(
+            key: const ValueKey('history-open-filter-sheet'),
+            tooltip: l10n.historyFilterSheetTitle,
+            icon: Icon(DeliveryIcons.filter),
+            onPressed: () => showHistoryFilterSheet(context, _history),
+          ),
+        ],
+      ),
       body: Column(
         children: [
           if (work.hasMultiple)
@@ -351,10 +362,21 @@ class _FiltersState extends State<_Filters> {
       HistoryFilter.cancelled: l10n.historyFilterCancelled,
       HistoryFilter.returned: l10n.historyFilterReturned,
     };
-    final rangeLabels = {
-      HistoryDateRange.allTime: l10n.historyRangeAllTime,
-      HistoryDateRange.thisWeek: l10n.historyRangeThisWeek,
-      HistoryDateRange.lastWeek: l10n.historyRangeLastWeek,
+    final now = DateTime.now();
+    final rangeSummary = switch (history.dateRange) {
+      HistoryDateRange.allTime => l10n.historyRangeAllTime,
+      HistoryDateRange.thisWeek =>
+        DeliveryFormat.dateRange(history.dateRange.boundsAt(now).since!, now),
+      HistoryDateRange.lastWeek => DeliveryFormat.dateRange(
+          history.dateRange.boundsAt(now).since!,
+          history.dateRange.boundsAt(now).until!.subtract(const Duration(days: 1)),
+        ),
+      // Custom's own bounds live on `history` itself (rider-chosen, not
+      // derivable from `now`) -- `until` is stored exclusive, so the
+      // summary's own inclusive last day subtracts one day back off it.
+      HistoryDateRange.custom => history.since != null && history.until != null
+          ? DeliveryFormat.dateRange(history.since!, history.until!.subtract(const Duration(days: 1)))
+          : l10n.historyRangeCustom,
     };
     return Padding(
       padding: const EdgeInsets.fromLTRB(
@@ -392,28 +414,30 @@ class _FiltersState extends State<_Filters> {
           const SizedBox(height: DeliverySpace.sm),
           Row(
             children: [
+              Icon(DeliveryIcons.calendar, size: DeliveryIconSize.sm, color: c.textSecondary),
+              const SizedBox(width: DeliverySpace.xs),
               Expanded(
-                child: Wrap(
-                  spacing: DeliverySpace.sm,
-                  runSpacing: DeliverySpace.sm,
-                  children: [
-                    for (final r in HistoryDateRange.values)
-                      ChoiceChip(
-                        key: ValueKey('history-range-${r.name}'),
-                        label: Text(rangeLabels[r]!),
-                        selected: history.dateRange == r,
-                        onSelected: (_) => history.setDateRange(r),
-                      ),
-                  ],
+                child: Text(
+                  rangeSummary,
+                  key: const ValueKey('history-range-summary'),
+                  style: t.bodyMedium.copyWith(color: c.textPrimary),
                 ),
               ),
-              if (history.hasActiveFilter)
-                TextButton.icon(
+              if (countFor[history.filter] case final int n)
+                Text(
+                  l10n.historyResultsSummary(n),
+                  key: const ValueKey('history-result-count'),
+                  style: t.bodyMedium.copyWith(color: c.textSecondary),
+                ),
+              if (history.hasActiveFilter) ...[
+                const SizedBox(width: DeliverySpace.sm),
+                IconButton(
                   key: const ValueKey('history-clear-filters'),
+                  tooltip: l10n.historyClearFilters,
                   onPressed: history.clearFilters,
                   icon: Icon(DeliveryIcons.close, size: DeliveryIconSize.sm, color: c.textSecondary),
-                  label: Text(l10n.historyClearFilters, style: t.bodyMedium.copyWith(color: c.textSecondary)),
                 ),
+              ],
             ],
           ),
         ],
