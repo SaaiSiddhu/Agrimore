@@ -40,6 +40,8 @@ String sellerWalletRefusal(String code, String? reason) => switch (reason) {
     };
 
 /// The full payout destination for the admin who is about to send money.
+/// `d` is `seller_payout_details`-shaped (payoutMethod/accountNumber/ifsc/…),
+/// the same shape `destinationFull` is stored in (ADMR-77/78).
 String sellerDestinationFull(Map<String, dynamic>? d) {
   if (d == null) return 'No payout account on file';
   if (d['payoutMethod'] == 'upi') {
@@ -48,6 +50,99 @@ String sellerDestinationFull(Map<String, dynamic>? d) {
   }
   return '${d['accountHolder'] ?? ''}\n${d['bankName'] ?? 'Bank'} · A/c ${d['accountNumber'] ?? '—'} · IFSC ${d['ifsc'] ?? '—'}';
 }
+
+/// The MASKED destination — `d` is the withdrawal's own `destination` field
+/// (method/accountLast4/ifsc/bankName/accountHolder, or method/upiId), the
+/// shape every withdrawal has had since SELLER-WALLET-1's first version.
+String sellerDestinationMasked(Map<String, dynamic>? d) {
+  if (d == null) return 'No payout account on file';
+  if (d['method'] == 'upi') return 'UPI ${d['upiId'] ?? '—'}';
+  return '${d['accountHolder'] ?? ''}\n${d['bankName'] ?? 'Bank'} · A/c ending ${d['accountLast4'] ?? '—'} · IFSC ${d['ifsc'] ?? '—'}';
+}
+
+/// ADMR-78: whether a LIVE seller_payout_details read (`live`) is the exact
+/// same account a withdrawal's own frozen masked `destination` (`masked`)
+/// was requested against — the only condition under which live data is safe
+/// to show/use for a withdrawal that predates `destinationFull` (ADMR-77).
+bool destinationMatchesMasked(Map<String, dynamic>? live, Map<String, dynamic>? masked) {
+  if (live == null || masked == null) return false;
+  final liveMethod = live['payoutMethod'] == 'upi' ? 'upi' : 'bank';
+  if (liveMethod != masked['method']) return false;
+  if (liveMethod == 'upi') {
+    final liveUpi = (live['upiId'] ?? '').toString().trim().toLowerCase();
+    final maskedUpi = (masked['upiId'] ?? '').toString().trim().toLowerCase();
+    return liveUpi.isNotEmpty && liveUpi == maskedUpi;
+  }
+  final liveAcct = (live['accountNumber'] ?? '').toString().replaceAll(RegExp(r'\s+'), '');
+  final liveLast4 = liveAcct.length >= 4 ? liveAcct.substring(liveAcct.length - 4) : liveAcct;
+  final liveIfsc = (live['ifsc'] ?? '').toString().trim().toUpperCase();
+  final maskedLast4 = (masked['accountLast4'] ?? '').toString();
+  final maskedIfsc = (masked['ifsc'] ?? '').toString().trim().toUpperCase();
+  return liveLast4.isNotEmpty && liveLast4 == maskedLast4 && liveIfsc.isNotEmpty && liveIfsc == maskedIfsc;
+}
+
+/// ADMR-78: what an admin should be shown/allowed for one withdrawal's
+/// payout destination — resolves the exact 4 states a request can be in
+/// rather than ever letting a live read stand in for a historical one.
+enum SellerPayoutDestinationKind {
+  /// destinationFull was frozen at request time (ADMR-77 or later) — full details, safe to use as-is.
+  full,
+  /// No destinationFull (a pre-ADMR-77 request), but a live payout-details read matches the frozen
+  /// masked destination exactly — nothing has changed, so the live full details are safe to show.
+  legacyVerified,
+  /// No destinationFull, and live payout details are missing or do not match the frozen masked
+  /// destination — showing or using them would risk presenting the wrong account. Paying is refused
+  /// here, not attempted with best-effort data.
+  legacyUnverified,
+  /// No destination at all on the withdrawal — should not be reachable (requestWithdrawalCore refuses
+  /// no_destination before creating one), handled defensively rather than crashing or guessing.
+  missing,
+}
+
+class SellerPayoutDestinationResolution {
+  const SellerPayoutDestinationResolution(this.kind, this.display, this.method);
+  final SellerPayoutDestinationKind kind;
+
+  /// What to show — full unmasked details (`full`/`legacyVerified`) or the masked destination
+  /// (`legacyUnverified`, so the admin still sees *something* to cross-check by eye) — or null (`missing`).
+  final Map<String, dynamic>? display;
+
+  /// Always the FROZEN record's own method (never live's), or null for `missing`.
+  final String? method;
+
+  /// Only `full` and `legacyVerified` are safe to actually pay from this dialog.
+  bool get payable => kind == SellerPayoutDestinationKind.full || kind == SellerPayoutDestinationKind.legacyVerified;
+}
+
+/// Pure — takes the withdrawal's own stored fields plus (for a legacy request only) a live
+/// seller_payout_details read, and returns which of the 4 states above applies.
+SellerPayoutDestinationResolution resolveSellerWithdrawalDestination(
+  Map<String, dynamic> withdrawal, {
+  Map<String, dynamic>? liveDetails,
+}) {
+  final full = (withdrawal['destinationFull'] as Map?)?.cast<String, dynamic>();
+  if (full != null) {
+    return SellerPayoutDestinationResolution(SellerPayoutDestinationKind.full, full, full['payoutMethod'] as String?);
+  }
+  final masked = (withdrawal['destination'] as Map?)?.cast<String, dynamic>();
+  if (masked == null) {
+    return const SellerPayoutDestinationResolution(SellerPayoutDestinationKind.missing, null, null);
+  }
+  if (destinationMatchesMasked(liveDetails, masked)) {
+    return SellerPayoutDestinationResolution(SellerPayoutDestinationKind.legacyVerified, liveDetails, masked['method'] as String?);
+  }
+  return SellerPayoutDestinationResolution(SellerPayoutDestinationKind.legacyUnverified, masked, masked['method'] as String?);
+}
+
+/// The text for whichever state `resolveSellerWithdrawalDestination` returned.
+String sellerPayoutDestinationText(SellerPayoutDestinationResolution r) => switch (r.kind) {
+      SellerPayoutDestinationKind.full => sellerDestinationFull(r.display),
+      SellerPayoutDestinationKind.legacyVerified => '${sellerDestinationFull(r.display)}\n(verified against this request\'s original destination)',
+      SellerPayoutDestinationKind.legacyUnverified =>
+        '${sellerDestinationMasked(r.display)}\n⚠ Full details were not saved for this older request, and the seller\'s '
+            'current payout details no longer match this masked destination. Do not pay — check with the seller/owner first.',
+      SellerPayoutDestinationKind.missing => '⚠ No payout account on file for this request — this should not happen. Contact the owner.',
+    };
 
 double _paise(Object? v) => ((v as num?) ?? 0) / 100;
 
@@ -92,15 +187,16 @@ Future<String?> _askReason(BuildContext context, String title, String action) as
 
 /// Shop name + whether a bank/UPI change is waiting, read fresh.
 ///
-/// `destinationOverride`, when given, is shown instead of a live
-/// seller_payout_details read — used for an open withdrawal's own tile, so
-/// the preview always matches the destination frozen on that withdrawal at
-/// request time (never a live account that may have changed since).
+/// `withdrawal`, when given, shows THAT withdrawal's own resolved destination
+/// (ADMR-78: full/legacyVerified/legacyUnverified/missing — never a live read
+/// standing in unchecked for a historical one) instead of the seller's
+/// current payout details — used for the "To pay" list, where the preview
+/// must always match what `_markPaid`'s own dialog will show for the same row.
 class _SellerHeader extends StatelessWidget {
-  const _SellerHeader(this.sellerId, {this.showDestination = false, this.destinationOverride});
+  const _SellerHeader(this.sellerId, {this.showDestination = false, this.withdrawal});
   final String sellerId;
   final bool showDestination;
-  final Map<String, dynamic>? destinationOverride;
+  final Map<String, dynamic>? withdrawal;
 
   @override
   Widget build(BuildContext context) {
@@ -117,8 +213,8 @@ class _SellerHeader extends StatelessWidget {
           Text(name, style: const TextStyle(fontWeight: FontWeight.w700)),
           if (showDestination) ...[
             const SizedBox(height: 4),
-            if (destinationOverride != null)
-              SelectableText(sellerDestinationFull(destinationOverride), style: const TextStyle(fontSize: 12))
+            if (withdrawal != null)
+              _WithdrawalDestinationText(sellerId: sellerId, withdrawal: withdrawal!)
             else
               FutureBuilder<DocumentSnapshot<Map<String, dynamic>>>(
                 future: _db.collection('seller_payout_details').doc(sellerId).get(),
@@ -138,6 +234,31 @@ class _SellerHeader extends StatelessWidget {
   }
 }
 
+/// Resolves and shows one withdrawal's own destination (ADMR-78) — a live
+/// seller_payout_details read is only ever fetched, and only ever shown, for
+/// a legacy request (no destinationFull) as a cross-check against its own
+/// frozen masked destination, never as a stand-in for it.
+class _WithdrawalDestinationText extends StatelessWidget {
+  const _WithdrawalDestinationText({required this.sellerId, required this.withdrawal});
+  final String sellerId;
+  final Map<String, dynamic> withdrawal;
+
+  @override
+  Widget build(BuildContext context) {
+    if (withdrawal['destinationFull'] != null) {
+      final r = resolveSellerWithdrawalDestination(withdrawal);
+      return SelectableText(sellerPayoutDestinationText(r), style: const TextStyle(fontSize: 12));
+    }
+    return FutureBuilder<DocumentSnapshot<Map<String, dynamic>>>(
+      future: _db.collection('seller_payout_details').doc(sellerId).get(),
+      builder: (context, dsnap) {
+        final r = resolveSellerWithdrawalDestination(withdrawal, liveDetails: dsnap.data?.data());
+        return SelectableText(sellerPayoutDestinationText(r), style: const TextStyle(fontSize: 12));
+      },
+    );
+  }
+}
+
 class SellerWithdrawalsTab extends StatefulWidget {
   const SellerWithdrawalsTab({super.key});
   @override
@@ -148,13 +269,23 @@ class _SellerWithdrawalsTabState extends State<SellerWithdrawalsTab> {
   String _status = 'requested';
 
   Future<void> _markPaid(String id, Map<String, dynamic> w) async {
-    final ref = TextEditingController();
-    // The destination frozen on this withdrawal at request time — never a
-    // live seller_payout_details read, so a bank/UPI change approved after
-    // the seller asked for this withdrawal can never silently redirect it.
-    final destinationFull = (w['destinationFull'] as Map?)?.cast<String, dynamic>();
-    var method = destinationFull?['payoutMethod'] == 'upi' ? 'upi' : 'bank';
+    // The destination frozen on this withdrawal at request time (ADMR-77) —
+    // for a legacy request (no destinationFull) this cross-checks a live
+    // seller_payout_details read against the frozen masked destination
+    // (ADMR-78) rather than ever trusting live data for a historical request.
+    final sellerId = (w['sellerId'] ?? '').toString();
+    Map<String, dynamic>? live;
+    if (w['destinationFull'] == null) {
+      live = (await _db.collection('seller_payout_details').doc(sellerId).get()).data();
+    }
+    final resolution = resolveSellerWithdrawalDestination(w, liveDetails: live);
     if (!mounted) return;
+    if (!resolution.payable) {
+      SnackbarHelper.showError(context, sellerPayoutDestinationText(resolution));
+      return;
+    }
+    var method = resolution.method == 'upi' ? 'upi' : 'bank';
+    final ref = TextEditingController();
     final confirmed = await showDialog<bool>(
       context: context,
       builder: (ctx) => StatefulBuilder(
@@ -163,7 +294,7 @@ class _SellerWithdrawalsTabState extends State<SellerWithdrawalsTab> {
           content: Column(mainAxisSize: MainAxisSize.min, crossAxisAlignment: CrossAxisAlignment.start, children: [
             Text('Send ${AgFormat.rupees(_paise(w['amountPaise']))} to:'),
             const SizedBox(height: 4),
-            SelectableText(sellerDestinationFull(destinationFull), style: const TextStyle(fontSize: 12)),
+            SelectableText(sellerPayoutDestinationText(resolution), style: const TextStyle(fontSize: 12)),
             const SizedBox(height: 8),
             SegmentedButton<String>(
               segments: const [
@@ -264,7 +395,7 @@ class _SellerWithdrawalsTabState extends State<SellerWithdrawalsTab> {
           Row(crossAxisAlignment: CrossAxisAlignment.start, children: [
             Expanded(child: _SellerHeader((w['sellerId'] ?? '').toString(),
                 showDestination: _status == 'requested',
-                destinationOverride: (w['destinationFull'] as Map?)?.cast<String, dynamic>())),
+                withdrawal: _status == 'requested' ? w : null)),
             Text(AgFormat.rupees(_paise(w['amountPaise'])), style: const TextStyle(fontWeight: FontWeight.w800)),
           ]),
           const SizedBox(height: 4),
