@@ -428,6 +428,7 @@ function refuse(reason: string): never {
     no_file: ["failed-precondition", "Upload the file first, then try again"],
     not_allowed_type: ["invalid-argument", "Only images and PDF documents can be attached as evidence"],
     too_large: ["invalid-argument", "That file is too large (10MB max)"],
+    content_mismatch: ["invalid-argument", "That file's real content doesn't match its claimed type"],
   };
   const [code, message] = table[reason] ?? ["internal", "Could not complete that"];
   throw new HttpsError(code as never, message, { reason });
@@ -655,25 +656,76 @@ export async function createSupportCaseFromSourceCore(
   });
 }
 
-// ── private evidence attachments (ADMR-71) ──
+// ── private evidence attachments (ADMR-71, hardened ADMR-72) ──
 //
-// The one still-unbuilt piece of the support system's own spec: private
-// Storage-based evidence (photos, documents) on a case. Mirrors
+// Private Storage-based evidence (photos, documents) on a case. Mirrors
 // riderExceptions.ts's own storageLookup exactly -- a fixed, deterministic
 // path is checked against the REAL uploaded object via the Admin SDK
 // (.exists() then .getMetadata()), never trusting a client-claimed size or
-// contentType. The path is derived only from caseId (already confirmed to
-// exist) and requestId (already regex-validated, itself filename-safe) --
-// a client can never point a finalize call at a path outside its own case,
-// the same closed-by-construction property proofPath(orderId) gives
-// delivery proofs. Evidence is append-only (no edit, no delete command),
+// contentType. Evidence is append-only (no edit, no delete command),
 // mirroring notes' own established rationale: an investigation trail
 // should not be alterable after the fact.
+//
+// ADMR-72 hardening. ADMR-71's own path/doc-id were keyed by caseId+requestId
+// only, and storage.rules' `allow write:` (create+update+delete combined)
+// let ANY admin overwrite or delete an ALREADY-FINALIZED object at that same
+// path -- nothing bound the object's identity after the one metadata lookup
+// at finalize time, and two different admins could collide on a coincidental
+// requestId with no per-uploader isolation at all (unlike this file's own
+// createSupportCaseCore, which already keys its deterministic id by
+// req_${adminUid}_${requestId}). Fixed by:
+//   1. The Storage path itself embeds the uploader's own uid
+//      (support_case_evidence/{caseId}/{adminUid}_{requestId}), mirroring
+//      product_images/{sellerId}_{fileName}'s own uid-prefix convention.
+//   2. storage.rules (see that file) now allows CREATE only, gated by that
+//      same uid prefix AND `resource == null` -- this codebase's own
+//      write-once precedent (delivery_document_submissions, DLVDOC2) --
+//      with update/delete both explicitly false. Once created, the object
+//      can never be overwritten or removed by any client, closing the
+//      overwrite-after-finalize gap at the infrastructure level, not just
+//      by convention.
+//   3. The Firestore evidence doc id also embeds adminUid
+//      (${caseId}_${adminUid}_${requestId}), closing the cross-admin
+//      collision.
+//   4. The real object's `generation` and `md5Hash` (confirmed present and
+//      changing-on-overwrite against the real Storage emulator) are
+//      recorded as its verified content identity -- a GCS-native, zero-
+//      extra-infra proof of exactly which bytes were checked. The
+//      requestId-conflict check (comparing originalFileName) is a display-
+//      label safeguard now, not a bytes-integrity one -- the write-once rule
+//      already makes a bytes swap under the same path impossible via any
+//      client path.
+// Residual, disclosed risk (shared with every write-once path in this
+// codebase, including DLVDOC2): a privileged Admin-SDK/console actor
+// bypasses client rules entirely and could still overwrite the underlying
+// object out of band. No client-side rule can ever prevent that; the
+// recorded generation/md5Hash at least make such a tamper DETECTABLE by a
+// future audit, not something this phase claims to prevent.
 
 export const MAX_EVIDENCE_BYTES = 10 * 1024 * 1024;
-const EVIDENCE_CONTENT_TYPES = /^(image\/|application\/pdf$)/;
 
-export type ObjectInfo = { size: number; contentType: string } | null;
+// ADMR-72 (section 5): a Storage object's own `contentType` metadata is a
+// label the UPLOADING CLIENT set at putData time -- it is not independently
+// verified against the actual bytes. Restricted from a broad "any image/*"
+// to the exact 3 formats the client ever offers, each checked against its
+// real file-signature (magic bytes), so a client cannot claim "image/png"
+// for an arbitrary (e.g. HTML/script) payload. This is a format check, NOT
+// malware/content scanning -- no such scanning is claimed or implemented.
+const EVIDENCE_SIGNATURES: Record<string, (b: Buffer) => boolean> = {
+  "image/png": (b) =>
+    b.length >= 8 && b[0] === 0x89 && b[1] === 0x50 && b[2] === 0x4e && b[3] === 0x47 &&
+    b[4] === 0x0d && b[5] === 0x0a && b[6] === 0x1a && b[7] === 0x0a,
+  "image/jpeg": (b) => b.length >= 3 && b[0] === 0xff && b[1] === 0xd8 && b[2] === 0xff,
+  "application/pdf": (b) => b.length >= 5 && b.subarray(0, 5).toString("latin1") === "%PDF-",
+};
+
+export type ObjectInfo = {
+  size: number;
+  contentType: string;
+  generation: string;
+  md5Hash: string;
+  headerBytes: Buffer;
+} | null;
 export type ObjectLookup = (path: string) => Promise<ObjectInfo>;
 
 export const storageLookup: ObjectLookup = async (path) => {
@@ -681,18 +733,33 @@ export const storageLookup: ObjectLookup = async (path) => {
   const [exists] = await file.exists();
   if (!exists) return null;
   const [meta] = await file.getMetadata();
-  return { size: Number(meta.size ?? 0), contentType: String(meta.contentType ?? "") };
+  const size = Number(meta.size ?? 0);
+  // Only as many header bytes as the longest signature above needs (8).
+  // Reading a small fixed prefix, not the whole object, keeps this cheap
+  // regardless of the file's real size.
+  const headerBytes = size > 0
+    ? (await file.download({ start: 0, end: Math.min(size, 8) - 1 }))[0]
+    : Buffer.alloc(0);
+  return {
+    size,
+    contentType: String(meta.contentType ?? ""),
+    generation: String(meta.generation ?? ""),
+    md5Hash: String(meta.md5Hash ?? ""),
+    headerBytes,
+  };
 };
 
-export function evidencePath(caseId: string, requestId: string): string {
-  return `support_case_evidence/${caseId}/${requestId}`;
+export function evidencePath(caseId: string, adminUid: string, requestId: string): string {
+  return `support_case_evidence/${caseId}/${adminUid}_${requestId}`;
 }
 
 export type AttachSupportCaseEvidenceVerdict =
   | { kind: "attached"; evidenceId: string; alreadyApplied: boolean }
   | {
       kind: "refused";
-      reason: "bad_request" | "not_found" | "no_file" | "not_allowed_type" | "too_large" | "request_id_conflict";
+      reason:
+        | "bad_request" | "not_found" | "no_file" | "not_allowed_type" | "too_large"
+        | "content_mismatch" | "request_id_conflict";
     };
 
 export async function attachSupportCaseEvidenceCore(
@@ -710,15 +777,16 @@ export async function attachSupportCaseEvidenceCore(
   if (!caseId || !REQUEST_ID.test(requestId)) {
     return { kind: "refused", reason: "bad_request" };
   }
-  const path = evidencePath(caseId, requestId);
+  const path = evidencePath(caseId, adminUid, requestId);
   const caseRef = db.collection("support_cases").doc(caseId);
-  const evidenceRef = db.collection("support_case_evidence").doc(`${caseId}_${requestId}`);
+  const evidenceRef = db.collection("support_case_evidence").doc(`${caseId}_${adminUid}_${requestId}`);
 
   // Checked once, outside the transaction -- mirrors linkSupportCaseRecordCore's
   // own precedent for an external existence check that cannot itself race
-  // Firestore's transaction retry mechanics, since the uploaded object, once
-  // present, does not change out from under this check. Skipped entirely on a
-  // replay (the evidence doc already exists) so a retry never re-reads Storage.
+  // Firestore's transaction retry mechanics. Safe to do unconditionally here
+  // (even the write-once object itself cannot change once this reads it),
+  // and skipped entirely on a replay (the evidence doc already exists) so a
+  // retry never re-reads Storage.
   const existingBefore = await evidenceRef.get();
   let info: ObjectInfo = null;
   if (!existingBefore.exists) {
@@ -737,8 +805,10 @@ export async function attachSupportCaseEvidenceCore(
       return { kind: "attached", evidenceId: evidenceRef.id, alreadyApplied: true };
     }
     if (!info) return { kind: "refused", reason: "no_file" };
-    if (!EVIDENCE_CONTENT_TYPES.test(info.contentType)) return { kind: "refused", reason: "not_allowed_type" };
+    const signatureCheck = EVIDENCE_SIGNATURES[info.contentType];
+    if (!signatureCheck) return { kind: "refused", reason: "not_allowed_type" };
     if (info.size <= 0 || info.size > MAX_EVIDENCE_BYTES) return { kind: "refused", reason: "too_large" };
+    if (!signatureCheck(info.headerBytes)) return { kind: "refused", reason: "content_mismatch" };
     const at = Timestamp.fromMillis(nowMs);
     tx.set(evidenceRef, {
       evidenceId: evidenceRef.id,
@@ -746,6 +816,8 @@ export async function attachSupportCaseEvidenceCore(
       storagePath: path,
       size: info.size,
       contentType: info.contentType,
+      generation: info.generation,
+      md5Hash: info.md5Hash,
       originalFileName,
       uploadedBy: adminUid,
       uploadedAt: at,

@@ -350,23 +350,39 @@ service firebase.storage {
     }
 
     // ============================================
-    // SUPPORT CASE EVIDENCE (Phase ADMR-71) — admin only, both ways
+    // SUPPORT CASE EVIDENCE (Phase ADMR-71, hardened ADMR-72) — admin only,
+    // create-only (write-once)
     // ============================================
     // Unlike support_attachments above (a rider uploads their own ticket's
     // attachment), only admins ever operate the case system at all -- no
     // participant read/write exists on support_cases in firestore.rules
-    // either. fileName here is the case's own requestId (deterministic,
-    // never client-chosen path text), so no owner-uid prefix check is
-    // needed the way products/{fileName} or profiles/{userId}/{fileName}
-    // need one. "Photos, documents" per the owner's own spec -- images plus
+    // either. "Photos, documents" per the owner's own spec -- images plus
     // PDF, unlike every isImage()-only block above.
+    //
+    // ADMR-72. `allow write` (create+update+delete combined) let ANY admin
+    // overwrite or delete an ALREADY-FINALIZED evidence object at the same
+    // path -- nothing made "finalized" mean anything at the Storage layer.
+    // Fixed two ways, both reusing already-proven conventions in THIS file
+    // rather than inventing new ones: (1) fileName now carries the
+    // uploader's own uid as a prefix, checked the SAME way
+    // product_images/{fileName} already checks a seller's own uid --
+    // closing the earlier gap where a different admin could collide on a
+    // coincidental requestId with no per-uploader isolation. (2) `create`
+    // only, gated by `resource == null` -- the SAME write-once pattern this
+    // file already uses for delivery_document_submissions (Phase DLVDOC2).
+    // Once an object exists at this path, no further write -- by ANY admin,
+    // including the original uploader -- is ever allowed again; update and
+    // delete are both explicitly false, not merely unmentioned.
     function isImageOrPdf() {
       return request.resource.contentType.matches('image/.*') ||
         request.resource.contentType == 'application/pdf';
     }
     match /support_case_evidence/{caseId}/{fileName} {
       allow read: if isAdmin();
-      allow write: if isAdmin() && isValidFileSize() && isImageOrPdf();
+      allow create: if isAdmin() && fileName.matches(request.auth.uid + '_.*') &&
+        isValidFileSize() && isImageOrPdf() && resource == null;
+      allow update: if false;
+      allow delete: if false;
     }
 
     // ============================================

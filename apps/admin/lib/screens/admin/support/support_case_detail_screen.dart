@@ -12,16 +12,22 @@
 // case behave exactly as ADMR-61's own emulator tests proved server-side
 // (first wins, second gets a clear "changed since you last viewed it"
 // message), never a silent overwrite.
+import 'dart:io';
+
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:cloud_functions/cloud_functions.dart';
 import 'package:file_picker/file_picker.dart';
 import 'package:firebase_auth/firebase_auth.dart';
 import 'package:firebase_storage/firebase_storage.dart';
+import 'package:flutter/foundation.dart' show kIsWeb;
 import 'package:flutter/material.dart';
 import 'package:go_router/go_router.dart';
+import 'package:path_provider/path_provider.dart';
+import 'package:share_plus/share_plus.dart';
 import 'package:uuid/uuid.dart';
 import 'package:agrimore_ui/agrimore_ui.dart';
 
+import '../orders/web_download_stub.dart' if (dart.library.html) '../orders/web_download_impl.dart' as web_download;
 import '../widgets/paginated_query_list.dart';
 import 'support_case_constants.dart';
 
@@ -304,6 +310,7 @@ class _SupportCaseDetailScreenState extends State<SupportCaseDetailScreen>
                     _EvidenceTab(
                       firestore: _firestore,
                       caseId: widget.caseId,
+                      currentUid: _currentUid,
                     ),
                   ],
                 ),
@@ -889,15 +896,24 @@ class _AddLinkDialogState extends State<_AddLinkDialog> {
 // (support_case_evidence/{caseId}/{requestId}), computed the same way the
 // server itself computes it (functions/src/admin/supportCases.ts's own
 // evidencePath) -- never a client-invented path. A retry reuses the SAME
-// requestId (and re-uploads the same bytes to the same path), so a failed
-// upload or a failed finalize call can always be retried without ever
-// creating a duplicate evidence record -- attachSupportCaseEvidenceCore's
-// own request-id-keyed idempotency handles that server-side exactly like
+// requestId; the object at that path is write-once (storage.rules), so the
+// upload step itself is skipped on a genuine retry (see _upload below) and
+// only the idempotent finalize call is repeated -- never a duplicate
+// evidence record. attachSupportCaseEvidenceCore's own request-id-keyed
+// idempotency handles the server side exactly like
 // createSupportCase/addSupportCaseNote (ADMR-66).
+
+/// Mirrors functions/src/admin/supportCases.ts's own MAX_EVIDENCE_BYTES.
+const int kMaxEvidenceBytes = 10 * 1024 * 1024;
 class _EvidenceTab extends StatefulWidget {
-  const _EvidenceTab({required this.firestore, required this.caseId});
+  const _EvidenceTab({required this.firestore, required this.caseId, required this.currentUid});
   final FirebaseFirestore firestore;
   final String caseId;
+
+  /// Storage's own create-only rule checks `fileName.matches(request.auth.uid
+  /// + '_.*')` -- the client must embed this SAME uid in the path it uploads
+  /// to, or its own upload would be refused by the rule it is meant to satisfy.
+  final String? currentUid;
 
   @override
   State<_EvidenceTab> createState() => _EvidenceTabState();
@@ -920,6 +936,12 @@ class _EvidenceTabState extends State<_EvidenceTab> {
     return null;
   }
 
+  /// ADMR-72: functions/src/admin/supportCases.ts's own evidencePath(caseId,
+  /// adminUid, requestId) -- mirrored here since Dart cannot import it.
+  String _evidencePath(String requestId) {
+    return 'support_case_evidence/${widget.caseId}/${widget.currentUid}_$requestId';
+  }
+
   Future<void> _pickAndUpload() async {
     final result = await FilePicker.platform.pickFiles(
       type: FileType.custom,
@@ -932,10 +954,14 @@ class _EvidenceTabState extends State<_EvidenceTab> {
       if (mounted) SnackbarHelper.showError(context, 'Could not read that file. Try again.');
       return;
     }
+    // A newly picked file is always a DISTINCT logical operation -- a fresh
+    // requestId (and so a fresh Storage path) even if the admin picks the
+    // exact same file again, matching the write-once rule's own semantics.
     final requestId = const Uuid().v4();
     setState(() {
       _pendingFile = file;
       _pendingRequestId = requestId;
+      _error = null;
     });
     await _upload(file, requestId);
   }
@@ -948,6 +974,10 @@ class _EvidenceTabState extends State<_EvidenceTab> {
   }
 
   Future<void> _upload(PlatformFile file, String requestId) async {
+    if (widget.currentUid == null) {
+      setState(() => _error = 'You must be signed in to attach evidence.');
+      return;
+    }
     final contentType = _contentTypeFor(file.name);
     setState(() {
       _uploading = true;
@@ -958,16 +988,32 @@ class _EvidenceTabState extends State<_EvidenceTab> {
       if (contentType == null) {
         throw Exception('Unsupported file type');
       }
-      final path = 'support_case_evidence/${widget.caseId}/$requestId';
-      final task = FirebaseStorage.instance
-          .ref(path)
-          .putData(file.bytes!, SettableMetadata(contentType: contentType));
-      task.snapshotEvents.listen((snapshot) {
-        if (mounted && snapshot.totalBytes > 0) {
-          setState(() => _progress = snapshot.bytesTransferred / snapshot.totalBytes);
-        }
-      });
-      await task;
+      final path = _evidencePath(requestId);
+      final ref = FirebaseStorage.instance.ref(path);
+      // ADMR-72: the object at this path is write-once (storage.rules:
+      // `resource == null`) -- a SECOND putData to the same path is always
+      // refused, even by the original uploader. A retry after a lost
+      // finalize acknowledgment must not attempt to re-upload; it should go
+      // straight to the (idempotent) finalize call instead. Distinguish
+      // "never uploaded" from "already uploaded, finalize just didn't land"
+      // by checking existence first, rather than blindly retrying putData.
+      var alreadyUploaded = false;
+      try {
+        await ref.getMetadata();
+        alreadyUploaded = true;
+      } on FirebaseException catch (e) {
+        if (e.code != 'object-not-found') rethrow;
+        alreadyUploaded = false;
+      }
+      if (!alreadyUploaded) {
+        final task = ref.putData(file.bytes!, SettableMetadata(contentType: contentType));
+        task.snapshotEvents.listen((snapshot) {
+          if (mounted && snapshot.totalBytes > 0) {
+            setState(() => _progress = snapshot.bytesTransferred / snapshot.totalBytes);
+          }
+        });
+        await task;
+      }
       await FirebaseFunctions.instance.httpsCallable('attachSupportCaseEvidence').call<Map<String, dynamic>>({
         'caseId': widget.caseId,
         'requestId': requestId,
@@ -1052,29 +1098,67 @@ class _EvidenceTabState extends State<_EvidenceTab> {
   }
 }
 
-class _EvidenceTile extends StatelessWidget {
+class _EvidenceTile extends StatefulWidget {
   const _EvidenceTile({required this.data});
   final Map<String, dynamic> data;
 
-  bool get _isImage => ((data['contentType'] as String?) ?? '').startsWith('image/');
+  @override
+  State<_EvidenceTile> createState() => _EvidenceTileState();
+}
 
+class _EvidenceTileState extends State<_EvidenceTile> {
+  bool _loading = false;
+
+  bool get _isImage => ((widget.data['contentType'] as String?) ?? '').startsWith('image/');
+
+  // ADMR-72: getDownloadURL() mints a token-bearing URL that -- once
+  // obtained -- bypasses storage.rules on every subsequent fetch by anyone
+  // who later holds it (a real gap for a feature whose own spec says "never
+  // a public URL"). getData() instead fetches bytes through the
+  // authenticated SDK, re-checked against storage.rules on EVERY call, with
+  // no persistent bypass credential ever minted. Disclosed limitation: this
+  // does not by itself "revoke" a URL that was already shared before this
+  // phase (none exist -- this feature has never been deployed); it only
+  // changes how future views work.
   Future<void> _view(BuildContext context) async {
-    final path = data['storagePath'] as String?;
+    final path = widget.data['storagePath'] as String?;
+    final name = (widget.data['originalFileName'] as String?) ?? 'evidence';
     if (path == null) return;
+    setState(() => _loading = true);
     try {
-      final url = await FirebaseStorage.instance.ref(path).getDownloadURL();
-      if (context.mounted) {
-        await showDialog<void>(
-          context: context,
-          builder: (_) => AlertDialog(
-            content: _isImage
-                ? Image.network(url, errorBuilder: (_, __, ___) => const Text('Could not load image.'))
-                : Text('This is a document. Open it: $url'),
-          ),
-        );
+      final bytes = await FirebaseStorage.instance.ref(path).getData(kMaxEvidenceBytes);
+      if (bytes == null) {
+        if (context.mounted) SnackbarHelper.showError(context, 'This file could not be read.');
+        return;
+      }
+      if (_isImage) {
+        if (context.mounted) {
+          await showDialog<void>(
+            context: context,
+            builder: (_) => AlertDialog(
+              content: InteractiveViewer(
+                child: Image.memory(bytes, errorBuilder: (_, __, ___) => const Text('Could not load image.')),
+              ),
+              actions: [TextButton(onPressed: () => Navigator.pop(context), child: const Text('Close'))],
+            ),
+          );
+        }
+        return;
+      }
+      // PDF: a real open/download interaction, never a raw URL string.
+      if (kIsWeb) {
+        web_download.downloadFile(bytes, name);
+      } else {
+        final dir = await getTemporaryDirectory();
+        final file = File('${dir.path}/$name');
+        await file.writeAsBytes(bytes);
+        if (!context.mounted) return;
+        await Share.shareXFiles([XFile(file.path)], text: name);
       }
     } catch (_) {
       if (context.mounted) SnackbarHelper.showError(context, 'Could not open this file.');
+    } finally {
+      if (mounted) setState(() => _loading = false);
     }
   }
 
@@ -1087,19 +1171,21 @@ class _EvidenceTile extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final name = (data['originalFileName'] as String?) ?? 'Evidence file';
-    final uploadedBy = (data['uploadedBy'] as String?) ?? '';
+    final name = (widget.data['originalFileName'] as String?) ?? 'Evidence file';
+    final uploadedBy = (widget.data['uploadedBy'] as String?) ?? '';
     return Card(
       margin: const EdgeInsets.symmetric(horizontal: 12, vertical: 4),
       child: ListTile(
         leading: Icon(_isImage ? Icons.image_outlined : Icons.picture_as_pdf_outlined),
         title: Text(name),
-        subtitle: Text('${_sizeLabel(data['size'] as num?)} · uploaded by $uploadedBy'),
+        subtitle: Text('${_sizeLabel(widget.data['size'] as num?)} · uploaded by $uploadedBy'),
         trailing: Wrap(
           spacing: 4,
           children: [
-            TextButton(onPressed: () => _view(context), child: const Text('View')),
-            _Timestamp(value: data['uploadedAt']),
+            _loading
+                ? const SizedBox(width: 20, height: 20, child: CircularProgressIndicator(strokeWidth: 2))
+                : TextButton(onPressed: () => _view(context), child: const Text('View')),
+            _Timestamp(value: widget.data['uploadedAt']),
           ],
         ),
       ),
