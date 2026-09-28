@@ -4,28 +4,32 @@
 // wrong answer here silently sends an admin to the WRONG financial record
 // while investigating real money. Exhaustive over every real finding kind
 // financeReconciliation.ts can produce — no widget pump needed, this is a
-// pure function of a Map.
+// pure function. ADMR-89 retyped it from a raw Map to the real
+// FinanceFinding model; these tests construct that model directly instead
+// of a hand-built Map, so a field this model's own fromMap() might parse
+// differently is still exercised through the same type the real screen uses.
 import 'package:flutter_test/flutter_test.dart';
 
+import 'package:agrimore_admin/screens/admin/finance/finance_reconciliation_models.dart';
 import 'package:agrimore_admin/screens/admin/finance/finance_reconciliation_screen.dart';
 
-Map<String, dynamic> _finding({
+FinanceFinding _finding({
   required String kind,
   required String actorType,
   required String recordId,
   Map<String, dynamic> detail = const {},
 }) =>
-    {
-      'id': '$kind:$recordId',
-      'kind': kind,
-      'actorType': actorType,
-      'recordId': recordId,
-      'actorId': 'actor_1',
-      'amountRupees': 100.0,
-      'summary': 'summary',
-      'detail': detail,
-      'confirmation': 'confirmed',
-    };
+    FinanceFinding(
+      id: '$kind:$recordId',
+      kind: kind,
+      actorType: actorType,
+      recordId: recordId,
+      actorId: 'actor_1',
+      amountRupees: 100.0,
+      summary: 'summary',
+      detail: detail,
+      confirmation: 'confirmed',
+    );
 
 void main() {
   group('financeFindingNavigationTarget — seller withdrawal-level kinds go straight to the withdrawal', () {

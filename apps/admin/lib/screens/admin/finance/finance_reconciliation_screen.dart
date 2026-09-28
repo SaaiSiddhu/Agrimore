@@ -1,9 +1,9 @@
-import 'package:cloud_functions/cloud_functions.dart';
 import 'package:flutter/material.dart';
 import 'package:go_router/go_router.dart';
 import 'package:agrimore_ui/agrimore_ui.dart';
 
 import '../support/support_case_constants.dart';
+import 'finance_reconciliation_models.dart';
 
 /// Every kind financeReconciliation.ts's own ReconciliationFindingKind
 /// union can produce, in plain language. Pure and top-level (not a State
@@ -19,22 +19,12 @@ String financeFindingKindLabel(String kind) => switch (kind) {
       _ => kind,
     };
 
-String financeCoverageLine(String label, Map<String, dynamic>? c) {
-  if (c == null) return '$label: not scanned';
-  final inspected = c['inspected'] ?? 0;
-  final statuses = ((c['statusesCovered'] as List?) ?? const []).join('/');
-  final total = c['totalInStatuses'];
-  final truncated = c['truncated'] == true;
-  final totalText = total == null ? '' : (truncated ? ' of $total — more exist, not all inspected' : ' of $total');
-  return '$label: $inspected$totalText ($statuses)';
-}
-
 /// The exact financial record a finding is about, and the link type it
 /// must be navigated/linked as (one of kLinkRecordCollection's financial
 /// keys). Null when there is nowhere sound to navigate. Pure and
 /// top-level for the same reason as financeFindingKindLabel above — this
-/// mapping is the single most consequential piece of new logic in this
-/// phase (a wrong answer silently sends an admin to the WRONG record), so
+/// mapping is the single most consequential piece of new logic ADMR-86
+/// added (a wrong answer silently sends an admin to the WRONG record), so
 /// it is unit-tested directly, exhaustively, for every real finding kind.
 ///
 /// malformed_amount and payout_ownership_mismatch have their OWN recordId
@@ -43,25 +33,22 @@ String financeCoverageLine(String label, Map<String, dynamic>? c) {
 /// detail.withdrawalId/expectedWithdrawalId), which shows that same child
 /// row in context among its siblings, rather than inventing a fourth,
 /// isolated single-row link type.
-({String type, String id})? financeFindingNavigationTarget(Map<String, dynamic> f) {
-  final actorType = (f['actorType'] ?? '').toString();
-  final kind = (f['kind'] ?? '').toString();
-  final recordId = (f['recordId'] ?? '').toString();
-  if (recordId.isEmpty) return null;
-  if (actorType == 'seller') {
-    if (kind == 'malformed_amount' || kind == 'payout_ownership_mismatch') {
-      final detail = (f['detail'] as Map?)?.cast<String, dynamic>() ?? const {};
-      final wId = (detail['withdrawalId'] ?? detail['expectedWithdrawalId'] ?? '').toString();
+({String type, String id})? financeFindingNavigationTarget(FinanceFinding f) {
+  if (f.recordId.isEmpty) return null;
+  if (f.actorType == 'seller') {
+    if (f.kind == 'malformed_amount' || f.kind == 'payout_ownership_mismatch') {
+      final wId = (f.detail['withdrawalId'] ?? f.detail['expectedWithdrawalId'] ?? '').toString();
       return wId.isEmpty ? null : (type: 'seller_withdrawal', id: wId);
     }
-    return (type: 'seller_withdrawal', id: recordId);
+    return (type: 'seller_withdrawal', id: f.recordId);
   }
-  if (actorType == 'rider') return (type: 'rider_payout', id: recordId);
-  if (actorType == 'employee') return (type: 'employee_payout', id: recordId);
+  if (f.actorType == 'rider') return (type: 'rider_payout', id: f.recordId);
+  if (f.actorType == 'employee') return (type: 'employee_payout', id: f.recordId);
   return null;
 }
 
-/// Phase ADMR-80, cursor continuation + investigation navigation ADMR-86.
+/// Phase ADMR-80, cursor continuation + investigation navigation ADMR-86,
+/// typed contract + request robustness ADMR-89.
 ///
 /// A READ-ONLY admin investigation surface over the seller/rider/employee
 /// payout paths (functions/src/admin/financeReconciliation.ts), calling
@@ -71,7 +58,12 @@ String financeCoverageLine(String label, Map<String, dynamic>? c) {
 /// record (FinancialRecordDetailScreen) instead of showing only a
 /// plain-text record/actor id.
 class FinanceReconciliationScreen extends StatefulWidget {
-  const FinanceReconciliationScreen({super.key});
+  const FinanceReconciliationScreen({super.key, FinanceReconciliationRepository? repository})
+      : _repository = repository ?? const CallableFinanceReconciliationRepository();
+
+  /// Injectable for tests — mirrors FinancialRecordDetailScreen's own
+  /// already-established injection convention.
+  final FinanceReconciliationRepository _repository;
 
   @override
   State<FinanceReconciliationScreen> createState() => _FinanceReconciliationScreenState();
@@ -81,8 +73,15 @@ class _FinanceReconciliationScreenState extends State<FinanceReconciliationScree
   bool _loading = true;
   bool _loadingMore = false;
   Object? _error;
-  List<Map<String, dynamic>> _findings = [];
-  Map<String, dynamic> _coverage = const {};
+
+  /// Keyed by each finding's own stable `id` and insertion-ordered (Dart's
+  /// default Map preserves insertion order) — a page whose findings happen
+  /// to repeat an id already held (should not happen after ADMR-88's own
+  /// fix, but this is a cheap, correct defensive measure, not a load-bearing
+  /// one) overwrites that entry IN PLACE rather than appending a visible
+  /// duplicate.
+  Map<String, FinanceFinding> _findingsById = {};
+  ScanCoverage _coverage = ScanCoverage.empty;
   bool _incomplete = false;
   List<String> _incompleteReasons = const [];
   DateTime? _observedAt;
@@ -90,45 +89,58 @@ class _FinanceReconciliationScreenState extends State<FinanceReconciliationScree
   bool _hasMore = false;
   String? _actorFilter; // null = all
 
-  void _openFinding(Map<String, dynamic> f) {
+  /// Incremented on every new request (a fresh scan OR a load-more). Each
+  /// in-flight request captures its own value at the moment it starts; if
+  /// the counter has moved on by the time it resolves, ITS result is stale
+  /// and is discarded rather than applied — this is what stops a slow
+  /// "load more" response from landing after a "re-scan" already reset the
+  /// list, and what makes a double-tap harmless instead of corrupting.
+  int _requestGeneration = 0;
+
+  void _openFinding(FinanceFinding f) {
     final target = financeFindingNavigationTarget(f);
     if (target == null) return;
     context.push(
       linkRecordRoute(target.type, target.id),
-      extra: {'kind': f['kind'], 'actorType': f['actorType'], 'detail': f['detail']},
+      extra: {'kind': f.kind, 'actorType': f.actorType, 'detail': f.detail},
     );
   }
 
-  void _applyResult(Map<String, dynamic> data, {required bool reset}) {
-    final newFindings = (data['findings'] as List? ?? const []).cast<Map<String, dynamic>>();
-    final newReasons = (data['incompleteReasons'] as List? ?? const []).cast<String>();
+  void _applyPage(ScanPage page, {required bool reset}) {
     setState(() {
-      _findings = reset ? newFindings : [..._findings, ...newFindings];
-      _coverage = (data['coverage'] as Map?)?.cast<String, dynamic>() ?? _coverage;
-      _incomplete = reset ? data['incomplete'] == true : (_incomplete || data['incomplete'] == true);
-      _incompleteReasons = reset ? newReasons : [..._incompleteReasons, ...newReasons];
-      _observedAt = data['observedAt'] is num
-          ? DateTime.fromMillisecondsSinceEpoch((data['observedAt'] as num).toInt())
-          : _observedAt;
-      _nextCursor = (data['nextCursor'] as Map?)?.cast<String, dynamic>();
-      _hasMore = data['hasMore'] == true;
+      if (reset) _findingsById = {};
+      for (final f in page.findings) {
+        _findingsById[f.id] = f;
+      }
+      _coverage = page.coverage;
+      _incomplete = reset ? page.incomplete : (_incomplete || page.incomplete);
+      _incompleteReasons = reset ? page.incompleteReasons : [..._incompleteReasons, ...page.incompleteReasons];
+      _observedAt = page.observedAt ?? _observedAt;
+      _nextCursor = page.nextCursor;
+      _hasMore = page.hasMore;
       _loading = false;
       _loadingMore = false;
       _error = null;
     });
   }
 
+  String _operatorMessage(Object e) {
+    if (e is MalformedScanResponseException) return e.message;
+    return "Couldn't reach the server — check your connection and try again.";
+  }
+
   Future<void> _scanFresh() async {
+    final myGeneration = ++_requestGeneration;
     setState(() {
       _loading = true;
       _error = null;
     });
     try {
-      final result =
-          await FirebaseFunctions.instance.httpsCallable('financeReconciliationScan').call<Map<String, dynamic>>();
-      _applyResult(Map<String, dynamic>.from(result.data as Map), reset: true);
+      final page = await widget._repository.scan();
+      if (myGeneration != _requestGeneration || !mounted) return; // superseded by a newer request
+      _applyPage(page, reset: true);
     } catch (e) {
-      if (!mounted) return;
+      if (myGeneration != _requestGeneration || !mounted) return;
       setState(() {
         _loading = false;
         _error = e;
@@ -138,16 +150,16 @@ class _FinanceReconciliationScreenState extends State<FinanceReconciliationScree
 
   Future<void> _loadMore() async {
     if (_nextCursor == null || _loadingMore) return;
+    final myGeneration = ++_requestGeneration;
     setState(() => _loadingMore = true);
     try {
-      final result = await FirebaseFunctions.instance
-          .httpsCallable('financeReconciliationScan')
-          .call<Map<String, dynamic>>({'cursor': _nextCursor});
-      _applyResult(Map<String, dynamic>.from(result.data as Map), reset: false);
+      final page = await widget._repository.scan(cursor: _nextCursor);
+      if (myGeneration != _requestGeneration || !mounted) return; // superseded by a newer request
+      _applyPage(page, reset: false);
     } catch (e) {
-      if (!mounted) return;
+      if (myGeneration != _requestGeneration || !mounted) return;
       setState(() => _loadingMore = false);
-      SnackbarHelper.showError(context, "Couldn't load more — check your connection and try again.");
+      SnackbarHelper.showError(context, _operatorMessage(e));
     }
   }
 
@@ -159,7 +171,8 @@ class _FinanceReconciliationScreenState extends State<FinanceReconciliationScree
 
   @override
   Widget build(BuildContext context) {
-    final visible = _actorFilter == null ? _findings : _findings.where((f) => f['actorType'] == _actorFilter).toList();
+    final findings = _findingsById.values.toList();
+    final visible = _actorFilter == null ? findings : findings.where((f) => f.actorType == _actorFilter).toList();
 
     return Scaffold(
       backgroundColor: const Color(0xFFF8FAFC),
@@ -179,7 +192,7 @@ class _FinanceReconciliationScreenState extends State<FinanceReconciliationScree
                     child: Column(mainAxisSize: MainAxisSize.min, children: [
                       const Icon(Icons.error_outline, size: 40, color: Colors.red),
                       const SizedBox(height: 8),
-                      Text('Scan failed: $_error', textAlign: TextAlign.center),
+                      Text('Scan failed: ${_operatorMessage(_error!)}', textAlign: TextAlign.center),
                       const SizedBox(height: 12),
                       OutlinedButton(onPressed: _scanFresh, child: const Text('Try again')),
                     ]),
@@ -199,10 +212,10 @@ class _FinanceReconciliationScreenState extends State<FinanceReconciliationScree
                         Padding(
                           padding: const EdgeInsets.only(top: 4),
                           child: Text(
-                            'Last checked ${_observedAt!.toLocal()} · ${_findings.length} finding(s) loaded\n'
-                            '${financeCoverageLine('Seller withdrawals', _coverage['sellerWithdrawals'] as Map<String, dynamic>?)}\n'
-                            '${financeCoverageLine('Paid rider statements', _coverage['riderPayouts'] as Map<String, dynamic>?)}\n'
-                            '${financeCoverageLine('Paid associate payouts', _coverage['employeePayouts'] as Map<String, dynamic>?)}',
+                            'Last checked ${_observedAt!.toLocal()} · ${findings.length} finding(s) loaded\n'
+                            '${_coverage.sellerWithdrawals.line('Seller withdrawals')}\n'
+                            '${_coverage.riderPayouts.line('Paid rider statements')}\n'
+                            '${_coverage.employeePayouts.line('Paid associate payouts')}',
                             style: const TextStyle(fontSize: 11, color: Colors.grey),
                           ),
                         ),
@@ -243,7 +256,7 @@ class _FinanceReconciliationScreenState extends State<FinanceReconciliationScree
                                     size: 48, color: _incomplete ? Colors.orange : Colors.green),
                                 const SizedBox(height: 12),
                                 Text(
-                                  _findings.isEmpty
+                                  findings.isEmpty
                                       ? (_incomplete ? 'No findings in the scope this scan actually covered' : 'No findings')
                                       : 'No findings for this filter',
                                   textAlign: TextAlign.center,
@@ -270,9 +283,6 @@ class _FinanceReconciliationScreenState extends State<FinanceReconciliationScree
                                 );
                               }
                               final f = visible[index];
-                              final actorType = (f['actorType'] ?? '').toString();
-                              final amount = (f['amountRupees'] as num?)?.toDouble() ?? 0;
-                              final confirmation = (f['confirmation'] ?? '').toString();
                               final navigable = financeFindingNavigationTarget(f) != null;
                               return Card(
                                 margin: const EdgeInsets.only(bottom: 10),
@@ -288,25 +298,25 @@ class _FinanceReconciliationScreenState extends State<FinanceReconciliationScree
                                         Container(
                                           padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 3),
                                           decoration: BoxDecoration(color: Colors.red.shade50, borderRadius: BorderRadius.circular(6)),
-                                          child: Text(actorType.toUpperCase(),
+                                          child: Text(f.actorType.toUpperCase(),
                                               style: TextStyle(fontSize: 11, fontWeight: FontWeight.w700, color: Colors.red.shade800)),
                                         ),
                                         const SizedBox(width: 8),
                                         Expanded(
-                                          child: Text(financeFindingKindLabel((f['kind'] ?? '').toString()),
+                                          child: Text(financeFindingKindLabel(f.kind),
                                               style: const TextStyle(fontWeight: FontWeight.w700, fontSize: 14)),
                                         ),
-                                        Text('₹${amount.toStringAsFixed(2)}', style: const TextStyle(fontWeight: FontWeight.w700)),
+                                        Text('₹${f.amountRupees.toStringAsFixed(2)}', style: const TextStyle(fontWeight: FontWeight.w700)),
                                       ]),
                                       const SizedBox(height: 6),
-                                      Text((f['summary'] ?? '').toString(), style: const TextStyle(fontSize: 13)),
+                                      Text(f.summary, style: const TextStyle(fontSize: 13)),
                                       const SizedBox(height: 4),
                                       Row(children: [
                                         Expanded(
-                                          child: SelectableText('record: ${f['recordId']} · actor: ${f['actorId']}',
+                                          child: SelectableText('record: ${f.recordId} · actor: ${f.actorId}',
                                               style: const TextStyle(fontSize: 11, color: Colors.grey, fontFamily: 'monospace')),
                                         ),
-                                        if (confirmation == 'unconfirmed')
+                                        if (f.confirmation == 'unconfirmed')
                                           Container(
                                             padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 2),
                                             decoration: BoxDecoration(color: Colors.grey.shade200, borderRadius: BorderRadius.circular(6)),
