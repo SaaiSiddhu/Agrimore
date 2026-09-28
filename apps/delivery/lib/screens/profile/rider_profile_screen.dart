@@ -739,9 +739,18 @@ class _RiderProfileScreenState extends State<RiderProfileScreen> {
         DeliverySpace.page,
         DeliverySpace.xxl,
       ),
+      // c.surfaceMuted (sunken) is literally black-on-black in dark mode
+      // (sunken == background == #000000 there) -- invisible, no matter the
+      // border radius. c.surface + a border is the SAME pair every other
+      // card on this screen (DeliveryCard's own standard variant) already
+      // uses for exactly this reason: a real fill difference where dark
+      // mode has one (surface != background), a visible border where light
+      // mode does not (surface == background there too).
       decoration: BoxDecoration(
-        color: c.surfaceMuted,
+        color: c.surface,
+        border: Border.all(color: c.border, width: DeliverySize.hairline),
         borderRadius: const BorderRadius.vertical(bottom: Radius.circular(DeliveryRadius.dialog)),
+        boxShadow: DeliveryElevation.card(c.shadow),
       ),
       child: Row(
         crossAxisAlignment: CrossAxisAlignment.center,
