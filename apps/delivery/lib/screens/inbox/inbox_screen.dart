@@ -25,6 +25,7 @@ import '../profile/document_submission_screen.dart';
 import '../profile/identity_change_screen.dart';
 import '../profile/rider_profile_screen.dart';
 import '../support/support_request_status_screen.dart';
+import '../../safety/incident_status_screen.dart';
 
 /// Fetches one order fresh (never trusts a notice's own payload): the
 /// security rule (`deliveryPartnerId == request.auth.uid`, among others)
@@ -209,6 +210,8 @@ class _InboxScreenState extends State<InboxScreen> {
         _openSupportTicket(n.ticketId!);
       case NoticeTarget.documentReview:
         _openDocumentReview(n);
+      case NoticeTarget.incidentStatus:
+        _openIncidentStatus(n.incidentId!);
       case NoticeTarget.none:
         break;
     }
@@ -298,6 +301,18 @@ class _InboxScreenState extends State<InboxScreen> {
     Navigator.of(context).push(
       MaterialPageRoute<void>(
         builder: (_) => const RiderProfileScreen(),
+      ),
+    );
+  }
+
+  /// DLVC3: routes to the EXACT safety report the notice named. Unlike
+  /// document review there is no generic fallback destination -- a legacy
+  /// notice with no incidentId is filtered out by NoticeTarget itself
+  /// (NoticeTarget.none), so this is only ever reached with a real id.
+  void _openIncidentStatus(String incidentId) {
+    Navigator.of(context).push(
+      MaterialPageRoute<void>(
+        builder: (_) => IncidentStatusScreen(incidentId: incidentId),
       ),
     );
   }

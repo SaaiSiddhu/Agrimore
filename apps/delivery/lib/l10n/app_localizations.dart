@@ -3166,6 +3166,54 @@ abstract class AppLocalizations {
   /// **'Nobody on the Agrimore team may have seen it yet. If you are in danger, call 112 now.'**
   String get incidentStatusRecordedDetail;
 
+  /// Link from the emergency sheet's own just-filed report card to its persistent status screen
+  ///
+  /// In en, this message translates to:
+  /// **'View details'**
+  String get incidentViewDetails;
+
+  /// AppBar title: one safety report's own status, reachable after the emergency sheet closes or from a notification
+  ///
+  /// In en, this message translates to:
+  /// **'Safety report'**
+  String get incidentStatusScreenTitle;
+
+  /// Title: the referenced safety report cannot be shown (deleted, bad id, or not this rider's)
+  ///
+  /// In en, this message translates to:
+  /// **'Not available'**
+  String get incidentStatusUnavailable;
+
+  /// Body for incidentStatusUnavailable
+  ///
+  /// In en, this message translates to:
+  /// **'This report is no longer available.'**
+  String get incidentStatusUnavailableBody;
+
+  /// Timestamp shown under a safety report's own status
+  ///
+  /// In en, this message translates to:
+  /// **'Last updated {date}'**
+  String incidentStatusUpdatedOn(String date);
+
+  /// AppBar title: a rider's own list of past safety reports
+  ///
+  /// In en, this message translates to:
+  /// **'Safety reports'**
+  String get myIncidentsTitle;
+
+  /// Empty state for myIncidentsTitle
+  ///
+  /// In en, this message translates to:
+  /// **'You haven\'t filed a safety report.'**
+  String get myIncidentsEmpty;
+
+  /// Profile/Support entry point opening myIncidentsTitle
+  ///
+  /// In en, this message translates to:
+  /// **'Safety reports'**
+  String get myIncidentsEntry;
+
   /// Emergency sheet title
   ///
   /// In en, this message translates to:

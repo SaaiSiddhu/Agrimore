@@ -2279,6 +2279,43 @@
   "@incidentStatusRecordedDetail": {
     "description": "Safety report reported detail"
   },
+  "incidentViewDetails": "View details",
+  "@incidentViewDetails": {
+    "description": "Link from the emergency sheet's own just-filed report card to its persistent status screen"
+  },
+  "incidentStatusScreenTitle": "Safety report",
+  "@incidentStatusScreenTitle": {
+    "description": "AppBar title: one safety report's own status, reachable after the emergency sheet closes or from a notification"
+  },
+  "incidentStatusUnavailable": "Not available",
+  "@incidentStatusUnavailable": {
+    "description": "Title: the referenced safety report cannot be shown (deleted, bad id, or not this rider's)"
+  },
+  "incidentStatusUnavailableBody": "This report is no longer available.",
+  "@incidentStatusUnavailableBody": {
+    "description": "Body for incidentStatusUnavailable"
+  },
+  "incidentStatusUpdatedOn": "Last updated {date}",
+  "@incidentStatusUpdatedOn": {
+    "description": "Timestamp shown under a safety report's own status",
+    "placeholders": {
+      "date": {
+        "type": "String"
+      }
+    }
+  },
+  "myIncidentsTitle": "Safety reports",
+  "@myIncidentsTitle": {
+    "description": "AppBar title: a rider's own list of past safety reports"
+  },
+  "myIncidentsEmpty": "You haven't filed a safety report.",
+  "@myIncidentsEmpty": {
+    "description": "Empty state for myIncidentsTitle"
+  },
+  "myIncidentsEntry": "Safety reports",
+  "@myIncidentsEntry": {
+    "description": "Profile/Support entry point opening myIncidentsTitle"
+  },
   "emergencyTitle": "Emergency help",
   "@emergencyTitle": {
     "description": "Emergency sheet title"

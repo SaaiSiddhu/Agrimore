@@ -22,6 +22,7 @@ import 'package:delivery/screens/money/money_screen.dart' show EarningTile, Mone
 import 'package:delivery/screens/money/statement_screen.dart';
 import 'package:delivery/screens/orders/active_order_screen.dart';
 import 'package:delivery/app/delivery_tab.dart';
+import 'package:delivery/safety/incident_status_screen.dart';
 import 'package:delivery/screens/profile/document_submission_screen.dart';
 import 'package:delivery/screens/profile/identity_change_screen.dart';
 import 'package:delivery/screens/support/support_request_status_screen.dart';
@@ -515,6 +516,50 @@ void main() {
       expect(t.takeException(), isNull);
       expect(opened, DeliveryTab.profile,
           reason: 'no submissionId to pin to -- the honest fallback, not a crash or a guessed association');
+    });
+  });
+
+  group('incident notices (DLVC3)', () {
+    RiderNotice incidentNotice(String type, {String? incidentId = 'r1_req1'}) => RiderNotice.fromMap('n7', {
+          'type': type,
+          'title': type == 'incident_acknowledged' ? 'Your safety report was seen' : 'Your safety report was closed',
+          'unread': true,
+          'data': {'type': type, if (incidentId != null) 'incidentId': incidentId},
+        });
+
+    testWidgets('an incident-acknowledged notice with an id opens that exact report', (t) async {
+      final src = FakeInbox()..current = [incidentNotice('incident_acknowledged')];
+      await t.pumpWidget(host(InboxScreen(riderId: 'r1', source: src)));
+      await t.pumpAndSettle();
+      await t.tap(find.text('Your safety report was seen'));
+      await t.pumpAndSettle();
+      expect(t.takeException(), isNull);
+      final screen = t.widget<IncidentStatusScreen>(find.byType(IncidentStatusScreen));
+      expect(screen.incidentId, 'r1_req1');
+    });
+
+    testWidgets('an incident-resolved notice with an id opens that exact report too', (t) async {
+      final src = FakeInbox()..current = [incidentNotice('incident_resolved', incidentId: 'r1_req2')];
+      await t.pumpWidget(host(InboxScreen(riderId: 'r1', source: src)));
+      await t.pumpAndSettle();
+      await t.tap(find.text('Your safety report was closed'));
+      await t.pumpAndSettle();
+      expect(t.takeException(), isNull);
+      final screen = t.widget<IncidentStatusScreen>(find.byType(IncidentStatusScreen));
+      expect(screen.incidentId, 'r1_req2');
+    });
+
+    // Unlike document review, there is no generic incident destination to
+    // fall back to -- a legacy notice with no id has nowhere honest to go,
+    // so tapping it must do nothing rather than guess or crash.
+    testWidgets('a legacy incident notice with no id does nothing, not crash', (t) async {
+      final src = FakeInbox()..current = [incidentNotice('incident_acknowledged', incidentId: null)];
+      await t.pumpWidget(host(InboxScreen(riderId: 'r1', source: src)));
+      await t.pumpAndSettle();
+      await t.tap(find.text('Your safety report was seen'));
+      await t.pumpAndSettle();
+      expect(t.takeException(), isNull);
+      expect(find.byType(IncidentStatusScreen), findsNothing);
     });
   });
 

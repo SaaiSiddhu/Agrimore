@@ -24,6 +24,7 @@ import '../../money/rider_money.dart';
 import '../../providers/auth_provider.dart';
 import '../../providers/order_provider.dart';
 import '../../registration/rider_application.dart';
+import '../../safety/incident_status_screen.dart';
 import '../auth/rider_registration_screen.dart' show vehicleLabel;
 import '../money/money_screen.dart';
 import '../orders/active_order_screen.dart';
@@ -661,6 +662,21 @@ class _RiderProfileScreenState extends State<RiderProfileScreen> {
                     onPressed: () => Navigator.of(context).push(
                       MaterialPageRoute<void>(
                         builder: (_) => const HelpSupportScreen(),
+                      ),
+                    ),
+                  ),
+                  const SizedBox(height: DeliverySpace.sm),
+                  // DLVC3: the persistent entry point back to a rider's own
+                  // past safety reports -- reopenable any time, including
+                  // after the emergency sheet that filed one has long since
+                  // closed and after an app restart.
+                  DeliveryButton.secondary(
+                    key: const ValueKey('my-safety-reports'),
+                    label: l.myIncidentsEntry,
+                    icon: DeliveryIcons.shield,
+                    onPressed: () => Navigator.of(context).push(
+                      MaterialPageRoute<void>(
+                        builder: (_) => MyIncidentsScreen(riderId: auth.user!.uid),
                       ),
                     ),
                   ),

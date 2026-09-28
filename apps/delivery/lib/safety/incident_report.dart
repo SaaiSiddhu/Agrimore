@@ -104,13 +104,26 @@ Future<String> reportIncidentCallable(Map<String, dynamic> payload) async {
   }
 }
 
-Stream<Map<String, dynamic>?> watchIncident(String incidentId) => FirebaseFirestore.instance
-    .collection('rider_incidents')
-    .doc(incidentId)
-    .snapshots()
-    // A cache-only "missing" is not an answer (web SDK offline after ~10 s).
-    .where((s) => s.exists || !s.metadata.isFromCache)
-    .map((s) => s.data());
+/// DLVC3: every existing caller (`EmergencySheet`) already injects its own
+/// `IncidentWatcher` override in tests, so this raw `FirebaseFirestore.
+/// instance` access had never been exercised without a real Firebase app --
+/// `IncidentStatusScreen`'s own default `watcher` is the first consumer
+/// that can reach this directly, and it can crash synchronously (not as a
+/// stream error) with no Firebase app initialized, the same class of gap
+/// already fixed for `RiderProfileScreen`'s own default partner source.
+Stream<Map<String, dynamic>?> watchIncident(String incidentId) {
+  try {
+    return FirebaseFirestore.instance
+        .collection('rider_incidents')
+        .doc(incidentId)
+        .snapshots()
+        // A cache-only "missing" is not an answer (web SDK offline after ~10 s).
+        .where((s) => s.exists || !s.metadata.isFromCache)
+        .map((s) => s.data());
+  } catch (e) {
+    return Stream.error(e);
+  }
+}
 
 Future<Map<String, dynamic>> quickIncidentFix() async {
   try {

@@ -113,6 +113,10 @@ async function main() {
   const ack = await call("updateRiderIncident", boss.token, { incidentId: "n07", action: "acknowledge" });
   box = await inbox(r1.uid);
   record("n07_incident_acknowledged", ack.result?.status === "acknowledged" && box.some((n) => n.id === "incident_n07_ack"), JSON.stringify({ ack }));
+  // DLVC3: incidentId used to be accepted but never threaded into `data` --
+  // a rider tapping this exact notice had no id to route to at all.
+  const n07Notice = box.find((n) => n.id === "incident_n07_ack");
+  record("n07b_notice_carries_incidentId_for_client_routing", n07Notice?.data?.incidentId === "n07", JSON.stringify(n07Notice));
 
   // n08
   const r2box = await inbox(r2.uid);

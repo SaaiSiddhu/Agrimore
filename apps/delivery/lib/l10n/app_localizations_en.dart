@@ -1770,6 +1770,33 @@ class AppLocalizationsEn extends AppLocalizations {
       'Nobody on the Agrimore team may have seen it yet. If you are in danger, call 112 now.';
 
   @override
+  String get incidentViewDetails => 'View details';
+
+  @override
+  String get incidentStatusScreenTitle => 'Safety report';
+
+  @override
+  String get incidentStatusUnavailable => 'Not available';
+
+  @override
+  String get incidentStatusUnavailableBody =>
+      'This report is no longer available.';
+
+  @override
+  String incidentStatusUpdatedOn(String date) {
+    return 'Last updated $date';
+  }
+
+  @override
+  String get myIncidentsTitle => 'Safety reports';
+
+  @override
+  String get myIncidentsEmpty => 'You haven\'t filed a safety report.';
+
+  @override
+  String get myIncidentsEntry => 'Safety reports';
+
+  @override
   String get emergencyTitle => 'Emergency help';
 
   @override
