@@ -51,6 +51,7 @@ class _SupportCaseDetailScreenState extends State<SupportCaseDetailScreen>
   late final TabController _tabController;
   int _activityRefreshTick = 0;
   bool _busy = false;
+  final _noteRequestIds = SupportRequestIdTracker();
 
   @override
   void initState() {
@@ -181,7 +182,8 @@ class _SupportCaseDetailScreenState extends State<SupportCaseDetailScreen>
   Future<void> _addNote() async {
     final text = await _promptForText(title: 'Add note', label: 'Note', confirmLabel: 'Add');
     if (text == null) return;
-    await _call('addSupportCaseNote', {'caseId': widget.caseId, 'text': text});
+    final requestId = _noteRequestIds.forPayload(text);
+    await _call('addSupportCaseNote', {'caseId': widget.caseId, 'text': text, 'requestId': requestId});
   }
 
   @override

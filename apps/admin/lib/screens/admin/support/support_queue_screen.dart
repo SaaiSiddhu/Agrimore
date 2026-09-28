@@ -216,6 +216,7 @@ class _CreateCaseDialogState extends State<_CreateCaseDialog> {
   String _category = kSupportCaseCategories.first;
   bool _busy = false;
   String? _error;
+  final _requestIds = SupportRequestIdTracker();
 
   @override
   void dispose() {
@@ -235,11 +236,13 @@ class _CreateCaseDialogState extends State<_CreateCaseDialog> {
       _busy = true;
       _error = null;
     });
+    final requestId = _requestIds.forPayload((title, _category, _actorType, actorId));
     try {
       await FirebaseFunctions.instance.httpsCallable('createSupportCase').call<Map<String, dynamic>>({
         'title': title,
         'category': _category,
         'primaryActor': {'type': _actorType, 'id': actorId},
+        'requestId': requestId,
       });
       if (mounted) Navigator.pop(context, true);
     } on FirebaseFunctionsException catch (e) {

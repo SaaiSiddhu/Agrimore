@@ -139,6 +139,7 @@ class _RaiseCaseDialogState extends State<_RaiseCaseDialog> {
   String _category = kSupportCaseCategories.first;
   bool _busy = false;
   String? _error;
+  final _requestIds = SupportRequestIdTracker();
 
   @override
   void dispose() {
@@ -156,11 +157,13 @@ class _RaiseCaseDialogState extends State<_RaiseCaseDialog> {
       _busy = true;
       _error = null;
     });
+    final requestId = _requestIds.forPayload((title, _category, widget.actorType, widget.actorId));
     try {
       await FirebaseFunctions.instance.httpsCallable('createSupportCase').call<Map<String, dynamic>>({
         'title': title,
         'category': _category,
         'primaryActor': {'type': widget.actorType, 'id': widget.actorId},
+        'requestId': requestId,
       });
       if (mounted) Navigator.pop(context, true);
     } on FirebaseFunctionsException catch (e) {
