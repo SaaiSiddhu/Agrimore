@@ -66,8 +66,9 @@ export {
 // Phase ADMR-80: a read-only admin scan over the seller/rider/employee
 // payout paths for the consistency invariants this session's own ADMR-77/
 // 78/79 work established — no remediation action, findings only. See
-// admin/financeReconciliation.ts.
-export { financeReconciliationScan } from "./admin/financeReconciliation";
+// admin/financeReconciliation.ts. ADMR-85 adds an on-demand single-finding
+// recheck (same read-only contract) alongside the scan.
+export { financeReconciliationScan, financeReconciliationRecheckFinding } from "./admin/financeReconciliation";
 
 // ============================================
 // CUSTOMER MODULE
