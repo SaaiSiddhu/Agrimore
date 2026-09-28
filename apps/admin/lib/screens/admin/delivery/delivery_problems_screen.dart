@@ -15,10 +15,15 @@ import '../widgets/actor_support_cases_section.dart' show createOrOpenCaseFromSo
 /// changes the order's money — refunds, cancellation and rider pay for a
 /// failed attempt are done in the order tools (open owner policy).
 class DeliveryProblemsScreen extends StatelessWidget {
-  const DeliveryProblemsScreen({super.key});
+  const DeliveryProblemsScreen({super.key, FirebaseFirestore? firestore}) : _firestoreOverride = firestore;
+
+  /// Injectable so a widget test never needs a real Firebase connection,
+  /// mirroring SupportCaseDetailScreen's own established pattern.
+  final FirebaseFirestore? _firestoreOverride;
 
   @override
   Widget build(BuildContext context) {
+    final firestore = _firestoreOverride ?? FirebaseFirestore.instance;
     return DefaultTabController(
       length: 2,
       child: Scaffold(
@@ -26,17 +31,19 @@ class DeliveryProblemsScreen extends StatelessWidget {
           title: const Text('Delivery Problems'),
           bottom: appBarTabs(context, const [Tab(text: 'Open'), Tab(text: 'Resolved')]),
         ),
-        body: const TabBarView(children: [_ProblemList(open: true), _ProblemList(open: false)]),
+        body: TabBarView(children: [
+          _ProblemList(open: true, firestore: firestore),
+          _ProblemList(open: false, firestore: firestore),
+        ]),
       ),
     );
   }
 }
 
-final FirebaseFirestore _db = FirebaseFirestore.instance;
-
 class _ProblemList extends StatefulWidget {
-  const _ProblemList({required this.open});
+  const _ProblemList({required this.open, required this.firestore});
   final bool open;
+  final FirebaseFirestore firestore;
   @override
   State<_ProblemList> createState() => _ProblemListState();
 }
@@ -44,8 +51,8 @@ class _ProblemList extends StatefulWidget {
 class _ProblemListState extends State<_ProblemList> {
   // Index: delivery_exceptions status ASC, createdAt DESC.
   late final Stream<QuerySnapshot<Map<String, dynamic>>> _stream = (widget.open
-          ? _db.collection('delivery_exceptions').where('status', whereIn: openProblemStatuses)
-          : _db.collection('delivery_exceptions').where('status', isEqualTo: 'resolved'))
+          ? widget.firestore.collection('delivery_exceptions').where('status', whereIn: openProblemStatuses)
+          : widget.firestore.collection('delivery_exceptions').where('status', isEqualTo: 'resolved'))
       .orderBy('createdAt', descending: true)
       .limit(widget.open ? 200 : 50)
       .snapshots();
@@ -66,7 +73,7 @@ class _ProblemListState extends State<_ProblemList> {
           padding: const EdgeInsets.all(16),
           itemCount: docs.length,
           separatorBuilder: (_, __) => const SizedBox(height: 12),
-          itemBuilder: (_, i) => _ProblemCard(id: docs[i].id, data: docs[i].data()),
+          itemBuilder: (_, i) => _ProblemCard(id: docs[i].id, data: docs[i].data(), firestore: widget.firestore),
         );
       },
     );
@@ -84,9 +91,10 @@ String _who(Object? uid) {
 }
 
 class _ProblemCard extends StatefulWidget {
-  const _ProblemCard({required this.id, required this.data});
+  const _ProblemCard({required this.id, required this.data, required this.firestore});
   final String id;
   final Map<String, dynamic> data;
+  final FirebaseFirestore firestore;
   @override
   State<_ProblemCard> createState() => _ProblemCardState();
 }
@@ -94,7 +102,7 @@ class _ProblemCard extends StatefulWidget {
 class _ProblemCardState extends State<_ProblemCard> {
   bool _busy = false;
   late final Stream<DocumentSnapshot<Map<String, dynamic>>> _rider =
-      _db.collection('delivery_partners').doc((widget.data['riderId'] ?? '').toString()).snapshots();
+      widget.firestore.collection('delivery_partners').doc((widget.data['riderId'] ?? '').toString()).snapshots();
 
   Future<void> _update(String action, {String? disposition, String? resolution}) async {
     setState(() => _busy = true);
