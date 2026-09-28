@@ -3,6 +3,37 @@
 // functions/src/admin/supportCases.ts (SUPPORT_CASE_ACTOR_TYPES,
 // SUPPORT_CASE_STATUSES) so the UI can never offer a value the backend
 // would refuse.
+import 'package:uuid/uuid.dart';
+
+/// ADMR-66 — createSupportCase and addSupportCaseNote now require a
+/// requestId for server-side idempotency (mirrors the real, already-shipped
+/// PayoutReviewScreen convention in apps/employee). Unlike that screen's own
+/// immutable, widget-lifetime-scoped id (safe there because its payload —
+/// requestedAmount — is a final field that can never change), a create/note
+/// dialog's own fields ARE editable across separate submit attempts within
+/// the same dialog instance, so reusing one fixed id for the widget's whole
+/// lifetime would wrongly bind two DIFFERENT logical actions (e.g. the user
+/// fixes a typo and resubmits) to the same id, tripping the server's own
+/// request_id_conflict refusal. This tracks the last-submitted payload
+/// alongside its id: an unchanged payload (a genuine retry of the same
+/// logical action) reuses the same id; a changed payload mints a fresh one.
+class SupportRequestIdTracker {
+  String? _lastId;
+  Object? _lastPayload;
+
+  /// [payload] should be a value with real (Dart records give this
+  /// automatically) or overridden equality -- e.g. `(title, category,
+  /// actorType, actorId)` or just a `String` for a single-field payload
+  /// like a note's own text.
+  String forPayload(Object payload) {
+    if (_lastPayload == payload) return _lastId!;
+    final id = const Uuid().v4();
+    _lastId = id;
+    _lastPayload = payload;
+    return id;
+  }
+}
+
 const List<String> kSupportCaseActorTypes = [
   'customer',
   'seller',

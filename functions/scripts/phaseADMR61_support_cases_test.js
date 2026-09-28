@@ -59,13 +59,13 @@ async function main() {
   // ── create: authorization ──
   {
     const r = await call(createSupportCase, undefined, {
-      title: "t", category: "c", primaryActor: { type: "customer", id: "sc-cust-real" },
+      title: "t", category: "c", primaryActor: { type: "customer", id: "sc-cust-real" }, requestId: "request-c01",
     });
     check("c01_unauthenticated_denied", !r.ok && r.code === "unauthenticated", JSON.stringify(r));
   }
   {
     const r = await call(createSupportCase, CUSTOMER_CALLER, {
-      title: "t", category: "c", primaryActor: { type: "customer", id: "sc-cust-real" },
+      title: "t", category: "c", primaryActor: { type: "customer", id: "sc-cust-real" }, requestId: "request-c02",
     });
     check("c02_non_admin_denied", !r.ok && r.code === "permission-denied", JSON.stringify(r));
   }
@@ -73,13 +73,13 @@ async function main() {
   // ── H09: create validates linked identity ──
   {
     const r = await call(createSupportCase, ADMIN1, {
-      title: "t", category: "c", primaryActor: { type: "customer", id: "does-not-exist" },
+      title: "t", category: "c", primaryActor: { type: "customer", id: "does-not-exist" }, requestId: "request-c03",
     });
     check("c03_h09_unknown_actor_refused", !r.ok && r.code === "invalid-argument" && r.details?.reason === "actor_not_found", JSON.stringify(r));
   }
   {
     const r = await call(createSupportCase, ADMIN1, {
-      title: "Delivery delayed", category: "delivery_issue", primaryActor: { type: "customer", id: "sc-cust-real" },
+      title: "Delivery delayed", category: "delivery_issue", primaryActor: { type: "customer", id: "sc-cust-real" }, requestId: "request-c04",
     });
     const doc = r.ok ? (await db.collection("support_cases").doc(r.res.caseId).get()).data() : null;
     check("c04_h09_real_actor_creates_case",
@@ -89,14 +89,14 @@ async function main() {
   // H14: the caller cannot forge who created it via the payload.
   {
     const r = await call(createSupportCase, ADMIN1, {
-      title: "t2", category: "c", primaryActor: { type: "seller", id: "sc-seller-real" }, createdBy: "someone-else",
+      title: "t2", category: "c", primaryActor: { type: "seller", id: "sc-seller-real" }, createdBy: "someone-else", requestId: "request-c05",
     });
     const doc = r.ok ? (await db.collection("support_cases").doc(r.res.caseId).get()).data() : null;
     check("c05_h14_creator_cannot_be_forged", r.ok && doc?.createdBy === "sc-admin1", JSON.stringify({ r, doc }));
   }
   {
     const events = await eventsFor((await call(createSupportCase, ADMIN1, {
-      title: "t3", category: "c", primaryActor: { type: "seller", id: "sc-seller-real" },
+      title: "t3", category: "c", primaryActor: { type: "seller", id: "sc-seller-real" }, requestId: "request-c06",
     })).res.caseId);
     check("c06_create_writes_a_real_event", events.length === 1 && events[0].type === "created" && events[0].actorUid === "sc-admin1", JSON.stringify(events));
   }
@@ -105,7 +105,7 @@ async function main() {
   let raceCaseId;
   {
     const created = await call(createSupportCase, ADMIN1, {
-      title: "race", category: "c", primaryActor: { type: "customer", id: "sc-cust-real" },
+      title: "race", category: "c", primaryActor: { type: "customer", id: "sc-cust-real" }, requestId: "request-c07",
     });
     raceCaseId = created.res.caseId; // version 1
     const first = await call(assignSupportCase, ADMIN1, { caseId: raceCaseId, assigneeUid: "sc-admin1", expectedVersion: 1 });
@@ -128,7 +128,7 @@ async function main() {
 
   // ── status change ──
   {
-    const created = await call(createSupportCase, ADMIN1, { title: "status", category: "c", primaryActor: { type: "customer", id: "sc-cust-real" } });
+    const created = await call(createSupportCase, ADMIN1, { title: "status", category: "c", primaryActor: { type: "customer", id: "sc-cust-real" }, requestId: "request-c10" });
     const caseId = created.res.caseId;
     const r1 = await call(changeSupportCaseStatus, ADMIN1, { caseId, status: "waiting", expectedVersion: 1 });
     check("c10_waiting_needs_a_reason", !r1.ok && r1.code === "invalid-argument", JSON.stringify(r1));
@@ -143,12 +143,12 @@ async function main() {
 
   // ── add note (append-only) ──
   {
-    const created = await call(createSupportCase, ADMIN1, { title: "notes", category: "c", primaryActor: { type: "customer", id: "sc-cust-real" } });
+    const created = await call(createSupportCase, ADMIN1, { title: "notes", category: "c", primaryActor: { type: "customer", id: "sc-cust-real" }, requestId: "request-c14" });
     const caseId = created.res.caseId;
-    const r1 = await call(addSupportCaseNote, ADMIN1, { caseId, text: "" });
+    const r1 = await call(addSupportCaseNote, ADMIN1, { caseId, text: "", requestId: "note-c14-empty" });
     check("c14_empty_note_refused", !r1.ok && r1.code === "invalid-argument", JSON.stringify(r1));
-    const r2 = await call(addSupportCaseNote, ADMIN1, { caseId, text: "Called the customer, no answer yet." });
-    const r3 = await call(addSupportCaseNote, ADMIN2, { caseId, text: "Tried again, reached them." });
+    const r2 = await call(addSupportCaseNote, ADMIN1, { caseId, text: "Called the customer, no answer yet.", requestId: "note-c15-a" });
+    const r3 = await call(addSupportCaseNote, ADMIN2, { caseId, text: "Tried again, reached them.", requestId: "note-c15-b" });
     const notes = await db.collection("support_case_notes").where("caseId", "==", caseId).get();
     check("c15_two_admins_can_each_add_their_own_note",
       r2.ok && r3.ok && notes.size === 2 && notes.docs.some((d) => d.data().authorUid === "sc-admin1") && notes.docs.some((d) => d.data().authorUid === "sc-admin2"),
@@ -157,7 +157,7 @@ async function main() {
 
   // ── resolve / reopen ──
   {
-    const created = await call(createSupportCase, ADMIN1, { title: "lifecycle", category: "c", primaryActor: { type: "customer", id: "sc-cust-real" } });
+    const created = await call(createSupportCase, ADMIN1, { title: "lifecycle", category: "c", primaryActor: { type: "customer", id: "sc-cust-real" }, requestId: "request-c16" });
     const caseId = created.res.caseId;
     const badResolve = await call(resolveSupportCase, ADMIN1, { caseId, resolutionSummary: "", expectedVersion: 1 });
     check("c16_resolve_needs_a_real_summary", !badResolve.ok && badResolve.code === "invalid-argument", JSON.stringify(badResolve));

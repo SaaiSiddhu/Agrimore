@@ -20,16 +20,32 @@
 // matching every other admin-mutated collection in this codebase) --
 // no participant-visible communication yet.
 //
-// This phase deliberately ships six commands only: create, assign,
-// change status, add note, resolve, reopen. Link/unlink, create-from-
-// an-existing-ticket, and evidence upload are a closely-following
-// phase so this one stays reviewable.
+// ADMR-66 (reliability hardening): createSupportCase and addSupportCaseNote
+// now require a client-generated requestId, bound into a deterministic
+// document id -- mirroring the real, already-shipped
+// functions/src/customer/requestEmployeePayout.ts:63's own
+// `${actorUid}_${requestId}` convention exactly (ADMR-43). A retry with the
+// SAME requestId and the SAME payload returns the original outcome
+// (alreadyApplied: true), never a duplicate; the SAME requestId with a
+// DIFFERENT payload is refused (request_id_conflict), never silently
+// overwritten. Every command's required audit event now writes INSIDE its
+// own transaction (writeEventTx) -- previously every event was written
+// AFTER the transaction had already resolved, so a mutation could commit
+// with no audit trail at all if the process died, or the event write
+// itself failed, in the gap between the two calls. assign/changeStatus/
+// resolve/reopen/link/unlink deliberately do NOT gain a new requestId:
+// their existing expectedVersion contract already correctly handles a
+// stale competing edit (first wins, second gets version_mismatch, proven
+// since ADMR-61's own c07/c08), and link/unlink's own idempotent
+// array-membership check already makes a same-link replay safe with no
+// new mechanism needed.
 import { onCall, HttpsError } from "firebase-functions/v2/https";
 import * as admin from "firebase-admin";
 import { Timestamp, FieldValue } from "firebase-admin/firestore";
 import { resolveIsAdmin } from "./complianceGate";
 
 type Db = FirebaseFirestore.Firestore;
+type Tx = FirebaseFirestore.Transaction;
 
 export const SUPPORT_CASE_ACTOR_TYPES = ["customer", "seller", "rider", "associate"] as const;
 export type SupportCaseActorType = (typeof SUPPORT_CASE_ACTOR_TYPES)[number];
@@ -42,6 +58,10 @@ export const MAX_TEXT = 2000;
 const REQUEST_ID = /^[A-Za-z0-9_-]{8,64}$/;
 
 export type ActorRef = { type: SupportCaseActorType; id: string };
+
+function sameActorRef(a: ActorRef | undefined, b: ActorRef): boolean {
+  return !!a && a.type === b.type && a.id === b.id;
+}
 
 // The real collection backing each actor type. No arbitrary client-
 // supplied path is ever trusted -- every actor is resolved against its
@@ -75,22 +95,28 @@ async function requireAdmin(
   return request.auth.uid;
 }
 
-async function writeEvent(
+// ADMR-66: writes INSIDE the caller's own open transaction -- every command
+// below now calls this before returning from its own runTransaction body, so
+// a mutation and its required audit event commit atomically, or neither
+// does.
+function writeEventTx(
+  tx: Tx,
   db: Db,
   caseId: string,
   type: string,
   actorUid: string,
   at: Timestamp,
   details: Record<string, unknown> = {}
-): Promise<void> {
-  await db.collection("support_case_events").add({ caseId, type, actorUid, at, details });
+): void {
+  const ref = db.collection("support_case_events").doc();
+  tx.set(ref, { caseId, type, actorUid, at, details });
 }
 
 // ── create ──
 
 export type CreateSupportCaseVerdict =
-  | { kind: "created"; caseId: string }
-  | { kind: "refused"; reason: "bad_request" | "actor_not_found" };
+  | { kind: "created"; caseId: string; alreadyApplied: boolean }
+  | { kind: "refused"; reason: "bad_request" | "actor_not_found" | "request_id_conflict" };
 
 export async function createSupportCaseCore(
   db: Db,
@@ -102,35 +128,55 @@ export async function createSupportCaseCore(
   const title = typeof d.title === "string" ? d.title.trim() : "";
   const category = typeof d.category === "string" ? d.category.trim() : "";
   const primaryActor = parseActorRef(d.primaryActor);
-  if (!title || title.length > MAX_TITLE || !category || !primaryActor) {
+  const requestId = typeof d.requestId === "string" ? d.requestId.trim() : "";
+  if (!title || title.length > MAX_TITLE || !category || !primaryActor || !REQUEST_ID.test(requestId)) {
     return { kind: "refused", reason: "bad_request" };
   }
+  // Checked once, outside the transaction, since it never changes once
+  // true -- mirrors linkSupportCaseRecordCore's own targetSnap check.
   if (!(await assertActorExists(db, primaryActor))) {
     return { kind: "refused", reason: "actor_not_found" };
   }
-  const caseRef = db.collection("support_cases").doc();
-  const at = Timestamp.fromMillis(nowMs);
-  await caseRef.set({
-    caseId: caseRef.id,
-    title,
-    category,
-    primaryActor,
-    status: "open" as SupportCaseStatus,
-    waitingReason: null,
-    assignedTo: null,
-    createdBy: adminUid,
-    createdAt: at,
-    updatedAt: at,
-    resolutionSummary: null,
-    resolvedAt: null,
-    resolvedBy: null,
-    reopenedAt: null,
-    reopenedBy: null,
-    reopenReason: null,
-    version: 1,
+  const caseRef = db.collection("support_cases").doc(`req_${adminUid}_${requestId}`);
+  return db.runTransaction(async (tx): Promise<CreateSupportCaseVerdict> => {
+    const existing = await tx.get(caseRef);
+    if (existing.exists) {
+      const prior = existing.data()!;
+      const samePayload =
+        prior.title === title &&
+        prior.category === category &&
+        sameActorRef(prior.primaryActor as ActorRef | undefined, primaryActor);
+      if (!samePayload) {
+        return { kind: "refused", reason: "request_id_conflict" };
+      }
+      // Idempotent replay -- the SAME request already succeeded. Return
+      // its original result; never create a second case.
+      return { kind: "created", caseId: caseRef.id, alreadyApplied: true };
+    }
+    const at = Timestamp.fromMillis(nowMs);
+    tx.set(caseRef, {
+      caseId: caseRef.id,
+      title,
+      category,
+      primaryActor,
+      status: "open" as SupportCaseStatus,
+      waitingReason: null,
+      assignedTo: null,
+      createdBy: adminUid,
+      createdAt: at,
+      updatedAt: at,
+      resolutionSummary: null,
+      resolvedAt: null,
+      resolvedBy: null,
+      reopenedAt: null,
+      reopenedBy: null,
+      reopenReason: null,
+      linkedRecords: [],
+      version: 1,
+    });
+    writeEventTx(tx, db, caseRef.id, "created", adminUid, at, { title, category, primaryActor });
+    return { kind: "created", caseId: caseRef.id, alreadyApplied: false };
   });
-  await writeEvent(db, caseRef.id, "created", adminUid, at, { title, category, primaryActor });
-  return { kind: "created", caseId: caseRef.id };
 }
 
 // ── assign ──
@@ -162,10 +208,8 @@ export async function assignSupportCaseCore(
     if (snap.data()!.version !== expectedVersion) return { kind: "refused", reason: "version_mismatch" };
     const at = Timestamp.fromMillis(nowMs);
     tx.update(caseRef, { assignedTo: assignee, updatedAt: at, version: FieldValue.increment(1) });
+    writeEventTx(tx, db, caseId, "assigned", adminUid, at, { assignee });
     return { kind: "assigned" };
-  }).then(async (v) => {
-    if (v.kind === "assigned") await writeEvent(db, caseId, "assigned", adminUid, Timestamp.fromMillis(nowMs), { assignee });
-    return v;
   });
 }
 
@@ -195,7 +239,7 @@ export async function changeSupportCaseStatusCore(
   }
   if (typeof expectedVersion !== "number") return { kind: "refused", reason: "bad_request" };
   const caseRef = db.collection("support_cases").doc(caseId);
-  const result = await db.runTransaction(async (tx): Promise<ChangeSupportCaseStatusVerdict> => {
+  return db.runTransaction(async (tx): Promise<ChangeSupportCaseStatusVerdict> => {
     const snap = await tx.get(caseRef);
     if (!snap.exists) return { kind: "refused", reason: "not_found" };
     const current = snap.data()!;
@@ -208,38 +252,55 @@ export async function changeSupportCaseStatusCore(
       updatedAt: at,
       version: FieldValue.increment(1),
     });
+    writeEventTx(tx, db, caseId, "status_changed", adminUid, at, {
+      status,
+      waitingReason: status === "waiting" ? reason : null,
+    });
     return { kind: "changed" };
   });
-  if (result.kind === "changed") {
-    await writeEvent(db, caseId, "status_changed", adminUid, Timestamp.fromMillis(nowMs), { status, waitingReason: status === "waiting" ? reason : null });
-  }
-  return result;
 }
 
 // ── add note ──
 
 export type AddSupportCaseNoteVerdict =
-  | { kind: "added"; noteId: string }
-  | { kind: "refused"; reason: "not_found" | "bad_request" };
+  | { kind: "added"; noteId: string; alreadyApplied: boolean }
+  | { kind: "refused"; reason: "not_found" | "bad_request" | "request_id_conflict" };
 
 export async function addSupportCaseNoteCore(
   db: Db,
   adminUid: string,
   caseId: string,
   text: unknown,
+  requestIdInput: unknown,
   nowMs: number
 ): Promise<AddSupportCaseNoteVerdict> {
   const body = typeof text === "string" ? text.trim() : "";
-  if (!body || body.length > MAX_TEXT) return { kind: "refused", reason: "bad_request" };
+  const requestId = typeof requestIdInput === "string" ? requestIdInput.trim() : "";
+  if (!body || body.length > MAX_TEXT || !REQUEST_ID.test(requestId)) {
+    return { kind: "refused", reason: "bad_request" };
+  }
   const caseRef = db.collection("support_cases").doc(caseId);
-  const caseSnap = await caseRef.get();
-  if (!caseSnap.exists) return { kind: "refused", reason: "not_found" };
-  const at = Timestamp.fromMillis(nowMs);
-  const noteRef = db.collection("support_case_notes").doc();
-  await noteRef.set({ noteId: noteRef.id, caseId, authorUid: adminUid, text: body, createdAt: at });
-  await caseRef.update({ updatedAt: at });
-  await writeEvent(db, caseId, "note_added", adminUid, at, { noteId: noteRef.id });
-  return { kind: "added", noteId: noteRef.id };
+  const noteRef = db.collection("support_case_notes").doc(`${caseId}_${requestId}`);
+  return db.runTransaction(async (tx): Promise<AddSupportCaseNoteVerdict> => {
+    const [caseSnap, existingNote] = await Promise.all([tx.get(caseRef), tx.get(noteRef)]);
+    if (!caseSnap.exists) return { kind: "refused", reason: "not_found" };
+    if (existingNote.exists) {
+      const prior = existingNote.data()!;
+      if (prior.text !== body) return { kind: "refused", reason: "request_id_conflict" };
+      // Idempotent replay -- never a second note, never a second event.
+      return { kind: "added", noteId: noteRef.id, alreadyApplied: true };
+    }
+    const at = Timestamp.fromMillis(nowMs);
+    tx.set(noteRef, { noteId: noteRef.id, caseId, authorUid: adminUid, text: body, createdAt: at });
+    // Deliberately does NOT bump `version` -- a note is additive
+    // commentary, never gated by or gating the assign/status/resolve/
+    // reopen optimistic-concurrency contract. Proven by a real test: a
+    // concurrent note-add and status-change never conflict with each
+    // other, each using the version they actually captured.
+    tx.update(caseRef, { updatedAt: at });
+    writeEventTx(tx, db, caseId, "note_added", adminUid, at, { noteId: noteRef.id });
+    return { kind: "added", noteId: noteRef.id, alreadyApplied: false };
+  });
 }
 
 // ── resolve ──
@@ -261,7 +322,7 @@ export async function resolveSupportCaseCore(
     return { kind: "refused", reason: "bad_request" };
   }
   const caseRef = db.collection("support_cases").doc(caseId);
-  const result = await db.runTransaction(async (tx): Promise<ResolveSupportCaseVerdict> => {
+  return db.runTransaction(async (tx): Promise<ResolveSupportCaseVerdict> => {
     const snap = await tx.get(caseRef);
     if (!snap.exists) return { kind: "refused", reason: "not_found" };
     const current = snap.data()!;
@@ -276,12 +337,9 @@ export async function resolveSupportCaseCore(
       updatedAt: at,
       version: FieldValue.increment(1),
     });
+    writeEventTx(tx, db, caseId, "resolved", adminUid, at, { resolutionSummary: summary });
     return { kind: "resolved" };
   });
-  if (result.kind === "resolved") {
-    await writeEvent(db, caseId, "resolved", adminUid, Timestamp.fromMillis(nowMs), { resolutionSummary: summary });
-  }
-  return result;
 }
 
 // ── reopen ──
@@ -303,7 +361,7 @@ export async function reopenSupportCaseCore(
     return { kind: "refused", reason: "bad_request" };
   }
   const caseRef = db.collection("support_cases").doc(caseId);
-  const result = await db.runTransaction(async (tx): Promise<ReopenSupportCaseVerdict> => {
+  return db.runTransaction(async (tx): Promise<ReopenSupportCaseVerdict> => {
     const snap = await tx.get(caseRef);
     if (!snap.exists) return { kind: "refused", reason: "not_found" };
     const current = snap.data()!;
@@ -318,12 +376,9 @@ export async function reopenSupportCaseCore(
       updatedAt: at,
       version: FieldValue.increment(1),
     });
+    writeEventTx(tx, db, caseId, "reopened", adminUid, at, { reason: text });
     return { kind: "reopened" };
   });
-  if (result.kind === "reopened") {
-    await writeEvent(db, caseId, "reopened", adminUid, Timestamp.fromMillis(nowMs), { reason: text });
-  }
-  return result;
 }
 
 // ── callables ──
@@ -341,6 +396,7 @@ function refuse(reason: string): never {
     link_not_found: ["failed-precondition", "That record is not linked to this case"],
     source_not_found: ["not-found", "That ticket, incident or exception could not be found"],
     source_actor_missing: ["invalid-argument", "That record has no rider it could be linked through"],
+    request_id_conflict: ["invalid-argument", "This request id was already used with different details — retry with a new one"],
   };
   const [code, message] = table[reason] ?? ["internal", "Could not complete that"];
   throw new HttpsError(code as never, message, { reason });
@@ -414,7 +470,7 @@ export async function linkSupportCaseRecordCore(
     return { kind: "refused", reason: "target_not_found" };
   }
   const caseRef = db.collection("support_cases").doc(caseId);
-  const result = await db.runTransaction(async (tx): Promise<LinkSupportCaseRecordVerdict> => {
+  return db.runTransaction(async (tx): Promise<LinkSupportCaseRecordVerdict> => {
     const snap = await tx.get(caseRef);
     if (!snap.exists) return { kind: "refused", reason: "not_found" };
     const current = snap.data()!;
@@ -427,12 +483,9 @@ export async function linkSupportCaseRecordCore(
     }
     const at = Timestamp.fromMillis(nowMs);
     tx.update(caseRef, { linkedRecords: [...existing, link], updatedAt: at, version: FieldValue.increment(1) });
+    writeEventTx(tx, db, caseId, "link_added", adminUid, at, { link });
     return { kind: "linked" };
   });
-  if (result.kind === "linked") {
-    await writeEvent(db, caseId, "link_added", adminUid, Timestamp.fromMillis(nowMs), { link });
-  }
-  return result;
 }
 
 export type UnlinkSupportCaseRecordVerdict =
@@ -452,7 +505,7 @@ export async function unlinkSupportCaseRecordCore(
     return { kind: "refused", reason: "bad_request" };
   }
   const caseRef = db.collection("support_cases").doc(caseId);
-  const result = await db.runTransaction(async (tx): Promise<UnlinkSupportCaseRecordVerdict> => {
+  return db.runTransaction(async (tx): Promise<UnlinkSupportCaseRecordVerdict> => {
     const snap = await tx.get(caseRef);
     if (!snap.exists) return { kind: "refused", reason: "not_found" };
     const current = snap.data()!;
@@ -468,12 +521,9 @@ export async function unlinkSupportCaseRecordCore(
       updatedAt: at,
       version: FieldValue.increment(1),
     });
+    writeEventTx(tx, db, caseId, "link_removed", adminUid, at, { link });
     return { kind: "unlinked" };
   });
-  if (result.kind === "unlinked") {
-    await writeEvent(db, caseId, "link_removed", adminUid, Timestamp.fromMillis(nowMs), { link });
-  }
-  return result;
 }
 
 // ── create from an existing operational record (ADMR-65) ──
@@ -530,7 +580,7 @@ export async function createSupportCaseFromSourceCore(
   const link: LinkedRecord = { type: sourceType, id: sourceId };
   const caseRef = db.collection("support_cases").doc(sourceCaseId(sourceType, sourceId));
 
-  const result = await db.runTransaction(async (tx): Promise<CreateSupportCaseFromSourceVerdict> => {
+  return db.runTransaction(async (tx): Promise<CreateSupportCaseFromSourceVerdict> => {
     const existingSnap = await tx.get(caseRef);
     if (existingSnap.exists) {
       return { kind: "existed", caseId: caseRef.id };
@@ -569,16 +619,9 @@ export async function createSupportCaseFromSourceCore(
       linkedRecords: [link],
       version: 1,
     });
+    writeEventTx(tx, db, caseRef.id, "created", adminUid, at, { title, category, fromSource: link });
     return { kind: "created", caseId: caseRef.id };
   });
-  if (result.kind === "created") {
-    await writeEvent(db, result.caseId, "created", adminUid, Timestamp.fromMillis(nowMs), {
-      title,
-      category,
-      fromSource: link,
-    });
-  }
-  return result;
 }
 
 // ── link/unlink/create-from-source callables ──
@@ -614,7 +657,7 @@ export const createSupportCase = onCall({ minInstances: 0, memory: "256MiB" }, a
   const adminUid = await requireAdmin(request);
   const v = await createSupportCaseCore(admin.firestore(), adminUid, request.data, Date.now());
   if (v.kind === "refused") refuse(v.reason);
-  return { success: true, caseId: v.caseId };
+  return { success: true, caseId: v.caseId, alreadyApplied: v.alreadyApplied };
 });
 
 export const assignSupportCase = onCall({ minInstances: 0, memory: "256MiB" }, async (request) => {
@@ -644,9 +687,9 @@ export const addSupportCaseNote = onCall({ minInstances: 0, memory: "256MiB" }, 
   const d = (request.data ?? {}) as Record<string, unknown>;
   const caseId = typeof d.caseId === "string" ? d.caseId.trim() : "";
   if (!caseId) throw new HttpsError("invalid-argument", "caseId is required");
-  const v = await addSupportCaseNoteCore(admin.firestore(), adminUid, caseId, d.text, Date.now());
+  const v = await addSupportCaseNoteCore(admin.firestore(), adminUid, caseId, d.text, d.requestId, Date.now());
   if (v.kind === "refused") refuse(v.reason);
-  return { success: true, noteId: v.noteId };
+  return { success: true, noteId: v.noteId, alreadyApplied: v.alreadyApplied };
 });
 
 export const resolveSupportCase = onCall({ minInstances: 0, memory: "256MiB" }, async (request) => {

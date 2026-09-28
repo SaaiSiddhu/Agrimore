@@ -58,9 +58,15 @@ async function seed() {
   });
 }
 
+let _newCaseCounter = 0;
 async function newCase(actorType, actorId) {
+  // Each call must be its own distinct logical case, never a replay of a
+  // sibling scenario's own createSupportCase call -- a unique requestId
+  // per invocation, not a shared literal.
+  _newCaseCounter += 1;
   const r = await call(createSupportCase, ADMIN1, {
     title: "base case", category: "c", primaryActor: { type: actorType, id: actorId },
+    requestId: `newcase-${_newCaseCounter}`,
   });
   return r.res.caseId;
 }
