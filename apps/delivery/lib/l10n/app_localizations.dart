@@ -2470,17 +2470,17 @@ abstract class AppLocalizations {
   /// **'All time'**
   String get historyRangeAllTime;
 
-  /// History date-range filter: the last week
+  /// History date-range filter: from Monday 00:00 IST (this week's own statement cutoff) to now
   ///
   /// In en, this message translates to:
-  /// **'Last 7 days'**
-  String get historyRangeLast7Days;
+  /// **'This week'**
+  String get historyRangeThisWeek;
 
-  /// History date-range filter: the last month
+  /// History date-range filter: the full previous Monday-to-Sunday IST week
   ///
   /// In en, this message translates to:
-  /// **'Last 30 days'**
-  String get historyRangeLast30Days;
+  /// **'Last week'**
+  String get historyRangeLastWeek;
 
   /// Resets the status and date-range filters to their defaults
   ///

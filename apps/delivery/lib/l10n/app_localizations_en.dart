@@ -1348,10 +1348,10 @@ class AppLocalizationsEn extends AppLocalizations {
   String get historyRangeAllTime => 'All time';
 
   @override
-  String get historyRangeLast7Days => 'Last 7 days';
+  String get historyRangeThisWeek => 'This week';
 
   @override
-  String get historyRangeLast30Days => 'Last 30 days';
+  String get historyRangeLastWeek => 'Last week';
 
   @override
   String get historyClearFilters => 'Clear filters';

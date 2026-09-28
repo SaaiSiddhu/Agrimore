@@ -81,7 +81,7 @@ Widget host(
             activeSource: (_) => Stream.value((docs: const <OrderDoc>[], fromCache: false)),
             deliveredCount: (_, __) async => 0,
             historyFetch: historyFetch,
-            historyCounts: historyCounts ?? (_, __) async => (all: 0, delivered: 0, cancelled: 0, returned: 0),
+            historyCounts: historyCounts ?? (_, __, ___) async => (all: 0, delivered: 0, cancelled: 0, returned: 0),
             historySearch: historySearch ?? (_, __) async => null,
           )..bind('r1'),
         ),
@@ -553,21 +553,57 @@ void main() {
       expect(h.filter, HistoryFilter.delivered);
     });
 
-    test('changing the date range reloads from the first page with that cutoff', () async {
-      final asked = <DateTime?>[];
+    group('DLVH11: mondayIstMidnightAtOrBefore (pure)', () {
+      test('a Monday-IST-midnight instant maps to itself -- the boundary is inclusive', () {
+        final mondayIst = DateTime.utc(2026, 9, 27, 18, 30); // 2026-09-28 00:00 IST, a real Monday
+        expect(mondayIstMidnightAtOrBefore(mondayIst), mondayIst);
+      });
+
+      test('a Sunday just before the boundary maps to the PRIOR Monday, not the upcoming one', () {
+        final mondayIst = DateTime.utc(2026, 9, 27, 18, 30);
+        final oneMinuteBefore = mondayIst.subtract(const Duration(minutes: 1)); // still Sunday IST
+        expect(mondayIstMidnightAtOrBefore(oneMinuteBefore), mondayIst.subtract(const Duration(days: 7)));
+      });
+
+      test('resolves by IST, not by UTC -- a UTC-Sunday instant that is already IST-Monday counts as the new week', () {
+        // 2026-09-27 20:00 UTC is still Sunday in UTC, but +5:30 makes it
+        // 2026-09-28 01:30 IST -- already the new week by the SAME clock the
+        // rider's own weekly statement is cut by.
+        final utcSundayButIstMonday = DateTime.utc(2026, 9, 27, 20, 0);
+        final mondayIst = DateTime.utc(2026, 9, 27, 18, 30);
+        expect(mondayIstMidnightAtOrBefore(utcSundayButIstMonday), mondayIst,
+            reason: 'a naive UTC-only check would wrongly say "not yet Monday"');
+      });
+
+      test('crosses a year boundary correctly: an early-January instant can belong to a December Monday', () {
+        // 2026-01-01 is a Thursday; its own week's Monday is 2025-12-29.
+        final earlyJan = DateTime.utc(2026, 1, 1, 12, 0);
+        final decMondayIst = DateTime.utc(2025, 12, 28, 18, 30); // 2025-12-29 00:00 IST
+        expect(mondayIstMidnightAtOrBefore(earlyJan), decMondayIst);
+      });
+    });
+
+    test('changing the date range reloads from the first page with that window', () async {
+      final askedSince = <DateTime?>[];
+      final askedUntil = <DateTime?>[];
       final h = RiderHistory(fetch: (rider, query, cursor, size) async {
-        asked.add(query.since);
+        askedSince.add(query.since);
+        askedUntil.add(query.until);
         return (items: <OrderModel>[], cursor: null, hasMore: false);
       })
         ..bind('r1');
       await h.loadMore();
-      await h.setDateRange(HistoryDateRange.last7Days);
-      expect(asked, hasLength(2));
-      expect(asked[0], isNull, reason: 'all time: no cutoff');
-      expect(asked[1], isNotNull);
-      expect(DateTime.now().difference(asked[1]!).inDays, 7);
-      expect(h.dateRange, HistoryDateRange.last7Days);
+      await h.setDateRange(HistoryDateRange.thisWeek);
+      expect(askedSince, hasLength(2));
+      expect(askedSince[0], isNull, reason: 'all time: no cutoff');
+      expect(askedUntil[0], isNull);
+      expect(askedSince[1], mondayIstMidnightAtOrBefore(DateTime.now()), reason: 'the same Monday-IST cutoff the rider\'s own statement uses');
+      expect(askedUntil[1], isNull, reason: 'this week is open-ended -- it runs up to now');
+      expect(h.dateRange, HistoryDateRange.thisWeek);
       expect(h.hasActiveFilter, isTrue);
+      await h.setDateRange(HistoryDateRange.lastWeek);
+      expect(askedSince[2], mondayIstMidnightAtOrBefore(DateTime.now()).subtract(const Duration(days: 7)));
+      expect(askedUntil[2], mondayIstMidnightAtOrBefore(DateTime.now()), reason: 'last week is bounded -- it excludes the current week');
     });
 
     test('clearFilters resets status and date range together, in one reload', () async {
@@ -579,7 +615,7 @@ void main() {
         ..bind('r1');
       await h.loadMore();
       await h.setFilter(HistoryFilter.cancelled);
-      await h.setDateRange(HistoryDateRange.last30Days);
+      await h.setDateRange(HistoryDateRange.lastWeek);
       expect(h.hasActiveFilter, isTrue);
       final before = calls;
       await h.clearFilters();
@@ -598,7 +634,7 @@ void main() {
         final h = RiderHistory(
           fetch: (rider, query, cursor, size) async =>
               (items: <OrderModel>[historyOrder('o1', {'orderNumber': 'A'})], cursor: 'c1', hasMore: true),
-          counts: (rider, since) async {
+          counts: (rider, since, until) async {
             calls++;
             return (all: 5, delivered: 3, cancelled: 1, returned: 1);
           },
@@ -616,7 +652,7 @@ void main() {
         var calls = 0;
         final h = RiderHistory(
           fetch: (rider, query, cursor, size) async => (items: <OrderModel>[], cursor: null, hasMore: false),
-          counts: (rider, since) async {
+          counts: (rider, since, until) async {
             calls++;
             return (all: 0, delivered: 0, cancelled: 0, returned: 0);
           },
@@ -627,7 +663,7 @@ void main() {
         await h.setFilter(HistoryFilter.delivered);
         await flushMicrotasks();
         expect(calls, 1, reason: 'a status-chip tap must not recompute date-scoped counts');
-        await h.setDateRange(HistoryDateRange.last7Days);
+        await h.setDateRange(HistoryDateRange.thisWeek);
         await flushMicrotasks();
         expect(calls, 2);
       });
@@ -636,7 +672,7 @@ void main() {
         var fail = false;
         final h = RiderHistory(
           fetch: (rider, query, cursor, size) async => (items: <OrderModel>[], cursor: null, hasMore: false),
-          counts: (rider, since) async {
+          counts: (rider, since, until) async {
             if (fail) throw Exception('offline');
             return (all: 9, delivered: 9, cancelled: 0, returned: 0);
           },
@@ -645,9 +681,31 @@ void main() {
         await flushMicrotasks();
         expect(h.counts, isNotNull);
         fail = true;
-        await h.setDateRange(HistoryDateRange.last30Days);
+        await h.setDateRange(HistoryDateRange.lastWeek);
         await flushMicrotasks();
         expect(h.counts, isNull);
+      });
+
+      test('DLVH11: counts and the list receive the identical since/until window for the same preset', () async {
+        DateTime? listSince, listUntil, countsSince, countsUntil;
+        final h = RiderHistory(
+          fetch: (rider, query, cursor, size) async {
+            listSince = query.since;
+            listUntil = query.until;
+            return (items: <OrderModel>[], cursor: null, hasMore: false);
+          },
+          counts: (rider, since, until) async {
+            countsSince = since;
+            countsUntil = until;
+            return (all: 0, delivered: 0, cancelled: 0, returned: 0);
+          },
+        )..bind('r1');
+        await h.setDateRange(HistoryDateRange.lastWeek);
+        await flushMicrotasks();
+        expect(listSince, isNotNull);
+        expect(listSince, countsSince, reason: 'the list and its counts must never see different windows');
+        expect(listUntil, isNotNull, reason: 'last week is genuinely bounded');
+        expect(listUntil, countsUntil);
       });
     });
 
@@ -721,7 +779,7 @@ void main() {
       test('binding to a different rider clears both counts and search', () async {
         final h = RiderHistory(
           fetch: (rider, query, cursor, size) async => (items: <OrderModel>[], cursor: null, hasMore: false),
-          counts: (rider, since) async => (all: 1, delivered: 1, cancelled: 0, returned: 0),
+          counts: (rider, since, until) async => (all: 1, delivered: 1, cancelled: 0, returned: 0),
           search: (rider, orderNumber) async => historyOrder('o1', {'orderNumber': orderNumber}),
         )..bind('r1');
         await h.loadMore();
@@ -1381,7 +1439,7 @@ void main() {
         await t.pumpWidget(host(
           const RiderHistoryScreen(),
           historyFetch: (rider, query, cursor, size) async => (items: <OrderModel>[], cursor: null, hasMore: false),
-          historyCounts: (rider, since) => gate.future,
+          historyCounts: (rider, since, until) => gate.future,
         ));
         await t.pump();
         expect(find.text('All'), findsOneWidget, reason: 'no count yet: the plain label');
