@@ -147,3 +147,59 @@ DLVC3 was `ACTIVE` (uncommitted WIP) at this phase's claim time, owning
 and `functions/src/delivery/riderNotices.ts`. This phase does not touch any of them — the
 notification bell reuses `InboxButton` (defined in `inbox_screen.dart`) by *importing and
 composing* it unchanged, never editing its source.
+
+## D6 — Profile screen redesign (OWNER_DECISION, 2026-09-28, scope amendment)
+
+Second reference set: `apps/delivery/assets/design-references/zomato-profile/` (two screenshots,
+overview + settings). Excluded verbatim per the owner's own list, none has an AgriMore
+equivalent: personal photo, rider ID, rating, partner tier, score, referral banner, Gigs/Trips
+history shortcuts, offers, certificates, rest points, app/audio/support language, order-alert
+sound, competitor branding footer.
+
+**Baseline re-check (required by the brief before touching anything):** by the time this
+sub-phase started, `agrimore/dlvc3-profile-lifecycle-notification-destinations` and
+`agrimore/dlvc4-support-connected-journey` were both `MERGED_DEVELOP` (confirmed via
+`git worktree list` + the ledger, not assumed from the brief's own "observations, not guaranteed
+current tips" framing). This branch was still based on `develop`@`413244a1`, predating both —
+`git merge develop --no-ff` (commit `ef182216`, develop tip `a647e144`) brought in DLVC3's real
+`_UidBoundStream` auth-lifecycle rebuild, DLVDOC3's per-document review/replace flow, and the
+safety-report entry point BEFORE any Profile edit, so this redesign builds on the current real
+implementation, not the one this branch forked from.
+
+**Before → after inventory**, read fresh from the merged tree (not assumed): every existing
+action kept its exact `ValueKey` and handler --
+
+| Action | Before | After |
+|---|---|---|
+| Identity header | plain `Text` name + email | `DeliveryAvatar` (initials, no photo) + name (2-line safe) + email |
+| Request vehicle/name change | `DeliveryButton.secondary` | unchanged (a review-triggering action, kept visually distinct from plain navigation) |
+| Edit contact | `DeliveryButton.secondary` -> `ContactEditSheet` | unchanged |
+| Documents | custom Row, no leading icon | same `StreamBuilder`/`_view`/`_replace` logic, now with a leading icon circle (danger-tinted when rejected) |
+| Payout summary + Change | `Text` + `DeliveryButton.secondary` | unchanged |
+| Appearance (System/Light/Dark) | `DeliverySegmented<ThemeMode>` in a plain-title card | same segmented control (owner: do not replace with a 2-way toggle), card now uses `DeliverySectionHeader` |
+| Device readiness | `DeliveryButton.secondary` | `DeliveryListTile` (chevron row) |
+| Get help | `DeliveryButton.secondary` | `DeliveryListTile` |
+| **My support requests** | reachable only nested inside Help & support | **new top-level row** (`my-support-requests`), reuses existing `l.mySupportRequestsEntry` string and `MySupportRequestsScreen`; the nested Help entry is untouched, not removed |
+| My safety reports | `DeliveryButton.secondary` -> `MyIncidentsScreen` | `DeliveryListTile`, same destination |
+| Call/email support | `SupportContactButtons()` | unchanged (reused component, not forked) |
+| Sign out / Delete account | `DeliveryButton.secondary` / `.ghost` | unchanged, same order (sign-out first, delete lower-emphasis) |
+
+Section titles/rows reuse `_row`/`_section` helpers, reimplemented on top of the app's own
+canonical `DeliveryKeyValueRow`/`DeliverySectionHeader`/`DeliveryListTile`/`DeliveryAvatar`
+(`design_system/components/delivery_list.dart`) instead of bespoke `Row`/`Text` — no new
+components, no parallel Profile theme.
+
+**Not touched** (reused via existing public entry points/backends only, per the brief's own
+"do not silently rewrite completed lifecycle fixes"): `identity_change_screen.dart`,
+`document_submission_screen.dart`, `rider_account_source.dart`, `rider_account.dart`,
+`rider_document_review.dart`, `help_support_screen.dart`, `my_support_requests_screen.dart`,
+`device_readiness_screen.dart`, `money_screen.dart`, `support_card.dart`.
+
+Evidence: `flutter analyze` apps/delivery 0 issues; `canon_check.sh --ratchet apps/delivery/lib`
+0 <= baseline 0; `flutter test` apps/delivery 437/437 (435 post-merge baseline + 2 new tests for
+the "My support requests" row's own navigation and its distinctness from "My safety reports") --
+`test/rider_profile_screen_test.dart` (19 cases: sign-out, deletion eligibility, the full DLVC3
+auth-lifecycle group) and `test/rider_profile_document_preview_test.dart` needed **zero logic
+changes**, only continuing to pass unchanged, confirming every `ValueKey` this redesign reused
+landed on the right widget. Verified on-device (Samsung S26, `RZGL21W98TB`) separately from this
+widget-test evidence, per the brief's own instruction to distinguish the two.
