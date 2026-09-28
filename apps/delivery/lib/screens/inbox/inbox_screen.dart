@@ -22,6 +22,7 @@ import '../money/money_screen.dart';
 import '../money/statement_screen.dart';
 import '../orders/active_order_screen.dart';
 import '../profile/identity_change_screen.dart';
+import '../profile/rider_profile_screen.dart';
 import '../support/support_request_status_screen.dart';
 
 /// Fetches one order fresh (never trusts a notice's own payload): the
@@ -205,6 +206,8 @@ class _InboxScreenState extends State<InboxScreen> {
         _openIdentityRequest(n);
       case NoticeTarget.supportTicket:
         _openSupportTicket(n.ticketId!);
+      case NoticeTarget.documentReview:
+        _openDocumentReview();
       case NoticeTarget.none:
         break;
     }
@@ -260,6 +263,27 @@ class _InboxScreenState extends State<InboxScreen> {
     Navigator.of(context).push(
       MaterialPageRoute<void>(
         builder: (_) => MoneyScreen(riderId: widget.riderId),
+      ),
+    );
+  }
+
+  /// DLVC2: Profile's own Documents section already shows the current,
+  /// live review status per document (RiderProfileScreen's
+  /// _DocumentPreviewTile, via a real-time Firestore stream) -- this notice
+  /// never needs to pin a specific historical record the way an identity or
+  /// bank change request does, so routing here just needs to land on
+  /// Profile at all. Mirrors _openPayoutDetails' own tab-switch-first
+  /// pattern; falls back to a pushed route when Inbox is reached outside
+  /// the tabbed shell (e.g. a test harness with no onOpenTab).
+  void _openDocumentReview() {
+    final go = widget.onOpenTab;
+    if (go != null) {
+      go(DeliveryTab.profile);
+      return;
+    }
+    Navigator.of(context).push(
+      MaterialPageRoute<void>(
+        builder: (_) => const RiderProfileScreen(),
       ),
     );
   }
