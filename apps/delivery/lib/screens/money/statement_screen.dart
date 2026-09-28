@@ -162,10 +162,10 @@ class _StatementScreenState extends State<StatementScreen> {
     WidgetsBinding.instance.addPostFrameCallback((_) async {
       if (!mounted || !_scrollController.hasClients) return;
       final estimate = (index * _kEstimatedRowExtent).clamp(0.0, _scrollController.position.maxScrollExtent);
-      await _scrollController.animateTo(estimate, duration: const Duration(milliseconds: 300), curve: Curves.easeOut);
+      await _scrollController.animateTo(estimate, duration: DeliveryMotion.debounce, curve: DeliveryMotion.standard);
       final ctx = _highlightRowKey.currentContext;
       if (ctx != null && ctx.mounted) {
-        await Scrollable.ensureVisible(ctx, duration: const Duration(milliseconds: 150), alignment: 0.5);
+        await Scrollable.ensureVisible(ctx, duration: DeliveryMotion.fast, alignment: 0.5);
       }
     });
   }

@@ -34,16 +34,13 @@ import 'route_recovery.dart';
 /// segmented toggle rather than showing both at once.
 enum RouteView { map, details }
 
-/// Below this, the rider's live position is shown as stale. Matches
-/// riderIncidents.ts's own FRESH_LOCATION_MS server-side constant for
-/// consistency (a position is "fresh" by the same definition whether the
-/// context is a safety incident or an active-delivery map) -- independent
-/// client/server constants, not a shared import.
-const Duration kStaleLocationThreshold = Duration(minutes: 2);
+/// See [DeliveryMotion.staleLocationThreshold] for the full doc comment --
+/// kept as a top-level alias so every existing consumer here and in tests
+/// keeps compiling unchanged.
+const Duration kStaleLocationThreshold = DeliveryMotion.staleLocationThreshold;
 
-/// Re-evaluate staleness on a timer, not only on a new Firestore event --
-/// the whole point is to notice when NOTHING has arrived in a while.
-const Duration kStaleLocationCheckInterval = Duration(seconds: 30);
+/// See [DeliveryMotion.staleLocationCheckInterval] for the full doc comment.
+const Duration kStaleLocationCheckInterval = DeliveryMotion.staleLocationCheckInterval;
 
 /// Pure (no Firebase, no widget) so it is unit-testable directly: null [at]
 /// (no live point recorded yet) is never stale -- there is nothing yet to

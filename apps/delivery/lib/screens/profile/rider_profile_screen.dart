@@ -867,8 +867,10 @@ class _DocumentPreviewDialog extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final l = AppLocalizations.of(context);
+    final c = context.colors;
+    final t = context.text;
     return Dialog.fullscreen(
-      backgroundColor: Colors.black,
+      backgroundColor: c.mediaViewerBackground,
       child: Stack(
         children: [
           Center(
@@ -879,11 +881,11 @@ class _DocumentPreviewDialog extends StatelessWidget {
                 url,
                 errorBuilder: (context, error, stackTrace) => Text(
                   l.docPreviewUnavailable,
-                  style: const TextStyle(color: Colors.white),
+                  style: t.bodyMedium.copyWith(color: c.onMediaViewer),
                 ),
                 loadingBuilder: (context, child, progress) => progress == null
                     ? child
-                    : const CircularProgressIndicator(color: Colors.white),
+                    : CircularProgressIndicator(color: c.onMediaViewer),
               ),
             ),
           ),
@@ -893,7 +895,7 @@ class _DocumentPreviewDialog extends StatelessWidget {
             child: SafeArea(
               child: IconButton(
                 key: const ValueKey('close-document-preview'),
-                icon: const Icon(Icons.close, color: Colors.white),
+                icon: Icon(DeliveryIcons.close, color: c.onMediaViewer),
                 onPressed: () => Navigator.of(context).pop(),
               ),
             ),
@@ -902,7 +904,7 @@ class _DocumentPreviewDialog extends StatelessWidget {
             top: DeliverySpace.md,
             left: DeliverySpace.md,
             child: SafeArea(
-              child: Text(label, style: const TextStyle(color: Colors.white)),
+              child: Text(label, style: t.bodyMedium.copyWith(color: c.onMediaViewer)),
             ),
           ),
         ],

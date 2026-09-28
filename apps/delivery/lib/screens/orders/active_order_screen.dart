@@ -83,11 +83,10 @@ bool isCashOnDeliveryMethod(String method) {
 // _onProviderChanged), reusing that provider's own existing live query
 // rather than adding a second listener.
 
-/// How long "not yet seen live" is treated as still-checking before
-/// concluding the assignment was genuinely removed — covers the gap between
-/// an offer's one-off accept read and the live query catching up with the
-/// same new order (the golden path must never flash "removed").
-const Duration kAssignmentConfirmGrace = Duration(seconds: 8);
+/// See [DeliveryMotion.assignmentConfirmGrace] for the full doc comment --
+/// kept as a top-level alias so every existing consumer here and in tests
+/// keeps compiling unchanged.
+const Duration kAssignmentConfirmGrace = DeliveryMotion.assignmentConfirmGrace;
 
 /// Whether [b] differs from [a] in anything the rider would need to review —
 /// store/customer/items/payment, never `orderStatus` (resynced into

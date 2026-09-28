@@ -160,6 +160,13 @@ class DeliveryColors extends ThemeExtension<DeliveryColors> {
   Color get focusRing => focus;
   Color get shadow => const Color(0xFF171210);
 
+  /// The full-screen document/photo viewer's own backdrop + foreground --
+  /// deliberately fixed regardless of [isDark] (a photo is shown against a
+  /// dark surface with light text/icons either way, the same convention a
+  /// system photo viewer uses), same category as [shadow] above.
+  Color get mediaViewerBackground => Colors.black;
+  Color get onMediaViewer => Colors.white;
+
   DeliveryTonePair get success => DeliveryTonePair(
         foreground: successColor,
         container: successContainer,
