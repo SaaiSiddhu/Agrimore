@@ -16,6 +16,7 @@
 // phase's ledger row, not decided here.
 import 'package:firebase_auth/firebase_auth.dart';
 import 'package:flutter/material.dart';
+import 'package:image_picker/image_picker.dart';
 
 import '../../account/support_card.dart';
 import '../../design_system/design_system.dart';
@@ -26,7 +27,19 @@ import 'my_support_requests_screen.dart';
 import 'submit_support_request_screen.dart';
 
 class HelpSupportScreen extends StatelessWidget {
-  const HelpSupportScreen({super.key});
+  const HelpSupportScreen({super.key, this.backend, this.pickImage});
+
+  /// DLVC4: injectable for tests, forwarded to whichever real screen this
+  /// navigates to -- without this, no test could drive the real
+  /// HelpSupportScreen -> SubmitSupportRequestScreen/MySupportRequestsScreen
+  /// chain with a fake, unlike every sibling entry point in this app that
+  /// already forwards its own injection seams. Defaults to the real
+  /// callable-backed service, matching every screen this pushes.
+  final RiderSupportBackend? backend;
+
+  /// Injectable for tests (image_picker has no test-friendly platform
+  /// channel); forwarded to SubmitSupportRequestScreen only.
+  final Future<XFile?> Function()? pickImage;
 
   @override
   Widget build(BuildContext context) {
@@ -105,7 +118,7 @@ class HelpSupportScreen extends StatelessWidget {
   void _openCategory(BuildContext context, String category) {
     Navigator.of(context).push(
       MaterialPageRoute<void>(
-        builder: (_) => SubmitSupportRequestScreen(category: category),
+        builder: (_) => SubmitSupportRequestScreen(category: category, backend: backend, pickImage: pickImage),
       ),
     );
   }
@@ -115,7 +128,7 @@ class HelpSupportScreen extends StatelessWidget {
     if (uid == null) return;
     Navigator.of(context).push(
       MaterialPageRoute<void>(
-        builder: (_) => MySupportRequestsScreen(riderId: uid),
+        builder: (_) => MySupportRequestsScreen(riderId: uid, backend: backend),
       ),
     );
   }

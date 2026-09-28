@@ -2,15 +2,27 @@
 //
 // Phase DLVSUP1 -- the request-details/status screen (31.4 panel 4): a
 // Submitted -> Seen -> Closed timeline, the outcome once closed, and a "New
-// request" action. Reached only right after submitting (pushReplacement) --
-// no ticket-LIST screen exists to reach an older ticket from, matching the
-// mockup, which shows none either.
+// request" action. Reached right after submitting (pushReplacement) or, per
+// DLVSUP2's own MySupportRequestsScreen and a support notification's own
+// exact-ticket routing, from a persistent list or an inbox notice for any
+// past ticket -- never only "right after submitting".
+//
+// DLVC4: a read failure (e.g. a cross-rider permission-denied listener
+// error, surfaced when a stale/historical notification names a ticket this
+// signed-in rider no longer owns) used to fall through to the SAME branch as
+// a genuinely nonexistent ticket, showing a bare Text with a string borrowed
+// from the unrelated identity-change flow. Folded into the same honest
+// "unavailable" RequestStatusCard every sibling by-id screen already uses
+// (DocumentSubmissionScreen, IncidentStatusScreen) -- their own established
+// reasoning applies identically here: a permission-denied read and a
+// genuinely-deleted ticket are not safely distinguishable to the rider.
 import 'package:agrimore_ui/agrimore_ui.dart' show AgFormat;
 import 'package:flutter/material.dart';
 
 import '../../design_system/design_system.dart';
 import '../../l10n/app_localizations.dart';
 import '../../support/rider_support.dart';
+import '../profile/identity_change_screen.dart' show RequestStatusCard;
 
 class SupportRequestStatusScreen extends StatelessWidget {
   const SupportRequestStatusScreen({
@@ -37,9 +49,13 @@ class SupportRequestStatusScreen extends StatelessWidget {
           if (snap.connectionState == ConnectionState.waiting) {
             return const Center(child: CircularProgressIndicator());
           }
-          final ticket = snap.data;
+          final ticket = snap.hasError ? null : snap.data;
           if (ticket == null) {
-            return Center(child: Text(l.identityChangeInvalid));
+            return RequestStatusCard(
+              icon: DeliveryIcons.close,
+              title: l.supportStatusUnavailable,
+              body: l.supportStatusUnavailableBody,
+            );
           }
           return _Timeline(ticket: ticket);
         },

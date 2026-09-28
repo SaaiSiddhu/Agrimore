@@ -562,6 +562,13 @@ class AppLocalizationsEn extends AppLocalizations {
   String get supportNewRequest => 'New request';
 
   @override
+  String get supportStatusUnavailable => 'Not available';
+
+  @override
+  String get supportStatusUnavailableBody =>
+      'This request is no longer available.';
+
+  @override
   String get profileAccount => 'Account';
 
   @override
