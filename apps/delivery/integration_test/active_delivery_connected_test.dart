@@ -220,4 +220,113 @@ void main() {
     expect(find.byIcon(DeliveryIcons.home), findsOneWidget,
         reason: 'the removed screen\'s own Back to Dashboard action, even after a reconnect-driven update');
   });
+
+  testWidgets('DLVR2 4.3: legitimate release ("Seller Not Ready"), before pickup', (tester) async {
+    final riderId = fixtures['riderA'] as String;
+    final orderId = fixtures['orderIdRelease'] as String;
+
+    await FirebaseAuth.instance.signInWithCustomToken(fixtures['tokenA'] as String);
+    expect(FirebaseAuth.instance.currentUser?.uid, riderId, reason: 'signed in via custom token, never the OTP UI');
+
+    final orderSnap = await FirebaseFirestore.instance.collection('orders').doc(orderId).get();
+    expect(orderSnap.data()?['orderStatus'], 'delivery_accepted',
+        reason: 'must start before pickup for the release action to even render');
+    final order = historyOrder(orderId, orderSnap.data()!);
+
+    final provider = DeliveryOrderProvider()..bind(riderId);
+    addTearDown(provider.dispose);
+
+    // A real push/pop navigation stack -- not ActiveOrderScreen alone as
+    // `home:` -- so its own Navigator.pop(context) on a successful release
+    // has a genuine underlying route to return to, exactly like the real
+    // dashboard -> active-order navigation.
+    await tester.pumpWidget(MultiProvider(
+      providers: [
+        ChangeNotifierProvider<LocationProvider>(create: (_) => LocationProvider()),
+        ChangeNotifierProvider<DeliveryOrderProvider>.value(value: provider),
+      ],
+      child: MaterialApp(
+        theme: WorkspaceTheme.build(WorkspaceBrand.delivery, Brightness.light),
+        localizationsDelegates: AppLocalizations.localizationsDelegates,
+        supportedLocales: AppLocalizations.supportedLocales,
+        home: Builder(
+          builder: (context) => Scaffold(
+            body: Center(
+              child: ElevatedButton(
+                onPressed: () => Navigator.of(context).push(
+                  MaterialPageRoute<void>(builder: (_) => ActiveOrderScreen(order: order)),
+                ),
+                child: const Text('Open Order'),
+              ),
+            ),
+          ),
+        ),
+      ),
+    ));
+    await tester.pumpAndSettle();
+    await tester.tap(find.text('Open Order'));
+    await tester.pumpAndSettle(const Duration(seconds: 5));
+    expect(tester.takeException(), isNull);
+
+    // Renders only before pickup (DeliveryStep.accepted/arrivedAtStore) --
+    // confirms the fixture's own status genuinely drives this, not a
+    // hardcoded test assumption.
+    expect(find.text('Seller not ready'), findsOneWidget);
+
+    // Below the fold in this screen's SingleChildScrollView -- a plain,
+    // non-lazy scrollable (unlike DLVH10's Sliver case, everything here is
+    // already built, just scrolled away), so ensureVisible alone suffices.
+    await tester.ensureVisible(find.text('Seller not ready'));
+    await tester.pumpAndSettle();
+    await tester.tap(find.text('Seller not ready'));
+    await tester.pumpAndSettle();
+    expect(find.text('Release order'), findsOneWidget, reason: 'a real confirm dialog, not a silent action');
+
+    await tester.tap(find.text('Release order'));
+    await tester.pumpAndSettle(const Duration(seconds: 5));
+    expect(tester.takeException(), isNull, reason: 'the real releaseDeliveryOrder callable dispatch must not throw');
+
+    // No false "reassigned away" alarm: the recovery machine's own masking
+    // UI (private-detail-hidden "removed" scaffold) must never appear for a
+    // SELF-initiated release -- _leavingByOwnAction suppresses it. Cleanly
+    // popped back to the launcher screen instead.
+    expect(find.text('Meenakshi Sundaram'), findsNothing, reason: 'popped away, not left on a removed/masked scaffold');
+    expect(find.text('Open Order'), findsOneWidget, reason: 'a genuine pop back to the underlying screen');
+
+    // The REAL backend, via the real onCall callable -- not a fake event --
+    // confirmed by reading the order back directly.
+    final after = await FirebaseFirestore.instance.collection('orders').doc(orderId).get();
+    expect(after.data()?['deliveryPartnerId'], isNull, reason: 'releaseOrderCore deletes deliveryPartnerId on success');
+    expect(after.data()?['orderStatus'], 'ready_for_pickup', reason: 'releaseOrderCore resets orderStatus to ready_for_pickup');
+    expect(after.data()?['deliveryReleasedBy'], riderId);
+
+    // No duplicate side effects from a genuine retry (e.g. a dropped
+    // response the client resends) -- the real callable's own idempotency,
+    // not a UI-timing guess: calling it again must report "already", not
+    // error, and must not write a second timeline entry. The UI's own
+    // button-disable guard (onPressed: null while _isUpdating, set
+    // synchronously before the awaited call) already makes a genuine
+    // in-app double-tap unreachable by construction; this is the
+    // complementary server-side guarantee for a network-level retry.
+    final retry = await FirebaseFunctions.instance
+        .httpsCallable('releaseDeliveryOrder')
+        .call({'orderId': orderId, 'reason': 'seller_not_ready'});
+    final retryData = retry.data as Map<Object?, Object?>;
+    expect(retryData['alreadyReleased'], isTrue, reason: 'the real callable itself recognizes the already-released state');
+
+    // Read via the admin identity, not Rider A's -- correctly, by rules
+    // design, a rider who just released an order is no longer its assigned
+    // partner and loses read access to its timeline (owner/seller/current-
+    // partner/admin only; unlike the order document itself, there is no
+    // isAvailableDeliveryOrder()-style fallback for a released order's
+    // timeline). Confirmed against firestore.rules directly, not assumed.
+    final adminFirestore = await _adminFirestore(fixtures['tokenAdmin'] as String);
+    final timeline = await adminFirestore
+        .collection('orders')
+        .doc(orderId)
+        .collection('timeline')
+        .where('status', isEqualTo: 'delivery_released')
+        .get();
+    expect(timeline.docs.length, 1, reason: 'exactly one release recorded, even after the retry above');
+  });
 }

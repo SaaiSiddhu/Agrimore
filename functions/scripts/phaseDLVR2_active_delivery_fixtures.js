@@ -47,6 +47,14 @@ const RIDER_A = "dlvr2-rider-a";
 const RIDER_B = "dlvr2-rider-b";
 const ADMIN_UID = "dlvr2-admin";
 const ORDER_ID = "dlvr2-order-1";
+// 4.3's own dedicated order, seeded BEFORE pickup (task status `assigned`,
+// i.e. orderStatus `delivery_accepted` -- confirmed against the real
+// mapping in functions/src/delivery/states.ts:73) -- releaseOrderCore
+// (functions/src/delivery/riderSteps.ts:195) refuses `after_pickup` for
+// anything past this, and ORDER_ID above is already `out_for_delivery`
+// (consumed by the 4.2 reassignment scenarios), so this needs its own,
+// independent order rather than reusing or restoring theirs.
+const ORDER_ID_RELEASE = "dlvr2-order-release";
 const STORE = { lat: 9.9252, lng: 78.1198 };
 const HOME = { lat: 9.8982, lng: 78.1198 };
 
@@ -117,6 +125,37 @@ async function seed(outFile) {
   });
   await db.doc(`sellers/dlvr2-seller`).set({ shopName: "Fresh Fields Madurai" });
 
+  // 4.3's own order: same rider/customer/seller, but seeded BEFORE pickup
+  // so releaseDeliveryOrder's own after_pickup gate does not refuse it.
+  await db.doc(`orders/${ORDER_ID_RELEASE}`).set({
+    userId: "dlvr2-customer",
+    sellerId: "dlvr2-seller",
+    orderNumber: "AGM-DLVR2-2",
+    total: 210,
+    paymentMethod: "cod",
+    paymentStatus: "pending",
+    orderStatus: "delivery_accepted",
+    status: "delivery_accepted",
+    deliveryPartnerId: RIDER_A,
+    items: [{ productName: "Onions 2kg", quantity: 1, price: 60 }],
+    deliveryAddress: {
+      name: "Meenakshi Sundaram",
+      phone: "+919876543210",
+      addressLine1: "44, West Masi Street",
+      city: "Madurai",
+      zipcode: "625001",
+      latitude: HOME.lat,
+      longitude: HOME.lng,
+    },
+    createdAt: admin.firestore.Timestamp.now(),
+  });
+  await db.doc(`delivery_tasks/${ORDER_ID_RELEASE}`).set({
+    orderId: ORDER_ID_RELEASE,
+    pickup: STORE,
+    drop: HOME,
+    riderId: RIDER_A,
+  });
+
   // Custom claims mirror this codebase's own established rules-test shape
   // (phaseDLV4A_rules_test.js CLAIMS.delivery/.admin) -- delivery_partner:
   // true / admin: true are the exact claims firestore.rules' own
@@ -126,7 +165,8 @@ async function seed(outFile) {
   const tokenAdmin = await auth.createCustomToken(ADMIN_UID, { admin: true, role: "admin" });
 
   const out = {
-    riderA: RIDER_A, riderB: RIDER_B, orderId: ORDER_ID, tokenA, tokenB, tokenAdmin, adminUid: ADMIN_UID, projectId: PROJECT_ID,
+    riderA: RIDER_A, riderB: RIDER_B, orderId: ORDER_ID, orderIdRelease: ORDER_ID_RELEASE,
+    tokenA, tokenB, tokenAdmin, adminUid: ADMIN_UID, projectId: PROJECT_ID,
   };
   fs.writeFileSync(outFile, JSON.stringify(out, null, 2));
   console.log(`SEEDED — fixtures written to ${outFile}`);
