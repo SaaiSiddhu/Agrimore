@@ -1126,6 +1126,18 @@ abstract class AppLocalizations {
   /// **'New request'**
   String get supportNewRequest;
 
+  /// DLVC4: title shown when the referenced ticket cannot be read (deleted, bad id, not this rider's, or a read failure) -- mirrors documentSubmissionUnavailable/incidentStatusUnavailable
+  ///
+  /// In en, this message translates to:
+  /// **'Not available'**
+  String get supportStatusUnavailable;
+
+  /// Body for supportStatusUnavailable
+  ///
+  /// In en, this message translates to:
+  /// **'This request is no longer available.'**
+  String get supportStatusUnavailableBody;
+
   /// Section
   ///
   /// In en, this message translates to:

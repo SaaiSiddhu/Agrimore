@@ -703,6 +703,14 @@
   "@supportNewRequest": {
     "description": "Button"
   },
+  "supportStatusUnavailable": "Not available",
+  "@supportStatusUnavailable": {
+    "description": "DLVC4: title shown when the referenced ticket cannot be read (deleted, bad id, not this rider's, or a read failure) -- mirrors documentSubmissionUnavailable/incidentStatusUnavailable"
+  },
+  "supportStatusUnavailableBody": "This request is no longer available.",
+  "@supportStatusUnavailableBody": {
+    "description": "Body for supportStatusUnavailable"
+  },
   "profileAccount": "Account",
   "@profileAccount": {
     "description": "Section"
