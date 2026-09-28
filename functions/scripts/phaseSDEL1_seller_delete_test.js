@@ -21,7 +21,7 @@ for (const k of ["FIRESTORE_EMULATOR_HOST", "FIREBASE_AUTH_EMULATOR_HOST", "FIRE
 }
 
 const admin = require("firebase-admin");
-if (!admin.apps.length) admin.initializeApp({ projectId: "agrimore-66a4e", storageBucket: "agrimore-66a4e.appspot.com" });
+if (!admin.apps.length) admin.initializeApp({ projectId: "agrimore-66a4e", storageBucket: "agrimore-66a4e.firebasestorage.app" });
 const test = require("firebase-functions-test")({ projectId: "agrimore-66a4e" });
 const { deleteUserData } = require("../lib/customer/deleteUserData");
 const wrapped = test.wrap(deleteUserData);

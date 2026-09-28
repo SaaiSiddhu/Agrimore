@@ -41,7 +41,7 @@ process.env.STORAGE_EMULATOR_HOST = process.env.STORAGE_EMULATOR_HOST || `http:/
 process.env.GCLOUD_PROJECT = "agrimore-66a4e";
 
 const admin = require("firebase-admin");
-if (!admin.apps.length) admin.initializeApp({ projectId: "agrimore-66a4e", storageBucket: "agrimore-66a4e.appspot.com" });
+if (!admin.apps.length) admin.initializeApp({ projectId: "agrimore-66a4e", storageBucket: "agrimore-66a4e.firebasestorage.app" });
 const db = admin.firestore();
 
 const SC = require("../lib/admin/supportCases");

@@ -10,7 +10,7 @@ process.env.FIREBASE_STORAGE_EMULATOR_HOST = "127.0.0.1:9199";
 process.env.GCLOUD_PROJECT = "agrimore-66a4e";
 
 const admin = require("firebase-admin");
-admin.initializeApp({ projectId: "agrimore-66a4e", storageBucket: "agrimore-66a4e.appspot.com" });
+admin.initializeApp({ projectId: "agrimore-66a4e", storageBucket: "agrimore-66a4e.firebasestorage.app" });
 const db = admin.firestore();
 const bucket = admin.storage().bucket();
 

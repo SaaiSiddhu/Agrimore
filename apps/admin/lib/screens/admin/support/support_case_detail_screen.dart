@@ -22,6 +22,7 @@ import 'package:firebase_storage/firebase_storage.dart';
 import 'package:flutter/foundation.dart' show kIsWeb;
 import 'package:flutter/material.dart';
 import 'package:go_router/go_router.dart';
+import 'package:http/http.dart' as http;
 import 'package:path_provider/path_provider.dart';
 import 'package:share_plus/share_plus.dart';
 import 'package:uuid/uuid.dart';
@@ -905,6 +906,28 @@ class _AddLinkDialogState extends State<_AddLinkDialog> {
 
 /// Mirrors functions/src/admin/supportCases.ts's own MAX_EVIDENCE_BYTES.
 const int kMaxEvidenceBytes = 10 * 1024 * 1024;
+
+// ADMR-76: same emulator dart-defines main.dart itself reads (ADMR-75) --
+// read independently here since these are compile-time constants, not
+// runtime state; duplicating the read, not the value, is simpler than
+// threading it through every screen. onRequest functions (like
+// viewSupportCaseEvidence) are not reachable via FirebaseFunctions.instance,
+// which only knows how to invoke Callables -- a real HTTP base URL is
+// needed for this one.
+const bool _useFirebaseEmulatorForEvidence =
+    bool.fromEnvironment('USE_FIREBASE_EMULATOR', defaultValue: false);
+const String _evidenceEmulatorHost =
+    String.fromEnvironment('FIREBASE_EMULATOR_HOST', defaultValue: 'localhost');
+const int _evidenceFunctionsEmulatorPort =
+    int.fromEnvironment('FUNCTIONS_EMULATOR_PORT', defaultValue: 5001);
+const String kAgrimoreProjectId = 'agrimore-66a4e';
+const String kAgrimoreFunctionsRegion = 'us-central1';
+
+/// The real, deployed HTTPS base URL in a normal build; the local emulator's
+/// equivalent when `--dart-define=USE_FIREBASE_EMULATOR=true` was passed.
+String get evidenceFunctionsBaseUrl => _useFirebaseEmulatorForEvidence
+    ? 'http://$_evidenceEmulatorHost:$_evidenceFunctionsEmulatorPort/$kAgrimoreProjectId/$kAgrimoreFunctionsRegion'
+    : 'https://$kAgrimoreFunctionsRegion-$kAgrimoreProjectId.cloudfunctions.net';
 class _EvidenceTab extends StatefulWidget {
   const _EvidenceTab({required this.firestore, required this.caseId, required this.currentUid});
   final FirebaseFirestore firestore;
@@ -1111,26 +1134,52 @@ class _EvidenceTileState extends State<_EvidenceTile> {
 
   bool get _isImage => ((widget.data['contentType'] as String?) ?? '').startsWith('image/');
 
-  // ADMR-72: getDownloadURL() mints a token-bearing URL that -- once
-  // obtained -- bypasses storage.rules on every subsequent fetch by anyone
-  // who later holds it (a real gap for a feature whose own spec says "never
-  // a public URL"). getData() instead fetches bytes through the
-  // authenticated SDK, re-checked against storage.rules on EVERY call, with
-  // no persistent bypass credential ever minted. Disclosed limitation: this
-  // does not by itself "revoke" a URL that was already shared before this
-  // phase (none exist -- this feature has never been deployed); it only
-  // changes how future views work.
+  // ADMR-76: ADMR-72's own switch to getData() was believed to re-check
+  // authorization on every call, closing getDownloadURL()'s persistent-
+  // bypass-token gap. CONFIRMED WRONG for Flutter WEB specifically by
+  // reading the actual installed firebase_storage_web package source:
+  // getData() there still calls getDownloadURL() internally and fetches via
+  // a plain, unauthenticated HTTP GET against that same public URL. Fixed
+  // with a genuine authenticated backend endpoint instead
+  // (viewSupportCaseEvidence) -- a fresh ID token is sent on EVERY view
+  // (never cached), verified server-side WITH REVOCATION CHECKED, and the
+  // live object's generation is compared against what was recorded at
+  // finalize time before any byte is ever streamed back.
   Future<void> _view(BuildContext context) async {
-    final path = widget.data['storagePath'] as String?;
+    final evidenceId = widget.data['evidenceId'] as String?;
     final name = (widget.data['originalFileName'] as String?) ?? 'evidence';
-    if (path == null) return;
+    if (evidenceId == null) return;
+    // Defense in depth: the server already refuses anything over this size
+    // at finalize time, so a recorded size beyond it would mean something
+    // is already wrong -- refuse before fetching a potentially huge payload
+    // into browser/device memory rather than trusting the record blindly.
+    final recordedSize = widget.data['size'] as num?;
+    if (recordedSize != null && recordedSize > kMaxEvidenceBytes) {
+      SnackbarHelper.showError(context, 'This file is unexpectedly large and was not opened.');
+      return;
+    }
     setState(() => _loading = true);
     try {
-      final bytes = await FirebaseStorage.instance.ref(path).getData(kMaxEvidenceBytes);
-      if (bytes == null) {
+      final user = FirebaseAuth.instance.currentUser;
+      if (user == null) {
+        if (context.mounted) SnackbarHelper.showError(context, 'Sign in again to view this file.');
+        return;
+      }
+      final idToken = await user.getIdToken();
+      final uri = Uri.parse('$evidenceFunctionsBaseUrl/viewSupportCaseEvidence')
+          .replace(queryParameters: {'evidenceId': evidenceId});
+      final response = await http.get(uri, headers: {'Authorization': 'Bearer $idToken'});
+      if (response.statusCode == 409) {
+        if (context.mounted) {
+          SnackbarHelper.showError(context, 'This file changed unexpectedly and could not be verified.');
+        }
+        return;
+      }
+      if (response.statusCode != 200) {
         if (context.mounted) SnackbarHelper.showError(context, 'This file could not be read.');
         return;
       }
+      final bytes = response.bodyBytes;
       if (_isImage) {
         if (context.mounted) {
           await showDialog<void>(
