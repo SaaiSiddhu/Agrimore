@@ -446,17 +446,24 @@ class _RiderProfileScreenState extends State<RiderProfileScreen> {
           final docs = documentsOnFile(data);
           final acct = v('bankAccountNumber');
           final upi = v('upiId');
-          return Column(
+          // Owner follow-up: the identity card scrolls away with the rest
+          // of the content, not pinned above a separately-scrolling list --
+          // one single ListView, the card as its own first (full-bleed, no
+          // horizontal padding) item, everything else wrapped in one Padding
+          // so its spacing is unchanged from before this card existed.
+          return ListView(
+            padding: EdgeInsets.zero,
             children: [
               _identityHeader(v, notSet, auth, c, t),
-              Expanded(
-                child: ListView(
-                  padding: const EdgeInsets.fromLTRB(
-                    DeliverySpace.page,
-                    DeliverySpace.lg,
-                    DeliverySpace.page,
-                    DeliverySpace.page,
-                  ),
+              Padding(
+                padding: const EdgeInsets.fromLTRB(
+                  DeliverySpace.page,
+                  DeliverySpace.lg,
+                  DeliverySpace.page,
+                  DeliverySpace.page,
+                ),
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.stretch,
                   children: [
               _section(
                 l.profileDetails,
