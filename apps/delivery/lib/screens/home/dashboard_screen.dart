@@ -234,32 +234,43 @@ class _DashboardScreenState extends State<DashboardScreen> {
                     child: Consumer<DeliveryOrderProvider>(
                       builder: (context, orderProvider, _) {
                         final work = orderProvider.work;
-                        final Widget body;
+                        // Rider-requested resting shape: collapsed shows
+                        // exactly one pinned "headline" widget (the
+                        // Today/This week + Earned card when idle; the
+                        // active-work summary otherwise) and nothing else.
+                        final Widget peek;
+                        final List<Widget> secondary;
                         if (!work.loaded) {
-                          body = const SizedBox(
+                          peek = const SizedBox(
                             height: DeliverySize.workPreviewMedium,
                             child: ActiveWorkLoading(),
                           );
+                          secondary = const [];
                         } else if (work.hasMultiple) {
-                          body = SizedBox(
+                          peek = SizedBox(
                             height: DeliverySize.workPreviewLarge,
                             child: MultipleActiveOrders(orders: work.orders, onOpen: _openOrder),
                           );
+                          secondary = const [];
                         } else if (work.single != null) {
-                          body = SizedBox(
+                          peek = SizedBox(
                             height: DeliverySize.workPreviewMedium,
                             child: ActiveOrderSummaryCard(order: work.single!, onOpen: _openOrder),
                           );
+                          secondary = const [];
                         } else if (work.error != null) {
-                          body = SizedBox(
+                          peek = SizedBox(
                             height: DeliverySize.workPreviewCompact,
                             child: ActiveWorkError(error: work.error!, onRetry: orderProvider.retry),
                           );
+                          secondary = const [];
                         } else {
-                          body = _buildDashboardContent();
+                          peek = _buildEarningsPeek();
+                          secondary = _buildExpandedContent();
                         }
                         return HomeOperationsPanel(
-                          children: [
+                          peek: peek,
+                          expanded: [
                             // DLVPP1: never behind a completion modal or any
                             // other screen -- always visible whenever a
                             // delivery still needs its proof photo attached.
@@ -269,7 +280,7 @@ class _DashboardScreenState extends State<DashboardScreen> {
                             ),
                             if (work.loaded && (work.fromCache || work.error != null) && work.orders.isNotEmpty)
                               const StaleDataBanner(),
-                            body,
+                            ...secondary,
                           ],
                         );
                       },
@@ -296,69 +307,89 @@ class _DashboardScreenState extends State<DashboardScreen> {
         .push(MaterialPageRoute<void>(builder: (_) => fallback()));
   }
 
-  Widget _buildDashboardContent() {
+  /// The panel's pinned collapsed content: just the Today/This week toggle
+  /// and the Earned card — everything else lives in [_buildExpandedContent],
+  /// only reachable by dragging the panel open.
+  Widget _buildEarningsPeek() {
+    return Padding(
+      padding: const EdgeInsets.fromLTRB(
+        DeliverySpace.page,
+        0,
+        DeliverySpace.page,
+        DeliverySpace.md,
+      ),
+      child: _buildEarningsCard(),
+    );
+  }
+
+  List<Widget> _buildExpandedContent() {
     final l = AppLocalizations.of(context);
     final c = context.colors;
     final t = context.text;
-    return Padding(
-      padding: const EdgeInsets.all(DeliverySpace.page),
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.stretch,
-        children: [
-          _buildEarningsCard(),
-          const SizedBox(height: DeliverySpace.xl),
-          _moneyStats(
-            (_, __, cash) => _StatCard(
-              label: l.dashStatCash,
-              value: cash,
-              icon: DeliveryIcons.rupee,
+    return [
+      Padding(
+        padding: const EdgeInsets.fromLTRB(
+          DeliverySpace.page,
+          0,
+          DeliverySpace.page,
+          DeliverySpace.page,
+        ),
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.stretch,
+          children: [
+            _moneyStats(
+              (_, __, cash) => _StatCard(
+                label: l.dashStatCash,
+                value: cash,
+                icon: DeliveryIcons.rupee,
+              ),
             ),
-          ),
-          const SizedBox(height: DeliverySpace.md),
-          _ActionCard(
-            title: l.dashMoneyTitle,
-            subtitle: l.dashMoneySubtitle,
-            icon: DeliveryIcons.wallet,
-            onTap: _openMoney,
-          ),
-          const SizedBox(height: DeliverySpace.xxl),
-          Text(
-            l.dashQuickActions,
-            style: t.titleMedium.copyWith(color: c.textPrimary),
-          ),
-          const SizedBox(height: DeliverySpace.md),
-          Consumer<OfferProvider>(
-            builder: (context, offers, _) {
-              final current = offers.current;
-              return _ActionCard(
-                title: current != null
-                    ? l.dashOfferTitle
-                    : _isOnline
-                        ? l.dashWaitingTitle
-                        : l.dashGoOnlineTitle,
-                subtitle: current != null
-                    ? l.dashOfferSubtitle
-                    : _isOnline
-                        ? l.dashWaitingSubtitle
-                        : l.dashGoOnlineSubtitle,
-                icon: DeliveryIcons.bell,
-                badgeCount: offers.offers.length,
-                onTap: current == null
-                    ? null
-                    : () => OfferLaunch.request(current.orderId),
-              );
-            },
-          ),
-          const SizedBox(height: DeliverySpace.md),
-          _ActionCard(
-            title: l.historyActionTitle,
-            subtitle: l.historyActionSubtitle,
-            icon: DeliveryIcons.history,
-            onTap: _showDeliveryHistory,
-          ),
-        ],
+            const SizedBox(height: DeliverySpace.md),
+            _ActionCard(
+              title: l.dashMoneyTitle,
+              subtitle: l.dashMoneySubtitle,
+              icon: DeliveryIcons.wallet,
+              onTap: _openMoney,
+            ),
+            const SizedBox(height: DeliverySpace.xxl),
+            Text(
+              l.dashQuickActions,
+              style: t.titleMedium.copyWith(color: c.textPrimary),
+            ),
+            const SizedBox(height: DeliverySpace.md),
+            Consumer<OfferProvider>(
+              builder: (context, offers, _) {
+                final current = offers.current;
+                return _ActionCard(
+                  title: current != null
+                      ? l.dashOfferTitle
+                      : _isOnline
+                          ? l.dashWaitingTitle
+                          : l.dashGoOnlineTitle,
+                  subtitle: current != null
+                      ? l.dashOfferSubtitle
+                      : _isOnline
+                          ? l.dashWaitingSubtitle
+                          : l.dashGoOnlineSubtitle,
+                  icon: DeliveryIcons.bell,
+                  badgeCount: offers.offers.length,
+                  onTap: current == null
+                      ? null
+                      : () => OfferLaunch.request(current.orderId),
+                );
+              },
+            ),
+            const SizedBox(height: DeliverySpace.md),
+            _ActionCard(
+              title: l.historyActionTitle,
+              subtitle: l.historyActionSubtitle,
+              icon: DeliveryIcons.history,
+              onTap: _showDeliveryHistory,
+            ),
+          ],
+        ),
       ),
-    );
+    ];
   }
 
   // ── Phase DLV-4B: money from the server (rider_earnings / rider_accounts) ──

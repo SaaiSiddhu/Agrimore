@@ -8,7 +8,10 @@ import 'package:lucide_icons_flutter/lucide_icons.dart';
 /// `CupertinoIcons.*` so `canon_check.sh` stays at 0 hits.
 abstract final class DeliveryIcons {
   // Navigation (Phase 07: Home · Deliveries · Earnings · Inbox · Profile)
-  static const IconData home = LucideIcons.house;
+  // DLVHOME1: the bold (600) weight from Lucide's own bundled variable-font
+  // family -- a genuinely higher-quality, more solid rendering of the same
+  // glyph, not a different icon or a new package.
+  static const IconData home = LucideIcons.house600;
   static const IconData deliveries = LucideIcons.packageCheck;
   static const IconData earnings = LucideIcons.indianRupee;
   static const IconData inbox = LucideIcons.bell;

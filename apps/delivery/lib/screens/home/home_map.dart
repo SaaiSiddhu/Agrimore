@@ -60,26 +60,50 @@ class HomeMap extends StatefulWidget {
   State<HomeMap> createState() => _HomeMapState();
 }
 
-class _HomeMapState extends State<HomeMap> {
+class _HomeMapState extends State<HomeMap> with WidgetsBindingObserver {
   GoogleMapController? _controller;
   LatLng? _initialTarget;
   _MapState _state = _MapState.loading;
   bool _following = true;
   bool _checking = false;
 
+  /// The permission state this widget last saw LocationProvider report —
+  /// used only to detect a false→true transition (the rider granted it via
+  /// the go-online flow) so this map re-checks without polling.
+  bool _lastKnownPermission = false;
+
   @override
   void initState() {
     super.initState();
+    WidgetsBinding.instance.addObserver(this);
     _check();
   }
 
   @override
   void dispose() {
+    WidgetsBinding.instance.removeObserver(this);
     // GoogleMapController itself needs no explicit dispose call (the
     // platform view owns its lifecycle); dropping the reference here is
     // enough to avoid holding a stale controller past this widget's life.
     _controller = null;
     super.dispose();
+  }
+
+  // Neither Geolocator.checkPermission() nor Geolocator.isLocationServiceEnabled()
+  // is itself a stream -- nothing tells this widget when a grant made
+  // elsewhere (the app-bar toggle's own ensurePermission() flow, or the
+  // rider returning from Settings) actually landed, so a state set once in
+  // initState stuck on "permission needed" forever even after the rider
+  // said yes was a real, reported bug (not merely a widget-test gap). Two
+  // independent re-check triggers cover the two ways permission actually
+  // changes in this app: an in-app OS permission dialog (no
+  // backgrounding — caught by the LocationProvider watch in build()) and
+  // leaving for Settings and coming back (caught here).
+  @override
+  void didChangeAppLifecycleState(AppLifecycleState state) {
+    if (state == AppLifecycleState.resumed && _state != _MapState.ready) {
+      _check();
+    }
   }
 
   LocationProvider get _location => context.read<LocationProvider>();
@@ -160,6 +184,19 @@ class _HomeMapState extends State<HomeMap> {
     // itself (no second subscription) — moves the blue dot / recenter
     // target without re-querying anything here.
     final live = context.select<LocationProvider, Position?>((p) => p.currentPosition);
+    // The go-online flow (DashboardScreen._toggleOnline -> ensurePermission)
+    // can grant permission via an in-app OS dialog with no app-backgrounding
+    // at all, so didChangeAppLifecycleState never fires for that path —
+    // LocationProvider's own hasPermission is the direct, correct signal.
+    final hasPermission = context.select<LocationProvider, bool>((p) => p.hasPermission);
+    if (hasPermission && !_lastKnownPermission && _state != _MapState.ready) {
+      _lastKnownPermission = hasPermission;
+      WidgetsBinding.instance.addPostFrameCallback((_) {
+        if (mounted) _check();
+      });
+    } else {
+      _lastKnownPermission = hasPermission;
+    }
     final myLocationEnabled = _state == _MapState.ready;
 
     if (_state == _MapState.loading && _initialTarget == null) {

@@ -50,6 +50,7 @@ class HomeAppBar extends StatelessWidget implements PreferredSizeWidget {
         children: [
           _AvailabilityToggle(isOnline: isOnline, busy: busy, onChanged: onToggle),
           const Spacer(),
+          // Owner-requested order: help (emergency/SOS) · support (?) · bell.
           _CircleIconButton(
             valueKey: const ValueKey('home-appbar-emergency'),
             icon: DeliveryIcons.emergency,
@@ -59,7 +60,14 @@ class HomeAppBar extends StatelessWidget implements PreferredSizeWidget {
             tooltip: AppLocalizations.of(context).emergencyTitle,
             onTap: () => showEmergencySheet(context),
           ),
-          const SizedBox(width: DeliverySpace.sm),
+          const SizedBox(width: DeliverySpace.xs),
+          _CircleIconButton(
+            valueKey: const ValueKey('home-appbar-help'),
+            icon: DeliveryIcons.help,
+            tooltip: AppLocalizations.of(context).profileSupport,
+            onTap: () => showHelpSheet(context),
+          ),
+          const SizedBox(width: DeliverySpace.xs),
           _CircleIconButton(
             valueKey: const ValueKey('home-appbar-inbox'),
             child: InboxButton(
@@ -67,13 +75,6 @@ class HomeAppBar extends StatelessWidget implements PreferredSizeWidget {
               source: inboxSource,
               onOpen: onOpenInbox,
             ),
-          ),
-          const SizedBox(width: DeliverySpace.sm),
-          _CircleIconButton(
-            valueKey: const ValueKey('home-appbar-help'),
-            icon: DeliveryIcons.help,
-            tooltip: AppLocalizations.of(context).profileSupport,
-            onTap: () => showHelpSheet(context),
           ),
         ],
       ),
@@ -147,10 +148,20 @@ class _AvailabilityToggle extends StatelessWidget {
   }
 }
 
-/// Neutral 48dp circular icon surface shared by the emergency, notification
-/// and help buttons, matching the reference's uniform right-hand-side icon
-/// row. Either [icon]+[onTap], or a pre-built [child] (InboxButton, which
-/// owns its own IconButton/tooltip/badge and must not be double-wrapped).
+/// Rider-requested compact size: a smaller, uniform circular icon surface
+/// shared by the emergency, help and notification buttons (same size,
+/// spacing and glyph scale for all three, in that order) — deliberately
+/// below the original 48dp minimum-touch-target guidance because these are
+/// three adjacent supplementary actions the rider explicitly asked to be
+/// visually tighter, not the screen's primary action.
+const double _kCircleSize = DeliverySize.controlCompact; // 40
+const double _kIconSize = DeliveryIconSize.md; // 20
+
+/// Either [icon]+[onTap], or a pre-built [child] (InboxButton, which owns
+/// its own IconButton/tooltip/badge and must not be double-wrapped). The
+/// global IconButtonTheme's own 48dp minimumSize is overridden locally
+/// (both branches) so InboxButton's unmodified internal IconButton matches
+/// the other two exactly instead of overflowing this smaller circle.
 class _CircleIconButton extends StatelessWidget {
   const _CircleIconButton({
     required this.valueKey,
@@ -171,17 +182,29 @@ class _CircleIconButton extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final c = context.colors;
+    final compactIconButtonStyle = IconButton.styleFrom(
+      minimumSize: const Size.square(_kCircleSize),
+      padding: EdgeInsets.zero,
+    );
     return Container(
       key: valueKey,
-      width: DeliverySize.touchTarget,
-      height: DeliverySize.touchTarget,
+      width: _kCircleSize,
+      height: _kCircleSize,
+      alignment: Alignment.center,
       decoration: BoxDecoration(color: c.surfaceMuted, shape: BoxShape.circle),
-      child: child ??
-          IconButton(
-            tooltip: tooltip,
-            onPressed: onTap,
-            icon: Icon(icon, color: iconColor ?? c.textPrimary),
-          ),
+      child: IconButtonTheme(
+        data: IconButtonThemeData(style: compactIconButtonStyle),
+        child: IconTheme.merge(
+          data: const IconThemeData(size: _kIconSize),
+          child: child ??
+              IconButton(
+                style: compactIconButtonStyle,
+                tooltip: tooltip,
+                onPressed: onTap,
+                icon: Icon(icon, color: iconColor ?? c.textPrimary),
+              ),
+        ),
+      ),
     );
   }
 }

@@ -42,7 +42,11 @@ pattern() {
     # Dart parameter name), a false positive found in apps/delivery/lib.
     STRINGS)  echo "Text\\( *['\"]|(^|[^A-Za-z])(label|hintText|labelText|title|message|tooltip): *['\"]" ;;
     FORMAT)   echo 'NumberFormat\(|DateFormat\(' ;;
-    THEME)    echo 'ThemeData\(' ;;
+    # word-boundary guarded on the left, like ICONS/STRINGS above —
+    # otherwise a legitimate local override (IconThemeData(...),
+    # IconButtonThemeData(...)) matches as a substring of its own name, a
+    # false positive found in apps/delivery/lib (DLVHOME1).
+    THEME)    echo "(^|[^A-Za-z])ThemeData\\(" ;;
     FEEDBACK) echo 'SnackBar\(|SnackbarHelper\.|AlertDialog\(' ;;
   esac
 }
