@@ -254,7 +254,23 @@ export async function requestWithdrawalCore(db: Db, sellerId: string, requestId:
 export type CloseVerdict =
   | { kind: "paid" | "rejected" | "cancelled" | "already"; sellerId: string; amountPaise: number; paidTo?: Record<string, unknown> }
   | { kind: "refused"; reason: "not_found" | "not_requested" | "not_yours" | "payout_change_pending" | "no_destination"
-      | "bad_reference" | "bad_method" | "reason_required" | "payout_mismatch" | "method_mismatch" };
+      | "bad_reference" | "bad_method" | "reason_required" | "payout_mismatch" | "method_mismatch" | "legacy_destination_unresolved" };
+
+/**
+ * ADMR-84: whether `full` is a genuinely complete, internally consistent destinationFull
+ * snapshot — never just "is it a non-null object". A withdrawal predating ADMR-77 (or one with a
+ * malformed snapshot) has no full destination that can be trusted to pay from; per ADMR-83, no
+ * reconstruction from any other record is ever attempted here either.
+ */
+function isValidDestinationFull(full: unknown, maskedMethod: unknown): full is Record<string, unknown> {
+  if (!full || typeof full !== "object" || Array.isArray(full)) return false;
+  const f = full as Record<string, unknown>;
+  const method = f.payoutMethod === "upi" ? "upi" : f.payoutMethod === "bank" ? "bank" : null;
+  if (!method || method !== maskedMethod) return false;
+  const str = (v: unknown) => typeof v === "string" && v.trim().length > 0;
+  if (method === "bank") return str(f.accountNumber) && str(f.ifsc);
+  return str(f.upiId);
+}
 
 /**
  * Admin: the money was sent. Refused while a payout-account change is pending. Pays to the
@@ -262,6 +278,15 @@ export type CloseVerdict =
  * re-read of seller_payout_details — so a bank/UPI change approved after this withdrawal was
  * already requested can never silently redirect it. `method` must match the frozen
  * destination's own method; a mismatch is refused (method_mismatch), not silently reconciled.
+ *
+ * ADMR-84: a withdrawal predating ADMR-77 (no destinationFull, or a malformed one) is refused
+ * outright (legacy_destination_unresolved) for a requested→paid transition — this is a
+ * server-authoritative gate, not merely the admin app's own "Mark paid" button being disabled;
+ * a direct call cannot bypass it. Placed AFTER the already-paid idempotent-replay check, so a
+ * withdrawal paid before this gate existed remains fully readable and its own replay semantics
+ * are completely unaffected — this only gates a NEW requested→paid transition, never a
+ * historical result. No reconstruction is attempted here (ADMR-83's own conclusion): if
+ * destinationFull is absent or invalid, this simply refuses.
  */
 export async function markWithdrawalPaidCore(
   db: Db, adminUid: string, withdrawalId: string, reference: string, method: unknown, nowMs: number
@@ -292,6 +317,7 @@ export async function markWithdrawalPaidCore(
     const dest = d.destination as Record<string, unknown> | undefined;
     if (!dest) return { kind: "refused", reason: "no_destination" };
     if (dest.method !== method) return { kind: "refused", reason: "method_mismatch" };
+    if (!isValidDestinationFull(d.destinationFull, dest.method)) return { kind: "refused", reason: "legacy_destination_unresolved" };
     const at = Timestamp.fromMillis(nowMs);
     for (const p of payouts) {
       tx.update(p.ref, { status: "paid", paidAt: at, paidBy: adminUid, paymentReference: ref, payoutMethod: method, updatedAt: at });
@@ -422,6 +448,7 @@ const REFUSAL_TEXT: Record<string, string> = {
   bad_reference: "Enter a payment reference (4–64 characters)",
   bad_method: "Choose bank or UPI",
   method_mismatch: "This withdrawal was requested for a different payment method — refresh and check",
+  legacy_destination_unresolved: "This request predates full destination records and cannot be paid from here — confirm the account with the seller/owner first",
   reason_required: "Give a reason (3–200 characters)",
   payout_mismatch: "The payouts in this withdrawal changed — refresh and try again",
   already_pending: "A change is already waiting for review",
