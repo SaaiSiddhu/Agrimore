@@ -46,8 +46,11 @@ Future<void> showEmergencySheet(
 }) {
   return showModalBottomSheet<void>(
     context: context,
-    showDragHandle: true,
+    // DLVHOME1: reskinned to the reference's title + explicit close button;
+    // no drag handle competing with that title row.
+    showDragHandle: false,
     isScrollControlled: true,
+    useSafeArea: true,
     builder: (_) => EmergencySheet(
       launcher: launcher ?? _launchDialer,
       supportPhone: supportPhone ?? AppConstants.supportPhone,
@@ -228,6 +231,49 @@ class _EmergencySheetState extends State<EmergencySheet> {
     if (!opened) setState(() => _dialFailedFor = numberShown);
   }
 
+  Widget _actionRow({
+    required Key key,
+    required IconData icon,
+    required String title,
+    required String subtitle,
+    required VoidCallback onTap,
+  }) {
+    final c = context.colors;
+    final t = context.text;
+    return InkWell(
+      key: key,
+      onTap: onTap,
+      child: Padding(
+        padding: const EdgeInsets.symmetric(
+          horizontal: DeliverySpace.page,
+          vertical: DeliverySpace.md,
+        ),
+        child: Row(
+          children: [
+            Container(
+              width: DeliverySize.avatarMd,
+              height: DeliverySize.avatarMd,
+              decoration: BoxDecoration(color: c.danger.container, shape: BoxShape.circle),
+              alignment: Alignment.center,
+              child: Icon(icon, size: DeliveryIconSize.md, color: c.danger.icon),
+            ),
+            const SizedBox(width: DeliverySpace.md),
+            Expanded(
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  Text(title, style: t.titleSmall.copyWith(color: c.textPrimary)),
+                  Text(subtitle, style: t.bodySmall.copyWith(color: c.textSecondary)),
+                ],
+              ),
+            ),
+            Icon(DeliveryIcons.chevronRight, size: DeliveryIconSize.md, color: c.textSecondary),
+          ],
+        ),
+      ),
+    );
+  }
+
   @override
   Widget build(BuildContext context) {
     final l = AppLocalizations.of(context);
@@ -235,77 +281,95 @@ class _EmergencySheetState extends State<EmergencySheet> {
     final t = context.text;
     final support = dialUri(widget.supportPhone);
     return SafeArea(
-      child: SingleChildScrollView(
-        child: Padding(
-          padding: const EdgeInsets.fromLTRB(
-            DeliverySpace.page,
-            DeliverySpace.xxs,
-            DeliverySpace.page,
-            DeliverySpace.xl,
+      child: Column(
+        mainAxisSize: MainAxisSize.min,
+        children: [
+          Padding(
+            padding: const EdgeInsets.fromLTRB(
+              DeliverySpace.page,
+              DeliverySpace.md,
+              DeliverySpace.sm,
+              DeliverySpace.sm,
+            ),
+            child: Row(
+              children: [
+                Expanded(
+                  child: Text(
+                    l.emergencyTitle,
+                    style: t.titleLarge.copyWith(color: c.textPrimary),
+                  ),
+                ),
+                IconButton(
+                  key: const ValueKey('emergency-sheet-close'),
+                  tooltip: l.actionClose,
+                  icon: Icon(DeliveryIcons.close, color: c.textSecondary),
+                  onPressed: () => Navigator.of(context).pop(),
+                ),
+              ],
+            ),
           ),
-          child: Column(
-            mainAxisSize: MainAxisSize.min,
-            crossAxisAlignment: CrossAxisAlignment.stretch,
-            children: [
-              Row(
+          Divider(height: DeliverySize.hairline, color: c.divider),
+          Flexible(
+            child: SingleChildScrollView(
+              padding: const EdgeInsets.only(bottom: DeliverySpace.xl),
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.stretch,
                 children: [
-                  Container(
-                    width: DeliverySize.avatarMd,
-                    height: DeliverySize.avatarMd,
-                    decoration: BoxDecoration(
-                      color: c.danger.container,
-                      borderRadius: DeliveryRadius.rSm,
+                  Padding(
+                    padding: const EdgeInsets.fromLTRB(
+                      DeliverySpace.page,
+                      DeliverySpace.sm,
+                      DeliverySpace.page,
+                      0,
                     ),
-                    alignment: Alignment.center,
-                    child: Icon(
-                      DeliveryIcons.emergency,
-                      color: c.danger.icon,
-                      size: DeliveryIconSize.lg,
-                    ),
-                  ),
-                  const SizedBox(width: DeliverySpace.md),
-                  Expanded(
                     child: Text(
-                      l.emergencyTitle,
-                      style: t.headlineSmall.copyWith(color: c.textPrimary),
+                      l.emergencyIntro(kEmergencyNumber),
+                      style: t.bodyMedium.copyWith(color: c.textSecondary),
                     ),
                   ),
+                  const SizedBox(height: DeliverySpace.sm),
+                  _actionRow(
+                    key: const ValueKey('emergency-sheet-call-112'),
+                    icon: DeliveryIcons.phone,
+                    title: l.emergencyCall(kEmergencyNumber),
+                    subtitle: kEmergencyNumber,
+                    onTap: () => _dial(dialUri(kEmergencyNumber)!, kEmergencyNumber),
+                  ),
+                  if (support != null) ...[
+                    Padding(
+                      padding: const EdgeInsets.symmetric(horizontal: DeliverySpace.page),
+                      child: Divider(height: DeliverySize.hairline, color: c.divider),
+                    ),
+                    _actionRow(
+                      key: const ValueKey('emergency-sheet-call-support'),
+                      icon: DeliveryIcons.support,
+                      title: l.emergencyCallSupport,
+                      subtitle: widget.supportPhone!,
+                      onTap: () => _dial(support, widget.supportPhone!),
+                    ),
+                  ],
+                  if (widget.reporter != null) ...[
+                    const SizedBox(height: DeliverySpace.lg),
+                    Padding(
+                      padding: const EdgeInsets.symmetric(horizontal: DeliverySpace.page),
+                      child: _reportSection(l),
+                    ),
+                  ],
+                  if (_dialFailedFor != null) ...[
+                    const SizedBox(height: DeliverySpace.md),
+                    Padding(
+                      padding: const EdgeInsets.symmetric(horizontal: DeliverySpace.page),
+                      child: DeliveryBanner(
+                        tone: DeliveryBannerTone.danger,
+                        body: l.emergencyDialFailed(_dialFailedFor!),
+                      ),
+                    ),
+                  ],
                 ],
               ),
-              const SizedBox(height: DeliverySpace.sm),
-              Text(
-                l.emergencyIntro(kEmergencyNumber),
-                style: t.bodyMedium.copyWith(color: c.textSecondary),
-              ),
-              const SizedBox(height: DeliverySpace.lg),
-              DeliveryButton.danger(
-                label: l.emergencyCall(kEmergencyNumber),
-                icon: DeliveryIcons.phone,
-                onPressed: () =>
-                    _dial(dialUri(kEmergencyNumber)!, kEmergencyNumber),
-              ),
-              if (support != null) ...[
-                const SizedBox(height: DeliverySpace.md),
-                DeliveryButton.secondary(
-                  label: l.emergencyCallSupport,
-                  icon: DeliveryIcons.support,
-                  onPressed: () => _dial(support, widget.supportPhone!),
-                ),
-              ],
-              if (widget.reporter != null) ...[
-                const SizedBox(height: DeliverySpace.lg),
-                _reportSection(l),
-              ],
-              if (_dialFailedFor != null) ...[
-                const SizedBox(height: DeliverySpace.md),
-                DeliveryBanner(
-                  tone: DeliveryBannerTone.danger,
-                  body: l.emergencyDialFailed(_dialFailedFor!),
-                ),
-              ],
-            ],
+            ),
           ),
-        ),
+        ],
       ),
     );
   }

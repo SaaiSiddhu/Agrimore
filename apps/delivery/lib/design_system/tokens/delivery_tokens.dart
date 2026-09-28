@@ -104,6 +104,14 @@ abstract final class DeliverySize {
   static const double countdownRing = 128;
   static const double mapHeight = 220;
 
+  // DLVHOME1: bounded preview heights for the active-work states
+  // (loading/single/multiple/error) when shown inside HomeOperationsPanel's
+  // scrollable list, where their own internal `Center` needs a finite
+  // height to lay out correctly.
+  static const double workPreviewCompact = 240;
+  static const double workPreviewMedium = 280;
+  static const double workPreviewLarge = 320;
+
   // Responsive layout bounds (Phase 04)
   static const double formMaxWidth = 560;
   static const double compactMax = 600;

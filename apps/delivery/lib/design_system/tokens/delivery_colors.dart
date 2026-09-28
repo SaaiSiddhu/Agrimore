@@ -39,11 +39,18 @@ class DeliveryTonePair {
   Color get icon => _icon ?? foreground;
 }
 
-/// The AgriMore Delivery Partner colour tokens (Phases 01, 02, 03, 14).
+/// The AgriMore Delivery Partner colour tokens (Phases 01, 02, 03, 14, DLVHOME1).
 ///
-/// Primary brand is Burnt Orange (`#C2410C` in light mode, `#FDBA74` in dark
-/// mode), paired with warm cream/espresso neutrals (`#FFFAF5` / `#171210`).
-/// Never uses green, teal, or blue as a brand colour.
+/// OWNER_DECISION 2026-09-28 (`docs/design-system/DELIVERY_HOME_REDESIGN_2026-09-28.md`):
+/// monochrome foundations -- light mode is white with black foreground and
+/// primary actions, dark mode is black with white foreground and primary
+/// actions. Burnt Orange (`#C2410C` light / `#FDBA74` dark) is no longer the
+/// dominant [primary]/[brand] colour; it survives unchanged as the separate
+/// [accent] family, used only where the app deliberately wants the brand
+/// mark (e.g. the Home app bar's emergency icon), never as the default fill
+/// for buttons, chips, badges, selected states, or the nav bar. Supersedes
+/// the Phase 01-03 "Primary brand is Burnt Orange" direction for [primary]
+/// itself; [accent] carries that palette forward unchanged.
 @immutable
 class DeliveryColors extends ThemeExtension<DeliveryColors> {
   const DeliveryColors({
@@ -58,6 +65,10 @@ class DeliveryColors extends ThemeExtension<DeliveryColors> {
     required this.primaryContainer,
     required this.onPrimaryContainer,
     required this.primarySubtle,
+    required this.accent,
+    required this.onAccent,
+    required this.accentContainer,
+    required this.onAccentContainer,
     required this.amber,
     required this.textPrimary,
     required this.textSecondary,
@@ -95,13 +106,21 @@ class DeliveryColors extends ThemeExtension<DeliveryColors> {
   final Color raised;
   final Color sunken;
 
-  // Brand (Burnt Orange)
+  // Primary actions (DLVHOME1: monochrome -- black-on-white light, white-on-black dark)
   final Color primary;
   final Color onPrimary;
   final Color primaryStrong;
   final Color primaryContainer;
   final Color onPrimaryContainer;
   final Color primarySubtle;
+
+  // Restrained brand accent (DLVHOME1: the former dominant primary, Burnt
+  // Orange, kept verbatim but demoted to occasional deliberate use only).
+  final Color accent;
+  final Color onAccent;
+  final Color accentContainer;
+  final Color onAccentContainer;
+
   final Color amber;
 
   // Text
@@ -207,32 +226,38 @@ class DeliveryColors extends ThemeExtension<DeliveryColors> {
         border: border,
       );
 
-  /// Light palette (Phases 01–03): warm ivory background `#FFFAF5`, crisp white
-  /// cards `#FFFFFF`, burnt orange `#C2410C` primary, deep espresso `#241A16` ink.
+  /// Light palette (DLVHOME1, 2026-09-28): true-white foundation `#FFFFFF`,
+  /// near-black `#171717` as the primary/foreground colour, neutral greys for
+  /// secondary surfaces/borders/disabled/secondary text. Burnt orange
+  /// `#C2410C` survives only as [accent] (unchanged from the former primary).
   static const DeliveryColors light = DeliveryColors(
     isDark: false,
-    background: Color(0xFFFFFAF5),
+    background: Color(0xFFFFFFFF),
     surface: Color(0xFFFFFFFF),
     raised: Color(0xFFFFFFFF),
-    sunken: Color(0xFFF5EFEA),
-    primary: Color(0xFFC2410C),
+    sunken: Color(0xFFF5F5F5),
+    primary: Color(0xFF171717),
     onPrimary: Color(0xFFFFFFFF),
-    primaryStrong: Color(0xFF9A3412),
-    primaryContainer: Color(0xFFFFEDD5),
-    onPrimaryContainer: Color(0xFF7C2D12),
-    primarySubtle: Color(0xFFFFF7ED),
+    primaryStrong: Color(0xFF000000),
+    primaryContainer: Color(0xFFF0F0F0),
+    onPrimaryContainer: Color(0xFF171717),
+    primarySubtle: Color(0xFFFAFAFA),
+    accent: Color(0xFFC2410C),
+    onAccent: Color(0xFFFFFFFF),
+    accentContainer: Color(0xFFFFEDD5),
+    onAccentContainer: Color(0xFF7C2D12),
     amber: Color(0xFFEA580C),
-    textPrimary: Color(0xFF241A16),
-    textSecondary: Color(0xFF5C4D46),
-    textTertiary: Color(0xFF7A6A62),
-    border: Color(0xFFE7DDD6),
-    controlBorder: Color(0xFFCFC2B8),
-    divider: Color(0xFFEFE6DF),
-    disabledFill: Color(0xFFEDE5DF),
-    disabledText: Color(0xFF94847B),
-    focus: Color(0xFFC2410C),
-    focusOnFill: Color(0xFF241A16),
-    focusOnDanger: Color(0xFF241A16),
+    textPrimary: Color(0xFF171717),
+    textSecondary: Color(0xFF525252),
+    textTertiary: Color(0xFF737373),
+    border: Color(0xFFE5E5E5),
+    controlBorder: Color(0xFFD4D4D4),
+    divider: Color(0xFFEDEDED),
+    disabledFill: Color(0xFFF0F0F0),
+    disabledText: Color(0xFFA3A3A3),
+    focus: Color(0xFF171717),
+    focusOnFill: Color(0xFF171717),
+    focusOnDanger: Color(0xFF171717),
     successColor: Color(0xFF15803D),
     successContainer: Color(0xFFDCFCE7),
     warningColor: Color(0xFFB45309),
@@ -243,38 +268,43 @@ class DeliveryColors extends ThemeExtension<DeliveryColors> {
     onDangerFill: Color(0xFFFFFFFF),
     infoColor: Color(0xFF1D4ED8),
     infoContainer: Color(0xFFDBEAFE),
-    toast: Color(0xFF241A16),
-    onToast: Color(0xFFFFFAF5),
+    toast: Color(0xFF171717),
+    onToast: Color(0xFFFFFFFF),
     toastSuccess: Color(0xFF86EFAC),
     toastDanger: Color(0xFFFCA5A5),
-    scrim: Color(0x80171210),
+    scrim: Color(0x80000000),
   );
 
-  /// Dark palette (Phases 03, 14): low-glare warm espresso `#171210` background,
-  /// `#251C17` cards, luminous warm amber `#FDBA74` interactive accent with dark
-  /// `#2B1206` text on filled controls.
+  /// Dark palette (DLVHOME1, 2026-09-28): true-black foundation `#000000`,
+  /// near-white `#F5F5F5` as the primary/foreground colour, neutral greys for
+  /// secondary surfaces/borders/disabled/secondary text. Burnt orange
+  /// `#FDBA74` survives only as [accent] (unchanged from the former primary).
   static const DeliveryColors dark = DeliveryColors(
     isDark: true,
-    background: Color(0xFF171210),
-    surface: Color(0xFF251C17),
-    raised: Color(0xFF2E231D),
-    sunken: Color(0xFF120E0C),
-    primary: Color(0xFFFDBA74),
-    onPrimary: Color(0xFF2B1206),
-    primaryStrong: Color(0xFFEA580C),
-    primaryContainer: Color(0xFF431E0E),
-    onPrimaryContainer: Color(0xFFFFEDD5),
-    primarySubtle: Color(0xFF261812),
+    background: Color(0xFF000000),
+    surface: Color(0xFF121212),
+    raised: Color(0xFF1A1A1A),
+    sunken: Color(0xFF000000),
+    primary: Color(0xFFF5F5F5),
+    onPrimary: Color(0xFF0A0A0A),
+    primaryStrong: Color(0xFFFFFFFF),
+    primaryContainer: Color(0xFF262626),
+    onPrimaryContainer: Color(0xFFF5F5F5),
+    primarySubtle: Color(0xFF1A1A1A),
+    accent: Color(0xFFFDBA74),
+    onAccent: Color(0xFF2B1206),
+    accentContainer: Color(0xFF431E0E),
+    onAccentContainer: Color(0xFFFFEDD5),
     amber: Color(0xFFFB923C),
-    textPrimary: Color(0xFFF7EFEA),
-    textSecondary: Color(0xFFC9B9B0),
-    textTertiary: Color(0xFF9A8980),
-    border: Color(0xFF3B2E27),
-    controlBorder: Color(0xFF57453C),
-    divider: Color(0xFF332721),
-    disabledFill: Color(0xFF2B211C),
-    disabledText: Color(0xFF786860),
-    focus: Color(0xFFFDBA74),
+    textPrimary: Color(0xFFF5F5F5),
+    textSecondary: Color(0xFFA3A3A3),
+    textTertiary: Color(0xFF737373),
+    border: Color(0xFF2E2E2E),
+    controlBorder: Color(0xFF404040),
+    divider: Color(0xFF262626),
+    disabledFill: Color(0xFF1F1F1F),
+    disabledText: Color(0xFF595959),
+    focus: Color(0xFFF5F5F5),
     focusOnFill: Color(0xFFFFFFFF),
     focusOnDanger: Color(0xFFFFFFFF),
     successColor: Color(0xFF86EFAC),
@@ -287,11 +317,11 @@ class DeliveryColors extends ThemeExtension<DeliveryColors> {
     onDangerFill: Color(0xFFFFFFFF),
     infoColor: Color(0xFF93C5FD),
     infoContainer: Color(0xFF15233B),
-    toast: Color(0xFF362922),
-    onToast: Color(0xFFF7EFEA),
+    toast: Color(0xFF262626),
+    onToast: Color(0xFFF5F5F5),
     toastSuccess: Color(0xFF86EFAC),
     toastDanger: Color(0xFFFCA5A5),
-    scrim: Color(0xB30B0807),
+    scrim: Color(0xB3000000),
   );
 
   /// Returns the matched foreground/container pair for [t].

@@ -1545,6 +1545,9 @@ class AppLocalizationsEn extends AppLocalizations {
   String get actionAllow => 'Allow';
 
   @override
+  String get actionClose => 'Close';
+
+  @override
   String get goOnlineServicesOff => 'Turn on location (GPS) to go online.';
 
   @override
@@ -2203,6 +2206,44 @@ class AppLocalizationsEn extends AppLocalizations {
 
   @override
   String get dashOfflineShort => 'Offline';
+
+  @override
+  String get homeAvailabilityOnline => 'Online';
+
+  @override
+  String get homeAvailabilityOffline => 'Offline';
+
+  @override
+  String get homeMapLoading => 'Finding your map';
+
+  @override
+  String get homeMapPermissionDeniedTitle => 'Location access needed';
+
+  @override
+  String get homeMapPermissionDeniedBody =>
+      'Allow location access to see your position on the map and go online.';
+
+  @override
+  String get homeMapServicesDisabledTitle => 'Location services are off';
+
+  @override
+  String get homeMapServicesDisabledBody =>
+      'Turn on location services to see your position on the map.';
+
+  @override
+  String get homeMapUnavailableTitle => 'Couldn\'t get your location';
+
+  @override
+  String get homeMapUnavailableBody => 'Check your signal and try again.';
+
+  @override
+  String get homeMapRecenter => 'Recenter on my location';
+
+  @override
+  String get homePanelExpand => 'Expand panel';
+
+  @override
+  String get homePanelCollapse => 'Collapse panel';
 
   @override
   String get dashOnline => 'You are online';

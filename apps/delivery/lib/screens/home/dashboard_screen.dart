@@ -1,16 +1,20 @@
 // lib/screens/home/dashboard_screen.dart
 //
-// Phase 18 — Delivery Partner Dashboard on the burnt-orange Delivery Design
-// System (`D-SELLER-OWN-DS`). Preserves all server online-state sync,
-// location disclosures, offer alerts, active-order cards, earnings streams,
-// inbox badge, SOS sheet, and sign-out confirmation.
+// Phase 18, DLVHOME1 — Delivery Partner Home on the AgriMore Delivery Design
+// System. DLVHOME1 (2026-09-28, OWNER_DECISION): the main area is now a real
+// map (HomeMap) with the compact HomeAppBar above it and every existing
+// operational surface -- pending proof, active-work states, earnings, quick
+// actions -- reachable through HomeOperationsPanel, an expandable panel
+// above the bottom nav. Preserves all server online-state sync, location
+// disclosures, offer alerts, active-order cards, earnings streams, inbox
+// badge, SOS sheet, and sign-out confirmation exactly as before -- only the
+// LAYOUT changed, not one line of the state machine below it.
 import 'package:agrimore_core/agrimore_core.dart' show OrderModel;
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:geolocator/geolocator.dart';
 import 'package:provider/provider.dart';
 
-import '../../account/rider_account.dart';
 import '../../delivery/delivery_problems.dart';
 import '../../delivery/proof_photo_recovery.dart';
 import '../../design_system/design_system.dart';
@@ -25,14 +29,15 @@ import '../../providers/auth_provider.dart';
 import '../../providers/location_provider.dart';
 import '../../providers/offer_provider.dart';
 import '../../providers/order_provider.dart';
-import '../../safety/emergency_sheet.dart';
 import '../../app/delivery_tab.dart';
 import '../history/rider_history_screen.dart';
 import '../inbox/inbox_screen.dart';
 import '../money/money_screen.dart';
 import '../orders/active_order_screen.dart';
-import '../profile/rider_profile_screen.dart';
 import 'active_work_states.dart';
+import 'home_app_bar.dart';
+import 'home_map.dart';
+import 'home_operations_panel.dart';
 import 'pending_proof_banner.dart';
 
 class DashboardScreen extends StatefulWidget {
@@ -44,12 +49,19 @@ class DashboardScreen extends StatefulWidget {
     this.onOpenTab,
     this.pendingProofStore,
     this.pendingProofBackend,
+    this.homeMapBuilder,
   });
 
   /// Injected in tests.
   final RiderInboxSource? inboxSource;
   final Stream<List<RiderEarning>> Function(String riderId)? earningsSource;
   final Stream<RiderAccount> Function(String riderId)? accountSource;
+
+  /// DLVHOME1: real GoogleMap platform views are not mocked in
+  /// `flutter test` (no plugin registered) and hang `pumpAndSettle`
+  /// indefinitely -- the same class of seam as `accountSource` above, not a
+  /// special case. Null (production) renders the real [HomeMap].
+  final WidgetBuilder? homeMapBuilder;
 
   /// DLVPP1: injected in tests; forwarded to [PendingProofBanner].
   final PendingProofStore? pendingProofStore;
@@ -192,52 +204,89 @@ class _DashboardScreenState extends State<DashboardScreen> {
   @override
   Widget build(BuildContext context) {
     final c = context.colors;
+    final auth = context.watch<DeliveryAuthProvider>();
+    final uid = auth.user?.uid;
     return Scaffold(
       backgroundColor: c.background,
       body: SafeArea(
+        bottom: false,
         child: Column(
           children: [
-            _buildHeader(),
-            _buildOnlineToggle(),
-            // DLVPP1: never behind a completion modal or any other screen --
-            // always visible here whenever a delivery still needs its proof
-            // photo attached, regardless of which tab or order is active.
-            PendingProofBanner(store: widget.pendingProofStore, backend: widget.pendingProofBackend),
+            if (uid != null)
+              HomeAppBar(
+                isOnline: _isOnline,
+                busy: _toggling,
+                onToggle: _toggleOnline,
+                riderId: uid,
+                inboxSource: _inbox,
+                onOpenInbox: () => _openTab(
+                  DeliveryTab.inbox,
+                  () => InboxScreen(riderId: uid, source: _inbox),
+                ),
+              ),
             Expanded(
-              child: Consumer<DeliveryOrderProvider>(
-                builder: (context, orderProvider, _) {
-                  final work = orderProvider.work;
-                  final Widget body;
-                  if (!work.loaded) {
-                    body = const ActiveWorkLoading();
-                  } else if (work.hasMultiple) {
-                    body = MultipleActiveOrders(
-                      orders: work.orders,
-                      onOpen: _openOrder,
-                    );
-                  } else if (work.single != null) {
-                    body = ActiveOrderSummaryCard(
-                      order: work.single!,
-                      onOpen: _openOrder,
-                    );
-                  } else if (work.error != null) {
-                    body = ActiveWorkError(
-                      error: work.error!,
-                      onRetry: orderProvider.retry,
-                    );
-                  } else {
-                    body = _buildDashboardContent();
-                  }
-                  return Column(
-                    children: [
-                      if (work.loaded &&
-                          (work.fromCache || work.error != null) &&
-                          work.orders.isNotEmpty)
-                        const StaleDataBanner(),
-                      Expanded(child: body),
-                    ],
-                  );
-                },
+              child: Stack(
+                children: [
+                  Positioned.fill(
+                    child: widget.homeMapBuilder?.call(context) ?? const HomeMap(),
+                  ),
+                  Positioned.fill(
+                    child: Consumer<DeliveryOrderProvider>(
+                      builder: (context, orderProvider, _) {
+                        final work = orderProvider.work;
+                        // Rider-requested resting shape: collapsed shows
+                        // exactly one pinned "headline" widget (the
+                        // Today/This week + Earned card when idle; the
+                        // active-work summary otherwise) and nothing else.
+                        final Widget peek;
+                        final List<Widget> secondary;
+                        if (!work.loaded) {
+                          peek = const SizedBox(
+                            height: DeliverySize.workPreviewMedium,
+                            child: ActiveWorkLoading(),
+                          );
+                          secondary = const [];
+                        } else if (work.hasMultiple) {
+                          peek = SizedBox(
+                            height: DeliverySize.workPreviewLarge,
+                            child: MultipleActiveOrders(orders: work.orders, onOpen: _openOrder),
+                          );
+                          secondary = const [];
+                        } else if (work.single != null) {
+                          peek = SizedBox(
+                            height: DeliverySize.workPreviewMedium,
+                            child: ActiveOrderSummaryCard(order: work.single!, onOpen: _openOrder),
+                          );
+                          secondary = const [];
+                        } else if (work.error != null) {
+                          peek = SizedBox(
+                            height: DeliverySize.workPreviewCompact,
+                            child: ActiveWorkError(error: work.error!, onRetry: orderProvider.retry),
+                          );
+                          secondary = const [];
+                        } else {
+                          peek = _buildEarningsPeek();
+                          secondary = _buildExpandedContent();
+                        }
+                        return HomeOperationsPanel(
+                          peek: peek,
+                          expanded: [
+                            // DLVPP1: never behind a completion modal or any
+                            // other screen -- always visible whenever a
+                            // delivery still needs its proof photo attached.
+                            PendingProofBanner(
+                              store: widget.pendingProofStore,
+                              backend: widget.pendingProofBackend,
+                            ),
+                            if (work.loaded && (work.fromCache || work.error != null) && work.orders.isNotEmpty)
+                              const StaleDataBanner(),
+                            ...secondary,
+                          ],
+                        );
+                      },
+                    ),
+                  ),
+                ],
               ),
             ),
           ],
@@ -258,168 +307,89 @@ class _DashboardScreenState extends State<DashboardScreen> {
         .push(MaterialPageRoute<void>(builder: (_) => fallback()));
   }
 
-  Widget _buildHeader() {
-    return Consumer<DeliveryAuthProvider>(
-      builder: (context, auth, _) {
-        final l = AppLocalizations.of(context);
-        final c = context.colors;
-        final t = context.text;
-        final initials = auth.user?.initials;
-        final first = auth.user?.firstName;
-        return Padding(
-          padding: const EdgeInsets.fromLTRB(
-            DeliverySpace.md,
-            DeliverySpace.lg,
-            DeliverySpace.sm,
-            DeliverySpace.lg,
-          ),
-          child: Row(
-            children: [
-              IconButton(
-                key: const ValueKey('open-profile'),
-                tooltip: l.profileOpen,
-                onPressed: () => _openTab(
-                  DeliveryTab.profile,
-                  () => const RiderProfileScreen(),
-                ),
-                icon: CircleAvatar(
-                  radius: DeliverySize.avatarMd / 2,
-                  backgroundColor: c.brandSubtle,
-                  child: initials == null || initials.isEmpty
-                      ? Icon(DeliveryIcons.user, color: c.brand)
-                      : Text(
-                          initials,
-                          style: t.titleSmall.copyWith(color: c.brand),
-                        ),
-                ),
-              ),
-              const SizedBox(width: DeliverySpace.sm),
-              Expanded(
-                child: Column(
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  children: [
-                    Text(
-                      first == null || first.isEmpty
-                          ? l.dashGreetingNoName
-                          : l.dashGreeting(first),
-                      maxLines: 1,
-                      overflow: TextOverflow.ellipsis,
-                      style: t.titleMedium.copyWith(color: c.textPrimary),
-                    ),
-                    Text(
-                      _isOnline ? l.dashReady : l.dashOfflineShort,
-                      style: t.bodySmall.copyWith(
-                        color: _isOnline ? c.onlineFg : c.textSecondary,
-                      ),
-                    ),
-                  ],
-                ),
-              ),
-              if (auth.user != null)
-                InboxButton(
-                  riderId: auth.user!.uid,
-                  source: _inbox,
-                  onOpen: () => _openTab(
-                    DeliveryTab.inbox,
-                    () => InboxScreen(riderId: auth.user!.uid, source: _inbox),
-                  ),
-                ),
-              IconButton(
-                onPressed: () => showEmergencySheet(context),
-                icon: Icon(DeliveryIcons.emergency, color: c.danger.icon),
-                tooltip: l.emergencyTitle,
-              ),
-              IconButton(
-                onPressed: _confirmSignOut,
-                icon: Icon(DeliveryIcons.logout, color: c.textSecondary),
-                tooltip: l.dashSignOutTooltip,
-              ),
-            ],
-          ),
-        );
-      },
-    );
-  }
-
-  Widget _buildOnlineToggle() {
-    final l = AppLocalizations.of(context);
+  /// The panel's pinned collapsed content: just the Today/This week toggle
+  /// and the Earned card — everything else lives in [_buildExpandedContent],
+  /// only reachable by dragging the panel open.
+  Widget _buildEarningsPeek() {
     return Padding(
-      padding: const EdgeInsets.symmetric(horizontal: DeliverySpace.page),
-      child: DeliveryOnlineSwitch(
-        isOnline: _isOnline,
-        isLoading: _toggling,
-        onlineTitle: l.dashOnline,
-        offlineTitle: l.dashOffline,
-        onlineSubtitle: l.dashOnlineHint,
-        offlineSubtitle: l.dashOfflineHint,
-        onChanged: _toggleOnline,
+      padding: const EdgeInsets.fromLTRB(
+        DeliverySpace.page,
+        0,
+        DeliverySpace.page,
+        DeliverySpace.md,
       ),
+      child: _buildEarningsCard(),
     );
   }
 
-  Widget _buildDashboardContent() {
+  List<Widget> _buildExpandedContent() {
     final l = AppLocalizations.of(context);
     final c = context.colors;
     final t = context.text;
-    return SingleChildScrollView(
-      padding: const EdgeInsets.all(DeliverySpace.page),
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.stretch,
-        children: [
-          _buildEarningsCard(),
-          const SizedBox(height: DeliverySpace.xl),
-          _moneyStats(
-            (_, __, cash) => _StatCard(
-              label: l.dashStatCash,
-              value: cash,
-              icon: DeliveryIcons.rupee,
+    return [
+      Padding(
+        padding: const EdgeInsets.fromLTRB(
+          DeliverySpace.page,
+          0,
+          DeliverySpace.page,
+          DeliverySpace.page,
+        ),
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.stretch,
+          children: [
+            _moneyStats(
+              (_, __, cash) => _StatCard(
+                label: l.dashStatCash,
+                value: cash,
+                icon: DeliveryIcons.rupee,
+              ),
             ),
-          ),
-          const SizedBox(height: DeliverySpace.md),
-          _ActionCard(
-            title: l.dashMoneyTitle,
-            subtitle: l.dashMoneySubtitle,
-            icon: DeliveryIcons.wallet,
-            onTap: _openMoney,
-          ),
-          const SizedBox(height: DeliverySpace.xxl),
-          Text(
-            l.dashQuickActions,
-            style: t.titleMedium.copyWith(color: c.textPrimary),
-          ),
-          const SizedBox(height: DeliverySpace.md),
-          Consumer<OfferProvider>(
-            builder: (context, offers, _) {
-              final current = offers.current;
-              return _ActionCard(
-                title: current != null
-                    ? l.dashOfferTitle
-                    : _isOnline
-                        ? l.dashWaitingTitle
-                        : l.dashGoOnlineTitle,
-                subtitle: current != null
-                    ? l.dashOfferSubtitle
-                    : _isOnline
-                        ? l.dashWaitingSubtitle
-                        : l.dashGoOnlineSubtitle,
-                icon: DeliveryIcons.bell,
-                badgeCount: offers.offers.length,
-                onTap: current == null
-                    ? null
-                    : () => OfferLaunch.request(current.orderId),
-              );
-            },
-          ),
-          const SizedBox(height: DeliverySpace.md),
-          _ActionCard(
-            title: l.historyActionTitle,
-            subtitle: l.historyActionSubtitle,
-            icon: DeliveryIcons.history,
-            onTap: _showDeliveryHistory,
-          ),
-        ],
+            const SizedBox(height: DeliverySpace.md),
+            _ActionCard(
+              title: l.dashMoneyTitle,
+              subtitle: l.dashMoneySubtitle,
+              icon: DeliveryIcons.wallet,
+              onTap: _openMoney,
+            ),
+            const SizedBox(height: DeliverySpace.xxl),
+            Text(
+              l.dashQuickActions,
+              style: t.titleMedium.copyWith(color: c.textPrimary),
+            ),
+            const SizedBox(height: DeliverySpace.md),
+            Consumer<OfferProvider>(
+              builder: (context, offers, _) {
+                final current = offers.current;
+                return _ActionCard(
+                  title: current != null
+                      ? l.dashOfferTitle
+                      : _isOnline
+                          ? l.dashWaitingTitle
+                          : l.dashGoOnlineTitle,
+                  subtitle: current != null
+                      ? l.dashOfferSubtitle
+                      : _isOnline
+                          ? l.dashWaitingSubtitle
+                          : l.dashGoOnlineSubtitle,
+                  icon: DeliveryIcons.bell,
+                  badgeCount: offers.offers.length,
+                  onTap: current == null
+                      ? null
+                      : () => OfferLaunch.request(current.orderId),
+                );
+              },
+            ),
+            const SizedBox(height: DeliverySpace.md),
+            _ActionCard(
+              title: l.historyActionTitle,
+              subtitle: l.historyActionSubtitle,
+              icon: DeliveryIcons.history,
+              onTap: _showDeliveryHistory,
+            ),
+          ],
+        ),
       ),
-    );
+    ];
   }
 
   // ── Phase DLV-4B: money from the server (rider_earnings / rider_accounts) ──
@@ -648,18 +618,6 @@ class _DashboardScreenState extends State<DashboardScreen> {
     } finally {
       _toggling = false;
     }
-  }
-
-  Future<void> _confirmSignOut() async {
-    final l = AppLocalizations.of(context);
-    final ok = await showDeliveryConfirmDialog(
-      context: context,
-      title: l.dashSignOutTitle,
-      body: l.dashSignOutBody,
-      confirmLabel: l.actionSignOut,
-      cancelLabel: l.cancel,
-    );
-    if (ok && mounted) await riderSignOut(context);
   }
 }
 

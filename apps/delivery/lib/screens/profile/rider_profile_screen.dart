@@ -30,6 +30,7 @@ import '../money/money_screen.dart';
 import '../orders/active_order_screen.dart';
 import '../settings/device_readiness_screen.dart';
 import '../support/help_support_screen.dart';
+import '../support/my_support_requests_screen.dart';
 import 'identity_change_screen.dart';
 
 String accountFailureText(AppLocalizations l, AccountActionFailure f) =>
@@ -303,37 +304,18 @@ class _RiderProfileScreenState extends State<RiderProfileScreen> {
     }
   }
 
-  Widget _row(String label, String value) {
-    final c = context.colors;
-    final t = context.text;
-    return Padding(
-      padding: const EdgeInsets.symmetric(vertical: DeliverySpace.xxs),
-      child: Row(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
-          Expanded(
-            flex: 2,
-            child: Text(
-              label,
-              style: t.bodyMedium.copyWith(color: c.textSecondary),
-            ),
-          ),
-          const SizedBox(width: DeliverySpace.sm),
-          Expanded(
-            flex: 3,
-            child: Text(
-              value,
-              style: t.bodyMedium.copyWith(color: c.textPrimary),
-            ),
-          ),
-        ],
-      ),
-    );
-  }
+  /// DLVHOME1 Profile redesign: a comfortable label/value row, matching the
+  /// reference's row rhythm. Kept as a thin wrapper over the canonical
+  /// [DeliveryKeyValueRow] rather than a bespoke Row -- same call shape
+  /// every existing call site already uses, so this is a styling change
+  /// only, not a rewrite of what each section says.
+  Widget _row(String label, String value) => DeliveryKeyValueRow(label: label, value: value);
 
+  /// DLVHOME1 Profile redesign: a grouped card with a [DeliverySectionHeader]
+  /// title (was a plain `Text`) -- the "clear grouped cards" + "consistent
+  /// icon/label/chevron rows" hierarchy the reference uses, built from the
+  /// app's own existing canonical components, not a new parallel style.
   Widget _section(String title, List<Widget> children) {
-    final c = context.colors;
-    final t = context.text;
     return Padding(
       padding: const EdgeInsets.only(bottom: DeliverySpace.md),
       child: DeliveryCard(
@@ -341,11 +323,10 @@ class _RiderProfileScreenState extends State<RiderProfileScreen> {
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.stretch,
           children: [
-            Text(
-              title,
-              style: t.titleSmall.copyWith(color: c.textPrimary),
+            DeliverySectionHeader(
+              title: title,
+              padding: const EdgeInsets.only(bottom: DeliverySpace.sm),
             ),
-            const SizedBox(height: DeliverySpace.sm),
             ...children,
           ],
         ),
@@ -363,7 +344,14 @@ class _RiderProfileScreenState extends State<RiderProfileScreen> {
 
     return Scaffold(
       backgroundColor: c.background,
-      appBar: AppBar(title: Text(l.profileTitle)),
+      // DLVHOME1 Profile redesign: matches the identity header card's own
+      // fill (c.surface) directly below it, per the owner's own follow-up --
+      // the app bar and that first card now read as one continuous surface
+      // instead of two different tones meeting at a seam.
+      appBar: AppBar(
+        title: Text(l.profileTitle),
+        backgroundColor: c.surface,
+      ),
       body: _body(auth, l, c, t, appearance),
     );
   }
@@ -458,18 +446,25 @@ class _RiderProfileScreenState extends State<RiderProfileScreen> {
           final docs = documentsOnFile(data);
           final acct = v('bankAccountNumber');
           final upi = v('upiId');
+          // Owner follow-up: the identity card scrolls away with the rest
+          // of the content, not pinned above a separately-scrolling list --
+          // one single ListView, the card as its own first (full-bleed, no
+          // horizontal padding) item, everything else wrapped in one Padding
+          // so its spacing is unchanged from before this card existed.
           return ListView(
-            padding: const EdgeInsets.all(DeliverySpace.page),
+            padding: EdgeInsets.zero,
             children: [
-              Text(
-                v('name'),
-                style: t.headlineSmall.copyWith(color: c.textPrimary),
-              ),
-              Text(
-                auth.user?.email ?? '',
-                style: t.bodyMedium.copyWith(color: c.textSecondary),
-              ),
-              const SizedBox(height: DeliverySpace.lg),
+              _identityHeader(v, notSet, auth, c, t),
+              Padding(
+                padding: const EdgeInsets.fromLTRB(
+                  DeliverySpace.page,
+                  DeliverySpace.lg,
+                  DeliverySpace.page,
+                  DeliverySpace.page,
+                ),
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.stretch,
+                  children: [
               _section(
                 l.profileDetails,
                 [
@@ -640,11 +635,12 @@ class _RiderProfileScreenState extends State<RiderProfileScreen> {
               _section(
                 l.profileReadinessHeading,
                 [
-                  DeliveryButton.secondary(
+                  DeliveryListTile(
                     key: const ValueKey('device-readiness'),
-                    label: l.readinessOpen,
-                    icon: DeliveryIcons.bell,
-                    onPressed: () => Navigator.of(context).push(
+                    title: l.readinessOpen,
+                    leadingIcon: DeliveryIcons.bell,
+                    showChevron: true,
+                    onTap: () => Navigator.of(context).push(
                       MaterialPageRoute<void>(
                         builder: (_) => const DeviceReadinessScreen(),
                       ),
@@ -655,26 +651,44 @@ class _RiderProfileScreenState extends State<RiderProfileScreen> {
               _section(
                 l.profileSupport,
                 [
-                  DeliveryButton.secondary(
+                  DeliveryListTile(
                     key: const ValueKey('get-help'),
-                    label: l.profileGetHelp,
-                    icon: DeliveryIcons.document,
-                    onPressed: () => Navigator.of(context).push(
+                    title: l.profileGetHelp,
+                    leadingIcon: DeliveryIcons.document,
+                    showChevron: true,
+                    onTap: () => Navigator.of(context).push(
                       MaterialPageRoute<void>(
                         builder: (_) => const HelpSupportScreen(),
                       ),
                     ),
                   ),
-                  const SizedBox(height: DeliverySpace.sm),
+                  // DLVHOME1 Profile redesign: previously reachable only by
+                  // opening Help & support first, then its own nested "My
+                  // requests" row -- the owner's IA explicitly lists this as
+                  // its own top-level Profile row, matching the reference's
+                  // "Support tickets" row. Help & support keeps its own
+                  // nested entry too (unchanged, still real, not removed).
+                  DeliveryListTile(
+                    key: const ValueKey('my-support-requests'),
+                    title: l.mySupportRequestsEntry,
+                    leadingIcon: DeliveryIcons.statement,
+                    showChevron: true,
+                    onTap: () => Navigator.of(context).push(
+                      MaterialPageRoute<void>(
+                        builder: (_) => MySupportRequestsScreen(riderId: auth.user!.uid),
+                      ),
+                    ),
+                  ),
                   // DLVC3: the persistent entry point back to a rider's own
                   // past safety reports -- reopenable any time, including
                   // after the emergency sheet that filed one has long since
                   // closed and after an app restart.
-                  DeliveryButton.secondary(
+                  DeliveryListTile(
                     key: const ValueKey('my-safety-reports'),
-                    label: l.myIncidentsEntry,
-                    icon: DeliveryIcons.shield,
-                    onPressed: () => Navigator.of(context).push(
+                    title: l.myIncidentsEntry,
+                    leadingIcon: DeliveryIcons.shield,
+                    showChevron: true,
+                    onTap: () => Navigator.of(context).push(
                       MaterialPageRoute<void>(
                         builder: (_) => MyIncidentsScreen(riderId: auth.user!.uid),
                       ),
@@ -693,7 +707,7 @@ class _RiderProfileScreenState extends State<RiderProfileScreen> {
                     icon: DeliveryIcons.logout,
                     onPressed: _busy ? null : _signOut,
                   ),
-                  const SizedBox(height: DeliverySpace.sm),
+                  const SizedBox(height: DeliverySpace.md),
                   StreamBuilder<RiderAccount>(
                     stream: _accountBinding.current,
                     builder: (context, accountSnap) => DeliveryButton.ghost(
@@ -710,8 +724,83 @@ class _RiderProfileScreenState extends State<RiderProfileScreen> {
                   ),
                 ],
               ),
+                  ],
+                ),
+              ),
             ],
           );
+  }
+
+  /// DLVHOME1 Profile redesign: a "strong identity header" per the
+  /// reference -- a full-bleed card, flush with the app bar above and
+  /// curved only at the bottom, distinct from the plain background below
+  /// it (matching the reference's own rounded identity card, not the flat
+  /// text block this used to be). Content stays strictly real: initials
+  /// avatar (never a reused KYC photo), name, email -- no invented rider
+  /// ID/rating/partner tier/score, no global "Edit profile" affordance.
+  Widget _identityHeader(
+    String Function(String) v,
+    String notSet,
+    DeliveryAuthProvider auth,
+    DeliveryColors c,
+    DeliveryType t,
+  ) {
+    return Container(
+      width: double.infinity,
+      padding: const EdgeInsets.fromLTRB(
+        DeliverySpace.page,
+        DeliverySpace.lg,
+        DeliverySpace.page,
+        DeliverySpace.xxl,
+      ),
+      // c.surfaceMuted (sunken) is literally black-on-black in dark mode
+      // (sunken == background == #000000 there) -- invisible, no matter the
+      // border radius. c.surface + a border is the SAME pair every other
+      // card on this screen (DeliveryCard's own standard variant) already
+      // uses for exactly this reason: a real fill difference where dark
+      // mode has one (surface != background), a visible border where light
+      // mode does not (surface == background there too).
+      decoration: BoxDecoration(
+        color: c.surface,
+        // Bottom edge only -- the top would sit right where this card
+        // meets the app bar, now the SAME c.surface fill as this card, so a
+        // top border would just draw a stray line across one continuous
+        // surface instead of separating two different ones.
+        border: Border(bottom: BorderSide(color: c.border, width: DeliverySize.hairline)),
+        borderRadius: const BorderRadius.vertical(bottom: Radius.circular(DeliveryRadius.dialog)),
+        boxShadow: DeliveryElevation.card(c.shadow),
+      ),
+      child: Row(
+        crossAxisAlignment: CrossAxisAlignment.center,
+        children: [
+          DeliveryAvatar(
+            name: v('name').isEmpty ? notSet : v('name'),
+            size: DeliverySize.avatarXl,
+          ),
+          const SizedBox(width: DeliverySpace.md),
+          Expanded(
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Text(
+                  v('name').isEmpty ? notSet : v('name'),
+                  maxLines: 2,
+                  overflow: TextOverflow.ellipsis,
+                  style: t.headlineSmall.copyWith(color: c.textPrimary),
+                ),
+                if ((auth.user?.email ?? '').isNotEmpty)
+                  Text(
+                    auth.user!.email,
+                    maxLines: 1,
+                    overflow: TextOverflow.ellipsis,
+                    style: t.bodyMedium.copyWith(color: c.textSecondary),
+                  ),
+              ],
+            ),
+          ),
+        ],
+      ),
+    );
   }
 }
 
@@ -984,14 +1073,39 @@ class _DocumentPreviewTileState extends State<_DocumentPreviewTile> {
           DocumentReviewStatus.rejected => l.docReviewRejected,
           _ => widget.onFile ? l.docSubmitted : l.docNotSubmitted,
         };
+        // DLVHOME1 Profile redesign: a leading icon circle per document,
+        // matching the rest of the screen's row language ("consistent
+        // icon/label/chevron rows") -- purely a visual addition, no change
+        // to the status text, keys, or the StreamBuilder-driven logic above.
+        final rejected = review.status == DocumentReviewStatus.rejected;
+        final docIcon = switch (widget.doc) {
+          RiderDocument.aadhaarFront || RiderDocument.aadhaarBack => DeliveryIcons.idCard,
+          RiderDocument.selfie => DeliveryIcons.camera,
+          RiderDocument.license => DeliveryIcons.document,
+        };
         return Padding(
-          padding: const EdgeInsets.symmetric(vertical: DeliverySpace.xxs),
+          padding: const EdgeInsets.symmetric(vertical: DeliverySpace.xs),
           child: Column(
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
               Row(
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
+                  Container(
+                    width: DeliverySize.avatarSm,
+                    height: DeliverySize.avatarSm,
+                    decoration: BoxDecoration(
+                      color: rejected ? c.danger.container : c.surfaceMuted,
+                      borderRadius: DeliveryRadius.rSm,
+                    ),
+                    alignment: Alignment.center,
+                    child: Icon(
+                      docIcon,
+                      size: DeliveryIconSize.sm,
+                      color: rejected ? c.danger.icon : c.textSecondary,
+                    ),
+                  ),
+                  const SizedBox(width: DeliverySpace.sm),
                   Expanded(
                     flex: 2,
                     child: Text(widget.label, style: t.bodyMedium.copyWith(color: c.textSecondary)),
@@ -1002,7 +1116,7 @@ class _DocumentPreviewTileState extends State<_DocumentPreviewTile> {
                     child: Text(
                       statusText,
                       style: t.bodyMedium.copyWith(
-                        color: review.status == DocumentReviewStatus.rejected ? c.danger.icon : c.textPrimary,
+                        color: rejected ? c.danger.icon : c.textPrimary,
                       ),
                     ),
                   ),

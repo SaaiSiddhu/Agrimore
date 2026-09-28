@@ -24,6 +24,7 @@ import 'package:delivery/providers/order_provider.dart';
 import 'package:delivery/screens/money/money_screen.dart';
 import 'package:delivery/screens/orders/active_order_screen.dart';
 import 'package:delivery/screens/profile/rider_profile_screen.dart';
+import 'package:delivery/screens/support/my_support_requests_screen.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:provider/provider.dart';
@@ -486,6 +487,43 @@ void main() {
       expect(find.text('Rider A', skipOffstage: false), findsNothing,
           reason: 'even off-stage, the tab-retained screen must rebind, not keep the previous rider forever');
       expect(find.text('Rider B', skipOffstage: false), findsOneWidget);
+    });
+  });
+
+  group('Support & safety navigation (DLVHOME1 Profile redesign)', () {
+    testWidgets('My support requests opens MySupportRequestsScreen for the signed-in rider', (t) async {
+      final auth = await authedProvider(t);
+      await t.pumpWidget(host(
+        auth,
+        RiderProfileScreen(
+          backend: FakeAccountBackend(),
+          partnerData: const {'name': 'Ravi'},
+        ),
+      ));
+      await t.pumpAndSettle();
+      await t.scrollUntilVisible(find.byKey(const ValueKey('my-support-requests')), 400);
+      await t.ensureVisible(find.byKey(const ValueKey('my-support-requests')));
+      await t.pumpAndSettle();
+      await t.tap(find.byKey(const ValueKey('my-support-requests')));
+      await t.pumpAndSettle();
+      expect(t.takeException(), isNull);
+      final screen = t.widget<MySupportRequestsScreen>(find.byType(MySupportRequestsScreen));
+      expect(screen.riderId, 'r1', reason: 'must use the real signed-in uid, not a placeholder');
+    });
+
+    testWidgets('My support requests and My safety reports are two distinct rows to two distinct screens', (t) async {
+      final auth = await authedProvider(t);
+      await t.pumpWidget(host(
+        auth,
+        RiderProfileScreen(
+          backend: FakeAccountBackend(),
+          partnerData: const {'name': 'Ravi'},
+        ),
+      ));
+      await t.pumpAndSettle();
+      await t.scrollUntilVisible(find.byKey(const ValueKey('my-safety-reports')), 400);
+      expect(find.byKey(const ValueKey('my-support-requests')), findsOneWidget);
+      expect(find.byKey(const ValueKey('my-safety-reports')), findsOneWidget);
     });
   });
 }
