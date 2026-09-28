@@ -21,6 +21,7 @@ import 'package:delivery/screens/money/bank_change_request_screen.dart';
 import 'package:delivery/screens/money/money_screen.dart' show EarningTile, MoneyScreen;
 import 'package:delivery/screens/money/statement_screen.dart';
 import 'package:delivery/screens/orders/active_order_screen.dart';
+import 'package:delivery/app/delivery_tab.dart';
 import 'package:delivery/screens/profile/identity_change_screen.dart';
 import 'package:delivery/screens/support/support_request_status_screen.dart';
 import 'package:flutter/material.dart';
@@ -451,6 +452,47 @@ void main() {
       await t.pumpAndSettle();
       expect(t.takeException(), isNull);
       expect(find.byType(SupportRequestStatusScreen), findsNothing);
+    });
+  });
+
+  group('document review notices (DLVC2)', () {
+    RiderNotice docReviewNotice(String type) => RiderNotice.fromMap('n6', {
+          'type': type,
+          'title': type == 'document_review_approved' ? 'Aadhaar (front) approved' : 'Aadhaar (front) not approved',
+          'unread': true,
+          'data': {'type': type, 'submissionId': 'sub-1', 'docType': 'aadhaarFront'},
+        });
+
+    // RiderProfileScreen (unlike every other destination InboxScreen routes
+    // to) reads its rider id from an ambient DeliveryAuthProvider rather
+    // than taking one as a constructor parameter -- true in the real app,
+    // where Inbox always lives inside the tabbed shell alongside that
+    // provider, but not reproducible in this file's own plain host()
+    // without a much larger fixture. Tested here via the SAME onOpenTab
+    // switch the shell always wires up in practice (DeliveryTab.profile),
+    // which is the real path every actual rider takes; the screen's own
+    // dedicated rider_profile_screen_test.dart covers the screen itself.
+    testWidgets('a document-review-approved notice switches to the Profile tab, not nothing', (t) async {
+      final src = FakeInbox()..current = [docReviewNotice('document_review_approved')];
+      DeliveryTab? opened;
+      await t.pumpWidget(host(InboxScreen(riderId: 'r1', source: src, onOpenTab: (tab) => opened = tab)));
+      await t.pumpAndSettle();
+      await t.tap(find.text('Aadhaar (front) approved'));
+      await t.pumpAndSettle();
+      expect(t.takeException(), isNull);
+      expect(opened, DeliveryTab.profile,
+          reason: 'previously fell through to NoticeTarget.none -- tapping did nothing at all');
+    });
+
+    testWidgets('a document-review-rejected notice switches to the Profile tab too', (t) async {
+      final src = FakeInbox()..current = [docReviewNotice('document_review_rejected')];
+      DeliveryTab? opened;
+      await t.pumpWidget(host(InboxScreen(riderId: 'r1', source: src, onOpenTab: (tab) => opened = tab)));
+      await t.pumpAndSettle();
+      await t.tap(find.text('Aadhaar (front) not approved'));
+      await t.pumpAndSettle();
+      expect(t.takeException(), isNull);
+      expect(opened, DeliveryTab.profile);
     });
   });
 

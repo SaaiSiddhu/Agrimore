@@ -11,7 +11,7 @@ import 'package:cloud_firestore/cloud_firestore.dart';
 /// identifier to get there (never trust the payload alone — the delivery
 /// destination re-reads its order fresh, and the server's own security rule
 /// is what actually authorizes it).
-enum NoticeTarget { delivery, statement, payoutDetails, bankChangeRequest, identityRequest, supportTicket, none }
+enum NoticeTarget { delivery, statement, payoutDetails, bankChangeRequest, identityRequest, supportTicket, documentReview, none }
 
 class RiderNotice {
   const RiderNotice({
@@ -93,6 +93,12 @@ class RiderNotice {
           requestId != null ? NoticeTarget.identityRequest : NoticeTarget.none,
         'support_request_seen' || 'support_request_closed' =>
           ticketId != null ? NoticeTarget.supportTicket : NoticeTarget.none,
+        // DLVC2: unlike a request/ticket, there is only ever ONE current
+        // review state per document (Profile's own Documents section always
+        // shows it live) -- no id is needed to know where this leads, so
+        // this is the one case here that is never conditional on a payload
+        // field being present.
+        'document_review_approved' || 'document_review_rejected' => NoticeTarget.documentReview,
         _ => NoticeTarget.none,
       };
 }
