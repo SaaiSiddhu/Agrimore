@@ -2344,6 +2344,18 @@ abstract class AppLocalizations {
   /// **'Load more'**
   String get statementLoadMore;
 
+  /// Shown above Load more when auto-search for a highlighted order paused at its safety limit without finding it yet
+  ///
+  /// In en, this message translates to:
+  /// **'Still looking for that delivery — load more to keep searching.'**
+  String get statementSearchPaused;
+
+  /// Shown once every page has genuinely been searched and the highlighted order was not found
+  ///
+  /// In en, this message translates to:
+  /// **'That delivery isn\'t in this statement.'**
+  String get statementTargetNotFound;
+
   /// Stands in for an amount while it loads
   ///
   /// In en, this message translates to:

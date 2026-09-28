@@ -1667,6 +1667,14 @@
   "@statementLoadMore": {
     "description": "Load the next page of statement lines"
   },
+  "statementSearchPaused": "Still looking for that delivery — load more to keep searching.",
+  "@statementSearchPaused": {
+    "description": "Shown above Load more when auto-search for a highlighted order paused at its safety limit without finding it yet"
+  },
+  "statementTargetNotFound": "That delivery isn't in this statement.",
+  "@statementTargetNotFound": {
+    "description": "Shown once every page has genuinely been searched and the highlighted order was not found"
+  },
   "moneyAmountLoading": "…",
   "@moneyAmountLoading": {
     "description": "Stands in for an amount while it loads"

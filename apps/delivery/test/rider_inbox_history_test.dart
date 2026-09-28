@@ -1362,6 +1362,7 @@ void main() {
       await t.pumpAndSettle();
       expect(calls, 1, reason: 'no highlight target: exactly the one page the rider is shown, no silent extra fetch');
       expect(find.text('Load more'), findsOneWidget, reason: 'further pages remain available on manual request, as before');
+      expect(find.textContaining('Still looking'), findsNothing, reason: 'the cap-paused wording is only for an actual highlight target');
     });
 
     group('DLVH10: statementCursorAdvanced (pure)', () {
@@ -1462,6 +1463,135 @@ void main() {
       final viewportHeight = t.view.physicalSize.height / t.view.devicePixelRatio;
       expect(dy, greaterThanOrEqualTo(0), reason: 'scrolled into view, not sitting above the visible area');
       expect(dy, lessThan(viewportHeight), reason: 'scrolled into view, not sitting below the visible area');
+    });
+
+    group('C1 4.2: statement pagination -- footer wording, disposal, later-page failure, text scale', () {
+      testWidgets('the footer says search paused at the cap, not a bare Load more, while still unfound', (t) async {
+        t.view.physicalSize = const Size(1080, 3200);
+        t.view.devicePixelRatio = 1;
+        addTearDown(t.view.reset);
+        var calls = 0;
+        await t.pumpWidget(host(StatementScreen(
+          payout: const RiderPayout(
+            id: 'stmt-cap', weekKey: '2026-W38', earned: 1000, netted: 0, amount: 1000,
+            cashHeldAfter: 0, orderCount: 50, status: 'paid',
+          ),
+          load: (after) async {
+            calls++;
+            return StatementPage([RiderEarning(orderId: 'o-page-$calls', total: 10, statementId: 'stmt-cap')], null, true);
+          },
+          highlightOrderId: 'never-appears-anywhere',
+        )));
+        await t.pumpAndSettle();
+        expect(calls, 20, reason: 'the same hard cap as DLVH10');
+        expect(find.text('Still looking for that delivery — load more to keep searching.'), findsOneWidget);
+        expect(find.text('Load more'), findsOneWidget, reason: 'the honest continuation stays available, not withdrawn');
+      });
+
+      testWidgets('the footer says the delivery is not in this statement once genuinely exhausted, not paused', (t) async {
+        var calls = 0;
+        await t.pumpWidget(host(StatementScreen(
+          payout: const RiderPayout(
+            id: 'stmt-exhausted-2', weekKey: '2026-W38', earned: 300, netted: 0, amount: 300,
+            cashHeldAfter: 0, orderCount: 1, status: 'paid',
+          ),
+          load: (after) async {
+            calls++;
+            if (calls == 1) {
+              return const StatementPage([RiderEarning(orderId: 'o-only', total: 300, statementId: 'stmt-exhausted-2')], null, true);
+            }
+            return const StatementPage([], null, false);
+          },
+          highlightOrderId: 'this-id-does-not-exist-anywhere',
+        )));
+        await t.pumpAndSettle();
+        expect(calls, 2);
+        expect(find.text("That delivery isn't in this statement."), findsOneWidget);
+        expect(find.text('Load more'), findsNothing, reason: 'genuinely exhausted: no false continuation offered once hasMore is truly false');
+      });
+
+      testWidgets('a late page response after the screen is disposed does not throw', (t) async {
+        // Revert-and-watch note: temporarily commenting out _loadMore's own
+        // `if (!mounted) return;` did NOT turn this test red -- the resulting
+        // setState-after-dispose error is thrown inside the very try block
+        // that guards it, so the method's own `catch (e)` swallows it (its
+        // second, dispose-guarded setState is skipped safely). That is a
+        // real, independent safety net, not a substitute for the explicit
+        // guard: relying on it would mean a disposal race gets logged as an
+        // ordinary load failure, and it says nothing about code reached
+        // outside this try block (e.g. _scrollToHighlightIfFound, which
+        // guards itself separately). The explicit early return stays for
+        // that reason; this test verifies the outcome the rider actually
+        // experiences -- no crash -- via both mechanisms together.
+        final gate = Completer<StatementPage>();
+        await t.pumpWidget(host(StatementScreen(
+          payout: const RiderPayout(
+            id: 'stmt-disposed', weekKey: '2026-W38', earned: 100, netted: 0, amount: 100,
+            cashHeldAfter: 0, orderCount: 1, status: 'paid',
+          ),
+          load: (after) => gate.future,
+        )));
+        await t.pump(); // initState's own _loadMore is now awaiting the gate
+        await t.pumpWidget(host(const SizedBox())); // replaces the tree -- disposes StatementScreen
+        gate.complete(const StatementPage([RiderEarning(orderId: 'o-late', total: 100, statementId: 'stmt-disposed')], null, false));
+        await t.pumpAndSettle();
+        expect(t.takeException(), isNull, reason: 'no crash must ever surface from a page response arriving after disposal');
+      });
+
+      testWidgets('a failure on a later page (not just the first) shows Retry, and retrying recovers', (t) async {
+        var calls = 0;
+        await t.pumpWidget(host(StatementScreen(
+          payout: const RiderPayout(
+            id: 'stmt-p2fail', weekKey: '2026-W38', earned: 200, netted: 0, amount: 200,
+            cashHeldAfter: 0, orderCount: 2, status: 'paid',
+          ),
+          load: (after) async {
+            calls++;
+            if (calls == 1) {
+              return const StatementPage([RiderEarning(orderId: 'o-a', total: 100, statementId: 'stmt-p2fail')], null, true);
+            }
+            if (calls == 2) throw Exception('network blip');
+            return const StatementPage([RiderEarning(orderId: 'o-b', total: 100, statementId: 'stmt-p2fail')], null, false);
+          },
+        )));
+        await t.pumpAndSettle();
+        await t.tap(find.text('Load more'));
+        await t.pumpAndSettle();
+        expect(find.text('Could not load the deliveries. Check your connection.'), findsOneWidget,
+            reason: 'a page-2 failure must be reported, not swallowed silently');
+        expect(find.byType(EarningTile), findsNWidgets(1), reason: 'page 1 must remain visible through the page-2 failure');
+        await t.tap(find.text('Try again'));
+        await t.pumpAndSettle();
+        expect(t.takeException(), isNull);
+        expect(find.byType(EarningTile), findsNWidgets(2), reason: 'retry must actually recover and load the rest');
+      });
+
+      testWidgets('the found target still scrolls into view under a large text scale, with taller rows', (t) async {
+        final manyEntries = List.generate(30, (i) => RiderEarning(orderId: 'o-$i', total: 10, statementId: 'stmt-scale'));
+        await t.pumpWidget(host(
+          Builder(
+            builder: (context) => MediaQuery(
+              data: MediaQuery.of(context).copyWith(textScaler: const TextScaler.linear(2.0)),
+              child: StatementScreen(
+                payout: const RiderPayout(
+                  id: 'stmt-scale', weekKey: '2026-W38', earned: 300, netted: 0, amount: 300,
+                  cashHeldAfter: 0, orderCount: 30, status: 'paid',
+                ),
+                load: (after) async => StatementPage(manyEntries, null, false),
+                highlightOrderId: 'o-25',
+              ),
+            ),
+          ),
+        ));
+        await t.pumpAndSettle();
+        expect(t.takeException(), isNull);
+        final targetFinder = find.byWidgetPredicate((w) => w is EarningTile && w.earning.orderId == 'o-25' && w.highlighted);
+        expect(targetFinder, findsOneWidget, reason: 'the estimated-offset jump must still make the Sliver build it at 2x text scale');
+        final dy = t.getTopLeft(targetFinder).dy;
+        final viewportHeight = t.view.physicalSize.height / t.view.devicePixelRatio;
+        expect(dy, greaterThanOrEqualTo(0), reason: 'not sitting above the visible area even with taller rows');
+        expect(dy, lessThan(viewportHeight), reason: 'not sitting below the visible area even with taller rows');
+      });
     });
 
     testWidgets('a deleted or inaccessible statement says so instead of doing nothing', (t) async {

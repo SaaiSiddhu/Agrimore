@@ -1277,6 +1277,14 @@ class AppLocalizationsEn extends AppLocalizations {
   String get statementLoadMore => 'Load more';
 
   @override
+  String get statementSearchPaused =>
+      'Still looking for that delivery — load more to keep searching.';
+
+  @override
+  String get statementTargetNotFound =>
+      'That delivery isn\'t in this statement.';
+
+  @override
   String get moneyAmountLoading => '…';
 
   @override
