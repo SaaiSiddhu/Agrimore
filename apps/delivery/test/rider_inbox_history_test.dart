@@ -1233,6 +1233,106 @@ void main() {
       expect(find.text('Load more'), findsOneWidget, reason: 'further pages remain available on manual request, as before');
     });
 
+    group('DLVH10: statementCursorAdvanced (pure)', () {
+      test('a repeated non-null cursor id is no progress; anything else is', () {
+        expect(statementCursorAdvanced('doc-1', 'doc-1'), isFalse, reason: 'the exact anomaly this guards against');
+        expect(statementCursorAdvanced('doc-1', 'doc-2'), isTrue);
+        expect(statementCursorAdvanced(null, 'doc-1'), isTrue);
+        expect(statementCursorAdvanced('doc-1', null), isTrue, reason: 'a null cursor is not itself suspicious');
+        expect(statementCursorAdvanced(null, null), isTrue, reason: 'matches this file\'s own null-cursor test fixtures');
+      });
+    });
+
+    testWidgets('DLVH10: a duplicate row across two pages is not double-counted', (t) async {
+      var calls = 0;
+      await t.pumpWidget(host(StatementScreen(
+        payout: const RiderPayout(
+          id: 'stmt-7', weekKey: '2026-W38', earned: 300, netted: 0, amount: 300,
+          cashHeldAfter: 0, orderCount: 2, status: 'paid',
+        ),
+        load: (after) async {
+          calls++;
+          if (calls == 1) {
+            return const StatementPage(
+              [RiderEarning(orderId: 'o-a', total: 100, statementId: 'stmt-7'), RiderEarning(orderId: 'o-b', total: 100, statementId: 'stmt-7')],
+              null,
+              true,
+            );
+          }
+          // o-b reappears (a race shifted the pagination window) alongside a genuinely new o-c.
+          return const StatementPage(
+            [RiderEarning(orderId: 'o-b', total: 100, statementId: 'stmt-7'), RiderEarning(orderId: 'o-c', total: 100, statementId: 'stmt-7')],
+            null,
+            false,
+          );
+        },
+      )));
+      await t.pumpAndSettle();
+      await t.tap(find.text('Load more'));
+      await t.pumpAndSettle();
+      expect(t.takeException(), isNull);
+      expect(find.byType(EarningTile), findsNWidgets(3), reason: 'o-a, o-b (once, not twice), o-c');
+    });
+
+    testWidgets('DLVH10: a target that never appears stops auto-continuing at a hard cap, not forever', (t) async {
+      // A generous viewport: this test is about the auto-continue COUNT and
+      // the footer's own reachability, not about scroll-to-target behaviour
+      // (covered separately below) -- tall enough that ListView's own lazy
+      // Sliver children (it stays lazy even with the plain children:
+      // constructor) build far enough to reach the footer without a manual
+      // scroll standing in for what this test is actually checking.
+      t.view.physicalSize = const Size(1080, 3200);
+      t.view.devicePixelRatio = 1;
+      addTearDown(t.view.reset);
+      var calls = 0;
+      await t.pumpWidget(host(StatementScreen(
+        payout: const RiderPayout(
+          id: 'stmt-8', weekKey: '2026-W38', earned: 1000, netted: 0, amount: 1000,
+          cashHeldAfter: 0, orderCount: 50, status: 'paid',
+        ),
+        load: (after) async {
+          calls++;
+          return StatementPage(
+            [RiderEarning(orderId: 'o-page-$calls', total: 10, statementId: 'stmt-8')],
+            null,
+            true, // always claims more -- a deliberately adversarial fixture
+          );
+        },
+        highlightOrderId: 'never-appears-anywhere',
+      )));
+      await t.pumpAndSettle();
+      expect(t.takeException(), isNull);
+      expect(calls, 20, reason: 'the hard cap, not an unbounded chain');
+      expect(find.text('Load more'), findsOneWidget,
+          reason: 'hasMore is genuinely still true -- manual continuation remains available past the auto-cap');
+    });
+
+    testWidgets('DLVH10: the found target scrolls into the visible viewport, not just the widget tree', (t) async {
+      // Deliberately the tester's own DEFAULT (small) viewport: entry #25 of
+      // 30 starts well beyond ListView's initial Sliver cache extent, so its
+      // own element -- and hence a GlobalKey context to ensureVisible -- does
+      // not exist until something actually scrolls near it first. This is
+      // exactly the gap the review named: correct highlight colour is not
+      // itself proof of visibility.
+      final manyEntries = List.generate(30, (i) => RiderEarning(orderId: 'o-$i', total: 10, statementId: 'stmt-9'));
+      await t.pumpWidget(host(StatementScreen(
+        payout: const RiderPayout(
+          id: 'stmt-9', weekKey: '2026-W38', earned: 300, netted: 0, amount: 300,
+          cashHeldAfter: 0, orderCount: 30, status: 'paid',
+        ),
+        load: (after) async => StatementPage(manyEntries, null, false),
+        highlightOrderId: 'o-25',
+      )));
+      await t.pumpAndSettle();
+      expect(t.takeException(), isNull);
+      final targetFinder = find.byWidgetPredicate((w) => w is EarningTile && w.earning.orderId == 'o-25' && w.highlighted);
+      expect(targetFinder, findsOneWidget, reason: 'the estimated-offset jump must make the Sliver build it at all');
+      final dy = t.getTopLeft(targetFinder).dy;
+      final viewportHeight = t.view.physicalSize.height / t.view.devicePixelRatio;
+      expect(dy, greaterThanOrEqualTo(0), reason: 'scrolled into view, not sitting above the visible area');
+      expect(dy, lessThan(viewportHeight), reason: 'scrolled into view, not sitting below the visible area');
+    });
+
     testWidgets('a deleted or inaccessible statement says so instead of doing nothing', (t) async {
       final order = historyOrder('o2', {
         'orderStatus': 'delivered',
