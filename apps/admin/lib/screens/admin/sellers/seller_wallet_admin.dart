@@ -60,10 +60,14 @@ String sellerDestinationMasked(Map<String, dynamic>? d) {
   return '${d['accountHolder'] ?? ''}\n${d['bankName'] ?? 'Bank'} · A/c ending ${d['accountLast4'] ?? '—'} · IFSC ${d['ifsc'] ?? '—'}';
 }
 
-/// ADMR-78: whether a LIVE seller_payout_details read (`live`) is the exact
-/// same account a withdrawal's own frozen masked `destination` (`masked`)
-/// was requested against — the only condition under which live data is safe
-/// to show/use for a withdrawal that predates `destinationFull` (ADMR-77).
+/// A CONSISTENCY check only — method + last-4-of-account-number + IFSC (or a
+/// UPI id) is display evidence, never proof of exact account identity on its
+/// own (ADMR-81: IFSC identifies a bank BRANCH, not an account; two
+/// different real accounts at the same branch can share a last-4 sequence by
+/// coincidence). Used only to cross-check a candidate destination that
+/// already has real, timestamped provenance behind it (see
+/// resolveLegacyDestination) — never, by itself, to call an unrelated live
+/// read "the same account" as a withdrawal's own frozen masked destination.
 bool destinationMatchesMasked(Map<String, dynamic>? live, Map<String, dynamic>? masked) {
   if (live == null || masked == null) return false;
   final liveMethod = live['payoutMethod'] == 'upi' ? 'upi' : 'bank';
@@ -81,19 +85,20 @@ bool destinationMatchesMasked(Map<String, dynamic>? live, Map<String, dynamic>? 
   return liveLast4.isNotEmpty && liveLast4 == maskedLast4 && liveIfsc.isNotEmpty && liveIfsc == maskedIfsc;
 }
 
-/// ADMR-78: what an admin should be shown/allowed for one withdrawal's
-/// payout destination — resolves the exact 4 states a request can be in
-/// rather than ever letting a live read stand in for a historical one.
+/// ADMR-78/81: what an admin should be shown/allowed for one withdrawal's
+/// payout destination — resolves the exact states a request can be in
+/// rather than ever letting a live read stand in for a historical one, and
+/// never labeling a masked-field coincidence "resolved" (ADMR-81).
 enum SellerPayoutDestinationKind {
   /// destinationFull was frozen at request time (ADMR-77 or later) — full details, safe to use as-is.
   full,
-  /// No destinationFull (a pre-ADMR-77 request), but a live payout-details read matches the frozen
-  /// masked destination exactly — nothing has changed, so the live full details are safe to show.
-  legacyVerified,
-  /// No destinationFull, and live payout details are missing or do not match the frozen masked
-  /// destination — showing or using them would risk presenting the wrong account. Paying is refused
+  /// No destinationFull (a pre-ADMR-77 request), but the exact historical destination was
+  /// established from real, timestamped provenance — see resolveLegacyDestination.
+  legacyResolvedFromHistory,
+  /// No destinationFull, and no reliable provenance establishes the exact historical account —
+  /// showing or using a live read here would risk presenting the wrong one. Paying is refused
   /// here, not attempted with best-effort data.
-  legacyUnverified,
+  legacyUnresolved,
   /// No destination at all on the withdrawal — should not be reachable (requestWithdrawalCore refuses
   /// no_destination before creating one), handled defensively rather than crashing or guessing.
   missing,
@@ -103,44 +108,93 @@ class SellerPayoutDestinationResolution {
   const SellerPayoutDestinationResolution(this.kind, this.display, this.method);
   final SellerPayoutDestinationKind kind;
 
-  /// What to show — full unmasked details (`full`/`legacyVerified`) or the masked destination
-  /// (`legacyUnverified`, so the admin still sees *something* to cross-check by eye) — or null (`missing`).
+  /// What to show — full unmasked details (`full`/`legacyResolvedFromHistory`) or the masked
+  /// destination (`legacyUnresolved`, so the admin still sees *something* to cross-check by eye) —
+  /// or null (`missing`).
   final Map<String, dynamic>? display;
 
   /// Always the FROZEN record's own method (never live's), or null for `missing`.
   final String? method;
 
-  /// Only `full` and `legacyVerified` are safe to actually pay from this dialog.
-  bool get payable => kind == SellerPayoutDestinationKind.full || kind == SellerPayoutDestinationKind.legacyVerified;
+  /// Only `full` and `legacyResolvedFromHistory` are safe to actually pay from this dialog.
+  bool get payable => kind == SellerPayoutDestinationKind.full || kind == SellerPayoutDestinationKind.legacyResolvedFromHistory;
 }
 
-/// Pure — takes the withdrawal's own stored fields plus (for a legacy request only) a live
-/// seller_payout_details read, and returns which of the 4 states above applies.
+/// One seller_payout_change_requests row's own fields, already in
+/// seller_payout_details shape (payoutMethod/accountHolder/bankName/
+/// accountNumber/ifsc/upiId) — real, timestamped, full-account provenance,
+/// never masked (confirmed by reading requestPayoutChangeCore directly).
+class SellerPayoutChangeRecord {
+  const SellerPayoutChangeRecord({required this.reviewedAtMillis, required this.fields});
+  final int? reviewedAtMillis;
+  final Map<String, dynamic> fields;
+}
+
+int? _millisOf(Object? v) => v is Timestamp ? v.millisecondsSinceEpoch : null;
+
+/// ADMR-81: resolves a legacy withdrawal's (no destinationFull) TRUE
+/// historical destination from real change-request provenance instead of a
+/// masked-field coincidence. `approvedChanges` should be every APPROVED
+/// change request for this seller (any order — sorted here).
+///
+/// Exactly one case is provable: the most recent approved change at or
+/// before the withdrawal's own createdAt IS what was active when it was
+/// requested — used only after its own masked shape is cross-checked for
+/// consistency against the withdrawal's frozen `destination`.
+///
+/// Deliberately NOT treated as provable: "no approved change exists at all,
+/// so current data must be unchanged". seller_payout_details' own
+/// firestore.rules allow a direct admin write (`allow create, update: if
+/// isAdmin()`), not only the change-request-approval path — so an EMPTY
+/// change history does not prove the data was never touched by some other
+/// means; a masked-field match against CURRENT live data would be exactly
+/// the same unproven coincidence this phase exists to stop trusting. A
+/// legacy request with no matching history is legacyUnresolved, full stop —
+/// live seller_payout_details is never consulted here at all.
+SellerPayoutDestinationResolution resolveLegacyDestination(
+  Map<String, dynamic> withdrawal,
+  List<SellerPayoutChangeRecord> approvedChanges,
+) {
+  final masked = (withdrawal['destination'] as Map?)?.cast<String, dynamic>();
+  if (masked == null) {
+    return const SellerPayoutDestinationResolution(SellerPayoutDestinationKind.missing, null, null);
+  }
+  final createdAtMillis = _millisOf(withdrawal['createdAt']);
+  SellerPayoutChangeRecord? activeAtRequestTime;
+  if (createdAtMillis != null) {
+    final before = approvedChanges.where((c) => c.reviewedAtMillis != null && c.reviewedAtMillis! <= createdAtMillis).toList()
+      ..sort((a, b) => a.reviewedAtMillis!.compareTo(b.reviewedAtMillis!));
+    if (before.isNotEmpty) activeAtRequestTime = before.last;
+  }
+  if (activeAtRequestTime != null && destinationMatchesMasked(activeAtRequestTime.fields, masked)) {
+    return SellerPayoutDestinationResolution(
+        SellerPayoutDestinationKind.legacyResolvedFromHistory, activeAtRequestTime.fields, masked['method'] as String?);
+  }
+  return SellerPayoutDestinationResolution(SellerPayoutDestinationKind.legacyUnresolved, masked, masked['method'] as String?);
+}
+
+/// Entry point for one withdrawal's destination: the trivial `full` case, or
+/// (for a legacy request) delegates to resolveLegacyDestination.
 SellerPayoutDestinationResolution resolveSellerWithdrawalDestination(
   Map<String, dynamic> withdrawal, {
-  Map<String, dynamic>? liveDetails,
+  List<SellerPayoutChangeRecord> approvedChanges = const [],
 }) {
   final full = (withdrawal['destinationFull'] as Map?)?.cast<String, dynamic>();
   if (full != null) {
     return SellerPayoutDestinationResolution(SellerPayoutDestinationKind.full, full, full['payoutMethod'] as String?);
   }
-  final masked = (withdrawal['destination'] as Map?)?.cast<String, dynamic>();
-  if (masked == null) {
-    return const SellerPayoutDestinationResolution(SellerPayoutDestinationKind.missing, null, null);
-  }
-  if (destinationMatchesMasked(liveDetails, masked)) {
-    return SellerPayoutDestinationResolution(SellerPayoutDestinationKind.legacyVerified, liveDetails, masked['method'] as String?);
-  }
-  return SellerPayoutDestinationResolution(SellerPayoutDestinationKind.legacyUnverified, masked, masked['method'] as String?);
+  return resolveLegacyDestination(withdrawal, approvedChanges);
 }
 
 /// The text for whichever state `resolveSellerWithdrawalDestination` returned.
 String sellerPayoutDestinationText(SellerPayoutDestinationResolution r) => switch (r.kind) {
       SellerPayoutDestinationKind.full => sellerDestinationFull(r.display),
-      SellerPayoutDestinationKind.legacyVerified => '${sellerDestinationFull(r.display)}\n(verified against this request\'s original destination)',
-      SellerPayoutDestinationKind.legacyUnverified =>
-        '${sellerDestinationMasked(r.display)}\n⚠ Full details were not saved for this older request, and the seller\'s '
-            'current payout details no longer match this masked destination. Do not pay — check with the seller/owner first.',
+      SellerPayoutDestinationKind.legacyResolvedFromHistory =>
+        '${sellerDestinationFull(r.display)}\n(resolved from this seller\'s own approved bank/UPI change history)',
+      SellerPayoutDestinationKind.legacyUnresolved =>
+        '${sellerDestinationMasked(r.display)}\n⚠ This request predates full destination records, and no reliable '
+            'history establishes the exact account. Do not pay from this screen — confirm the correct account with '
+            'the seller or owner first.',
       SellerPayoutDestinationKind.missing => '⚠ No payout account on file for this request — this should not happen. Contact the owner.',
     };
 
@@ -161,6 +215,22 @@ Future<void> _call(BuildContext context, String name, Map<String, dynamic> data,
     debugPrint('$name: $e');
     if (context.mounted) SnackbarHelper.showError(context, sellerWalletRefusal('unknown', null));
   }
+}
+
+/// Every APPROVED bank/UPI change request for one seller — real provenance
+/// for resolveLegacyDestination. Bounded: a seller's own change history is
+/// realistically small (a handful of changes over the account's lifetime),
+/// unlike withdrawals which can be many.
+Future<List<SellerPayoutChangeRecord>> _fetchApprovedPayoutChanges(String sellerId) async {
+  final snap = await _db
+      .collection('seller_payout_change_requests')
+      .where('sellerId', isEqualTo: sellerId)
+      .where('status', isEqualTo: 'approved')
+      .get();
+  return snap.docs.map((d) {
+    final data = d.data();
+    return SellerPayoutChangeRecord(reviewedAtMillis: _millisOf(data['reviewedAt']), fields: data);
+  }).toList();
 }
 
 Future<String?> _askReason(BuildContext context, String title, String action) async {
@@ -234,14 +304,20 @@ class _SellerHeader extends StatelessWidget {
   }
 }
 
-/// Resolves and shows one withdrawal's own destination (ADMR-78) — a live
-/// seller_payout_details read is only ever fetched, and only ever shown, for
-/// a legacy request (no destinationFull) as a cross-check against its own
-/// frozen masked destination, never as a stand-in for it.
+/// Resolves and shows one withdrawal's own destination (ADMR-78/81) — for a
+/// legacy request (no destinationFull) this queries the seller's own
+/// APPROVED change-request history for real provenance; live
+/// seller_payout_details is never read for this purpose at all (ADMR-81 —
+/// see resolveLegacyDestination's own doc comment for why).
 class _WithdrawalDestinationText extends StatelessWidget {
   const _WithdrawalDestinationText({required this.sellerId, required this.withdrawal});
   final String sellerId;
   final Map<String, dynamic> withdrawal;
+
+  Future<SellerPayoutDestinationResolution> _resolve() async {
+    final approved = await _fetchApprovedPayoutChanges(sellerId);
+    return resolveSellerWithdrawalDestination(withdrawal, approvedChanges: approved);
+  }
 
   @override
   Widget build(BuildContext context) {
@@ -249,11 +325,11 @@ class _WithdrawalDestinationText extends StatelessWidget {
       final r = resolveSellerWithdrawalDestination(withdrawal);
       return SelectableText(sellerPayoutDestinationText(r), style: const TextStyle(fontSize: 12));
     }
-    return FutureBuilder<DocumentSnapshot<Map<String, dynamic>>>(
-      future: _db.collection('seller_payout_details').doc(sellerId).get(),
-      builder: (context, dsnap) {
-        final r = resolveSellerWithdrawalDestination(withdrawal, liveDetails: dsnap.data?.data());
-        return SelectableText(sellerPayoutDestinationText(r), style: const TextStyle(fontSize: 12));
+    return FutureBuilder<SellerPayoutDestinationResolution>(
+      future: _resolve(),
+      builder: (context, snap) {
+        if (!snap.hasData) return const SizedBox(height: 12, width: 12, child: CircularProgressIndicator(strokeWidth: 2));
+        return SelectableText(sellerPayoutDestinationText(snap.data!), style: const TextStyle(fontSize: 12));
       },
     );
   }
@@ -270,15 +346,15 @@ class _SellerWithdrawalsTabState extends State<SellerWithdrawalsTab> {
 
   Future<void> _markPaid(String id, Map<String, dynamic> w) async {
     // The destination frozen on this withdrawal at request time (ADMR-77) —
-    // for a legacy request (no destinationFull) this cross-checks a live
-    // seller_payout_details read against the frozen masked destination
-    // (ADMR-78) rather than ever trusting live data for a historical request.
+    // for a legacy request (no destinationFull) this resolves the true
+    // historical destination from real change-request provenance, never a
+    // masked-field coincidence against live data (ADMR-81).
     final sellerId = (w['sellerId'] ?? '').toString();
-    Map<String, dynamic>? live;
+    var approvedChanges = const <SellerPayoutChangeRecord>[];
     if (w['destinationFull'] == null) {
-      live = (await _db.collection('seller_payout_details').doc(sellerId).get()).data();
+      approvedChanges = await _fetchApprovedPayoutChanges(sellerId);
     }
-    final resolution = resolveSellerWithdrawalDestination(w, liveDetails: live);
+    final resolution = resolveSellerWithdrawalDestination(w, approvedChanges: approvedChanges);
     if (!mounted) return;
     if (!resolution.payable) {
       SnackbarHelper.showError(context, sellerPayoutDestinationText(resolution));
