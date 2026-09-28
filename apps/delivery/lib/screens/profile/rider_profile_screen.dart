@@ -439,47 +439,18 @@ class _RiderProfileScreenState extends State<RiderProfileScreen> {
           final docs = documentsOnFile(data);
           final acct = v('bankAccountNumber');
           final upi = v('upiId');
-          return ListView(
-            padding: const EdgeInsets.all(DeliverySpace.page),
+          return Column(
             children: [
-              // DLVHOME1 Profile redesign: a "strong identity header" per
-              // the reference (initials avatar + prominent name), built
-              // entirely from real, already-reliable data -- no invented
-              // rider ID/rating/tier/score, no reused KYC selfie as a
-              // decorative photo (DeliveryAvatar is initials-only), and no
-              // global "Edit profile" affordance (each field's own actual
-              // edit path stays where it already is, below).
-              Row(
-                crossAxisAlignment: CrossAxisAlignment.center,
-                children: [
-                  DeliveryAvatar(
-                    name: v('name').isEmpty ? notSet : v('name'),
-                    size: DeliverySize.avatarXl,
+              _identityHeader(v, notSet, auth, c, t),
+              Expanded(
+                child: ListView(
+                  padding: const EdgeInsets.fromLTRB(
+                    DeliverySpace.page,
+                    DeliverySpace.lg,
+                    DeliverySpace.page,
+                    DeliverySpace.page,
                   ),
-                  const SizedBox(width: DeliverySpace.md),
-                  Expanded(
-                    child: Column(
-                      crossAxisAlignment: CrossAxisAlignment.start,
-                      children: [
-                        Text(
-                          v('name').isEmpty ? notSet : v('name'),
-                          maxLines: 2,
-                          overflow: TextOverflow.ellipsis,
-                          style: t.headlineSmall.copyWith(color: c.textPrimary),
-                        ),
-                        if ((auth.user?.email ?? '').isNotEmpty)
-                          Text(
-                            auth.user!.email,
-                            maxLines: 1,
-                            overflow: TextOverflow.ellipsis,
-                            style: t.bodyMedium.copyWith(color: c.textSecondary),
-                          ),
-                      ],
-                    ),
-                  ),
-                ],
-              ),
-              const SizedBox(height: DeliverySpace.xl),
+                  children: [
               _section(
                 l.profileDetails,
                 [
@@ -739,8 +710,70 @@ class _RiderProfileScreenState extends State<RiderProfileScreen> {
                   ),
                 ],
               ),
+                  ],
+                ),
+              ),
             ],
           );
+  }
+
+  /// DLVHOME1 Profile redesign: a "strong identity header" per the
+  /// reference -- a full-bleed card, flush with the app bar above and
+  /// curved only at the bottom, distinct from the plain background below
+  /// it (matching the reference's own rounded identity card, not the flat
+  /// text block this used to be). Content stays strictly real: initials
+  /// avatar (never a reused KYC photo), name, email -- no invented rider
+  /// ID/rating/partner tier/score, no global "Edit profile" affordance.
+  Widget _identityHeader(
+    String Function(String) v,
+    String notSet,
+    DeliveryAuthProvider auth,
+    DeliveryColors c,
+    DeliveryType t,
+  ) {
+    return Container(
+      width: double.infinity,
+      padding: const EdgeInsets.fromLTRB(
+        DeliverySpace.page,
+        DeliverySpace.lg,
+        DeliverySpace.page,
+        DeliverySpace.xxl,
+      ),
+      decoration: BoxDecoration(
+        color: c.surfaceMuted,
+        borderRadius: const BorderRadius.vertical(bottom: Radius.circular(DeliveryRadius.dialog)),
+      ),
+      child: Row(
+        crossAxisAlignment: CrossAxisAlignment.center,
+        children: [
+          DeliveryAvatar(
+            name: v('name').isEmpty ? notSet : v('name'),
+            size: DeliverySize.avatarXl,
+          ),
+          const SizedBox(width: DeliverySpace.md),
+          Expanded(
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Text(
+                  v('name').isEmpty ? notSet : v('name'),
+                  maxLines: 2,
+                  overflow: TextOverflow.ellipsis,
+                  style: t.headlineSmall.copyWith(color: c.textPrimary),
+                ),
+                if ((auth.user?.email ?? '').isNotEmpty)
+                  Text(
+                    auth.user!.email,
+                    maxLines: 1,
+                    overflow: TextOverflow.ellipsis,
+                    style: t.bodyMedium.copyWith(color: c.textSecondary),
+                  ),
+              ],
+            ),
+          ),
+        ],
+      ),
+    );
   }
 }
 
