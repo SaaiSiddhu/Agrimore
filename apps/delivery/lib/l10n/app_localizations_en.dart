@@ -589,6 +589,17 @@ class AppLocalizationsEn extends AppLocalizations {
   String get profileNotSet => 'Not added';
 
   @override
+  String get profileSignedOut => 'You\'ve been signed out.';
+
+  @override
+  String get profileRecordMissing =>
+      'We couldn\'t find your profile record. Contact Agrimore support.';
+
+  @override
+  String get profileLoadFailed =>
+      'Couldn\'t load your profile. Check your connection.';
+
+  @override
   String get profileEditContact => 'Edit contact and address';
 
   @override
@@ -711,6 +722,34 @@ class AppLocalizationsEn extends AppLocalizations {
 
   @override
   String get docReplaceFailed => 'Couldn\'t submit this replacement right now.';
+
+  @override
+  String get documentSubmissionTitle => 'Document submission';
+
+  @override
+  String get documentSubmissionUnavailable => 'Not available';
+
+  @override
+  String get documentSubmissionUnavailableBody =>
+      'This submission is no longer available.';
+
+  @override
+  String get documentSubmissionApprovedTitle => 'Approved';
+
+  @override
+  String get documentSubmissionRejectedTitle => 'Not approved';
+
+  @override
+  String get documentSubmissionPendingTitle => 'Pending review';
+
+  @override
+  String get documentSubmissionPendingBody =>
+      'Agrimore is reviewing this document.';
+
+  @override
+  String documentSubmissionReviewedOn(String date) {
+    return 'Reviewed on $date';
+  }
 
   @override
   String payoutBank(String masked) {

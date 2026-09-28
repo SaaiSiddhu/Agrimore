@@ -1180,6 +1180,24 @@ abstract class AppLocalizations {
   /// **'Not added'**
   String get profileNotSet;
 
+  /// Shown if Profile is still open at the moment sign-out takes effect, before navigation catches up
+  ///
+  /// In en, this message translates to:
+  /// **'You\'ve been signed out.'**
+  String get profileSignedOut;
+
+  /// The rider's own delivery_partners document genuinely does not exist
+  ///
+  /// In en, this message translates to:
+  /// **'We couldn\'t find your profile record. Contact Agrimore support.'**
+  String get profileRecordMissing;
+
+  /// The profile read failed (network/permission/etc), distinct from a missing record
+  ///
+  /// In en, this message translates to:
+  /// **'Couldn\'t load your profile. Check your connection.'**
+  String get profileLoadFailed;
+
   /// Button
   ///
   /// In en, this message translates to:
@@ -1407,6 +1425,54 @@ abstract class AppLocalizations {
   /// In en, this message translates to:
   /// **'Couldn\'t submit this replacement right now.'**
   String get docReplaceFailed;
+
+  /// AppBar title: the exact-submission detail screen a document-review notification opens
+  ///
+  /// In en, this message translates to:
+  /// **'Document submission'**
+  String get documentSubmissionTitle;
+
+  /// Title: the referenced submission cannot be shown (deleted, bad id, or not this rider's)
+  ///
+  /// In en, this message translates to:
+  /// **'Not available'**
+  String get documentSubmissionUnavailable;
+
+  /// Body for documentSubmissionUnavailable
+  ///
+  /// In en, this message translates to:
+  /// **'This submission is no longer available.'**
+  String get documentSubmissionUnavailableBody;
+
+  /// Title: this exact submission was approved
+  ///
+  /// In en, this message translates to:
+  /// **'Approved'**
+  String get documentSubmissionApprovedTitle;
+
+  /// Title: this exact submission was rejected
+  ///
+  /// In en, this message translates to:
+  /// **'Not approved'**
+  String get documentSubmissionRejectedTitle;
+
+  /// Title: this exact submission is still awaiting review
+  ///
+  /// In en, this message translates to:
+  /// **'Pending review'**
+  String get documentSubmissionPendingTitle;
+
+  /// Body for documentSubmissionPendingTitle
+  ///
+  /// In en, this message translates to:
+  /// **'Agrimore is reviewing this document.'**
+  String get documentSubmissionPendingBody;
+
+  /// When this exact submission was decided
+  ///
+  /// In en, this message translates to:
+  /// **'Reviewed on {date}'**
+  String documentSubmissionReviewedOn(String date);
 
   /// Payout destination
   ///

@@ -26,6 +26,7 @@ class RiderNotice {
     this.ticketId,
     this.requestId,
     this.changeType = 'name',
+    this.documentSubmissionId,
   });
   final String id;
   final String type;
@@ -57,6 +58,14 @@ class RiderNotice {
   /// existed, matching the wording every such notice already carried.
   final String changeType;
 
+  /// DLVC3: the EXACT `document_review_submissions/{id}` this notice is
+  /// about (`document_review_approved`/`rejected` — `documentReviewNotice`
+  /// already writes it, functions/src/delivery/riderNotices.ts). Null for a
+  /// notice written before this field existed -- an honest legacy fallback
+  /// to Profile's own current-status view is used then, never a guessed or
+  /// reconstructed id.
+  final String? documentSubmissionId;
+
   factory RiderNotice.fromMap(String id, Map<String, dynamic> m) {
     final data = m['data'];
     final d = data is Map ? data : const {};
@@ -73,6 +82,7 @@ class RiderNotice {
       ticketId: str(d['ticketId']),
       requestId: str(d['requestId']),
       changeType: str(d['changeType']) ?? 'name',
+      documentSubmissionId: str(d['submissionId']),
     );
   }
 

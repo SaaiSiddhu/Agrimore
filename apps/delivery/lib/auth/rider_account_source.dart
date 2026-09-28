@@ -10,6 +10,8 @@ import 'package:firebase_auth/firebase_auth.dart';
 import 'package:firebase_messaging/firebase_messaging.dart';
 import 'package:flutter/foundation.dart';
 
+import '../design_system/tokens/delivery_motion.dart';
+
 /// A refused sign-in, with the provider's error code.
 class RiderAuthFailure implements Exception {
   const RiderAuthFailure(this.code);
@@ -145,10 +147,22 @@ class FirestoreRiderAccountStore implements RiderAccountStore {
 }
 
 class FcmPushTokens implements RiderPushTokens {
+  /// DLVC3: `getToken()` can hang indefinitely rather than throw -- observed
+  /// directly on an Android emulator during a connected-journey test
+  /// (`pumpAndSettle` never converged; a real, if unrelated, device could
+  /// hit the same underlying platform-channel stall). Registration is
+  /// already `unawaited` at every call site (auth_provider.dart's own
+  /// `_registerToken`/`_unregisterToken`), so sign-in and shell access were
+  /// never at risk either way -- but without a bound, a single hung attempt
+  /// never resolves at all, so this rider's device gets no further chance
+  /// to register a token until some OTHER event (a KYC status change, an
+  /// explicit retry) happens to call this again. A timeout turns that
+  /// silent, permanent stall into the SAME "token unavailable, try again
+  /// next opportunity" outcome the existing catch-block already handles.
   @override
   Future<String?> current() async {
     try {
-      return await FirebaseMessaging.instance.getToken();
+      return await FirebaseMessaging.instance.getToken().timeout(DeliveryMotion.pushTokenTimeout);
     } catch (e) {
       debugPrint('Push token unavailable: $e');
       return null;

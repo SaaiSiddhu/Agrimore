@@ -68,12 +68,25 @@ class RiderProfileScreen extends StatefulWidget {
     super.key,
     this.backend,
     this.partnerData,
+    this.partnerSource,
     this.accountSource,
     this.documentReviewBackend,
     this.pickReplacementPhoto,
   });
   final RiderAccountBackend? backend;
+
+  /// A FIXED test value: when set, the partner section renders exactly this
+  /// data, once, never live-bound to auth at all. For a test that wants the
+  /// live, uid-rebinding behavior under a controlled fake instead, use
+  /// [partnerSource].
   final Map<String, dynamic>? partnerData;
+
+  /// Injectable for tests; defaults to a real `delivery_partners/{uid}`
+  /// live read. Takes the CURRENT uid explicitly (mirroring [accountSource]
+  /// below) so a fake can be swapped per-uid -- what an account-switch or
+  /// late-previous-account test needs that a single fixed [partnerData]
+  /// cannot express.
+  final Stream<Map<String, dynamic>?> Function(String riderId)? partnerSource;
 
   /// DLVP1: injectable for tests; defaults to a real `rider_accounts/{uid}`
   /// read (the same stream `MoneyScreen` already uses), so the proactive
@@ -97,13 +110,84 @@ class RiderProfileScreen extends StatefulWidget {
 class _RiderProfileScreenState extends State<RiderProfileScreen> {
   late final RiderAccountBackend _backend =
       widget.backend ?? CallableRiderAccountBackend();
-  late final Stream<Map<String, dynamic>?> _partner = _resolvePartnerStream();
-  late final Stream<RiderAccount> _account = _resolveAccountStream();
   late final RiderDocumentReviewBackend _documentReviewBackend =
       widget.documentReviewBackend ?? CallableRiderDocumentReviewBackend();
   late final Future<({Uint8List bytes, String contentType})?> Function(RiderDocument doc)
       _pickReplacementPhoto = widget.pickReplacementPhoto ?? _defaultPickReplacementPhoto;
   bool _busy = false;
+
+  // DLVC3: _partner/_account used to be `late final`, resolved from
+  // DeliveryAuthProvider.user exactly once, the first time each field was
+  // read. Firebase's own uidChanges listener fires as a microtask, not
+  // synchronously with construction, so the FIRST build of this screen
+  // could run before it fired -- permanently capturing a stream derived
+  // from a null uid (this screen's own connected test caught this exact
+  // race: a stuck spinner that never recovered even once auth resolved
+  // moments later, since the stale stream had already emitted its one-shot
+  // null value and closed). _UidBoundStream fixes this at the root: it
+  // re-derives itself from whatever uid didChangeDependencies observes,
+  // every time DeliveryAuthProvider actually changes (a real account
+  // switch, a real sign-out, auth finishing initial resolution) -- and
+  // leaves an unrelated rebuild (a theme change, an unrelated provider
+  // notifying) alone, since the uid-equality guard short-circuits when
+  // nothing about auth itself changed. StreamBuilder's own behavior when
+  // handed a NEW stream instance (cancel the old subscription, subscribe to
+  // the new one) is what actually disposes a superseded account's
+  // subscription and discards any event still in flight from it -- nothing
+  // from an old uid can ever reach a StreamBuilder that has already moved
+  // on to a new stream instance for a new uid.
+  final _partnerBinding = _UidBoundStream<Map<String, dynamic>?>();
+  final _accountBinding = _UidBoundStream<RiderAccount>();
+
+  @override
+  void didChangeDependencies() {
+    super.didChangeDependencies();
+    _rebindAuthDependentStreams();
+  }
+
+  void _rebindAuthDependentStreams() {
+    final auth = context.read<DeliveryAuthProvider>();
+    if (auth.isLoading) return; // nothing to bind to yet; build() shows the auth-resolving state
+    final uid = auth.user?.uid;
+    if (widget.partnerData == null) {
+      _partnerBinding.rebind(uid, widget.partnerSource ?? _defaultPartnerSource);
+    }
+    // RiderMoneyService.account() is itself deferred to first subscription
+    // (Stream.multi), so a test that never needs the real account (e.g.
+    // testing sign-out alone) never touches Firebase just because this
+    // screen was built.
+    _accountBinding.rebind(uid, widget.accountSource ?? _defaultAccountSource, whenNull: const Stream.empty());
+  }
+
+  /// A bare `FirebaseFirestore.instance` throws SYNCHRONOUSLY (not as a
+  /// stream error) when no Firebase app exists at all -- caught here so
+  /// that reaches this screen's own read-failure state instead of crashing
+  /// the whole widget tree build (confirmed by `delivery_shell_test.dart`,
+  /// whose own fixtures never initialize a real Firebase app: the original
+  /// `try { ... } catch (_) { ... }` this replaces existed for exactly this
+  /// reason).
+  Stream<Map<String, dynamic>?> _defaultPartnerSource(String uid) {
+    try {
+      return FirebaseFirestore.instance
+          .collection('delivery_partners')
+          .doc(uid)
+          .snapshots()
+          .map((s) => s.data());
+    } catch (e) {
+      return Stream.error(e);
+    }
+  }
+
+  Stream<RiderAccount> _defaultAccountSource(String uid) => RiderMoneyService(uid).account();
+
+  /// A Firestore stream does not resume itself after delivering an error --
+  /// an explicit retry needs a genuinely new subscription for the SAME uid,
+  /// not just a rebuild of the same (now-dead) stream.
+  void _retryPartner() {
+    final uid = context.read<DeliveryAuthProvider>().user?.uid;
+    if (uid == null) return;
+    setState(() => _partnerBinding.forceRebind(uid, widget.partnerSource ?? _defaultPartnerSource));
+  }
 
   Future<({Uint8List bytes, String contentType})?> _defaultPickReplacementPhoto(RiderDocument doc) async {
     final file = await ImagePicker().pickImage(
@@ -113,35 +197,6 @@ class _RiderProfileScreenState extends State<RiderProfileScreen> {
     );
     if (file == null) return null;
     return (bytes: await file.readAsBytes(), contentType: file.mimeType ?? 'image/jpeg');
-  }
-
-  Stream<Map<String, dynamic>?> _resolvePartnerStream() {
-    if (widget.partnerData != null) {
-      return Stream.value(widget.partnerData);
-    }
-    try {
-      final uid = context.read<DeliveryAuthProvider>().user?.uid;
-      if (uid == null) return Stream.value(null);
-      return FirebaseFirestore.instance
-          .collection('delivery_partners')
-          .doc(uid)
-          .snapshots()
-          .map((s) => s.data());
-    } catch (_) {
-      return Stream.value(null);
-    }
-  }
-
-  /// `RiderMoneyService.account()` is itself deferred to first subscription
-  /// (`Stream.multi`), so a test that never needs the real account (e.g.
-  /// testing sign-out alone) never touches Firebase just because this
-  /// screen was built.
-  Stream<RiderAccount> _resolveAccountStream() {
-    final own = widget.accountSource;
-    final uid = context.read<DeliveryAuthProvider>().user?.uid;
-    if (uid == null) return const Stream.empty();
-    if (own != null) return own(uid);
-    return RiderMoneyService(uid).account();
   }
 
   Future<void> _editContact(Map<String, dynamic> d) async {
@@ -308,14 +363,96 @@ class _RiderProfileScreenState extends State<RiderProfileScreen> {
     return Scaffold(
       backgroundColor: c.background,
       appBar: AppBar(title: Text(l.profileTitle)),
-      body: StreamBuilder<Map<String, dynamic>?>(
-        stream: _partner,
-        builder: (context, snap) {
-          final data = snap.data;
-          if (data == null) {
-            return const Center(child: CircularProgressIndicator());
-          }
-          String v(String k) => (data[k] as String?)?.trim() ?? '';
+      body: _body(auth, l, c, t, appearance),
+    );
+  }
+
+  /// DLVC3: auth-resolving / signed-out / data-loading / missing-record /
+  /// read-failure are now distinct, rather than collapsing everything that
+  /// is not yet a loaded map into one spinner (the bug that made a
+  /// genuinely-stuck stream indistinguishable from an ordinary loading
+  /// moment).
+  Widget _body(
+    DeliveryAuthProvider auth,
+    AppLocalizations l,
+    DeliveryColors c,
+    DeliveryType t,
+    DeliveryAppearanceController? appearance,
+  ) {
+    if (widget.partnerData != null) {
+      return _loaded(widget.partnerData!, auth, l, c, t, appearance);
+    }
+    if (auth.isLoading) {
+      return const Center(child: CircularProgressIndicator());
+    }
+    if (auth.user == null) {
+      return Center(
+        child: Text(l.profileSignedOut, style: t.bodyMedium.copyWith(color: c.textSecondary)),
+      );
+    }
+    final stream = _partnerBinding.current;
+    if (stream == null) {
+      // auth.user is non-null here, so _rebindAuthDependentStreams should
+      // already have bound a real stream -- defensive only, never expected.
+      return const Center(child: CircularProgressIndicator());
+    }
+    return StreamBuilder<Map<String, dynamic>?>(
+      stream: stream,
+      builder: (context, snap) {
+        if (snap.connectionState == ConnectionState.waiting) {
+          return const Center(child: CircularProgressIndicator());
+        }
+        if (snap.hasError) {
+          return Center(
+            child: Padding(
+              padding: const EdgeInsets.all(DeliverySpace.page),
+              child: Column(
+                mainAxisSize: MainAxisSize.min,
+                children: [
+                  Text(
+                    l.profileLoadFailed,
+                    textAlign: TextAlign.center,
+                    style: t.bodyMedium.copyWith(color: c.textPrimary),
+                  ),
+                  const SizedBox(height: DeliverySpace.sm),
+                  DeliveryButton.secondary(
+                    key: const ValueKey('profile-retry'),
+                    label: l.actionRetry,
+                    fullWidth: false,
+                    onPressed: _retryPartner,
+                  ),
+                ],
+              ),
+            ),
+          );
+        }
+        final data = snap.data;
+        if (data == null) {
+          return Center(
+            child: Padding(
+              padding: const EdgeInsets.all(DeliverySpace.page),
+              child: Text(
+                l.profileRecordMissing,
+                textAlign: TextAlign.center,
+                style: t.bodyMedium.copyWith(color: c.textSecondary),
+              ),
+            ),
+          );
+        }
+        return _loaded(data, auth, l, c, t, appearance);
+      },
+    );
+  }
+
+  Widget _loaded(
+    Map<String, dynamic> data,
+    DeliveryAuthProvider auth,
+    AppLocalizations l,
+    DeliveryColors c,
+    DeliveryType t,
+    DeliveryAppearanceController? appearance,
+  ) {
+    String v(String k) => (data[k] as String?)?.trim() ?? '';
           final notSet = l.profileNotSet;
           final docs = documentsOnFile(data);
           final acct = v('bankAccountNumber');
@@ -542,7 +679,7 @@ class _RiderProfileScreenState extends State<RiderProfileScreen> {
                   ),
                   const SizedBox(height: DeliverySpace.sm),
                   StreamBuilder<RiderAccount>(
-                    stream: _account,
+                    stream: _accountBinding.current,
                     builder: (context, accountSnap) => DeliveryButton.ghost(
                       key: const ValueKey('delete-account'),
                       label: l.deleteAccount,
@@ -559,9 +696,36 @@ class _RiderProfileScreenState extends State<RiderProfileScreen> {
               ),
             ],
           );
-        },
-      ),
-    );
+  }
+}
+
+/// DLVC3: a stream re-derived from whatever uid it is [rebind]-ed to, and
+/// only when that uid genuinely differs from the last one -- an unrelated
+/// rebuild that calls [rebind] again with the SAME uid is a no-op, so a
+/// widget can safely call it from `didChangeDependencies` (which can fire
+/// for reasons that have nothing to do with auth) without tearing down and
+/// recreating a live subscription every time. [current] becoming a NEW
+/// stream instance is what actually lets `StreamBuilder` dispose the
+/// previous subscription and ignore anything still in flight from it --
+/// this class only decides WHEN that should happen, `StreamBuilder`'s own
+/// widget lifecycle does the disposing.
+class _UidBoundStream<T> {
+  String? _boundUid;
+  Stream<T>? current;
+
+  void rebind(String? uid, Stream<T> Function(String uid) source, {Stream<T>? whenNull}) {
+    if (uid == _boundUid) return;
+    _boundUid = uid;
+    current = uid == null ? whenNull : source(uid);
+  }
+
+  /// Re-derives the stream for the SAME uid -- for an explicit retry after
+  /// a read failure, where the uid has not changed but the previous
+  /// subscription is dead (a Firestore stream does not resume itself after
+  /// delivering an error) and a genuinely new one is needed.
+  void forceRebind(String? uid, Stream<T> Function(String uid) source, {Stream<T>? whenNull}) {
+    _boundUid = uid;
+    current = uid == null ? whenNull : source(uid);
   }
 }
 

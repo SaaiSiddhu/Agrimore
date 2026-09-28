@@ -739,6 +739,18 @@
   "@profileNotSet": {
     "description": "Value missing"
   },
+  "profileSignedOut": "You've been signed out.",
+  "@profileSignedOut": {
+    "description": "Shown if Profile is still open at the moment sign-out takes effect, before navigation catches up"
+  },
+  "profileRecordMissing": "We couldn't find your profile record. Contact Agrimore support.",
+  "@profileRecordMissing": {
+    "description": "The rider's own delivery_partners document genuinely does not exist"
+  },
+  "profileLoadFailed": "Couldn't load your profile. Check your connection.",
+  "@profileLoadFailed": {
+    "description": "The profile read failed (network/permission/etc), distinct from a missing record"
+  },
   "profileEditContact": "Edit contact and address",
   "@profileEditContact": {
     "description": "Button"
@@ -890,6 +902,43 @@
   "docReplaceFailed": "Couldn't submit this replacement right now.",
   "@docReplaceFailed": {
     "description": "Generic failure submitting a document replacement"
+  },
+  "documentSubmissionTitle": "Document submission",
+  "@documentSubmissionTitle": {
+    "description": "AppBar title: the exact-submission detail screen a document-review notification opens"
+  },
+  "documentSubmissionUnavailable": "Not available",
+  "@documentSubmissionUnavailable": {
+    "description": "Title: the referenced submission cannot be shown (deleted, bad id, or not this rider's)"
+  },
+  "documentSubmissionUnavailableBody": "This submission is no longer available.",
+  "@documentSubmissionUnavailableBody": {
+    "description": "Body for documentSubmissionUnavailable"
+  },
+  "documentSubmissionApprovedTitle": "Approved",
+  "@documentSubmissionApprovedTitle": {
+    "description": "Title: this exact submission was approved"
+  },
+  "documentSubmissionRejectedTitle": "Not approved",
+  "@documentSubmissionRejectedTitle": {
+    "description": "Title: this exact submission was rejected"
+  },
+  "documentSubmissionPendingTitle": "Pending review",
+  "@documentSubmissionPendingTitle": {
+    "description": "Title: this exact submission is still awaiting review"
+  },
+  "documentSubmissionPendingBody": "Agrimore is reviewing this document.",
+  "@documentSubmissionPendingBody": {
+    "description": "Body for documentSubmissionPendingTitle"
+  },
+  "documentSubmissionReviewedOn": "Reviewed on {date}",
+  "@documentSubmissionReviewedOn": {
+    "description": "When this exact submission was decided",
+    "placeholders": {
+      "date": {
+        "type": "String"
+      }
+    }
   },
   "payoutBank": "Bank account {masked}",
   "@payoutBank": {

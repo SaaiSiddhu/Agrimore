@@ -15,6 +15,14 @@ abstract final class DeliveryMotion {
   /// 5-second GPS fix timeout for emergency incident snapshots.
   static const Duration locationTimeout = Duration(seconds: 5);
 
+  /// 10-second bound on a push-token registration attempt (DLVC3) --
+  /// `FirebaseMessaging.getToken()` can hang indefinitely on some devices/
+  /// emulators rather than throw; registration is already fire-and-forget
+  /// everywhere it's called, so this only bounds how long ONE attempt can
+  /// leave a rider's device unregistered before falling back to "try again
+  /// next opportunity", the same outcome an ordinary failure already has.
+  static const Duration pushTokenTimeout = Duration(seconds: 10);
+
   /// Duration a confirmation toast remains visible.
   static const Duration toast = Duration(seconds: 4);
 
