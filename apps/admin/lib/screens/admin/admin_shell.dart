@@ -157,6 +157,12 @@ class _AdminShellState extends State<AdminShell> {
       'Support Cases',
       AdminRoutes.supportCases,
     ),
+    // ADMR-80. Appended at the end, same index-stability rule.
+    _NavItem(
+      Icons.fact_check_rounded,
+      'Finance Reconciliation',
+      AdminRoutes.financeReconciliation,
+    ),
   ];
 
   int get _currentIndex {
