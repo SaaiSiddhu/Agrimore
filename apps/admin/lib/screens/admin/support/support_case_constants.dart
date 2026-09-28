@@ -133,7 +133,9 @@ String supportCaseActorRoute(String type, String id) {
 // (functions/src/admin/supportCases.ts's LINK_RECORD_TYPES), a superset of
 // the four actor types above: also covers order and the three per-rider
 // operational records that can be linked but never form a case's own
-// primaryActor.
+// primaryActor. ADMR-86 adds the three financial-record types the server
+// itself gained in ADMR-85 (same LINK_COLLECTION map, nothing new to
+// validate — parseLinkedRecord already covers any entry in this list).
 const List<String> kLinkRecordTypes = [
   'order',
   'rider_ticket',
@@ -143,6 +145,9 @@ const List<String> kLinkRecordTypes = [
   'seller',
   'rider',
   'associate',
+  'seller_withdrawal',
+  'rider_payout',
+  'employee_payout',
 ];
 
 /// The real collection backing each link type, mirroring
@@ -156,6 +161,9 @@ const Map<String, String> kLinkRecordCollection = {
   'seller': 'sellers',
   'rider': 'delivery_partners',
   'associate': 'employees',
+  'seller_withdrawal': 'seller_withdrawals',
+  'rider_payout': 'rider_payouts',
+  'employee_payout': 'employee_payouts',
 };
 
 String linkRecordTypeLabel(String type) {
@@ -176,6 +184,12 @@ String linkRecordTypeLabel(String type) {
       return 'Delivery partner';
     case 'associate':
       return 'Sales associate';
+    case 'seller_withdrawal':
+      return 'Seller withdrawal';
+    case 'rider_payout':
+      return 'Rider payout';
+    case 'employee_payout':
+      return 'Associate payout';
     default:
       return type;
   }
@@ -186,6 +200,11 @@ String linkRecordTypeLabel(String type) {
 /// per-record detail screen exists anywhere in this codebase for those
 /// three (only global list screens), so the UI shows an honest inline
 /// summary for them instead of a fabricated or unfiltered-list route.
+/// ADMR-86: the three financial types route to the new, read-only
+/// FinancialRecordDetailScreen (apps/admin/lib/screens/admin/finance/
+/// financial_record_detail_screen.dart) — no prior per-record screen
+/// existed for these either, so this is a genuinely new route, not a
+/// fabricated path onto something already there.
 String linkRecordRoute(String type, String id) {
   switch (type) {
     case 'order':
@@ -198,6 +217,10 @@ String linkRecordRoute(String type, String id) {
       return '/delivery-partners/$id';
     case 'associate':
       return '/employees/$id';
+    case 'seller_withdrawal':
+    case 'rider_payout':
+    case 'employee_payout':
+      return '/finance/records/$type/$id';
     default:
       return '';
   }

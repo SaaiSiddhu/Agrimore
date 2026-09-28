@@ -12,6 +12,7 @@ import 'package:url_launcher/url_launcher.dart';
 import '../design_system/design_system.dart';
 import '../l10n/app_localizations.dart';
 import 'incident_report.dart';
+import 'incident_status_screen.dart';
 
 /// India's single emergency number (Emergency Response Support System).
 const String kEmergencyNumber = '112';
@@ -91,6 +92,7 @@ class _EmergencySheetState extends State<EmergencySheet> {
   bool _sending = false;
   IncidentReportException? _reportError;
   Stream<Map<String, dynamic>?>? _record;
+  String? _incidentId;
 
   Future<void> _report() async {
     if (_sending || _record != null) return;
@@ -114,6 +116,7 @@ class _EmergencySheetState extends State<EmergencySheet> {
       if (!mounted) return;
       setState(() {
         _sending = false;
+        _incidentId = id;
         _record =
             widget.watcher?.call(id).asBroadcastStream() ?? Stream.value(null);
       });
@@ -166,6 +169,25 @@ class _EmergencySheetState extends State<EmergencySheet> {
                         s.detail,
                         style: t.bodyMedium.copyWith(color: c.textSecondary),
                       ),
+                      // DLVC3: this card (and its live stream) disappears
+                      // the moment this sheet closes -- this is the only
+                      // link into the SAME report's persistent status,
+                      // reachable afterward from Profile or a notification.
+                      if (_incidentId != null) ...[
+                        const SizedBox(height: DeliverySpace.xxs),
+                        Align(
+                          alignment: Alignment.centerLeft,
+                          child: TextButton(
+                            key: const ValueKey('incident-view-details'),
+                            onPressed: () => Navigator.of(context).push(
+                              MaterialPageRoute<void>(
+                                builder: (_) => IncidentStatusScreen(incidentId: _incidentId!),
+                              ),
+                            ),
+                            child: Text(l.incidentViewDetails),
+                          ),
+                        ),
+                      ],
                     ],
                   ),
                 ),

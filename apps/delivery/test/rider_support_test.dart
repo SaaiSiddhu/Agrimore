@@ -21,6 +21,13 @@ class FakeSupportBackend implements RiderSupportBackend {
   SupportTicket? current;
   final _ticket = StreamController<SupportTicket?>.broadcast();
 
+  /// DLVC4: pushes a listener error through the SAME `ticket()` stream a
+  /// real Firestore permission-denied or dropped-listener failure would
+  /// surface as -- lets a test simulate the stream erroring AFTER it has
+  /// already delivered real data, the case `hasError` must not let the
+  /// screen keep showing as a stale, no-longer-updating timeline.
+  void failTicketStream(Object error) => _ticket.addError(error);
+
   /// DLVSUP2: drives [tickets]. Null means "still loading" (never emits);
   /// set to a list (possibly empty) to resolve it, or set [ticketsFailWith]
   /// to make it error instead. [tickets] is re-evaluated on every call (not
@@ -284,6 +291,26 @@ void main() {
       await t.tap(find.byKey(const ValueKey('support-new-request')));
       await t.pumpAndSettle();
       expect(find.text('open status'), findsOneWidget);
+    });
+
+    testWidgets('a nonexistent ticket shows the unavailable card, not a bare identity-flow string (DLVC4)', (t) async {
+      final backend = FakeSupportBackend(); // current stays null; _ticket never emits
+      await t.pumpWidget(host(SupportRequestStatusScreen(ticketId: 'no-such-ticket', backend: backend)));
+      await t.pumpAndSettle();
+      expect(find.text('Not available'), findsOneWidget);
+      expect(find.text('This request is no longer available.'), findsOneWidget);
+      expect(find.text('Check your details and try again.'), findsNothing);
+    });
+
+    testWidgets('a ticket stream that errors after loading falls back to unavailable, not a stale timeline (DLVC4)', (t) async {
+      final backend = FakeSupportBackend()..current = _ticket(status: SupportTicketStatus.submitted);
+      await t.pumpWidget(host(SupportRequestStatusScreen(ticketId: 'r1_req1', backend: backend)));
+      await t.pumpAndSettle();
+      expect(find.text('Your request has been recorded.'), findsOneWidget);
+      backend.failTicketStream(Exception('permission-denied'));
+      await t.pumpAndSettle();
+      expect(find.text('Not available'), findsOneWidget);
+      expect(find.text('Your request has been recorded.'), findsNothing);
     });
   });
 }

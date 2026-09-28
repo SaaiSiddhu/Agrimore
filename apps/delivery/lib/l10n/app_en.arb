@@ -703,6 +703,14 @@
   "@supportNewRequest": {
     "description": "Button"
   },
+  "supportStatusUnavailable": "Not available",
+  "@supportStatusUnavailable": {
+    "description": "DLVC4: title shown when the referenced ticket cannot be read (deleted, bad id, not this rider's, or a read failure) -- mirrors documentSubmissionUnavailable/incidentStatusUnavailable"
+  },
+  "supportStatusUnavailableBody": "This request is no longer available.",
+  "@supportStatusUnavailableBody": {
+    "description": "Body for supportStatusUnavailable"
+  },
   "profileAccount": "Account",
   "@profileAccount": {
     "description": "Section"
@@ -738,6 +746,18 @@
   "profileNotSet": "Not added",
   "@profileNotSet": {
     "description": "Value missing"
+  },
+  "profileSignedOut": "You've been signed out.",
+  "@profileSignedOut": {
+    "description": "Shown if Profile is still open at the moment sign-out takes effect, before navigation catches up"
+  },
+  "profileRecordMissing": "We couldn't find your profile record. Contact Agrimore support.",
+  "@profileRecordMissing": {
+    "description": "The rider's own delivery_partners document genuinely does not exist"
+  },
+  "profileLoadFailed": "Couldn't load your profile. Check your connection.",
+  "@profileLoadFailed": {
+    "description": "The profile read failed (network/permission/etc), distinct from a missing record"
   },
   "profileEditContact": "Edit contact and address",
   "@profileEditContact": {
@@ -890,6 +910,43 @@
   "docReplaceFailed": "Couldn't submit this replacement right now.",
   "@docReplaceFailed": {
     "description": "Generic failure submitting a document replacement"
+  },
+  "documentSubmissionTitle": "Document submission",
+  "@documentSubmissionTitle": {
+    "description": "AppBar title: the exact-submission detail screen a document-review notification opens"
+  },
+  "documentSubmissionUnavailable": "Not available",
+  "@documentSubmissionUnavailable": {
+    "description": "Title: the referenced submission cannot be shown (deleted, bad id, or not this rider's)"
+  },
+  "documentSubmissionUnavailableBody": "This submission is no longer available.",
+  "@documentSubmissionUnavailableBody": {
+    "description": "Body for documentSubmissionUnavailable"
+  },
+  "documentSubmissionApprovedTitle": "Approved",
+  "@documentSubmissionApprovedTitle": {
+    "description": "Title: this exact submission was approved"
+  },
+  "documentSubmissionRejectedTitle": "Not approved",
+  "@documentSubmissionRejectedTitle": {
+    "description": "Title: this exact submission was rejected"
+  },
+  "documentSubmissionPendingTitle": "Pending review",
+  "@documentSubmissionPendingTitle": {
+    "description": "Title: this exact submission is still awaiting review"
+  },
+  "documentSubmissionPendingBody": "Agrimore is reviewing this document.",
+  "@documentSubmissionPendingBody": {
+    "description": "Body for documentSubmissionPendingTitle"
+  },
+  "documentSubmissionReviewedOn": "Reviewed on {date}",
+  "@documentSubmissionReviewedOn": {
+    "description": "When this exact submission was decided",
+    "placeholders": {
+      "date": {
+        "type": "String"
+      }
+    }
   },
   "payoutBank": "Bank account {masked}",
   "@payoutBank": {
@@ -2233,6 +2290,43 @@
   "incidentStatusRecordedDetail": "Nobody on the Agrimore team may have seen it yet. If you are in danger, call 112 now.",
   "@incidentStatusRecordedDetail": {
     "description": "Safety report reported detail"
+  },
+  "incidentViewDetails": "View details",
+  "@incidentViewDetails": {
+    "description": "Link from the emergency sheet's own just-filed report card to its persistent status screen"
+  },
+  "incidentStatusScreenTitle": "Safety report",
+  "@incidentStatusScreenTitle": {
+    "description": "AppBar title: one safety report's own status, reachable after the emergency sheet closes or from a notification"
+  },
+  "incidentStatusUnavailable": "Not available",
+  "@incidentStatusUnavailable": {
+    "description": "Title: the referenced safety report cannot be shown (deleted, bad id, or not this rider's)"
+  },
+  "incidentStatusUnavailableBody": "This report is no longer available.",
+  "@incidentStatusUnavailableBody": {
+    "description": "Body for incidentStatusUnavailable"
+  },
+  "incidentStatusUpdatedOn": "Last updated {date}",
+  "@incidentStatusUpdatedOn": {
+    "description": "Timestamp shown under a safety report's own status",
+    "placeholders": {
+      "date": {
+        "type": "String"
+      }
+    }
+  },
+  "myIncidentsTitle": "Safety reports",
+  "@myIncidentsTitle": {
+    "description": "AppBar title: a rider's own list of past safety reports"
+  },
+  "myIncidentsEmpty": "You haven't filed a safety report.",
+  "@myIncidentsEmpty": {
+    "description": "Empty state for myIncidentsTitle"
+  },
+  "myIncidentsEntry": "Safety reports",
+  "@myIncidentsEntry": {
+    "description": "Profile/Support entry point opening myIncidentsTitle"
   },
   "emergencyTitle": "Emergency help",
   "@emergencyTitle": {

@@ -21,13 +21,21 @@ import 'package:flutter_test/flutter_test.dart';
 import 'rider_profile_screen_test.dart' show authedProvider, host, FakeAccountBackend;
 
 class _FakeDocumentReviewBackend implements RiderDocumentReviewBackend {
-  _FakeDocumentReviewBackend({Map<String, DocumentReview> reviews = const {}}) : _reviews = reviews;
+  _FakeDocumentReviewBackend({
+    Map<String, DocumentReview> reviews = const {},
+    Map<String, DocumentSubmission> submissions = const {},
+  })  : _reviews = reviews,
+        _submissions = submissions;
   final Map<String, DocumentReview> _reviews;
+  final Map<String, DocumentSubmission> _submissions;
   DocumentReplacementException? failNextSubmit;
   final submitted = <String>[];
 
   @override
   Stream<Map<String, DocumentReview>> reviewsFor(String riderId) => Stream.value(_reviews);
+
+  @override
+  Stream<DocumentSubmission?> submissionById(String submissionId) => Stream.value(_submissions[submissionId]);
 
   @override
   Future<String> submitReplacement({

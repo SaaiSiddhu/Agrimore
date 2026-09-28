@@ -11,7 +11,17 @@ import 'package:cloud_firestore/cloud_firestore.dart';
 /// identifier to get there (never trust the payload alone — the delivery
 /// destination re-reads its order fresh, and the server's own security rule
 /// is what actually authorizes it).
-enum NoticeTarget { delivery, statement, payoutDetails, bankChangeRequest, identityRequest, supportTicket, documentReview, none }
+enum NoticeTarget {
+  delivery,
+  statement,
+  payoutDetails,
+  bankChangeRequest,
+  identityRequest,
+  supportTicket,
+  documentReview,
+  incidentStatus,
+  none,
+}
 
 class RiderNotice {
   const RiderNotice({
@@ -26,6 +36,8 @@ class RiderNotice {
     this.ticketId,
     this.requestId,
     this.changeType = 'name',
+    this.documentSubmissionId,
+    this.incidentId,
   });
   final String id;
   final String type;
@@ -57,6 +69,22 @@ class RiderNotice {
   /// existed, matching the wording every such notice already carried.
   final String changeType;
 
+  /// DLVC3: the EXACT `document_review_submissions/{id}` this notice is
+  /// about (`document_review_approved`/`rejected` — `documentReviewNotice`
+  /// already writes it, functions/src/delivery/riderNotices.ts). Null for a
+  /// notice written before this field existed -- an honest legacy fallback
+  /// to Profile's own current-status view is used then, never a guessed or
+  /// reconstructed id.
+  final String? documentSubmissionId;
+
+  /// DLVC3: the EXACT `rider_incidents/{id}` this notice is about
+  /// (`incident_acknowledged`/`incident_resolved` — `incidentNotice`,
+  /// same file). Null for a notice written before this field existed --
+  /// no honest generic fallback exists for incidents the way Profile does
+  /// for documents (there is no "current incident status" concept), so a
+  /// legacy notice with no id here has nowhere safe to route at all.
+  final String? incidentId;
+
   factory RiderNotice.fromMap(String id, Map<String, dynamic> m) {
     final data = m['data'];
     final d = data is Map ? data : const {};
@@ -73,6 +101,8 @@ class RiderNotice {
       ticketId: str(d['ticketId']),
       requestId: str(d['requestId']),
       changeType: str(d['changeType']) ?? 'name',
+      documentSubmissionId: str(d['submissionId']),
+      incidentId: str(d['incidentId']),
     );
   }
 
@@ -99,6 +129,13 @@ class RiderNotice {
         // this is the one case here that is never conditional on a payload
         // field being present.
         'document_review_approved' || 'document_review_rejected' => NoticeTarget.documentReview,
+        // DLVC3: unlike document review, there is no generic "current
+        // incident status" fallback destination -- each incident is its
+        // own independent, standalone record with no ongoing successor to
+        // point to instead, so a missing id here genuinely has nowhere
+        // useful to go.
+        'incident_acknowledged' || 'incident_resolved' =>
+          incidentId != null ? NoticeTarget.incidentStatus : NoticeTarget.none,
         _ => NoticeTarget.none,
       };
 }

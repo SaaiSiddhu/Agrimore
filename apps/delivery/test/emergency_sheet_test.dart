@@ -2,6 +2,7 @@
 // shared with authorities and admin." and send nothing. The sheet it opens
 // now may only hand off to the dialer, and must never claim more.
 import 'package:delivery/safety/emergency_sheet.dart';
+import 'package:delivery/safety/incident_status_screen.dart';
 import 'package:flutter/material.dart';
 import 'support/ws_app.dart';
 import 'package:flutter_test/flutter_test.dart';
@@ -63,6 +64,32 @@ void main() {
     await pump(t, support: '');
     expect(find.text('Call Agrimore support'), findsNothing);
     expect(find.textContaining('Call 112'), findsOneWidget);
+  });
+
+  // DLVC3: this sheet's own live report card disappears the moment it
+  // closes -- "View details" is the only link into that SAME report's
+  // persistent status, reachable afterward from Profile or a notification.
+  testWidgets('after reporting, View details opens the persistent status screen for that exact report',
+      (t) async {
+    await t.pumpWidget(wsApp(
+      home: Scaffold(
+        body: EmergencySheet(
+          launcher: (_) async => true,
+          reporter: (_) async => 'r1_req1',
+          watcher: (_) => Stream.value(const {'status': 'reported'}),
+        ),
+      ),
+    ));
+    await t.tap(find.text('Tell the Agrimore team'));
+    await t.pumpAndSettle();
+    expect(find.text('Report recorded'), findsOneWidget);
+    final viewDetails = find.byKey(const ValueKey('incident-view-details'));
+    expect(viewDetails, findsOneWidget);
+    await t.tap(viewDetails);
+    await t.pumpAndSettle();
+    expect(t.takeException(), isNull);
+    final screen = t.widget<IncidentStatusScreen>(find.byType(IncidentStatusScreen));
+    expect(screen.incidentId, 'r1_req1');
   });
 
   test('dial URIs', () {

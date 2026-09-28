@@ -21,9 +21,11 @@ import '../money/bank_change_request_screen.dart';
 import '../money/money_screen.dart';
 import '../money/statement_screen.dart';
 import '../orders/active_order_screen.dart';
+import '../profile/document_submission_screen.dart';
 import '../profile/identity_change_screen.dart';
 import '../profile/rider_profile_screen.dart';
 import '../support/support_request_status_screen.dart';
+import '../../safety/incident_status_screen.dart';
 
 /// Fetches one order fresh (never trusts a notice's own payload): the
 /// security rule (`deliveryPartnerId == request.auth.uid`, among others)
@@ -207,7 +209,9 @@ class _InboxScreenState extends State<InboxScreen> {
       case NoticeTarget.supportTicket:
         _openSupportTicket(n.ticketId!);
       case NoticeTarget.documentReview:
-        _openDocumentReview();
+        _openDocumentReview(n);
+      case NoticeTarget.incidentStatus:
+        _openIncidentStatus(n.incidentId!);
       case NoticeTarget.none:
         break;
     }
@@ -267,15 +271,28 @@ class _InboxScreenState extends State<InboxScreen> {
     );
   }
 
-  /// DLVC2: Profile's own Documents section already shows the current,
-  /// live review status per document (RiderProfileScreen's
-  /// _DocumentPreviewTile, via a real-time Firestore stream) -- this notice
-  /// never needs to pin a specific historical record the way an identity or
-  /// bank change request does, so routing here just needs to land on
-  /// Profile at all. Mirrors _openPayoutDetails' own tab-switch-first
-  /// pattern; falls back to a pushed route when Inbox is reached outside
+  /// DLVC3: routes to the EXACT submission the notice named (never
+  /// "whichever is currently pending", which can silently be a different,
+  /// newer submission for the same document made since the notice
+  /// arrived) -- mirrors DLVBANK1/DLVID3's own by-id precedent. A notice
+  /// written before `submissionId` existed on this payload (DLVC2's own
+  /// original routing) has no exact destination to offer -- an honest
+  /// fallback to Profile's Documents section (which shows the CURRENT
+  /// status, still useful even without knowing which submission this was)
+  /// is used instead, never a guessed association. Mirrors
+  /// _openPayoutDetails' own tab-switch-first pattern for that fallback;
+  /// falls back further to a pushed route when Inbox is reached outside
   /// the tabbed shell (e.g. a test harness with no onOpenTab).
-  void _openDocumentReview() {
+  void _openDocumentReview(RiderNotice n) {
+    final submissionId = n.documentSubmissionId;
+    if (submissionId != null) {
+      Navigator.of(context).push(
+        MaterialPageRoute<void>(
+          builder: (_) => DocumentSubmissionScreen(submissionId: submissionId),
+        ),
+      );
+      return;
+    }
     final go = widget.onOpenTab;
     if (go != null) {
       go(DeliveryTab.profile);
@@ -284,6 +301,18 @@ class _InboxScreenState extends State<InboxScreen> {
     Navigator.of(context).push(
       MaterialPageRoute<void>(
         builder: (_) => const RiderProfileScreen(),
+      ),
+    );
+  }
+
+  /// DLVC3: routes to the EXACT safety report the notice named. Unlike
+  /// document review there is no generic fallback destination -- a legacy
+  /// notice with no incidentId is filtered out by NoticeTarget itself
+  /// (NoticeTarget.none), so this is only ever reached with a real id.
+  void _openIncidentStatus(String incidentId) {
+    Navigator.of(context).push(
+      MaterialPageRoute<void>(
+        builder: (_) => IncidentStatusScreen(incidentId: incidentId),
       ),
     );
   }

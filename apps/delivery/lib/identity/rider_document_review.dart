@@ -59,6 +59,43 @@ DocumentReplacementException documentReplacementExceptionOf(String code, String?
 String documentStagingPath(String uid, String submissionId) =>
     'delivery_document_submissions/$uid/$submissionId';
 
+/// DLVC3: one exact, historical `document_review_submissions/{id}` record --
+/// distinct from [DocumentReview] (the denormalized, CURRENT-only status per
+/// docType on `delivery_partners`), this is what a notification's own
+/// `submissionId` names: the specific submission that notification was
+/// about, whatever the rider's CURRENT status for that docType has since
+/// become (a later resubmission may already be pending again by the time
+/// this is opened).
+class DocumentSubmission {
+  const DocumentSubmission({
+    required this.id,
+    required this.docType,
+    required this.status,
+    this.rejectionReason,
+    this.submittedAt,
+    this.reviewedAt,
+  });
+  final String id;
+  final String docType;
+  final DocumentReviewStatus status;
+  final String? rejectionReason;
+  final DateTime? submittedAt;
+  final DateTime? reviewedAt;
+
+  factory DocumentSubmission.fromDoc(String id, Map<String, dynamic> m) => DocumentSubmission(
+        id: id,
+        docType: (m['docType'] as String?) ?? '',
+        status: switch (m['status'] as String?) {
+          'approved' => DocumentReviewStatus.approved,
+          'rejected' => DocumentReviewStatus.rejected,
+          _ => DocumentReviewStatus.pending,
+        },
+        rejectionReason: m['rejectionReason'] as String?,
+        submittedAt: (m['submittedAt'] as Timestamp?)?.toDate(),
+        reviewedAt: (m['reviewedAt'] as Timestamp?)?.toDate(),
+      );
+}
+
 abstract class RiderDocumentReviewBackend {
   /// This rider's live review-status map, keyed by docType -- reads the
   /// same denormalized delivery_partners.documentReview field
@@ -72,6 +109,18 @@ abstract class RiderDocumentReviewBackend {
     required Uint8List bytes,
     required String contentType,
   });
+
+  /// DLVC3: the ONE exact submission [submissionId] names -- live, so a
+  /// decision made while this is open updates in place. `null` once
+  /// settled means the document genuinely does not exist under this
+  /// reader's own access (deleted, a bad/legacy id, or -- enforced by
+  /// `firestore.rules` itself, not this method -- it belongs to a
+  /// different rider entirely); this method never distinguishes those
+  /// from each other, matching `IdentityChangeScreen`'s own established
+  /// by-id precedent (a permission-denied read surfaces as a thrown
+  /// `FirebaseException`, a missing document surfaces as `null` -- the
+  /// screen shows the same honest "not available" card either way).
+  Stream<DocumentSubmission?> submissionById(String submissionId);
 }
 
 class CallableRiderDocumentReviewBackend implements RiderDocumentReviewBackend {
@@ -96,6 +145,20 @@ class CallableRiderDocumentReviewBackend implements RiderDocumentReviewBackend {
             if (raw is! Map) return const {};
             return raw.map((k, v) => MapEntry(k.toString(), DocumentReview.fromMap(v)));
           }));
+        } catch (e, st) {
+          controller.addError(e, st);
+          controller.close();
+        }
+      });
+
+  @override
+  Stream<DocumentSubmission?> submissionById(String submissionId) => Stream.multi((controller) {
+        try {
+          controller.addStream(
+            _db.collection('document_review_submissions').doc(submissionId).snapshots().map(
+                  (doc) => doc.exists ? DocumentSubmission.fromDoc(doc.id, doc.data()!) : null,
+                ),
+          );
         } catch (e, st) {
           controller.addError(e, st);
           controller.close();

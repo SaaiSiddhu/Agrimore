@@ -562,6 +562,13 @@ class AppLocalizationsEn extends AppLocalizations {
   String get supportNewRequest => 'New request';
 
   @override
+  String get supportStatusUnavailable => 'Not available';
+
+  @override
+  String get supportStatusUnavailableBody =>
+      'This request is no longer available.';
+
+  @override
   String get profileAccount => 'Account';
 
   @override
@@ -587,6 +594,17 @@ class AppLocalizationsEn extends AppLocalizations {
 
   @override
   String get profileNotSet => 'Not added';
+
+  @override
+  String get profileSignedOut => 'You\'ve been signed out.';
+
+  @override
+  String get profileRecordMissing =>
+      'We couldn\'t find your profile record. Contact Agrimore support.';
+
+  @override
+  String get profileLoadFailed =>
+      'Couldn\'t load your profile. Check your connection.';
 
   @override
   String get profileEditContact => 'Edit contact and address';
@@ -711,6 +729,34 @@ class AppLocalizationsEn extends AppLocalizations {
 
   @override
   String get docReplaceFailed => 'Couldn\'t submit this replacement right now.';
+
+  @override
+  String get documentSubmissionTitle => 'Document submission';
+
+  @override
+  String get documentSubmissionUnavailable => 'Not available';
+
+  @override
+  String get documentSubmissionUnavailableBody =>
+      'This submission is no longer available.';
+
+  @override
+  String get documentSubmissionApprovedTitle => 'Approved';
+
+  @override
+  String get documentSubmissionRejectedTitle => 'Not approved';
+
+  @override
+  String get documentSubmissionPendingTitle => 'Pending review';
+
+  @override
+  String get documentSubmissionPendingBody =>
+      'Agrimore is reviewing this document.';
+
+  @override
+  String documentSubmissionReviewedOn(String date) {
+    return 'Reviewed on $date';
+  }
 
   @override
   String payoutBank(String masked) {
@@ -1732,6 +1778,33 @@ class AppLocalizationsEn extends AppLocalizations {
   @override
   String get incidentStatusRecordedDetail =>
       'Nobody on the Agrimore team may have seen it yet. If you are in danger, call 112 now.';
+
+  @override
+  String get incidentViewDetails => 'View details';
+
+  @override
+  String get incidentStatusScreenTitle => 'Safety report';
+
+  @override
+  String get incidentStatusUnavailable => 'Not available';
+
+  @override
+  String get incidentStatusUnavailableBody =>
+      'This report is no longer available.';
+
+  @override
+  String incidentStatusUpdatedOn(String date) {
+    return 'Last updated $date';
+  }
+
+  @override
+  String get myIncidentsTitle => 'Safety reports';
+
+  @override
+  String get myIncidentsEmpty => 'You haven\'t filed a safety report.';
+
+  @override
+  String get myIncidentsEntry => 'Safety reports';
 
   @override
   String get emergencyTitle => 'Emergency help';

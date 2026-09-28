@@ -48,6 +48,7 @@ import '../screens/admin/employees/employee_payouts_screen.dart';
 import '../screens/admin/employees/employee_payout_account_review_screen.dart';
 import '../screens/admin/employees/commission_exceptions_screen.dart';
 import '../screens/admin/finance/finance_reconciliation_screen.dart';
+import '../screens/admin/finance/financial_record_detail_screen.dart';
 import '../screens/admin/sellers/seller_payouts_screen.dart';
 import '../screens/admin/employees/employee_payout_detail_screen.dart';
 import '../screens/admin/benefit_program/compliance_control_screen.dart';
@@ -173,6 +174,12 @@ class AdminRoutes {
   /// Read-only finance reconciliation scan (ADMR-80), wired to
   /// functions/src/admin/financeReconciliation.ts.
   static const String financeReconciliation = '/finance/reconciliation';
+
+  /// ADMR-86 — the "exact financial record" step of the investigation
+  /// workflow: one seller_withdrawal/rider_payout/employee_payout by id,
+  /// read-only. `type` is one of kLinkRecordCollection's three financial
+  /// keys (support_case_constants.dart).
+  static const String financialRecordDetail = '/finance/records/:type/:id';
 }
 
 /// App router configuration using go_router
@@ -624,6 +631,25 @@ class AppRouter {
               name: 'finance-reconciliation',
               pageBuilder: (context, state) =>
                   _buildPage(const FinanceReconciliationScreen(), state),
+            ),
+
+            GoRoute(
+              path: AdminRoutes.financialRecordDetail,
+              name: 'financial-record-detail',
+              pageBuilder: (context, state) {
+                final extra = state.extra;
+                final finding = extra is Map<String, dynamic> ? extra : null;
+                return _buildPage(
+                  FinancialRecordDetailScreen(
+                    type: state.pathParameters['type']!,
+                    recordId: state.pathParameters['id']!,
+                    findingKind: finding?['kind'] as String?,
+                    findingActorType: finding?['actorType'] as String?,
+                    findingDetail: (finding?['detail'] as Map?)?.cast<String, dynamic>(),
+                  ),
+                  state,
+                );
+              },
             ),
 
             GoRoute(

@@ -169,10 +169,17 @@ export function documentReviewNotice(submissionId: string, docType: string, appr
       data: { type: "document_review_rejected", submissionId, docType } };
 }
 
+// DLVC3: incidentId was accepted but never threaded into `data` -- the
+// notice's own document id (`incident_${incidentId}_ack`) encodes it, but
+// nothing on the CLIENT side reads a notice's own Firestore document id as
+// data (every other typed notice here carries its referenced id explicitly
+// in `data`, matching how the client actually parses a notice), so a rider
+// tapping this notice had no id to route to at all. Same fix shape as
+// documentReviewNotice above.
 export function incidentNotice(incidentId: string, status: "acknowledged" | "resolved"): RiderNotice {
   return status === "acknowledged"
     ? { id: `incident_${incidentId}_ack`, type: "incident_acknowledged", title: "Your safety report was seen",
-      body: "The Agrimore team has seen your report and is looking into it.", data: { type: "incident_acknowledged" } }
+      body: "The Agrimore team has seen your report and is looking into it.", data: { type: "incident_acknowledged", incidentId } }
     : { id: `incident_${incidentId}_done`, type: "incident_resolved", title: "Your safety report was closed",
-      body: "The Agrimore team has closed your report. Contact support if you still need help.", data: { type: "incident_resolved" } };
+      body: "The Agrimore team has closed your report. Contact support if you still need help.", data: { type: "incident_resolved", incidentId } };
 }
