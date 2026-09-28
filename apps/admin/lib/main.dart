@@ -112,10 +112,25 @@ void main() async {
 
   // Phase 17, Workstream 2: monitoring mode only — see
   // AppCheckService's header comment. Never blocks startup.
-  try {
-    await AppCheckService.activate();
-  } catch (e) {
-    debugPrint('⚠️ App Check init error: $e');
+  // ADMR-87: skipped entirely in emulator mode. Found live, not assumed —
+  // AppCheckService's web ReCaptchaV3Provider is constructed with the
+  // still-placeholder kRecaptchaV3SiteKey regardless of emulator mode;
+  // activate() itself fails open as designed, but FirebaseAuth's own
+  // token-fetch-per-request (@firebase/auth's "Error while retrieving App
+  // Check token: AppCheck: ReCAPTCHA error") corrupts the emulator sign-in
+  // request enough to make the Auth EMULATOR reject valid credentials as
+  // invalid-credential — real credentials, confirmed directly against the
+  // Auth emulator's own REST API, still failed through the app. App Check
+  // has no reason to run against a local test session at all (mirrors this
+  // same file's own emulator-config-before-any-real-use ordering rationale
+  // just above), so it is skipped outright rather than merely allowed to
+  // fail open.
+  if (!_useFirebaseEmulator) {
+    try {
+      await AppCheckService.activate();
+    } catch (e) {
+      debugPrint('⚠️ App Check init error: $e');
+    }
   }
 
   // Initialize Auth Persistence
