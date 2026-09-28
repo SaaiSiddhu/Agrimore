@@ -2344,6 +2344,18 @@ abstract class AppLocalizations {
   /// **'Load more'**
   String get statementLoadMore;
 
+  /// Shown above Load more when auto-search for a highlighted order paused at its safety limit without finding it yet
+  ///
+  /// In en, this message translates to:
+  /// **'Still looking for that delivery — load more to keep searching.'**
+  String get statementSearchPaused;
+
+  /// Shown once every page has genuinely been searched and the highlighted order was not found
+  ///
+  /// In en, this message translates to:
+  /// **'That delivery isn\'t in this statement.'**
+  String get statementTargetNotFound;
+
   /// Stands in for an amount while it loads
   ///
   /// In en, this message translates to:
@@ -2493,6 +2505,60 @@ abstract class AppLocalizations {
   /// In en, this message translates to:
   /// **'No orders here'**
   String get historyEmptyFiltered;
+
+  /// History date-range filter: a rider-chosen start/end date, opens a date-range picker
+  ///
+  /// In en, this message translates to:
+  /// **'Custom'**
+  String get historyRangeCustom;
+
+  /// History filter sheet: subtitle under the Custom date-range pill before any dates are chosen
+  ///
+  /// In en, this message translates to:
+  /// **'Select dates'**
+  String get historyRangeCustomSelectDates;
+
+  /// History filter bottom sheet: title
+  ///
+  /// In en, this message translates to:
+  /// **'Filters'**
+  String get historyFilterSheetTitle;
+
+  /// History filter bottom sheet: section header above the This week/Last week/Custom pills
+  ///
+  /// In en, this message translates to:
+  /// **'Date range'**
+  String get historyFilterSheetDateRangeSection;
+
+  /// History filter bottom sheet: section header above the status radio list
+  ///
+  /// In en, this message translates to:
+  /// **'Delivery status'**
+  String get historyFilterSheetStatusSection;
+
+  /// History filter bottom sheet: the status radio list's own 'no filter' option (the inline chip row elsewhere says just 'All')
+  ///
+  /// In en, this message translates to:
+  /// **'All statuses'**
+  String get historyFilterSheetAllStatuses;
+
+  /// History filter bottom sheet: commits the staged date-range/status selection
+  ///
+  /// In en, this message translates to:
+  /// **'Apply filters'**
+  String get historyFilterSheetApply;
+
+  /// History filter bottom sheet: clears the staged selection back to All statuses / All time
+  ///
+  /// In en, this message translates to:
+  /// **'Reset filters'**
+  String get historyFilterSheetReset;
+
+  /// History: result count shown next to the active date-range label
+  ///
+  /// In en, this message translates to:
+  /// **'{count, plural, =0{0 results} =1{1 result} other{{count} results}}'**
+  String historyResultsSummary(int count);
 
   /// History: placeholder for the Order ID search field. Exact match only -- must not imply partial/fuzzy search
   ///

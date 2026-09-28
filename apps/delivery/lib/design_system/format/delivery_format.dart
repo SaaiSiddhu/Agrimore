@@ -50,6 +50,19 @@ abstract final class DeliveryFormat {
   /// `24 Sep 2026, 10:30 AM`
   static String dateTime(DateTime d) => '${date(d)}, ${time(d)}';
 
+  /// An inclusive calendar-day range: `14 – 20 Sep 2026` when [start] and
+  /// [endInclusive] share a month and year, `28 Sep – 3 Oct 2026` across a
+  /// month boundary, `28 Dec 2026 – 3 Jan 2027` across a year boundary.
+  static String dateRange(DateTime start, DateTime endInclusive) {
+    if (start.year == endInclusive.year && start.month == endInclusive.month) {
+      return '${start.day} – ${date(endInclusive)}';
+    }
+    if (start.year == endInclusive.year) {
+      return '${dayMonth(start)} – ${date(endInclusive)}';
+    }
+    return '${date(start)} – ${date(endInclusive)}';
+  }
+
   /// Masks an Indian mobile number (`+91 •••••• 3210`).
   static String maskPhone(String raw) {
     final digits = raw.replaceAll(RegExp(r'\D'), '');

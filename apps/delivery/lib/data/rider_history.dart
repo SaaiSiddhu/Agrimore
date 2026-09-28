@@ -27,12 +27,13 @@ typedef HistoryPage = ({List<OrderModel> items, Object? cursor, bool hasMore});
 /// distinguished them; only the filter itself was coarser than the data.
 enum HistoryFilter { all, delivered, cancelled, returned }
 
-/// DLVH1/DLVH11: a preset `createdAt` window, applied in addition to
+/// DLVH1/DLVH11/DLVC1: a preset `createdAt` window, applied in addition to
 /// [HistoryFilter]. Week-aligned per the canonical mockup, replacing the
 /// original rolling 7/30-day presets (which no reference ever asked for and
-/// did not match the rider's own weekly statement boundary). Custom (a
-/// date-range picker) is a separate, deliberately deferred feature.
-enum HistoryDateRange { allTime, thisWeek, lastWeek }
+/// did not match the rider's own weekly statement boundary). [custom]'s own
+/// bounds are rider-chosen, not derivable from a clock -- see
+/// [RiderHistory.setCustomDateRange].
+enum HistoryDateRange { allTime, thisWeek, lastWeek, custom }
 
 /// DLVH11: mirrors `functions/src/delivery/riderPay.ts`'s own
 /// `statementCutoff` EXACTLY -- statements (and so "this/last week") are cut
@@ -54,13 +55,20 @@ DateTime mondayIstMidnightAtOrBefore(DateTime instant) {
 extension HistoryDateRangeBounds on HistoryDateRange {
   /// The `createdAt` window for this preset, relative to [now]. `until` is
   /// null for an open-ended (still-ongoing) window; both are null for "all
-  /// time".
-  ({DateTime? since, DateTime? until}) boundsAt(DateTime now) {
+  /// time". [customSince]/[customUntilExclusive] are used only for
+  /// [HistoryDateRange.custom] (ignored otherwise) -- callers of the three
+  /// clock-derived presets are unaffected by these optional parameters.
+  ({DateTime? since, DateTime? until}) boundsAt(
+    DateTime now, {
+    DateTime? customSince,
+    DateTime? customUntilExclusive,
+  }) {
     final thisMonday = mondayIstMidnightAtOrBefore(now);
     return switch (this) {
       HistoryDateRange.allTime => (since: null, until: null),
       HistoryDateRange.thisWeek => (since: thisMonday, until: null),
       HistoryDateRange.lastWeek => (since: thisMonday.subtract(const Duration(days: 7)), until: thisMonday),
+      HistoryDateRange.custom => (since: customSince, until: customUntilExclusive),
     };
   }
 }
@@ -265,6 +273,14 @@ class RiderHistory extends ChangeNotifier {
   List<OrderModel> get items => List.unmodifiable(_items);
   HistoryFilter get filter => _filter;
   HistoryDateRange get dateRange => _dateRange;
+
+  /// DLVC1: the currently-applied window, exposed so the filter sheet can
+  /// show a rider-chosen [HistoryDateRange.custom] range's own dates when it
+  /// reopens rather than losing them. [until] is the internal EXCLUSIVE
+  /// upper bound (the day after the last included day) -- callers wanting
+  /// the inclusive last day subtract one day themselves.
+  DateTime? get since => _since;
+  DateTime? get until => _until;
   bool get hasActiveFilter => _filter != HistoryFilter.all || _dateRange != HistoryDateRange.allTime;
   HistoryCounts? get counts => _counts;
 
@@ -367,6 +383,29 @@ class RiderHistory extends ChangeNotifier {
     final bounds = r.boundsAt(DateTime.now());
     _since = bounds.since;
     _until = bounds.until;
+    _countsStale = true;
+    return refresh();
+  }
+
+  /// DLVC1: a rider-chosen range, [lastDayInclusive] being the LAST calendar
+  /// day the rider wants included (how a range picker is actually used) --
+  /// converted here, once, to the exclusive upper bound the query plumbing
+  /// already expects (matching [HistoryDateRangeBounds]'s own convention for
+  /// the three presets). `DateTime(y, m, d + 1)` normalizes correctly across
+  /// a month/year boundary (Dart's own DateTime constructor, not re-derived
+  /// by hand here) -- e.g. day 31 + 1 rolls into the 1st of the next month.
+  /// The caller (the filter sheet) is responsible for refusing an inverted
+  /// range before calling this; this method trusts its own inputs, matching
+  /// [setDateRange]'s own contract.
+  Future<void> setCustomDateRange(DateTime firstDay, DateTime lastDayInclusive) {
+    final since = DateTime(firstDay.year, firstDay.month, firstDay.day);
+    final untilExclusive = DateTime(lastDayInclusive.year, lastDayInclusive.month, lastDayInclusive.day + 1);
+    if (_dateRange == HistoryDateRange.custom && _since == since && _until == untilExclusive) {
+      return Future.value();
+    }
+    _dateRange = HistoryDateRange.custom;
+    _since = since;
+    _until = untilExclusive;
     _countsStale = true;
     return refresh();
   }

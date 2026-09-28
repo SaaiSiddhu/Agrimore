@@ -68,15 +68,12 @@ class _StatementScreenState extends State<StatementScreen> {
   final _scrollController = ScrollController();
   bool _scrolledToHighlight = false;
 
-  /// DLVH10: a rough average row height, used ONLY to estimate a scroll
-  /// offset close to the target BEFORE its own element exists -- `ListView`
-  /// (even the plain, non-.builder constructor) still lazily builds Sliver
-  /// children by viewport+cache extent, so `Scrollable.ensureVisible` alone
-  /// cannot reach an element that was never built because it starts beyond
-  /// that range. Does not need to be exact: it only has to land close enough
-  /// that the real element gets built, after which [_highlightRowKey]'s own
-  /// context lets a precise `ensureVisible` correction take over.
-  static const double _kEstimatedRowExtent = 92.0;
+  /// C1 4.2: a hard ceiling on the viewport-stepping walk in
+  /// [_scrollToHighlightIfFound], for the same reason as
+  /// [_maxAutoContinuePages] -- a real, disclosed boundary in case a
+  /// degenerate viewport (e.g. zero `viewportDimension`) would otherwise
+  /// never make progress, never a silent infinite loop.
+  static const int _maxScrollSteps = 50;
 
   /// DLVH10: the previous call's own cursor id, to detect a backend anomaly
   /// where the cursor does not actually advance despite claiming `hasMore`
@@ -106,6 +103,16 @@ class _StatementScreenState extends State<StatementScreen> {
     if (target == null || !_hasMore) return false;
     if (_autoContinuedPages >= _maxAutoContinuePages) return false;
     return !_lines.any((e) => e.orderId == target);
+  }
+
+  /// C1 4.2: true once a highlight target was asked for and is not among the
+  /// lines loaded so far -- used only to pick the honest footer wording
+  /// below, never to change loading/paging behaviour itself. Distinct from
+  /// [_stillLookingForHighlight], which additionally requires more pages to
+  /// still be worth fetching automatically.
+  bool get _targetNotYetFound {
+    final target = widget.highlightOrderId;
+    return target != null && !_lines.any((e) => e.orderId == target);
   }
 
   Future<void> _loadMore() async {
@@ -148,10 +155,20 @@ class _StatementScreenState extends State<StatementScreen> {
   /// DLVH10: once genuinely found (not merely exhausted-and-absent), the
   /// highlighted row is scrolled into the visible viewport -- correct color
   /// alone is not enough if the rider still has to blindly scroll past
-  /// everything else to ever see it. Two steps, since a target beyond the
-  /// Sliver's own initial cache extent has no element (and so no context)
-  /// to `ensureVisible` yet: (1) an estimated jump close to it, so the
-  /// Sliver actually builds it; (2) a precise correction now that it exists.
+  /// everything else to ever see it. A target beyond the Sliver's own
+  /// initial cache extent has no element (and so no context) for
+  /// `Scrollable.ensureVisible` to use yet.
+  ///
+  /// C1 4.2: this used to jump once to an estimated offset (index * a fixed
+  /// average row height) before correcting. Real row height depends on
+  /// content and on the accessibility text scale, so that fixed estimate
+  /// could land far enough from the real position -- under, at a glance, a
+  /// plain 2x text scale -- that the Sliver never built the target row's
+  /// element at all, and the "precise correction" step had no context to
+  /// act on. Walking forward one viewport at a time instead makes no
+  /// assumption about row height: each step is guaranteed to bring new rows
+  /// into the Sliver's cache extent, so the target is eventually built
+  /// regardless of how tall its row actually is.
   void _scrollToHighlightIfFound() {
     if (_scrolledToHighlight) return;
     final target = widget.highlightOrderId;
@@ -161,8 +178,17 @@ class _StatementScreenState extends State<StatementScreen> {
     _scrolledToHighlight = true;
     WidgetsBinding.instance.addPostFrameCallback((_) async {
       if (!mounted || !_scrollController.hasClients) return;
-      final estimate = (index * _kEstimatedRowExtent).clamp(0.0, _scrollController.position.maxScrollExtent);
-      await _scrollController.animateTo(estimate, duration: DeliveryMotion.debounce, curve: DeliveryMotion.standard);
+      final position = _scrollController.position;
+      var steps = 0;
+      while (_highlightRowKey.currentContext == null &&
+          position.pixels < position.maxScrollExtent &&
+          steps < _maxScrollSteps) {
+        steps++;
+        final next = (position.pixels + position.viewportDimension).clamp(0.0, position.maxScrollExtent);
+        _scrollController.jumpTo(next);
+        await WidgetsBinding.instance.endOfFrame;
+        if (!mounted || !_scrollController.hasClients) return;
+      }
       final ctx = _highlightRowKey.currentContext;
       if (ctx != null && ctx.mounted) {
         await Scrollable.ensureVisible(ctx, duration: DeliveryMotion.fast, alignment: 0.5);
@@ -275,10 +301,35 @@ class _StatementScreenState extends State<StatementScreen> {
         ],
       );
     } else if (_hasMore) {
-      child = DeliveryButton.secondary(
-        label: l.statementLoadMore,
-        fullWidth: false,
-        onPressed: _loadMore,
+      // C1 4.2: reaching here with the target still unfound can only mean
+      // the auto-continue safety cap paused the search (see
+      // _stillLookingForHighlight) -- say so plainly rather than showing the
+      // same bare button a rider casually paging with no target would see,
+      // while still offering that exact button as the honest continuation.
+      child = Column(
+        children: [
+          if (_targetNotYetFound) ...[
+            Text(
+              l.statementSearchPaused,
+              textAlign: TextAlign.center,
+              style: t.bodyMedium.copyWith(color: c.textSecondary),
+            ),
+            const SizedBox(height: DeliverySpace.sm),
+          ],
+          DeliveryButton.secondary(
+            label: l.statementLoadMore,
+            fullWidth: false,
+            onPressed: _loadMore,
+          ),
+        ],
+      );
+    } else if (_targetNotYetFound) {
+      // Every page has genuinely been fetched (_hasMore is now false): this
+      // is a real, truthful "not found", not the cap-paused case above.
+      child = Text(
+        l.statementTargetNotFound,
+        textAlign: TextAlign.center,
+        style: t.bodyMedium.copyWith(color: c.textSecondary),
       );
     } else if (_lines.isEmpty) {
       child = Text(

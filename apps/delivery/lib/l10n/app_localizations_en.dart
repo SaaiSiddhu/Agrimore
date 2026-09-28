@@ -1277,6 +1277,14 @@ class AppLocalizationsEn extends AppLocalizations {
   String get statementLoadMore => 'Load more';
 
   @override
+  String get statementSearchPaused =>
+      'Still looking for that delivery — load more to keep searching.';
+
+  @override
+  String get statementTargetNotFound =>
+      'That delivery isn\'t in this statement.';
+
+  @override
   String get moneyAmountLoading => '…';
 
   @override
@@ -1358,6 +1366,42 @@ class AppLocalizationsEn extends AppLocalizations {
 
   @override
   String get historyEmptyFiltered => 'No orders here';
+
+  @override
+  String get historyRangeCustom => 'Custom';
+
+  @override
+  String get historyRangeCustomSelectDates => 'Select dates';
+
+  @override
+  String get historyFilterSheetTitle => 'Filters';
+
+  @override
+  String get historyFilterSheetDateRangeSection => 'Date range';
+
+  @override
+  String get historyFilterSheetStatusSection => 'Delivery status';
+
+  @override
+  String get historyFilterSheetAllStatuses => 'All statuses';
+
+  @override
+  String get historyFilterSheetApply => 'Apply filters';
+
+  @override
+  String get historyFilterSheetReset => 'Reset filters';
+
+  @override
+  String historyResultsSummary(int count) {
+    String _temp0 = intl.Intl.pluralLogic(
+      count,
+      locale: localeName,
+      other: '$count results',
+      one: '1 result',
+      zero: '0 results',
+    );
+    return '$_temp0';
+  }
 
   @override
   String get historyOrderIdSearchHint => 'Enter the exact Order ID';

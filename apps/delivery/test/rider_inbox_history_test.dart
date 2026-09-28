@@ -606,6 +606,55 @@ void main() {
       expect(askedUntil[2], mondayIstMidnightAtOrBefore(DateTime.now()), reason: 'last week is bounded -- it excludes the current week');
     });
 
+    test('DLVC1: setCustomDateRange -- same-day range, inclusive last day via a correct exclusive upper bound', () async {
+      final askedSince = <DateTime?>[];
+      final askedUntil = <DateTime?>[];
+      final h = RiderHistory(fetch: (rider, query, cursor, size) async {
+        askedSince.add(query.since);
+        askedUntil.add(query.until);
+        return (items: <OrderModel>[], cursor: null, hasMore: false);
+      })
+        ..bind('r1');
+      await h.loadMore();
+      final day = DateTime(2026, 9, 15);
+      await h.setCustomDateRange(day, day);
+      expect(h.dateRange, HistoryDateRange.custom);
+      expect(askedSince[1], DateTime(2026, 9, 15), reason: 'midnight of the chosen day');
+      expect(askedUntil[1], DateTime(2026, 9, 16), reason: 'exclusive upper bound is the NEXT day, not the same day');
+      expect(h.since, askedSince[1]);
+      expect(h.until, askedUntil[1]);
+    });
+
+    test('DLVC1: setCustomDateRange -- month and year boundaries normalize correctly', () async {
+      final askedUntil = <DateTime?>[];
+      final h = RiderHistory(fetch: (rider, query, cursor, size) async {
+        askedUntil.add(query.until);
+        return (items: <OrderModel>[], cursor: null, hasMore: false);
+      })
+        ..bind('r1');
+      await h.loadMore();
+      await h.setCustomDateRange(DateTime(2026, 1, 20), DateTime(2026, 1, 31));
+      expect(askedUntil[1], DateTime(2026, 2, 1), reason: 'day 31 + 1 rolls into the next month');
+      await h.setCustomDateRange(DateTime(2026, 12, 20), DateTime(2026, 12, 31));
+      expect(askedUntil[2], DateTime(2027, 1, 1), reason: 'and across a year boundary too');
+    });
+
+    test('DLVC1: setCustomDateRange is a no-op when the same range is already applied', () async {
+      var calls = 0;
+      final h = RiderHistory(fetch: (rider, query, cursor, size) async {
+        calls++;
+        return (items: <OrderModel>[], cursor: null, hasMore: false);
+      })
+        ..bind('r1');
+      await h.loadMore();
+      final first = DateTime(2026, 9, 1);
+      final last = DateTime(2026, 9, 7);
+      await h.setCustomDateRange(first, last);
+      final before = calls;
+      await h.setCustomDateRange(first, last);
+      expect(calls, before, reason: 'an identical custom range must not trigger a redundant reload');
+    });
+
     test('clearFilters resets status and date range together, in one reload', () async {
       var calls = 0;
       final h = RiderHistory(fetch: (rider, query, cursor, size) async {
@@ -791,6 +840,30 @@ void main() {
         expect(h.counts, isNull);
         expect(h.isSearchActive, isFalse);
         expect(h.searchResult, isNull);
+      });
+
+      test('DLVC1: switching rider accounts while a list page fetch is in flight discards the stale page', () async {
+        final gate = Completer<HistoryPage>();
+        final h = RiderHistory(fetch: (rider, query, cursor, size) => gate.future)..bind('r1');
+        final pending = h.loadMore(); // in flight, not yet resolved
+        h.bind('r2'); // account switch WHILE the above page fetch is still pending
+        gate.complete((items: [historyOrder('secretA', {'orderNumber': 'A'})], cursor: 'c1', hasMore: true));
+        await pending;
+        expect(h.items, isEmpty, reason: 'rider A\'s late page must never land under rider B\'s session');
+        expect(h.loading, isFalse, reason: 'the stale response must not leave the NEW session stuck loading forever');
+      });
+
+      test('DLVC1: switching rider accounts while counts are in flight discards the stale counts', () async {
+        final gate = Completer<HistoryCounts>();
+        final h = RiderHistory(
+          fetch: (rider, query, cursor, size) async => (items: <OrderModel>[], cursor: null, hasMore: false),
+          counts: (rider, since, until) => gate.future,
+        )..bind('r1');
+        await h.loadMore(); // starts the counts fetch (fire-and-forget) but does not await it
+        h.bind('r2');
+        gate.complete((all: 99, delivered: 99, cancelled: 0, returned: 0)); // rider A's stale counts arrive late
+        await flushMicrotasks();
+        expect(h.counts, isNull, reason: 'rider A\'s late counts must never land under rider B\'s session');
       });
     });
 
@@ -1289,6 +1362,7 @@ void main() {
       await t.pumpAndSettle();
       expect(calls, 1, reason: 'no highlight target: exactly the one page the rider is shown, no silent extra fetch');
       expect(find.text('Load more'), findsOneWidget, reason: 'further pages remain available on manual request, as before');
+      expect(find.textContaining('Still looking'), findsNothing, reason: 'the cap-paused wording is only for an actual highlight target');
     });
 
     group('DLVH10: statementCursorAdvanced (pure)', () {
@@ -1389,6 +1463,135 @@ void main() {
       final viewportHeight = t.view.physicalSize.height / t.view.devicePixelRatio;
       expect(dy, greaterThanOrEqualTo(0), reason: 'scrolled into view, not sitting above the visible area');
       expect(dy, lessThan(viewportHeight), reason: 'scrolled into view, not sitting below the visible area');
+    });
+
+    group('C1 4.2: statement pagination -- footer wording, disposal, later-page failure, text scale', () {
+      testWidgets('the footer says search paused at the cap, not a bare Load more, while still unfound', (t) async {
+        t.view.physicalSize = const Size(1080, 3200);
+        t.view.devicePixelRatio = 1;
+        addTearDown(t.view.reset);
+        var calls = 0;
+        await t.pumpWidget(host(StatementScreen(
+          payout: const RiderPayout(
+            id: 'stmt-cap', weekKey: '2026-W38', earned: 1000, netted: 0, amount: 1000,
+            cashHeldAfter: 0, orderCount: 50, status: 'paid',
+          ),
+          load: (after) async {
+            calls++;
+            return StatementPage([RiderEarning(orderId: 'o-page-$calls', total: 10, statementId: 'stmt-cap')], null, true);
+          },
+          highlightOrderId: 'never-appears-anywhere',
+        )));
+        await t.pumpAndSettle();
+        expect(calls, 20, reason: 'the same hard cap as DLVH10');
+        expect(find.text('Still looking for that delivery — load more to keep searching.'), findsOneWidget);
+        expect(find.text('Load more'), findsOneWidget, reason: 'the honest continuation stays available, not withdrawn');
+      });
+
+      testWidgets('the footer says the delivery is not in this statement once genuinely exhausted, not paused', (t) async {
+        var calls = 0;
+        await t.pumpWidget(host(StatementScreen(
+          payout: const RiderPayout(
+            id: 'stmt-exhausted-2', weekKey: '2026-W38', earned: 300, netted: 0, amount: 300,
+            cashHeldAfter: 0, orderCount: 1, status: 'paid',
+          ),
+          load: (after) async {
+            calls++;
+            if (calls == 1) {
+              return const StatementPage([RiderEarning(orderId: 'o-only', total: 300, statementId: 'stmt-exhausted-2')], null, true);
+            }
+            return const StatementPage([], null, false);
+          },
+          highlightOrderId: 'this-id-does-not-exist-anywhere',
+        )));
+        await t.pumpAndSettle();
+        expect(calls, 2);
+        expect(find.text("That delivery isn't in this statement."), findsOneWidget);
+        expect(find.text('Load more'), findsNothing, reason: 'genuinely exhausted: no false continuation offered once hasMore is truly false');
+      });
+
+      testWidgets('a late page response after the screen is disposed does not throw', (t) async {
+        // Revert-and-watch note: temporarily commenting out _loadMore's own
+        // `if (!mounted) return;` did NOT turn this test red -- the resulting
+        // setState-after-dispose error is thrown inside the very try block
+        // that guards it, so the method's own `catch (e)` swallows it (its
+        // second, dispose-guarded setState is skipped safely). That is a
+        // real, independent safety net, not a substitute for the explicit
+        // guard: relying on it would mean a disposal race gets logged as an
+        // ordinary load failure, and it says nothing about code reached
+        // outside this try block (e.g. _scrollToHighlightIfFound, which
+        // guards itself separately). The explicit early return stays for
+        // that reason; this test verifies the outcome the rider actually
+        // experiences -- no crash -- via both mechanisms together.
+        final gate = Completer<StatementPage>();
+        await t.pumpWidget(host(StatementScreen(
+          payout: const RiderPayout(
+            id: 'stmt-disposed', weekKey: '2026-W38', earned: 100, netted: 0, amount: 100,
+            cashHeldAfter: 0, orderCount: 1, status: 'paid',
+          ),
+          load: (after) => gate.future,
+        )));
+        await t.pump(); // initState's own _loadMore is now awaiting the gate
+        await t.pumpWidget(host(const SizedBox())); // replaces the tree -- disposes StatementScreen
+        gate.complete(const StatementPage([RiderEarning(orderId: 'o-late', total: 100, statementId: 'stmt-disposed')], null, false));
+        await t.pumpAndSettle();
+        expect(t.takeException(), isNull, reason: 'no crash must ever surface from a page response arriving after disposal');
+      });
+
+      testWidgets('a failure on a later page (not just the first) shows Retry, and retrying recovers', (t) async {
+        var calls = 0;
+        await t.pumpWidget(host(StatementScreen(
+          payout: const RiderPayout(
+            id: 'stmt-p2fail', weekKey: '2026-W38', earned: 200, netted: 0, amount: 200,
+            cashHeldAfter: 0, orderCount: 2, status: 'paid',
+          ),
+          load: (after) async {
+            calls++;
+            if (calls == 1) {
+              return const StatementPage([RiderEarning(orderId: 'o-a', total: 100, statementId: 'stmt-p2fail')], null, true);
+            }
+            if (calls == 2) throw Exception('network blip');
+            return const StatementPage([RiderEarning(orderId: 'o-b', total: 100, statementId: 'stmt-p2fail')], null, false);
+          },
+        )));
+        await t.pumpAndSettle();
+        await t.tap(find.text('Load more'));
+        await t.pumpAndSettle();
+        expect(find.text('Could not load the deliveries. Check your connection.'), findsOneWidget,
+            reason: 'a page-2 failure must be reported, not swallowed silently');
+        expect(find.byType(EarningTile), findsNWidgets(1), reason: 'page 1 must remain visible through the page-2 failure');
+        await t.tap(find.text('Try again'));
+        await t.pumpAndSettle();
+        expect(t.takeException(), isNull);
+        expect(find.byType(EarningTile), findsNWidgets(2), reason: 'retry must actually recover and load the rest');
+      });
+
+      testWidgets('the found target still scrolls into view under a large text scale, with taller rows', (t) async {
+        final manyEntries = List.generate(30, (i) => RiderEarning(orderId: 'o-$i', total: 10, statementId: 'stmt-scale'));
+        await t.pumpWidget(host(
+          Builder(
+            builder: (context) => MediaQuery(
+              data: MediaQuery.of(context).copyWith(textScaler: const TextScaler.linear(2.0)),
+              child: StatementScreen(
+                payout: const RiderPayout(
+                  id: 'stmt-scale', weekKey: '2026-W38', earned: 300, netted: 0, amount: 300,
+                  cashHeldAfter: 0, orderCount: 30, status: 'paid',
+                ),
+                load: (after) async => StatementPage(manyEntries, null, false),
+                highlightOrderId: 'o-25',
+              ),
+            ),
+          ),
+        ));
+        await t.pumpAndSettle();
+        expect(t.takeException(), isNull);
+        final targetFinder = find.byWidgetPredicate((w) => w is EarningTile && w.earning.orderId == 'o-25' && w.highlighted);
+        expect(targetFinder, findsOneWidget, reason: 'the estimated-offset jump must still make the Sliver build it at 2x text scale');
+        final dy = t.getTopLeft(targetFinder).dy;
+        final viewportHeight = t.view.physicalSize.height / t.view.devicePixelRatio;
+        expect(dy, greaterThanOrEqualTo(0), reason: 'not sitting above the visible area even with taller rows');
+        expect(dy, lessThan(viewportHeight), reason: 'not sitting below the visible area even with taller rows');
+      });
     });
 
     testWidgets('a deleted or inaccessible statement says so instead of doing nothing', (t) async {
@@ -1500,6 +1703,91 @@ void main() {
         expect(t.takeException(), isNull);
         expect(find.text('Order AGM-3'), findsOneWidget);
         expect(find.text('No delivery found with that Order ID'), findsNothing);
+      });
+    });
+
+    group('DLVC1: history filter bottom sheet', () {
+      testWidgets('the funnel action opens the sheet; This week + Apply commits the range', (t) async {
+        await t.pumpWidget(host(
+          const RiderHistoryScreen(),
+          historyFetch: (rider, query, cursor, size) async => (items: <OrderModel>[], cursor: null, hasMore: false),
+        ));
+        await t.pumpAndSettle();
+        expect(find.text('All time'), findsOneWidget, reason: 'the summary bar\'s own default label');
+
+        await t.tap(find.byKey(const ValueKey('history-open-filter-sheet')));
+        await t.pumpAndSettle();
+        expect(find.text('Filters'), findsOneWidget);
+        expect(find.text('Date range'), findsOneWidget);
+        expect(find.text('Delivery status'), findsOneWidget);
+
+        await t.tap(find.byKey(const ValueKey('history-sheet-range-thisWeek')));
+        await t.pumpAndSettle();
+        await t.tap(find.byKey(const ValueKey('history-sheet-apply')));
+        await t.pumpAndSettle();
+        expect(t.takeException(), isNull);
+        expect(find.text('Filters'), findsNothing, reason: 'the sheet closed after Apply');
+        expect(find.text('All time'), findsNothing, reason: 'the summary bar reflects the newly-applied range');
+      });
+
+      testWidgets('closing the sheet without Apply discards the staged selection', (t) async {
+        await t.pumpWidget(host(
+          const RiderHistoryScreen(),
+          historyFetch: (rider, query, cursor, size) async => (items: <OrderModel>[], cursor: null, hasMore: false),
+        ));
+        await t.pumpAndSettle();
+
+        await t.tap(find.byKey(const ValueKey('history-open-filter-sheet')));
+        await t.pumpAndSettle();
+        await t.tap(find.byKey(const ValueKey('history-sheet-range-lastWeek')));
+        await t.pumpAndSettle();
+        await t.tap(find.byKey(const ValueKey('history-sheet-close')));
+        await t.pumpAndSettle();
+
+        expect(t.takeException(), isNull);
+        expect(find.text('All time'), findsOneWidget, reason: 'the staged Last week tap was never applied');
+      });
+
+      testWidgets('Reset filters clears an already-applied filter from inside the sheet', (t) async {
+        await t.pumpWidget(host(
+          const RiderHistoryScreen(),
+          historyFetch: (rider, query, cursor, size) async => (items: <OrderModel>[], cursor: null, hasMore: false),
+        ));
+        await t.pumpAndSettle();
+        await t.tap(find.byKey(const ValueKey('history-open-filter-sheet')));
+        await t.pumpAndSettle();
+        await t.tap(find.byKey(const ValueKey('history-sheet-range-thisWeek')));
+        await t.pumpAndSettle();
+        await t.tap(find.byKey(const ValueKey('history-sheet-apply')));
+        await t.pumpAndSettle();
+        expect(find.text('All time'), findsNothing);
+
+        await t.tap(find.byKey(const ValueKey('history-open-filter-sheet')));
+        await t.pumpAndSettle();
+        await t.tap(find.byKey(const ValueKey('history-sheet-reset')));
+        await t.pumpAndSettle();
+        expect(t.takeException(), isNull);
+        expect(find.text('All time'), findsOneWidget, reason: 'Reset applies immediately, unlike a plain close');
+      });
+
+      testWidgets('a status radio selection combines with a date-range pill in one Apply', (t) async {
+        await t.pumpWidget(host(
+          const RiderHistoryScreen(),
+          historyFetch: (rider, query, cursor, size) async => (items: <OrderModel>[], cursor: null, hasMore: false),
+        ));
+        await t.pumpAndSettle();
+        await t.tap(find.byKey(const ValueKey('history-open-filter-sheet')));
+        await t.pumpAndSettle();
+        await t.tap(find.byKey(const ValueKey('history-sheet-status-delivered')));
+        await t.tap(find.byKey(const ValueKey('history-sheet-range-lastWeek')));
+        await t.pumpAndSettle();
+        await t.tap(find.byKey(const ValueKey('history-sheet-apply')));
+        await t.pumpAndSettle();
+        expect(t.takeException(), isNull);
+        // The inline status chip reflects the same underlying filter the
+        // sheet just staged -- both controls share one RiderHistory.
+        final chip = t.widget<ChoiceChip>(find.byKey(const ValueKey('history-filter-delivered')));
+        expect(chip.selected, isTrue);
       });
     });
   });
