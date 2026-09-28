@@ -33,6 +33,12 @@ typedef ActiveWorkSource = Stream<ActiveSnapshot> Function(String riderId);
 /// Counts [riderId]'s deliveries since [since].
 typedef DeliveredCount = Future<int> Function(String riderId, DateTime since);
 
+/// Advances one rider step (arrived_at_store, picked_up, out_for_delivery).
+typedef AdvanceStep = Future<void> Function(String orderId, String status, Map<String, dynamic> fix);
+
+/// Releases an order ("Seller not ready"), before pickup only.
+typedef ReleaseOrder = Future<void> Function(String orderId, {String reason});
+
 Stream<ActiveSnapshot> firestoreActiveWork(String riderId) => FirebaseFirestore.instance
     .collection('orders')
     .where('deliveryPartnerId', isEqualTo: riderId)
@@ -61,14 +67,20 @@ class DeliveryOrderProvider extends ChangeNotifier {
     HistoryFetch? historyFetch,
     CountsFetch? historyCounts,
     SearchFetch? historySearch,
+    AdvanceStep? advanceStepFn,
+    ReleaseOrder? releaseOrderFn,
     DateTime Function()? clock,
   })  : _activeSource = activeSource ?? firestoreActiveWork,
         _deliveredCount = deliveredCount ?? firestoreDeliveredCount,
+        _advanceStepFn = advanceStepFn ?? steps.advanceDeliveryStep,
+        _releaseOrderFn = releaseOrderFn ?? steps.releaseDeliveryOrder,
         _clock = clock ?? DateTime.now,
         history = RiderHistory(fetch: historyFetch, counts: historyCounts, search: historySearch);
 
   final ActiveWorkSource _activeSource;
   final DeliveredCount _deliveredCount;
+  final AdvanceStep _advanceStepFn;
+  final ReleaseOrder _releaseOrderFn;
   final DateTime Function() _clock;
 
   /// The bound rider's order history, page by page.
@@ -189,27 +201,47 @@ class DeliveryOrderProvider extends ChangeNotifier {
   /// Phase DLV-3C: a rider step (arrived_at_store, picked_up,
   /// out_for_delivery) through advanceDeliveryStep. Returns null on success,
   /// or the refusal (worded by RiderStepException.message).
+  ///
+  /// Section 5 (2026-09-28 continuation review) — the late-callable-response
+  /// race: this provider is rebound (bind()), not recreated, on every
+  /// sign-in/sign-out/account switch (see the file header). A step call
+  /// started under one rider whose response arrives AFTER a later bind() —
+  /// a slow network, or the app backgrounding mid-call — must not surface
+  /// that rider's error under whatever session is current now. Every other
+  /// async path in this file already guards this way (_listen, _refreshToday,
+  /// _refreshWeek); this one and releaseOrder below did not. Only the
+  /// SHARED `_error`/notifyListeners state is guarded here — the direct
+  /// caller of this specific invocation (this screen's own awaited call,
+  /// which already checks its own `mounted`) still gets an honest answer
+  /// about what happened to ITS call, stale or not.
   Future<steps.RiderStepException?> advanceStep(String orderId, String status, Map<String, dynamic> fix) async {
+    final gen = _generation;
     try {
-      await steps.advanceDeliveryStep(orderId, status, fix);
+      await _advanceStepFn(orderId, status, fix);
       return null;
     } on steps.RiderStepException catch (e) {
-      _error = e;
-      notifyListeners();
+      if (gen == _generation) {
+        _error = e;
+        notifyListeners();
+      }
       return e;
     }
   }
 
   /// Phase DLV-3C: "Seller not ready" through releaseDeliveryOrder, before
   /// pickup only. The active-work listener drops the order when the server
-  /// has released it — no local guess.
+  /// has released it — no local guess. See advanceStep's own doc comment
+  /// for the generation guard below (Section 5, 2026-09-28).
   Future<steps.RiderStepException?> releaseOrder(String orderId, {required String reason}) async {
+    final gen = _generation;
     try {
-      await steps.releaseDeliveryOrder(orderId, reason: reason);
+      await _releaseOrderFn(orderId, reason: reason);
       return null;
     } on steps.RiderStepException catch (e) {
-      _error = e;
-      notifyListeners();
+      if (gen == _generation) {
+        _error = e;
+        notifyListeners();
+      }
       return e;
     }
   }
