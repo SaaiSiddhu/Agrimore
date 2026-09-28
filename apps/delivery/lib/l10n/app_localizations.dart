@@ -2494,10 +2494,10 @@ abstract class AppLocalizations {
   /// **'No orders here'**
   String get historyEmptyFiltered;
 
-  /// History: placeholder for the Order ID search field
+  /// History: placeholder for the Order ID search field. Exact match only -- must not imply partial/fuzzy search
   ///
   /// In en, this message translates to:
-  /// **'Search by Order ID'**
+  /// **'Enter the exact Order ID'**
   String get historyOrderIdSearchHint;
 
   /// History: tooltip for the Order ID search field's own clear button
@@ -2505,6 +2505,12 @@ abstract class AppLocalizations {
   /// In en, this message translates to:
   /// **'Clear search'**
   String get historyOrderIdSearchClear;
+
+  /// History: an Order ID search failed to even run (offline, permission, or another error) -- distinct from a genuine not-found result
+  ///
+  /// In en, this message translates to:
+  /// **'Couldn\'t search right now. Try again.'**
+  String get historySearchError;
 
   /// History: an Order ID search matched nothing of this rider's own
   ///
