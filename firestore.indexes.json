@@ -1007,6 +1007,20 @@
                     "order": "DESCENDING"
                 }
             ]
+        },
+        {
+            "collectionGroup": "support_cases",
+            "queryScope": "COLLECTION",
+            "fields": [
+                {
+                    "fieldPath": "linkedRecords",
+                    "arrayConfig": "CONTAINS"
+                },
+                {
+                    "fieldPath": "updatedAt",
+                    "order": "DESCENDING"
+                }
+            ]
         }
     ],
     "fieldOverrides": []

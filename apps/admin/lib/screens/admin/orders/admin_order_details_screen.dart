@@ -300,9 +300,13 @@ class _AdminOrderDetailsScreenState extends State<AdminOrderDetailsScreen> {
         _buildCommissionCard(order, orderProvider),
         const SizedBox(height: 16),
       ],
-      _buildSectionTitle('Support Cases', Icons.folder_special_rounded),
+      _buildSectionTitle('Cases About This Order', Icons.folder_special_rounded),
       const SizedBox(height: 12),
-      _buildOrderSupportCasesCard(order, orderProvider),
+      _buildOrderLinkedCasesCard(order, orderProvider),
+      const SizedBox(height: 16),
+      _buildSectionTitle('Other Cases Involving These People', Icons.groups_rounded),
+      const SizedBox(height: 12),
+      _buildOrderActorContextCasesCard(order, orderProvider),
       const SizedBox(height: 16),
       _buildSectionTitle('Related Support Tickets', Icons.support_agent_rounded),
       const SizedBox(height: 12),
@@ -792,49 +796,60 @@ class _AdminOrderDetailsScreenState extends State<AdminOrderDetailsScreen> {
   }
 
   // =========================
-  // Support Cases Card (ADMR-64)
+  // Support Cases Cards (ADMR-64, split ADMR-67)
   // =========================
-  // support_cases has no orderId field by design (ADMR-61) -- a case links
-  // to an actor, not an order, and link/unlink of an existing order record
-  // is its own deferred phase. This stacks one real, per-actor
-  // ActorSupportCasesSection (ADMR-63) per actor role this specific order
-  // actually carries, reusing the exact same widget the four People-360
-  // workspaces already use -- never a fabricated order-level case.
-  Widget _buildOrderSupportCasesCard(OrderModel order, OrderProvider orderProvider) {
-    final firestore = orderProvider.firestore;
-    final sections = <Widget>[
-      ActorSupportCasesSection(
-        firestore: firestore,
-        actorType: 'customer',
-        actorId: order.userId,
-        title: 'Customer',
-      ),
+  // Two DIFFERENT, deliberately separated concepts (owner's prompt, section
+  // 4): cases genuinely linked to THIS order (via linkedRecords, ADMR-67 --
+  // proven server-side to never leak a same-actor case from a different
+  // order), and actor-context history (ADMR-64's own original card --
+  // real, but never proof any of it concerns this specific order).
+  // Conflating the two would let an admin mistake one for the other.
+
+  /// Every actor role this order actually carries, customer first (matches
+  /// the default primaryActor for a new order-linked case).
+  List<({String type, String id, String label})> _orderActors(OrderModel order) {
+    final actors = <({String type, String id, String label})>[
+      (type: 'customer', id: order.userId, label: 'Customer'),
     ];
     if (order.sellerId != null && order.sellerId!.isNotEmpty) {
-      sections.add(const SizedBox(height: 16));
-      sections.add(ActorSupportCasesSection(
-        firestore: firestore,
-        actorType: 'seller',
-        actorId: order.sellerId!,
-        title: 'Seller',
-      ));
+      actors.add((type: 'seller', id: order.sellerId!, label: 'Seller'));
     }
     if (order.deliveryPartnerId != null && order.deliveryPartnerId!.isNotEmpty) {
-      sections.add(const SizedBox(height: 16));
-      sections.add(ActorSupportCasesSection(
-        firestore: firestore,
-        actorType: 'rider',
-        actorId: order.deliveryPartnerId!,
-        title: 'Delivery Partner',
-      ));
+      actors.add((type: 'rider', id: order.deliveryPartnerId!, label: 'Delivery Partner'));
     }
     if (order.employeeUid != null && order.employeeUid!.isNotEmpty) {
-      sections.add(const SizedBox(height: 16));
+      actors.add((type: 'associate', id: order.employeeUid!, label: 'Sales Associate'));
+    }
+    return actors;
+  }
+
+  Widget _buildOrderLinkedCasesCard(OrderModel order, OrderProvider orderProvider) {
+    return Container(
+      decoration: BoxDecoration(
+        color: Colors.white,
+        borderRadius: BorderRadius.circular(16),
+        boxShadow: [BoxShadow(color: Colors.black.withOpacity(0.04), blurRadius: 10, offset: const Offset(0, 4))],
+      ),
+      padding: const EdgeInsets.all(16),
+      child: OrderLinkedSupportCasesSection(
+        firestore: orderProvider.firestore,
+        orderId: order.id,
+        availableActors: _orderActors(order),
+      ),
+    );
+  }
+
+  Widget _buildOrderActorContextCasesCard(OrderModel order, OrderProvider orderProvider) {
+    final firestore = orderProvider.firestore;
+    final actors = _orderActors(order);
+    final sections = <Widget>[];
+    for (var i = 0; i < actors.length; i++) {
+      if (i > 0) sections.add(const SizedBox(height: 16));
       sections.add(ActorSupportCasesSection(
         firestore: firestore,
-        actorType: 'associate',
-        actorId: order.employeeUid!,
-        title: 'Sales Associate',
+        actorType: actors[i].type,
+        actorId: actors[i].id,
+        title: actors[i].label,
       ));
     }
     return Container(
