@@ -14,10 +14,15 @@ import '../widgets/actor_support_cases_section.dart' show createOrOpenCaseFromSo
 /// through updateRiderIncident. There is no push to admins yet — the team
 /// sees a report when this screen is open, so "New" is shown loudly.
 class RiderIncidentsScreen extends StatelessWidget {
-  const RiderIncidentsScreen({super.key});
+  const RiderIncidentsScreen({super.key, FirebaseFirestore? firestore}) : _firestoreOverride = firestore;
+
+  /// Injectable so a widget test never needs a real Firebase connection,
+  /// mirroring SupportCaseDetailScreen's own established pattern.
+  final FirebaseFirestore? _firestoreOverride;
 
   @override
   Widget build(BuildContext context) {
+    final firestore = _firestoreOverride ?? FirebaseFirestore.instance;
     return DefaultTabController(
       length: 2,
       child: Scaffold(
@@ -27,17 +32,19 @@ class RiderIncidentsScreen extends StatelessWidget {
           // bodies); inside the primary app bar it was invisible.
           bottom: appBarTabs(context, const [Tab(text: 'Open'), Tab(text: 'Resolved')]),
         ),
-        body: const TabBarView(children: [_IncidentList(open: true), _IncidentList(open: false)]),
+        body: TabBarView(children: [
+          _IncidentList(open: true, firestore: firestore),
+          _IncidentList(open: false, firestore: firestore),
+        ]),
       ),
     );
   }
 }
 
-final FirebaseFirestore _db = FirebaseFirestore.instance;
-
 class _IncidentList extends StatefulWidget {
-  const _IncidentList({required this.open});
+  const _IncidentList({required this.open, required this.firestore});
   final bool open;
+  final FirebaseFirestore firestore;
   @override
   State<_IncidentList> createState() => _IncidentListState();
 }
@@ -46,8 +53,8 @@ class _IncidentListState extends State<_IncidentList> {
   // Created once (a stream built in build() resubscribes on every rebuild).
   // Index: rider_incidents status ASC, createdAt DESC.
   late final Stream<QuerySnapshot<Map<String, dynamic>>> _stream = (widget.open
-          ? _db.collection('rider_incidents').where('status', whereIn: openIncidentStatuses)
-          : _db.collection('rider_incidents').where('status', isEqualTo: 'resolved'))
+          ? widget.firestore.collection('rider_incidents').where('status', whereIn: openIncidentStatuses)
+          : widget.firestore.collection('rider_incidents').where('status', isEqualTo: 'resolved'))
       .orderBy('createdAt', descending: true)
       .limit(widget.open ? 200 : 50)
       .snapshots();
@@ -70,7 +77,7 @@ class _IncidentListState extends State<_IncidentList> {
           padding: const EdgeInsets.all(16),
           itemCount: docs.length,
           separatorBuilder: (_, __) => const SizedBox(height: 12),
-          itemBuilder: (_, i) => _IncidentCard(id: docs[i].id, data: docs[i].data()),
+          itemBuilder: (_, i) => _IncidentCard(id: docs[i].id, data: docs[i].data(), firestore: widget.firestore),
         );
       },
     );
@@ -90,9 +97,10 @@ String _who(Object? uid) {
 }
 
 class _IncidentCard extends StatefulWidget {
-  const _IncidentCard({required this.id, required this.data});
+  const _IncidentCard({required this.id, required this.data, required this.firestore});
   final String id;
   final Map<String, dynamic> data;
+  final FirebaseFirestore firestore;
   @override
   State<_IncidentCard> createState() => _IncidentCardState();
 }
@@ -103,7 +111,7 @@ class _IncidentCardState extends State<_IncidentCard> {
   late Stream<DocumentSnapshot<Map<String, dynamic>>> _rider = _listen();
 
   Stream<DocumentSnapshot<Map<String, dynamic>>> _listen() =>
-      _db.collection('delivery_partners').doc((widget.data['riderId'] ?? '').toString()).snapshots();
+      widget.firestore.collection('delivery_partners').doc((widget.data['riderId'] ?? '').toString()).snapshots();
 
   @override
   void didUpdateWidget(_IncidentCard old) {

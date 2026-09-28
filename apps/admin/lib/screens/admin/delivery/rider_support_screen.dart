@@ -28,10 +28,15 @@ String _mapToSupportCategory(String? ticketCategory) => switch (ticketCategory) 
     };
 
 class RiderSupportScreen extends StatelessWidget {
-  const RiderSupportScreen({super.key});
+  const RiderSupportScreen({super.key, FirebaseFirestore? firestore}) : _firestoreOverride = firestore;
+
+  /// Injectable so a widget test never needs a real Firebase connection,
+  /// mirroring SupportCaseDetailScreen's own established pattern.
+  final FirebaseFirestore? _firestoreOverride;
 
   @override
   Widget build(BuildContext context) {
+    final firestore = _firestoreOverride ?? FirebaseFirestore.instance;
     return DefaultTabController(
       length: 2,
       child: Scaffold(
@@ -39,13 +44,14 @@ class RiderSupportScreen extends StatelessWidget {
           title: const Text('Rider Support'),
           bottom: appBarTabs(context, const [Tab(text: 'Open'), Tab(text: 'Closed')]),
         ),
-        body: const TabBarView(children: [_TicketList(open: true), _TicketList(open: false)]),
+        body: TabBarView(children: [
+          _TicketList(open: true, firestore: firestore),
+          _TicketList(open: false, firestore: firestore),
+        ]),
       ),
     );
   }
 }
-
-final FirebaseFirestore _db = FirebaseFirestore.instance;
 
 String _categoryLabel(String? category) => switch (category) {
       'delivery_issue' => 'Delivery issue',
@@ -70,8 +76,9 @@ String _supportRefusal(String code, String? reason) => switch (reason) {
     };
 
 class _TicketList extends StatefulWidget {
-  const _TicketList({required this.open});
+  const _TicketList({required this.open, required this.firestore});
   final bool open;
+  final FirebaseFirestore firestore;
   @override
   State<_TicketList> createState() => _TicketListState();
 }
@@ -79,8 +86,8 @@ class _TicketList extends StatefulWidget {
 class _TicketListState extends State<_TicketList> {
   // Index: rider_support_tickets status ASC, createdAt DESC.
   late final Stream<QuerySnapshot<Map<String, dynamic>>> _stream = (widget.open
-          ? _db.collection('rider_support_tickets').where('status', whereIn: const ['submitted', 'seen'])
-          : _db.collection('rider_support_tickets').where('status', isEqualTo: 'closed'))
+          ? widget.firestore.collection('rider_support_tickets').where('status', whereIn: const ['submitted', 'seen'])
+          : widget.firestore.collection('rider_support_tickets').where('status', isEqualTo: 'closed'))
       .orderBy('createdAt', descending: true)
       .limit(widget.open ? 200 : 50)
       .snapshots();
@@ -103,7 +110,7 @@ class _TicketListState extends State<_TicketList> {
           padding: const EdgeInsets.all(16),
           itemCount: docs.length,
           separatorBuilder: (_, __) => const SizedBox(height: 12),
-          itemBuilder: (_, i) => _TicketCard(id: docs[i].id, data: docs[i].data()),
+          itemBuilder: (_, i) => _TicketCard(id: docs[i].id, data: docs[i].data(), firestore: widget.firestore),
         );
       },
     );
@@ -123,9 +130,10 @@ String _who(Object? uid) {
 }
 
 class _TicketCard extends StatefulWidget {
-  const _TicketCard({required this.id, required this.data});
+  const _TicketCard({required this.id, required this.data, required this.firestore});
   final String id;
   final Map<String, dynamic> data;
+  final FirebaseFirestore firestore;
   @override
   State<_TicketCard> createState() => _TicketCardState();
 }
@@ -135,7 +143,7 @@ class _TicketCardState extends State<_TicketCard> {
   late Stream<DocumentSnapshot<Map<String, dynamic>>> _rider = _listen();
 
   Stream<DocumentSnapshot<Map<String, dynamic>>> _listen() =>
-      _db.collection('delivery_partners').doc((widget.data['riderId'] ?? '').toString()).snapshots();
+      widget.firestore.collection('delivery_partners').doc((widget.data['riderId'] ?? '').toString()).snapshots();
 
   @override
   void didUpdateWidget(_TicketCard old) {
