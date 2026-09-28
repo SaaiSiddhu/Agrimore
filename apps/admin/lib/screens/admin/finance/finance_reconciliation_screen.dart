@@ -27,8 +27,19 @@ class _FinanceReconciliationScreenState extends State<FinanceReconciliationScree
         'withdrawal_amount_mismatch' => 'Withdrawal amount does not match its payouts',
         'missing_destination_snapshot' => 'No destination on file at all',
         'payout_status_drift' => 'A payout drifted status outside its withdrawal',
+        'malformed_amount' => 'A payout row has no valid amount',
         _ => kind,
       };
+
+  static String _coverageLine(String label, Map<String, dynamic>? c) {
+    if (c == null) return '$label: not scanned';
+    final inspected = c['inspected'] ?? 0;
+    final statuses = ((c['statusesCovered'] as List?) ?? const []).join('/');
+    final total = c['totalInStatuses'];
+    final truncated = c['truncated'] == true;
+    final totalText = total == null ? '' : (truncated ? ' of $total — more exist, not all inspected' : ' of $total');
+    return '$label: $inspected$totalText ($statuses)';
+  }
 
   Future<Map<String, dynamic>> _runScan() async {
     final result = await FirebaseFunctions.instance.httpsCallable('financeReconciliationScan').call<Map<String, dynamic>>();
@@ -76,7 +87,9 @@ class _FinanceReconciliationScreenState extends State<FinanceReconciliationScree
           }
           final data = snap.data!;
           final findings = (data['findings'] as List? ?? const []).cast<Map<String, dynamic>>();
-          final scanned = (data['scanned'] as Map?)?.cast<String, dynamic>() ?? const {};
+          final coverage = (data['coverage'] as Map?)?.cast<String, dynamic>() ?? const {};
+          final incomplete = data['incomplete'] == true;
+          final incompleteReasons = (data['incompleteReasons'] as List? ?? const []).cast<String>();
           final observedAt = data['observedAt'] is num ? DateTime.fromMillisecondsSinceEpoch((data['observedAt'] as num).toInt()) : null;
           final visible = _actorFilter == null ? findings : findings.where((f) => f['actorType'] == _actorFilter).toList();
 
@@ -86,17 +99,38 @@ class _FinanceReconciliationScreenState extends State<FinanceReconciliationScree
               child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
                 Text(
                   'Read-only — no action here changes anything. Follow a finding\'s record id to investigate '
-                  'or act elsewhere. A finding reflects what was true at the moment of this scan, not necessarily now.',
+                  'or act elsewhere. A finding reflects what was true at the moment of this scan, not necessarily now, '
+                  'and only within the scope described below — not a whole-platform guarantee.',
                   style: TextStyle(fontSize: 12, color: Colors.grey.shade700),
                 ),
                 if (observedAt != null)
                   Padding(
                     padding: const EdgeInsets.only(top: 4),
                     child: Text(
-                      'Scanned ${observedAt.toLocal()} · seller withdrawals: ${scanned['sellerWithdrawals'] ?? 0} · '
-                      'paid rider statements: ${scanned['riderPayouts'] ?? 0} · paid associate payouts: ${scanned['employeePayouts'] ?? 0}',
+                      'Last checked ${observedAt.toLocal()}\n'
+                      '${_coverageLine('Seller withdrawals', coverage['sellerWithdrawals'] as Map<String, dynamic>?)}\n'
+                      '${_coverageLine('Paid rider statements', coverage['riderPayouts'] as Map<String, dynamic>?)}\n'
+                      '${_coverageLine('Paid associate payouts', coverage['employeePayouts'] as Map<String, dynamic>?)}',
                       style: const TextStyle(fontSize: 11, color: Colors.grey),
                     ),
+                  ),
+                if (incomplete)
+                  Container(
+                    margin: const EdgeInsets.only(top: 8),
+                    padding: const EdgeInsets.all(10),
+                    decoration: BoxDecoration(color: Colors.orange.shade50, borderRadius: BorderRadius.circular(8)),
+                    child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
+                      Row(children: [
+                        Icon(Icons.warning_amber_rounded, size: 16, color: Colors.orange.shade800),
+                        const SizedBox(width: 6),
+                        Text('This scan did not finish', style: TextStyle(fontWeight: FontWeight.w700, fontSize: 12, color: Colors.orange.shade900)),
+                      ]),
+                      for (final r in incompleteReasons)
+                        Padding(
+                          padding: const EdgeInsets.only(top: 4),
+                          child: Text(r, style: TextStyle(fontSize: 11, color: Colors.orange.shade900)),
+                        ),
+                    ]),
                   ),
                 const SizedBox(height: 8),
                 Wrap(spacing: 8, children: [
@@ -113,10 +147,16 @@ class _FinanceReconciliationScreenState extends State<FinanceReconciliationScree
                       child: Padding(
                         padding: const EdgeInsets.all(32),
                         child: Column(mainAxisSize: MainAxisSize.min, children: [
-                          const Icon(Icons.check_circle_outline, size: 48, color: Colors.green),
+                          Icon(incomplete ? Icons.warning_amber_rounded : Icons.check_circle_outline,
+                              size: 48, color: incomplete ? Colors.orange : Colors.green),
                           const SizedBox(height: 12),
-                          Text(findings.isEmpty ? 'No findings' : 'No findings for this filter',
-                              style: const TextStyle(fontWeight: FontWeight.w700, fontSize: 16)),
+                          Text(
+                            findings.isEmpty
+                                ? (incomplete ? 'No findings in the scope this scan actually covered' : 'No findings')
+                                : 'No findings for this filter',
+                            textAlign: TextAlign.center,
+                            style: const TextStyle(fontWeight: FontWeight.w700, fontSize: 16),
+                          ),
                         ]),
                       ),
                     )
