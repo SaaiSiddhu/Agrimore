@@ -1,4 +1,4 @@
-// PHASE ADMR-80 — finance reconciliation scan
+// PHASE ADMR-80, hardened ADMR-82 — finance reconciliation scan
 // (functions/src/admin/financeReconciliation.ts) on the Firestore emulator.
 //
 // Each scenario seeds ONE specific bad state directly (Admin SDK, bypassing
@@ -18,6 +18,17 @@
 //  r6 a paid rider statement missing its payment reference
 //  r7 a paid employee payout missing its payment reference
 //  r8 a fully clean, ordinary paid withdrawal produces ZERO findings
+//  r9 (ADMR-82) a payout row with no valid numeric amount is its own
+//     malformed_amount finding, excluded from its withdrawal's own sum
+//     check rather than silently defaulted to zero
+//  r10 (ADMR-82) coverage is honest: inspected count, statuses covered and
+//     totalInStatuses reflect what was ACTUALLY scanned, never a whole-
+//     collection count regardless of status
+//  r11 (ADMR-82) a tiny injected child-read budget makes the scan report
+//     incomplete:true with a clear reason, rather than silently continuing
+//  r12 (ADMR-82) isCandidateStillReal — the pure revalidation check itself:
+//     a genuine, persistent mismatch stays real; a candidate whose status
+//     changed since the first read is correctly recognized as stale
 // Run with: firebase emulators:exec --only firestore "node scripts/phaseADMR80_finance_reconciliation_test.js"
 process.env.FIRESTORE_EMULATOR_HOST = process.env.FIRESTORE_EMULATOR_HOST || "127.0.0.1:8080";
 const PROJECT = process.env.GCLOUD_PROJECT || "demo-admr80-reconciliation";
@@ -26,7 +37,7 @@ const admin = require("firebase-admin");
 if (admin.apps.length === 0) admin.initializeApp({ projectId: PROJECT });
 const db = admin.firestore();
 const { Timestamp } = require("firebase-admin/firestore");
-const { financeReconciliationScanCore } = require("../lib/admin/financeReconciliation");
+const { financeReconciliationScanCore, isCandidateStillReal } = require("../lib/admin/financeReconciliation");
 
 const results = [];
 const record = (label, pass, detail) => { results.push(pass); console.log(`${pass ? "PASSED" : "FAILED"} — ${label}${pass ? "" : ` :: ${detail}`}`); };
@@ -90,7 +101,23 @@ async function main() {
     createdAt: Timestamp.fromMillis(NOW), paidAt: Timestamp.fromMillis(NOW),
   });
 
+  // r9 — a payout row with no valid numeric amount at all
+  await db.doc("seller_payouts/r9-p1").set({ sellerId: "r9s", status: "requested", withdrawalId: "r9w" }); // no netAmount/amount
+  await db.doc("seller_withdrawals/r9w").set({
+    sellerId: "r9s", status: "requested", amountPaise: 10000, payoutIds: ["r9-p1"],
+    destination: DEST, createdAt: Timestamp.fromMillis(NOW),
+  });
+
   const result = await financeReconciliationScanCore(db, NOW + 1000);
+
+  // r11 — a separate scan with a tiny injected budget (this withdrawal alone exceeds it)
+  await db.doc("seller_payouts/r11-p1").set({ sellerId: "r11s", netAmount: 10, status: "requested", withdrawalId: "r11w" });
+  await db.doc("seller_payouts/r11-p2").set({ sellerId: "r11s", netAmount: 10, status: "requested", withdrawalId: "r11w" });
+  await db.doc("seller_withdrawals/r11w").set({
+    sellerId: "r11s", status: "requested", amountPaise: 2000, payoutIds: ["r11-p1", "r11-p2"],
+    destination: DEST, createdAt: Timestamp.fromMillis(NOW),
+  });
+  const budgetedResult = await financeReconciliationScanCore(db, NOW + 2000, 1);
   const byKindAndId = (kind, id) => result.findings.filter((f) => f.kind === kind && f.recordId === id);
 
   record("r1_paid_withdrawal_with_unpaid_payout_row", byKindAndId("withdrawal_payout_status_mismatch", "r1w").length === 1,
@@ -111,8 +138,36 @@ async function main() {
     JSON.stringify(result.findings.filter((f) => f.actorType === "employee")));
   const r8Findings = result.findings.filter((f) => f.recordId === "r8w" || f.recordId === "r8-p1");
   record("r8_clean_withdrawal_produces_zero_findings", r8Findings.length === 0, JSON.stringify(r8Findings));
-  record("scan_metadata_present", typeof result.observedAt === "number" && typeof result.scanned.sellerWithdrawals === "number",
-    JSON.stringify(result.scanned));
+
+  // r9
+  const malformed = result.findings.filter((f) => f.kind === "malformed_amount" && f.recordId === "r9-p1");
+  const r9AmountMismatch = byKindAndId("withdrawal_amount_mismatch", "r9w");
+  record("r9_malformed_payout_amount_is_its_own_finding_not_silent_zero",
+    malformed.length === 1 && r9AmountMismatch.length === 0,
+    JSON.stringify({ malformed, r9AmountMismatch }));
+
+  // r10 — coverage honesty
+  const cov = result.coverage.sellerWithdrawals;
+  record("r10_coverage_is_honest_not_a_whole_collection_count",
+    cov.statusesCovered.includes("paid") && cov.statusesCovered.includes("requested") &&
+      cov.limit === 200 && cov.inspected >= 7 && cov.totalInStatuses >= cov.inspected && typeof cov.truncated === "boolean",
+    JSON.stringify(cov));
+  record("r10b_result_has_no_stale_scanned_field", result.scanned === undefined, JSON.stringify({ hasScanned: "scanned" in result }));
+
+  // r11 — budget exhaustion
+  record("r11_tiny_budget_marks_scan_incomplete_with_reason",
+    budgetedResult.incomplete === true && budgetedResult.incompleteReasons.length > 0 &&
+      budgetedResult.incompleteReasons[0].includes("Child-read budget"),
+    JSON.stringify(budgetedResult.incompleteReasons));
+  record("r11b_normal_unbudgeted_scan_is_complete", result.incomplete === false, JSON.stringify({ incomplete: result.incomplete }));
+
+  // r12 — isCandidateStillReal, the pure revalidation check
+  const original = { status: "paid", paymentReference: "UTR-X", amountPaise: 5000 };
+  record("r12a_unchanged_state_is_still_real", isCandidateStillReal(original, { status: "paid", paymentReference: "UTR-X", amountPaise: 5000 }) === true, "");
+  record("r12b_status_changed_since_is_not_real", isCandidateStillReal(original, { status: "rejected", paymentReference: "UTR-X", amountPaise: 5000 }) === false, "");
+  record("r12c_reference_changed_since_is_not_real", isCandidateStillReal(original, { status: "paid", paymentReference: "UTR-Y", amountPaise: 5000 }) === false, "");
+  record("r12d_amount_changed_since_is_not_real", isCandidateStillReal(original, { status: "paid", paymentReference: "UTR-X", amountPaise: 6000 }) === false, "");
+  record("r12e_document_deleted_since_is_not_real", isCandidateStillReal(original, undefined) === false, "");
 
   const failed = results.filter((x) => !x).length;
   console.log(`\n${results.length - failed}/${results.length} passed`);
