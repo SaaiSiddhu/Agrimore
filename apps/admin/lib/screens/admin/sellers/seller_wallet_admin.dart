@@ -29,6 +29,7 @@ String sellerWalletRefusal(String code, String? reason) => switch (reason) {
       'bad_reference' => 'Enter the UTR / payment reference (4–64 characters).',
       'bad_method' => 'Choose bank or UPI.',
       'method_mismatch' => 'This withdrawal was requested for a different payment method. Refresh and try again.',
+      'legacy_destination_unresolved' => 'This request predates full destination records and cannot be paid from here — confirm the account with the seller or owner first.',
       'reason_required' => 'Give a reason (3–200 characters) — the seller sees it.',
       'not_pending' => 'This request has already been reviewed.',
       'not_found' => 'Not found — it may have been removed.',
