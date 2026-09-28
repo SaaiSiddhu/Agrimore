@@ -27,22 +27,47 @@ typedef HistoryPage = ({List<OrderModel> items, Object? cursor, bool hasMore});
 /// distinguished them; only the filter itself was coarser than the data.
 enum HistoryFilter { all, delivered, cancelled, returned }
 
-/// DLVH1: a preset lower bound on `createdAt`, applied in addition to
-/// [HistoryFilter]. Presets only (no custom range) for this phase.
-enum HistoryDateRange { allTime, last7Days, last30Days }
+/// DLVH1/DLVH11: a preset `createdAt` window, applied in addition to
+/// [HistoryFilter]. Week-aligned per the canonical mockup, replacing the
+/// original rolling 7/30-day presets (which no reference ever asked for and
+/// did not match the rider's own weekly statement boundary). Custom (a
+/// date-range picker) is a separate, deliberately deferred feature.
+enum HistoryDateRange { allTime, thisWeek, lastWeek }
 
-extension HistoryDateRangeSince on HistoryDateRange {
-  /// The cutoff for this preset, relative to [now]; null for "all time".
-  DateTime? since(DateTime now) => switch (this) {
-        HistoryDateRange.allTime => null,
-        HistoryDateRange.last7Days => now.subtract(const Duration(days: 7)),
-        HistoryDateRange.last30Days => now.subtract(const Duration(days: 30)),
-      };
+/// DLVH11: mirrors `functions/src/delivery/riderPay.ts`'s own
+/// `statementCutoff` EXACTLY -- statements (and so "this/last week") are cut
+/// every Monday 00:00 IST, regardless of the device's own local timezone.
+/// The rider's weekly statement and the history filter must never disagree
+/// about where one week ends and the next begins.
+const _istOffset = Duration(hours: 5, minutes: 30);
+
+/// The most recent Monday 00:00 IST at or before [instant] -- shift forward
+/// by the IST offset, read the wall-clock calendar fields via UTC getters
+/// (avoiding any dependency on a timezone database), then shift back.
+DateTime mondayIstMidnightAtOrBefore(DateTime instant) {
+  final shifted = instant.toUtc().add(_istOffset);
+  final sinceMonday = (shifted.weekday - DateTime.monday) % 7; // Mon=0 .. Sun=6
+  final mondayShiftedMidnight = DateTime.utc(shifted.year, shifted.month, shifted.day).subtract(Duration(days: sinceMonday));
+  return mondayShiftedMidnight.subtract(_istOffset);
+}
+
+extension HistoryDateRangeBounds on HistoryDateRange {
+  /// The `createdAt` window for this preset, relative to [now]. `until` is
+  /// null for an open-ended (still-ongoing) window; both are null for "all
+  /// time".
+  ({DateTime? since, DateTime? until}) boundsAt(DateTime now) {
+    final thisMonday = mondayIstMidnightAtOrBefore(now);
+    return switch (this) {
+      HistoryDateRange.allTime => (since: null, until: null),
+      HistoryDateRange.thisWeek => (since: thisMonday, until: null),
+      HistoryDateRange.lastWeek => (since: thisMonday.subtract(const Duration(days: 7)), until: thisMonday),
+    };
+  }
 }
 
 /// What to ask the server for: a status bucket and an optional `createdAt`
-/// cutoff, combined.
-typedef HistoryQuery = ({HistoryFilter filter, DateTime? since});
+/// window, combined.
+typedef HistoryQuery = ({HistoryFilter filter, DateTime? since, DateTime? until});
 
 // Terminal order statuses as they may be stored (Firestore `in` is
 // case-sensitive) — the spellings DeliveryTaskStatus.fromOrderStatus reads.
@@ -85,11 +110,11 @@ bool historyMatches(OrderModel o, HistoryFilter f) {
 /// Fetches a page of [riderId]'s orders under [query] after [cursor] (null = first page).
 typedef HistoryFetch = Future<HistoryPage> Function(String riderId, HistoryQuery query, Object? cursor, int size);
 
-/// The [deliveryPartnerId] + optional status + optional `createdAt` cutoff
+/// The [deliveryPartnerId] + optional status + optional `createdAt` window
 /// filter `firestoreHistoryPage` and `firestoreHistoryCounts` both need,
 /// shared so the count queries can never drift from what the list actually
 /// fetches.
-Filter _historyWhere(String riderId, HistoryFilter filter, DateTime? since) {
+Filter _historyWhere(String riderId, HistoryFilter filter, DateTime? since, DateTime? until) {
   Filter where = Filter('deliveryPartnerId', isEqualTo: riderId);
   final statusValues = switch (filter) {
     HistoryFilter.all => null,
@@ -98,9 +123,10 @@ Filter _historyWhere(String riderId, HistoryFilter filter, DateTime? since) {
     HistoryFilter.returned => _returnedStored,
   };
   // Indexes: orders (deliveryPartnerId, orderStatus, createdAt desc) and
-  // (deliveryPartnerId, status, createdAt desc). A `createdAt` lower bound
-  // needs no separate index: it is a range filter on the same field the
-  // query already orders by.
+  // (deliveryPartnerId, status, createdAt desc). A `createdAt` lower AND
+  // upper bound together still need no separate index: Firestore treats a
+  // compound range on ONE field (however many-sided) as the same single
+  // range dimension the query already orders by.
   if (statusValues != null) {
     where = Filter.and(
       where,
@@ -110,13 +136,16 @@ Filter _historyWhere(String riderId, HistoryFilter filter, DateTime? since) {
   if (since != null) {
     where = Filter.and(where, Filter('createdAt', isGreaterThanOrEqualTo: Timestamp.fromDate(since)));
   }
+  if (until != null) {
+    where = Filter.and(where, Filter('createdAt', isLessThan: Timestamp.fromDate(until)));
+  }
   return where;
 }
 
 Future<HistoryPage> firestoreHistoryPage(String riderId, HistoryQuery query, Object? cursor, int size) async {
   Query<Map<String, dynamic>> q = FirebaseFirestore.instance
       .collection('orders')
-      .where(_historyWhere(riderId, query.filter, query.since))
+      .where(_historyWhere(riderId, query.filter, query.since, query.until))
       .orderBy('createdAt', descending: true);
   if (cursor is DocumentSnapshot) q = q.startAfterDocument(cursor);
   // One extra row tells whether another page exists.
@@ -131,19 +160,20 @@ Future<HistoryPage> firestoreHistoryPage(String riderId, HistoryQuery query, Obj
 }
 
 /// DLVH7: how many of [riderId]'s orders fall under each status, scoped by
-/// the same `createdAt` cutoff the list itself uses -- one count per bucket,
+/// the same `createdAt` window the list itself uses -- one count per bucket,
 /// shown together regardless of which chip is selected (the mockup's own
 /// panel always shows all four side by side).
 typedef HistoryCounts = ({int all, int delivered, int cancelled, int returned});
 
-/// Loads [HistoryCounts] for [riderId] as of [since] (null = all time).
-typedef CountsFetch = Future<HistoryCounts> Function(String riderId, DateTime? since);
+/// Loads [HistoryCounts] for [riderId] within [since]..[until] (either or
+/// both null for an open/all-time window).
+typedef CountsFetch = Future<HistoryCounts> Function(String riderId, DateTime? since, DateTime? until);
 
-Future<HistoryCounts> firestoreHistoryCounts(String riderId, DateTime? since) async {
+Future<HistoryCounts> firestoreHistoryCounts(String riderId, DateTime? since, DateTime? until) async {
   Future<int> count(HistoryFilter f) async {
     final agg = await FirebaseFirestore.instance
         .collection('orders')
-        .where(_historyWhere(riderId, f, since))
+        .where(_historyWhere(riderId, f, since, until))
         .count()
         .get();
     return agg.count ?? 0;
@@ -196,6 +226,7 @@ class RiderHistory extends ChangeNotifier {
   HistoryFilter _filter = HistoryFilter.all;
   HistoryDateRange _dateRange = HistoryDateRange.allTime;
   DateTime? _since;
+  DateTime? _until;
   int _generation = 0;
   final List<OrderModel> _items = [];
   Object? _cursor;
@@ -301,15 +332,15 @@ class RiderHistory extends ChangeNotifier {
     notifyListeners();
   }
 
-  /// Recomputes [counts] for the currently-bound rider and [_since]. Errors
-  /// clear [counts] to unavailable rather than showing a stale number.
+  /// Recomputes [counts] for the currently-bound rider and [_since]/[_until].
+  /// Errors clear [counts] to unavailable rather than showing a stale number.
   Future<void> _loadCounts() async {
     final riderId = _riderId;
     if (riderId == null) return;
     final gen = _generation;
     HistoryCounts? result;
     try {
-      result = await _countsFetch(riderId, _since);
+      result = await _countsFetch(riderId, _since, _until);
     } catch (e) {
       debugPrint('History counts failed: $e');
       result = null;
@@ -326,13 +357,16 @@ class RiderHistory extends ChangeNotifier {
     return refresh();
   }
 
-  /// Shows [r] from its first page. The cutoff is computed once here (not
+  /// Shows [r] from its first page. Both bounds are computed once here (not
   /// re-derived from `DateTime.now()` on every page) so a session that
-  /// crosses midnight mid-scroll keeps a stable window.
+  /// crosses midnight -- or the Monday IST cutoff -- mid-scroll keeps a
+  /// stable window.
   Future<void> setDateRange(HistoryDateRange r) {
     if (r == _dateRange) return Future.value();
     _dateRange = r;
-    _since = r.since(DateTime.now());
+    final bounds = r.boundsAt(DateTime.now());
+    _since = bounds.since;
+    _until = bounds.until;
     _countsStale = true;
     return refresh();
   }
@@ -343,6 +377,7 @@ class RiderHistory extends ChangeNotifier {
     _filter = HistoryFilter.all;
     _dateRange = HistoryDateRange.allTime;
     _since = null;
+    _until = null;
     _countsStale = true;
     return refresh();
   }
@@ -413,7 +448,7 @@ class RiderHistory extends ChangeNotifier {
       unawaited(_loadCounts());
     }
     try {
-      final page = await _fetch(riderId, (filter: _filter, since: _since), _cursor, pageSize);
+      final page = await _fetch(riderId, (filter: _filter, since: _since, until: _until), _cursor, pageSize);
       if (gen != _generation) return; // another session since
       final seen = _items.map((o) => o.id).toSet();
       _items.addAll(page.items.where((o) => !seen.contains(o.id)));

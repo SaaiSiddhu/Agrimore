@@ -1761,13 +1761,13 @@
   "@historyRangeAllTime": {
     "description": "History date-range filter: no cutoff"
   },
-  "historyRangeLast7Days": "Last 7 days",
-  "@historyRangeLast7Days": {
-    "description": "History date-range filter: the last week"
+  "historyRangeThisWeek": "This week",
+  "@historyRangeThisWeek": {
+    "description": "History date-range filter: from Monday 00:00 IST (this week's own statement cutoff) to now"
   },
-  "historyRangeLast30Days": "Last 30 days",
-  "@historyRangeLast30Days": {
-    "description": "History date-range filter: the last month"
+  "historyRangeLastWeek": "Last week",
+  "@historyRangeLastWeek": {
+    "description": "History date-range filter: the full previous Monday-to-Sunday IST week"
   },
   "historyClearFilters": "Clear filters",
   "@historyClearFilters": {

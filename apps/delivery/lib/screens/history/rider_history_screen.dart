@@ -353,8 +353,8 @@ class _FiltersState extends State<_Filters> {
     };
     final rangeLabels = {
       HistoryDateRange.allTime: l10n.historyRangeAllTime,
-      HistoryDateRange.last7Days: l10n.historyRangeLast7Days,
-      HistoryDateRange.last30Days: l10n.historyRangeLast30Days,
+      HistoryDateRange.thisWeek: l10n.historyRangeThisWeek,
+      HistoryDateRange.lastWeek: l10n.historyRangeLastWeek,
     };
     return Padding(
       padding: const EdgeInsets.fromLTRB(
