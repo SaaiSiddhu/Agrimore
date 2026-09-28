@@ -39,7 +39,7 @@
 // since ADMR-61's own c07/c08), and link/unlink's own idempotent
 // array-membership check already makes a same-link replay safe with no
 // new mechanism needed.
-import { onCall, HttpsError } from "firebase-functions/v2/https";
+import { onCall, onRequest, HttpsError } from "firebase-functions/v2/https";
 import * as admin from "firebase-admin";
 import { Timestamp, FieldValue } from "firebase-admin/firestore";
 import { resolveIsAdmin } from "./complianceGate";
@@ -933,4 +933,107 @@ export const attachSupportCaseEvidence = onCall({ minInstances: 0, memory: "256M
   );
   if (v.kind === "refused") refuse(v.reason);
   return { success: true, evidenceId: v.evidenceId, alreadyApplied: v.alreadyApplied };
+});
+
+// ── authenticated evidence delivery (ADMR-76) ──
+//
+// ADMR-72 switched viewing from getDownloadURL() to getData(), believing
+// getData() re-checked authorization on every call, closing the "persistent
+// bypass token" gap. CONFIRMED WRONG for Flutter WEB specifically by reading
+// the actual installed SDK source (firebase_storage_web-3.10.17's own
+// reference_web.dart): getData() there calls getMetadata() then
+// getDownloadURL() then does a PLAIN, UNAUTHENTICATED http.readBytes() GET
+// against that same public, token-bearing URL. Fixed with a genuine
+// authenticated backend delivery endpoint instead -- an onRequest HTTPS
+// function, not a Callable returning base64 (a full MAX_EVIDENCE_BYTES file
+// base64-encoded would be ~13.3MB of JSON, near or over practical Callable
+// limits). The client sends a FRESH ID token on every view (never cached);
+// this function verifies it WITH REVOCATION CHECKED
+// (verifyIdToken(token, true)) -- something a Storage download token can
+// never offer, since it carries no link to the issuing user's live auth
+// state at all -- then streams raw bytes, never base64.
+//
+// Also closes a gap ADMR-72 explicitly disclosed as future work: the live
+// object's generation is compared against the evidence record's OWN
+// recorded generation before ever streaming a byte. A mismatch (e.g. a
+// privileged Admin-SDK/console bypass, the one thing no client-side rule
+// can ever prevent) now produces a real, honest integrity-mismatch refusal
+// -- active, per-view tamper DETECTION, not merely tamper-evidence for a
+// hypothetical future audit.
+
+type LiveEvidenceObject = { generation: string; contentType: string; bytes: Buffer } | null;
+export type FetchLiveEvidenceObject = (storagePath: string) => Promise<LiveEvidenceObject>;
+
+export const fetchLiveEvidenceObject: FetchLiveEvidenceObject = async (storagePath) => {
+  const file = admin.storage().bucket().file(storagePath);
+  const [exists] = await file.exists();
+  if (!exists) return null;
+  const [meta] = await file.getMetadata();
+  const [bytes] = await file.download();
+  return {
+    generation: String(meta.generation ?? ""),
+    contentType: String(meta.contentType ?? "application/octet-stream"),
+    bytes,
+  };
+};
+
+export type ViewSupportCaseEvidenceVerdict =
+  | { kind: "ok"; contentType: string; originalFileName: string; bytes: Buffer }
+  | { kind: "refused"; status: number; reason: string };
+
+export async function viewSupportCaseEvidenceCore(
+  db: Db,
+  evidenceId: string,
+  fetchLive: FetchLiveEvidenceObject
+): Promise<ViewSupportCaseEvidenceVerdict> {
+  if (!evidenceId) return { kind: "refused", status: 400, reason: "bad_request" };
+  const doc = await db.collection("support_case_evidence").doc(evidenceId).get();
+  if (!doc.exists) return { kind: "refused", status: 404, reason: "not_found" };
+  const evidence = doc.data()!;
+  const live = await fetchLive(evidence.storagePath as string);
+  if (!live) return { kind: "refused", status: 410, reason: "object_missing" };
+  if (String(live.generation) !== String(evidence.generation)) {
+    return { kind: "refused", status: 409, reason: "integrity_mismatch" };
+  }
+  return {
+    kind: "ok",
+    contentType: (evidence.contentType as string) || live.contentType,
+    originalFileName: (evidence.originalFileName as string) || "evidence",
+    bytes: live.bytes,
+  };
+}
+
+export const viewSupportCaseEvidence = onRequest({ minInstances: 0, memory: "256MiB", cors: true }, async (req, res) => {
+  const authHeader = req.get("Authorization") || "";
+  const match = /^Bearer (.+)$/.exec(authHeader);
+  if (!match) {
+    res.status(401).json({ error: "missing_token" });
+    return;
+  }
+  let decoded;
+  try {
+    // checkRevoked=true: a demoted/deactivated admin's still-unexpired token
+    // is rejected live, not just at its own natural 1-hour expiry -- a
+    // property no Storage download token could ever offer.
+    decoded = await admin.auth().verifyIdToken(match[1], true);
+  } catch {
+    res.status(401).json({ error: "invalid_token" });
+    return;
+  }
+  const isAdmin = await resolveIsAdmin(admin.firestore(), decoded.uid, decoded.admin === true);
+  if (!isAdmin) {
+    res.status(403).json({ error: "not_admin" });
+    return;
+  }
+  const evidenceId = typeof req.query.evidenceId === "string" ? req.query.evidenceId.trim() : "";
+  const v = await viewSupportCaseEvidenceCore(admin.firestore(), evidenceId, fetchLiveEvidenceObject);
+  if (v.kind === "refused") {
+    res.status(v.status).json({ error: v.reason });
+    return;
+  }
+  res.set("Content-Type", v.contentType);
+  res.set("Content-Length", String(v.bytes.length));
+  res.set("Cache-Control", "private, no-store");
+  res.set("Content-Disposition", `inline; filename="${encodeURIComponent(v.originalFileName)}"`);
+  res.status(200).send(v.bytes);
 });

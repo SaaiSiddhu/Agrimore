@@ -80,24 +80,42 @@ void main() async {
       options: DefaultFirebaseOptions.currentPlatform,
     );
     debugPrint('✅ Firebase initialized');
-    // ADMR-75: opt-in only, see the constants above. Placed here — after
-    // Firebase.initializeApp, before anything else (including
-    // AppCheckService.activate() and any Provider construction that might
-    // grab a Firestore/Auth/Functions/Storage singleton) — so emulator
-    // config is guaranteed to be in effect before any real use.
-    if (_useFirebaseEmulator) {
+  } catch (e) {
+    debugPrint('❌ Firebase init error: $e');
+  }
+
+  // ADMR-75/76: opt-in only, see the constants above. Placed here — after
+  // Firebase.initializeApp, before anything else (including
+  // AppCheckService.activate() and any Provider construction that might
+  // grab a Firestore/Auth/Functions/Storage singleton) — so emulator config
+  // is guaranteed to be in effect before any real use. Unlike every OTHER
+  // init step in this file (which logs and continues), a failure HERE is
+  // FATAL when emulator mode was explicitly requested: silently continuing
+  // would leave the app connected to REAL production Firebase while the
+  // operator believes they are safely testing locally -- exactly the
+  // failure mode the owner's own prompt names. A comment saying "never
+  // enable in release" is not enforcement; refusing to start is.
+  if (_useFirebaseEmulator) {
+    try {
       debugPrint(
           '🧪 USE_FIREBASE_EMULATOR=true — pointing Auth/Firestore/Functions/Storage at $_firebaseEmulatorHost');
       await FirebaseAuth.instance.useAuthEmulator(_firebaseEmulatorHost, _authEmulatorPort);
       FirebaseFirestore.instance.useFirestoreEmulator(_firebaseEmulatorHost, _firestoreEmulatorPort);
       FirebaseFunctions.instance.useFunctionsEmulator(_firebaseEmulatorHost, _functionsEmulatorPort);
       await FirebaseStorage.instance.useStorageEmulator(_firebaseEmulatorHost, _storageEmulatorPort);
+    } catch (e) {
+      debugPrint('🛑 FATAL: emulator wiring requested but failed, refusing to start: $e');
+      runApp(_EmulatorWiringFailedApp(error: e.toString()));
+      return;
     }
-    // Phase 17, Workstream 2: monitoring mode only — see
-    // AppCheckService's header comment. Never blocks startup.
+  }
+
+  // Phase 17, Workstream 2: monitoring mode only — see
+  // AppCheckService's header comment. Never blocks startup.
+  try {
     await AppCheckService.activate();
   } catch (e) {
-    debugPrint('❌ Firebase init error: $e');
+    debugPrint('⚠️ App Check init error: $e');
   }
 
   // Initialize Auth Persistence
@@ -172,9 +190,102 @@ void main() async {
         ChangeNotifierProvider(create: (_) => SellerProvider()),
         ChangeNotifierProvider(create: (_) => BenefitComplianceProvider()),
       ],
-      child: const AdminApp(),
+      // ADMR-76: a real, in-app, tool-independent visible indicator when
+      // emulator mode is active -- see _EmulatorModeBanner's own comment.
+      child: _useFirebaseEmulator ? const _EmulatorModeBanner(child: AdminApp()) : const AdminApp(),
     ),
   );
+}
+
+/// ADMR-76: shown INSTEAD of the real app when USE_FIREBASE_EMULATOR=true
+/// but wiring the emulator connections itself threw. Refusing to start is
+/// the enforcement; a "never enable in release" comment alone is not.
+class _EmulatorWiringFailedApp extends StatelessWidget {
+  const _EmulatorWiringFailedApp({required this.error});
+  final String error;
+
+  @override
+  Widget build(BuildContext context) {
+    return MaterialApp(
+      debugShowCheckedModeBanner: false,
+      home: Scaffold(
+        backgroundColor: Colors.red.shade900,
+        body: Center(
+          child: Padding(
+            padding: const EdgeInsets.all(24),
+            child: Column(
+              mainAxisSize: MainAxisSize.min,
+              children: [
+                const Icon(Icons.dangerous_rounded, color: Colors.white, size: 48),
+                const SizedBox(height: 16),
+                const Text(
+                  'Emulator configuration failed',
+                  style: TextStyle(color: Colors.white, fontSize: 20, fontWeight: FontWeight.bold),
+                  textAlign: TextAlign.center,
+                ),
+                const SizedBox(height: 8),
+                const Text(
+                  'USE_FIREBASE_EMULATOR was set but connecting to the local emulator failed. '
+                  'Refusing to start rather than risk silently running against production.',
+                  style: TextStyle(color: Colors.white70),
+                  textAlign: TextAlign.center,
+                ),
+                const SizedBox(height: 16),
+                Text(error, style: const TextStyle(color: Colors.white38, fontSize: 11), textAlign: TextAlign.center),
+              ],
+            ),
+          ),
+        ),
+      ),
+    );
+  }
+}
+
+/// ADMR-76: a real, in-app, tool-independent visible indicator. ADMR-75's
+/// own checklist entry mistakenly credited a "Running in emulator mode..."
+/// banner seen during a browser-driven check to this app's own emulator
+/// wiring -- a fresh grep across the whole source tree found zero matches
+/// for that text anywhere in this codebase. That banner was injected by the
+/// browser tooling used to view the page, NOT the app itself, so it would
+/// NOT appear on a real device or a different browser. This widget closes
+/// that gap for real: it renders from the app's OWN widget tree, so it
+/// appears identically on web, Android and iOS whenever emulator mode is
+/// genuinely active.
+class _EmulatorModeBanner extends StatelessWidget {
+  const _EmulatorModeBanner({required this.child});
+  final Widget child;
+
+  @override
+  Widget build(BuildContext context) {
+    return Directionality(
+      textDirection: TextDirection.ltr,
+      child: Stack(
+        children: [
+          child,
+          Positioned(
+            left: 0,
+            right: 0,
+            bottom: 0,
+            child: IgnorePointer(
+              child: SafeArea(
+                top: false,
+                child: Container(
+                  width: double.infinity,
+                  color: Colors.red.shade900,
+                  padding: const EdgeInsets.symmetric(vertical: 4),
+                  child: const Text(
+                    'TEST MODE — connected to local emulator, not production',
+                    textAlign: TextAlign.center,
+                    style: TextStyle(color: Colors.white, fontSize: 11, fontWeight: FontWeight.bold),
+                  ),
+                ),
+              ),
+            ),
+          ),
+        ],
+      ),
+    );
+  }
 }
 
 // ============================================
