@@ -55,6 +55,13 @@ const ORDER_ID = "dlvr2-order-1";
 // (consumed by the 4.2 reassignment scenarios), so this needs its own,
 // independent order rather than reusing or restoring theirs.
 const ORDER_ID_RELEASE = "dlvr2-order-release";
+// 4.4's own dedicated order: post-pickup, pre-delivered (out_for_delivery,
+// same shape ORDER_ID originally used before 4.2 consumed it), carrying the
+// LEGACY verification-code fallback field (confirmDelivery.ts:214-219 reads
+// orders/{id}/secrets/delivery first, else this field -- the legacy path is
+// simpler to fixture and is still a fully valid, still-supported path).
+const ORDER_ID_COMPLETE = "dlvr2-order-complete";
+const DELIVERY_CODE = "482913";
 const STORE = { lat: 9.9252, lng: 78.1198 };
 const HOME = { lat: 9.8982, lng: 78.1198 };
 
@@ -156,6 +163,42 @@ async function seed(outFile) {
     riderId: RIDER_A,
   });
 
+  // 4.4's own order: post-pickup, en route -- confirmDelivery only accepts
+  // an order that is not yet delivered/cancelled/etc (see its own
+  // statusIsIn checks), and onRiderDelivery only records an earning once
+  // taskStatusFromOrder(after) becomes 'delivered' -- out_for_delivery is
+  // the correct starting point, matching ORDER_ID's own original shape
+  // before 4.2 consumed it.
+  await db.doc(`orders/${ORDER_ID_COMPLETE}`).set({
+    userId: "dlvr2-customer",
+    sellerId: "dlvr2-seller",
+    orderNumber: "AGM-DLVR2-3",
+    total: 180,
+    paymentMethod: "online",
+    paymentStatus: "paid",
+    orderStatus: "out_for_delivery",
+    status: "out_for_delivery",
+    deliveryPartnerId: RIDER_A,
+    deliveryVerificationCode: DELIVERY_CODE,
+    items: [{ productName: "Bananas 1 dozen", quantity: 1, price: 180 }],
+    deliveryAddress: {
+      name: "Meenakshi Sundaram",
+      phone: "+919876543210",
+      addressLine1: "44, West Masi Street",
+      city: "Madurai",
+      zipcode: "625001",
+      latitude: HOME.lat,
+      longitude: HOME.lng,
+    },
+    createdAt: admin.firestore.Timestamp.now(),
+  });
+  await db.doc(`delivery_tasks/${ORDER_ID_COMPLETE}`).set({
+    orderId: ORDER_ID_COMPLETE,
+    pickup: STORE,
+    drop: HOME,
+    riderId: RIDER_A,
+  });
+
   // Custom claims mirror this codebase's own established rules-test shape
   // (phaseDLV4A_rules_test.js CLAIMS.delivery/.admin) -- delivery_partner:
   // true / admin: true are the exact claims firestore.rules' own
@@ -166,6 +209,7 @@ async function seed(outFile) {
 
   const out = {
     riderA: RIDER_A, riderB: RIDER_B, orderId: ORDER_ID, orderIdRelease: ORDER_ID_RELEASE,
+    orderIdComplete: ORDER_ID_COMPLETE, deliveryCode: DELIVERY_CODE,
     tokenA, tokenB, tokenAdmin, adminUid: ADMIN_UID, projectId: PROJECT_ID,
   };
   fs.writeFileSync(outFile, JSON.stringify(out, null, 2));

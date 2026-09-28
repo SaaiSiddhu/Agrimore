@@ -78,6 +78,24 @@ Future<FirebaseFirestore> _adminFirestore(String tokenAdmin) async {
   return adminFirestore;
 }
 
+/// Polls for a document a server-side trigger writes asynchronously AFTER
+/// the callable that caused it already returned (e.g. onRiderDelivery,
+/// which fires from a Firestore onUpdate trigger, not from confirmDelivery
+/// itself) -- bounded, so a genuine failure to appear fails fast rather
+/// than hanging the test's own timeout.
+Future<DocumentSnapshot<Map<String, dynamic>>> _waitForDoc(
+  DocumentReference<Map<String, dynamic>> ref, {
+  Duration timeout = const Duration(seconds: 8),
+}) async {
+  final deadline = DateTime.now().add(timeout);
+  while (DateTime.now().isBefore(deadline)) {
+    final snap = await ref.get();
+    if (snap.exists) return snap;
+    await Future<void>.delayed(const Duration(milliseconds: 200));
+  }
+  return ref.get();
+}
+
 void main() {
   IntegrationTestWidgetsFlutterBinding.ensureInitialized();
 
@@ -328,5 +346,123 @@ void main() {
         .where('status', isEqualTo: 'delivery_released')
         .get();
     expect(timeline.docs.length, 1, reason: 'exactly one release recorded, even after the retry above');
+  });
+
+  testWidgets('DLVR2 4.4: legitimate completion (real verification callable)', (tester) async {
+    final riderId = fixtures['riderA'] as String;
+    final orderId = fixtures['orderIdComplete'] as String;
+    final code = fixtures['deliveryCode'] as String;
+
+    await FirebaseAuth.instance.signInWithCustomToken(fixtures['tokenA'] as String);
+    expect(FirebaseAuth.instance.currentUser?.uid, riderId, reason: 'signed in via custom token, never the OTP UI');
+
+    final orderSnap = await FirebaseFirestore.instance.collection('orders').doc(orderId).get();
+    expect(orderSnap.data()?['orderStatus'], 'out_for_delivery',
+        reason: 'must start post-pickup, pre-delivered for the completion action to render');
+    final order = historyOrder(orderId, orderSnap.data()!);
+
+    final provider = DeliveryOrderProvider()..bind(riderId);
+    addTearDown(provider.dispose);
+
+    await tester.pumpWidget(MultiProvider(
+      providers: [
+        ChangeNotifierProvider<LocationProvider>(create: (_) => LocationProvider()),
+        ChangeNotifierProvider<DeliveryOrderProvider>.value(value: provider),
+      ],
+      child: MaterialApp(
+        theme: WorkspaceTheme.build(WorkspaceBrand.delivery, Brightness.light),
+        localizationsDelegates: AppLocalizations.localizationsDelegates,
+        supportedLocales: AppLocalizations.supportedLocales,
+        home: Builder(
+          builder: (context) => Scaffold(
+            body: Center(
+              child: ElevatedButton(
+                onPressed: () => Navigator.of(context).push(
+                  MaterialPageRoute<void>(builder: (_) => ActiveOrderScreen(order: order)),
+                ),
+                child: const Text('Open Order'),
+              ),
+            ),
+          ),
+        ),
+      ),
+    ));
+    await tester.pumpAndSettle();
+    await tester.tap(find.text('Open Order'));
+    await tester.pumpAndSettle(const Duration(seconds: 5));
+    expect(tester.takeException(), isNull);
+
+    await tester.ensureVisible(find.text('Complete delivery'));
+    await tester.pumpAndSettle();
+    await tester.tap(find.text('Complete delivery'));
+    await tester.pumpAndSettle();
+    expect(find.text('Verify delivery'), findsOneWidget, reason: 'a real verification sheet, not a silent completion');
+
+    await tester.enterText(find.byType(TextField), code);
+    await tester.pump();
+    await tester.ensureVisible(find.text('Verify & complete'));
+    await tester.tap(find.text('Verify & complete'));
+    await tester.pumpAndSettle(const Duration(seconds: 5));
+    expect(tester.takeException(), isNull, reason: 'the real confirmDelivery callable dispatch must not throw');
+
+    // A possible "you seem far from the customer" confirmation only if the
+    // test device's own (real or absent) location reads as far from the
+    // fixture's Madurai coordinates -- farTapQuestion returns null for a
+    // null/unavailable fix, so this is expected to be a no-op here, but
+    // handled rather than assumed away.
+    final continuePrompt = find.text('Continue');
+    if (continuePrompt.evaluate().isNotEmpty) {
+      await tester.tap(continuePrompt);
+      await tester.pumpAndSettle(const Duration(seconds: 5));
+    }
+
+    expect(find.text('Delivery complete'), findsOneWidget,
+        reason: 'the real celebration sheet after a genuine server-verified completion -- not claimed from a fake event');
+    await tester.tap(find.text('Back to dashboard'));
+    await tester.pumpAndSettle();
+    expect(tester.takeException(), isNull, reason: 'back navigation must not throw');
+    expect(find.text('Open Order'), findsOneWidget,
+        reason: 'cleanly popped back to the underlying screen -- _leavingByOwnAction suppresses any masked/removed scaffold');
+
+    // The REAL backend, via the real onCall callable -- confirmed by
+    // reading the order back directly.
+    final after = await FirebaseFirestore.instance.collection('orders').doc(orderId).get();
+    expect(after.data()?['orderStatus'], 'delivered');
+    expect(after.data()?['deliveryConfirmedBy'], riderId);
+
+    // onRiderDelivery is a SEPARATE Firestore trigger, not part of
+    // confirmDelivery's own transaction -- poll for it rather than assume
+    // it already landed the instant the callable returned.
+    final earningRef = FirebaseFirestore.instance.collection('rider_earnings').doc(orderId);
+    final earning = await _waitForDoc(earningRef);
+    expect(earning.exists, isTrue, reason: 'onRiderDelivery must have genuinely fired and recorded this delivery\'s pay');
+    expect(earning.data()?['riderId'], riderId);
+    final total = (earning.data()?['total'] as num).toDouble();
+    expect(total, greaterThan(0), reason: 'a real, nonzero computed rider payout, not a placeholder');
+    final firstCreatedAt = earning.data()?['createdAt'];
+
+    final accountRef = FirebaseFirestore.instance.collection('rider_accounts').doc(riderId);
+    final account = await accountRef.get();
+    expect(account.exists, isTrue);
+    final earningsUnsettled = (account.data()?['earningsUnsettled'] as num).toDouble();
+    expect(earningsUnsettled, greaterThanOrEqualTo(total), reason: 'the rider account balance reflects this earning');
+
+    // No duplicate earnings from a genuine retry -- the real callable's own
+    // idempotency (not a fake event, not a UI-timing guess): calling
+    // confirmDelivery again with the SAME code must report
+    // alreadyDelivered, and must not create a second earning or increment
+    // the balance again.
+    final retry = await FirebaseFunctions.instance.httpsCallable('confirmDelivery').call({
+      'orderId': orderId,
+      'code': code,
+    });
+    final retryData = retry.data as Map<Object?, Object?>;
+    expect(retryData['alreadyDelivered'], isTrue, reason: 'the real callable itself recognizes the already-delivered state');
+
+    final earningAfterRetry = await earningRef.get();
+    expect(earningAfterRetry.data()?['createdAt'], firstCreatedAt, reason: 'the SAME earning record, not a new one');
+    final accountAfterRetry = await accountRef.get();
+    expect((accountAfterRetry.data()?['earningsUnsettled'] as num).toDouble(), earningsUnsettled,
+        reason: 'the balance must not double-increment from the retry');
   });
 }
