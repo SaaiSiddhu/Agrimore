@@ -26,9 +26,26 @@
 //     collection count regardless of status
 //  r11 (ADMR-82) a tiny injected child-read budget makes the scan report
 //     incomplete:true with a clear reason, rather than silently continuing
-//  r12 (ADMR-82) isCandidateStillReal — the pure revalidation check itself:
-//     a genuine, persistent mismatch stays real; a candidate whose status
-//     changed since the first read is correctly recognized as stale
+//  r12 (ADMR-85) evaluateWithdrawal — the pure, from-scratch evaluation that
+//     replaced isCandidateStillReal: a bad state produces its finding; the
+//     SAME data with the bad field fixed produces none — this IS what
+//     "resolved since the first read" means, proven directly, no timing race
+//  r13 (ADMR-85) a seller_payouts row whose own withdrawalId/sellerId no
+//     longer points back at the withdrawal listing it — payout_ownership_mismatch
+//  r14 (ADMR-85) an ordinary persistent finding (r1's) carries confirmation:
+//     "confirmed" — the two-pass wiring must not silently drop real findings
+//  r15 (ADMR-85) a budget that covers the first pass but not the
+//     confirmation re-read marks that withdrawal's child-derived finding(s)
+//     confirmation:"unconfirmed", never drops them and never claims "confirmed"
+//  r16 (ADMR-85) cursor continuation: 3 paid withdrawals, pageLimit 2 —
+//     page 1 returns the 2 most recent + a cursor; page 2 (that cursor)
+//     returns exactly the 3rd, with no overlap and no gap
+//  r17 (ADMR-85) stable tie-break: 2 withdrawals sharing the exact same
+//     paidAt, pageLimit 1 — paging by cursor reaches both exactly once
+//  r18 (ADMR-85) recheckFindingCore: confirmed now, resolved after the
+//     underlying record is legitimately fixed; not_found for a vanished one
+//  r19 (ADMR-85) recheckFindingCore for a rider paid_missing_reference —
+//     same confirmed → resolved transition, the non-seller path
 // Run with: firebase emulators:exec --only firestore "node scripts/phaseADMR80_finance_reconciliation_test.js"
 process.env.FIRESTORE_EMULATOR_HOST = process.env.FIRESTORE_EMULATOR_HOST || "127.0.0.1:8080";
 const PROJECT = process.env.GCLOUD_PROJECT || "demo-admr80-reconciliation";
@@ -37,7 +54,7 @@ const admin = require("firebase-admin");
 if (admin.apps.length === 0) admin.initializeApp({ projectId: PROJECT });
 const db = admin.firestore();
 const { Timestamp } = require("firebase-admin/firestore");
-const { financeReconciliationScanCore, isCandidateStillReal } = require("../lib/admin/financeReconciliation");
+const { financeReconciliationScanCore, evaluateWithdrawal, recheckFindingCore, CHILD_READ_BUDGET } = require("../lib/admin/financeReconciliation");
 
 const results = [];
 const record = (label, pass, detail) => { results.push(pass); console.log(`${pass ? "PASSED" : "FAILED"} — ${label}${pass ? "" : ` :: ${detail}`}`); };
@@ -108,6 +125,15 @@ async function main() {
     destination: DEST, createdAt: Timestamp.fromMillis(NOW),
   });
 
+  // r13 (ADMR-85) — a payout row listed under r13w but its own withdrawalId
+  // points at a DIFFERENT withdrawal entirely (simulating a direct edit
+  // elsewhere, exactly the class of drift no prior check ever caught)
+  await db.doc("seller_payouts/r13-p1").set({ sellerId: "r13s", netAmount: 40, status: "requested", withdrawalId: "r13w-OTHER" });
+  await db.doc("seller_withdrawals/r13w").set({
+    sellerId: "r13s", status: "requested", amountPaise: 4000, payoutIds: ["r13-p1"],
+    destination: DEST, createdAt: Timestamp.fromMillis(NOW),
+  });
+
   const result = await financeReconciliationScanCore(db, NOW + 1000);
 
   // r11 — a separate scan with a tiny injected budget (this withdrawal alone exceeds it)
@@ -128,6 +154,13 @@ async function main() {
     JSON.stringify(byKindAndId("withdrawal_amount_mismatch", "r3w")));
   record("r4_missing_destination_snapshot", byKindAndId("missing_destination_snapshot", "r4w").length === 1,
     JSON.stringify(byKindAndId("missing_destination_snapshot", "r4w")));
+  // r4b (ADMR-85) — an empty payoutIds array must NOT also produce a spurious
+  // withdrawal_amount_mismatch (a real amountPaise compared against the sum
+  // of zero children always "mismatches" and means nothing) — r4w's only
+  // finding is the destination one asserted above, nothing else.
+  record("r4b_empty_payoutids_produces_no_spurious_amount_mismatch",
+    result.findings.filter((f) => f.recordId === "r4w").length === 1,
+    JSON.stringify(result.findings.filter((f) => f.recordId === "r4w")));
   record("r5_payout_status_drift_on_requested_withdrawal", byKindAndId("payout_status_drift", "r5w").length === 1,
     JSON.stringify(byKindAndId("payout_status_drift", "r5w")));
   record("r6_paid_rider_statement_missing_reference",
@@ -161,13 +194,143 @@ async function main() {
     JSON.stringify(budgetedResult.incompleteReasons));
   record("r11b_normal_unbudgeted_scan_is_complete", result.incomplete === false, JSON.stringify({ incomplete: result.incomplete }));
 
-  // r12 — isCandidateStillReal, the pure revalidation check
-  const original = { status: "paid", paymentReference: "UTR-X", amountPaise: 5000 };
-  record("r12a_unchanged_state_is_still_real", isCandidateStillReal(original, { status: "paid", paymentReference: "UTR-X", amountPaise: 5000 }) === true, "");
-  record("r12b_status_changed_since_is_not_real", isCandidateStillReal(original, { status: "rejected", paymentReference: "UTR-X", amountPaise: 5000 }) === false, "");
-  record("r12c_reference_changed_since_is_not_real", isCandidateStillReal(original, { status: "paid", paymentReference: "UTR-Y", amountPaise: 5000 }) === false, "");
-  record("r12d_amount_changed_since_is_not_real", isCandidateStillReal(original, { status: "paid", paymentReference: "UTR-X", amountPaise: 6000 }) === false, "");
-  record("r12e_document_deleted_since_is_not_real", isCandidateStillReal(original, undefined) === false, "");
+  // r12 — evaluateWithdrawal, the pure from-scratch evaluator that replaced
+  // isCandidateStillReal. Proves both detection AND what "resolved since the
+  // first read" means: the SAME withdrawal with the bad field fixed produces
+  // nothing, with no timing race needed to demonstrate it.
+  {
+    const badDest = { sellerId: "r12s", status: "requested", amountPaise: 1000 }; // no destination/destinationFull, no children
+    const fixedDest = { ...badDest, destination: DEST };
+    const badDestOut = evaluateWithdrawal("r12w", badDest, []);
+    record("r12a_missing_destination_detected_and_nothing_else",
+      badDestOut.length === 1 && badDestOut[0].kind === "missing_destination_snapshot", JSON.stringify(badDestOut));
+    record("r12b_fixed_destination_produces_nothing", evaluateWithdrawal("r12w", fixedDest, []).length === 0, JSON.stringify(evaluateWithdrawal("r12w", fixedDest, [])));
+
+    const fakeSnap = (id, data) => ({ id, data: () => data });
+    const badChild = [fakeSnap("r12-p1", { sellerId: "r12s", netAmount: 10, status: "requested", withdrawalId: "SOME-OTHER-WITHDRAWAL" })];
+    const fixedChild = [fakeSnap("r12-p1", { sellerId: "r12s", netAmount: 10, status: "requested", withdrawalId: "r12w" })];
+    const wData = { sellerId: "r12s", status: "requested", amountPaise: 1000, destination: DEST };
+    record("r12c_ownership_mismatch_detected", evaluateWithdrawal("r12w", wData, badChild).some((f) => f.kind === "payout_ownership_mismatch"), "");
+    record("r12d_fixed_ownership_produces_no_mismatch", !evaluateWithdrawal("r12w", wData, fixedChild).some((f) => f.kind === "payout_ownership_mismatch"), "");
+  }
+
+  // r13 — payout_ownership_mismatch, via the real scan
+  {
+    const f = result.findings.filter((x) => x.kind === "payout_ownership_mismatch" && x.recordId === "r13-p1");
+    record("r13_payout_ownership_mismatch_detected",
+      f.length === 1 && f[0].detail.expectedWithdrawalId === "r13w" && f[0].detail.actualWithdrawalId === "r13w-OTHER",
+      JSON.stringify(f));
+  }
+
+  // r14 — an ordinary persistent finding carries confirmation:"confirmed" —
+  // the two-pass wiring must not silently drop a real, unchanging finding
+  {
+    const f = byKindAndId("withdrawal_payout_status_mismatch", "r1w");
+    record("r14_persistent_finding_is_confirmed", f.length === 1 && f[0].confirmation === "confirmed", JSON.stringify(f));
+    record("r14b_every_finding_this_scan_has_a_confirmation_state",
+      result.findings.every((x) => x.confirmation === "confirmed" || x.confirmation === "unconfirmed"),
+      JSON.stringify(result.findings.map((x) => ({ id: x.id, confirmation: x.confirmation }))));
+    record("r14c_every_finding_has_a_stable_id",
+      result.findings.every((x) => x.id === `${x.kind}:${x.recordId}`), JSON.stringify(result.findings.map((x) => x.id)));
+  }
+
+  // r15 — a budget that covers the first pass but not the confirmation
+  // re-read reports that withdrawal's finding as unconfirmed, never drops it
+  // and never claims "confirmed". r15w is given a paidAt far in the future
+  // so it is the FIRST row this scan's own paid-status query processes,
+  // before any other seeded withdrawal has a chance to consume the shared
+  // budget — this makes the arithmetic exact regardless of what else exists.
+  {
+    await db.doc("seller_payouts/r15-p1").set({ sellerId: "r15s", netAmount: 50, status: "requested", withdrawalId: "r15w" });
+    await db.doc("seller_payouts/r15-p2").set({ sellerId: "r15s", netAmount: 50, status: "requested", withdrawalId: "r15w" });
+    await db.doc("seller_withdrawals/r15w").set({
+      sellerId: "r15s", status: "paid", amountPaise: 10000, payoutIds: ["r15-p1", "r15-p2"], paymentReference: "UTR-R15",
+      destination: DEST, createdAt: Timestamp.fromMillis(NOW), paidAt: Timestamp.fromMillis(NOW + 10_000_000),
+    });
+    const r15Result = await financeReconciliationScanCore(db, NOW + 3000, 2); // exactly enough for pass 1 (2 payouts), 0 left for pass 2
+    const f = r15Result.findings.filter((x) => x.recordId === "r15w");
+    record("r15_confirmation_budget_exhaustion_marks_unconfirmed_not_dropped",
+      f.length === 1 && f[0].kind === "withdrawal_payout_status_mismatch" && f[0].confirmation === "unconfirmed",
+      JSON.stringify({ findings: f, incompleteReasons: r15Result.incompleteReasons }));
+  }
+
+  // r16 — cursor continuation past the page limit. Each withdrawal is given
+  // a real, cheap-to-detect finding (missing destination) so each page's
+  // OWN findings array — the actual thing under test, not a parallel
+  // hand-rolled query — directly says which of these 3 it covered.
+  // Far-future timestamps make them unambiguously the top rows regardless
+  // of anything else seeded above.
+  {
+    const mk = async (id, ms) => db.doc(`seller_withdrawals/${id}`).set({
+      sellerId: "r16s", status: "paid", amountPaise: 100, payoutIds: [], paymentReference: "UTR-OK",
+      createdAt: Timestamp.fromMillis(NOW), paidAt: Timestamp.fromMillis(ms), // no destination/destinationFull — a guaranteed finding
+    });
+    await mk("r16w-a", NOW + 30_000_000);
+    await mk("r16w-b", NOW + 29_000_000);
+    await mk("r16w-c", NOW + 28_000_000);
+    const seenOn = (res) => res.findings.filter((f) => f.kind === "missing_destination_snapshot" && f.recordId.startsWith("r16w-")).map((f) => f.recordId);
+
+    const page1 = await financeReconciliationScanCore(db, NOW + 5000, CHILD_READ_BUDGET, {}, 2);
+    const page1Ids = seenOn(page1);
+    const cursor = page1.nextCursor.sellerWithdrawals.paid;
+    record("r16a_page1_has_a_cursor", cursor !== null && typeof cursor.value === "number" && typeof cursor.id === "string", JSON.stringify(page1.nextCursor));
+    record("r16b_page1_is_the_two_newest", page1Ids.includes("r16w-a") && page1Ids.includes("r16w-b") && !page1Ids.includes("r16w-c"), JSON.stringify(page1Ids));
+
+    const page2 = await financeReconciliationScanCore(db, NOW + 5001, CHILD_READ_BUDGET, { sellerWithdrawals: { paid: cursor } }, 2);
+    const page2Ids = seenOn(page2);
+    record("r16c_page2_reaches_the_third_with_no_overlap", page2Ids.includes("r16w-c") && !page2Ids.includes("r16w-a") && !page2Ids.includes("r16w-b"), JSON.stringify(page2Ids));
+  }
+
+  // r17 — stable tie-break: two withdrawals sharing the EXACT same paidAt.
+  // Without a documentId tiebreak, paging by cursor could duplicate or skip
+  // one of them; both far-future so they are unambiguously the top of the
+  // whole collection.
+  {
+    const TIE = NOW + 40_000_000;
+    const mkTied = async (id) => db.doc(`seller_withdrawals/${id}`).set({
+      sellerId: "r17s", status: "paid", amountPaise: 100, payoutIds: [], paymentReference: "UTR-OK",
+      createdAt: Timestamp.fromMillis(NOW), paidAt: Timestamp.fromMillis(TIE), // no destination — a guaranteed finding
+    });
+    await mkTied("r17w-a");
+    await mkTied("r17w-b");
+    const seenOn = (res) => res.findings.filter((f) => f.kind === "missing_destination_snapshot" && f.recordId.startsWith("r17w-")).map((f) => f.recordId);
+
+    const page1 = await financeReconciliationScanCore(db, NOW + 6000, CHILD_READ_BUDGET, {}, 1);
+    const page1Ids = seenOn(page1);
+    const cursor = page1.nextCursor.sellerWithdrawals.paid;
+    const page2 = await financeReconciliationScanCore(db, NOW + 6001, CHILD_READ_BUDGET, { sellerWithdrawals: { paid: cursor } }, 1);
+    const page2Ids = seenOn(page2);
+    const seen = [...page1Ids, ...page2Ids];
+    record("r17_tiebreak_reaches_both_exactly_once",
+      page1Ids.length === 1 && page2Ids.length === 1 && seen.includes("r17w-a") && seen.includes("r17w-b") && page1Ids[0] !== page2Ids[0],
+      JSON.stringify({ page1Ids, page2Ids }));
+  }
+
+  // r18 — recheckFindingCore: confirmed now, resolved after a legitimate fix, not_found for a vanished record
+  {
+    await db.doc("seller_withdrawals/r18w").set({
+      sellerId: "r18s", status: "requested", amountPaise: 1000, payoutIds: [], createdAt: Timestamp.fromMillis(NOW),
+    }); // no destination
+    const before = await recheckFindingCore(db, { kind: "missing_destination_snapshot", actorType: "seller", recordId: "r18w", detail: {} });
+    record("r18a_recheck_confirms_a_real_finding", before.kind === "confirmed" && before.finding.kind === "missing_destination_snapshot", JSON.stringify(before));
+
+    await db.doc("seller_withdrawals/r18w").update({ destination: DEST });
+    const after = await recheckFindingCore(db, { kind: "missing_destination_snapshot", actorType: "seller", recordId: "r18w", detail: {} });
+    record("r18b_recheck_resolves_after_a_legitimate_fix", after.kind === "resolved", JSON.stringify(after));
+
+    const gone = await recheckFindingCore(db, { kind: "missing_destination_snapshot", actorType: "seller", recordId: "r18w-does-not-exist", detail: {} });
+    record("r18c_recheck_not_found_for_a_vanished_record", gone.kind === "not_found", JSON.stringify(gone));
+  }
+
+  // r19 — recheckFindingCore for the non-seller path (rider paid_missing_reference)
+  {
+    await db.doc("rider_payouts/r19rp").set({ riderId: "r19r", status: "paid", amountPaise: 500, paymentReference: "", paidAt: Timestamp.fromMillis(NOW) });
+    const before = await recheckFindingCore(db, { kind: "paid_missing_reference", actorType: "rider", recordId: "r19rp", detail: {} });
+    record("r19a_recheck_confirms_rider_missing_reference", before.kind === "confirmed" && before.finding.actorType === "rider", JSON.stringify(before));
+    await db.doc("rider_payouts/r19rp").update({ paymentReference: "UTR-R19" });
+    const after = await recheckFindingCore(db, { kind: "paid_missing_reference", actorType: "rider", recordId: "r19rp", detail: {} });
+    record("r19b_recheck_resolves_after_reference_added", after.kind === "resolved", JSON.stringify(after));
+  }
 
   const failed = results.filter((x) => !x).length;
   console.log(`\n${results.length - failed}/${results.length} passed`);

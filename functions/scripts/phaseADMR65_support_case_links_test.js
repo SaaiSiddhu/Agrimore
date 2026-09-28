@@ -292,6 +292,40 @@ async function main() {
     );
   }
 
+  // ── ADMR-85: the three financial LINK_RECORD_TYPES a support case can now
+  //    reference — the exact withdrawal/payout a ticket is actually about,
+  //    not just the seller/rider/associate in general. Same
+  //    target-existence discipline as every other type in this file. ──
+  {
+    await db.doc("sellers/sl-seller-real").set({ businessName: "Real Seller" });
+    await db.doc("seller_withdrawals/sl-withdrawal-real").set({ sellerId: "sl-seller-real", status: "requested", amountPaise: 5000 });
+    await db.doc("rider_payouts/sl-riderpayout-real").set({ riderId: "sl-rider-real", status: "paid", amountPaise: 2000 });
+    await db.doc("employee_payouts/sl-emppayout-real").set({ employeeId: "sl-emp-real", status: "paid", amount: 300 });
+
+    const caseId = await newCase("seller", "sl-seller-real");
+    const rw = await call(linkSupportCaseRecord, ADMIN1, { caseId, link: { type: "seller_withdrawal", id: "sl-withdrawal-real" }, expectedVersion: 1 });
+    const rp = await call(linkSupportCaseRecord, ADMIN1, { caseId, link: { type: "rider_payout", id: "sl-riderpayout-real" }, expectedVersion: 2 });
+    const ep = await call(linkSupportCaseRecord, ADMIN1, { caseId, link: { type: "employee_payout", id: "sl-emppayout-real" }, expectedVersion: 3 });
+    const doc = (await db.doc(`support_cases/${caseId}`).get()).data();
+    check(
+      "f09_financial_record_types_link_successfully",
+      rw.ok && rp.ok && ep.ok && doc.version === 4 && doc.linkedRecords.length === 3 &&
+        doc.linkedRecords.some((l) => l.type === "seller_withdrawal" && l.id === "sl-withdrawal-real") &&
+        doc.linkedRecords.some((l) => l.type === "rider_payout" && l.id === "sl-riderpayout-real") &&
+        doc.linkedRecords.some((l) => l.type === "employee_payout" && l.id === "sl-emppayout-real"),
+      JSON.stringify({ rw, rp, ep, doc })
+    );
+  }
+  {
+    const caseId = await newCase("seller", "sl-seller-real");
+    const r = await call(linkSupportCaseRecord, ADMIN1, { caseId, link: { type: "seller_withdrawal", id: "sl-withdrawal-does-not-exist" }, expectedVersion: 1 });
+    check(
+      "f10_financial_link_to_nonexistent_withdrawal_refused",
+      !r.ok && r.code === "invalid-argument" && r.details && r.details.reason === "target_not_found",
+      JSON.stringify(r)
+    );
+  }
+
   const failed = Object.entries(results).filter(([, v]) => v !== "PASSED");
   console.log(`\n${Object.keys(results).length - failed.length}/${Object.keys(results).length} scenarios passed`);
   if (failed.length) {

@@ -442,6 +442,13 @@ function refuse(reason: string): never {
 // file already uses: never an arbitrary client-supplied path, always
 // validated against the record's own real collection first.
 
+// ADMR-85 adds the three financial-record types: a support case can now be
+// linked to the exact withdrawal/payout a ticket is actually about, not just
+// the seller/rider/associate in general. Same constrained-reference
+// discipline as every other type here -- validated against the record's own
+// real collection (seller_withdrawals/rider_payouts/employee_payouts) by the
+// SAME linkSupportCaseRecordCore target-existence check, nothing new added
+// to that function itself.
 export const LINK_RECORD_TYPES = [
   "order",
   "rider_ticket",
@@ -451,6 +458,9 @@ export const LINK_RECORD_TYPES = [
   "seller",
   "rider",
   "associate",
+  "seller_withdrawal",
+  "rider_payout",
+  "employee_payout",
 ] as const;
 export type LinkRecordType = (typeof LINK_RECORD_TYPES)[number];
 export type LinkedRecord = { type: LinkRecordType; id: string };
@@ -464,6 +474,9 @@ const LINK_COLLECTION: Record<LinkRecordType, string> = {
   seller: "sellers",
   rider: "delivery_partners",
   associate: "employees",
+  seller_withdrawal: "seller_withdrawals",
+  rider_payout: "rider_payouts",
+  employee_payout: "employee_payouts",
 };
 
 function parseLinkedRecord(v: unknown): LinkedRecord | undefined {
