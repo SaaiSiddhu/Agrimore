@@ -7,6 +7,7 @@ import 'dart:async';
 import 'package:agrimore_core/agrimore_core.dart';
 import 'package:delivery/data/rider_history.dart';
 import 'package:delivery/data/rider_work.dart';
+import 'package:delivery/delivery/rider_steps.dart' show RiderStepException;
 import 'package:delivery/providers/order_provider.dart';
 import 'package:cloud_firestore/cloud_firestore.dart' show FirebaseException;
 import 'package:flutter_test/flutter_test.dart';
@@ -25,7 +26,13 @@ void main() {
   // keeps every completer for a rider in call order instead.
   late Map<String, List<Completer<int>>> countAnswers;
 
-  DeliveryOrderProvider make({HistoryFetch? history, DateTime? now}) => DeliveryOrderProvider(
+  DeliveryOrderProvider make({
+    HistoryFetch? history,
+    DateTime? now,
+    AdvanceStep? advanceStepFn,
+    ReleaseOrder? releaseOrderFn,
+  }) =>
+      DeliveryOrderProvider(
         activeSource: (rider) {
           subscribed.add(rider);
           return (streams[rider] = StreamController<ActiveSnapshot>()).stream;
@@ -37,6 +44,8 @@ void main() {
           return c.future;
         },
         historyFetch: history,
+        advanceStepFn: advanceStepFn,
+        releaseOrderFn: releaseOrderFn,
         clock: () => now ?? DateTime(2026, 9, 24, 15, 30),
       );
 
@@ -79,6 +88,44 @@ void main() {
     expect(p.activeOrders, isEmpty);
     expect(p.todayDelivered, isNull);
     expect(aStream.hasListener, isFalse, reason: 'A\'s listener was cancelled');
+  });
+
+  test('Section 5: a late advanceStep failure from a superseded session is dropped, not surfaced', () async {
+    final answers = <Completer<void>>[];
+    final p = make(advanceStepFn: (orderId, status, fix) {
+      final c = Completer<void>();
+      answers.add(c);
+      return c.future;
+    })
+      ..bind('rA');
+    final resultFuture = p.advanceStep('o1', 'picked_up', const {});
+    p.bind('rB');
+    answers[0].completeError(const RiderStepException('not_assigned'));
+    // The caller's own awaited Future still resolves to the refusal --
+    // advanceStep's return value is not itself generation-guarded, only
+    // the PROVIDER's shared _error/notifyListeners state is (the screen
+    // holding this specific call already checks its own `mounted`).
+    final result = await resultFuture;
+    expect(result, isA<RiderStepException>());
+    expect(p.riderId, 'rB', reason: 'the rebind already happened');
+    expect(p.error, isNull, reason: 'rider A\'s late refusal must never surface under rider B\'s session');
+  });
+
+  test('Section 5: a late releaseOrder failure from a superseded session is dropped, not surfaced', () async {
+    final answers = <Completer<void>>[];
+    final p = make(releaseOrderFn: (orderId, {reason = 'seller_not_ready'}) {
+      final c = Completer<void>();
+      answers.add(c);
+      return c.future;
+    })
+      ..bind('rA');
+    final resultFuture = p.releaseOrder('o1', reason: 'seller_not_ready');
+    p.bind('rB');
+    answers[0].completeError(const RiderStepException('after_pickup'));
+    final result = await resultFuture;
+    expect(result, isA<RiderStepException>());
+    expect(p.riderId, 'rB');
+    expect(p.error, isNull, reason: 'rider A\'s late refusal must never surface under rider B\'s session');
   });
 
   test('sign-out clears everything; binding the same rider twice subscribes once', () async {
