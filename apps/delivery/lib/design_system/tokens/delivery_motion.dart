@@ -21,6 +21,24 @@ abstract final class DeliveryMotion {
   /// Debounce delay for local search inputs.
   static const Duration debounce = Duration(milliseconds: 300);
 
+  /// How long "not yet seen live" (active_order_screen.dart) is treated as
+  /// still-checking before concluding an assignment was genuinely removed --
+  /// covers the gap between an offer's one-off accept read and the live
+  /// query catching up with the same new order (the golden path must never
+  /// flash "removed").
+  static const Duration assignmentConfirmGrace = Duration(seconds: 8);
+
+  /// Below this (rider_route_card.dart), the rider's live position is shown
+  /// as stale. Matches riderIncidents.ts's own FRESH_LOCATION_MS server-side
+  /// constant for consistency (a position is "fresh" by the same definition
+  /// whether the context is a safety incident or an active-delivery map) --
+  /// independent client/server constants, not a shared import.
+  static const Duration staleLocationThreshold = Duration(minutes: 2);
+
+  /// Re-evaluate staleness on a timer, not only on a new Firestore event --
+  /// the whole point is to notice when NOTHING has arrived in a while.
+  static const Duration staleLocationCheckInterval = Duration(seconds: 30);
+
   static const Curve standard = Cubic(0.2, 0, 0, 1);
   static const Curve standardCurve = standard;
   static const Curve enter = Cubic(0, 0, 0, 1);
