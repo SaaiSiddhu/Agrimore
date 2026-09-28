@@ -47,6 +47,7 @@ import '../screens/admin/employees/add_employee_screen.dart';
 import '../screens/admin/employees/employee_payouts_screen.dart';
 import '../screens/admin/employees/employee_payout_account_review_screen.dart';
 import '../screens/admin/employees/commission_exceptions_screen.dart';
+import '../screens/admin/finance/finance_reconciliation_screen.dart';
 import '../screens/admin/sellers/seller_payouts_screen.dart';
 import '../screens/admin/employees/employee_payout_detail_screen.dart';
 import '../screens/admin/benefit_program/compliance_control_screen.dart';
@@ -168,6 +169,10 @@ class AdminRoutes {
   /// Support case queue + detail (ADMR-62), wired to ADMR-61's backend.
   static const String supportCases = '/support';
   static const String supportCaseDetail = '/support/:id';
+
+  /// Read-only finance reconciliation scan (ADMR-80), wired to
+  /// functions/src/admin/financeReconciliation.ts.
+  static const String financeReconciliation = '/finance/reconciliation';
 }
 
 /// App router configuration using go_router
@@ -612,6 +617,13 @@ class AppRouter {
               name: 'commission-exceptions',
               pageBuilder: (context, state) =>
                   _buildPage(const CommissionExceptionsScreen(), state),
+            ),
+
+            GoRoute(
+              path: AdminRoutes.financeReconciliation,
+              name: 'finance-reconciliation',
+              pageBuilder: (context, state) =>
+                  _buildPage(const FinanceReconciliationScreen(), state),
             ),
 
             GoRoute(

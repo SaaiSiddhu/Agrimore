@@ -63,6 +63,11 @@ export {
   attachSupportCaseEvidence,
   viewSupportCaseEvidence,
 } from "./admin/supportCases";
+// Phase ADMR-80: a read-only admin scan over the seller/rider/employee
+// payout paths for the consistency invariants this session's own ADMR-77/
+// 78/79 work established — no remediation action, findings only. See
+// admin/financeReconciliation.ts.
+export { financeReconciliationScan } from "./admin/financeReconciliation";
 
 // ============================================
 // CUSTOMER MODULE
