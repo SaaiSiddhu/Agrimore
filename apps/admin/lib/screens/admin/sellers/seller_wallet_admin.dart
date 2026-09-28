@@ -28,6 +28,7 @@ String sellerWalletRefusal(String code, String? reason) => switch (reason) {
       'payout_mismatch' => 'The payouts in this withdrawal changed. Refresh and try again.',
       'bad_reference' => 'Enter the UTR / payment reference (4–64 characters).',
       'bad_method' => 'Choose bank or UPI.',
+      'method_mismatch' => 'This withdrawal was requested for a different payment method. Refresh and try again.',
       'reason_required' => 'Give a reason (3–200 characters) — the seller sees it.',
       'not_pending' => 'This request has already been reviewed.',
       'not_found' => 'Not found — it may have been removed.',
@@ -90,29 +91,40 @@ Future<String?> _askReason(BuildContext context, String title, String action) as
 }
 
 /// Shop name + whether a bank/UPI change is waiting, read fresh.
+///
+/// `destinationOverride`, when given, is shown instead of a live
+/// seller_payout_details read — used for an open withdrawal's own tile, so
+/// the preview always matches the destination frozen on that withdrawal at
+/// request time (never a live account that may have changed since).
 class _SellerHeader extends StatelessWidget {
-  const _SellerHeader(this.sellerId, {this.showDestination = false});
+  const _SellerHeader(this.sellerId, {this.showDestination = false, this.destinationOverride});
   final String sellerId;
   final bool showDestination;
+  final Map<String, dynamic>? destinationOverride;
 
   @override
   Widget build(BuildContext context) {
     return FutureBuilder<List<DocumentSnapshot<Map<String, dynamic>>>>(
       future: Future.wait([
         _db.collection('sellers').doc(sellerId).get(),
-        _db.collection('seller_payout_details').doc(sellerId).get(),
         _db.collection('seller_wallets').doc(sellerId).get(),
       ]),
       builder: (context, snap) {
         final seller = snap.data?[0].data();
-        final details = snap.data?[1].data();
-        final pending = snap.data?[2].data()?['payoutChangePending'];
+        final pending = snap.data?[1].data()?['payoutChangePending'];
         final name = (seller?['shopName'] ?? seller?['businessName'] ?? seller?['name'] ?? sellerId).toString();
         return Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
           Text(name, style: const TextStyle(fontWeight: FontWeight.w700)),
           if (showDestination) ...[
             const SizedBox(height: 4),
-            SelectableText(sellerDestinationFull(details), style: const TextStyle(fontSize: 12)),
+            if (destinationOverride != null)
+              SelectableText(sellerDestinationFull(destinationOverride), style: const TextStyle(fontSize: 12))
+            else
+              FutureBuilder<DocumentSnapshot<Map<String, dynamic>>>(
+                future: _db.collection('seller_payout_details').doc(sellerId).get(),
+                builder: (context, dsnap) =>
+                    SelectableText(sellerDestinationFull(dsnap.data?.data()), style: const TextStyle(fontSize: 12)),
+              ),
           ],
           if (pending is String && pending.isNotEmpty)
             Padding(
@@ -137,9 +149,11 @@ class _SellerWithdrawalsTabState extends State<SellerWithdrawalsTab> {
 
   Future<void> _markPaid(String id, Map<String, dynamic> w) async {
     final ref = TextEditingController();
-    final sellerId = (w['sellerId'] ?? '').toString();
-    final details = (await _db.collection('seller_payout_details').doc(sellerId).get()).data();
-    var method = details?['payoutMethod'] == 'upi' ? 'upi' : 'bank';
+    // The destination frozen on this withdrawal at request time — never a
+    // live seller_payout_details read, so a bank/UPI change approved after
+    // the seller asked for this withdrawal can never silently redirect it.
+    final destinationFull = (w['destinationFull'] as Map?)?.cast<String, dynamic>();
+    var method = destinationFull?['payoutMethod'] == 'upi' ? 'upi' : 'bank';
     if (!mounted) return;
     final confirmed = await showDialog<bool>(
       context: context,
@@ -149,7 +163,7 @@ class _SellerWithdrawalsTabState extends State<SellerWithdrawalsTab> {
           content: Column(mainAxisSize: MainAxisSize.min, crossAxisAlignment: CrossAxisAlignment.start, children: [
             Text('Send ${AgFormat.rupees(_paise(w['amountPaise']))} to:'),
             const SizedBox(height: 4),
-            SelectableText(sellerDestinationFull(details), style: const TextStyle(fontSize: 12)),
+            SelectableText(sellerDestinationFull(destinationFull), style: const TextStyle(fontSize: 12)),
             const SizedBox(height: 8),
             SegmentedButton<String>(
               segments: const [
@@ -248,7 +262,9 @@ class _SellerWithdrawalsTabState extends State<SellerWithdrawalsTab> {
         padding: const EdgeInsets.all(14),
         child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
           Row(crossAxisAlignment: CrossAxisAlignment.start, children: [
-            Expanded(child: _SellerHeader((w['sellerId'] ?? '').toString(), showDestination: _status == 'requested')),
+            Expanded(child: _SellerHeader((w['sellerId'] ?? '').toString(),
+                showDestination: _status == 'requested',
+                destinationOverride: (w['destinationFull'] as Map?)?.cast<String, dynamic>())),
             Text(AgFormat.rupees(_paise(w['amountPaise'])), style: const TextStyle(fontWeight: FontWeight.w800)),
           ]),
           const SizedBox(height: 4),

@@ -129,6 +129,30 @@ export function payoutDestination(d: FirebaseFirestore.DocumentData | undefined)
   return { method, upiId: upi };
 }
 
+/**
+ * The full (unmasked) payout details behind `payoutDestination`'s masked view — same field
+ * names as seller_payout_details itself (payoutMethod/accountNumber/ifsc/bankName/
+ * accountHolder/upiId), same completeness rule (delegates to payoutDestination so the two can
+ * never disagree on when a destination is "on file"). Frozen onto a withdrawal at request time
+ * (requestWithdrawalCore) so an admin has the real account number to act on without a live
+ * re-read of seller_payout_details that a later bank/UPI change could have altered. Admin +
+ * owning-seller read only — the same access level seller_payout_details and
+ * seller_payout_change_requests already give a full account number at.
+ */
+export function payoutDestinationFull(d: FirebaseFirestore.DocumentData | undefined): Record<string, unknown> | null {
+  if (payoutDestination(d) === null) return null;
+  const str = (v: unknown) => (typeof v === "string" ? v.trim() : "");
+  const method = d!.payoutMethod === "upi" ? "upi" : "bank";
+  return {
+    payoutMethod: method,
+    accountHolder: str(d!.accountHolder) || null,
+    bankName: method === "bank" ? str(d!.bankName) || null : null,
+    accountNumber: method === "bank" ? str(d!.accountNumber).replace(/\s+/g, "") : null,
+    ifsc: method === "bank" ? str(d!.ifsc) || null : null,
+    upiId: method === "upi" ? str(d!.upiId) : null,
+  };
+}
+
 // ── summary (what the seller sees) ──
 
 export interface WalletSummary {
@@ -204,6 +228,7 @@ export async function requestWithdrawalCore(db: Db, sellerId: string, requestId:
     if (typeof a.openWithdrawal === "string" && a.openWithdrawal) return { kind: "refused", reason: "withdrawal_open" };
     const destination = payoutDestination(details.data());
     if (!destination) return { kind: "refused", reason: "no_destination" };
+    const destinationFull = payoutDestinationFull(details.data());
 
     const rows = pending.docs
       .filter((p) => isWithdrawable(p.data(), cutoff))
@@ -218,7 +243,7 @@ export async function requestWithdrawalCore(db: Db, sellerId: string, requestId:
       sellerId, status: "requested", amountPaise, amount: fromPaise(amountPaise),
       payoutIds: rows.map((p) => p.id), payoutCount: rows.length,
       orderNumbers: rows.map((p) => String(p.data().orderNumber || p.data().orderId || "")),
-      destination, createdAt: at, updatedAt: at,
+      destination, destinationFull, createdAt: at, updatedAt: at,
     });
     for (const p of rows) tx.update(p.ref, { status: "requested", withdrawalId: id, updatedAt: at });
     tx.set(accRef, { sellerId, openWithdrawal: id, updatedAt: at }, { merge: true });
@@ -229,9 +254,15 @@ export async function requestWithdrawalCore(db: Db, sellerId: string, requestId:
 export type CloseVerdict =
   | { kind: "paid" | "rejected" | "cancelled" | "already"; sellerId: string; amountPaise: number; paidTo?: Record<string, unknown> }
   | { kind: "refused"; reason: "not_found" | "not_requested" | "not_yours" | "payout_change_pending" | "no_destination"
-      | "bad_reference" | "bad_method" | "reason_required" | "payout_mismatch" };
+      | "bad_reference" | "bad_method" | "reason_required" | "payout_mismatch" | "method_mismatch" };
 
-/** Admin: the money was sent. Refused while a payout-account change is pending. */
+/**
+ * Admin: the money was sent. Refused while a payout-account change is pending. Pays to the
+ * destination frozen on the withdrawal at request time (requestWithdrawalCore) — never a live
+ * re-read of seller_payout_details — so a bank/UPI change approved after this withdrawal was
+ * already requested can never silently redirect it. `method` must match the frozen
+ * destination's own method; a mismatch is refused (method_mismatch), not silently reconciled.
+ */
 export async function markWithdrawalPaidCore(
   db: Db, adminUid: string, withdrawalId: string, reference: string, method: unknown, nowMs: number
 ): Promise<CloseVerdict> {
@@ -248,9 +279,8 @@ export async function markWithdrawalPaidCore(
     if (d.status === "paid" && d.paymentReference === ref) return { kind: "already", sellerId, amountPaise, paidTo: d.paidTo ?? {} };
     if (d.status !== "requested") return { kind: "refused", reason: "not_requested" };
     const ids: string[] = Array.isArray(d.payoutIds) ? d.payoutIds.map(String) : [];
-    const [acc, details, ...payouts] = await Promise.all([
+    const [acc, ...payouts] = await Promise.all([
       tx.get(walletRef(db, sellerId)),
-      tx.get(db.collection("seller_payout_details").doc(sellerId)),
       ...ids.map((pid) => tx.get(db.collection("seller_payouts").doc(pid))),
     ]);
     const a = acc.data() ?? {};
@@ -259,8 +289,9 @@ export async function markWithdrawalPaidCore(
       const pd = p.data();
       if (!pd || pd.withdrawalId !== withdrawalId || pd.status !== "requested") return { kind: "refused", reason: "payout_mismatch" };
     }
-    const dest = payoutDestination({ ...(details.data() ?? {}), payoutMethod: method });
+    const dest = d.destination as Record<string, unknown> | undefined;
     if (!dest) return { kind: "refused", reason: "no_destination" };
+    if (dest.method !== method) return { kind: "refused", reason: "method_mismatch" };
     const at = Timestamp.fromMillis(nowMs);
     for (const p of payouts) {
       tx.update(p.ref, { status: "paid", paidAt: at, paidBy: adminUid, paymentReference: ref, payoutMethod: method, updatedAt: at });
@@ -390,6 +421,7 @@ const REFUSAL_TEXT: Record<string, string> = {
   not_yours: "Not your request",
   bad_reference: "Enter a payment reference (4–64 characters)",
   bad_method: "Choose bank or UPI",
+  method_mismatch: "This withdrawal was requested for a different payment method — refresh and check",
   reason_required: "Give a reason (3–200 characters)",
   payout_mismatch: "The payouts in this withdrawal changed — refresh and try again",
   already_pending: "A change is already waiting for review",

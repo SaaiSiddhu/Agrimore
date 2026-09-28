@@ -5,7 +5,7 @@ import 'package:flutter_test/flutter_test.dart';
 void main() {
   test('every server refusal reads as an admin sentence', () {
     for (final r in ['payout_change_pending', 'no_destination', 'not_requested', 'payout_mismatch', 'bad_reference',
-      'bad_method', 'reason_required', 'not_pending', 'not_found']) {
+      'bad_method', 'method_mismatch', 'reason_required', 'not_pending', 'not_found']) {
       final text = sellerWalletRefusal('failed-precondition', r);
       expect(text, isNot(contains('_')), reason: r);
       expect(text, isNot('Could not complete that. Please try again.'), reason: r);

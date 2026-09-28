@@ -6,7 +6,9 @@
 //     while one is open is refused; two concurrent taps make one withdrawal
 //  w3 refused: below the minimum, nothing to withdraw, no bank/UPI on file
 //  w4 paying is refused while a bank/UPI change is pending; approving the
-//     change updates the details; paying then records the masked destination
+//     change updates seller_payout_details, but the ALREADY-open withdrawal's
+//     own destination stays frozen at what it was when requested (ADMR-77) --
+//     paying it uses that frozen method/account, not the newly-approved one,
 //     and marks every payout paid; a replay is "already"
 //  w5 admin reject (reason required) puts the payouts back in the balance
 //  w6 the seller can cancel their own open withdrawal, not someone else's
@@ -55,7 +57,8 @@ async function main() {
   const rows = await Promise.all(nets.map((_, i) => get(`seller_payouts/a${i}`)));
   record("w1_exact_sum_and_payouts_requested", v1.kind === "requested" && v1.amountPaise === expectP && w.amountPaise === expectP &&
     w.payoutCount === 5 && rows.every((r) => r.status === "requested" && r.withdrawalId === wId) &&
-    (await get("seller_payouts/a-paid")).status === "paid" && w.destination.accountLast4 === "4821" && !("accountNumber" in w.destination),
+    (await get("seller_payouts/a-paid")).status === "paid" && w.destination.accountLast4 === "4821" && !("accountNumber" in w.destination) &&
+    w.destinationFull.accountNumber === "123456784821" && w.destinationFull.payoutMethod === "bank" && w.destinationFull.ifsc === "EXMP0001234",
     JSON.stringify({ v1, w }));
   record("w1b_wallet_marks_open_withdrawal", (await get("seller_wallets/sA")).openWithdrawal === wId, "");
 
@@ -94,18 +97,24 @@ async function main() {
   const noReason = await W.reviewPayoutChangeCore(db, { adminUid: "adm" }, ch.id, false, "", NOW);
   const approved = await W.reviewPayoutChangeCore(db, { adminUid: "adm" }, ch.id, true, null, NOW);
   const det = await get("seller_payout_details/sA");
-  const wrongMethod = await W.markWithdrawalPaidCore(db, "adm", wId, "UTR998877", "bank", NOW);
-  const paidV = await W.markWithdrawalPaidCore(db, "adm", wId, "UTR998877", "upi", NOW);
-  const again = await W.markWithdrawalPaidCore(db, "adm", wId, "UTR998877", "upi", NOW + 5);
+  // sA's approved change moved seller_payout_details to UPI, but wId itself
+  // was requested against the ORIGINAL bank details -- its own destination
+  // must stay frozen (ADMR-77): paying with the NEW (now-current) method is
+  // refused, paying with the ORIGINAL (frozen) method succeeds and records
+  // the ORIGINAL account, never the one seller_payout_details holds now.
+  const wrongMethod = await W.markWithdrawalPaidCore(db, "adm", wId, "UTR998877", "upi", NOW);
+  const paidV = await W.markWithdrawalPaidCore(db, "adm", wId, "UTR998877", "bank", NOW);
+  const again = await W.markWithdrawalPaidCore(db, "adm", wId, "UTR998877", "bank", NOW + 5);
   const wPaid = await get(`seller_withdrawals/${wId}`);
   const pRows = await Promise.all(nets.map((_, i) => get(`seller_payouts/a${i}`)));
   record("w4a_change_blocks_payment_and_is_single", ch.kind === "requested" && dup.reason === "already_pending" &&
     blocked.reason === "payout_change_pending" && noReason.reason === "reason_required", JSON.stringify({ ch, dup, blocked, noReason }));
   record("w4b_approval_updates_details", approved.kind === "approved" && det.payoutMethod === "upi" && det.upiId === "kaveri@okbank" &&
     det.accountNumber === null && det.verifiedBy === "adm" && (await get("seller_wallets/sA")).payoutChangePending === null, JSON.stringify(det));
-  record("w4c_paid_to_current_destination", wrongMethod.reason === "no_destination" && paidV.kind === "paid" && again.kind === "already" &&
-    wPaid.status === "paid" && wPaid.paidTo.upiId === "kaveri@okbank" && wPaid.paymentReference === "UTR998877" &&
-    pRows.every((r) => r.status === "paid" && r.paymentReference === "UTR998877" && r.paidBy === "adm") &&
+  record("w4c_paid_to_frozen_destination", wrongMethod.reason === "method_mismatch" && paidV.kind === "paid" && again.kind === "already" &&
+    wPaid.status === "paid" && wPaid.paidTo.accountLast4 === "4821" && !("upiId" in wPaid.paidTo) &&
+    wPaid.destinationFull.accountNumber === "123456784821" && wPaid.paymentReference === "UTR998877" &&
+    pRows.every((r) => r.status === "paid" && r.paymentReference === "UTR998877" && r.paidBy === "adm" && r.payoutMethod === "bank") &&
     (await get("seller_wallets/sA")).openWithdrawal === null, JSON.stringify({ wrongMethod, paidV, again, wPaid }));
 
   // w5
