@@ -37,7 +37,10 @@ pattern() {
     MOTION)   echo 'Duration\((milli)?seconds: *[1-9]|Curves\.' ;;
     ICONS)    echo '(^|[^A-Za-z])Icons\.|FontAwesomeIcons\.|CupertinoIcons\.' ;;
     SHADOW)   echo 'BoxShadow\(' ;;
-    STRINGS)  echo "Text\\( *['\"]|(label|hintText|labelText|title|message|tooltip): *['\"]" ;;
+    # word-boundary guarded on the left, like ICONS below — otherwise
+    # `title:` matches inside `subtitle:` (a genuinely different, non-string
+    # Dart parameter name), a false positive found in apps/delivery/lib.
+    STRINGS)  echo "Text\\( *['\"]|(^|[^A-Za-z])(label|hintText|labelText|title|message|tooltip): *['\"]" ;;
     FORMAT)   echo 'NumberFormat\(|DateFormat\(' ;;
     THEME)    echo 'ThemeData\(' ;;
     FEEDBACK) echo 'SnackBar\(|SnackbarHelper\.|AlertDialog\(' ;;
