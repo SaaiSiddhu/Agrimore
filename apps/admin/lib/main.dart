@@ -1,4 +1,8 @@
 import 'dart:async';
+import 'package:cloud_firestore/cloud_firestore.dart';
+import 'package:cloud_functions/cloud_functions.dart';
+import 'package:firebase_auth/firebase_auth.dart';
+import 'package:firebase_storage/firebase_storage.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/foundation.dart' show kIsWeb;
 import 'package:flutter/services.dart';
@@ -32,6 +36,34 @@ import 'providers/seller_provider.dart';
 import 'providers/benefit_compliance_provider.dart';
 
 // ============================================
+// Phase ADMR-75 — OPT-IN Firebase emulator wiring, mirrors
+// apps/marketplace's own established Phase 16B-3 pattern exactly. Exists so
+// this app's own UI can be visually verified against a local emulator
+// instead of production, without a hack that could get committed by
+// accident. `_useFirebaseEmulator` defaults to `false` and every other
+// constant below is only ever read when it is `true` — a normal build (any
+// build that doesn't pass `--dart-define=USE_FIREBASE_EMULATOR=true`
+// explicitly) is bit-identical to before this change. THIS MUST NEVER BE
+// ENABLED IN A RELEASE BUILD — there is no default, CI flag, or environment
+// variable that turns it on; it requires an explicit, manual `--dart-define`
+// on every single run. Storage is ALSO wired here (marketplace's own
+// snippet doesn't need it; this app extensively touches Storage — KYC
+// docs, payout staging docs, support-case evidence).
+// ============================================
+const bool _useFirebaseEmulator =
+    bool.fromEnvironment('USE_FIREBASE_EMULATOR', defaultValue: false);
+const String _firebaseEmulatorHost =
+    String.fromEnvironment('FIREBASE_EMULATOR_HOST', defaultValue: 'localhost');
+const int _firestoreEmulatorPort =
+    int.fromEnvironment('FIRESTORE_EMULATOR_PORT', defaultValue: 8080);
+const int _authEmulatorPort =
+    int.fromEnvironment('AUTH_EMULATOR_PORT', defaultValue: 9099);
+const int _functionsEmulatorPort =
+    int.fromEnvironment('FUNCTIONS_EMULATOR_PORT', defaultValue: 5001);
+const int _storageEmulatorPort =
+    int.fromEnvironment('STORAGE_EMULATOR_PORT', defaultValue: 9199);
+
+// ============================================
 // MAIN ENTRY POINT - ADMIN APP
 // ============================================
 void main() async {
@@ -48,6 +80,19 @@ void main() async {
       options: DefaultFirebaseOptions.currentPlatform,
     );
     debugPrint('✅ Firebase initialized');
+    // ADMR-75: opt-in only, see the constants above. Placed here — after
+    // Firebase.initializeApp, before anything else (including
+    // AppCheckService.activate() and any Provider construction that might
+    // grab a Firestore/Auth/Functions/Storage singleton) — so emulator
+    // config is guaranteed to be in effect before any real use.
+    if (_useFirebaseEmulator) {
+      debugPrint(
+          '🧪 USE_FIREBASE_EMULATOR=true — pointing Auth/Firestore/Functions/Storage at $_firebaseEmulatorHost');
+      await FirebaseAuth.instance.useAuthEmulator(_firebaseEmulatorHost, _authEmulatorPort);
+      FirebaseFirestore.instance.useFirestoreEmulator(_firebaseEmulatorHost, _firestoreEmulatorPort);
+      FirebaseFunctions.instance.useFunctionsEmulator(_firebaseEmulatorHost, _functionsEmulatorPort);
+      await FirebaseStorage.instance.useStorageEmulator(_firebaseEmulatorHost, _storageEmulatorPort);
+    }
     // Phase 17, Workstream 2: monitoring mode only — see
     // AppCheckService's header comment. Never blocks startup.
     await AppCheckService.activate();
