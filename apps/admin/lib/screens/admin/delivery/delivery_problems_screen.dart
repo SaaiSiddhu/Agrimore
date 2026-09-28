@@ -7,6 +7,7 @@ import 'package:url_launcher/url_launcher.dart';
 
 import 'delivery_problems_admin.dart';
 import 'rider_incidents_admin.dart' show ageLabel, incidentMapsUrl, appBarTabs;
+import '../widgets/actor_support_cases_section.dart' show createOrOpenCaseFromSource;
 
 /// Phase DLV-E1: problems riders reported after pickup (delivery_exceptions),
 /// newest first. Acknowledge, then resolve as "rider will try again" or
@@ -225,6 +226,16 @@ class _ProblemCardState extends State<_ProblemCard> {
             if (isNew)
               FilledButton.tonal(onPressed: _busy ? null : () => _update('acknowledge'), child: const Text('Acknowledge')),
             if (status != 'resolved') FilledButton(onPressed: _busy ? null : _resolve, child: const Text('Resolve')),
+            OutlinedButton.icon(
+              onPressed: () => createOrOpenCaseFromSource(
+                context,
+                sourceType: 'delivery_exception',
+                sourceId: widget.id,
+                defaultCategory: 'delivery_issue',
+              ),
+              icon: const Icon(Icons.folder_special_outlined, size: 18),
+              label: const Text('Create/open case'),
+            ),
           ]),
         ]),
       ),

@@ -128,3 +128,77 @@ String supportCaseActorRoute(String type, String id) {
       return '';
   }
 }
+
+// ADMR-68 — linkSupportCaseRecord/unlinkSupportCaseRecord's own vocabulary
+// (functions/src/admin/supportCases.ts's LINK_RECORD_TYPES), a superset of
+// the four actor types above: also covers order and the three per-rider
+// operational records that can be linked but never form a case's own
+// primaryActor.
+const List<String> kLinkRecordTypes = [
+  'order',
+  'rider_ticket',
+  'rider_incident',
+  'delivery_exception',
+  'user',
+  'seller',
+  'rider',
+  'associate',
+];
+
+/// The real collection backing each link type, mirroring
+/// supportCases.ts's own LINK_COLLECTION map exactly.
+const Map<String, String> kLinkRecordCollection = {
+  'order': 'orders',
+  'rider_ticket': 'rider_support_tickets',
+  'rider_incident': 'rider_incidents',
+  'delivery_exception': 'delivery_exceptions',
+  'user': 'users',
+  'seller': 'sellers',
+  'rider': 'delivery_partners',
+  'associate': 'employees',
+};
+
+String linkRecordTypeLabel(String type) {
+  switch (type) {
+    case 'order':
+      return 'Order';
+    case 'rider_ticket':
+      return 'Rider support ticket';
+    case 'rider_incident':
+      return 'Rider incident';
+    case 'delivery_exception':
+      return 'Delivery exception';
+    case 'user':
+      return 'Customer account';
+    case 'seller':
+      return 'Seller';
+    case 'rider':
+      return 'Delivery partner';
+    case 'associate':
+      return 'Sales associate';
+    default:
+      return type;
+  }
+}
+
+/// The real detail route for a link type that has one. Empty for
+/// rider_ticket/rider_incident/delivery_exception -- no dedicated
+/// per-record detail screen exists anywhere in this codebase for those
+/// three (only global list screens), so the UI shows an honest inline
+/// summary for them instead of a fabricated or unfiltered-list route.
+String linkRecordRoute(String type, String id) {
+  switch (type) {
+    case 'order':
+      return '/orders/$id';
+    case 'user':
+      return '/users/$id';
+    case 'seller':
+      return '/sellers/$id';
+    case 'rider':
+      return '/delivery-partners/$id';
+    case 'associate':
+      return '/employees/$id';
+    default:
+      return '';
+  }
+}

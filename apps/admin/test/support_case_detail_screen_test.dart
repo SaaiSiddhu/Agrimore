@@ -196,4 +196,102 @@ void main() {
     expect(find.textContaining('Case created: Late delivery'), findsOneWidget);
     expect(find.textContaining('Resolved: Refund issued.'), findsOneWidget);
   });
+
+  // ADMR-68 additions below: the Linked Records tab for
+  // linkSupportCaseRecord/unlinkSupportCaseRecord (ADMR-65, backend-only
+  // until now).
+  group('Linked Records tab (ADMR-68)', () {
+    Future<void> openLinkedRecordsTab(WidgetTester tester, FakeFirebaseFirestore db, String caseId) async {
+      await pumpScreen(tester, db, caseId);
+      await tester.tap(find.widgetWithText(Tab, 'Linked Records'));
+      await tester.pumpAndSettle();
+    }
+
+    testWidgets('shows an honest empty state when nothing is linked yet', (tester) async {
+      final db = FakeFirebaseFirestore();
+      await _seedCase(db, 'c1');
+
+      await openLinkedRecordsTab(tester, db, 'c1');
+
+      expect(find.text('No linked records yet.'), findsOneWidget);
+    });
+
+    testWidgets('a linked order shows a working View link, a linked ticket shows an inline summary '
+        'instead of a fabricated route', (tester) async {
+      final db = FakeFirebaseFirestore();
+      await _seedCase(db, 'c1');
+      await db.doc('orders/order_1').set({'orderNumber': 'ORD-1'});
+      await db.doc('rider_support_tickets/ticket_1').set({
+        'riderId': 'rider_1', 'category': 'delivery_issue', 'status': 'submitted',
+      });
+      await db.doc('support_cases/c1').update({
+        'linkedRecords': [
+          {'type': 'order', 'id': 'order_1'},
+          {'type': 'rider_ticket', 'id': 'ticket_1'},
+        ],
+      });
+
+      await openLinkedRecordsTab(tester, db, 'c1');
+
+      expect(find.text('Order'), findsOneWidget);
+      expect(find.text('Rider support ticket'), findsOneWidget);
+      // The order has a real detail route -- a working View link, not a
+      // fabricated one.
+      expect(find.widgetWithText(TextButton, 'View'), findsOneWidget);
+      // The ticket has none -- an honest inline summary of its own real
+      // fields instead.
+      expect(find.textContaining('delivery_issue'), findsOneWidget);
+      expect(find.textContaining('submitted'), findsOneWidget);
+      expect(tester.takeException(), isNull);
+    });
+
+    testWidgets('a linked record that no longer exists is disclosed honestly, not hidden or crashed',
+        (tester) async {
+      final db = FakeFirebaseFirestore();
+      await _seedCase(db, 'c1');
+      await db.doc('support_cases/c1').update({
+        'linkedRecords': [
+          {'type': 'rider_incident', 'id': 'does-not-exist'},
+        ],
+      });
+
+      await openLinkedRecordsTab(tester, db, 'c1');
+
+      expect(find.text('This record no longer exists.'), findsOneWidget);
+      expect(tester.takeException(), isNull);
+    });
+
+    testWidgets('"Add link" opens a dialog offering only the real constrained record types',
+        (tester) async {
+      final db = FakeFirebaseFirestore();
+      await _seedCase(db, 'c1');
+
+      await openLinkedRecordsTab(tester, db, 'c1');
+      await tester.tap(find.widgetWithText(OutlinedButton, 'Add link'));
+      await tester.pumpAndSettle();
+
+      expect(find.text('Add a linked record'), findsOneWidget);
+      expect(find.widgetWithText(DropdownButtonFormField<String>, 'Record type'), findsOneWidget);
+      expect(find.widgetWithText(TextField, 'Its id'), findsOneWidget);
+    });
+
+    testWidgets('removing a link asks for confirmation and discloses it does not touch the record itself',
+        (tester) async {
+      final db = FakeFirebaseFirestore();
+      await _seedCase(db, 'c1');
+      await db.doc('orders/order_1').set({'orderNumber': 'ORD-1'});
+      await db.doc('support_cases/c1').update({
+        'linkedRecords': [
+          {'type': 'order', 'id': 'order_1'},
+        ],
+      });
+
+      await openLinkedRecordsTab(tester, db, 'c1');
+      await tester.tap(find.byIcon(Icons.link_off));
+      await tester.pumpAndSettle();
+
+      expect(find.text('Remove this link?'), findsOneWidget);
+      expect(find.textContaining('does not change or delete'), findsOneWidget);
+    });
+  });
 }

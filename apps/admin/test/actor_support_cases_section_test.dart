@@ -90,4 +90,65 @@ void main() {
     // screen's own generic create dialog.
     expect(find.textContaining('Their id'), findsNothing);
   });
+
+  // ADMR-68 additions below: createOrOpenCaseFromSource's own dialog, shared
+  // by the three rider-scoped operational screens. Those screens themselves
+  // use a hardcoded FirebaseFirestore.instance (not injectable), so they
+  // cannot be widget-tested directly -- this proves the shared dialog's own
+  // field set and category pre-fill in isolation instead, pumped from a
+  // minimal host widget the same way the real screens invoke it.
+  group('createOrOpenCaseFromSource dialog (ADMR-68)', () {
+    Future<void> pumpHost(WidgetTester tester, {required String defaultCategory}) async {
+      await tester.pumpWidget(
+        MaterialApp(
+          home: Builder(
+            builder: (context) => Scaffold(
+              body: ElevatedButton(
+                onPressed: () => createOrOpenCaseFromSource(
+                  context,
+                  sourceType: 'rider_ticket',
+                  sourceId: 'ticket_1',
+                  defaultCategory: defaultCategory,
+                ),
+                child: const Text('Create/open case'),
+              ),
+            ),
+          ),
+        ),
+      );
+      await tester.pumpAndSettle();
+      await tester.tap(find.text('Create/open case'));
+      await tester.pumpAndSettle();
+    }
+
+    testWidgets('opens with a title field and the category pre-filled from the source',
+        (tester) async {
+      await pumpHost(tester, defaultCategory: 'payment_issue');
+
+      expect(find.text('Create or open a support case for this'), findsOneWidget);
+      expect(find.widgetWithText(TextField, 'Title'), findsOneWidget);
+      expect(find.text('Payment issue'), findsOneWidget);
+    });
+
+    testWidgets('requires a title before continuing', (tester) async {
+      await pumpHost(tester, defaultCategory: 'delivery_issue');
+
+      await tester.tap(find.widgetWithText(FilledButton, 'Continue'));
+      await tester.pumpAndSettle();
+
+      expect(find.text('Title is required.'), findsOneWidget);
+      // Still on the dialog -- it never popped with an empty title.
+      expect(find.text('Create or open a support case for this'), findsOneWidget);
+    });
+
+    testWidgets('Cancel closes the dialog without calling anything', (tester) async {
+      await pumpHost(tester, defaultCategory: 'delivery_issue');
+
+      await tester.tap(find.widgetWithText(TextButton, 'Cancel'));
+      await tester.pumpAndSettle();
+
+      expect(find.text('Create or open a support case for this'), findsNothing);
+      expect(tester.takeException(), isNull);
+    });
+  });
 }

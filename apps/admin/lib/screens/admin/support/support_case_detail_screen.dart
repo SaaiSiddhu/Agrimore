@@ -56,7 +56,7 @@ class _SupportCaseDetailScreenState extends State<SupportCaseDetailScreen>
   @override
   void initState() {
     super.initState();
-    _tabController = TabController(length: 2, vsync: this);
+    _tabController = TabController(length: 3, vsync: this);
   }
 
   @override
@@ -147,6 +147,42 @@ class _SupportCaseDetailScreenState extends State<SupportCaseDetailScreen>
     );
   }
 
+  Future<void> _addLink(Map<String, dynamic> data) async {
+    final link = await showDialog<Map<String, String>>(
+      context: context,
+      builder: (_) => const _AddLinkDialog(),
+    );
+    if (link == null) return;
+    await _call(
+      'linkSupportCaseRecord',
+      {'caseId': widget.caseId, 'link': link, 'expectedVersion': data['version']},
+      successMessage: 'Link added',
+    );
+  }
+
+  Future<void> _removeLink(Map<String, dynamic> data, Map<String, dynamic> link) async {
+    final confirmed = await showDialog<bool>(
+      context: context,
+      builder: (ctx) => AlertDialog(
+        title: const Text('Remove this link?'),
+        content: Text(
+          'This only removes the relationship from this case. It does not change or delete the '
+          '${linkRecordTypeLabel(link['type'] as String? ?? '').toLowerCase()} itself.',
+        ),
+        actions: [
+          TextButton(onPressed: () => Navigator.pop(ctx, false), child: const Text('Cancel')),
+          FilledButton(onPressed: () => Navigator.pop(ctx, true), child: const Text('Remove')),
+        ],
+      ),
+    );
+    if (confirmed != true) return;
+    await _call(
+      'unlinkSupportCaseRecord',
+      {'caseId': widget.caseId, 'link': link, 'expectedVersion': data['version']},
+      successMessage: 'Link removed',
+    );
+  }
+
   Future<String?> _promptForText({
     required String title,
     required String label,
@@ -231,7 +267,7 @@ class _SupportCaseDetailScreenState extends State<SupportCaseDetailScreen>
               TabBar(
                 controller: _tabController,
                 labelColor: AppColors.primary,
-                tabs: const [Tab(text: 'Notes'), Tab(text: 'Activity')],
+                tabs: const [Tab(text: 'Notes'), Tab(text: 'Activity'), Tab(text: 'Linked Records')],
               ),
               Expanded(
                 child: TabBarView(
@@ -248,6 +284,13 @@ class _SupportCaseDetailScreenState extends State<SupportCaseDetailScreen>
                       firestore: _firestore,
                       caseId: widget.caseId,
                       currentUid: _currentUid,
+                    ),
+                    _LinkedRecordsTab(
+                      firestore: _firestore,
+                      data: data,
+                      busy: _busy,
+                      onAdd: () => _addLink(data),
+                      onRemove: (link) => _removeLink(data, link),
                     ),
                   ],
                 ),
@@ -637,6 +680,192 @@ class _ChangeStatusDialogState extends State<_ChangeStatusDialog> {
             });
           },
           child: const Text('Save'),
+        ),
+      ],
+    );
+  }
+}
+
+// ADMR-68 — link/unlink UI for linkSupportCaseRecord/unlinkSupportCaseRecord
+// (ADMR-65, backend-only until now). For the four types with a real
+// People-360/Order-360 detail route, shows a working "View" link; for the
+// three per-rider operational types with no dedicated detail screen in
+// this codebase, shows an honest inline summary of the linked record's own
+// key fields instead of a fabricated route or an unfiltered global list.
+
+class _LinkedRecordsTab extends StatelessWidget {
+  const _LinkedRecordsTab({
+    required this.firestore,
+    required this.data,
+    required this.busy,
+    required this.onAdd,
+    required this.onRemove,
+  });
+  final FirebaseFirestore firestore;
+  final Map<String, dynamic> data;
+  final bool busy;
+  final VoidCallback onAdd;
+  final void Function(Map<String, dynamic> link) onRemove;
+
+  @override
+  Widget build(BuildContext context) {
+    final links = ((data['linkedRecords'] as List?) ?? const [])
+        .whereType<Map>()
+        .map((m) => m.cast<String, dynamic>())
+        .toList();
+    return ListView(
+      padding: const EdgeInsets.all(16),
+      children: [
+        Align(
+          alignment: Alignment.centerLeft,
+          child: OutlinedButton.icon(
+            onPressed: busy ? null : onAdd,
+            icon: const Icon(Icons.add_link),
+            label: const Text('Add link'),
+          ),
+        ),
+        const SizedBox(height: 8),
+        if (links.isEmpty)
+          const SectionMessage(icon: Icons.link_off, message: 'No linked records yet.'),
+        for (final link in links)
+          Padding(
+            padding: const EdgeInsets.only(bottom: 8),
+            child: _LinkedRecordTile(
+              firestore: firestore,
+              link: link,
+              busy: busy,
+              onRemove: () => onRemove(link),
+            ),
+          ),
+      ],
+    );
+  }
+}
+
+class _LinkedRecordTile extends StatelessWidget {
+  const _LinkedRecordTile({
+    required this.firestore,
+    required this.link,
+    required this.busy,
+    required this.onRemove,
+  });
+  final FirebaseFirestore firestore;
+  final Map<String, dynamic> link;
+  final bool busy;
+  final VoidCallback onRemove;
+
+  /// A short, honest inline summary for the three types with no dedicated
+  /// detail screen -- never a route to a page that doesn't exist.
+  String _summarize(String type, Map<String, dynamic> d) {
+    switch (type) {
+      case 'rider_ticket':
+        return '${d['category'] ?? 'ticket'} · ${d['status'] ?? 'unknown'}';
+      case 'rider_incident':
+        return '${d['kind'] ?? 'incident'} · ${d['status'] ?? 'unknown'}';
+      case 'delivery_exception':
+        return '${d['reason'] ?? 'exception'} · ${d['status'] ?? 'unknown'}';
+      default:
+        return '';
+    }
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    final type = (link['type'] as String?) ?? '';
+    final id = (link['id'] as String?) ?? '';
+    final route = linkRecordRoute(type, id);
+    final collection = kLinkRecordCollection[type];
+
+    return Card(
+      child: ListTile(
+        leading: const Icon(Icons.link),
+        title: Text(linkRecordTypeLabel(type)),
+        subtitle: collection == null
+            ? Text(id)
+            : FutureBuilder<DocumentSnapshot<Map<String, dynamic>>>(
+                future: firestore.collection(collection).doc(id).get(),
+                builder: (context, snap) {
+                  if (!snap.hasData) return const Text('Loading…');
+                  if (!snap.data!.exists) {
+                    return const Text('This record no longer exists.');
+                  }
+                  final d = snap.data!.data()!;
+                  if (route.isNotEmpty) return Text(id);
+                  return Text(_summarize(type, d));
+                },
+              ),
+        trailing: Wrap(
+          spacing: 4,
+          children: [
+            if (route.isNotEmpty)
+              TextButton(onPressed: () => context.push(route), child: const Text('View')),
+            IconButton(
+              tooltip: 'Remove link',
+              icon: const Icon(Icons.link_off),
+              onPressed: busy ? null : onRemove,
+            ),
+          ],
+        ),
+      ),
+    );
+  }
+}
+
+class _AddLinkDialog extends StatefulWidget {
+  const _AddLinkDialog();
+
+  @override
+  State<_AddLinkDialog> createState() => _AddLinkDialogState();
+}
+
+class _AddLinkDialogState extends State<_AddLinkDialog> {
+  String _type = kLinkRecordTypes.first;
+  final _idController = TextEditingController();
+
+  @override
+  void dispose() {
+    _idController.dispose();
+    super.dispose();
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    return AlertDialog(
+      title: const Text('Add a linked record'),
+      content: SizedBox(
+        width: 400,
+        child: Column(
+          mainAxisSize: MainAxisSize.min,
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            DropdownButtonFormField<String>(
+              value: _type,
+              decoration: const InputDecoration(labelText: 'Record type'),
+              items: [
+                for (final t in kLinkRecordTypes)
+                  DropdownMenuItem(value: t, child: Text(linkRecordTypeLabel(t))),
+              ],
+              onChanged: (v) => setState(() => _type = v!),
+            ),
+            TextField(
+              controller: _idController,
+              decoration: const InputDecoration(
+                labelText: 'Its id',
+                helperText: 'The id from its own profile/record URL',
+              ),
+            ),
+          ],
+        ),
+      ),
+      actions: [
+        TextButton(onPressed: () => Navigator.pop(context), child: const Text('Cancel')),
+        FilledButton(
+          onPressed: () {
+            final id = _idController.text.trim();
+            if (id.isEmpty) return;
+            Navigator.pop(context, {'type': _type, 'id': id});
+          },
+          child: const Text('Add'),
         ),
       ],
     );
