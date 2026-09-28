@@ -1,0 +1,29 @@
+{
+  "_comment": "ADMR-90 — the shared contract between functions/src/admin/supportCases.ts's LINK_RECORD_TYPES/LINK_COLLECTION and apps/admin/lib/screens/admin/support/support_case_constants.dart's kLinkRecordTypes/kLinkRecordCollection. Asserted against by functions/scripts/phaseADMR90_support_link_type_parity_test.js (TS side) and apps/admin/test/support_link_record_types_parity_test.dart (Dart side) — the same pattern packages/agrimore_core/test/fixtures/delivery_status_table.json already establishes for the delivery vocabulary. A change to either side alone, without updating this file to match, fails that side's own suite.",
+  "linkRecordTypes": [
+    "order",
+    "rider_ticket",
+    "rider_incident",
+    "delivery_exception",
+    "user",
+    "seller",
+    "rider",
+    "associate",
+    "seller_withdrawal",
+    "rider_payout",
+    "employee_payout"
+  ],
+  "linkRecordCollection": {
+    "order": "orders",
+    "rider_ticket": "rider_support_tickets",
+    "rider_incident": "rider_incidents",
+    "delivery_exception": "delivery_exceptions",
+    "user": "users",
+    "seller": "sellers",
+    "rider": "delivery_partners",
+    "associate": "employees",
+    "seller_withdrawal": "seller_withdrawals",
+    "rider_payout": "rider_payouts",
+    "employee_payout": "employee_payouts"
+  }
+}

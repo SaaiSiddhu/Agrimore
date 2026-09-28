@@ -465,7 +465,7 @@ export const LINK_RECORD_TYPES = [
 export type LinkRecordType = (typeof LINK_RECORD_TYPES)[number];
 export type LinkedRecord = { type: LinkRecordType; id: string };
 
-const LINK_COLLECTION: Record<LinkRecordType, string> = {
+export const LINK_COLLECTION: Record<LinkRecordType, string> = {
   order: "orders",
   rider_ticket: "rider_support_tickets",
   rider_incident: "rider_incidents",
