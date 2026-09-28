@@ -18,8 +18,8 @@
 // Run with:
 //   firebase emulators:exec --only firestore,functions,auth \
 //     "node scripts/phase59_employee_payout_review_test.js"
-process.env.FIRESTORE_EMULATOR_HOST = "127.0.0.1:8080";
-process.env.GCLOUD_PROJECT = "agrimore-66a4e";
+process.env.FIRESTORE_EMULATOR_HOST = process.env.FIRESTORE_EMULATOR_HOST || "127.0.0.1:8080";
+process.env.GCLOUD_PROJECT = process.env.GCLOUD_PROJECT || "agrimore-66a4e";
 
 const admin = require("firebase-admin");
 if (admin.apps.length === 0) admin.initializeApp({ projectId: "agrimore-66a4e" });
