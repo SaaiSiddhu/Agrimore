@@ -991,6 +991,20 @@
             ]
         },
         {
+            "collectionGroup": "support_case_evidence",
+            "queryScope": "COLLECTION",
+            "fields": [
+                {
+                    "fieldPath": "caseId",
+                    "order": "ASCENDING"
+                },
+                {
+                    "fieldPath": "uploadedAt",
+                    "order": "DESCENDING"
+                }
+            ]
+        },
+        {
             "collectionGroup": "support_cases",
             "queryScope": "COLLECTION",
             "fields": [

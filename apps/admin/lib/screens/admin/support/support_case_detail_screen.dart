@@ -14,9 +14,12 @@
 // message), never a silent overwrite.
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:cloud_functions/cloud_functions.dart';
+import 'package:file_picker/file_picker.dart';
 import 'package:firebase_auth/firebase_auth.dart';
+import 'package:firebase_storage/firebase_storage.dart';
 import 'package:flutter/material.dart';
 import 'package:go_router/go_router.dart';
+import 'package:uuid/uuid.dart';
 import 'package:agrimore_ui/agrimore_ui.dart';
 
 import '../widgets/paginated_query_list.dart';
@@ -56,7 +59,7 @@ class _SupportCaseDetailScreenState extends State<SupportCaseDetailScreen>
   @override
   void initState() {
     super.initState();
-    _tabController = TabController(length: 3, vsync: this);
+    _tabController = TabController(length: 4, vsync: this);
   }
 
   @override
@@ -267,7 +270,13 @@ class _SupportCaseDetailScreenState extends State<SupportCaseDetailScreen>
               TabBar(
                 controller: _tabController,
                 labelColor: AppColors.primary,
-                tabs: const [Tab(text: 'Notes'), Tab(text: 'Activity'), Tab(text: 'Linked Records')],
+                isScrollable: true,
+                tabs: const [
+                  Tab(text: 'Notes'),
+                  Tab(text: 'Activity'),
+                  Tab(text: 'Linked Records'),
+                  Tab(text: 'Evidence'),
+                ],
               ),
               Expanded(
                 child: TabBarView(
@@ -291,6 +300,10 @@ class _SupportCaseDetailScreenState extends State<SupportCaseDetailScreen>
                       busy: _busy,
                       onAdd: () => _addLink(data),
                       onRemove: (link) => _removeLink(data, link),
+                    ),
+                    _EvidenceTab(
+                      firestore: _firestore,
+                      caseId: widget.caseId,
                     ),
                   ],
                 ),
@@ -868,6 +881,228 @@ class _AddLinkDialogState extends State<_AddLinkDialog> {
           child: const Text('Add'),
         ),
       ],
+    );
+  }
+}
+
+// ADMR-71 — private evidence attachments. Storage path is deterministic
+// (support_case_evidence/{caseId}/{requestId}), computed the same way the
+// server itself computes it (functions/src/admin/supportCases.ts's own
+// evidencePath) -- never a client-invented path. A retry reuses the SAME
+// requestId (and re-uploads the same bytes to the same path), so a failed
+// upload or a failed finalize call can always be retried without ever
+// creating a duplicate evidence record -- attachSupportCaseEvidenceCore's
+// own request-id-keyed idempotency handles that server-side exactly like
+// createSupportCase/addSupportCaseNote (ADMR-66).
+class _EvidenceTab extends StatefulWidget {
+  const _EvidenceTab({required this.firestore, required this.caseId});
+  final FirebaseFirestore firestore;
+  final String caseId;
+
+  @override
+  State<_EvidenceTab> createState() => _EvidenceTabState();
+}
+
+class _EvidenceTabState extends State<_EvidenceTab> {
+  static const _allowedExtensions = ['jpg', 'jpeg', 'png', 'pdf'];
+
+  bool _uploading = false;
+  double _progress = 0;
+  String? _error;
+  PlatformFile? _pendingFile;
+  String? _pendingRequestId;
+
+  String? _contentTypeFor(String name) {
+    final n = name.toLowerCase();
+    if (n.endsWith('.png')) return 'image/png';
+    if (n.endsWith('.jpg') || n.endsWith('.jpeg')) return 'image/jpeg';
+    if (n.endsWith('.pdf')) return 'application/pdf';
+    return null;
+  }
+
+  Future<void> _pickAndUpload() async {
+    final result = await FilePicker.platform.pickFiles(
+      type: FileType.custom,
+      allowedExtensions: _allowedExtensions,
+      withData: true,
+    );
+    if (result == null || result.files.isEmpty) return;
+    final file = result.files.first;
+    if (file.bytes == null) {
+      if (mounted) SnackbarHelper.showError(context, 'Could not read that file. Try again.');
+      return;
+    }
+    final requestId = const Uuid().v4();
+    setState(() {
+      _pendingFile = file;
+      _pendingRequestId = requestId;
+    });
+    await _upload(file, requestId);
+  }
+
+  Future<void> _retry() async {
+    final file = _pendingFile;
+    final requestId = _pendingRequestId;
+    if (file == null || requestId == null) return;
+    await _upload(file, requestId);
+  }
+
+  Future<void> _upload(PlatformFile file, String requestId) async {
+    final contentType = _contentTypeFor(file.name);
+    setState(() {
+      _uploading = true;
+      _progress = 0;
+      _error = null;
+    });
+    try {
+      if (contentType == null) {
+        throw Exception('Unsupported file type');
+      }
+      final path = 'support_case_evidence/${widget.caseId}/$requestId';
+      final task = FirebaseStorage.instance
+          .ref(path)
+          .putData(file.bytes!, SettableMetadata(contentType: contentType));
+      task.snapshotEvents.listen((snapshot) {
+        if (mounted && snapshot.totalBytes > 0) {
+          setState(() => _progress = snapshot.bytesTransferred / snapshot.totalBytes);
+        }
+      });
+      await task;
+      await FirebaseFunctions.instance.httpsCallable('attachSupportCaseEvidence').call<Map<String, dynamic>>({
+        'caseId': widget.caseId,
+        'requestId': requestId,
+        'originalFileName': file.name,
+      });
+      if (mounted) {
+        SnackbarHelper.showSuccess(context, 'Evidence attached');
+        setState(() {
+          _pendingFile = null;
+          _pendingRequestId = null;
+        });
+      }
+    } on FirebaseFunctionsException catch (e) {
+      if (mounted) setState(() => _error = e.message ?? 'Could not attach that evidence. You can retry.');
+    } catch (_) {
+      if (mounted) setState(() => _error = 'Upload failed. You can retry — nothing will be duplicated.');
+    } finally {
+      if (mounted) setState(() => _uploading = false);
+    }
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    return Column(
+      children: [
+        Padding(
+          padding: const EdgeInsets.all(12),
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              Align(
+                alignment: Alignment.centerLeft,
+                child: OutlinedButton.icon(
+                  onPressed: _uploading ? null : _pickAndUpload,
+                  icon: const Icon(Icons.upload_file),
+                  label: const Text('Attach evidence'),
+                ),
+              ),
+              const SizedBox(height: 4),
+              Text(
+                'Photos or PDF documents, up to 10MB. Only admins can view these.',
+                style: TextStyle(fontSize: 12, color: Colors.grey.shade600),
+              ),
+              if (_uploading) ...[
+                const SizedBox(height: 12),
+                ClipRRect(
+                  borderRadius: BorderRadius.circular(4),
+                  child: LinearProgressIndicator(value: _progress > 0 ? _progress : null, minHeight: 6),
+                ),
+                const SizedBox(height: 4),
+                Text('Uploading… ${(_progress * 100).toInt()}%', style: const TextStyle(fontSize: 12)),
+              ],
+              if (_error != null && !_uploading) ...[
+                const SizedBox(height: 8),
+                Row(
+                  children: [
+                    Expanded(
+                      child: Text(_error!, style: TextStyle(color: AppColors.error, fontSize: 13)),
+                    ),
+                    TextButton(onPressed: _retry, child: const Text('Retry')),
+                  ],
+                ),
+              ],
+            ],
+          ),
+        ),
+        Expanded(
+          child: PaginatedQueryList(
+            baseQuery: widget.firestore
+                .collection('support_case_evidence')
+                .where('caseId', isEqualTo: widget.caseId)
+                .orderBy('uploadedAt', descending: true),
+            emptyLabel: 'No evidence attached yet.',
+            itemBuilder: (context, doc) {
+              final d = doc.data();
+              return _EvidenceTile(data: d);
+            },
+          ),
+        ),
+      ],
+    );
+  }
+}
+
+class _EvidenceTile extends StatelessWidget {
+  const _EvidenceTile({required this.data});
+  final Map<String, dynamic> data;
+
+  bool get _isImage => ((data['contentType'] as String?) ?? '').startsWith('image/');
+
+  Future<void> _view(BuildContext context) async {
+    final path = data['storagePath'] as String?;
+    if (path == null) return;
+    try {
+      final url = await FirebaseStorage.instance.ref(path).getDownloadURL();
+      if (context.mounted) {
+        await showDialog<void>(
+          context: context,
+          builder: (_) => AlertDialog(
+            content: _isImage
+                ? Image.network(url, errorBuilder: (_, __, ___) => const Text('Could not load image.'))
+                : Text('This is a document. Open it: $url'),
+          ),
+        );
+      }
+    } catch (_) {
+      if (context.mounted) SnackbarHelper.showError(context, 'Could not open this file.');
+    }
+  }
+
+  String _sizeLabel(num? bytes) {
+    if (bytes == null) return '';
+    final kb = bytes / 1024;
+    if (kb < 1024) return '${kb.toStringAsFixed(0)} KB';
+    return '${(kb / 1024).toStringAsFixed(1)} MB';
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    final name = (data['originalFileName'] as String?) ?? 'Evidence file';
+    final uploadedBy = (data['uploadedBy'] as String?) ?? '';
+    return Card(
+      margin: const EdgeInsets.symmetric(horizontal: 12, vertical: 4),
+      child: ListTile(
+        leading: Icon(_isImage ? Icons.image_outlined : Icons.picture_as_pdf_outlined),
+        title: Text(name),
+        subtitle: Text('${_sizeLabel(data['size'] as num?)} · uploaded by $uploadedBy'),
+        trailing: Wrap(
+          spacing: 4,
+          children: [
+            TextButton(onPressed: () => _view(context), child: const Text('View')),
+            _Timestamp(value: data['uploadedAt']),
+          ],
+        ),
+      ),
     );
   }
 }
