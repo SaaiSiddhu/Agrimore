@@ -841,6 +841,30 @@ void main() {
         expect(h.isSearchActive, isFalse);
         expect(h.searchResult, isNull);
       });
+
+      test('DLVC1: switching rider accounts while a list page fetch is in flight discards the stale page', () async {
+        final gate = Completer<HistoryPage>();
+        final h = RiderHistory(fetch: (rider, query, cursor, size) => gate.future)..bind('r1');
+        final pending = h.loadMore(); // in flight, not yet resolved
+        h.bind('r2'); // account switch WHILE the above page fetch is still pending
+        gate.complete((items: [historyOrder('secretA', {'orderNumber': 'A'})], cursor: 'c1', hasMore: true));
+        await pending;
+        expect(h.items, isEmpty, reason: 'rider A\'s late page must never land under rider B\'s session');
+        expect(h.loading, isFalse, reason: 'the stale response must not leave the NEW session stuck loading forever');
+      });
+
+      test('DLVC1: switching rider accounts while counts are in flight discards the stale counts', () async {
+        final gate = Completer<HistoryCounts>();
+        final h = RiderHistory(
+          fetch: (rider, query, cursor, size) async => (items: <OrderModel>[], cursor: null, hasMore: false),
+          counts: (rider, since, until) => gate.future,
+        )..bind('r1');
+        await h.loadMore(); // starts the counts fetch (fire-and-forget) but does not await it
+        h.bind('r2');
+        gate.complete((all: 99, delivered: 99, cancelled: 0, returned: 0)); // rider A's stale counts arrive late
+        await flushMicrotasks();
+        expect(h.counts, isNull, reason: 'rider A\'s late counts must never land under rider B\'s session');
+      });
     });
 
     group('DLVH9: search errors are distinct from a genuine not-found result', () {
