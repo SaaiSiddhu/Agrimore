@@ -10,6 +10,7 @@ import 'package:provider/provider.dart';
 import '../../account/support_card.dart';
 import '../../data/order_timeline.dart';
 import '../../data/rider_history.dart';
+import '../../data/rider_work.dart' show RiderDataError;
 import '../../design_system/design_system.dart';
 import '../../l10n/app_localizations.dart';
 import '../../money/money_text.dart';
@@ -434,6 +435,20 @@ class _SearchResult extends StatelessWidget {
   Widget build(BuildContext context) {
     final l10n = AppLocalizations.of(context);
     if (history.searching) return const ActiveWorkLoading();
+    // DLVH9: a query FAILURE is not the same fact as a genuine no-match --
+    // shown distinctly, with a retry, rather than the not-found message.
+    final error = history.searchError;
+    if (error != null) {
+      return DeliveryErrorState(
+        title: switch (error) {
+          RiderDataError.permission => l10n.activeWorkErrorPermission,
+          RiderDataError.offline => l10n.activeWorkErrorOffline,
+          RiderDataError.unknown => l10n.historySearchError,
+        },
+        retryLabel: l10n.actionRetry,
+        onRetry: () => history.search(history.searchText),
+      );
+    }
     final result = history.searchResult;
     if (result != null) {
       return ListView(

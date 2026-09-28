@@ -1777,13 +1777,17 @@
   "@historyEmptyFiltered": {
     "description": "History with a filter and no match"
   },
-  "historyOrderIdSearchHint": "Search by Order ID",
+  "historyOrderIdSearchHint": "Enter the exact Order ID",
   "@historyOrderIdSearchHint": {
-    "description": "History: placeholder for the Order ID search field"
+    "description": "History: placeholder for the Order ID search field. Exact match only -- must not imply partial/fuzzy search"
   },
   "historyOrderIdSearchClear": "Clear search",
   "@historyOrderIdSearchClear": {
     "description": "History: tooltip for the Order ID search field's own clear button"
+  },
+  "historySearchError": "Couldn't search right now. Try again.",
+  "@historySearchError": {
+    "description": "History: an Order ID search failed to even run (offline, permission, or another error) -- distinct from a genuine not-found result"
   },
   "historySearchNotFound": "No delivery found with that Order ID",
   "@historySearchNotFound": {

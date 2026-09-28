@@ -11,7 +11,7 @@ import 'package:delivery/design_system/design_system.dart'
 import 'package:delivery/data/rider_history.dart';
 import 'package:delivery/inbox/rider_inbox.dart';
 import 'package:delivery/l10n/app_localizations.dart';
-import 'package:delivery/data/rider_work.dart' show OrderDoc;
+import 'package:delivery/data/rider_work.dart' show OrderDoc, RiderDataError;
 import 'package:delivery/money/rider_money.dart';
 import 'package:delivery/providers/location_provider.dart';
 import 'package:delivery/providers/order_provider.dart';
@@ -734,6 +734,117 @@ void main() {
         expect(h.isSearchActive, isFalse);
         expect(h.searchResult, isNull);
       });
+    });
+
+    group('DLVH9: search errors are distinct from a genuine not-found result', () {
+      test('a FirebaseException failure sets searchError, not searchNotFound', () async {
+        final h = RiderHistory(
+          fetch: (rider, query, cursor, size) async => (items: <OrderModel>[], cursor: null, hasMore: false),
+          search: (rider, orderNumber) async => throw FirebaseException(plugin: 'firestore', code: 'unavailable'),
+        )..bind('r1');
+        await h.search('AGM-1');
+        expect(h.searchError, RiderDataError.offline);
+        expect(h.searchNotFound, isFalse, reason: 'a query failure is not the same fact as a genuine no-match');
+        expect(h.searchResult, isNull);
+      });
+
+      test('a permission-denied failure maps to RiderDataError.permission, not unknown', () async {
+        final h = RiderHistory(
+          fetch: (rider, query, cursor, size) async => (items: <OrderModel>[], cursor: null, hasMore: false),
+          search: (rider, orderNumber) async => throw FirebaseException(plugin: 'firestore', code: 'permission-denied'),
+        )..bind('r1');
+        await h.search('AGM-1');
+        expect(h.searchError, RiderDataError.permission);
+      });
+
+      test('a missing-index failure (failed-precondition) is a search error, never a false not-found', () async {
+        // The exact scenario this phase exists to fix: an unresolved index dependency
+        // must fail honestly, not read to the rider as "no delivery with that Order ID".
+        final h = RiderHistory(
+          fetch: (rider, query, cursor, size) async => (items: <OrderModel>[], cursor: null, hasMore: false),
+          search: (rider, orderNumber) async => throw FirebaseException(plugin: 'firestore', code: 'failed-precondition'),
+        )..bind('r1');
+        await h.search('AGM-1');
+        expect(h.searchError, isNotNull);
+        expect(h.searchNotFound, isFalse);
+      });
+
+      test('a non-Firebase exception maps to RiderDataError.unknown', () async {
+        final h = RiderHistory(
+          fetch: (rider, query, cursor, size) async => (items: <OrderModel>[], cursor: null, hasMore: false),
+          search: (rider, orderNumber) async => throw Exception('boom'),
+        )..bind('r1');
+        await h.search('AGM-1');
+        expect(h.searchError, RiderDataError.unknown);
+      });
+
+      test('a fresh search clears a stale error from a previous failed attempt', () async {
+        var fail = true;
+        final order = historyOrder('o1', {'orderNumber': 'AGM-1'});
+        final h = RiderHistory(
+          fetch: (rider, query, cursor, size) async => (items: <OrderModel>[], cursor: null, hasMore: false),
+          search: (rider, orderNumber) async {
+            if (fail) throw FirebaseException(plugin: 'firestore', code: 'unavailable');
+            return order;
+          },
+        )..bind('r1');
+        await h.search('AGM-1');
+        expect(h.searchError, isNotNull);
+        fail = false;
+        await h.search('AGM-1');
+        expect(h.searchError, isNull, reason: 'a successful retry must not leave the old error lingering');
+        expect(h.searchResult, order);
+      });
+
+      test('clearSearch resets a lingering error, not only the result', () async {
+        final h = RiderHistory(
+          fetch: (rider, query, cursor, size) async => (items: <OrderModel>[], cursor: null, hasMore: false),
+          search: (rider, orderNumber) async => throw FirebaseException(plugin: 'firestore', code: 'unavailable'),
+        )..bind('r1');
+        await h.search('AGM-1');
+        expect(h.searchError, isNotNull);
+        h.clearSearch();
+        expect(h.searchError, isNull);
+      });
+
+      test('switching rider accounts while a search is in flight discards the stale response', () async {
+        final gate = Completer<OrderModel?>();
+        final h = RiderHistory(
+          fetch: (rider, query, cursor, size) async => (items: <OrderModel>[], cursor: null, hasMore: false),
+          search: (rider, orderNumber) => gate.future,
+        )..bind('r1');
+        final pending = h.search('AGM-1'); // in flight, not yet resolved
+        h.bind('r2'); // account switch WHILE the above search is still pending
+        gate.complete(historyOrder('o1', {'orderNumber': 'AGM-1'})); // the stale r1 response arrives late
+        await pending;
+        expect(h.isSearchActive, isFalse, reason: 'the stale r1 search result must not resurrect after switching to r2');
+        expect(h.searchResult, isNull);
+        expect(h.searchError, isNull);
+      });
+    });
+
+    testWidgets('DLVH9: a search failure shows a distinct, retryable error, not the not-found message', (t) async {
+      var fail = true;
+      final order = historyOrder('o1', {'orderNumber': 'AGM-1'});
+      await t.pumpWidget(host(
+        const RiderHistoryScreen(),
+        historyFetch: (rider, query, cursor, size) async => (items: <OrderModel>[], cursor: null, hasMore: false),
+        historySearch: (rider, orderNumber) async {
+          if (fail) throw FirebaseException(plugin: 'firestore', code: 'unavailable');
+          return order;
+        },
+      ));
+      await t.pumpAndSettle();
+      await t.enterText(find.byKey(const ValueKey('history-search-field')), 'AGM-1');
+      await t.pumpAndSettle();
+      expect(find.text("Couldn't reach Agrimore. Check your connection."), findsOneWidget);
+      expect(find.text('No delivery found with that Order ID'), findsNothing);
+
+      fail = false;
+      await t.tap(find.text('Try again'));
+      await t.pumpAndSettle();
+      expect(t.takeException(), isNull);
+      expect(find.text('Order AGM-1'), findsOneWidget);
     });
 
     testWidgets('detail shows this order\'s pay and whether it is in a statement', (t) async {

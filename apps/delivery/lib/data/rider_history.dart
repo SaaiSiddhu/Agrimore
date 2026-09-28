@@ -223,6 +223,12 @@ class RiderHistory extends ChangeNotifier {
   bool _searching = false;
   OrderModel? _searchResult;
   bool _searchNotFound = false;
+
+  /// DLVH9: a query FAILURE (offline, permission, a missing index) is not
+  /// the same fact as a genuine "no order with that id" -- conflating them
+  /// previously showed the not-found message even when the search could not
+  /// run at all. Cleared on every fresh [search] attempt and by [clearSearch].
+  RiderDataError? _searchError;
   int _searchToken = 0;
 
   List<OrderModel> get items => List.unmodifiable(_items);
@@ -236,6 +242,7 @@ class RiderHistory extends ChangeNotifier {
   bool get searching => _searching;
   OrderModel? get searchResult => _searchResult;
   bool get searchNotFound => _searchNotFound;
+  RiderDataError? get searchError => _searchError;
 
   /// Looks up exactly one order by its exact Order ID (`orderNumber`),
   /// scoped only by rider ownership -- independent of the current status/
@@ -253,6 +260,7 @@ class RiderHistory extends ChangeNotifier {
     _searching = true;
     _searchResult = null;
     _searchNotFound = false;
+    _searchError = null;
     notifyListeners();
     if (riderId == null) {
       _searching = false;
@@ -265,11 +273,14 @@ class RiderHistory extends ChangeNotifier {
       if (token != _searchToken) return; // superseded by a newer search/clear
       _searchResult = found;
       _searchNotFound = found == null;
+    } on FirebaseException catch (e) {
+      if (token != _searchToken) return;
+      debugPrint('History search failed: ${e.code}');
+      _searchError = riderDataErrorOf(e.code);
     } catch (e) {
       if (token != _searchToken) return;
       debugPrint('History search failed: $e');
-      _searchResult = null;
-      _searchNotFound = true;
+      _searchError = RiderDataError.unknown;
     } finally {
       if (token == _searchToken) {
         _searching = false;
@@ -285,6 +296,7 @@ class RiderHistory extends ChangeNotifier {
     _searchText = '';
     _searching = false;
     _searchResult = null;
+    _searchError = null;
     _searchNotFound = false;
     notifyListeners();
   }
@@ -365,6 +377,7 @@ class RiderHistory extends ChangeNotifier {
     _searching = false;
     _searchResult = null;
     _searchNotFound = false;
+    _searchError = null;
     notifyListeners();
   }
 
