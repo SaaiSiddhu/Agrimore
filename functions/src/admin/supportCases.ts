@@ -116,7 +116,10 @@ function writeEventTx(
 
 export type CreateSupportCaseVerdict =
   | { kind: "created"; caseId: string; alreadyApplied: boolean }
-  | { kind: "refused"; reason: "bad_request" | "actor_not_found" | "request_id_conflict" };
+  | {
+      kind: "refused";
+      reason: "bad_request" | "actor_not_found" | "request_id_conflict" | "initial_link_target_not_found";
+    };
 
 export async function createSupportCaseCore(
   db: Db,
@@ -129,23 +132,42 @@ export async function createSupportCaseCore(
   const category = typeof d.category === "string" ? d.category.trim() : "";
   const primaryActor = parseActorRef(d.primaryActor);
   const requestId = typeof d.requestId === "string" ? d.requestId.trim() : "";
+  // ADMR-67: an optional link recorded in the SAME write as creation --
+  // e.g. Order 360's own "raise a case" records the order relationship
+  // atomically, never a separate create-then-link step (the "create case,
+  // then maybe link it later" partial-success trap).
+  let initialLink: LinkedRecord | undefined;
+  if (d.initialLink !== undefined && d.initialLink !== null) {
+    initialLink = parseLinkedRecord(d.initialLink);
+    if (!initialLink) return { kind: "refused", reason: "bad_request" };
+  }
   if (!title || title.length > MAX_TITLE || !category || !primaryActor || !REQUEST_ID.test(requestId)) {
     return { kind: "refused", reason: "bad_request" };
   }
-  // Checked once, outside the transaction, since it never changes once
-  // true -- mirrors linkSupportCaseRecordCore's own targetSnap check.
+  // Both checked once, outside the transaction, since neither changes
+  // once true -- mirrors linkSupportCaseRecordCore's own targetSnap check.
   if (!(await assertActorExists(db, primaryActor))) {
     return { kind: "refused", reason: "actor_not_found" };
+  }
+  if (initialLink) {
+    const targetSnap = await db.collection(LINK_COLLECTION[initialLink.type]).doc(initialLink.id).get();
+    if (!targetSnap.exists) return { kind: "refused", reason: "initial_link_target_not_found" };
   }
   const caseRef = db.collection("support_cases").doc(`req_${adminUid}_${requestId}`);
   return db.runTransaction(async (tx): Promise<CreateSupportCaseVerdict> => {
     const existing = await tx.get(caseRef);
     if (existing.exists) {
       const prior = existing.data()!;
+      const priorLinks: LinkedRecord[] = Array.isArray(prior.linkedRecords) ? prior.linkedRecords : [];
       const samePayload =
         prior.title === title &&
         prior.category === category &&
-        sameActorRef(prior.primaryActor as ActorRef | undefined, primaryActor);
+        sameActorRef(prior.primaryActor as ActorRef | undefined, primaryActor) &&
+        // A call that doesn't ask about a link is compatible with any prior
+        // state; a call that DOES specify one requires it to already be
+        // among the case's own links (allows other links added later by
+        // separate calls without treating a legitimate replay as a conflict).
+        (initialLink === undefined || priorLinks.some((l) => sameLinkedRecord(l, initialLink!)));
       if (!samePayload) {
         return { kind: "refused", reason: "request_id_conflict" };
       }
@@ -171,10 +193,15 @@ export async function createSupportCaseCore(
       reopenedAt: null,
       reopenedBy: null,
       reopenReason: null,
-      linkedRecords: [],
+      linkedRecords: initialLink ? [initialLink] : [],
       version: 1,
     });
-    writeEventTx(tx, db, caseRef.id, "created", adminUid, at, { title, category, primaryActor });
+    writeEventTx(tx, db, caseRef.id, "created", adminUid, at, {
+      title,
+      category,
+      primaryActor,
+      ...(initialLink ? { initialLink } : {}),
+    });
     return { kind: "created", caseId: caseRef.id, alreadyApplied: false };
   });
 }
@@ -397,6 +424,7 @@ function refuse(reason: string): never {
     source_not_found: ["not-found", "That ticket, incident or exception could not be found"],
     source_actor_missing: ["invalid-argument", "That record has no rider it could be linked through"],
     request_id_conflict: ["invalid-argument", "This request id was already used with different details — retry with a new one"],
+    initial_link_target_not_found: ["invalid-argument", "That record could not be found"],
   };
   const [code, message] = table[reason] ?? ["internal", "Could not complete that"];
   throw new HttpsError(code as never, message, { reason });

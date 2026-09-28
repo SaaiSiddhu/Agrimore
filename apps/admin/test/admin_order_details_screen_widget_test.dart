@@ -27,6 +27,7 @@ import 'package:provider/provider.dart';
 
 import 'package:agrimore_admin/providers/order_provider.dart';
 import 'package:agrimore_admin/screens/admin/orders/admin_order_details_screen.dart';
+import 'package:agrimore_admin/screens/admin/widgets/actor_support_cases_section.dart';
 
 void main() {
   testWidgets(
@@ -230,6 +231,94 @@ void main() {
       expect(find.text('Delivery Partner'), findsOneWidget);
       expect(find.text('Sales Associate'), findsOneWidget);
       expect(find.text('Seller shipped the wrong item'), findsOneWidget);
+      expect(tester.takeException(), isNull);
+    });
+  });
+
+  // ADMR-67 additions below: cases genuinely LINKED to this order, distinct
+  // from ADMR-64's own actor-context history above.
+  //
+  // The cross-order isolation guarantee itself (order A's own case never
+  // leaking into order B's view, even sharing a customer) is proven against
+  // a REAL Firebase emulator in phaseADMR67_order_specific_cases_test.js
+  // (o05/o06/o07, 7/7 passing) -- NOT here. A fresh, isolated probe during
+  // this phase confirmed fake_cloud_firestore's own arrayContains never
+  // matches a Map-shaped array element at all (0 docs found for the single
+  // simplest positive case, not just the cross-order negative one) --
+  // Dart's default Map.== is identity-based, not the value-based comparison
+  // real Firestore's own array-contains uses server-side. New memory:
+  // agrimore-fake-cloud-firestore-arraycontains-map-never-matches. These
+  // widget tests are scoped to what this harness CAN prove honestly: the
+  // two-section split renders with the right headers and doesn't crash.
+  group('Order-linked cases section (ADMR-67)', () {
+    testWidgets(
+        'renders both section headers without crashing, real filtering is '
+        'proven server-side only (see phaseADMR67_order_specific_cases_test.js)',
+        (tester) async {
+      final firestore = FakeFirebaseFirestore();
+      final doc = await firestore.collection('orders').add({
+        'orderNumber': 'ORD-LINK1',
+        'orderStatus': 'processing',
+        'total': 100.0,
+        'subtotal': 100.0,
+        'paymentMethod': 'cod',
+        'userId': 'cust_link1',
+        'items': <Map<String, dynamic>>[],
+        'deliveryAddress': {
+          'name': 'Test',
+          'phone': '9999999999',
+          'addressLine1': '1 Test St',
+          'addressLine2': '',
+          'city': 'Chennai',
+          'state': 'Tamil Nadu',
+          'zipcode': '600001',
+        },
+        'createdAt': Timestamp.fromDate(DateTime(2026, 9, 10)),
+      });
+      await firestore.collection('support_cases').add({
+        'title': 'Genuinely about this order',
+        'category': 'delivery_issue',
+        'primaryActor': {'type': 'customer', 'id': 'cust_link1'},
+        'linkedRecords': [
+          {'type': 'order', 'id': doc.id}
+        ],
+        'status': 'open',
+        'updatedAt': Timestamp.fromDate(DateTime(2026, 9, 11)),
+      });
+      // Same customer, but this case is about a DIFFERENT order -- must
+      // never appear in the "about this order" section.
+      await firestore.collection('support_cases').add({
+        'title': 'About some other order entirely',
+        'category': 'delivery_issue',
+        'primaryActor': {'type': 'customer', 'id': 'cust_link1'},
+        'linkedRecords': [
+          {'type': 'order', 'id': 'a-completely-different-order'}
+        ],
+        'status': 'open',
+        'updatedAt': Timestamp.fromDate(DateTime(2026, 9, 12)),
+      });
+
+      await tester.pumpWidget(
+        MaterialApp(
+          home: ChangeNotifierProvider<OrderProvider>(
+            create: (_) => OrderProvider(firestore: firestore),
+            child: AdminOrderDetailsScreen(orderId: doc.id),
+          ),
+        ),
+      );
+      await tester.pumpAndSettle();
+
+      expect(find.text('Cases About This Order'), findsOneWidget);
+      expect(find.text('Other Cases Involving These People'), findsOneWidget);
+      expect(find.byType(OrderLinkedSupportCasesSection), findsOneWidget);
+      // Both seeded cases share primaryActor.customer, so ADMR-63's own
+      // actor-scoped query (proven separately, real Firestore semantics
+      // that DO work under this harness) legitimately renders both of them
+      // in "Other Cases Involving These People" -- this only confirms that
+      // section still works normally alongside the new one, not the new
+      // query's own filtering (see the group's own header comment).
+      expect(find.text('Genuinely about this order'), findsOneWidget);
+      expect(find.text('About some other order entirely'), findsOneWidget);
       expect(tester.takeException(), isNull);
     });
   });

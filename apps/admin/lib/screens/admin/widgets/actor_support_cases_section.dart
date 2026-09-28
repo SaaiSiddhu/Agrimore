@@ -125,6 +125,203 @@ class _CaseTile extends StatelessWidget {
   }
 }
 
+// ADMR-67 — cases genuinely ABOUT one order, not just history for its
+// actors. Queries linkedRecords (array-contains {type:'order', id}) rather
+// than primaryActor -- a customer's case about a DIFFERENT order must
+// never appear here, proven server-side (phaseADMR67_order_specific_cases_
+// test.js, o05). Deliberately a separate widget from ActorSupportCasesSection
+// rather than a mode flag on it: the query shape, empty-state copy and
+// raise-case flow (actor is SELECTABLE here, fixed there) are all different
+// enough that a shared widget would need more branching than it saves.
+class OrderLinkedSupportCasesSection extends StatefulWidget {
+  const OrderLinkedSupportCasesSection({
+    super.key,
+    required this.firestore,
+    required this.orderId,
+    required this.availableActors,
+  });
+
+  final FirebaseFirestore firestore;
+  final String orderId;
+
+  /// Every actor role this specific order actually carries (customer
+  /// always; seller/rider/associate only when present) -- mirrors
+  /// _buildOrderSupportCasesCard's own conditional list exactly, so
+  /// "raise a case" only ever offers an actor genuinely on this order.
+  final List<({String type, String id, String label})> availableActors;
+
+  @override
+  State<OrderLinkedSupportCasesSection> createState() => _OrderLinkedSupportCasesSectionState();
+}
+
+class _OrderLinkedSupportCasesSectionState extends State<OrderLinkedSupportCasesSection> {
+  int _refreshTick = 0;
+
+  Future<void> _raiseCase() async {
+    final created = await showDialog<bool>(
+      context: context,
+      builder: (_) => _RaiseOrderCaseDialog(orderId: widget.orderId, availableActors: widget.availableActors),
+    );
+    if (created == true && mounted) {
+      SnackbarHelper.showSuccess(context, 'Case created');
+      setState(() => _refreshTick++);
+    }
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        Row(
+          children: [
+            const Expanded(
+              child: Text('Cases about this order',
+                  style: TextStyle(fontWeight: FontWeight.bold, fontSize: 15)),
+            ),
+            OutlinedButton.icon(
+              onPressed: _raiseCase,
+              icon: const Icon(Icons.add),
+              label: const Text('Raise a case'),
+            ),
+          ],
+        ),
+        const SizedBox(height: 8),
+        PaginatedQueryList(
+          key: ValueKey('order-cases-${widget.orderId}-$_refreshTick'),
+          baseQuery: widget.firestore
+              .collection('support_cases')
+              .where('linkedRecords', arrayContains: {'type': 'order', 'id': widget.orderId})
+              .orderBy('updatedAt', descending: true),
+          emptyLabel: 'No support cases are linked to this order yet.',
+          pageSize: 10,
+          shrinkWrapInList: true,
+          itemBuilder: (context, doc) => _CaseTile(doc: doc),
+        ),
+      ],
+    );
+  }
+}
+
+class _RaiseOrderCaseDialog extends StatefulWidget {
+  const _RaiseOrderCaseDialog({required this.orderId, required this.availableActors});
+  final String orderId;
+  final List<({String type, String id, String label})> availableActors;
+
+  @override
+  State<_RaiseOrderCaseDialog> createState() => _RaiseOrderCaseDialogState();
+}
+
+class _RaiseOrderCaseDialogState extends State<_RaiseOrderCaseDialog> {
+  final _titleController = TextEditingController();
+  String _category = kSupportCaseCategories.first;
+  late String _actorType = widget.availableActors.first.type;
+  late String _actorId = widget.availableActors.first.id;
+  bool _busy = false;
+  String? _error;
+  final _requestIds = SupportRequestIdTracker();
+
+  @override
+  void dispose() {
+    _titleController.dispose();
+    super.dispose();
+  }
+
+  Future<void> _submit() async {
+    final title = _titleController.text.trim();
+    if (title.isEmpty) {
+      setState(() => _error = 'Title is required.');
+      return;
+    }
+    setState(() {
+      _busy = true;
+      _error = null;
+    });
+    final requestId =
+        _requestIds.forPayload((title, _category, _actorType, _actorId, widget.orderId));
+    try {
+      await FirebaseFunctions.instance.httpsCallable('createSupportCase').call<Map<String, dynamic>>({
+        'title': title,
+        'category': _category,
+        'primaryActor': {'type': _actorType, 'id': _actorId},
+        'initialLink': {'type': 'order', 'id': widget.orderId},
+        'requestId': requestId,
+      });
+      if (mounted) Navigator.pop(context, true);
+    } on FirebaseFunctionsException catch (e) {
+      setState(() => _error = e.message ?? 'Could not create that case.');
+    } catch (e) {
+      setState(() => _error = 'Could not create that case.');
+    } finally {
+      if (mounted) setState(() => _busy = false);
+    }
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    return AlertDialog(
+      title: const Text('Raise a case for this order'),
+      content: SizedBox(
+        width: 400,
+        child: Column(
+          mainAxisSize: MainAxisSize.min,
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            TextField(
+              controller: _titleController,
+              autofocus: true,
+              maxLength: 200,
+              decoration: const InputDecoration(labelText: 'Title'),
+            ),
+            DropdownButtonFormField<String>(
+              value: _category,
+              decoration: const InputDecoration(labelText: 'Category'),
+              items: [
+                for (final c in kSupportCaseCategories)
+                  DropdownMenuItem(value: c, child: Text(supportCaseCategoryLabel(c))),
+              ],
+              onChanged: (v) => setState(() => _category = v!),
+            ),
+            if (widget.availableActors.length > 1)
+              DropdownButtonFormField<String>(
+                value: '$_actorType:$_actorId',
+                decoration: const InputDecoration(labelText: 'Who this case is primarily about'),
+                items: [
+                  for (final a in widget.availableActors)
+                    DropdownMenuItem(value: '${a.type}:${a.id}', child: Text(a.label)),
+                ],
+                onChanged: (v) {
+                  final actor = widget.availableActors.firstWhere((a) => '${a.type}:${a.id}' == v);
+                  setState(() {
+                    _actorType = actor.type;
+                    _actorId = actor.id;
+                  });
+                },
+              ),
+            if (_error != null) ...[
+              const SizedBox(height: 8),
+              Text(_error!, style: TextStyle(color: Colors.red.shade700)),
+            ],
+          ],
+        ),
+      ),
+      actions: [
+        TextButton(
+          onPressed: _busy ? null : () => Navigator.pop(context, false),
+          child: const Text('Cancel'),
+        ),
+        FilledButton(
+          onPressed: _busy ? null : _submit,
+          child: _busy
+              ? const SizedBox(
+                  width: 16, height: 16, child: CircularProgressIndicator(strokeWidth: 2))
+              : const Text('Create'),
+        ),
+      ],
+    );
+  }
+}
+
 class _RaiseCaseDialog extends StatefulWidget {
   const _RaiseCaseDialog({required this.actorType, required this.actorId});
   final String actorType;
