@@ -7,6 +7,7 @@ import 'package:agrimore_ui/agrimore_ui.dart';
 import 'package:url_launcher/url_launcher.dart';
 
 import 'rider_incidents_admin.dart';
+import '../widgets/actor_support_cases_section.dart' show createOrOpenCaseFromSource;
 
 /// Phase DLV-S2: riders' safety reports (rider_incidents), newest first.
 /// Only the server writes them; this screen acknowledges and resolves
@@ -293,6 +294,16 @@ class _IncidentCardState extends State<_IncidentCard> {
                     onPressed: _busy ? null : _resolve,
                     child: const Text('Resolve'),
                   ),
+                OutlinedButton.icon(
+                  onPressed: () => createOrOpenCaseFromSource(
+                    context,
+                    sourceType: 'rider_incident',
+                    sourceId: widget.id,
+                    defaultCategory: 'delivery_issue',
+                  ),
+                  icon: const Icon(Icons.folder_special_outlined, size: 18),
+                  label: const Text('Create/open case'),
+                ),
               ],
             ),
           ],

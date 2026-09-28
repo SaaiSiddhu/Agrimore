@@ -15,6 +15,17 @@ import 'package:agrimore_ui/agrimore_ui.dart';
 import 'package:url_launcher/url_launcher.dart';
 
 import 'rider_incidents_admin.dart' show appBarTabs, ageLabel;
+import '../widgets/actor_support_cases_section.dart' show createOrOpenCaseFromSource;
+
+/// ADMR-68: maps this collection's own category vocabulary onto the
+/// support-case category vocabulary -- a pre-fill, never authoritative;
+/// the admin can still change it before the real command runs.
+String _mapToSupportCategory(String? ticketCategory) => switch (ticketCategory) {
+      'delivery_issue' => 'delivery_issue',
+      'earnings_payouts' => 'payment_issue',
+      'account_documents' => 'account_issue',
+      _ => 'other',
+    };
 
 class RiderSupportScreen extends StatelessWidget {
   const RiderSupportScreen({super.key});
@@ -294,6 +305,16 @@ class _TicketCardState extends State<_TicketCard> {
                     onPressed: _busy ? null : _close,
                     child: const Text('Close'),
                   ),
+                OutlinedButton.icon(
+                  onPressed: () => createOrOpenCaseFromSource(
+                    context,
+                    sourceType: 'rider_ticket',
+                    sourceId: widget.id,
+                    defaultCategory: _mapToSupportCategory(d['category'] as String?),
+                  ),
+                  icon: const Icon(Icons.folder_special_outlined, size: 18),
+                  label: const Text('Create/open case'),
+                ),
               ],
             ),
           ],

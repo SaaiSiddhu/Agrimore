@@ -420,3 +420,126 @@ class _RaiseCaseDialogState extends State<_RaiseCaseDialog> {
     );
   }
 }
+
+// ADMR-68 — a "Create/open a case from this" action shared by the three
+// rider-scoped operational screens (rider_support_screen.dart,
+// rider_incidents_screen.dart, delivery_problems_screen.dart). Calls the
+// real createSupportCaseFromSource directly -- no client-side requestId
+// needed here, unlike createSupportCase/addSupportCaseNote: this command's
+// own idempotency is keyed by sourceType+sourceId deterministically, proven
+// server-side (phaseADMR65_support_case_links_test.js, f02/f08). Prefers
+// "opened" language over "created" when alreadyExisted comes back true --
+// never the same wording for both, so an admin can tell a fresh case from
+// one that already existed for this exact ticket/incident/exception.
+Future<void> createOrOpenCaseFromSource(
+  BuildContext context, {
+  required String sourceType,
+  required String sourceId,
+  required String defaultCategory,
+}) async {
+  final result = await showDialog<({String title, String category})>(
+    context: context,
+    builder: (_) => _CreateFromSourceDialog(defaultCategory: defaultCategory),
+  );
+  if (result == null || !context.mounted) return;
+  try {
+    final res = await FirebaseFunctions.instance
+        .httpsCallable('createSupportCaseFromSource')
+        .call<Map<String, dynamic>>({
+      'sourceType': sourceType,
+      'sourceId': sourceId,
+      'title': result.title,
+      'category': result.category,
+    });
+    final data = res.data as Map;
+    final caseId = data['caseId'] as String;
+    final alreadyExisted = data['alreadyExisted'] == true;
+    if (context.mounted) {
+      SnackbarHelper.showSuccess(
+        context,
+        alreadyExisted ? 'A case already exists for this — opening it' : 'Case created',
+      );
+      context.push('/support/$caseId');
+    }
+  } on FirebaseFunctionsException catch (e) {
+    if (context.mounted) {
+      SnackbarHelper.showError(context, e.message ?? 'Could not create or open that case.');
+    }
+  } catch (e) {
+    if (context.mounted) SnackbarHelper.showError(context, 'Could not create or open that case.');
+  }
+}
+
+class _CreateFromSourceDialog extends StatefulWidget {
+  const _CreateFromSourceDialog({required this.defaultCategory});
+  final String defaultCategory;
+
+  @override
+  State<_CreateFromSourceDialog> createState() => _CreateFromSourceDialogState();
+}
+
+class _CreateFromSourceDialogState extends State<_CreateFromSourceDialog> {
+  final _titleController = TextEditingController();
+  late String _category = widget.defaultCategory;
+  String? _error;
+
+  @override
+  void dispose() {
+    _titleController.dispose();
+    super.dispose();
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    return AlertDialog(
+      title: const Text('Create or open a support case for this'),
+      content: SizedBox(
+        width: 400,
+        child: Column(
+          mainAxisSize: MainAxisSize.min,
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            TextField(
+              controller: _titleController,
+              autofocus: true,
+              maxLength: 200,
+              decoration: const InputDecoration(labelText: 'Title'),
+            ),
+            DropdownButtonFormField<String>(
+              value: _category,
+              decoration: const InputDecoration(labelText: 'Category'),
+              items: [
+                for (final c in kSupportCaseCategories)
+                  DropdownMenuItem(value: c, child: Text(supportCaseCategoryLabel(c))),
+              ],
+              onChanged: (v) => setState(() => _category = v!),
+            ),
+            const SizedBox(height: 4),
+            Text(
+              'If a case already exists for this exact record, it opens instead of creating a new one.',
+              style: TextStyle(color: Colors.grey.shade600, fontSize: 12),
+            ),
+            if (_error != null) ...[
+              const SizedBox(height: 8),
+              Text(_error!, style: TextStyle(color: Colors.red.shade700)),
+            ],
+          ],
+        ),
+      ),
+      actions: [
+        TextButton(onPressed: () => Navigator.pop(context), child: const Text('Cancel')),
+        FilledButton(
+          onPressed: () {
+            final title = _titleController.text.trim();
+            if (title.isEmpty) {
+              setState(() => _error = 'Title is required.');
+              return;
+            }
+            Navigator.pop(context, (title: title, category: _category));
+          },
+          child: const Text('Continue'),
+        ),
+      ],
+    );
+  }
+}
