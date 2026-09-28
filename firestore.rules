@@ -2440,6 +2440,15 @@ service cloud.firestore {
       allow read: if isAdmin();
       allow write: if false;
     }
+    // ADMR-71: private evidence attachments -- the Firestore record of a
+    // Storage object under support_case_evidence/{caseId}/{requestId}
+    // (storage.rules, admin-only both ways). Same admin-only-read/no-write
+    // shape as its two siblings above; no participant read exists on
+    // support_cases at all, so none should exist on its evidence either.
+    match /support_case_evidence/{evidenceId} {
+      allow read: if isAdmin();
+      allow write: if false;
+    }
 
     // ============================================
     // SUBSCRIPTIONS COLLECTION (Phase FIX-6B — D-COLLECTION-COVERAGE)

@@ -294,4 +294,99 @@ void main() {
       expect(find.textContaining('does not change or delete'), findsOneWidget);
     });
   });
+
+  // ADMR-71 additions below: the Evidence tab for attachSupportCaseEvidence
+  // (server-side idempotent, atomic-audit-event, real-emulator-verified by
+  // functions/scripts/phaseADMR71_evidence_test.js). Scoped to what a
+  // fake_cloud_firestore harness can honestly prove -- rendering of already-
+  // attached evidence records. The upload flow itself (file_picker,
+  // firebase_storage) has no platform channel in a bare `flutter test` VM,
+  // the same disclosed limitation the three rider-scoped screens already
+  // have (ADMR-68's own ledger entry) -- so "Attach evidence" is proven to
+  // RENDER, never tapped, and the real upload+finalize path is proven only
+  // by the real-emulator suite.
+  group('Evidence tab (ADMR-71)', () {
+    Future<void> openEvidenceTab(WidgetTester tester, FakeFirebaseFirestore db, String caseId) async {
+      await pumpScreen(tester, db, caseId);
+      await tester.tap(find.widgetWithText(Tab, 'Evidence'));
+      await tester.pumpAndSettle();
+    }
+
+    testWidgets('shows an honest empty state when nothing is attached yet', (tester) async {
+      final db = FakeFirebaseFirestore();
+      await _seedCase(db, 'c1');
+
+      await openEvidenceTab(tester, db, 'c1');
+
+      expect(find.text('No evidence attached yet.'), findsOneWidget);
+      expect(find.widgetWithText(OutlinedButton, 'Attach evidence'), findsOneWidget);
+      expect(tester.takeException(), isNull);
+    });
+
+    testWidgets('a real evidence record renders its filename, size and uploader', (tester) async {
+      final db = FakeFirebaseFirestore();
+      await _seedCase(db, 'c1');
+      await db.collection('support_case_evidence').doc('c1_req-0001').set({
+        'evidenceId': 'c1_req-0001',
+        'caseId': 'c1',
+        'storagePath': 'support_case_evidence/c1/req-0001',
+        'size': 204800, // 200 KB
+        'contentType': 'image/jpeg',
+        'originalFileName': 'damaged_parcel.jpg',
+        'uploadedBy': 'admin_1',
+        'uploadedAt': Timestamp.fromDate(DateTime(2026, 9, 1)),
+      });
+
+      await openEvidenceTab(tester, db, 'c1');
+
+      expect(find.text('damaged_parcel.jpg'), findsOneWidget);
+      expect(find.textContaining('200 KB'), findsOneWidget);
+      expect(find.textContaining('uploaded by admin_1'), findsOneWidget);
+      expect(find.byIcon(Icons.image_outlined), findsOneWidget);
+      expect(tester.takeException(), isNull);
+    });
+
+    testWidgets('a PDF evidence record shows the document icon, not the image icon', (tester) async {
+      final db = FakeFirebaseFirestore();
+      await _seedCase(db, 'c1');
+      await db.collection('support_case_evidence').doc('c1_req-0002').set({
+        'evidenceId': 'c1_req-0002',
+        'caseId': 'c1',
+        'storagePath': 'support_case_evidence/c1/req-0002',
+        'size': 1048576, // 1 MB
+        'contentType': 'application/pdf',
+        'originalFileName': 'invoice.pdf',
+        'uploadedBy': 'admin_2',
+        'uploadedAt': Timestamp.fromDate(DateTime(2026, 9, 2)),
+      });
+
+      await openEvidenceTab(tester, db, 'c1');
+
+      expect(find.text('invoice.pdf'), findsOneWidget);
+      expect(find.textContaining('1.0 MB'), findsOneWidget);
+      expect(find.byIcon(Icons.picture_as_pdf_outlined), findsOneWidget);
+      expect(find.byIcon(Icons.image_outlined), findsNothing);
+    });
+
+    testWidgets('evidence for a DIFFERENT case never leaks into this one\'s list', (tester) async {
+      final db = FakeFirebaseFirestore();
+      await _seedCase(db, 'c1');
+      await _seedCase(db, 'c2');
+      await db.collection('support_case_evidence').doc('c2_req-0001').set({
+        'evidenceId': 'c2_req-0001',
+        'caseId': 'c2',
+        'storagePath': 'support_case_evidence/c2/req-0001',
+        'size': 1000,
+        'contentType': 'image/png',
+        'originalFileName': 'other_case.png',
+        'uploadedBy': 'admin_1',
+        'uploadedAt': Timestamp.fromDate(DateTime(2026, 9, 1)),
+      });
+
+      await openEvidenceTab(tester, db, 'c1');
+
+      expect(find.text('No evidence attached yet.'), findsOneWidget);
+      expect(find.text('other_case.png'), findsNothing);
+    });
+  });
 }

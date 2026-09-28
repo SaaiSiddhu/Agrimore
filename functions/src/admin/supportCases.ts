@@ -425,6 +425,9 @@ function refuse(reason: string): never {
     source_actor_missing: ["invalid-argument", "That record has no rider it could be linked through"],
     request_id_conflict: ["invalid-argument", "This request id was already used with different details — retry with a new one"],
     initial_link_target_not_found: ["invalid-argument", "That record could not be found"],
+    no_file: ["failed-precondition", "Upload the file first, then try again"],
+    not_allowed_type: ["invalid-argument", "Only images and PDF documents can be attached as evidence"],
+    too_large: ["invalid-argument", "That file is too large (10MB max)"],
   };
   const [code, message] = table[reason] ?? ["internal", "Could not complete that"];
   throw new HttpsError(code as never, message, { reason });
@@ -652,6 +655,114 @@ export async function createSupportCaseFromSourceCore(
   });
 }
 
+// ── private evidence attachments (ADMR-71) ──
+//
+// The one still-unbuilt piece of the support system's own spec: private
+// Storage-based evidence (photos, documents) on a case. Mirrors
+// riderExceptions.ts's own storageLookup exactly -- a fixed, deterministic
+// path is checked against the REAL uploaded object via the Admin SDK
+// (.exists() then .getMetadata()), never trusting a client-claimed size or
+// contentType. The path is derived only from caseId (already confirmed to
+// exist) and requestId (already regex-validated, itself filename-safe) --
+// a client can never point a finalize call at a path outside its own case,
+// the same closed-by-construction property proofPath(orderId) gives
+// delivery proofs. Evidence is append-only (no edit, no delete command),
+// mirroring notes' own established rationale: an investigation trail
+// should not be alterable after the fact.
+
+export const MAX_EVIDENCE_BYTES = 10 * 1024 * 1024;
+const EVIDENCE_CONTENT_TYPES = /^(image\/|application\/pdf$)/;
+
+export type ObjectInfo = { size: number; contentType: string } | null;
+export type ObjectLookup = (path: string) => Promise<ObjectInfo>;
+
+export const storageLookup: ObjectLookup = async (path) => {
+  const file = admin.storage().bucket().file(path);
+  const [exists] = await file.exists();
+  if (!exists) return null;
+  const [meta] = await file.getMetadata();
+  return { size: Number(meta.size ?? 0), contentType: String(meta.contentType ?? "") };
+};
+
+export function evidencePath(caseId: string, requestId: string): string {
+  return `support_case_evidence/${caseId}/${requestId}`;
+}
+
+export type AttachSupportCaseEvidenceVerdict =
+  | { kind: "attached"; evidenceId: string; alreadyApplied: boolean }
+  | {
+      kind: "refused";
+      reason: "bad_request" | "not_found" | "no_file" | "not_allowed_type" | "too_large" | "request_id_conflict";
+    };
+
+export async function attachSupportCaseEvidenceCore(
+  db: Db,
+  adminUid: string,
+  caseId: string,
+  requestIdInput: unknown,
+  originalFileNameInput: unknown,
+  lookup: ObjectLookup,
+  nowMs: number
+): Promise<AttachSupportCaseEvidenceVerdict> {
+  const requestId = typeof requestIdInput === "string" ? requestIdInput.trim() : "";
+  const originalFileName =
+    typeof originalFileNameInput === "string" ? originalFileNameInput.trim().slice(0, 200) : "";
+  if (!caseId || !REQUEST_ID.test(requestId)) {
+    return { kind: "refused", reason: "bad_request" };
+  }
+  const path = evidencePath(caseId, requestId);
+  const caseRef = db.collection("support_cases").doc(caseId);
+  const evidenceRef = db.collection("support_case_evidence").doc(`${caseId}_${requestId}`);
+
+  // Checked once, outside the transaction -- mirrors linkSupportCaseRecordCore's
+  // own precedent for an external existence check that cannot itself race
+  // Firestore's transaction retry mechanics, since the uploaded object, once
+  // present, does not change out from under this check. Skipped entirely on a
+  // replay (the evidence doc already exists) so a retry never re-reads Storage.
+  const existingBefore = await evidenceRef.get();
+  let info: ObjectInfo = null;
+  if (!existingBefore.exists) {
+    info = await lookup(path);
+  }
+
+  return db.runTransaction(async (tx): Promise<AttachSupportCaseEvidenceVerdict> => {
+    const [caseSnap, existing] = await Promise.all([tx.get(caseRef), tx.get(evidenceRef)]);
+    if (!caseSnap.exists) return { kind: "refused", reason: "not_found" };
+    if (existing.exists) {
+      const prior = existing.data()!;
+      if (prior.originalFileName !== originalFileName) {
+        return { kind: "refused", reason: "request_id_conflict" };
+      }
+      // Idempotent replay -- never a second evidence record, never a second event.
+      return { kind: "attached", evidenceId: evidenceRef.id, alreadyApplied: true };
+    }
+    if (!info) return { kind: "refused", reason: "no_file" };
+    if (!EVIDENCE_CONTENT_TYPES.test(info.contentType)) return { kind: "refused", reason: "not_allowed_type" };
+    if (info.size <= 0 || info.size > MAX_EVIDENCE_BYTES) return { kind: "refused", reason: "too_large" };
+    const at = Timestamp.fromMillis(nowMs);
+    tx.set(evidenceRef, {
+      evidenceId: evidenceRef.id,
+      caseId,
+      storagePath: path,
+      size: info.size,
+      contentType: info.contentType,
+      originalFileName,
+      uploadedBy: adminUid,
+      uploadedAt: at,
+    });
+    // Deliberately does NOT bump `version` -- same rationale as a note:
+    // additive evidence never gates or is gated by the assign/status/
+    // resolve/reopen optimistic-concurrency contract.
+    tx.update(caseRef, { updatedAt: at });
+    writeEventTx(tx, db, caseId, "evidence_attached", adminUid, at, {
+      evidenceId: evidenceRef.id,
+      contentType: info.contentType,
+      size: info.size,
+    });
+    return { kind: "attached", evidenceId: evidenceRef.id, alreadyApplied: false };
+  });
+}
+
 // ── link/unlink/create-from-source callables ──
 
 export const linkSupportCaseRecord = onCall({ minInstances: 0, memory: "256MiB" }, async (request) => {
@@ -738,4 +849,16 @@ export const reopenSupportCase = onCall({ minInstances: 0, memory: "256MiB" }, a
   const v = await reopenSupportCaseCore(admin.firestore(), adminUid, caseId, d.reason, d.expectedVersion, Date.now());
   if (v.kind === "refused") refuse(v.reason);
   return { success: true };
+});
+
+export const attachSupportCaseEvidence = onCall({ minInstances: 0, memory: "256MiB" }, async (request) => {
+  const adminUid = await requireAdmin(request);
+  const d = (request.data ?? {}) as Record<string, unknown>;
+  const caseId = typeof d.caseId === "string" ? d.caseId.trim() : "";
+  if (!caseId) throw new HttpsError("invalid-argument", "caseId is required");
+  const v = await attachSupportCaseEvidenceCore(
+    admin.firestore(), adminUid, caseId, d.requestId, d.originalFileName, storageLookup, Date.now()
+  );
+  if (v.kind === "refused") refuse(v.reason);
+  return { success: true, evidenceId: v.evidenceId, alreadyApplied: v.alreadyApplied };
 });

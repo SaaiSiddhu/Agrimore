@@ -350,6 +350,26 @@ service firebase.storage {
     }
 
     // ============================================
+    // SUPPORT CASE EVIDENCE (Phase ADMR-71) — admin only, both ways
+    // ============================================
+    // Unlike support_attachments above (a rider uploads their own ticket's
+    // attachment), only admins ever operate the case system at all -- no
+    // participant read/write exists on support_cases in firestore.rules
+    // either. fileName here is the case's own requestId (deterministic,
+    // never client-chosen path text), so no owner-uid prefix check is
+    // needed the way products/{fileName} or profiles/{userId}/{fileName}
+    // need one. "Photos, documents" per the owner's own spec -- images plus
+    // PDF, unlike every isImage()-only block above.
+    function isImageOrPdf() {
+      return request.resource.contentType.matches('image/.*') ||
+        request.resource.contentType == 'application/pdf';
+    }
+    match /support_case_evidence/{caseId}/{fileName} {
+      allow read: if isAdmin();
+      allow write: if isAdmin() && isValidFileSize() && isImageOrPdf();
+    }
+
+    // ============================================
     // BUSINESS POST IMAGES (Phase BUSINESS-NETWORK-2, slice 2)
     // ============================================
     // Mirrors product_images/{fileName} above exactly: public read, write

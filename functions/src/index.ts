@@ -60,6 +60,7 @@ export {
   linkSupportCaseRecord,
   unlinkSupportCaseRecord,
   createSupportCaseFromSource,
+  attachSupportCaseEvidence,
 } from "./admin/supportCases";
 
 // ============================================
