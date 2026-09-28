@@ -865,6 +865,20 @@
             ]
         },
         {
+            "collectionGroup": "seller_payout_change_requests",
+            "queryScope": "COLLECTION",
+            "fields": [
+                {
+                    "fieldPath": "sellerId",
+                    "order": "ASCENDING"
+                },
+                {
+                    "fieldPath": "status",
+                    "order": "ASCENDING"
+                }
+            ]
+        },
+        {
             "collectionGroup": "rider_earnings",
             "queryScope": "COLLECTION",
             "fields": [
