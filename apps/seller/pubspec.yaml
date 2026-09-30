@@ -60,8 +60,9 @@ dev_dependencies:
 
 flutter_launcher_icons:
   android: "launcher_icon"
-  ios: false
-  image_path: "assets/images/seller_logo.png"
+  ios: true
+  image_path: "assets/Icons/app_icon.png"
+  remove_alpha_ios: true
 
 flutter:
   uses-material-design: true
@@ -75,6 +76,7 @@ flutter:
   # same phase). Do not re-add it.
   assets:
     - assets/images/
+    - assets/images/clay-icons/normalized/
 
   # SELLER-REDESIGN-1 (decisions D0/D14b): Inter 4.1 (SIL OFL 1.1, assets/fonts/OFL.txt)
   # bundled with the seller app itself — the seller's own design system.

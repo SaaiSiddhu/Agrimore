@@ -1,0 +1,7 @@
+# Weekly off and holidays clay icon
+
+Asset: apps/seller/assets/images/clay-icons/weekly-off-holidays-v1.png
+
+Created using built-in image generation.
+
+Create a single premium claymorphism mobile UI icon representing 'Weekly off & Holidays' for AgriMore Seller. Square canvas1024x1024 with GENUINELY TRANSPARENT alpha background, no background colour or tile, no floor, no surrounding shadow. A chunky rounded miniature desk calendar, straight-on with slight three-quarter depth, soft ivory calendar body, deep green-teal #0F766E rounded top header, two mint clay binding loops. Calendar face has a tidy simple3by3 grid of rounded recessed squares; most pale mint, two highlighted teal day squares to suggest scheduled days off. No digits no letters no text. A small attached circular mint badge at lower right containing a simple raised teal sun with short rounded rays, signifying holidays/rest days. Beautiful tactile matte smooth clay, plush bevelled edges, restrained soft top-left studio lighting and object-only ambient occlusion, strong readable silhouette. Palette #0F766E teal #DDF3EA mint #5EEAD4 accent and warm ivory. Match the friendly professional clay storefront icon family: substantial rounded forms, clean polished3D product rendering, no outlines, no thin fiddly details. One centered isolated icon fills about75 percent of canvas, generous transparent padding around all sides. No watermark, no extra objects, no confetti, no app launcher rounded-square backdrop. Individual UI asset to replace a Lucide calendar icon.

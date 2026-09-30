@@ -1,0 +1,610 @@
+{
+  "images": [
+    {
+      "phase": 1,
+      "original_path": "design/brand/brand-identity-storybook-v1.png",
+      "path": "01-brand-visual-identity/01-brand-identity.png",
+      "source_revision": 1,
+      "sha256": "8a8e0ef67d78f971d00a6c64529ab2be5fc888e341d632ebb585c7a19c448858"
+    },
+    {
+      "phase": 2,
+      "original_path": "design/tokens/design-tokens-storybook-v1.png",
+      "path": "02-design-tokens/01-design-tokens.png",
+      "source_revision": 1,
+      "sha256": "d9356594a1b2cb662cb1c99c96ed78ccda2bc989aa7fd742866ee6cbe5ab9211"
+    },
+    {
+      "phase": 3,
+      "original_path": "design/themes/themes-storybook-v1.png",
+      "path": "03-themes/01-themes.png",
+      "source_revision": 1,
+      "sha256": "e814827a74ca8c712e738b47a1a7ce721cb3d8f888ae8fb0635af0f9a9862f2b"
+    },
+    {
+      "phase": 4,
+      "original_path": "design/layouts/responsive-layouts-storybook-v1.png",
+      "path": "04-responsive-layouts/01-responsive-layouts.png",
+      "source_revision": 1,
+      "sha256": "174ec654c1fb33b5dda09ffb46149099a127a64081b8c5797a34ac3423822f5b"
+    },
+    {
+      "phase": 5,
+      "original_path": "design/typography/typography-content-storybook-v1.png",
+      "path": "05-typography-content/01-typography-content.png",
+      "source_revision": 1,
+      "sha256": "cd3175467c2fa23267bc78d989f3d22a4079453caac5e716a9f009735375be92"
+    },
+    {
+      "phase": 6,
+      "original_path": "design/icons-images-avatars/icons-images-avatars-storybook-v1.png",
+      "path": "06-icons-images-avatars/01-icons-images-avatars.png",
+      "source_revision": 1,
+      "sha256": "2a3a63e23da5e33939ffacf691b198795699634a0dfb971dbadf65e9294f0d8b"
+    },
+    {
+      "phase": 7,
+      "original_path": "design/navigation/navigation-storybook-v1.png",
+      "path": "07-navigation/01-navigation.png",
+      "source_revision": 1,
+      "sha256": "4c13d0386058a016f369fc0356c0b620256568ffeef346dad276349b3a596aa7"
+    },
+    {
+      "phase": 8,
+      "original_path": "design/actions-selection/actions-selection-storybook-v1.png",
+      "path": "08-actions-selection/01-actions-selection.png",
+      "source_revision": 1,
+      "sha256": "6afd9427468988ad71d7479d0404376ce8fc3daec40be02f588d4727dc5d974c"
+    },
+    {
+      "phase": 9,
+      "original_path": "design/forms-validation/forms-validation-storybook-v1.png",
+      "path": "09-forms-validation/01-forms-validation.png",
+      "source_revision": 1,
+      "sha256": "31e8fa10f6a409979324ef6f1a0edb4d79f6080b6786cff734f0d26bec85b7d9"
+    },
+    {
+      "phase": 10,
+      "original_path": "design/search-filtering-sorting/search-filtering-sorting-storybook-v1.png",
+      "path": "10-search-filtering-sorting/01-search-filtering-sorting.png",
+      "source_revision": 1,
+      "sha256": "547f212c276365a0b4bfd9fd690aac8282e4fd1a6ed2c8de5efde01451a26148"
+    },
+    {
+      "phase": 11,
+      "original_path": "design/cards-lists-data/cards-lists-data-storybook-v1.png",
+      "path": "11-cards-lists-data/01-cards-lists-data.png",
+      "source_revision": 1,
+      "sha256": "8fe55cf9710725872357a067cd14d910683b024504388ef27bdef996f9be5d75"
+    },
+    {
+      "phase": 12,
+      "original_path": "design/status-progress/status-progress-storybook-v1.png",
+      "path": "12-status-progress/01-status-progress.png",
+      "source_revision": 1,
+      "sha256": "74c25954f1718facabba9c90361ecfc5fdc928f557e44c657ba00d5695609231"
+    },
+    {
+      "phase": 13,
+      "original_path": "design/feedback-recovery/feedback-recovery-storybook-v1.png",
+      "path": "13-feedback-recovery/01-feedback-recovery.png",
+      "source_revision": 1,
+      "sha256": "98f586751f2d3a4473c35963ce4601a047780be44da820e6c246a1147b1df700"
+    },
+    {
+      "phase": 14,
+      "original_path": "design/overlays-confirmations/overlays-confirmations-storybook-v1.png",
+      "path": "14-overlays-confirmations/01-overlays-confirmations.png",
+      "source_revision": 1,
+      "sha256": "d47a10afeebf2bb4f215fc28ebe8cbba1c40829f32983ec63875b933658a67b1"
+    },
+    {
+      "phase": 15,
+      "original_path": "design/media-upload-location/media-upload-location-storybook-v1.png",
+      "path": "15-media-upload-location/01-media-upload-location.png",
+      "source_revision": 1,
+      "sha256": "68d37d517e5fddfa77d214a3a300c7c87988cf14f682a1664a0f3a09b8d0fbd2"
+    },
+    {
+      "phase": 16,
+      "original_path": "design/authentication-onboarding/01-access-v1.png",
+      "path": "16-authentication-onboarding/01-access.png",
+      "source_revision": 1,
+      "sha256": "910e13e1ef830180d32706c89b400910d735b60704ecd8d6a9b41e99549ac2b8"
+    },
+    {
+      "phase": 16,
+      "original_path": "design/authentication-onboarding/02-otp-recovery-v1.png",
+      "path": "16-authentication-onboarding/02-otp-recovery.png",
+      "source_revision": 1,
+      "sha256": "332226682ecf29b2a010fc141ae1f28e4c3f30ff133dd92681f59675188cedf1"
+    },
+    {
+      "phase": 16,
+      "original_path": "design/authentication-onboarding/03-five-step-application-v1.png",
+      "path": "16-authentication-onboarding/03-five-step-application.png",
+      "source_revision": 1,
+      "sha256": "9191b1bef4caf1d53148c8a9b6c5bb82fe1ebfcb562952a47b703ef515a5a0a7"
+    },
+    {
+      "phase": 16,
+      "original_path": "design/authentication-onboarding/04-document-collection-v1.png",
+      "path": "16-authentication-onboarding/04-document-collection.png",
+      "source_revision": 1,
+      "sha256": "97b9268252ddc60e2448bb0ab18cfa96f46540cf13073213497f910dd33628e1"
+    },
+    {
+      "phase": 16,
+      "original_path": "design/authentication-onboarding/05-review-submission-v1.png",
+      "path": "16-authentication-onboarding/05-review-submission.png",
+      "source_revision": 1,
+      "sha256": "f5eb9560713f7482ff88a092dcedfaa2fce5cbfffc6913a9855a47aec9e69834"
+    },
+    {
+      "phase": 16,
+      "original_path": "design/authentication-onboarding/06-pending-approval-v1.png",
+      "path": "16-authentication-onboarding/06-pending-approval.png",
+      "source_revision": 1,
+      "sha256": "24370ee1492e75fd562b5a9d8e17ba1c5c979e92318a9caaac1089ddd4405ac9"
+    },
+    {
+      "phase": 16,
+      "original_path": "design/authentication-onboarding/07-rejection-v1.png",
+      "path": "16-authentication-onboarding/07-rejection.png",
+      "source_revision": 1,
+      "sha256": "e8b70795294447801e5134e20ced15980ed768c274c61e060a979d5af906836d"
+    },
+    {
+      "phase": 16,
+      "original_path": "design/authentication-onboarding/08-suspension-v1.png",
+      "path": "16-authentication-onboarding/08-suspension.png",
+      "source_revision": 1,
+      "sha256": "f4fbd64ae53a4189c93ca57d51adf7e22c1d21fbe084247c8ba2fcc22d47df8d"
+    },
+    {
+      "phase": 17,
+      "original_path": "design/orders-fulfilment/01-order-cards-v1.png",
+      "path": "17-orders-fulfilment/01-order-cards.png",
+      "source_revision": 1,
+      "sha256": "84848987b76f1d1005514df8ef3a08457605cc7ac4602f71532ca2e46c0aa6d0"
+    },
+    {
+      "phase": 17,
+      "original_path": "design/orders-fulfilment/02-customer-delivery-v1.png",
+      "path": "17-orders-fulfilment/02-customer-delivery.png",
+      "source_revision": 1,
+      "sha256": "4326a340eff7941b62773167868fa42796597d8643fcb780fa5844096b9dfc1d"
+    },
+    {
+      "phase": 17,
+      "original_path": "design/orders-fulfilment/03-item-options-v1.png",
+      "path": "17-orders-fulfilment/03-item-options.png",
+      "source_revision": 1,
+      "sha256": "b5939b5b3e00c8813cda9dd4f6cd0abfae1efa7b776977d9a45ac02163be7c46"
+    },
+    {
+      "phase": 17,
+      "original_path": "design/orders-fulfilment/04-payment-breakdowns-v1.png",
+      "path": "17-orders-fulfilment/04-payment-breakdowns.png",
+      "source_revision": 1,
+      "sha256": "0793a226bc3e8eb58e20a77ca6f2661e809c1171077dd7e82d0ef5719d8b6a17"
+    },
+    {
+      "phase": 17,
+      "original_path": "design/orders-fulfilment/05-stage-actions-v1.png",
+      "path": "17-orders-fulfilment/05-stage-actions.png",
+      "source_revision": 1,
+      "sha256": "300841d128b7ad311004485439db1e87135f82c6442580116248b9d05cfa508b"
+    },
+    {
+      "phase": 17,
+      "original_path": "design/orders-fulfilment/06-rejection-cancellation-v1.png",
+      "path": "17-orders-fulfilment/06-rejection-cancellation.png",
+      "source_revision": 1,
+      "sha256": "157fa6651ca8e26e6c4a6efbdb24761e9c8f1ae5256bc37f1288ee431d97e3ed"
+    },
+    {
+      "phase": 17,
+      "original_path": "design/orders-fulfilment/07-invoice-v1.png",
+      "path": "17-orders-fulfilment/07-invoice.png",
+      "source_revision": 1,
+      "sha256": "2e55fb4419fc308a2faf0763218cba4150a88f376aad0ff2599a63c31eb173e3"
+    },
+    {
+      "phase": 18,
+      "original_path": "design/catalogue-inventory/01-product-cards-v1.png",
+      "path": "18-catalogue-inventory/01-product-cards.png",
+      "source_revision": 1,
+      "sha256": "ab3b07c3873f25aba222e9cd78cd31b14dbd937618944e2b795c9a8c8ab19146"
+    },
+    {
+      "phase": 18,
+      "original_path": "design/catalogue-inventory/02-drafts-visibility-v2.png",
+      "path": "18-catalogue-inventory/02-drafts-visibility.png",
+      "source_revision": 2,
+      "sha256": "1b6d8af65835bb8e37e330629b6b9a0558116617e2baa6973bf0f54225ea7e18"
+    },
+    {
+      "phase": 18,
+      "original_path": "design/catalogue-inventory/03-stock-bulk-actions-v1.png",
+      "path": "18-catalogue-inventory/03-stock-bulk-actions.png",
+      "source_revision": 1,
+      "sha256": "e0ae2ff96f60ad4876edb816fcdd50cbfdb63e9057fae8ac7dc40491e4d31ccb"
+    },
+    {
+      "phase": 18,
+      "original_path": "design/catalogue-inventory/04-product-editor-v1.png",
+      "path": "18-catalogue-inventory/04-product-editor.png",
+      "source_revision": 1,
+      "sha256": "01a1143c960adecb6d4b893a6975520ede87b7e0b5f71af133c2e1b3b2621fee"
+    },
+    {
+      "phase": 18,
+      "original_path": "design/catalogue-inventory/05-pack-options-v1.png",
+      "path": "18-catalogue-inventory/05-pack-options.png",
+      "source_revision": 1,
+      "sha256": "8f3757c425efa46ac31bd2550c9f1ff7e02196f656b4715b23d1242774beed22"
+    },
+    {
+      "phase": 18,
+      "original_path": "design/catalogue-inventory/06-pricing-tax-v1.png",
+      "path": "18-catalogue-inventory/06-pricing-tax.png",
+      "source_revision": 1,
+      "sha256": "3e85c319b541b86cc3ebf1d64713307a1fd6aa95a21f8abdf41318c6a1fe1098"
+    },
+    {
+      "phase": 18,
+      "original_path": "design/catalogue-inventory/07-coverage-v1.png",
+      "path": "18-catalogue-inventory/07-coverage.png",
+      "source_revision": 1,
+      "sha256": "457523ca3279cefb8c82524b73a0ea5db328daf5d0fc2d432e6f14adc143583c"
+    },
+    {
+      "phase": 18,
+      "original_path": "design/catalogue-inventory/08-wholesale-settings-v1.png",
+      "path": "18-catalogue-inventory/08-wholesale-settings.png",
+      "source_revision": 1,
+      "sha256": "14058b95de30a17b7ead00d35fe4707b4e57f66617cac15294e24065c63ed488"
+    },
+    {
+      "phase": 19,
+      "original_path": "design/payments-financial-documents/01-pending-paid-amounts-v1.png",
+      "path": "19-payments-financial-documents/01-pending-paid-amounts.png",
+      "source_revision": 1,
+      "sha256": "b8cf5084cab05d1edd5bbab0c81aa22df13ed33d1011600784767d2cea0d56d5"
+    },
+    {
+      "phase": 19,
+      "original_path": "design/payments-financial-documents/02-masked-payout-accounts-v1.png",
+      "path": "19-payments-financial-documents/02-masked-payout-accounts.png",
+      "source_revision": 1,
+      "sha256": "05b0a5dd3e56de4d8b739bad1c460f0d2775b4eb3b9181750bf5387cdfa42b29"
+    },
+    {
+      "phase": 19,
+      "original_path": "design/payments-financial-documents/03-settlement-timelines-v1.png",
+      "path": "19-payments-financial-documents/03-settlement-timelines.png",
+      "source_revision": 1,
+      "sha256": "4bd36a4e4a48e7326d22b2804e78c67c8a1240a4505c927910d2302921c02623"
+    },
+    {
+      "phase": 19,
+      "original_path": "design/payments-financial-documents/04-commission-breakdowns-v1.png",
+      "path": "19-payments-financial-documents/04-commission-breakdowns.png",
+      "source_revision": 1,
+      "sha256": "9a8038a7b07f89fdab7e61a6acf5830600f4ab931879bfb0702bbd8058027562"
+    },
+    {
+      "phase": 19,
+      "original_path": "design/payments-financial-documents/05-monthly-statements-v1.png",
+      "path": "19-payments-financial-documents/05-monthly-statements.png",
+      "source_revision": 1,
+      "sha256": "51a18d7b738b99e6315e06bf5ada537ec37a04be9adfcc09245f718af1219fbb"
+    },
+    {
+      "phase": 19,
+      "original_path": "design/payments-financial-documents/06-invoices-copy-actions-v1.png",
+      "path": "19-payments-financial-documents/06-invoices-copy-actions.png",
+      "source_revision": 1,
+      "sha256": "c674b0546c2f83a972a8cc0b878c142a55285b56a0780d9a5ae5cce1ba928636"
+    },
+    {
+      "phase": 19,
+      "original_path": "design/payments-financial-documents/07-payments-overview-v1.png",
+      "path": "19-payments-financial-documents/07-payments-overview.png",
+      "source_revision": 1,
+      "sha256": "801f719d62a6e0c16a0fa22e24e5510d93d2847634206a157d000f69ad649de6"
+    },
+    {
+      "phase": 20,
+      "original_path": "design/b2b-quotes-negotiation/01-quote-inbox-v1.png",
+      "path": "20-b2b-quotes-negotiation/01-quote-inbox.png",
+      "source_revision": 1,
+      "sha256": "0d4d31463dc31398c1716e66eeb4d5ed6cdfd27ec944910fcecd1dcdde0d1f6b"
+    },
+    {
+      "phase": 20,
+      "original_path": "design/b2b-quotes-negotiation/02-actor-status-labels-v1.png",
+      "path": "20-b2b-quotes-negotiation/02-actor-status-labels.png",
+      "source_revision": 1,
+      "sha256": "bf9d5ba6337b3a61beca59ebe0f886add9f98096b859822fba995a440b0c7050"
+    },
+    {
+      "phase": 20,
+      "original_path": "design/b2b-quotes-negotiation/03-offer-summaries-v1.png",
+      "path": "20-b2b-quotes-negotiation/03-offer-summaries.png",
+      "source_revision": 1,
+      "sha256": "8d590af67f1cd25c73e123c990c80c1d988ee670db629f461bf2a53cd7cbf529"
+    },
+    {
+      "phase": 20,
+      "original_path": "design/b2b-quotes-negotiation/04-negotiation-history-v1.png",
+      "path": "20-b2b-quotes-negotiation/04-negotiation-history.png",
+      "source_revision": 1,
+      "sha256": "0355fd37cbfc1465372a86507903e230dd9716b497dbce9a7618ac8db5703598"
+    },
+    {
+      "phase": 20,
+      "original_path": "design/b2b-quotes-negotiation/05-counter-offers-v1.png",
+      "path": "20-b2b-quotes-negotiation/05-counter-offers.png",
+      "source_revision": 1,
+      "sha256": "0d23f6e09361cb45a992d094cf743ef11217f557c821e0f7d3095167683648e9"
+    },
+    {
+      "phase": 20,
+      "original_path": "design/b2b-quotes-negotiation/06-expiry-minimum-quantity-v1.png",
+      "path": "20-b2b-quotes-negotiation/06-expiry-minimum-quantity.png",
+      "source_revision": 1,
+      "sha256": "96c9804ab970fc91ec2a24b303469da446def9517a2def19bf15ad4b7f3cba0b"
+    },
+    {
+      "phase": 20,
+      "original_path": "design/b2b-quotes-negotiation/07-acceptance-decline-v1.png",
+      "path": "20-b2b-quotes-negotiation/07-acceptance-decline.png",
+      "source_revision": 1,
+      "sha256": "46c5c20d107b9b7c642a005351ba384e2ffb13c627d3504b3c0d089980ec1bdf"
+    },
+    {
+      "phase": 20,
+      "original_path": "design/b2b-quotes-negotiation/08-linked-orders-v1.png",
+      "path": "20-b2b-quotes-negotiation/08-linked-orders.png",
+      "source_revision": 1,
+      "sha256": "2d4f2654273c2807b2c1752d175926691b21f5ff2e4df8fbe7669e32ea467c71"
+    },
+    {
+      "phase": 21,
+      "original_path": "design/analytics-account-health/01-kpi-cards-v1.png",
+      "path": "21-analytics-account-health/01-kpi-cards.png",
+      "source_revision": 1,
+      "sha256": "77cd60f457a5750a12549cc341df30d8e0471f50fadeb3ea63cf2850e8805db2"
+    },
+    {
+      "phase": 21,
+      "original_path": "design/analytics-account-health/02-period-selectors-v1.png",
+      "path": "21-analytics-account-health/02-period-selectors.png",
+      "source_revision": 1,
+      "sha256": "ec4109b3a7a53359ea99e2f9e6fcedd47ec7e82f9fca256a84812a80c6d1350d"
+    },
+    {
+      "phase": 21,
+      "original_path": "design/analytics-account-health/03-comparisons-v1.png",
+      "path": "21-analytics-account-health/03-comparisons.png",
+      "source_revision": 1,
+      "sha256": "877fc654d442079c6465d9ceec7a79665df2d8b6827bd3630c52b0c2a7106c1c"
+    },
+    {
+      "phase": 21,
+      "original_path": "design/analytics-account-health/04-sparklines-sales-charts-v1.png",
+      "path": "21-analytics-account-health/04-sparklines-sales-charts.png",
+      "source_revision": 1,
+      "sha256": "d4c65d8f3d0198b0b6ad85eccbfeeb30187b63bcfbbbe71404434bf40f139f7f"
+    },
+    {
+      "phase": 21,
+      "original_path": "design/analytics-account-health/05-stage-bars-v1.png",
+      "path": "21-analytics-account-health/05-stage-bars.png",
+      "source_revision": 1,
+      "sha256": "100318e10f42548eb8a8f7e512ed25c5296646f4d6cddceb4ecfa2d946e20cd6"
+    },
+    {
+      "phase": 21,
+      "original_path": "design/analytics-account-health/06-ranked-products-v1.png",
+      "path": "21-analytics-account-health/06-ranked-products.png",
+      "source_revision": 1,
+      "sha256": "5732a399292b83eb25bea03f585cf003be18c0803e3857bb5be951ca7a68e07c"
+    },
+    {
+      "phase": 21,
+      "original_path": "design/analytics-account-health/07-rating-distributions-v1.png",
+      "path": "21-analytics-account-health/07-rating-distributions.png",
+      "source_revision": 1,
+      "sha256": "468fb67091835bb941d296d23cf21ed7063eaaea2fbd6a6700c9a62bdc542c48"
+    },
+    {
+      "phase": 21,
+      "original_path": "design/analytics-account-health/08-score-rings-v1.png",
+      "path": "21-analytics-account-health/08-score-rings.png",
+      "source_revision": 1,
+      "sha256": "d2eb9a6fde3dc2c83ef6bc20b2b87975e23ea4c26a52780a4801407c179a16b8"
+    },
+    {
+      "phase": 21,
+      "original_path": "design/analytics-account-health/09-metric-explanations-v1.png",
+      "path": "21-analytics-account-health/09-metric-explanations.png",
+      "source_revision": 1,
+      "sha256": "b3e693fb624d074e701afed24f19353d6f37fde0613810ee70ea9536cbd992b7"
+    },
+    {
+      "phase": 22,
+      "original_path": "design/store-management-engagement/01-store-availability-v1.png",
+      "path": "22-store-management-engagement/01-store-availability.png",
+      "source_revision": 1,
+      "sha256": "843351b4d273e1e2c12e09953ccf91eac49e8cee4c88ba4a20e18be46190fed7"
+    },
+    {
+      "phase": 22,
+      "original_path": "design/store-management-engagement/02-pause-durations-v1.png",
+      "path": "22-store-management-engagement/02-pause-durations.png",
+      "source_revision": 1,
+      "sha256": "e57d2e5c12aef27a33c9ff9ea03b9e32eb85d16c6b559450e15ed35413d19ffc"
+    },
+    {
+      "phase": 22,
+      "original_path": "design/store-management-engagement/03-weekly-closures-v1.png",
+      "path": "22-store-management-engagement/03-weekly-closures.png",
+      "source_revision": 1,
+      "sha256": "5b9cc2ccea00b7df6c6171055889c239485cde776eb02f39f7c2946adcb9b054"
+    },
+    {
+      "phase": 22,
+      "original_path": "design/store-management-engagement/04-holidays-v1.png",
+      "path": "22-store-management-engagement/04-holidays.png",
+      "source_revision": 1,
+      "sha256": "e5a74e3ea53b5ce7c38ffcc81a7504fdd3f634ef49730e4be8de430cef03f3d8"
+    },
+    {
+      "phase": 22,
+      "original_path": "design/store-management-engagement/05-business-details-v1.png",
+      "path": "22-store-management-engagement/05-business-details.png",
+      "source_revision": 1,
+      "sha256": "e93ae120281c2fc525d5caae9a200749afd45230586a3e20d2ed550b6861c327"
+    },
+    {
+      "phase": 22,
+      "original_path": "design/store-management-engagement/06-delivery-fees-v1.png",
+      "path": "22-store-management-engagement/06-delivery-fees.png",
+      "source_revision": 1,
+      "sha256": "0fc2cce4c3dc6a46e4674a55850edb2bbaf2e8e1206bedfa803ef8168f5d765b"
+    },
+    {
+      "phase": 22,
+      "original_path": "design/store-management-engagement/07-storefront-editor-preview-v1.png",
+      "path": "22-store-management-engagement/07-storefront-editor-preview.png",
+      "source_revision": 1,
+      "sha256": "97d0c3998ffdcefb5517fdb676041c89b4a5fd0c76d6f1d5b74b4223aa17fef9"
+    },
+    {
+      "phase": 22,
+      "original_path": "design/store-management-engagement/08-reviews-replies-v1.png",
+      "path": "22-store-management-engagement/08-reviews-replies.png",
+      "source_revision": 1,
+      "sha256": "146b0be6a79aebdf179dc007378d46681fa7bbf43e0740158eea720c108fef87"
+    },
+    {
+      "phase": 22,
+      "original_path": "design/store-management-engagement/09-followers-posts-v1.png",
+      "path": "22-store-management-engagement/09-followers-posts.png",
+      "source_revision": 1,
+      "sha256": "4e40cf3788911d522ce7884e5c4509e366836d0c7a243895884d1ec4f4e080e2"
+    },
+    {
+      "phase": 23,
+      "original_path": "design/ai-notifications-preferences-support/01-ai-activation-connection-chat-v1.png",
+      "path": "23-ai-notifications-preferences-support/01-ai-activation-connection-chat.png",
+      "source_revision": 1,
+      "sha256": "9b41a0db128e77897334e82de34ee7f0a8364d3c73220720928fb07ac185fa30"
+    },
+    {
+      "phase": 23,
+      "original_path": "design/ai-notifications-preferences-support/02-notification-inbox-preferences-v1.png",
+      "path": "23-ai-notifications-preferences-support/02-notification-inbox-preferences.png",
+      "source_revision": 1,
+      "sha256": "00ce3c12f21420b026c4009936fa146ee0b0fad9e7eae1804f5896ea50e4cc5f"
+    },
+    {
+      "phase": 23,
+      "original_path": "design/ai-notifications-preferences-support/03-quiet-hours-v1.png",
+      "path": "23-ai-notifications-preferences-support/03-quiet-hours.png",
+      "source_revision": 1,
+      "sha256": "64db1c7995ecd67b0b255c9e1abae3d586cfa938a7030342a7f1a348dcf26e9d"
+    },
+    {
+      "phase": 23,
+      "original_path": "design/ai-notifications-preferences-support/04-theme-settings-v1.png",
+      "path": "23-ai-notifications-preferences-support/04-theme-settings.png",
+      "source_revision": 1,
+      "sha256": "30f995d6f64bba4dd0a9fcd697c4aa819d23557b064a9991acaf72256a508dc4"
+    },
+    {
+      "phase": 23,
+      "original_path": "design/ai-notifications-preferences-support/05-faqs-v1.png",
+      "path": "23-ai-notifications-preferences-support/05-faqs.png",
+      "source_revision": 1,
+      "sha256": "0a82846a29e221b11b9b175b8a09d49539eaf1f200cb10149bca451f193f5505"
+    },
+    {
+      "phase": 23,
+      "original_path": "design/ai-notifications-preferences-support/06-support-contacts-v1.png",
+      "path": "23-ai-notifications-preferences-support/06-support-contacts.png",
+      "source_revision": 1,
+      "sha256": "996276276a83f3a3c15289a2f306b1d0b7504ebc18b30d71077bbe89e9ef5f8e"
+    },
+    {
+      "phase": 23,
+      "original_path": "design/ai-notifications-preferences-support/07-policies-v1.png",
+      "path": "23-ai-notifications-preferences-support/07-policies.png",
+      "source_revision": 1,
+      "sha256": "d985305b22868ff42c04e709f19e5bddc7b5f245002bda493587037aee915a8c"
+    },
+    {
+      "phase": 23,
+      "original_path": "design/ai-notifications-preferences-support/08-account-actions-v1.png",
+      "path": "23-ai-notifications-preferences-support/08-account-actions.png",
+      "source_revision": 1,
+      "sha256": "4c0ca90f0352498bb21d92eb3309d4f4a14fea678e6fa85883a2fde414515bcc"
+    },
+    {
+      "phase": 24,
+      "original_path": "design/accessibility-interaction/01-keyboard-navigation-v1.png",
+      "path": "24-accessibility-interaction/01-keyboard-navigation.png",
+      "source_revision": 1,
+      "sha256": "d2a0d6986860c9867f5e7d5ac398b7bb8c27090377a486c86d4358e3e50cfff4"
+    },
+    {
+      "phase": 24,
+      "original_path": "design/accessibility-interaction/02-visible-focus-v2.png",
+      "path": "24-accessibility-interaction/02-visible-focus.png",
+      "source_revision": 2,
+      "sha256": "90a334df662d45443b67b8fee5655d80f58f68588c766fa62444e2cab3d9afc1"
+    },
+    {
+      "phase": 24,
+      "original_path": "design/accessibility-interaction/03-screen-reader-labels-v1.png",
+      "path": "24-accessibility-interaction/03-screen-reader-labels.png",
+      "source_revision": 1,
+      "sha256": "c0591326ef74361a1858b790b82b464c4869d967cfe041c805db4bbf4d6f3c43"
+    },
+    {
+      "phase": 24,
+      "original_path": "design/accessibility-interaction/04-contrast-touch-text-scaling-v1.png",
+      "path": "24-accessibility-interaction/04-contrast-touch-text-scaling.png",
+      "source_revision": 1,
+      "sha256": "93e0c8681a2ac3ba5a7e17f0bfa30ad92192ff624308654ac606a338c8d606f5"
+    },
+    {
+      "phase": 24,
+      "original_path": "design/accessibility-interaction/05-reduced-motion-v1.png",
+      "path": "24-accessibility-interaction/05-reduced-motion.png",
+      "source_revision": 1,
+      "sha256": "214b57b08b1db6c0475028a54f8f1e740a194752f68ff779cd7ba233a6e55f66"
+    },
+    {
+      "phase": 24,
+      "original_path": "design/accessibility-interaction/06-non-colour-status-cues-v1.png",
+      "path": "24-accessibility-interaction/06-non-colour-status-cues.png",
+      "source_revision": 1,
+      "sha256": "fd38be9ed4c5f015204ddc1d2179e746155293c444223f0f19130d3e59846cbd"
+    },
+    {
+      "phase": 24,
+      "original_path": "design/accessibility-interaction/07-accessible-charts-forms-v1.png",
+      "path": "24-accessibility-interaction/07-accessible-charts-forms.png",
+      "source_revision": 1,
+      "sha256": "65a54a7389118fcc0e92fe986a64ac4f887c0e021f2d7ef020192a7d2f4125d8"
+    }
+  ],
+  "excluded_older_revisions": [
+    "design/catalogue-inventory/02-drafts-visibility-v1.png",
+    "design/accessibility-interaction/02-visible-focus-v1.png"
+  ]
+}

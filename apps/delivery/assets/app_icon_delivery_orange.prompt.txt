@@ -1,0 +1,12 @@
+Generated using built-in image_gen.
+
+Use case: logo-brand.
+Create a single finished square Agrimore DELIVERY PARTNER app icon belonging to the exact illustrated family of the three supplied reference icons.
+Image 1 marketplace: reference for signature large sweeping pointed leaf with curved negative-space vein and agricultural identity.
+Image 2 sales associate: reference for bold simplified human silhouette and balanced icon layout.
+Image 3 seller: primary reference for polished rounded-square treatment, thick separating outlines, smooth subtle shading and visual density.
+These are style references, not edit targets.
+New composition: signature large sweeping leaf dominates upper-left, rendered in apricot. Center-right and lower center a clearly recognizable helmeted delivery partner riding a compact delivery scooter toward the right, side view, with two clearly visible wheels and a securely mounted rear delivery parcel. Parcel has a simple two-leaf agricultural emblem. Rider is a clean faceless pictogram with helmet, warm-white shirt and burnt-orange vest, hands on handlebars, believable simple riding posture. The scooter and parcel make DELIVERY immediately recognizable. Keep shapes large and bold; avoid clutter, extra floating badges or excessive tiny product details.
+Strict user color system: primary burnt orange #C2410C is the dominant brand color, used for rounded-square background and scooter/vest accents where contrast allows. Soft peach #FFEDD5 for parcel and soft surfaces, warm white #FFFAF5 for rider and strongest highlights, apricot #FDBA74 for large leaf and accents. Charcoal #241A16 outlines, warm black #171210 deepest shadows, dark warm brown #251C17 for wheels and dark structural areas. Use restrained gradients derived from these colors, keep burnt orange rich and earthy rather than neon or yellow. No green, teal, blue, red or gold.
+Match the references' high-quality clean illustrated app icon finish with subtle dimensional gradients, crisp contours, integrated agricultural leaf and role-specific foreground scene. Full-bleed opaque square canvas with rounded-square inner tile treatment like references 2 and 3, surrounding corners in burnt orange. Emblem occupies about 80 percent of canvas with generous safety margins. Clear silhouette at small sizes.
+No text, lettering, numerals, watermark, storefront, shopping cart, clipboard, charts, mockup devices, grids or multiple variants. Output one high-resolution square PNG.

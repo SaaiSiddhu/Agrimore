@@ -1,0 +1,34 @@
+Mode: built-in image_gen
+Scope: Flutter native iOS and Android phones and tablets only. Storybook shell is documentation presentation, not a product desktop interface.
+Status: proposed visual concept; responsive values are project proposals.
+
+Use case: ui-mockup. Create a high-resolution professional Storybook-style design documentation board for "AgriMore Seller", page "Responsive layouts", "Foundation 04". The attached image is a STYLE reference: reuse the wordmark, professional typography, white slim sidebar, mint selected row, off-white canvas, fine borders, well-aligned white cards, clear hierarchy. NEW page content. Landscape approximately 3:2, large crisp legible text. Straight-on UI illustration, not photographed monitor.
+
+CRITICAL PRODUCT SCOPE: Flutter native iOS and Android apps ONLY, phones and tablets. The outer Storybook shell is a documentation presentation, NOT an app screen. All actual app previews must be PHONE or TABLET screens with native mobile status/system gesture areas. NO laptop/desktop/web app previews, browser chrome, website navigation or hover examples. The FIVE seller destinations exactly "Home", "Orders", "Catalogue", "Payments", "Account". On phones these are bottom tabs with icon plus label; on tablets use a compact mobile navigation rail with same five destinations. No Customers or Analytics destination.
+
+Outer sidebar AgriMore leaf logo, SELLER DESIGN SYSTEM; FOUNDATIONS Brand identity, Design tokens, Themes, Responsive layouts selected, Colour, Typography; COMPONENTS Buttons, Forms, Navigation; PATTERNS Seller workspace; Concept v0.1. Top breadcrumb Foundations / Responsive layouts and Docs selected next to Canvas.
+Heading Responsive layouts, Foundation 04 pill, subtitle "Flutter · iOS & Android · Phone & tablet". Small note "Proposed layout values in logical pixels".
+
+Brand colours consistently primary green-teal #0F766E, deep teal #134E4A, mint #DDF3EA, canvas #F5F8F7, white surface. Small top palette strip with visible exact codes "#0F766E", "#DDF3EA", "#050908", "#0B1513", "#5EEAD4". One dark phone specimen uses near-black #050908 and teal-black surface #0B1513 with #5EEAD4 action and pale readable text. No blue-grey dark background.
+
+Main composition 2 rows:
+TOP ROW takes about 60% of main content, three cards:
+01 / Phone — iOS & Android (about 38% width). Two flat front-on tall phone screenshots side by side, no heavy photoreal device frames. Left light iOS, right dark Android. Under each clear platform label. Both show Orders app bar, Search orders, status chips All / To accept / Packing, three readable order cards (Order 1042, Order 1041, Order 1040) with ₹ amounts and stage pills, FIVE bottom destination tabs correct names, Orders selected. iOS has status clock/camera safe area and bottom home indicator. Android has native status area and bottom gesture inset. Use leader lines and tiny mint highlights showing top safe area and bottom safe area, not overlays obscuring text. Footnote "Single pane · List → detail". Labels "16 px page inset" and "4-column grid" below previews. Do NOT squeeze every app detail into tiny illegible copy.
+
+02 / Tablet — list & detail (about 40% width). A medium landscape tablet screenshot with native status bar, compact navigation rail, order list pane on left and selected Order 1042 detail on right. Detail shows stage "To accept", simple customer name, item row Fresh tomatoes, total ₹640, sticky primary "Accept order". List shows same order number selected. At bottom a landscape system gesture indicator. Small callouts "Independent pane scrolling" and "Selection stays visible". Below a simplified grid diagram with 8 vertical faint mint columns and caption "24 px page inset · 8-column grid". This is a native tablet, NOT desktop.
+03 / Adaptive rules (about 22% width). Beautiful tidy token-like rows with device icons:
+"Compact · <600" / "4 columns · Bottom tabs"
+"Medium · 600–839" / "8 columns · Navigation rail"
+"Expanded · ≥840" / "12 columns · List + detail"
+Then two concise rows "Form max width · 640" and "Content max width · 1200". Small note "Use available width, not device name." These are proposed project breakpoints, not official platform requirements. Include heading "Proposed breakpoints".
+
+BOTTOM ROW four equally balanced documentation cards with clear concise drawn diagrams:
+04 / Safe areas: outline of phone screen with top system inset and bottom gesture inset tinted mint; central content safe. Labels "Top system inset", "Bottom gesture inset". Caption "Insets follow the device." Do not hardcode fixed safe area heights.
+05 / Keyboard clearance: mini phone form with "Product name" field, teal "Save product" sticky action ABOVE a visible compact native on-screen keyboard; vertical arrow showing content can scroll. Label "Focused field stays visible". Bottom caption "Action sits above keyboard". No bottom navigation squeezed between keyboard and save action.
+06 / Scrolling & sticky actions: diagram with app bar fixed top, three product item rows inside scrollable content indicated with arrows, bottom "Accept order" action above gesture inset. Labels "Scroll content", "Sticky action", "Bottom content clearance". Content not covered by CTA.
+07 / List → detail: two tiny phone outlines with an arrow between, first list selected row and second detail with back arrow; beside/below a tiny tablet split-pane diagram. Captions "Phone · Push detail" and "Tablet · Show both". Note "Keep selection on resize."
+
+Prioritise actual polished UI previews and well-spaced annotated layout diagrams, not dense paragraphs. All seven cards and footer fit cleanly. Readable small text, no decorative photos or charts, subtle consistent iconography, black/teal dark specimen and white/teal light specimens. Footer "Native mobile only · Responsive to window size, orientation and text scale".
+
+Final edit prompt:
+Edit this responsive-layout documentation image, preserving the composition, branding, colours, all seven sections and native Flutter iOS/Android scope. Make these targeted content corrections only: In section 06 / Scrolling & sticky actions, the miniature screen is Catalogue, so replace its bottom button text 'Accept order' with '+ Add product'. Keep the tablet order detail Accept order button unchanged. In section 02 tablet example, change caption below grid to '24 px page inset · 12-column grid' and show twelve evenly spaced mint columns, to match expanded list/detail rules. Correct fictional order 1042 data consistently: in BOTH main phones and tablet selected order list, use '1 item · 2 hours ago'; in tablet detail use 'Items (1)', one Fresh tomatoes line with '1 × ₹640', line total ₹640 and Order total ₹640. Change tablet customer location to 'Chennai, Tamil Nadu' and mask customer phone as '+91 ••••••4321'. In adaptive rules label the widths explicitly 'Form max width · 640' and 'Content max width · 1200'. Everything else unchanged.

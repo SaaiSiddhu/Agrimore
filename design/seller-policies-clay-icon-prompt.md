@@ -1,0 +1,7 @@
+# Seller policies clay icon
+
+Asset: apps/seller/assets/images/clay-icons/seller-policies-v1.png
+
+Created using built-in image generation.
+
+Create a single premium claymorphism mobile UI icon representing 'Seller policies' for AgriMore Seller. One cohesive compact composition: a chunky warm-ivory rounded policy document, front facing with slight three-quarter depth and softly folded upper-right corner. Three short substantial rounded green-teal and mint bars on the document suggest policy text without actual letters. Overlapping lower-right foreground is a substantial rounded green-teal shield with pale-mint inset face and one bold raised dark-teal checkmark, representing clear seller rules and trust. Professional friendly established clay icon family: plush softly bevelled forms, smooth tactile matte clay, polished3D rendering, gentle top-left studio lighting, subtle ambient occlusion confined to objects. Restrained palette #0F766E green-teal #DDF3EA mint #5EEAD4 accent warm ivory. Strong clean recognizable silhouette readable at small mobile sizes, minimal details. No gavel no scales no padlock no extra badges or floating objects. Single isolated centered icon square1024x1024canvas about75percent occupancy with generous transparent padding. GENUINELY TRANSPARENT alpha background: no backdrop no background colour no surrounding tile no floor no ground plane no exterior cast shadow. No text letters numbers watermark or provider logos. Individual mobile UI asset replacing a Lucide seller-policies icon, not app launcher logo.

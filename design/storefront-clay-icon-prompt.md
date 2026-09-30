@@ -1,0 +1,7 @@
+# Storefront clay icon
+
+Asset: apps/seller/assets/images/clay-icons/storefront-v1.png
+
+Created using built-in image generation.
+
+Create a single premium claymorphism mobile UI icon representing 'Storefront' for AgriMore Seller, matching a green-teal clay icon family. A charming chunky miniature shop front facing forward with slight three-quarter depth: warm ivory rounded walls, broad alternating green-teal and pale mint scalloped awning, dark teal rounded doorway and one attractive simple display window with a tiny leaf motif. A small attached circular mint badge at lower right with one chunky diagonal dark-teal pencil, clearly suggesting storefront customization. No checkmark, no status dot: this represents store presentation/editing. Soft plush bevelled forms, smooth tactile matte clay, polished3D rendering, gentle top-left studio lighting, object-only ambient occlusion. Palette #0F766E teal #DDF3EA mint #5EEAD4 accent warm ivory. Strong clean silhouette recognizable at mobile UI sizes, restrained detail. Single isolated centered icon square1024x1024canvas about75percent occupancy with generous transparent padding. GENUINELY TRANSPARENT alpha background: no backdrop no colour background no tile no floor no ground plane no exterior cast shadow. No text letters numbers watermark or additional floating objects. Individual UI asset replacing a Lucide storefront icon, not an app launcher logo.

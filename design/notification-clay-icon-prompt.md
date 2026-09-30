@@ -1,0 +1,7 @@
+# Notification clay icon
+
+Asset: apps/seller/assets/images/clay-icons/notification-v1.png
+
+Created using built-in image generation.
+
+Create a single premium claymorphism mobile UI icon representing 'Notifications' for AgriMore Seller. One substantial softly rounded notification bell, front facing with very slight three-quarter depth: dark green-teal #0F766E domed body, thick rounded flared rim, small mint #DDF3EA spherical clapper visible beneath, small rounded teal loop on top. One small attached pale-mint circular unread badge at upper right, plain solid badge without number or symbol, overlapping bell silhouette. Match established professional friendly clay icon family: plush softly bevelled forms, smooth tactile matte clay, polished3D rendering, gentle top-left studio lighting, subtle ambient occlusion confined to object. Restrained palette #0F766E green-teal #DDF3EA mint #5EEAD4 highlights. Clean recognizable silhouette readable at small mobile sizes. No motion lines no extra bells no floating decorations. Single centered isolated icon square1024x1024canvas about75percent occupancy with generous transparent padding. GENUINELY TRANSPARENT alpha background: no backdrop no background colour no surrounding tile no floor no ground plane no exterior cast shadow. No text letters numbers watermark or provider logos. Individual mobile UI asset replacing a Lucide notification bell icon, not app launcher logo.

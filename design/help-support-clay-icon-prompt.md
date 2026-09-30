@@ -1,0 +1,7 @@
+# Help and support clay icon
+
+Asset: apps/seller/assets/images/clay-icons/help-support-v1.png
+
+Created using built-in image generation.
+
+Create a single premium claymorphism mobile UI icon representing 'Help & Support' for AgriMore Seller. One cohesive compact composition: a substantial rounded dark green-teal customer-support headset with a plush curved headband, two chunky pale-mint padded earcups, and a short rounded teal microphone boom curling inward from the right earcup. Nestled within the headset opening is a warm-ivory softly rounded speech bubble with short lower-left tail, bearing one clear raised dark-teal question mark ?. Professional friendly established clay icon family: plush softly bevelled forms, smooth tactile matte clay, polished3D rendering, gentle top-left studio lighting, subtle ambient occlusion confined to objects. Restrained palette #0F766E green-teal #DDF3EA mint #5EEAD4 highlights warm ivory. Strong clear recognizable silhouette readable at small mobile sizes, minimal details. No human face, no robot, no extra badges, no floating decorations. Single isolated centered icon square1024x1024canvas about75percent occupancy with generous transparent padding. GENUINELY TRANSPARENT alpha background including open spaces: no backdrop no background colour no surrounding tile no floor no ground plane no exterior cast shadow. No text except single ? symbol, no letters numbers watermark or provider logos. Individual mobile UI asset replacing a Lucide help and support icon, not app launcher logo.
