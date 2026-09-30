@@ -1,0 +1,7 @@
+# Ask AI clay icon
+
+Asset: apps/seller/assets/images/clay-icons/ask-ai-v1.png
+
+Created using built-in image generation.
+
+Create a single premium claymorphism mobile UI icon representing 'Ask AI' for AgriMore Seller. One cohesive compact composition: a chunky softly rounded warm-ivory speech bubble with short lower-left tail. Centered inside it a friendly minimalist green-teal assistant face, a rounded rectangular clay faceplate with two small mint pill eyes and a subtle curved mint smile, no human face. At upper-right attached to the speech bubble one substantial four-point mint sparkle with soft rounded tips and darker teal bevel, indicating AI assistance. Keep sparkle joined/overlapping the main silhouette, not floating far away. Professional friendly established clay icon family, plush rounded bevelled forms, smooth tactile matte clay, polished3D rendering, gentle top-left studio light, subtle ambient occlusion confined to objects. Palette #0F766E green-teal #DDF3EA mint #5EEAD4 accent warm ivory. Clean strong recognizable silhouette readable at small mobile icon sizes, no thin fiddly details. Single centered isolated icon square1024x1024canvas about75percent occupancy with generous transparent padding. GENUINELY TRANSPARENT alpha background: no backdrop no background colour no surrounding tile no floor no ground plane no exterior cast shadow. No text letters numbers watermark, no provider logos, no extra floating decorations. Individual mobile UI asset replacing a Lucide Ask AI icon, not app launcher logo.

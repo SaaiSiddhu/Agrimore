@@ -1,0 +1,990 @@
+{
+  "images": [
+    {
+      "phase": 1,
+      "original_path": "apps/delivery/assets/ui-mockups/01-brand-visual-identity/01-brand-visual-identity-v2.png",
+      "path": "01-brand-visual-identity/01-brand-visual-identity.png",
+      "source_revision": 2,
+      "sha256": "9e56caf4d6a859836d717ce11f47a0ccebf0d8b675294e43b55f64a8fd002677"
+    },
+    {
+      "phase": 2,
+      "original_path": "apps/delivery/assets/ui-mockups/02-design-tokens/01-design-tokens-v1.png",
+      "path": "02-design-tokens/01-design-tokens.png",
+      "source_revision": 1,
+      "sha256": "26bcaa7a120a4e9d2a7b4566ce8f611b51fb1c2d75bc9c94ae5f73b93f1a0322"
+    },
+    {
+      "phase": 3,
+      "original_path": "apps/delivery/assets/ui-mockups/03-themes-appearance/01-themes-appearance-v1.png",
+      "path": "03-themes-appearance/01-themes-appearance.png",
+      "source_revision": 1,
+      "sha256": "07324d47e18491ec3b2b546c7c1cfe7c2047e7d86d9bb221d9c58ff53d70aaf6"
+    },
+    {
+      "phase": 4,
+      "original_path": "apps/delivery/assets/ui-mockups/04-mobile-layouts-safe-areas/01-mobile-layouts-safe-areas-v1.png",
+      "path": "04-mobile-layouts-safe-areas/01-mobile-layouts-safe-areas.png",
+      "source_revision": 1,
+      "sha256": "d85d658a8c9be42498d5ded8787393ba3911bef06890202c9662efdd63f2c356"
+    },
+    {
+      "phase": 5,
+      "original_path": "apps/delivery/assets/ui-mockups/05-typography-content/01-typography-content-v1.png",
+      "path": "05-typography-content/01-typography-content.png",
+      "source_revision": 1,
+      "sha256": "cb1c5eabd36bfed89d712e78db96cf3e1608ae12779d49f9361d7ff181459973"
+    },
+    {
+      "phase": 6,
+      "original_path": "apps/delivery/assets/ui-mockups/06-icons-images-documents/01-icons-images-documents-v1.png",
+      "path": "06-icons-images-documents/01-icons-images-documents.png",
+      "source_revision": 1,
+      "sha256": "a895a9701769ce9369d56def3007ce81564c7a64bfb734eb1bd3e16cc6361203"
+    },
+    {
+      "phase": 7,
+      "original_path": "apps/delivery/assets/ui-mockups/07-navigation-app-structure/01-navigation-app-structure-v1.png",
+      "path": "07-navigation-app-structure/01-navigation-app-structure.png",
+      "source_revision": 1,
+      "sha256": "70e5594afd812b9e80d6fefa2dcde3ffeb7bf3f12a0a95e60a61bd1f836bb08f"
+    },
+    {
+      "phase": 8,
+      "original_path": "apps/delivery/assets/ui-mockups/08-actions-selection/01-actions-selection-v1.png",
+      "path": "08-actions-selection/01-actions-selection.png",
+      "source_revision": 1,
+      "sha256": "98c3f1f00c0c5cfc958496ef922785e1d55b717c1541d0b0d5b327dacb073899"
+    },
+    {
+      "phase": 9,
+      "original_path": "apps/delivery/assets/ui-mockups/09-forms-validation/01-forms-validation-v1.png",
+      "path": "09-forms-validation/01-forms-validation.png",
+      "source_revision": 1,
+      "sha256": "a22741279404d2544cda96ce01c1a2dcc74d5ed898b052a3a2e7f48c0ac05319"
+    },
+    {
+      "phase": 10,
+      "original_path": "apps/delivery/assets/ui-mockups/10-cards-lists-data/01-cards-lists-data-v1.png",
+      "path": "10-cards-lists-data/01-cards-lists-data.png",
+      "source_revision": 1,
+      "sha256": "10c5122cb314df6b69431c75615bae48fe94edb51ae6dc727fbe7ebebce4e4a7"
+    },
+    {
+      "phase": 11,
+      "original_path": "apps/delivery/assets/ui-mockups/11-status-progress-time/01-status-progress-time-v1.png",
+      "path": "11-status-progress-time/01-status-progress-time.png",
+      "source_revision": 1,
+      "sha256": "ee3f85909c7e015972c19c5183a67b3b11a705435eb2a75f1bd81e6153087903"
+    },
+    {
+      "phase": 12,
+      "original_path": "apps/delivery/assets/ui-mockups/12-feedback-connectivity-recovery/01-feedback-connectivity-recovery-v1.png",
+      "path": "12-feedback-connectivity-recovery/01-feedback-connectivity-recovery.png",
+      "source_revision": 1,
+      "sha256": "dc811be65ef1d1f012e66e6731143b69d83657888cb5a0b33d8d1b9f65957a56"
+    },
+    {
+      "phase": 13,
+      "original_path": "apps/delivery/assets/ui-mockups/13-sheets-dialogs-confirmations/01-sheets-dialogs-confirmations-v1.png",
+      "path": "13-sheets-dialogs-confirmations/01-sheets-dialogs-confirmations.png",
+      "source_revision": 1,
+      "sha256": "1e22135db80ec6efd5a92c7f87f8ab28323611d7ac2787cb517da6c214fad22a"
+    },
+    {
+      "phase": 14,
+      "original_path": "apps/delivery/assets/ui-mockups/14-permissions-device-readiness/01-permissions-device-readiness-v1.png",
+      "path": "14-permissions-device-readiness/01-permissions-device-readiness.png",
+      "source_revision": 1,
+      "sha256": "30cc9bd058d19478db327591e505e81951874471012bcfb036babdcfa40f1f17"
+    },
+    {
+      "phase": 15,
+      "original_path": "apps/delivery/assets/ui-mockups/15-authentication-session-access/01-email-password-sign-in-v1.png",
+      "path": "15-authentication-session-access/01-email-password-sign-in.png",
+      "source_revision": 1,
+      "sha256": "29735d520ef72ac9705bd2451222615d1516dd6458477537bb88a7d8a588421a"
+    },
+    {
+      "phase": 15,
+      "original_path": "apps/delivery/assets/ui-mockups/15-authentication-session-access/02-password-reset-invalid-credentials-v1.png",
+      "path": "15-authentication-session-access/02-password-reset-invalid-credentials.png",
+      "source_revision": 1,
+      "sha256": "a04e1f542675bc3c83680c53e8d63efcced5497386c5c04294f65e86b693937f"
+    },
+    {
+      "phase": 15,
+      "original_path": "apps/delivery/assets/ui-mockups/15-authentication-session-access/03-throttling-account-role-v1.png",
+      "path": "15-authentication-session-access/03-throttling-account-role.png",
+      "source_revision": 1,
+      "sha256": "d71ccb1b4ba7c28250e3fdc81b71327334521224e76088cf8cdc688f335906a3"
+    },
+    {
+      "phase": 15,
+      "original_path": "apps/delivery/assets/ui-mockups/15-authentication-session-access/04-account-loading-session-recovery-v1.png",
+      "path": "15-authentication-session-access/04-account-loading-session-recovery.png",
+      "source_revision": 1,
+      "sha256": "35d156d330cd8d6f7c1c9deb3973568ac72b3ce974fbb4f27224f0ab73709b93"
+    },
+    {
+      "phase": 16,
+      "original_path": "apps/delivery/assets/ui-mockups/16-delivery-partner-registration/01-account-v1.png",
+      "path": "16-delivery-partner-registration/01-account.png",
+      "source_revision": 1,
+      "sha256": "870f63f5898fa935f6d2d54b93243419aef23c4ba30b9492179ecb08526cbe01"
+    },
+    {
+      "phase": 16,
+      "original_path": "apps/delivery/assets/ui-mockups/16-delivery-partner-registration/02-personal-contact-details-v1.png",
+      "path": "16-delivery-partner-registration/02-personal-contact-details.png",
+      "source_revision": 1,
+      "sha256": "ad8a7fc01d492a8801296f54d5d6b1c0408a87bbed9e7f1eecff855bafa6afc0"
+    },
+    {
+      "phase": 16,
+      "original_path": "apps/delivery/assets/ui-mockups/16-delivery-partner-registration/03-vehicle-licence-v1.png",
+      "path": "16-delivery-partner-registration/03-vehicle-licence.png",
+      "source_revision": 1,
+      "sha256": "d8d06282f09dce69471709c31cab60cb8290463d64512eab2a369489c4220b0d"
+    },
+    {
+      "phase": 16,
+      "original_path": "apps/delivery/assets/ui-mockups/16-delivery-partner-registration/04-identity-documents-optional-payout-v1.png",
+      "path": "16-delivery-partner-registration/04-identity-documents-optional-payout.png",
+      "source_revision": 1,
+      "sha256": "08e0616613b0f19b1abfdae5c7af9329a342a8fa8eab92904ad96546abe58d4c"
+    },
+    {
+      "phase": 16,
+      "original_path": "apps/delivery/assets/ui-mockups/16-delivery-partner-registration/05-navigation-validation-v1.png",
+      "path": "16-delivery-partner-registration/05-navigation-validation.png",
+      "source_revision": 1,
+      "sha256": "f73dba08d70cc2aaeb0b06e471f750f276a806321fd80025d27427b41ab7efb4"
+    },
+    {
+      "phase": 16,
+      "original_path": "apps/delivery/assets/ui-mockups/16-delivery-partner-registration/06-submission-registration-recovery-v1.png",
+      "path": "16-delivery-partner-registration/06-submission-registration-recovery.png",
+      "source_revision": 1,
+      "sha256": "293fbbb88b342accc4dbc1a072d4ce79b943c034c8fc25e2f35d8e63c1aa6fd5"
+    },
+    {
+      "phase": 17,
+      "original_path": "apps/delivery/assets/ui-mockups/17-identity-documents-approval/01-aadhaar-front-back-v1.png",
+      "path": "17-identity-documents-approval/01-aadhaar-front-back.png",
+      "source_revision": 1,
+      "sha256": "f169c164a56229edda45ccc11da6d37474c3e271c5ae1c570dd7ba5e89dd0673"
+    },
+    {
+      "phase": 17,
+      "original_path": "apps/delivery/assets/ui-mockups/17-identity-documents-approval/02-selfie-v1.png",
+      "path": "17-identity-documents-approval/02-selfie.png",
+      "source_revision": 1,
+      "sha256": "d18c8806b9a96ed1d3858aa48fecb08d8e339c616edd87e4bb4ea655e306d5c3"
+    },
+    {
+      "phase": 17,
+      "original_path": "apps/delivery/assets/ui-mockups/17-identity-documents-approval/03-driving-licence-v1.png",
+      "path": "17-identity-documents-approval/03-driving-licence.png",
+      "source_revision": 1,
+      "sha256": "3e5836e86d34ff1a6c38a2b3cd159fc6a07bd9a4ecf55502a0b26632885b6e92"
+    },
+    {
+      "phase": 17,
+      "original_path": "apps/delivery/assets/ui-mockups/17-identity-documents-approval/04-add-replace-upload-v1.png",
+      "path": "17-identity-documents-approval/04-add-replace-upload.png",
+      "source_revision": 1,
+      "sha256": "dd43bc9cf8bef452bcbec2b123faab9ae3daff566b348d589c7d137415715046"
+    },
+    {
+      "phase": 17,
+      "original_path": "apps/delivery/assets/ui-mockups/17-identity-documents-approval/05-application-pending-v1.png",
+      "path": "17-identity-documents-approval/05-application-pending.png",
+      "source_revision": 1,
+      "sha256": "21e21934e6ebc930fc914e598e0af0ba46360547d2603c75f916e4a4e01dd957"
+    },
+    {
+      "phase": 17,
+      "original_path": "apps/delivery/assets/ui-mockups/17-identity-documents-approval/06-rejection-reason-v1.png",
+      "path": "17-identity-documents-approval/06-rejection-reason.png",
+      "source_revision": 1,
+      "sha256": "f3f1e7cb851ca4661e6e97967db7f5154f6af333fb53a0077b4d3f794c51d0c1"
+    },
+    {
+      "phase": 17,
+      "original_path": "apps/delivery/assets/ui-mockups/17-identity-documents-approval/07-correction-resubmission-v1.png",
+      "path": "17-identity-documents-approval/07-correction-resubmission.png",
+      "source_revision": 1,
+      "sha256": "95e453a2487633f119208328bb2fe5ddc4950fb15b161ffe3e7a4d4fe9b04ba9"
+    },
+    {
+      "phase": 17,
+      "original_path": "apps/delivery/assets/ui-mockups/17-identity-documents-approval/08-suspension-deactivation-v1.png",
+      "path": "17-identity-documents-approval/08-suspension-deactivation.png",
+      "source_revision": 1,
+      "sha256": "20fa36e90827ec8f4967861dfb6562010c4a58a60132ac4b3986aa9e7a8ddcdb"
+    },
+    {
+      "phase": 18,
+      "original_path": "apps/delivery/assets/ui-mockups/18-dashboard-work-availability/01-online-offline-dashboard-v1.png",
+      "path": "18-dashboard-work-availability/01-online-offline-dashboard.png",
+      "source_revision": 1,
+      "sha256": "959f87e6aac479a32e4ac8b4bbf341bd2ce7af53cf45699d305a7cb85ccdf3a5"
+    },
+    {
+      "phase": 18,
+      "original_path": "apps/delivery/assets/ui-mockups/18-dashboard-work-availability/02-go-online-readiness-v1.png",
+      "path": "18-dashboard-work-availability/02-go-online-readiness.png",
+      "source_revision": 1,
+      "sha256": "ade49e6e56d536ae0bbde82ebc675d40a16a3aa7d57a17eadd1a3f435b05d920"
+    },
+    {
+      "phase": 18,
+      "original_path": "apps/delivery/assets/ui-mockups/18-dashboard-work-availability/03-waiting-for-offers-v1.png",
+      "path": "18-dashboard-work-availability/03-waiting-for-offers.png",
+      "source_revision": 1,
+      "sha256": "a5ada29c0539ab64a5c01f21390662c3d1d5f353b72329df120fb1a47deb5c72"
+    },
+    {
+      "phase": 18,
+      "original_path": "apps/delivery/assets/ui-mockups/18-dashboard-work-availability/04-today-week-summaries-v1.png",
+      "path": "18-dashboard-work-availability/04-today-week-summaries.png",
+      "source_revision": 1,
+      "sha256": "81bae992ea3a8607aca17751bd67db4ba47049a028d46c9c9e65add4b14b61c1"
+    },
+    {
+      "phase": 18,
+      "original_path": "apps/delivery/assets/ui-mockups/18-dashboard-work-availability/05-active-delivery-v1.png",
+      "path": "18-dashboard-work-availability/05-active-delivery.png",
+      "source_revision": 1,
+      "sha256": "61afb66e80b3fdf1370df8548c8866fc5f58bc3b02dfd27f5547ac7ff0e249e9"
+    },
+    {
+      "phase": 18,
+      "original_path": "apps/delivery/assets/ui-mockups/18-dashboard-work-availability/06-quick-actions-v1.png",
+      "path": "18-dashboard-work-availability/06-quick-actions.png",
+      "source_revision": 1,
+      "sha256": "dfc168a0ccd30b01248d9dc6b2dc1948e24b0757f017bf2d3a84309842bc5809"
+    },
+    {
+      "phase": 18,
+      "original_path": "apps/delivery/assets/ui-mockups/18-dashboard-work-availability/07-server-offline-recovery-v1.png",
+      "path": "18-dashboard-work-availability/07-server-offline-recovery.png",
+      "source_revision": 1,
+      "sha256": "3b4e0c727edceaa6dad69f60d06a80e061bf7f8c46b1e20fb200ede5d06804b4"
+    },
+    {
+      "phase": 19,
+      "original_path": "apps/delivery/assets/ui-mockups/19-incoming-offers-acceptance/01-timed-offer-v1.png",
+      "path": "19-incoming-offers-acceptance/01-timed-offer.png",
+      "source_revision": 1,
+      "sha256": "283badc7cf1be42dfa3c5612f3599960df1980797a629b21b1779d7e64f73a60"
+    },
+    {
+      "phase": 19,
+      "original_path": "apps/delivery/assets/ui-mockups/19-incoming-offers-acceptance/02-estimated-pay-v1.png",
+      "path": "19-incoming-offers-acceptance/02-estimated-pay.png",
+      "source_revision": 1,
+      "sha256": "694bdc75abb07bc181d7d61d2a2f92e426402163c3c42df227ef79c36a262806"
+    },
+    {
+      "phase": 19,
+      "original_path": "apps/delivery/assets/ui-mockups/19-incoming-offers-acceptance/03-pickup-distance-v1.png",
+      "path": "19-incoming-offers-acceptance/03-pickup-distance.png",
+      "source_revision": 1,
+      "sha256": "f8c19d436c312ddfb101182b4b13175c1daf26b81836116d01d71edae91950a2"
+    },
+    {
+      "phase": 19,
+      "original_path": "apps/delivery/assets/ui-mockups/19-incoming-offers-acceptance/04-drop-summary-v1.png",
+      "path": "19-incoming-offers-acceptance/04-drop-summary.png",
+      "source_revision": 1,
+      "sha256": "4a5615895e877da36b63b22200f189ee465c04ec5e685ae093ad271e2c08e64c"
+    },
+    {
+      "phase": 19,
+      "original_path": "apps/delivery/assets/ui-mockups/19-incoming-offers-acceptance/05-item-count-v1.png",
+      "path": "19-incoming-offers-acceptance/05-item-count.png",
+      "source_revision": 1,
+      "sha256": "c6fb28172d98e9cc145db23586456e2df3239d45dcbe0685ebcd028255f181a5"
+    },
+    {
+      "phase": 19,
+      "original_path": "apps/delivery/assets/ui-mockups/19-incoming-offers-acceptance/06-cod-prepaid-v1.png",
+      "path": "19-incoming-offers-acceptance/06-cod-prepaid.png",
+      "source_revision": 1,
+      "sha256": "19d9d997f4faf7f2dfe75ad8b85ed25b412497dfc2ad11dbcaa979bda346e6e7"
+    },
+    {
+      "phase": 19,
+      "original_path": "apps/delivery/assets/ui-mockups/19-incoming-offers-acceptance/07-accept-decline-v1.png",
+      "path": "19-incoming-offers-acceptance/07-accept-decline.png",
+      "source_revision": 1,
+      "sha256": "6eec405dfb08ebf12c28069eb74ee80a6b5286c72c5b2faa6fd0c699d794c832"
+    },
+    {
+      "phase": 19,
+      "original_path": "apps/delivery/assets/ui-mockups/19-incoming-offers-acceptance/08-expired-already-taken-v1.png",
+      "path": "19-incoming-offers-acceptance/08-expired-already-taken.png",
+      "source_revision": 1,
+      "sha256": "49350eda37dbf90c9dd48613e6ec19467f446059804e0a6252d5d395133d4882"
+    },
+    {
+      "phase": 19,
+      "original_path": "apps/delivery/assets/ui-mockups/19-incoming-offers-acceptance/09-acceptance-failures-v1.png",
+      "path": "19-incoming-offers-acceptance/09-acceptance-failures.png",
+      "source_revision": 1,
+      "sha256": "f291a7dbda65ff104a22a10736c2845172b4e259258a081556fbb63503732c85"
+    },
+    {
+      "phase": 20,
+      "original_path": "apps/delivery/assets/ui-mockups/20-active-delivery-workspace/01-assigned-order-summary-v1.png",
+      "path": "20-active-delivery-workspace/01-assigned-order-summary.png",
+      "source_revision": 1,
+      "sha256": "bf71ca864474fcd9f8e2850d7ffd636d7291d4f1c904748d63e2b2d5f80773ce"
+    },
+    {
+      "phase": 20,
+      "original_path": "apps/delivery/assets/ui-mockups/20-active-delivery-workspace/02-current-step-v1.png",
+      "path": "20-active-delivery-workspace/02-current-step.png",
+      "source_revision": 1,
+      "sha256": "a948b6e4220265a75817eaadca03d73e87f034214b0f2d42b2f9d1284522d79c"
+    },
+    {
+      "phase": 20,
+      "original_path": "apps/delivery/assets/ui-mockups/20-active-delivery-workspace/03-next-action-v1.png",
+      "path": "20-active-delivery-workspace/03-next-action.png",
+      "source_revision": 1,
+      "sha256": "2506f4e6c5e14da514a108ce5f031723175428d0503f3e836edfce520ca1b388"
+    },
+    {
+      "phase": 20,
+      "original_path": "apps/delivery/assets/ui-mockups/20-active-delivery-workspace/04-merchant-customer-information-v1.png",
+      "path": "20-active-delivery-workspace/04-merchant-customer-information.png",
+      "source_revision": 1,
+      "sha256": "f6f73039df44d7c01f12c04007b3e8950848080e9357092f2245d86faa0264ae"
+    },
+    {
+      "phase": 20,
+      "original_path": "apps/delivery/assets/ui-mockups/20-active-delivery-workspace/05-items-v1.png",
+      "path": "20-active-delivery-workspace/05-items.png",
+      "source_revision": 1,
+      "sha256": "54df28768ef49ea73d7810e689d10a608750cc02c336b0cb08626949ec473fff"
+    },
+    {
+      "phase": 20,
+      "original_path": "apps/delivery/assets/ui-mockups/20-active-delivery-workspace/06-payment-details-v1.png",
+      "path": "20-active-delivery-workspace/06-payment-details.png",
+      "source_revision": 1,
+      "sha256": "77d35aa54754e855502cfc9373c75cf277e9eaf40d508a90ea21a524a2142578"
+    },
+    {
+      "phase": 20,
+      "original_path": "apps/delivery/assets/ui-mockups/20-active-delivery-workspace/07-support-access-v1.png",
+      "path": "20-active-delivery-workspace/07-support-access.png",
+      "source_revision": 1,
+      "sha256": "9b5ecf427ebdadfa10656ad7c9690739a4c9bd1ac8092e7336f7cdba186b8131"
+    },
+    {
+      "phase": 20,
+      "original_path": "apps/delivery/assets/ui-mockups/20-active-delivery-workspace/08-assignment-recovery-v1.png",
+      "path": "20-active-delivery-workspace/08-assignment-recovery.png",
+      "source_revision": 1,
+      "sha256": "2603ae223ece44c6fb192c56de7af5343da41b09d8d9dfc6f603823e2dde97d6"
+    },
+    {
+      "phase": 21,
+      "original_path": "apps/delivery/assets/ui-mockups/21-maps-routes-navigation/01-rider-store-customer-markers-v1.png",
+      "path": "21-maps-routes-navigation/01-rider-store-customer-markers.png",
+      "source_revision": 1,
+      "sha256": "63db78561f28566a7e5ec63ae6edfc7b87891e34ffb30b7d42391ab1ea920092"
+    },
+    {
+      "phase": 21,
+      "original_path": "apps/delivery/assets/ui-mockups/21-maps-routes-navigation/02-pickup-drop-legs-v1.png",
+      "path": "21-maps-routes-navigation/02-pickup-drop-legs.png",
+      "source_revision": 1,
+      "sha256": "824594e05f58e1d8ce593915fe1547e7168666c442c5c6060b91f574b6a3f34e"
+    },
+    {
+      "phase": 21,
+      "original_path": "apps/delivery/assets/ui-mockups/21-maps-routes-navigation/03-distance-eta-v1.png",
+      "path": "21-maps-routes-navigation/03-distance-eta.png",
+      "source_revision": 1,
+      "sha256": "2303b639088e1f27e61112496424af94227869e8db0d0fb434033b37ec507a85"
+    },
+    {
+      "phase": 21,
+      "original_path": "apps/delivery/assets/ui-mockups/21-maps-routes-navigation/04-route-loading-v1.png",
+      "path": "21-maps-routes-navigation/04-route-loading.png",
+      "source_revision": 1,
+      "sha256": "d21c2093d62f5f4653d703fa2e5ae60d94b3186a4fb14db57bb5e1d4ba707afc"
+    },
+    {
+      "phase": 21,
+      "original_path": "apps/delivery/assets/ui-mockups/21-maps-routes-navigation/05-missing-coordinates-v1.png",
+      "path": "21-maps-routes-navigation/05-missing-coordinates.png",
+      "source_revision": 1,
+      "sha256": "1e44819cf10750bc1bc5409a7366b4e4b0dca0f77576a70f1171ec6d45374d73"
+    },
+    {
+      "phase": 21,
+      "original_path": "apps/delivery/assets/ui-mockups/21-maps-routes-navigation/06-stale-location-v1.png",
+      "path": "21-maps-routes-navigation/06-stale-location.png",
+      "source_revision": 1,
+      "sha256": "26a80b9ecd2067a19793daabbe6ace427a4c1001785fc379cd92ecd5b0386146"
+    },
+    {
+      "phase": 21,
+      "original_path": "apps/delivery/assets/ui-mockups/21-maps-routes-navigation/07-external-navigation-handoff-v1.png",
+      "path": "21-maps-routes-navigation/07-external-navigation-handoff.png",
+      "source_revision": 1,
+      "sha256": "1d766efb77b254fb07e56cd96a5b75e6141e9c80f17f2209557fae68e125c8b4"
+    },
+    {
+      "phase": 22,
+      "original_path": "apps/delivery/assets/ui-mockups/22-store-arrival-pickup/01-navigate-to-store-v1.png",
+      "path": "22-store-arrival-pickup/01-navigate-to-store.png",
+      "source_revision": 1,
+      "sha256": "a731ef6950e9e097b28e020b492527853d28d7023a365eaeac8c8b11784abf7d"
+    },
+    {
+      "phase": 22,
+      "original_path": "apps/delivery/assets/ui-mockups/22-store-arrival-pickup/02-mark-arrived-v1.png",
+      "path": "22-store-arrival-pickup/02-mark-arrived.png",
+      "source_revision": 1,
+      "sha256": "f941fa5c272050ecb7e57ba879fe30c82942f3d2d4d61d1a905b030d8bf61948"
+    },
+    {
+      "phase": 22,
+      "original_path": "apps/delivery/assets/ui-mockups/22-store-arrival-pickup/03-item-pack-quantities-v1.png",
+      "path": "22-store-arrival-pickup/03-item-pack-quantities.png",
+      "source_revision": 1,
+      "sha256": "473f4080fe4e85365382eb5188a69692bff1e7c699f239e22542652575b82862"
+    },
+    {
+      "phase": 22,
+      "original_path": "apps/delivery/assets/ui-mockups/22-store-arrival-pickup/04-waiting-state-v1.png",
+      "path": "22-store-arrival-pickup/04-waiting-state.png",
+      "source_revision": 1,
+      "sha256": "c60d639d1b2f2e0f34927397fae2fbdafc124e29a11d8520881c296d9bd0309d"
+    },
+    {
+      "phase": 22,
+      "original_path": "apps/delivery/assets/ui-mockups/22-store-arrival-pickup/05-seller-not-ready-release-v1.png",
+      "path": "22-store-arrival-pickup/05-seller-not-ready-release.png",
+      "source_revision": 1,
+      "sha256": "91fbdf0eac95ff6376370fd810eb6b1dbe5bddaf7e607ed236afa76fc2ff9b17"
+    },
+    {
+      "phase": 22,
+      "original_path": "apps/delivery/assets/ui-mockups/22-store-arrival-pickup/06-pickup-confirmation-v1.png",
+      "path": "22-store-arrival-pickup/06-pickup-confirmation.png",
+      "source_revision": 1,
+      "sha256": "c90c8484d9e04926994a13439c8dcc8eb9c9efdb5a2f80c1cc9da85f3a96ee11"
+    },
+    {
+      "phase": 22,
+      "original_path": "apps/delivery/assets/ui-mockups/22-store-arrival-pickup/07-distance-warning-confirmation-v1.png",
+      "path": "22-store-arrival-pickup/07-distance-warning-confirmation.png",
+      "source_revision": 1,
+      "sha256": "32a0e8e22f48782448b6348c0d9b58fe71024d98dd8fae1c5fe8da1b135781b9"
+    },
+    {
+      "phase": 23,
+      "original_path": "apps/delivery/assets/ui-mockups/23-customer-dropoff-verification/01-start-delivery-v1.png",
+      "path": "23-customer-dropoff-verification/01-start-delivery.png",
+      "source_revision": 1,
+      "sha256": "c99b6aecc3f9f177e37699e213f4ba24513973d70ac7b58e399636ab59e7ace3"
+    },
+    {
+      "phase": 23,
+      "original_path": "apps/delivery/assets/ui-mockups/23-customer-dropoff-verification/02-address-contact-actions-v1.png",
+      "path": "23-customer-dropoff-verification/02-address-contact-actions.png",
+      "source_revision": 1,
+      "sha256": "76591e04a90c1dfb313fe9cbcbd63675ad913caf4b88e49426a8540babe24849"
+    },
+    {
+      "phase": 23,
+      "original_path": "apps/delivery/assets/ui-mockups/23-customer-dropoff-verification/03-item-pack-quantities-v1.png",
+      "path": "23-customer-dropoff-verification/03-item-pack-quantities.png",
+      "source_revision": 1,
+      "sha256": "5765ee6cc903d21304cc7889fc90b350aeeaf47276f286d82f61219aab7b7397"
+    },
+    {
+      "phase": 23,
+      "original_path": "apps/delivery/assets/ui-mockups/23-customer-dropoff-verification/04-prepaid-cod-instructions-v1.png",
+      "path": "23-customer-dropoff-verification/04-prepaid-cod-instructions.png",
+      "source_revision": 1,
+      "sha256": "b46a03fd61a579673904bebeb23497c48aa250ab52a7d1c3865cf402eab76534"
+    },
+    {
+      "phase": 23,
+      "original_path": "apps/delivery/assets/ui-mockups/23-customer-dropoff-verification/05-six-digit-delivery-code-v1.png",
+      "path": "23-customer-dropoff-verification/05-six-digit-delivery-code.png",
+      "source_revision": 1,
+      "sha256": "4727a536499a7beb3c207fd146f8306ba4923db96bb905b7915b5694a69c6e8b"
+    },
+    {
+      "phase": 23,
+      "original_path": "apps/delivery/assets/ui-mockups/23-customer-dropoff-verification/06-incomplete-wrong-code-v1.png",
+      "path": "23-customer-dropoff-verification/06-incomplete-wrong-code.png",
+      "source_revision": 1,
+      "sha256": "5a0d271664a1ba311118217d581cbc7277d1d280ecdef9895309cd223a7d1bbc"
+    },
+    {
+      "phase": 23,
+      "original_path": "apps/delivery/assets/ui-mockups/23-customer-dropoff-verification/07-verification-lockout-v1.png",
+      "path": "23-customer-dropoff-verification/07-verification-lockout.png",
+      "source_revision": 1,
+      "sha256": "2f0b2d4cb490936d2b088562af6c20a91bab772299fa8d95857129581ac226ad"
+    },
+    {
+      "phase": 23,
+      "original_path": "apps/delivery/assets/ui-mockups/23-customer-dropoff-verification/08-verification-failure-v1.png",
+      "path": "23-customer-dropoff-verification/08-verification-failure.png",
+      "source_revision": 1,
+      "sha256": "11fde151a2a6b383fa4b983a84dd051af9ccae749d4cdefd6f9e2e0ecb5109ba"
+    },
+    {
+      "phase": 23,
+      "original_path": "apps/delivery/assets/ui-mockups/23-customer-dropoff-verification/09-delivery-completion-v1.png",
+      "path": "23-customer-dropoff-verification/09-delivery-completion.png",
+      "source_revision": 1,
+      "sha256": "e6f7cfa9757cc48d15d871f20e69eaec430aea118b5b4346e5973cc334dedd60"
+    },
+    {
+      "phase": 24,
+      "original_path": "apps/delivery/assets/ui-mockups/24-proof-of-delivery-completion/01-optional-photo-capture-v1.png",
+      "path": "24-proof-of-delivery-completion/01-optional-photo-capture.png",
+      "source_revision": 1,
+      "sha256": "9ee21804cf8bbc18a95b2b23dc80d36b99ded93a217e69f5c250759551812ff8"
+    },
+    {
+      "phase": 24,
+      "original_path": "apps/delivery/assets/ui-mockups/24-proof-of-delivery-completion/02-photo-preview-v1.png",
+      "path": "24-proof-of-delivery-completion/02-photo-preview.png",
+      "source_revision": 1,
+      "sha256": "1a561dc967be66f4af004558b914f30e1d5dc2dfdc2462baa4cd0b99f91e9e58"
+    },
+    {
+      "phase": 24,
+      "original_path": "apps/delivery/assets/ui-mockups/24-proof-of-delivery-completion/03-retake-remove-v1.png",
+      "path": "24-proof-of-delivery-completion/03-retake-remove.png",
+      "source_revision": 1,
+      "sha256": "57b3bb58a2395505ab1a053a706496ba6f0f008190ad49a33cd5ae9794349e61"
+    },
+    {
+      "phase": 24,
+      "original_path": "apps/delivery/assets/ui-mockups/24-proof-of-delivery-completion/04-upload-states-v1.png",
+      "path": "24-proof-of-delivery-completion/04-upload-states.png",
+      "source_revision": 1,
+      "sha256": "c31683638e8bd7d28b9df071ac315d7607f33a36cb805f7bd831107405665ee4"
+    },
+    {
+      "phase": 24,
+      "original_path": "apps/delivery/assets/ui-mockups/24-proof-of-delivery-completion/05-completed-delivery-summary-v1.png",
+      "path": "24-proof-of-delivery-completion/05-completed-delivery-summary.png",
+      "source_revision": 1,
+      "sha256": "678cd3f69c1b1937133381cca63fafcb7420f6df19d60ca14632f53bd040c2bd"
+    },
+    {
+      "phase": 24,
+      "original_path": "apps/delivery/assets/ui-mockups/24-proof-of-delivery-completion/06-delivery-complete-v1.png",
+      "path": "24-proof-of-delivery-completion/06-delivery-complete.png",
+      "source_revision": 1,
+      "sha256": "dc23ef02bfcb04a1b77603fbeb6b865cab47843cdb14b702776e0258485a6ddb"
+    },
+    {
+      "phase": 24,
+      "original_path": "apps/delivery/assets/ui-mockups/24-proof-of-delivery-completion/07-photo-not-saved-recovery-v1.png",
+      "path": "24-proof-of-delivery-completion/07-photo-not-saved-recovery.png",
+      "source_revision": 1,
+      "sha256": "ff52aed99aa773f99537e5574ce7044b58aa5286c9252a7df1a99d5270654ebe"
+    },
+    {
+      "phase": 25,
+      "original_path": "apps/delivery/assets/ui-mockups/25-delivery-problems-resolution/01-customer-unreachable-refusal-v1.png",
+      "path": "25-delivery-problems-resolution/01-customer-unreachable-refusal.png",
+      "source_revision": 1,
+      "sha256": "3e60f1b99d69a30425209bfe0ac38ce0fb7fe2f3d8c09d71d934bf44ff434670"
+    },
+    {
+      "phase": 25,
+      "original_path": "apps/delivery/assets/ui-mockups/25-delivery-problems-resolution/02-address-issues-v1.png",
+      "path": "25-delivery-problems-resolution/02-address-issues.png",
+      "source_revision": 1,
+      "sha256": "ead196f4b48fbf454028e326ac85e8df711e60814a83680f439456d96dc7b4e8"
+    },
+    {
+      "phase": 25,
+      "original_path": "apps/delivery/assets/ui-mockups/25-delivery-problems-resolution/03-cash-payment-problems-v1.png",
+      "path": "25-delivery-problems-resolution/03-cash-payment-problems.png",
+      "source_revision": 1,
+      "sha256": "23ca598c3a21d652451fbb8c42cf731201e975ae29fb7b9ff70cd944c2a338c6"
+    },
+    {
+      "phase": 25,
+      "original_path": "apps/delivery/assets/ui-mockups/25-delivery-problems-resolution/04-damaged-goods-v1.png",
+      "path": "25-delivery-problems-resolution/04-damaged-goods.png",
+      "source_revision": 1,
+      "sha256": "622682dc61567a87d1ac219ada07344d75473f829826ea3615a4d66957b11cc1"
+    },
+    {
+      "phase": 25,
+      "original_path": "apps/delivery/assets/ui-mockups/25-delivery-problems-resolution/05-vehicle-safety-issues-v1.png",
+      "path": "25-delivery-problems-resolution/05-vehicle-safety-issues.png",
+      "source_revision": 1,
+      "sha256": "42dec51780485abbbae030bb8cfc2db6dc5068a910f376f646875c3d943a9d0b"
+    },
+    {
+      "phase": 25,
+      "original_path": "apps/delivery/assets/ui-mockups/25-delivery-problems-resolution/06-optional-note-v1.png",
+      "path": "25-delivery-problems-resolution/06-optional-note.png",
+      "source_revision": 1,
+      "sha256": "2c37ce9844cd2b4251ecc4e5ba409712099570d87284f804de28d206a009d4a7"
+    },
+    {
+      "phase": 25,
+      "original_path": "apps/delivery/assets/ui-mockups/25-delivery-problems-resolution/07-report-submission-v1.png",
+      "path": "25-delivery-problems-resolution/07-report-submission.png",
+      "source_revision": 1,
+      "sha256": "d8434298ceb70a0ae573fbc128189c54d43dd55964589372dc7084a8ac07efa9"
+    },
+    {
+      "phase": 25,
+      "original_path": "apps/delivery/assets/ui-mockups/25-delivery-problems-resolution/08-seen-status-v1.png",
+      "path": "25-delivery-problems-resolution/08-seen-status.png",
+      "source_revision": 1,
+      "sha256": "bd856aefb194c30a45ec0af16c7260993a0e7ca0a8715b4cf96c29ffb93c730e"
+    },
+    {
+      "phase": 25,
+      "original_path": "apps/delivery/assets/ui-mockups/25-delivery-problems-resolution/09-reattempt-v1.png",
+      "path": "25-delivery-problems-resolution/09-reattempt.png",
+      "source_revision": 1,
+      "sha256": "1512ab36c3ee108ede815324fac176a8fc4e2e913ca84ffb5923bba8b3b4e030"
+    },
+    {
+      "phase": 25,
+      "original_path": "apps/delivery/assets/ui-mockups/25-delivery-problems-resolution/10-recorded-return-v1.png",
+      "path": "25-delivery-problems-resolution/10-recorded-return.png",
+      "source_revision": 1,
+      "sha256": "96c23074479a36fd67e2180d1fe0b4d10888a187e76a6365ac453c87238c50c7"
+    },
+    {
+      "phase": 26,
+      "original_path": "apps/delivery/assets/ui-mockups/26-emergency-help-incident-reporting/01-emergency-call-action-v1.png",
+      "path": "26-emergency-help-incident-reporting/01-emergency-call-action.png",
+      "source_revision": 1,
+      "sha256": "1715f94cd8610124125ea1e66af81460693b092ebf0f8e1ec677ead8b03e1ffb"
+    },
+    {
+      "phase": 26,
+      "original_path": "apps/delivery/assets/ui-mockups/26-emergency-help-incident-reporting/02-support-call-v1.png",
+      "path": "26-emergency-help-incident-reporting/02-support-call.png",
+      "source_revision": 1,
+      "sha256": "98b3e11a199305bd743e4d7aa2821add95115629132bdb8a39278bb2a06cb0da"
+    },
+    {
+      "phase": 26,
+      "original_path": "apps/delivery/assets/ui-mockups/26-emergency-help-incident-reporting/03-incident-reporting-v1.png",
+      "path": "26-emergency-help-incident-reporting/03-incident-reporting.png",
+      "source_revision": 1,
+      "sha256": "4eb90be872cb8f7e0d203f4a49e9a2772ee42b1d2c941feb0b74fa6175f00e27"
+    },
+    {
+      "phase": 26,
+      "original_path": "apps/delivery/assets/ui-mockups/26-emergency-help-incident-reporting/04-location-unavailable-v1.png",
+      "path": "26-emergency-help-incident-reporting/04-location-unavailable.png",
+      "source_revision": 1,
+      "sha256": "bc29a63cf23746c1fb0b0920c277e4345c6c4224ee27cd29e4aa712bdf2bd9e7"
+    },
+    {
+      "phase": 26,
+      "original_path": "apps/delivery/assets/ui-mockups/26-emergency-help-incident-reporting/05-submission-failure-v1.png",
+      "path": "26-emergency-help-incident-reporting/05-submission-failure.png",
+      "source_revision": 1,
+      "sha256": "b46a8109a0e79605724b9514ac0fc3bd9c78fed2986b3738cc701be59f49dd72"
+    },
+    {
+      "phase": 26,
+      "original_path": "apps/delivery/assets/ui-mockups/26-emergency-help-incident-reporting/06-recorded-seen-closed-v1.png",
+      "path": "26-emergency-help-incident-reporting/06-recorded-seen-closed.png",
+      "source_revision": 1,
+      "sha256": "50f3c4cc5828f7f8ac02ea3d003ee4768d70a1d3d5d144551f37be226224f111"
+    },
+    {
+      "phase": 27,
+      "original_path": "apps/delivery/assets/ui-mockups/27-earnings-cod-cash/01-today-week-earnings-v1.png",
+      "path": "27-earnings-cod-cash/01-today-week-earnings.png",
+      "source_revision": 1,
+      "sha256": "ae273383277ced40d72230840e811dfe4fe5fc27e23d8271f6f6f6611f279daa"
+    },
+    {
+      "phase": 27,
+      "original_path": "apps/delivery/assets/ui-mockups/27-earnings-cod-cash/02-per-delivery-breakdown-v1.png",
+      "path": "27-earnings-cod-cash/02-per-delivery-breakdown.png",
+      "source_revision": 1,
+      "sha256": "65fa6338fcd4c6c88d02f28fea0baca9232e5cac88a8412faf3064d430546e8f"
+    },
+    {
+      "phase": 27,
+      "original_path": "apps/delivery/assets/ui-mockups/27-earnings-cod-cash/03-collected-cash-v1.png",
+      "path": "27-earnings-cod-cash/03-collected-cash.png",
+      "source_revision": 1,
+      "sha256": "64d28351a15b9df5d4dac0ed130bb99ca0ae8a78661d11decb70710057860ef8"
+    },
+    {
+      "phase": 27,
+      "original_path": "apps/delivery/assets/ui-mockups/27-earnings-cod-cash/04-cash-held-v1.png",
+      "path": "27-earnings-cod-cash/04-cash-held.png",
+      "source_revision": 1,
+      "sha256": "77d140029542c5a0a02796c8cdb1efdf736b94e8f074c744189248bd2323401a"
+    },
+    {
+      "phase": 27,
+      "original_path": "apps/delivery/assets/ui-mockups/27-earnings-cod-cash/05-cod-eligibility-limit-v1.png",
+      "path": "27-earnings-cod-cash/05-cod-eligibility-limit.png",
+      "source_revision": 1,
+      "sha256": "925f245acaef566a82b15957fc2c6ea814b4306b39cfdf41825743a0a892e475"
+    },
+    {
+      "phase": 27,
+      "original_path": "apps/delivery/assets/ui-mockups/27-earnings-cod-cash/06-cash-offset-explanations-v1.png",
+      "path": "27-earnings-cod-cash/06-cash-offset-explanations.png",
+      "source_revision": 1,
+      "sha256": "5782f1dbfd3642cbe0ed2465932a13e5d4fed90ae540f077cb9d662455e5a5d6"
+    },
+    {
+      "phase": 28,
+      "original_path": "apps/delivery/assets/ui-mockups/28-weekly-statements-payouts/01-statement-list-detail-v1.png",
+      "path": "28-weekly-statements-payouts/01-statement-list-detail.png",
+      "source_revision": 1,
+      "sha256": "cab1ee69b3e2cf95cd58f0d5aa6127f7493ef9bc68c613d6db41206e5027a3ad"
+    },
+    {
+      "phase": 28,
+      "original_path": "apps/delivery/assets/ui-mockups/28-weekly-statements-payouts/02-period-covered-v1.png",
+      "path": "28-weekly-statements-payouts/02-period-covered.png",
+      "source_revision": 1,
+      "sha256": "65f16eb91ddd0f0f3fc55d5e6dd506917b7fecdeb504b1a50eeafbcf335a0802"
+    },
+    {
+      "phase": 28,
+      "original_path": "apps/delivery/assets/ui-mockups/28-weekly-statements-payouts/03-deliveries-v1.png",
+      "path": "28-weekly-statements-payouts/03-deliveries.png",
+      "source_revision": 1,
+      "sha256": "69df7e64a8c54e372a6961c18ca7ae443212a128aa6cf24ed7bc4a4f40f7e8f7"
+    },
+    {
+      "phase": 28,
+      "original_path": "apps/delivery/assets/ui-mockups/28-weekly-statements-payouts/04-earned-amount-v1.png",
+      "path": "28-weekly-statements-payouts/04-earned-amount.png",
+      "source_revision": 1,
+      "sha256": "0f349e90714faa6a3faf2605aed968d6fa969956d0b01ff1d33072c23130549d"
+    },
+    {
+      "phase": 28,
+      "original_path": "apps/delivery/assets/ui-mockups/28-weekly-statements-payouts/05-cash-deductions-v1.png",
+      "path": "28-weekly-statements-payouts/05-cash-deductions.png",
+      "source_revision": 1,
+      "sha256": "6fea4778f27c519143edf4cd2f8c96f62c44122955885b70273714ecfa69dde6"
+    },
+    {
+      "phase": 28,
+      "original_path": "apps/delivery/assets/ui-mockups/28-weekly-statements-payouts/06-net-payment-v1.png",
+      "path": "28-weekly-statements-payouts/06-net-payment.png",
+      "source_revision": 1,
+      "sha256": "ec840223c3ecaf60a28eb993a2bc87cd104c181f50287d32063667468db84590"
+    },
+    {
+      "phase": 28,
+      "original_path": "apps/delivery/assets/ui-mockups/28-weekly-statements-payouts/07-transfer-reference-v1.png",
+      "path": "28-weekly-statements-payouts/07-transfer-reference.png",
+      "source_revision": 1,
+      "sha256": "de9a95b30349436e82c177ab6b51ceb184f6353ef3b220c725dc464757680ea1"
+    },
+    {
+      "phase": 28,
+      "original_path": "apps/delivery/assets/ui-mockups/28-weekly-statements-payouts/08-payout-states-v1.png",
+      "path": "28-weekly-statements-payouts/08-payout-states.png",
+      "source_revision": 1,
+      "sha256": "335a4008861d83254847b54a645d218eef8a5091f671c422ad6c10587fd15d4f"
+    },
+    {
+      "phase": 29,
+      "original_path": "apps/delivery/assets/ui-mockups/29-payout-details-change-review/01-masked-bank-upi-destination-v1.png",
+      "path": "29-payout-details-change-review/01-masked-bank-upi-destination.png",
+      "source_revision": 1,
+      "sha256": "cbfb02fd2f0b149b9b6bca9e9f9979132d09af38b2db3be84f8f6b204d512cd6"
+    },
+    {
+      "phase": 29,
+      "original_path": "apps/delivery/assets/ui-mockups/29-payout-details-change-review/02-missing-details-v1.png",
+      "path": "29-payout-details-change-review/02-missing-details.png",
+      "source_revision": 1,
+      "sha256": "04c020605be25c4258c833fc69e3e21bcffcb6e23ab20fc2776ce8d10de7d1e4"
+    },
+    {
+      "phase": 29,
+      "original_path": "apps/delivery/assets/ui-mockups/29-payout-details-change-review/03-change-form-v1.png",
+      "path": "29-payout-details-change-review/03-change-form.png",
+      "source_revision": 1,
+      "sha256": "604de9314156743627d821a85a58a6194122562852066d2c55ece7ec079b673f"
+    },
+    {
+      "phase": 29,
+      "original_path": "apps/delivery/assets/ui-mockups/29-payout-details-change-review/04-validation-v1.png",
+      "path": "29-payout-details-change-review/04-validation.png",
+      "source_revision": 1,
+      "sha256": "e539b0f5f0c4960043e1c961daf624214cb20bbe7d986cd05a223b8c2e7ad5c6"
+    },
+    {
+      "phase": 29,
+      "original_path": "apps/delivery/assets/ui-mockups/29-payout-details-change-review/05-submission-v1.png",
+      "path": "29-payout-details-change-review/05-submission.png",
+      "source_revision": 1,
+      "sha256": "59f76df297cc6d9f349cc5f4bca05cae1f7aaf0f481911a2edfb480f05edbc09"
+    },
+    {
+      "phase": 29,
+      "original_path": "apps/delivery/assets/ui-mockups/29-payout-details-change-review/06-pending-review-v1.png",
+      "path": "29-payout-details-change-review/06-pending-review.png",
+      "source_revision": 1,
+      "sha256": "5cdeaf805eaf7fc0bd7fd37f25ed8ea286410dde3085db5bdfac6bce1226e082"
+    },
+    {
+      "phase": 29,
+      "original_path": "apps/delivery/assets/ui-mockups/29-payout-details-change-review/07-rejection-v1.png",
+      "path": "29-payout-details-change-review/07-rejection.png",
+      "source_revision": 1,
+      "sha256": "10429e4253e4897049fa17581500686bb9b2170154b1cca8732e9ed2bc410a16"
+    },
+    {
+      "phase": 29,
+      "original_path": "apps/delivery/assets/ui-mockups/29-payout-details-change-review/08-payout-hold-explanation-v1.png",
+      "path": "29-payout-details-change-review/08-payout-hold-explanation.png",
+      "source_revision": 1,
+      "sha256": "11ef4865a897daabd03d6f75ca18277a84dcd5e59118c65b9e49b59ae7cd7de4"
+    },
+    {
+      "phase": 30,
+      "original_path": "apps/delivery/assets/ui-mockups/30-delivery-history-inbox/01-history-filters-v1.png",
+      "path": "30-delivery-history-inbox/01-history-filters.png",
+      "source_revision": 1,
+      "sha256": "3c6f51929dc9d56c0f85409bedae57fcab4664dc429de86a2f875470b0de1a5a"
+    },
+    {
+      "phase": 30,
+      "original_path": "apps/delivery/assets/ui-mockups/30-delivery-history-inbox/02-delivered-cancelled-returned-v1.png",
+      "path": "30-delivery-history-inbox/02-delivered-cancelled-returned.png",
+      "source_revision": 1,
+      "sha256": "28ef2829e587a640f45891d6120dcf57bd4d4a874402b160a61871a75b8cecbb"
+    },
+    {
+      "phase": 30,
+      "original_path": "apps/delivery/assets/ui-mockups/30-delivery-history-inbox/03-order-pay-v1.png",
+      "path": "30-delivery-history-inbox/03-order-pay.png",
+      "source_revision": 1,
+      "sha256": "065a63a6d9f95732ef441377d981e80b33b7e76b31448aae8811f531fea0fdbb"
+    },
+    {
+      "phase": 30,
+      "original_path": "apps/delivery/assets/ui-mockups/30-delivery-history-inbox/04-statement-linkage-v1.png",
+      "path": "30-delivery-history-inbox/04-statement-linkage.png",
+      "source_revision": 1,
+      "sha256": "8684f908607468e2fb6622d93efc99ac50588a601c3398d9596a687544f9402c"
+    },
+    {
+      "phase": 30,
+      "original_path": "apps/delivery/assets/ui-mockups/30-delivery-history-inbox/05-notification-list-v1.png",
+      "path": "30-delivery-history-inbox/05-notification-list.png",
+      "source_revision": 1,
+      "sha256": "da9614a645542833d14a5de0dfe2b898b3663edb61b3b25485b8bbd5c715b89f"
+    },
+    {
+      "phase": 30,
+      "original_path": "apps/delivery/assets/ui-mockups/30-delivery-history-inbox/06-unread-mark-all-read-v1.png",
+      "path": "30-delivery-history-inbox/06-unread-mark-all-read.png",
+      "source_revision": 1,
+      "sha256": "ffee5a88bd64fbdb522dfd9021a5d07d7874b57003baed4cf2739aa27676b341"
+    },
+    {
+      "phase": 30,
+      "original_path": "apps/delivery/assets/ui-mockups/30-delivery-history-inbox/07-destination-handling-v1.png",
+      "path": "30-delivery-history-inbox/07-destination-handling.png",
+      "source_revision": 1,
+      "sha256": "8dbd435fc294943d4d86a3d0d0a77bd4c65c4ed79eeac760210a06cf33ff536f"
+    },
+    {
+      "phase": 31,
+      "original_path": "apps/delivery/assets/ui-mockups/31-profile-support-account-lifecycle/01-contact-address-editing-v1.png",
+      "path": "31-profile-support-account-lifecycle/01-contact-address-editing.png",
+      "source_revision": 1,
+      "sha256": "ed5ca51aa46ed227f2eb903d073894912fd1cd6031c4d2ec4eced22e0dfd9c9c"
+    },
+    {
+      "phase": 31,
+      "original_path": "apps/delivery/assets/ui-mockups/31-profile-support-account-lifecycle/02-vehicle-document-information-v1.png",
+      "path": "31-profile-support-account-lifecycle/02-vehicle-document-information.png",
+      "source_revision": 1,
+      "sha256": "218aa76f7da60fe7afa2ac1818e40e5c9a7c8be6c8911e2b8163d459c6c697af"
+    },
+    {
+      "phase": 31,
+      "original_path": "apps/delivery/assets/ui-mockups/31-profile-support-account-lifecycle/03-support-managed-identity-changes-v1.png",
+      "path": "31-profile-support-account-lifecycle/03-support-managed-identity-changes.png",
+      "source_revision": 1,
+      "sha256": "4d6adc6443f9774171f458426d0346ea681d388d22d5e71a1e7b629cc5d85a54"
+    },
+    {
+      "phase": 31,
+      "original_path": "apps/delivery/assets/ui-mockups/31-profile-support-account-lifecycle/04-support-contacts-v1.png",
+      "path": "31-profile-support-account-lifecycle/04-support-contacts.png",
+      "source_revision": 1,
+      "sha256": "2b41514e9a38477babb825bde66d271951c693f25c8fdd35ce5b95849bac5c6d"
+    },
+    {
+      "phase": 31,
+      "original_path": "apps/delivery/assets/ui-mockups/31-profile-support-account-lifecycle/05-signout-account-deletion-v1.png",
+      "path": "31-profile-support-account-lifecycle/05-signout-account-deletion.png",
+      "source_revision": 1,
+      "sha256": "7000783c4f877a50fcc2eb39dfa998596ac1469b7da258232e75d41ab182d881"
+    },
+    {
+      "phase": 32,
+      "original_path": "apps/delivery/assets/ui-mockups/32-accessibility-interaction-behaviour/01-single-border-keyboard-focus-v1.png",
+      "path": "32-accessibility-interaction-behaviour/01-single-border-keyboard-focus.png",
+      "source_revision": 1,
+      "sha256": "3428893b54462179b001dc920aa0f5e6066081e9864a6dd50968ca44276d2bd7"
+    },
+    {
+      "phase": 32,
+      "original_path": "apps/delivery/assets/ui-mockups/32-accessibility-interaction-behaviour/02-traversal-screen-reader-labels-v1.png",
+      "path": "32-accessibility-interaction-behaviour/02-traversal-screen-reader-labels.png",
+      "source_revision": 1,
+      "sha256": "81dec98ceb41fb09ff800572e3d38e52f65f1f48bb77eca6b16de03e09a126f5"
+    },
+    {
+      "phase": 32,
+      "original_path": "apps/delivery/assets/ui-mockups/32-accessibility-interaction-behaviour/03-touch-text-contrast-reduced-motion-v1.png",
+      "path": "32-accessibility-interaction-behaviour/03-touch-text-contrast-reduced-motion.png",
+      "source_revision": 1,
+      "sha256": "fe0123fa8d927dc2f2cad1cf883a29d836375b2754a4c4d237e4b3709b451d73"
+    },
+    {
+      "phase": 32,
+      "original_path": "apps/delivery/assets/ui-mockups/32-accessibility-interaction-behaviour/04-accessible-alternatives-form-errors-v1.png",
+      "path": "32-accessibility-interaction-behaviour/04-accessible-alternatives-form-errors.png",
+      "source_revision": 1,
+      "sha256": "9fd1d6898667e0df8ce0ce1a9621742ba8f5ee98889034dba490102c41ebb4e3"
+    }
+  ],
+  "archived_revisions": [
+    {
+      "original_path": "apps/delivery/assets/ui-mockups/01-brand-visual-identity/01-brand-visual-identity-v1.png",
+      "archive_path": "design/delivery/superseded/01-brand-visual-identity/01-brand-visual-identity-v1.png"
+    }
+  ]
+}

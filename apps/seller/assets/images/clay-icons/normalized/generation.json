@@ -1,0 +1,61 @@
+{
+  "style": "Generate a production-quality single mobile menu icon, part of a STRICTLY CONSISTENT AgriMore Seller clay icon family. Square1024x1024. True transparent alpha background, clean smooth antialiased silhouette edges, NO white fringes NO detached pixels NO background NO tile NO exterior shadow. Front-facing orthographic view, NO tilt or perspective. Shallow rounded clay relief, matte smooth untextured material, subtle upper-left illumination, minimal depth. Restrained exact palette deep teal #0F766E, pale mint #DDF3EA, ivory #FFF9EE; no neon no blue no gradients except subtle physical shading. Thick simplified forms readable at48px. Object centered in both axes, maximum bounding dimension exactly76percent of canvas (12percent clear margin each side on longest axis); generous identical padding. No text except explicitly requested symbols. One cohesive compact silhouette, no tiny decorative details. Subject: ",
+  "icons": [
+    [
+      "store-status",
+      "a simple storefront with striped teal and ivory awning, one door and one window. NO status badge NO checkmark"
+    ],
+    [
+      "weekly-off-holidays",
+      "a simple calendar with teal header, two mint binding loops, four large rounded day squares, one teal square and three mint squares. No badge no sun no numbers"
+    ],
+    [
+      "business-details",
+      "an ivory rounded business profile card with small teal storefront silhouette on left and two thick teal information bars on right. No badges"
+    ],
+    [
+      "delivery-fee",
+      "a compact teal delivery truck with ivory cargo box, two dark teal wheels with mint hubs, and one large teal rupee symbol ₹ centered on cargo box. No coin badge"
+    ],
+    [
+      "storefront",
+      "a teal and ivory storefront with broad awning and one large display window; one chunky mint pencil leaning against right edge to mean edit storefront. No circular badge"
+    ],
+    [
+      "reviews",
+      "one ivory speech bubble with one large teal five-point rounded star centered inside. No text bars no extra badge"
+    ],
+    [
+      "followers-posts",
+      "one ivory post card with mint inset picture square behind two simple teal and mint person bust silhouettes. No tiny text details"
+    ],
+    [
+      "quotes",
+      "two overlapping rounded speech bubbles, rear mint and front ivory, with one teal rupee symbol ₹ centered in front bubble. No arrows"
+    ],
+    [
+      "payout-account",
+      "a teal bank pediment and base with three ivory pillars, one large mint rupee symbol ₹ on pediment. No card no badge"
+    ],
+    [
+      "ask-ai",
+      "one ivory rounded speech bubble containing a teal faceplate with two mint pill eyes and simple curved smile; one small attached mint four-point sparkle. No extra badges"
+    ],
+    [
+      "settings",
+      "one thick teal eight-tooth gear, softly rounded teeth, mint circular hub ring and genuinely transparent central hole"
+    ],
+    [
+      "notification",
+      "one simple teal bell with mint clapper and rounded top loop. NO unread dot NO badge"
+    ],
+    [
+      "help-support",
+      "one teal headset with mint ear pads and short microphone boom around an ivory speech bubble with a bold teal question mark ?. No extra objects"
+    ],
+    [
+      "seller-policies",
+      "one ivory policy sheet with two broad mint lines and an overlapping small teal shield bearing a mint checkmark. No circular badge"
+    ]
+  ]
+}

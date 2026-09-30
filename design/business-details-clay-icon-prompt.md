@@ -1,0 +1,7 @@
+# Business details clay icon
+
+Asset: apps/seller/assets/images/clay-icons/business-details-v1.png
+
+Created using built-in image generation.
+
+Create a single premium claymorphism mobile UI icon representing 'Business details' for AgriMore Seller. A chunky rounded ivory business profile card, front facing with slight three-quarter depth. On upper-left of card a simple raised green-teal miniature storefront emblem with rounded awning, and to its right three short thick rounded teal bars representing business information, NO actual text letters or numbers. Below two short recessed mint information bars. A small attached circular mint badge at lower right with a chunky dark-teal briefcase symbol, simple bold shape readable at mobile icon size. Match a cohesive friendly professional clay icon family: plush softly bevelled rounded forms, tactile matte smooth clay, subtle top-left studio light, ambient occlusion only on object, restrained polished3D rendering. Palette primary #0F766E green-teal, #DDF3EA mint, #5EEAD4 accent, warm ivory. Single centered isolated icon, square1024x1024 canvas with generous transparent padding, about75percent canvas occupancy. GENUINELY TRANSPARENT alpha background, no background colour, no backdrop, no tile, no floor, no ground plane, no external cast shadow. No text no watermark no extra objects no thin fiddly detail. This is an individual UI asset replacing an outline business-details icon, not an app launcher logo.

@@ -22,6 +22,7 @@ export 'components/seller_states.dart';
 export 'components/seller_timeline.dart';
 export 'format/seller_format.dart';
 export 'icons/seller_icons.dart';
+export 'icons/seller_account_icon.dart';
 export 'theme/seller_focus.dart';
 export 'theme/seller_theme.dart';
 export 'tokens/seller_colors.dart';

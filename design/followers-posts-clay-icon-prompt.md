@@ -1,0 +1,7 @@
+# Followers and posts clay icon
+
+Asset: apps/seller/assets/images/clay-icons/followers-posts-v1.png
+
+Created using built-in image generation.
+
+Create a single premium claymorphism mobile UI icon representing 'Followers & Posts' for AgriMore Seller. One cohesive compact composition: a chunky rounded warm-ivory social post card behind, showing a simple raised mint picture thumbnail with one dark-teal leaf silhouette and two short rounded mint bars suggesting text; in foreground at lower left, two friendly abstract bust silhouettes with round heads and softly rounded shoulders, main figure dark green-teal and slightly smaller companion mint/teal, clearly representing followers. Integrate the figures and card into one strong readable silhouette, no scattered objects. Match established professional friendly clay icon family: plush softly bevelled rounded forms, smooth tactile matte clay, polished3D rendering, gentle top-left studio lighting, subtle ambient occlusion only on objects. Restrained palette #0F766E green-teal #DDF3EA mint #5EEAD4 accent and warm ivory. Minimal clean detail readable at small mobile sizes. Single centered isolated icon square1024x1024canvas about75percent occupancy with generous transparent padding. GENUINELY TRANSPARENT alpha background: no backdrop, no background colour, no surrounding tile, no floor, no ground plane, no exterior cast shadow. No text letters numbers watermark, no red hearts, no extra floating decorations. Individual mobile UI asset replacing a Lucide followers/posts icon, not app launcher logo.
