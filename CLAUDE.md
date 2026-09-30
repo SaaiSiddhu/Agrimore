@@ -6,10 +6,13 @@ every AI coding tool that opens this repository reads and follows it.
 
 ## 1. Where you are
 
-- **Git root = project root = `/Users/saai_siddharth/Projects/Clients/Agrimore`**, flat, and since
-  2026-09-20 the **only** worktree — it is checked out on `develop` and carries uncommitted
-  work-in-progress by the owner's decision, so a dirty tree here is normal, not a finding.
-  Attribute it; do not clear it. The old nested layout (`Agrimore-Full-Project/Agrimore-main/…`)
+- **Git root = project root = `/Users/saai_siddharth/Projects/Clients/Agrimore`**, flat, and
+  reconsolidated on 2026-09-30 into the **only** worktree, checked out on `develop`, with only
+  `develop`, `staging` and `main` local branches. The consolidation ended clean; future owner
+  work-in-progress is normal, so attribute it and do not clear it. See
+  [`docs/active/CONSOLIDATION_2026_09_30.md`](docs/active/CONSOLIDATION_2026_09_30.md)
+  for merges, verification, recovery material and the delivery rules deployment gate.
+  The old nested layout (`Agrimore-Full-Project/Agrimore-main/…`)
   was flattened on 2026-09-04 (`c8f6f30`); paths never carry an `Agrimore-main/` segment any more.
   Sibling `Agrimore-develop` / `Agrimore-<slug>` folders no longer exist; a reference to one is
   stale documentation, not a missing directory. Copies under `Projects/Clients/Clone/` are
