@@ -8,6 +8,8 @@
 // rider app (0ea1e53) makes must still pass — including the direct
 // `delivered` (D-DLV-OTPLOCK keeps it until DLV-3D). The step evidence and
 // flags written by the callables are not writable by any client.
+// DLV-3D (release-gated): the a-series status writes are now DENIED — every
+// step goes through the callables; see phaseDLV3D_status_lock_test.
 //
 // Run with:
 //   firebase emulators:exec --only firestore "node scripts/phaseDLV3C_rider_rules_test.js"
@@ -79,17 +81,17 @@ async function main() {
   const o = (id, d = rider) => d.collection("orders").doc(id);
 
   console.log("=== PHASE DLV-3C — rider status rules ===");
-  // ── what the released app does: all still allowed ──
-  await scenario("a01 released app: accept → arrived_at_store", "allow", async () => o(await order("delivery_accepted")).update({ ...set("arrived_at_store"), arrivedAtStoreAt: serverTimestamp() }));
-  await scenario("a02 released app: arrived → picked_up", "allow", async () => o(await order("arrived_at_store")).update({ ...set("picked_up"), pickedUpAt: serverTimestamp() }));
-  await scenario("a03 released app: picked_up → out_for_delivery", "allow", async () => o(await order("picked_up")).update({ ...set("out_for_delivery"), outForDeliveryAt: serverTimestamp() }));
-  await scenario("a04 released app: out_for_delivery → delivered (D-DLV-OTPLOCK keeps it until DLV-3D)", "allow", async () => o(await order("out_for_delivery")).update({ ...set("delivered"), deliveredAt: serverTimestamp(), codSettlementStatus: "pending" }));
-  await scenario("a05 admin-assigned order (still ready_for_pickup) → arrived_at_store", "allow", async () => o(await order("ready_for_pickup")).update(set("arrived_at_store")));
-  await scenario("a06 claimless rider (users.role fallback) → picked_up", "allow", async () => o(await order("arrived_at_store"), dbNoClaim(RIDER)).update(set("picked_up")));
+  // ── what the released app did directly: DLV-3D denies every status write ──
+  await scenario("a01 released app: accept → arrived_at_store", "deny", async () => o(await order("delivery_accepted")).update({ ...set("arrived_at_store"), arrivedAtStoreAt: serverTimestamp() }));
+  await scenario("a02 released app: arrived → picked_up", "deny", async () => o(await order("arrived_at_store")).update({ ...set("picked_up"), pickedUpAt: serverTimestamp() }));
+  await scenario("a03 released app: picked_up → out_for_delivery", "deny", async () => o(await order("picked_up")).update({ ...set("out_for_delivery"), outForDeliveryAt: serverTimestamp() }));
+  await scenario("a04 released app: out_for_delivery → delivered (DLV-3D: the code bypass is closed)", "deny", async () => o(await order("out_for_delivery")).update({ ...set("delivered"), deliveredAt: serverTimestamp(), codSettlementStatus: "pending" }));
+  await scenario("a05 admin-assigned order (still ready_for_pickup) → arrived_at_store", "deny", async () => o(await order("ready_for_pickup")).update(set("arrived_at_store")));
+  await scenario("a06 claimless rider (users.role fallback) → picked_up", "deny", async () => o(await order("arrived_at_store"), dbNoClaim(RIDER)).update(set("picked_up")));
   await scenario("a07 same step again (a retry) is allowed", "allow", async () => o(await order("picked_up")).update(set("picked_up")));
   await scenario("a08 a write that does not touch the status (deliveryIssue) is unaffected", "allow", async () => o(await order("picked_up")).update({ deliveryIssue: "gate closed", updatedAt: serverTimestamp() }));
   await scenario("a09 released app's claim of an unassigned order still works", "allow", async () => o(await order("ready_for_pickup", { deliveryPartnerId: null })).update({ ...set("delivery_accepted"), deliveryPartnerId: RIDER, deliveryAcceptedAt: serverTimestamp() }));
-  await scenario("a10 released app: skip ahead (accept → out_for_delivery) is not a rules matter — the callable judges steps", "allow", async () => o(await order("delivery_accepted")).update(set("out_for_delivery")));
+  await scenario("a10 released app: skip ahead (accept → out_for_delivery) — only the callable moves steps", "deny", async () => o(await order("delivery_accepted")).update(set("out_for_delivery")));
 
   // ── the holes this phase closes ──
   await scenario("d01 picked_up → cancelled (the credit-refund hole)", "deny", async () => o(await order("picked_up")).update(set("cancelled")));

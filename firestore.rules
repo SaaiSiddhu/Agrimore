@@ -647,40 +647,18 @@ service cloud.firestore {
       ]);
     }
 
-    // Phase DLV-3C (OWNER_DECISION D-DLV-RIDERALLOW, 2026-09-23). The assigned
-    // rider could write ANY status: cancelled after pickup (productCreditReversal
-    // then refunds the customer's credit while the goods are with the rider),
-    // or move an order backwards (re-proved at bab71df, demo-dlv3c-probe P4/P5).
-    // A rider may now only set a delivery step, never behind the current one.
-    // The released app (0ea1e53) only ever writes these forward values, so this
-    // is safe before it is replaced. `delivered` stays directly writable until
-    // DLV-3D (D-DLV-OTPLOCK); the steps and the release go through
-    // advanceDeliveryStep / releaseDeliveryOrder (Admin SDK, not these rules).
-    function riderStatusRank(s) {
-      return {
-        'ready_for_pickup': 0,
-        'delivery_accepted': 1,
-        'arrived_at_store': 2, 'reached_pickup': 2,
-        'picked_up': 3, 'parcel_picked': 3,
-        'out_for_delivery': 4, 'outfordelivery': 4, 'outForDelivery': 4,
-        'delivered': 5
-      }.get(s, -1);
-    }
-    // The rank the order is at now: a finished order (delivered, cancelled,
-    // returned …) ranks above every step, so a rider can change nothing; any
-    // other unknown value (shipped, processing) counts as the start.
-    function riderCurrentRank(s) {
-      return s in ['delivered', 'completed', 'cancelled', 'canceled', 'rejected', 'refunded', 'returned']
-        ? 99
-        : (riderStatusRank(s) >= 0 ? riderStatusRank(s) : 0);
-    }
-    function riderStatusFieldIsValid(field) {
-      return !(field in request.resource.data.diff(resource.data).affectedKeys()) ||
-        (riderStatusRank(request.resource.data.get(field, '')) >= 1 &&
-         riderStatusRank(request.resource.data.get(field, '')) >= riderCurrentRank(resource.data.get(field, '')));
-    }
-    function riderStatusChangeIsValid() {
-      return riderStatusFieldIsValid('orderStatus') && riderStatusFieldIsValid('status');
+    // Phase DLV-3D (D-DLV-OTPLOCK; RELEASE-GATED — deploy only after the
+    // DLV-2B/3C rider app is on Play and adopted). The assigned rider no
+    // longer writes an order's status at all: every step goes through
+    // advanceDeliveryStep (geofence-flagged), the release through
+    // releaseDeliveryOrder, and delivery through confirmDelivery with the
+    // customer's code — all Admin SDK, not these rules. DLV-3C allowed forward
+    // steps from the client and `delivered` directly, which let a rider skip
+    // the code (G20). Other rider writes (e.g. deliveryIssue) are unaffected;
+    // the protected fields are orderFulfilmentCannotChangeProtectedFields.
+    function riderCannotChangeStatus() {
+      return !request.resource.data.diff(resource.data).affectedKeys()
+        .hasAny(['orderStatus', 'status', 'deliveredAt', 'codSettlementStatus']);
     }
 
     // FIX-13 (finding N-24). None of orders/{orderId}'s four update
@@ -761,7 +739,7 @@ service cloud.firestore {
           sellerCannotChangeOrderLifecycle()) ||
          (isDeliveryPartner() && resource.data.deliveryPartnerId == request.auth.uid &&
           orderFulfilmentCannotChangeProtectedFields() &&
-          riderStatusChangeIsValid()) ||
+          riderCannotChangeStatus()) ||
          (isDeliveryPartner() &&
           (!('deliveryPartnerId' in resource.data) ||
            resource.data.deliveryPartnerId == null ||
