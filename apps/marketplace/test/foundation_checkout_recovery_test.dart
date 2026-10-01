@@ -197,8 +197,9 @@ void main() {
         () async {
       var failedOnce = false;
       handler = (call) async {
-        if (call['functionName'] != 'ensureCheckoutSubscriptions')
+        if (call['functionName'] != 'ensureCheckoutSubscriptions') {
           return [response];
+        }
         if (!failedOnce) {
           failedOnce = true;
           return ['unavailable', 'Synthetic lost reply', null];
