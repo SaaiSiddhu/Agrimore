@@ -7,6 +7,7 @@
 // is assigned, customers' cash is held or pay is owed). Covered by
 // test/rider_account_test.dart.
 import 'package:cloud_functions/cloud_functions.dart';
+import 'package:firebase_auth/firebase_auth.dart';
 import 'package:flutter/widgets.dart';
 import 'package:provider/provider.dart';
 
@@ -41,7 +42,8 @@ class AccountActionException implements Exception {
   final List<String> problems;
 }
 
-AccountActionFailure accountFailureOf(String code, String? reason) => switch (reason) {
+AccountActionFailure accountFailureOf(String code, String? reason) =>
+    switch (reason) {
       'rider_active_order' => AccountActionFailure.activeOrder,
       'rider_cash_held' => AccountActionFailure.cashHeld,
       'rider_pay_owed' => AccountActionFailure.payOwed,
@@ -62,6 +64,9 @@ abstract class RiderAccountBackend {
 }
 
 class CallableRiderAccountBackend implements RiderAccountBackend {
+  CallableRiderAccountBackend({FirebaseAuth? auth})
+      : _auth = auth ?? FirebaseAuth.instance;
+  final FirebaseAuth _auth;
   Future<void> _call(String name, Map<String, dynamic> data) async {
     try {
       await FirebaseFunctions.instance.httpsCallable(name).call<dynamic>(data);
@@ -70,14 +75,40 @@ class CallableRiderAccountBackend implements RiderAccountBackend {
       debugPrint('$name refused: ${e.code} ${details['reason']}');
       throw AccountActionException(
         accountFailureOf(e.code, details['reason'] as String?),
-        (details['problems'] as List?)?.whereType<String>().toList() ?? const [],
+        (details['problems'] as List?)?.whereType<String>().toList() ??
+            const [],
       );
     }
   }
 
   @override
-  Future<void> updateContact(Map<String, dynamic> contact) => _call('updateRiderContact', contact);
+  Future<void> updateContact(Map<String, dynamic> contact) =>
+      _call('updateRiderContact', contact);
 
   @override
-  Future<void> deleteAccount() => _call('deleteUserData', const {});
+  Future<void> deleteAccount() async {
+    final owner = _auth.currentUser?.uid;
+    if (owner == null) {
+      throw const AccountActionException(AccountActionFailure.unknown);
+    }
+    try {
+      final result = await FirebaseFunctions.instance
+          .httpsCallable('deleteUserData')
+          .call<dynamic>({'expectedOwnerId': owner});
+      final data = result.data;
+      if (data is! Map ||
+          data['success'] != true ||
+          (_auth.currentUser != null && _auth.currentUser!.uid != owner)) {
+        throw const AccountActionException(AccountActionFailure.unknown);
+      }
+    } on FirebaseFunctionsException catch (e) {
+      final details = e.details is Map ? e.details as Map : const {};
+      throw AccountActionException(
+          accountFailureOf(e.code, details['reason'] as String?));
+    } on AccountActionException {
+      rethrow;
+    } catch (_) {
+      throw const AccountActionException(AccountActionFailure.unknown);
+    }
+  }
 }

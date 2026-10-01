@@ -20,6 +20,8 @@ class AuthProvider with ChangeNotifier {
   int _profileRead = 0;
   int _authListenVersion = 0;
   bool _disposed = false;
+  int _deletionRead = 0;
+  bool _deletionInFlight = false;
 
   // ============================================
   // STATE VARIABLES
@@ -1072,36 +1074,46 @@ class AuthProvider with ChangeNotifier {
   // ============================================
   // DELETE ACCOUNT
   // ============================================
+  bool _deletionIsCurrent(String owner, int epoch, int read,
+      {bool signedOut = false}) {
+    if (_disposed || read != _deletionRead) return false;
+    final current = _authService.currentUserId;
+    return signedOut && current == null ||
+        current == owner && _profileOwner == owner && epoch == _authEpoch;
+  }
+
   Future<bool> deleteAccount() async {
+    if (_disposed || _deletionInFlight) return false;
+    final owner = _authService.currentUserId;
+    final user = currentUser;
+    if (owner == null || user == null || user.uid != owner) {
+      _error = 'Sign in to your account before deleting it.';
+      _errorCode = 'unauthenticated';
+      notifyListeners();
+      return false;
+    }
+    final epoch = _authEpoch, read = ++_deletionRead;
+    _deletionInFlight = true;
+    _profileRead++;
     try {
       _isLoading = true;
       _error = null;
       _errorCode = null;
       notifyListeners();
-
-      debugPrint('🗑️ Deleting account...');
-
-      final email = _currentUser?.email ?? 'unknown';
-
-      await _authService.deleteAccount();
-
+      if (!_deletionIsCurrent(owner, epoch, read)) return false;
+      await _authService.deleteAccount(expectedOwnerId: owner);
+      if (!_deletionIsCurrent(owner, epoch, read, signedOut: true)) {
+        return false;
+      }
+      _profileRead++;
       _currentUser = null;
+      _isNewUser = false;
+      _isInitializing = false;
       _resetFailedAttempts();
-
-      await _logAuthEvent('account_deletion', true, email);
-
-      debugPrint('✅ Account deleted successfully');
-
-      _isLoading = false;
-      notifyListeners();
-      return true;
+      await _logAuthEvent('account_deletion', true, user.email);
+      return _deletionIsCurrent(owner, epoch, read, signedOut: true);
     } catch (e) {
-      debugPrint('❌ Error deleting account: $e');
-      // Phase 17, Workstream 3: propagate the REAL reason
-      // (AuthException.message/.code, carrying deleteUserData's specific
-      // refusal message when there is one) instead of a hardcoded generic
-      // string — a caller cannot explain a refusal it was never told
-      // about.
+      if (!_deletionIsCurrent(owner, epoch, read)) return false;
       if (e is AuthException) {
         _error = e.message;
         _errorCode = e.code;
@@ -1109,12 +1121,14 @@ class AuthProvider with ChangeNotifier {
         _error = 'Failed to delete account. Please try again.';
         _errorCode = null;
       }
-      await _logAuthEvent(
-          'account_deletion', false, _currentUser?.email ?? 'unknown',
-          error: e.toString());
-      _isLoading = false;
-      notifyListeners();
+      await _logAuthEvent('account_deletion', false, user.email);
       return false;
+    } finally {
+      if (read == _deletionRead) _deletionInFlight = false;
+      if (_deletionIsCurrent(owner, epoch, read, signedOut: true)) {
+        _isLoading = false;
+        notifyListeners();
+      }
     }
   }
 

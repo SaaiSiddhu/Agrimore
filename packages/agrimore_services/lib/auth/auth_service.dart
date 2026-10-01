@@ -1149,28 +1149,59 @@ class AuthService {
   // the Auth user deletion, server-side, in that order — so this method
   // no longer touches `user.delete()` or `_firestore` at all; it is a
   // sign-in-required precondition check plus a single callable call.
-  Future<void> deleteAccount() async {
+  Future<void> deleteAccount({String? expectedOwnerId}) async {
     final user = currentUser;
     if (user == null) throw UnauthorizedException();
-
-    debugPrint('🔥 Deleting account for: ${user.uid}');
-
+    final owner = user.uid;
+    if (expectedOwnerId != null && expectedOwnerId != owner) {
+      throw AuthException(
+        'Your account session changed. Please try again.',
+        code: 'session-changed',
+      );
+    }
+    bool current() => currentUser == null || currentUser!.uid == owner;
     try {
-      final callable = FirebaseFunctions.instance.httpsCallable('deleteUserData');
-      await callable.call<Map<String, dynamic>>();
-      await SharedPreferencesService.clearUserSession();
-      debugPrint('✅ Account deleted successfully');
+      final callable = FirebaseFunctions.instance.httpsCallable(
+        'deleteUserData',
+      );
+      final result = await callable.call<Map<String, dynamic>>({
+        'expectedOwnerId': owner,
+      });
+      if (result.data['success'] != true) {
+        throw AuthException(
+          'Account deletion could not be confirmed. Please try again.',
+          code: 'unconfirmed',
+        );
+      }
+      if (!current()) {
+        throw AuthException(
+          'Your account session changed. Please review your current account.',
+          code: 'session-changed',
+        );
+      }
+      await SharedPreferencesService.clearUserSession(
+        expectedUserId: owner,
+        isSessionCurrent: current,
+      );
+      if (!current()) {
+        throw AuthException(
+          'Your account session changed. Please review your current account.',
+          code: 'session-changed',
+        );
+      }
     } on FirebaseFunctionsException catch (e) {
-      // Code preserved (not just the message) so callers — see
-      // AuthProvider.deleteAccount() and DeleteAccountScreen — can tell a
-      // refusal (failed-precondition: wallet balance / in-flight order /
-      // pending payout, with a specific actionable message already
-      // written by deleteUserData.ts) apart from any other failure.
-      debugPrint('❌ Error deleting account: ${e.code} - ${e.message}');
-      throw AuthException(e.message ?? 'Failed to delete account', code: e.code);
-    } catch (e) {
-      debugPrint('❌ Error deleting account: $e');
-      throw AuthException('Failed to delete account: ${e.toString()}');
+      // Preserve actionable refusal codes used by DeleteAccountScreen.
+      throw AuthException(
+        e.message ?? 'Failed to delete account',
+        code: e.code,
+      );
+    } on AuthException {
+      rethrow;
+    } catch (_) {
+      throw AuthException(
+        'Account deletion could not be confirmed. Please try again.',
+        code: 'unconfirmed',
+      );
     }
   }
 
