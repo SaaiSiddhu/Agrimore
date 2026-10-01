@@ -2923,6 +2923,7 @@ class _MobileCartScreenState extends State<MobileCartScreen>
         );
         await _razorpayService!.openCheckout(
           amount: finalTotal,
+          purpose: CheckoutPaymentPurpose.goods,
           userName: address.name,
           userEmail: user.email ?? 'user@example.com',
           userPhone: address.phone,
