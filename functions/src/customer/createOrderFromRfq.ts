@@ -325,7 +325,7 @@ export const createOrderFromRfq = onCall(
         if (payment.orderId !== razorpayOrderId) {
           throw new HttpsError("failed-precondition", "Payment does not match this order");
         }
-        if (!isSpendableCapturedPayment(payment, razorpayPaymentId)) {
+        if (!isSpendableCapturedPayment(payment, razorpayPaymentId, "rfq_checkout")) {
           throw new HttpsError("failed-precondition", "Payment was not captured");
         }
         const verifiedAmount = typeof payment.amount === "number" ? payment.amount : -1;

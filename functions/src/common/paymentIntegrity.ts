@@ -22,13 +22,35 @@ export function razorpayModeFromKey(keyId: string): "live" | "test" | undefined 
   return undefined;
 }
 
+export const PAYMENT_PURPOSES = ["goods_checkout", "rfq_checkout", "wallet_topup",
+  "associate_onboarding", "seller_ai_activation"] as const;
+export type PaymentPurpose = typeof PAYMENT_PURPOSES[number];
+export function isPaymentPurpose(value: unknown): value is PaymentPurpose {
+  return typeof value === "string" && (PAYMENT_PURPOSES as readonly string[]).includes(value);
+}
+
+export function isExactMoneyAmount(value: unknown): value is number {
+  return typeof value === "number" && Number.isFinite(value) && value > 0 &&
+    Number.isSafeInteger(Math.round(value * 100)) && Math.round(value * 100) > 0 &&
+    Math.abs(value * 100 - Math.round(value * 100)) < 1e-7;
+}
+
+// Fixed fees contain no distributed cart arithmetic. Compare provider minor
+// units, rather than treating a whole paise as floating-point tolerance.
+export function matchesMoneyInPaise(amount: number, expected: number): boolean {
+  return Number.isFinite(amount) && Number.isFinite(expected) && amount > 0 && expected > 0 &&
+    Number.isSafeInteger(Math.round(amount * 100)) && Number.isSafeInteger(Math.round(expected * 100)) &&
+    Math.round(amount * 100) === Math.round(expected * 100);
+}
+
 // This is an additional guard, not an ownership or amount-due validator:
 // callers still perform those checks and consume once in their transaction.
 // Old wallet records lack currency/minor-unit/signature fields; retain their
 // established INR contract while rejecting explicitly inconsistent metadata.
 export function isSpendableCapturedPayment(
   payment: Record<string, unknown>,
-  paymentId: unknown
+  paymentId: unknown,
+  expectedPurpose?: PaymentPurpose
 ): boolean {
   const amount = payment.amount;
   if (payment.status !== "captured" || typeof amount !== "number" ||
@@ -42,6 +64,7 @@ export function isSpendableCapturedPayment(
   if (payment.providerMode !== undefined &&
       (payment.providerMode !== "live" && payment.providerMode !== "test")) return false;
   if (payment.providerMode === "test" && !isLocalPaymentStorage()) return false;
+  if (expectedPurpose !== undefined && payment.purpose !== undefined && payment.purpose !== expectedPurpose) return false;
 
   const simulated = payment.isTest === true || payment.isTestOrder === true ||
     (typeof paymentId === "string" && paymentId.startsWith("pay_test_")) ||

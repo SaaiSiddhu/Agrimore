@@ -273,6 +273,7 @@ export const verifyWalletTopup = onCall(
       }
       const order = razorpayOrderSnap.data();
       if (order && (order.userId !== uid || order.orderId !== orderId ||
+          (order.purpose !== undefined && order.purpose !== "wallet_topup") ||
           order.currency !== "INR" || order.amountPaise !== amountPaise ||
           (order.providerMode !== undefined && order.providerMode !== providerMode) ||
           typeof order.amount !== "number" || !Number.isFinite(order.amount) ||
@@ -282,7 +283,7 @@ export const verifyWalletTopup = onCall(
       const verified = paymentSnap.data();
       if (verified && (verified.userId !== uid || verified.orderId !== orderId ||
           (!order && verified.paymentId !== paymentId) ||
-          !isSpendableCapturedPayment(verified, paymentId) ||
+          !isSpendableCapturedPayment(verified, paymentId, "wallet_topup") ||
           (verified.providerMode !== undefined && verified.providerMode !== providerMode) ||
           Math.round(verified.amount * 100) !== amountPaise)) {
         throw new HttpsError("failed-precondition", "Verified payment does not match the requested top-up");
@@ -341,7 +342,7 @@ export const verifyWalletTopup = onCall(
         );
       }
 
-      if (payment && !isSpendableCapturedPayment(payment, paymentId)) {
+      if (payment && !isSpendableCapturedPayment(payment, paymentId, "wallet_topup")) {
         throw new HttpsError("failed-precondition", "Payment was not captured");
       }
 
@@ -435,6 +436,7 @@ export const verifyWalletTopup = onCall(
           amountPaise,
           currency: "INR",
           providerMode,
+          purpose: "wallet_topup",
           status: "captured",
           consumedByWalletTopup: uid,
           consumedByWalletTopupPaymentId: paymentId,

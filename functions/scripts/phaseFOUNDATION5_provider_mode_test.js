@@ -29,7 +29,8 @@ async function fixture(kind){
  const amount=kind==='associate-create'||kind==='webhook'||kind==='reconcile'?500:kind==='seller-create'?50:100;
  const auth={uid,token:{seller:true}},orderRef=db.collection('razorpay_orders').doc(orderId),paymentRef=db.collection('verified_payments').doc(paymentId);
  await db.collection('users').doc(uid).set({profileCompleted:true});await db.collection('employees').doc(uid).set({userId:uid,status:'pending'});
- await orderRef.set({orderId,userId:uid,employeeId:uid,purpose:'associate_onboarding',amount,amountPaise:amount*100,currency:'INR',createdAt:admin.firestore.Timestamp.fromMillis(Date.now()-(kind==='reconcile'?40*60000:0))});
+ const purpose = kind === 'wallet' ? 'wallet_topup' : kind === 'seller-create' ? 'seller_ai_activation' : kind.startsWith('generic-') ? 'goods_checkout' : 'associate_onboarding';
+ await orderRef.set({orderId,userId:uid,employeeId:uid,purpose,amount,amountPaise:amount*100,currency:'INR',createdAt:admin.firestore.Timestamp.fromMillis(Date.now()-(kind==='reconcile'?40*60000:0))});
  const capture={id:paymentId,order_id:orderId,amount:amount*100,currency:'INR',status:'captured',method:'upi'};
  current={uid,paymentId,orderId,createdOrderId,capture};
  const signature=crypto.createHmac('sha256',process.env.RAZORPAY_KEY_SECRET).update(`${orderId}|${paymentId}`).digest('hex');
