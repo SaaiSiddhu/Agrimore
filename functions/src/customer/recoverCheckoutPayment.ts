@@ -75,9 +75,10 @@ export const recoverCheckoutPayment = onCall(
       throw new HttpsError("unauthenticated", "Sign in to recover checkout");
     }
     const uid = request.auth.uid;
-    const { orderId, checkoutOwnerId } = request.data || {};
+    const { orderId, checkoutOwnerId, includeCheckoutOrder } = request.data || {};
     if (!isSafeProviderId(orderId) || typeof checkoutOwnerId !== "string" ||
-        !checkoutOwnerId || checkoutOwnerId.length > 128) {
+        !checkoutOwnerId || checkoutOwnerId.length > 128 ||
+        (includeCheckoutOrder !== undefined && typeof includeCheckoutOrder !== "boolean")) {
       throw new HttpsError("invalid-argument", "Missing checkout recovery details");
     }
     // Firebase transport can choose its auth token after the app session check.
@@ -113,6 +114,16 @@ export const recoverCheckoutPayment = onCall(
     if (captures.length === 0) {
       // No new-charge permission: a created/authorized/failed/empty list is an
       // observation, not evidence that no future capture can occur.
+      if (includeCheckoutOrder === true) {
+        const stored = requireGoodsOrder((await orderRef.get()).data(), orderId, uid, mode);
+        if (stored.amountPaise !== order.amountPaise || stored.amount !== order.amount) {
+          throw new HttpsError("failed-precondition", "Saved payment needs review");
+        }
+        // Public metadata for the SAME owned order only. Never permit a new
+        // order on an uncertain result. The provider enforces its paid state.
+        return { success: true, verified: false, outcome: "unconfirmed", orderId,
+          keyId: credentials.keyId, amountPaise: stored.amountPaise, currency: "INR" };
+      }
       return { success: true, verified: false, outcome: "unconfirmed", orderId };
     }
     const payment = captures[0];
