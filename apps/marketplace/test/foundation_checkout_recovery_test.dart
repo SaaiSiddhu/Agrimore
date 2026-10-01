@@ -151,6 +151,110 @@ void main() {
     expect(first.requestId, matches(RegExp(r'^ck_[a-f0-9]{32}$')));
     expect(calls, isEmpty);
   });
+  group('Auto-Delivery setup after durable order confirmation', () {
+    late PendingCheckoutRequest request;
+    late Map<String, dynamic> subscriptionReply;
+    setUp(() async {
+      request = await service().prepare({
+        ...intent(),
+        'orderType': 'Auto Delivery',
+        'autoFrequency': 'Daily'
+      });
+      subscriptionReply = {
+        'success': true,
+        'checkoutRequestId': request.requestId,
+        'subscriptionIds': ['a' * 64]
+      };
+      handler = (call) async => [
+            call['functionName'] == 'ensureCheckoutSubscriptions'
+                ? subscriptionReply
+                : response
+          ];
+    });
+    test(
+        'receipt is persisted before subscription setup and owner tuple is sent',
+        () async {
+      handler = (call) async {
+        if (call['functionName'] == 'ensureCheckoutSubscriptions') {
+          expect(
+              (jsonDecode((await store.read(request.ownerId))!)
+                  as Map)['stage'],
+              'completed');
+          expect(call['parameters'], {
+            'checkoutOwnerId': request.ownerId,
+            'checkoutRequestId': request.requestId
+          });
+          return [subscriptionReply];
+        }
+        return [response];
+      };
+      await service().confirm(request.ownerId, request.requestId);
+      expect(calls.map((c) => c['functionName']),
+          ['createOrder', 'ensureCheckoutSubscriptions']);
+    });
+    test(
+        'lost setup reply retries after restart without creating another order',
+        () async {
+      var failedOnce = false;
+      handler = (call) async {
+        if (call['functionName'] != 'ensureCheckoutSubscriptions')
+          return [response];
+        if (!failedOnce) {
+          failedOnce = true;
+          return ['unavailable', 'Synthetic lost reply', null];
+        }
+        return [subscriptionReply];
+      };
+      await expectLater(service().confirm(request.ownerId, request.requestId),
+          throwsA(isA<Exception>()));
+      final recovered = (await service().pending())!;
+      expect(recovered.stage, 'completed');
+      expect(
+          (await service().confirm(recovered.ownerId, recovered.requestId))
+              .single
+              .orderId,
+          'fixture_order');
+      expect(calls.map((c) => c['functionName']), [
+        'createOrder',
+        'ensureCheckoutSubscriptions',
+        'ensureCheckoutSubscriptions'
+      ]);
+    });
+    test('account switch during setup cannot finish the old checkout',
+        () async {
+      handler = (call) async {
+        if (call['functionName'] == 'ensureCheckoutSubscriptions') {
+          uid = 'other-owner';
+          return [subscriptionReply];
+        }
+        return [response];
+      };
+      await expectLater(service().confirm(request.ownerId, request.requestId),
+          throwsStateError);
+      uid = request.ownerId;
+      expect((await service().pending())!.stage, 'completed');
+    });
+    for (final change in <Map<String, dynamic>>[
+      {'success': false},
+      {'checkoutRequestId': 'other'},
+      {'subscriptionIds': []},
+      {
+        'subscriptionIds': ['bad/path']
+      },
+      {
+        'subscriptionIds': ['a' * 64, 'a' * 64]
+      },
+    ]) {
+      test(
+          'malformed setup result refuses $change but retains completed receipt',
+          () async {
+        subscriptionReply.addAll(change);
+        await expectLater(service().confirm(request.ownerId, request.requestId),
+            throwsStateError);
+        expect((await service().pending())!.stage, 'completed');
+      });
+    }
+  });
   test('object key order does not replace the pending checkout', () async {
     final first = await service().prepare(intent());
     final reversed =
