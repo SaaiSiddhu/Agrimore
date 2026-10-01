@@ -20,6 +20,8 @@ import 'package:flutter_test/flutter_test.dart';
 class _Auth extends FirebaseAuthPlatform {
   String? uid = 'owner_a';
   bool closeOnListen = false;
+  bool verified = true;
+  String? emailOverride;
   final events = StreamController<UserPlatform?>.broadcast();
   late Future<void> Function(String) reloading;
   Completer<void>? signoutPending;
@@ -37,18 +39,23 @@ class _Auth extends FirebaseAuthPlatform {
   Stream<UserPlatform?> authStateChanges() =>
       Stream<UserPlatform?>.multi((sink) {
         listening++;
+        var released = false;
+        void release() {
+          if (released) return;
+          released = true;
+          cancelled++;
+        }
+
         sink.add(currentUser);
         if (closeOnListen) {
-          sink.onCancel = () {
-            cancelled++;
-          };
+          sink.onCancel = release;
           sink.close();
           return;
         }
         final subscription = events.stream
             .listen(sink.add, onError: sink.addError, onDone: sink.close);
         sink.onCancel = () async {
-          cancelled++;
+          release();
           await subscription.cancel();
         };
       });
@@ -79,8 +86,8 @@ class _User extends UserPlatform {
                 userInfo: PigeonUserInfo(
                     uid: uid,
                     isAnonymous: false,
-                    isEmailVerified: true,
-                    email: '$uid@example.invalid',
+                    isEmailVerified: owner.verified,
+                    email: owner.emailOverride ?? '$uid@example.invalid',
                     displayName: 'sdk-$uid'),
                 providerData: []));
   final _Auth owner;
@@ -146,6 +153,7 @@ void main() {
   late List<fs.DocumentReferenceRequest> writes;
   late Future<List<Object?>> Function(String) read;
   late Future<void> Function() write;
+  late List<Object?> updateReply;
   Completer<void>? googlePending;
   var googleSignouts = 0;
   var listenBase = 0, cancelBase = 0;
@@ -157,14 +165,14 @@ void main() {
                 hasPendingWrites: false, isFromCache: false))
       ];
   List<Object?> profile(String path,
-          {String name = 'Current', String role = 'user'}) =>
+          {String name = 'Current', String role = 'user', String? email}) =>
       document(
           path,
           path == 'settings/access'
               ? {'adminEmails': <String>[]}
               : {
                   'name': name,
-                  'email': '${path.split('/').last}@example.invalid',
+                  'email': email ?? '${path.split('/').last}@example.invalid',
                   'role': role
                 });
   Future<void> drain() async {
@@ -199,6 +207,8 @@ void main() {
   setUp(() async {
     auth.uid = 'owner_a';
     auth.closeOnListen = false;
+    auth.verified = true;
+    auth.emailOverride = null;
     listenBase = auth.listening;
     cancelBase = auth.cancelled;
     auth.reloads.clear();
@@ -215,6 +225,7 @@ void main() {
     writes = [];
     read = (path) async => profile(path);
     write = () async {};
+    updateReply = [null];
     googlePending = null;
     googleSignouts = 0;
     messenger.setMockDecodedMessageHandler<Object?>(documents, (message) async {
@@ -226,7 +237,7 @@ void main() {
       writes.add((const _WriteCodec().decodeMessage(message)! as List)[1]
           as fs.DocumentReferenceRequest);
       await write();
-      return fs.FirebaseFirestoreHostApi.codec.encodeMessage([null]);
+      return fs.FirebaseFirestoreHostApi.codec.encodeMessage(updateReply);
     });
     messenger.setMockMethodCallHandler(google, (call) async {
       if (call.method == 'signOut') {
@@ -251,7 +262,7 @@ void main() {
     expect(user?.role, 'user');
     saved('owner_a');
     expect(auth.reloads, ['owner_a']);
-    expect(reads.toSet(), {'users/owner_a', 'settings/access'});
+    expect(reads.toSet(), {'users/owner_a'});
   });
   test('signed-out restore returns null without reads or persistence',
       () async {
@@ -329,14 +340,14 @@ void main() {
     expect(reads, isEmpty);
     saved('owner_a', name: 'Seed');
   });
-  test('current profile read preserves allowed role and parallel read start',
+  test('current profile read preserves server role with one native read',
       () async {
     final pending = Completer<List<Object?>>();
     read = (path) async =>
         path.startsWith('users/') ? await pending.future : profile(path);
     final result = service.getUserData('owner_a');
     await drain();
-    expect(reads.toSet(), {'users/owner_a', 'settings/access'});
+    expect(reads.toSet(), {'users/owner_a'});
     pending.complete(profile('users/owner_a', role: 'employee'));
     expect((await result).role, 'employee');
     expect(writes, isEmpty);
@@ -358,17 +369,14 @@ void main() {
     await expectLater(result, throwsA(isA<AuthException>()));
     expect(writes, isEmpty);
   });
-  test('late admin allowlist cannot dispatch old role policy write', () async {
-    final pending = Completer<List<Object?>>();
-    read = (path) async =>
-        path == 'settings/access' ? await pending.future : profile(path);
-    final result = service.getUserData('owner_a');
-    await drain();
-    auth.emit('owner_b');
-    pending.complete(document('settings/access', {
-      'adminEmails': ['owner_a@example.invalid']
-    }));
-    await expectLater(result, throwsA(isA<AuthException>()));
+  test('admin allowlist hints cannot grant or write a profile role', () async {
+    read = (path) async => path == 'settings/access'
+        ? document(path, {
+            'adminEmails': ['owner_a@example.invalid']
+          })
+        : profile(path);
+    expect((await service.getUserData('owner_a')).role, 'user');
+    expect(reads, ['users/owner_a']);
     expect(writes, isEmpty);
   });
   test('native Google logout await cannot sign out a newer Firebase owner',
@@ -507,42 +515,33 @@ void main() {
     expect(result?.role, 'user');
     expect(store.sets, isEmpty);
   });
-  test('current allowlisted role policy preserved in this bounded slice',
+  test('current server user remains user even when hint lists that email',
       () async {
     read = (path) async => path == 'settings/access'
         ? document(path, {
             'adminEmails': ['owner_a@example.invalid']
           })
         : profile(path);
-    expect((await service.getUserData('owner_a')).role, 'admin');
-    expect(writes.single.path, 'users/owner_a');
-    expect(writes.single.data, {'role': 'admin'});
+    expect((await service.getUserData('owner_a')).role, 'user');
+    expect(writes, isEmpty);
   });
-  test('current demotion policy still returns existing user role', () async {
+  test('server admin cannot be demoted by a mismatched email hint', () async {
     read = (path) async => path == 'settings/access'
         ? document(path, {
             'adminEmails': ['other@example.invalid']
           })
         : profile(path, role: 'admin');
-    expect((await service.getUserData('owner_a')).role, 'user');
-    expect(writes.single.path, 'users/owner_a');
-    expect(writes.single.data, {'role': 'user'});
+    expect((await service.getUserData('owner_a')).role, 'admin');
+    expect(writes, isEmpty);
   });
-  test('already issued role write cannot publish after account switch',
-      () async {
-    final pending = Completer<void>();
-    write = () => pending.future;
+  test('owned profile read cannot dispatch any role mutation', () async {
     read = (path) async => path == 'settings/access'
         ? document(path, {
             'adminEmails': ['owner_a@example.invalid']
           })
         : profile(path);
-    final result = service.getUserData('owner_a');
-    await drain();
-    expect(writes, hasLength(1));
-    auth.emit('owner_b');
-    pending.complete();
-    await expectLater(result, throwsA(isA<AuthException>()));
+    expect((await service.getUserData('owner_a')).role, 'user');
+    expect(writes, isEmpty);
     expect(store.sets, isEmpty);
   });
   test('same UID renewal refuses a held profile result', () async {
@@ -759,4 +758,101 @@ void main() {
     expect(store.removals, isEmpty);
     expect((await disk())['flutter.user_name'], 'Latest');
   });
+
+  test('unverified default admin email never grants client role', () async {
+    auth.verified = false;
+    auth.emailOverride = 'admin@agrimore.in';
+    read = (path) async => profile(path, email: 'admin@agrimore.in');
+    expect((await service.getUserData('owner_a')).role, 'user');
+    expect(writes, isEmpty);
+    expect(reads, ['users/owner_a']);
+  });
+  test('verified default admin email alone never grants client role', () async {
+    auth.verified = true;
+    auth.emailOverride = 'admin@agrimore.in';
+    read = (path) async => profile(path, email: 'admin@agrimore.in');
+    expect((await service.getUserData('owner_a')).role, 'user');
+    expect(writes, isEmpty);
+  });
+  test('different SDK email cannot elevate from profile email hint', () async {
+    read = (path) async => profile(path, email: 'admin@agrimore.in');
+    expect((await service.getUserData('owner_a')).role, 'user');
+    expect(writes, isEmpty);
+  });
+  test('rejected native role update cannot fabricate admin profile', () async {
+    updateReply = ['permission-denied', 'PRIVATE_ROLE_REFUSAL', null];
+    read = (path) async => path == 'settings/access'
+        ? document(path, {
+            'adminEmails': ['owner_a@example.invalid']
+          })
+        : profile(path);
+    expect((await service.getUserData('owner_a')).role, 'user');
+    expect(writes, isEmpty);
+  });
+  test('restored role cannot persist admin derived from hints', () async {
+    read = (path) async => path == 'settings/access'
+        ? document(path, {
+            'adminEmails': ['owner_a@example.invalid']
+          })
+        : profile(path);
+    expect((await service.restoreSession())?.role, 'user');
+    saved('owner_a');
+    expect((await disk())['flutter.user_role'], 'user');
+    expect(writes, isEmpty);
+  });
+  test('server admin retained even if obsolete hint endpoint rejects',
+      () async {
+    read = (path) async => path == 'settings/access'
+        ? ['permission-denied', 'PRIVATE_HINT_REFUSAL', null]
+        : profile(path, role: 'admin');
+    expect((await service.getUserData('owner_a')).role, 'admin');
+    expect(reads, ['users/owner_a']);
+    expect(writes, isEmpty);
+  });
+  test('server-recorded admin restore keeps its established role', () async {
+    read = (path) async => profile(path, role: 'admin');
+    expect((await service.restoreSession())?.role, 'admin');
+    expect(SharedPreferencesService.getUserRole(), 'admin');
+    expect(writes, isEmpty);
+  });
+  test('missing profile cannot become admin through fallback email', () async {
+    auth.emailOverride = 'admin@agrimore.in';
+    read = (path) async => document(path, null);
+    final restored = await service.restoreSession();
+    expect(restored?.uid, 'owner_a');
+    expect(restored?.email, 'admin@agrimore.in');
+    expect(restored?.role, 'user');
+    expect(store.sets, isEmpty);
+    expect(writes, isEmpty);
+  });
+  test('build-time hint cannot grant role without server record', () async {
+    if (const String.fromEnvironment('AGRIMORE_BOOTSTRAP_ADMIN_EMAILS') ==
+        'owner_a@example.invalid') {
+      expect(
+          AdminAccessConfig.shouldBootstrapAdminRole('owner_a@example.invalid'),
+          isTrue,
+          reason: 'The test build must actually recognize the hint');
+    }
+    expect((await service.getUserData('owner_a')).role, 'user');
+    expect(writes, isEmpty);
+    expect(reads, ['users/owner_a']);
+  });
+  for (final role in [
+    'user',
+    'seller',
+    'delivery_partner',
+    'employee',
+    'admin'
+  ]) {
+    test('server-recorded $role survives conflicting client hint', () async {
+      read = (path) async => path == 'settings/access'
+          ? document(path, {
+              'adminEmails': ['owner_a@example.invalid']
+            })
+          : profile(path, role: role);
+      expect((await service.getUserData('owner_a')).role, role);
+      expect(writes, isEmpty);
+      expect(reads, ['users/owner_a']);
+    });
+  }
 }

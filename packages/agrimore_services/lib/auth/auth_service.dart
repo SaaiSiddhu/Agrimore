@@ -234,7 +234,7 @@ class AuthService {
             e.toString().contains('User not found')) {
           debugPrint('📝 User document missing, creating new one...');
           // ✅ SECURITY FIX: Never auto-assign admin role. Default to 'user'.
-          // Admin promotion is handled separately via _syncRoleWithAdminPolicy.
+          // Privileged roles are provisioned by server/admin tools.
           userModel = UserModel(
             uid: user.uid,
             email: user.email ?? email,
@@ -864,110 +864,6 @@ class AuthService {
     }
   }
 
-  /// Firestore `settings/access` field `adminEmails` (list of strings), lowercased.
-  Future<Set<String>> _adminAllowlistEmailsLower() async {
-    try {
-      final snap = await _firestore
-          .collection('settings')
-          .doc('access')
-          .get()
-          .timeout(const Duration(seconds: 4));
-      final raw = snap.data()?['adminEmails'];
-      if (raw is List) {
-        return raw
-            .map((e) => e.toString().trim().toLowerCase())
-            .where((e) => e.isNotEmpty)
-            .toSet();
-      }
-    } catch (e) {
-      debugPrint('⚠️ Admin allowlist read failed: $e');
-    }
-    return {};
-  }
-
-  /// Admin if: bootstrap define, or on Firestore allowlist, or allowlist empty and user already admin.
-  /// If allowlist is non-empty and email is not listed (and not bootstrap), strip `admin` role.
-  ///
-  /// Phase 14, Workstream 3 fix: this used to also OR in a hardcoded
-  /// three-address list (admin@agrimore.com / admin@admin.com /
-  /// agrimore@gmail.com) — of which the latter two had no live Auth account
-  /// and were claimable by anyone through open signup, making this an
-  /// unconditional self-service admin-promotion path shipped in every app.
-  /// That list is removed; AdminAccessConfig.shouldBootstrapAdminRole and
-  /// the settings/access.adminEmails allowlist remain the only legitimate
-  /// promotion mechanisms.
-  ///
-  /// Phase 14, Workstream 2 fix: the promotion write below (`role: 'admin'`)
-  /// is also removed outright — firestore.rules now locks `role` on
-  /// users/{uid} to admin/Cloud-Functions-only (see
-  /// ownerCannotChangePrivilegedFields()), so this write could never
-  /// succeed from the client regardless of email. An allowlisted/bootstrap
-  /// email that isn't already admin in Firestore can no longer be
-  /// auto-promoted by this method — promotion now requires a real
-  /// server-side (Admin SDK) action. The remaining demotion write is now
-  /// best-effort: it will also be rejected by the same rule once the
-  /// caller isn't the actual document owner acting within policy, and a
-  /// PermissionDenied here must never surface as a sign-in failure (this
-  /// write sits inside getUserData()'s try block, which wraps any escaping
-  /// exception as a DatabaseException).
-  Future<UserModel> _syncRoleWithAdminPolicy(
-    UserModel user,
-    String uid,
-    Map<String, dynamic> raw,
-    Set<String> allow,
-    bool Function() isSessionCurrent,
-  ) async {
-    _requireCurrentSession(isSessionCurrent);
-    final emailLower = user.email.trim().toLowerCase();
-    final bootstrap = AdminAccessConfig.shouldBootstrapAdminRole(emailLower);
-    final onList = allow.contains(emailLower);
-    final shouldBeAdmin =
-        bootstrap || onList || (allow.isEmpty && user.isAdmin);
-
-    if (shouldBeAdmin) {
-      if (user.role != 'admin') {
-        debugPrint(
-          '👑 Promoting user to admin based on admin policy: ${user.email}',
-        );
-        try {
-          await _firestore
-              .collection('users')
-              .doc(uid)
-              .update({'role': 'admin'})
-              .timeout(const Duration(seconds: 4));
-          debugPrint('👑 Persisted role: admin to Firestore for ${user.email}');
-        } catch (e) {
-          debugPrint('⚠️ Could not persist role: admin to Firestore: $e');
-        }
-        _requireCurrentSession(isSessionCurrent);
-        return user.copyWith(role: 'admin');
-      }
-      return user;
-    }
-
-    if (user.isAdmin && !bootstrap) {
-      final sellerStatus = raw['sellerStatus']?.toString();
-      final nextRole = sellerStatus == 'approved' ? 'seller' : 'user';
-      debugPrint('🔻 Removing admin role for ${user.email} → $nextRole');
-      try {
-        await _firestore.collection('users').doc(uid).update({
-          'role': nextRole,
-        });
-        _requireCurrentSession(isSessionCurrent);
-        return user.copyWith(role: nextRole);
-      } catch (e) {
-        debugPrint(
-          '⚠️ Role-sync demotion write rejected (expected under the Phase '
-          '14 rules lockdown — role is admin/Cloud-Functions-only now): $e',
-        );
-        _requireCurrentSession(isSessionCurrent);
-        return user;
-      }
-    }
-
-    return user;
-  }
-
   // ✅ Save persistent session
   void _requireCurrentSession(bool Function() current) {
     if (!current()) {
@@ -1014,18 +910,9 @@ class AuthService {
       _requireCurrentSession(current);
       debugPrint('🔥 Getting user data for: $uid');
 
-      // PERF-2: the user-doc read and the admin-allowlist read
-      // (_adminAllowlistEmailsLower, consumed by _syncRoleWithAdminPolicy
-      // below) are independent of each other -- the allowlist read needs
-      // nothing from the user doc -- so both Firestore round trips are
-      // started here and run concurrently instead of sequentially (the
-      // second one used to only start once the first had fully resolved,
-      // inside _syncRoleWithAdminPolicy). Every logged-in app launch goes
-      // through this method while AuthWrapper shows a blocking spinner, so
-      // this halves that wait rather than just shortening it.
-      final docFuture = _firestore.collection('users').doc(uid).get();
-      final allowFuture = _adminAllowlistEmailsLower();
-      final doc = await docFuture;
+      // Role is read from the owned server record. Email/build-time hints
+      // cannot grant or revoke a role, and profile reads never write roles.
+      final doc = await _firestore.collection('users').doc(uid).get();
       _requireCurrentSession(current);
 
       if (!doc.exists) {
@@ -1035,11 +922,7 @@ class AuthService {
 
       debugPrint('✅ User document found');
       final raw = doc.data()!;
-      UserModel user = UserModel.fromMap(raw, doc.id);
-      final allow = await allowFuture;
-      _requireCurrentSession(current);
-      user = await _syncRoleWithAdminPolicy(user, uid, raw, allow, current);
-      _requireCurrentSession(current);
+      final user = UserModel.fromMap(raw, doc.id);
 
       return user;
     } catch (e) {

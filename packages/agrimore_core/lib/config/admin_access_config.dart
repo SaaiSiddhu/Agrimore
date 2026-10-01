@@ -1,10 +1,10 @@
-/// Optional build-time list of admin emails that receive `role: admin` on first sign-in
-/// if their Firestore user doc exists but `role` is not yet `admin`.
+/// Legacy build-time email hints retained for operator configuration displays.
+/// These hints do not grant or revoke roles during authentication. Provision
+/// privileged roles through server/admin tools; shared profile reads preserve
+/// the role recorded for the current SDK owner.
 ///
-/// Pass at build time, e.g.:
-/// `flutter run --dart-define=AGRIMORE_BOOTSTRAP_ADMIN_EMAILS=owner@yourdomain.com`
-///
-/// Leave empty in production if you assign `role: admin` only via Firestore / admin tools.
+/// Public helper signatures and hint values remain compatible with existing
+/// consumers. A hint match is not proof of server authorization.
 class AdminAccessConfig {
   static const String _bootstrapEmails = String.fromEnvironment(
     'AGRIMORE_BOOTSTRAP_ADMIN_EMAILS',

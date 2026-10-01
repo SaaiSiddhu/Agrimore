@@ -1,11 +1,5 @@
-// PERF-2 source-shape regression guards. Same rationale as PERF-1's own
-// guards in product_provider_test.dart: a timing-based behavioral proof
-// would need either a real GPS/platform-channel mock (Geolocator) or
-// Firestore mocking (fake_cloud_firestore, not a dependency here) to
-// reliably distinguish the fixed shape from the pre-fix one — deliberately
-// not added just for this. These assert the committed source directly, so
-// they fail loudly if either regression comes back, which a written PR
-// description alone would not catch.
+// PERF-2 home/GPS source-shape guard retains the location timeout regression.
+// Shared authentication now has native behavioral request/role checks instead.
 import 'dart:io';
 
 import 'package:flutter_test/flutter_test.dart';
@@ -37,49 +31,8 @@ void main() {
       },
     );
 
-    test(
-      'auth_service.dart: getUserData starts the admin-allowlist read '
-      'before awaiting the user-doc read (must stay concurrent, not '
-      'sequential)',
-      () async {
-        final source = await File(
-          '${Directory.current.path}/../../packages/agrimore_services/lib/auth/auth_service.dart',
-        ).readAsString();
-
-        final getUserDataIndex =
-            source.indexOf('Future<UserModel> getUserData(String uid) async {');
-        expect(getUserDataIndex, greaterThan(-1),
-            reason: 'getUserData not found — has it moved/renamed?');
-
-        // Scope the search to this method's own body only (up to the next
-        // top-level method, checkUserExists) so a match elsewhere in the
-        // file can't produce a false pass.
-        final nextMethodIndex =
-            source.indexOf('Future<bool> checkUserExists(', getUserDataIndex);
-        expect(nextMethodIndex, greaterThan(getUserDataIndex));
-        final methodBody =
-            source.substring(getUserDataIndex, nextMethodIndex);
-
-        final allowFutureIndex = methodBody.indexOf('_adminAllowlistEmailsLower()');
-        final awaitDocIndex = methodBody.indexOf('await docFuture');
-
-        expect(allowFutureIndex, greaterThan(-1),
-            reason: 'the admin-allowlist read is no longer started inside '
-                'getUserData — has _syncRoleWithAdminPolicy gone back to '
-                'fetching it internally?');
-        expect(awaitDocIndex, greaterThan(-1),
-            reason: 'the user-doc read no longer goes through a named '
-                '"docFuture" — has getUserData been restructured?');
-        expect(
-          allowFutureIndex,
-          lessThan(awaitDocIndex),
-          reason: 'the admin-allowlist read now starts AFTER the user-doc '
-              'read is awaited — the two Firestore round trips are '
-              'sequential again instead of concurrent (PERF-2 regression). '
-              'Every logged-in app launch goes through this method while '
-              'AuthWrapper shows a blocking spinner.',
-        );
-      },
-    );
+    // The old auth parallel-read guard was retired in F2.11: profile reads
+    // no longer fetch email hints or mutate roles. Actual native request-count
+    // and role controls live in foundation_shared_auth_session_test.dart.
   });
 }
