@@ -74,6 +74,7 @@ class AuthService {
 
   final FirebaseAuth _auth = FirebaseAuth.instance;
   final FirebaseFirestore _firestore = FirebaseFirestore.instance;
+  int _restoreRead = 0;
 
   // Lazily create GoogleSignIn only on native platforms. Constructing it with
   // serverClientId on web crashes google_sign_in_web during app startup.
@@ -914,15 +915,20 @@ class AuthService {
     String uid,
     Map<String, dynamic> raw,
     Set<String> allow,
+    bool Function() isSessionCurrent,
   ) async {
+    _requireCurrentSession(isSessionCurrent);
     final emailLower = user.email.trim().toLowerCase();
     final bootstrap = AdminAccessConfig.shouldBootstrapAdminRole(emailLower);
     final onList = allow.contains(emailLower);
-    final shouldBeAdmin = bootstrap || onList || (allow.isEmpty && user.isAdmin);
+    final shouldBeAdmin =
+        bootstrap || onList || (allow.isEmpty && user.isAdmin);
 
     if (shouldBeAdmin) {
       if (user.role != 'admin') {
-        debugPrint('👑 Promoting user to admin based on admin policy: ${user.email}');
+        debugPrint(
+          '👑 Promoting user to admin based on admin policy: ${user.email}',
+        );
         try {
           await _firestore
               .collection('users')
@@ -933,6 +939,7 @@ class AuthService {
         } catch (e) {
           debugPrint('⚠️ Could not persist role: admin to Firestore: $e');
         }
+        _requireCurrentSession(isSessionCurrent);
         return user.copyWith(role: 'admin');
       }
       return user;
@@ -943,12 +950,17 @@ class AuthService {
       final nextRole = sellerStatus == 'approved' ? 'seller' : 'user';
       debugPrint('🔻 Removing admin role for ${user.email} → $nextRole');
       try {
-        await _firestore.collection('users').doc(uid).update({'role': nextRole});
+        await _firestore.collection('users').doc(uid).update({
+          'role': nextRole,
+        });
+        _requireCurrentSession(isSessionCurrent);
         return user.copyWith(role: nextRole);
       } catch (e) {
         debugPrint(
-            '⚠️ Role-sync demotion write rejected (expected under the Phase '
-            '14 rules lockdown — role is admin/Cloud-Functions-only now): $e');
+          '⚠️ Role-sync demotion write rejected (expected under the Phase '
+          '14 rules lockdown — role is admin/Cloud-Functions-only now): $e',
+        );
+        _requireCurrentSession(isSessionCurrent);
         return user;
       }
     }
@@ -957,23 +969,49 @@ class AuthService {
   }
 
   // ✅ Save persistent session
-  Future<void> _savePersistentSession(UserModel userModel) async {
+  void _requireCurrentSession(bool Function() current) {
+    if (!current()) {
+      throw AuthException(
+        'Your account session changed. Please try again.',
+        code: 'session-changed',
+      );
+    }
+  }
+
+  Future<void> _savePersistentSession(
+    UserModel userModel, {
+    bool Function()? isSessionCurrent,
+  }) async {
+    final session = _OwnedAuthSession(_auth);
+    bool current() =>
+        session.owner == userModel.uid &&
+        session.isCurrent() &&
+        (isSessionCurrent == null || isSessionCurrent());
     try {
+      _requireCurrentSession(current);
       await SharedPreferencesService.saveUserSession(
         userId: userModel.uid,
         email: userModel.email,
         name: userModel.name,
         role: userModel.role,
+        isSessionCurrent: current,
       );
-      debugPrint('✅ Persistent session saved');
+      _requireCurrentSession(current);
+    } on AuthException {
+      rethrow;
     } catch (e) {
-      debugPrint('⚠️ Could not save session: $e');
+      debugPrint('Could not save session: $e');
+    } finally {
+      await session.cancel();
     }
   }
 
   // ✅ Get user data from Firestore
   Future<UserModel> getUserData(String uid) async {
+    final session = _OwnedAuthSession(_auth);
+    bool current() => session.owner == uid && session.isCurrent();
     try {
+      _requireCurrentSession(current);
       debugPrint('🔥 Getting user data for: $uid');
 
       // PERF-2: the user-doc read and the admin-allowlist read
@@ -988,6 +1026,7 @@ class AuthService {
       final docFuture = _firestore.collection('users').doc(uid).get();
       final allowFuture = _adminAllowlistEmailsLower();
       final doc = await docFuture;
+      _requireCurrentSession(current);
 
       if (!doc.exists) {
         debugPrint('❌ User document does not exist!');
@@ -997,12 +1036,19 @@ class AuthService {
       debugPrint('✅ User document found');
       final raw = doc.data()!;
       UserModel user = UserModel.fromMap(raw, doc.id);
-      user = await _syncRoleWithAdminPolicy(user, uid, raw, await allowFuture);
+      final allow = await allowFuture;
+      _requireCurrentSession(current);
+      user = await _syncRoleWithAdminPolicy(user, uid, raw, allow, current);
+      _requireCurrentSession(current);
 
       return user;
     } catch (e) {
+      _requireCurrentSession(current);
+      if (e is AuthException && e.code == 'session-changed') rethrow;
       debugPrint('❌ Error getting user data: $e');
       throw DatabaseException('Failed to get user: ${e.toString()}');
+    } finally {
+      await session.cancel();
     }
   }
 
@@ -1118,22 +1164,29 @@ class AuthService {
 
   // ✅ Sign out
   Future<void> signOut() async {
+    final session = _OwnedAuthSession(_auth);
+    final owner = session.owner;
     try {
-      debugPrint('🔥 Signing out...');
-
+      if (owner == null || !session.isCurrent()) return;
       if (!kIsWeb) {
-        // Only call google_sign_in signOut on native platforms
         try {
           await _mobileGoogleSignIn.signOut();
         } catch (_) {}
       }
+      if (!session.isCurrent()) return;
       await _auth.signOut();
-      await SharedPreferencesService.clearUserSession();
-
-      debugPrint('✅ Sign out successful');
+      bool current() => session.isCurrent(allowSignedOut: true);
+      if (!current()) return;
+      await SharedPreferencesService.clearUserSession(
+        expectedUserId: owner,
+        isSessionCurrent: current,
+      );
     } catch (e) {
-      debugPrint('❌ Error signing out: $e');
+      if (!session.isCurrent(allowSignedOut: true)) return;
+      debugPrint('Error signing out: $e');
       throw AuthException('Sign out failed: ${e.toString()}');
+    } finally {
+      await session.cancel();
     }
   }
 
@@ -1217,40 +1270,36 @@ class AuthService {
 
   // ✅ Restore session on app start
   Future<UserModel?> restoreSession() async {
+    final read = ++_restoreRead;
+    final user = currentUser;
+    if (user == null) return null;
+    final session = _OwnedAuthSession(_auth);
+    bool current() =>
+        read == _restoreRead &&
+        session.owner == user.uid &&
+        session.isCurrent();
     try {
-      debugPrint('🔥 Restoring session...');
-
-      if (currentUser != null) {
-        debugPrint('✅ Firebase has current user: ${currentUser!.uid}');
-
-        try {
-          await currentUser!.reload();
-
-          final userModel = await getUserData(currentUser!.uid);
-
-          await _savePersistentSession(userModel);
-
-          debugPrint('✅ Session restored successfully');
-          return userModel;
-        } catch (e) {
-          debugPrint(
-              '⚠️ Could not fetch user data, but user is authenticated: $e');
-          return UserModel(
-            uid: currentUser!.uid,
-            email: currentUser!.email ?? '',
-            name: currentUser!.displayName ?? 'User',
-            role: 'user',
-            createdAt: DateTime.now(),
-            lastLogin: DateTime.now(),
-          );
-        }
-      }
-
-      debugPrint('⚠️ No Firebase user found - Guest mode');
-      return null;
+      if (!current()) return null;
+      await user.reload();
+      if (!current()) return null;
+      final userModel = await getUserData(user.uid);
+      if (!current()) return null;
+      await _savePersistentSession(userModel, isSessionCurrent: current);
+      if (!current()) return null;
+      return userModel;
     } catch (e) {
-      debugPrint('❌ Error restoring session: $e');
-      return null;
+      if (!current()) return null;
+      debugPrint('Could not fetch current profile: $e');
+      return UserModel(
+        uid: user.uid,
+        email: user.email ?? '',
+        name: user.displayName ?? 'User',
+        role: 'user',
+        createdAt: DateTime.now(),
+        lastLogin: DateTime.now(),
+      );
+    } finally {
+      await session.cancel();
     }
   }
 
@@ -1300,6 +1349,65 @@ class AuthService {
         return AuthException('Network error. Check connection');
       default:
         return AuthException(e.message ?? 'Authentication failed');
+    }
+  }
+}
+
+/// A short-lived SDK session ticket. Native auth streams first yield their
+/// current snapshot; later events, even for the same UID, revoke this ticket.
+/// Cancellation releases the listener on every operation completion path.
+class _OwnedAuthSession {
+  _OwnedAuthSession(this._auth) : owner = _auth.currentUser?.uid {
+    final subscription = _auth.authStateChanges().listen(
+      (user) {
+        if (_closed) return;
+        final uid = user?.uid;
+        if (_first && uid == owner) {
+          _first = false;
+          return;
+        }
+        _first = false;
+        _changes++;
+        _lastOwner = uid;
+      },
+      onError: (Object error) => _revoke(),
+      onDone: _revoke,
+    );
+    _subscription = subscription;
+    // A stream may close synchronously inside listen before it returns.
+    if (!_healthy) unawaited(cancel());
+  }
+
+  final FirebaseAuth _auth;
+  final String? owner;
+  StreamSubscription<User?>? _subscription;
+  bool _first = true, _healthy = true, _closed = false;
+  int _changes = 0;
+  String? _lastOwner;
+
+  void _revoke() {
+    _healthy = false;
+    unawaited(cancel());
+  }
+
+  bool isCurrent({bool allowSignedOut = false}) {
+    if (_closed || !_healthy) return false;
+    final uid = _auth.currentUser?.uid;
+    if (_changes == 0 && uid == owner) return true;
+    return allowSignedOut &&
+        owner != null &&
+        uid == null &&
+        (_changes == 0 || (_changes == 1 && _lastOwner == null));
+  }
+
+  Future<void> cancel() async {
+    _closed = true;
+    final subscription = _subscription;
+    _subscription = null;
+    try {
+      await subscription?.cancel();
+    } catch (e) {
+      debugPrint('Auth session listener cancellation failed: $e');
     }
   }
 }

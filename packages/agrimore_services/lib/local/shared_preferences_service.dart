@@ -4,6 +4,9 @@ import 'package:agrimore_core/constants/storage_constants.dart';
 
 class SharedPreferencesService {
   static SharedPreferences? _preferences;
+  static Future<void> _sessionWriteTail = Future<void>.value();
+  static int _sessionWriteVersion = 0;
+  static String? _pendingSessionOwner;
   static final ValueNotifier<bool> isReady = ValueNotifier(false);
 
   // ============================================
@@ -205,22 +208,58 @@ class SharedPreferencesService {
   // ============================================
   // USER SESSION METHODS
   // ============================================
+  // Serialize complete session operations, including their native replies. An
+  // issued write cannot be canceled; newer writes must wait for it to finish.
+  static Future<void> _queueSessionWrite(Future<void> Function() write) {
+    final task = _sessionWriteTail.then((_) => write());
+    _sessionWriteTail = task.catchError((Object error) {
+      debugPrint('Session preference operation failed: $error');
+    });
+    return task;
+  }
+
   static Future<void> saveUserSession({
     required String userId,
     required String email,
     required String name,
     required String role,
+    bool Function()? isSessionCurrent,
   }) async {
     try {
-      if (_preferences == null) return;
-      await setBool(StorageConstants.keyIsLoggedIn, true);
-      await setString(StorageConstants.keyUserId, userId);
-      await setString(StorageConstants.keyUserEmail, email);
-      await setString(StorageConstants.keyUserName, name);
-      await setString(StorageConstants.keyUserRole, role);
-      debugPrint('✅ User session saved: $email');
+      if (_preferences == null ||
+          (isSessionCurrent != null && !isSessionCurrent())) {
+        return;
+      }
+      final version = ++_sessionWriteVersion;
+      _pendingSessionOwner = userId;
+      bool current() =>
+          _preferences != null &&
+          version == _sessionWriteVersion &&
+          (isSessionCurrent == null || isSessionCurrent());
+      try {
+        await _queueSessionWrite(() async {
+          if (!current()) return;
+          // Preferences are not a transaction or an authorization source. Publish
+          // logged-in only after all identity fields have finished successfully.
+          if (!await setBool(StorageConstants.keyIsLoggedIn, false)) return;
+          for (final entry in {
+            StorageConstants.keyUserId: userId,
+            StorageConstants.keyUserEmail: email,
+            StorageConstants.keyUserName: name,
+            StorageConstants.keyUserRole: role,
+          }.entries) {
+            if (!current()) return;
+            if (!await setString(entry.key, entry.value)) return;
+          }
+          if (!current()) return;
+          if (!await setBool(StorageConstants.keyIsLoggedIn, true)) return;
+          if (current()) debugPrint('User session saved');
+        });
+      } finally {
+        if (version == _sessionWriteVersion) _pendingSessionOwner = null;
+      }
     } catch (e) {
-      debugPrint('❌ Error saving user session: $e');
+      debugPrint('Error saving user session: $e');
     }
   }
 
@@ -229,27 +268,39 @@ class SharedPreferencesService {
     bool Function()? isSessionCurrent,
   }) async {
     try {
-      if (_preferences == null) return;
-      for (final key in [
-        StorageConstants.keyIsLoggedIn,
-        StorageConstants.keyUserId,
-        StorageConstants.keyUserEmail,
-        StorageConstants.keyUserName,
-        StorageConstants.keyUserRole,
-        StorageConstants.keyUserToken,
-        StorageConstants.keyRememberMe,
-        StorageConstants.keyRememberEmail,
-      ]) {
+      bool owned() {
         final storedOwner = getUserId();
-        if ((isSessionCurrent != null && !isSessionCurrent()) ||
-            (expectedUserId != null &&
-                storedOwner != null &&
-                expectedUserId != storedOwner)) {
-          return;
-        }
-        await remove(key);
+        return _preferences != null &&
+            (isSessionCurrent == null || isSessionCurrent()) &&
+            (expectedUserId == null ||
+                _pendingSessionOwner == null ||
+                expectedUserId == _pendingSessionOwner) &&
+            (expectedUserId == null ||
+                storedOwner == null ||
+                expectedUserId == storedOwner);
       }
-      debugPrint('User session cleared');
+
+      if (!owned()) return;
+      final version = ++_sessionWriteVersion;
+      _pendingSessionOwner = null;
+      await _queueSessionWrite(() async {
+        for (final key in [
+          StorageConstants.keyIsLoggedIn,
+          StorageConstants.keyUserId,
+          StorageConstants.keyUserEmail,
+          StorageConstants.keyUserName,
+          StorageConstants.keyUserRole,
+          StorageConstants.keyUserToken,
+          StorageConstants.keyRememberMe,
+          StorageConstants.keyRememberEmail,
+        ]) {
+          if (version != _sessionWriteVersion || !owned()) return;
+          if (!await remove(key)) return;
+        }
+        if (version == _sessionWriteVersion && owned()) {
+          debugPrint('User session cleared');
+        }
+      });
     } catch (e) {
       debugPrint('Error clearing user session: $e');
     }
