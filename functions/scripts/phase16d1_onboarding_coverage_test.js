@@ -414,7 +414,7 @@ async function main() {
       currency: "INR",
       verifiedAt: admin.firestore.FieldValue.serverTimestamp(),
     });
-    RECONCILER_FAKE_PAYMENTS[staleOrderId] = { items: [{ id: "pay_reconcile_stale", status: "captured" }] };
+    RECONCILER_FAKE_PAYMENTS[staleOrderId] = { items: [{ id: "pay_reconcile_stale", order_id: staleOrderId, amount: 50000, currency: "INR", status: "captured" }] };
 
     // Stale, captured payment exists per Razorpay, but activation will
     // fail (amount mismatch) -> must produce an onboarding_exceptions
@@ -438,7 +438,7 @@ async function main() {
       currency: "INR",
       verifiedAt: admin.firestore.FieldValue.serverTimestamp(),
     });
-    RECONCILER_FAKE_PAYMENTS[staleExceptionOrderId] = { items: [{ id: "pay_reconcile_exception", status: "captured" }] };
+    RECONCILER_FAKE_PAYMENTS[staleExceptionOrderId] = { items: [{ id: "pay_reconcile_exception", order_id: staleExceptionOrderId, amount: 50000, currency: "INR", status: "captured" }] };
 
     // Fresh (created just now) — MUST be excluded by the staleness
     // window even though a captured payment is "available".
@@ -461,7 +461,7 @@ async function main() {
       currency: "INR",
       verifiedAt: admin.firestore.FieldValue.serverTimestamp(),
     });
-    RECONCILER_FAKE_PAYMENTS[freshOrderId] = { items: [{ id: "pay_reconcile_fresh", status: "captured" }] };
+    RECONCILER_FAKE_PAYMENTS[freshOrderId] = { items: [{ id: "pay_reconcile_fresh", order_id: freshOrderId, amount: 50000, currency: "INR", status: "captured" }] };
 
     // Too old (30 hours) — MUST be excluded by the lookback bound.
     await db.collection("razorpay_orders").doc(tooOldOrderId).set({

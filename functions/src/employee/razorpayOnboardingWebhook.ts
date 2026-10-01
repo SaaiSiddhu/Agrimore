@@ -24,6 +24,8 @@ import { log } from "../common/helpers";
 import { getRazorpayCredentials, RAZORPAY_KEY_SECRET } from "../customer/payment";
 import { performOnboardingActivation } from "./activationCore";
 import { ONBOARDING_PURPOSE } from "./onboardingConfig";
+import { isSafeProviderId } from "../common/paymentIntegrity";
+import { verifyOnboardingCapture } from "./onboardingVerification";
 
 // Phase 18, Workstream 1: distinct from RAZORPAY_KEY_SECRET (imported above,
 // used for HMAC-signing checkout payments) — Razorpay issues a separate
@@ -158,7 +160,7 @@ export const razorpayOnboardingWebhook = onRequest(
     const orderId = paymentEntity.order_id as string | undefined;
     const notes = paymentEntity.notes || {};
 
-    if (!paymentId || !orderId) {
+    if (!isSafeProviderId(paymentId) || !isSafeProviderId(orderId)) {
       log.warn("⚠️ Onboarding webhook payment.captured event missing payment id/order id — ignored");
       res.status(200).send("Ignored (malformed payload)");
       return;
@@ -182,6 +184,10 @@ export const razorpayOnboardingWebhook = onRequest(
     // depending on a header Razorpay may not send in every account
     // configuration.
     const eventIdHeader = req.get("x-razorpay-event-id");
+    if (eventIdHeader && (eventIdHeader.length > 512 || eventIdHeader.includes("/"))) {
+      res.status(400).send("Invalid event id");
+      return;
+    }
     const eventKey = eventIdHeader || `${eventType}_${paymentId}`;
     const eventRef = db.collection("webhook_events").doc(eventKey);
 
@@ -195,6 +201,7 @@ export const razorpayOnboardingWebhook = onRequest(
     try {
       const verifiedPaymentsRef = db.collection("verified_payments").doc(paymentId);
       const verifiedSnap = await verifiedPaymentsRef.get();
+      let livePayment: Record<string, unknown> | undefined;
 
       if (!verifiedSnap.exists) {
         // Decision (7e, option i — see completion report Decisions
@@ -219,77 +226,29 @@ export const razorpayOnboardingWebhook = onRequest(
         const liveResponse = await axios.get(`https://api.razorpay.com/v1/payments/${paymentId}`, {
           headers: { Authorization: `Basic ${authHeader}` },
         });
-        const livePayment = liveResponse.data;
+        livePayment = liveResponse.data;
 
-        if (livePayment.status !== "captured") {
+        if (!livePayment || livePayment.status !== "captured") {
           log.warn(
-            `⚠️ Onboarding webhook fired for ${paymentId} but live Razorpay status is '${livePayment.status}' — not activating`
+            `⚠️ Onboarding webhook fired for ${paymentId} but live Razorpay status is not captured — not activating`
           );
           res.status(200).send("Ignored (not captured per live API)");
           return;
         }
-
-        const orderRef = db.collection("razorpay_orders").doc(orderId);
-        const orderSnap = await orderRef.get();
-        const orderUserId = orderSnap.data()?.userId as string | undefined;
-
-        if (!orderSnap.exists || !orderUserId) {
-          log.error(
-            `🚨 Onboarding webhook: razorpay_orders/${orderId} missing or has no userId — cannot verify ownership, refusing to activate`
-          );
-          await db.collection("onboarding_exceptions").add({
-            paymentId,
-            orderId,
-            reason: "order_record_missing_or_no_userid",
-            source: "webhook",
-            createdAt: admin.firestore.FieldValue.serverTimestamp(),
-          });
-          res.status(200).send("Ignored (order record missing)");
-          return;
-        }
-
-        const notesUserId = notes.userId as string | undefined;
-        if (notesUserId && notesUserId !== orderUserId) {
-          log.error(
-            `🚨 Onboarding webhook: notes.userId (${notesUserId}) disagrees with razorpay_orders userId (${orderUserId}) for order ${orderId} — refusing to activate`
-          );
-          await db.collection("onboarding_exceptions").add({
-            paymentId,
-            orderId,
-            reason: "notes_order_userid_mismatch",
-            source: "webhook",
-            createdAt: admin.firestore.FieldValue.serverTimestamp(),
-          });
-          res.status(200).send("Ignored (userid mismatch)");
-          return;
-        }
-
-        await verifiedPaymentsRef.set({
-          orderId,
-          paymentId,
-          userId: orderUserId,
-          signatureVerified: true,
-          verifiedAt: admin.firestore.FieldValue.serverTimestamp(),
-          method: livePayment.method,
-          bank: livePayment.bank || null,
-          email: livePayment.email || null,
-          contact: livePayment.contact || null,
-          amount: livePayment.amount / 100,
-          currency: livePayment.currency,
-          status: livePayment.status,
-          verifiedBy: "razorpayOnboardingWebhook",
-        });
       }
 
-      const finalVerifiedSnap = await verifiedPaymentsRef.get();
-      const uid = finalVerifiedSnap.data()?.userId as string | undefined;
-      if (!uid) {
-        log.error(
-          `🚨 Onboarding webhook: verified_payments/${paymentId} has no userId after verification — refusing to activate`
-        );
-        res.status(200).send("Ignored (no userid on verified payment)");
+      const verification = await verifyOnboardingCapture({
+        db, paymentId, orderId, notesUserId: notes.userId, livePayment, source: "webhook",
+      });
+      if (!verification.ok) {
+        await db.collection("onboarding_exceptions").add({
+          paymentId, orderId, reason: verification.reason, source: "webhook",
+          createdAt: admin.firestore.FieldValue.serverTimestamp(),
+        });
+        res.status(200).send("Ignored (payment binding mismatch)");
         return;
       }
+      const uid = verification.uid;
 
       const result = await performOnboardingActivation({ db, uid, paymentId, source: "webhook" });
       if (!result.ok && !result.alreadyActive) {
