@@ -9,7 +9,9 @@ if (!/^(127\.0\.0\.1|localhost|\[::1\]):\d+$/.test(process.env.FIRESTORE_EMULATO
 process.env.GCLOUD_PROJECT = "demo-agrimore-foundation";
 process.env.FUNCTIONS_EMULATOR = "false";
 const fixtureKey = "rzp_test_foundation_recovery_fixture";
-const fixtureSecret = "foundation_recovery_fixture_not_a_provider_credential";
+// Explicit per-process test stub, matching the other foundation suites.
+process.env.RAZORPAY_KEY_SECRET = "foundation_recovery_fixture_not_a_provider_credential";
+const fixtureSecret = process.env.RAZORPAY_KEY_SECRET;
 let calls = [], body, duringLookup, providerFailure, seq = 0, passed = 0, failed = 0, rules;
 const axios = require("axios");
 axios.get = async (url, options) => {
