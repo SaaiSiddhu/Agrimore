@@ -50,10 +50,15 @@ class SellerAuthProvider with ChangeNotifier {
     AuthService? authService,
     FirebaseAuth? firebaseAuth,
     FirebaseFirestore? firestore,
-  })  : _authServiceOverride = authService,
-        _auth = firebaseAuth ?? FirebaseAuth.instance,
-        _firestore = firestore ?? FirebaseFirestore.instance {
-    _subscription = _auth!.authStateChanges().listen(_onAuthChanged);
+    Future<String?> Function()? readPushToken,
+    Future<void> Function(String)? savePendingPushToken,
+  }) : _authServiceOverride = authService,
+       _readPushToken = readPushToken,
+       _savePendingPushToken = savePendingPushToken,
+       _auth = firebaseAuth ?? FirebaseAuth.instance,
+       _firestore = firestore ?? FirebaseFirestore.instance {
+    _sessionOwner = _auth!.currentUser?.uid;
+    _listenForAuth();
   }
 
   /// A provider frozen in one state, with no Firebase behind it — for widget
@@ -68,10 +73,12 @@ class SellerAuthProvider with ChangeNotifier {
     SellerAuthError error = SellerAuthError.none,
     String? phone,
     UserModel? user,
-  })  : _authServiceOverride = null,
-        _auth = null,
-        _firestore = null,
-        _previewPhone = phone {
+  }) : _authServiceOverride = null,
+       _readPushToken = null,
+       _savePendingPushToken = null,
+       _auth = null,
+       _firestore = null,
+       _previewPhone = phone {
     _access = access;
     _pendingPhone = pendingPhone;
     _otpChannel = otpChannel;
@@ -85,8 +92,18 @@ class SellerAuthProvider with ChangeNotifier {
   AuthService get _authService => _authServiceOverride ?? AuthService();
   final FirebaseAuth? _auth;
   final FirebaseFirestore? _firestore;
+  final Future<String?> Function()? _readPushToken;
+  final Future<void> Function(String)? _savePendingPushToken;
   String? _previewPhone;
   StreamSubscription<User?>? _subscription;
+  String? _sessionOwner;
+  int _sessionEpoch = 0;
+  int _accessRead = 0;
+  int _authVersion = 0;
+  bool _disposed = false;
+
+  bool get _ownsProjection =>
+      !_disposed && (_auth == null || _sessionOwner == _auth.currentUser?.uid);
 
   SellerAccess _access = SellerAccess.loading;
   UserModel? _currentUser;
@@ -104,15 +121,29 @@ class SellerAuthProvider with ChangeNotifier {
   PendingGoogleIdentity? _pendingGoogle;
   bool _googleLinkConflict = false;
 
-  SellerAccess get access => _access;
-  UserModel? get currentUser => _currentUser;
-  bool get isBusy => _busy;
-  SellerAuthError get lastError => _lastError;
+  SellerAccess get access {
+    if (_disposed) return SellerAccess.signedOut;
+    if (!_ownsProjection) {
+      return _auth?.currentUser == null
+          ? SellerAccess.signedOut
+          : SellerAccess.loading;
+    }
+    return _access;
+  }
+
+  UserModel? get currentUser =>
+      _ownsProjection &&
+          (_auth == null || _currentUser?.uid == _auth.currentUser?.uid)
+      ? _currentUser
+      : null;
+  bool get isBusy => !_disposed && _busy;
+  SellerAuthError get lastError =>
+      _ownsProjection ? _lastError : SellerAuthError.none;
 
   /// Server-provided message for [SellerAuthError.generic]/rate limits, when
   /// the server gave one; screens prefer their own localised copy.
-  String? get lastErrorMessage => _lastErrorMessage;
-  int? get retryAfterMs => _retryAfterMs;
+  String? get lastErrorMessage => _ownsProjection ? _lastErrorMessage : null;
+  int? get retryAfterMs => _ownsProjection ? _retryAfterMs : null;
   String? get pendingPhone => _pendingPhone;
   String get otpChannel => _otpChannel;
   String? get testOtp => _testOtp;
@@ -121,59 +152,141 @@ class SellerAuthProvider with ChangeNotifier {
   bool get googleLinkConflict => _googleLinkConflict;
 
   /// Phone on the signed-in account, for "no seller account on this number".
-  String? get signedInPhone => _previewPhone ?? _currentUser?.phone ?? _auth?.currentUser?.phoneNumber;
+  String? get signedInPhone => _disposed
+      ? null
+      : _auth == null
+      ? _previewPhone ?? _currentUser?.phone
+      : currentUser?.phone ?? _auth.currentUser?.phoneNumber;
 
   // ── Session ────────────────────────────────────────────────────────────────
 
-  Future<void> _onAuthChanged(User? user) async {
-    if (user == null) {
-      _currentUser = null;
-      _setAccess(SellerAccess.signedOut);
-      return;
+  void _listenForAuth() {
+    if (_disposed || _auth == null || _subscription != null) return;
+    final version = ++_authVersion;
+    try {
+      final subscription = _auth.authStateChanges().listen(
+        (user) {
+          if (_disposed ||
+              version != _authVersion ||
+              user?.uid != _auth.currentUser?.uid) {
+            return;
+          }
+          _bindOwner(user?.uid, renew: true);
+          final epoch = _sessionEpoch, read = _accessRead;
+          notifyListeners();
+          if (user != null && _readIsCurrent(user.uid, epoch, read)) {
+            unawaited(_resolveAccess(user.uid));
+          }
+        },
+        onError: (Object error) => _stopAuthUpdates(version),
+        onDone: () => _stopAuthUpdates(version),
+      );
+      // A stream can close synchronously before listen returns its subscription.
+      if (_disposed || version != _authVersion) {
+        unawaited(
+          subscription.cancel().catchError((Object error) {
+            debugPrint('Seller auth listener cleanup failed');
+          }),
+        );
+      } else {
+        _subscription = subscription;
+      }
+    } catch (_) {
+      _stopAuthUpdates(version);
     }
-    _setAccess(SellerAccess.loading);
-    await _resolveAccess(user.uid);
   }
+
+  void _cancelAuthSubscription() {
+    final subscription = _subscription;
+    _subscription = null;
+    if (subscription != null) {
+      unawaited(
+        subscription.cancel().catchError((Object error) {
+          debugPrint('Seller auth listener cleanup failed');
+        }),
+      );
+    }
+  }
+
+  void _stopAuthUpdates(int version) {
+    if (_disposed || version != _authVersion) return;
+    ++_authVersion;
+    _cancelAuthSubscription();
+    _bindOwner(_auth?.currentUser?.uid, renew: true);
+    if (_sessionOwner != null) {
+      _access = SellerAccess.noApplication;
+      _lastError = SellerAuthError.network;
+    }
+    notifyListeners();
+  }
+
+  void _bindOwner(String? uid, {bool renew = false}) {
+    if (_disposed || (!renew && uid == _sessionOwner)) return;
+    _sessionOwner = uid;
+    ++_sessionEpoch;
+    ++_accessRead;
+    _currentUser = null;
+    _clearError();
+    _access = uid == null ? SellerAccess.signedOut : SellerAccess.loading;
+  }
+
+  bool _readIsCurrent(String uid, int epoch, int read) =>
+      !_disposed &&
+      uid == _sessionOwner &&
+      uid == _auth?.currentUser?.uid &&
+      epoch == _sessionEpoch &&
+      read == _accessRead;
 
   /// Re-reads the seller records (the "Check status" action).
   Future<void> refresh() async {
-    final uid = _auth?.currentUser?.uid;
+    if (_disposed || _auth == null) return;
+    final uid = _auth.currentUser?.uid;
     if (uid == null) return;
+    _listenForAuth();
+    _bindOwner(uid);
     await _resolveAccess(uid);
   }
 
   Future<void> _resolveAccess(String uid) async {
     final db = _firestore;
-    if (db == null) return;
+    final epoch = _sessionEpoch, read = ++_accessRead;
+    if (db == null || !_readIsCurrent(uid, epoch, read)) return;
+    _clearError();
+    notifyListeners();
+    if (!_readIsCurrent(uid, epoch, read)) return;
     try {
       final results = await Future.wait([
         db.collection('users').doc(uid).get(),
         db.collection('sellers').doc(uid).get(),
         db.collection('sellerRequests').doc(uid).get(),
       ]);
+      if (!_readIsCurrent(uid, epoch, read)) return;
+      if (results.any((document) => document.id != uid)) {
+        throw StateError('Seller record ownership mismatch');
+      }
       final userDoc = results[0];
       final sellerDoc = results[1];
       final requestDoc = results[2];
-
-      _currentUser = userDoc.exists ? UserModel.fromMap(userDoc.data()!, userDoc.id) : null;
-      final role = _currentUser?.role;
-      final userSellerStatus = userDoc.data()?['sellerStatus']?.toString();
-      final sellerStatus = sellerDoc.data()?['status']?.toString();
-      final requestStatus = requestDoc.data()?['status']?.toString();
-
+      final user = userDoc.exists
+          ? UserModel.fromMap(userDoc.data()!, userDoc.id)
+          : null;
       final access = resolveSellerAccess(
-        role: role,
-        sellerStatus: sellerStatus,
+        role: user?.role,
+        sellerStatus: sellerDoc.data()?['status']?.toString(),
         sellerDocExists: sellerDoc.exists,
-        userSellerStatus: userSellerStatus,
-        requestStatus: requestStatus,
+        userSellerStatus: userDoc.data()?['sellerStatus']?.toString(),
+        requestStatus: requestDoc.data()?['status']?.toString(),
       );
-      if (access == SellerAccess.approved) {
-        unawaited(_updateFcmToken(uid));
-      }
+      _currentUser = user;
       _setAccess(access);
-    } catch (e) {
-      debugPrint('Seller access could not be resolved: $e');
+      // Listeners can change the SDK session while receiving the access update.
+      if (access == SellerAccess.approved && _readIsCurrent(uid, epoch, read)) {
+        unawaited(_updateFcmToken(uid, epoch, read));
+      }
+    } catch (_) {
+      if (!_readIsCurrent(uid, epoch, read)) return;
+      debugPrint('Seller access could not be resolved');
+      _currentUser = null;
       _lastError = SellerAuthError.network;
       _setAccess(SellerAccess.noApplication);
     }
@@ -408,28 +521,48 @@ class SellerAuthProvider with ChangeNotifier {
     _retryAfterMs = null;
   }
 
-  Future<void> _updateFcmToken(String uid) async {
+  Future<void> _updateFcmToken(String uid, int epoch, int read) async {
     final db = _firestore;
     // D13: an emulator run registers no push token — a real device token in
     // emulator data makes every server notification try live FCM.
-    if (db == null || kSellerUsesEmulator) return;
+    if (db == null ||
+        kSellerUsesEmulator ||
+        !_readIsCurrent(uid, epoch, read) ||
+        _access != SellerAccess.approved) {
+      return;
+    }
     try {
-      final token = await FirebaseMessaging.instance.getToken();
-      if (token == null) return;
+      final token =
+          await (_readPushToken?.call() ??
+              FirebaseMessaging.instance.getToken());
+      if (token == null || !_readIsCurrent(uid, epoch, read)) return;
       await db.collection('users').doc(uid).set({
         'fcmTokens': FieldValue.arrayUnion([token]),
         'fcmToken': token,
         'lastTokenUpdate': FieldValue.serverTimestamp(),
       }, SetOptions(merge: true));
-      await NotificationService.savePendingToken(uid);
-    } catch (e) {
-      debugPrint('FCM token update skipped for seller: $e');
+      if (!_readIsCurrent(uid, epoch, read)) return;
+      await (_savePendingPushToken?.call(uid) ??
+          NotificationService.savePendingToken(uid));
+    } catch (_) {
+      debugPrint('FCM token update skipped for seller');
     }
   }
 
   @override
+  void notifyListeners() {
+    if (!_disposed) super.notifyListeners();
+  }
+
+  @override
   void dispose() {
-    _subscription?.cancel();
+    if (_disposed) return;
+    _disposed = true;
+    ++_sessionEpoch;
+    ++_accessRead;
+    ++_authVersion;
+    _currentUser = null;
+    _cancelAuthSubscription();
     super.dispose();
   }
 }
