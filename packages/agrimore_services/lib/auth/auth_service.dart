@@ -737,20 +737,78 @@ class AuthService {
     }
   }
 
+  // Capture before dispatch: the native Functions SDK may obtain an auth
+  // token after the account changes. The server can only reject this hint;
+  // request.auth.uid remains the sole actor and target of every callable.
+  Future<T> _runOwnedProfileCommand<T>({
+    required String command,
+    required Map<String, dynamic> parameters,
+    required String failureMessage,
+    required Future<T> Function(String, bool Function()) confirmed,
+  }) async {
+    final session = _OwnedAuthSession(_auth);
+    final owner = session.owner;
+    bool current() => session.isCurrent();
+    try {
+      if (owner == null) throw UnauthorizedException();
+      _requireCurrentSession(current);
+      final result = await FirebaseFunctions.instance
+          .httpsCallable(command)
+          .call<Map<String, dynamic>>({
+            ...parameters,
+            'expectedOwnerId': owner,
+          });
+      _requireCurrentSession(current);
+      if (result.data['success'] != true) {
+        throw AuthException(
+          'Profile change could not be confirmed. Please try again.',
+          code: 'unconfirmed',
+        );
+      }
+      final value = await confirmed(owner, current);
+      _requireCurrentSession(current);
+      return value;
+    } on FirebaseFunctionsException catch (e) {
+      _requireCurrentSession(current);
+      throw AuthException(e.message ?? failureMessage, code: e.code);
+    } on AuthException {
+      rethrow;
+    } catch (e) {
+      _requireCurrentSession(current);
+      debugPrint('Profile command failed: $e');
+      throw AuthException(failureMessage);
+    } finally {
+      await session.cancel();
+    }
+  }
+
+  Future<UserModel> _refreshOwnedProfile(
+    String owner,
+    bool Function() current,
+  ) async {
+    _requireCurrentSession(current);
+    final updated = await getUserData(owner);
+    _requireCurrentSession(current);
+    await _savePersistentSession(updated, isSessionCurrent: current);
+    _requireCurrentSession(current);
+    return updated;
+  }
+
   /// Verifies [otp] for [email] via the authenticated verifyEmailForProfile
   /// callable — proves ownership without minting a second Firebase Auth
   /// identity (see that function's header comment for why it's not
   /// verifyEmailOTP.ts). Must be called while already signed in (phone
   /// OTP happens first in the real flow).
-  Future<void> verifyEmailOtpForProfile({required String email, required String otp}) async {
-    try {
-      final callable = FirebaseFunctions.instance.httpsCallable('verifyEmailForProfile');
-      await callable.call<Map<String, dynamic>>({'email': email, 'otp': otp});
-    } on FirebaseFunctionsException catch (e) {
-      throw AuthException(e.message ?? 'Invalid verification code');
-    } catch (e) {
-      throw AuthException('Failed to verify code: ${e.toString()}');
-    }
+  Future<void> verifyEmailOtpForProfile({
+    required String email,
+    required String otp,
+  }) async {
+    await _runOwnedProfileCommand<void>(
+      command: 'verifyEmailForProfile',
+      parameters: {'email': email, 'otp': otp},
+      failureMessage: 'Invalid verification code',
+      confirmed: (owner, current) async {},
+    );
   }
 
   /// Completes the caller's profile via the completeUserProfile callable —
@@ -762,26 +820,17 @@ class AuthService {
     required DateTime dateOfBirth,
     required String gender,
   }) async {
-    final user = currentUser;
-    if (user == null) throw UnauthorizedException();
-
-    try {
-      final callable = FirebaseFunctions.instance.httpsCallable('completeUserProfile');
-      await callable.call<Map<String, dynamic>>({
+    return _runOwnedProfileCommand<UserModel>(
+      command: 'completeUserProfile',
+      parameters: {
         'name': name,
         'email': email,
         'dateOfBirth': dateOfBirth.toIso8601String(),
         'gender': gender,
-      });
-
-      final updated = await getUserData(user.uid);
-      await _savePersistentSession(updated);
-      return updated;
-    } on FirebaseFunctionsException catch (e) {
-      throw AuthException(e.message ?? 'Failed to complete profile');
-    } catch (e) {
-      throw AuthException('Failed to complete profile: ${e.toString()}');
-    }
+      },
+      failureMessage: 'Failed to complete profile',
+      confirmed: _refreshOwnedProfile,
+    );
   }
 
   /// Changes the caller's OWN phone number via the changePhoneNumber
@@ -795,21 +844,12 @@ class AuthService {
     required String phone,
     required String otp,
   }) async {
-    final user = currentUser;
-    if (user == null) throw UnauthorizedException();
-
-    try {
-      final callable = FirebaseFunctions.instance.httpsCallable('changePhoneNumber');
-      await callable.call<Map<String, dynamic>>({'phone': phone, 'otp': otp});
-
-      final updated = await getUserData(user.uid);
-      await _savePersistentSession(updated);
-      return updated;
-    } on FirebaseFunctionsException catch (e) {
-      throw AuthException(e.message ?? 'Failed to update mobile number');
-    } catch (e) {
-      throw AuthException('Failed to update mobile number: ${e.toString()}');
-    }
+    return _runOwnedProfileCommand<UserModel>(
+      command: 'changePhoneNumber',
+      parameters: {'phone': phone, 'otp': otp},
+      failureMessage: 'Failed to update mobile number',
+      confirmed: _refreshOwnedProfile,
+    );
   }
 
   /// Changes the caller's OWN email address via the changeEmailAddress
@@ -819,21 +859,12 @@ class AuthService {
   /// changeEmailAddress.ts's header comment). Returns the refreshed
   /// UserModel on success.
   Future<UserModel> changeEmailAddress({required String email}) async {
-    final user = currentUser;
-    if (user == null) throw UnauthorizedException();
-
-    try {
-      final callable = FirebaseFunctions.instance.httpsCallable('changeEmailAddress');
-      await callable.call<Map<String, dynamic>>({'email': email});
-
-      final updated = await getUserData(user.uid);
-      await _savePersistentSession(updated);
-      return updated;
-    } on FirebaseFunctionsException catch (e) {
-      throw AuthException(e.message ?? 'Failed to update email address');
-    } catch (e) {
-      throw AuthException('Failed to update email address: ${e.toString()}');
-    }
+    return _runOwnedProfileCommand<UserModel>(
+      command: 'changeEmailAddress',
+      parameters: {'email': email},
+      failureMessage: 'Failed to update email address',
+      confirmed: _refreshOwnedProfile,
+    );
   }
 
   /// Changes the caller's OWN date of birth via the changeDateOfBirth
@@ -845,23 +876,12 @@ class AuthService {
   /// one authorised, Admin-SDK path around that block. Returns the
   /// refreshed UserModel on success.
   Future<UserModel> changeDateOfBirth({required DateTime dateOfBirth}) async {
-    final user = currentUser;
-    if (user == null) throw UnauthorizedException();
-
-    try {
-      final callable = FirebaseFunctions.instance.httpsCallable('changeDateOfBirth');
-      await callable.call<Map<String, dynamic>>({
-        'dateOfBirth': dateOfBirth.toIso8601String(),
-      });
-
-      final updated = await getUserData(user.uid);
-      await _savePersistentSession(updated);
-      return updated;
-    } on FirebaseFunctionsException catch (e) {
-      throw AuthException(e.message ?? 'Failed to update date of birth');
-    } catch (e) {
-      throw AuthException('Failed to update date of birth: ${e.toString()}');
-    }
+    return _runOwnedProfileCommand<UserModel>(
+      command: 'changeDateOfBirth',
+      parameters: {'dateOfBirth': dateOfBirth.toIso8601String()},
+      failureMessage: 'Failed to update date of birth',
+      confirmed: _refreshOwnedProfile,
+    );
   }
 
   // ✅ Save persistent session

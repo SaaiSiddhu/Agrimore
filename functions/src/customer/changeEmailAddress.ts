@@ -29,6 +29,9 @@ export const changeEmailAddress = onCall(
       throw new HttpsError("unauthenticated", "Sign in required");
     }
     const uid = request.auth.uid;
+    if (request.data?.expectedOwnerId !== undefined && request.data.expectedOwnerId !== uid) {
+      throw new HttpsError("permission-denied", "Profile change does not belong to this account");
+    }
 
     const email = String(request.data?.email || "").trim().toLowerCase();
     if (!email || !/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email)) {
