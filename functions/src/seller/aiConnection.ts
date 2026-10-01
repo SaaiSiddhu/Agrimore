@@ -57,6 +57,7 @@ import * as admin from "firebase-admin";
 import { FieldValue } from "firebase-admin/firestore";
 import Razorpay from "razorpay";
 import { log } from "../common/helpers";
+import { isSpendableCapturedPayment } from "../common/paymentIntegrity";
 import { getRazorpayCredentials, RAZORPAY_KEY_SECRET } from "../customer/payment";
 import {
   AI_KEY_ENCRYPTION_SECRET,
@@ -256,7 +257,7 @@ export const connectSellerAiProvider = onCall(
             log.error(`❌ Seller AI activation: payment ${paymentId} belongs to a different user (uid=${uid})`);
             throw new HttpsError("failed-precondition", GENERIC_PAYMENT_FAILURE_MESSAGE);
           }
-          if (payment.status !== "captured") {
+          if (!isSpendableCapturedPayment(payment, paymentId)) {
             log.error(`❌ Seller AI activation: payment ${paymentId} not captured (status=${payment.status})`);
             throw new HttpsError("failed-precondition", GENERIC_PAYMENT_FAILURE_MESSAGE);
           }

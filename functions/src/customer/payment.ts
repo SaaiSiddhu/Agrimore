@@ -5,6 +5,7 @@ import axios from "axios";
 import Razorpay from "razorpay";
 import { createHmac, randomBytes, timingSafeEqual } from "crypto";
 import { log } from "../common/helpers";
+import { isLocalPaymentEmulator } from "../common/paymentIntegrity";
 
 // Phase 18, Workstream 1: Secret Manager binding. Every function below (and
 // every indirect importer of getRazorpayCredentials() — wallet.ts,
@@ -45,14 +46,6 @@ interface CreateOrderData {
   // and never referenced again anywhere in this function. Agrimore does not
   // use Razorpay Route; seller payouts are computed and disbursed by this
   // codebase's own calculateSellerPayout, not by Razorpay-native transfers.
-}
-
-// This server environment, never a request field or a test-looking provider
-// key, is the only authority for simulated captures. Require a local database
-// as well so a misconfigured emulator cannot mint production payment records.
-function isLocalPaymentEmulator(): boolean {
-  return process.env.FUNCTIONS_EMULATOR === "true" &&
-    /^(127\.0\.0\.1|localhost|\[::1\]):\d+$/.test(process.env.FIRESTORE_EMULATOR_HOST || "");
 }
 
 function isSafeProviderId(value: unknown): value is string {

@@ -36,6 +36,7 @@ import * as crypto from "crypto";
 import axios from "axios";
 import { log } from "../common/helpers";
 import { getRazorpayCredentials, RAZORPAY_KEY_SECRET } from "./payment";
+import { isSpendableCapturedPayment } from "../common/paymentIntegrity";
 
 interface RazorpayPayment {
   id: string;
@@ -94,7 +95,8 @@ export const verifyWalletTopup = onCall(
 
     const amount = Number(data?.amount);
     const { paymentId, orderId, signature } = data || ({} as VerifyWalletTopupData);
-    if (!amount || amount <= 0) {
+    if (!Number.isFinite(amount) || amount <= 0 ||
+        !Number.isSafeInteger(Math.round(amount * 100)) || Math.round(amount * 100) < 1) {
       throw new HttpsError("invalid-argument", "amount must be a positive number");
     }
     if (!paymentId || !orderId || !signature) {
@@ -152,7 +154,9 @@ export const verifyWalletTopup = onCall(
       headers: { Authorization: `Basic ${authHeader}` },
     });
     const payment = response.data as RazorpayPayment;
-    if (payment.status !== "captured") {
+    if (!Number.isSafeInteger(payment.amount) || !isSpendableCapturedPayment({
+      ...payment, amount: payment.amount / 100, paymentId, orderId,
+    }, paymentId)) {
       throw new HttpsError("failed-precondition", "Payment was not captured");
     }
 
@@ -298,6 +302,10 @@ export const verifyWalletTopup = onCall(
           "failed-precondition",
           "This payment has already been used for a seller AI Assistant activation"
         );
+      }
+
+      if (payment && !isSpendableCapturedPayment(payment, paymentId)) {
+        throw new HttpsError("failed-precondition", "Payment was not captured");
       }
 
       const bonusCoins = getBonusForAmount(configSnap.data()?.topupBonuses, amount);

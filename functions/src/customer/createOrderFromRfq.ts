@@ -38,6 +38,7 @@
 import { onCall, HttpsError } from "firebase-functions/v2/https";
 import * as admin from "firebase-admin";
 import { assertSellerAcceptingOrders } from "../common/sellerAvailability";
+import { isSpendableCapturedPayment } from "../common/paymentIntegrity";
 import * as crypto from "crypto";
 import { deliverySecretRef, newDeliverySecret } from "../delivery/deliverySecret";
 
@@ -324,7 +325,7 @@ export const createOrderFromRfq = onCall(
         if (payment.orderId !== razorpayOrderId) {
           throw new HttpsError("failed-precondition", "Payment does not match this order");
         }
-        if (payment.status !== "captured") {
+        if (!isSpendableCapturedPayment(payment, razorpayPaymentId)) {
           throw new HttpsError("failed-precondition", "Payment was not captured");
         }
         const verifiedAmount = typeof payment.amount === "number" ? payment.amount : -1;
