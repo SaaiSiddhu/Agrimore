@@ -2382,6 +2382,13 @@ service cloud.firestore {
       allow read, write: if false;
     }
 
+    // Completed checkout retry anchors belong to createOrder's transaction.
+    // Like order_rate_limits, they have no direct client access. A caller
+    // recovers only its own original order result through createOrder.
+    match /checkout_requests/{requestId} {
+      allow read, write: if false;
+    }
+
     // ============================================
     // COMMISSION EXCEPTIONS COLLECTION (Phase 16D-1, Workstream 3f)
     // ============================================
