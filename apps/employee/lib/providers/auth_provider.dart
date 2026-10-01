@@ -1,3 +1,4 @@
+import 'dart:async';
 // lib/providers/auth_provider.dart
 import 'package:flutter/material.dart';
 import 'package:firebase_auth/firebase_auth.dart';
@@ -15,220 +16,253 @@ import 'package:agrimore_services/agrimore_services.dart';
 /// rejection accurately. Telling someone who just typed a mobile number that
 /// "this account" is not an associate is vague; naming the number is not.
 /// It deliberately does NOT gate any check — both methods run the identical
-/// post-authentication gate in [_applyAssociateGate].
+/// post-authentication gate in [_loadUserData].
 enum AssociateSignInMethod { unknown, phone, email }
 
 class EmployeeAuthProvider extends ChangeNotifier {
-  final FirebaseAuth _auth = FirebaseAuth.instance;
-  final FirebaseFirestore _firestore = FirebaseFirestore.instance;
+  final FirebaseAuth _auth;
+  final FirebaseFirestore _firestore;
   // Phase 18, Workstream 2: the SHARED phone-OTP implementation, already used
   // by apps/marketplace. AuthService is a singleton (factory AuthService() =>
   // _instance), so this costs nothing and adds no second OTP code path.
-  final AuthService _authService = AuthService();
+  final AuthService _authService;
 
+  StreamSubscription<User?>? _authSubscription;
+  String? _profileOwner;
+  int _sessionEpoch = 0;
+  int _profileRead = 0;
+  int _authVersion = 0;
+  bool _disposed = false;
+  bool _approved = false;
+  String? _gateError;
+  String? _pendingRefusal;
   UserModel? _user;
   bool _isLoading = true;
   String? _error;
   AssociateSignInMethod _signInMethod = AssociateSignInMethod.unknown;
 
-  // Getters
-  UserModel? get user => _user;
-  bool get isLoading => _isLoading;
-  bool get isAuthenticated => _user != null && _error == null;
-  bool get isEmployee => _user?.isEmployee ?? false;
-  String? get error => _error;
+  // Cached identity never grants access without its completed approval decision.
+  bool get _ownsProjection =>
+      !_disposed && _profileOwner == _auth.currentUser?.uid;
+  UserModel? get user =>
+      _ownsProjection && _user?.uid == _auth.currentUser?.uid ? _user : null;
+  bool get isLoading =>
+      !_disposed && (!_ownsProjection ? _auth.currentUser != null : _isLoading);
+  bool get isAuthenticated =>
+      user?.isEmployee == true && _approved && error == null;
+  bool get isEmployee => user?.isEmployee ?? false;
+  String? get error => _ownsProjection ? _gateError ?? _error : null;
 
-  void _init() {
-    _auth.authStateChanges().listen((firebaseUser) async {
-      if (firebaseUser != null) {
-        await _loadUserData(firebaseUser.uid);
-      } else {
-        _user = null;
-      }
-      _isLoading = false;
-      notifyListeners();
-    });
+  EmployeeAuthProvider({
+    FirebaseAuth? firebaseAuth,
+    FirebaseFirestore? firestore,
+    AuthService? authService,
+  }) : _auth = firebaseAuth ?? FirebaseAuth.instance,
+       _firestore = firestore ?? FirebaseFirestore.instance,
+       _authService = authService ?? AuthService() {
+    _profileOwner = _auth.currentUser?.uid;
+    _listenForAuth();
   }
 
-  EmployeeAuthProvider() {
-    _init();
+  void _listenForAuth() {
+    if (_disposed || _authSubscription != null) return;
+    final version = ++_authVersion;
+    try {
+      final subscription = _auth.authStateChanges().listen(
+        (firebaseUser) {
+          if (_disposed ||
+              version != _authVersion ||
+              firebaseUser?.uid != _auth.currentUser?.uid) {
+            return;
+          }
+          _bindOwner(firebaseUser?.uid, renew: true);
+          final epoch = _sessionEpoch, read = _profileRead;
+          notifyListeners();
+          if (firebaseUser != null &&
+              _readIsCurrent(firebaseUser.uid, epoch, read)) {
+            unawaited(_loadUserData(firebaseUser.uid));
+          }
+        },
+        onError: (Object error) => _stopAuthUpdates(version),
+        onDone: () => _stopAuthUpdates(version),
+      );
+      if (_disposed || version != _authVersion) {
+        unawaited(
+          subscription.cancel().catchError((Object error) {
+            debugPrint('Associate auth listener cleanup failed');
+          }),
+        );
+      } else {
+        _authSubscription = subscription;
+      }
+    } catch (_) {
+      _stopAuthUpdates(version);
+    }
+  }
+
+  void _cancelAuthSubscription() {
+    final subscription = _authSubscription;
+    _authSubscription = null;
+    if (subscription != null) {
+      unawaited(
+        subscription.cancel().catchError((Object error) {
+          debugPrint('Associate auth listener cleanup failed');
+        }),
+      );
+    }
+  }
+
+  void _stopAuthUpdates(int version) {
+    if (_disposed || version != _authVersion) return;
+    ++_authVersion;
+    _cancelAuthSubscription();
+    _pendingRefusal = null;
+    _bindOwner(_auth.currentUser?.uid, renew: true);
+    _isLoading = false;
+    if (_profileOwner != null) {
+      _gateError = 'Account updates paused. Please refresh your account.';
+    }
+    notifyListeners();
+  }
+
+  void _bindOwner(String? owner, {bool renew = false}) {
+    if (_disposed || (!renew && owner == _profileOwner)) return;
+    final refusal = owner == null ? _pendingRefusal : null;
+    _pendingRefusal = null;
+    _profileOwner = owner;
+    ++_sessionEpoch;
+    ++_profileRead;
+    _user = null;
+    _approved = false;
+    _gateError = refusal;
+    _error = null;
+    _isLoading = owner != null;
+  }
+
+  bool _readIsCurrent(String uid, int epoch, int read) =>
+      !_disposed &&
+      uid == _profileOwner &&
+      uid == _auth.currentUser?.uid &&
+      epoch == _sessionEpoch &&
+      read == _profileRead;
+
+  Future<void> refreshUserData() async {
+    if (_disposed) return;
+    final uid = _auth.currentUser?.uid;
+    if (uid == null) return;
+    _listenForAuth();
+    await _loadUserData(uid);
+  }
+
+  Future<DocumentSnapshot<Map<String, dynamic>>> _readDocument(
+    String collection,
+    String uid,
+    int epoch,
+    int read,
+  ) {
+    final reference = _firestore.collection(collection).doc(uid);
+    return reference.get().timeout(
+      const Duration(milliseconds: 2500),
+      onTimeout: () {
+        if (!_readIsCurrent(uid, epoch, read)) {
+          throw StateError('Associate read superseded');
+        }
+        return reference.get(const GetOptions(source: Source.cache));
+      },
+    );
   }
 
   Future<void> _loadUserData(String uid) async {
-    // Phase 18: authStateChanges ALSO drives this method, so a single sign-in
-    // runs it TWICE — once from the listener, once from the explicit call in
-    // signIn()/verifyPhoneOtpAndSignIn() — and the two passes overlap.
-    //
-    // That matters because a rejecting pass signs the user out. Whichever
-    // pass loses the race then finds itself unauthenticated, its
-    // users/{uid} read is denied by firestore.rules, and without this guard
-    // it would land in the catch below and replace a specific, honest
-    // explanation ("this number isn't registered as an associate") with a
-    // useless generic one ("Failed to load user data").
-    //
-    // So: if the signed-in user is no longer the one this pass was started
-    // for, another pass has already resolved the outcome. Abort, and leave
-    // its verdict alone.
-    if (_auth.currentUser?.uid != uid) return;
+    if (_disposed || _auth.currentUser?.uid != uid) return;
+    _bindOwner(uid);
+    final epoch = _sessionEpoch, read = ++_profileRead;
+    _user = null;
+    _approved = false;
+    _gateError = null;
+    _error = null;
+    _isLoading = true;
+    notifyListeners();
+    if (!_readIsCurrent(uid, epoch, read)) return;
     try {
-      _error = null;
-
-      // Phase EMP-3: Fast-path instant cache resolution (<30ms).
-      // Eliminates startup delay on app resume/reopen.
-      DocumentSnapshot<Map<String, dynamic>>? cachedUserDoc;
-      try {
-        cachedUserDoc = await _firestore
-            .collection('users')
-            .doc(uid)
-            .get(const GetOptions(source: Source.cache));
-      } catch (_) {}
-
-      if (_auth.currentUser?.uid != uid) return;
-
-      if (cachedUserDoc != null && cachedUserDoc.exists) {
-        _user = UserModel.fromFirestore(cachedUserDoc);
-        DocumentSnapshot<Map<String, dynamic>>? cachedEmpDoc;
-        try {
-          cachedEmpDoc = await _firestore
-              .collection('employees')
-              .doc(uid)
-              .get(const GetOptions(source: Source.cache));
-        } catch (_) {}
-
-        if (cachedEmpDoc != null && cachedEmpDoc.exists) {
-          final status = cachedEmpDoc.data()?['status'] ?? 'pending';
-          if (status == 'approved') {
-            _isLoading = false;
-            notifyListeners();
-          }
-        }
+      // Preserve the bounded cache fallback, but do not publish a user while
+      // the corresponding approval check is still in flight.
+      final document = await _readDocument('users', uid, epoch, read);
+      if (!_readIsCurrent(uid, epoch, read)) return;
+      final profile = document.exists
+          ? UserModel.fromFirestore(document)
+          : null;
+      if (profile == null || !profile.isEmployee) {
+        final subject = _signInMethod == AssociateSignInMethod.phone
+            ? "This mobile number isn't registered"
+            : "This account isn't registered";
+        await _refuse(
+          uid,
+          epoch,
+          read,
+          '$subject as an Agrimore Sales Associate. To become one, apply '
+          'from the Agrimore customer app under Profile.',
+        );
+        return;
       }
-
-      // Phase EMP-3: Network sync with 2500ms timeout falling back to cache.
-      final doc = await _firestore
-          .collection('users')
-          .doc(uid)
-          .get()
-          .timeout(
-            const Duration(milliseconds: 2500),
-            onTimeout: () => _firestore
-                .collection('users')
-                .doc(uid)
-                .get(const GetOptions(source: Source.cache)),
-          );
-
-      if (_auth.currentUser?.uid != uid) return;
-      if (doc.exists) {
-        _user = UserModel.fromFirestore(doc);
-        await _applyAssociateGate(uid);
+      final employee = await _readDocument('employees', uid, epoch, read);
+      if (!_readIsCurrent(uid, epoch, read)) return;
+      if (!employee.exists) {
+        await _refuse(
+          uid,
+          epoch,
+          read,
+          'We could not find your Sales Associate profile. '
+          'Please contact support.',
+        );
+        return;
+      }
+      final status = employee.data()?['status'] ?? 'pending';
+      _user = profile;
+      if (status == 'suspended') {
+        _gateError = 'Your associate account has been suspended.';
+      } else if (status != 'approved') {
+        _gateError = 'Your account is pending approval by an administrator.';
       } else {
-        // Phase 18, Workstream 3: previously this branch did nothing at all —
-        // _user stayed null, _error stayed null, and the user was bounced to
-        // a login screen showing no explanation whatsoever. verifyPhoneOTP.ts
-        // always creates users/{uid}, so this should be unreachable on the
-        // phone path, but "should be unreachable" is not a reason to leave a
-        // silent dead end in an auth flow.
-        await _rejectNonAssociate(uid);
+        _approved = true;
       }
-    } catch (e) {
-      // Being signed out mid-flight by the other pass is an EXPECTED way to
-      // land here, and it is not a load failure worth reporting — see the
-      // guard note above.
-      if (_auth.currentUser?.uid != uid) return;
-      if (_user == null) {
-        _error = 'Failed to load user data';
-      }
-      debugPrint('Error loading user: $e');
-    } finally {
       _isLoading = false;
       notifyListeners();
-    }
-  }
-
-  /// Phase 18, Workstream 3 — the ONE post-authentication gate.
-  ///
-  /// Both sign-in paths (email/password and phone OTP) run this identical
-  /// check. It is deliberately a single implementation rather than one copy
-  /// per path: a divergence here would mean one door into the app enforced
-  /// approval and the other did not.
-  ///
-  /// Assumes [_user] has just been populated from users/{uid}.
-  Future<void> _applyAssociateGate(String uid) async {
-    // STRICT ROLE CHECK FOR THE SALES ASSOCIATE APP
-    if (!_user!.isEmployee) {
-      debugPrint(
-          '⛔ Unauthorized access attempt by non-associate: ${_user!.email}');
-      await _rejectNonAssociate(uid);
-      return;
-    }
-
-    final employeeDoc = await _firestore
-        .collection('employees')
-        .doc(uid)
-        .get()
-        .timeout(
-          const Duration(milliseconds: 2500),
-          onTimeout: () => _firestore
-              .collection('employees')
-              .doc(uid)
-              .get(const GetOptions(source: Source.cache)),
-        );
-    // Same overlapping-pass guard as _loadUserData — a concurrent pass may
-    // have signed this user out while the read above was in flight.
-    if (_auth.currentUser?.uid != uid) return;
-    if (!employeeDoc.exists) {
-      await _auth.signOut();
+      if (_approved && _readIsCurrent(uid, epoch, read)) {
+        await _updateFCMToken(uid, epoch: epoch, read: read);
+      }
+    } catch (_) {
+      if (!_readIsCurrent(uid, epoch, read)) return;
       _user = null;
-      _error = 'We could not find your Sales Associate profile. '
-          'Please contact support.';
-      return;
-    }
-
-    final status = employeeDoc.data()?['status'] ?? 'pending';
-    // Phase 16C, Workstream 5: previously ANY non-approved status —
-    // including 'suspended' — produced this exact same "pending
-    // approval" message, so a suspended associate (who may have
-    // been approved and working for months) was told they were
-    // still under initial review. Distinguishing the two is the
-    // ONLY change here — the check that gates FCM registration on
-    // status == 'approved' is untouched, and this still does not
-    // touch signIn()/OTP/the auth mechanism itself.
-    //
-    // ⚠️ app.dart's _AuthGate routes on error!.contains('suspended') and
-    // error!.contains('pending'). These two strings are load-bearing — do
-    // not reword them without updating that routing.
-    if (status == 'suspended') {
-      _error = 'Your associate account has been suspended.';
-    } else if (status != 'approved') {
-      _error = 'Your account is pending approval by an administrator.';
-    } else {
-      await _updateFCMToken(uid);
+      _approved = false;
+      _gateError = 'Failed to load user data';
+      debugPrint('Associate profile could not be resolved');
+    } finally {
+      if (_readIsCurrent(uid, epoch, read)) {
+        _isLoading = false;
+        notifyListeners();
+      }
     }
   }
 
-  /// Signs out and explains why, in words that are true for the method the
-  /// user actually used.
-  ///
-  /// ⚠️ Neither message may contain the substrings 'pending' or 'suspended'
-  /// — app.dart's _AuthGate routes on those, and a stray match here would
-  /// send a total stranger to the "pending approval" screen.
-  Future<void> _rejectNonAssociate(String uid) async {
-    // CTO review, 2026-09-03: the same overlapping-pass guard the other
-    // three read/write sites in this file already carry, added here too —
-    // this call site was the one gap in the "identity guard before every
-    // _error write" claim. If the current Firebase Auth session is no
-    // longer this pass's target uid, another pass already resolved (and
-    // signed out) this same sign-in attempt, or a brand-new attempt has
-    // superseded it entirely; either way this pass's verdict is stale and
-    // must not sign out again or overwrite whatever _error is now current.
-    if (_auth.currentUser?.uid != uid) return;
-    await _auth.signOut();
+  Future<void> _refuse(String uid, int epoch, int read, String message) async {
+    if (!_readIsCurrent(uid, epoch, read)) return;
+    _pendingRefusal = message;
+    _gateError = message;
     _user = null;
-    final subject = _signInMethod == AssociateSignInMethod.phone
-        ? "This mobile number isn't registered"
-        : "This account isn't registered";
-    _error = '$subject as an Agrimore Sales Associate. To become one, apply '
-        'from the Agrimore customer app under Profile.';
+    _approved = false;
+    notifyListeners();
+    if (!_readIsCurrent(uid, epoch, read)) return;
+    await _auth.signOut();
+    // The owned null callback normally carries the refusal. Accommodate the
+    // SDK updating currentUser before delivering that callback as well.
+    if (!_disposed &&
+        _profileOwner == uid &&
+        epoch == _sessionEpoch &&
+        read == _profileRead &&
+        _auth.currentUser == null) {
+      _bindOwner(null);
+      notifyListeners();
+    }
   }
 
   // ============================================
@@ -406,23 +440,32 @@ class EmployeeAuthProvider extends ChangeNotifier {
     }
   }
 
-  Future<void> _updateFCMToken(String uid) async {
+  Future<void> _updateFCMToken(String uid, {int? epoch, int? read}) async {
+    final capturedEpoch = epoch ?? _sessionEpoch,
+        capturedRead = read ?? _profileRead;
+    if (const bool.fromEnvironment(
+      'USE_FIREBASE_EMULATOR',
+      defaultValue: false,
+    )) {
+      return;
+    }
+    bool current() =>
+        _approved &&
+        user?.isEmployee == true &&
+        _readIsCurrent(uid, capturedEpoch, capturedRead);
+    if (!current()) return;
     try {
-      // Dynamically import to avoid issues on unsupported platforms
       final messaging = await _getMessagingInstance();
-      if (messaging == null) return;
-
+      if (messaging == null || !current()) return;
       final token = await messaging.getToken();
-      if (token != null) {
-        await _firestore.collection('users').doc(uid).update({
-          'fcmTokens': FieldValue.arrayUnion([token]),
-          'fcmToken': token,
-          'lastTokenUpdate': FieldValue.serverTimestamp(),
-        });
-        debugPrint('✅ FCM token updated for associate: $uid');
-      }
-    } catch (e) {
-      debugPrint('⚠️ FCM token update skipped: $e');
+      if (token == null || !current()) return;
+      await _firestore.collection('users').doc(uid).update({
+        'fcmTokens': FieldValue.arrayUnion([token]),
+        'fcmToken': token,
+        'lastTokenUpdate': FieldValue.serverTimestamp(),
+      });
+    } catch (_) {
+      debugPrint('Associate push registration skipped');
     }
   }
 
@@ -440,8 +483,18 @@ class EmployeeAuthProvider extends ChangeNotifier {
   }
 
   Future<void> signOut() async {
+    if (_disposed) return;
+    final uid = _auth.currentUser?.uid, epoch = _sessionEpoch;
+    if (uid == null || uid != _profileOwner) return;
     await _auth.signOut();
+    if (_disposed ||
+        epoch != _sessionEpoch ||
+        _profileOwner != uid ||
+        (_auth.currentUser != null && _auth.currentUser?.uid != uid)) {
+      return;
+    }
     _user = null;
+    _approved = false;
     _signInMethod = AssociateSignInMethod.unknown;
     notifyListeners();
   }
@@ -450,4 +503,24 @@ class EmployeeAuthProvider extends ChangeNotifier {
     _error = null;
     notifyListeners();
   }
+
+  @override
+  void notifyListeners() {
+    if (!_disposed) super.notifyListeners();
+  }
+
+  @override
+  void dispose() {
+    if (_disposed) return;
+    _disposed = true;
+    ++_authVersion;
+    ++_sessionEpoch;
+    ++_profileRead;
+    _approved = false;
+    _user = null;
+    _cancelAuthSubscription();
+    super.dispose();
+  }
+
+
 }
