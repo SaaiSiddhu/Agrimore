@@ -15,7 +15,7 @@ import { log } from "../common/helpers";
 import { getRazorpayCredentials, RAZORPAY_KEY_SECRET } from "../customer/payment";
 import { loadOnboardingConfig, ONBOARDING_PURPOSE } from "./onboardingConfig";
 import { ASSOCIATE_DISPLAY_TERM } from "./associateTerm";
-import { razorpayModeFromKey } from "../common/paymentIntegrity";
+import { isSafeProviderId, razorpayModeFromKey } from "../common/paymentIntegrity";
 
 // Mirrors sendPhoneOTP.ts's RESEND_COOLDOWN_MS (30s) — the same
 // "long enough to stop scripted spam, short enough not to punish a genuine
@@ -37,7 +37,7 @@ export const createAssociateOnboardingPayment = onCall(
 
     // Amount comes ONLY from server config — never from the client (S8).
     const config = await loadOnboardingConfig(db);
-    if (!config.valid || !config.isEnabled || typeof config.feeAmount !== "number") {
+    if (!config.valid || !config.isEnabled || typeof config.feeAmount !== "number" || config.currency !== "INR") {
       throw new HttpsError(
         "failed-precondition",
         `${ASSOCIATE_DISPLAY_TERM} onboarding payment is not available right now. Please try again later.`
@@ -116,6 +116,9 @@ export const createAssociateOnboardingPayment = onCall(
         configVersion: String(config.configVersion),
       },
     });
+    if (!isSafeProviderId(order.id) || order.amount !== Math.round(config.feeAmount * 100) || order.currency !== config.currency) {
+      throw new HttpsError("failed-precondition", "Payment order did not match the configured onboarding fee");
+    }
 
     await rateLimitRef.set(
       { lastRequestAt: admin.firestore.FieldValue.serverTimestamp() },

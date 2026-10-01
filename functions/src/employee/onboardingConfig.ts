@@ -44,6 +44,7 @@
 // scripts/phase16b4_fee_single_source_test.js can use them directly.
 
 import * as admin from "firebase-admin";
+import { isExactMoneyAmount } from "../common/paymentIntegrity";
 
 export const ONBOARDING_PURPOSE = "associate_onboarding";
 const SETTINGS_COLLECTION = "settings";
@@ -222,11 +223,8 @@ export function interpolateFeeAmount<T>(value: T, feeAmount: number | null, curr
 // "rs"/"inr" substring in any of those, so the pattern never fires on them.
 const CURRENCY_MENTION_PATTERN = /(?:₹|\brs\.?|\binr)\s*([\d][\d,]*(?:\.\d+)?)/gi;
 
-// Same purpose as activationCore.ts's ONBOARDING_AMOUNT_TOLERANCE (0.01) —
-// that constant is module-private there and not exported, so this is a
-// deliberately separate constant with the same value and the same
-// justification: absorbing floating-point noise only, never a genuine
-// amount discrepancy.
+// Copy scanning retains its spelling tolerance. Financial activation uses
+// exact provider minor units in matchesMoneyInPaise, independently of copy.
 const FEE_MISMATCH_TOLERANCE = 0.01;
 
 // Reuses collectStringLeaves — the exact traversal interpolateFeeToken()
@@ -509,8 +507,7 @@ export async function loadOnboardingConfig(
   const raw = snap.data() || {};
 
   const feeAmountRaw = raw.feeAmount;
-  const feeAmountValid =
-    typeof feeAmountRaw === "number" && Number.isFinite(feeAmountRaw) && feeAmountRaw > 0;
+  const feeAmountValid = isExactMoneyAmount(feeAmountRaw);
 
   const currencyRaw = raw.currency;
   const currencyValid = typeof currencyRaw === "string" && currencyRaw.trim().length === 3;

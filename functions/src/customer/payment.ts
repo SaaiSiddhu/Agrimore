@@ -5,7 +5,7 @@ import axios from "axios";
 import Razorpay from "razorpay";
 import { createHmac, randomBytes, timingSafeEqual } from "crypto";
 import { log } from "../common/helpers";
-import { isLocalPaymentEmulator, isLocalPaymentStorage, isSafeProviderId, razorpayModeFromKey } from "../common/paymentIntegrity";
+import { isLocalPaymentEmulator, isLocalPaymentStorage, isPaymentPurpose, isSafeProviderId, razorpayModeFromKey } from "../common/paymentIntegrity";
 
 // Phase 18, Workstream 1: Secret Manager binding. Every function below (and
 // every indirect importer of getRazorpayCredentials() — wallet.ts,
@@ -47,6 +47,7 @@ interface CreateOrderData {
   currency?: string;
   receipt?: string;
   notes?: Record<string, string>;
+  purpose?: string;
   // FIX-9, WS8. `transfers` removed — accepted from the client, destructured,
   // and never referenced again anywhere in this function. Agrimore does not
   // use Razorpay Route; seller payouts are computed and disbursed by this
@@ -68,7 +69,8 @@ function requireOwnedOrder(
   if (order.orderId !== orderId || !Number.isSafeInteger(order.amountPaise) ||
       order.amountPaise <= 0 || typeof order.amount !== "number" ||
       !Number.isFinite(order.amount) || Math.round(order.amount * 100) !== order.amountPaise ||
-      order.currency !== "INR" || (sandbox ? order.isTestOrder !== true : order.isTestOrder === true)) {
+      order.currency !== "INR" || (order.purpose !== undefined && !isPaymentPurpose(order.purpose)) ||
+      (sandbox ? order.isTestOrder !== true : order.isTestOrder === true)) {
     throw new HttpsError("failed-precondition", "Payment could not be verified for your account");
   }
   if (order.providerMode !== undefined &&
@@ -91,7 +93,7 @@ export const createRazorpayOrder = onCall(
         );
       }
 
-      const { amount, currency = "INR", receipt, notes } = data || {};
+      const { amount, currency = "INR", receipt, notes, purpose } = data || {};
       const amountPaise = Math.round(amount * 100);
 
       if (typeof amount !== "number" || !Number.isFinite(amount) || amount <= 0 ||
@@ -103,6 +105,9 @@ export const createRazorpayOrder = onCall(
       }
       if (currency !== "INR") {
         throw new HttpsError("invalid-argument", "Currency must be INR");
+      }
+      if (purpose !== undefined && !["goods_checkout", "rfq_checkout", "wallet_topup"].includes(purpose)) {
+        throw new HttpsError("invalid-argument", "Invalid payment purpose");
       }
 
       const { keyId: RAZORPAY_KEY_ID, keySecret: RAZORPAY_KEY_SECRET } =
@@ -119,6 +124,7 @@ export const createRazorpayOrder = onCall(
         // here is still a forged attribution on a financial record.
         notes: {
           ...notes,
+          ...(purpose !== undefined ? { purpose } : {}),
           userId: request.auth.uid,
         },
       };
@@ -179,6 +185,7 @@ export const createRazorpayOrder = onCall(
         receipt: order.receipt || orderOptions.receipt,
         isTestOrder: isTestMode,
         providerMode: isTestMode ? "test" : razorpayModeFromKey(RAZORPAY_KEY_ID),
+        ...(purpose !== undefined ? { purpose } : {}),
         createdAt: admin.firestore.FieldValue.serverTimestamp(),
       });
 
@@ -306,6 +313,7 @@ export const verifyRazorpayPayment = onCall(
           if (existing.userId !== uid || existing.orderId !== orderId ||
               existing.paymentId !== paymentId || existing.amount !== payment.amount / 100 ||
               (existing.providerMode !== undefined && existing.providerMode !== (sandbox ? "test" : providerMode)) ||
+              (stored.purpose !== undefined && existing.purpose !== undefined && existing.purpose !== stored.purpose) ||
               (existing.currency != null && existing.currency !== payment.currency)) {
             throw new HttpsError("failed-precondition", "Payment could not be verified for your account");
           }

@@ -57,7 +57,7 @@ import * as admin from "firebase-admin";
 import { FieldValue } from "firebase-admin/firestore";
 import Razorpay from "razorpay";
 import { log } from "../common/helpers";
-import { isSpendableCapturedPayment, razorpayModeFromKey } from "../common/paymentIntegrity";
+import { isSafeProviderId, isSpendableCapturedPayment, matchesMoneyInPaise, razorpayModeFromKey } from "../common/paymentIntegrity";
 import { getRazorpayCredentials, RAZORPAY_KEY_SECRET } from "../customer/payment";
 import {
   AI_KEY_ENCRYPTION_SECRET,
@@ -76,12 +76,8 @@ const SELLER_AI_ORDER_PURPOSE = "seller_ai_activation";
 // its own cost and rate implications even before any payment is made.
 const RATE_LIMIT_WINDOW_MS = 30 * 1000;
 
-// Mirrors activationCore.ts's ONBOARDING_AMOUNT_TOLERANCE reasoning
-// exactly: this absorbs ONLY Razorpay's paise-to-rupee floating-point
-// division noise (payment.ts's `payment.amount / 100`), never a genuine
-// under/overpayment — ACTIVATION_FEE itself is a fixed constant, not a
-// multi-component computed total.
-const SELLER_AI_AMOUNT_TOLERANCE = 0.01;
+// The fixed activation fee matches in provider minor units, without a
+// floating-point tolerance that could admit a genuine one-paise gap.
 
 // Security lane finding (self-caught before VERIFY): createAssociateOnboardingPayment.ts
 // requires employees/{uid} to already exist before it will take a payment —
@@ -150,6 +146,9 @@ export const createSellerAiActivationOrder = onCall(
       receipt: `seller_ai_${uid}_${Date.now()}`,
       notes: { purpose: SELLER_AI_ORDER_PURPOSE, userId: uid },
     });
+    if (!isSafeProviderId(order.id) || order.amount !== Math.round(ACTIVATION_FEE * 100) || order.currency !== "INR") {
+      throw new HttpsError("failed-precondition", "Payment order did not match the configured activation fee");
+    }
 
     await rateLimitRef.set(
       { lastRequestAt: FieldValue.serverTimestamp() },
@@ -258,12 +257,12 @@ export const connectSellerAiProvider = onCall(
             log.error(`❌ Seller AI activation: payment ${paymentId} belongs to a different user (uid=${uid})`);
             throw new HttpsError("failed-precondition", GENERIC_PAYMENT_FAILURE_MESSAGE);
           }
-          if (!isSpendableCapturedPayment(payment, paymentId)) {
+          if (!isSpendableCapturedPayment(payment, paymentId, "seller_ai_activation")) {
             log.error(`❌ Seller AI activation: payment ${paymentId} not captured (status=${payment.status})`);
             throw new HttpsError("failed-precondition", GENERIC_PAYMENT_FAILURE_MESSAGE);
           }
           const paidAmount = typeof payment.amount === "number" ? payment.amount : -1;
-          if (Math.abs(paidAmount - ACTIVATION_FEE) > SELLER_AI_AMOUNT_TOLERANCE) {
+          if (!matchesMoneyInPaise(paidAmount, ACTIVATION_FEE)) {
             log.error(`❌ Seller AI activation: payment ${paymentId} amount mismatch (paid=${paidAmount})`);
             throw new HttpsError("failed-precondition", GENERIC_PAYMENT_FAILURE_MESSAGE);
           }

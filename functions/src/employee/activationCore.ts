@@ -19,7 +19,7 @@
 
 import * as admin from "firebase-admin";
 import { log } from "../common/helpers";
-import { isSpendableCapturedPayment } from "../common/paymentIntegrity";
+import { isSpendableCapturedPayment, matchesMoneyInPaise } from "../common/paymentIntegrity";
 import { loadOnboardingConfig } from "./onboardingConfig";
 
 export type ActivationSource = "client" | "webhook" | "reconciler";
@@ -40,7 +40,8 @@ export type ActivationFailureCode =
   // payment already spent on a seller's AI Assistant activation must not
   // also activate onboarding.
   | "payment_already_consumed_by_seller_ai_activation"
-  | "employee_not_found";
+  | "employee_not_found"
+  | "employee_onboarding_refunded";
 
 export interface ActivationResult {
   ok: boolean;
@@ -58,17 +59,8 @@ export interface ActivationParams {
   source: ActivationSource;
 }
 
-// Amount-match tolerance (Workstream 5c.5 decision — see the completion
-// report's Decisions section for the full justification). Unlike
-// createOrder.ts's ±₹1 tolerance on a MULTI-COMPONENT computed total
-// (subtotal - discount + delivery + tax, which can accumulate real
-// per-seller rounding error — see roundMoney() calls throughout
-// createOrder.ts), the onboarding fee is a single, fixed,
-// server-configured number with no arithmetic performed on it anywhere.
-// This tolerance exists ONLY to absorb floating-point representation noise
-// from Razorpay's paise-to-rupee division (payment.amount / 100 in
-// payment.ts), never to permit a genuine underpayment or overpayment.
-const ONBOARDING_AMOUNT_TOLERANCE = 0.01;
+// The single configured fee must match in provider minor units. This
+// absorbs representation noise without accepting a genuine one-paise gap.
 
 export async function performOnboardingActivation(
   params: ActivationParams
@@ -88,7 +80,7 @@ export async function performOnboardingActivation(
     // ============================================
     // VALIDATION — fail closed at every step (S9)
     // ============================================
-    if (!config.valid) {
+    if (!config.valid || config.currency !== "INR") {
       return { ok: false, failureCode: "config_invalid" as const };
     }
     if (!config.isEnabled) {
@@ -109,12 +101,12 @@ export async function performOnboardingActivation(
     if (!payment.userId || payment.userId !== uid) {
       return { ok: false, failureCode: "payment_wrong_user" as const };
     }
-    if (!isSpendableCapturedPayment(payment, paymentId)) {
+    if (!isSpendableCapturedPayment(payment, paymentId, "associate_onboarding")) {
       return { ok: false, failureCode: "payment_not_captured" as const };
     }
 
     const paidAmount = typeof payment.amount === "number" ? payment.amount : -1;
-    if (Math.abs(paidAmount - (config.feeAmount as number)) > ONBOARDING_AMOUNT_TOLERANCE) {
+    if (!matchesMoneyInPaise(paidAmount, config.feeAmount as number)) {
       return { ok: false, failureCode: "payment_amount_mismatch" as const };
     }
 
@@ -122,6 +114,11 @@ export async function performOnboardingActivation(
       return { ok: false, failureCode: "employee_not_found" as const };
     }
     const employee = employeeSnap.data()!;
+    // Mirror createAssociateOnboardingPayment's existing review policy for
+    // every activation channel, including previously created fee orders.
+    if (employee.onboardingRefundedAt) {
+      return { ok: false, failureCode: "employee_onboarding_refunded" as const };
+    }
 
     // IDEMPOTENCY (S3, Workstream 5c.9) — checked BEFORE the
     // consumption-marker checks below, deliberately. An associate who
@@ -145,14 +142,9 @@ export async function performOnboardingActivation(
       return { ok: true, alreadyActive: true, employeeId: uid };
     }
 
-    // Cross-consumption guard, one direction only (S3): a payment already
-    // spent on a real order can never also activate onboarding. NOTE: the
-    // reverse direction — createOrder.ts rejecting a payment already
-    // consumed BY onboarding — is NOT enforced, because createOrder.ts is
-    // out of this phase's scope to edit. This is a real, confirmed
-    // residual finding; see the completion report's Security Caveats
-    // section (item X) for the exact line numbers and recommended Phase
-    // 16B fix.
+    // A payment spent on goods cannot activate onboarding. Goods, RFQ,
+    // wallet and seller activation consumers also reject this namespace,
+    // so the single-use contract holds in both directions.
     if (payment.consumedByOrderId) {
       return { ok: false, failureCode: "payment_already_consumed_by_order" as const };
     }

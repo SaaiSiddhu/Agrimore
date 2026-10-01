@@ -703,7 +703,7 @@ export const createOrder = onCall({ minInstances: 0, memory: "256MiB" }, async (
       if (payment.orderId !== razorpayOrderId) {
         throw new HttpsError("failed-precondition", "Payment does not match this order");
       }
-      if (!isSpendableCapturedPayment(payment, razorpayPaymentId)) {
+      if (!isSpendableCapturedPayment(payment, razorpayPaymentId, "goods_checkout")) {
         throw new HttpsError("failed-precondition", "Payment was not captured");
       }
       const verifiedAmount = typeof payment.amount === "number" ? payment.amount : -1;

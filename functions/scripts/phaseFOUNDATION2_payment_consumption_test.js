@@ -108,6 +108,13 @@ async function allowed(f, kind) {
     ["failed signature", { signatureVerified: false }], ["inconsistent minor units", { amountPaise: 1 }],
   ];
   for (const kind of ["goods", "rfq", "associate", "seller", "wallet"]) {
+    const expectedPurpose = { goods: "goods_checkout", rfq: "rfq_checkout", associate: "associate_onboarding", seller: "seller_ai_activation", wallet: "wallet_topup" }[kind];
+    for (const purpose of ["goods_checkout", "rfq_checkout", "associate_onboarding", "seller_ai_activation", "wallet_topup", 42]) {
+      await scenario(`${kind} ${purpose === expectedPurpose ? "allows" : "rejects"} explicit purpose ${purpose}`, async () => {
+        const f = await fixture(kind, { purpose });
+        if (purpose === expectedPurpose) await allowed(f, kind); else await refused(f);
+      });
+    }
     for (const [label, overrides] of badRecords) {
       await scenario(`${kind} rejects ${label}`, async () => refused(await fixture(kind, typeof overrides === "function" ? overrides() : overrides)));
     }
