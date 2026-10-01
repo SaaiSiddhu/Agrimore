@@ -392,7 +392,10 @@ class CheckoutRecoveryService {
   Future<List<CheckoutReceipt>> confirm(String ownerId, String requestId) =>
       _locked(ownerId, () async {
         var request = await _require(ownerId, requestId);
-        if (request.stage == 'completed') return request.receipts;
+        if (request.stage == 'completed') {
+          await _finishSubscriptions(request);
+          return request.receipts;
+        }
         if (request.intent['paymentMethod'] == 'cod' &&
             request.stage == 'draft') {
           request =
@@ -440,13 +443,38 @@ class CheckoutRecoveryService {
           throw StateError('Order could not be confirmed.');
         }
         final receipts = CheckoutReceipt.parse(result.data['orders']);
-        await _save(ownerId, {
+        final completed = await _save(ownerId, {
           ...request.toMap(),
           'stage': 'completed',
           'orders': receipts.map((r) => r.toMap()).toList()
         });
+        await _finishSubscriptions(completed);
         return receipts;
       });
+
+  Future<void> _finishSubscriptions(PendingCheckoutRequest request) async {
+    if (request.intent['orderType'] != 'Auto Delivery') return;
+    _checkOwner(request.ownerId);
+    final result = await (_functions ?? FirebaseFunctions.instance)
+        .httpsCallable('ensureCheckoutSubscriptions',
+            options: HttpsCallableOptions(timeout: const Duration(seconds: 25)))
+        .call<Map<String, dynamic>>({
+      'checkoutOwnerId': request.ownerId,
+      'checkoutRequestId': request.requestId,
+    });
+    _checkOwner(request.ownerId);
+    final data = result.data, ids = data['subscriptionIds'];
+    if (data['success'] != true ||
+        data['checkoutRequestId'] != request.requestId ||
+        ids is! List ||
+        ids.isEmpty ||
+        ids.length > 100 ||
+        ids.any(
+            (id) => id is! String || !RegExp(r'^[a-f0-9]{64}$').hasMatch(id)) ||
+        ids.toSet().length != ids.length) {
+      throw StateError('Auto-Delivery setup could not be confirmed.');
+    }
+  }
 
   Future<void> acknowledge(String ownerId, String requestId) =>
       _locked(ownerId, () async {
