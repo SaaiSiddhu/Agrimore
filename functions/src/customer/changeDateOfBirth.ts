@@ -59,6 +59,9 @@ export const changeDateOfBirth = onCall(
     // caller's own document, same reasoning completeUserProfile.ts states
     // for the identical choice.
     const uid = request.auth.uid;
+    if (request.data?.expectedOwnerId !== undefined && request.data.expectedOwnerId !== uid) {
+      throw new HttpsError("permission-denied", "Profile change does not belong to this account");
+    }
 
     const dob = parseDateOfBirth(request.data?.dateOfBirth);
     if (!dob) {

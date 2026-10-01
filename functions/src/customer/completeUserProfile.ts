@@ -88,6 +88,9 @@ export const completeUserProfile = onCall(
     // caller's own document. Accepting one is exactly the shape
     // privilege-escalation bugs are made of.
     const uid = request.auth.uid;
+    if (request.data?.expectedOwnerId !== undefined && request.data.expectedOwnerId !== uid) {
+      throw new HttpsError("permission-denied", "Profile change does not belong to this account");
+    }
 
     const db = admin.firestore();
     const userRef = db.collection("users").doc(uid);

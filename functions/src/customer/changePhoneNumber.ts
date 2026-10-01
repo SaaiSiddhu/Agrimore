@@ -43,6 +43,9 @@ export const changePhoneNumber = onCall(
       throw new HttpsError("unauthenticated", "Sign in required");
     }
     const uid = request.auth.uid;
+    if (request.data?.expectedOwnerId !== undefined && request.data.expectedOwnerId !== uid) {
+      throw new HttpsError("permission-denied", "Profile change does not belong to this account");
+    }
 
     const rawPhone = String(request.data?.phone || "").trim();
     const otp = String(request.data?.otp || "").trim();
