@@ -19,10 +19,13 @@ import '../providers/location_provider.dart';
 Future<void> riderSignOut(BuildContext context) async {
   final auth = context.read<DeliveryAuthProvider>();
   final location = context.read<LocationProvider>();
+  final owner = auth.sessionUid;
+  final session = auth.sessionVersion;
   final uid = auth.user?.uid;
+  if (!auth.isCurrentSession(owner, session)) return;
   location.stopTracking();
   if (uid != null) await location.setOnlineStatus(uid, false);
-  await auth.signOut();
+  if (auth.isCurrentSession(owner, session)) await auth.signOut();
 }
 
 /// Why an account action did not go through. Worded by the screen.

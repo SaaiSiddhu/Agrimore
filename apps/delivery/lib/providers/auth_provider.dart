@@ -43,7 +43,10 @@ enum RiderAuthProblem {
 
 /// Sign-in error code → [RiderAuthProblem].
 RiderAuthProblem authProblemOf(String code) => switch (code) {
-      'invalid-credential' || 'wrong-password' || 'user-not-found' || 'INVALID_LOGIN_CREDENTIALS' =>
+      'invalid-credential' ||
+      'wrong-password' ||
+      'user-not-found' ||
+      'INVALID_LOGIN_CREDENTIALS' =>
         RiderAuthProblem.wrongCredentials,
       'invalid-email' => RiderAuthProblem.invalidEmail,
       'too-many-requests' => RiderAuthProblem.tooManyAttempts,
@@ -53,11 +56,15 @@ RiderAuthProblem authProblemOf(String code) => switch (code) {
     };
 
 class DeliveryAuthProvider extends ChangeNotifier {
-  DeliveryAuthProvider({RiderAuthGateway? gateway, RiderAccountStore? store, RiderPushTokens? pushTokens})
+  DeliveryAuthProvider(
+      {RiderAuthGateway? gateway,
+      RiderAccountStore? store,
+      RiderPushTokens? pushTokens})
       : _gateway = gateway ?? FirebaseRiderAuthGateway(),
         _store = store ?? FirestoreRiderAccountStore(),
         _push = pushTokens ?? FcmPushTokens() {
-    _authSub = _gateway.uidChanges.listen(_onAuthChanged);
+    _authSub =
+        _gateway.uidChanges.listen(_onAuthChanged, onError: _onAuthError);
   }
 
   final RiderAuthGateway _gateway;
@@ -69,6 +76,9 @@ class DeliveryAuthProvider extends ChangeNotifier {
   StreamSubscription<String>? _tokenSub;
 
   int _session = 0;
+  int _tokenWork = 0;
+  String? _sessionOwner;
+  bool _disposed = false;
   Completer<void>? _sessionReady;
 
   UserModel? _user;
@@ -90,40 +100,73 @@ class DeliveryAuthProvider extends ChangeNotifier {
   String? _offlineReason;
   String? _registeredToken;
 
-  UserModel? get user => _user;
-  /// The session is being resolved (start-up, or loading an accepted
-  /// account's profile). The gate shows a loading screen.
-  bool get isLoading => _isLoading;
-  bool get signingIn => _signingIn;
+  bool get _stateCurrent => !_disposed && _sessionOwner == _gateway.currentUid;
 
-  /// Signed in, but no rider record exists yet: registration continues.
-  bool get needsRegistration => _needsRegistration && _gateway.currentUid != null;
-  RiderAuthProblem? get problem => _problem;
+  /// Capture with [sessionUid] before an asynchronous account action.
+  int get sessionVersion => _session;
 
-  /// Signed in AND allowed to work.
-  bool get isAuthenticated => _user != null && _problem == null && (_kycStatus?.canOperate ?? false);
-  bool get isDeliveryPartner => _user?.isDeliveryPartner ?? false;
-  RiderKycStatus? get kycStatus => _kycStatus;
-  String? get statusReason => _statusReason;
-  bool? get partnerOnline => _partnerOnline;
-  String? get offlineReason => _offlineReason;
+  /// A queued SDK event must not leave the previous owner actionable.
+  /// A confirmed deletion may complete after its own single sign-out event.
+  bool isCurrentSession(String? uid, int version,
+      {bool allowSignedOut = false}) {
+    if (_disposed) return false;
+    if (_session == version && _gateway.currentUid == uid) return true;
+    return allowSignedOut &&
+        uid != null &&
+        _gateway.currentUid == null &&
+        ((_session == version && _sessionOwner == uid) ||
+            (_session == version + 1 && _sessionOwner == null));
+  }
 
-  /// Signed in as a delivery partner whose onboarding status does not allow
-  /// work (pending, rejected, suspended, deactivated).
-  bool get isBlocked => _user != null && _kycStatus != null && !_kycStatus!.canOperate;
+  UserModel? get user =>
+      _stateCurrent && _user?.uid == _gateway.currentUid ? _user : null;
 
-  /// Signed in, but the profile could not be read from the server yet.
-  bool get profileUnavailable => _problem == RiderAuthProblem.profileUnavailable && _gateway.currentUid != null;
+  /// The gate also waits when the SDK changed before its event arrived.
+  bool get isLoading =>
+      !_disposed && (_stateCurrent ? _isLoading : _gateway.currentUid != null);
+  bool get signingIn => !_disposed && _signingIn;
+  bool get needsRegistration =>
+      _stateCurrent && _needsRegistration && _gateway.currentUid != null;
+  RiderAuthProblem? get problem => _stateCurrent ? _problem : null;
+  bool get isAuthenticated =>
+      user != null && problem == null && (kycStatus?.canOperate ?? false);
+  bool get isDeliveryPartner => user?.isDeliveryPartner ?? false;
+  RiderKycStatus? get kycStatus => _stateCurrent ? _kycStatus : null;
+  String? get statusReason => _stateCurrent ? _statusReason : null;
+  bool? get partnerOnline => _stateCurrent ? _partnerOnline : null;
+  String? get offlineReason => _stateCurrent ? _offlineReason : null;
+  bool get isBlocked =>
+      user != null && kycStatus != null && !kycStatus!.canOperate;
+  bool get profileUnavailable =>
+      problem == RiderAuthProblem.profileUnavailable && sessionUid != null;
+  String? get sessionUid => _disposed ? null : _gateway.currentUid;
 
-  /// The uid this session belongs to (also while its profile is unavailable).
-  String? get sessionUid => _gateway.currentUid;
-
-  /// This device's push token as saved for the rider (null when none).
   @visibleForTesting
-  String? get registeredToken => _registeredToken;
+  String? get registeredToken => _stateCurrent ? _registeredToken : null;
+
+  void _cancel(StreamSubscription<dynamic>? subscription) {
+    if (subscription == null) return;
+    unawaited(subscription.cancel().catchError((Object error) {
+      debugPrint('Rider listener cancellation failed');
+    }));
+  }
+
+  void _onAuthError(Object error) {
+    if (_disposed) return;
+    ++_session;
+    _sessionOwner = _gateway.currentUid;
+    _endSessionState();
+    _isLoading = false;
+    _problem =
+        _sessionOwner == null ? null : RiderAuthProblem.profileUnavailable;
+    notifyListeners();
+    _completeReady();
+  }
 
   Future<void> _onAuthChanged(String? uid) async {
+    if (_disposed || uid != _gateway.currentUid) return;
     final session = ++_session;
+    _sessionOwner = uid;
     _endSessionState();
     if (uid == null) {
       _user = null;
@@ -134,10 +177,12 @@ class DeliveryAuthProvider extends ChangeNotifier {
       _completeReady();
       return;
     }
+    _carryProblem = null;
     _isLoading = true;
     notifyListeners();
+    if (!isCurrentSession(uid, session)) return;
     await _loadUserData(uid, session);
-    if (session != _session) return;
+    if (!isCurrentSession(uid, session)) return;
     _isLoading = false;
     notifyListeners();
     _completeReady();
@@ -149,9 +194,10 @@ class DeliveryAuthProvider extends ChangeNotifier {
   }
 
   void _endSessionState() {
-    _partnerSub?.cancel();
+    ++_tokenWork;
+    _cancel(_partnerSub);
     _partnerSub = null;
-    _tokenSub?.cancel();
+    _cancel(_tokenSub);
     _tokenSub = null;
     _registeredToken = null;
     _user = null;
@@ -173,13 +219,14 @@ class DeliveryAuthProvider extends ChangeNotifier {
       RiderKycStatus.suspended => data?['suspensionReason'],
       _ => null,
     };
-    _statusReason = (reason is String && reason.trim().isNotEmpty) ? reason.trim() : null;
+    _statusReason =
+        (reason is String && reason.trim().isNotEmpty) ? reason.trim() : null;
   }
 
   Future<void> _loadUserData(String uid, int session) async {
     try {
       final userRead = await _store.user(uid);
-      if (session != _session) return;
+      if (!isCurrentSession(uid, session)) return;
       if (!userRead.exists) {
         if (userRead.missing) {
           _needsRegistration = true;
@@ -193,9 +240,11 @@ class DeliveryAuthProvider extends ChangeNotifier {
       // A profile with no role yet may still register; any other role
       // belongs to another app.
       final unregistered = role == null || (role is String && role.isEmpty);
-      if (!unregistered && !user.isDeliveryPartner) return _refuse(RiderAuthProblem.notDeliveryPartner);
+      if (!unregistered && !user.isDeliveryPartner) {
+        return _refuse(RiderAuthProblem.notDeliveryPartner, uid, session);
+      }
       final partner = await _store.partner(uid);
-      if (session != _session) return;
+      if (!isCurrentSession(uid, session)) return;
       if (!partner.exists) {
         if (partner.missing) {
           _needsRegistration = true;
@@ -213,7 +262,7 @@ class DeliveryAuthProvider extends ChangeNotifier {
       if (_kycStatus!.canOperate) unawaited(_registerToken(uid, session));
       _watchPartner(uid, session);
     } catch (e) {
-      if (session != _session) return;
+      if (!isCurrentSession(uid, session)) return;
       debugPrint('Rider profile load failed: $e');
       _problem = RiderAuthProblem.profileUnavailable;
     }
@@ -221,16 +270,18 @@ class DeliveryAuthProvider extends ChangeNotifier {
 
   /// Signs out a user who may not use this app; the reason survives the
   /// sign-out so the sign-in screen can say why.
-  Future<void> _refuse(RiderAuthProblem problem) async {
+  Future<void> _refuse(
+      RiderAuthProblem problem, String uid, int session) async {
+    if (!isCurrentSession(uid, session)) return;
     _carryProblem = problem;
     _user = null;
     await _gateway.signOut();
   }
 
   void _watchPartner(String uid, int session) {
-    _partnerSub?.cancel();
+    _cancel(_partnerSub);
     _partnerSub = _store.watchPartner(uid).listen((read) {
-      if (session != _session || _user == null) return;
+      if (!isCurrentSession(uid, session) || user == null) return;
       if (!read.exists && read.fromCache) return; // not an answer
       final before = _kycStatus;
       _applyPartnerData(read.data);
@@ -241,7 +292,7 @@ class DeliveryAuthProvider extends ChangeNotifier {
         if (operating && !(before?.canOperate ?? false)) {
           unawaited(_registerToken(uid, session));
         } else if (!operating && _registeredToken != null) {
-          unawaited(_unregisterToken(uid));
+          unawaited(_unregisterToken(uid, session));
         }
       }
       notifyListeners();
@@ -250,49 +301,66 @@ class DeliveryAuthProvider extends ChangeNotifier {
     });
   }
 
+  bool _canRegister(String uid, int session, int work) =>
+      isCurrentSession(uid, session) &&
+      work == _tokenWork &&
+      user?.uid == uid &&
+      (kycStatus?.canOperate ?? false);
+
   Future<void> _registerToken(String uid, int session) async {
-    final token = await _push.current();
-    if (token == null || session != _session) return;
+    if (!isCurrentSession(uid, session)) return;
+    final work = ++_tokenWork;
     try {
+      final token = await _push.current();
+      if (token == null || !_canRegister(uid, session, work)) return;
       await _store.addToken(uid, token);
+      if (!_canRegister(uid, session, work)) return;
+      _registeredToken = token;
+      _cancel(_tokenSub);
+      _tokenSub = _push.refreshed.listen((fresh) async {
+        if (!isCurrentSession(uid, session) ||
+            !(kycStatus?.canOperate ?? false) ||
+            fresh == _registeredToken) {
+          return;
+        }
+        final refreshWork = ++_tokenWork;
+        final old = _registeredToken;
+        try {
+          if (old != null) await _store.removeToken(uid, old);
+          if (!_canRegister(uid, session, refreshWork)) return;
+          await _store.addToken(uid, fresh);
+          if (_canRegister(uid, session, refreshWork)) _registeredToken = fresh;
+        } catch (e) {
+          debugPrint('Refreshed push token not saved');
+        }
+      }, onError: (Object error) {
+        debugPrint('Push token refresh listener failed');
+      });
     } catch (e) {
-      debugPrint('Push token not saved: $e');
-      return;
+      debugPrint('Push token not saved');
     }
-    if (session != _session) return;
-    _registeredToken = token;
-    _tokenSub?.cancel();
-    _tokenSub = _push.refreshed.listen((fresh) async {
-      if (session != _session || fresh == _registeredToken) return;
-      final old = _registeredToken;
-      try {
-        if (old != null) await _store.removeToken(uid, old);
-        await _store.addToken(uid, fresh);
-        if (session == _session) _registeredToken = fresh;
-      } catch (e) {
-        debugPrint('Refreshed push token not saved: $e');
-      }
-    });
   }
 
-  /// Removes this device's token from the rider's document. Runs while still
-  /// signed in (the rules check the owner).
-  Future<void> _unregisterToken(String uid) async {
-    final token = _registeredToken ?? await _push.current();
-    _tokenSub?.cancel();
-    _tokenSub = null;
-    _registeredToken = null;
-    if (token == null) return;
+  /// Remove only the captured owner's token; never cancel a newer listener.
+  Future<void> _unregisterToken(String uid, int session) async {
+    if (!isCurrentSession(uid, session)) return;
+    final work = ++_tokenWork;
     try {
-      await _store.removeToken(uid, token);
+      final token = registeredToken ?? await _push.current();
+      if (!isCurrentSession(uid, session) || work != _tokenWork) return;
+      _cancel(_tokenSub);
+      _tokenSub = null;
+      _registeredToken = null;
+      if (token != null) await _store.removeToken(uid, token);
     } catch (e) {
-      debugPrint('Push token not removed: $e');
+      debugPrint('Push token not removed');
     }
   }
 
   /// Signs in. True when the account may use this app (working, or blocked
   /// with a reason to show). The profile is loaded by the auth listener.
   Future<bool> signIn(String email, String password) async {
+    if (_disposed) return false;
     _problem = null;
     _carryProblem = null;
     _signingIn = true;
@@ -301,7 +369,8 @@ class DeliveryAuthProvider extends ChangeNotifier {
     try {
       // The password is used exactly as typed — never trimmed.
       await _gateway.signIn(email.trim(), password);
-      await ready.future.timeout(DeliveryTiming.signInAccountWait, onTimeout: () {});
+      await ready.future
+          .timeout(DeliveryTiming.signInAccountWait, onTimeout: () {});
       return _user != null;
     } on RiderAuthFailure catch (e) {
       debugPrint('Sign-in refused: ${e.code}');
@@ -335,22 +404,35 @@ class DeliveryAuthProvider extends ChangeNotifier {
   /// Removes and invalidates this device's push token, then signs out.
   /// Callers stop location first; the session gate clears everything else.
   Future<void> signOut() async {
-    final uid = _gateway.currentUid;
-    if (uid != null) await _unregisterToken(uid);
+    final uid = sessionUid;
+    final session = sessionVersion;
+    if (!isCurrentSession(uid, session)) return;
+    if (uid != null) await _unregisterToken(uid, session);
+    if (!isCurrentSession(uid, session)) return;
     await _push.forget();
+    if (!isCurrentSession(uid, session)) return;
     await _gateway.signOut();
   }
 
   void clearError() {
+    if (_disposed) return;
     _problem = null;
     notifyListeners();
   }
 
   @override
+  void notifyListeners() {
+    if (!_disposed) super.notifyListeners();
+  }
+
+  @override
   void dispose() {
-    _authSub?.cancel();
-    _partnerSub?.cancel();
-    _tokenSub?.cancel();
+    _disposed = true;
+    ++_session;
+    _cancel(_authSub);
+    _authSub = null;
+    _endSessionState();
+    _completeReady();
     super.dispose();
   }
 }

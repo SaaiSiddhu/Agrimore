@@ -104,6 +104,14 @@ class _DeliveryPendingApprovalScreenState
   }
 
   Future<void> _delete() async {
+    final auth = context.read<DeliveryAuthProvider>();
+    final owner = auth.sessionUid;
+    final session = auth.sessionVersion;
+    if (owner == null || !auth.isCurrentSession(owner, session)) return;
+    bool current({bool allowSignedOut = false}) =>
+        mounted &&
+        identical(context.read<DeliveryAuthProvider>(), auth) &&
+        auth.isCurrentSession(owner, session, allowSignedOut: allowSignedOut);
     final l = AppLocalizations.of(context);
     final ok = await showDeliveryConfirmDialog(
       context: context,
@@ -113,16 +121,15 @@ class _DeliveryPendingApprovalScreenState
       cancelLabel: l.cancel,
       destructive: true,
     );
-    if (!ok || !mounted) return;
+    if (!ok || !mounted || !current()) return;
     setState(() => _busy = true);
     try {
       await _backend.deleteAccount();
-      if (!mounted) return;
-      final auth = context.read<DeliveryAuthProvider>();
+      if (!mounted || !current(allowSignedOut: true)) return;
       showDeliveryToast(context, message: l.deleteDone);
-      await auth.signOut();
+      if (auth.isCurrentSession(owner, session)) await auth.signOut();
     } on AccountActionException catch (e) {
-      if (mounted) {
+      if (mounted && current()) {
         showDeliveryToast(
           context,
           message: accountFailureText(l, e.failure),
@@ -143,8 +150,8 @@ class _DeliveryPendingApprovalScreenState
     final status = auth.kycStatus ?? RiderKycStatus.pending;
     final copy = statusCopy(l, status);
     final reason = auth.statusReason;
-    final severe = status == RiderKycStatus.rejected ||
-        status == RiderKycStatus.suspended;
+    final severe =
+        status == RiderKycStatus.rejected || status == RiderKycStatus.suspended;
     return Scaffold(
       backgroundColor: c.background,
       body: SafeArea(
