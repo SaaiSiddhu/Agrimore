@@ -224,20 +224,34 @@ class SharedPreferencesService {
     }
   }
 
-  static Future<void> clearUserSession() async {
+  static Future<void> clearUserSession({
+    String? expectedUserId,
+    bool Function()? isSessionCurrent,
+  }) async {
     try {
       if (_preferences == null) return;
-      await remove(StorageConstants.keyIsLoggedIn);
-      await remove(StorageConstants.keyUserId);
-      await remove(StorageConstants.keyUserEmail);
-      await remove(StorageConstants.keyUserName);
-      await remove(StorageConstants.keyUserRole);
-      await remove(StorageConstants.keyUserToken);
-      await remove(StorageConstants.keyRememberMe);
-      await remove(StorageConstants.keyRememberEmail);
-      debugPrint('✅ User session cleared');
+      for (final key in [
+        StorageConstants.keyIsLoggedIn,
+        StorageConstants.keyUserId,
+        StorageConstants.keyUserEmail,
+        StorageConstants.keyUserName,
+        StorageConstants.keyUserRole,
+        StorageConstants.keyUserToken,
+        StorageConstants.keyRememberMe,
+        StorageConstants.keyRememberEmail,
+      ]) {
+        final storedOwner = getUserId();
+        if ((isSessionCurrent != null && !isSessionCurrent()) ||
+            (expectedUserId != null &&
+                storedOwner != null &&
+                expectedUserId != storedOwner)) {
+          return;
+        }
+        await remove(key);
+      }
+      debugPrint('User session cleared');
     } catch (e) {
-      debugPrint('❌ Error clearing user session: $e');
+      debugPrint('Error clearing user session: $e');
     }
   }
 

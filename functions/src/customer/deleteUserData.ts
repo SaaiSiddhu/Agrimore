@@ -236,6 +236,10 @@ export const deleteUserData = functions.https.onCall(async (data, context) => {
   // email, or phone out of `data` — accepting a client-supplied identifier
   // here would make this an account-takeover primitive (S-invariant).
   const uid = context.auth.uid;
+  // This hint constrains the action; it never selects the deletion target.
+  if (data?.expectedOwnerId !== undefined && data.expectedOwnerId !== uid) {
+    throw new functions.https.HttpsError("permission-denied", "Account action does not belong to this account");
+  }
 
   // ============================================================
   // REFUSAL CHECKS — read-only, run on every call (including a retried
