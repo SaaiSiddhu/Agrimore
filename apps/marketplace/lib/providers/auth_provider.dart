@@ -1,3 +1,4 @@
+import 'dart:async';
 import 'package:flutter/material.dart';
 import 'package:firebase_auth/firebase_auth.dart';
 import 'package:firebase_messaging/firebase_messaging.dart';
@@ -11,9 +12,14 @@ class AuthProvider with ChangeNotifier {
   // ============================================
   // SERVICES & FIREBASE
   // ============================================
-  final AuthService _authService = AuthService();
-  final FirebaseFirestore _firestore = FirebaseFirestore.instance;
-  final FirebaseAuth _firebaseAuth = FirebaseAuth.instance;
+  final AuthService _authService;
+  final FirebaseFirestore _firestore;
+  StreamSubscription<User?>? _authSubscription;
+  String? _profileOwner;
+  int _authEpoch = 0;
+  int _profileRead = 0;
+  int _authListenVersion = 0;
+  bool _disposed = false;
 
   // ============================================
   // STATE VARIABLES
@@ -37,29 +43,53 @@ class AuthProvider with ChangeNotifier {
   // ============================================
   // GETTERS
   // ============================================
-  UserModel? get currentUser => _currentUser;
-  bool get isLoading => _isLoading;
-  bool get isInitializing => _isInitializing;
-  String? get error => _error;
-  String? get errorCode => _errorCode;
-  bool get isLoggedIn => _currentUser != null;
-  bool get isAdmin => _currentUser?.isAdmin ?? false;
-  bool get isSeller => _currentUser?.isSeller ?? false;
-  bool get isBuyer => _currentUser?.isBuyer ?? false;
+  UserModel? get currentUser {
+    final owner = _authService.currentUserId;
+    final user = _currentUser;
+    return !_disposed &&
+            owner != null &&
+            _profileOwner == owner &&
+            user?.uid == owner
+        ? user
+        : null;
+  }
+
+  bool get isLoading =>
+      !_disposed && _profileOwner == _authService.currentUserId && _isLoading;
+  bool get isInitializing =>
+      !_disposed &&
+      (_profileOwner != _authService.currentUserId
+          ? _authService.currentUserId != null
+          : _isInitializing);
+  String? get error =>
+      !_disposed && _profileOwner == _authService.currentUserId ? _error : null;
+  String? get errorCode =>
+      !_disposed && _profileOwner == _authService.currentUserId
+          ? _errorCode
+          : null;
+  bool get isLoggedIn => currentUser != null;
+  bool get isAdmin => currentUser?.isAdmin ?? false;
+  bool get isSeller => currentUser?.isSeller ?? false;
+  bool get isBuyer => currentUser?.isBuyer ?? false;
   bool get isLocked =>
       _lockoutUntil != null && DateTime.now().isBefore(_lockoutUntil!);
   bool get rememberMe => _rememberMe;
-  String? get userEmail => _currentUser?.email;
-  String? get userName => _currentUser?.name;
-  String? get userPhone => _currentUser?.phone;
-  String? get userPhotoUrl => _currentUser?.photoUrl;
-  String? get userUid => _currentUser?.uid;
-  bool get isNewUser => _isNewUser;
+  String? get userEmail => currentUser?.email;
+  String? get userName => currentUser?.name;
+  String? get userPhone => currentUser?.phone;
+  String? get userPhotoUrl => currentUser?.photoUrl;
+  String? get userUid => currentUser?.uid;
+  bool get isNewUser => currentUser != null && _isNewUser;
 
   // ============================================
   // CONSTRUCTOR
   // ============================================
-  AuthProvider() {
+  AuthProvider({
+    AuthService? authService,
+    FirebaseFirestore? firestore,
+  })  : _authService = authService ?? AuthService(),
+        _firestore = firestore ?? FirebaseFirestore.instance {
+    _profileOwner = _authService.currentUserId;
     _initialize();
   }
 
@@ -67,69 +97,124 @@ class AuthProvider with ChangeNotifier {
   // INITIALIZE AUTH STATE
   // ============================================
   void _initialize() {
-    debugPrint('🔄 AuthProvider initializing...');
+    _listenForAuth();
+    unawaited(_loadStoredPreferences());
+  }
 
-    _authService.authStateChanges.listen((User? user) async {
-      if (user != null) {
-        try {
-          debugPrint('🔐 Firebase user detected: ${user.uid}');
-          
-          // ✅ FIXED: Wait for user data BEFORE marking initialization complete
-          _currentUser = await _authService.getUserData(user.uid);
-          
-          // Fire-and-forget: Don't await lastLogin update (non-blocking)
-          _updateLastLogin(user.uid);
-          
-          debugPrint('✅ User loaded: ${_currentUser?.email}');
-          
-          // ✅ Now mark initialization complete AFTER user is loaded
-          _isInitializing = false;
-          notifyListeners();
-        } catch (e) {
-          debugPrint('❌ Error loading user data: $e');
-          _error = e.toString();
-          _isInitializing = false;
-          notifyListeners();
-        }
-      } else {
-        debugPrint('👤 No Firebase user logged in');
-        _currentUser = null;
+  void _listenForAuth() {
+    if (_disposed || _authSubscription != null) return;
+    final version = ++_authListenVersion;
+    try {
+      _authSubscription = _authService.authStateChanges.listen(
+        (user) {
+          if (_disposed ||
+              version != _authListenVersion ||
+              user?.uid != _authService.currentUserId) {
+            return;
+          }
+          _bindProfileOwner(user?.uid, renew: true);
+          unawaited(_loadOwnedProfile(lastLogin: user != null));
+        },
+        onError: (Object error) => _stopAuthUpdates(version),
+        onDone: () => _stopAuthUpdates(version),
+      );
+    } catch (_) {
+      _stopAuthUpdates(version);
+    }
+  }
+
+  void _cancelAuthSubscription() {
+    final subscription = _authSubscription;
+    _authSubscription = null;
+    if (subscription != null) {
+      unawaited(subscription.cancel().catchError((Object _) {
+        debugPrint('Auth subscription cleanup failed');
+      }));
+    }
+  }
+
+  void _stopAuthUpdates(int version) {
+    if (_disposed || version != _authListenVersion) return;
+    _authListenVersion++;
+    _cancelAuthSubscription();
+    _authEpoch++;
+    _profileRead++;
+    _profileOwner = _authService.currentUserId;
+    _currentUser = null;
+    _isNewUser = false;
+    _isInitializing = false;
+    _isLoading = false;
+    _error = 'Account updates paused. Please refresh your account.';
+    _errorCode = null;
+    notifyListeners();
+  }
+
+  void _bindProfileOwner(String? owner, {bool renew = false}) {
+    if (_disposed || (!renew && owner == _profileOwner)) return;
+    _profileOwner = owner;
+    _authEpoch++;
+    _profileRead++;
+    _currentUser = null;
+    _isNewUser = false;
+    _isLoading = false;
+    _error = null;
+    _errorCode = null;
+    _isInitializing = owner != null;
+  }
+
+  bool _profileReadIsCurrent(String? owner, int epoch, int read) =>
+      !_disposed &&
+      owner == _profileOwner &&
+      owner == _authService.currentUserId &&
+      epoch == _authEpoch &&
+      read == _profileRead;
+
+  Future<void> _loadOwnedProfile(
+      {bool restore = false, bool lastLogin = false}) async {
+    if (_disposed) return;
+    final owner = _authService.currentUserId;
+    _bindProfileOwner(owner);
+    final epoch = _authEpoch, read = ++_profileRead;
+    if (restore) _isInitializing = owner != null;
+    _error = null;
+    _errorCode = null;
+    notifyListeners();
+    if (!_profileReadIsCurrent(owner, epoch, read)) return;
+    try {
+      final user = owner == null
+          ? null
+          : restore
+              ? await _authService.restoreSession()
+              : await _authService.getUserData(owner);
+      if (!_profileReadIsCurrent(owner, epoch, read)) return;
+      if (user != null && user.uid != owner) {
+        throw StateError('Account profile ownership mismatch');
+      }
+      _currentUser = user;
+      if (lastLogin && owner != null && user != null) {
+        unawaited(_updateLastLogin(owner, epoch: epoch));
+      }
+    } catch (_) {
+      if (!_profileReadIsCurrent(owner, epoch, read)) return;
+      _currentUser = null;
+      _isNewUser = false;
+      _error = 'Unable to load your account. Please try again.';
+      _errorCode = null;
+    } finally {
+      if (_profileReadIsCurrent(owner, epoch, read)) {
         _isInitializing = false;
         notifyListeners();
       }
-    });
-
-    // Load stored preferences (non-blocking)
-    _loadStoredPreferences();
+    }
   }
 
   // ============================================
   // RESTORE SESSION ON APP START
   // ============================================
   Future<void> restoreSession() async {
-    try {
-      _isInitializing = true;
-      notifyListeners();
-
-      debugPrint('🔄 Restoring session...');
-
-      final userModel = await _authService.restoreSession();
-
-      if (userModel != null) {
-        _currentUser = userModel;
-        debugPrint('✅ Session restored: ${userModel.email}');
-      } else {
-        debugPrint('⚠️ No session to restore');
-        _currentUser = null;
-      }
-
-      _isInitializing = false;
-      notifyListeners();
-    } catch (e) {
-      debugPrint('❌ Error restoring session: $e');
-      _isInitializing = false;
-      notifyListeners();
-    }
+    if (_disposed) return;
+    _listenForAuth();
+    await _loadOwnedProfile(restore: true);
   }
 
   // ============================================
@@ -138,6 +223,7 @@ class AuthProvider with ChangeNotifier {
   Future<void> _loadStoredPreferences() async {
     try {
       final prefs = await SharedPreferences.getInstance();
+      if (_disposed) return;
       _rememberMe = prefs.getBool(StorageConstants.keyRememberMe) ?? false;
       debugPrint('💾 Loaded preferences: rememberMe=$_rememberMe');
     } catch (e) {
@@ -168,7 +254,12 @@ class AuthProvider with ChangeNotifier {
   // ============================================
   // UPDATE LAST LOGIN TIMESTAMP
   // ============================================
-  Future<void> _updateLastLogin(String uid) async {
+  Future<void> _updateLastLogin(String uid, {int? epoch}) async {
+    if (_disposed ||
+        uid != _authService.currentUserId ||
+        (epoch != null && epoch != _authEpoch)) {
+      return;
+    }
     try {
       await _firestore.collection('users').doc(uid).update({
         'lastLogin': FieldValue.serverTimestamp(),
@@ -242,7 +333,8 @@ class AuthProvider with ChangeNotifier {
       notifyListeners();
       return true;
     } on FirebaseAuthException catch (e) {
-      debugPrint('❌ Firebase Auth Registration error: ${e.code} - ${e.message}');
+      debugPrint(
+          '❌ Firebase Auth Registration error: ${e.code} - ${e.message}');
       _error = _getFirebaseErrorMessage(e.code);
       _incrementFailedAttempts();
       await _logAuthEvent('registration', false, email, error: e.code);
@@ -339,7 +431,8 @@ class AuthProvider with ChangeNotifier {
   /// Returns the [PhoneOtpSendResult] (including the EFFECTIVE delivery
   /// channel — see auth_service.dart) on success, or `null` on failure —
   /// callers should read [error] for the failure message.
-  Future<PhoneOtpSendResult?> sendPhoneOTP(String phone, {String channel = 'sms'}) async {
+  Future<PhoneOtpSendResult?> sendPhoneOTP(String phone,
+      {String channel = 'sms'}) async {
     try {
       if (isLocked) {
         _error = 'Too many attempts. Please try again later.';
@@ -409,7 +502,8 @@ class AuthProvider with ChangeNotifier {
       await _logAuthEvent('phone_login', true, phone);
       if (_currentUser != null) await _updateFCMToken(_currentUser!.uid);
 
-      debugPrint('✅ Phone login successful: ${_currentUser?.uid} (new: $_isNewUser)');
+      debugPrint(
+          '✅ Phone login successful: ${_currentUser?.uid} (new: $_isNewUser)');
 
       _resetFailedAttempts();
       _isLoading = false;
@@ -442,7 +536,8 @@ class AuthProvider with ChangeNotifier {
   // ============================================
   // PROFILE COMPLETION (Phase 16)
   // ============================================
-  bool get needsProfileCompletion => isLoggedIn && _currentUser?.profileCompleted != true;
+  bool get needsProfileCompletion =>
+      isLoggedIn && currentUser?.profileCompleted != true;
 
   Future<bool> sendEmailOtpForProfile(String email) async {
     try {
@@ -461,7 +556,8 @@ class AuthProvider with ChangeNotifier {
     }
   }
 
-  Future<bool> verifyEmailOtpForProfile({required String email, required String otp}) async {
+  Future<bool> verifyEmailOtpForProfile(
+      {required String email, required String otp}) async {
     try {
       _error = null;
       notifyListeners();
@@ -509,7 +605,8 @@ class AuthProvider with ChangeNotifier {
       return false;
     } catch (e) {
       _error = e.toString().replaceAll('Exception: ', '');
-      await _logAuthEvent('profile_completion', false, email, error: e.toString());
+      await _logAuthEvent('profile_completion', false, email,
+          error: e.toString());
       _isLoading = false;
       notifyListeners();
       return false;
@@ -521,13 +618,15 @@ class AuthProvider with ChangeNotifier {
   // ============================================
 
   /// [otp] must have been requested against [phone] via sendPhoneOTP first.
-  Future<bool> changePhoneNumber({required String phone, required String otp}) async {
+  Future<bool> changePhoneNumber(
+      {required String phone, required String otp}) async {
     try {
       _isLoading = true;
       _error = null;
       notifyListeners();
 
-      _currentUser = await _authService.changePhoneNumber(phone: phone, otp: otp);
+      _currentUser =
+          await _authService.changePhoneNumber(phone: phone, otp: otp);
 
       _isLoading = false;
       notifyListeners();
@@ -580,7 +679,8 @@ class AuthProvider with ChangeNotifier {
       _error = null;
       notifyListeners();
 
-      _currentUser = await _authService.changeDateOfBirth(dateOfBirth: dateOfBirth);
+      _currentUser =
+          await _authService.changeDateOfBirth(dateOfBirth: dateOfBirth);
 
       _isLoading = false;
       notifyListeners();
@@ -617,7 +717,8 @@ class AuthProvider with ChangeNotifier {
 
       _currentUser = await _authService.signInWithGoogle();
 
-      await _logAuthEvent('google_login', true, _currentUser?.email ?? 'unknown');
+      await _logAuthEvent(
+          'google_login', true, _currentUser?.email ?? 'unknown');
       if (_currentUser != null) await _updateFCMToken(_currentUser!.uid);
 
       debugPrint('✅ Google sign in successful: ${_currentUser?.uid}');
@@ -642,7 +743,8 @@ class AuthProvider with ChangeNotifier {
         _error = 'Google sign in failed. Please try again.';
       }
       _incrementFailedAttempts();
-      await _logAuthEvent('google_login', false, 'unknown', error: e.toString());
+      await _logAuthEvent('google_login', false, 'unknown',
+          error: e.toString());
       _isLoading = false;
       notifyListeners();
       return false;
@@ -682,7 +784,8 @@ class AuthProvider with ChangeNotifier {
 
   /// Pure lookup — never creates a user, never signs in. Returns null only
   /// on a genuine failure (network, server error); read [error] then.
-  Future<GoogleIdentityResolution?> resolveGoogleIdentity(PendingGoogleIdentity pending) async {
+  Future<GoogleIdentityResolution?> resolveGoogleIdentity(
+      PendingGoogleIdentity pending) async {
     try {
       _error = null;
       final resolution = await _authService.resolveGoogleIdentity(pending);
@@ -700,7 +803,8 @@ class AuthProvider with ChangeNotifier {
   }
 
   /// Scenario A (returning, already linked): signs in directly, no OTP.
-  Future<bool> signInWithLinkedGoogle(PendingGoogleIdentity pending, {String? expectedUid}) async {
+  Future<bool> signInWithLinkedGoogle(PendingGoogleIdentity pending,
+      {String? expectedUid}) async {
     try {
       if (isLocked) {
         _error = 'Too many attempts. Please try again later.';
@@ -722,7 +826,8 @@ class AuthProvider with ChangeNotifier {
       // rather than left at whatever _isNewUser last held.
       _isNewUser = false;
 
-      await _logAuthEvent('google_returning_signin_success', true, _currentUser?.email ?? 'unknown');
+      await _logAuthEvent('google_returning_signin_success', true,
+          _currentUser?.email ?? 'unknown');
       if (_currentUser != null) await _updateFCMToken(_currentUser!.uid);
 
       _resetFailedAttempts();
@@ -732,14 +837,16 @@ class AuthProvider with ChangeNotifier {
     } on AuthException catch (e) {
       _error = e.message;
       _incrementFailedAttempts();
-      await _logAuthEvent('google_returning_signin_failed', false, 'unknown', error: e.message);
+      await _logAuthEvent('google_returning_signin_failed', false, 'unknown',
+          error: e.message);
       _isLoading = false;
       notifyListeners();
       return false;
     } catch (e) {
       _error = e.toString().replaceAll('Exception: ', '');
       _incrementFailedAttempts();
-      await _logAuthEvent('google_returning_signin_failed', false, 'unknown', error: e.toString());
+      await _logAuthEvent('google_returning_signin_failed', false, 'unknown',
+          error: e.toString());
       _isLoading = false;
       notifyListeners();
       return false;
@@ -823,8 +930,8 @@ class AuthProvider with ChangeNotifier {
     } catch (e) {
       debugPrint('❌ Error updating profile: $e');
       _error = 'Failed to update profile: $e';
-      await _logAuthEvent('profile_update', false,
-          _currentUser?.email ?? 'unknown',
+      await _logAuthEvent(
+          'profile_update', false, _currentUser?.email ?? 'unknown',
           error: e.toString());
       _isLoading = false;
       notifyListeners();
@@ -866,7 +973,8 @@ class AuthProvider with ChangeNotifier {
         newPassword: newPassword,
       );
 
-      await _logAuthEvent('password_change', true, _currentUser?.email ?? 'unknown');
+      await _logAuthEvent(
+          'password_change', true, _currentUser?.email ?? 'unknown');
 
       debugPrint('✅ Password changed successfully');
 
@@ -876,8 +984,8 @@ class AuthProvider with ChangeNotifier {
     } on FirebaseAuthException catch (e) {
       debugPrint('❌ Firebase Auth Password change error: ${e.code}');
       _error = _getFirebaseErrorMessage(e.code);
-      await _logAuthEvent('password_change', false,
-          _currentUser?.email ?? 'unknown',
+      await _logAuthEvent(
+          'password_change', false, _currentUser?.email ?? 'unknown',
           error: e.code);
       _isLoading = false;
       notifyListeners();
@@ -885,8 +993,8 @@ class AuthProvider with ChangeNotifier {
     } catch (e) {
       debugPrint('❌ Error changing password: $e');
       _error = 'Failed to change password. Please try again.';
-      await _logAuthEvent('password_change', false,
-          _currentUser?.email ?? 'unknown',
+      await _logAuthEvent(
+          'password_change', false, _currentUser?.email ?? 'unknown',
           error: e.toString());
       _isLoading = false;
       notifyListeners();
@@ -917,7 +1025,8 @@ class AuthProvider with ChangeNotifier {
     } on FirebaseAuthException catch (e) {
       debugPrint('❌ Firebase Auth Password reset error: ${e.code}');
       _error = _getFirebaseErrorMessage(e.code);
-      await _logAuthEvent('password_reset_request', false, email, error: e.code);
+      await _logAuthEvent('password_reset_request', false, email,
+          error: e.code);
       _isLoading = false;
       notifyListeners();
       return false;
@@ -1000,8 +1109,8 @@ class AuthProvider with ChangeNotifier {
         _error = 'Failed to delete account. Please try again.';
         _errorCode = null;
       }
-      await _logAuthEvent('account_deletion', false,
-          _currentUser?.email ?? 'unknown',
+      await _logAuthEvent(
+          'account_deletion', false, _currentUser?.email ?? 'unknown',
           error: e.toString());
       _isLoading = false;
       notifyListeners();
@@ -1079,20 +1188,9 @@ class AuthProvider with ChangeNotifier {
   // REFRESH USER DATA
   // ============================================
   Future<void> refreshUserData() async {
-    try {
-      if (_currentUser == null) return;
-
-      debugPrint('🔄 Refreshing user data...');
-
-      _currentUser = await _authService.getUserData(_currentUser!.uid);
-      notifyListeners();
-
-      debugPrint('✅ User data refreshed');
-    } catch (e) {
-      debugPrint('❌ Error refreshing user data: $e');
-      _error = 'Failed to refresh user data';
-      notifyListeners();
-    }
+    if (_disposed) return;
+    _listenForAuth();
+    await _loadOwnedProfile();
   }
 
   // ============================================
@@ -1152,5 +1250,23 @@ class AuthProvider with ChangeNotifier {
     } else {
       debugPrint('❌ No user logged in');
     }
+  }
+
+  @override
+  void notifyListeners() {
+    if (!_disposed) super.notifyListeners();
+  }
+
+  @override
+  void dispose() {
+    if (_disposed) return;
+    _disposed = true;
+    _authListenVersion++;
+    _authEpoch++;
+    _profileRead++;
+    _cancelAuthSubscription();
+    _currentUser = null;
+    _isNewUser = false;
+    super.dispose();
   }
 }
