@@ -101,6 +101,31 @@ void main() {
     expect(options()['order_id'], 'order_foundation_web');
     expect(failures, isEmpty);
   });
+  test('browser inactive session prevents provider creation', () async {
+    await service.openCheckout(
+        amount: 100,
+        userName: '',
+        userEmail: '',
+        userPhone: '',
+        canOpenCheckout: () => false);
+    expect(functions.callable.parameters, isNull);
+    expect((_eval('window._fixtureOpened') as JSBoolean).toDart, false);
+    expect(failures, hasLength(1));
+  });
+  test('browser session predicate is checked after persistence', () async {
+    var current = true;
+    await service.openCheckout(
+        amount: 100,
+        userName: '',
+        userEmail: '',
+        userPhone: '',
+        canOpenCheckout: () => current,
+        onOrderCreated: (_) async {
+          current = false;
+        });
+    expect((_eval('window._fixtureOpened') as JSBoolean).toDart, false);
+    expect(failures, hasLength(1));
+  });
   test('browser SDK waits for validated order persistence hook', () async {
     final entered = Completer<void>(), release = Completer<void>();
     final pending = service.openCheckout(
