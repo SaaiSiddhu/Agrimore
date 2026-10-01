@@ -1,3 +1,5 @@
+import 'dart:async';
+
 import 'package:flutter/material.dart';
 import 'package:firebase_auth/firebase_auth.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
@@ -9,13 +11,20 @@ class AuthProvider with ChangeNotifier {
   // ============================================
   // SERVICES & FIREBASE
   // ============================================
-  final AuthService _authService = AuthService();
-  final FirebaseFirestore _firestore = FirebaseFirestore.instance;
-  final FirebaseAuth _firebaseAuth = FirebaseAuth.instance;
+  final AuthService _authService;
+  final FirebaseFirestore _firestore;
+  final FirebaseAuth _firebaseAuth;
 
   // ============================================
   // STATE VARIABLES
   // ============================================
+  StreamSubscription<User?>? _authSubscription;
+  int _authListenVersion = 0;
+  int _authEpoch = 0;
+  int _profileRead = 0;
+  String? _profileOwner;
+  String? _pendingRefusal;
+  bool _disposed = false;
   UserModel? _currentUser;
   bool _isLoading = false;
   bool _isInitializing = true;
@@ -28,27 +37,49 @@ class AuthProvider with ChangeNotifier {
   // ============================================
   // GETTERS
   // ============================================
-  UserModel? get currentUser => _currentUser;
-  bool get isLoading => _isLoading;
-  bool get isInitializing => _isInitializing;
-  String? get error => _error;
-  bool get isLoggedIn => _currentUser != null;
-  bool get isAdmin => _currentUser?.isAdmin ?? false;
-  bool get isSeller => _currentUser?.isSeller ?? false;
-  bool get isBuyer => _currentUser?.isBuyer ?? false;
+  UserModel? get currentUser {
+    final owner = _authService.currentUserId;
+    return !_disposed &&
+            owner != null &&
+            owner == _profileOwner &&
+            _currentUser?.uid == owner
+        ? _currentUser
+        : null;
+  }
+
+  bool get isLoading =>
+      !_disposed && _profileOwner == _authService.currentUserId && _isLoading;
+  bool get isInitializing =>
+      !_disposed &&
+      (_profileOwner != _authService.currentUserId
+          ? _authService.currentUserId != null
+          : _isInitializing);
+  String? get error =>
+      !_disposed && _profileOwner == _authService.currentUserId ? _error : null;
+  bool get isLoggedIn => currentUser != null;
+  bool get isAdmin => currentUser?.isAdmin ?? false;
+  bool get isSeller => currentUser?.isSeller ?? false;
+  bool get isBuyer => currentUser?.isBuyer ?? false;
   bool get isLocked =>
       _lockoutUntil != null && DateTime.now().isBefore(_lockoutUntil!);
   bool get rememberMe => _rememberMe;
-  String? get userEmail => _currentUser?.email;
-  String? get userName => _currentUser?.name;
-  String? get userPhone => _currentUser?.phone;
-  String? get userPhotoUrl => _currentUser?.photoUrl;
-  String? get userUid => _currentUser?.uid;
+  String? get userEmail => currentUser?.email;
+  String? get userName => currentUser?.name;
+  String? get userPhone => currentUser?.phone;
+  String? get userPhotoUrl => currentUser?.photoUrl;
+  String? get userUid => currentUser?.uid;
 
   // ============================================
   // CONSTRUCTOR
   // ============================================
-  AuthProvider() {
+  AuthProvider({
+    AuthService? authService,
+    FirebaseFirestore? firestore,
+    FirebaseAuth? firebaseAuth,
+  }) : _authService = authService ?? AuthService(),
+       _firestore = firestore ?? FirebaseFirestore.instance,
+       _firebaseAuth = firebaseAuth ?? FirebaseAuth.instance {
+    _profileOwner = _authService.currentUserId;
     _initialize();
   }
 
@@ -56,83 +87,145 @@ class AuthProvider with ChangeNotifier {
   // INITIALIZE AUTH STATE
   // ============================================
   void _initialize() {
-    debugPrint('🔄 AuthProvider initializing...');
-
-    _authService.authStateChanges.listen((User? user) async {
-      if (user != null) {
-        try {
-          debugPrint('🔐 Firebase user detected: ${user.uid}');
-          _currentUser = await _authService.getUserData(user.uid).timeout(const Duration(seconds: 6));
-          
-          // STRICT ROLE CHECK FOR ADMIN APP
-          if (_currentUser != null && _currentUser!.role != 'admin') {
-            debugPrint('⛔ Unauthorized access attempt by non-admin: ${_currentUser!.email}');
-            await _firebaseAuth.signOut();
-            _currentUser = null;
-            _error = 'Access denied. You are not an admin.';
-            _isLoading = false;
-          } else if (_currentUser != null) {
-            await _updateLastLogin(user.uid).timeout(const Duration(seconds: 3)).catchError((e) {
-              debugPrint('⚠️ Error updating last login: $e');
-            });
-            debugPrint('✅ User loaded: ${_currentUser?.email}');
-          }
-        } catch (e) {
-          debugPrint('❌ Error loading user data: $e');
-          _error = e.toString();
-          _isLoading = false;
-        }
-      } else {
-        debugPrint('👤 No Firebase user logged in');
-        _currentUser = null;
-      }
-      
-      // Mark initialization complete after first auth state change
-      if (_isInitializing) {
-        _isInitializing = false;
-        debugPrint('✅ Auth initialization complete');
-      }
-      notifyListeners();
-    });
-
-    // Load stored preferences
-    _loadStoredPreferences();
+    _listenForAuth();
+    unawaited(_loadStoredPreferences());
   }
 
-  // ============================================
-  // RESTORE SESSION ON APP START
-  // ============================================
-  Future<void> restoreSession() async {
+  void _listenForAuth() {
+    if (_disposed || _authSubscription != null) return;
+    final version = ++_authListenVersion;
     try {
-      _isInitializing = true;
-      notifyListeners();
-
-      debugPrint('🔄 Restoring session...');
-
-      final userModel = await _authService.restoreSession();
-
-      if (userModel != null) {
-        if (userModel.role != 'admin') {
-          debugPrint('⛔ Restored non-admin session blocked: ${userModel.email}');
-          await _firebaseAuth.signOut();
-          _currentUser = null;
-          _error = 'Access denied. You are not an admin.';
-        } else {
-          _currentUser = userModel;
-          debugPrint('✅ Session restored: ${userModel.email}');
-        }
+      final subscription = _authService.authStateChanges.listen(
+        (user) {
+          if (_disposed ||
+              version != _authListenVersion ||
+              user?.uid != _authService.currentUserId) {
+            return;
+          }
+          _bindProfileOwner(user?.uid, renew: true);
+          unawaited(_loadOwnedProfile(lastLogin: user != null));
+        },
+        onError: (Object error) => _stopAuthUpdates(version),
+        onDone: () => _stopAuthUpdates(version),
+      );
+      if (_disposed || version != _authListenVersion) {
+        unawaited(
+          subscription.cancel().catchError((Object error) {
+            debugPrint('Admin auth listener cleanup failed');
+          }),
+        );
       } else {
-        debugPrint('⚠️ No session to restore');
-        _currentUser = null;
+        _authSubscription = subscription;
       }
-
-      _isInitializing = false;
-      notifyListeners();
-    } catch (e) {
-      debugPrint('❌ Error restoring session: $e');
-      _isInitializing = false;
-      notifyListeners();
+    } catch (_) {
+      _stopAuthUpdates(version);
     }
+  }
+
+  void _cancelAuthSubscription() {
+    final subscription = _authSubscription;
+    _authSubscription = null;
+    if (subscription != null) {
+      unawaited(
+        subscription.cancel().catchError((Object error) {
+          debugPrint('Admin auth listener cleanup failed');
+        }),
+      );
+    }
+  }
+
+  void _stopAuthUpdates(int version) {
+    if (_disposed || version != _authListenVersion) return;
+    ++_authListenVersion;
+    _cancelAuthSubscription();
+    ++_authEpoch;
+    ++_profileRead;
+    _profileOwner = _authService.currentUserId;
+    _currentUser = null;
+    _pendingRefusal = null;
+    _isInitializing = false;
+    _isLoading = false;
+    _error = 'Account updates paused. Please refresh your account.';
+    notifyListeners();
+  }
+
+  void _bindProfileOwner(String? owner, {bool renew = false}) {
+    if (_disposed || (!renew && owner == _profileOwner)) return;
+    final refusal = owner == null ? _pendingRefusal : null;
+    _pendingRefusal = null;
+    _profileOwner = owner;
+    ++_authEpoch;
+    ++_profileRead;
+    _currentUser = null;
+    _error = refusal;
+    _isLoading = false;
+    _isInitializing = owner != null;
+  }
+
+  bool _profileReadIsCurrent(String? owner, int epoch, int read) =>
+      !_disposed &&
+      owner == _profileOwner &&
+      owner == _authService.currentUserId &&
+      epoch == _authEpoch &&
+      read == _profileRead;
+
+  Future<void> _loadOwnedProfile({
+    bool restore = false,
+    bool lastLogin = false,
+  }) async {
+    if (_disposed) return;
+    final owner = _authService.currentUserId;
+    _bindProfileOwner(owner);
+    final epoch = _authEpoch, read = ++_profileRead;
+    if (restore) _isInitializing = owner != null;
+    if (owner != null) _error = null;
+    notifyListeners();
+    if (!_profileReadIsCurrent(owner, epoch, read)) return;
+    try {
+      final user = owner == null
+          ? null
+          : restore
+          ? await _authService.restoreSession()
+          : lastLogin
+          ? await _authService
+                .getUserData(owner)
+                .timeout(const Duration(seconds: 6))
+          : await _authService.getUserData(owner);
+      if (!_profileReadIsCurrent(owner, epoch, read)) return;
+      if (user != null && user.uid != owner) {
+        throw StateError('Admin profile ownership mismatch');
+      }
+      if (user != null && user.role != 'admin') {
+        _currentUser = null;
+        _error = 'Access denied. You are not an admin.';
+        _pendingRefusal = _error;
+        if (_firebaseAuth.currentUser?.uid == owner &&
+            _profileReadIsCurrent(owner, epoch, read)) {
+          await _firebaseAuth.signOut();
+        }
+        return;
+      }
+      _currentUser = user;
+      if (lastLogin && user != null && owner != null) {
+        unawaited(_updateLastLogin(owner, epoch: epoch));
+      }
+    } catch (_) {
+      if (!_profileReadIsCurrent(owner, epoch, read)) return;
+      _currentUser = null;
+      _error = 'Unable to load your account. Please try again.';
+    } finally {
+      if (_profileReadIsCurrent(owner, epoch, read)) {
+        _isInitializing = false;
+        _isLoading = false;
+        notifyListeners();
+      }
+    }
+  }
+
+  Future<void> restoreSession() async {
+    if (_disposed) return;
+    _listenForAuth();
+    await _loadOwnedProfile(restore: true);
   }
 
   // ============================================
@@ -141,6 +234,7 @@ class AuthProvider with ChangeNotifier {
   Future<void> _loadStoredPreferences() async {
     try {
       final prefs = await SharedPreferences.getInstance();
+      if (_disposed) return;
       _rememberMe = prefs.getBool(StorageConstants.keyRememberMe) ?? false;
       debugPrint('💾 Loaded preferences: rememberMe=$_rememberMe');
     } catch (e) {
@@ -171,7 +265,12 @@ class AuthProvider with ChangeNotifier {
   // ============================================
   // UPDATE LAST LOGIN TIMESTAMP
   // ============================================
-  Future<void> _updateLastLogin(String uid) async {
+  Future<void> _updateLastLogin(String uid, {int? epoch}) async {
+    if (_disposed ||
+        uid != _authService.currentUserId ||
+        (epoch != null && epoch != _authEpoch)) {
+      return;
+    }
     try {
       await _firestore.collection('users').doc(uid).update({
         'lastLogin': FieldValue.serverTimestamp(),
@@ -675,20 +774,9 @@ class AuthProvider with ChangeNotifier {
   // REFRESH USER DATA
   // ============================================
   Future<void> refreshUserData() async {
-    try {
-      if (_currentUser == null) return;
-
-      debugPrint('🔄 Refreshing user data...');
-
-      _currentUser = await _authService.getUserData(_currentUser!.uid);
-      notifyListeners();
-
-      debugPrint('✅ User data refreshed');
-    } catch (e) {
-      debugPrint('❌ Error refreshing user data: $e');
-      _error = 'Failed to refresh user data';
-      notifyListeners();
-    }
+    if (_disposed) return;
+    _listenForAuth();
+    await _loadOwnedProfile();
   }
 
   // ============================================
@@ -749,4 +837,20 @@ class AuthProvider with ChangeNotifier {
       debugPrint('❌ No user logged in');
     }
   }
+  @override
+  void notifyListeners() {
+    if (!_disposed) super.notifyListeners();
+  }
+
+  @override
+  void dispose() {
+    _disposed = true;
+    ++_authEpoch;
+    ++_profileRead;
+    ++_authListenVersion;
+    _cancelAuthSubscription();
+    _currentUser = null;
+    super.dispose();
+  }
+
 }
