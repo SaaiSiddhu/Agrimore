@@ -6,15 +6,19 @@ import 'package:path_provider/path_provider.dart';
 import 'checkout_request_store.dart';
 
 CheckoutRequestStore createCheckoutRequestStore() => FileCheckoutRequestStore();
+CheckoutRequestStore createWalletTopupRequestStore() =>
+    FileCheckoutRequestStore(walletTopups: true);
 
 /// Same-directory staged replacement keeps the previous record intact while
 /// writing. This journal is for the foreground app isolate; server request
 /// anchors remain the authority across devices and concurrent processes.
 class FileCheckoutRequestStore implements CheckoutRequestStore {
-  FileCheckoutRequestStore({Future<Directory> Function()? directory})
+  FileCheckoutRequestStore(
+      {Future<Directory> Function()? directory, this.walletTopups = false})
       : _directory = directory ?? getApplicationSupportDirectory;
 
   final Future<Directory> Function() _directory;
+  final bool walletTopups;
   static const maxBytes = 256 * 1024;
 
   Future<File> _file(String ownerId) async {
@@ -22,7 +26,9 @@ class FileCheckoutRequestStore implements CheckoutRequestStore {
       throw const FormatException('Checkout recovery is unavailable.');
     }
     final root = await _directory();
-    final folder = Directory('${root.path}/checkout_requests_v1');
+    final namespace =
+        walletTopups ? 'wallet_topups_v1' : 'checkout_requests_v1';
+    final folder = Directory('${root.path}/$namespace');
     await folder.create(recursive: true);
     final name = base64Url.encode(utf8.encode(ownerId)).replaceAll('=', '');
     return File('${folder.path}/$name.json');

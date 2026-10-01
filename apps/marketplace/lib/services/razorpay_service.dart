@@ -223,6 +223,45 @@ class RazorpayService {
     required String userEmail,
     required String userPhone,
     String? description,
+  }) =>
+      _resumeSavedPayment(
+          order: order,
+          ownerId: ownerId,
+          currentUserId: currentUserId,
+          userName: userName,
+          userEmail: userEmail,
+          userPhone: userPhone,
+          description: description,
+          recoveryFunction: 'recoverCheckoutPayment');
+
+  Future<GoodsCheckoutResumeOutcome> resumeWalletTopup({
+    required PaymentCheckoutOrder order,
+    required String ownerId,
+    required String? Function() currentUserId,
+    required String userName,
+    required String userEmail,
+    required String userPhone,
+    String? description,
+  }) =>
+      _resumeSavedPayment(
+          order: order,
+          ownerId: ownerId,
+          currentUserId: currentUserId,
+          userName: userName,
+          userEmail: userEmail,
+          userPhone: userPhone,
+          description: description,
+          recoveryFunction: 'recoverWalletTopupPayment');
+
+  Future<GoodsCheckoutResumeOutcome> _resumeSavedPayment({
+    required PaymentCheckoutOrder order,
+    required String ownerId,
+    required String? Function() currentUserId,
+    required String userName,
+    required String userEmail,
+    required String userPhone,
+    String? description,
+    required String recoveryFunction,
   }) async {
     void checkSession() {
       if (_disposed ||
@@ -238,7 +277,7 @@ class RazorpayService {
 
     checkSession();
     final result = await FirebaseFunctions.instance
-        .httpsCallable('recoverCheckoutPayment',
+        .httpsCallable(recoveryFunction,
             options: HttpsCallableOptions(timeout: const Duration(seconds: 20)))
         .call<Map<String, dynamic>>({
       'checkoutOwnerId': ownerId,
