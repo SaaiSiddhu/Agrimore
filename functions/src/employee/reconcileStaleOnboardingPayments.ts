@@ -15,6 +15,7 @@ import { log } from "../common/helpers";
 import { getRazorpayCredentials, RAZORPAY_KEY_SECRET } from "../customer/payment";
 import { performOnboardingActivation } from "./activationCore";
 import { ONBOARDING_PURPOSE } from "./onboardingConfig";
+import { verifyOnboardingCapture } from "./onboardingVerification";
 
 // Decision (8a/8d — see completion report Decisions section): a stale
 // order is one created more than STALENESS_MINUTES ago (long enough that
@@ -111,9 +112,25 @@ export const reconcileStaleOnboardingPayments = onSchedule(
           continue;
         }
 
+        // A missed callback AND webhook means no verified_payments document
+        // exists. Establish one from the owned server order and provider proof
+        // before invoking the common activation gate; never overwrite a spend.
+        const verification = await verifyOnboardingCapture({
+          db, orderId: orderDoc.id, paymentId: capturedPayment.id,
+          livePayment: capturedPayment as unknown as Record<string, unknown>, source: "reconciler",
+        });
+        if (!verification.ok) {
+          exceptions++;
+          await db.collection("onboarding_exceptions").add({
+            employeeId, orderId: orderDoc.id, paymentId: capturedPayment.id,
+            reason: verification.reason, source: "reconciler",
+            createdAt: admin.firestore.FieldValue.serverTimestamp(),
+          });
+          continue;
+        }
         const result = await performOnboardingActivation({
           db,
-          uid: employeeId,
+          uid: verification.uid,
           paymentId: capturedPayment.id,
           source: "reconciler",
         });
