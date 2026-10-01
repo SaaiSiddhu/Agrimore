@@ -5,7 +5,7 @@ import axios from "axios";
 import Razorpay from "razorpay";
 import { createHmac, randomBytes, timingSafeEqual } from "crypto";
 import { log } from "../common/helpers";
-import { isLocalPaymentEmulator } from "../common/paymentIntegrity";
+import { isLocalPaymentEmulator, isSafeProviderId } from "../common/paymentIntegrity";
 
 // Phase 18, Workstream 1: Secret Manager binding. Every function below (and
 // every indirect importer of getRazorpayCredentials() — wallet.ts,
@@ -46,10 +46,6 @@ interface CreateOrderData {
   // and never referenced again anywhere in this function. Agrimore does not
   // use Razorpay Route; seller payouts are computed and disbursed by this
   // codebase's own calculateSellerPayout, not by Razorpay-native transfers.
-}
-
-function isSafeProviderId(value: unknown): value is string {
-  return typeof value === "string" && /^[A-Za-z0-9_-]{1,200}$/.test(value);
 }
 
 function requireOwnedOrder(

@@ -129,9 +129,10 @@ async function seedVerifiedPayment(paymentId, orderId, uid, amount, extra) {
     );
 }
 
-function mockCaptured(paymentId, amount) {
+function mockCaptured(paymentId, amount, orderId) {
   mockPayments[paymentId] = {
     id: paymentId,
+    order_id: orderId,
     amount: amount * 100,
     currency: "INR",
     status: "captured",
@@ -201,7 +202,7 @@ async function main() {
     const amount = 1000;
     await seedUser(uid);
     await seedRazorpayOrder(orderId, uid, amount);
-    mockCaptured(paymentId, amount);
+    mockCaptured(paymentId, amount, orderId);
 
     const r = await callTopup(
       { amount, paymentId, orderId, signature: computeSignature(orderId, paymentId) },
@@ -237,7 +238,7 @@ async function main() {
     await seedProduct(productId, "phase25-dirA-seller", amount, 50);
     await seedRazorpayOrder(orderId, uid, amount);
     await seedVerifiedPayment(paymentId, orderId, uid, amount);
-    mockCaptured(paymentId, amount);
+    mockCaptured(paymentId, amount, orderId);
 
     const orderResult = await callCreateOrder(orderPayload(productId, paymentId, orderId), {
       uid,
@@ -286,7 +287,7 @@ async function main() {
     // reverted build creates the order AND keeps the wallet credit, which is
     // the N-1 exploit itself.
     await seedVerifiedPayment(paymentId, orderId, uid, amount);
-    mockCaptured(paymentId, amount);
+    mockCaptured(paymentId, amount, orderId);
 
     const topup = await callTopup(
       { amount, paymentId, orderId, signature: computeSignature(orderId, paymentId) },
@@ -338,7 +339,7 @@ async function main() {
     // ACTIVATES onboarding off an already-spent payment, rather than stopping
     // early at payment_not_found.
     await seedVerifiedPayment(paymentId, orderId, uid, amount);
-    mockCaptured(paymentId, amount);
+    mockCaptured(paymentId, amount, orderId);
 
     const topup = await callTopup(
       { amount, paymentId, orderId, signature: computeSignature(orderId, paymentId) },
@@ -378,7 +379,7 @@ async function main() {
     await seedUser(payer);
     await seedUser(attacker);
     await seedRazorpayOrder(orderId, payer, amount);
-    mockCaptured(paymentId, amount);
+    mockCaptured(paymentId, amount, orderId);
 
     const r = await callTopup(
       { amount, paymentId, orderId, signature: computeSignature(orderId, paymentId) },
@@ -405,7 +406,7 @@ async function main() {
     const paymentId = "pay_phase25_orphan";
     const amount = 750;
     await seedUser(uid);
-    mockCaptured(paymentId, amount);
+    mockCaptured(paymentId, amount, orderId);
 
     const r = await callTopup(
       { amount, paymentId, orderId, signature: computeSignature(orderId, paymentId) },

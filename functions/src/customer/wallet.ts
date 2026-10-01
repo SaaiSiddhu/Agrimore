@@ -36,7 +36,7 @@ import * as crypto from "crypto";
 import axios from "axios";
 import { log } from "../common/helpers";
 import { getRazorpayCredentials, RAZORPAY_KEY_SECRET } from "./payment";
-import { isSpendableCapturedPayment } from "../common/paymentIntegrity";
+import { isSafeProviderId, isSpendableCapturedPayment } from "../common/paymentIntegrity";
 
 interface RazorpayPayment {
   id: string;
@@ -93,13 +93,16 @@ export const verifyWalletTopup = onCall(
     }
     const uid = request.auth.uid;
 
-    const amount = Number(data?.amount);
+    const requestedAmount = data?.amount;
     const { paymentId, orderId, signature } = data || ({} as VerifyWalletTopupData);
-    if (!Number.isFinite(amount) || amount <= 0 ||
-        !Number.isSafeInteger(Math.round(amount * 100)) || Math.round(amount * 100) < 1) {
+    if (typeof requestedAmount !== "number" || !Number.isFinite(requestedAmount) || requestedAmount <= 0 ||
+        !Number.isSafeInteger(Math.round(requestedAmount * 100)) || Math.round(requestedAmount * 100) < 1) {
       throw new HttpsError("invalid-argument", "amount must be a positive number");
     }
-    if (!paymentId || !orderId || !signature) {
+    const amountPaise = Math.round(requestedAmount * 100);
+    const amount = amountPaise / 100;
+    if (!isSafeProviderId(paymentId) || !isSafeProviderId(orderId) ||
+        typeof signature !== "string" || !signature || signature.length > 256) {
       throw new HttpsError(
         "invalid-argument",
         "Missing Razorpay verification parameters"
@@ -129,7 +132,9 @@ export const verifyWalletTopup = onCall(
       .createHmac("sha256", RAZORPAY_KEY_SECRET)
       .update(`${orderId}|${paymentId}`)
       .digest("hex");
-    if (expectedSignature !== signature) {
+    const signatureMatches = /^[a-fA-F0-9]{64}$/.test(signature) &&
+      crypto.timingSafeEqual(Buffer.from(expectedSignature, "hex"), Buffer.from(signature, "hex"));
+    if (!signatureMatches) {
       log.error(`🚨 Wallet top-up signature mismatch for payment ${paymentId}`);
       // FIX-9, WS1. Mirrors payment.ts's identical fix: never persist the
       // correct signature, even into an admin-read-only collection — see
@@ -154,6 +159,9 @@ export const verifyWalletTopup = onCall(
       headers: { Authorization: `Basic ${authHeader}` },
     });
     const payment = response.data as RazorpayPayment;
+    if (!payment || payment.id !== paymentId || payment.order_id !== orderId || payment.currency !== "INR") {
+      throw new HttpsError("failed-precondition", "Payment does not match the requested top-up");
+    }
     if (!Number.isSafeInteger(payment.amount) || !isSpendableCapturedPayment({
       ...payment, amount: payment.amount / 100, paymentId, orderId,
     }, paymentId)) {
@@ -166,7 +174,7 @@ export const verifyWalletTopup = onCall(
     // Razorpay-captured amount (paise) must equal the claimed rupee amount
     // exactly, compared at paise granularity to avoid floating-point noise.
     const capturedAmount = payment.amount / 100;
-    if (Math.round(capturedAmount * 100) !== Math.round(amount * 100)) {
+    if (payment.amount !== amountPaise) {
       log.error(
         `🚨 Wallet top-up amount mismatch for payment ${paymentId}: captured ₹${capturedAmount}, claimed ₹${amount}`
       );
@@ -216,16 +224,6 @@ export const verifyWalletTopup = onCall(
         tx.get(razorpayOrderRef),
       ]);
 
-      if (topupSnap.exists) {
-        const existing = topupSnap.data()!;
-        return {
-          alreadyCredited: true,
-          bonusCoins: existing.bonusCoins as number,
-          balanceAfter: existing.balanceAfter as number,
-          coinsAfter: existing.coinsAfter as number,
-        };
-      }
-
       // ============================================
       // Phase FIX-1, N-6: bind this payment to the caller BEFORE crediting.
       // ============================================
@@ -263,6 +261,41 @@ export const verifyWalletTopup = onCall(
           "failed-precondition",
           "This payment could not be verified for your account"
         );
+      }
+
+      // A retry is a financial read too: establish its owner and immutable
+      // binding before returning the saved balance. Never reuse another UID's
+      // anchor, or let it hide a mismatched provider/order relationship.
+      const existing = topupSnap.data();
+      if (existing && existing.uid !== uid) {
+        throw new HttpsError("permission-denied", "This payment does not belong to you");
+      }
+      const order = razorpayOrderSnap.data();
+      if (order && (order.userId !== uid || order.orderId !== orderId ||
+          order.currency !== "INR" || order.amountPaise !== amountPaise ||
+          typeof order.amount !== "number" || !Number.isFinite(order.amount) ||
+          Math.round(order.amount * 100) !== amountPaise)) {
+        throw new HttpsError("failed-precondition", "Payment order does not match the requested top-up");
+      }
+      const verified = paymentSnap.data();
+      if (verified && (verified.userId !== uid || verified.orderId !== orderId ||
+          (!order && verified.paymentId !== paymentId) ||
+          !isSpendableCapturedPayment(verified, paymentId) ||
+          Math.round(verified.amount * 100) !== amountPaise)) {
+        throw new HttpsError("failed-precondition", "Verified payment does not match the requested top-up");
+      }
+      if (existing) {
+        if (existing.paymentId !== paymentId || existing.orderId !== orderId ||
+            existing.amount !== amount ||
+            (existing.amountPaise !== undefined && existing.amountPaise !== amountPaise)) {
+          throw new HttpsError("failed-precondition", "Previous top-up does not match this payment");
+        }
+        return {
+          alreadyCredited: true,
+          bonusCoins: existing.bonusCoins as number,
+          balanceAfter: existing.balanceAfter as number,
+          coinsAfter: existing.coinsAfter as number,
+        };
       }
 
       // ============================================
@@ -371,6 +404,8 @@ export const verifyWalletTopup = onCall(
         paymentId,
         orderId,
         amount,
+        amountPaise,
+        currency: "INR",
         bonusCoins,
         balanceAfter,
         coinsAfter,
@@ -392,6 +427,8 @@ export const verifyWalletTopup = onCall(
           orderId,
           userId: uid,
           amount,
+          amountPaise,
+          currency: "INR",
           status: "captured",
           consumedByWalletTopup: uid,
           consumedByWalletTopupPaymentId: paymentId,
