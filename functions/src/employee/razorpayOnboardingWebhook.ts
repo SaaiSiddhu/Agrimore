@@ -24,7 +24,7 @@ import { log } from "../common/helpers";
 import { getRazorpayCredentials, RAZORPAY_KEY_SECRET } from "../customer/payment";
 import { performOnboardingActivation } from "./activationCore";
 import { ONBOARDING_PURPOSE } from "./onboardingConfig";
-import { isSafeProviderId } from "../common/paymentIntegrity";
+import { isSafeProviderId, razorpayModeFromKey } from "../common/paymentIntegrity";
 import { verifyOnboardingCapture } from "./onboardingVerification";
 
 // Phase 18, Workstream 1: distinct from RAZORPAY_KEY_SECRET (imported above,
@@ -200,6 +200,7 @@ export const razorpayOnboardingWebhook = onRequest(
 
     try {
       const verifiedPaymentsRef = db.collection("verified_payments").doc(paymentId);
+      const { keyId, keySecret } = getRazorpayCredentials();
       const verifiedSnap = await verifiedPaymentsRef.get();
       let livePayment: Record<string, unknown> | undefined;
 
@@ -215,7 +216,6 @@ export const razorpayOnboardingWebhook = onRequest(
         // razorpay_orders/{orderId}.userId, written by
         // createAssociateOnboardingPayment.ts at order-creation time — a
         // value Razorpay's servers never see or control.
-        const { keyId, keySecret } = getRazorpayCredentials();
         if (!keyId || !keySecret) {
           log.error("🚨 Razorpay credentials not configured — cannot verify onboarding webhook payment");
           res.status(200).send("Ignored (credentials not configured)");
@@ -239,6 +239,7 @@ export const razorpayOnboardingWebhook = onRequest(
 
       const verification = await verifyOnboardingCapture({
         db, paymentId, orderId, notesUserId: notes.userId, livePayment, source: "webhook",
+        providerMode: razorpayModeFromKey(keyId),
       });
       if (!verification.ok) {
         await db.collection("onboarding_exceptions").add({

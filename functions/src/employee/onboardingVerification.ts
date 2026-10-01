@@ -14,8 +14,9 @@ export async function verifyOnboardingCapture(params: {
   notesUserId?: unknown;
   livePayment?: Record<string, unknown>;
   source: "webhook" | "reconciler";
+  providerMode?: "live" | "test";
 }): Promise<VerificationResult> {
-  const { db, paymentId, orderId, notesUserId, livePayment, source } = params;
+  const { db, paymentId, orderId, notesUserId, livePayment, source, providerMode } = params;
   if (!isSafeProviderId(paymentId) || !isSafeProviderId(orderId)) {
     return { ok: false, reason: "invalid_payment_ids" };
   }
@@ -34,6 +35,7 @@ export async function verifyOnboardingCapture(params: {
     if (order) {
       if (order.orderId !== orderId || order.purpose !== ONBOARDING_PURPOSE ||
           order.currency !== "INR" ||
+          (providerMode !== undefined && order.providerMode !== undefined && order.providerMode !== providerMode) ||
           (order.employeeId !== undefined && order.employeeId !== uid) ||
           typeof order.amount !== "number" || !Number.isFinite(order.amount) ||
           !Number.isSafeInteger(Math.round(order.amount * 100)) || Math.round(order.amount * 100) < 1) {
@@ -60,6 +62,7 @@ export async function verifyOnboardingCapture(params: {
       if (existing.paymentId !== paymentId || existing.orderId !== orderId || existing.userId !== uid ||
           (existing.purpose !== undefined && existing.purpose !== ONBOARDING_PURPOSE) ||
           !isSpendableCapturedPayment(existing, paymentId) ||
+          (providerMode !== undefined && existing.providerMode !== undefined && existing.providerMode !== providerMode) ||
           (amountPaise !== undefined && Math.round(existing.amount * 100) !== amountPaise) ||
           (livePayment && Math.round(existing.amount * 100) !== livePayment.amount)) {
         return { ok: false, reason: "verified_binding_mismatch" };
@@ -68,7 +71,7 @@ export async function verifyOnboardingCapture(params: {
       // belong to the verifier/consumer that already won this transaction.
       return { ok: true, uid };
     }
-    if (!order || !livePayment || amountPaise === undefined) {
+    if (!order || !livePayment || amountPaise === undefined || !providerMode) {
       return { ok: false, reason: "capture_evidence_missing" };
     }
     tx.set(paymentRef, {
@@ -78,6 +81,7 @@ export async function verifyOnboardingCapture(params: {
       isTest: order.isTest === true || order.isTestOrder === true ||
         livePayment.isTest === true || livePayment.isTestOrder === true,
       verifiedAt: admin.firestore.FieldValue.serverTimestamp(),
+      providerMode,
       verifiedBy: source === "webhook" ? "razorpayOnboardingWebhook" : "reconcileStaleOnboardingPayments",
       method: typeof livePayment.method === "string" ? livePayment.method : null,
     }, { merge: true });

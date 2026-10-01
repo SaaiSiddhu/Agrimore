@@ -16,6 +16,7 @@ import { getRazorpayCredentials, RAZORPAY_KEY_SECRET } from "../customer/payment
 import { performOnboardingActivation } from "./activationCore";
 import { ONBOARDING_PURPOSE } from "./onboardingConfig";
 import { verifyOnboardingCapture } from "./onboardingVerification";
+import { razorpayModeFromKey } from "../common/paymentIntegrity";
 
 // Decision (8a/8d — see completion report Decisions section): a stale
 // order is one created more than STALENESS_MINUTES ago (long enough that
@@ -118,6 +119,7 @@ export const reconcileStaleOnboardingPayments = onSchedule(
         const verification = await verifyOnboardingCapture({
           db, orderId: orderDoc.id, paymentId: capturedPayment.id,
           livePayment: capturedPayment as unknown as Record<string, unknown>, source: "reconciler",
+          providerMode: razorpayModeFromKey(keyId),
         });
         if (!verification.ok) {
           exceptions++;

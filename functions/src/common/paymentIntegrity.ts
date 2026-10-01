@@ -7,8 +7,19 @@ export function isSafeProviderId(value: unknown): value is string {
 // economic consumer. Neither request flags nor provider key prefixes enable
 // simulated money. Require loopback storage to isolate local financial tests.
 export function isLocalPaymentEmulator(): boolean {
-  return process.env.FUNCTIONS_EMULATOR === "true" &&
-    /^(127\.0\.0\.1|localhost|\[::1\]):\d+$/.test(process.env.FIRESTORE_EMULATOR_HOST || "");
+  return process.env.FUNCTIONS_EMULATOR === "true" && isLocalPaymentStorage();
+}
+
+// Provider-backed sandbox fixtures still require isolated financial storage,
+// even when handlers are invoked directly without the Functions emulator.
+export function isLocalPaymentStorage(): boolean {
+  return /^(127\.0\.0\.1|localhost|\[::1\]):\d+$/.test(process.env.FIRESTORE_EMULATOR_HOST || "");
+}
+
+export function razorpayModeFromKey(keyId: string): "live" | "test" | undefined {
+  if (keyId.startsWith("rzp_live_")) return "live";
+  if (keyId.startsWith("rzp_test_")) return "test";
+  return undefined;
 }
 
 // This is an additional guard, not an ownership or amount-due validator:
@@ -28,6 +39,9 @@ export function isSpendableCapturedPayment(
   if (payment.amountPaise !== undefined &&
       (!Number.isSafeInteger(payment.amountPaise) || payment.amountPaise !== Math.round(amount * 100))) return false;
   if (payment.paymentId !== undefined && payment.paymentId !== paymentId) return false;
+  if (payment.providerMode !== undefined &&
+      (payment.providerMode !== "live" && payment.providerMode !== "test")) return false;
+  if (payment.providerMode === "test" && !isLocalPaymentStorage()) return false;
 
   const simulated = payment.isTest === true || payment.isTestOrder === true ||
     (typeof paymentId === "string" && paymentId.startsWith("pay_test_")) ||

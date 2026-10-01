@@ -15,6 +15,7 @@ import { log } from "../common/helpers";
 import { getRazorpayCredentials, RAZORPAY_KEY_SECRET } from "../customer/payment";
 import { loadOnboardingConfig, ONBOARDING_PURPOSE } from "./onboardingConfig";
 import { ASSOCIATE_DISPLAY_TERM } from "./associateTerm";
+import { razorpayModeFromKey } from "../common/paymentIntegrity";
 
 // Mirrors sendPhoneOTP.ts's RESEND_COOLDOWN_MS (30s) — the same
 // "long enough to stop scripted spam, short enough not to punish a genuine
@@ -132,6 +133,7 @@ export const createAssociateOnboardingPayment = onCall(
       amount: config.feeAmount,
       amountPaise: order.amount,
       currency: order.currency,
+      providerMode: razorpayModeFromKey(RAZORPAY_KEY_ID),
       status: order.status,
       receipt: order.receipt,
       configVersion: config.configVersion,
