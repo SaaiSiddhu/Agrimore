@@ -194,6 +194,32 @@ const markers = { consumedByOrderId: "original-goods-order", consumedByWalletTop
       assert.equal((await f.paymentRef.get()).exists, false);
     });
   }
+  await scenario("opt-in resume returns exact owned public tuple without new-order permission", async () => {
+    const f = await fixture(); body.items = []; body.count = 0;
+    assert.deepEqual(await f.call({ ...f.input, includeCheckoutOrder: true }), {
+      success: true, verified: false, outcome: "unconfirmed", orderId: f.orderId,
+      keyId: fixtureKey, amountPaise: 10000, currency: "INR"
+    });
+    assert.equal((await f.paymentRef.get()).exists, false);
+    assert.equal(calls.length, 1);
+  });
+  await scenario("captured opt-in resumes fulfilment without returning checkout key", async () => {
+    const f = await fixture(), r = await f.call({ ...f.input, includeCheckoutOrder: true });
+    assert.equal(r.outcome, "captured"); assert.equal("keyId" in r, false);
+  });
+  await scenario("nonboolean resume option refuses before provider lookup", async () => {
+    const f = await fixture(); await refuses(f, "invalid-argument", () => f.call({ ...f.input, includeCheckoutOrder: "true" }));
+    assert.equal(calls.length, 0);
+  });
+  for (const change of ["owner", "amount", "purpose", "mode", "delete", "orderId"]) {
+    await scenario(`unconfirmed opt-in rechecks changed ${change} before returning checkout tuple`, async () => {
+      const f = await fixture(); body.items = []; body.count = 0;
+      duringLookup = () => change === "delete" ? f.orderRef.delete() : f.orderRef.update(
+        change === "owner" ? { userId: "other-owner" } : change === "amount" ? { amount: 101, amountPaise: 10100 } :
+          change === "purpose" ? { purpose: "wallet_topup" } : change === "mode" ? { providerMode: "live" } : { orderId: "wrong-order" });
+      await refuses(f, change === "owner" ? "permission-denied" : "failed-precondition", () => f.call({ ...f.input, includeCheckoutOrder: true }));
+    });
+  }
   await scenario("one capture alongside failed attempt recovers the captured payment", async () => {
     const f = await fixture(); body.items.unshift({ ...body.items[0], id: "pay_failed_attempt", status: "failed", captured: false }); body.count = 2;
     assert.equal((await f.call()).paymentId, f.paymentId);

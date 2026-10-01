@@ -6,6 +6,7 @@ library;
 import 'dart:async';
 
 import 'package:agrimore_marketplace/services/razorpay_service.dart';
+import 'package:agrimore_marketplace/services/payment_checkout_order.dart';
 import 'package:firebase_core/firebase_core.dart';
 import 'package:firebase_core_platform_interface/test.dart';
 import 'package:flutter/services.dart';
@@ -79,6 +80,131 @@ void main() {
         userPhone: '',
       );
 
+  group('same saved goods order resume', () {
+    late String? owner;
+    late Map<String, dynamic> outcome;
+    late PaymentCheckoutOrder saved;
+    late Completer<void>? lookupStarted;
+    late Completer<void>? lookupRelease;
+    setUp(() {
+      owner = 'fixture-owner';
+      saved = PaymentCheckoutOrder.fromResponse(serverResponse);
+      outcome = {
+        'success': true,
+        'verified': false,
+        'outcome': 'unconfirmed',
+        'orderId': saved.orderId,
+        'keyId': saved.keyId,
+        'amountPaise': saved.amountPaise,
+        'currency': 'INR',
+      };
+      lookupStarted = null;
+      lookupRelease = null;
+      messenger.setMockDecodedMessageHandler<Object?>(functionsChannel,
+          (message) async {
+        final call = (message! as List).single as Map;
+        expect(call['functionName'], 'recoverCheckoutPayment');
+        requests.add(call['parameters'] as Map);
+        lookupStarted?.complete();
+        if (lookupRelease != null) await lookupRelease!.future;
+        return [outcome];
+      });
+    });
+    Future<GoodsCheckoutResumeOutcome> resume() => service.resumeGoodsCheckout(
+          order: saved,
+          ownerId: 'fixture-owner',
+          currentUserId: () => owner,
+          userName: '',
+          userEmail: '',
+          userPhone: '',
+        );
+    test('reopens exact saved tuple without creating another provider order',
+        () async {
+      expect(await resume(), GoodsCheckoutResumeOutcome.reopened);
+      expect(sdkOptions.single['order_id'], saved.orderId);
+      expect(sdkOptions.single['amount'], 59999);
+      expect(sdkOptions.single['key'], saved.keyId);
+      expect(requests.single, {
+        'checkoutOwnerId': 'fixture-owner',
+        'orderId': saved.orderId,
+        'includeCheckoutOrder': true
+      });
+    });
+    test('captured outcome continues fulfilment without opening SDK', () async {
+      outcome['verified'] = true;
+      outcome['outcome'] = 'captured';
+      outcome['paymentId'] = 'pay_foundation_recovered';
+      outcome.remove('keyId');
+      expect(await resume(), GoodsCheckoutResumeOutcome.captured);
+      expect(sdkOptions, isEmpty);
+    });
+    test('different account refuses before transport', () async {
+      owner = 'other-owner';
+      await expectLater(resume(), throwsStateError);
+      expect(requests, isEmpty);
+      expect(sdkOptions, isEmpty);
+    });
+    test('account switch during transport prevents opening SDK', () async {
+      lookupStarted = Completer<void>();
+      lookupRelease = Completer<void>();
+      final pending = resume();
+      await lookupStarted!.future;
+      owner = 'other-owner';
+      lookupRelease!.complete();
+      await expectLater(pending, throwsStateError);
+      expect(sdkOptions, isEmpty);
+    });
+    test('disposal during transport prevents opening SDK', () async {
+      lookupStarted = Completer<void>();
+      lookupRelease = Completer<void>();
+      final pending = resume();
+      await lookupStarted!.future;
+      service.dispose();
+      lookupRelease!.complete();
+      await expectLater(pending, throwsStateError);
+      expect(sdkOptions, isEmpty);
+    });
+    test('disposed service refuses before transport', () async {
+      service.dispose();
+      await expectLater(resume(), throwsStateError);
+      expect(requests, isEmpty);
+      expect(sdkOptions, isEmpty);
+    });
+    test('provider unavailable never creates or opens a replacement charge',
+        () async {
+      messenger.setMockDecodedMessageHandler<Object?>(functionsChannel,
+          (_) async => ['unavailable', 'Synthetic fixture failure', null]);
+      await expectLater(resume(), throwsA(isA<Exception>()));
+      expect(sdkOptions, isEmpty);
+    });
+    test('local simulated order cannot enter provider recovery', () async {
+      saved = PaymentCheckoutOrder.fromResponse(
+          {...serverResponse, 'isTestMode': true});
+      await expectLater(resume(), throwsStateError);
+      expect(requests, isEmpty);
+      expect(sdkOptions, isEmpty);
+    });
+    for (final change in <Map<String, dynamic>>[
+      {'success': false},
+      {'verified': true},
+      {'verified': null},
+      {'outcome': 'failed'},
+      {'orderId': 'order_other'},
+      {'amountPaise': 59998},
+      {'amountPaise': '59999'},
+      {'currency': 'USD'},
+      {'keyId': 'rzp_live_other_fixture'},
+      {'isTestMode': true},
+      {'verified': true, 'outcome': 'captured', 'paymentId': 'bad/path'},
+      {'verified': true, 'outcome': 'captured', 'paymentId': 'pay_test_fake'},
+    ]) {
+      test('malformed resume response refuses $change', () async {
+        outcome.addAll(change);
+        await expectLater(resume(), throwsStateError);
+        expect(sdkOptions, isEmpty);
+      });
+    }
+  });
   test('goods purpose is sent to the real callable transport', () async {
     await checkout();
     await opened.future.timeout(const Duration(seconds: 2));

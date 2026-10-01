@@ -23,6 +23,8 @@ typedef PaymentDismissCallback = void Function();
 typedef PaymentOrderCreatedCallback = Future<void> Function(
     PaymentCheckoutOrder order);
 
+enum GoodsCheckoutResumeOutcome { reopened, captured }
+
 /// Unified Razorpay Service for all platforms
 class RazorpayService {
   bool _disposed = false;
@@ -163,7 +165,6 @@ class RazorpayService {
       if (onOrderCreated != null) await onOrderCreated(order);
       if (_disposed) return;
       final razorpayOrderId = order.orderId;
-      final keyId = order.keyId;
       final isTestMode = order.isTestMode;
 
       debugPrint(
@@ -189,78 +190,156 @@ class RazorpayService {
         return;
       }
 
-      // Enhanced Razorpay checkout options with premium branding
-      final options = {
-        'key': keyId,
-        'amount': order.amountPaise,
-        'order_id': razorpayOrderId,
-        'currency': 'INR',
-
-        // Premium Branding
-        'name': 'Agrimore',
-        'description': description ?? 'Premium Order Payment',
-        'image': 'https://agrimore.in/icons/Icon-192.png', // App logo
-
-        // Customer prefill for faster checkout
-        'prefill': {
-          'name': userName,
-          'email': userEmail,
-          'contact': userPhone,
-        },
-
-        // Premium Theme with app colors
-        'theme': {
-          'color': '#145A32', // Agrimore Green
-          'backdrop_color': '#0B3B20', // Darker green backdrop
-          'hide_topbar': false,
-        },
-
-        // Smart Retry for failed payments
-        'retry': {
-          'enabled': true,
-          'max_count': 3,
-        },
-
-        // Remember customer for faster future payments
-        'remember_customer': true,
-
-        // Send SMS/Email updates
-        'send_sms_hash': true,
-
-        // Modal configuration
-        'modal': {
-          'confirm_close': true, // Ask before closing
-          'animation': true,
-          'backdropclose': false, // Don't close on backdrop click
-          'escape': false, // Don't close on ESC
-        },
-
-        // Payment method preferences (show all)
-        'config': {
-          'display': {
-            'hide': [
-              // {'method': 'paylater'}, // Uncomment to hide Pay Later
-            ],
-            'preferences': {
-              'show_default_blocks': true,
-            },
-          },
-        },
-
-        // Notes for order tracking
-        'notes': {
-          'app': 'Agrimore',
-          'platform': 'mobile',
-          'order_source': 'cart_checkout',
-        },
-      };
-
-      debugPrint('📱 Opening premium Razorpay checkout...');
-      _razorpay?.open(options);
+      _openMobileOrder(order,
+          userName: userName,
+          userEmail: userEmail,
+          userPhone: userPhone,
+          description: description);
     } catch (e) {
       debugPrint('❌ Error opening mobile checkout: $e');
       _onFailure?.call('Could not open payment. Please try again.');
     }
+  }
+
+  /// Goods only: recover the saved provider order before reopening it. A
+  /// captured payment goes straight to fulfilment; this method never creates
+  /// a replacement payment order. Dedicated activation fees remain web-only.
+  Future<GoodsCheckoutResumeOutcome> resumeGoodsCheckout({
+    required PaymentCheckoutOrder order,
+    required String ownerId,
+    required String? Function() currentUserId,
+    required String userName,
+    required String userEmail,
+    required String userPhone,
+    String? description,
+  }) async {
+    void checkSession() {
+      if (_disposed ||
+          currentUserId() != ownerId ||
+          ownerId.isEmpty ||
+          ownerId.length > 128 ||
+          kIsWeb ||
+          order.isTestMode ||
+          order.orderId.startsWith('order_test_')) {
+        throw StateError('The saved payment cannot be opened.');
+      }
+    }
+
+    checkSession();
+    final result = await FirebaseFunctions.instance
+        .httpsCallable('recoverCheckoutPayment',
+            options: HttpsCallableOptions(timeout: const Duration(seconds: 20)))
+        .call<Map<String, dynamic>>({
+      'checkoutOwnerId': ownerId,
+      'orderId': order.orderId,
+      'includeCheckoutOrder': true,
+    });
+    checkSession();
+    final data = result.data;
+    if (data['success'] != true ||
+        data['orderId'] != order.orderId ||
+        data['amountPaise'] != order.amountPaise ||
+        data['currency'] != 'INR' ||
+        data['isTestMode'] == true) {
+      throw StateError('The saved payment needs review.');
+    }
+    if (data['verified'] == true && data['outcome'] == 'captured') {
+      final paymentId = data['paymentId'];
+      if (paymentId is! String ||
+          !RegExp(r'^[A-Za-z0-9_-]{1,128}$').hasMatch(paymentId) ||
+          paymentId.startsWith('pay_test_')) {
+        throw StateError('The saved payment needs review.');
+      }
+      return GoodsCheckoutResumeOutcome.captured;
+    }
+    if (data['verified'] != false ||
+        data['outcome'] != 'unconfirmed' ||
+        data['keyId'] != order.keyId) {
+      throw StateError('The saved payment needs review.');
+    }
+    _openMobileOrder(order,
+        userName: userName,
+        userEmail: userEmail,
+        userPhone: userPhone,
+        description: description);
+    return GoodsCheckoutResumeOutcome.reopened;
+  }
+
+  void _openMobileOrder(
+    PaymentCheckoutOrder order, {
+    required String userName,
+    required String userEmail,
+    required String userPhone,
+    String? description,
+  }) {
+    // Enhanced Razorpay checkout options with premium branding
+    final options = {
+      'key': order.keyId,
+      'amount': order.amountPaise,
+      'order_id': order.orderId,
+      'currency': 'INR',
+
+      // Premium Branding
+      'name': 'Agrimore',
+      'description': description ?? 'Premium Order Payment',
+      'image': 'https://agrimore.in/icons/Icon-192.png', // App logo
+
+      // Customer prefill for faster checkout
+      'prefill': {
+        'name': userName,
+        'email': userEmail,
+        'contact': userPhone,
+      },
+
+      // Premium Theme with app colors
+      'theme': {
+        'color': '#145A32', // Agrimore Green
+        'backdrop_color': '#0B3B20', // Darker green backdrop
+        'hide_topbar': false,
+      },
+
+      // Smart Retry for failed payments
+      'retry': {
+        'enabled': true,
+        'max_count': 3,
+      },
+
+      // Remember customer for faster future payments
+      'remember_customer': true,
+
+      // Send SMS/Email updates
+      'send_sms_hash': true,
+
+      // Modal configuration
+      'modal': {
+        'confirm_close': true, // Ask before closing
+        'animation': true,
+        'backdropclose': false, // Don't close on backdrop click
+        'escape': false, // Don't close on ESC
+      },
+
+      // Payment method preferences (show all)
+      'config': {
+        'display': {
+          'hide': [
+            // {'method': 'paylater'}, // Uncomment to hide Pay Later
+          ],
+          'preferences': {
+            'show_default_blocks': true,
+          },
+        },
+      },
+
+      // Notes for order tracking
+      'notes': {
+        'app': 'Agrimore',
+        'platform': 'mobile',
+        'order_source': 'cart_checkout',
+      },
+    };
+
+    debugPrint('📱 Opening premium Razorpay checkout...');
+    _razorpay?.open(options);
   }
 
   // Mobile event handlers
