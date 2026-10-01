@@ -22,7 +22,9 @@ only way a second session can discover that a phase is already claimed.
 - **CLAIM BEFORE YOU START — the row is a lock, not a receipt.** See the claim protocol.
 - **Phase branches merge into `develop`, never into `main`.** `develop` is the integration branch
   (local end-to-end on the Firebase emulator suite). `staging` and `main` move only by
-  fast-forward promotion with the owner's word in the same message, recorded in `## Promotions`.
+  fast-forward promotion with the owner's word in the same message, recorded in `| `agrimore/foundation-f1d-onboarding-recovery` | `7482f0ce` | `ACTIVE` | 2026-10-01 | owner-authorized ten-phase foundation, single agent | F1.4 exact scope this ledger; functions/src/employee/onboardingVerification.ts, razorpayOnboardingWebhook.ts, reconcileStaleOnboardingPayments.ts; scripts/phase16d1_onboarding_coverage_test.js and phaseFOUNDATION4_onboarding_recovery_test.js. Shared transactional capture binding/preservation; missed callback and webhook recovery; realistic provider fixtures. No activation policy/client/rules/index/credential-mode/schedule change. Collision: clean develop 7482f0ce, one workspace, zero other ACTIVE claims. External foundation-f1d-contract.json. Deploy consequence: functions:razorpayOnboardingWebhook,functions:reconcileStaleOnboardingPayments, owner-operated only. | N/A — pending |
+
+## Promotions`.
   A merge commit or a direct commit on `staging`/`main` is a defect.
 - **Nothing here authorises `firebase deploy`.** Promotion is a git event. Deploying to
   `agrimore-66a4e` (live, real users) is the owner's own action, always with explicit function
