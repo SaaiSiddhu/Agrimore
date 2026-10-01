@@ -76,8 +76,23 @@ analyze() { # analyze <app>   PASS = zero error lines (flutter analyze exits 1 o
   local app="$1"; local log="$OUT/analyze_$app.log"; local start=$SECONDS
   ( cd "apps/$app" && flutter analyze ) >"$log" 2>&1; local rc=$?; local secs=$((SECONDS-start))
   local e w i; e=$(grep -cE '^ *error •' "$log"); w=$(grep -cE '^ *warning •' "$log"); i=$(grep -cE '^ *info •' "$log")
-  local verdict=0; [ "$e" -eq 0 ] || verdict=1
-  local first=""; [ "$e" -eq 0 ] || first="$(grep -E '^ *error •' "$log" | head -1 | cut -c1-110)"
+  # Foundation F0.1: zero parsed errors proves nothing when Flutter exits
+  # before analysis (e.g. SDK-cache permissions). Require its completion
+  # summary and reconcile every reported issue with parsed diagnostics.
+  local total=$((e+w+i)); local expected=""; local verdict=0; local first=""
+  if grep -q 'No issues found!' "$log"; then
+    expected=0
+  else
+    expected=$(sed -nE 's/^ *([0-9]+) issues? found\..*/\1/p' "$log" | tail -1)
+  fi
+  if { [ "$rc" -ne 0 ] && [ "$rc" -ne 1 ]; } || [ -z "$expected" ] ||
+     [ "$expected" != "$total" ] || { [ "$rc" -ne 0 ] && [ "$total" -eq 0 ]; }; then
+    verdict=1
+    first="analysis incomplete/tool failed or diagnostics not fully parsed — inspect $log"
+  elif [ "$e" -ne 0 ]; then
+    verdict=1
+    first="$(grep -E '^ *error •' "$log" | head -1 | cut -c1-110)"
+  fi
   [ $verdict -eq 0 ] || FAILS=$((FAILS+1))
   row "analyze:$app" "$verdict" "$secs" "errors=$e warnings=$w infos=$i (tool exit $rc)${first:+ — $first}"
 }
@@ -85,6 +100,7 @@ analyze() { # analyze <app>   PASS = zero error lines (flutter analyze exits 1 o
 run functions:build            bash -c 'cd functions && npm run build'
 for a in $APPS; do analyze "$a"; done
 if [ "$MODE" != quick ]; then
+  run guard:analysis-integrity python3 scripts/governance/foundation_f0_gate_analysis_test.py
   run guard:client-secrets     bash -c 'cd functions && node scripts/phase19_client_secret_guard_test.js'
   run guard:secret-bindings    bash -c 'cd functions && node scripts/phase18_secret_binding_test.js'
   run guard:fee-truthfulness   bash -c 'cd functions && node scripts/phase16b4_fee_truthfulness_test.js'
