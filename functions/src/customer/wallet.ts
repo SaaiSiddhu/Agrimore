@@ -36,7 +36,7 @@ import * as crypto from "crypto";
 import axios from "axios";
 import { log } from "../common/helpers";
 import { getRazorpayCredentials, RAZORPAY_KEY_SECRET } from "./payment";
-import { isSafeProviderId, isSpendableCapturedPayment, razorpayModeFromKey } from "../common/paymentIntegrity";
+import { isExactMoneyAmount, isSafeProviderId, isSpendableCapturedPayment, razorpayModeFromKey } from "../common/paymentIntegrity";
 
 interface RazorpayPayment {
   id: string;
@@ -77,7 +77,9 @@ interface VerifyWalletTopupData {
   amount: number;
   paymentId: string;
   orderId: string;
-  signature: string;
+  signature?: string;
+  proofSource?: string;
+  checkoutOwnerId?: string;
 }
 
 export const verifyWalletTopup = onCall(
@@ -93,6 +95,18 @@ export const verifyWalletTopup = onCall(
     }
     const uid = request.auth.uid;
 
+    if (data?.checkoutOwnerId !== undefined && data.checkoutOwnerId !== uid) {
+      throw new HttpsError("permission-denied", "Checkout does not belong to this account");
+    }
+    if (data?.proofSource !== undefined && data.proofSource !== "provider_api_recovery") {
+      throw new HttpsError("invalid-argument", "Missing Razorpay verification parameters");
+    }
+    const apiRecovery = data?.proofSource === "provider_api_recovery";
+    if (apiRecovery && (data.checkoutOwnerId !== uid || data.signature !== undefined ||
+        !isExactMoneyAmount(data.amount))) {
+      throw new HttpsError("invalid-argument", "Missing Razorpay verification parameters");
+    }
+
     const requestedAmount = data?.amount;
     const { paymentId, orderId, signature } = data || ({} as VerifyWalletTopupData);
     if (typeof requestedAmount !== "number" || !Number.isFinite(requestedAmount) || requestedAmount <= 0 ||
@@ -102,7 +116,7 @@ export const verifyWalletTopup = onCall(
     const amountPaise = Math.round(requestedAmount * 100);
     const amount = amountPaise / 100;
     if (!isSafeProviderId(paymentId) || !isSafeProviderId(orderId) ||
-        typeof signature !== "string" || !signature || signature.length > 256) {
+        (!apiRecovery && (typeof signature !== "string" || !signature || signature.length > 256))) {
       throw new HttpsError(
         "invalid-argument",
         "Missing Razorpay verification parameters"
@@ -129,39 +143,54 @@ export const verifyWalletTopup = onCall(
 
     // STEP 1: HMAC-SHA256 signature check — the primary gate, identical to
     // verifyRazorpayPayment's.
-    const expectedSignature = crypto
-      .createHmac("sha256", RAZORPAY_KEY_SECRET)
-      .update(`${orderId}|${paymentId}`)
-      .digest("hex");
-    const signatureMatches = /^[a-fA-F0-9]{64}$/.test(signature) &&
-      crypto.timingSafeEqual(Buffer.from(expectedSignature, "hex"), Buffer.from(signature, "hex"));
-    if (!signatureMatches) {
-      log.error(`🚨 Wallet top-up signature mismatch for payment ${paymentId}`);
-      // FIX-9, WS1. Mirrors payment.ts's identical fix: never persist the
-      // correct signature, even into an admin-read-only collection — see
-      // that file's own comment for why "admin-only" isn't "safe to store".
-      await admin.firestore().collection("payment_security_logs").add({
-        paymentId,
-        orderId,
-        receivedSignatureLength: signature ? String(signature).length : 0,
-        signatureMatched: false,
-        flaggedAt: admin.firestore.FieldValue.serverTimestamp(),
-        type: "wallet_topup_signature_mismatch",
-        uid,
-      });
-      throw new HttpsError("permission-denied", "Payment signature verification failed");
+    if (!apiRecovery) {
+      const expectedSignature = crypto
+        .createHmac("sha256", RAZORPAY_KEY_SECRET)
+        .update(`${orderId}|${paymentId}`)
+        .digest("hex");
+      const signatureMatches = /^[a-fA-F0-9]{64}$/.test(signature!) &&
+        crypto.timingSafeEqual(Buffer.from(expectedSignature, "hex"), Buffer.from(signature!, "hex"));
+      if (!signatureMatches) {
+        log.error(`🚨 Wallet top-up signature mismatch for payment ${paymentId}`);
+        // FIX-9, WS1. Mirrors payment.ts's identical fix: never persist the
+        // correct signature, even into an admin-read-only collection — see
+        // that file's own comment for why "admin-only" isn't "safe to store".
+        await admin.firestore().collection("payment_security_logs").add({
+          paymentId,
+          orderId,
+          receivedSignatureLength: signature ? String(signature).length : 0,
+          signatureMatched: false,
+          flaggedAt: admin.firestore.FieldValue.serverTimestamp(),
+          type: "wallet_topup_signature_mismatch",
+          uid,
+        });
+        throw new HttpsError("permission-denied", "Payment signature verification failed");
+      }
     }
 
     // STEP 2: live Razorpay API status check — a signature alone doesn't
     // prove the payment was actually captured (only that the IDs were
     // real), same as verifyRazorpayPayment's second gate.
     const authHeader = Buffer.from(`${RAZORPAY_KEY_ID}:${RAZORPAY_KEY_SECRET}`).toString("base64");
-    const response = await axios.get(`https://api.razorpay.com/v1/payments/${paymentId}`, {
-      headers: { Authorization: `Basic ${authHeader}` },
-    });
-    const payment = response.data as RazorpayPayment;
+    let payment: RazorpayPayment;
+    try {
+      const response = await axios.get(`https://api.razorpay.com/v1/payments/${paymentId}`, {
+        headers: { Authorization: `Basic ${authHeader}` },
+        timeout: 15000, maxContentLength: 256 * 1024, maxRedirects: 0,
+      });
+      payment = response.data as RazorpayPayment;
+    } catch {
+      throw new HttpsError("unavailable", "Payment outcome could not be checked. Try again later.");
+    }
     if (!payment || payment.id !== paymentId || payment.order_id !== orderId || payment.currency !== "INR") {
       throw new HttpsError("failed-precondition", "Payment does not match the requested top-up");
+    }
+    if (payment.captured === false ||
+        (payment.amount_refunded !== undefined && payment.amount_refunded !== 0) ||
+        (payment.refund_status !== undefined && payment.refund_status !== null) ||
+        (apiRecovery && (payment.entity !== "payment" || payment.captured !== true ||
+          payment.amount_refunded !== 0 || payment.refund_status !== null))) {
+      throw new HttpsError("failed-precondition", "Payment was not captured");
     }
     if (!Number.isSafeInteger(payment.amount) || !isSpendableCapturedPayment({
       ...payment, amount: payment.amount / 100, paymentId, orderId,
@@ -287,6 +316,18 @@ export const verifyWalletTopup = onCall(
           (verified.providerMode !== undefined && verified.providerMode !== providerMode) ||
           Math.round(verified.amount * 100) !== amountPaise)) {
         throw new HttpsError("failed-precondition", "Verified payment does not match the requested top-up");
+      }
+      // A client-supplied source flag is never proof. The server-only capture
+      // record and typed immutable order must both exist at credit time.
+      if (apiRecovery && (!order || !verified || order.purpose !== "wallet_topup" ||
+          order.providerMode !== providerMode || order.isTestOrder === true ||
+          orderId.startsWith("order_test_") || paymentId.startsWith("pay_test_") ||
+          verified.paymentId !== paymentId || verified.purpose !== "wallet_topup" ||
+          verified.providerMode !== providerMode || verified.currency !== "INR" ||
+          verified.amountPaise !== amountPaise || verified.isTest !== false ||
+          verified.providerCaptureVerified !== true ||
+          verified.verificationMethod !== "provider_api_recovery" || verified.signatureVerified === false)) {
+        throw new HttpsError("failed-precondition", "Saved payment needs review");
       }
       if (existing) {
         if (existing.paymentId !== paymentId || existing.orderId !== orderId ||

@@ -78,6 +78,7 @@ export {
   verifyRazorpayPayment
 } from "./customer/payment";
 export { recoverCheckoutPayment } from "./customer/recoverCheckoutPayment";
+export { recoverWalletTopupPayment } from "./customer/recoverWalletTopupPayment";
 export { ensureCheckoutSubscriptions } from "./customer/ensureCheckoutSubscriptions";
 // Phase 14, Workstream 5: splitCartIntoOrders removed (the file it lived in,
 // customer/cartSplitting.ts, is deleted too). It accepted a client-supplied
