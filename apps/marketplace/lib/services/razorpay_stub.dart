@@ -24,6 +24,7 @@ class RazorpayWebService {
     required String userPhone,
     String? description,
     Future<void> Function(PaymentCheckoutOrder order)? onOrderCreated,
+    bool Function()? canOpenCheckout,
   }) async {
     // No-op on mobile - use RazorpayCustomService instead
   }

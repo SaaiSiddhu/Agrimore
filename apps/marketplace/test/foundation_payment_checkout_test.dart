@@ -210,6 +210,34 @@ void main() {
     await opened.future.timeout(const Duration(seconds: 2));
     expect(requests.single['purpose'], 'goods_checkout');
   });
+  test('inactive session predicate refuses before creating a provider order',
+      () async {
+    await service.openCheckout(
+        amount: 100,
+        userName: '',
+        userEmail: '',
+        userPhone: '',
+        canOpenCheckout: () => false);
+    expect(requests, isEmpty);
+    expect(sdkOptions, isEmpty);
+    expect(failures, hasLength(1));
+  });
+  test('session predicate is checked again after the persistence hook',
+      () async {
+    var current = true;
+    await service.openCheckout(
+        amount: 100,
+        userName: '',
+        userEmail: '',
+        userPhone: '',
+        canOpenCheckout: () => current,
+        onOrderCreated: (_) async {
+          current = false;
+        });
+    expect(requests, hasLength(1));
+    expect(sdkOptions, isEmpty);
+    expect(failures, hasLength(1));
+  });
   test('disposing during provider response prevents late native checkout',
       () async {
     final entered = Completer<void>(), release = Completer<void>();

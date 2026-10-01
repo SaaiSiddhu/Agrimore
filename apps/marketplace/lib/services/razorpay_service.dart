@@ -89,8 +89,13 @@ class RazorpayService {
     String? description,
     BuildContext? context,
     PaymentOrderCreatedCallback? onOrderCreated,
+    bool Function()? canOpenCheckout,
   }) async {
     if (_disposed) return;
+    if (canOpenCheckout != null && !canOpenCheckout()) {
+      _onFailure?.call('Could not open payment. Please try again.');
+      return;
+    }
     _userName = userName;
     _userPhone = userPhone;
 
@@ -103,6 +108,7 @@ class RazorpayService {
         userPhone: userPhone,
         description: description,
         onOrderCreated: onOrderCreated,
+        canOpenCheckout: canOpenCheckout,
       );
     } else {
       await _openMobileCheckout(
@@ -114,6 +120,7 @@ class RazorpayService {
         description: description,
         context: context,
         onOrderCreated: onOrderCreated,
+        canOpenCheckout: canOpenCheckout,
       );
     }
   }
@@ -128,6 +135,7 @@ class RazorpayService {
     String? description,
     BuildContext? context,
     PaymentOrderCreatedCallback? onOrderCreated,
+    bool Function()? canOpenCheckout,
   }) async {
     try {
       debugPrint('💳 Creating Razorpay order via Cloud Function...');
@@ -164,6 +172,9 @@ class RazorpayService {
       // or interrupted hook cannot silently fall through to SDK checkout.
       if (onOrderCreated != null) await onOrderCreated(order);
       if (_disposed) return;
+      if (canOpenCheckout != null && !canOpenCheckout()) {
+        throw StateError('Checkout session changed.');
+      }
       final razorpayOrderId = order.orderId;
       final isTestMode = order.isTestMode;
 

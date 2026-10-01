@@ -51,9 +51,13 @@ class RazorpayWebService {
     required String userPhone,
     String? description,
     Future<void> Function(PaymentCheckoutOrder order)? onOrderCreated,
+    bool Function()? canOpenCheckout,
   }) async {
     if (_disposed) return;
     try {
+      if (canOpenCheckout != null && !canOpenCheckout()) {
+        throw StateError('Checkout session changed.');
+      }
       debugPrint('💳 Creating Razorpay order via Cloud Function...');
 
       // Call Cloud Function to create order
@@ -78,6 +82,9 @@ class RazorpayWebService {
       final order = PaymentCheckoutOrder.fromResponse(data);
       if (onOrderCreated != null) await onOrderCreated(order);
       if (_disposed) return;
+      if (canOpenCheckout != null && !canOpenCheckout()) {
+        throw StateError('Checkout session changed.');
+      }
       final razorpayOrderId = order.orderId;
       final keyId = order.keyId;
 
