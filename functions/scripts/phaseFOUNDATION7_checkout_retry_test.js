@@ -55,6 +55,31 @@ async function sameEffect(f, first) {
 }
 
 (async () => {
+  await scenario("explicit checkout owner matches authenticated session", async () => {
+    const f = await fixture(); f.data.checkoutOwnerId = f.uid;
+    const first = await f.call(); await sameEffect(f, first);
+  });
+  await scenario("different checkout owner refuses before any order effect", async () => {
+    const f = await fixture(); f.data.checkoutOwnerId = "another-owner";
+    const before = await f.state();
+    await assert.rejects(() => f.call(), error => error.code === "permission-denied");
+    assert.deepEqual(await f.state(), before); assert.equal((await f.anchor.get()).exists, false);
+  });
+  await scenario("completed checkout cannot bypass explicit owner binding", async () => {
+    const f = await fixture(); await f.call(); f.data.checkoutOwnerId = "another-owner";
+    const before = await f.state();
+    await assert.rejects(() => f.call(), error => error.code === "permission-denied");
+    assert.deepEqual(await f.state(), before);
+  });
+  await scenario("auth token switching to another user cannot submit saved owner's cart", async () => {
+    const original = await fixture(), switched = await fixture();
+    original.data.checkoutOwnerId = original.uid;
+    const beforeOriginal = await original.state(), beforeSwitched = await switched.state();
+    await assert.rejects(() => original.call(original.data, switched.auth), error => error.code === "permission-denied");
+    assert.deepEqual(await original.state(), beforeOriginal);
+    assert.deepEqual(await switched.state(), beforeSwitched);
+    assert.equal((await original.anchor.get()).exists, false);
+  });
   for (const paid of [false, true]) {
     await scenario(`${paid ? "paid" : "COD"} lost response recovers identical order without another effect`, async () => {
       const f = await fixture({ paid });

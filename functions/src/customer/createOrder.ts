@@ -77,6 +77,8 @@ interface CreateOrderData {
   /** Additive retry identity. Existing clients without it retain their
    *  established payment replay and COD behavior. */
   checkoutRequestId?: string;
+  /** Optional native journal owner, checked against the resolved auth token. */
+  checkoutOwnerId?: string;
 }
 
 // FIX-9, WS5. Was `Date.now()` plus a `Math.random()` 4-digit tail — neither
@@ -179,6 +181,9 @@ export const createOrder = onCall({ minInstances: 0, memory: "256MiB" }, async (
   }
 
   const uid = request.auth.uid;
+  if (data?.checkoutOwnerId !== undefined && data.checkoutOwnerId !== uid) {
+    throw new HttpsError("permission-denied", "Checkout does not belong to this account");
+  }
   const items = Array.isArray(data?.items) ? data.items : [];
   const orderMode = data?.orderMode;
   const paymentMethod = data?.paymentMethod || "cod";
