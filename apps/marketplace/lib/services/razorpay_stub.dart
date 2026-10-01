@@ -23,6 +23,7 @@ class RazorpayWebService {
     required String userEmail,
     required String userPhone,
     String? description,
+    Future<void> Function(PaymentCheckoutOrder order)? onOrderCreated,
   }) async {
     // No-op on mobile - use RazorpayCustomService instead
   }

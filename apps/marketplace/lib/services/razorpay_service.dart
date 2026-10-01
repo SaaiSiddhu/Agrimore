@@ -20,9 +20,12 @@ typedef PaymentSuccessCallback = void Function(
     String paymentId, String? orderId, String? signature);
 typedef PaymentFailureCallback = void Function(String error);
 typedef PaymentDismissCallback = void Function();
+typedef PaymentOrderCreatedCallback = Future<void> Function(
+    PaymentCheckoutOrder order);
 
 /// Unified Razorpay Service for all platforms
 class RazorpayService {
+  bool _disposed = false;
   Razorpay? _razorpay; // Mobile only
   RazorpayWebService? _razorpayWeb; // Web only
 
@@ -83,7 +86,9 @@ class RazorpayService {
     required String userPhone,
     String? description,
     BuildContext? context,
+    PaymentOrderCreatedCallback? onOrderCreated,
   }) async {
+    if (_disposed) return;
     _userName = userName;
     _userPhone = userPhone;
 
@@ -95,6 +100,7 @@ class RazorpayService {
         userEmail: userEmail,
         userPhone: userPhone,
         description: description,
+        onOrderCreated: onOrderCreated,
       );
     } else {
       await _openMobileCheckout(
@@ -105,6 +111,7 @@ class RazorpayService {
         userPhone: userPhone,
         description: description,
         context: context,
+        onOrderCreated: onOrderCreated,
       );
     }
   }
@@ -118,6 +125,7 @@ class RazorpayService {
     required String userPhone,
     String? description,
     BuildContext? context,
+    PaymentOrderCreatedCallback? onOrderCreated,
   }) async {
     try {
       debugPrint('💳 Creating Razorpay order via Cloud Function...');
@@ -142,6 +150,7 @@ class RazorpayService {
       }).timeout(const Duration(seconds: 16));
 
       final data = result.data;
+      if (_disposed) return;
 
       if (data['success'] != true) {
         _onFailure?.call(data['error'] ?? 'Failed to create order');
@@ -149,6 +158,10 @@ class RazorpayService {
       }
 
       final order = PaymentCheckoutOrder.fromResponse(data);
+      // Save the exact provider tuple before the customer can pay. A failed
+      // or interrupted hook cannot silently fall through to SDK checkout.
+      if (onOrderCreated != null) await onOrderCreated(order);
+      if (_disposed) return;
       final razorpayOrderId = order.orderId;
       final keyId = order.keyId;
       final isTestMode = order.isTestMode;
@@ -555,6 +568,7 @@ class RazorpayService {
 
   /// Dispose resources
   void dispose() {
+    _disposed = true;
     _razorpay?.clear();
     _razorpayWeb?.dispose();
     _onSuccess = null;

@@ -2,6 +2,7 @@
 library;
 
 import 'dart:convert';
+import 'dart:async';
 import 'dart:js_interop';
 
 import 'package:agrimore_marketplace/services/razorpay_web.dart';
@@ -98,6 +99,60 @@ void main() {
     await checkout();
     expect(options()['amount'], 59999);
     expect(options()['order_id'], 'order_foundation_web');
+    expect(failures, isEmpty);
+  });
+  test('browser SDK waits for validated order persistence hook', () async {
+    final entered = Completer<void>(), release = Completer<void>();
+    final pending = service.openCheckout(
+      amount: 599.99,
+      userName: '',
+      userEmail: '',
+      userPhone: '',
+      onOrderCreated: (order) async {
+        expect(order.orderId, 'order_foundation_web');
+        expect(order.amountPaise, 59999);
+        entered.complete();
+        await release.future;
+      },
+    );
+    await entered.future;
+    expect((_eval('window._fixtureOpened') as JSBoolean).toDart, false);
+    release.complete();
+    await pending;
+    expect(options()['amount'], 59999);
+    expect(failures, isEmpty);
+  });
+  test('browser persistence failure cannot open SDK', () async {
+    await service.openCheckout(
+      amount: 599.99,
+      userName: '',
+      userEmail: '',
+      userPhone: '',
+      onOrderCreated: (_) async {
+        throw StateError('Synthetic persistence failure');
+      },
+    );
+    expect((_eval('window._fixtureOpened') as JSBoolean).toDart, false);
+    expect(successes, isEmpty);
+    expect(failures, hasLength(1));
+  });
+  test('browser disposal during persistence suppresses late modal', () async {
+    final entered = Completer<void>(), release = Completer<void>();
+    final pending = service.openCheckout(
+      amount: 599.99,
+      userName: '',
+      userEmail: '',
+      userPhone: '',
+      onOrderCreated: (_) async {
+        entered.complete();
+        await release.future;
+      },
+    );
+    await entered.future;
+    service.dispose();
+    release.complete();
+    await pending;
+    expect((_eval('window._fixtureOpened') as JSBoolean).toDart, false);
     expect(failures, isEmpty);
   });
   test('quotes and newlines remain text in SDK options', () async {
