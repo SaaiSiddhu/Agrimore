@@ -1,5 +1,4 @@
 import 'package:flutter/material.dart';
-import 'package:firebase_auth/firebase_auth.dart';
 import 'package:provider/provider.dart';
 import 'package:agrimore_ui/agrimore_ui.dart';
 import '../providers/auth_provider.dart';
@@ -78,17 +77,11 @@ class _AuthGate extends StatelessWidget {
           return const EmployeePendingApprovalScreen();
         }
 
-        // Phase EMP-3: Fast-path zero delay startup.
-        // If an authenticated session exists in FirebaseAuth on cold start / reopen,
-        // mount EmployeeShellScreen immediately without showing a blocking loading spinner.
-        if (FirebaseAuth.instance.currentUser != null) {
-          return const EmployeeShellScreen();
-        }
-
+        // Authentication alone cannot open an associate workspace. The
+        // provider must finish its owned role and approval checks first.
         // Not logged in -> LoginScreen
         return const LoginScreen();
       },
     );
   }
 }
-
