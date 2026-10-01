@@ -196,12 +196,16 @@ class CheckoutRecoveryService {
     }
     if (data['payment'] != null) {
       final proof = data['payment'] as Map;
+      final viaProvider = proof['source'] == 'provider_api_recovery';
       if (!_safeId(proof['paymentId']) ||
           !_safeId(proof['orderId']) ||
           proof['orderId'] != (data['gateway'] as Map?)?['orderId'] ||
-          proof['signature'] is! String ||
-          (proof['signature'] as String).isEmpty ||
-          (proof['signature'] as String).length > 256) {
+          (viaProvider
+              ? proof.containsKey('signature')
+              : proof['source'] != null ||
+                  proof['signature'] is! String ||
+                  (proof['signature'] as String).isEmpty ||
+                  (proof['signature'] as String).length > 256)) {
         throw const FormatException('Checkout recovery needs attention.');
       }
     }
@@ -295,6 +299,15 @@ class CheckoutRecoveryService {
           'orderId': orderId,
           'signature': signature
         };
+        // A late SDK callback must not change the stable provider proof after
+        // recovery or alter the fingerprint of an already confirmed request.
+        if (request.payment?['source'] == 'provider_api_recovery' &&
+            request.payment?['paymentId'] == paymentId &&
+            request.payment?['orderId'] == orderId &&
+            signature.isNotEmpty &&
+            signature.length <= 256) {
+          return request;
+        }
         if (request.payment != null &&
             _canonical(request.payment) == _canonical(proof)) {
           return request;
@@ -321,6 +334,61 @@ class CheckoutRecoveryService {
     return request;
   }
 
+  /// Lookup only: an uncertain result preserves the original payment attempt.
+  /// The descriptor is a retry hint; server-owned verified_payments remains
+  /// financial authority, and confirmation rechecks the provider outcome.
+  Future<PendingCheckoutRequest> recoverPayment(
+          String ownerId, String requestId) =>
+      _locked(ownerId, () async {
+        final request = await _require(ownerId, requestId);
+        if (['ready', 'completed'].contains(request.stage)) return request;
+        if (request.stage != 'awaiting_payment') {
+          throw StateError('There is no saved payment attempt to check.');
+        }
+        final proof = await _recoverProvider(request);
+        if (proof == null) return request;
+        return _save(ownerId, {
+          ...request.toMap(),
+          'stage': 'ready',
+          'payment': proof,
+        });
+      });
+
+  Future<Map<String, dynamic>?> _recoverProvider(
+      PendingCheckoutRequest request) async {
+    _checkOwner(request.ownerId);
+    final result = await (_functions ?? FirebaseFunctions.instance)
+        .httpsCallable('recoverCheckoutPayment',
+            options: HttpsCallableOptions(timeout: const Duration(seconds: 20)))
+        .call<Map<String, dynamic>>({
+      'checkoutOwnerId': request.ownerId,
+      'orderId': request.gateway!['orderId'],
+    });
+    _checkOwner(request.ownerId);
+    final data = result.data;
+    if (data['success'] != true ||
+        data['orderId'] != request.gateway!['orderId']) {
+      throw StateError('Payment outcome could not be confirmed.');
+    }
+    if (data['verified'] == false && data['outcome'] == 'unconfirmed') {
+      return null;
+    }
+    if (data['verified'] != true ||
+        data['outcome'] != 'captured' ||
+        !_safeId(data['paymentId']) ||
+        data['amountPaise'] != request.gateway!['amount'] ||
+        data['currency'] != 'INR' ||
+        (request.payment != null &&
+            data['paymentId'] != request.payment!['paymentId'])) {
+      throw StateError('Payment outcome could not be confirmed.');
+    }
+    return {
+      'source': 'provider_api_recovery',
+      'orderId': data['orderId'],
+      'paymentId': data['paymentId'],
+    };
+  }
+
   Future<List<CheckoutReceipt>> confirm(String ownerId, String requestId) =>
       _locked(ownerId, () async {
         var request = await _require(ownerId, requestId);
@@ -336,15 +404,21 @@ class CheckoutRecoveryService {
         final functions = _functions ?? FirebaseFunctions.instance;
         final proof = request.payment;
         if (request.intent['paymentMethod'] != 'cod') {
-          _checkOwner(ownerId);
-          final verified = await functions
-              .httpsCallable('verifyRazorpayPayment',
-                  options: HttpsCallableOptions(
-                      timeout: const Duration(seconds: 15)))
-              .call<Map<String, dynamic>>(proof);
-          _checkOwner(ownerId);
-          if (verified.data['verified'] != true) {
-            throw StateError('Payment could not be confirmed.');
+          if (proof?['source'] == 'provider_api_recovery') {
+            if (await _recoverProvider(request) == null) {
+              throw StateError('Payment could not be confirmed.');
+            }
+          } else {
+            _checkOwner(ownerId);
+            final verified = await functions
+                .httpsCallable('verifyRazorpayPayment',
+                    options: HttpsCallableOptions(
+                        timeout: const Duration(seconds: 15)))
+                .call<Map<String, dynamic>>(proof);
+            _checkOwner(ownerId);
+            if (verified.data['verified'] != true) {
+              throw StateError('Payment could not be confirmed.');
+            }
           }
         }
         _checkOwner(ownerId);
@@ -358,7 +432,8 @@ class CheckoutRecoveryService {
           'checkoutOwnerId': ownerId,
           if (proof != null) 'razorpayPaymentId': proof['paymentId'],
           if (proof != null) 'razorpayOrderId': proof['orderId'],
-          if (proof != null) 'razorpaySignature': proof['signature'],
+          if (proof?['signature'] != null)
+            'razorpaySignature': proof!['signature'],
         });
         _checkOwner(ownerId);
         if (result.data['success'] != true) {
