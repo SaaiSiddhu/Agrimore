@@ -7,8 +7,10 @@ import 'package:agrimore_core/agrimore_core.dart';
 
 /// Provider for managing user wallet, transactions, and config
 class WalletProvider with ChangeNotifier {
-  final FirebaseFirestore _firestore = FirebaseFirestore.instance;
-  final FirebaseAuth _auth = FirebaseAuth.instance;
+  final FirebaseFirestore _firestore;
+  final FirebaseAuth _auth;
+  final Stream<DocumentSnapshot<Map<String, dynamic>>> Function(String)?
+      _walletSnapshots;
 
   // State
   WalletModel? _wallet;
@@ -17,25 +19,63 @@ class WalletProvider with ChangeNotifier {
   bool _isLoading = false;
   bool _isLoadingTransactions = false;
   String? _error;
-  StreamSubscription<DocumentSnapshot>? _walletSubscription;
+  StreamSubscription<DocumentSnapshot<Map<String, dynamic>>>?
+      _walletSubscription;
+  StreamSubscription<User?>? _authSubscription;
+  String? _sessionOwner, _transactionsOwner;
+  bool _bound = false, _disposed = false;
+  int _epoch = 0, _walletRead = 0, _historyRead = 0, _configRead = 0;
+
+  bool _live(String owner, int epoch) =>
+      !_disposed &&
+      _bound &&
+      _sessionOwner == owner &&
+      _auth.currentUser?.uid == owner &&
+      _epoch == epoch;
+  bool get _currentSession =>
+      !_disposed && _bound && _sessionOwner == _auth.currentUser?.uid;
+  void _cancelWallet() {
+    final old = _walletSubscription;
+    _walletSubscription = null;
+    if (old != null) unawaited(old.cancel().catchError((Object _) {}));
+  }
+
+  WalletModel _ownedWallet(DocumentSnapshot doc, String owner) {
+    if (!doc.exists || doc.id != owner) {
+      throw StateError('Wallet needs attention.');
+    }
+    final value = WalletModel.fromFirestore(doc);
+    if (value.userId != owner ||
+        !value.balance.isFinite ||
+        !value.lifetimeEarnings.isFinite) {
+      throw StateError('Wallet needs attention.');
+    }
+    return value;
+  }
 
   // Getters
-  WalletModel? get wallet => _wallet;
+  WalletModel? get wallet =>
+      !_disposed && _wallet?.userId == _auth.currentUser?.uid ? _wallet : null;
   WalletConfigModel get config => _config;
-  List<WalletTransactionModel> get transactions => _transactions;
-  bool get isLoading => _isLoading;
-  bool get isLoadingTransactions => _isLoadingTransactions;
-  String? get error => _error;
+  List<WalletTransactionModel> get transactions => !_disposed &&
+          _transactionsOwner == _auth.currentUser?.uid &&
+          _transactionsOwner != null
+      ? List.unmodifiable(_transactions)
+      : const [];
+  bool get isLoading => _currentSession && _isLoading;
+  bool get isLoadingTransactions => _currentSession && _isLoadingTransactions;
+  String? get error => _currentSession ? _error : null;
 
   // Wallet getters
-  double get balance => _wallet?.balance ?? 0;
-  int get coins => _wallet?.coins ?? 0;
-  double get totalAvailable => _wallet?.totalAvailable ?? 0;
+  double get balance => wallet?.balance ?? 0;
+  int get coins => wallet?.coins ?? 0;
+  double get totalAvailable => wallet?.totalAvailable ?? 0;
 
   /// Returns referral code - falls back to generated code from user ID if wallet not loaded
   String get referralCode {
-    if (_wallet?.referralCode != null && _wallet!.referralCode.isNotEmpty) {
-      return _wallet!.referralCode;
+    if (_disposed) return '';
+    if (wallet?.referralCode != null && wallet!.referralCode.isNotEmpty) {
+      return wallet!.referralCode;
     }
     // Generate fallback code: First 4 letters of name + 2 digit sequence
     final user = _auth.currentUser;
@@ -56,8 +96,8 @@ class WalletProvider with ChangeNotifier {
     return '';
   }
 
-  bool get hasWallet => _wallet != null;
-  bool get canUseWallet => _wallet?.canUseWallet ?? false;
+  bool get hasWallet => wallet != null;
+  bool get canUseWallet => wallet?.canUseWallet ?? false;
 
   // Config getters
   double get maxCoinsPercentage => _config.maxCoinsPercentage;
@@ -66,160 +106,219 @@ class WalletProvider with ChangeNotifier {
   bool get isCoinsEnabled => _config.isCoinsEnabled;
   bool get isReferralEnabled => _config.isReferralEnabled;
 
-  WalletProvider() {
-    _init();
-  }
-
-  Future<void> _init() async {
-    await loadConfig();
+  WalletProvider(
+      {FirebaseFirestore? firestore,
+      FirebaseAuth? auth,
+      Stream<DocumentSnapshot<Map<String, dynamic>>> Function(String)?
+          walletSnapshots})
+      : _firestore = firestore ?? FirebaseFirestore.instance,
+        _auth = auth ?? FirebaseAuth.instance,
+        _walletSnapshots = walletSnapshots {
+    _authSubscription = _auth.authStateChanges().listen((_) {
+      if (!_disposed) _startWalletListener();
+    }, onError: (_) {
+      if (_currentSession) {
+        _error = 'Your session needs attention. Sign in again to continue.';
+        notifyListeners();
+      }
+    });
     _startWalletListener();
+    unawaited(loadConfig());
   }
 
-  /// Load wallet configuration from Firestore
+  /// Global configuration can outlive an account, but never the provider.
   Future<void> loadConfig() async {
+    if (_disposed) return;
+    final read = ++_configRead;
     try {
       final doc =
           await _firestore.collection('settings').doc('wallet_config').get();
-      if (doc.exists) {
-        _config = WalletConfigModel.fromFirestore(doc);
-      } else {
-        // Use local defaults if admin has not published config yet.
-        // Customer clients must not create admin-owned settings documents.
-        _config = WalletConfigModel.defaults();
-      }
+      if (_disposed || read != _configRead) return;
+      _config = doc.exists
+          ? WalletConfigModel.fromFirestore(doc)
+          : WalletConfigModel.defaults();
       notifyListeners();
-    } catch (e) {
-      debugPrint('Error loading wallet config: $e');
+    } catch (_) {
+      if (!_disposed && read == _configRead) {
+        debugPrint('Wallet configuration could not be loaded.');
+      }
     }
   }
 
-  /// Start listening to wallet changes
   void _startWalletListener() {
-    final userId = _auth.currentUser?.uid;
-    if (userId == null) return;
-
-    _walletSubscription?.cancel();
-    _walletSubscription =
-        _firestore.collection('wallets').doc(userId).snapshots().listen((doc) {
-      if (doc.exists) {
-        _wallet = WalletModel.fromFirestore(doc);
+    if (_disposed) return;
+    final owner = _auth.currentUser?.uid;
+    if (!_bound || _sessionOwner != owner) {
+      _epoch++;
+      _walletRead++;
+      _historyRead++;
+      _cancelWallet();
+      _bound = true;
+      _sessionOwner = owner;
+      _wallet = null;
+      _transactions = [];
+      _transactionsOwner = null;
+      _isLoading = false;
+      _isLoadingTransactions = false;
+      _error = null;
+      notifyListeners();
+    }
+    if (owner == null || _walletSubscription != null) return;
+    final epoch = _epoch;
+    final snapshots = _walletSnapshots?.call(owner) ??
+        _firestore.collection('wallets').doc(owner).snapshots();
+    _walletSubscription = snapshots.listen((doc) {
+      if (!_live(owner, epoch)) return;
+      try {
+        _wallet = doc.exists ? _ownedWallet(doc, owner) : null;
+        _error = null;
+      } catch (_) {
+        _wallet = null;
+        _error = 'Your wallet needs attention. Please refresh it.';
+      }
+      notifyListeners();
+    }, onError: (_) {
+      if (!_live(owner, epoch)) return;
+      _epoch++;
+      _walletRead++;
+      _historyRead++;
+      _cancelWallet();
+      _isLoading = false;
+      _isLoadingTransactions = false;
+      _error = 'Your wallet could not be loaded. Please refresh it.';
+      notifyListeners();
+    }, onDone: () {
+      if (_live(owner, epoch)) {
+        _epoch++;
+        _walletRead++;
+        _historyRead++;
+        _cancelWallet();
+        _isLoading = false;
+        _isLoadingTransactions = false;
+        _error = 'Wallet updates paused. Please refresh your wallet.';
         notifyListeners();
       }
-    }, onError: (e) {
-      debugPrint('Wallet listener error: $e');
     });
   }
 
-  /// Load or create wallet for current user
+  /// Zero-only wallet creation remains protected by rules; bonuses are server-owned.
   Future<void> loadWallet() async {
-    final userId = _auth.currentUser?.uid;
-    if (userId == null) {
-      _error = 'Not logged in';
+    if (_disposed) return;
+    _startWalletListener();
+    final owner = _auth.currentUser?.uid;
+    if (owner == null) {
+      _error = 'Sign in to view your wallet.';
       notifyListeners();
       return;
     }
-
+    final epoch = _epoch, read = ++_walletRead;
+    bool live() => _live(owner, epoch) && read == _walletRead;
     _isLoading = true;
     _error = null;
     notifyListeners();
-
     try {
-      final doc = await _firestore.collection('wallets').doc(userId).get();
-
+      if (!live()) return;
+      final doc = await _firestore.collection('wallets').doc(owner).get();
+      if (!live()) return;
       if (doc.exists) {
-        _wallet = WalletModel.fromFirestore(doc);
+        _wallet = _ownedWallet(doc, owner);
       } else {
-        // Create new wallet for user. This document creation itself stays
-        // client-side — firestore.rules only allows it when every
-        // balance-bearing field is at its zero starting value
-        // (WalletModel.empty()'s exact shape, referralCode included), so it
-        // carries no self-credit risk. The signup bonus itself is a real
-        // balance mutation (coins/lifetimeCoinsEarned), so it's credited by
-        // the creditSignupBonus callable instead of a direct client write,
-        // which firestore.rules would now reject anyway.
-        //
-        // Phase FIX-N6F: referralCode is no longer generated here — it's
-        // assigned server-side (assignReferralCode trigger) once this
-        // document lands, with a real uniqueness check. The listener this
-        // method sets up right after (below) picks up the assigned code
-        // automatically.
-        _wallet = WalletModel.empty(userId);
-        await _firestore
-            .collection('wallets')
-            .doc(userId)
-            .set(_wallet!.toMap());
-
+        final empty = WalletModel.empty(owner);
+        await _firestore.collection('wallets').doc(owner).set(empty.toMap());
+        if (!live()) return;
+        // A snapshot may already contain a newer server credit; do not replace it.
+        _wallet ??= empty;
         try {
+          if (!live()) return;
           await FirebaseFunctions.instance
               .httpsCallable('creditSignupBonus')
-              .call<Map<String, dynamic>>();
-        } catch (e) {
-          debugPrint('Error crediting signup bonus: $e');
+              .call<Map<String, dynamic>>({'checkoutOwnerId': owner});
+          if (!live()) return;
+        } catch (_) {
+          if (live()) {
+            debugPrint('Wallet signup bonus confirmation needs attention.');
+          }
         }
       }
-
-      _startWalletListener();
-    } catch (e) {
-      _error = 'Failed to load wallet: $e';
-      debugPrint(_error);
+    } catch (_) {
+      if (live()) {
+        _error = 'Your wallet could not be loaded. Please refresh it.';
+      }
     } finally {
-      _isLoading = false;
-      notifyListeners();
+      if (live()) {
+        _isLoading = false;
+        notifyListeners();
+      }
     }
   }
 
-  /// Refresh an already confirmed wallet without creating it or granting bonuses.
+  /// Refresh confirmed credit from the server before acknowledging a native receipt.
   Future<void> refreshWalletForOwner(String ownerId) async {
+    if (_disposed || _auth.currentUser?.uid != ownerId) {
+      throw StateError('Wallet session changed.');
+    }
+    _startWalletListener();
+    final epoch = _epoch, read = ++_walletRead;
     void checkOwner() {
-      if (_auth.currentUser?.uid != ownerId) {
+      if (!_live(ownerId, epoch) || read != _walletRead) {
         throw StateError('Wallet session changed.');
       }
     }
 
     checkOwner();
-    final doc = await _firestore
-        .collection('wallets')
-        .doc(ownerId)
-        .get(const GetOptions(source: Source.server))
-        .timeout(const Duration(seconds: 10));
-    checkOwner();
-    if (!doc.exists || doc.data()?['userId'] != ownerId) {
-      throw StateError('Wallet confirmation needs attention.');
+    try {
+      final doc = await _firestore
+          .collection('wallets')
+          .doc(ownerId)
+          .get(const GetOptions(source: Source.server))
+          .timeout(const Duration(seconds: 10));
+      checkOwner();
+      _wallet = _ownedWallet(doc, ownerId);
+      _error = null;
+    } finally {
+      if (_live(ownerId, epoch) && read == _walletRead) {
+        _isLoading = false;
+        notifyListeners();
+      }
     }
-    final wallet = WalletModel.fromFirestore(doc);
-    if (!wallet.balance.isFinite || !wallet.lifetimeEarnings.isFinite) {
-      throw StateError('Wallet confirmation needs attention.');
-    }
-    _wallet = wallet;
-    notifyListeners();
   }
 
-  /// Load transaction history
+  /// Session-fenced history; query bounding/index rollout remains F7.
   Future<void> loadTransactions({int limit = 20}) async {
-    final userId = _auth.currentUser?.uid;
-    if (userId == null) return;
-
+    if (_disposed) return;
+    _startWalletListener();
+    final owner = _auth.currentUser?.uid;
+    if (owner == null) return;
+    final epoch = _epoch, read = ++_historyRead;
+    bool live() => _live(owner, epoch) && read == _historyRead;
     _isLoadingTransactions = true;
     notifyListeners();
-
     try {
+      if (!live()) return;
       final query = await _firestore
           .collection('wallet_transactions')
-          .where('userId', isEqualTo: userId)
+          .where('userId', isEqualTo: owner)
           .get();
-
-      _transactions = query.docs
+      if (!live()) return;
+      final values = query.docs
           .map((doc) => WalletTransactionModel.fromFirestore(doc))
           .toList();
-      _transactions.sort((a, b) => b.createdAt.compareTo(a.createdAt));
-      if (_transactions.length > limit) {
-        _transactions = _transactions.take(limit).toList();
+      if (values.any((value) => value.userId != owner)) {
+        throw StateError('Wallet history owner changed.');
       }
-    } catch (e) {
-      debugPrint('Error loading transactions: $e');
+      values.sort((a, b) => b.createdAt.compareTo(a.createdAt));
+      _transactions =
+          values.length > limit ? values.take(limit).toList() : values;
+      _transactionsOwner = owner;
+    } catch (_) {
+      if (live()) {
+        _error = 'Your wallet history could not be loaded. Please refresh it.';
+      }
     } finally {
-      _isLoadingTransactions = false;
-      notifyListeners();
+      if (live()) {
+        _isLoadingTransactions = false;
+        notifyListeners();
+      }
     }
   }
 
@@ -227,7 +326,7 @@ class WalletProvider with ChangeNotifier {
   int maxCoinsUsableForOrder(double orderTotal) {
     if (!isCoinsEnabled || coins == 0) return 0;
     if (orderTotal < minOrderForCoins) return 0;
-    return _wallet?.maxCoinsUsable(orderTotal, maxCoinsPercentage) ?? 0;
+    return wallet?.maxCoinsUsable(orderTotal, maxCoinsPercentage) ?? 0;
   }
 
   /// Get bonus coins for top-up amount
@@ -249,26 +348,35 @@ class WalletProvider with ChangeNotifier {
     required String orderId,
     required String signature,
   }) async {
-    try {
-      final callable =
-          FirebaseFunctions.instance.httpsCallable('verifyWalletTopup');
-      await callable.call<Map<String, dynamic>>({
-        'amount': amount,
-        'paymentId': paymentId,
-        'orderId': orderId,
-        'signature': signature,
-      });
-
-      await loadTransactions();
-    } catch (e) {
-      debugPrint('Error adding money: $e');
-      rethrow;
+    if (_disposed) throw StateError('Wallet session changed.');
+    _startWalletListener();
+    final owner = _auth.currentUser?.uid;
+    if (owner == null) throw StateError('Sign in to continue.');
+    final epoch = _epoch;
+    void checkOwner() {
+      if (!_live(owner, epoch)) throw StateError('Wallet session changed.');
     }
+
+    checkOwner();
+    await FirebaseFunctions.instance
+        .httpsCallable('verifyWalletTopup')
+        .call<Map<String, dynamic>>({
+      'checkoutOwnerId': owner,
+      'amount': amount,
+      'paymentId': paymentId,
+      'orderId': orderId,
+      'signature': signature,
+    });
+    checkOwner();
+    await loadTransactions();
+    checkOwner();
   }
 
   /// Validate referral code
   Future<bool> validateReferralCode(String code) async {
-    if (code.isEmpty) return false;
+    if (_disposed || code.isEmpty) return false;
+    final owner = _auth.currentUser?.uid;
+    final epoch = _epoch;
 
     try {
       final query = await _firestore
@@ -277,9 +385,9 @@ class WalletProvider with ChangeNotifier {
           .limit(1)
           .get();
 
-      return query.docs.isNotEmpty;
+      return owner != null && _live(owner, epoch) && query.docs.isNotEmpty;
     } catch (e) {
-      debugPrint('Error validating referral: $e');
+      if (!_disposed) debugPrint('Referral validation could not be completed.');
       return false;
     }
   }
@@ -294,19 +402,22 @@ class WalletProvider with ChangeNotifier {
   /// bonus. The Admin SDK write in redeemReferralCode bypasses that
   /// entirely and credits both wallets in one transaction.
   Future<void> applyReferralCode(String code) async {
-    if (_wallet == null || !_config.isReferralEnabled) return;
-    if (_wallet!.referredBy != null) return; // Already referred
+    if (wallet == null || !_config.isReferralEnabled) return;
+    if (wallet!.referredBy != null) return; // Already referred
 
-    try {
-      final callable =
-          FirebaseFunctions.instance.httpsCallable('redeemReferralCode');
-      await callable.call<Map<String, dynamic>>({'code': code.toUpperCase()});
-
-      await loadWallet();
-    } catch (e) {
-      debugPrint('Error applying referral: $e');
-      rethrow;
+    final owner = _auth.currentUser!.uid, epoch = _epoch;
+    void checkOwner() {
+      if (!_live(owner, epoch)) throw StateError('Wallet session changed.');
     }
+
+    checkOwner();
+    await FirebaseFunctions.instance
+        .httpsCallable('redeemReferralCode')
+        .call<Map<String, dynamic>>(
+            {'code': code.toUpperCase(), 'checkoutOwnerId': owner});
+    checkOwner();
+    await loadWallet();
+    checkOwner();
   }
 
   /// Generate share text for referral
@@ -316,14 +427,27 @@ class WalletProvider with ChangeNotifier {
 
   /// Refresh wallet data
   Future<void> refresh() async {
+    if (_disposed) return;
+    _startWalletListener();
+    final owner = _auth.currentUser?.uid, epoch = _epoch;
     await loadConfig();
+    if (owner == null || !_live(owner, epoch)) return;
     await loadWallet();
+    if (!_live(owner, epoch)) return;
     await loadTransactions();
   }
 
   @override
   void dispose() {
-    _walletSubscription?.cancel();
+    _disposed = true;
+    _epoch++;
+    _walletRead++;
+    _historyRead++;
+    _configRead++;
+    _cancelWallet();
+    final auth = _authSubscription;
+    _authSubscription = null;
+    if (auth != null) unawaited(auth.cancel().catchError((Object _) {}));
     super.dispose();
   }
 }

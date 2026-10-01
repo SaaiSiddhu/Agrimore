@@ -41,6 +41,9 @@ class _Auth extends FirebaseAuthPlatform {
           {PigeonUserDetails? currentUser, String? languageCode}) =>
       this;
   @override
+  Stream<UserPlatform?> authStateChanges() => const Stream.empty();
+
+  @override
   UserPlatform? get currentUser => uid == null ? null : _User(this, uid!);
 }
 
