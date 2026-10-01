@@ -168,6 +168,32 @@ class WalletProvider with ChangeNotifier {
     }
   }
 
+  /// Refresh an already confirmed wallet without creating it or granting bonuses.
+  Future<void> refreshWalletForOwner(String ownerId) async {
+    void checkOwner() {
+      if (_auth.currentUser?.uid != ownerId) {
+        throw StateError('Wallet session changed.');
+      }
+    }
+
+    checkOwner();
+    final doc = await _firestore
+        .collection('wallets')
+        .doc(ownerId)
+        .get(const GetOptions(source: Source.server))
+        .timeout(const Duration(seconds: 10));
+    checkOwner();
+    if (!doc.exists || doc.data()?['userId'] != ownerId) {
+      throw StateError('Wallet confirmation needs attention.');
+    }
+    final wallet = WalletModel.fromFirestore(doc);
+    if (!wallet.balance.isFinite || !wallet.lifetimeEarnings.isFinite) {
+      throw StateError('Wallet confirmation needs attention.');
+    }
+    _wallet = wallet;
+    notifyListeners();
+  }
+
   /// Load transaction history
   Future<void> loadTransactions({int limit = 20}) async {
     final userId = _auth.currentUser?.uid;
@@ -224,7 +250,8 @@ class WalletProvider with ChangeNotifier {
     required String signature,
   }) async {
     try {
-      final callable = FirebaseFunctions.instance.httpsCallable('verifyWalletTopup');
+      final callable =
+          FirebaseFunctions.instance.httpsCallable('verifyWalletTopup');
       await callable.call<Map<String, dynamic>>({
         'amount': amount,
         'paymentId': paymentId,
@@ -271,7 +298,8 @@ class WalletProvider with ChangeNotifier {
     if (_wallet!.referredBy != null) return; // Already referred
 
     try {
-      final callable = FirebaseFunctions.instance.httpsCallable('redeemReferralCode');
+      final callable =
+          FirebaseFunctions.instance.httpsCallable('redeemReferralCode');
       await callable.call<Map<String, dynamic>>({'code': code.toUpperCase()});
 
       await loadWallet();
