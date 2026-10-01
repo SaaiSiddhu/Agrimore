@@ -7,6 +7,7 @@ import 'package:flutter/material.dart';
 
 import 'checkout_recovery_service.dart';
 import 'payment_checkout_order.dart';
+import 'native_payment_flight.dart';
 import 'razorpay_service.dart';
 
 class MobileCheckoutCustomer {
@@ -62,7 +63,6 @@ class MobileCheckoutFlow {
   final void Function(String) _onError;
   final Future<void> Function(PendingCheckoutRequest, List<CheckoutReceipt>)
       _onConfirmed;
-  static final Map<String, MobileCheckoutFlow> _flights = {};
   Future<void> _tail = Future.value();
   PendingCheckoutRequest? _pending;
   String? _heldOwner, _deliveredRequestId;
@@ -83,8 +83,8 @@ class MobileCheckoutFlow {
   }
 
   void _release() {
-    if (_heldOwner != null && identical(_flights[_heldOwner], this)) {
-      _flights.remove(_heldOwner);
+    if (_heldOwner != null) {
+      NativePaymentFlight.release(_heldOwner!, this);
     }
     _heldOwner = null;
     _busy = false;
@@ -96,10 +96,9 @@ class MobileCheckoutFlow {
     try {
       await previous;
       _checkLive(ownerId);
-      if (_flights[ownerId] != null && !identical(_flights[ownerId], this)) {
+      if (!NativePaymentFlight.acquire(ownerId, this)) {
         throw StateError('Another checkout is in progress.');
       }
-      _flights[ownerId] = this;
       _heldOwner = ownerId;
       _busy = true;
       _notify();
