@@ -1,3 +1,4 @@
+import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:provider/provider.dart';
@@ -23,6 +24,10 @@ import 'package:record/record.dart';
 import 'package:audioplayers/audioplayers.dart';
 import 'package:path_provider/path_provider.dart';
 import '../../../services/razorpay_service.dart';
+import '../../../services/checkout_recovery_service.dart';
+import '../../../services/mobile_checkout_flow.dart';
+import '../../../services/mobile_checkout_confirmation.dart';
+import '../checkout/widgets/saved_checkout_card.dart';
 import '../../auth/login_screen.dart';
 
 class ShippingFeeInfo {
@@ -57,8 +62,9 @@ class ShippingFeeInfo {
 
 class MobileCartScreen extends StatefulWidget {
   final VoidCallback? onBack;
+  final CheckoutRecoveryService? checkoutRecovery;
 
-  const MobileCartScreen({Key? key, this.onBack}) : super(key: key);
+  const MobileCartScreen({Key? key, this.onBack, this.checkoutRecovery}) : super(key: key);
 
   @override
   State<MobileCartScreen> createState() => _MobileCartScreenState();
@@ -107,6 +113,7 @@ class _MobileCartScreenState extends State<MobileCartScreen>
   // Wallet & Checkout
   bool _isPlacingOrder = false;
   RazorpayService? _razorpayService;
+  MobileCheckoutFlow? _nativeCheckout;
   final Map<String, CartItemModel> _bogoFreeItems = {};
   final Map<String, ProductModel> _productCache = {};
 
@@ -120,8 +127,10 @@ class _MobileCartScreenState extends State<MobileCartScreen>
     );
 
     _scrollController.addListener(_scrollListener);
+    if (!kIsWeb) _initializeNativeCheckout();
 
     WidgetsBinding.instance.addPostFrameCallback((_) {
+      if (!mounted) return;
       context.read<CartProvider>().loadCart();
       // "You might also like" (_buildYouMightAlsoLike) only ever shows up to
       // 9 products (6 shown + 3 preview), filtered by category overlap with
@@ -159,6 +168,7 @@ class _MobileCartScreenState extends State<MobileCartScreen>
     _audioPlayer.dispose();
     _recordTimer?.cancel();
     _employeeCodeController.dispose();
+    _nativeCheckout?.dispose();
     _razorpayService?.dispose();
     super.dispose();
   }
@@ -438,13 +448,17 @@ class _MobileCartScreenState extends State<MobileCartScreen>
         child: Consumer2<CartProvider, CouponProvider>(
           builder: (context, cartProvider, couponProvider, child) {
             if (cartProvider.isLoading) {
-              return _buildLoadingState(accentColor, isDark);
+              return Column(children: [
+                _savedCheckout(),
+                Expanded(child: _buildLoadingState(accentColor, isDark)),
+              ]);
             }
 
             if (cartProvider.isEmpty) {
               return Column(
                 children: [
                   _buildBlinkitAppBar(isDark, cardColor, cartProvider),
+                  _savedCheckout(),
                   Expanded(
                     child: EmptyCart(
                       onStartShopping: () {
@@ -476,6 +490,8 @@ class _MobileCartScreenState extends State<MobileCartScreen>
               children: [
                 // Blinkit-style App Bar
                 _buildBlinkitAppBar(isDark, cardColor, cartProvider),
+
+                _savedCheckout(),
 
                 // Main scrollable content
                 Expanded(
@@ -2890,6 +2906,59 @@ class _MobileCartScreenState extends State<MobileCartScreen>
     );
   }
 
+  void _initializeNativeCheckout() {
+    _nativeCheckout = MobileCheckoutFlow(
+      journal: widget.checkoutRecovery,
+      onChanged: () {
+        if (mounted) setState(() => _isPlacingOrder = _nativeCheckout!.isBusy);
+      },
+      onError: (message) {
+        if (mounted) SnackbarHelper.showError(context, message);
+      },
+      onConfirmed: _finishNativeCheckout,
+    );
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      if (mounted) _nativeCheckout?.restore();
+    });
+  }
+
+  Future<void> _finishNativeCheckout(PendingCheckoutRequest request,
+      List<CheckoutReceipt> receipts) async {
+    final cart = context.read<CartProvider>();
+    final coupon = context.read<CouponProvider>();
+    final market = context.read<MarketModeProvider>();
+    await finishMobileCheckout(
+      request: request, receipts: receipts,
+      isMounted: () => mounted,
+      currentUserId: () => FirebaseAuth.instance.currentUser?.uid,
+      readOrder: (id) async {
+        final doc = await FirebaseFirestore.instance.collection('orders').doc(id)
+            .get().timeout(const Duration(seconds: 10));
+        return doc.exists ? doc.data() : null;
+      },
+      currentItems: () => cart.items,
+      currentMode: () => cart.cartMode ?? (market.isB2B ? 'B2B' : 'B2C'),
+      clearCart: cart.clearCart,
+      clearCoupon: coupon.removeCoupon,
+      clearSubscriptionHint: cart.clearCheckoutSubscriptionIntent,
+      acknowledge: _nativeCheckout!.acknowledge,
+      showOrder: (order) {
+        HapticFeedback.heavyImpact();
+        Navigator.pushAndRemoveUntil(context,
+          MaterialPageRoute(builder: (_) => OrderSuccessScreen(order: order)),
+          (route) => route.isFirst);
+      },
+    );
+  }
+
+  Widget _savedCheckout() {
+    final flow = _nativeCheckout;
+    final request = flow?.pending;
+    if (flow == null || request == null) return const SizedBox.shrink();
+    return SavedCheckoutCard(request: request, isBusy: flow.isBusy,
+        onContinue: () => continueSavedCheckout(context, flow));
+  }
+
   // --- Order Placement ---
   Future<void> _placeOrder(double finalTotal, AddressModel address) async {
     if (_isPlacingOrder) return;
@@ -2897,6 +2966,40 @@ class _MobileCartScreenState extends State<MobileCartScreen>
     final user = FirebaseAuth.instance.currentUser;
     if (user == null) {
       _showSnackBar('Please login to place order', isError: true);
+      return;
+    }
+
+    final flow = _nativeCheckout;
+    if (flow != null) {
+      if (flow.pending != null) {
+        await continueSavedCheckout(context, flow);
+        return;
+      }
+      final cart = context.read<CartProvider>();
+      final coupon = context.read<CouponProvider>();
+      final isB2B = cart.cartMode == 'B2B' ||
+          (cart.cartMode == null && context.read<MarketModeProvider>().isB2B);
+      final code = _employeeCodeController.text.trim();
+      if (isB2B && code.isEmpty) {
+        SnackbarHelper.showError(context, 'Sales Associate code is required for B2B orders.');
+        return;
+      }
+      final pricing = _calculateAdvancedPricing(cart, coupon);
+      await flow.start(intent: {
+        'items': cart.items.map((item) => {
+          'productId': item.productId, 'quantity': item.quantity,
+          if (item.variant != null && item.variant!.isNotEmpty) 'variantId': item.variant,
+        }).toList(),
+        'orderMode': isB2B ? 'B2B' : 'B2C',
+        if (isB2B || code.isNotEmpty) 'employeeCode': code,
+        'deliveryAddress': address.toOrderMap(),
+        'paymentMethod': _selectedPaymentMethod.toLowerCase(),
+        if (coupon.appliedCoupon?.code != null) 'couponCode': coupon.appliedCoupon!.code,
+        'deliveryCharge': (pricing['shippingFee'] ?? 0.0) + (pricing['expressDeliveryFee'] ?? 0.0),
+        'tax': 0.0,
+        if (_deliveryNote.trim().isNotEmpty) 'notes': _deliveryNote.trim(),
+      }, amount: finalTotal, context: context, customer: MobileCheckoutCustomer(
+        name: address.name, email: user.email ?? '', phone: address.phone));
       return;
     }
 
@@ -3482,6 +3585,10 @@ class _MobileCartScreenState extends State<MobileCartScreen>
                                     MaterialPageRoute(
                                         builder: (_) => LoginScreen()),
                                   );
+                                  return;
+                                }
+                                if (_nativeCheckout?.pending != null) {
+                                  continueSavedCheckout(context, _nativeCheckout!);
                                   return;
                                 }
                                 if (!hasAddress || address == null) {
