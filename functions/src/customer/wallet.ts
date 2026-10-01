@@ -499,6 +499,7 @@ export const verifyWalletTopup = onCall(
 
 interface RedeemReferralCodeData {
   code: string;
+  checkoutOwnerId?: string;
 }
 
 export const redeemReferralCode = onCall(
@@ -509,6 +510,9 @@ export const redeemReferralCode = onCall(
       throw new HttpsError("unauthenticated", "Sign in required");
     }
     const uid = request.auth.uid;
+    if (data?.checkoutOwnerId !== undefined && data.checkoutOwnerId !== uid) {
+      throw new HttpsError("permission-denied", "Wallet action does not belong to this account");
+    }
     const code = String(data?.code || "").trim().toUpperCase();
     if (!code) {
       throw new HttpsError("invalid-argument", "code is required");
@@ -789,6 +793,9 @@ export const creditSignupBonus = onCall(
     throw new HttpsError("unauthenticated", "Sign in required");
   }
   const uid = request.auth.uid;
+  if (request.data?.checkoutOwnerId !== undefined && request.data.checkoutOwnerId !== uid) {
+    throw new HttpsError("permission-denied", "Wallet action does not belong to this account");
+  }
   const db = admin.firestore();
 
   const configSnap = await db.collection("settings").doc("wallet_config").get();
