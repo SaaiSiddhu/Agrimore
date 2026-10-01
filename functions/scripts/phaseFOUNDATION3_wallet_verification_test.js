@@ -99,6 +99,62 @@ async function denied(f, data = f.payload, code) {
     await scenario(`reject malformed ${field} ${JSON.stringify(value)}`, async () => { const f = await fixture(); const before = calls;
       await denied(f, { ...f.payload, [field]: value }, "invalid-argument"); assert.equal(calls, before); });
   }
+  async function recoveredFixture() {
+    const f = await fixture();
+    await f.orderRef.update({ purpose: "wallet_topup", providerMode: "test", isTestOrder: false });
+    await f.paymentRef.set({ paymentId: f.paymentId, orderId: f.orderId, userId: f.uid,
+      amount: 100, amountPaise: 10000, currency: "INR", status: "captured", purpose: "wallet_topup",
+      providerMode: "test", isTest: false, providerCaptureVerified: true, verificationMethod: "provider_api_recovery" });
+    provider = { ...provider, entity: "payment", captured: true, amount_refunded: 0, refund_status: null };
+    const payload = { amount: 100, paymentId: f.paymentId, orderId: f.orderId,
+      proofSource: "provider_api_recovery", checkoutOwnerId: f.uid };
+    return { ...f, payload, call: (data = payload, caller = f.uid) => f.call(data, caller) };
+  }
+  await scenario("SDK owner hint cannot cross a transport session", async () => {
+    const f = await fixture(); const before = calls;
+    await denied(f, { ...f.payload, checkoutOwnerId: "different-owner" }, "permission-denied");
+    assert.equal(calls, before);
+  });
+  await scenario("unknown proof source never bypasses HMAC validation", async () => {
+    const f = await fixture(); await denied(f, { ...f.payload, proofSource: "untrusted" }, "invalid-argument");
+  });
+  await scenario("owned server API proof credits without claiming SDK signature", async () => {
+    const f = await recoveredFixture(); const result = await f.call();
+    assert.equal(result.success, true); assert.equal(result.amount, 100);
+    assert.equal((await f.paymentRef.get()).data().signatureVerified, undefined);
+    assert.equal((await db.collection("wallets").doc(f.uid).get()).data().balance, 100);
+  });
+  await scenario("concurrent API proof retries credit once", async () => {
+    const f = await recoveredFixture(); const results = await Promise.all([f.call(), f.call(), f.call()]);
+    assert.equal(results.filter(r => !r.alreadyCredited).length, 1);
+    assert.equal((await db.collection("wallet_transactions").where("userId", "==", f.uid).get()).size, 1);
+  });
+  for (const [field, value] of [["providerCaptureVerified", false], ["verificationMethod", "sdk"],
+    ["purpose", "goods_checkout"], ["providerMode", "live"], ["isTest", true], ["amountPaise", 9999],
+    ["signatureVerified", false], ["userId", "different-owner"], ["orderId", "order_other"], ["paymentId", "pay_other"]]) {
+    await scenario(`API proof rejects untrusted ${field}`, async () => {
+      const f = await recoveredFixture(); await f.paymentRef.update({ [field]: value }); await denied(f);
+    });
+  }
+  await scenario("API proof cannot infer missing order purpose", async () => {
+    const f = await recoveredFixture(); await f.orderRef.update({ purpose: admin.firestore.FieldValue.delete() }); await denied(f);
+  });
+  await scenario("API proof requires immutable order, not only a capture marker", async () => {
+    const f = await recoveredFixture(); await f.orderRef.delete(); await denied(f);
+  });
+  await scenario("API proof without prior server capture record never credits", async () => {
+    const f = await recoveredFixture(); await f.paymentRef.delete(); await denied(f);
+  });
+  await scenario("API proof requires explicit matching owner hint", async () => {
+    const f = await recoveredFixture(); const data = { ...f.payload }; delete data.checkoutOwnerId;
+    await denied(f, data, "invalid-argument");
+  });
+  await scenario("API proof still rechecks fresh provider refund status", async () => {
+    const f = await recoveredFixture(); provider.amount_refunded = 1; await denied(f);
+  });
+  await scenario("API proof cannot credit goods already consumed", async () => {
+    const f = await recoveredFixture(); await f.paymentRef.update({ consumedByOrderId: "prior" }); await denied(f);
+  });
   console.log(`FOUNDATION3 wallet verification: ${passed} passed, ${failed} failed`);
   fft.cleanup(); await admin.app().delete(); process.exitCode = failed ? 1 : 0;
 })().catch(e => { console.error(e.message); process.exitCode = 1; });
