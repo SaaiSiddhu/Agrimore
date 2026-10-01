@@ -218,6 +218,9 @@ class _RiderProfileScreenState extends State<RiderProfileScreen> {
   }
 
   Future<void> _signOut() async {
+    final auth = context.read<DeliveryAuthProvider>();
+    final owner = auth.sessionUid;
+    final session = auth.sessionVersion;
     final l = AppLocalizations.of(context);
     final ok = await showDeliveryConfirmDialog(
       context: context,
@@ -226,7 +229,11 @@ class _RiderProfileScreenState extends State<RiderProfileScreen> {
       confirmLabel: l.actionSignOut,
       cancelLabel: l.cancel,
     );
-    if (ok && mounted) await riderSignOut(context);
+    if (ok && mounted &&
+        identical(context.read<DeliveryAuthProvider>(), auth) &&
+        auth.isCurrentSession(owner, session)) {
+      await riderSignOut(context);
+    }
   }
 
   /// Checks the SAME three reasons `riderDeletionRefusal` enforces
@@ -237,6 +244,13 @@ class _RiderProfileScreenState extends State<RiderProfileScreen> {
   /// remains the actual safety net for a race between this read and the
   /// real attempt.
   Future<void> _delete(List<OrderModel> activeOrders, RiderAccount? account) async {
+    final auth = context.read<DeliveryAuthProvider>();
+    final owner = auth.sessionUid;
+    final session = auth.sessionVersion;
+    if (owner == null || !auth.isCurrentSession(owner, session)) return;
+    bool current({bool allowSignedOut = false}) => mounted &&
+        identical(context.read<DeliveryAuthProvider>(), auth) &&
+        auth.isCurrentSession(owner, session, allowSignedOut: allowSignedOut);
     final l = AppLocalizations.of(context);
     if (activeOrders.isNotEmpty) {
       final view = await showDeliveryConfirmDialog(
@@ -246,7 +260,7 @@ class _RiderProfileScreenState extends State<RiderProfileScreen> {
         confirmLabel: l.deleteBlockedViewDelivery,
         cancelLabel: l.cancel,
       );
-      if (view && mounted) {
+      if (view && mounted && current()) {
         Navigator.of(context).push(
           MaterialPageRoute<void>(
             builder: (_) => ActiveOrderScreen(order: activeOrders.first),
@@ -264,7 +278,7 @@ class _RiderProfileScreenState extends State<RiderProfileScreen> {
         confirmLabel: l.deleteBlockedViewEarnings,
         cancelLabel: l.cancel,
       );
-      if (view && mounted) {
+      if (view && mounted && current()) {
         Navigator.of(context).push(
           MaterialPageRoute<void>(
             builder: (_) => MoneyScreen(
@@ -283,16 +297,15 @@ class _RiderProfileScreenState extends State<RiderProfileScreen> {
       cancelLabel: l.cancel,
       destructive: true,
     );
-    if (!ok || !mounted) return;
+    if (!ok || !mounted || !current()) return;
     setState(() => _busy = true);
     try {
       await _backend.deleteAccount();
-      if (!mounted) return;
-      final auth = context.read<DeliveryAuthProvider>();
+      if (!mounted || !current(allowSignedOut: true)) return;
       showDeliveryToast(context, message: l.deleteDone);
-      await auth.signOut();
+      if (auth.isCurrentSession(owner, session)) await auth.signOut();
     } on AccountActionException catch (e) {
-      if (mounted) {
+      if (mounted && current()) {
         showDeliveryToast(
           context,
           message: accountFailureText(l, e.failure),
