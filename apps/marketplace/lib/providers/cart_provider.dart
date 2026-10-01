@@ -1,18 +1,61 @@
 import 'dart:async';
 import 'package:flutter/material.dart';
 import 'package:uuid/uuid.dart';
-import 'package:agrimore_core/agrimore_core.dart';
 import 'package:agrimore_services/agrimore_services.dart';
 
 class CartProvider with ChangeNotifier {
-  final DatabaseService _databaseService = DatabaseService();
-  final AuthService _authService = AuthService();
+  CartProvider({DatabaseService? databaseService, AuthService? authService})
+      : _databaseService = databaseService ?? DatabaseService(),
+        _authService = authService ?? AuthService();
+
+  final DatabaseService _databaseService;
+  final AuthService _authService;
   final Uuid _uuid = const Uuid();
 
   CartModel? _cart;
   bool _isLoading = false;
   String? _error;
-  bool _isListening = false; // ✅ Prevent duplicate stream subscriptions
+  bool _isListening = false;
+  StreamSubscription<CartModel?>? _cartSubscription;
+  StreamSubscription<dynamic>? _authSubscription;
+  String? _boundOwner;
+  int _sessionEpoch = 0;
+  bool _hasBound = false, _disposed = false;
+
+  bool get _currentSession =>
+      !_disposed && _hasBound && _boundOwner == _authService.currentUserId;
+  bool _live(String? owner, int epoch) =>
+      _currentSession && _boundOwner == owner && _sessionEpoch == epoch;
+  bool _ownedCart(CartModel value, String owner) =>
+      value.userId == owner &&
+      value.items.every((item) => item.userId == owner);
+  CartModel? get _visibleCart {
+    if (!_currentSession) return null;
+    final value = _cart;
+    final owner = _boundOwner ?? 'guest_user';
+    return value != null && _ownedCart(value, owner) ? value : null;
+  }
+
+  void _invalidate() {
+    _sessionEpoch++;
+    final subscription = _cartSubscription;
+    _cartSubscription = null;
+    if (subscription != null)
+      unawaited(subscription.cancel().catchError((Object _) {}));
+    _isListening = false;
+  }
+
+  Future<void> _persistCart(String owner, CartModel value, int epoch) async {
+    if (!_live(owner, epoch)) return;
+    try {
+      await _databaseService.updateCart(owner, value);
+    } catch (_) {
+      if (_live(owner, epoch)) {
+        _error = 'Your cart could not be saved. Refresh it before checkout.';
+        notifyListeners();
+      }
+    }
+  }
 
   /// In-memory checkout hint from product detail (not stored on the cart document).
   String? _checkoutOrderType;
@@ -25,6 +68,7 @@ class CartProvider with ChangeNotifier {
   /// Set on addItem, cleared on clearCart() or when cart becomes empty.
   String? _cartMode;
   String? get cartMode {
+    if (!_currentSession) return null;
     if (_cartMode != null) return _cartMode;
     if (_cart == null || _cart!.items.isEmpty) return null;
     final saved = SharedPreferencesService.getString(_cartModeKey);
@@ -44,86 +88,107 @@ class CartProvider with ChangeNotifier {
     }
   }
 
-  String? get checkoutOrderType => _checkoutOrderType;
-  String? get checkoutAutoFrequency => _checkoutAutoFrequency;
+  String? get checkoutOrderType => _currentSession ? _checkoutOrderType : null;
+  String? get checkoutAutoFrequency =>
+      _currentSession ? _checkoutAutoFrequency : null;
 
   void setCheckoutSubscriptionIntent(String orderType, String autoFrequency) {
+    if (_disposed) return;
+    loadCart();
     _checkoutOrderType = orderType;
     _checkoutAutoFrequency = autoFrequency;
     notifyListeners();
   }
 
   void clearCheckoutSubscriptionIntent() {
+    if (_disposed) return;
     _checkoutOrderType = null;
     _checkoutAutoFrequency = null;
     notifyListeners();
   }
 
-  CartModel? get cart => _cart;
-  bool get isLoading => _isLoading;
-  String? get error => _error;
+  CartModel? get cart => _visibleCart;
+  bool get isLoading => _currentSession && _isLoading;
+  String? get error => _currentSession ? _error : null;
 
-  int get itemCount => _cart?.totalItems ?? 0;
-  double get subtotal => _cart?.subtotal ?? 0.0;
-  bool get isEmpty => _cart?.isEmpty ?? true;
-  List<CartItemModel> get items => _cart?.items ?? [];
+  int get itemCount => cart?.totalItems ?? 0;
+  double get subtotal => cart?.subtotal ?? 0.0;
+  bool get isEmpty => cart?.isEmpty ?? true;
+  List<CartItemModel> get items => cart?.items ?? [];
 
   void loadCart() {
-    // ✅ Skip if already listening
-    if (_isListening) {
-      debugPrint('📦 Cart already listening, skipping...');
-      return;
-    }
-
-    final userId = _authService.currentUserId;
-    if (userId == null) {
-      debugPrint('ℹ️ CartProvider.loadCart: Guest user, maintaining in-memory cart');
-      _cart ??= CartModel(
-        id: 'guest_cart',
-        userId: 'guest_user',
-        items: [],
-        updatedAt: DateTime.now(),
-      );
+    if (_disposed) return;
+    _authSubscription ??= _authService.authStateChanges.listen((_) {
+      if (!_disposed) loadCart();
+    }, onError: (_) {
+      if (_currentSession) {
+        _error = 'Your session needs attention. Sign in again to continue.';
+        notifyListeners();
+      }
+    });
+    final owner = _authService.currentUserId;
+    if (!_hasBound || _boundOwner != owner) {
+      final changingOwner = _hasBound && _boundOwner != owner;
+      _invalidate();
+      _hasBound = true;
+      _boundOwner = owner;
+      _cart = null;
+      _isLoading = false;
       _error = null;
+      _checkoutOrderType = null;
+      _checkoutAutoFrequency = null;
+      if (changingOwner) {
+        _setCartMode(null);
+      } else {
+        _cartMode = null;
+      }
+    }
+    if (owner == null) {
+      _cart ??= CartModel(
+          id: 'guest_cart',
+          userId: 'guest_user',
+          items: [],
+          updatedAt: DateTime.now());
       notifyListeners();
       return;
     }
-
-    debugPrint('📦 CartProvider.loadCart: Loading for user $userId');
-    _isListening = true; // ✅ Mark as listening
-
-    _databaseService.getUserCart(userId).listen(
-      (cart) {
-        if (cart != null) {
-          debugPrint(
-              '✅ CartProvider.loadCart: Cart loaded with ${cart.items.length} items');
-          _cart = cart;
-          if (cart.items.isEmpty) {
-            _setCartMode(null);
-          } else if (_cartMode == null) {
-            _cartMode = SharedPreferencesService.getString(_cartModeKey);
-          }
-        } else {
-          debugPrint(
-              '✅ CartProvider.loadCart: Cart is empty, initializing new cart');
-          _cart = CartModel(
-            id: userId,
-            userId: userId,
-            items: [],
-            updatedAt: DateTime.now(),
-          );
+    if (_isListening) return;
+    final epoch = _sessionEpoch;
+    _isListening = true;
+    try {
+      _cartSubscription = _databaseService.getUserCart(owner).listen((value) {
+        if (!_live(owner, epoch)) return;
+        if (value != null && !_ownedCart(value, owner)) {
+          _cart = null;
+          _error = 'Your cart needs attention. Refresh it before checkout.';
+          notifyListeners();
+          return;
+        }
+        _cart = value ??
+            CartModel(
+                id: owner, userId: owner, items: [], updatedAt: DateTime.now());
+        if (_cart!.items.isEmpty) {
           _setCartMode(null);
+        } else {
+          _cartMode ??= SharedPreferencesService.getString(_cartModeKey);
         }
         _error = null;
         notifyListeners();
-      },
-      onError: (error) {
-        debugPrint('❌ CartProvider.loadCart error: $error');
-        _error = error.toString();
-        _isListening = false; // ✅ Reset on error
+      }, onError: (_) {
+        if (!_live(owner, epoch)) return;
+        _invalidate();
+        _error = 'Your cart could not be loaded. Please refresh it.';
         notifyListeners();
-      },
-    );
+      }, onDone: () {
+        if (_live(owner, epoch)) _invalidate();
+      });
+    } catch (_) {
+      if (_live(owner, epoch)) {
+        _invalidate();
+        _error = 'Your cart could not be loaded. Please refresh it.';
+        notifyListeners();
+      }
+    }
   }
 
   // ✅ UPDATED: Now accepts variant price parameters
@@ -135,8 +200,12 @@ class CartProvider with ChangeNotifier {
     double? variantOriginalPrice, // ✅ NEW: Variant-specific original price
     bool isB2BMode = false,
   }) async {
+    if (_disposed) return false;
+    loadCart();
+    final operationOwner = _authService.currentUserId;
+    final epoch = _sessionEpoch;
     try {
-      final userId = _authService.currentUserId;
+      final userId = operationOwner;
       final effectiveUserId = userId ?? 'guest_user';
 
       int effectiveQuantity = quantity;
@@ -193,7 +262,7 @@ class CartProvider with ChangeNotifier {
       );
 
       List<CartItemModel> updatedItems =
-          List<CartItemModel>.from(_cart?.items ?? []);
+          List<CartItemModel>.from(cart?.items ?? []);
 
       // ✅ UPDATED: Check both productId AND variant
       final existingIndex = updatedItems.indexWhere(
@@ -228,15 +297,17 @@ class CartProvider with ChangeNotifier {
       _error = null;
       notifyListeners();
 
+      if (!_live(operationOwner, epoch)) return false;
       // Sync with database non-blockingly if authenticated
       if (userId != null) {
-        unawaited(_databaseService.updateCart(userId, updatedCart));
+        unawaited(_persistCart(userId, updatedCart, epoch));
       }
 
       return true;
     } catch (e) {
+      if (!_live(operationOwner, epoch)) return false;
       debugPrint('❌ addItem error: $e');
-      _error = e.toString();
+      _error = 'Your cart could not be saved. Please refresh it.';
       _isLoading = false;
       notifyListeners();
       return false;
@@ -245,8 +316,13 @@ class CartProvider with ChangeNotifier {
 
   // ✅ UPDATED: addOrderItems now supports variants
   Future<bool> addOrderItems(List<CartItemModel> orderItems) async {
+    orderItems = List<CartItemModel>.unmodifiable(orderItems);
+    if (_disposed) return false;
+    loadCart();
+    final operationOwner = _authService.currentUserId;
+    final epoch = _sessionEpoch;
     try {
-      final userId = _authService.currentUserId;
+      final userId = operationOwner;
       print(
           '📦 [addOrderItems] Starting - userId: $userId, items: ${orderItems.length}');
 
@@ -272,6 +348,10 @@ class CartProvider with ChangeNotifier {
 
       try {
         final currentCart = await _databaseService.getUserCart(userId).first;
+        if (!_live(userId, epoch)) return false;
+        if (currentCart != null && !_ownedCart(currentCart, userId)) {
+          throw StateError('Cart owner does not match.');
+        }
         if (currentCart != null) {
           updatedItems = List.from(currentCart.items);
           print(
@@ -280,10 +360,13 @@ class CartProvider with ChangeNotifier {
           print('📦 [addOrderItems] No existing cart, starting fresh');
           updatedItems = [];
         }
-      } catch (e) {
-        print(
-            '⚠️  [addOrderItems] Could not fetch current cart, starting fresh: $e');
-        updatedItems = [];
+      } catch (_) {
+        if (!_live(userId, epoch)) return false;
+        _error =
+            'Your cart could not be loaded. Refresh it before adding items.';
+        _isLoading = false;
+        notifyListeners();
+        return false;
       }
 
       int addedCount = 0;
@@ -354,8 +437,10 @@ class CartProvider with ChangeNotifier {
         updatedAt: DateTime.now(),
       );
 
+      if (!_live(userId, epoch)) return false;
       print('📦 [addOrderItems] Saving to database...');
       await _databaseService.updateCart(userId, updatedCart);
+      if (!_live(userId, epoch)) return false;
 
       print(
           '✅ [addOrderItems] Successfully saved ${addedProductNames.length} items: $addedProductNames');
@@ -367,8 +452,9 @@ class CartProvider with ChangeNotifier {
 
       return true;
     } catch (e) {
+      if (!_live(operationOwner, epoch)) return false;
       print('❌ [addOrderItems] FATAL ERROR: $e');
-      _error = 'Error adding items: ${e.toString()}';
+      _error = 'Your cart could not be saved. Please refresh it.';
       _isLoading = false;
       notifyListeners();
       return false;
@@ -396,12 +482,16 @@ class CartProvider with ChangeNotifier {
 
   // ✅ UPDATED: removeItem now supports variant - NO LOADING STATE for instant update
   Future<bool> removeItem(String productId, {String? variant}) async {
+    if (_disposed) return false;
+    loadCart();
+    final operationOwner = _authService.currentUserId;
+    final epoch = _sessionEpoch;
     try {
-      final userId = _authService.currentUserId;
+      final userId = operationOwner;
       final effectiveUserId = userId ?? 'guest_user';
 
       // ✅ Immediate local update (no shimmer)
-      List<CartItemModel> updatedItems = List.from(_cart?.items ?? []);
+      List<CartItemModel> updatedItems = List.from(cart?.items ?? []);
 
       // ✅ UPDATED: Remove based on productId AND variant
       if (variant != null && variant.isNotEmpty) {
@@ -432,15 +522,17 @@ class CartProvider with ChangeNotifier {
       _error = null;
       notifyListeners();
 
+      if (!_live(operationOwner, epoch)) return false;
       // ✅ Sync with database in background
       if (userId != null) {
-        unawaited(_databaseService.updateCart(userId, updatedCart));
+        unawaited(_persistCart(userId, updatedCart, epoch));
       }
 
       return true;
     } catch (e) {
+      if (!_live(operationOwner, epoch)) return false;
       debugPrint('❌ removeItem error: $e');
-      _error = e.toString();
+      _error = 'Your cart could not be saved. Please refresh it.';
       notifyListeners();
       return false;
     }
@@ -449,8 +541,12 @@ class CartProvider with ChangeNotifier {
   // ✅ UPDATED: updateQuantity now supports variant - NO LOADING STATE for instant update
   Future<bool> updateQuantity(String productId, int quantity,
       {String? variant}) async {
+    if (_disposed) return false;
+    loadCart();
+    final operationOwner = _authService.currentUserId;
+    final epoch = _sessionEpoch;
     try {
-      final userId = _authService.currentUserId;
+      final userId = operationOwner;
       final effectiveUserId = userId ?? 'guest_user';
 
       if (quantity <= 0) {
@@ -458,7 +554,7 @@ class CartProvider with ChangeNotifier {
       }
 
       // ✅ Immediate local update (no shimmer)
-      List<CartItemModel> updatedItems = List.from(_cart?.items ?? []);
+      List<CartItemModel> updatedItems = List.from(cart?.items ?? []);
 
       // ✅ UPDATED: Find item by productId AND variant
       int index = -1;
@@ -490,15 +586,17 @@ class CartProvider with ChangeNotifier {
       _error = null;
       notifyListeners();
 
+      if (!_live(operationOwner, epoch)) return false;
       // ✅ Sync with database in background
       if (userId != null) {
-        unawaited(_databaseService.updateCart(userId, updatedCart));
+        unawaited(_persistCart(userId, updatedCart, epoch));
       }
 
       return true;
     } catch (e) {
+      if (!_live(operationOwner, epoch)) return false;
       print('❌ updateQuantity error: $e');
-      _error = e.toString();
+      _error = 'Your cart could not be saved. Please refresh it.';
       notifyListeners();
       return false;
     }
@@ -522,21 +620,22 @@ class CartProvider with ChangeNotifier {
   }
 
   Future<bool> clearCart() async {
+    if (_disposed) return false;
+    loadCart();
+    final owner = _authService.currentUserId;
+    final epoch = _sessionEpoch;
     try {
-      final userId = _authService.currentUserId;
+      if (owner != null) await _databaseService.clearCart(owner);
+      if (!_live(owner, epoch)) return false;
       _cart = null;
       _setCartMode(null);
       _isLoading = false;
       _error = null;
       notifyListeners();
-
-      if (userId != null) {
-        unawaited(_databaseService.clearCart(userId));
-      }
       return true;
-    } catch (e) {
-      debugPrint('❌ clearCart error: $e');
-      _error = e.toString();
+    } catch (_) {
+      if (!_live(owner, epoch)) return false;
+      _error = 'Your cart could not be cleared. Please try again.';
       _isLoading = false;
       notifyListeners();
       return false;
@@ -570,12 +669,12 @@ class CartProvider with ChangeNotifier {
   // ✅ UPDATED: isInCart now checks variant
   bool isInCart(String productId, {String? variant}) {
     if (variant != null && variant.isNotEmpty) {
-      return _cart?.items.any(
+      return cart?.items.any(
             (item) => item.productId == productId && item.variant == variant,
           ) ??
           false;
     }
-    return _cart?.items.any(
+    return cart?.items.any(
           (item) =>
               item.productId == productId &&
               (item.variant == null || item.variant!.isEmpty),
@@ -588,11 +687,11 @@ class CartProvider with ChangeNotifier {
     try {
       CartItemModel? item;
       if (variant != null && variant.isNotEmpty) {
-        item = _cart?.items.firstWhere(
+        item = cart?.items.firstWhere(
           (item) => item.productId == productId && item.variant == variant,
         );
       } else {
-        item = _cart?.items.firstWhere(
+        item = cart?.items.firstWhere(
           (item) =>
               item.productId == productId &&
               (item.variant == null || item.variant!.isEmpty),
@@ -608,11 +707,11 @@ class CartProvider with ChangeNotifier {
   CartItemModel? getCartItem(String productId, {String? variant}) {
     try {
       if (variant != null && variant.isNotEmpty) {
-        return _cart?.items.firstWhere(
+        return cart?.items.firstWhere(
           (item) => item.productId == productId && item.variant == variant,
         );
       }
-      return _cart?.items.firstWhere(
+      return cart?.items.firstWhere(
         (item) =>
             item.productId == productId &&
             (item.variant == null || item.variant!.isEmpty),
@@ -627,8 +726,13 @@ class CartProvider with ChangeNotifier {
   }
 
   void reset() {
+    if (_disposed) return;
+    _invalidate();
+    _hasBound = true;
+    _boundOwner = _authService.currentUserId;
     _cart = null;
     _isListening = false;
+    _isLoading = false;
     _error = null;
     _checkoutOrderType = null;
     _checkoutAutoFrequency = null;
@@ -637,12 +741,18 @@ class CartProvider with ChangeNotifier {
   }
 
   void clearError() {
+    if (_disposed) return;
     _error = null;
     notifyListeners();
   }
 
   @override
   void dispose() {
+    _disposed = true;
+    _invalidate();
+    final auth = _authSubscription;
+    _authSubscription = null;
+    if (auth != null) unawaited(auth.cancel().catchError((Object _) {}));
     super.dispose();
   }
 }
