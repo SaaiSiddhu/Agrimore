@@ -272,13 +272,15 @@ void main() {
     test(
         'account switch while cleanup reply is delayed stops all remaining removals',
         () async {
+      Future<void>? nextSession;
       store.afterRemove = (_) async {
         store.afterRemove = null;
         transport.uid = 'owner_b';
-        await seedSession('owner_b');
+        nextSession = seedSession('owner_b');
       };
       await expectLater(
           AuthService().deleteAccount(), throwsA(isA<AuthException>()));
+      await nextSession;
       expect(store.removals.length, 1);
       expect(SharedPreferencesService.getUserId(), 'owner_b');
       expect(
@@ -301,12 +303,14 @@ void main() {
     test(
         'stored owner changes mid-cleanup independently prevent remaining removals',
         () async {
+      Future<void>? nextSession;
       store.afterRemove = (_) async {
         store.afterRemove = null;
-        await seedSession('owner_b');
+        nextSession = seedSession('owner_b');
       };
       await SharedPreferencesService.clearUserSession(
           expectedUserId: 'owner_a');
+      await nextSession;
       expect(store.removals.length, 1);
       expect(SharedPreferencesService.getUserId(), 'owner_b');
       expect(SharedPreferencesService.isLoggedIn(), isTrue);
