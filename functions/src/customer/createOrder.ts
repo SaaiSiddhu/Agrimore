@@ -46,6 +46,7 @@ import { DeliveryFeeSchedule, parseDeliveryFeeSchedule } from "./deliveryFeeSche
 import { deliverySecretRef, newDeliverySecret } from "../delivery/deliverySecret";
 import { assertSellerAcceptingOrders } from "../common/sellerAvailability";
 import { isSpendableCapturedPayment } from "../common/paymentIntegrity";
+import { checkoutRequestDocId, checkoutRequestFingerprint, isCheckoutOrderReceipt } from "./checkoutRequest";
 
 interface CreateOrderItemInput {
   productId: string;
@@ -73,6 +74,9 @@ interface CreateOrderData {
    *  this order. The amount redeemed is read from the hold document, never
    *  from this string alone (S4). */
   productCreditHoldId?: string;
+  /** Additive retry identity. Existing clients without it retain their
+   *  established payment replay and COD behavior. */
+  checkoutRequestId?: string;
 }
 
 // FIX-9, WS5. Was `Date.now()` plus a `Math.random()` 4-digit tail — neither
@@ -221,6 +225,11 @@ export const createOrder = onCall({ minInstances: 0, memory: "256MiB" }, async (
   // Firestore dependency, so it runs before any read, same as the item
   // checks above.
   validateOrderInputBounds(data);
+  const checkoutRequestId = data?.checkoutRequestId;
+  if (checkoutRequestId !== undefined &&
+      (typeof checkoutRequestId !== "string" || !/^[A-Za-z0-9_-]{8,128}$/.test(checkoutRequestId))) {
+    throw new HttpsError("invalid-argument", "Invalid checkout request ID");
+  }
 
   // Phase FIX-3 (finding N-4, P1). Collapse repeated productIds into one line
   // with the summed quantity, and bound the cart, BEFORE anything downstream
@@ -236,6 +245,24 @@ export const createOrder = onCall({ minInstances: 0, memory: "256MiB" }, async (
   const normalizedItems = normalizeOrderItems(items);
 
   const db = admin.firestore();
+  const checkoutRequestRef = checkoutRequestId
+    ? db.collection("checkout_requests").doc(checkoutRequestDocId(uid, checkoutRequestId))
+    : null;
+  // Only consequential command fields are bound; client prices/totals and
+  // other ignored fields never become authoritative through this hash.
+  const checkoutFingerprint = checkoutRequestRef ? checkoutRequestFingerprint({
+    items: normalizedItems, orderMode, paymentMethod, employeeCode,
+    deliveryAddress: data?.deliveryAddress || null,
+    couponCode: typeof data?.couponCode === "string" ? data.couponCode.trim().toUpperCase() : data?.couponCode ?? null,
+    deliveryCharge: data?.deliveryCharge ?? 0, tax: data?.tax ?? 0,
+    deliverySlot: typeof data?.deliverySlot === "string" ? data.deliverySlot : null,
+    notes: typeof data?.notes === "string" && data.notes.trim() ? data.notes.trim() : null,
+    orderType: typeof data?.orderType === "string" && data.orderType ? data.orderType : "One Time",
+    autoFrequency: data?.orderType === "Auto Delivery" && typeof data?.autoFrequency === "string" ? data.autoFrequency : null,
+    productCreditHoldId: typeof data?.productCreditHoldId === "string" ? data.productCreditHoldId.trim() || null : null,
+    razorpayOrderId: data?.razorpayOrderId ?? null,
+    razorpayPaymentId: data?.razorpayPaymentId ?? null,
+  }) : null;
 
   // Phase D: a hold's amount is never known until it's read inside the
   // transaction below — and it may cover the ENTIRE order, in which case
@@ -314,6 +341,39 @@ export const createOrder = onCall({ minInstances: 0, memory: "256MiB" }, async (
     // docs) happen only in the second half of this callback, below.
     // ============================================
     const userSnap = await tx.get(userRef);
+
+    if (checkoutRequestRef) {
+      const requestSnap = await tx.get(checkoutRequestRef);
+      if (requestSnap.exists) {
+        if (!userSnap.exists || userSnap.data()?.profileCompleted !== true) {
+          throw new HttpsError("failed-precondition", "Please complete your profile before placing an order");
+        }
+        const previous = requestSnap.data()!;
+        if (previous.uid !== uid || previous.requestId !== checkoutRequestId ||
+            previous.status !== "completed" || !isCheckoutOrderReceipt(previous.orders)) {
+          throw new HttpsError("failed-precondition", "Checkout result could not be recovered. Please contact support.");
+        }
+        if (previous.fingerprint !== checkoutFingerprint) {
+          throw new HttpsError("already-exists", "This checkout request was already used for different order details. Please start a new checkout.");
+        }
+        const orders = previous.orders;
+        const existing = await tx.getAll(...orders.map(order => db.collection("orders").doc(order.orderId)));
+        if (existing.some((snapshot, i) => {
+          const order = snapshot.data();
+          return !snapshot.exists || order?.userId !== uid || order?.id !== orders[i].orderId ||
+            order?.orderNumber !== orders[i].orderNumber || (order?.sellerId ?? "") !== orders[i].sellerId ||
+            order?.total !== orders[i].total;
+        })) {
+          throw new HttpsError("failed-precondition", "Checkout result could not be recovered. Please contact support.");
+        }
+        // This recovers an owned historical result; it performs no payment,
+        // stock, coupon or rate-limit write and never repeats order creation.
+        return { success: true, orders: orders.map(order => ({
+          orderId: order.orderId, orderNumber: order.orderNumber,
+          sellerId: order.sellerId, total: order.total,
+        })) };
+      }
+    }
 
     // FIX-16, WS1 (finding N-23). Checked right after the mandatory reads,
     // before the (unconditional) employee-code/product reads below, so a
@@ -1012,6 +1072,13 @@ export const createOrder = onCall({ minInstances: 0, memory: "256MiB" }, async (
       { merge: true }
     );
 
+    if (checkoutRequestRef) {
+      tx.create(checkoutRequestRef, {
+        uid, requestId: checkoutRequestId, fingerprint: checkoutFingerprint,
+        status: "completed", orders: createdOrders,
+        completedAt: admin.firestore.FieldValue.serverTimestamp(),
+      });
+    }
     return { success: true, orders: createdOrders };
   });
 
