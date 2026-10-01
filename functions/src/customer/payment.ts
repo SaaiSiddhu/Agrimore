@@ -31,15 +31,15 @@ export const RAZORPAY_KEY_SECRET = defineSecret("RAZORPAY_KEY_SECRET");
 // `defineString` was rejected here) — it already reads
 // `process.env.RAZORPAY_KEY_ID` exactly as it always has.
 export function getRazorpayCredentials(): { keyId: string; keySecret: string } {
-  const keyId = process.env.RAZORPAY_KEY_ID || "";
-  const mode = razorpayModeFromKey(keyId);
-  if (keyId && (!mode || (mode === "test" && !isLocalPaymentStorage()))) {
-    throw new HttpsError("failed-precondition", "Payment credentials are not configured for this environment");
-  }
-  return {
-    keyId,
+  const credentials = {
+    keyId: process.env.RAZORPAY_KEY_ID || "",
     keySecret: process.env.RAZORPAY_KEY_SECRET || "",
   };
+  const mode = razorpayModeFromKey(credentials.keyId);
+  if (credentials.keyId && (!mode || (mode === "test" && !isLocalPaymentStorage()))) {
+    throw new HttpsError("failed-precondition", "Payment credentials are not configured for this environment");
+  }
+  return credentials;
 }
 
 interface CreateOrderData {
