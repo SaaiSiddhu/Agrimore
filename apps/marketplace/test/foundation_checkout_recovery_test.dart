@@ -91,6 +91,27 @@ void main() {
         signature: 'fixture_signature');
   }
 
+  Future<PendingCheckoutRequest> awaitingRequest() async {
+    final request = await service().prepare(intent(paid: true));
+    return service().attachGateway(request.ownerId, request.requestId, gateway);
+  }
+
+  final recoveredCapture = {
+    'success': true,
+    'verified': true,
+    'outcome': 'captured',
+    'orderId': gateway.orderId,
+    'paymentId': 'pay_journal_recovered',
+    'amountPaise': gateway.amountPaise,
+    'currency': 'INR',
+  };
+  final unconfirmed = {
+    'success': true,
+    'verified': false,
+    'outcome': 'unconfirmed',
+    'orderId': gateway.orderId,
+  };
+
   setUpAll(() async => Firebase.initializeApp());
   setUp(() async {
     directory =
@@ -167,6 +188,275 @@ void main() {
     expect(restored.gateway!['orderId'], gateway.orderId);
     expect(restored.payment!['paymentId'], 'pay_journal_fixture');
     expect(calls, isEmpty);
+  });
+
+  test(
+      'lost SDK callback recovers durable API proof and confirms after restart',
+      () async {
+    final request = await awaitingRequest();
+    handler = (call) async => [
+          call['functionName'] == 'recoverCheckoutPayment'
+              ? recoveredCapture
+              : response
+        ];
+    final recovered =
+        await service().recoverPayment(request.ownerId, request.requestId);
+    expect(recovered.stage, 'ready');
+    expect(recovered.payment!['source'], 'provider_api_recovery');
+    expect(recovered.payment!.containsKey('signature'), false);
+    final fresh = (await service().pending())!;
+    expect(fresh.toMap(), recovered.toMap());
+    expect(
+        (await service().confirm(fresh.ownerId, fresh.requestId))
+            .single
+            .orderId,
+        'fixture_order');
+    expect(calls.map((c) => c['functionName']),
+        ['recoverCheckoutPayment', 'recoverCheckoutPayment', 'createOrder']);
+    expect(calls.first['parameters'],
+        {'checkoutOwnerId': request.ownerId, 'orderId': gateway.orderId});
+    final payload = calls.last['parameters'] as Map;
+    expect(payload['checkoutRequestId'], request.requestId);
+    expect(payload['checkoutOwnerId'], request.ownerId);
+    expect(payload['razorpayPaymentId'], 'pay_journal_recovered');
+    expect(payload.containsKey('razorpaySignature'), false);
+    expect((await service().pending())!.stage, 'completed');
+  });
+  test('unconfirmed lookup preserves awaiting state and never creates order',
+      () async {
+    final request = await awaitingRequest();
+    handler = (_) async => [unconfirmed];
+    final after =
+        await service().recoverPayment(request.ownerId, request.requestId);
+    expect(after.toMap(), request.toMap());
+    await expectLater(service().confirm(request.ownerId, request.requestId),
+        throwsStateError);
+    expect(calls.single['functionName'], 'recoverCheckoutPayment');
+  });
+  for (final change in <String, dynamic>{
+    'success': false,
+    'verified': false,
+    'outcome': 'refunded',
+    'orderId': 'order_other',
+    'paymentId': 'bad/path',
+    'amountPaise': 9999,
+    'currency': 'USD',
+  }.entries) {
+    test('malformed recovery ${change.key} cannot promote pending proof',
+        () async {
+      final request = await awaitingRequest();
+      handler = (_) async => [
+            {...recoveredCapture, change.key: change.value}
+          ];
+      await expectLater(
+          service().recoverPayment(request.ownerId, request.requestId),
+          throwsStateError);
+      expect((await service().pending())!.toMap(), request.toMap());
+      expect(calls.single['functionName'], 'recoverCheckoutPayment');
+    });
+  }
+  test('provider recovery error retains immutable awaiting journal', () async {
+    final request = await awaitingRequest();
+    handler = (_) async => ['unavailable', 'Synthetic provider outage', null];
+    await expectLater(
+        service().recoverPayment(request.ownerId, request.requestId),
+        throwsA(isA<Exception>()));
+    expect((await service().pending())!.toMap(), request.toMap());
+  });
+  test('API proof persistence failure retries identical owner/provider tuple',
+      () async {
+    final request = await awaitingRequest();
+    handler = (_) async => [recoveredCapture];
+    store.failWrite = true;
+    await expectLater(
+        service().recoverPayment(request.ownerId, request.requestId),
+        throwsA(isA<FileSystemException>()));
+    expect((await service().pending())!.toMap(), request.toMap());
+    store.failWrite = false;
+    await service().recoverPayment(request.ownerId, request.requestId);
+    expect(calls, hasLength(2));
+    expect(calls.first['parameters'], calls.last['parameters']);
+  });
+  test('ready API proof must pass fresh provider check before createOrder',
+      () async {
+    final request = await awaitingRequest();
+    handler = (_) async => [recoveredCapture];
+    await service().recoverPayment(request.ownerId, request.requestId);
+    handler = (_) async => [unconfirmed];
+    await expectLater(service().confirm(request.ownerId, request.requestId),
+        throwsStateError);
+    expect((await service().pending())!.stage, 'ready');
+    expect(calls.every((c) => c['functionName'] == 'recoverCheckoutPayment'),
+        true);
+  });
+  test('changed provider payment ID cannot replace already saved API proof',
+      () async {
+    final request = await awaitingRequest();
+    handler = (_) async => [recoveredCapture];
+    final saved =
+        await service().recoverPayment(request.ownerId, request.requestId);
+    handler = (_) async => [
+          {...recoveredCapture, 'paymentId': 'pay_other'}
+        ];
+    await expectLater(service().confirm(request.ownerId, request.requestId),
+        throwsStateError);
+    expect((await service().pending())!.toMap(), saved.toMap());
+  });
+  test('account switch before API recovery sends no old-owner RPC', () async {
+    final request = await awaitingRequest();
+    uid = 'different_owner';
+    await expectLater(
+        service().recoverPayment(request.ownerId, request.requestId),
+        throwsStateError);
+    expect(calls, isEmpty);
+  });
+  test('account switch during API recovery cannot persist old proof', () async {
+    final request = await awaitingRequest();
+    handler = (_) async {
+      uid = 'different_owner';
+      return [recoveredCapture];
+    };
+    await expectLater(
+        service().recoverPayment(request.ownerId, request.requestId),
+        throwsStateError);
+    uid = request.ownerId;
+    expect((await service().pending())!.toMap(), request.toMap());
+    expect(calls, hasLength(1));
+  });
+  test('account switch during API proof recheck prevents order RPC', () async {
+    final request = await awaitingRequest();
+    handler = (_) async => [recoveredCapture];
+    await service().recoverPayment(request.ownerId, request.requestId);
+    handler = (_) async {
+      uid = 'different_owner';
+      return [recoveredCapture];
+    };
+    await expectLater(service().confirm(request.ownerId, request.requestId),
+        throwsStateError);
+    expect(calls.every((c) => c['functionName'] == 'recoverCheckoutPayment'),
+        true);
+  });
+  test('concurrent recovery performs one lookup and preserves same proof',
+      () async {
+    final request = await awaitingRequest();
+    final entered = Completer<void>(), release = Completer<void>();
+    handler = (_) async {
+      entered.complete();
+      await release.future;
+      return [recoveredCapture];
+    };
+    final first = service().recoverPayment(request.ownerId, request.requestId);
+    await entered.future;
+    final second = service().recoverPayment(request.ownerId, request.requestId);
+    release.complete();
+    final results = await Future.wait([first, second]);
+    expect(results[0].toMap(), results[1].toMap());
+    expect(calls, hasLength(1));
+  });
+  test(
+      'late matching SDK callback preserves stable API proof; other ID refuses',
+      () async {
+    final request = await awaitingRequest();
+    handler = (_) async => [recoveredCapture];
+    final recovered =
+        await service().recoverPayment(request.ownerId, request.requestId);
+    final late = await service().recordPayment(
+        request.ownerId, request.requestId,
+        paymentId: 'pay_journal_recovered',
+        orderId: gateway.orderId,
+        signature: 'fixture_sdk_signature');
+    expect(late.toMap(), recovered.toMap());
+    await expectLater(
+        service().recordPayment(request.ownerId, request.requestId,
+            paymentId: 'pay_other',
+            orderId: gateway.orderId,
+            signature: 'fixture_sdk_signature'),
+        throwsStateError);
+    expect((await service().pending())!.toMap(), recovered.toMap());
+  });
+  test('SDK proof or completed journal recovery does not initiate extra lookup',
+      () async {
+    final request = await paidRequest();
+    expect(
+        (await service().recoverPayment(request.ownerId, request.requestId))
+            .toMap(),
+        request.toMap());
+    expect(calls, isEmpty);
+    await service().confirm(request.ownerId, request.requestId);
+    final count = calls.length;
+    expect(
+        (await service().recoverPayment(request.ownerId, request.requestId))
+            .stage,
+        'completed');
+    expect(calls, hasLength(count));
+  });
+  test('SDK callback racing in-flight recovery retains the first API proof',
+      () async {
+    final request = await awaitingRequest();
+    final entered = Completer<void>(), release = Completer<void>();
+    handler = (_) async {
+      entered.complete();
+      await release.future;
+      return [recoveredCapture];
+    };
+    final recovery =
+        service().recoverPayment(request.ownerId, request.requestId);
+    await entered.future;
+    final callback = service().recordPayment(request.ownerId, request.requestId,
+        paymentId: 'pay_journal_recovered',
+        orderId: gateway.orderId,
+        signature: 'fixture_sdk_signature');
+    release.complete();
+    final results = await Future.wait([recovery, callback]);
+    expect(results[0].toMap(), results[1].toMap());
+    expect(results[1].payment!['source'], 'provider_api_recovery');
+    expect(calls, hasLength(1));
+  });
+  test('SDK callback that wins the recovery race keeps its original proof',
+      () async {
+    final request = await awaitingRequest();
+    final callback = service().recordPayment(request.ownerId, request.requestId,
+        paymentId: 'pay_journal_fixture',
+        orderId: gateway.orderId,
+        signature: 'fixture_sdk_signature');
+    final recovery =
+        service().recoverPayment(request.ownerId, request.requestId);
+    final results = await Future.wait([callback, recovery]);
+    expect(results[0].toMap(), results[1].toMap());
+    expect(results[1].payment!['signature'], 'fixture_sdk_signature');
+    expect(calls, isEmpty);
+  });
+  test('draft cannot look up a nonexistent provider attempt', () async {
+    final request = await service().prepare(intent());
+    await expectLater(
+        service().recoverPayment(request.ownerId, request.requestId),
+        throwsStateError);
+    expect(calls, isEmpty);
+  });
+  test('lost API-proof confirmation reply reuses exact original order payload',
+      () async {
+    final request = await awaitingRequest();
+    bool interrupted = false;
+    handler = (call) async {
+      if (call['functionName'] == 'recoverCheckoutPayment') {
+        return [recoveredCapture];
+      }
+      if (!interrupted) {
+        interrupted = true;
+        return ['unavailable', 'Synthetic lost receipt', null];
+      }
+      return [response];
+    };
+    await service().recoverPayment(request.ownerId, request.requestId);
+    await expectLater(service().confirm(request.ownerId, request.requestId),
+        throwsA(isA<Exception>()));
+    await service().confirm(request.ownerId, request.requestId);
+    final orders =
+        calls.where((c) => c['functionName'] == 'createOrder').toList();
+    expect(orders, hasLength(2));
+    expect(orders[0]['parameters'], orders[1]['parameters']);
+    expect((orders.first['parameters'] as Map).containsKey('razorpaySignature'),
+        false);
   });
   test('different callback provider order cannot replace saved attempt',
       () async {
