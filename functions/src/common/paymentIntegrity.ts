@@ -1,3 +1,8 @@
+// Provider IDs are also document IDs and URL path components.
+export function isSafeProviderId(value: unknown): value is string {
+  return typeof value === "string" && /^[A-Za-z0-9_-]{1,200}$/.test(value);
+}
+
 // Server environment authority shared by payment verification and every
 // economic consumer. Neither request flags nor provider key prefixes enable
 // simulated money. Require loopback storage to isolate local financial tests.

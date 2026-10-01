@@ -123,7 +123,7 @@ async function main() {
     const orderId = "order_phase9_topup1";
     const paymentId = "pay_phase9_topup1";
     const amount = 1000;
-    mockPayments[paymentId] = { id: paymentId, amount: amount * 100, currency: "INR", status: "captured", method: "card" };
+    mockPayments[paymentId] = { id: paymentId, order_id: orderId, amount: amount * 100, currency: "INR", status: "captured", method: "card" };
     const signature = computeSignature(orderId, paymentId);
 
     const r = await callAndCapture(
@@ -155,7 +155,7 @@ async function main() {
     const orderId = "order_phase9_topup2";
     const paymentId = "pay_phase9_topup2";
     const amount = 500;
-    mockPayments[paymentId] = { id: paymentId, amount: amount * 100, currency: "INR", status: "captured", method: "card" };
+    mockPayments[paymentId] = { id: paymentId, order_id: orderId, amount: amount * 100, currency: "INR", status: "captured", method: "card" };
 
     const r = await callAndCapture(
       { amount, paymentId, orderId, signature: "0000tampered0000signature0000" },
@@ -183,7 +183,7 @@ async function main() {
     const uid = "phase9-topup-customer3";
     const orderId = "order_phase9_topup3";
     const paymentId = "pay_phase9_topup3";
-    mockPayments[paymentId] = { id: paymentId, amount: 500 * 100, currency: "INR", status: "captured", method: "card" };
+    mockPayments[paymentId] = { id: paymentId, order_id: orderId, amount: 500 * 100, currency: "INR", status: "captured", method: "card" };
     const signature = computeSignature(orderId, paymentId);
 
     const r = await callAndCapture(
@@ -212,7 +212,7 @@ async function main() {
     const orderId = "order_phase9_topup4";
     const paymentId = "pay_phase9_topup4";
     const amount = 500;
-    mockPayments[paymentId] = { id: paymentId, amount: amount * 100, currency: "INR", status: "captured", method: "card" };
+    mockPayments[paymentId] = { id: paymentId, order_id: orderId, amount: amount * 100, currency: "INR", status: "captured", method: "card" };
     const signature = computeSignature(orderId, paymentId);
     const payload = { amount, paymentId, orderId, signature };
 
