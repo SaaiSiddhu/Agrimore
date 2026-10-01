@@ -84,6 +84,131 @@ void main() {
     await opened.future.timeout(const Duration(seconds: 2));
     expect(requests.single['purpose'], 'goods_checkout');
   });
+  test('disposing during provider response prevents late native checkout',
+      () async {
+    final entered = Completer<void>(), release = Completer<void>();
+    messenger.setMockDecodedMessageHandler<Object?>(functionsChannel,
+        (message) async {
+      entered.complete();
+      await release.future;
+      return [serverResponse];
+    });
+    final pending = checkout();
+    await entered.future;
+    service.dispose();
+    release.complete();
+    await pending;
+    await Future<void>.delayed(Duration.zero);
+    expect(sdkOptions, isEmpty);
+    expect(failures, isEmpty);
+  });
+  test('durable order-created hook finishes before native SDK opens', () async {
+    final entered = Completer<void>(), release = Completer<void>();
+    final pending = service.openCheckout(
+      amount: 599.99,
+      userName: '',
+      userEmail: '',
+      userPhone: '',
+      onOrderCreated: (order) async {
+        expect(order.orderId, 'order_foundation_mobile');
+        expect(order.amountPaise, 59999);
+        expect(order.keyId, 'rzp_test_foundation_fixture');
+        entered.complete();
+        await release.future;
+      },
+    );
+    await entered.future;
+    expect(sdkOptions, isEmpty);
+    release.complete();
+    await pending;
+    expect((await opened.future)['amount'], 59999);
+    expect(requests, hasLength(1));
+  });
+  test('failed order-created hook never opens SDK or emits payment success',
+      () async {
+    bool success = false;
+    service.initialize(
+        onSuccess: (_, __, ___) {
+          success = true;
+        },
+        onFailure: failures.add);
+    await service.openCheckout(
+      amount: 599.99,
+      userName: '',
+      userEmail: '',
+      userPhone: '',
+      onOrderCreated: (_) async {
+        throw StateError('Synthetic persistence failure');
+      },
+    );
+    expect(sdkOptions, isEmpty);
+    expect(success, false);
+    expect(failures, hasLength(1));
+  });
+  test('malformed server order cannot reach persistence hook', () async {
+    bool hook = false;
+    serverResponse['amount'] = 59999.5;
+    await service.openCheckout(
+      amount: 599.99,
+      userName: '',
+      userEmail: '',
+      userPhone: '',
+      onOrderCreated: (_) async {
+        hook = true;
+      },
+    );
+    expect(hook, false);
+    expect(sdkOptions, isEmpty);
+    expect(failures, hasLength(1));
+  });
+  test('disposing during persistence hook suppresses late native SDK open',
+      () async {
+    final entered = Completer<void>(), release = Completer<void>();
+    final pending = service.openCheckout(
+      amount: 599.99,
+      userName: '',
+      userEmail: '',
+      userPhone: '',
+      onOrderCreated: (_) async {
+        entered.complete();
+        await release.future;
+      },
+    );
+    await entered.future;
+    service.dispose();
+    release.complete();
+    await pending;
+    expect(sdkOptions, isEmpty);
+    expect(failures, isEmpty);
+  });
+  test('sandbox success waits for persistence hook instead of bypassing it',
+      () async {
+    final entered = Completer<void>(), release = Completer<void>();
+    bool success = false;
+    serverResponse['isTestMode'] = true;
+    service.initialize(
+        onSuccess: (_, __, ___) {
+          success = true;
+        },
+        onFailure: failures.add);
+    final pending = service.openCheckout(
+      amount: 599.99,
+      userName: '',
+      userEmail: '',
+      userPhone: '',
+      onOrderCreated: (_) async {
+        entered.complete();
+        await release.future;
+      },
+    );
+    await entered.future;
+    expect(success, false);
+    release.complete();
+    await pending;
+    expect(success, true);
+    expect(sdkOptions, isEmpty);
+    expect(failures, isEmpty);
+  });
   test('59999 server paise reaches the native SDK without losing a paise',
       () async {
     await checkout();

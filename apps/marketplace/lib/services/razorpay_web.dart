@@ -29,6 +29,7 @@ class RazorpayWebService {
   RazorpayWebService({FirebaseFunctions? functions}) : _functions = functions;
 
   final FirebaseFunctions? _functions;
+  bool _disposed = false;
   RazorpayWebSuccessCallback? _onSuccess;
   RazorpayWebFailureCallback? _onFailure;
 
@@ -49,7 +50,9 @@ class RazorpayWebService {
     required String userEmail,
     required String userPhone,
     String? description,
+    Future<void> Function(PaymentCheckoutOrder order)? onOrderCreated,
   }) async {
+    if (_disposed) return;
     try {
       debugPrint('💳 Creating Razorpay order via Cloud Function...');
 
@@ -65,6 +68,7 @@ class RazorpayWebService {
       });
 
       final data = result.data;
+      if (_disposed) return;
 
       if (data['success'] != true) {
         _onFailure?.call(data['error'] ?? 'Failed to create order');
@@ -72,6 +76,8 @@ class RazorpayWebService {
       }
 
       final order = PaymentCheckoutOrder.fromResponse(data);
+      if (onOrderCreated != null) await onOrderCreated(order);
+      if (_disposed) return;
       final razorpayOrderId = order.orderId;
       final keyId = order.keyId;
 
@@ -127,6 +133,7 @@ class RazorpayWebService {
     required String userPhone,
     String? description,
   }) {
+    if (_disposed) return;
     try {
       PaymentCheckoutOrder.fromResponse({
         'success': true,
@@ -289,6 +296,7 @@ class RazorpayWebService {
 
   /// Dispose method
   void dispose() {
+    _disposed = true;
     _onSuccess = null;
     _onFailure = null;
     try {
