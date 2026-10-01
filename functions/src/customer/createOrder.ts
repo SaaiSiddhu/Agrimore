@@ -45,6 +45,7 @@ import { appendLedgerEntry, toProjectionFields } from "./productCreditLedger";
 import { DeliveryFeeSchedule, parseDeliveryFeeSchedule } from "./deliveryFeeSchedule";
 import { deliverySecretRef, newDeliverySecret } from "../delivery/deliverySecret";
 import { assertSellerAcceptingOrders } from "../common/sellerAvailability";
+import { isSpendableCapturedPayment } from "../common/paymentIntegrity";
 
 interface CreateOrderItemInput {
   productId: string;
@@ -702,7 +703,7 @@ export const createOrder = onCall({ minInstances: 0, memory: "256MiB" }, async (
       if (payment.orderId !== razorpayOrderId) {
         throw new HttpsError("failed-precondition", "Payment does not match this order");
       }
-      if (payment.status !== "captured") {
+      if (!isSpendableCapturedPayment(payment, razorpayPaymentId)) {
         throw new HttpsError("failed-precondition", "Payment was not captured");
       }
       const verifiedAmount = typeof payment.amount === "number" ? payment.amount : -1;

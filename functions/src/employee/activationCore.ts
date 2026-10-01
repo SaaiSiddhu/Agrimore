@@ -19,6 +19,7 @@
 
 import * as admin from "firebase-admin";
 import { log } from "../common/helpers";
+import { isSpendableCapturedPayment } from "../common/paymentIntegrity";
 import { loadOnboardingConfig } from "./onboardingConfig";
 
 export type ActivationSource = "client" | "webhook" | "reconciler";
@@ -108,7 +109,7 @@ export async function performOnboardingActivation(
     if (!payment.userId || payment.userId !== uid) {
       return { ok: false, failureCode: "payment_wrong_user" as const };
     }
-    if (payment.status !== "captured") {
+    if (!isSpendableCapturedPayment(payment, paymentId)) {
       return { ok: false, failureCode: "payment_not_captured" as const };
     }
 
