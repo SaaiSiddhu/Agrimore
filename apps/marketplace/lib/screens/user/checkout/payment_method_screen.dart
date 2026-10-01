@@ -1,3 +1,4 @@
+import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:provider/provider.dart';
@@ -15,6 +16,10 @@ import '../../../providers/theme_provider.dart';
 import '../../../providers/market_mode_provider.dart';
 import 'package:agrimore_services/settings/delivery_slot_service.dart';
 import '../../../services/razorpay_service.dart';
+import '../../../services/checkout_recovery_service.dart';
+import '../../../services/mobile_checkout_flow.dart';
+import '../../../services/mobile_checkout_confirmation.dart';
+import 'widgets/saved_checkout_card.dart';
 import 'widgets/checkout_steps.dart';
 import 'widgets/associate_code_field.dart';
 import 'order_success_screen.dart';
@@ -24,6 +29,7 @@ class PaymentMethodScreen extends StatefulWidget {
   final double total;
   final double deliveryCharge;
   final double tax;
+  final CheckoutRecoveryService? checkoutRecovery;
 
   const PaymentMethodScreen({
     Key? key,
@@ -31,6 +37,7 @@ class PaymentMethodScreen extends StatefulWidget {
     required this.total,
     this.deliveryCharge = 0.0,
     this.tax = 0.0,
+    this.checkoutRecovery,
   }) : super(key: key);
 
   @override
@@ -39,6 +46,7 @@ class PaymentMethodScreen extends StatefulWidget {
 
 class _PaymentMethodScreenState extends State<PaymentMethodScreen> {
   RazorpayService? _razorpayService;
+  MobileCheckoutFlow? _nativeCheckout;
   bool _isProcessing = false;
   String _selectedPaymentMethod = 'razorpay';
 
@@ -101,7 +109,64 @@ class _PaymentMethodScreenState extends State<PaymentMethodScreen> {
     return s.containsClock(DateTime.now());
   }
 
+  void _initializeNativeCheckout() {
+    _nativeCheckout = MobileCheckoutFlow(
+      journal: widget.checkoutRecovery,
+      onChanged: () {
+        if (mounted) setState(() => _isProcessing = _nativeCheckout!.isBusy);
+      },
+      onError: (message) {
+        if (mounted) SnackbarHelper.showError(context, message);
+      },
+      onConfirmed: _finishNativeCheckout,
+    );
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      if (mounted) _nativeCheckout?.restore();
+    });
+  }
+
+  Future<void> _finishNativeCheckout(PendingCheckoutRequest request,
+      List<CheckoutReceipt> receipts) async {
+    final cart = context.read<CartProvider>();
+    final coupon = context.read<CouponProvider>();
+    final market = context.read<MarketModeProvider>();
+    await finishMobileCheckout(
+      request: request, receipts: receipts,
+      isMounted: () => mounted,
+      currentUserId: () => FirebaseAuth.instance.currentUser?.uid,
+      readOrder: (id) async {
+        final doc = await FirebaseFirestore.instance.collection('orders').doc(id)
+            .get().timeout(const Duration(seconds: 10));
+        return doc.exists ? doc.data() : null;
+      },
+      currentItems: () => cart.items,
+      currentMode: () => cart.cartMode ?? (market.isB2B ? 'B2B' : 'B2C'),
+      clearCart: cart.clearCart,
+      clearCoupon: coupon.removeCoupon,
+      clearSubscriptionHint: cart.clearCheckoutSubscriptionIntent,
+      acknowledge: _nativeCheckout!.acknowledge,
+      showOrder: (order) {
+        HapticFeedback.heavyImpact();
+        Navigator.pushAndRemoveUntil(context,
+          MaterialPageRoute(builder: (_) => OrderSuccessScreen(order: order)),
+          (route) => route.isFirst);
+      },
+    );
+  }
+
+  Widget _savedCheckout() {
+    final flow = _nativeCheckout;
+    final request = flow?.pending;
+    if (flow == null || request == null) return const SizedBox.shrink();
+    return SavedCheckoutCard(request: request, isBusy: flow.isBusy,
+        onContinue: () => continueSavedCheckout(context, flow));
+  }
+
   void _initializePaymentServices() {
+    if (!kIsWeb) {
+      _initializeNativeCheckout();
+      return;
+    }
     _razorpayService = RazorpayService();
     _razorpayService!.initialize(
       onSuccess: (paymentId, orderId, signature) {
@@ -391,6 +456,11 @@ class _PaymentMethodScreenState extends State<PaymentMethodScreen> {
     final user = FirebaseAuth.instance.currentUser;
     if (user == null) return;
 
+    if (_nativeCheckout?.pending != null) {
+      await continueSavedCheckout(context, _nativeCheckout!);
+      return;
+    }
+
     HapticFeedback.mediumImpact();
 
     if (_selectedSlot != null && !_selectedSlotIsValidNow()) {
@@ -401,6 +471,37 @@ class _PaymentMethodScreenState extends State<PaymentMethodScreen> {
     if (context.read<MarketModeProvider>().isB2B &&
         _employeeCodeController.text.trim().isEmpty) {
       _showSnackBar('Employee ID is required for B2B orders', isError: true);
+      return;
+    }
+
+    final flow = _nativeCheckout;
+    if (flow != null) {
+      final cart = context.read<CartProvider>();
+      final coupon = context.read<CouponProvider>();
+      final isB2B = context.read<MarketModeProvider>().isB2B;
+      final code = _employeeCodeController.text.trim();
+      final effectiveType = isB2B ? 'One Time' : _orderType;
+      final discount = coupon.calculateDiscount(orderAmount: cart.subtotal, items: cart.items);
+      await flow.start(intent: {
+        'items': cart.items.map((item) => {
+          'productId': item.productId, 'quantity': item.quantity,
+          if (item.variant != null && item.variant!.isNotEmpty) 'variantId': item.variant,
+        }).toList(),
+        'orderMode': isB2B ? 'B2B' : 'B2C',
+        if (isB2B || code.isNotEmpty) 'employeeCode': code,
+        'deliveryAddress': widget.selectedAddress.toOrderMap(),
+        'paymentMethod': _selectedPaymentMethod,
+        if (coupon.appliedCoupon?.code != null) 'couponCode': coupon.appliedCoupon!.code,
+        'deliveryCharge': widget.deliveryCharge, 'tax': widget.tax,
+        if (_selectedSlot != null) 'deliverySlot': '${_selectedSlot!.label} (${_selectedSlot!.start}-${_selectedSlot!.end})',
+        if (_notesController.text.trim().isNotEmpty) 'notes': _notesController.text.trim(),
+        'orderType': effectiveType,
+        if (effectiveType == 'Auto Delivery') 'autoFrequency': _autoFrequency,
+      }, amount: cart.calculateTotal(discount: discount,
+        deliveryCharge: widget.deliveryCharge, tax: widget.tax),
+        context: context, customer: MobileCheckoutCustomer(
+          name: widget.selectedAddress.name, email: user.email ?? '',
+          phone: widget.selectedAddress.phone));
       return;
     }
 
@@ -520,6 +621,7 @@ class _PaymentMethodScreenState extends State<PaymentMethodScreen> {
       body: Column(
         children: [
           CheckoutSteps(currentStep: _currentStep),
+          _savedCheckout(),
           Expanded(
             child: SingleChildScrollView(
               padding: const EdgeInsets.fromLTRB(16, 16, 16, 0),
@@ -1880,6 +1982,7 @@ class _PaymentMethodScreenState extends State<PaymentMethodScreen> {
   void dispose() {
     _notesController.dispose();
     _employeeCodeController.dispose();
+    _nativeCheckout?.dispose();
     _razorpayService?.dispose();
     super.dispose();
   }
