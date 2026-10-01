@@ -39,7 +39,7 @@
 import { onCall, HttpsError } from "firebase-functions/v2/https";
 import * as admin from "firebase-admin";
 import * as crypto from "crypto";
-import { computeOrderPricing, normalizeOrderItems, MAX_VARIANT_ID_LENGTH } from "./orderPricing";
+import { computeOrderPricing, normalizeOrderItems, MAX_VARIANT_ID_LENGTH, assertSafeOrderMoney } from "./orderPricing";
 import { computeCartFingerprint } from "./productCreditHold";
 import { appendLedgerEntry, toProjectionFields } from "./productCreditLedger";
 import { DeliveryFeeSchedule, parseDeliveryFeeSchedule } from "./deliveryFeeSchedule";
@@ -212,7 +212,7 @@ export const createOrder = onCall({ minInstances: 0, memory: "256MiB" }, async (
     if (!item || typeof item.productId !== "string" || !item.productId.trim()) {
       throw new HttpsError("invalid-argument", "Each item requires a productId");
     }
-    if (!Number.isInteger(item.quantity) || item.quantity <= 0) {
+    if (!Number.isSafeInteger(item.quantity) || item.quantity <= 0) {
       throw new HttpsError("invalid-argument", `Invalid quantity for product ${item.productId}`);
     }
     if (item.variantId !== undefined && item.variantId !== null &&
@@ -714,6 +714,7 @@ export const createOrder = onCall({ minInstances: 0, memory: "256MiB" }, async (
     // in full, `payable` is ~0 and there is no Razorpay payment to check at
     // all (paymentRef is null in that case — see its construction above).
     const payable = roundMoney(pricing.grandTotal - creditApplied);
+    assertSafeOrderMoney(payable);
     if (paymentRef) {
       if (!paymentSnap || !paymentSnap.exists) {
         throw new HttpsError("failed-precondition", "Payment could not be verified");
