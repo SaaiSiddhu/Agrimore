@@ -121,6 +121,17 @@ function main() {
     }
   }
 
+  {
+    const src = read("customer/recoverCheckoutPayment.ts");
+    const opts = optionsObjectOf(extractDeclaration(src, "recoverCheckoutPayment") || "");
+    check("recoverCheckoutPayment declares its imported Razorpay secret",
+      /secrets:\s*\[[^\]]*RAZORPAY_KEY_SECRET[^\]]*\]/.test(opts));
+    check("recoverCheckoutPayment preserves minInstances/memory",
+      /minInstances:\s*0/.test(opts) && /memory:\s*["']256MiB["']/.test(opts));
+    check("recoverCheckoutPayment grants no public key ID as a secret",
+      !opts.includes("RAZORPAY_KEY_ID"));
+  }
+
   // ---------------------------------------------------------------
   // employee/razorpayOnboardingWebhook.ts — needs BOTH Razorpay secrets
   // ---------------------------------------------------------------
