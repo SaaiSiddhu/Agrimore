@@ -57,7 +57,7 @@ import * as admin from "firebase-admin";
 import { FieldValue } from "firebase-admin/firestore";
 import Razorpay from "razorpay";
 import { log } from "../common/helpers";
-import { isSpendableCapturedPayment } from "../common/paymentIntegrity";
+import { isSpendableCapturedPayment, razorpayModeFromKey } from "../common/paymentIntegrity";
 import { getRazorpayCredentials, RAZORPAY_KEY_SECRET } from "../customer/payment";
 import {
   AI_KEY_ENCRYPTION_SECRET,
@@ -165,6 +165,7 @@ export const createSellerAiActivationOrder = onCall(
       amount: ACTIVATION_FEE,
       amountPaise: order.amount,
       currency: order.currency,
+      providerMode: razorpayModeFromKey(RAZORPAY_KEY_ID),
       status: order.status,
       receipt: order.receipt,
       createdAt: FieldValue.serverTimestamp(),

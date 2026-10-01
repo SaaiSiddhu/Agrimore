@@ -19,6 +19,9 @@ require("axios").get = async url => {
 const admin = require("firebase-admin");
 admin.initializeApp({ projectId: process.env.GCLOUD_PROJECT });
 const db = admin.firestore();
+// Pin the fixture transport before testing production-shaped environment
+// flags. Clearing the authority flag must never redirect test data to cloud.
+db.settings({ host: process.env.FIRESTORE_EMULATOR_HOST, ssl: false });
 const fft = require("firebase-functions-test")({ projectId: process.env.GCLOUD_PROJECT });
 const goods = fft.wrap(require("../lib/customer/createOrder").createOrder);
 const rfq = fft.wrap(require("../lib/customer/createOrderFromRfq").createOrderFromRfq);
@@ -116,6 +119,18 @@ async function allowed(f, kind) {
     await scenario(`${kind} allows trusted local simulated record`, async () => {
       process.env.FUNCTIONS_EMULATOR = "true"; await allowed(await fixture(kind, { isTest: true }), kind);
     });
+    await scenario(`${kind} rejects unknown provider mode`, async () => refused(await fixture(kind, { providerMode: "unknown" })));
+    await scenario(`${kind} allows test provider capture in loopback storage`, async () => allowed(await fixture(kind, { providerMode: "test" }), kind));
+    for (const mode of ["test", "live"]) {
+      await scenario(`${kind} ${mode === "test" ? "rejects" : "allows"} provider ${mode} capture outside loopback authority`, async () => {
+        const f = await fixture(kind, { providerMode: mode });
+        const host = process.env.FIRESTORE_EMULATOR_HOST, keyId = process.env.RAZORPAY_KEY_ID;
+        delete process.env.FIRESTORE_EMULATOR_HOST;
+        process.env.RAZORPAY_KEY_ID = "rzp_live_foundation2_fixture";
+        try { if (mode === "test") await refused(f); else await allowed(f, kind); }
+        finally { process.env.FIRESTORE_EMULATOR_HOST = host; process.env.RAZORPAY_KEY_ID = keyId; }
+      });
+    }
   }
   await scenario("wallet credits genuine provider capture without prior verification record", async () => allowed(await fixture("wallet", {}, { noRecord: true }), "wallet"));
   console.log(`FOUNDATION2 payment consumption: ${passed} passed, ${failed} failed`);

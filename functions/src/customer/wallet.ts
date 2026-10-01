@@ -36,7 +36,7 @@ import * as crypto from "crypto";
 import axios from "axios";
 import { log } from "../common/helpers";
 import { getRazorpayCredentials, RAZORPAY_KEY_SECRET } from "./payment";
-import { isSafeProviderId, isSpendableCapturedPayment } from "../common/paymentIntegrity";
+import { isSafeProviderId, isSpendableCapturedPayment, razorpayModeFromKey } from "../common/paymentIntegrity";
 
 interface RazorpayPayment {
   id: string;
@@ -110,6 +110,7 @@ export const verifyWalletTopup = onCall(
     }
 
     const { keyId: RAZORPAY_KEY_ID, keySecret: RAZORPAY_KEY_SECRET } = getRazorpayCredentials();
+    const providerMode = razorpayModeFromKey(RAZORPAY_KEY_ID);
     if (!RAZORPAY_KEY_ID || !RAZORPAY_KEY_SECRET) {
       throw new HttpsError("failed-precondition", "Razorpay credentials not configured");
     }
@@ -273,6 +274,7 @@ export const verifyWalletTopup = onCall(
       const order = razorpayOrderSnap.data();
       if (order && (order.userId !== uid || order.orderId !== orderId ||
           order.currency !== "INR" || order.amountPaise !== amountPaise ||
+          (order.providerMode !== undefined && order.providerMode !== providerMode) ||
           typeof order.amount !== "number" || !Number.isFinite(order.amount) ||
           Math.round(order.amount * 100) !== amountPaise)) {
         throw new HttpsError("failed-precondition", "Payment order does not match the requested top-up");
@@ -281,12 +283,14 @@ export const verifyWalletTopup = onCall(
       if (verified && (verified.userId !== uid || verified.orderId !== orderId ||
           (!order && verified.paymentId !== paymentId) ||
           !isSpendableCapturedPayment(verified, paymentId) ||
+          (verified.providerMode !== undefined && verified.providerMode !== providerMode) ||
           Math.round(verified.amount * 100) !== amountPaise)) {
         throw new HttpsError("failed-precondition", "Verified payment does not match the requested top-up");
       }
       if (existing) {
         if (existing.paymentId !== paymentId || existing.orderId !== orderId ||
             existing.amount !== amount ||
+            (existing.providerMode !== undefined && existing.providerMode !== providerMode) ||
             (existing.amountPaise !== undefined && existing.amountPaise !== amountPaise)) {
           throw new HttpsError("failed-precondition", "Previous top-up does not match this payment");
         }
@@ -406,6 +410,7 @@ export const verifyWalletTopup = onCall(
         amount,
         amountPaise,
         currency: "INR",
+        providerMode,
         bonusCoins,
         balanceAfter,
         coinsAfter,
@@ -429,6 +434,7 @@ export const verifyWalletTopup = onCall(
           amount,
           amountPaise,
           currency: "INR",
+          providerMode,
           status: "captured",
           consumedByWalletTopup: uid,
           consumedByWalletTopupPaymentId: paymentId,

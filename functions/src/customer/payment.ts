@@ -5,7 +5,7 @@ import axios from "axios";
 import Razorpay from "razorpay";
 import { createHmac, randomBytes, timingSafeEqual } from "crypto";
 import { log } from "../common/helpers";
-import { isLocalPaymentEmulator, isSafeProviderId } from "../common/paymentIntegrity";
+import { isLocalPaymentEmulator, isLocalPaymentStorage, isSafeProviderId, razorpayModeFromKey } from "../common/paymentIntegrity";
 
 // Phase 18, Workstream 1: Secret Manager binding. Every function below (and
 // every indirect importer of getRazorpayCredentials() — wallet.ts,
@@ -31,8 +31,13 @@ export const RAZORPAY_KEY_SECRET = defineSecret("RAZORPAY_KEY_SECRET");
 // `defineString` was rejected here) — it already reads
 // `process.env.RAZORPAY_KEY_ID` exactly as it always has.
 export function getRazorpayCredentials(): { keyId: string; keySecret: string } {
+  const keyId = process.env.RAZORPAY_KEY_ID || "";
+  const mode = razorpayModeFromKey(keyId);
+  if (keyId && (!mode || (mode === "test" && !isLocalPaymentStorage()))) {
+    throw new HttpsError("failed-precondition", "Payment credentials are not configured for this environment");
+  }
   return {
-    keyId: process.env.RAZORPAY_KEY_ID || "",
+    keyId,
     keySecret: process.env.RAZORPAY_KEY_SECRET || "",
   };
 }
@@ -64,6 +69,11 @@ function requireOwnedOrder(
       order.amountPaise <= 0 || typeof order.amount !== "number" ||
       !Number.isFinite(order.amount) || Math.round(order.amount * 100) !== order.amountPaise ||
       order.currency !== "INR" || (sandbox ? order.isTestOrder !== true : order.isTestOrder === true)) {
+    throw new HttpsError("failed-precondition", "Payment could not be verified for your account");
+  }
+  if (order.providerMode !== undefined &&
+      ((order.providerMode !== "live" && order.providerMode !== "test") ||
+       (order.providerMode === "test" && !isLocalPaymentStorage()))) {
     throw new HttpsError("failed-precondition", "Payment could not be verified for your account");
   }
   return order;
@@ -168,6 +178,7 @@ export const createRazorpayOrder = onCall(
         status: order.status,
         receipt: order.receipt || orderOptions.receipt,
         isTestOrder: isTestMode,
+        providerMode: isTestMode ? "test" : razorpayModeFromKey(RAZORPAY_KEY_ID),
         createdAt: admin.firestore.FieldValue.serverTimestamp(),
       });
 
@@ -218,6 +229,8 @@ export const verifyRazorpayPayment = onCall(
         throw new HttpsError("invalid-argument", "Missing Razorpay verification parameters");
       }
       const uid = request.auth.uid;
+      const credentials = getRazorpayCredentials();
+      const providerMode = razorpayModeFromKey(credentials.keyId);
       const sandbox = orderId.startsWith("order_test_") ||
         paymentId.startsWith("pay_test_") || signature.startsWith("test_sig_");
       if (sandbox && !isLocalPaymentEmulator()) {
@@ -229,7 +242,6 @@ export const verifyRazorpayPayment = onCall(
       }
 
       if (!sandbox) {
-        const credentials = getRazorpayCredentials();
         if (!credentials.keyId || !credentials.keySecret) {
           throw new HttpsError("failed-precondition", "Razorpay credentials not configured");
         }
@@ -253,13 +265,15 @@ export const verifyRazorpayPayment = onCall(
       // Reject an unowned order before any provider call. Recheck inside the
       // final transaction so an intervening server mutation cannot change it.
       const order = requireOwnedOrder((await orderRef.get()).data(), orderId, uid, sandbox);
+      if (!sandbox && order.providerMode !== undefined && order.providerMode !== providerMode) {
+        throw new HttpsError("failed-precondition", "Payment could not be verified for your account");
+      }
       let payment: RazorpayPayment;
       if (sandbox) {
         payment = { id: paymentId, order_id: orderId, amount: order.amountPaise,
           currency: order.currency, status: "captured", method: "test_sandbox",
           bank: "SANDBOX_TEST_BANK" };
       } else {
-        const credentials = getRazorpayCredentials();
         const authHeader = Buffer.from(`${credentials.keyId}:${credentials.keySecret}`).toString("base64");
         const response = await axios.get(`https://api.razorpay.com/v1/payments/${paymentId}`, {
           headers: { Authorization: `Basic ${authHeader}` }, timeout: 15000,
@@ -283,11 +297,15 @@ export const verifyRazorpayPayment = onCall(
       await db.runTransaction(async (tx) => {
         const [orderSnap, existingSnap] = await Promise.all([tx.get(orderRef), tx.get(paymentRef)]);
         const stored = requireOwnedOrder(orderSnap.data(), orderId, uid, sandbox);
+        if (!sandbox && stored.providerMode !== undefined && stored.providerMode !== providerMode) {
+          throw new HttpsError("failed-precondition", "Payment could not be verified for your account");
+        }
         requireProviderMatch(stored);
         if (existingSnap.exists) {
           const existing = existingSnap.data()!;
           if (existing.userId !== uid || existing.orderId !== orderId ||
               existing.paymentId !== paymentId || existing.amount !== payment.amount / 100 ||
+              (existing.providerMode !== undefined && existing.providerMode !== (sandbox ? "test" : providerMode)) ||
               (existing.currency != null && existing.currency !== payment.currency)) {
             throw new HttpsError("failed-precondition", "Payment could not be verified for your account");
           }
@@ -301,6 +319,7 @@ export const verifyRazorpayPayment = onCall(
           email: payment.email || null, contact: payment.contact || null,
           amount: payment.amount / 100, amountPaise: payment.amount,
           currency: payment.currency, status: payment.status, isTest: sandbox,
+          providerMode: sandbox ? "test" : providerMode,
           ...(typeof stored.purpose === "string" ? { purpose: stored.purpose } : {}),
         }, { merge: true });
       });
