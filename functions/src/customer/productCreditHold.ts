@@ -23,7 +23,7 @@ import * as admin from "firebase-admin";
 import * as crypto from "crypto";
 import { assertProgramLaunchable, resolveIsAdmin } from "../admin/complianceGate";
 import { appendLedgerEntry, toProjectionFields } from "./productCreditLedger";
-import { computeOrderPricing, normalizeOrderItems, OrderPricingItemInput } from "./orderPricing";
+import { computeOrderPricing, normalizeOrderItems, OrderPricingItemInput, assertSafeOrderMoney } from "./orderPricing";
 import { computeRedeemableAmount } from "./redemptionRules";
 import { DeliveryFeeSchedule, parseDeliveryFeeSchedule } from "./deliveryFeeSchedule";
 import { resolveProductCategoryId } from "../common/productCategory";
@@ -103,7 +103,7 @@ export const quoteOrderWithCredit = onCall(
       if (!item || typeof item.productId !== "string" || !item.productId.trim()) {
         throw new HttpsError("invalid-argument", "Each item requires a productId");
       }
-      if (!Number.isInteger(item.quantity) || item.quantity <= 0) {
+      if (!Number.isSafeInteger(item.quantity) || item.quantity <= 0) {
         throw new HttpsError("invalid-argument", `Invalid quantity for product ${item.productId}`);
       }
     }
@@ -301,6 +301,9 @@ export const quoteOrderWithCredit = onCall(
         reasons = redemption.reasons;
       }
 
+      const payable = roundMoney(pricing.grandTotal - creditApplied);
+      assertSafeOrderMoney(payable);
+
       // ============================================
       // Place a new HOLD if any credit was approved. All-or-nothing (see
       // productCreditLedger.ts's REDEMPTION note): this hold is later
@@ -334,7 +337,7 @@ export const quoteOrderWithCredit = onCall(
           ledgerEntryId: entryRef.id,
           cartFingerprint,
           quotedTotal: pricing.grandTotal,
-          quotedPayable: roundMoney(pricing.grandTotal - creditApplied),
+          quotedPayable: payable,
           createdAt: admin.firestore.FieldValue.serverTimestamp(),
           expiresAt: expiresAtTimestamp,
           releasedAt: null,
@@ -346,7 +349,7 @@ export const quoteOrderWithCredit = onCall(
       return {
         total: pricing.grandTotal,
         creditApplied,
-        payable: roundMoney(pricing.grandTotal - creditApplied),
+        payable,
         holdId,
         expiresAt: expiresAtTimestamp ? expiresAtTimestamp.toDate().toISOString() : null,
         reasons,

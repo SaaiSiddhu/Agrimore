@@ -2,10 +2,9 @@
 //  Order pricing — extracted from createOrder.ts (Phase C, Workstream 4)
 // ============================================================
 //
-// BEHAVIOUR-PRESERVING EXTRACTION. Every line of logic in this file is
-// moved VERBATIM out of createOrder.ts — same HttpsError codes, same
-// message strings, same computation order, same rounding. Nothing was
-// "improved", reordered, or re-tidied. createOrder.ts's own transaction
+// Originally a behaviour-preserving extraction from createOrder.ts.
+// Subsequent shared validation rejects unsafe quantities and money; valid
+// pricing retains the existing computation order and rounding. Its transaction
 // still does every Firestore read itself (products, coupon, per-user
 // coupon-redemption existence) and passes the results in here; this module
 // performs zero Firestore access, which is what makes it safe for
@@ -109,6 +108,17 @@ function roundMoney(value: number): number {
   return Math.round(value * 100) / 100;
 }
 
+/** Monetary arithmetic must stay finite and within exact integer-paise
+ * representation. Existing fractional-rupee rounding is preserved; this is
+ * a numerical bound, not a new business limit. Legacy seller-split residuals
+ * may be signed, so those components are checked with allowNegative. */
+export function assertSafeOrderMoney(value: number, allowNegative = false): void {
+  if (!Number.isFinite(value) || (!allowNegative && value < 0) ||
+      !Number.isSafeInteger(Math.round(Math.abs(value) * 100))) {
+    throw new HttpsError("failed-precondition", "Order pricing cannot be calculated safely");
+  }
+}
+
 /**
  * Ports CouponModel.calculateDiscount's exact logic
  * (packages/agrimore_core/lib/models/coupon_model.dart) server-side. Does
@@ -189,6 +199,9 @@ function computeCouponDiscount(
   }
 
   const maxDiscountAmount = coupon.maxDiscountAmount as number | undefined;
+  if (typeof maxDiscountAmount === "number" && !Number.isFinite(maxDiscountAmount)) {
+    throw new HttpsError("failed-precondition", "Order pricing cannot be calculated safely");
+  }
   if (typeof maxDiscountAmount === "number" && discountAmount > maxDiscountAmount) {
     discountAmount = maxDiscountAmount;
   }
@@ -280,7 +293,17 @@ export function normalizeOrderItems(items: OrderPricingItemInput[]): OrderPricin
   // One line per product + variant (SELLER-CATALOGUE-2): two variants of
   // the same product are different goods with different prices and stock.
   const byProduct = new Map<string, OrderPricingItemInput>();
+  const quantityByProduct = new Map<string, number>();
   for (const item of items) {
+    if (!Number.isSafeInteger(item.quantity) || item.quantity <= 0) {
+      throw new HttpsError("invalid-argument", `Invalid quantity for product ${item.productId}`);
+    }
+    // soldCount is incremented per product, across its variants as well.
+    const productQuantity = (quantityByProduct.get(item.productId) ?? 0) + item.quantity;
+    if (!Number.isSafeInteger(productQuantity)) {
+      throw new HttpsError("invalid-argument", `Invalid quantity for product ${item.productId}`);
+    }
+    quantityByProduct.set(item.productId, productQuantity);
     const variantId = typeof item.variantId === "string" && item.variantId.trim() ? item.variantId.trim() : undefined;
     const key = variantId ? `${item.productId}\u0000${variantId}` : item.productId;
     const existing = byProduct.get(key);
@@ -387,6 +410,10 @@ export function computeOrderPricing(params: ComputeOrderPricingParams): OrderPri
       price = candidatePrice;
     }
 
+    assertSafeOrderMoney(price);
+    const lineSubtotal = price * item.quantity;
+    assertSafeOrderMoney(lineSubtotal);
+
     // Stock validation. Fail-OPEN (with a logged warning) when `stock` is
     // missing or non-numeric, rather than fail-closed — deliberately
     // mirroring packages/agrimore_core/lib/models/product_model.dart's own
@@ -405,7 +432,8 @@ export function computeOrderPricing(params: ComputeOrderPricingParams): OrderPri
     }
 
     const sellerId = typeof product.sellerId === "string" && product.sellerId ? product.sellerId : "_unassigned";
-    cartSubtotal += price * item.quantity;
+    cartSubtotal += lineSubtotal;
+    assertSafeOrderMoney(cartSubtotal);
 
     const validatedItem: Record<string, unknown> = {
       id: item.productId,
@@ -445,6 +473,7 @@ export function computeOrderPricing(params: ComputeOrderPricingParams): OrderPri
     cartSubtotal,
     validatedItems
   );
+  assertSafeOrderMoney(discountAmount);
 
   // Per-user redemption re-check — same point in the sequence
   // createOrder.ts always ran it: after the coupon's own validity check,
@@ -506,6 +535,7 @@ export function computeOrderPricing(params: ComputeOrderPricingParams): OrderPri
     );
   }
   const grandTotal = roundMoney(Math.max(0, cartSubtotal - discountAmount) + deliveryCharge + tax);
+  assertSafeOrderMoney(grandTotal);
 
   // Per-seller ratio split — mirrors _createSellerScopedOrders's own
   // ratio-based discount/delivery/tax distribution exactly (by seller
@@ -551,6 +581,10 @@ export function computeOrderPricing(params: ComputeOrderPricingParams): OrderPri
     const sellerTotal = isLastSeller
       ? roundMoney(grandTotal - totalAssigned)
       : roundMoney(Math.max(0, sellerSubtotal - sellerDiscount) + sellerDeliveryCharge + sellerTax);
+
+    for (const amount of [sellerSubtotal, sellerDiscount, sellerDeliveryCharge, sellerTax, sellerTotal]) {
+      assertSafeOrderMoney(amount, true);
+    }
 
     discountAssigned = roundMoney(discountAssigned + sellerDiscount);
     deliveryAssigned = roundMoney(deliveryAssigned + sellerDeliveryCharge);
