@@ -425,6 +425,7 @@ class _PaymentMethodScreenState extends State<PaymentMethodScreen> {
 
     await _razorpayService?.openCheckout(
       amount: finalTotal,
+      purpose: CheckoutPaymentPurpose.goods,
       userName: widget.selectedAddress.name,
       userEmail: user.email ?? 'user@example.com',
       userPhone: widget.selectedAddress.phone,

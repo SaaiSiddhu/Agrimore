@@ -4,6 +4,7 @@
 import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
 import 'package:cloud_functions/cloud_functions.dart';
+import 'payment_checkout_order.dart';
 
 // Platform-specific imports
 import 'razorpay_web.dart' if (dart.library.io) 'razorpay_stub.dart';
@@ -11,6 +12,8 @@ import 'razorpay_web.dart' if (dart.library.io) 'razorpay_stub.dart';
 // Mobile-only: razorpay_flutter
 import 'razorpay_flutter_stub.dart'
     if (dart.library.io) 'package:razorpay_flutter/razorpay_flutter.dart';
+
+export 'payment_checkout_order.dart' show CheckoutPaymentPurpose;
 
 /// Callback types
 typedef PaymentSuccessCallback = void Function(
@@ -29,7 +32,6 @@ class RazorpayService {
 
   // Order details for callback context
   String _userName = '';
-  String _userEmail = '';
   String _userPhone = '';
 
   RazorpayService() {
@@ -75,6 +77,7 @@ class RazorpayService {
   /// Open payment checkout
   Future<void> openCheckout({
     required double amount,
+    CheckoutPaymentPurpose purpose = CheckoutPaymentPurpose.goods,
     required String userName,
     required String userEmail,
     required String userPhone,
@@ -82,12 +85,12 @@ class RazorpayService {
     BuildContext? context,
   }) async {
     _userName = userName;
-    _userEmail = userEmail;
     _userPhone = userPhone;
 
     if (kIsWeb) {
       await _razorpayWeb?.openCheckout(
         amount: amount,
+        purpose: purpose,
         userName: userName,
         userEmail: userEmail,
         userPhone: userPhone,
@@ -96,6 +99,7 @@ class RazorpayService {
     } else {
       await _openMobileCheckout(
         amount: amount,
+        purpose: purpose,
         userName: userName,
         userEmail: userEmail,
         userPhone: userPhone,
@@ -108,6 +112,7 @@ class RazorpayService {
   /// Mobile-specific checkout using razorpay_flutter
   Future<void> _openMobileCheckout({
     required double amount,
+    required CheckoutPaymentPurpose purpose,
     required String userName,
     required String userEmail,
     required String userPhone,
@@ -115,8 +120,7 @@ class RazorpayService {
     BuildContext? context,
   }) async {
     try {
-      debugPrint(
-          '💳 Creating Razorpay order via Cloud Function for $_userName ($_userEmail)...');
+      debugPrint('💳 Creating Razorpay order via Cloud Function...');
 
       // Call Cloud Function to create order with 15s timeout
       final functions = FirebaseFunctions.instance;
@@ -128,6 +132,7 @@ class RazorpayService {
       final result = await callable.call<Map<String, dynamic>>({
         'amount': amount,
         'currency': 'INR',
+        'purpose': purpose.value,
         'receipt': 'agrimore_${DateTime.now().millisecondsSinceEpoch}',
         'notes': {
           'customer_name': userName,
@@ -143,22 +148,25 @@ class RazorpayService {
         return;
       }
 
-      final razorpayOrderId = data['orderId'] as String;
-      final keyId = data['keyId'] as String;
-      final isTestMode = data['isTestMode'] == true;
+      final order = PaymentCheckoutOrder.fromResponse(data);
+      final razorpayOrderId = order.orderId;
+      final keyId = order.keyId;
+      final isTestMode = order.isTestMode;
 
-      debugPrint('✅ Razorpay order created: $razorpayOrderId (TestMode: $isTestMode)');
+      debugPrint(
+          '✅ Razorpay order created: $razorpayOrderId (TestMode: $isTestMode)');
 
       if (isTestMode) {
         if (context != null && context.mounted) {
           _showSandboxPaymentSheet(
             context: context,
-            amount: amount,
+            amount: order.amountPaise / 100.0,
             orderId: razorpayOrderId,
             description: description,
           );
         } else {
-          debugPrint('🧪 Auto-completing sandbox payment in background mode...');
+          debugPrint(
+              '🧪 Auto-completing sandbox payment in background mode...');
           final mockPaymentId =
               'pay_test_${DateTime.now().millisecondsSinceEpoch}';
           final mockSignature =
@@ -171,7 +179,7 @@ class RazorpayService {
       // Enhanced Razorpay checkout options with premium branding
       final options = {
         'key': keyId,
-        'amount': (amount * 100).toInt(), // Amount in paise
+        'amount': order.amountPaise,
         'order_id': razorpayOrderId,
         'currency': 'INR',
 
@@ -238,7 +246,7 @@ class RazorpayService {
       _razorpay?.open(options);
     } catch (e) {
       debugPrint('❌ Error opening mobile checkout: $e');
-      _onFailure?.call('Failed to open payment: ${e.toString()}');
+      _onFailure?.call('Could not open payment. Please try again.');
     }
   }
 

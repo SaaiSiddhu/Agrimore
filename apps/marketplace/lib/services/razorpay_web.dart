@@ -4,8 +4,10 @@
 
 import 'dart:js_interop';
 import 'dart:js_interop_unsafe';
+import 'dart:convert';
 import 'package:cloud_functions/cloud_functions.dart';
 import 'package:flutter/foundation.dart';
+import 'payment_checkout_order.dart';
 
 /// Callback type for payment success
 typedef RazorpayWebSuccessCallback = void Function(
@@ -24,6 +26,9 @@ external JSObject get _window;
 
 /// Web-specific Razorpay Service using dart:js_interop
 class RazorpayWebService {
+  RazorpayWebService({FirebaseFunctions? functions}) : _functions = functions;
+
+  final FirebaseFunctions? _functions;
   RazorpayWebSuccessCallback? _onSuccess;
   RazorpayWebFailureCallback? _onFailure;
 
@@ -39,6 +44,7 @@ class RazorpayWebService {
   /// Create Razorpay order via Cloud Function and open checkout
   Future<void> openCheckout({
     required double amount,
+    CheckoutPaymentPurpose purpose = CheckoutPaymentPurpose.goods,
     required String userName,
     required String userEmail,
     required String userPhone,
@@ -48,12 +54,13 @@ class RazorpayWebService {
       debugPrint('💳 Creating Razorpay order via Cloud Function...');
 
       // Call Cloud Function to create order
-      final functions = FirebaseFunctions.instance;
+      final functions = _functions ?? FirebaseFunctions.instance;
       final callable = functions.httpsCallable('createRazorpayOrder');
 
       final result = await callable.call<Map<String, dynamic>>({
         'amount': amount,
         'currency': 'INR',
+        'purpose': purpose.value,
         'receipt': 'order_${DateTime.now().millisecondsSinceEpoch}',
       });
 
@@ -64,8 +71,9 @@ class RazorpayWebService {
         return;
       }
 
-      final razorpayOrderId = data['orderId'] as String;
-      final keyId = data['keyId'] as String;
+      final order = PaymentCheckoutOrder.fromResponse(data);
+      final razorpayOrderId = order.orderId;
+      final keyId = order.keyId;
 
       debugPrint('✅ Razorpay order created: $razorpayOrderId');
 
@@ -73,7 +81,7 @@ class RazorpayWebService {
       _openRazorpayModal(
         keyId: keyId,
         orderId: razorpayOrderId,
-        amount: amount,
+        amountPaise: order.amountPaise,
         userName: userName,
         userEmail: userEmail,
         userPhone: userPhone,
@@ -81,29 +89,13 @@ class RazorpayWebService {
       );
     } catch (e) {
       debugPrint('❌ Error creating Razorpay order: $e');
-      _onFailure?.call('Failed to create payment order: ${e.toString()}');
+      _onFailure?.call('Could not open payment. Please try again.');
     }
   }
 
-  /// Phase 16B-2, Workstream 3a/3b — opens the checkout modal for an order
-  /// ALREADY created server-side (by `createAssociateOnboardingPayment`,
-  /// which prices the ₹500 onboarding fee from server config — S1). This is
-  /// the narrow, additive entry point the associate-onboarding payment step
-  /// uses instead of `openCheckout()` above: `openCheckout()` always calls
-  /// `createRazorpayOrder` first, which trusts a client-supplied `amount`
-  /// and must never be used for a fee the client does not get to set.
-  /// `openCheckout()`'s own behaviour is untouched by this addition — the
-  /// live cart and wallet flows that depend on it are unaffected.
-  ///
-  /// `amountPaise` matches `createAssociateOnboardingPayment`'s response
-  /// shape exactly (`amount: order.amount`, which the Razorpay SDK returns
-  /// in paise). Phase 16B-3, Defect 3 fix: this used to divide by 100.0
-  /// here and let `_openRazorpayModal` multiply back by 100 and `.toInt()`
-  /// truncate — exact at ₹500 (50000 paise) but LOSSY for a fractional-
-  /// rupee fee (59999 paise -> 599.99 -> 59998.999999999993 -> 59998),
-  /// which Razorpay Checkout would then reject as an amount mismatch
-  /// against the server-created order. `exactAmountPaise` below now carries
-  /// the integer straight through with no float round-trip at all.
+  /// Dedicated fee callers pass their server-created order here. The integer
+  /// paise amount stays exact, and this web-only entry point adds no native
+  /// fee payment UI.
   Future<void> openCheckoutForExistingOrder({
     required String keyId,
     required String orderId,
@@ -116,8 +108,7 @@ class RazorpayWebService {
     _openRazorpayModal(
       keyId: keyId,
       orderId: orderId,
-      amount: amountPaise / 100.0,
-      exactAmountPaise: amountPaise,
+      amountPaise: amountPaise,
       userName: userName,
       userEmail: userEmail,
       userPhone: userPhone,
@@ -125,39 +116,26 @@ class RazorpayWebService {
     );
   }
 
-  /// Open the Razorpay checkout modal using JS eval
-  ///
-  /// [exactAmountPaise] — Phase 16B-3, Defect 3 — when non-null, used
-  /// VERBATIM as the paise value sent to Razorpay, with no float
-  /// arithmetic. When null (every existing call site — `openCheckout()`
-  /// above, used by the live cart and wallet flows, passes nothing new and
-  /// is therefore UNCHANGED), the original `(amount * 100).toInt()`
-  /// computation runs exactly as it always has.
+  /// Open checkout with validated server minor units. JSON string encoding
+  /// keeps customer text as data when constructing the JavaScript options.
   void _openRazorpayModal({
     required String keyId,
     required String orderId,
-    required double amount,
-    int? exactAmountPaise,
+    required int amountPaise,
     required String userName,
     required String userEmail,
     required String userPhone,
     String? description,
   }) {
     try {
-      // Amount in paise — exact when the caller supplied it (Defect 3),
-      // otherwise the original float-based computation, byte-for-byte
-      // unchanged for openCheckout()'s existing callers.
-      final amountPaise = exactAmountPaise ?? (amount * 100).toInt();
+      PaymentCheckoutOrder.fromResponse({
+        'success': true,
+        'orderId': orderId,
+        'keyId': keyId,
+        'amount': amountPaise,
+        'currency': 'INR',
+      });
       final desc = description ?? 'Order Payment';
-
-      // Escape special characters in user inputs
-      final escapedName =
-          userName.replaceAll("'", "\\'").replaceAll('"', '\\"');
-      final escapedEmail =
-          userEmail.replaceAll("'", "\\'").replaceAll('"', '\\"');
-      final escapedPhone =
-          userPhone.replaceAll("'", "\\'").replaceAll('"', '\\"');
-      final escapedDesc = desc.replaceAll("'", "\\'").replaceAll('"', '\\"');
 
       // Store dart callbacks via JS for access from Razorpay handler
       _setupCallbacks();
@@ -177,19 +155,19 @@ class RazorpayWebService {
           }
           
           var options = {
-            key: '$keyId',
-            order_id: '$orderId',
+            key: ${jsonEncode(keyId)},
+            order_id: ${jsonEncode(orderId)},
             amount: $amountPaise,
             currency: 'INR',
             
             name: 'Agrimore',
-            description: '$escapedDesc',
+            description: ${jsonEncode(desc)},
             image: 'https://agrimore.in/icons/Icon-192.png',
             
             prefill: {
-              name: '$escapedName',
-              email: '$escapedEmail',
-              contact: '$escapedPhone'
+              name: ${jsonEncode(userName)},
+              email: ${jsonEncode(userEmail)},
+              contact: ${jsonEncode(userPhone)}
             },
             
             theme: {
@@ -261,7 +239,7 @@ class RazorpayWebService {
       debugPrint('✅ Razorpay JS executed');
     } catch (e) {
       debugPrint('❌ Error in _openRazorpayModal: $e');
-      _onFailure?.call('Failed to open payment: ${e.toString()}');
+      _onFailure?.call('Could not open payment. Please try again.');
     }
   }
 

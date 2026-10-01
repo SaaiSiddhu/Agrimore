@@ -1,8 +1,10 @@
 // Stub file for mobile platform
 // This is used when the conditional import falls back on non-web platforms
+import 'payment_checkout_order.dart';
 
 /// Placeholder callback types
-typedef RazorpayWebSuccessCallback = void Function(String paymentId, String? orderId, String? signature);
+typedef RazorpayWebSuccessCallback = void Function(
+    String paymentId, String? orderId, String? signature);
 typedef RazorpayWebFailureCallback = void Function(String error);
 
 /// Stub class for mobile - not used on mobile platforms
@@ -13,9 +15,10 @@ class RazorpayWebService {
   }) {
     // No-op on mobile
   }
-  
+
   Future<void> openCheckout({
     required double amount,
+    CheckoutPaymentPurpose purpose = CheckoutPaymentPurpose.goods,
     required String userName,
     required String userEmail,
     required String userPhone,

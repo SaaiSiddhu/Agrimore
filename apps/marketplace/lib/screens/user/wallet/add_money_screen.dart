@@ -446,6 +446,7 @@ class _AddMoneyScreenState extends State<AddMoneyScreen> {
 
       await razorpay.openCheckout(
         amount: _enteredAmount,
+        purpose: CheckoutPaymentPurpose.walletTopup,
         userName: '',
         userEmail: '',
         userPhone: '',
