@@ -708,7 +708,28 @@ class AuthService {
   /// (Resend-backed). Used only during profile completion — this endpoint
   /// does not sign anyone in or touch Firebase Auth.
   Future<void> sendEmailOtpForProfile(String email) async {
+    final session = _OwnedAuthSession(_auth);
+    bool current() => session.isCurrent();
+    const fallback = 'Failed to send verification code. Please try again.';
+    const rateFallback =
+        'Too many verification requests. Please try again later.';
+    // Only these existing, explicitly user-facing server sentences may be
+    // shown. Unknown HTTP text and provider/transport diagnostics stay out.
+    const allowedErrors = <int, Set<String>>{
+      400: {'Email is required', 'Invalid email format'},
+      429: {
+        'Please wait before requesting another code',
+        'Too many code requests for this address today. Please try again later.',
+        'Too many code requests from this network today. Please try again later.',
+      },
+      502: {
+        'Could not deliver the verification code. Please try again shortly.',
+      },
+      500: {fallback},
+    };
     try {
+      if (session.owner == null) throw UnauthorizedException();
+      _requireCurrentSession(current);
       final response = await http
           .post(
             Uri.parse('$_functionsBaseUrl/sendEmailOTP'),
@@ -716,24 +737,46 @@ class AuthService {
             body: jsonEncode({'email': email}),
           )
           .timeout(_requestTimeout);
-
-      final data = jsonDecode(response.body) as Map<String, dynamic>;
-
+      _requireCurrentSession(current);
+      var data = <String, dynamic>{};
+      try {
+        final decoded = jsonDecode(response.body);
+        if (decoded is Map<String, dynamic>) data = decoded;
+      } catch (_) {
+        debugPrint('Email verification response could not be decoded');
+      }
+      final rawError = data['error'];
+      final message = rawError is String &&
+              (allowedErrors[response.statusCode]?.contains(rawError) ?? false)
+          ? rawError
+          : response.statusCode == 429
+              ? rateFallback
+              : fallback;
       if (response.statusCode == 429) {
+        final retry = data['retryAfterMs'];
         throw PhoneOtpRateLimitException(
-          data['error']?.toString() ?? 'Too many requests. Please try again later.',
-          retryAfterMs: data['retryAfterMs'] is num ? (data['retryAfterMs'] as num).toInt() : null,
+          message,
+          retryAfterMs: retry is num && retry.isFinite && retry >= 0
+              ? retry.toInt()
+              : null,
         );
       }
       if (response.statusCode != 200 || data['success'] != true) {
-        throw AuthException(data['error']?.toString() ?? 'Failed to send verification code');
+        throw AuthException(message);
       }
+      _requireCurrentSession(current);
     } on AuthException {
+      _requireCurrentSession(current);
       rethrow;
     } on TimeoutException {
+      _requireCurrentSession(current);
       throw AuthException('Network is too slow right now. Please try again.');
-    } catch (e) {
-      throw AuthException('Failed to send verification code: ${e.toString()}');
+    } catch (_) {
+      _requireCurrentSession(current);
+      debugPrint('Email verification request failed');
+      throw AuthException(fallback);
+    } finally {
+      await session.cancel();
     }
   }
 
