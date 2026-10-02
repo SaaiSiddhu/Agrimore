@@ -69,6 +69,15 @@ class AuthProvider with ChangeNotifier {
       !_disposed && _profileOwner == _authService.currentUserId
           ? _errorCode
           : null;
+  /// Mounted account forms can retain this version and owner across awaits.
+  int get sessionVersion => _authEpoch;
+  bool isSessionCurrent(String owner, int version) =>
+      !_disposed &&
+      _authSubscription != null &&
+      owner == _profileOwner &&
+      owner == _authService.currentUserId &&
+      version == _authEpoch;
+
   bool get isLoggedIn => currentUser != null;
   bool get isAdmin => currentUser?.isAdmin ?? false;
   bool get isSeller => currentUser?.isSeller ?? false;
@@ -107,7 +116,7 @@ class AuthProvider with ChangeNotifier {
     if (_disposed || _authSubscription != null) return;
     final version = ++_authListenVersion;
     try {
-      _authSubscription = _authService.authStateChanges.listen(
+      final subscription = _authService.authStateChanges.listen(
         (user) {
           if (_disposed ||
               version != _authListenVersion ||
@@ -120,6 +129,14 @@ class AuthProvider with ChangeNotifier {
         onError: (Object error) => _stopAuthUpdates(version),
         onDone: () => _stopAuthUpdates(version),
       );
+      // A stream may close synchronously while listen returns its handle.
+      if (_disposed || version != _authListenVersion) {
+        unawaited(subscription.cancel().catchError((Object _) {
+          debugPrint('Auth subscription cleanup failed');
+        }));
+      } else {
+        _authSubscription = subscription;
+      }
     } catch (_) {
       _stopAuthUpdates(version);
     }
@@ -178,6 +195,7 @@ class AuthProvider with ChangeNotifier {
     _bindProfileOwner(owner);
     final epoch = _authEpoch, read = ++_profileRead;
     if (restore) _isInitializing = owner != null;
+    _isLoading = false;
     _error = null;
     _errorCode = null;
     notifyListeners();
@@ -541,79 +559,90 @@ class AuthProvider with ChangeNotifier {
   bool get needsProfileCompletion =>
       isLoggedIn && currentUser?.profileCompleted != true;
 
-  Future<bool> sendEmailOtpForProfile(String email) async {
-    try {
-      _error = null;
-      notifyListeners();
-      await _authService.sendEmailOtpForProfile(email);
-      return true;
-    } on AuthException catch (e) {
-      _error = e.message;
-      notifyListeners();
-      return false;
-    } catch (e) {
-      _error = e.toString().replaceAll('Exception: ', '');
-      notifyListeners();
+  Future<bool> _runOwnedProfileCommand(
+    Future<UserModel?> Function() command, {
+    String? auditEvent,
+    String? auditEmail,
+  }) async {
+    final owner = _authService.currentUserId;
+    final user = currentUser;
+    final epoch = _authEpoch;
+    if (owner == null || user == null || !isSessionCurrent(owner, epoch)) {
       return false;
     }
+    // Profile reads and commands share a latest-intent ticket. This controls
+    // presentation; already-issued server mutations cannot be cancelled.
+    final read = ++_profileRead;
+    bool current() =>
+        isSessionCurrent(owner, epoch) && read == _profileRead;
+    _isLoading = true;
+    _error = null;
+    _errorCode = null;
+    notifyListeners();
+    if (!current()) return false;
+
+    UserModel? updated;
+    String? failure;
+    String? code;
+    var confirmed = false;
+    try {
+      updated = await command();
+      if (!current()) return false;
+      if (updated != null && updated.uid != owner) {
+        throw StateError('Account profile ownership mismatch');
+      }
+      confirmed = true;
+    } on AuthException catch (error) {
+      if (!current()) return false;
+      failure = error.message;
+      code = error.code;
+    } catch (_) {
+      if (!current()) return false;
+      failure = 'Unable to update your profile. Please try again.';
+    }
+    if (!current()) return false;
+    if (auditEvent != null) {
+      await _logAuthEvent(auditEvent, confirmed, auditEmail ?? user.email,
+          error: failure, ownerId: owner);
+      if (!current()) return false;
+    }
+    if (confirmed && updated != null) _currentUser = updated;
+    _error = failure;
+    _errorCode = code;
+    _isLoading = false;
+    notifyListeners();
+    return current() && confirmed;
   }
 
+  Future<bool> sendEmailOtpForProfile(String email) =>
+      _runOwnedProfileCommand(() async {
+        await _authService.sendEmailOtpForProfile(email);
+        return null;
+      });
+
   Future<bool> verifyEmailOtpForProfile(
-      {required String email, required String otp}) async {
-    try {
-      _error = null;
-      notifyListeners();
-      await _authService.verifyEmailOtpForProfile(email: email, otp: otp);
-      return true;
-    } on AuthException catch (e) {
-      _error = e.message;
-      notifyListeners();
-      return false;
-    } catch (e) {
-      _error = e.toString().replaceAll('Exception: ', '');
-      notifyListeners();
-      return false;
-    }
-  }
+          {required String email, required String otp}) =>
+      _runOwnedProfileCommand(() async {
+        await _authService.verifyEmailOtpForProfile(email: email, otp: otp);
+        return null;
+      });
 
   Future<bool> completeUserProfile({
     required String name,
     required String email,
     required DateTime dateOfBirth,
     required String gender,
-  }) async {
-    try {
-      _isLoading = true;
-      _error = null;
-      notifyListeners();
-
-      _currentUser = await _authService.completeUserProfile(
-        name: name,
-        email: email,
-        dateOfBirth: dateOfBirth,
-        gender: gender,
+  }) =>
+      _runOwnedProfileCommand(
+        () => _authService.completeUserProfile(
+          name: name,
+          email: email,
+          dateOfBirth: dateOfBirth,
+          gender: gender,
+        ),
+        auditEvent: 'profile_completion',
+        auditEmail: email,
       );
-
-      await _logAuthEvent('profile_completion', true, email);
-
-      _isLoading = false;
-      notifyListeners();
-      return true;
-    } on AuthException catch (e) {
-      _error = e.message;
-      await _logAuthEvent('profile_completion', false, email, error: e.message);
-      _isLoading = false;
-      notifyListeners();
-      return false;
-    } catch (e) {
-      _error = e.toString().replaceAll('Exception: ', '');
-      await _logAuthEvent('profile_completion', false, email,
-          error: e.toString());
-      _isLoading = false;
-      notifyListeners();
-      return false;
-    }
-  }
 
   // ============================================
   // CHANGE PHONE / EMAIL (post-completion profile edit)
@@ -621,84 +650,20 @@ class AuthProvider with ChangeNotifier {
 
   /// [otp] must have been requested against [phone] via sendPhoneOTP first.
   Future<bool> changePhoneNumber(
-      {required String phone, required String otp}) async {
-    try {
-      _isLoading = true;
-      _error = null;
-      notifyListeners();
-
-      _currentUser =
-          await _authService.changePhoneNumber(phone: phone, otp: otp);
-
-      _isLoading = false;
-      notifyListeners();
-      return true;
-    } on AuthException catch (e) {
-      _error = e.message;
-      _isLoading = false;
-      notifyListeners();
-      return false;
-    } catch (e) {
-      _error = e.toString().replaceAll('Exception: ', '');
-      _isLoading = false;
-      notifyListeners();
-      return false;
-    }
-  }
+          {required String phone, required String otp}) =>
+      _runOwnedProfileCommand(
+          () => _authService.changePhoneNumber(phone: phone, otp: otp));
 
   /// [email] must already be verified via verifyEmailOtpForProfile first.
-  Future<bool> changeEmailAddress({required String email}) async {
-    try {
-      _isLoading = true;
-      _error = null;
-      notifyListeners();
+  Future<bool> changeEmailAddress({required String email}) =>
+      _runOwnedProfileCommand(
+          () => _authService.changeEmailAddress(email: email));
 
-      _currentUser = await _authService.changeEmailAddress(email: email);
-
-      _isLoading = false;
-      notifyListeners();
-      return true;
-    } on AuthException catch (e) {
-      _error = e.message;
-      _isLoading = false;
-      notifyListeners();
-      return false;
-    } catch (e) {
-      _error = e.toString().replaceAll('Exception: ', '');
-      _isLoading = false;
-      notifyListeners();
-      return false;
-    }
-  }
-
-  /// PROFILE-8: dateOfBirth has no client-side write path — firestore.rules
-  /// blocks it outright regardless of value — so this goes through the
-  /// changeDateOfBirth callable (Admin SDK) rather than updateUserProfile's
-  /// plain Firestore write, unlike name/gender/photo below.
-  Future<bool> changeDateOfBirth({required DateTime dateOfBirth}) async {
-    try {
-      _isLoading = true;
-      _error = null;
-      notifyListeners();
-
-      _currentUser =
-          await _authService.changeDateOfBirth(dateOfBirth: dateOfBirth);
-
-      _isLoading = false;
-      notifyListeners();
-      return true;
-    } on AuthException catch (e) {
-      _error = e.message;
-      _isLoading = false;
-      notifyListeners();
-      return false;
-    } catch (e) {
-      _error = e.toString().replaceAll('Exception: ', '');
-      _isLoading = false;
-      notifyListeners();
-      return false;
-    }
-  }
+  /// Date of birth remains server-only; ordinary profile fields use the
+  /// existing Firestore edit path below.
+  Future<bool> changeDateOfBirth({required DateTime dateOfBirth}) =>
+      _runOwnedProfileCommand(
+          () => _authService.changeDateOfBirth(dateOfBirth: dateOfBirth));
 
   // ============================================
   // SIGN IN WITH GOOGLE
@@ -1181,6 +1146,7 @@ class AuthProvider with ChangeNotifier {
     bool success,
     String email, {
     String? error,
+    String? ownerId,
   }) async {
     try {
       await _firestore.collection('auth_logs').add({
@@ -1190,7 +1156,7 @@ class AuthProvider with ChangeNotifier {
         'error': error,
         'timestamp': FieldValue.serverTimestamp(),
         'platform': 'flutter',
-        'uid': _currentUser?.uid,
+        'uid': ownerId ?? _currentUser?.uid,
       });
       debugPrint('📊 Logged auth event: $eventType ($success)');
     } catch (e) {
