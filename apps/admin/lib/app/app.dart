@@ -4,6 +4,7 @@ import 'package:go_router/go_router.dart';
 import 'package:provider/provider.dart';
 
 import '../providers/theme_provider.dart';
+import '../providers/auth_provider.dart';
 import 'app_router.dart';
 import 'themes/admin_theme.dart';
 
@@ -16,12 +17,25 @@ class AdminApp extends StatefulWidget {
 
 class _AdminAppState extends State<AdminApp> {
   GoRouter? _router;
+  AuthProvider? _routerAuth;
 
   @override
   void didChangeDependencies() {
     super.didChangeDependencies();
-    // Create router only once
-    _router ??= AppRouter.router(context);
+    final auth = context.watch<AuthProvider>();
+    if (!identical(auth, _routerAuth)) {
+      _router?.dispose();
+      _routerAuth = auth;
+      _router = AppRouter.router(context);
+    }
+  }
+
+  @override
+  void dispose() {
+    _router?.dispose();
+    _router = null;
+    _routerAuth = null;
+    super.dispose();
   }
 
   @override
