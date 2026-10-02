@@ -25,6 +25,7 @@ class AuthProvider with ChangeNotifier {
   String? _profileOwner;
   String? _pendingRefusal;
   bool _disposed = false;
+  bool _signOutInFlight = false;
   UserModel? _currentUser;
   bool _isLoading = false;
   bool _isInitializing = true;
@@ -646,27 +647,53 @@ class AuthProvider with ChangeNotifier {
   // SIGN OUT
   // ============================================
   Future<void> signOut() async {
+    final owner = _authService.currentUserId;
+    final epoch = _authEpoch;
+    if (_signOutInFlight || owner == null ||
+        !isSessionCurrent(owner, epoch)) {
+      return;
+    }
+    final observer = _authListenVersion;
+    final read = ++_profileRead;
+    _signOutInFlight = true;
+    // Only the opening account or its immediately observed signed-out
+    // transition belongs to this operation. A renewed account is a new session.
+    bool signedOut() => !_disposed && _authSubscription != null &&
+        observer == _authListenVersion && _authEpoch == epoch + 1 &&
+        _profileOwner == null && _authService.currentUserId == null;
     try {
-      debugPrint('🚪 Signing out...');
-
       await _authService.signOut();
-
+      if (!signedOut()) {
+        return;
+      }
       final prefs = await SharedPreferences.getInstance();
+      if (!signedOut()) {
+        return;
+      }
       await prefs.remove(StorageConstants.keyRememberEmail);
-
+      if (!signedOut()) {
+        return;
+      }
       _currentUser = null;
       _error = null;
       _resetFailedAttempts();
-
-      await _logAuthEvent('logout', true, 'user');
-
-      debugPrint('✅ Sign out successful');
-
+      if (!signedOut()) {
+        return;
+      }
+      await _logAuthEvent('logout', true, 'user', ownerId: owner);
+      if (!signedOut()) {
+        return;
+      }
       notifyListeners();
-    } catch (e) {
-      debugPrint('❌ Error signing out: $e');
-      _error = e.toString();
+    } catch (_) {
+      if (!isSessionCurrent(owner, epoch) || observer != _authListenVersion ||
+          read != _profileRead) {
+        return;
+      }
+      _error = 'Unable to sign out. Please try again.';
       notifyListeners();
+    } finally {
+      _signOutInFlight = false;
     }
   }
 
