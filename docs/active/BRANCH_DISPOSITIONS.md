@@ -366,6 +366,8 @@ It is an IN-PLACE runtime bump (nodejs20 → nodejs22), not gen1→gen2, so no d
 
 | `agrimore/foundation-f2r-owned-completion-form` | `f170662357686a64260dd8d2bbab810e49a0c37b` | `MERGED_DEVELOP` | 2026-10-02 | owner: continue entire foundation single-agent | F2.18 owned complete_profile_screen.dart form, freeze sent/verified email, safe static errors, date-picker and navigation lifecycle guards; repair observed security-note Row overflow using existing Expanded/Text; foundation_complete_profile_form_test.dart and ledger only. Clean developdbe9c501, one checkout, no ACTIVE collisions; external foundation-f2r-contract.json. Mock provider only; no account/token or real OTP operations. Deploy NONE server; owner client publication. | `772fd42842a8bf2c254a6517b75af08d3f1dcbb8` |
 
+| `agrimore/foundation-f2s-owned-deletion-form` | `N/A — pending` | `ACTIVE` | 2026-10-02 | owner: continue entire foundation single-agent | F2.19 owned delete_account_screen.dart acknowledgement/result/lifecycle, read-only AuthProvider signed-out getter and local native getter tests, new foundation_delete_account_form_test.dart; wrap existing disclosure headings at phone width. Ledger only otherwise. Clean develop66d17f03, one checkout, no ACTIVE collision; external foundation-f2s-contract.json. Fake deletion outcomes only, no account/token/live operations. Deploy NONE server; owner client publication. | `N/A — pending` |
+
 ## Promotions
 
 Fast-forward promotions between the three environment branches (`develop` → `staging` → `main`),

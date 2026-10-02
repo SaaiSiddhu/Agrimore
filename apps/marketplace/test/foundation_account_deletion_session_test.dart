@@ -440,5 +440,33 @@ void main() {
       expect(await auth.deleteAccount(), isFalse);
       expect(service.deletions, isEmpty);
     });
+
+    test('signed-out getter uses SDK identity rather than absent profile',
+        () async {
+      expect(auth.hasSignedOutSession, isFalse);
+      service.uid = 'owner_b';
+      expect(auth.currentUser, isNull);
+      expect(auth.hasSignedOutSession, isFalse);
+    });
+    test('signed-out getter permits an observed own signed-out session',
+        () async {
+      service.switchTo(null);
+      await drain();
+      expect(auth.hasSignedOutSession, isTrue);
+      expect(auth.currentUser, isNull);
+    });
+    test('signed-out getter refuses disposed provider', () async {
+      service.switchTo(null);
+      await drain();
+      auth.dispose();
+      expect(auth.hasSignedOutSession, isFalse);
+    });
+    test('signed-out getter refuses a closed identity subscription', () async {
+      service.switchTo(null);
+      await drain();
+      await service.events.close();
+      await drain();
+      expect(auth.hasSignedOutSession, isFalse);
+    });
   });
 }
