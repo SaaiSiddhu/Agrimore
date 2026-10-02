@@ -57,18 +57,36 @@ class NotificationService {
     RemoteMessageHook? onMessageOpened,
     NotificationResponseHook? onNotificationResponse,
   }) async {
+    await initializeWithPermissionResult(
+      backgroundHandler: backgroundHandler,
+      extraChannels: extraChannels,
+      onForegroundMessage: onForegroundMessage,
+      onMessageOpened: onMessageOpened,
+      onNotificationResponse: onNotificationResponse,
+    );
+  }
+
+  /// True only when the native permission and local setup completed.
+  /// Existing startup callers retain the Future<void> initialize contract.
+  static Future<bool> initializeWithPermissionResult({
+    BackgroundMessageHandler? backgroundHandler,
+    List<AndroidNotificationChannel> extraChannels = const [],
+    RemoteMessageHook? onForegroundMessage,
+    RemoteMessageHook? onMessageOpened,
+    NotificationResponseHook? onNotificationResponse,
+  }) async {
     if (kIsWeb) {
       // Web initialization is handled by FCMService
-      return;
+      return false;
     }
     _extraChannels = extraChannels;
     _onForegroundMessage = onForegroundMessage;
     _onMessageOpened = onMessageOpened;
     _onNotificationResponse = onNotificationResponse;
-    await _initializeMobileFCM(backgroundHandler ?? firebaseMessagingBackgroundHandler);
+    return _initializeMobileFCM(backgroundHandler ?? firebaseMessagingBackgroundHandler);
   }
 
-  static Future<void> _initializeMobileFCM(BackgroundMessageHandler backgroundHandler) async {
+  static Future<bool> _initializeMobileFCM(BackgroundMessageHandler backgroundHandler) async {
     FirebaseMessaging messaging = FirebaseMessaging.instance;
 
     // Request permissions
@@ -111,7 +129,7 @@ class NotificationService {
       );
 
       // Enhanced notification tap handler
-      await flutterLocalNotificationsPlugin.initialize(
+      final localReady = await flutterLocalNotificationsPlugin.initialize(
         initializationSettings,
         onDidReceiveNotificationResponse: (NotificationResponse response) async {
           if (_onNotificationResponse?.call(response) == true) return;
@@ -196,7 +214,9 @@ class NotificationService {
           savePendingToken(currentUser.uid);
         }
       });
+      return localReady == true;
     }
+    return false;
   }
 
   static Future<void> savePendingToken(String userId) async {
