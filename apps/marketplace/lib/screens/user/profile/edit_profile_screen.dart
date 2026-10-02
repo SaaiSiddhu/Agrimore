@@ -300,7 +300,7 @@ class _EditProfileScreenState extends State<EditProfileScreen>
         _photoRemoved = false;
         _showToastMessage('Profile updated successfully.');
         Future.delayed(const Duration(milliseconds: 800), () {
-          if (_ownsForm && ModalRoute.of(context)?.isCurrent == true) {
+          if (mounted && _ownsForm && ModalRoute.of(context)?.isCurrent == true) {
             Navigator.pop(context);
           }
         });
@@ -330,7 +330,7 @@ class _EditProfileScreenState extends State<EditProfileScreen>
       lastDate: DateTime(now.year - kMinimumProfileAgeYears, now.month, now.day),
       helpText: 'Select your date of birth',
     );
-    if (picked == null || !_ownsForm) return;
+    if (picked == null || !mounted || !_ownsForm) return;
     if (_dateOfBirth != null &&
         picked.year == _dateOfBirth!.year &&
         picked.month == _dateOfBirth!.month &&

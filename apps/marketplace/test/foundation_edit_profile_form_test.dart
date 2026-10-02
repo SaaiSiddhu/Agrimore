@@ -2,7 +2,6 @@
 library;
 
 import 'dart:async';
-import 'dart:typed_data';
 import 'package:agrimore_core/agrimore_core.dart';
 import 'package:agrimore_marketplace/providers/auth_provider.dart';
 import 'package:agrimore_marketplace/providers/theme_provider.dart';
@@ -10,6 +9,8 @@ import 'package:agrimore_marketplace/screens/user/profile/edit_profile_screen.da
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:firebase_core/firebase_core.dart';
+// Same cached transitive Storage SDK used by the production screen.
+// ignore: depend_on_referenced_packages
 import 'package:firebase_storage/firebase_storage.dart';
 // Official cached platform harness; all transports remain local fixtures.
 // ignore: depend_on_referenced_packages
