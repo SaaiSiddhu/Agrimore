@@ -4,7 +4,6 @@ import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:provider/provider.dart';
 import 'package:agrimore_ui/agrimore_ui.dart';
-import 'package:agrimore_ui/agrimore_ui.dart';
 import '../../../providers/auth_provider.dart' as app_auth;
 import '../../../providers/theme_provider.dart';
 
@@ -17,6 +16,14 @@ class ChangePasswordScreen extends StatefulWidget {
 
 class _ChangePasswordScreenState extends State<ChangePasswordScreen>
     with TickerProviderStateMixin {
+  late app_auth.AuthProvider _openingProvider;
+  String? _openingOwner;
+  int _openingVersion = -1;
+  Timer? _popTimer;
+  bool get _ownsForm => mounted && _openingOwner != null &&
+      identical(context.read<app_auth.AuthProvider>(), _openingProvider) &&
+      _openingProvider.isSessionCurrent(_openingOwner!, _openingVersion);
+
   final _formKey = GlobalKey<FormState>();
   final _currentPasswordController = TextEditingController();
   final _newPasswordController = TextEditingController();
@@ -52,6 +59,10 @@ class _ChangePasswordScreenState extends State<ChangePasswordScreen>
   @override
   void initState() {
     super.initState();
+    _openingProvider = context.read<app_auth.AuthProvider>();
+    _openingOwner = _openingProvider.currentUser?.uid;
+    _openingVersion = _openingProvider.sessionVersion;
+    _openingProvider.addListener(_clearExpiredSession);
 
     _animationController = AnimationController(
       vsync: this,
@@ -99,7 +110,25 @@ class _ChangePasswordScreenState extends State<ChangePasswordScreen>
   }
 
   @override
+  void didChangeDependencies() {
+    super.didChangeDependencies();
+    _clearExpiredSession();
+  }
+
+  void _clearExpiredSession() {
+    if (!mounted || _ownsForm) return;
+    _currentPasswordController.clear();
+    _newPasswordController.clear();
+    _confirmPasswordController.clear();
+    _toastTimer?.cancel();
+    _popTimer?.cancel();
+    _showToast = false;
+  }
+
+  @override
   void dispose() {
+    _openingProvider.removeListener(_clearExpiredSession);
+    _popTimer?.cancel();
     _currentPasswordController.dispose();
     _newPasswordController.dispose();
     _confirmPasswordController.dispose();
@@ -110,6 +139,7 @@ class _ChangePasswordScreenState extends State<ChangePasswordScreen>
   }
 
   void _updatePasswordStrength() {
+    if (!_ownsForm) return;
     final password = _newPasswordController.text;
     double strength = 0;
     String label = '';
@@ -159,22 +189,22 @@ class _ChangePasswordScreenState extends State<ChangePasswordScreen>
   }
 
   void _showToastMessage(String message, {bool isSuccess = true}) {
-    if (!mounted) return;
+    if (!_ownsForm) return;
     _toastTimer?.cancel();
 
     setState(() {
       _toastMessage = message;
       _toastIcon = isSuccess ? Icons.check_circle_rounded : Icons.error_rounded;
-      _toastColor = isSuccess ? const Color(0xFF2D7D3C) : Colors.red;
+      _toastColor = isSuccess ? AppColors.success : AppColors.error;
       _showToast = true;
     });
 
     _toastAnimationController.forward();
 
     _toastTimer = Timer(const Duration(milliseconds: 2800), () {
-      if (mounted) {
+      if (_ownsForm) {
         _toastAnimationController.reverse().then((_) {
-          if (mounted) setState(() => _showToast = false);
+          if (_ownsForm) setState(() => _showToast = false);
         });
       }
     });
@@ -214,51 +244,43 @@ class _ChangePasswordScreenState extends State<ChangePasswordScreen>
   }
 
   Future<void> _changePassword() async {
-    if (!_formKey.currentState!.validate()) {
-      _showToastMessage('⚠️ Please fix the errors in the form', isSuccess: false);
+    if (!_ownsForm || _isLoading) return;
+    if (_formKey.currentState?.validate() != true) {
+      _showToastMessage('Please fix the errors in the form.', isSuccess: false);
       return;
     }
-
+    final currentPassword = _currentPasswordController.text;
+    final newPassword = _newPasswordController.text;
     setState(() => _isLoading = true);
     HapticFeedback.mediumImpact();
-
     try {
-      final authProvider =
-          Provider.of<app_auth.AuthProvider>(context, listen: false);
-
-      debugPrint('🔐 Changing password...');
-
-      final success = await authProvider.changePassword(
-        currentPassword: _currentPasswordController.text,
-        newPassword: _newPasswordController.text,
+      final success = await _openingProvider.changePassword(
+        currentPassword: currentPassword,
+        newPassword: newPassword,
       );
-
-      if (!mounted) return;
-
+      if (!_ownsForm) return;
       if (success) {
-        _showToastMessage('✅ Password changed successfully!');
-
+        _showToastMessage('Password changed.');
         _currentPasswordController.clear();
         _newPasswordController.clear();
         _confirmPasswordController.clear();
-
-        Future.delayed(const Duration(milliseconds: 800), () {
-          if (mounted) {
+        _popTimer?.cancel();
+        _popTimer = Timer(const Duration(milliseconds: 800), () {
+          if (!mounted || !_ownsForm) return;
+          if (ModalRoute.of(context)?.isCurrent == true) {
             Navigator.pop(context);
+          } else {
+            setState(() => _isLoading = false);
           }
         });
       } else {
-        _showToastMessage(
-          '❌ ${authProvider.error ?? 'Failed to change password'}', isSuccess: false
-        );
+        _showToastMessage('Could not change your password. Please try again.', isSuccess: false);
         setState(() => _isLoading = false);
       }
-    } catch (e) {
-      debugPrint('❌ Error: $e');
-      if (mounted) {
-        _showToastMessage('❌ Error: ${e.toString()}', isSuccess: false);
-        setState(() => _isLoading = false);
-      }
+    } catch (_) {
+      if (!_ownsForm) return;
+      _showToastMessage('Could not change your password. Please try again.', isSuccess: false);
+      setState(() => _isLoading = false);
     }
   }
 
@@ -298,7 +320,7 @@ class _ChangePasswordScreenState extends State<ChangePasswordScreen>
               color: Colors.transparent,
               child: InkWell(
                 onTap: () {
-                  if (!_isLoading) {
+                  if (_ownsForm && !_isLoading) {
                     HapticFeedback.lightImpact();
                     Navigator.pop(context);
                   }
@@ -371,6 +393,7 @@ class _ChangePasswordScreenState extends State<ChangePasswordScreen>
             Expanded(
               child: TextFormField(
                 controller: controller,
+                enabled: !_isLoading,
                 obscureText: obscure,
                 validator: validator,
                 style: TextStyle(
@@ -399,7 +422,9 @@ class _ChangePasswordScreenState extends State<ChangePasswordScreen>
                 color: isDark ? Colors.grey[600] : Colors.grey[400],
                 size: 20,
               ),
-              onPressed: onObscureToggle,
+              onPressed: _isLoading ? null : () {
+                if (_ownsForm) onObscureToggle();
+              },
             ),
           ],
         ),
@@ -468,6 +493,16 @@ class _ChangePasswordScreenState extends State<ChangePasswordScreen>
 
   @override
   Widget build(BuildContext context) {
+    context.watch<app_auth.AuthProvider>();
+    if (!_ownsForm) {
+      return Scaffold(
+        appBar: AppBar(title: const Text('Change password')),
+        body: const ErrorView(
+          useThemeColors: true,
+          message: 'Your session changed. Reopen your profile to continue.',
+        ),
+      );
+    }
     final themeProvider = Provider.of<ThemeProvider>(context);
     final isDark = themeProvider.isDarkMode;
 

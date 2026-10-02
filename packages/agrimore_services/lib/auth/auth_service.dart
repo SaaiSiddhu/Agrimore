@@ -1048,25 +1048,35 @@ class AuthService {
     required String currentPassword,
     required String newPassword,
   }) async {
+    final session = _OwnedAuthSession(_auth);
+    void requireCurrent() {
+      if (session.owner == null || !session.isCurrent()) {
+        throw AuthException(
+          'Your account session changed. Please try again.',
+          code: 'session-changed',
+        );
+      }
+    }
     try {
       final user = currentUser;
       if (user == null || user.email == null) throw UnauthorizedException();
-
+      requireCurrent();
       final credential = EmailAuthProvider.credential(
         email: user.email!,
         password: currentPassword,
       );
-
       await user.reauthenticateWithCredential(credential);
+      requireCurrent();
       await user.updatePassword(newPassword);
-
-      debugPrint('✅ Password changed successfully');
+      requireCurrent();
     } on FirebaseAuthException catch (e) {
-      debugPrint('❌ Error changing password: ${e.code} - ${e.message}');
       throw _handleAuthException(e);
-    } catch (e) {
-      debugPrint('❌ Error changing password: $e');
-      throw AuthException('Failed to change password: ${e.toString()}');
+    } on AuthException {
+      rethrow;
+    } catch (_) {
+      throw AuthException('Could not change your password. Please try again.');
+    } finally {
+      await session.cancel();
     }
   }
 

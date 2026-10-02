@@ -901,47 +901,14 @@ class AuthProvider with ChangeNotifier {
   Future<bool> changePassword({
     required String currentPassword,
     required String newPassword,
-  }) async {
-    try {
-      _isLoading = true;
-      _error = null;
-      notifyListeners();
-
-      debugPrint('🔐 Changing password...');
-
-      await _authService.changePassword(
-        currentPassword: currentPassword,
-        newPassword: newPassword,
-      );
-
-      await _logAuthEvent(
-          'password_change', true, _currentUser?.email ?? 'unknown');
-
-      debugPrint('✅ Password changed successfully');
-
-      _isLoading = false;
-      notifyListeners();
-      return true;
-    } on FirebaseAuthException catch (e) {
-      debugPrint('❌ Firebase Auth Password change error: ${e.code}');
-      _error = _getFirebaseErrorMessage(e.code);
-      await _logAuthEvent(
-          'password_change', false, _currentUser?.email ?? 'unknown',
-          error: e.code);
-      _isLoading = false;
-      notifyListeners();
-      return false;
-    } catch (e) {
-      debugPrint('❌ Error changing password: $e');
-      _error = 'Failed to change password. Please try again.';
-      await _logAuthEvent(
-          'password_change', false, _currentUser?.email ?? 'unknown',
-          error: e.toString());
-      _isLoading = false;
-      notifyListeners();
-      return false;
-    }
-  }
+  }) =>
+      _runOwnedProfileCommand(() async {
+        await _authService.changePassword(
+          currentPassword: currentPassword,
+          newPassword: newPassword,
+        );
+        return null;
+      }, auditEvent: 'password_change');
 
   // ============================================
   // SEND PASSWORD RESET EMAIL
