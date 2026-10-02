@@ -27,6 +27,7 @@ class AuthProvider with ChangeNotifier {
   bool _disposed = false;
   bool _signOutInFlight = false;
   bool _loginInFlight = false;
+  bool _passwordResetInFlight = false;
   String? _loginObservedOwner;
   bool _loginSuperseded = false;
   UserModel? _currentUser;
@@ -419,7 +420,7 @@ class AuthProvider with ChangeNotifier {
         observer == _authListenVersion && !_loginSuperseded;
     bool openingCurrent() => observing() &&
         _profileReadIsCurrent(openingOwner, openingEpoch, openingRead);
-    if (_loginInFlight || !openingCurrent()) return false;
+    if (_loginInFlight || _passwordResetInFlight || !openingCurrent()) return false;
     if (isLocked) {
       _error = 'Too many attempts. Please try again later.';
       notifyListeners();
@@ -575,37 +576,46 @@ class AuthProvider with ChangeNotifier {
   // SEND PASSWORD RESET EMAIL
   // ============================================
   Future<bool> sendPasswordResetEmail(String email) async {
+    final owner = _authService.currentUserId;
+    final epoch = _authEpoch, read = _profileRead;
+    final observer = _authListenVersion;
+    bool current() => !_disposed && _authSubscription != null &&
+        observer == _authListenVersion && _profileReadIsCurrent(owner, epoch, read);
+    if (_passwordResetInFlight || _loginInFlight || !current() || isInitializing) {
+      return false;
+    }
+    _passwordResetInFlight = true;
+    _isLoading = true;
+    _error = null;
+    notifyListeners();
+    var confirmed = false;
+    String? failure;
     try {
-      _isLoading = true;
-      _error = null;
-      notifyListeners();
-
-      debugPrint('📧 Sending password reset email to: $email');
-
-      await _authService.sendPasswordResetEmail(email.trim());
-
-      await _logAuthEvent('password_reset_request', true, email);
-
-      debugPrint('✅ Password reset email sent successfully');
-
+      if (!current()) return false;
+      try {
+        await _authService.sendPasswordResetEmail(email.trim());
+        if (!current()) return false;
+        confirmed = true;
+      } catch (error) {
+        if (!current()) return false;
+        failure = error is FirebaseAuthException
+            ? _getFirebaseErrorMessage(error.code)
+            : 'Failed to send reset email. Please try again.';
+      }
+      if (!current()) return false;
+      _error = failure;
+      await _logAuthEvent('password_reset_request', confirmed, email.trim(),
+          error: confirmed ? null : 'password-reset-failed', ownerId: owner);
+      if (!current()) return false;
       _isLoading = false;
       notifyListeners();
-      return true;
-    } on FirebaseAuthException catch (e) {
-      debugPrint('❌ Firebase Auth Password reset error: ${e.code}');
-      _error = _getFirebaseErrorMessage(e.code);
-      await _logAuthEvent('password_reset_request', false, email, error: e.code);
-      _isLoading = false;
-      notifyListeners();
-      return false;
-    } catch (e) {
-      debugPrint('❌ Error sending password reset email: $e');
-      _error = 'Failed to send reset email. Please try again.';
-      await _logAuthEvent('password_reset_request', false, email,
-          error: e.toString());
-      _isLoading = false;
-      notifyListeners();
-      return false;
+      return current() && confirmed;
+    } finally {
+      if (current() && _isLoading) {
+        _isLoading = false;
+        notifyListeners();
+      }
+      _passwordResetInFlight = false;
     }
   }
 
