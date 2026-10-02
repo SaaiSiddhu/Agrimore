@@ -271,7 +271,7 @@ export const sendEmailOTP = functions
     console.error("❌ Error sending OTP:", error);
     res.status(500).json({
       success: false,
-      error: error.message || "Failed to send OTP",
+      error: "Failed to send verification code. Please try again.",
     });
   }
 });
