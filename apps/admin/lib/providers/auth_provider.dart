@@ -26,6 +26,9 @@ class AuthProvider with ChangeNotifier {
   String? _pendingRefusal;
   bool _disposed = false;
   bool _signOutInFlight = false;
+  bool _loginInFlight = false;
+  String? _loginObservedOwner;
+  bool _loginSuperseded = false;
   UserModel? _currentUser;
   bool _isLoading = false;
   bool _isInitializing = true;
@@ -162,6 +165,13 @@ class AuthProvider with ChangeNotifier {
 
   void _bindProfileOwner(String? owner, {bool renew = false}) {
     if (_disposed || (!renew && owner == _profileOwner)) return;
+    if (renew && _loginInFlight) {
+      if (_loginObservedOwner != null) {
+        _loginSuperseded = true;
+      } else if (owner != null) {
+        _loginObservedOwner = owner;
+      }
+    }
     final refusal = owner == null ? _pendingRefusal : null;
     _pendingRefusal = null;
     _profileOwner = owner;
@@ -386,136 +396,89 @@ class AuthProvider with ChangeNotifier {
   Future<bool> signInWithEmail({
     required String email,
     required String password,
+  }) => _runOwnedSignIn(
+    () => _authService.signInWithEmail(email: email.trim(), password: password),
+    event: 'login', email: email.trim(), rememberEmail: true,
+  );
+
+  Future<bool> signInWithGoogle() => _runOwnedSignIn(
+    _authService.signInWithGoogle, event: 'google_login', email: 'unknown',
+  );
+
+  Future<bool> _runOwnedSignIn(
+    Future<UserModel> Function() command, {
+    required String event,
+    required String email,
+    bool rememberEmail = false,
   }) async {
-    try {
-      if (isLocked) {
-        _error = 'Too many attempts. Please try again later.';
-        notifyListeners();
-        return false;
-      }
-
-      _isLoading = true;
-      _error = null;
+    final openingOwner = _authService.currentUserId;
+    final openingEpoch = _authEpoch;
+    final openingRead = _profileRead;
+    final observer = _authListenVersion;
+    bool observing() => !_disposed && _authSubscription != null &&
+        observer == _authListenVersion && !_loginSuperseded;
+    bool openingCurrent() => observing() &&
+        _profileReadIsCurrent(openingOwner, openingEpoch, openingRead);
+    if (_loginInFlight || !openingCurrent()) return false;
+    if (isLocked) {
+      _error = 'Too many attempts. Please try again later.';
       notifyListeners();
-
-      debugPrint('🔐 Signing in user: $email');
-
-      _currentUser = await _authService.signInWithEmail(
-        email: email.trim(),
-        password: password,
-      );
-
-      // STRICT ROLE CHECK FOR ADMIN APP
-      if (_currentUser != null && _currentUser!.role != 'admin') {
-        debugPrint('⛔ Unauthorized sign in attempt by non-admin: $email');
-        await _firebaseAuth.signOut();
-        _currentUser = null;
-        _error = 'Access denied. You are not an admin. Please use the appropriate app.';
-        _isLoading = false;
-        notifyListeners();
+      return false;
+    }
+    _loginInFlight = true;
+    _loginObservedOwner = openingOwner;
+    _loginSuperseded = false;
+    _isLoading = true;
+    _error = null;
+    notifyListeners();
+    bool Function() current = openingCurrent;
+    try {
+      if (!current()) return false;
+      final returned = await command();
+      if (!observing() || returned.uid != _authService.currentUserId) {
         return false;
       }
-
-      await _logAuthEvent('login', true, email);
-
-      if (_rememberMe) {
-        await _storeCredentials(email);
+      // A service result may contain an old role/profile. Read the current
+      // SDK owner's profile through the existing session-owned refusal path.
+      final owner = returned.uid;
+      _bindProfileOwner(owner);
+      final epoch = _authEpoch;
+      final read = _profileRead + 1;
+      current = () => observing() && _profileReadIsCurrent(owner, epoch, read);
+      await _loadOwnedProfile();
+      if (!current() || !isAdmin) return false;
+      final user = currentUser!;
+      await _logAuthEvent(event, true, user.email, ownerId: owner);
+      if (!current()) return false;
+      if (rememberEmail && _rememberMe) {
+        await _storeCredentials(email, isSessionCurrent: current);
+        if (!current()) return false;
       }
-
-      debugPrint('✅ Sign in successful: ${_currentUser?.uid}');
-
       _resetFailedAttempts();
       _isLoading = false;
       notifyListeners();
-      return true;
-    } on FirebaseAuthException catch (e) {
-      debugPrint('❌ Firebase Auth Sign in error: ${e.code} - ${e.message}');
-      _error = _getFirebaseErrorMessage(e.code);
+      return current() && isAdmin;
+    } catch (failure) {
+      if (!openingCurrent()) return false;
+      _error = failure is FirebaseAuthException
+          ? _getFirebaseErrorMessage(failure.code)
+          : 'Sign in failed. Please try again.';
       _incrementFailedAttempts();
-      await _logAuthEvent('login', false, email, error: e.code);
-      _isLoading = false;
-      notifyListeners();
-      return false;
-    } on AuthException catch (e) {
-      debugPrint('❌ Sign in error: ${e.message}');
-      _error = e.message;
-      _incrementFailedAttempts();
-      await _logAuthEvent('login', false, email, error: e.message);
-      _isLoading = false;
-      notifyListeners();
-      return false;
-    } catch (e) {
-      debugPrint('❌ Sign in error: $e');
-      _error = 'Sign in failed. Please try again.';
-      _incrementFailedAttempts();
-      await _logAuthEvent('login', false, email, error: e.toString());
+      if (!openingCurrent()) return false;
+      await _logAuthEvent(event, false, email,
+          error: 'sign-in-failed', ownerId: openingOwner);
+      if (!openingCurrent()) return false;
       _isLoading = false;
       notifyListeners();
       return false;
     } finally {
-      _isLoading = false;
-      notifyListeners();
-    }
-  }
-
-  // ============================================
-  // SIGN IN WITH GOOGLE
-  // ============================================
-  Future<bool> signInWithGoogle() async {
-    try {
-      if (isLocked) {
-        _error = 'Too many attempts. Please try again later.';
-        notifyListeners();
-        return false;
-      }
-
-      _isLoading = true;
-      _error = null;
-      notifyListeners();
-
-      debugPrint('🔐 Signing in with Google...');
-
-      _currentUser = await _authService.signInWithGoogle();
-
-      // STRICT ROLE CHECK FOR ADMIN APP
-      if (_currentUser != null && _currentUser!.role != 'admin') {
-        debugPrint('⛔ Unauthorized Google sign in attempt by non-admin: ${_currentUser!.email}');
-        await _firebaseAuth.signOut();
-        _currentUser = null;
-        _error = 'Access denied. You are not an admin. Please use the appropriate app.';
+      if (current() && _isLoading) {
         _isLoading = false;
         notifyListeners();
-        return false;
       }
-
-      await _logAuthEvent('google_login', true, _currentUser?.email ?? 'unknown');
-
-      debugPrint('✅ Google sign in successful: ${_currentUser?.uid}');
-
-      _resetFailedAttempts();
-      _isLoading = false;
-      notifyListeners();
-      return true;
-    } on AuthException catch (e) {
-      debugPrint('❌ Google sign in error: ${e.message}');
-      _error = e.message;
-      _incrementFailedAttempts();
-      await _logAuthEvent('google_login', false, 'unknown', error: e.message);
-      _isLoading = false;
-      notifyListeners();
-      return false;
-    } catch (e) {
-      debugPrint('❌ Google sign in error: $e');
-      if (e.toString().contains('PlatformException')) {
-        _error = 'Google sign in cancelled';
-      } else {
-        _error = 'Google sign in failed. Please try again.';
-      }
-      _incrementFailedAttempts();
-      await _logAuthEvent('google_login', false, 'unknown', error: e.toString());
-      _isLoading = false;
-      notifyListeners();
-      return false;
+      _loginObservedOwner = null;
+      _loginSuperseded = false;
+      _loginInFlight = false;
     }
   }
 
@@ -740,10 +703,14 @@ class AuthProvider with ChangeNotifier {
   // ============================================
   // STORE CREDENTIALS (Remember Me)
   // ============================================
-  Future<void> _storeCredentials(String email) async {
+  Future<void> _storeCredentials(String email, {
+    bool Function()? isSessionCurrent,
+  }) async {
     try {
       final prefs = await SharedPreferences.getInstance();
+      if (isSessionCurrent != null && !isSessionCurrent()) return;
       await prefs.setString(StorageConstants.keyRememberEmail, email);
+      if (isSessionCurrent != null && !isSessionCurrent()) return;
       await prefs.setBool(StorageConstants.keyRememberMe, true);
       debugPrint('💾 Stored credentials for remember me: $email');
     } catch (e) {
