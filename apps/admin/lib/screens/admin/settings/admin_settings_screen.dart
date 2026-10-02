@@ -71,6 +71,7 @@ class AdminSettingsScreen extends StatefulWidget {
 }
 
 class _AdminSettingsScreenState extends State<AdminSettingsScreen> {
+  bool _logoutInFlight = false;
   bool _notificationsEnabled = true;
   bool _emailNotifications = true;
   bool _orderNotifications = true;
@@ -807,38 +808,61 @@ class _AdminSettingsScreenState extends State<AdminSettingsScreen> {
     );
   }
 
-  void _showLogoutDialog(AuthProvider authProvider) {
-    showDialog(
-      context: context,
-      builder: (context) => AlertDialog(
-        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
-        title: Row(
-          children: [
+  Future<void> _showLogoutDialog(AuthProvider authProvider) async {
+    final owner = authProvider.currentUser?.uid;
+    final version = authProvider.sessionVersion;
+    final route = ModalRoute.of(context);
+    bool ownsPage() => mounted && owner != null &&
+        identical(context.read<AuthProvider>(), authProvider) &&
+        authProvider.isSessionCurrent(owner, version) &&
+        route?.isCurrent == true;
+    if (_logoutInFlight || !ownsPage()) {
+      return;
+    }
+    _logoutInFlight = true;
+    try {
+      // Keep this screen's existing confirmation layout; no credentials are
+      // entered here. Dispatch belongs to the opening page after confirmation.
+      final confirm = await showDialog<bool>(
+        context: context,
+        builder: (dialogContext) => AlertDialog(
+          shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
+          title: Row(children: [
             Icon(Icons.logout_rounded, color: Colors.red.shade700),
             const SizedBox(width: 12),
             const Text('Logout'),
+          ]),
+          content: const Text('Are you sure you want to logout from admin panel?'),
+          actions: [
+            TextButton(onPressed: () => Navigator.pop(dialogContext, false),
+              child: const Text('Cancel')),
+            ElevatedButton(onPressed: () => Navigator.pop(dialogContext, true),
+              style: ElevatedButton.styleFrom(backgroundColor: Colors.red),
+              child: const Text('Logout')),
           ],
         ),
-        content: const Text('Are you sure you want to logout from admin panel?'),
-        actions: [
-          TextButton(
-            onPressed: () => Navigator.pop(context),
-            child: const Text('Cancel'),
-          ),
-          ElevatedButton(
-            onPressed: () async {
-              await authProvider.signOut();
-              if (context.mounted) {
-                Navigator.pop(context);
-                context.go(AdminRoutes.auth);
-              }
-            },
-            style: ElevatedButton.styleFrom(backgroundColor: Colors.red),
-            child: const Text('Logout'),
-          ),
-        ],
-      ),
-    );
+      );
+      if (!mounted || confirm != true || !ownsPage()) {
+        return;
+      }
+      await authProvider.signOut();
+      if (!mounted || !identical(context.read<AuthProvider>(), authProvider) ||
+          route?.isCurrent != true) {
+        return;
+      }
+      if (authProvider.hasSignedOutSession &&
+          authProvider.sessionVersion == version + 1) {
+        context.go(AdminRoutes.auth);
+      } else if (ownsPage()) {
+        SnackbarHelper.showError(context, 'Unable to sign out. Please try again.');
+      }
+    } catch (_) {
+      if (mounted && ownsPage()) {
+        SnackbarHelper.showError(context, 'Unable to sign out. Please try again.');
+      }
+    } finally {
+      _logoutInFlight = false;
+    }
   }
 
   void _showBackupDialog() {

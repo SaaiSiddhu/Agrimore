@@ -175,7 +175,8 @@ void main() {
     expect(service.calls, 1);
     expect(auth.currentUser, isNull);
     expect(auth.error, isNull);
-    expect((await SharedPreferences.getInstance()).getString('remember_email'), isNull);
+    expect((await SharedPreferences.getInstance()).getString('remember_email'),
+        isNull);
     expect(audits.single['event'], 'logout');
     expect(audits.single['uid'], 'owner_a');
   });
@@ -294,5 +295,18 @@ void main() {
     await result;
     expect(auth.userUid, 'owner_b');
     expect(auth.error, isNull);
+  });
+  test(
+      'signedout session accessor excludes active account, paused observer and disposal',
+      () async {
+    expect(auth.hasSignedOutSession, isFalse);
+    service.emit(null);
+    await drain();
+    expect(auth.hasSignedOutSession, isTrue);
+    service.stream.subscriptions.last.done?.call();
+    expect(auth.hasSignedOutSession, isFalse);
+    auth.dispose();
+    disposed = true;
+    expect(auth.hasSignedOutSession, isFalse);
   });
 }

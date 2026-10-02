@@ -376,6 +376,8 @@ It is an IN-PLACE runtime bump (nodejs20 → nodejs22), not gen1→gen2, so no d
 
 | `agrimore/foundation-f2w-owned-signout-completion` | `4fb51a1b928905ac86037573134e52018d282e15` | `MERGED_DEVELOP` | 2026-10-02 | owner: continue entire foundation single-agent | F2.23 customer/admin AuthProvider signout completion ownership, duplicate suppression and captured logout audit; two provider files and two new foundation_owned_signout_test.dart files plus ledger only. Develop e87b32f2; one checkout; no active overlap; owner design WIP disjoint. External foundation-f2w-contract.json. Local synthetic stream/transport fixtures only. Deploy NONE server; owner customer/admin builds. | `4864f42636cf1d230b03ba8ec0c4066270ad251f` |
 
+| `agrimore/foundation-f2x-admin-owned-logout-navigation` | `N/A — pending` | `ACTIVE` | 2026-10-02 | owner: continue entire foundation single-agent | F2.24 owned admin logout confirmation/dispatch/navigation and shell queued refusal guard; minimal observed390px bottom-nav/drawer-header constraints; read-only admin session getter, admin_settings_screen.dart, admin_shell.dart, new foundation_admin_logout_navigation_test.dart, existing foundation_owned_signout_test.dart, ledger only. Develop d8a9ae80; one checkout/no collision; owner design WIP disjoint. Existing AlertDialog layouts retained; canonical SnackbarHelper safe copy; synthetic local mounted/browser fixtures only. External foundation-f2x-contract.json. Deploy NONE server; owner admin build. | `N/A — pending` |
+
 ## Promotions
 
 Fast-forward promotions between the three environment branches (`develop` → `staging` → `main`),

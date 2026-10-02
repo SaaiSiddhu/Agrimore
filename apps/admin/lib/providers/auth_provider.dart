@@ -64,6 +64,9 @@ class AuthProvider with ChangeNotifier {
       owner == _profileOwner && owner == _authService.currentUserId &&
       version == _authEpoch;
 
+  bool get hasSignedOutSession => !_disposed &&
+      _authSubscription != null && _authService.currentUserId == null;
+
   bool get isLoggedIn => currentUser != null;
   bool get isAdmin => currentUser?.isAdmin ?? false;
   bool get isSeller => currentUser?.isSeller ?? false;
