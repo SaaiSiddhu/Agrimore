@@ -31,6 +31,17 @@ class CompleteProfileScreen extends StatefulWidget {
 
 class _CompleteProfileScreenState extends State<CompleteProfileScreen>
     with SingleTickerProviderStateMixin {
+  late AuthProvider _openingProvider;
+  String? _openingOwner;
+  int _openingVersion = -1;
+  String _sentEmail = '';
+  String _verifiedEmail = '';
+  bool get _ownsForm => mounted &&
+      _openingOwner != null &&
+      identical(context.read<AuthProvider>(), _openingProvider) &&
+      _openingProvider.isSessionCurrent(_openingOwner!, _openingVersion);
+  bool get _busy => _isLoading || _isSendingCode || _isVerifyingCode;
+
   final _nameController = TextEditingController();
   final _emailController = TextEditingController();
   final _emailOtpController = TextEditingController();
@@ -59,6 +70,9 @@ class _CompleteProfileScreenState extends State<CompleteProfileScreen>
   @override
   void initState() {
     super.initState();
+    _openingProvider = context.read<AuthProvider>();
+    _openingOwner = _openingProvider.currentUser?.uid;
+    _openingVersion = _openingProvider.sessionVersion;
     _animController = AnimationController(
       vsync: this,
       duration: const Duration(milliseconds: 800),
@@ -97,11 +111,14 @@ class _CompleteProfileScreenState extends State<CompleteProfileScreen>
     return null;
   }
 
-  bool get _canSubmit =>
-      _dateOfBirth != null && _gender != null && _emailVerified && !_isLoading;
+  bool get _canSubmit => _ownsForm && !_busy &&
+      _dateOfBirth != null && _gender != null && _emailVerified &&
+      _verifiedEmail.isNotEmpty;
 
   Future<void> _handleSendCode() async {
-    final emailError = _validateEmail(_emailController.text);
+    if (!_ownsForm || _busy) return;
+    final email = _codeSent ? _sentEmail : _emailController.text.trim().toLowerCase();
+    final emailError = _validateEmail(email);
     if (emailError != null) {
       setState(() => _errorMessage = emailError);
       return;
@@ -111,51 +128,70 @@ class _CompleteProfileScreenState extends State<CompleteProfileScreen>
       _isSendingCode = true;
       _errorMessage = null;
     });
-
-    final authProvider = context.read<AuthProvider>();
-    final success = await authProvider.sendEmailOtpForProfile(_emailController.text.trim());
-
-    if (!mounted) return;
-    setState(() {
-      _isSendingCode = false;
-      if (success) {
-        _codeSent = true;
-      } else {
-        _errorMessage = authProvider.error ?? 'Failed to send verification code';
-      }
-    });
+    try {
+      final success = await _openingProvider.sendEmailOtpForProfile(email);
+      if (!_ownsForm) return;
+      setState(() {
+        _isSendingCode = false;
+        if (success) {
+          _sentEmail = email;
+          _emailController.text = email;
+          _emailOtpController.clear();
+          _codeSent = true;
+          _emailVerified = false;
+          _verifiedEmail = '';
+        } else {
+          _errorMessage = 'Could not send a verification code. Please try again.';
+        }
+      });
+    } catch (_) {
+      if (!_ownsForm) return;
+      setState(() {
+        _isSendingCode = false;
+        _errorMessage = 'Could not send a verification code. Please try again.';
+      });
+    }
   }
 
   Future<void> _handleVerifyCode() async {
+    if (!_ownsForm || _busy || !_codeSent || _sentEmail.isEmpty) return;
     final code = _emailOtpController.text.trim();
     if (code.length != 6) {
       setState(() => _errorMessage = 'Enter the 6-digit code');
       return;
     }
+    final email = _sentEmail;
     HapticFeedback.lightImpact();
     setState(() {
       _isVerifyingCode = true;
       _errorMessage = null;
     });
-
-    final authProvider = context.read<AuthProvider>();
-    final success = await authProvider.verifyEmailOtpForProfile(
-      email: _emailController.text.trim(),
-      otp: code,
-    );
-
-    if (!mounted) return;
-    setState(() {
-      _isVerifyingCode = false;
-      if (success) {
-        _emailVerified = true;
-      } else {
-        _errorMessage = authProvider.error ?? 'Invalid code. Please try again.';
-      }
-    });
+    try {
+      final success = await _openingProvider.verifyEmailOtpForProfile(
+        email: email,
+        otp: code,
+      );
+      if (!_ownsForm) return;
+      setState(() {
+        _isVerifyingCode = false;
+        if (success) {
+          _emailVerified = true;
+          _verifiedEmail = email;
+        } else {
+          _errorMessage = 'Could not verify your code. Please try again.';
+        }
+      });
+    } catch (_) {
+      if (!_ownsForm) return;
+      setState(() {
+        _isVerifyingCode = false;
+        _errorMessage = 'Could not verify your code. Please try again.';
+      });
+    }
   }
 
   Future<void> _handlePickDateOfBirth() async {
+    if (!_ownsForm || _isLoading) return;
     final now = DateTime.now();
     final picked = await showDatePicker(
       context: context,
@@ -164,13 +200,15 @@ class _CompleteProfileScreenState extends State<CompleteProfileScreen>
       lastDate: DateTime(now.year - kMinimumProfileAgeYears, now.month, now.day),
       helpText: 'Select your date of birth',
     );
+    if (!mounted || !_ownsForm || _isLoading) return;
     if (picked != null) {
       setState(() => _dateOfBirth = picked);
     }
   }
 
   Future<void> _handleComplete() async {
-    if (!_formKey.currentState!.validate()) return;
+    if (!_ownsForm || _busy) return;
+    if (_formKey.currentState?.validate() != true) return;
     if (!_canSubmit) {
       setState(() {
         _errorMessage = !_emailVerified
@@ -179,36 +217,53 @@ class _CompleteProfileScreenState extends State<CompleteProfileScreen>
       });
       return;
     }
-
+    final name = _nameController.text.trim();
+    final email = _verifiedEmail;
+    final dateOfBirth = _dateOfBirth!;
+    final gender = _gender!;
     HapticFeedback.mediumImpact();
     setState(() {
       _isLoading = true;
       _errorMessage = null;
     });
-
-    final authProvider = context.read<AuthProvider>();
-    final success = await authProvider.completeUserProfile(
-      name: _nameController.text.trim(),
-      email: _emailController.text.trim(),
-      dateOfBirth: _dateOfBirth!,
-      gender: _gender!,
-    );
-
-    if (!mounted) return;
-
-    if (!success) {
+    try {
+      final success = await _openingProvider.completeUserProfile(
+        name: name,
+        email: email,
+        dateOfBirth: dateOfBirth,
+        gender: gender,
+      );
+      if (!mounted || !_ownsForm) return;
       setState(() {
         _isLoading = false;
-        _errorMessage = authProvider.error ?? 'Failed to complete profile';
+        if (!success) {
+          _errorMessage = 'Could not complete your profile. Please try again.';
+        }
       });
-      return;
+      if (success && ModalRoute.of(context)?.isCurrent == true) {
+        Navigator.of(context).pushNamedAndRemoveUntil(AppRoutes.main, (route) => false);
+      }
+    } catch (_) {
+      if (!_ownsForm) return;
+      setState(() {
+        _isLoading = false;
+        _errorMessage = 'Could not complete your profile. Please try again.';
+      });
     }
-
-    Navigator.of(context).pushNamedAndRemoveUntil(AppRoutes.main, (route) => false);
   }
 
   @override
   Widget build(BuildContext context) {
+    context.watch<AuthProvider>();
+    if (!_ownsForm) {
+      return Scaffold(
+        appBar: AppBar(title: const Text('Complete your profile')),
+        body: const ErrorView(
+          useThemeColors: true,
+          message: 'Your session changed. Reopen sign-in to continue.',
+        ),
+      );
+    }
     final isDark = Theme.of(context).brightness == Brightness.dark;
     final size = MediaQuery.of(context).size;
 
@@ -497,7 +552,7 @@ class _CompleteProfileScreenState extends State<CompleteProfileScreen>
           children: [
             Expanded(
               child: Text(
-                _emailController.text.trim(),
+                _verifiedEmail,
                 style: TextStyle(
                   fontSize: 14,
                   fontWeight: FontWeight.w500,
@@ -524,14 +579,14 @@ class _CompleteProfileScreenState extends State<CompleteProfileScreen>
                 validator: _validateEmail,
                 isDark: isDark,
                 keyboardType: TextInputType.emailAddress,
-                enabled: !_codeSent,
+                enabled: !_codeSent && !_busy,
               ),
             ),
             const SizedBox(width: 10),
             SizedBox(
               height: 52,
               child: ElevatedButton(
-                onPressed: (_isSendingCode || _codeSent) ? null : _handleSendCode,
+                onPressed: (_busy || _codeSent) ? null : _handleSendCode,
                 style: ElevatedButton.styleFrom(
                   backgroundColor: AppColors.primary,
                   foregroundColor: Colors.white,
@@ -572,7 +627,7 @@ class _CompleteProfileScreenState extends State<CompleteProfileScreen>
               SizedBox(
                 height: 52,
                 child: ElevatedButton(
-                  onPressed: _isVerifyingCode ? null : _handleVerifyCode,
+                  onPressed: _busy ? null : _handleVerifyCode,
                   style: ElevatedButton.styleFrom(
                     backgroundColor: AppColors.secondary,
                     foregroundColor: Colors.white,
@@ -592,12 +647,7 @@ class _CompleteProfileScreenState extends State<CompleteProfileScreen>
             ],
           ),
           TextButton(
-            onPressed: _isSendingCode
-                ? null
-                : () {
-                    setState(() => _codeSent = false);
-                    _handleSendCode();
-                  },
+            onPressed: _busy ? null : _handleSendCode,
             child: const Text('Resend code', style: TextStyle(color: AppColors.primary, fontSize: 13)),
           ),
         ],
@@ -607,7 +657,7 @@ class _CompleteProfileScreenState extends State<CompleteProfileScreen>
 
   Widget _buildDateOfBirthField(bool isDark) {
     return InkWell(
-      onTap: _handlePickDateOfBirth,
+      onTap: _isLoading ? null : _handlePickDateOfBirth,
       borderRadius: BorderRadius.circular(14),
       child: Container(
         padding: const EdgeInsets.symmetric(horizontal: 18, vertical: 16),
@@ -650,7 +700,10 @@ class _CompleteProfileScreenState extends State<CompleteProfileScreen>
         return ChoiceChip(
           label: Text(option['label']!),
           selected: selected,
-          onSelected: (_) => setState(() => _gender = option['value']),
+          onSelected: _isLoading ? null : (_) {
+            if (!_ownsForm) return;
+            setState(() => _gender = option['value']);
+          },
           selectedColor: AppColors.primary,
           labelStyle: TextStyle(
             color: selected ? Colors.white : (isDark ? AppColors.textLight : AppColors.textPrimary),
@@ -712,7 +765,7 @@ class _CompleteProfileScreenState extends State<CompleteProfileScreen>
       ),
       child: TextFormField(
         controller: controller,
-        enabled: enabled,
+        enabled: enabled && !_isLoading,
         keyboardType: keyboardType,
         inputFormatters: inputFormatters,
         textCapitalization: textCapitalization,
@@ -771,7 +824,7 @@ class _CompleteProfileScreenState extends State<CompleteProfileScreen>
         ],
       ),
       child: ElevatedButton(
-        onPressed: _isLoading ? null : _handleComplete,
+        onPressed: _busy ? null : _handleComplete,
         style: ElevatedButton.styleFrom(
           backgroundColor: Colors.transparent,
           shadowColor: Colors.transparent,
@@ -803,9 +856,12 @@ class _CompleteProfileScreenState extends State<CompleteProfileScreen>
       children: [
         Icon(Icons.lock_rounded, size: 14, color: isDark ? AppColors.textLightTertiary : AppColors.textTertiary),
         const SizedBox(width: 6),
-        Text(
-          'Your information is secure and private',
-          style: TextStyle(fontSize: 13, color: isDark ? AppColors.textLightTertiary : AppColors.textTertiary),
+        Expanded(
+          child: Text(
+            'Your information is secure and private',
+            textAlign: TextAlign.center,
+            style: TextStyle(fontSize: 13, color: isDark ? AppColors.textLightTertiary : AppColors.textTertiary),
+          ),
         ),
       ],
     );
