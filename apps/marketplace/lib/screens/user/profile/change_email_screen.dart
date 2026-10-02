@@ -487,7 +487,7 @@ class _ChangeEmailScreenState extends State<ChangeEmailScreen> {
           VerificationStepHeader(
             icon: Icons.mark_email_unread_outlined,
             title: 'Verify Email Address',
-            subtitle: "We've sent a 6-digit code to\n${_sentTarget}",
+            subtitle: "We've sent a 6-digit code to\n$_sentTarget",
             isDark: isDark,
           ),
           const SizedBox(height: 28),

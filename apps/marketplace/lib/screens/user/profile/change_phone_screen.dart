@@ -497,7 +497,7 @@ class _ChangePhoneScreenState extends State<ChangePhoneScreen> {
           VerificationStepHeader(
             icon: Icons.sms_outlined,
             title: 'Verify Phone Number',
-            subtitle: 'We\'ve sent a 6-digit OTP to\n+91 ${_sentTarget}',
+            subtitle: 'We\'ve sent a 6-digit OTP to\n+91 $_sentTarget',
             isDark: isDark,
           ),
           const SizedBox(height: 28),

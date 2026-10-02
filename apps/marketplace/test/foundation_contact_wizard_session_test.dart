@@ -94,8 +94,9 @@ void main() {
     querySuccess = false;
     messenger.setMockMessageHandler(queryChannel, (_) async {
       queries++;
-      if (heldQuery != null && queries == holdAt)
+      if (heldQuery != null && queries == holdAt) {
         return await heldQuery!.future;
+      }
       return querySuccess ? emptyQuery() : refused();
     });
   });
