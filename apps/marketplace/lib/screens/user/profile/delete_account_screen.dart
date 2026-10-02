@@ -12,6 +12,7 @@
 
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
+import 'package:agrimore_ui/agrimore_ui.dart';
 
 import '../../../app/routes.dart';
 import '../../../providers/auth_provider.dart' as app_auth;
@@ -26,6 +27,44 @@ class DeleteAccountScreen extends StatefulWidget {
 enum _DeletionState { idle, submitting, refused, failed }
 
 class _DeleteAccountScreenState extends State<DeleteAccountScreen> {
+  late app_auth.AuthProvider _openingProvider;
+  String? _openingOwner;
+  int _openingVersion = -1;
+  bool _pendingSessionInvalidated = false;
+  bool get _sameProvider => mounted &&
+      identical(context.read<app_auth.AuthProvider>(), _openingProvider);
+  bool get _ownsForm => _sameProvider && _openingOwner != null &&
+      _openingProvider.isSessionCurrent(_openingOwner!, _openingVersion);
+  bool get _awaitingOwnSignOut => _sameProvider &&
+      _state == _DeletionState.submitting && !_pendingSessionInvalidated &&
+      _openingProvider.hasSignedOutSession;
+
+  @override
+  void initState() {
+    super.initState();
+    _openingProvider = context.read<app_auth.AuthProvider>();
+    _openingOwner = _openingProvider.currentUser?.uid;
+    _openingVersion = _openingProvider.sessionVersion;
+    _openingProvider.addListener(_observeSession);
+  }
+
+  void _observeSession() {
+    if (!mounted || _state != _DeletionState.submitting) return;
+    if (!_openingProvider.hasSignedOutSession &&
+        (_openingOwner == null ||
+         !_openingProvider.isSessionCurrent(_openingOwner!, _openingVersion))) {
+      // A new/renewed account invalidates this action permanently, even if
+      // that newer account subsequently signs out before the old reply.
+      _pendingSessionInvalidated = true;
+    }
+  }
+
+  @override
+  void dispose() {
+    _openingProvider.removeListener(_observeSession);
+    super.dispose();
+  }
+
   bool _acknowledged = false;
   _DeletionState _state = _DeletionState.idle;
   String? _errorMessage;
@@ -45,51 +84,59 @@ class _DeleteAccountScreenState extends State<DeleteAccountScreen> {
         'or associate accounting that depends on it stays correct',
   ];
 
-  // authProvider.deleteAccount() catches everything internally (see
-  // AuthProvider.deleteAccount()) and always returns a bool rather than
-  // throwing — so this method has exactly one success path and one
-  // failure path, both read off the provider afterward, never a caught
-  // exception here.
   Future<void> _submit() async {
+    if (!_ownsForm || !_acknowledged || _state == _DeletionState.submitting) return;
+    _pendingSessionInvalidated = false;
     setState(() {
       _state = _DeletionState.submitting;
       _errorMessage = null;
     });
+    try {
+      final ok = await _openingProvider.deleteAccount();
+      if (!mounted) return;
+      if (ok && _sameProvider && !_pendingSessionInvalidated &&
+          (_ownsForm || _openingProvider.hasSignedOutSession)) {
+        setState(() => _state = _DeletionState.idle);
+        if (ModalRoute.of(context)?.isCurrent == true) {
+          Navigator.of(context).pushNamedAndRemoveUntil(AppRoutes.login, (route) => false);
+        }
+        return;
+      }
+      _finishFailure(refused: !ok && _openingProvider.errorCode == 'failed-precondition');
+    } catch (_) {
+      if (!mounted) return;
+      _finishFailure();
+    }
+  }
 
-    final navigator = Navigator.of(context);
-    final authProvider = context.read<app_auth.AuthProvider>();
-    final ok = await authProvider.deleteAccount();
-    if (!mounted) return;
-
-    if (ok) {
-      // Clean, full-stack replacement with the signed-out route — never
-      // leaves this pushed screen (or anything below it) reachable via
-      // back, the same "don't strand the user on a dead route after
-      // sign-out" lesson apps/employee's ProfileScreen already proved,
-      // taken one step further since there is no session left to return
-      // to at all.
-      navigator.pushNamedAndRemoveUntil(AppRoutes.login, (route) => false);
+  void _finishFailure({bool refused = false}) {
+    if (!_ownsForm || _pendingSessionInvalidated) {
+      setState(() {
+        _state = _DeletionState.idle;
+        _errorMessage = null;
+      });
       return;
     }
-
-    // authProvider.errorCode carries the original
-    // FirebaseFunctionsException.code through AuthException — a
-    // 'failed-precondition' is one of deleteUserData's three refusal
-    // cases (each with its own specific, actionable message already
-    // written server-side); anything else (network failure, a genuine
-    // server error) is a plain failure with a generic retry banner.
-    final message = authProvider.error;
-    final isRefusal = authProvider.errorCode == 'failed-precondition';
     setState(() {
-      _state = isRefusal ? _DeletionState.refused : _DeletionState.failed;
-      _errorMessage = (message == null || message.isEmpty)
-          ? 'Something went wrong. Please try again.'
-          : message;
+      _state = refused ? _DeletionState.refused : _DeletionState.failed;
+      _errorMessage = refused
+          ? 'Your account cannot be deleted yet. Resolve open orders, balances or pending payouts, then try again.'
+          : 'Could not confirm account deletion. Please try again.';
     });
   }
 
   @override
   Widget build(BuildContext context) {
+    context.watch<app_auth.AuthProvider>();
+    if (!_ownsForm && !_awaitingOwnSignOut) {
+      return Scaffold(
+        appBar: AppBar(title: const Text('Delete account')),
+        body: const ErrorView(
+          useThemeColors: true,
+          message: 'Your session changed. Reopen your profile to continue.',
+        ),
+      );
+    }
     final isDark = Theme.of(context).brightness == Brightness.dark;
     final submitting = _state == _DeletionState.submitting;
 
@@ -175,7 +222,10 @@ class _DeleteAccountScreenState extends State<DeleteAccountScreen> {
               value: _acknowledged,
               onChanged: submitting
                   ? null
-                  : (v) => setState(() => _acknowledged = v ?? false),
+                  : (v) {
+                      if (!_ownsForm) return;
+                      setState(() => _acknowledged = v ?? false);
+                    },
               controlAffinity: ListTileControlAffinity.leading,
               contentPadding: EdgeInsets.zero,
               title: const Text(
@@ -216,7 +266,9 @@ class _DeleteAccountScreenState extends State<DeleteAccountScreen> {
             SizedBox(
               width: double.infinity,
               child: OutlinedButton(
-                onPressed: submitting ? null : () => Navigator.of(context).pop(),
+                onPressed: submitting ? null : () {
+                  if (_ownsForm) Navigator.of(context).pop();
+                },
                 style: OutlinedButton.styleFrom(
                   padding: const EdgeInsets.symmetric(vertical: 14),
                   shape: RoundedRectangleBorder(
@@ -271,9 +323,11 @@ class _DisclosureSection extends StatelessWidget {
             children: [
               Icon(icon, size: 18, color: color),
               const SizedBox(width: 8),
-              Text(
-                title,
-                style: TextStyle(fontSize: 14, fontWeight: FontWeight.w800, color: color),
+              Expanded(
+                child: Text(
+                  title,
+                  style: TextStyle(fontSize: 14, fontWeight: FontWeight.w800, color: color),
+                ),
               ),
             ],
           ),

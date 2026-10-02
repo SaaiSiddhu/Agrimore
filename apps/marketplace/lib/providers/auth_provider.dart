@@ -78,6 +78,11 @@ class AuthProvider with ChangeNotifier {
       owner == _authService.currentUserId &&
       version == _authEpoch;
 
+  // Missing profile data may also mean an account is still loading. Deletion
+  // forms must distinguish that from an observed signed-out SDK session.
+  bool get hasSignedOutSession => !_disposed &&
+      _authSubscription != null && _authService.currentUserId == null;
+
   bool get isLoggedIn => currentUser != null;
   bool get isAdmin => currentUser?.isAdmin ?? false;
   bool get isSeller => currentUser?.isSeller ?? false;
