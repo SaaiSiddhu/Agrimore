@@ -41,9 +41,10 @@ async function seedUser(uid) {
   await db.collection("users").doc(uid).set({ uid, profileCompleted: true });
 }
 
-async function seedProduct(id, salePrice, stock) {
+async function seedProduct(id, salePrice, stock, state = {}) {
   const doc = { name: `P ${id}`, salePrice, sellerId: "phase27-seller", images: [], isB2BEnabled: false };
   if (stock !== undefined) doc.stock = stock;
+  Object.assign(doc, state);
   await db.collection("products").doc(id).set(doc);
 }
 
@@ -161,6 +162,32 @@ async function main() {
     record("scenario7_cart_line_cap_enforced",
       !r.ok && r.code === "invalid-argument" && /more than/.test(r.message || ""),
       `code=${r.code} msg="${r.message}" (cap=${MAX_CART_LINES})`);
+  }
+
+  // F3.1: eligibility must be checked from the product snapshot used for
+  // price/stock, before creating any order or moving inventory.
+  for (const [scenario, state] of [
+    [8, { isActive: false }],
+    [9, { isActive: true, isDraft: true }],
+  ]) {
+    const uid = `phase27-u${scenario}`; const p = `phase27-p${scenario}`;
+    await seedUser(uid); await seedProduct(p, 100, 5, state);
+    const r = await call(payload([{ productId: p, quantity: 1 }]), { uid, token: {} });
+    const after = await prod(p);
+    const orders = await db.collection("orders").where("userId", "==", uid).get();
+    record(`scenario${scenario}_explicitly_unpurchasable_product_rejected`,
+      !r.ok && r.code === "failed-precondition" && after.stock === 5 && orders.empty,
+      `code=${r.code} stock=${after.stock} (must stay 5) orders=${orders.size}`);
+  }
+
+  {
+    const uid = "phase27-u10"; const p = "phase27-p10";
+    await seedUser(uid); await seedProduct(p, 100, 5, { isActive: true, isDraft: false });
+    const r = await call(payload([{ productId: p, quantity: 1 }]), { uid, token: {} });
+    const after = await prod(p);
+    record("scenario10_explicitly_active_product_remains_purchasable",
+      r.ok && after.stock === 4,
+      `ok=${r.ok} stock=${after.stock} (expect 4)`);
   }
 
   console.log("\n=== SUMMARY ===");

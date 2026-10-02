@@ -35,13 +35,14 @@ async function callAndCapture(wrapped, payload, auth) {
   }
 }
 
-async function seedProduct(productId, salePrice, sellerId) {
+async function seedProduct(productId, salePrice, sellerId, state = {}) {
   await db.collection("products").doc(productId).set({
     name: `Product ${productId}`,
     salePrice,
     sellerId,
     images: [],
     isB2BEnabled: false,
+    ...state,
   });
 }
 
@@ -385,6 +386,45 @@ async function main() {
     const pass = r.ok && r.result.creditApplied === 300;
     results.scenario10_categoryName_fallback_resolves_for_restricted_program = pass
       ? `PASSED — a category-restricted program credited a categoryName-only product in full (creditApplied=${r.result.creditApplied})`
+      : `FAILED — ${JSON.stringify(r)}`;
+    if (!pass) allPassed = false;
+  }
+
+  // F3.1 controls: the shared pricing path must reject explicit unavailable
+  // states while retaining the documented legacy defaults (covered by the
+  // existing quote scenarios whose products omit both fields).
+  for (const [scenario, state] of [
+    [11, { isActive: false }],
+    [12, { isActive: true, isDraft: true }],
+  ]) {
+    const customerId = `phaseC-elig-c${scenario}`;
+    const productId = `phaseC-elig-p${scenario}`;
+    await seedProduct(productId, 1000, `seller${scenario}`, state);
+    const r = await callAndCapture(
+      wrappedQuote,
+      { items: [{ productId, quantity: 1 }], orderMode: "B2C" },
+      auth(customerId)
+    );
+    const holds = await db.collection("product_credit_holds")
+      .where("customerId", "==", customerId).get();
+    const pass = !r.ok && r.code === "failed-precondition" && holds.empty;
+    results[`scenario${scenario}_explicitly_unpurchasable_quote_rejected`] = pass
+      ? "PASSED — unavailable product rejected before hold creation"
+      : `FAILED — ${JSON.stringify(r)}, holdsCount=${holds.size}`;
+    if (!pass) allPassed = false;
+  }
+  {
+    const customerId = "phaseC-elig-c13";
+    const productId = "phaseC-elig-p13";
+    await seedProduct(productId, 1000, "seller13", { isActive: true, isDraft: false });
+    const r = await callAndCapture(
+      wrappedQuote,
+      { items: [{ productId, quantity: 1 }], orderMode: "B2C" },
+      auth(customerId)
+    );
+    const pass = r.ok && Math.abs(r.result.total - 1000) <= 0.02;
+    results.scenario13_explicitly_active_quote_remains_available = pass
+      ? "PASSED — active product pricing remains available"
       : `FAILED — ${JSON.stringify(r)}`;
     if (!pass) allPassed = false;
   }

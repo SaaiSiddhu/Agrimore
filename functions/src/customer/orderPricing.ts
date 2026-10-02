@@ -342,6 +342,17 @@ export function computeOrderPricing(params: ComputeOrderPricingParams): OrderPri
     }
     const product = productSnap.data()!;
 
+    // Catalogue visibility is also the server-side purchase policy. Keep
+    // legacy products compatible with ProductModel.fromMap (missing
+    // isActive defaults true; missing isDraft defaults false), while
+    // refusing products the seller/admin explicitly hid or saved as drafts.
+    if (product.isActive === false || product.isDraft === true) {
+      throw new HttpsError(
+        "failed-precondition",
+        `Product ${item.productId} is not available for purchase`
+      );
+    }
+
     // SELLER-CATALOGUE-2: a line naming a variant is priced and stock-checked
     // against that variant. A line without one keeps the base-product
     // behaviour (older app versions never send variantId).
