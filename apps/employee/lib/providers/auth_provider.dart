@@ -33,12 +33,16 @@ class EmployeeAuthProvider extends ChangeNotifier {
   int _profileRead = 0;
   int _authVersion = 0;
   bool _disposed = false;
+  bool _observedAuth = false;
+  int _commandSerial = 0;
+  _EmployeeAuthAction? _activeCommand;
   bool _approved = false;
   String? _gateError;
   String? _pendingRefusal;
   UserModel? _user;
   bool _isLoading = true;
   String? _error;
+  int? _retryAfterMs;
   AssociateSignInMethod _signInMethod = AssociateSignInMethod.unknown;
 
   // Cached identity never grants access without its completed approval decision.
@@ -47,19 +51,22 @@ class EmployeeAuthProvider extends ChangeNotifier {
   UserModel? get user =>
       _ownsProjection && _user?.uid == _auth.currentUser?.uid ? _user : null;
   bool get isLoading =>
-      !_disposed && (!_ownsProjection ? _auth.currentUser != null : _isLoading);
+      !_disposed &&
+      (_activeCommand != null ||
+          (!_ownsProjection ? _auth.currentUser != null : _isLoading));
   bool get isAuthenticated =>
       user?.isEmployee == true && _approved && error == null;
   bool get isEmployee => user?.isEmployee ?? false;
   String? get error => _ownsProjection ? _gateError ?? _error : null;
+  int? get retryAfterMs => _ownsProjection ? _retryAfterMs : null;
 
   EmployeeAuthProvider({
     FirebaseAuth? firebaseAuth,
     FirebaseFirestore? firestore,
     AuthService? authService,
-  }) : _auth = firebaseAuth ?? FirebaseAuth.instance,
-       _firestore = firestore ?? FirebaseFirestore.instance,
-       _authService = authService ?? AuthService() {
+  })  : _auth = firebaseAuth ?? FirebaseAuth.instance,
+        _firestore = firestore ?? FirebaseFirestore.instance,
+        _authService = authService ?? AuthService() {
     _profileOwner = _auth.currentUser?.uid;
     _listenForAuth();
   }
@@ -75,6 +82,8 @@ class EmployeeAuthProvider extends ChangeNotifier {
               firebaseUser?.uid != _auth.currentUser?.uid) {
             return;
           }
+          _activeCommand?.observe(firebaseUser?.uid);
+          _observedAuth = true;
           _bindOwner(firebaseUser?.uid, renew: true);
           final epoch = _sessionEpoch, read = _profileRead;
           notifyListeners();
@@ -115,6 +124,8 @@ class EmployeeAuthProvider extends ChangeNotifier {
   void _stopAuthUpdates(int version) {
     if (_disposed || version != _authVersion) return;
     ++_authVersion;
+    _observedAuth = false;
+    _retireCommand();
     _cancelAuthSubscription();
     _pendingRefusal = null;
     _bindOwner(_auth.currentUser?.uid, renew: true);
@@ -129,6 +140,9 @@ class EmployeeAuthProvider extends ChangeNotifier {
     if (_disposed || (!renew && owner == _profileOwner)) return;
     final refusal = owner == null ? _pendingRefusal : null;
     _pendingRefusal = null;
+    if (owner == null && refusal == null) {
+      _signInMethod = AssociateSignInMethod.unknown;
+    }
     _profileOwner = owner;
     ++_sessionEpoch;
     ++_profileRead;
@@ -136,6 +150,7 @@ class EmployeeAuthProvider extends ChangeNotifier {
     _approved = false;
     _gateError = refusal;
     _error = null;
+    _retryAfterMs = null;
     _isLoading = owner != null;
   }
 
@@ -180,6 +195,7 @@ class EmployeeAuthProvider extends ChangeNotifier {
     _approved = false;
     _gateError = null;
     _error = null;
+    _retryAfterMs = null;
     _isLoading = true;
     notifyListeners();
     if (!_readIsCurrent(uid, epoch, read)) return;
@@ -188,9 +204,8 @@ class EmployeeAuthProvider extends ChangeNotifier {
       // the corresponding approval check is still in flight.
       final document = await _readDocument('users', uid, epoch, read);
       if (!_readIsCurrent(uid, epoch, read)) return;
-      final profile = document.exists
-          ? UserModel.fromFirestore(document)
-          : null;
+      final profile =
+          document.exists ? UserModel.fromFirestore(document) : null;
       if (profile == null || !profile.isEmployee) {
         final subject = _signInMethod == AssociateSignInMethod.phone
             ? "This mobile number isn't registered"
@@ -252,6 +267,16 @@ class EmployeeAuthProvider extends ChangeNotifier {
     _approved = false;
     notifyListeners();
     if (!_readIsCurrent(uid, epoch, read)) return;
+    final action = _activeCommand;
+    // A sign-in callback may resolve the profile before the SDK call returns
+    // its credential. Defer destructive cleanup until that command binds the
+    // exact resulting UID; otherwise a queued callback can sign out a new user.
+    if (action != null && action.transitioned && !action.bound) return;
+    await _signOutRefusedOwner(uid, epoch, read);
+  }
+
+  Future<void> _signOutRefusedOwner(String uid, int epoch, int read) async {
+    if (!_readIsCurrent(uid, epoch, read)) return;
     await _auth.signOut();
     // The owned null callback normally carries the refusal. Accommodate the
     // SDK updating currentUser before delivering that callback as well.
@@ -273,41 +298,21 @@ class EmployeeAuthProvider extends ChangeNotifier {
   // could sign in before Phase 18 — removing this to make phone OTP "the"
   // path would have locked out every associate who can currently get in.
   Future<bool> signIn(String email, String password) async {
-    try {
-      _isLoading = true;
-      _error = null;
-      _signInMethod = AssociateSignInMethod.email;
-      notifyListeners();
-
-      final credential = await _auth.signInWithEmailAndPassword(
-        email: email,
-        password: password,
-      );
-
-      if (credential.user != null) {
-        await _loadUserData(credential.user!.uid);
-        // The role checks and approval checks are now handled in _loadUserData
-
-        // If _user is null after _loadUserData, it means they were rejected and signed out
-        if (_user == null) {
-          _isLoading = false;
-          notifyListeners();
-          return false;
-        }
-
-        // Update FCM token
-        await _updateFCMToken(credential.user!.uid);
-
-        return true;
-      }
-      return false;
-    } on FirebaseAuthException catch (e) {
-      _error = e.message ?? 'Authentication failed';
-      return false;
-    } finally {
-      _isLoading = false;
-      notifyListeners();
-    }
+    return await _runAuthCommand<bool>((action) async {
+          action.allowTransition();
+          _signInMethod = AssociateSignInMethod.email;
+          final credential = await _auth.signInWithEmailAndPassword(
+              email: email, password: password);
+          final uid = credential.user?.uid;
+          if (uid == null || !action.bindResult(uid)) return false;
+          await _loadUserData(uid);
+          if (!action.isCurrent) return false;
+          if (_pendingRefusal != null && _auth.currentUser?.uid == uid) {
+            await _signOutRefusedOwner(uid, _sessionEpoch, _profileRead);
+          }
+          return action.isCurrent && user?.uid == uid;
+        }, fallback: 'Authentication failed. Please try again.') ??
+        false;
   }
 
   // ============================================
@@ -326,26 +331,10 @@ class EmployeeAuthProvider extends ChangeNotifier {
   /// delivered by voice call). Returns null on failure, with [error] set.
   Future<PhoneOtpSendResult?> sendPhoneOtp(String phone,
       {String channel = 'sms'}) async {
-    try {
-      _isLoading = true;
-      _error = null;
-      notifyListeners();
-
-      return await _authService.sendPhoneOTP(phone, channel: channel);
-    } on AuthException catch (e) {
-      // Covers PhoneOtpUnavailableException and PhoneOtpRateLimitException
-      // too — both extend AuthException and both already carry a specific,
-      // user-appropriate message from the service layer.
-      _error = e.message;
-      return null;
-    } catch (e) {
-      debugPrint('Error sending associate OTP: $e');
-      _error = 'Failed to send OTP. Please try again.';
-      return null;
-    } finally {
-      _isLoading = false;
-      notifyListeners();
-    }
+    return _runAuthCommand<PhoneOtpSendResult?>((action) async {
+      final result = await _authService.sendPhoneOTP(phone, channel: channel);
+      return action.isCurrent ? result : null;
+    }, fallback: 'Failed to send OTP. Please try again.');
   }
 
   // ============================================
@@ -363,38 +352,27 @@ class EmployeeAuthProvider extends ChangeNotifier {
   /// real account and no account at all — see the `USER_NOT_FOUND` branch
   /// below for why that isn't automatic.
   Future<bool> sendPasswordReset(String email) async {
-    try {
-      _isLoading = true;
-      _error = null;
-      notifyListeners();
-
-      await _authService.sendPasswordResetEmail(email);
-      return true;
-    } on AuthException catch (e) {
-      // Verified directly against a real Auth emulator while building this
-      // phase: Firebase's sendOobCode endpoint genuinely DOES return a
-      // distinguishable EMAIL_NOT_FOUND for a non-existent account (a real,
-      // documented Firebase quirk, not the leak-proof behaviour it's often
-      // assumed to have) — AuthService surfaces this as
-      // UserNotFoundException, code 'USER_NOT_FOUND'. Treating it as a
-      // FAILURE like every other AuthException would let an attacker
-      // enumerate real associate emails by watching which ones "succeed"
-      // vs. "fail" here — exactly what this phase's own security invariant
-      // forbids. So this ONE code is deliberately normalised to success;
-      // every other AuthException still fails honestly.
-      if (e.code == 'USER_NOT_FOUND') {
-        return true;
-      }
-      _error = e.message;
-      return false;
-    } catch (e) {
-      debugPrint('Error sending associate password reset: $e');
-      _error = 'Failed to send reset email. Please try again.';
-      return false;
-    } finally {
-      _isLoading = false;
-      notifyListeners();
-    }
+    return await _runAuthCommand<bool>((action) async {
+          try {
+            await _authService.sendPasswordResetEmail(email);
+          } on AuthException catch (e) {
+            // Verified directly against a real Auth emulator while building this
+            // phase: Firebase's sendOobCode endpoint genuinely DOES return a
+            // distinguishable EMAIL_NOT_FOUND for a non-existent account (a real,
+            // documented Firebase quirk, not the leak-proof behaviour it's often
+            // assumed to have) — AuthService surfaces this as
+            // UserNotFoundException, code 'USER_NOT_FOUND'. Treating it as a
+            // FAILURE like every other AuthException would let an attacker
+            // enumerate real associate emails by watching which ones "succeed"
+            // vs. "fail" here — exactly what this phase's own security invariant
+            // forbids. So this ONE code is deliberately normalised to success;
+            // every other AuthException still fails honestly.
+            if (e.code == 'USER_NOT_FOUND') return action.isCurrent;
+            rethrow;
+          }
+          return action.isCurrent;
+        }, fallback: 'Failed to send reset email. Please try again.') ??
+        false;
   }
 
   /// Verifies [otp] and, on success, signs in and runs the same associate
@@ -410,34 +388,28 @@ class EmployeeAuthProvider extends ChangeNotifier {
     required String phone,
     required String otp,
   }) async {
-    try {
-      _isLoading = true;
-      _error = null;
-      _signInMethod = AssociateSignInMethod.phone;
-      notifyListeners();
-
-      await _authService.verifyPhoneOTP(phone: phone, otp: otp);
-
-      final uid = _auth.currentUser?.uid;
-      if (uid == null) {
-        _error = 'Sign in failed. Please try again.';
-        return false;
-      }
-
-      // Same gate as the email path — one implementation, not two.
-      await _loadUserData(uid);
-      return true;
-    } on AuthException catch (e) {
-      _error = e.message;
-      return false;
-    } catch (e) {
-      debugPrint('Error verifying associate OTP: $e');
-      _error = 'Failed to verify OTP. Please try again.';
-      return false;
-    } finally {
-      _isLoading = false;
-      notifyListeners();
-    }
+    return await _runAuthCommand<bool>((action) async {
+          _signInMethod = AssociateSignInMethod.phone;
+          action.allowTransition();
+          final result =
+              await _authService.verifyPhoneOTP(phone: phone, otp: otp);
+          final uid = result.user.uid;
+          if (!action.bindResult(uid)) return false;
+          await _loadUserData(uid);
+          if (!action.isCurrent &&
+              _auth.currentUser == null &&
+              _gateError != null) {
+            action.phoneRefused = true;
+            return true;
+          }
+          if (!action.isCurrent) return false;
+          if (_pendingRefusal != null && _auth.currentUser?.uid == uid) {
+            await _signOutRefusedOwner(uid, _sessionEpoch, _profileRead);
+            action.phoneRefused = true;
+          }
+          return action.isCurrent && user?.uid == uid || action.phoneRefused;
+        }, fallback: 'Failed to verify OTP. Please try again.') ??
+        false;
   }
 
   Future<void> _updateFCMToken(String uid, {int? epoch, int? read}) async {
@@ -483,24 +455,68 @@ class EmployeeAuthProvider extends ChangeNotifier {
   }
 
   Future<void> signOut() async {
-    if (_disposed) return;
-    final uid = _auth.currentUser?.uid, epoch = _sessionEpoch;
+    final uid = _auth.currentUser?.uid;
     if (uid == null || uid != _profileOwner) return;
-    await _auth.signOut();
+    await _runAuthCommand<bool>((action) async {
+      action.allowTransition(signingOut: true);
+      await _auth.signOut();
+      return action.isCurrent;
+    }, fallback: 'Could not sign out. Please try again.');
+  }
+
+  Future<T?> _runAuthCommand<T>(Future<T> Function(_EmployeeAuthAction) run,
+      {required String fallback}) async {
     if (_disposed ||
-        epoch != _sessionEpoch ||
-        _profileOwner != uid ||
-        (_auth.currentUser != null && _auth.currentUser?.uid != uid)) {
-      return;
+        !_observedAuth ||
+        _authSubscription == null ||
+        _activeCommand != null ||
+        !_ownsProjection) {
+      return null;
     }
-    _user = null;
-    _approved = false;
-    _signInMethod = AssociateSignInMethod.unknown;
+    final action = _EmployeeAuthAction(this, ++_commandSerial);
+    _activeCommand = action;
+    _isLoading = true;
+    _error = null;
+    _retryAfterMs = null;
     notifyListeners();
+    try {
+      if (!action.isCurrent) return null;
+      final result = await run(action);
+      return action.isCurrent || action.phoneRefused ? result : null;
+    } catch (error) {
+      if (!action.isCurrent || (action.transitioned && !action.bound)) {
+        return null;
+      }
+      if (error is PhoneOtpRateLimitException) {
+        _error = 'Too many verification requests. Please try again later.';
+        _retryAfterMs = error.retryAfterMs;
+      } else if (error is PhoneOtpUnavailableException) {
+        _error =
+            'Phone verification is currently unavailable. Please try again later.';
+      } else {
+        _error = fallback;
+      }
+      debugPrint('Associate authentication command failed');
+      return null;
+    } finally {
+      if (identical(_activeCommand, action)) {
+        _activeCommand = null;
+        _isLoading = false;
+        notifyListeners();
+      }
+    }
+  }
+
+  void _retireCommand() {
+    ++_commandSerial;
+    _activeCommand = null;
+    _isLoading = false;
   }
 
   void clearError() {
+    if (_disposed) return;
     _error = null;
+    _retryAfterMs = null;
     notifyListeners();
   }
 
@@ -513,6 +529,8 @@ class EmployeeAuthProvider extends ChangeNotifier {
   void dispose() {
     if (_disposed) return;
     _disposed = true;
+    _observedAuth = false;
+    _retireCommand();
     ++_authVersion;
     ++_sessionEpoch;
     ++_profileRead;
@@ -521,6 +539,63 @@ class EmployeeAuthProvider extends ChangeNotifier {
     _cancelAuthSubscription();
     super.dispose();
   }
+}
 
+class _EmployeeAuthAction {
+  _EmployeeAuthAction(this.provider, this.serial)
+      : observer = provider._authVersion,
+        epoch = provider._sessionEpoch,
+        owner = provider._profileOwner;
+  final EmployeeAuthProvider provider;
+  final int serial, observer;
+  int epoch;
+  String? owner;
+  bool allowed = false, signingOut = false, transitioned = false, bound = false;
+  bool phoneRefused = false;
+  bool get isCurrent =>
+      !provider._disposed &&
+      provider._observedAuth &&
+      provider._authSubscription != null &&
+      observer == provider._authVersion &&
+      serial == provider._commandSerial &&
+      identical(provider._activeCommand, this) &&
+      epoch == provider._sessionEpoch &&
+      owner == provider._profileOwner &&
+      owner == provider._auth.currentUser?.uid;
+  void allowTransition({bool signingOut = false}) {
+    if (!isCurrent) return;
+    allowed = true;
+    this.signingOut = signingOut;
+  }
 
+  void observe(String? uid) {
+    if (!allowed ||
+        transitioned ||
+        (signingOut ? uid != null : uid == null) ||
+        (bound && owner != uid)) {
+      provider._retireCommand();
+      return;
+    }
+    transitioned = true;
+    owner = uid;
+    epoch = provider._sessionEpoch + 1;
+  }
+
+  bool bindResult(String uid) {
+    if (provider._disposed ||
+        !provider._observedAuth ||
+        !allowed ||
+        observer != provider._authVersion ||
+        serial != provider._commandSerial ||
+        !identical(provider._activeCommand, this) ||
+        provider._auth.currentUser?.uid != uid ||
+        (transitioned && owner != uid)) {
+      return false;
+    }
+    owner = uid;
+    bound = true;
+    provider._bindOwner(uid);
+    epoch = provider._sessionEpoch;
+    return isCurrent;
+  }
 }
