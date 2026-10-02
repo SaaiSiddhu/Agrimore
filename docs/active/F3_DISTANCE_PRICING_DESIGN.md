@@ -1,6 +1,6 @@
 # F3 seller delivery pricing — approved design and implementation record
 
-**Status:** approved pricing contract implemented for standard mobile checkout; distance seller configuration UI, RFQ/credit-hold integration, production quota confirmation, and deployment remain open.
+**Status:** approved pricing contract implemented for standard mobile checkout and seller distance-fee configuration; alternate-order-path integration, production quota confirmation, and deployment remain open.
 **Date:** 2026-10-02
 **Scope:** customer delivery charge for each seller's portion of an order. Rider earnings, tax, and seller payout policy are separate concerns.
 
@@ -64,11 +64,11 @@ Approved direction: **base + per kilometre using server road distance without li
 - Mixed carts calculate each configured seller's own fee. The legacy client fee is allocated only among seller groups without a schedule. The ₹1,000 overall delivery cap still applies. Tax remains separate.
 - Marketplace checkout restores the Firestore address document ID, obtains the server quote before routing to payment, and passes the quote identity and legacy fee through standard and native-recovery payloads. No client-side Routes key exists.
 
-Focused verification on 2026-10-02: `npm run build`; 12 fee-math checks; 24 Firestore-emulator checks for authenticated quote creation, minimal route request, radius and coordinate failures, rate limiting, flat and mixed schedules, atomic order consumption, address mismatch/edit, and replay rejection. Tests use synthetic emulator documents and a mocked Routes response.
+Focused verification on 2026-10-02: `npm run build`; 12 fee-math checks; 24 Firestore-emulator checks for authenticated quote creation, minimal route request, radius and coordinate failures, rate limiting, flat and mixed schedules, atomic order consumption, address mismatch/edit, and replay rejection; and 25 seller delivery-validation unit tests. Emulator tests use synthetic documents and a mocked Routes response.
 
 ## Remaining release work
 
-- Seller profile UI and server-side seller-schedule write validation for distance settings are not yet implemented; malformed distance schedules fail closed at checkout.
+- Seller profile UI now supports base/rate entry, paise precision validation, and an explicit current-shop-location action. The seller's configured delivery radius is shown and validated. Malformed distance schedules fail closed at checkout.
 - Accepted RFQ order creation rejects seller-configured schedules until that flow supports authoritative pre-payment quotes. Product Credit quote creation rejects distance schedules; flat/slab schedules still use the shared per-seller calculation. Do not enable distance schedules for these alternate paths until they validate and consume the same quote semantics.
 - Confirm the actual Google Maps billing account, per-minute quotas, and budget alerts before enabling distance schedules in production. No billing, quota, secret, production data, or deployment settings were changed.
 - Backfill numeric inventory before enforcing fail-closed stock validation as separately selected by the owner. Tax remains an independent release blocker.

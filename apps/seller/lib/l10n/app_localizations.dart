@@ -4054,6 +4054,16 @@ abstract class AppLocalizations {
   /// **'By order value'**
   String get feeSlab;
 
+  String get feeDistance;
+  String get feeDistanceBase;
+  String get feeDistanceRate;
+  String get feeDistanceHelp;
+  String feeDistanceLocationReady(String radius);
+  String get feeDistanceLocationMissing;
+  String get feeSetLocation;
+  String get feeLocationSaved;
+  String get feeLocationFailed;
+
   /// No description provided for @feeAmount.
   ///
   /// In en, this message translates to:
@@ -4125,6 +4135,8 @@ abstract class AppLocalizations {
   /// In en, this message translates to:
   /// **'{count, plural, =1{By order value · 1 tier} other{By order value · {count} tiers}}'**
   String feeSummarySlab(int count);
+
+  String feeSummaryDistance(String base, String rate);
 
   /// No description provided for @postHint.
   ///
@@ -5883,6 +5895,11 @@ abstract class AppLocalizations {
   /// In en, this message translates to:
   /// **'Delivery fee can\'t be more than {max}.'**
   String feeErrTooHigh(String max);
+
+  String get feeErrDistanceBase;
+  String get feeErrDistanceRate;
+  String get feeErrPaisePrecision;
+  String get feeErrShopLocation;
 
   /// No description provided for @feeErrNoTiers.
   ///

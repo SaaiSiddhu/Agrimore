@@ -66,6 +66,13 @@ class SellerProfileScreen extends StatefulWidget {
 
 class _SellerProfileScreenState extends State<SellerProfileScreen> {
   Map<String, dynamic>? _seller;
+  bool get _hasValidShopCoordinates {
+    final latitude = _seller?['latitude'];
+    final longitude = _seller?['longitude'];
+    return latitude is num && longitude is num &&
+        latitude.isFinite && longitude.isFinite &&
+        latitude >= -90 && latitude <= 90 && longitude >= -180 && longitude <= 180;
+  }
   PayoutView _payout = const PayoutView(available: true);
   bool _loading = true;
   bool _loadFailed = false;
@@ -178,6 +185,8 @@ class _SellerProfileScreenState extends State<SellerProfileScreen> {
       context,
       uid: uid,
       initialSchedule: _seller?['deliveryFeeSchedule'] as Map<String, dynamic>?,
+      hasShopLocation: _hasValidShopCoordinates,
+      deliveryRadiusKm: BusinessDetails.fromSeller(_seller).deliveryRadiusKm,
       onSaved: _load,
     );
   }
