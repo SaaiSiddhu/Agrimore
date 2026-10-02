@@ -36,6 +36,7 @@ class AuthProvider with ChangeNotifier {
   String? _error;
   DateTime? _lastAuthCheck;
   bool _rememberMe = false;
+  int _rememberIntent = 0;
   int _failedLoginAttempts = 0;
   DateTime? _lockoutUntil;
 
@@ -254,13 +255,14 @@ class AuthProvider with ChangeNotifier {
   // LOAD STORED PREFERENCES
   // ============================================
   Future<void> _loadStoredPreferences() async {
+    final intent = _rememberIntent;
     try {
       final prefs = await SharedPreferences.getInstance();
-      if (_disposed) return;
+      if (_disposed || intent != _rememberIntent) return;
       _rememberMe = prefs.getBool(StorageConstants.keyRememberMe) ?? false;
-      debugPrint('💾 Loaded preferences: rememberMe=$_rememberMe');
+      debugPrint('Remember-email preference loaded');
     } catch (e) {
-      debugPrint('⚠️ Error loading preferences: $e');
+      debugPrint('Unable to load remember-email preference');
     }
   }
 
@@ -451,8 +453,10 @@ class AuthProvider with ChangeNotifier {
       final user = currentUser!;
       await _logAuthEvent(event, true, user.email, ownerId: owner);
       if (!current()) return false;
-      if (rememberEmail && _rememberMe) {
-        await _storeCredentials(email, isSessionCurrent: current);
+      if (rememberEmail) {
+        final intent = _rememberIntent;
+        await _storeCredentials(email, remember: _rememberMe,
+            isSessionCurrent: () => current() && intent == _rememberIntent);
         if (!current()) return false;
       }
       _resetFailedAttempts();
@@ -714,17 +718,22 @@ class AuthProvider with ChangeNotifier {
   // STORE CREDENTIALS (Remember Me)
   // ============================================
   Future<void> _storeCredentials(String email, {
+    bool remember = true,
     bool Function()? isSessionCurrent,
   }) async {
     try {
       final prefs = await SharedPreferences.getInstance();
       if (isSessionCurrent != null && !isSessionCurrent()) return;
-      await prefs.setString(StorageConstants.keyRememberEmail, email);
+      if (remember) {
+        await prefs.setString(StorageConstants.keyRememberEmail, email);
+      } else {
+        await prefs.remove(StorageConstants.keyRememberEmail);
+      }
       if (isSessionCurrent != null && !isSessionCurrent()) return;
-      await prefs.setBool(StorageConstants.keyRememberMe, true);
-      debugPrint('💾 Stored credentials for remember me: $email');
+      await prefs.setBool(StorageConstants.keyRememberMe, remember);
+      debugPrint('Remember-email preference saved');
     } catch (e) {
-      debugPrint('⚠️ Error storing credentials: $e');
+      debugPrint('Unable to save remember-email preference');
     }
   }
 
@@ -775,6 +784,10 @@ class AuthProvider with ChangeNotifier {
   // SET REMEMBER ME
   // ============================================
   void setRememberMe(bool value) {
+    if (_disposed) {
+      return;
+    }
+    ++_rememberIntent;
     _rememberMe = value;
     notifyListeners();
   }
