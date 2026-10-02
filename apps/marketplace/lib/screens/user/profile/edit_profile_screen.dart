@@ -4,7 +4,6 @@ import 'package:flutter/services.dart';
 import 'package:provider/provider.dart';
 import 'package:image_picker/image_picker.dart';
 import 'package:firebase_storage/firebase_storage.dart';
-import 'package:firebase_auth/firebase_auth.dart' as auth;
 import 'package:agrimore_ui/agrimore_ui.dart';
 import '../../../providers/auth_provider.dart' as app_auth;
 import '../../../providers/theme_provider.dart';
@@ -12,7 +11,9 @@ import 'change_phone_screen.dart';
 import 'change_email_screen.dart';
 
 class EditProfileScreen extends StatefulWidget {
-  const EditProfileScreen({Key? key}) : super(key: key);
+  const EditProfileScreen({Key? key, this.imagePicker}) : super(key: key);
+
+  final ImagePicker? imagePicker;
 
   @override
   State<EditProfileScreen> createState() => _EditProfileScreenState();
@@ -20,6 +21,15 @@ class EditProfileScreen extends StatefulWidget {
 
 class _EditProfileScreenState extends State<EditProfileScreen>
     with TickerProviderStateMixin, StickyHeaderCollapseMixin<EditProfileScreen> {
+  late app_auth.AuthProvider _openingProvider;
+  String? _openingOwner;
+  int _openingVersion = -1;
+
+  bool get _ownsForm => mounted &&
+      _openingOwner != null &&
+      identical(context.read<app_auth.AuthProvider>(), _openingProvider) &&
+      _openingProvider.isSessionCurrent(_openingOwner!, _openingVersion);
+
   final _formKey = GlobalKey<FormState>();
   final _nameController = TextEditingController();
   // Phone/email are shown read-only here, not free-text editable — see
@@ -145,14 +155,17 @@ class _EditProfileScreenState extends State<EditProfileScreen>
     _loadUserData();
     _animationController.forward();
     Future.delayed(const Duration(milliseconds: 200), () {
-      _avatarController.forward();
+      if (_ownsForm) _avatarController.forward();
     });
   }
 
   void _loadUserData() {
     final authProvider =
         Provider.of<app_auth.AuthProvider>(context, listen: false);
+    _openingProvider = authProvider;
     final user = authProvider.currentUser;
+    _openingOwner = user?.uid;
+    _openingVersion = authProvider.sessionVersion;
 
     if (user != null) {
       _nameController.text = user.name ?? '';
@@ -166,7 +179,7 @@ class _EditProfileScreenState extends State<EditProfileScreen>
   }
 
   void _showToastMessage(String message, {bool isSuccess = true}) {
-    if (!mounted) return;
+    if (!_ownsForm) return;
     _toastTimer?.cancel();
 
     setState(() {
@@ -179,9 +192,9 @@ class _EditProfileScreenState extends State<EditProfileScreen>
     _toastAnimationController.forward();
 
     _toastTimer = Timer(const Duration(milliseconds: 2800), () {
-      if (mounted) {
+      if (_ownsForm) {
         _toastAnimationController.reverse().then((_) {
-          if (mounted) setState(() => _showToast = false);
+          if (_ownsForm) setState(() => _showToast = false);
         });
       }
     });
@@ -200,39 +213,27 @@ class _EditProfileScreenState extends State<EditProfileScreen>
   }
 
   Future<String?> _uploadPhotoToFirebase(XFile imageFile) async {
+    if (!_ownsForm) return null;
+    final userId = _openingOwner!;
+    setState(() => _isUploadingImage = true);
     try {
-      final userId = auth.FirebaseAuth.instance.currentUser?.uid;
-
-      if (userId == null) {
-        _showToastMessage('❌ User ID not found', isSuccess: false);
-        return null;
-      }
-
-      debugPrint('📸 Uploading profile photo for user: $userId');
-
-      setState(() => _isUploadingImage = true);
-
-      final fileName =
-          'profile_${DateTime.now().millisecondsSinceEpoch}.jpg';
+      final bytes = await imageFile.readAsBytes();
+      if (!_ownsForm) return null;
+      final fileName = 'profile_${DateTime.now().millisecondsSinceEpoch}.jpg';
       final ref = FirebaseStorage.instance.ref('users/$userId/$fileName');
-
-      // Use bytes for web compatibility
-      final Uint8List bytes = await imageFile.readAsBytes();
-      final uploadTask = ref.putData(bytes, SettableMetadata(contentType: 'image/jpeg'));
-
-      await uploadTask;
+      await ref.putData(bytes, SettableMetadata(contentType: 'image/jpeg'));
+      if (!_ownsForm) return null;
       final downloadUrl = await ref.getDownloadURL();
-      debugPrint('✅ Photo uploaded: $downloadUrl');
-
-      setState(() => _isUploadingImage = false);
-      _showToastMessage('✅ Photo uploaded successfully');
-
+      if (!_ownsForm) return null;
       return downloadUrl;
-    } catch (e) {
-      debugPrint('❌ Upload error: $e');
-      setState(() => _isUploadingImage = false);
-      _showToastMessage('❌ Failed to upload photo', isSuccess: false);
+    } catch (_) {
+      if (_ownsForm) {
+        _showToastMessage('Could not upload your photo. Please try again.',
+            isSuccess: false);
+      }
       return null;
+    } finally {
+      if (_ownsForm) setState(() => _isUploadingImage = false);
     }
   }
 
@@ -247,6 +248,11 @@ class _EditProfileScreenState extends State<EditProfileScreen>
   }
 
   Future<void> _saveProfile() async {
+    if (!_ownsForm || _isLoading || _isUploadingImage) return;
+    final name = _nameController.text.trim();
+    final gender = _gender;
+    final image = _pickedImage;
+    final removed = _photoRemoved;
     if (!_formKey.currentState!.validate()) {
       _showToastMessage('⚠️ Please fix the errors in the form', isSuccess: false);
       return;
@@ -261,21 +267,21 @@ class _EditProfileScreenState extends State<EditProfileScreen>
       // Step 1: upload a newly-picked photo, or resolve a staged removal
       // to an explicit empty string (see _photoRemoved's own comment for
       // why null can't represent "cleared").
-      if (_pickedImage != null) {
-        photoUrl = await _uploadPhotoToFirebase(_pickedImage!);
+      if (image != null) {
+        photoUrl = await _uploadPhotoToFirebase(image);
+        if (!_ownsForm) return;
         if (photoUrl == null) {
           setState(() => _isLoading = false);
           return;
         }
-      } else if (_photoRemoved) {
+      } else if (removed) {
         photoUrl = '';
       }
 
-      if (!mounted) return;
+      if (!_ownsForm) return;
 
       // Step 2: Update profile via AuthProvider
-      final authProvider =
-          Provider.of<app_auth.AuthProvider>(context, listen: false);
+      final authProvider = _openingProvider;
 
       // phone/dateOfBirth are deliberately NOT sent here — phone is
       // read-only on this screen (ChangePhoneScreen's verified flow only),
@@ -283,35 +289,36 @@ class _EditProfileScreenState extends State<EditProfileScreen>
       // _changeDateOfBirth) since firestore.rules blocks it from this
       // plain profile-edit write regardless of value.
       final success = await authProvider.updateUserProfile(
-        name: _nameController.text.trim(),
+        name: name,
         photoUrl: photoUrl,
-        gender: _gender,
+        gender: gender,
       );
 
-      if (!mounted) return;
+      if (!_ownsForm) return;
 
       if (success) {
         _photoRemoved = false;
-        _showToastMessage('✅ Profile updated successfully!');
+        _showToastMessage('Profile updated successfully.');
         Future.delayed(const Duration(milliseconds: 800), () {
-          if (mounted) {
+          if (mounted && _ownsForm && ModalRoute.of(context)?.isCurrent == true) {
             Navigator.pop(context);
           }
         });
       } else {
-        _showToastMessage('❌ ${authProvider.error ?? 'Failed to update profile'}', isSuccess: false);
+        _showToastMessage('Could not update your profile. Please try again.', isSuccess: false);
         setState(() => _isLoading = false);
       }
     } catch (e) {
       debugPrint('❌ Save profile error: $e');
-      if (mounted) {
-        _showToastMessage('❌ Error: ${e.toString()}', isSuccess: false);
+      if (_ownsForm) {
+        _showToastMessage('Could not update your profile. Please try again.', isSuccess: false);
         setState(() => _isLoading = false);
       }
     }
   }
 
   Future<void> _pickDateOfBirth() async {
+    if (!_ownsForm || _isSavingDateOfBirth || _isLoading) return;
     final now = DateTime.now();
     final picked = await showDatePicker(
       context: context,
@@ -323,7 +330,7 @@ class _EditProfileScreenState extends State<EditProfileScreen>
       lastDate: DateTime(now.year - kMinimumProfileAgeYears, now.month, now.day),
       helpText: 'Select your date of birth',
     );
-    if (picked == null || !mounted) return;
+    if (picked == null || !mounted || !_ownsForm) return;
     if (_dateOfBirth != null &&
         picked.year == _dateOfBirth!.year &&
         picked.month == _dateOfBirth!.month &&
@@ -337,7 +344,7 @@ class _EditProfileScreenState extends State<EditProfileScreen>
     final authProvider = Provider.of<app_auth.AuthProvider>(context, listen: false);
     final success = await authProvider.changeDateOfBirth(dateOfBirth: picked);
 
-    if (!mounted) return;
+    if (!_ownsForm) return;
     setState(() => _isSavingDateOfBirth = false);
 
     if (success) {
@@ -345,13 +352,14 @@ class _EditProfileScreenState extends State<EditProfileScreen>
       _showToastMessage('✅ Date of birth updated');
     } else {
       _showToastMessage(
-        '❌ ${authProvider.error ?? 'Failed to update date of birth'}',
+        'Could not update your date of birth. Please try again.',
         isSuccess: false,
       );
     }
   }
 
   Future<void> _pickGender(bool isDark) async {
+    if (!_ownsForm || _isLoading) return;
     final selected = await showModalBottomSheet<String>(
       context: context,
       backgroundColor: Colors.transparent,
@@ -389,33 +397,53 @@ class _EditProfileScreenState extends State<EditProfileScreen>
               ),
               const SizedBox(height: 16),
               for (final option in _genderOptions)
-                RadioListTile<String>(
-                  value: option['value']!,
-                  groupValue: _gender,
-                  onChanged: (value) => Navigator.pop(context, value),
-                  title: Text(
-                    option['label']!,
-                    style: TextStyle(
-                      fontSize: 14,
-                      fontWeight: FontWeight.w600,
-                      color: isDark ? Colors.white : Colors.black87,
+                Material(
+                  color: Colors.transparent,
+                  child: RadioListTile<String>(
+                    value: option['value']!,
+                    groupValue: _gender,
+                    onChanged: (value) => Navigator.pop(context, value),
+                    title: Text(
+                      option['label']!,
+                      style: TextStyle(
+                        fontSize: 14,
+                        fontWeight: FontWeight.w600,
+                        color: isDark ? Colors.white : Colors.black87,
+                      ),
                     ),
+                    activeColor: isDark ? AppColors.primaryLight : const Color(0xFF2D7D3C),
+                    contentPadding: EdgeInsets.zero,
                   ),
-                  activeColor: isDark ? AppColors.primaryLight : const Color(0xFF2D7D3C),
-                  contentPadding: EdgeInsets.zero,
                 ),
             ],
           ),
         ),
       ),
     );
-    if (selected != null && mounted) {
+    if (selected != null && _ownsForm) {
       setState(() => _gender = selected);
     }
   }
 
+  Future<XFile?> _readPickedImage(ImagePicker picker, ImageSource source) async {
+    if (!_ownsForm) return null;
+    try {
+      final image = await picker.pickImage(
+        source: source, maxWidth: 1024, maxHeight: 1024, imageQuality: 85,
+      );
+      return _ownsForm ? image : null;
+    } catch (_) {
+      if (_ownsForm) {
+        _showToastMessage('Could not select your photo. Please try again.',
+            isSuccess: false);
+      }
+      return null;
+    }
+  }
+
   Future<void> _pickImage(bool isDark) async {
-    final ImagePicker picker = ImagePicker();
+    if (!_ownsForm || _isLoading || _isUploadingImage) return;
+    final ImagePicker picker = widget.imagePicker ?? ImagePicker();
     final hasExistingPhoto =
         _pickedImage != null || (_photoUrl != null && _photoUrl!.isNotEmpty);
     try {
@@ -460,15 +488,11 @@ class _EditProfileScreenState extends State<EditProfileScreen>
                         icon: Icons.camera_alt_outlined,
                         label: 'Camera',
                         onTap: () async {
+                          if (!_ownsForm) return;
                           Navigator.pop(context);
-                          final XFile? image = await picker.pickImage(
-                            source: ImageSource.camera,
-                            maxWidth: 1024,
-                            maxHeight: 1024,
-                            imageQuality: 85,
-                          );
+                          final XFile? image = await _readPickedImage(picker, ImageSource.camera);
 
-                          if (image != null) {
+                          if (image != null && _ownsForm) {
                             setState(() {
                               _pickedImage = image;
                             });
@@ -483,15 +507,11 @@ class _EditProfileScreenState extends State<EditProfileScreen>
                         icon: Icons.image_outlined,
                         label: 'Gallery',
                         onTap: () async {
+                          if (!_ownsForm) return;
                           Navigator.pop(context);
-                          final XFile? image = await picker.pickImage(
-                            source: ImageSource.gallery,
-                            maxWidth: 1024,
-                            maxHeight: 1024,
-                            imageQuality: 85,
-                          );
+                          final XFile? image = await _readPickedImage(picker, ImageSource.gallery);
 
-                          if (image != null) {
+                          if (image != null && _ownsForm) {
                             setState(() {
                               _pickedImage = image;
                             });
@@ -529,6 +549,7 @@ class _EditProfileScreenState extends State<EditProfileScreen>
         color: Colors.transparent,
         child: InkWell(
           onTap: () {
+            if (!_ownsForm) return;
             Navigator.pop(context);
             setState(() {
               _pickedImage = null;
@@ -1092,6 +1113,16 @@ class _EditProfileScreenState extends State<EditProfileScreen>
 
   @override
   Widget build(BuildContext context) {
+    context.watch<app_auth.AuthProvider>();
+    if (!_ownsForm) {
+      return Scaffold(
+        appBar: AppBar(title: const Text('Edit Profile')),
+        body: const ErrorView(
+          useThemeColors: true,
+          message: 'Your session changed. Reopen your profile to continue.',
+        ),
+      );
+    }
     final themeProvider = Provider.of<ThemeProvider>(context);
     final isDark = themeProvider.isDarkMode;
 
@@ -1184,6 +1215,7 @@ class _EditProfileScreenState extends State<EditProfileScreen>
                                   value: _phoneController.text,
                                   placeholder: 'Add mobile number',
                                   trailing: _buildCompactChangeButton(isDark, () async {
+                                    if (!_ownsForm) return;
                                     final newPhone = await Navigator.push<String>(
                                       context,
                                       MaterialPageRoute(
@@ -1192,7 +1224,7 @@ class _EditProfileScreenState extends State<EditProfileScreen>
                                         ),
                                       ),
                                     );
-                                    if (newPhone != null && newPhone.isNotEmpty && mounted) {
+                                    if (newPhone != null && newPhone.isNotEmpty && _ownsForm) {
                                       setState(() => _phoneController.text = newPhone);
                                       _showToastMessage('Mobile number updated to $newPhone');
                                     }
@@ -1206,6 +1238,7 @@ class _EditProfileScreenState extends State<EditProfileScreen>
                                   value: _emailController.text,
                                   placeholder: 'Add email address',
                                   trailing: _buildCompactChangeButton(isDark, () async {
+                                    if (!_ownsForm) return;
                                     final newEmail = await Navigator.push<String>(
                                       context,
                                       MaterialPageRoute(
@@ -1214,7 +1247,7 @@ class _EditProfileScreenState extends State<EditProfileScreen>
                                         ),
                                       ),
                                     );
-                                    if (newEmail != null && newEmail.isNotEmpty && mounted) {
+                                    if (newEmail != null && newEmail.isNotEmpty && _ownsForm) {
                                       setState(() => _emailController.text = newEmail);
                                       _showToastMessage('Email updated to $newEmail');
                                     }
