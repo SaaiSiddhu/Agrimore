@@ -855,55 +855,24 @@ class AuthProvider with ChangeNotifier {
     // (see firestore.rules' ownerCannotChangePrivilegedFields() comment).
     String? gender,
   }) async {
-    try {
-      _isLoading = true;
-      _error = null;
-      notifyListeners();
-
-      debugPrint('📝 Updating user profile...');
-
-      if (_currentUser == null) {
-        _error = 'No user logged in';
-        _isLoading = false;
-        notifyListeners();
-        return false;
-      }
-
-      // Create updated user model using copyWith
-      final updatedUser = _currentUser!.copyWith(
-        name: name ?? _currentUser!.name,
-        phone: phone ?? _currentUser!.phone,
-        photoUrl: photoUrl ?? _currentUser!.photoUrl,
-        gender: gender ?? _currentUser!.gender,
-      );
-
-      // Update in Firestore
-      await _firestore
-          .collection('users')
-          .doc(_currentUser!.uid)
-          .update(updatedUser.toMap());
-
-      // Update local state
-      _currentUser = updatedUser;
-      _error = null;
-
-      await _logAuthEvent('profile_update', true, _currentUser!.email);
-
-      debugPrint('✅ User profile updated successfully');
-
-      _isLoading = false;
-      notifyListeners();
-      return true;
-    } catch (e) {
-      debugPrint('❌ Error updating profile: $e');
-      _error = 'Failed to update profile: $e';
-      await _logAuthEvent(
-          'profile_update', false, _currentUser?.email ?? 'unknown',
-          error: e.toString());
-      _isLoading = false;
-      notifyListeners();
-      return false;
-    }
+    final user = currentUser;
+    if (user == null) return false;
+    return _runOwnedProfileCommand(
+      () async {
+        final updatedUser = user.copyWith(
+          name: name ?? user.name,
+          phone: phone ?? user.phone,
+          photoUrl: photoUrl ?? user.photoUrl,
+          gender: gender ?? user.gender,
+        );
+        await _firestore
+            .collection('users')
+            .doc(user.uid)
+            .update(updatedUser.toMap());
+        return updatedUser;
+      },
+      auditEvent: 'profile_update',
+    );
   }
 
   // ============================================
