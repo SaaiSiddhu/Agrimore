@@ -37,7 +37,7 @@ async function main() {
     await db.collection("users").doc(uid).set({ uid, profileCompleted });
   }
 
-  async function seedProduct(productId, sellerId, { stock = 1000, catalogPrice = 999 } = {}) {
+  async function seedProduct(productId, sellerId, { stock = 1000, catalogPrice = 999, ...state } = {}) {
     // catalogPrice is deliberately far from any RFQ finalPrice used below —
     // if the callable ever used this instead of the RFQ's own locked price,
     // the price-substitution scenario would catch it immediately.
@@ -50,6 +50,7 @@ async function main() {
       b2bMoq: 1,
       stock,
       images: [],
+      ...state,
     });
   }
 
@@ -414,6 +415,61 @@ async function main() {
     results.scenario14_payment_amount_mismatch_rejected = s;
     if (s !== "PASSED") allPassed = false;
     console.log("Scenario 14:", s);
+  }
+
+  // Scenarios 15–17 — RFQ conversion must apply the same explicit
+  // purchasability policy as standard checkout, while retaining legacy
+  // documents with absent flags.
+  async function purchasabilityScenario({ suffix, productState, expectSuccess }) {
+    const buyerId = `phase40-f3b-buyer-${suffix}`;
+    const productId = `phase40-f3b-product-${suffix}`;
+    const rfqId = `phase40-f3b-rfq-${suffix}`;
+    await seedUser(buyerId);
+    await seedProduct(productId, SELLER, { stock: 17, ...productState });
+    await seedAcceptedRfq(rfqId, {
+      buyerId,
+      sellerId: SELLER,
+      productId,
+      finalPrice: 42,
+      finalQuantity: 3,
+    });
+    const result = await call(
+      { rfqId, productId, quantity: 3, paymentMethod: "cod" },
+      { uid: buyerId, token: {} }
+    );
+    const rfqSnap = await db.collection("rfqs").doc(rfqId).get();
+    const productSnap = await db.collection("products").doc(productId).get();
+    const orderSnap = await db.collection("orders").where("rfqId", "==", rfqId).get();
+    if (expectSuccess) {
+      if (!result.ok) throw new Error(`expected RFQ conversion success, got ${JSON.stringify(result)}`);
+      if (rfqSnap.data().consumedByOrderId !== result.result.orderId) throw new Error("successful conversion did not consume RFQ");
+      if (productSnap.data().stock !== 14) throw new Error(`expected stock 14, got ${productSnap.data().stock}`);
+      if (orderSnap.size !== 1) throw new Error(`expected one order, got ${orderSnap.size}`);
+    } else {
+      if (result.ok || result.code !== "failed-precondition" || !/not available for purchase/i.test(result.message)) {
+        throw new Error(`expected purchasability refusal, got ${JSON.stringify(result)}`);
+      }
+      if (rfqSnap.data().consumedByOrderId) throw new Error("refused RFQ was consumed");
+      if (productSnap.data().stock !== 17) throw new Error(`refused conversion changed stock to ${productSnap.data().stock}`);
+      if (orderSnap.size !== 0) throw new Error(`refused conversion created ${orderSnap.size} order(s)`);
+    }
+  }
+
+  for (const scenario of [
+    { key: "scenario15_inactive_product_rejected", suffix: "inactive", productState: { isActive: false }, expectSuccess: false },
+    { key: "scenario16_draft_product_rejected", suffix: "draft", productState: { isActive: true, isDraft: true }, expectSuccess: false },
+    { key: "scenario17_explicit_active_product_allowed", suffix: "active", productState: { isActive: true, isDraft: false }, expectSuccess: true },
+  ]) {
+    let status;
+    try {
+      await purchasabilityScenario(scenario);
+      status = "PASSED";
+    } catch (e) {
+      status = `FAILED — ${e.message}`;
+      allPassed = false;
+    }
+    results[scenario.key] = status;
+    console.log(`${scenario.key}:`, status);
   }
 
   console.log("=== PHASE RFQ-3 SUMMARY ===");

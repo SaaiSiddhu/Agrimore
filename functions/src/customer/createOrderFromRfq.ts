@@ -248,6 +248,16 @@ export const createOrderFromRfq = onCall(
       }
       const product = productSnap.data()!;
 
+      // Match the shared checkout purchasability policy: an explicitly
+      // inactive or draft product cannot be ordered through the RFQ path.
+      // Missing flags remain compatible with legacy product documents.
+      if (product.isActive === false || product.isDraft === true) {
+        throw new HttpsError(
+          "failed-precondition",
+          `Product ${rfq.productId} is not available for purchase`
+        );
+      }
+
       // ============================================
       // PRICING — the RFQ's own locked finalPrice/finalQuantity, never
       // re-derived from the product's own catalogue price. deliveryCharge/
