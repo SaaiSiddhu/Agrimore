@@ -5,11 +5,13 @@ import '../../themes/app_text_styles.dart';
 class ErrorView extends StatelessWidget {
   final String message;
   final VoidCallback? onRetry;
+  final bool useThemeColors;
 
   const ErrorView({
     Key? key,
     required this.message,
     this.onRetry,
+    this.useThemeColors = false,
   }) : super(key: key);
 
   @override
@@ -36,14 +38,18 @@ class ErrorView extends StatelessWidget {
             const SizedBox(height: 30),
             Text(
               'Oops! Something went wrong',
-              style: AppTextStyles.headlineMedium,
+              style: AppTextStyles.headlineMedium.copyWith(
+                color: useThemeColors ? Theme.of(context).colorScheme.onSurface : null,
+              ),
               textAlign: TextAlign.center,
             ),
             const SizedBox(height: 12),
             Text(
               message,
               style: AppTextStyles.bodyLarge.copyWith(
-                color: AppColors.textSecondary,
+                color: useThemeColors
+                    ? Theme.of(context).colorScheme.onSurfaceVariant
+                    : AppColors.textSecondary,
               ),
               textAlign: TextAlign.center,
             ),
