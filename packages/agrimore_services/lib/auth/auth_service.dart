@@ -1478,8 +1478,12 @@ class _OwnedAuthSignIn {
         return;
       }
       _first = false;
-      // A queued snapshot of an older SDK owner is not the current episode.
-      if (uid != _auth.currentUser?.uid) return;
+      // A later event from another owner revokes this episode even when
+      // the current SDK owner has already returned before delivery.
+      if (uid != _auth.currentUser?.uid) {
+        _revoke();
+        return;
+      }
       if (!_allowed ||
           _transitionSeen ||
           uid == null ||
