@@ -123,6 +123,8 @@ class RfqProvider with ChangeNotifier {
     required String productId,
     required int quantity,
     required Map<String, dynamic> deliveryAddress,
+    double deliveryCharge = 0,
+    String? deliveryQuoteId,
   }) async {
     _isSubmitting = true;
     _error = null;
@@ -136,6 +138,9 @@ class RfqProvider with ChangeNotifier {
         'quantity': quantity,
         'deliveryAddress': deliveryAddress,
         'paymentMethod': 'cod',
+        'deliveryCharge': deliveryCharge,
+        'legacyDeliveryCharge': 0,
+        if (deliveryQuoteId != null) 'deliveryQuoteId': deliveryQuoteId,
       });
       return result.data['orderId'] as String;
     } on FirebaseFunctionsException catch (e) {

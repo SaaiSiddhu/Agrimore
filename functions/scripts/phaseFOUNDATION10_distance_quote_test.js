@@ -16,6 +16,8 @@ const { quoteDeliveryFees } = require("../lib/customer/deliveryDistanceQuote");
 const wrappedQuote = test.wrap(quoteDeliveryFees);
 const { createOrder } = require("../lib/customer/createOrder");
 const wrappedCreateOrder = test.wrap(createOrder);
+const { createOrderFromRfq } = require("../lib/customer/createOrderFromRfq");
+const wrappedCreateOrderFromRfq = test.wrap(createOrderFromRfq);
 
 let failures = 0;
 let passed = 0;
@@ -195,6 +197,32 @@ async function main() {
     ...orderRequest,
     data: { ...orderRequest.data, deliveryQuoteId: addressEditQuote.deliveryQuoteId, deliveryCharge: addressEditQuote.deliveryCharge },
   }), "failed-precondition");
+
+  const rfqUid = "f3c-user-distance-rfq";
+  await db.collection("users").doc(rfqUid).set({ uid: rfqUid, profileCompleted: true, role: "customer" });
+  await seedAddress("f3c-address-rfq", rfqUid);
+  await seedSeller("f3c-seller-rfq");
+  await seedProduct("f3c-product-rfq", "f3c-seller-rfq");
+  await db.collection("rfqs").doc("f3c-rfq-order").set({
+    buyerId: rfqUid, sellerId: "f3c-seller-rfq", productId: "f3c-product-rfq",
+    status: "accepted", finalPrice: 75, finalQuantity: 2,
+  });
+  const rfqQuote = await wrappedQuote({
+    data: { addressId: "f3c-address-rfq", orderMode: "B2C", legacyDeliveryCharge: 0, rfqId: "f3c-rfq-order", items: [{ productId: "f3c-product-rfq", quantity: 2 }] },
+    auth: { uid: rfqUid, token: {} },
+  });
+  const rfqOrderRequest = {
+    data: {
+      rfqId: "f3c-rfq-order", productId: "f3c-product-rfq", quantity: 2,
+      deliveryAddress: { id: "f3c-address-rfq", latitude: 12.99, longitude: 77.6, name: "Test", phone: "9999999999" },
+      deliveryCharge: rfqQuote.deliveryCharge, legacyDeliveryCharge: 0, deliveryQuoteId: rfqQuote.deliveryQuoteId,
+    },
+    auth: { uid: rfqUid, token: {} },
+  };
+  const rfqResult = await wrappedCreateOrderFromRfq(rfqOrderRequest);
+  const rfqOrder = await db.collection("orders").doc(rfqResult.orderId).get();
+  check("accepted RFQ uses its locked negotiated quantity and atomically consumes the distance quote", rfqOrder.data().deliveryCharge === 275 && rfqOrder.data().deliveryQuoteId === rfqQuote.deliveryQuoteId);
+  await expectCode("accepted RFQ and its route quote cannot be reused", () => wrappedCreateOrderFromRfq(rfqOrderRequest), "failed-precondition");
 
   const limitUser = "f3c-user-rate-limit";
   await seedAddress("f3c-address-rate-limit", limitUser);

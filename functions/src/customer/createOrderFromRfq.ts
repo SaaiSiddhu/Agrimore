@@ -42,6 +42,8 @@ import { isSpendableCapturedPayment } from "../common/paymentIntegrity";
 import * as crypto from "crypto";
 import { deliverySecretRef, newDeliverySecret } from "../delivery/deliverySecret";
 import { parseDeliveryFeeSchedule } from "./deliveryFeeSchedule";
+import { computeFeeFromSchedule, DeliveryFeeSchedule } from "./deliveryFeeSchedule";
+import { distanceScheduleFingerprint } from "./deliveryDistanceQuote";
 
 interface CreateOrderFromRfqData {
   rfqId: string;
@@ -54,6 +56,8 @@ interface CreateOrderFromRfqData {
   deliverySlot?: string;
   notes?: string;
   deliveryCharge?: number;
+  legacyDeliveryCharge?: number;
+  deliveryQuoteId?: string;
   tax?: number;
 }
 
@@ -235,11 +239,59 @@ export const createOrderFromRfq = onCall(
       // seller has paused their store.
       const rfqSellerSnap = await tx.get(db.collection("sellers").doc(sellerId));
       assertSellerAcceptingOrders(rfqSellerSnap.data(), Date.now());
-      if (parseDeliveryFeeSchedule(rfqSellerSnap.data()?.deliveryFeeSchedule)) {
-        throw new HttpsError(
-          "failed-precondition",
-          "This seller's delivery pricing is not yet supported for accepted quote orders"
-        );
+      const sellerSchedule = parseDeliveryFeeSchedule(rfqSellerSnap.data()?.deliveryFeeSchedule);
+      let sellerDistanceMeters: number | undefined;
+      let deliveryQuoteRef: FirebaseFirestore.DocumentReference | null = null;
+      let deliveryQuoteSnap: FirebaseFirestore.DocumentSnapshot | null = null;
+      if (sellerSchedule || data?.deliveryQuoteId) {
+        if (!sellerSchedule || typeof data.deliveryQuoteId !== "string" || !/^[A-Za-z0-9_-]{1,150}$/.test(data.deliveryQuoteId)) {
+          throw new HttpsError("failed-precondition", "Refresh this seller's delivery pricing before placing the order");
+        }
+        deliveryQuoteRef = db.collection("delivery_fee_quotes").doc(data.deliveryQuoteId);
+        deliveryQuoteSnap = await tx.get(deliveryQuoteRef);
+        const quote = deliveryQuoteSnap.data();
+        const address = data.deliveryAddress ?? {};
+        const addressId = typeof address.id === "string" ? address.id : "";
+        const savedAddressSnap = addressId ? await tx.get(db.collection("addresses").doc(addressId)) : null;
+        const savedAddress = savedAddressSnap?.data();
+        const fingerprint = (destination: { latitude: unknown; longitude: unknown } | null) => crypto.createHash("sha256")
+          .update(JSON.stringify({ addressId, destination })).digest("hex");
+        const requestDestination = typeof address.latitude === "number" && typeof address.longitude === "number"
+          ? { latitude: address.latitude, longitude: address.longitude } : null;
+        const savedDestination = typeof savedAddress?.latitude === "number" && typeof savedAddress?.longitude === "number"
+          ? { latitude: savedAddress.latitude, longitude: savedAddress.longitude } : null;
+        const expectedCartFingerprint = crypto.createHash("sha256").update(JSON.stringify([
+          { productId: rfq.productId as string, quantity: data.quantity, variantId: null },
+        ])).digest("hex");
+        const expiresAt = quote?.expiresAt as admin.firestore.Timestamp | undefined;
+        const entries = Array.isArray(quote?.distanceEntries) ? quote!.distanceEntries as Array<Record<string, unknown>> : [];
+        const rfqFingerprint = crypto.createHash("sha256").update(JSON.stringify({
+          rfqId, productId: rfq.productId, quantity: rfq.finalQuantity, finalPrice: rfq.finalPrice, sellerId,
+        })).digest("hex");
+        if (!deliveryQuoteSnap.exists || !savedAddressSnap?.exists || savedAddress?.userId !== uid ||
+            quote?.uid !== uid || quote?.addressId !== addressId ||
+            quote?.addressFingerprint !== fingerprint(requestDestination) || quote?.addressFingerprint !== fingerprint(savedDestination) ||
+            quote?.cartFingerprint !== expectedCartFingerprint || quote?.orderMode !== "B2C" ||
+            quote?.rfqContext?.rfqId !== rfqId || quote?.rfqContext?.fingerprint !== rfqFingerprint ||
+            JSON.stringify(quote?.sellerIds) !== JSON.stringify([sellerId]) ||
+            quote?.scheduleFingerprints?.[sellerId] !== distanceScheduleFingerprint(sellerSchedule) ||
+            quote?.legacyDeliveryChargePaise !== Math.round((data.legacyDeliveryCharge ?? 0) * 100) ||
+            !expiresAt || expiresAt.toMillis() <= Date.now() || quote?.consumedAt != null ||
+            entries.length !== (sellerSchedule.type === "distance" ? 1 : 0)) {
+          throw new HttpsError("failed-precondition", "Seller delivery pricing changed or expired. Refresh the quote.");
+        }
+        if (sellerSchedule.type === "distance") {
+          const entry = entries[0];
+          const seller = rfqSellerSnap.data() ?? {};
+          const originFingerprint = crypto.createHash("sha256")
+            .update(JSON.stringify({ latitude: seller.latitude, longitude: seller.longitude })).digest("hex");
+          if (entry.sellerId !== sellerId || entry.originFingerprint !== originFingerprint ||
+              entry.radiusKm !== seller.deliveryRadiusKm || !Number.isSafeInteger(entry.distanceMeters) ||
+              (entry.distanceMeters as number) > Math.round(Number(seller.deliveryRadiusKm) * 1000)) {
+            throw new HttpsError("failed-precondition", "Seller delivery pricing changed. Refresh the quote.");
+          }
+          sellerDistanceMeters = entry.distanceMeters as number;
+        }
       }
 
       // Profile-completeness — same server-side gate createOrder.ts enforces.
@@ -274,8 +326,18 @@ export const createOrderFromRfq = onCall(
       // ============================================
       const MAX_REASONABLE_DELIVERY_CHARGE = 1000;
       const MAX_REASONABLE_TAX = 1000;
-      const deliveryCharge =
-        typeof data?.deliveryCharge === "number" && data.deliveryCharge > 0 ? data.deliveryCharge : 0;
+      const finalPrice = rfq.finalPrice as number;
+      const finalQuantity = rfq.finalQuantity as number;
+      const subtotal = roundMoney(finalPrice * finalQuantity);
+      const calculatedScheduleFee = sellerSchedule
+        ? computeFeeFromSchedule(sellerSchedule, subtotal, sellerDistanceMeters)
+        : 0;
+      const deliveryCharge = sellerSchedule
+        ? calculatedScheduleFee
+        : typeof data?.deliveryCharge === "number" && data.deliveryCharge > 0 ? data.deliveryCharge : 0;
+      if (deliveryQuoteSnap?.exists && Math.round(deliveryCharge * 100) !== deliveryQuoteSnap.data()?.deliveryChargePaise) {
+        throw new HttpsError("failed-precondition", "Delivery amount changed. Refresh the quote before ordering.");
+      }
       const tax = typeof data?.tax === "number" && data.tax > 0 ? data.tax : 0;
       if (deliveryCharge > MAX_REASONABLE_DELIVERY_CHARGE) {
         throw new HttpsError(
@@ -290,9 +352,6 @@ export const createOrderFromRfq = onCall(
         );
       }
 
-      const finalPrice = rfq.finalPrice as number;
-      const finalQuantity = rfq.finalQuantity as number;
-      const subtotal = roundMoney(finalPrice * finalQuantity);
       const grandTotal = roundMoney(subtotal + deliveryCharge + tax);
 
       // Stock check — mirrors orderPricing.ts's own fail-open-on-missing
@@ -381,6 +440,13 @@ export const createOrderFromRfq = onCall(
       };
 
       const deliveryCode = generateVerificationCode();
+
+      if (deliveryQuoteRef && deliveryQuoteSnap?.exists) {
+        tx.update(deliveryQuoteRef, {
+          consumedAt: admin.firestore.FieldValue.serverTimestamp(),
+          consumedByOrderIds: [orderRef.id],
+        });
+      }
       tx.set(orderRef, {
         id: orderRef.id,
         userId: uid,
@@ -390,6 +456,7 @@ export const createOrderFromRfq = onCall(
         subtotal,
         discount: 0,
         deliveryCharge,
+        ...(data?.deliveryQuoteId ? { deliveryQuoteId: data.deliveryQuoteId } : {}),
         tax,
         total: grandTotal,
         paymentMethod,

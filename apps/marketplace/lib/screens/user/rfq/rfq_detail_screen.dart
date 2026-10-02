@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
+import 'package:cloud_functions/cloud_functions.dart';
 import 'package:firebase_auth/firebase_auth.dart';
 import 'package:agrimore_ui/agrimore_ui.dart';
 import '../../../providers/rfq_provider.dart';
@@ -84,6 +85,7 @@ class _RfqDetailScreenState extends State<RfqDetailScreen> {
   }
 
   Future<void> _respond(RfqModel rfq, String action) async {
+    final rfqProvider = context.read<RfqProvider>();
     if (action == 'accept') {
       final confirmed = await DialogHelper.showConfirmation(
         context,
@@ -105,7 +107,7 @@ class _RfqDetailScreenState extends State<RfqDetailScreen> {
       if (confirmed != true) return;
     }
     try {
-      await context.read<RfqProvider>().respond(rfqId: rfq.id, action: action);
+      await rfqProvider.respond(rfqId: rfq.id, action: action);
       if (mounted) {
         SnackbarHelper.showSuccess(context, action == 'accept' ? 'Offer accepted' : 'Quote request rejected');
       }
@@ -117,6 +119,7 @@ class _RfqDetailScreenState extends State<RfqDetailScreen> {
   }
 
   Future<void> _placeOrder(RfqModel rfq) async {
+    final rfqProvider = context.read<RfqProvider>();
     final addressProvider = context.read<AddressProvider>();
     final address = addressProvider.defaultAddress;
     if (address == null) {
@@ -135,11 +138,26 @@ class _RfqDetailScreenState extends State<RfqDetailScreen> {
     if (confirmed != true) return;
 
     try {
-      await context.read<RfqProvider>().placeOrder(
+      final deliveryQuote = await FirebaseFunctions.instance
+          .httpsCallable('quoteDeliveryFees')
+          .call<Map<String, dynamic>>({
+        'addressId': address.id,
+        'orderMode': 'B2C',
+        'legacyDeliveryCharge': 0,
+        'rfqId': rfq.id,
+        'items': [
+          {'productId': rfq.productId, 'quantity': rfq.finalQuantity ?? 0},
+        ],
+      });
+      if (!mounted) return;
+      final quoteData = deliveryQuote.data;
+      await rfqProvider.placeOrder(
             rfqId: rfq.id,
             productId: rfq.productId,
             quantity: rfq.finalQuantity ?? 0,
             deliveryAddress: address.toOrderMap(),
+            deliveryCharge: (quoteData['deliveryCharge'] as num?)?.toDouble() ?? 0,
+            deliveryQuoteId: quoteData['deliveryQuoteId'] as String?,
           );
       if (mounted) {
         SnackbarHelper.showSuccess(context, 'Order placed');

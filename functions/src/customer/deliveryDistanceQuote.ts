@@ -11,7 +11,7 @@ import * as crypto from "crypto";
 import { onCall, HttpsError } from "firebase-functions/v2/https";
 import { Timestamp } from "firebase-admin/firestore";
 import { normalizeOrderItems, OrderPricingItemInput, MAX_CART_LINES } from "./orderPricing";
-import { DeliveryFeeSchedule, parseDeliveryFeeSchedule } from "./deliveryFeeSchedule";
+import { computeFeeFromSchedule, DeliveryFeeSchedule, parseDeliveryFeeSchedule } from "./deliveryFeeSchedule";
 import { computeOrderPricing } from "./orderPricing";
 import { GOOGLE_ROUTES_API_KEY } from "../delivery/deliveryRoute";
 
@@ -131,6 +131,7 @@ export interface CreateDeliveryQuoteInput {
   rawItems: unknown;
   orderMode?: "B2C" | "B2B";
   legacyDeliveryCharge?: number;
+  rfqId?: string;
   nowMs: number;
   apiKey: string | (() => string);
   fetcher?: DistanceRouteFetcher;
@@ -165,6 +166,24 @@ export async function createDeliveryQuoteCore(
   }))].sort();
   const realSellerIds = sellerIds.filter((id) => id !== "_unassigned");
   if (realSellerIds.length === 0) return { deliveryQuoteId: null, deliveryCharge: null, sellerFees: [] };
+
+  let rfqContext: { rfqId: string; productId: string; quantity: number; finalPrice: number; sellerId: string; fingerprint: string } | null = null;
+  if (input.rfqId !== undefined) {
+    if (typeof input.rfqId !== "string" || !/^[A-Za-z0-9_-]{1,150}$/.test(input.rfqId) || items.length !== 1) {
+      throw new HttpsError("invalid-argument", "The accepted quote order is invalid");
+    }
+    const rfqSnap = await db.collection("rfqs").doc(input.rfqId).get();
+    const rfq = rfqSnap.data();
+    const item = items[0];
+    if (!rfqSnap.exists || rfq?.buyerId !== uid || rfq?.status !== "accepted" || rfq?.consumedByOrderId ||
+        rfq?.productId !== item.productId || rfq?.finalQuantity !== item.quantity ||
+        typeof rfq?.finalPrice !== "number" || !Number.isFinite(rfq.finalPrice) || rfq.finalPrice <= 0 ||
+        typeof rfq?.sellerId !== "string" || sellerIds[0] !== rfq.sellerId) {
+      throw new HttpsError("failed-precondition", "This accepted quote is no longer available");
+    }
+    const fingerprint = hash({ rfqId: input.rfqId, productId: item.productId, quantity: item.quantity, finalPrice: rfq.finalPrice, sellerId: rfq.sellerId });
+    rfqContext = { rfqId: input.rfqId, productId: item.productId, quantity: item.quantity, finalPrice: rfq.finalPrice, sellerId: rfq.sellerId, fingerprint };
+  }
 
   const sellerSnaps = await db.getAll(...realSellerIds.map((id) => db.collection("sellers").doc(id)));
   const sellers = new Map(sellerSnaps.map((snap) => [snap.id, snap.data() ?? {}]));
@@ -250,13 +269,21 @@ export async function createDeliveryQuoteCore(
   const orderMode = input.orderMode ?? "B2C";
   const legacyDeliveryCharge = typeof input.legacyDeliveryCharge === "number" && Number.isFinite(input.legacyDeliveryCharge)
     ? Math.max(0, input.legacyDeliveryCharge) : 0;
-  const pricing = computeOrderPricing({
-    items, productSnaps, orderMode, uid, couponSnap: null,
-    deliveryCharge: legacyDeliveryCharge,
-    sellerFeeSchedules,
-    sellerDistanceMeters,
-  });
-  const totalPaise = Math.round(pricing.deliveryCharge * 100);
+  let deliveryCharge: number;
+  if (rfqContext) {
+    const schedule = sellerFeeSchedules.get(rfqContext.sellerId);
+    deliveryCharge = schedule
+      ? computeFeeFromSchedule(schedule, rfqContext.finalPrice * rfqContext.quantity, sellerDistanceMeters.get(rfqContext.sellerId))
+      : legacyDeliveryCharge;
+  } else {
+    deliveryCharge = computeOrderPricing({
+      items, productSnaps, orderMode, uid, couponSnap: null,
+      deliveryCharge: legacyDeliveryCharge,
+      sellerFeeSchedules,
+      sellerDistanceMeters,
+    }).deliveryCharge;
+  }
+  const totalPaise = Math.round(deliveryCharge * 100);
   if (!Number.isSafeInteger(totalPaise) || totalPaise > 100000) {
     throw new HttpsError("failed-precondition", "Distance delivery fees exceed the allowed maximum");
   }
@@ -267,6 +294,7 @@ export async function createDeliveryQuoteCore(
     cartFingerprint,
     sellerIds,
     orderMode,
+    ...(rfqContext ? { rfqContext } : {}),
     legacyDeliveryChargePaise: Math.round(legacyDeliveryCharge * 100),
     scheduleFingerprints,
     distanceEntries: distanceEntries.map((entry) => ({
@@ -302,6 +330,7 @@ export const quoteDeliveryFees = onCall(
       rawItems: request.data?.items,
       orderMode: request.data?.orderMode === "B2B" ? "B2B" : "B2C",
       legacyDeliveryCharge: request.data?.legacyDeliveryCharge,
+      rfqId: request.data?.rfqId,
       nowMs,
       apiKey: () => GOOGLE_ROUTES_API_KEY.value(),
     });
