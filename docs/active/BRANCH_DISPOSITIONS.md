@@ -374,6 +374,8 @@ It is an IN-PLACE runtime bump (nodejs20 → nodejs22), not gen1→gen2, so no d
 
 | `agrimore/foundation-f2v-admin-owned-password-dialog` | `44618d273cf0e557481af33772ca8c9680c0f0b5` | `MERGED_DEVELOP` | 2026-10-02 | owner: continue entire foundation single-agent | F2.22 existing mounted admin password AlertDialog ownership/input lifecycle, safe feedback and current-dialog pop; minimal existing settings-group transparent Material wrapper for observed mounted ListTile assertion; read-only admin AuthProvider session getters, admin_settings_screen.dart, new foundation_admin_password_dialog_test.dart and ledger only. Develop34fb83ae; one checkout/no ACTIVE collision; unrelated26 untracked design files disjoint/preserved; external foundation-f2v-contract.json. Synthetic local widgets and empty-dialog previews only; no real account/token/credential operations. Deploy NONE server; owner admin build. | `d8c3189c2e935f148372504fb2d4e88731ef95f3` |
 
+| `agrimore/foundation-f2w-owned-signout-completion` | `N/A — pending` | `ACTIVE` | 2026-10-02 | owner: continue entire foundation single-agent | F2.23 customer/admin AuthProvider signout completion ownership, duplicate suppression and captured logout audit; two provider files and two new foundation_owned_signout_test.dart files plus ledger only. Develop e87b32f2; one checkout; no active overlap; owner design WIP disjoint. External foundation-f2w-contract.json. Local synthetic stream/transport fixtures only. Deploy NONE server; owner customer/admin builds. | `N/A — pending` |
+
 ## Promotions
 
 Fast-forward promotions between the three environment branches (`develop` → `staging` → `main`),
