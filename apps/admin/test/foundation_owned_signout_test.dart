@@ -148,8 +148,9 @@ void main() {
     messenger.setMockMessageHandler(setChannel, (message) async {
       final args = const _WriteRequestCodec().decodeMessage(message) as List;
       final request = args[1] as fs.DocumentReferenceRequest;
-      if (request.path.startsWith('auth_logs/'))
+      if (request.path.startsWith('auth_logs/')) {
         audits.add(Map<String, Object?>.from(request.data!));
+      }
       return fs.FirebaseFirestoreHostApi.codec.encodeMessage([null]);
     });
     auth = AuthProvider(authService: service);
