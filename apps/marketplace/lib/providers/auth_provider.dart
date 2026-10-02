@@ -21,6 +21,9 @@ class AuthProvider with ChangeNotifier {
   int _authListenVersion = 0;
   bool _disposed = false;
   bool _signOutInFlight = false;
+  bool _loginInFlight = false;
+  String? _loginObservedOwner;
+  bool _loginSuperseded = false;
   int _deletionRead = 0;
   bool _deletionInFlight = false;
 
@@ -176,6 +179,13 @@ class AuthProvider with ChangeNotifier {
 
   void _bindProfileOwner(String? owner, {bool renew = false}) {
     if (_disposed || (!renew && owner == _profileOwner)) return;
+    if (renew && _loginInFlight) {
+      if (_loginObservedOwner != null) {
+        _loginSuperseded = true;
+      } else if (owner != null) {
+        _loginObservedOwner = owner;
+      }
+    }
     _profileOwner = owner;
     _authEpoch++;
     _profileRead++;
@@ -324,130 +334,144 @@ class AuthProvider with ChangeNotifier {
     required String password,
     required String name,
     String? phone,
-  }) async {
-    try {
-      if (isLocked) {
-        _error = 'Too many attempts. Please try again later.';
-        notifyListeners();
-        return false;
-      }
-
-      _isLoading = true;
-      _error = null;
-      notifyListeners();
-
-      debugPrint('📝 Registering user: $email');
-
-      _currentUser = await _authService.registerWithEmail(
-        email: email.trim(),
-        password: password,
-        name: name.trim(),
-        phone: phone?.trim(),
-      );
-
-      await _logAuthEvent('registration', true, email);
-      if (_currentUser != null) await _updateFCMToken(_currentUser!.uid);
-
-      if (_rememberMe) {
-        await _storeCredentials(email);
-      }
-
-      debugPrint('✅ Registration successful: ${_currentUser?.uid}');
-
-      _resetFailedAttempts();
-      _isLoading = false;
-      notifyListeners();
-      return true;
-    } on FirebaseAuthException catch (e) {
-      debugPrint(
-          '❌ Firebase Auth Registration error: ${e.code} - ${e.message}');
-      _error = _getFirebaseErrorMessage(e.code);
-      _incrementFailedAttempts();
-      await _logAuthEvent('registration', false, email, error: e.code);
-      _isLoading = false;
-      notifyListeners();
-      return false;
-    } on AuthException catch (e) {
-      debugPrint('❌ Registration error: ${e.message}');
-      _error = e.message;
-      _incrementFailedAttempts();
-      await _logAuthEvent('registration', false, email, error: e.message);
-      _isLoading = false;
-      notifyListeners();
-      return false;
-    } catch (e) {
-      debugPrint('❌ Registration error: $e');
-      _error = 'Registration failed. Please try again.';
-      _incrementFailedAttempts();
-      await _logAuthEvent('registration', false, email, error: e.toString());
-      _isLoading = false;
-      notifyListeners();
-      return false;
-    }
-  }
+  }) =>
+      _runOwnedSignIn(
+          () async => PhoneAuthResult(
+              user: await _authService.registerWithEmail(
+                  email: email.trim(),
+                  password: password,
+                  name: name.trim(),
+                  phone: phone?.trim()),
+              isNewUser: false),
+          event: 'registration',
+          auditEmail: email,
+          fallback: 'Registration failed. Please try again.',
+          rememberEmail: email);
 
   // ============================================
   // SIGN IN WITH EMAIL
   // ============================================
-  Future<bool> signInWithEmail({
-    required String email,
-    required String password,
+  Future<bool> signInWithEmail(
+          {required String email, required String password}) =>
+      _runOwnedSignIn(
+          () async => PhoneAuthResult(
+              user: await _authService.signInWithEmail(
+                  email: email.trim(), password: password),
+              isNewUser: false),
+          event: 'login',
+          auditEmail: email,
+          fallback: 'Sign in failed. Please try again.',
+          rememberEmail: email);
+
+  Future<bool> _runOwnedSignIn(
+    Future<PhoneAuthResult> Function() command, {
+    required String event,
+    required String fallback,
+    String? failureEvent,
+    String? auditEmail,
+    String? rememberEmail,
   }) async {
+    final openingOwner = _authService.currentUserId;
+    final openingEpoch = _authEpoch, openingRead = _profileRead;
+    final observer = _authListenVersion;
+    bool observing() =>
+        !_disposed &&
+        _authSubscription != null &&
+        observer == _authListenVersion &&
+        !_loginSuperseded;
+    bool openingCurrent() =>
+        observing() &&
+        _profileReadIsCurrent(openingOwner, openingEpoch, openingRead);
+    if (_loginInFlight ||
+        _signOutInFlight ||
+        _deletionInFlight ||
+        !openingCurrent()) {
+      return false;
+    }
+    if (isLocked) {
+      _error = 'Too many attempts. Please try again later.';
+      notifyListeners();
+      return false;
+    }
+    _loginInFlight = true;
+    _loginObservedOwner = openingOwner;
+    _loginSuperseded = false;
+    _isLoading = true;
+    _error = null;
+    _errorCode = null;
+    notifyListeners();
+    bool Function() current = openingCurrent;
     try {
-      if (isLocked) {
-        _error = 'Too many attempts. Please try again later.';
-        notifyListeners();
+      if (!current()) {
         return false;
       }
-
-      _isLoading = true;
-      _error = null;
-      notifyListeners();
-
-      debugPrint('🔐 Signing in user: $email');
-
-      _currentUser = await _authService.signInWithEmail(
-        email: email.trim(),
-        password: password,
-      );
-
-      await _logAuthEvent('login', true, email);
-      if (_currentUser != null) await _updateFCMToken(_currentUser!.uid);
-
-      if (_rememberMe) {
-        await _storeCredentials(email);
+      final result = await command();
+      if (!observing() || result.user.uid != _authService.currentUserId) {
+        return false;
       }
-
-      debugPrint('✅ Sign in successful: ${_currentUser?.uid}');
-
+      final owner = result.user.uid;
+      _bindProfileOwner(owner);
+      final epoch = _authEpoch, read = _profileRead + 1;
+      current = () => observing() && _profileReadIsCurrent(owner, epoch, read);
+      await _loadOwnedProfile();
+      if (!current() || currentUser == null) {
+        return false;
+      }
+      final user = currentUser!;
+      _isNewUser = result.isNewUser;
+      await _logAuthEvent(event, true, auditEmail ?? user.email,
+          ownerId: owner);
+      if (!current()) {
+        return false;
+      }
+      await _updateFCMToken(owner, isSessionCurrent: current);
+      if (!current()) {
+        return false;
+      }
+      if (rememberEmail != null && _rememberMe) {
+        await _storeCredentials(rememberEmail, isSessionCurrent: current);
+        if (!current()) {
+          return false;
+        }
+      }
       _resetFailedAttempts();
       _isLoading = false;
       notifyListeners();
-      return true;
-    } on FirebaseAuthException catch (e) {
-      debugPrint('❌ Firebase Auth Sign in error: ${e.code} - ${e.message}');
-      _error = _getFirebaseErrorMessage(e.code);
-      _incrementFailedAttempts();
-      await _logAuthEvent('login', false, email, error: e.code);
+      return current() && currentUser != null;
+    } catch (failure) {
+      if (!openingCurrent()) {
+        return false;
+      }
+      final timedOut = failure is AuthException && failure.code == 'TIMEOUT';
+      _errorCode = timedOut ? 'TIMEOUT' : null;
+      _error = timedOut
+          ? 'Still verifying — this is taking longer than usual. Please wait a moment.'
+          : failure is FirebaseAuthException
+              ? _getFirebaseErrorMessage(failure.code)
+              : fallback;
+      if (!timedOut) {
+        _incrementFailedAttempts();
+      }
+      if (!openingCurrent()) {
+        return false;
+      }
+      await _logAuthEvent(failureEvent ?? event, false, auditEmail ?? 'unknown',
+          error: timedOut ? 'sign-in-timeout' : 'sign-in-failed',
+          ownerId: openingOwner);
+      if (!openingCurrent()) {
+        return false;
+      }
       _isLoading = false;
       notifyListeners();
       return false;
-    } on AuthException catch (e) {
-      debugPrint('❌ Sign in error: ${e.message}');
-      _error = e.message;
-      _incrementFailedAttempts();
-      await _logAuthEvent('login', false, email, error: e.message);
-      _isLoading = false;
-      notifyListeners();
-      return false;
-    } catch (e) {
-      debugPrint('❌ Sign in error: $e');
-      _error = 'Sign in failed. Please try again.';
-      _incrementFailedAttempts();
-      await _logAuthEvent('login', false, email, error: e.toString());
-      _isLoading = false;
-      notifyListeners();
-      return false;
+    } finally {
+      if (current() && _isLoading) {
+        _isLoading = false;
+        notifyListeners();
+      }
+      _loginObservedOwner = null;
+      _loginSuperseded = false;
+      _loginInFlight = false;
     }
   }
 
@@ -497,67 +521,13 @@ class AuthProvider with ChangeNotifier {
   // ============================================
   // VERIFY PHONE OTP (LOGIN / SIGNUP)
   // ============================================
-  Future<bool> verifyPhoneOTP({
-    required String phone,
-    required String otp,
-    String? name,
-  }) async {
-    try {
-      if (isLocked) {
-        _error = 'Too many attempts. Please try again later.';
-        notifyListeners();
-        return false;
-      }
-
-      _isLoading = true;
-      _error = null;
-      _errorCode = null;
-      notifyListeners();
-
-      debugPrint('🔐 Verifying OTP for: $phone');
-
-      final result = await _authService.verifyPhoneOTP(
-        phone: phone,
-        otp: otp,
-        name: name,
-      );
-
-      _currentUser = result.user;
-      _isNewUser = result.isNewUser;
-
-      await _logAuthEvent('phone_login', true, phone);
-      if (_currentUser != null) await _updateFCMToken(_currentUser!.uid);
-
-      debugPrint(
-          '✅ Phone login successful: ${_currentUser?.uid} (new: $_isNewUser)');
-
-      _resetFailedAttempts();
-      _isLoading = false;
-      notifyListeners();
-      return true;
-    } on AuthException catch (e) {
-      debugPrint('❌ Verify OTP error: ${e.message}');
-      _error = e.message;
-      _errorCode = e.code;
-      // A client-side timeout isn't evidence of a wrong code — the request
-      // may still be completing server-side (observed: sign-in landing tens
-      // of seconds after the client gave up). Don't count it toward lockout.
-      if (e.code != 'TIMEOUT') _incrementFailedAttempts();
-      await _logAuthEvent('phone_login', false, phone, error: e.message);
-      _isLoading = false;
-      notifyListeners();
-      return false;
-    } catch (e) {
-      debugPrint('❌ Verify OTP error: $e');
-      _error = e.toString().replaceAll('Exception: ', '');
-      _errorCode = null;
-      _incrementFailedAttempts();
-      await _logAuthEvent('phone_login', false, phone, error: e.toString());
-      _isLoading = false;
-      notifyListeners();
-      return false;
-    }
-  }
+  Future<bool> verifyPhoneOTP(
+          {required String phone, required String otp, String? name}) =>
+      _runOwnedSignIn(
+          () => _authService.verifyPhoneOTP(phone: phone, otp: otp, name: name),
+          event: 'phone_login',
+          auditEmail: phone,
+          fallback: 'Unable to verify the code. Please try again.');
 
   // ============================================
   // PROFILE COMPLETION (Phase 16)
@@ -674,66 +644,19 @@ class AuthProvider with ChangeNotifier {
   // ============================================
   // SIGN IN WITH GOOGLE
   // ============================================
-  Future<bool> signInWithGoogle() async {
-    try {
-      if (isLocked) {
-        _error = 'Too many attempts. Please try again later.';
-        notifyListeners();
-        return false;
-      }
-
-      _isLoading = true;
-      _error = null;
-      notifyListeners();
-
-      debugPrint('🔐 Signing in with Google...');
-
-      _currentUser = await _authService.signInWithGoogle();
-
-      await _logAuthEvent(
-          'google_login', true, _currentUser?.email ?? 'unknown');
-      if (_currentUser != null) await _updateFCMToken(_currentUser!.uid);
-
-      debugPrint('✅ Google sign in successful: ${_currentUser?.uid}');
-
-      _resetFailedAttempts();
-      _isLoading = false;
-      notifyListeners();
-      return true;
-    } on AuthException catch (e) {
-      debugPrint('❌ Google sign in error: ${e.message}');
-      _error = e.message;
-      _incrementFailedAttempts();
-      await _logAuthEvent('google_login', false, 'unknown', error: e.message);
-      _isLoading = false;
-      notifyListeners();
-      return false;
-    } catch (e) {
-      debugPrint('❌ Google sign in error: $e');
-      if (e.toString().contains('PlatformException')) {
-        _error = 'Google sign in cancelled';
-      } else {
-        _error = 'Google sign in failed. Please try again.';
-      }
-      _incrementFailedAttempts();
-      await _logAuthEvent('google_login', false, 'unknown',
-          error: e.toString());
-      _isLoading = false;
-      notifyListeners();
-      return false;
-    }
-  }
+  Future<bool> signInWithGoogle() => _runOwnedSignIn(
+      () async => PhoneAuthResult(
+          user: await _authService.signInWithGoogle(), isNewUser: false),
+      event: 'google_login',
+      fallback: 'Google sign in failed. Please try again.');
 
   // ============================================
   // AUTH-3: GOOGLE AS A PHONE-VERIFICATION-GATED LINKED PROVIDER
   // ============================================
-  // Thin wrappers over AuthService's own additive methods, mirroring the
-  // existing signInWithGoogle()/verifyPhoneOTP() pattern above: set
-  // loading/error, delegate, update _currentUser, notify. The screen owns
-  // which sheet state to show (phone / OTP / google-needs-phone) — this
-  // provider only ever holds the RESULT of each step, never that UI state,
-  // matching how phone/OTP already divide the work between login_screen.dart
-  // and this class.
+  // The screen owns the phone/OTP/Google-needs-phone sheet state and holds
+  // a pending credential in memory. Returning Google and phone sign-in use
+  // the same session-owned result path; acquisition/resolution and linking
+  // are separate steps in that journey.
 
   /// Acquires a Google credential without signing in yet. Returns null on
   /// cancellation OR failure — [error] distinguishes them for the caller
@@ -777,54 +700,15 @@ class AuthProvider with ChangeNotifier {
 
   /// Scenario A (returning, already linked): signs in directly, no OTP.
   Future<bool> signInWithLinkedGoogle(PendingGoogleIdentity pending,
-      {String? expectedUid}) async {
-    try {
-      if (isLocked) {
-        _error = 'Too many attempts. Please try again later.';
-        notifyListeners();
-        return false;
-      }
-
-      _isLoading = true;
-      _error = null;
-      notifyListeners();
-
-      _currentUser = await _authService.signInWithLinkedGoogleCredential(
-        pending,
-        expectedUid: expectedUid,
-      );
-      // A returning, already-linked Google identity is never a new
-      // customer by definition — unlike verifyPhoneOTP(), this path has no
-      // server-reported isNewUser to read, so it must be stated explicitly
-      // rather than left at whatever _isNewUser last held.
-      _isNewUser = false;
-
-      await _logAuthEvent('google_returning_signin_success', true,
-          _currentUser?.email ?? 'unknown');
-      if (_currentUser != null) await _updateFCMToken(_currentUser!.uid);
-
-      _resetFailedAttempts();
-      _isLoading = false;
-      notifyListeners();
-      return true;
-    } on AuthException catch (e) {
-      _error = e.message;
-      _incrementFailedAttempts();
-      await _logAuthEvent('google_returning_signin_failed', false, 'unknown',
-          error: e.message);
-      _isLoading = false;
-      notifyListeners();
-      return false;
-    } catch (e) {
-      _error = e.toString().replaceAll('Exception: ', '');
-      _incrementFailedAttempts();
-      await _logAuthEvent('google_returning_signin_failed', false, 'unknown',
-          error: e.toString());
-      _isLoading = false;
-      notifyListeners();
-      return false;
-    }
-  }
+          {String? expectedUid}) =>
+      _runOwnedSignIn(
+          () async => PhoneAuthResult(
+              user: await _authService.signInWithLinkedGoogleCredential(pending,
+                  expectedUid: expectedUid),
+              isNewUser: false),
+          event: 'google_returning_signin_success',
+          failureEvent: 'google_returning_signin_failed',
+          fallback: 'Google sign in failed. Please try again.');
 
   /// Scenario B, final step — called only once verifyPhoneOTP has already
   /// signed the caller in as the canonical phone-verified user. Attaches
@@ -1070,14 +954,21 @@ class AuthProvider with ChangeNotifier {
   // ============================================
   // STORE CREDENTIALS (Remember Me)
   // ============================================
-  Future<void> _storeCredentials(String email) async {
+  Future<void> _storeCredentials(String email,
+      {bool Function()? isSessionCurrent}) async {
     try {
       final prefs = await SharedPreferences.getInstance();
+      if (isSessionCurrent != null && !isSessionCurrent()) {
+        return;
+      }
       await prefs.setString(StorageConstants.keyRememberEmail, email);
+      if (isSessionCurrent != null && !isSessionCurrent()) {
+        return;
+      }
       await prefs.setBool(StorageConstants.keyRememberMe, true);
-      debugPrint('💾 Stored credentials for remember me: $email');
+      debugPrint('Remember-email preference saved');
     } catch (e) {
-      debugPrint('⚠️ Error storing credentials: $e');
+      debugPrint('Unable to save remember-email preference');
     }
   }
 
@@ -1092,22 +983,32 @@ class AuthProvider with ChangeNotifier {
   // after a logout without restarting the app) never gets a token saved,
   // because initialize() already ran with no user before the login screen
   // even rendered. Mirrors apps/delivery/lib/providers/auth_provider.dart's
-  // own _updateFCMToken(uid) exactly — same field shape, same arrayUnion —
-  // called explicitly right after every genuine new-session success below,
+  // token field shape and arrayUnion. The caller retains sign-in ownership
+  // across token retrieval before dispatching a write for that same owner,
   // independent of FCMService's app-startup timing.
-  Future<void> _updateFCMToken(String uid) async {
+  Future<void> _updateFCMToken(String uid,
+      {bool Function()? isSessionCurrent}) async {
     try {
+      if (isSessionCurrent != null && !isSessionCurrent()) {
+        return;
+      }
       final token = await FirebaseMessaging.instance.getToken();
+      if (isSessionCurrent != null && !isSessionCurrent()) {
+        return;
+      }
       if (token != null) {
         await _firestore.collection('users').doc(uid).set({
           'fcmTokens': FieldValue.arrayUnion([token]),
           'fcmToken': token,
           'lastTokenUpdate': FieldValue.serverTimestamp(),
         }, SetOptions(merge: true));
-        debugPrint('✅ FCM token saved for user: $uid');
+        if (isSessionCurrent != null && !isSessionCurrent()) {
+          return;
+        }
+        debugPrint('Notification token saved');
       }
     } catch (e) {
-      debugPrint('⚠️ FCM token save skipped: $e');
+      debugPrint('Notification token save skipped');
     }
   }
 
