@@ -364,6 +364,8 @@ It is an IN-PLACE runtime bump (nodejs20 → nodejs22), not gen1→gen2, so no d
 
 | `agrimore/foundation-f2q-owned-contact-wizards` | `ee9ffbb987ff2ae105d88067e773d7dc7202109a` | `MERGED_DEVELOP` | 2026-10-02 | owner: continue entire foundation single-agent | F2.17 opening-session guards in change_email_screen.dart and change_phone_screen.dart; freeze confirmed sent target; safe static errors, query/send/verify/save/countdown/navigation continuations; new foundation_contact_wizard_session_test.dart and ledger only. Clean develop353c9edb, one worktree, zero ACTIVE claims, no collision. Actual native advisory-query fixtures; fake provider only, no auth account/token or live delivery operations. External foundation-f2q-contract.json. Deploy NONE server; owner client publication. | `e7178ed875750a221ecde7e6061d0ed36f6a07cc` |
 
+| `agrimore/foundation-f2r-owned-completion-form` | `N/A — pending` | `ACTIVE` | 2026-10-02 | owner: continue entire foundation single-agent | F2.18 owned complete_profile_screen.dart form, freeze sent/verified email, safe static errors, date-picker and navigation lifecycle guards; repair observed security-note Row overflow using existing Expanded/Text; foundation_complete_profile_form_test.dart and ledger only. Clean developdbe9c501, one checkout, no ACTIVE collisions; external foundation-f2r-contract.json. Mock provider only; no account/token or real OTP operations. Deploy NONE server; owner client publication. | `N/A — pending` |
+
 ## Promotions
 
 Fast-forward promotions between the three environment branches (`develop` → `staging` → `main`),
