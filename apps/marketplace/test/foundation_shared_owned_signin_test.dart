@@ -494,6 +494,40 @@ void main() {
       expect(writes, isEmpty);
       expect(auth.uid, 'foreign');
     });
+    test(
+        '$method queued foreign-return cannot substitute its delayed intended event',
+        () async {
+      auth.publishResult = false;
+      final entered = Completer<void>(), release = Completer<void>();
+      var held = false;
+      hold = (stage) async {
+        if (stage == 'read' && !held) {
+          held = true;
+          entered.complete();
+          await release.future;
+        }
+      };
+      final pending = captured(method);
+      try {
+        await entered.future.timeout(const Duration(seconds: 3));
+        expect(auth.uid, 'signed_in');
+        // Both callbacks are queued before observers run. The current SDK owner
+        // is already back, but the intervening foreign episode must revoke this.
+        auth.emit('foreign');
+        auth.emit('signed_in');
+        await drain();
+        final readCount = reads.length, writeCount = writes.length;
+        release.complete();
+        expect(await pending, isException);
+        expect(reads.length, readCount);
+        expect(writes.length, writeCount);
+        expect(store.sets, isEmpty);
+        expect(auth.uid, 'signed_in');
+      } finally {
+        if (!release.isCompleted) release.complete();
+        await pending;
+      }
+    });
     test('$method SDK result may precede its one intended auth event',
         () async {
       auth.publishResult = false;
