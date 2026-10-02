@@ -368,6 +368,8 @@ It is an IN-PLACE runtime bump (nodejs20 → nodejs22), not gen1→gen2, so no d
 
 | `agrimore/foundation-f2s-owned-deletion-form` | `25ed008ea01315085b88a3f23582a5ec62c0f6c4` | `MERGED_DEVELOP` | 2026-10-02 | owner: continue entire foundation single-agent | F2.19 owned delete_account_screen.dart acknowledgement/result/lifecycle, read-only AuthProvider signed-out getter and local native getter tests, new foundation_delete_account_form_test.dart; wrap existing disclosure headings at phone width. Ledger only otherwise. Clean develop66d17f03, one checkout, no ACTIVE collision; external foundation-f2s-contract.json. Fake deletion outcomes only, no account/token/live operations. Deploy NONE server; owner client publication. | `f6f37f40b173b9359d072d4d34e1b70b3c0991cb` |
 
+| `agrimore/foundation-f2t-owned-password-action` | `N/A — pending` | `ACTIVE` | 2026-10-02 | owner: continue entire foundation single-agent | F2.20 existing shared AuthService.changePassword session ticket, marketplace AuthProvider owned command and ChangePasswordScreen form/lifecycle; foundation_password_command_session_test.dart and foundation_change_password_form_test.dart only new tests, ledger otherwise. Clean develop53a8efce, one checkout, no ACTIVE collision; external foundation-f2t-contract.json. Verification uses local synthetic fake-platform methods only, no account/token/credential operations; empty-form browser preview only. Shared five-app and actual merged full gate required. Deploy NONE server; owner client publication. | `N/A — pending` |
+
 ## Promotions
 
 Fast-forward promotions between the three environment branches (`develop` → `staging` → `main`),
