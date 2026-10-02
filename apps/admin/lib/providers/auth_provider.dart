@@ -56,6 +56,13 @@ class AuthProvider with ChangeNotifier {
           : _isInitializing);
   String? get error =>
       !_disposed && _profileOwner == _authService.currentUserId ? _error : null;
+  /// Account dialogs retain this owner/version across asynchronous actions.
+  int get sessionVersion => _authEpoch;
+  bool isSessionCurrent(String owner, int version) =>
+      !_disposed && _authSubscription != null &&
+      owner == _profileOwner && owner == _authService.currentUserId &&
+      version == _authEpoch;
+
   bool get isLoggedIn => currentUser != null;
   bool get isAdmin => currentUser?.isAdmin ?? false;
   bool get isSeller => currentUser?.isSeller ?? false;
