@@ -529,7 +529,9 @@ class _AdminSettingsScreenState extends State<AdminSettingsScreen> {
           ),
         ],
       ),
-      child: Column(
+      child: Material(
+        type: MaterialType.transparency,
+        child: Column(
         children: children.map((child) {
           final index = children.indexOf(child);
           return Column(
@@ -540,6 +542,7 @@ class _AdminSettingsScreenState extends State<AdminSettingsScreen> {
             ],
           );
         }).toList(),
+        ),
       ),
     );
   }
@@ -771,86 +774,9 @@ class _AdminSettingsScreenState extends State<AdminSettingsScreen> {
   }
 
   void _showChangePasswordDialog(AuthProvider authProvider) {
-    final currentPasswordController = TextEditingController();
-    final newPasswordController = TextEditingController();
-    final confirmPasswordController = TextEditingController();
-
-    showDialog(
+    showDialog<void>(
       context: context,
-      builder: (context) => AlertDialog(
-        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
-        title: const Text('Change Password'),
-        content: Column(
-          mainAxisSize: MainAxisSize.min,
-          children: [
-            TextField(
-              controller: currentPasswordController,
-              decoration: const InputDecoration(
-                labelText: 'Current Password',
-                prefixIcon: Icon(Icons.lock_outline),
-              ),
-              obscureText: true,
-            ),
-            const SizedBox(height: 16),
-            TextField(
-              controller: newPasswordController,
-              decoration: const InputDecoration(
-                labelText: 'New Password',
-                prefixIcon: Icon(Icons.lock),
-              ),
-              obscureText: true,
-            ),
-            const SizedBox(height: 16),
-            TextField(
-              controller: confirmPasswordController,
-              decoration: const InputDecoration(
-                labelText: 'Confirm Password',
-                prefixIcon: Icon(Icons.lock),
-              ),
-              obscureText: true,
-            ),
-          ],
-        ),
-        actions: [
-          TextButton(
-            onPressed: () => Navigator.pop(context),
-            child: const Text('Cancel'),
-          ),
-          ElevatedButton(
-            onPressed: () async {
-              final formError = changePasswordFormError(
-                currentPassword: currentPasswordController.text,
-                newPassword: newPasswordController.text,
-                confirmPassword: confirmPasswordController.text,
-              );
-              if (formError != null) {
-                SnackbarHelper.showError(context, formError);
-                return;
-              }
-
-              final success = await authProvider.changePassword(
-                currentPassword: currentPasswordController.text,
-                newPassword: newPasswordController.text,
-              );
-              if (!context.mounted) return;
-
-              if (success) {
-                Navigator.pop(context);
-                SnackbarHelper.showSuccess(
-                  context,
-                  'Password changed successfully!',
-                );
-              } else {
-                SnackbarHelper.showError(
-                  context,
-                  authProvider.error ?? 'Failed to change password',
-                );
-              }
-            },
-            child: const Text('Change'),
-          ),
-        ],
-      ),
+      builder: (_) => _OwnedPasswordDialog(auth: authProvider),
     );
   }
 
@@ -1175,3 +1101,129 @@ class _AdminSettingsScreenState extends State<AdminSettingsScreen> {
   }
 }
 
+
+// The existing credential form keeps its AlertDialog layout; ownership and
+// controller disposal belong to the mounted dialog rather than its caller.
+class _OwnedPasswordDialog extends StatefulWidget {
+  const _OwnedPasswordDialog({required this.auth});
+  final AuthProvider auth;
+  @override
+  State<_OwnedPasswordDialog> createState() => _OwnedPasswordDialogState();
+}
+
+class _OwnedPasswordDialogState extends State<_OwnedPasswordDialog> {
+  final _current = TextEditingController();
+  final _new = TextEditingController();
+  final _confirm = TextEditingController();
+  late final String? _owner;
+  late final int _epoch;
+  bool _busy = false;
+  bool get _ownsForm => mounted && _owner != null &&
+      identical(context.read<AuthProvider>(), widget.auth) &&
+      widget.auth.isSessionCurrent(_owner, _epoch) &&
+      widget.auth.currentUser?.isAdmin == true;
+
+  @override
+  void initState() {
+    super.initState();
+    _owner = widget.auth.currentUser?.uid;
+    _epoch = widget.auth.sessionVersion;
+    widget.auth.addListener(_clearExpired);
+  }
+
+  void _clearExpired() {
+    if (!mounted || _ownsForm) return;
+    _current.clear();
+    _new.clear();
+    _confirm.clear();
+  }
+
+  @override
+  void didChangeDependencies() {
+    super.didChangeDependencies();
+    _clearExpired();
+  }
+
+  @override
+  void dispose() {
+    widget.auth.removeListener(_clearExpired);
+    _current.dispose();
+    _new.dispose();
+    _confirm.dispose();
+    super.dispose();
+  }
+
+  Future<void> _submit() async {
+    if (!_ownsForm || _busy || ModalRoute.of(context)?.isCurrent != true) return;
+    final currentPassword = _current.text;
+    final newPassword = _new.text;
+    final formError = changePasswordFormError(
+      currentPassword: currentPassword,
+      newPassword: newPassword,
+      confirmPassword: _confirm.text,
+    );
+    if (formError != null) {
+      SnackbarHelper.showError(context, formError);
+      return;
+    }
+    setState(() => _busy = true);
+    var success = false;
+    try {
+      success = await widget.auth.changePassword(
+        currentPassword: currentPassword,
+        newPassword: newPassword,
+      );
+    } catch (_) {
+      // Static UI copy also covers an unexpected provider failure.
+    }
+    if (!mounted || !_ownsForm) return;
+    if (ModalRoute.of(context)?.isCurrent != true) {
+      setState(() => _busy = false);
+      return;
+    }
+    if (success) {
+      Navigator.pop(context);
+      SnackbarHelper.showSuccess(context, 'Password changed successfully!');
+    } else {
+      setState(() => _busy = false);
+      SnackbarHelper.showError(
+          context, 'Could not change your password. Please try again.');
+    }
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    context.watch<AuthProvider>();
+    final owned = _ownsForm;
+    return AlertDialog(
+      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
+      title: const Text('Change Password'),
+      content: SingleChildScrollView(
+        child: owned
+            ? Column(mainAxisSize: MainAxisSize.min, children: [
+                TextField(controller: _current, enabled: !_busy,
+                  decoration: const InputDecoration(labelText: 'Current Password', prefixIcon: Icon(Icons.lock_outline)), obscureText: true),
+                const SizedBox(height: 16),
+                TextField(controller: _new, enabled: !_busy,
+                  decoration: const InputDecoration(labelText: 'New Password', prefixIcon: Icon(Icons.lock)), obscureText: true),
+                const SizedBox(height: 16),
+                TextField(controller: _confirm, enabled: !_busy,
+                  decoration: const InputDecoration(labelText: 'Confirm Password', prefixIcon: Icon(Icons.lock)), obscureText: true),
+              ])
+            : const SizedBox(width: 320, height: 520, child: ErrorView(
+                message: 'Your session changed. Reopen settings to continue.',
+                useThemeColors: true)),
+      ),
+      actions: [
+        TextButton(
+          onPressed: owned && _busy ? null : () {
+            if (ModalRoute.of(context)?.isCurrent == true) Navigator.pop(context);
+          },
+          child: Text(owned ? 'Cancel' : 'Close'),
+        ),
+        if (owned) ElevatedButton(onPressed: _busy ? null : _submit,
+          child: Text(_busy ? 'Changing…' : 'Change')),
+      ],
+    );
+  }
+}

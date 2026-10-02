@@ -372,6 +372,8 @@ It is an IN-PLACE runtime bump (nodejs20 → nodejs22), not gen1→gen2, so no d
 
 | `agrimore/foundation-f2u-admin-owned-commands` | `835025aef06a6eb6a933d985c82ff2ae77de248c` | `MERGED_DEVELOP` | 2026-10-02 | owner: continue entire foundation single-agent | F2.21 admin existing profile/password commands opening owner/epoch/latest intent, captured-owner audit and safe failure. Exact scope admin/lib/providers/auth_provider.dart and admin/test/foundation_auth_session_test.dart plus this ledger. Clean develop13a27798; one checkout/no ACTIVE collision; external foundation-f2u-contract.json. Synthetic callbacks/native intercepted writes only, no real account/token/credential operations. Deploy NONE server; owner admin build. | `d1d893a3c04b997b3f5d7e0c06450405c0cd9f4e` |
 
+| `agrimore/foundation-f2v-admin-owned-password-dialog` | `N/A — pending` | `ACTIVE` | 2026-10-02 | owner: continue entire foundation single-agent | F2.22 existing mounted admin password AlertDialog ownership/input lifecycle, safe feedback and current-dialog pop; minimal existing settings-group transparent Material wrapper for observed mounted ListTile assertion; read-only admin AuthProvider session getters, admin_settings_screen.dart, new foundation_admin_password_dialog_test.dart and ledger only. Develop34fb83ae; one checkout/no ACTIVE collision; unrelated26 untracked design files disjoint/preserved; external foundation-f2v-contract.json. Synthetic local widgets and empty-dialog previews only; no real account/token/credential operations. Deploy NONE server; owner admin build. | `N/A — pending` |
+
 ## Promotions
 
 Fast-forward promotions between the three environment branches (`develop` → `staging` → `main`),
