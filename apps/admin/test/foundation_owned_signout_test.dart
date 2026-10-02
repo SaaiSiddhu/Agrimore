@@ -158,7 +158,9 @@ void main() {
     expect(auth.userUid, 'owner_a');
   });
   tearDown(() async {
-    if (!disposed) auth.dispose();
+    if (!disposed) {
+      auth.dispose();
+    }
     await drain();
     messenger.setMockMessageHandler(updateChannel, null);
     messenger.setMockMessageHandler(setChannel, null);
