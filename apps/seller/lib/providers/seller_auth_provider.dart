@@ -324,25 +324,18 @@ class SellerAuthProvider with ChangeNotifier {
     required String? requestStatus,
   }) {
     if (sellerStatus == 'suspended') return SellerAccess.suspended;
-    if (role == 'seller' &&
-        (sellerStatus == null || sellerStatus == 'approved'))
-      return SellerAccess.approved;
+    if (role == 'seller' && (sellerStatus == null || sellerStatus == 'approved')) return SellerAccess.approved;
     // A reopened application (rejected → draft) wins over the stale
     // users.sellerStatus 'rejected' left by the earlier review.
     if (requestStatus == 'draft') return SellerAccess.draft;
-    if (sellerStatus == 'rejected' ||
-        userSellerStatus == 'rejected' ||
-        requestStatus == 'rejected') {
+    if (sellerStatus == 'rejected' || userSellerStatus == 'rejected' || requestStatus == 'rejected') {
       return SellerAccess.rejected;
     }
     if (role == 'seller') {
-      if (sellerStatus == null || sellerStatus == 'approved')
-        return SellerAccess.approved;
+      if (sellerStatus == null || sellerStatus == 'approved') return SellerAccess.approved;
       if (sellerStatus == 'pending') return SellerAccess.pending;
     }
-    if (sellerStatus == 'pending' ||
-        userSellerStatus == 'pending' ||
-        requestStatus == 'pending') {
+    if (sellerStatus == 'pending' || userSellerStatus == 'pending' || requestStatus == 'pending') {
       return SellerAccess.pending;
     }
     if (sellerStatus == 'approved') {
@@ -528,21 +521,15 @@ class SellerAuthProvider with ChangeNotifier {
 
   // ── Internals ──────────────────────────────────────────────────────────────
 
-  SellerAuthError _classify(String message,
-      {SellerAuthError fallback = SellerAuthError.generic}) {
+  SellerAuthError _classify(String message, {SellerAuthError fallback = SellerAuthError.generic}) {
     final m = message.toLowerCase();
-    if (m.contains('network') ||
-        m.contains('timed out') ||
-        m.contains('too slow')) {
+    if (m.contains('network') || m.contains('timed out') || m.contains('too slow')) {
       return SellerAuthError.network;
     }
-    if (m.contains('invalid otp') ||
-        m.contains('expired') ||
-        m.contains('no otp')) {
+    if (m.contains('invalid otp') || m.contains('expired') || m.contains('no otp')) {
       return SellerAuthError.invalidCode;
     }
-    if (m.contains('already') && m.contains('account'))
-      return SellerAuthError.conflict;
+    if (m.contains('already') && m.contains('account')) return SellerAuthError.conflict;
     return fallback;
   }
 
