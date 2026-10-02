@@ -36,7 +36,15 @@ enum SellerAccess {
 }
 
 /// Outcome of a sign-in step, for screens to map onto localised copy.
-enum SellerAuthError { none, network, rateLimited, unavailable, invalidCode, conflict, generic }
+enum SellerAuthError {
+  none,
+  network,
+  rateLimited,
+  unavailable,
+  invalidCode,
+  conflict,
+  generic
+}
 
 /// Seller-app session: phone OTP (primary), Google linked to a verified phone
 /// (secondary) and email + password (legacy admin-created accounts only).
@@ -52,11 +60,11 @@ class SellerAuthProvider with ChangeNotifier {
     FirebaseFirestore? firestore,
     Future<String?> Function()? readPushToken,
     Future<void> Function(String)? savePendingPushToken,
-  }) : _authServiceOverride = authService,
-       _readPushToken = readPushToken,
-       _savePendingPushToken = savePendingPushToken,
-       _auth = firebaseAuth ?? FirebaseAuth.instance,
-       _firestore = firestore ?? FirebaseFirestore.instance {
+  })  : _authServiceOverride = authService,
+        _readPushToken = readPushToken,
+        _savePendingPushToken = savePendingPushToken,
+        _auth = firebaseAuth ?? FirebaseAuth.instance,
+        _firestore = firestore ?? FirebaseFirestore.instance {
     _sessionOwner = _auth!.currentUser?.uid;
     _listenForAuth();
   }
@@ -73,12 +81,12 @@ class SellerAuthProvider with ChangeNotifier {
     SellerAuthError error = SellerAuthError.none,
     String? phone,
     UserModel? user,
-  }) : _authServiceOverride = null,
-       _readPushToken = null,
-       _savePendingPushToken = null,
-       _auth = null,
-       _firestore = null,
-       _previewPhone = phone {
+  })  : _authServiceOverride = null,
+        _readPushToken = null,
+        _savePendingPushToken = null,
+        _auth = null,
+        _firestore = null,
+        _previewPhone = phone {
     _access = access;
     _pendingPhone = pendingPhone;
     _otpChannel = otpChannel;
@@ -101,6 +109,9 @@ class SellerAuthProvider with ChangeNotifier {
   int _accessRead = 0;
   int _authVersion = 0;
   bool _disposed = false;
+  bool _observedAuth = false;
+  int _commandSerial = 0;
+  _SellerAuthAction? _activeCommand;
 
   bool get _ownsProjection =>
       !_disposed && (_auth == null || _sessionOwner == _auth.currentUser?.uid);
@@ -131,8 +142,7 @@ class SellerAuthProvider with ChangeNotifier {
     return _access;
   }
 
-  UserModel? get currentUser =>
-      _ownsProjection &&
+  UserModel? get currentUser => _ownsProjection &&
           (_auth == null || _currentUser?.uid == _auth.currentUser?.uid)
       ? _currentUser
       : null;
@@ -144,19 +154,20 @@ class SellerAuthProvider with ChangeNotifier {
   /// the server gave one; screens prefer their own localised copy.
   String? get lastErrorMessage => _ownsProjection ? _lastErrorMessage : null;
   int? get retryAfterMs => _ownsProjection ? _retryAfterMs : null;
-  String? get pendingPhone => _pendingPhone;
+  String? get pendingPhone => _ownsProjection ? _pendingPhone : null;
   String get otpChannel => _otpChannel;
-  String? get testOtp => _testOtp;
-  bool get isTestMode => _testOtp != null;
-  PendingGoogleIdentity? get pendingGoogle => _pendingGoogle;
-  bool get googleLinkConflict => _googleLinkConflict;
+  String? get testOtp => _ownsProjection ? _testOtp : null;
+  bool get isTestMode => testOtp != null;
+  PendingGoogleIdentity? get pendingGoogle =>
+      _ownsProjection ? _pendingGoogle : null;
+  bool get googleLinkConflict => _ownsProjection && _googleLinkConflict;
 
   /// Phone on the signed-in account, for "no seller account on this number".
   String? get signedInPhone => _disposed
       ? null
       : _auth == null
-      ? _previewPhone ?? _currentUser?.phone
-      : currentUser?.phone ?? _auth.currentUser?.phoneNumber;
+          ? _previewPhone ?? _currentUser?.phone
+          : currentUser?.phone ?? _auth.currentUser?.phoneNumber;
 
   // ── Session ────────────────────────────────────────────────────────────────
 
@@ -166,11 +177,14 @@ class SellerAuthProvider with ChangeNotifier {
     try {
       final subscription = _auth.authStateChanges().listen(
         (user) {
-          if (_disposed ||
-              version != _authVersion ||
-              user?.uid != _auth.currentUser?.uid) {
+          if (_disposed || version != _authVersion) return;
+          if (user?.uid != _auth.currentUser?.uid) {
+            // Do not project a queued old owner, but revoke its command episode.
+            _retireCommand();
             return;
           }
+          _activeCommand?.observe(user?.uid);
+          _observedAuth = true;
           _bindOwner(user?.uid, renew: true);
           final epoch = _sessionEpoch, read = _accessRead;
           notifyListeners();
@@ -211,6 +225,8 @@ class SellerAuthProvider with ChangeNotifier {
   void _stopAuthUpdates(int version) {
     if (_disposed || version != _authVersion) return;
     ++_authVersion;
+    _observedAuth = false;
+    _retireCommand();
     _cancelAuthSubscription();
     _bindOwner(_auth?.currentUser?.uid, renew: true);
     if (_sessionOwner != null) {
@@ -223,6 +239,7 @@ class SellerAuthProvider with ChangeNotifier {
   void _bindOwner(String? uid, {bool renew = false}) {
     if (_disposed || (!renew && uid == _sessionOwner)) return;
     _sessionOwner = uid;
+    _clearPendingIdentity();
     ++_sessionEpoch;
     ++_accessRead;
     _currentUser = null;
@@ -307,18 +324,25 @@ class SellerAuthProvider with ChangeNotifier {
     required String? requestStatus,
   }) {
     if (sellerStatus == 'suspended') return SellerAccess.suspended;
-    if (role == 'seller' && (sellerStatus == null || sellerStatus == 'approved')) return SellerAccess.approved;
+    if (role == 'seller' &&
+        (sellerStatus == null || sellerStatus == 'approved'))
+      return SellerAccess.approved;
     // A reopened application (rejected → draft) wins over the stale
     // users.sellerStatus 'rejected' left by the earlier review.
     if (requestStatus == 'draft') return SellerAccess.draft;
-    if (sellerStatus == 'rejected' || userSellerStatus == 'rejected' || requestStatus == 'rejected') {
+    if (sellerStatus == 'rejected' ||
+        userSellerStatus == 'rejected' ||
+        requestStatus == 'rejected') {
       return SellerAccess.rejected;
     }
     if (role == 'seller') {
-      if (sellerStatus == null || sellerStatus == 'approved') return SellerAccess.approved;
+      if (sellerStatus == null || sellerStatus == 'approved')
+        return SellerAccess.approved;
       if (sellerStatus == 'pending') return SellerAccess.pending;
     }
-    if (sellerStatus == 'pending' || userSellerStatus == 'pending' || requestStatus == 'pending') {
+    if (sellerStatus == 'pending' ||
+        userSellerStatus == 'pending' ||
+        requestStatus == 'pending') {
       return SellerAccess.pending;
     }
     if (sellerStatus == 'approved') {
@@ -332,181 +356,198 @@ class SellerAuthProvider with ChangeNotifier {
 
   /// Sends a code to [phone] (`+91XXXXXXXXXX`). Returns true when the OTP
   /// step should open.
-  Future<bool> sendOtp(String phone, {String channel = 'sms'}) async {
-    _startBusy();
-    try {
-      final result = await _authService.sendPhoneOTP(phone, channel: channel);
-      _pendingPhone = phone;
-      _otpChannel = result.channel;
-      _testOtp = result.testOtp;
-      return true;
-    } on PhoneOtpRateLimitException catch (e) {
-      _fail(SellerAuthError.rateLimited, e.message);
-      _retryAfterMs = e.retryAfterMs;
-      return false;
-    } on PhoneOtpUnavailableException catch (e) {
-      _fail(SellerAuthError.unavailable, e.message);
-      return false;
-    } on AuthException catch (e) {
-      _fail(_classify(e.message), e.message);
-      return false;
-    } catch (e) {
-      _fail(SellerAuthError.generic, null);
-      return false;
-    } finally {
-      _endBusy();
-    }
-  }
+  Future<bool> sendOtp(String phone, {String channel = 'sms'}) =>
+      _runAuthCommand((action) async {
+        final result = await _authService.sendPhoneOTP(phone, channel: channel);
+        if (!action.isCurrent) return false;
+        _pendingPhone = phone;
+        _otpChannel = result.channel;
+        _testOtp = result.testOtp;
+        return true;
+      }, fallback: 'Could not send a verification code. Please try again.');
 
-  /// Verifies [otp] for the pending phone. On success the auth listener
-  /// resolves [access]; a pending Google identity is then linked (Scenario B).
   Future<bool> verifyOtp(String otp) async {
-    final phone = _pendingPhone;
+    final phone = _pendingPhone, google = _pendingGoogle;
     if (phone == null) return false;
-    _startBusy();
-    try {
-      await _authService.verifyPhoneOTP(phone: phone, otp: otp);
+    return _runAuthCommand((action) async {
+      action.allowTransition();
+      final result = await _authService.verifyPhoneOTP(phone: phone, otp: otp);
+      if (!action.bindResult(result.user.uid)) return false;
       _testOtp = null;
-      final google = _pendingGoogle;
       if (google != null) {
-        final linked = await _authService.linkPendingGoogleCredential(google);
-        _googleLinkConflict = !linked;
+        try {
+          final linked = await _authService.linkPendingGoogleCredential(google);
+          if (!action.isCurrent) return false;
+          _googleLinkConflict = !linked;
+        } catch (_) {
+          if (!action.isCurrent) return false;
+          // Linking cannot undo a confirmed phone sign-in.
+          _googleLinkConflict = true;
+        }
         _pendingGoogle = null;
       }
-      return true;
-    } on AuthException catch (e) {
-      _fail(_classify(e.message, fallback: SellerAuthError.invalidCode), e.message);
-      return false;
-    } catch (e) {
-      _fail(SellerAuthError.generic, null);
-      return false;
-    } finally {
-      _endBusy();
-    }
+      return action.isCurrent;
+    },
+        fallback: 'Could not verify the code. Please try again.',
+        fallbackError: SellerAuthError.invalidCode);
   }
 
-  /// Back to the phone step.
   void resetOtp() {
-    _pendingPhone = null;
-    _testOtp = null;
+    if (_disposed) return;
+    _retireCommand();
+    _clearPendingIdentity();
     _clearError();
     notifyListeners();
   }
 
-  // ── Google (secondary, phone-gated) ────────────────────────────────────────
-
-  /// Returns true when signed in straight away (a linked identity). Returns
-  /// false with [pendingGoogle] set when the phone must be verified first,
-  /// or false with [lastError] set on failure / cancellation.
-  Future<bool> continueWithGoogle() async {
-    _startBusy();
-    try {
-      final pending = await _authService.acquireGoogleCredential();
-      if (pending == null) return false; // cancelled by the user
-      final resolution = await _authService.resolveGoogleIdentity(pending);
-      if (resolution.linked) {
-        await _authService.signInWithLinkedGoogleCredential(
-          pending,
-          expectedUid: resolution.expectedUid,
-        );
-        return true;
-      }
-      _pendingGoogle = pending;
-      return false;
-    } on AuthException catch (e) {
-      _fail(_classify(e.message), e.message);
-      return false;
-    } catch (e) {
-      _fail(SellerAuthError.generic, null);
-      return false;
-    } finally {
-      _endBusy();
-    }
-  }
+  Future<bool> continueWithGoogle() => _runAuthCommand((action) async {
+        final pending = await _authService.acquireGoogleCredential();
+        if (!action.isCurrent || pending == null) return false;
+        final resolution = await _authService.resolveGoogleIdentity(pending);
+        if (!action.isCurrent) return false;
+        if (resolution.linked) {
+          action.allowTransition();
+          final result = await _authService.signInWithLinkedGoogleCredential(
+              pending,
+              expectedUid: resolution.expectedUid);
+          return action.bindResult(result.uid);
+        }
+        _pendingGoogle = pending;
+        return false;
+      }, fallback: 'Google sign in could not complete. Please try again.');
 
   void cancelGoogleLink() {
+    if (_disposed) return;
+    _retireCommand();
     _pendingGoogle = null;
     notifyListeners();
   }
 
   void acknowledgeGoogleConflict() {
+    if (_disposed) return;
     _googleLinkConflict = false;
     notifyListeners();
   }
 
-  // ── Email (legacy) ─────────────────────────────────────────────────────────
+  Future<bool> signInWithEmail(String email, String password) =>
+      _runAuthCommand((action) async {
+        action.allowTransition();
+        final result = await _authService.signInWithEmail(
+            email: email, password: password);
+        return action.bindResult(result.uid);
+      }, fallback: 'Sign in failed. Please try again.');
 
-  Future<bool> signInWithEmail(String email, String password) async {
-    _startBusy();
-    try {
-      await _authService.signInWithEmail(email: email, password: password);
-      return true;
-    } on AuthException catch (e) {
-      _fail(_classify(e.message), e.message);
-      return false;
-    } catch (e) {
-      _fail(SellerAuthError.generic, null);
-      return false;
-    } finally {
-      _endBusy();
-    }
-  }
-
-  Future<bool> sendPasswordReset(String email) async {
-    _startBusy();
-    try {
-      await _authService.sendPasswordResetEmail(email);
-      return true;
-    } on AuthException catch (e) {
-      _fail(_classify(e.message), e.message);
-      return false;
-    } catch (e) {
-      _fail(SellerAuthError.generic, null);
-      return false;
-    } finally {
-      _endBusy();
-    }
-  }
+  Future<bool> sendPasswordReset(String email) =>
+      _runAuthCommand((action) async {
+        try {
+          await _authService.sendPasswordResetEmail(email);
+        } on AuthException catch (error) {
+          // Known and unknown addresses have the same reset result.
+          if (error.code != 'USER_NOT_FOUND') rethrow;
+        }
+        return action.isCurrent;
+      }, fallback: 'Could not send a reset link. Please try again.');
 
   Future<void> signOut() async {
-    _pendingPhone = null;
-    _testOtp = null;
-    _pendingGoogle = null;
-    await _authService.signOut();
+    await _runAuthCommand((action) async {
+      action.allowTransition(signingOut: true);
+      _clearPendingIdentity();
+      await _authService.signOut();
+      return action.isCurrent;
+    }, fallback: 'Could not sign out. Please try again.');
   }
 
   void clearError() {
+    if (_disposed) return;
     _clearError();
     notifyListeners();
   }
 
+  Future<bool> _runAuthCommand(
+    Future<bool> Function(_SellerAuthAction action) command, {
+    required String fallback,
+    SellerAuthError fallbackError = SellerAuthError.generic,
+  }) async {
+    if (_disposed ||
+        !_observedAuth ||
+        _subscription == null ||
+        _auth == null ||
+        !_ownsProjection ||
+        _activeCommand != null) {
+      return false;
+    }
+    final action = _SellerAuthAction(this, ++_commandSerial);
+    _activeCommand = action;
+    _busy = true;
+    _clearError();
+    notifyListeners();
+    try {
+      if (!action.isCurrent) return false;
+      final result = await command(action);
+      return action.isCurrent && result;
+    } catch (error) {
+      if (!action.isCurrent || (action.transitioned && !action.bound)) {
+        return false;
+      }
+      if (error is PhoneOtpRateLimitException) {
+        _fail(SellerAuthError.rateLimited,
+            'Too many verification requests. Please try again later.');
+        _retryAfterMs = error.retryAfterMs;
+      } else if (error is PhoneOtpUnavailableException) {
+        _fail(SellerAuthError.unavailable,
+            'Phone verification is currently unavailable. Please try again later.');
+      } else {
+        final kind = error is AuthException
+            ? _classify(error.message, fallback: fallbackError)
+            : fallbackError;
+        _fail(kind, fallback);
+      }
+      return false;
+    } finally {
+      // A retired command must not stop the spinner of its replacement.
+      if (identical(_activeCommand, action)) {
+        _activeCommand = null;
+        _busy = false;
+        notifyListeners();
+      }
+    }
+  }
+
+  void _clearPendingIdentity() {
+    _pendingPhone = null;
+    _testOtp = null;
+    _pendingGoogle = null;
+    _googleLinkConflict = false;
+  }
+
+  void _retireCommand() {
+    ++_commandSerial;
+    _activeCommand = null;
+    _busy = false;
+  }
+
   // ── Internals ──────────────────────────────────────────────────────────────
 
-  SellerAuthError _classify(String message, {SellerAuthError fallback = SellerAuthError.generic}) {
+  SellerAuthError _classify(String message,
+      {SellerAuthError fallback = SellerAuthError.generic}) {
     final m = message.toLowerCase();
-    if (m.contains('network') || m.contains('timed out') || m.contains('too slow')) {
+    if (m.contains('network') ||
+        m.contains('timed out') ||
+        m.contains('too slow')) {
       return SellerAuthError.network;
     }
-    if (m.contains('invalid otp') || m.contains('expired') || m.contains('no otp')) {
+    if (m.contains('invalid otp') ||
+        m.contains('expired') ||
+        m.contains('no otp')) {
       return SellerAuthError.invalidCode;
     }
-    if (m.contains('already') && m.contains('account')) return SellerAuthError.conflict;
+    if (m.contains('already') && m.contains('account'))
+      return SellerAuthError.conflict;
     return fallback;
   }
 
   void _setAccess(SellerAccess value) {
     _access = value;
-    notifyListeners();
-  }
-
-  void _startBusy() {
-    _busy = true;
-    _clearError();
-    notifyListeners();
-  }
-
-  void _endBusy() {
-    _busy = false;
     notifyListeners();
   }
 
@@ -532,9 +573,8 @@ class SellerAuthProvider with ChangeNotifier {
       return;
     }
     try {
-      final token =
-          await (_readPushToken?.call() ??
-              FirebaseMessaging.instance.getToken());
+      final token = await (_readPushToken?.call() ??
+          FirebaseMessaging.instance.getToken());
       if (token == null || !_readIsCurrent(uid, epoch, read)) return;
       await db.collection('users').doc(uid).set({
         'fcmTokens': FieldValue.arrayUnion([token]),
@@ -558,11 +598,76 @@ class SellerAuthProvider with ChangeNotifier {
   void dispose() {
     if (_disposed) return;
     _disposed = true;
+    _observedAuth = false;
+    _retireCommand();
+    _clearPendingIdentity();
     ++_sessionEpoch;
     ++_accessRead;
     ++_authVersion;
     _currentUser = null;
     _cancelAuthSubscription();
     super.dispose();
+  }
+}
+
+/// A provider-owned command episode. Only its explicitly allowed first SDK
+/// transition can move ownership; later callbacks revoke it even for one UID.
+class _SellerAuthAction {
+  _SellerAuthAction(this.provider, this.serial)
+      : observer = provider._authVersion,
+        epoch = provider._sessionEpoch,
+        owner = provider._sessionOwner;
+  final SellerAuthProvider provider;
+  final int serial, observer;
+  int epoch;
+  String? owner;
+  bool allowed = false, signingOut = false, transitioned = false, bound = false;
+
+  bool get isCurrent =>
+      !provider._disposed &&
+      provider._observedAuth &&
+      provider._subscription != null &&
+      observer == provider._authVersion &&
+      serial == provider._commandSerial &&
+      identical(provider._activeCommand, this) &&
+      epoch == provider._sessionEpoch &&
+      owner == provider._sessionOwner &&
+      owner == provider._auth?.currentUser?.uid;
+
+  void allowTransition({bool signingOut = false}) {
+    if (!isCurrent) return;
+    allowed = true;
+    this.signingOut = signingOut;
+  }
+
+  void observe(String? uid) {
+    if (!allowed ||
+        transitioned ||
+        (signingOut ? uid != null : uid == null) ||
+        (bound && owner != uid)) {
+      provider._retireCommand();
+      return;
+    }
+    transitioned = true;
+    owner = uid;
+    epoch = provider._sessionEpoch + 1;
+  }
+
+  bool bindResult(String uid) {
+    if (provider._disposed ||
+        !provider._observedAuth ||
+        !allowed ||
+        observer != provider._authVersion ||
+        serial != provider._commandSerial ||
+        !identical(provider._activeCommand, this) ||
+        provider._auth?.currentUser?.uid != uid ||
+        (transitioned && owner != uid)) {
+      return false;
+    }
+    owner = uid;
+    bound = true;
+    provider._bindOwner(uid);
+    epoch = provider._sessionEpoch;
+    return isCurrent;
   }
 }
