@@ -241,12 +241,15 @@ class AppRouter {
             animationType: SplashAnimationType.admin,
             onNavigation: (ctx) async {
               final auth = ctx.read<AuthProvider>();
+              final route = ModalRoute.of(ctx);
+              bool current() => ctx.mounted && route?.isCurrent == true &&
+                  identical(ctx.read<AuthProvider>(), auth);
               int waitCount = 0;
-              while (auth.isInitializing && waitCount < 30) {
+              while (current() && auth.isInitializing && waitCount < 30) {
                 await Future.delayed(const Duration(milliseconds: 100));
                 waitCount++;
               }
-              if (!ctx.mounted) return;
+              if (!ctx.mounted || !current()) return;
               if (!auth.isLoggedIn) {
                 ctx.go(AdminRoutes.auth);
               } else if (auth.isAdmin) {
