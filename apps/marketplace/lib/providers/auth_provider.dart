@@ -76,6 +76,13 @@ class AuthProvider with ChangeNotifier {
           : null;
   /// Mounted account forms can retain this version and owner across awaits.
   int get sessionVersion => _authEpoch;
+  /// Observed SDK identity only; this grants no profile or role access.
+  String? get sessionOwner {
+    final owner = _authService.currentUserId;
+    return !_disposed && _authSubscription != null && owner == _profileOwner
+        ? owner
+        : null;
+  }
   bool isSessionCurrent(String owner, int version) =>
       !_disposed &&
       _authSubscription != null &&

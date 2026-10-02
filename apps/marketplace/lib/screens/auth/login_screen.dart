@@ -13,7 +13,8 @@ import 'dart:convert';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:agrimore_ui/agrimore_ui.dart';
-import 'package:agrimore_services/agrimore_services.dart' show PendingGoogleIdentity;
+import 'package:agrimore_services/agrimore_services.dart'
+    show PendingGoogleIdentity;
 import 'package:provider/provider.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 import '../../providers/auth_provider.dart';
@@ -24,6 +25,51 @@ enum _AuthSheetState { phoneEntry, otpEntry }
 
 const int _kOtpLength = 6;
 const int _kResendCooldownSeconds = 30;
+
+/// A screen action owns one observed session; a login may establish it once.
+class _LoginAction {
+  _LoginAction(
+      this.auth, this.route, this.version, this.generation, this.signIn)
+      : owner = auth.sessionOwner,
+        epoch = auth.sessionVersion {
+    auth.addListener(_observe);
+  }
+  final AuthProvider auth;
+  final ModalRoute<dynamic>? route;
+  final int version;
+  final int generation;
+  bool signIn;
+  String? owner;
+  int epoch;
+  bool _retired = false;
+  bool _invalid = false;
+  void _observe() {
+    if (_retired || _invalid) return;
+    final next = auth.sessionOwner;
+    final nextEpoch = auth.sessionVersion;
+    if (signIn && owner == null && next != null) {
+      owner = next;
+      epoch = nextEpoch;
+    } else if (owner != next || epoch != nextEpoch) {
+      _invalid = true;
+    }
+  }
+
+  bool get current {
+    _observe();
+    return !_retired &&
+        !_invalid &&
+        (owner == null
+            ? auth.hasSignedOutSession
+            : auth.isSessionCurrent(owner!, epoch));
+  }
+
+  void retire() {
+    if (_retired) return;
+    _retired = true;
+    auth.removeListener(_observe);
+  }
+}
 
 class LoginScreen extends StatefulWidget {
   const LoginScreen({Key? key}) : super(key: key);
@@ -47,7 +93,8 @@ class _LoginScreenState extends State<LoginScreen> {
   // own, now living alongside the phone-entry fields in one State. ──
   final List<TextEditingController> _otpControllers =
       List.generate(_kOtpLength, (_) => TextEditingController());
-  final List<FocusNode> _otpFocusNodes = List.generate(_kOtpLength, (_) => FocusNode());
+  final List<FocusNode> _otpFocusNodes =
+      List.generate(_kOtpLength, (_) => FocusNode());
   Timer? _resendTimer;
   int _resendSecondsLeft = _kResendCooldownSeconds;
   bool _isVerifying = false;
@@ -81,6 +128,7 @@ class _LoginScreenState extends State<LoginScreen> {
 
   @override
   void dispose() {
+    _retireActions();
     _phoneFocusNode.removeListener(_onPhoneFocusChange);
     _phoneController.dispose();
     _phoneFocusNode.dispose();
@@ -95,10 +143,10 @@ class _LoginScreenState extends State<LoginScreen> {
   }
 
   Future<void> _loadRecentNumbers() async {
-    final prefs = await SharedPreferences.getInstance();
-    final raw = prefs.getString(StorageConstants.keyRecentPhoneNumbers);
-    if (raw == null || raw.isEmpty) return;
     try {
+      final prefs = await SharedPreferences.getInstance();
+      final raw = prefs.getString(StorageConstants.keyRecentPhoneNumbers);
+      if (raw == null || raw.isEmpty) return;
       final list = (jsonDecode(raw) as List).cast<String>();
       if (mounted) setState(() => _recentNumbers = list);
     } catch (_) {
@@ -110,15 +158,20 @@ class _LoginScreenState extends State<LoginScreen> {
   // suggestions, mirroring the OS "phone number hint" UX without needing any
   // SIM/telephony permissions.
   void _onPhoneFocusChange() {
-    if (_phoneFocusNode.hasFocus && !_autofillSheetShown && _recentNumbers.isNotEmpty) {
+    if (_phoneFocusNode.hasFocus &&
+        !_autofillSheetShown &&
+        _recentNumbers.isNotEmpty) {
       _autofillSheetShown = true;
       WidgetsBinding.instance.addPostFrameCallback((_) => _showAutofillSheet());
     }
   }
 
   Future<void> _showAutofillSheet() async {
+    if (!mounted || _busy) return;
+    final generation = _sheetGeneration;
+    final auth = _observedAuth;
+    final route = ModalRoute.of(context);
     _phoneFocusNode.unfocus();
-    if (!mounted) return;
 
     final selected = await showModalBottomSheet<String>(
       context: context,
@@ -129,7 +182,7 @@ class _LoginScreenState extends State<LoginScreen> {
       builder: (context) => _AutofillNumberSheet(numbers: _recentNumbers),
     );
 
-    if (!mounted) return;
+    if (!_sheetCurrent(generation, auth, route)) return;
 
     if (selected != null) {
       setState(() => _phoneController.text = selected);
@@ -142,39 +195,134 @@ class _LoginScreenState extends State<LoginScreen> {
     final v = value?.trim() ?? '';
     if (v.isEmpty) return 'Enter your mobile number';
     if (v.length != 10) return 'Enter a valid 10-digit mobile number';
-    if (!RegExp(r'^[6-9]\d{9}$').hasMatch(v)) return 'Enter a valid Indian mobile number';
+    if (!RegExp(r'^[6-9]\d{9}$').hasMatch(v)) {
+      return 'Enter a valid Indian mobile number';
+    }
     return null;
   }
 
+  bool get _busy =>
+      _isSubmitting ||
+      _isGoogleLoading ||
+      _isVerifying ||
+      _isResending ||
+      _isRequestingVoice;
+  AuthProvider? _observedAuth;
+  int? _observedEpoch;
+  int _actionVersion = 0;
+  int _sheetGeneration = 0;
+  final Set<_LoginAction> _actions = {};
+
+  @override
+  void didChangeDependencies() {
+    super.didChangeDependencies();
+    final auth = context.watch<AuthProvider>();
+    if (_observedAuth != null && !identical(_observedAuth, auth)) {
+      _retireActions();
+      _sheetState = _AuthSheetState.phoneEntry;
+      _pendingPhone = '';
+      _otpErrorMessage = null;
+    }
+    if (identical(_observedAuth, auth) && _observedEpoch != auth.sessionVersion &&
+        !_actions.any((action) => action.signIn && action.current)) {
+      _pendingGoogleIdentity = null;
+    }
+    _observedAuth = auth;
+    _observedEpoch = auth.sessionVersion;
+  }
+
+  void _clearBusy() {
+    _isSubmitting = _isGoogleLoading =
+        _isVerifying = _isResending = _isRequestingVoice = false;
+  }
+
+  void _retireActions() {
+    for (final action in _actions) {
+      action.retire();
+    }
+    _actions.clear();
+    _actionVersion++;
+    _sheetGeneration++;
+    _resendTimer?.cancel();
+    _pendingGoogleIdentity = null;
+    _clearBusy();
+  }
+
+  _LoginAction? _beginAction({bool signIn = false}) {
+    if (!mounted || _busy || ModalRoute.of(context)?.isCurrent != true) {
+      return null;
+    }
+    final auth = context.read<AuthProvider>();
+    final action = _LoginAction(auth, ModalRoute.of(context), ++_actionVersion,
+        _sheetGeneration, signIn);
+    if (!action.current) {
+      action.retire();
+      return null;
+    }
+    _actions.add(action);
+    return action;
+  }
+
+  bool _current(_LoginAction action) =>
+      mounted &&
+      identical(_observedAuth, action.auth) &&
+      action.route?.isCurrent == true &&
+      action.version == _actionVersion &&
+      action.generation == _sheetGeneration &&
+      action.current;
+
+  void _finish(_LoginAction action) {
+    action.retire();
+    _actions.remove(action);
+    if (mounted &&
+        identical(_observedAuth, action.auth) &&
+        action.version == _actionVersion) {
+      setState(_clearBusy);
+    }
+  }
+
+  bool _sheetCurrent(
+          int generation, AuthProvider? auth, ModalRoute<dynamic>? route, [int? epoch]) =>
+      mounted &&
+      generation == _sheetGeneration &&
+      identical(auth, _observedAuth) &&
+      (epoch == null || auth?.sessionVersion == epoch) &&
+      route?.isCurrent == true;
+
   Future<void> _handleContinue() async {
-    if (!_formKey.currentState!.validate()) return;
-
-    HapticFeedback.mediumImpact();
-    FocusScope.of(context).unfocus();
-
-    final phone = '+91${_phoneController.text.trim()}';
-    final authProvider = context.read<AuthProvider>();
-
-    setState(() => _isSubmitting = true);
-    final result = await authProvider.sendPhoneOTP(phone);
-    if (!mounted) return;
-    setState(() => _isSubmitting = false);
-
-    if (result == null) {
-      ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(
-          content: Text(authProvider.error ?? 'Failed to send OTP. Please try again.'),
-          backgroundColor: AppColors.error,
-        ),
-      );
+    if (_busy ||
+        _sheetState != _AuthSheetState.phoneEntry ||
+        _formKey.currentState?.validate() != true) {
       return;
     }
-
-    _pendingPhone = phone;
-    _enterOtpState(result.channel, autofillOtp: result.testOtp);
+    final action = _beginAction();
+    if (action == null) return;
+    HapticFeedback.mediumImpact();
+    FocusScope.of(context).unfocus();
+    final phone = '+91${_phoneController.text.trim()}';
+    setState(() => _isSubmitting = true);
+    try {
+      final result = await action.auth.sendPhoneOTP(phone);
+      if (!mounted || !_current(action)) return;
+      if (result == null) {
+        SnackbarHelper.showError(
+            context, 'Failed to send OTP. Please try again.');
+        return;
+      }
+      _pendingPhone = phone;
+      _enterOtpState(result.channel, autofillOtp: result.testOtp);
+    } catch (_) {
+      if (mounted && _current(action)) {
+        SnackbarHelper.showError(
+            context, 'Failed to send OTP. Please try again.');
+      }
+    } finally {
+      _finish(action);
+    }
   }
 
   void _enterOtpState(String channel, {String? autofillOtp}) {
+    _sheetGeneration++;
     for (final c in _otpControllers) {
       c.clear();
     }
@@ -185,131 +333,117 @@ class _LoginScreenState extends State<LoginScreen> {
       _sheetState = _AuthSheetState.otpEntry;
     });
     _startResendCountdown();
-
-    if (autofillOtp != null && autofillOtp.length == _kOtpLength) {
+    final generation = _sheetGeneration;
+    final auth = _observedAuth;
+    final epoch = auth?.sessionVersion;
+    final route = ModalRoute.of(context);
+    final autofill = autofillOtp != null && autofillOtp.length == _kOtpLength;
+    if (autofill) {
       for (int i = 0; i < _kOtpLength; i++) {
         _otpControllers[i].text = autofillOtp[i];
       }
-      WidgetsBinding.instance.addPostFrameCallback((_) {
-        if (!mounted) return;
-        _otpFocusNodes.last.requestFocus();
+    }
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      if (!_sheetCurrent(generation, auth, route, epoch)) return;
+      (autofill ? _otpFocusNodes.last : _otpFocusNodes.first).requestFocus();
+      if (autofill) {
         Future.delayed(const Duration(milliseconds: 350), () {
-          if (mounted && _sheetState == _AuthSheetState.otpEntry) {
+          if (_sheetCurrent(generation, auth, route, epoch) &&
+              _sheetState == _AuthSheetState.otpEntry) {
             _handleVerify();
           }
         });
-      });
-    } else {
-      // Auto-focus the first OTP cell once the transition has had a frame to
-      // mount the new content — matches the previous screen's own behavior
-      // (autofocus was implicit there because the whole screen was fresh).
-      WidgetsBinding.instance.addPostFrameCallback((_) {
-        if (mounted) _otpFocusNodes.first.requestFocus();
-      });
-    }
+      }
+    });
   }
 
-  // AUTH-3: "Continue with Google" — acquires a credential, asks
-  // resolveGoogleIdentity whether it is already linked, and only ever
-  // takes ONE of two paths: sign straight in (Scenario A) or require phone
-  // verification first (Scenario B). Never creates a session or a
-  // Firestore document before one of those two paths is decided.
   Future<void> _handleGoogleSignIn() async {
-    if (_isGoogleLoading) return;
+    if (_sheetState != _AuthSheetState.phoneEntry) return;
+    final action = _beginAction();
+    if (action == null) return;
     HapticFeedback.mediumImpact();
     FocusScope.of(context).unfocus();
-
-    final authProvider = context.read<AuthProvider>();
     setState(() => _isGoogleLoading = true);
-
-    final pending = await authProvider.acquireGoogleCredential();
-    if (!mounted) return;
-
-    if (pending == null) {
-      setState(() => _isGoogleLoading = false);
-      // A null pending with no error means the user closed the account
-      // picker themselves — a cancellation, not a failure, so no toast.
-      if (authProvider.error != null) {
-        ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(content: Text(authProvider.error ?? "Couldn't sign in with Google. Please try again.")),
-        );
-      }
-      return;
-    }
-
-    final resolution = await authProvider.resolveGoogleIdentity(pending);
-    if (!mounted) return;
-
-    if (resolution == null) {
-      setState(() => _isGoogleLoading = false);
-      ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(content: Text(authProvider.error ?? "Couldn't sign in with Google. Please try again.")),
-      );
-      return;
-    }
-
-    if (resolution.linked) {
-      // Scenario A: already linked — sign straight in, no OTP.
-      final success = await authProvider.signInWithLinkedGoogle(
-        pending,
-        expectedUid: resolution.expectedUid,
-      );
-      if (!mounted) return;
-      setState(() => _isGoogleLoading = false);
-
-      if (!success) {
-        ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(content: Text(authProvider.error ?? "Couldn't sign in with Google. Please try again.")),
-        );
+    try {
+      final pending = await action.auth.acquireGoogleCredential();
+      if (!mounted || !_current(action)) return;
+      if (pending == null) {
+        if (action.auth.error != null) {
+          SnackbarHelper.showError(
+              context, "Couldn't sign in with Google. Please try again.");
+        }
         return;
       }
-      await _proceedAfterLogin(isNewUser: authProvider.isNewUser);
-      return;
+      final resolution = await action.auth.resolveGoogleIdentity(pending);
+      if (!mounted || !_current(action)) return;
+      if (resolution == null) {
+        SnackbarHelper.showError(
+            context, "Couldn't sign in with Google. Please try again.");
+        return;
+      }
+      if (resolution.linked) {
+        action.signIn = true;
+        final success = await action.auth.signInWithLinkedGoogle(pending,
+            expectedUid: resolution.expectedUid);
+        if (!mounted || !_current(action)) return;
+        if (!success) {
+          SnackbarHelper.showError(
+              context, "Couldn't sign in with Google. Please try again.");
+          return;
+        }
+        await _proceedAfterLogin(action,
+            phone: _pendingPhone, isNewUser: action.auth.isNewUser);
+      } else {
+        setState(() => _pendingGoogleIdentity = pending);
+        final generation = _sheetGeneration;
+        WidgetsBinding.instance.addPostFrameCallback((_) {
+          if (_sheetCurrent(generation, action.auth, action.route)) {
+            _phoneFocusNode.requestFocus();
+          }
+        });
+      }
+    } catch (_) {
+      if (mounted && _current(action)) {
+        SnackbarHelper.showError(
+            context, "Couldn't sign in with Google. Please try again.");
+      }
+    } finally {
+      _finish(action);
     }
-
-    // Scenario B: unlinked — hold the credential and switch this same
-    // phone-entry content into "verify your mobile to connect Google"
-    // framing (see _buildPhoneContent). Existing sendPhoneOTP/verifyPhoneOTP
-    // handle everything from here; _handleVerify() links Google once the
-    // OTP itself succeeds.
-    setState(() {
-      _isGoogleLoading = false;
-      _pendingGoogleIdentity = pending;
-    });
-    WidgetsBinding.instance.addPostFrameCallback((_) {
-      if (mounted) _phoneFocusNode.requestFocus();
-    });
   }
 
-  // Lets the customer back out of the Google-linking detour into a normal
-  // phone login, per the reference's own "safe method to return... back to
-  // normal login" requirement — never leaves stale pending Google state
-  // behind (the whole point of holding the credential only in memory).
   void _handleCancelGoogleLink() {
-    setState(() => _pendingGoogleIdentity = null);
+    setState(_retireActions);
   }
 
-  // "Change number" (and the system/OS back gesture while on the OTP step,
-  // see build()'s PopScope) — returns to phone entry, keeping the typed
-  // number so the customer doesn't retype it, and discards in-progress OTP
-  // state so a stale resend timer can't keep running underneath.
   void _handleChangeNumber() {
-    _resendTimer?.cancel();
     setState(() {
+      _retireActions();
       _sheetState = _AuthSheetState.phoneEntry;
       _activeTestOtp = null;
       _otpErrorMessage = null;
     });
+    final generation = _sheetGeneration;
+    final auth = _observedAuth;
+    final route = ModalRoute.of(context);
     WidgetsBinding.instance.addPostFrameCallback((_) {
-      if (mounted) _phoneFocusNode.requestFocus();
+      if (_sheetCurrent(generation, auth, route)) {
+        _phoneFocusNode.requestFocus();
+      }
     });
   }
 
   void _startResendCountdown() {
     _resendSecondsLeft = _kResendCooldownSeconds;
     _resendTimer?.cancel();
+    final generation = _sheetGeneration;
     _resendTimer = Timer.periodic(const Duration(seconds: 1), (timer) {
-      if (!mounted) return;
+      if (!mounted ||
+          generation != _sheetGeneration ||
+          _sheetState != _AuthSheetState.otpEntry) {
+        timer.cancel();
+        return;
+      }
       if (_resendSecondsLeft <= 1) {
         timer.cancel();
         setState(() => _resendSecondsLeft = 0);
@@ -330,166 +464,157 @@ class _LoginScreenState extends State<LoginScreen> {
   }
 
   Future<void> _handleVerify() async {
-    if (_isVerifying) return;
+    if (_busy || _sheetState != _AuthSheetState.otpEntry) return;
     final code = _otpControllers.map((c) => c.text).join();
-    if (code.length != _kOtpLength) return;
-
+    if (code.length != _kOtpLength || code.contains(RegExp(r'\D'))) return;
+    final action = _beginAction(signIn: true);
+    if (action == null) return;
+    final phone = _pendingPhone;
+    final pendingGoogle = _pendingGoogleIdentity;
     HapticFeedback.mediumImpact();
     setState(() {
       _isVerifying = true;
       _otpErrorMessage = null;
     });
-
-    final authProvider = context.read<AuthProvider>();
-    final success = await authProvider.verifyPhoneOTP(phone: _pendingPhone, otp: code);
-
-    if (!mounted) return;
-
-    if (!success) {
-      // A timeout isn't a confirmed wrong code — the verify call may still
-      // land in the background. Keep the entered code and avoid the scary
-      // "failed" framing instead of wiping the boxes on a guess.
-      final isTimeout = authProvider.errorCode == 'TIMEOUT';
-      setState(() {
-        _isVerifying = false;
-        _otpErrorMessage = authProvider.error ?? 'Invalid OTP. Please try again.';
-      });
-      if (!isTimeout) {
-        for (final c in _otpControllers) {
-          c.clear();
+    try {
+      final success = await action.auth.verifyPhoneOTP(phone: phone, otp: code);
+      if (!mounted || !_current(action)) return;
+      if (!success) {
+        final timeout = action.auth.errorCode == 'TIMEOUT';
+        setState(() => _otpErrorMessage = timeout
+            ? 'Verification is taking longer. Please try again.'
+            : 'Invalid OTP. Please try again.');
+        if (!timeout) {
+          for (final c in _otpControllers) {
+            c.clear();
+          }
+          _otpFocusNodes.first.requestFocus();
         }
-        _otpFocusNodes.first.requestFocus();
+        return;
       }
-      return;
-    }
-
-    await _rememberPhoneNumber();
-
-    // AUTH-3, Scenario B's final step: the phone OTP above just
-    // authenticated the canonical account — now attach the held Google
-    // credential to THAT account. A link failure (already-in-use, expired,
-    // network) never undoes this already-successful login; it only means
-    // the Google shortcut isn't set up for next time.
-    final pendingGoogle = _pendingGoogleIdentity;
-    if (pendingGoogle != null) {
-      _pendingGoogleIdentity = null;
-      final linked = await authProvider.linkGoogleToCurrentUser(pendingGoogle);
-      if (mounted && !linked) {
-        ScaffoldMessenger.of(context).showSnackBar(
-          const SnackBar(
-            content: Text('This Google account is already connected to another AgriMore account.'),
-          ),
-        );
+      if (action.owner == null || action.auth.userUid != action.owner) return;
+      await _rememberPhoneNumber(action, phone);
+      if (!mounted || !_current(action)) return;
+      if (pendingGoogle != null) {
+        bool linked = false;
+        try {
+          linked = await action.auth.linkGoogleToCurrentUser(pendingGoogle);
+        } catch (_) {
+          // A linking failure cannot undo the confirmed phone session.
+        }
+        if (!mounted || !_current(action)) return;
+        _pendingGoogleIdentity = null;
+        if (!linked) {
+          SnackbarHelper.showWarning(context,
+              'Signed in. Google could not be connected. Please try again later.');
+        }
       }
+      await _proceedAfterLogin(action,
+          phone: phone, isNewUser: action.auth.isNewUser);
+    } catch (_) {
+      if (mounted && _current(action)) {
+        setState(() => _otpErrorMessage =
+            'Could not complete verification. Please try again.');
+      }
+    } finally {
+      _finish(action);
     }
-
-    await _proceedAfterLogin(isNewUser: authProvider.isNewUser);
   }
 
-  Future<void> _rememberPhoneNumber() async {
+  Future<void> _rememberPhoneNumber(_LoginAction action, String phone) async {
     try {
       final prefs = await SharedPreferences.getInstance();
+      if (!_current(action)) return;
       final raw = prefs.getString(StorageConstants.keyRecentPhoneNumbers);
-      final list = raw != null ? (jsonDecode(raw) as List).cast<String>() : <String>[];
-      final national = _pendingPhone.replaceFirst('+91', '');
+      final list =
+          raw != null ? (jsonDecode(raw) as List).cast<String>() : <String>[];
+      final national = phone.replaceFirst('+91', '');
       list.remove(national);
       list.insert(0, national);
-      await prefs.setString(
-        StorageConstants.keyRecentPhoneNumbers,
-        jsonEncode(list.take(4).toList()),
-      );
-    } catch (_) {
-      // Non-critical convenience cache — safe to ignore failures
-    }
+      if (!_current(action)) return;
+      await prefs.setString(StorageConstants.keyRecentPhoneNumbers,
+          jsonEncode(list.take(4).toList()));
+    } catch (_) {/* Convenience cache failure does not undo login. */}
   }
 
-  Future<void> _proceedAfterLogin({required bool isNewUser}) async {
-    if (!mounted) return;
-
-    final prefs = await SharedPreferences.getInstance();
-    final alreadyPrimed = prefs.getBool(StorageConstants.keyNotificationsPrimed) ?? false;
-
-    if (!mounted) return;
-
-    if (!alreadyPrimed) {
-      Navigator.of(context).pushAndRemoveUntil(
-        MaterialPageRoute(
-          builder: (_) => EnableNotificationsScreen(isNewUser: isNewUser, phone: _pendingPhone),
-        ),
-        (route) => false,
-      );
+  Future<void> _proceedAfterLogin(_LoginAction action,
+      {required bool isNewUser, required String phone}) async {
+    if (!_current(action) ||
+        action.owner == null ||
+        action.auth.userUid != action.owner) {
       return;
     }
-
-    PostAuthRouter.routeAfterAuth(context, phone: _pendingPhone, isNewUser: isNewUser);
-  }
-
-  Future<void> _handleResend() async {
-    if (_resendSecondsLeft > 0 || _isResending) return;
-
-    setState(() => _isResending = true);
-    final authProvider = context.read<AuthProvider>();
-    final result = await authProvider.sendPhoneOTP(_pendingPhone);
-
-    if (!mounted) return;
-    setState(() => _isResending = false);
-
-    if (result != null) {
-      setState(() {
-        _channel = result.channel;
-        _activeTestOtp = result.testOtp;
-      });
-      for (final c in _otpControllers) {
-        c.clear();
-      }
-      if (result.testOtp != null && result.testOtp!.length == _kOtpLength) {
-        for (int i = 0; i < _kOtpLength; i++) {
-          _otpControllers[i].text = result.testOtp![i];
-        }
-        WidgetsBinding.instance.addPostFrameCallback((_) {
-          if (!mounted) return;
-          _otpFocusNodes.last.requestFocus();
-          Future.delayed(const Duration(milliseconds: 350), () {
-            if (mounted && _sheetState == _AuthSheetState.otpEntry) {
-              _handleVerify();
-            }
-          });
-        });
-      } else {
-        _otpFocusNodes.first.requestFocus();
-      }
-      _startResendCountdown();
+    bool alreadyPrimed = false;
+    try {
+      final prefs = await SharedPreferences.getInstance();
+      if (!_current(action)) return;
+      alreadyPrimed =
+          prefs.getBool(StorageConstants.keyNotificationsPrimed) ?? false;
+    } catch (_) {/* Offer the primer when its local flag is unavailable. */}
+    if (!mounted || !_current(action) || action.auth.userUid != action.owner) {
+      return;
+    }
+    if (!alreadyPrimed) {
+      Navigator.of(context).pushAndRemoveUntil(
+          MaterialPageRoute(
+              builder: (_) => EnableNotificationsScreen(
+                  isNewUser: isNewUser, phone: phone)),
+          (route) => false);
     } else {
-      ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(content: Text(authProvider.error ?? 'Failed to resend OTP')),
-      );
+      PostAuthRouter.routeAfterAuth(context,
+          phone: phone, isNewUser: isNewUser);
     }
   }
 
-  // Offered once the SMS resend cooldown has elapsed — server-side, this
-  // redelivers the SAME code the SMS already carries (see
-  // sendPhoneOTP.ts's voice-reuse logic), so requesting a call never
-  // invalidates a pending SMS.
-  Future<void> _handleVoiceResend() async {
-    if (_resendSecondsLeft > 0 || _isRequestingVoice) return;
+  Future<void> _handleResend() => _redeliver(voice: false);
+  Future<void> _handleVoiceResend() => _redeliver(voice: true);
 
-    setState(() => _isRequestingVoice = true);
-    final authProvider = context.read<AuthProvider>();
-    final result = await authProvider.sendPhoneOTP(_pendingPhone, channel: 'voice');
-
-    if (!mounted) return;
-    setState(() => _isRequestingVoice = false);
-
-    if (result != null) {
-      setState(() => _channel = result.channel);
-      _startResendCountdown();
-      ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(content: Text("We're calling you now with your code")),
-      );
-    } else {
-      ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(content: Text(authProvider.error ?? 'Failed to place the call')),
-      );
+  Future<void> _redeliver({required bool voice}) async {
+    if (_busy ||
+        _resendSecondsLeft > 0 ||
+        _sheetState != _AuthSheetState.otpEntry) {
+      return;
+    }
+    final action = _beginAction();
+    if (action == null) return;
+    final phone = _pendingPhone;
+    setState(() {
+      if (voice) {
+        _isRequestingVoice = true;
+      } else {
+        _isResending = true;
+      }
+    });
+    try {
+      final result = await action.auth
+          .sendPhoneOTP(phone, channel: voice ? 'voice' : 'sms');
+      if (!mounted || !_current(action)) return;
+      if (result == null) {
+        SnackbarHelper.showError(
+            context,
+            voice
+                ? 'Failed to place the call. Please try again.'
+                : 'Failed to resend OTP. Please try again.');
+        return;
+      }
+      if (voice) {
+        setState(() => _channel = result.channel);
+        _startResendCountdown();
+        SnackbarHelper.showSuccess(
+            context, "We're calling you now with your code");
+      } else {
+        _enterOtpState(result.channel, autofillOtp: result.testOtp);
+      }
+    } catch (_) {
+      if (mounted && _current(action)) {
+        SnackbarHelper.showError(
+            context,
+            voice
+                ? 'Failed to place the call. Please try again.'
+                : 'Failed to resend OTP. Please try again.');
+      }
+    } finally {
+      _finish(action);
     }
   }
 
@@ -731,7 +856,7 @@ class _LoginScreenState extends State<LoginScreen> {
               SizedBox(
                 height: _fieldHeight,
                 child: ElevatedButton(
-                  onPressed: _isSubmitting ? null : _handleContinue,
+                  onPressed: _busy ? null : _handleContinue,
                   style: ElevatedButton.styleFrom(
                     backgroundColor: AppColors.primary,
                     foregroundColor: Colors.white,
@@ -792,7 +917,7 @@ class _LoginScreenState extends State<LoginScreen> {
     return SizedBox(
       height: _fieldHeight,
       child: OutlinedButton(
-        onPressed: _isGoogleLoading ? null : _handleGoogleSignIn,
+        onPressed: _busy ? null : _handleGoogleSignIn,
         style: OutlinedButton.styleFrom(
           backgroundColor: Colors.white,
           side: const BorderSide(color: AppColors.border),
