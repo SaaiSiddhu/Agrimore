@@ -22,6 +22,7 @@ class AuthProvider with ChangeNotifier {
   bool _disposed = false;
   bool _signOutInFlight = false;
   bool _loginInFlight = false;
+  bool _authRequestInFlight = false;
   String? _loginObservedOwner;
   bool _loginSuperseded = false;
   int _deletionRead = 0;
@@ -383,6 +384,7 @@ class AuthProvider with ChangeNotifier {
         observing() &&
         _profileReadIsCurrent(openingOwner, openingEpoch, openingRead);
     if (_loginInFlight ||
+        _authRequestInFlight ||
         _signOutInFlight ||
         _deletionInFlight ||
         !openingCurrent()) {
@@ -482,39 +484,96 @@ class AuthProvider with ChangeNotifier {
   /// channel — see auth_service.dart) on success, or `null` on failure —
   /// callers should read [error] for the failure message.
   Future<PhoneOtpSendResult?> sendPhoneOTP(String phone,
-      {String channel = 'sms'}) async {
+          {String channel = 'sms'}) =>
+      _runOwnedAuthRequest(
+          () => _authService.sendPhoneOTP(phone, channel: channel),
+          fallback: 'Unable to send a code. Please try again.',
+          requireUnlocked: true);
+
+  Future<T?> _runOwnedAuthRequest<T>(
+    Future<T?> Function() command, {
+    required String fallback,
+    bool requireUser = false,
+    bool requireUnlocked = false,
+    String Function(T?)? auditEvent,
+    bool Function(T?)? auditSuccess,
+    String? auditEmail,
+    String? failureAuditEvent,
+  }) async {
+    final owner = _authService.currentUserId;
+    final epoch = _authEpoch,
+        read = _profileRead,
+        observer = _authListenVersion;
+    final user = currentUser;
+    bool current() =>
+        !_disposed &&
+        _authSubscription != null &&
+        observer == _authListenVersion &&
+        _profileReadIsCurrent(owner, epoch, read);
+    if (_authRequestInFlight ||
+        _loginInFlight ||
+        _signOutInFlight ||
+        _deletionInFlight ||
+        !current() ||
+        (requireUser && (owner == null || user == null))) {
+      return null;
+    }
+    if (requireUnlocked && isLocked) {
+      _error = 'Too many attempts. Please try again later.';
+      notifyListeners();
+      return null;
+    }
+    _authRequestInFlight = true;
+    _isLoading = true;
+    _error = null;
+    _errorCode = null;
+    notifyListeners();
     try {
-      if (isLocked) {
-        _error = 'Too many attempts. Please try again later.';
-        notifyListeners();
+      if (!current()) {
         return null;
       }
-
-      _isLoading = true;
-      _error = null;
-      notifyListeners();
-
-      debugPrint('📱 Sending OTP to: $phone (channel: $channel)');
-
-      final result = await _authService.sendPhoneOTP(phone, channel: channel);
-
-      debugPrint('✅ OTP sent via ${result.channel}');
-
+      T? result;
+      String? failure;
+      try {
+        result = await command();
+        if (!current()) {
+          return null;
+        }
+      } catch (error) {
+        if (!current()) {
+          return null;
+        }
+        failure = error is FirebaseAuthException
+            ? _getFirebaseErrorMessage(error.code)
+            : fallback;
+      }
+      if (!current()) {
+        return null;
+      }
+      _error = failure;
+      if (failure == null && auditEvent != null) {
+        await _logAuthEvent(
+            auditEvent(result),
+            auditSuccess?.call(result) ?? true,
+            auditEmail ?? user?.email ?? 'unknown',
+            ownerId: owner);
+      } else if (failure != null && failureAuditEvent != null) {
+        await _logAuthEvent(
+            failureAuditEvent, false, auditEmail ?? user?.email ?? 'unknown',
+            error: 'auth-request-failed', ownerId: owner);
+      }
+      if (!current()) {
+        return null;
+      }
       _isLoading = false;
       notifyListeners();
-      return result;
-    } on AuthException catch (e) {
-      debugPrint('❌ Send OTP error: ${e.message}');
-      _error = e.message;
-      _isLoading = false;
-      notifyListeners();
-      return null;
-    } catch (e) {
-      debugPrint('❌ Send OTP error: $e');
-      _error = e.toString().replaceAll('Exception: ', '');
-      _isLoading = false;
-      notifyListeners();
-      return null;
+      return failure == null && current() ? result : null;
+    } finally {
+      if (current() && _isLoading) {
+        _isLoading = false;
+        notifyListeners();
+      }
+      _authRequestInFlight = false;
     }
   }
 
@@ -661,42 +720,16 @@ class AuthProvider with ChangeNotifier {
   /// Acquires a Google credential without signing in yet. Returns null on
   /// cancellation OR failure — [error] distinguishes them for the caller
   /// (null with no [error] set means the user simply cancelled).
-  Future<PendingGoogleIdentity?> acquireGoogleCredential() async {
-    try {
-      _error = null;
-      final pending = await _authService.acquireGoogleCredential();
-      notifyListeners();
-      return pending;
-    } on AuthException catch (e) {
-      _error = e.message;
-      notifyListeners();
-      return null;
-    } catch (e) {
-      _error = e.toString().replaceAll('Exception: ', '');
-      notifyListeners();
-      return null;
-    }
-  }
+  Future<PendingGoogleIdentity?> acquireGoogleCredential() =>
+      _runOwnedAuthRequest(_authService.acquireGoogleCredential,
+          fallback: 'Unable to open Google sign-in. Please try again.');
 
   /// Pure lookup — never creates a user, never signs in. Returns null only
   /// on a genuine failure (network, server error); read [error] then.
   Future<GoogleIdentityResolution?> resolveGoogleIdentity(
-      PendingGoogleIdentity pending) async {
-    try {
-      _error = null;
-      final resolution = await _authService.resolveGoogleIdentity(pending);
-      notifyListeners();
-      return resolution;
-    } on AuthException catch (e) {
-      _error = e.message;
-      notifyListeners();
-      return null;
-    } catch (e) {
-      _error = e.toString().replaceAll('Exception: ', '');
-      notifyListeners();
-      return null;
-    }
-  }
+          PendingGoogleIdentity pending) =>
+      _runOwnedAuthRequest(() => _authService.resolveGoogleIdentity(pending),
+          fallback: 'Unable to check this Google account. Please try again.');
 
   /// Scenario A (returning, already linked): signs in directly, no OTP.
   Future<bool> signInWithLinkedGoogle(PendingGoogleIdentity pending,
@@ -717,21 +750,16 @@ class AuthProvider with ChangeNotifier {
   /// — the phone login this follows has already succeeded either way, so a
   /// `false` here means "show a soft already-connected message", never
   /// "the login failed".
-  Future<bool> linkGoogleToCurrentUser(PendingGoogleIdentity pending) async {
-    try {
-      final linked = await _authService.linkPendingGoogleCredential(pending);
-      await _logAuthEvent(
-        linked ? 'google_account_linked' : 'google_link_conflict',
-        linked,
-        _currentUser?.email ?? 'unknown',
-      );
-      notifyListeners();
-      return linked;
-    } catch (e) {
-      debugPrint('⚠️ Google link error: $e');
-      return false;
-    }
-  }
+  Future<bool> linkGoogleToCurrentUser(PendingGoogleIdentity pending) async =>
+      await _runOwnedAuthRequest<bool>(
+          () => _authService.linkPendingGoogleCredential(pending),
+          fallback:
+              'Unable to connect Google right now. Your current sign-in is still active.',
+          requireUser: true,
+          auditEvent: (linked) =>
+              linked == true ? 'google_account_linked' : 'google_link_conflict',
+          auditSuccess: (linked) => linked == true) ??
+      false;
 
   // ============================================
   // ✅ UPDATE USER PROFILE (FIXED - NEW METHOD)
@@ -798,41 +826,16 @@ class AuthProvider with ChangeNotifier {
   // ============================================
   // SEND PASSWORD RESET EMAIL
   // ============================================
-  Future<bool> sendPasswordResetEmail(String email) async {
-    try {
-      _isLoading = true;
-      _error = null;
-      notifyListeners();
-
-      debugPrint('📧 Sending password reset email to: $email');
-
-      await _authService.sendPasswordResetEmail(email.trim());
-
-      await _logAuthEvent('password_reset_request', true, email);
-
-      debugPrint('✅ Password reset email sent successfully');
-
-      _isLoading = false;
-      notifyListeners();
-      return true;
-    } on FirebaseAuthException catch (e) {
-      debugPrint('❌ Firebase Auth Password reset error: ${e.code}');
-      _error = _getFirebaseErrorMessage(e.code);
-      await _logAuthEvent('password_reset_request', false, email,
-          error: e.code);
-      _isLoading = false;
-      notifyListeners();
-      return false;
-    } catch (e) {
-      debugPrint('❌ Error sending password reset email: $e');
-      _error = 'Failed to send reset email. Please try again.';
-      await _logAuthEvent('password_reset_request', false, email,
-          error: e.toString());
-      _isLoading = false;
-      notifyListeners();
-      return false;
-    }
-  }
+  Future<bool> sendPasswordResetEmail(String email) async =>
+      await _runOwnedAuthRequest<bool>(() async {
+        await _authService.sendPasswordResetEmail(email.trim());
+        return true;
+      },
+          fallback: 'Failed to send reset email. Please try again.',
+          auditEmail: email,
+          auditEvent: (_) => 'password_reset_request',
+          failureAuditEvent: 'password_reset_request') ??
+      false;
 
   // ============================================
   // SIGN OUT
