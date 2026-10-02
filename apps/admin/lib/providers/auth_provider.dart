@@ -511,60 +511,62 @@ class AuthProvider with ChangeNotifier {
   // ============================================
   // ✅ UPDATE USER PROFILE (FIXED - NEW METHOD)
   // ============================================
+  Future<bool> _runOwnedAccountCommand(
+    Future<UserModel?> Function(UserModel user) command, {
+    required String auditEvent,
+  }) async {
+    final owner = _authService.currentUserId;
+    final user = currentUser;
+    final epoch = _authEpoch;
+    if (owner == null || user == null || !user.isAdmin ||
+        _authSubscription == null || _disposed) {
+      return false;
+    }
+    final read = ++_profileRead;
+    bool current() => _authSubscription != null &&
+        _profileReadIsCurrent(owner, epoch, read);
+    _isLoading = true;
+    _error = null;
+    notifyListeners();
+    if (!current()) return false;
+    UserModel? updated;
+    String? failure;
+    var confirmed = false;
+    try {
+      updated = await command(user);
+      if (!current()) return false;
+      if (updated != null && updated.uid != owner) {
+        throw StateError('Admin profile ownership mismatch');
+      }
+      confirmed = true;
+    } catch (_) {
+      if (!current()) return false;
+      failure = 'Unable to update your account. Please try again.';
+    }
+    if (!current()) return false;
+    await _logAuthEvent(auditEvent, confirmed, user.email,
+        error: failure, ownerId: owner);
+    if (!current()) return false;
+    if (confirmed && updated != null) _currentUser = updated;
+    _error = failure;
+    _isLoading = false;
+    notifyListeners();
+    return current() && confirmed;
+  }
+
   Future<bool> updateUserProfile({
     String? name,
     String? phone,
     String? photoUrl,
-  }) async {
-    try {
-      _isLoading = true;
-      _error = null;
-      notifyListeners();
-
-      debugPrint('📝 Updating user profile...');
-
-      if (_currentUser == null) {
-        _error = 'No user logged in';
-        _isLoading = false;
-        notifyListeners();
-        return false;
-      }
-
-      // Create updated user model using copyWith
-      final updatedUser = _currentUser!.copyWith(
-        name: name ?? _currentUser!.name,
-        phone: phone ?? _currentUser!.phone,
-        photoUrl: photoUrl ?? _currentUser!.photoUrl,
-      );
-
-      // Update in Firestore
-      await _firestore
-          .collection('users')
-          .doc(_currentUser!.uid)
-          .update(updatedUser.toMap());
-
-      // Update local state
-      _currentUser = updatedUser;
-      _error = null;
-
-      await _logAuthEvent('profile_update', true, _currentUser!.email);
-
-      debugPrint('✅ User profile updated successfully');
-
-      _isLoading = false;
-      notifyListeners();
-      return true;
-    } catch (e) {
-      debugPrint('❌ Error updating profile: $e');
-      _error = 'Failed to update profile: $e';
-      await _logAuthEvent('profile_update', false,
-          _currentUser?.email ?? 'unknown',
-          error: e.toString());
-      _isLoading = false;
-      notifyListeners();
-      return false;
-    }
-  }
+  }) => _runOwnedAccountCommand((user) async {
+    final updated = user.copyWith(
+      name: name ?? user.name,
+      phone: phone ?? user.phone,
+      photoUrl: photoUrl ?? user.photoUrl,
+    );
+    await _firestore.collection('users').doc(user.uid).update(updated.toMap());
+    return updated;
+  }, auditEvent: 'profile_update');
 
   // ============================================
   // UPDATE PROFILE (Original Method - Kept for compatibility)
@@ -587,46 +589,13 @@ class AuthProvider with ChangeNotifier {
   Future<bool> changePassword({
     required String currentPassword,
     required String newPassword,
-  }) async {
-    try {
-      _isLoading = true;
-      _error = null;
-      notifyListeners();
-
-      debugPrint('🔐 Changing password...');
-
-      await _authService.changePassword(
-        currentPassword: currentPassword,
-        newPassword: newPassword,
-      );
-
-      await _logAuthEvent('password_change', true, _currentUser?.email ?? 'unknown');
-
-      debugPrint('✅ Password changed successfully');
-
-      _isLoading = false;
-      notifyListeners();
-      return true;
-    } on FirebaseAuthException catch (e) {
-      debugPrint('❌ Firebase Auth Password change error: ${e.code}');
-      _error = _getFirebaseErrorMessage(e.code);
-      await _logAuthEvent('password_change', false,
-          _currentUser?.email ?? 'unknown',
-          error: e.code);
-      _isLoading = false;
-      notifyListeners();
-      return false;
-    } catch (e) {
-      debugPrint('❌ Error changing password: $e');
-      _error = 'Failed to change password. Please try again.';
-      await _logAuthEvent('password_change', false,
-          _currentUser?.email ?? 'unknown',
-          error: e.toString());
-      _isLoading = false;
-      notifyListeners();
-      return false;
-    }
-  }
+  }) => _runOwnedAccountCommand((user) async {
+    await _authService.changePassword(
+      currentPassword: currentPassword,
+      newPassword: newPassword,
+    );
+    return null;
+  }, auditEvent: 'password_change');
 
   // ============================================
   // SEND PASSWORD RESET EMAIL
@@ -753,6 +722,7 @@ class AuthProvider with ChangeNotifier {
     bool success,
     String email, {
     String? error,
+    String? ownerId,
   }) async {
     try {
       await _firestore.collection('auth_logs').add({
@@ -762,7 +732,7 @@ class AuthProvider with ChangeNotifier {
         'error': error,
         'timestamp': FieldValue.serverTimestamp(),
         'platform': 'flutter',
-        'uid': _currentUser?.uid,
+        'uid': ownerId ?? _currentUser?.uid,
       });
       debugPrint('📊 Logged auth event: $eventType ($success)');
     } catch (e) {
