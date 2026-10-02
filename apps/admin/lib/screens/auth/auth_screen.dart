@@ -46,7 +46,9 @@ class _AuthScreenState extends State<AuthScreen>
   bool _isEmailFocused = false;
   bool _isPasswordFocused = false;
   bool _rememberMe = false;
-  SharedPreferences? _prefs;
+  bool _rememberMeEdited = false;
+  AuthProvider? _observedAuth;
+  int _authActionVersion = 0;
 
   late AnimationController _fadeController;
   late Animation<double> _fadeAnimation;
@@ -70,11 +72,15 @@ class _AuthScreenState extends State<AuthScreen>
     );
 
     _emailFocusNode.addListener(() {
-      setState(() => _isEmailFocused = _emailFocusNode.hasFocus);
+      if (mounted) {
+        setState(() => _isEmailFocused = _emailFocusNode.hasFocus);
+      }
     });
 
     _passwordFocusNode.addListener(() {
-      setState(() => _isPasswordFocused = _passwordFocusNode.hasFocus);
+      if (mounted) {
+        setState(() => _isPasswordFocused = _passwordFocusNode.hasFocus);
+      }
     });
 
     _fadeController.forward();
@@ -86,14 +92,32 @@ class _AuthScreenState extends State<AuthScreen>
       final p = await SharedPreferences.getInstance();
       if (!mounted) return;
       setState(() {
-        _prefs = p;
-        _rememberMe = p.getBool(StorageConstants.keyRememberMe) ?? false;
+        if (!_rememberMeEdited) {
+          _rememberMe = p.getBool(StorageConstants.keyRememberMe) ?? false;
+        }
         final savedEmail = p.getString(StorageConstants.keyRememberEmail);
-        if (savedEmail != null) _emailController.text = savedEmail;
+        if (savedEmail != null && _emailController.text.isEmpty) {
+          _emailController.text = savedEmail;
+        }
       });
     } catch (e) {
       debugPrint('SharedPreferences error: $e');
     }
+  }
+
+  @override
+  void didChangeDependencies() {
+    super.didChangeDependencies();
+    final auth = Provider.of<AuthProvider>(context);
+    if (identical(auth, _observedAuth)) {
+      return;
+    }
+    if (_observedAuth != null) {
+      ++_authActionVersion;
+      _isLoading = false;
+      _errorMessage = null;
+    }
+    _observedAuth = auth;
   }
 
   @override
@@ -154,85 +178,137 @@ class _AuthScreenState extends State<AuthScreen>
   }
 
   Future<void> _handleLogin() async {
-    if (!_formKey.currentState!.validate()) return;
+    if (_isLoading || !(_formKey.currentState?.validate() ?? false)) {
+      return;
+    }
+    await _runSignIn(google: false);
+  }
 
-    HapticFeedback.mediumImpact();
+  Future<void> _handleGoogleLogin() => _runSignIn(google: true);
+
+  Future<void> _runSignIn({required bool google}) async {
+    if (_isLoading) {
+      return;
+    }
+    final auth = context.read<AuthProvider>();
+    final route = ModalRoute.of(context);
+    final action = ++_authActionVersion;
+    final openingOwner = auth.userUid, openingVersion = auth.sessionVersion;
+    int? establishedVersion = openingOwner == null ? null : openingVersion;
+    var invalidated = false;
+    bool ownsPage() => mounted && action == _authActionVersion &&
+        identical(context.read<AuthProvider>(), auth) && (route?.isCurrent ?? true);
+    bool ownsOpening() => !invalidated && auth.userUid == openingOwner &&
+        auth.sessionVersion == openingVersion;
+    void observe() {
+      if (!mounted || action != _authActionVersion ||
+          !identical(context.read<AuthProvider>(), auth)) {
+        invalidated = true;
+        return;
+      }
+      if (establishedVersion != null && auth.sessionVersion != establishedVersion) {
+        invalidated = true;
+      }
+      if (auth.userUid != null && establishedVersion == null) {
+        establishedVersion = auth.sessionVersion;
+      }
+    }
+    auth.addListener(observe);
     setState(() {
       _isLoading = true;
       _errorMessage = null;
     });
-
-    final auth = context.read<AuthProvider>();
-    final email = _emailController.text.trim().toLowerCase();
-    final password = _passwordController.text.trim();
-    
     try {
-      final ok = await auth.signInWithEmail(
-        email: email,
-        password: password,
-      );
-
-      if (!mounted) return;
-
-      if (ok) {
-        // Save remember me
-        if (_rememberMe && _prefs != null) {
-          await _prefs!.setBool(StorageConstants.keyRememberMe, true);
-          await _prefs!.setString(StorageConstants.keyRememberEmail, email);
-        }
-
-        HapticFeedback.heavyImpact();
-        
-        if (auth.isAdmin) {
-          SnackbarHelper.showSuccess(context, '✅ Welcome back, Admin!');
-          await Future.delayed(const Duration(milliseconds: 600));
-          if (mounted) context.go(AdminRoutes.dashboard);
-        } else {
-          setState(() {
-            _errorMessage = auth.error ??
-                'Access denied. Please use the Seller, Delivery, or Customer app.';
-          });
-        }
-      } else {
-        HapticFeedback.vibrate();
-        setState(() {
-          _errorMessage = auth.error ?? 'Authentication failed';
-        });
+      if (!mounted || !ownsPage()) {
+        return;
       }
-    } catch (e) {
-      setState(() {
-        _errorMessage = e.toString().replaceAll('Exception: ', '');
-      });
+      HapticFeedback.mediumImpact();
+      if (!google) {
+        auth.setRememberMe(_rememberMe);
+      }
+      if (!mounted || !ownsPage() || invalidated) {
+        return;
+      }
+      final confirmed = google
+          ? await auth.signInWithGoogle()
+          : await auth.signInWithEmail(
+              email: _emailController.text.trim().toLowerCase(),
+              password: _passwordController.text,
+            );
+      if (!mounted || !ownsPage() || invalidated) {
+        return;
+      }
+      final owner = auth.userUid;
+      if (confirmed && owner != null && auth.isAdmin &&
+          auth.isSessionCurrent(owner, auth.sessionVersion)) {
+        HapticFeedback.heavyImpact();
+        context.go(AdminRoutes.dashboard);
+      } else if (auth.hasSignedOutSession &&
+          auth.error == 'Access denied. You are not an admin.') {
+        setState(() => _errorMessage =
+            'Access denied. This account cannot access the admin app.');
+      } else if (ownsOpening()) {
+        setState(() => _errorMessage = auth.isLocked
+            ? 'Too many attempts. Please try again later.'
+            : 'Sign in failed. Please try again.');
+      }
+    } catch (_) {
+      if (ownsPage() && ownsOpening()) {
+        setState(() => _errorMessage = 'Sign in failed. Please try again.');
+      }
     } finally {
-      if (mounted) {
+      auth.removeListener(observe);
+      if (mounted && action == _authActionVersion &&
+          identical(context.read<AuthProvider>(), auth)) {
         setState(() => _isLoading = false);
       }
     }
   }
 
   Future<void> _handleForgotPassword() async {
-    final email = _emailController.text.trim();
-    if (email.isEmpty) {
-      setState(() {
-        _errorMessage = 'Please enter your email address first';
-      });
+    if (_isLoading) {
       return;
     }
-
+    final email = _emailController.text.trim();
+    if (email.isEmpty || _validateEmail(email) != null) {
+      setState(() => _errorMessage = email.isEmpty
+          ? 'Please enter your email address first'
+          : 'Please enter a valid email');
+      return;
+    }
+    final auth = context.read<AuthProvider>();
+    final route = ModalRoute.of(context);
+    final action = ++_authActionVersion;
+    final owner = auth.userUid, version = auth.sessionVersion;
+    bool ownsPage() => mounted && action == _authActionVersion &&
+        identical(context.read<AuthProvider>(), auth) && (route?.isCurrent ?? true) &&
+        auth.userUid == owner && auth.sessionVersion == version;
+    setState(() {
+      _isLoading = true;
+      _errorMessage = null;
+    });
     try {
-      final auth = context.read<AuthProvider>();
-      final ok = await auth.sendPasswordResetEmail(email);
-      if (mounted) {
-        if (ok) {
-          SnackbarHelper.showSuccess(context, '✉️ Reset link sent to $email');
-        } else {
-          setState(() => _errorMessage = auth.error ?? 'Failed to send reset email');
-        }
+      if (!mounted || !ownsPage()) {
+        return;
       }
-    } catch (e) {
-      setState(() {
-        _errorMessage = e.toString().replaceAll('Exception: ', '');
-      });
+      final confirmed = await auth.sendPasswordResetEmail(email);
+      if (!mounted || !ownsPage()) {
+        return;
+      }
+      if (confirmed) {
+        SnackbarHelper.showSuccess(context, 'Check your email for a password reset link.');
+      } else {
+        setState(() => _errorMessage = 'Failed to send reset email. Please try again.');
+      }
+    } catch (_) {
+      if (ownsPage()) {
+        setState(() => _errorMessage = 'Failed to send reset email. Please try again.');
+      }
+    } finally {
+      if (mounted && action == _authActionVersion &&
+          identical(context.read<AuthProvider>(), auth)) {
+        setState(() => _isLoading = false);
+      }
     }
   }
 
@@ -718,7 +794,10 @@ class _AuthScreenState extends State<AuthScreen>
                 height: 24,
                 child: Checkbox(
                   value: _rememberMe,
-                  onChanged: (_) => setState(() => _rememberMe = !_rememberMe),
+                  onChanged: _isLoading ? null : (_) => setState(() {
+                    _rememberMeEdited = true;
+                    _rememberMe = !_rememberMe;
+                  }),
                   activeColor: const Color(0xFF1976D2),
                   shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(4)),
                 ),
@@ -820,33 +899,7 @@ class _AuthScreenState extends State<AuthScreen>
             width: double.infinity,
             height: 52,
             child: OutlinedButton(
-              onPressed: _isLoading ? null : () async {
-                setState(() => _isLoading = true);
-                final auth = context.read<AuthProvider>();
-                final success = await auth.signInWithGoogle();
-                
-                if (!mounted) return;
-                
-                if (success) {
-                  HapticFeedback.heavyImpact();
-                  if (auth.isAdmin) {
-                    SnackbarHelper.showSuccess(context, '✅ Welcome back, Admin!');
-                    await Future.delayed(const Duration(milliseconds: 600));
-                    if (mounted) context.go(AdminRoutes.dashboard);
-                  } else {
-                    setState(() {
-                      _errorMessage = auth.error ??
-                          'Access denied. Please use the Seller, Delivery, or Customer app.';
-                      _isLoading = false;
-                    });
-                  }
-                } else {
-                  setState(() {
-                    _errorMessage = auth.error ?? 'Google Sign-In failed';
-                    _isLoading = false;
-                  });
-                }
-              },
+              onPressed: _isLoading ? null : _handleGoogleLogin,
               style: OutlinedButton.styleFrom(
                 side: BorderSide(color: isDark ? Colors.white24 : AppColors.divider),
                 shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
