@@ -186,16 +186,17 @@ export const quoteOrderWithCredit = onCall(
           return typeof sellerId === "string" && sellerId ? sellerId : "_unassigned";
         })
       );
-      let sellerFeeSchedules: Map<string, DeliveryFeeSchedule> | undefined;
-      if (cartSellerIds.size === 1) {
-        const [onlySellerId] = Array.from(cartSellerIds);
-        if (onlySellerId !== "_unassigned") {
-          const sellerSnap = await tx.get(db.collection("sellers").doc(onlySellerId));
-          const schedule = parseDeliveryFeeSchedule(sellerSnap.data()?.deliveryFeeSchedule);
-          if (schedule) {
-            sellerFeeSchedules = new Map([[onlySellerId, schedule]]);
-          }
+      const realSellerIds = [...cartSellerIds].filter((sellerId) => sellerId !== "_unassigned");
+      const sellerSnaps = realSellerIds.length
+        ? await tx.getAll(...realSellerIds.map((sellerId) => db.collection("sellers").doc(sellerId)))
+        : [];
+      const sellerFeeSchedules = new Map<string, DeliveryFeeSchedule>();
+      for (const sellerSnap of sellerSnaps) {
+        const schedule = parseDeliveryFeeSchedule(sellerSnap.data()?.deliveryFeeSchedule);
+        if (schedule?.type === "distance") {
+          throw new HttpsError("failed-precondition", "Refresh delivery pricing before using Product Credit with this seller");
         }
+        if (schedule) sellerFeeSchedules.set(sellerSnap.id, schedule);
       }
 
       // ============================================

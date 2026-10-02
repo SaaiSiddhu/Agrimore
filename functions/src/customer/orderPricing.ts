@@ -231,18 +231,13 @@ export interface ComputeOrderPricingParams {
   deliveryCharge?: number;
   tax?: number;
   /** Phase FIX-8, Workstream 1. Keyed by real sellerId (never the
-   *  "_unassigned" sentinel) — the caller's own already-fetched, already-
-   *  parsed schedule for each seller in the cart, or omitted entirely for a
-   *  seller with none configured. ONLY consulted when the cart resolves to
-   *  exactly one real seller (see the single-seller guard below) — a
-   *  multi-seller cart keeps 100% of the legacy ratio-split behaviour
-   *  unconditionally in this workstream; correctly prorating multiple
-   *  independent per-seller schedules across one client-supplied total is
-   *  deferred to its own follow-up (see the ledger row), not guessed at
-   *  here. This function still performs zero Firestore access — the caller
-   *  reads and parses every schedule before calling in, same discipline as
-   *  every other input here. */
+   *  "_unassigned" sentinel) — the caller's already-read and validated
+   *  schedule for each seller, if any. Each configured seller gets its own
+   *  schedule-computed fee. The legacy client fee is distributed only among
+   *  sellers without schedules, by their subtotal share. */
   sellerFeeSchedules?: Map<string, DeliveryFeeSchedule>;
+  /** Server-verified route metres for each distance-priced seller. */
+  sellerDistanceMeters?: Map<string, number>;
 }
 
 const MAX_REASONABLE_DELIVERY_CHARGE = 1000;
@@ -493,45 +488,52 @@ export function computeOrderPricing(params: ComputeOrderPricingParams): OrderPri
     throw new HttpsError("failed-precondition", "You have already redeemed this coupon");
   }
 
-  // Phase FIX-8, WS1: a single-seller cart whose seller has a configured
-  // delivery fee schedule gets a REAL server-computed charge instead of
-  // the client-supplied stopgap below. Guarded on itemsBySeller.size === 1
-  // (not just "one real sellerId") so a cart mixing a real seller with an
-  // "_unassigned" bucket — a product missing sellerId entirely, an
-  // anomalous data state — never has its schedule-computed charge silently
-  // split with that bucket by the per-seller ratio logic further down;
-  // it falls through to the legacy path instead, same as any multi-seller
-  // cart. When this IS a true single-seller cart, the per-seller split
-  // loop's own "last seller absorbs the residual" rule already gives 100%
-  // of `deliveryCharge` to that one seller by construction — no further
-  // change needed there.
-  const singleSellerId = itemsBySeller.size === 1 ? Array.from(itemsBySeller.keys())[0] : null;
-  let scheduleComputedDeliveryCharge: number | null = null;
-  if (singleSellerId && singleSellerId !== "_unassigned") {
-    const schedule = params.sellerFeeSchedules?.get(singleSellerId);
+  // F3.3: each configured seller's fee is computed from that seller's own
+  // subtotal and (for distance schedules) an already-verified route. The
+  // existing client-supplied total remains a compatibility fallback only
+  // for seller groups that have no configured schedule; those groups split
+  // it by subtotal share so configured and legacy groups are never charged
+  // the same cart fee twice.
+  const scheduledDeliveryBySeller = new Map<string, number>();
+  const sellerSubtotals = new Map<string, number>();
+  for (const [sellerId, sellerItems] of itemsBySeller) {
+    let sellerSubtotal = 0;
+    for (const item of sellerItems) sellerSubtotal += (item.price as number) * (item.quantity as number);
+    sellerSubtotals.set(sellerId, sellerSubtotal);
+    const schedule = params.sellerFeeSchedules?.get(sellerId);
     if (schedule) {
-      let sellerSubtotal = 0;
-      for (const item of itemsBySeller.get(singleSellerId)!) {
-        sellerSubtotal += (item.price as number) * (item.quantity as number);
-      }
-      scheduleComputedDeliveryCharge = computeFeeFromSchedule(schedule, sellerSubtotal);
+      scheduledDeliveryBySeller.set(
+        sellerId,
+        computeFeeFromSchedule(schedule, sellerSubtotal, params.sellerDistanceMeters?.get(sellerId))
+      );
     }
   }
 
-  // deliveryCharge/tax have no server-side source of truth to recompute
-  // from — apply a sanity ceiling instead of trusting the client number
-  // outright. This is a stopgap, not a fix; it only catches a
-  // wildly-inflated value, not a modestly inflated one. Superseded above
-  // for a single seller with a configured schedule — the ceiling check
-  // below still applies to that value too, as defence in depth (it can
-  // never actually trigger for one, since parseDeliveryFeeSchedule already
-  // enforces the identical bound at write-parse time).
-  const deliveryCharge =
-    scheduleComputedDeliveryCharge !== null
-      ? scheduleComputedDeliveryCharge
-      : typeof params.deliveryCharge === "number" && params.deliveryCharge > 0
-      ? params.deliveryCharge
-      : 0;
+  const legacyDeliveryCharge =
+    typeof params.deliveryCharge === "number" && params.deliveryCharge > 0 ? params.deliveryCharge : 0;
+  const sellersWithoutSchedule = [...itemsBySeller.keys()].filter((sellerId) => !scheduledDeliveryBySeller.has(sellerId));
+  const legacyDeliveryBySeller = new Map<string, number>();
+  if (scheduledDeliveryBySeller.size === 0) {
+    // Preserve the established all-legacy behavior exactly; the normal
+    // ratio split below allocates this total across every seller.
+  } else if (sellersWithoutSchedule.length > 0 && legacyDeliveryCharge > 0) {
+    const unscheduledSubtotal = sellersWithoutSchedule.reduce((sum, sellerId) => sum + (sellerSubtotals.get(sellerId) ?? 0), 0);
+    let assigned = 0;
+    sellersWithoutSchedule.forEach((sellerId, index) => {
+      const isLast = index === sellersWithoutSchedule.length - 1;
+      const share = isLast
+        ? roundMoney(legacyDeliveryCharge - assigned)
+        : roundMoney(legacyDeliveryCharge * ((sellerSubtotals.get(sellerId) ?? 0) / (unscheduledSubtotal || sellersWithoutSchedule.length)));
+      legacyDeliveryBySeller.set(sellerId, share);
+      assigned = roundMoney(assigned + share);
+    });
+  }
+  const deliveryCharge = scheduledDeliveryBySeller.size === 0
+    ? legacyDeliveryCharge
+    : roundMoney(
+      [...scheduledDeliveryBySeller.values()].reduce((sum, fee) => sum + fee, 0) +
+      [...legacyDeliveryBySeller.values()].reduce((sum, fee) => sum + fee, 0)
+    );
   const tax = typeof params.tax === "number" && params.tax > 0 ? params.tax : 0;
   if (deliveryCharge > MAX_REASONABLE_DELIVERY_CHARGE) {
     throw new HttpsError(
@@ -583,7 +585,11 @@ export function computeOrderPricing(params: ComputeOrderPricingParams): OrderPri
     const sellerDiscount = isLastSeller
       ? roundMoney(discountAmount - discountAssigned)
       : roundMoney(discountAmount * ratio);
-    const sellerDeliveryCharge = isLastSeller
+    const sellerDeliveryCharge = scheduledDeliveryBySeller.has(sellerId)
+      ? roundMoney(scheduledDeliveryBySeller.get(sellerId)!)
+      : scheduledDeliveryBySeller.size > 0
+      ? roundMoney(legacyDeliveryBySeller.get(sellerId) ?? 0)
+      : isLastSeller
       ? roundMoney(deliveryCharge - deliveryAssigned)
       : roundMoney(deliveryCharge * ratio);
     const sellerTax = isLastSeller

@@ -3,6 +3,7 @@ import 'package:flutter/services.dart';
 import 'package:provider/provider.dart';
 import 'package:firebase_auth/firebase_auth.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
+import 'package:cloud_functions/cloud_functions.dart';
 import 'package:url_launcher/url_launcher.dart';
 
 import 'package:agrimore_ui/agrimore_ui.dart';
@@ -10,6 +11,7 @@ import 'package:agrimore_core/agrimore_core.dart';
 import '../../../providers/cart_provider.dart';
 import '../../../providers/coupon_provider.dart';
 import '../../../providers/theme_provider.dart';
+import '../../../providers/market_mode_provider.dart';
 import '../../../app/routes.dart';
 import 'widgets/checkout_steps.dart';
 
@@ -31,6 +33,7 @@ class _CheckoutScreenState extends State<CheckoutScreen> {
   AddressModel? _selectedAddress;
   bool _isLoadingAddresses = true;
   List<AddressModel> _addresses = [];
+  bool _isPreparingQuote = false;
 
   @override
   void initState() {
@@ -58,7 +61,7 @@ class _CheckoutScreenState extends State<CheckoutScreen> {
       if (mounted) {
         setState(() {
           _addresses = snapshot.docs
-              .map((doc) => AddressModel.fromMap(doc.data()))
+              .map((doc) => AddressModel.fromMap({...doc.data(), 'id': doc.id}))
               .toList();
 
           _addresses.sort((a, b) {
@@ -728,19 +731,50 @@ class _CheckoutScreenState extends State<CheckoutScreen> {
         ),
       ),
       child: ElevatedButton(
-        onPressed: hasAddress
-            ? () {
+        onPressed: hasAddress && !_isPreparingQuote
+            ? () async {
                 HapticFeedback.mediumImpact();
+                setState(() => _isPreparingQuote = true);
+                try {
+                  final cart = context.read<CartProvider>();
+                  final orderMode = context.read<MarketModeProvider>().isB2B ? 'B2B' : 'B2C';
+                  final quote = await FirebaseFunctions.instance
+                      .httpsCallable('quoteDeliveryFees')
+                      .call<Map<String, dynamic>>({
+                    'addressId': _selectedAddress!.id,
+                    'orderMode': orderMode,
+                    'legacyDeliveryCharge': widget.deliveryCharge,
+                    'items': cart.items.map((item) => {
+                      'productId': item.productId,
+                      'quantity': item.quantity,
+                      if (item.variant != null && item.variant!.isNotEmpty) 'variantId': item.variant,
+                    }).toList(),
+                  });
+                  if (!mounted) return;
+                  final data = quote.data;
+                  final deliveryCharge = (data['deliveryCharge'] as num?)?.toDouble() ?? widget.deliveryCharge;
+                  final coupon = context.read<CouponProvider>();
+                  final discount = coupon.calculateDiscount(orderAmount: cart.subtotal, items: cart.items);
+                  final total = cart.subtotal - discount + deliveryCharge + widget.tax;
                 Navigator.pushNamed(
                   context,
                   AppRoutes.paymentMethod,
                   arguments: {
                     'address': _selectedAddress!,
                     'total': total,
-                    'deliveryCharge': widget.deliveryCharge,
+                    'deliveryCharge': deliveryCharge,
+                    'legacyDeliveryCharge': widget.deliveryCharge,
+                    if (data['deliveryQuoteId'] is String) 'deliveryQuoteId': data['deliveryQuoteId'],
                     'tax': widget.tax,
                   },
                 );
+                } on FirebaseFunctionsException catch (error) {
+                  if (mounted) {
+                    _showSnackBar(error.message ?? 'Could not calculate delivery pricing', isError: true);
+                  }
+                } finally {
+                  if (mounted) setState(() => _isPreparingQuote = false);
+                }
               }
             : null,
         style: ElevatedButton.styleFrom(
@@ -763,7 +797,7 @@ class _CheckoutScreenState extends State<CheckoutScreen> {
             ),
             const SizedBox(width: 10),
             Text(
-              hasAddress ? 'Continue to Payment' : 'Select Address',
+              _isPreparingQuote ? 'Calculating delivery…' : (hasAddress ? 'Continue to Payment' : 'Select Address'),
               style: const TextStyle(
                 fontSize: 17,
                 fontWeight: FontWeight.w800,

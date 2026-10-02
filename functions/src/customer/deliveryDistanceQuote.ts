@@ -1,0 +1,309 @@
+// Owner-approved F3.3 distance-priced checkout quotes.
+//
+// This is a separate use of Google's Routes API for pricing; it does not
+// change the traffic-aware rider-tracking route in deliveryRoute.ts. The
+// callable reads a caller-owned saved address and seller-owned coordinates,
+// performs routing before any checkout transaction, then stores only a
+// short-lived quote snapshot (no raw coordinates or route geometry).
+
+import * as admin from "firebase-admin";
+import * as crypto from "crypto";
+import { onCall, HttpsError } from "firebase-functions/v2/https";
+import { Timestamp } from "firebase-admin/firestore";
+import { normalizeOrderItems, OrderPricingItemInput, MAX_CART_LINES } from "./orderPricing";
+import { DeliveryFeeSchedule, parseDeliveryFeeSchedule } from "./deliveryFeeSchedule";
+import { computeOrderPricing } from "./orderPricing";
+import { GOOGLE_ROUTES_API_KEY } from "../delivery/deliveryRoute";
+
+const ROUTES_URL = "https://routes.googleapis.com/directions/v2:computeRoutes";
+const ROUTE_FIELD_MASK = "routes.distanceMeters";
+const MAX_SELLERS_PER_QUOTE = 10;
+const MAX_RADIUS_KM = 100;
+const QUOTE_TTL_MS = 10 * 60 * 1000;
+const RATE_WINDOW_MS = 60 * 1000;
+const MAX_QUOTES_PER_WINDOW = 3;
+const ROUTE_TIMEOUT_MS = 7000;
+
+export type RoutePoint = { latitude: number; longitude: number };
+export type DistanceRouteFetcher = (body: unknown, apiKey: string) => Promise<unknown>;
+
+function validCoordinatePair(lat: unknown, lng: unknown): RoutePoint | null {
+  if (typeof lat !== "number" || !Number.isFinite(lat) || lat < -90 || lat > 90) return null;
+  if (typeof lng !== "number" || !Number.isFinite(lng) || lng < -180 || lng > 180) return null;
+  return { latitude: lat, longitude: lng };
+}
+
+function hash(value: unknown): string {
+  return crypto.createHash("sha256").update(JSON.stringify(value)).digest("hex");
+}
+
+function routeBody(origin: RoutePoint, destination: RoutePoint): Record<string, unknown> {
+  return {
+    origin: { location: { latLng: origin } },
+    destination: { location: { latLng: destination } },
+    travelMode: "DRIVE",
+    routingPreference: "TRAFFIC_UNAWARE",
+    computeAlternativeRoutes: false,
+    languageCode: "en-IN",
+    regionCode: "IN",
+    units: "METRIC",
+  };
+}
+
+/** Calls Routes API with a minimal response field mask; exported for injected local tests. */
+export const googleDistanceFetcher: DistanceRouteFetcher = async (body, apiKey) => {
+  const controller = new AbortController();
+  const timeout = setTimeout(() => controller.abort(), ROUTE_TIMEOUT_MS);
+  try {
+    const response = await fetch(ROUTES_URL, {
+      method: "POST",
+      headers: {
+        "content-type": "application/json",
+        "X-Goog-Api-Key": apiKey,
+        "X-Goog-FieldMask": ROUTE_FIELD_MASK,
+      },
+      body: JSON.stringify(body),
+      signal: controller.signal,
+    });
+    if (!response.ok) {
+      // Do not forward provider body text, which can contain address details.
+      throw new Error(`Routes API returned HTTP ${response.status}`);
+    }
+    return response.json();
+  } finally {
+    clearTimeout(timeout);
+  }
+};
+
+export async function getRoadDistanceMeters(
+  origin: RoutePoint,
+  destination: RoutePoint,
+  apiKey: string,
+  fetcher: DistanceRouteFetcher = googleDistanceFetcher
+): Promise<number> {
+  if (!apiKey) throw new HttpsError("unavailable", "Distance pricing is temporarily unavailable");
+  let result: unknown;
+  try {
+    result = await fetcher(routeBody(origin, destination), apiKey);
+  } catch {
+    throw new HttpsError("unavailable", "A delivery route could not be calculated. Please try again.");
+  }
+  const routes = (result as { routes?: unknown } | null)?.routes;
+  const distanceMeters = Array.isArray(routes) ? (routes[0] as { distanceMeters?: unknown } | undefined)?.distanceMeters : undefined;
+  if (typeof distanceMeters !== "number" || !Number.isSafeInteger(distanceMeters) || distanceMeters < 0) {
+    throw new HttpsError("unavailable", "A delivery route could not be calculated. Please try again.");
+  }
+  return distanceMeters;
+}
+
+export function fingerprintDeliveryItems(items: OrderPricingItemInput[]): string {
+  return hash([...items]
+    .map((item) => ({ productId: item.productId, quantity: item.quantity, variantId: item.variantId ?? null }))
+    .sort((a, b) => a.productId.localeCompare(b.productId) || String(a.variantId).localeCompare(String(b.variantId))));
+}
+
+export function distanceScheduleFingerprint(schedule: DeliveryFeeSchedule): string {
+  return hash(schedule);
+}
+
+async function claimQuoteRateSlot(db: FirebaseFirestore.Firestore, uid: string, nowMs: number): Promise<void> {
+  const ref = db.collection("delivery_fee_quote_rate_limits").doc(uid);
+  await db.runTransaction(async (tx) => {
+    const snap = await tx.get(ref);
+    const current = snap.data() ?? {};
+    const windowStart = typeof current.windowStartMs === "number" ? current.windowStartMs : 0;
+    const count = typeof current.count === "number" ? current.count : 0;
+    const active = nowMs >= windowStart && nowMs - windowStart < RATE_WINDOW_MS;
+    if (active && count >= MAX_QUOTES_PER_WINDOW) {
+      throw new HttpsError("resource-exhausted", "Too many delivery quote attempts. Please wait a moment and try again.");
+    }
+    tx.set(ref, {
+      windowStartMs: active ? windowStart : nowMs,
+      count: active ? count + 1 : 1,
+      updatedAt: Timestamp.fromMillis(nowMs),
+    });
+  });
+}
+
+export interface CreateDeliveryQuoteInput {
+  uid: string;
+  addressId: string;
+  rawItems: unknown;
+  orderMode?: "B2C" | "B2B";
+  legacyDeliveryCharge?: number;
+  nowMs: number;
+  apiKey: string | (() => string);
+  fetcher?: DistanceRouteFetcher;
+}
+
+/** Purely injectable core: all Firestore reads are owner/product/seller scoped by explicit IDs. */
+export async function createDeliveryQuoteCore(
+  db: FirebaseFirestore.Firestore,
+  input: CreateDeliveryQuoteInput
+): Promise<{ deliveryQuoteId: string | null; deliveryCharge: number | null; sellerFees: Array<Record<string, unknown>> }> {
+  const { uid, addressId, nowMs } = input;
+  if (typeof addressId !== "string" || !/^[A-Za-z0-9_-]{1,150}$/.test(addressId)) {
+    throw new HttpsError("invalid-argument", "A saved delivery address is required");
+  }
+  let items: OrderPricingItemInput[];
+  try {
+    items = normalizeOrderItems(input.rawItems as OrderPricingItemInput[]);
+  } catch (error) {
+    if (error instanceof HttpsError) throw error;
+    throw new HttpsError("invalid-argument", "The delivery quote cart is invalid");
+  }
+  if (items.length === 0 || items.length > MAX_CART_LINES) {
+    throw new HttpsError("invalid-argument", "The delivery quote cart is invalid");
+  }
+
+  const productIds = [...new Set(items.map((item) => item.productId))];
+  const productSnaps = await db.getAll(...productIds.map((id) => db.collection("products").doc(id)));
+  const products = new Map(productSnaps.map((snap) => [snap.id, snap]));
+  const sellerIds = [...new Set(items.map((item) => {
+    const sellerId = products.get(item.productId)?.data()?.sellerId;
+    return typeof sellerId === "string" && sellerId ? sellerId : "_unassigned";
+  }))].sort();
+  const realSellerIds = sellerIds.filter((id) => id !== "_unassigned");
+  if (realSellerIds.length === 0) return { deliveryQuoteId: null, deliveryCharge: null, sellerFees: [] };
+
+  const sellerSnaps = await db.getAll(...realSellerIds.map((id) => db.collection("sellers").doc(id)));
+  const sellers = new Map(sellerSnaps.map((snap) => [snap.id, snap.data() ?? {}]));
+  const sellerFeeSchedules = new Map<string, DeliveryFeeSchedule>();
+  const scheduleFingerprints: Record<string, string> = {};
+  const distanceSellerIds: string[] = [];
+  for (const sellerId of realSellerIds) {
+    const schedule = parseDeliveryFeeSchedule(sellers.get(sellerId)!.deliveryFeeSchedule);
+    if (schedule) {
+      sellerFeeSchedules.set(sellerId, schedule);
+      scheduleFingerprints[sellerId] = distanceScheduleFingerprint(schedule);
+      if (schedule.type === "distance") distanceSellerIds.push(sellerId);
+    }
+  }
+  if (sellerFeeSchedules.size === 0) return { deliveryQuoteId: null, deliveryCharge: null, sellerFees: [] };
+  if (distanceSellerIds.length > MAX_SELLERS_PER_QUOTE) {
+    throw new HttpsError("resource-exhausted", "Too many distance-priced sellers in one checkout");
+  }
+
+  const addressSnap = await db.collection("addresses").doc(addressId).get();
+  if (!addressSnap.exists || addressSnap.data()?.userId !== uid) {
+    throw new HttpsError("permission-denied", "The delivery address does not belong to this account");
+  }
+  const address = addressSnap.data()!;
+  const destination = validCoordinatePair(address.latitude, address.longitude);
+  if (distanceSellerIds.length > 0 && !destination) {
+    throw new HttpsError("failed-precondition", "Add a map location to this saved address before using distance delivery");
+  }
+
+  // Bound scheduled-quote reads as well as billable Routes API requests.
+  // This must happen before the Maps key is resolved or any route is fetched.
+  await claimQuoteRateSlot(db, uid, nowMs);
+  const apiKey = distanceSellerIds.length > 0
+    ? (typeof input.apiKey === "function" ? input.apiKey() : input.apiKey)
+    : "";
+  const distanceEntries: Array<{
+    sellerId: string;
+    schedule: DeliveryFeeSchedule;
+    distanceMeters: number;
+    feePaise: number;
+    originFingerprint: string;
+    radiusKm: number;
+    policyFingerprint: string;
+  }> = [];
+
+  for (const sellerId of distanceSellerIds) {
+    const seller = sellers.get(sellerId)!;
+    const schedule = parseDeliveryFeeSchedule(seller.deliveryFeeSchedule);
+    if (!schedule || schedule.type !== "distance") continue;
+    const origin = validCoordinatePair(seller.latitude, seller.longitude);
+    if (!origin) {
+      throw new HttpsError("failed-precondition", "A seller using distance delivery must configure a valid shop location");
+    }
+    const radiusKm = seller.deliveryRadiusKm;
+    if (typeof radiusKm !== "number" || !Number.isFinite(radiusKm) || radiusKm <= 0 || radiusKm > MAX_RADIUS_KM) {
+      throw new HttpsError("failed-precondition", "A seller using distance delivery must configure a valid delivery radius");
+    }
+    const distanceMeters = await getRoadDistanceMeters(origin, destination!, apiKey, input.fetcher);
+    if (distanceMeters > Math.round(radiusKm * 1000)) {
+      throw new HttpsError("failed-precondition", "This delivery address is outside the seller's delivery area");
+    }
+    const fee = (schedule.baseFeePaise + Math.round(distanceMeters * schedule.ratePerKmPaise / 1000)) / 100;
+    distanceEntries.push({
+      sellerId,
+      schedule,
+      distanceMeters,
+      feePaise: Math.round(fee * 100),
+      originFingerprint: hash(origin),
+      radiusKm,
+      policyFingerprint: distanceScheduleFingerprint(schedule),
+    });
+  }
+
+  const quoteRef = db.collection("delivery_fee_quotes").doc();
+  const addressFingerprint = hash({ addressId, destination: destination ?? null });
+  const cartFingerprint = fingerprintDeliveryItems(items);
+  const sellerFees = distanceEntries.map(({ sellerId, distanceMeters, feePaise }) => ({
+    sellerId,
+    distanceMeters,
+    deliveryCharge: feePaise / 100,
+  }));
+  const sellerDistanceMeters = new Map(distanceEntries.map((entry) => [entry.sellerId, entry.distanceMeters]));
+  const orderMode = input.orderMode ?? "B2C";
+  const legacyDeliveryCharge = typeof input.legacyDeliveryCharge === "number" && Number.isFinite(input.legacyDeliveryCharge)
+    ? Math.max(0, input.legacyDeliveryCharge) : 0;
+  const pricing = computeOrderPricing({
+    items, productSnaps, orderMode, uid, couponSnap: null,
+    deliveryCharge: legacyDeliveryCharge,
+    sellerFeeSchedules,
+    sellerDistanceMeters,
+  });
+  const totalPaise = Math.round(pricing.deliveryCharge * 100);
+  if (!Number.isSafeInteger(totalPaise) || totalPaise > 100000) {
+    throw new HttpsError("failed-precondition", "Distance delivery fees exceed the allowed maximum");
+  }
+  await quoteRef.create({
+    uid,
+    addressId,
+    addressFingerprint,
+    cartFingerprint,
+    sellerIds,
+    orderMode,
+    legacyDeliveryChargePaise: Math.round(legacyDeliveryCharge * 100),
+    scheduleFingerprints,
+    distanceEntries: distanceEntries.map((entry) => ({
+      sellerId: entry.sellerId,
+      distanceMeters: entry.distanceMeters,
+      feePaise: entry.feePaise,
+      originFingerprint: entry.originFingerprint,
+      radiusKm: entry.radiusKm,
+      policyFingerprint: entry.policyFingerprint,
+    })),
+    deliveryChargePaise: totalPaise,
+    createdAt: Timestamp.fromMillis(nowMs),
+    expiresAt: Timestamp.fromMillis(nowMs + QUOTE_TTL_MS),
+    consumedAt: null,
+    consumedByOrderIds: null,
+  });
+  return { deliveryQuoteId: quoteRef.id, deliveryCharge: totalPaise / 100, sellerFees };
+}
+
+export const quoteDeliveryFees = onCall(
+  { minInstances: 0, maxInstances: 10, memory: "256MiB", secrets: [GOOGLE_ROUTES_API_KEY] },
+  async (request) => {
+    if (!request.auth) throw new HttpsError("unauthenticated", "Sign in required");
+    const uid = request.auth.uid;
+    const db = admin.firestore();
+    const nowMs = Date.now();
+
+    // The core resolves seller schedules first and touches the Routes secret
+    // only when at least one distance schedule is present.
+    return createDeliveryQuoteCore(db, {
+      uid,
+      addressId: request.data?.addressId,
+      rawItems: request.data?.items,
+      orderMode: request.data?.orderMode === "B2B" ? "B2B" : "B2C",
+      legacyDeliveryCharge: request.data?.legacyDeliveryCharge,
+      nowMs,
+      apiKey: () => GOOGLE_ROUTES_API_KEY.value(),
+    });
+  }
+);

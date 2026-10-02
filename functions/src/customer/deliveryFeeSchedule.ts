@@ -2,9 +2,10 @@
 //  Per-seller delivery fee schedule (Phase FIX-8, Workstream 1)
 // ============================================================
 //
-// D-DELIVERY-FEE (owner decision, 2026-09-07): per-seller, and each seller
-// picks their own fee shape. This file ships flat and slab only — see the
-// ledger row for why distance-based is a deferred follow-up.
+// D-DELIVERY-FEE (owner decision, 2026-09-07): each seller chooses their own
+// fee shape. Owner-approved F3.3 adds base-plus-per-kilometre distance fees;
+// callers must supply a server-verified route distance before that type can
+// produce a charge.
 //
 // A seller can write ANY value to sellers/{sellerId}.deliveryFeeSchedule
 // directly (firestore.rules' own ownerCannotApproveSellerStatus() only
@@ -42,7 +43,15 @@ export interface SlabFeeSchedule {
   slabs: Array<{ minOrderValue: number; fee: number }>;
 }
 
-export type DeliveryFeeSchedule = FlatFeeSchedule | SlabFeeSchedule;
+export interface DistanceFeeSchedule {
+  type: "distance";
+  /** Seller-configured fixed component, stored as integer paise. */
+  baseFeePaise: number;
+  /** Seller-configured rate for 1 km, stored as integer paise. */
+  ratePerKmPaise: number;
+}
+
+export type DeliveryFeeSchedule = FlatFeeSchedule | SlabFeeSchedule | DistanceFeeSchedule;
 
 const MAX_SLABS = 10;
 
@@ -57,6 +66,22 @@ const MAX_SLABS = 10;
 export function parseDeliveryFeeSchedule(raw: unknown): DeliveryFeeSchedule | null {
   if (typeof raw !== "object" || raw === null) return null;
   const data = raw as Record<string, unknown>;
+
+  // A seller-selected distance schedule must never silently degrade to the
+  // legacy client-supplied amount. Until the route quote has been added to a
+  // caller, computeFeeFromSchedule() fails closed when distanceMeters is
+  // omitted. Malformed distance schedules fail here for the same reason.
+  if (data.type === "distance") {
+    const baseFeePaise = data.baseFeePaise;
+    const ratePerKmPaise = data.ratePerKmPaise;
+    if (!Number.isSafeInteger(baseFeePaise) || (baseFeePaise as number) < 0 || (baseFeePaise as number) > MAX_REASONABLE_DELIVERY_FEE * 100) {
+      throw new HttpsError("failed-precondition", "Seller distance delivery fee is invalid");
+    }
+    if (!Number.isSafeInteger(ratePerKmPaise) || (ratePerKmPaise as number) <= 0 || (ratePerKmPaise as number) > MAX_REASONABLE_DELIVERY_FEE * 100) {
+      throw new HttpsError("failed-precondition", "Seller distance delivery fee is invalid");
+    }
+    return { type: "distance", baseFeePaise: baseFeePaise as number, ratePerKmPaise: ratePerKmPaise as number };
+  }
 
   if (data.type === "flat") {
     const amount = data.amount;
@@ -97,9 +122,20 @@ export function parseDeliveryFeeSchedule(raw: unknown): DeliveryFeeSchedule | nu
  * would reach here in that state, so this is defence-in-depth, not the
  * primary validation.
  */
-export function computeFeeFromSchedule(schedule: DeliveryFeeSchedule, sellerSubtotal: number): number {
+export function computeFeeFromSchedule(schedule: DeliveryFeeSchedule, sellerSubtotal: number, distanceMeters?: number): number {
   if (schedule.type === "flat") {
     return schedule.amount;
+  }
+
+  if (schedule.type === "distance") {
+    if (!Number.isSafeInteger(distanceMeters) || (distanceMeters as number) < 0) {
+      throw new HttpsError("failed-precondition", "A server-verified delivery distance is required");
+    }
+    const feePaise = schedule.baseFeePaise + Math.round((distanceMeters as number) * schedule.ratePerKmPaise / 1000);
+    if (!Number.isSafeInteger(feePaise) || feePaise < 0 || feePaise > MAX_REASONABLE_DELIVERY_FEE * 100) {
+      throw new HttpsError("failed-precondition", "Distance delivery fee exceeds the allowed maximum");
+    }
+    return feePaise / 100;
   }
 
   // slab: the highest minOrderValue that does not exceed the subtotal.

@@ -196,11 +196,12 @@ async function main() {
   );
 
   // ------------------------------------------------------------
-  // Scenario 5: multi-seller cart, ONE seller has a schedule configured.
+  // Scenario 5: multi-seller cart, one seller has its own fee while the
+  // seller with no schedule retains the legacy fee share.
   // Must be completely ignored — 100% legacy ratio-split behaviour.
   // ------------------------------------------------------------
   await seedUser("p42-cust-multi");
-  await seedSeller("p42-seller-multiA", { type: "flat", amount: 999 }); // configured, must be ignored
+  await seedSeller("p42-seller-multiA", { type: "flat", amount: 70 });
   await seedProduct("p42-prod-multiA", "p42-seller-multiA", 100);
   await seedProduct("p42-prod-multiB", "p42-seller-multiB", 100);
 
@@ -218,7 +219,7 @@ async function main() {
     auth: { uid: "p42-cust-multi", token: {} },
   });
   check(
-    "MULTI-SELLER cart: 2 orders created (one per seller), the configured schedule (999) is ignored entirely",
+    "MULTI-SELLER cart: 2 orders created (one per seller), each schedule is computed independently",
     Array.isArray(multiResult.orders) && multiResult.orders.length === 2,
     multiResult
   );
@@ -228,8 +229,8 @@ async function main() {
     multiTotalDelivery += snap.data().deliveryCharge;
   }
   check(
-    "MULTI-SELLER cart: sum of per-seller deliveryCharge equals the legacy client-supplied total (50), not 999+anything",
-    Math.abs(multiTotalDelivery - 50) < 0.01,
+    "MULTI-SELLER cart: configured seller pays 70 and unscheduled seller retains its 50 legacy share",
+    Math.abs(multiTotalDelivery - 120) < 0.01,
     { multiTotalDelivery }
   );
 

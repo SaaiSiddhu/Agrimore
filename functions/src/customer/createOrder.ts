@@ -43,6 +43,7 @@ import { computeOrderPricing, normalizeOrderItems, MAX_VARIANT_ID_LENGTH, assert
 import { computeCartFingerprint } from "./productCreditHold";
 import { appendLedgerEntry, toProjectionFields } from "./productCreditLedger";
 import { DeliveryFeeSchedule, parseDeliveryFeeSchedule } from "./deliveryFeeSchedule";
+import { fingerprintDeliveryItems, distanceScheduleFingerprint } from "./deliveryDistanceQuote";
 import { deliverySecretRef, newDeliverySecret } from "../delivery/deliverySecret";
 import { assertSellerAcceptingOrders } from "../common/sellerAvailability";
 import { isSpendableCapturedPayment } from "../common/paymentIntegrity";
@@ -65,6 +66,8 @@ interface CreateOrderData {
   razorpaySignature?: string;
   couponCode?: string;
   deliveryCharge?: number;
+  legacyDeliveryCharge?: number;
+  deliveryQuoteId?: string;
   tax?: number;
   deliverySlot?: string;
   notes?: string;
@@ -260,6 +263,8 @@ export const createOrder = onCall({ minInstances: 0, memory: "256MiB" }, async (
     deliveryAddress: data?.deliveryAddress || null,
     couponCode: typeof data?.couponCode === "string" ? data.couponCode.trim().toUpperCase() : data?.couponCode ?? null,
     deliveryCharge: data?.deliveryCharge ?? 0, tax: data?.tax ?? 0,
+    legacyDeliveryCharge: data?.legacyDeliveryCharge ?? null,
+    deliveryQuoteId: data?.deliveryQuoteId ?? null,
     deliverySlot: typeof data?.deliverySlot === "string" ? data.deliverySlot : null,
     notes: typeof data?.notes === "string" && data.notes.trim() ? data.notes.trim() : null,
     orderType: typeof data?.orderType === "string" && data.orderType ? data.orderType : "One Time",
@@ -462,16 +467,84 @@ export const createOrder = onCall({ minInstances: 0, memory: "256MiB" }, async (
       assertSellerAcceptingOrders(snap.data(), nowMs);
     }
 
-    let sellerFeeSchedules: Map<string, DeliveryFeeSchedule> | undefined;
-    if (cartSellerIds.size === 1) {
-      const [onlySellerId] = Array.from(cartSellerIds);
-      if (onlySellerId !== "_unassigned") {
-        const sellerSnap = sellerSnaps.find((s) => s.id === onlySellerId);
-        const schedule = parseDeliveryFeeSchedule(sellerSnap?.data()?.deliveryFeeSchedule);
-        if (schedule) {
-          sellerFeeSchedules = new Map([[onlySellerId, schedule]]);
+    const sellerFeeSchedules = new Map<string, DeliveryFeeSchedule>();
+    for (const sellerId of realSellerIds) {
+      const sellerSnap = sellerSnaps.find((s) => s.id === sellerId);
+      const schedule = parseDeliveryFeeSchedule(sellerSnap?.data()?.deliveryFeeSchedule);
+      if (schedule) sellerFeeSchedules.set(sellerId, schedule);
+    }
+
+    const distanceSellerIds = [...sellerFeeSchedules.entries()]
+      .filter(([, schedule]) => schedule.type === "distance")
+      .map(([sellerId]) => sellerId).sort();
+    let sellerDistanceMeters: Map<string, number> | undefined;
+    let deliveryQuoteRef: FirebaseFirestore.DocumentReference | null = null;
+    let deliveryQuoteSnap: FirebaseFirestore.DocumentSnapshot | null = null;
+    if (distanceSellerIds.length > 0 || data?.deliveryQuoteId) {
+      if (!data?.deliveryQuoteId || typeof data.deliveryQuoteId !== "string" ||
+          !/^[A-Za-z0-9_-]{1,150}$/.test(data.deliveryQuoteId)) {
+        throw new HttpsError("failed-precondition", "Refresh delivery pricing before placing this order");
+      }
+      deliveryQuoteRef = db.collection("delivery_fee_quotes").doc(data.deliveryQuoteId);
+      deliveryQuoteSnap = await tx.get(deliveryQuoteRef);
+      const quote = deliveryQuoteSnap.data();
+      const address = data.deliveryAddress ?? {};
+      const addressId = typeof address.id === "string" ? address.id : "";
+      const savedAddressSnap = addressId ? await tx.get(db.collection("addresses").doc(addressId)) : null;
+      const savedAddress = savedAddressSnap?.data();
+      const lat = address.latitude;
+      const lng = address.longitude;
+      const destination = typeof lat === "number" && typeof lng === "number"
+        ? { latitude: lat, longitude: lng }
+        : null;
+      const addressFingerprint = crypto.createHash("sha256")
+        .update(JSON.stringify({ addressId, destination })).digest("hex");
+      const savedLatitude = savedAddress?.latitude;
+      const savedLongitude = savedAddress?.longitude;
+      const savedDestination = typeof savedLatitude === "number" && typeof savedLongitude === "number"
+        ? { latitude: savedLatitude, longitude: savedLongitude }
+        : null;
+      const savedAddressFingerprint = crypto.createHash("sha256")
+        .update(JSON.stringify({ addressId, destination: savedDestination })).digest("hex");
+      const cartFingerprint = fingerprintDeliveryItems(normalizedItems);
+      const expiresAt = quote?.expiresAt as admin.firestore.Timestamp | undefined;
+      const entries = Array.isArray(quote?.distanceEntries) ? quote!.distanceEntries as Array<Record<string, unknown>> : [];
+      const quoteSellerIds = [...(Array.isArray(quote?.sellerIds) ? quote!.sellerIds as string[] : [])].sort();
+      const expectedSellerIds = [...cartSellerIds].sort();
+      if (!deliveryQuoteSnap.exists || !savedAddressSnap?.exists || savedAddress?.userId !== uid ||
+          quote?.uid !== uid || quote?.addressId !== addressId ||
+          quote?.addressFingerprint !== addressFingerprint || quote?.addressFingerprint !== savedAddressFingerprint ||
+          quote?.cartFingerprint !== cartFingerprint ||
+          quote?.orderMode !== orderMode || quote?.legacyDeliveryChargePaise !== Math.round((data.legacyDeliveryCharge ?? 0) * 100) ||
+          JSON.stringify(quoteSellerIds) !== JSON.stringify(expectedSellerIds) ||
+          !expiresAt || expiresAt.toMillis() <= Date.now() || quote?.consumedAt != null ||
+          entries.length !== distanceSellerIds.length ||
+          !Number.isSafeInteger(quote?.deliveryChargePaise) ||
+          Math.round((data.deliveryCharge ?? 0) * 100) !== quote?.deliveryChargePaise) {
+        throw new HttpsError("failed-precondition", "Delivery pricing changed or expired. Please refresh checkout.");
+      }
+      const quoteScheduleFingerprints = quote?.scheduleFingerprints as Record<string, unknown> | undefined;
+      for (const [sellerId, schedule] of sellerFeeSchedules) {
+        if (quoteScheduleFingerprints?.[sellerId] !== distanceScheduleFingerprint(schedule)) {
+          throw new HttpsError("failed-precondition", "Seller delivery pricing changed. Please refresh checkout.");
         }
       }
+      sellerDistanceMeters = new Map();
+      for (const entry of entries) {
+        const sellerId = entry.sellerId;
+        const schedule = typeof sellerId === "string" ? sellerFeeSchedules.get(sellerId) : undefined;
+        const seller = sellerSnaps.find((s) => s.id === sellerId)?.data() ?? {};
+        const origin = { latitude: seller.latitude, longitude: seller.longitude };
+        const originFingerprint = crypto.createHash("sha256").update(JSON.stringify(origin)).digest("hex");
+        if (!schedule || schedule.type !== "distance" || entry.policyFingerprint !== distanceScheduleFingerprint(schedule) ||
+            entry.originFingerprint !== originFingerprint || entry.radiusKm !== seller.deliveryRadiusKm ||
+            !Number.isSafeInteger(entry.distanceMeters) || (entry.distanceMeters as number) > Math.round(Number(seller.deliveryRadiusKm) * 1000)) {
+          throw new HttpsError("failed-precondition", "Seller delivery pricing changed. Please refresh checkout.");
+        }
+        sellerDistanceMeters.set(sellerId as string, entry.distanceMeters as number);
+      }
+    } else if (data?.deliveryQuoteId) {
+      throw new HttpsError("failed-precondition", "Seller delivery pricing changed. Please refresh checkout.");
     }
 
     const normalizedCouponCode =
@@ -595,10 +668,16 @@ export const createOrder = onCall({ minInstances: 0, memory: "256MiB" }, async (
       // ceilings. Passed as a plain boolean (not the snapshot itself) so
       // computeOrderPricing stays read-free.
       couponAlreadyRedeemed: !!(redemptionSnap && redemptionSnap.exists),
-      deliveryCharge: data?.deliveryCharge,
+      deliveryCharge: distanceSellerIds.length > 0 || data?.deliveryQuoteId
+        ? data?.legacyDeliveryCharge
+        : data?.deliveryCharge,
       tax: data?.tax,
       sellerFeeSchedules,
+      sellerDistanceMeters,
     });
+    if (data?.deliveryQuoteId && Math.round(pricing.deliveryCharge * 100) !== Math.round((data?.deliveryCharge ?? 0) * 100)) {
+      throw new HttpsError("failed-precondition", "Delivery amount changed. Please refresh checkout before payment.");
+    }
 
     // ============================================
     // Phase D: settle the Product Credit hold, if one was supplied. This
@@ -845,6 +924,13 @@ export const createOrder = onCall({ minInstances: 0, memory: "256MiB" }, async (
       for (let i = 0; i < sellerCount; i++) creditShares.push(0);
     }
 
+    if (deliveryQuoteRef && deliveryQuoteSnap && data?.deliveryQuoteId) {
+      tx.update(deliveryQuoteRef, {
+        consumedAt: admin.firestore.FieldValue.serverTimestamp(),
+        consumedByOrderRequestId: checkoutRequestId ?? null,
+      });
+    }
+
     let index = 0;
     for (const sellerResult of pricing.perSeller) {
       const sellerCreditShare = creditShares[index];
@@ -862,6 +948,9 @@ export const createOrder = onCall({ minInstances: 0, memory: "256MiB" }, async (
         subtotal: sellerResult.subtotal,
         discount: sellerResult.discount,
         deliveryCharge: sellerResult.deliveryCharge,
+        ...(data?.deliveryQuoteId
+          ? { deliveryQuoteId: data.deliveryQuoteId }
+          : {}),
         tax: sellerResult.tax,
         total: sellerResult.total,
         paymentMethod,

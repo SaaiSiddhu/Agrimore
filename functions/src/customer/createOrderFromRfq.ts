@@ -41,6 +41,7 @@ import { assertSellerAcceptingOrders } from "../common/sellerAvailability";
 import { isSpendableCapturedPayment } from "../common/paymentIntegrity";
 import * as crypto from "crypto";
 import { deliverySecretRef, newDeliverySecret } from "../delivery/deliverySecret";
+import { parseDeliveryFeeSchedule } from "./deliveryFeeSchedule";
 
 interface CreateOrderFromRfqData {
   rfqId: string;
@@ -234,6 +235,12 @@ export const createOrderFromRfq = onCall(
       // seller has paused their store.
       const rfqSellerSnap = await tx.get(db.collection("sellers").doc(sellerId));
       assertSellerAcceptingOrders(rfqSellerSnap.data(), Date.now());
+      if (parseDeliveryFeeSchedule(rfqSellerSnap.data()?.deliveryFeeSchedule)) {
+        throw new HttpsError(
+          "failed-precondition",
+          "This seller's delivery pricing is not yet supported for accepted quote orders"
+        );
+      }
 
       // Profile-completeness — same server-side gate createOrder.ts enforces.
       if (!userSnap.exists || userSnap.data()?.profileCompleted !== true) {

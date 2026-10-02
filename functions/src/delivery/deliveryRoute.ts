@@ -3,9 +3,10 @@
 // ============================================================
 //
 // OWNER_DECISION D-DLV-ROUTES (2026-09-23, references/decisions.md): the
-// customer's map follows real roads, from Google's Routes API (two-wheeler,
-// traffic-aware), called ONLY from here — the key is the
-// GOOGLE_ROUTES_API_KEY secret and never reaches an app.
+// customer's live map route uses Google's Routes API (two-wheeler,
+// traffic-aware). Owner-approved F3.3 separately uses the same server-only
+// key for non-traffic route distance in checkout pricing; that path lives in
+// customer/deliveryDistanceQuote.ts and does not change tracking behavior.
 //
 // Like Swiggy/Zomato, not on every GPS ping: a route is (re)computed when a
 // leg starts, when the stage changes (pickup), when the rider strays more
