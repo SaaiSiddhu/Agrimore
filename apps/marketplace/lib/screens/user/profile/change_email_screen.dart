@@ -19,7 +19,6 @@ import 'dart:async';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:provider/provider.dart';
-import 'package:firebase_auth/firebase_auth.dart' as auth;
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:agrimore_ui/agrimore_ui.dart';
 
@@ -42,6 +41,15 @@ class ChangeEmailScreen extends StatefulWidget {
 }
 
 class _ChangeEmailScreenState extends State<ChangeEmailScreen> {
+  late app_auth.AuthProvider _openingProvider;
+  String? _openingOwner;
+  int _openingVersion = -1;
+  String _sentTarget = '';
+  bool get _ownsForm => mounted &&
+      _openingOwner != null &&
+      identical(context.read<app_auth.AuthProvider>(), _openingProvider) &&
+      _openingProvider.isSessionCurrent(_openingOwner!, _openingVersion);
+
   final _emailController = TextEditingController();
   String _otp = '';
 
@@ -56,7 +64,11 @@ class _ChangeEmailScreenState extends State<ChangeEmailScreen> {
   @override
   void initState() {
     super.initState();
+    _openingProvider = context.read<app_auth.AuthProvider>();
+    _openingOwner = _openingProvider.currentUser?.uid;
+    _openingVersion = _openingProvider.sessionVersion;
     _emailController.addListener(() {
+      if (!_ownsForm) return;
       if (_errorMessage != null || _roleCollisionWarning != null) {
         setState(() {
           _errorMessage = null;
@@ -76,9 +88,14 @@ class _ChangeEmailScreenState extends State<ChangeEmailScreen> {
   }
 
   void _startCountdown() {
+    if (!_ownsForm) return;
     _countdownTimer?.cancel();
     setState(() => _resendCountdown = 30);
     _countdownTimer = Timer.periodic(const Duration(seconds: 1), (timer) {
+      if (!_ownsForm) {
+        timer.cancel();
+        return;
+      }
       if (_resendCountdown > 0) {
         setState(() => _resendCountdown--);
       } else {
@@ -91,7 +108,8 @@ class _ChangeEmailScreenState extends State<ChangeEmailScreen> {
   // check server-side. This just avoids sending an OTP for an address the
   // server would reject anyway.
   Future<String?> _checkEmailRoleCollision(String email) async {
-    final currentUid = auth.FirebaseAuth.instance.currentUser?.uid;
+    if (!_ownsForm) return null;
+    final currentUid = _openingOwner;
     final normalizedEmail = email.trim().toLowerCase();
 
     try {
@@ -100,6 +118,7 @@ class _ChangeEmailScreenState extends State<ChangeEmailScreen> {
           .where('email', isEqualTo: normalizedEmail)
           .limit(1)
           .get();
+      if (!_ownsForm) return null;
       if (sellerSnap.docs.isNotEmpty && sellerSnap.docs.first.id != currentUid) {
         return 'This email address is already registered as an Agrimore Seller account.';
       }
@@ -109,8 +128,9 @@ class _ChangeEmailScreenState extends State<ChangeEmailScreen> {
           .where('email', isEqualTo: normalizedEmail)
           .limit(1)
           .get();
+      if (!_ownsForm) return null;
       if (employeeSnap.docs.isNotEmpty && employeeSnap.docs.first.id != currentUid) {
-        return 'This email address is already registered as an Agrimore Employee / Staff account.';
+        return 'This email address is already registered as an Agrimore Sales Associate / Staff account.';
       }
 
       final usersSnap = await FirebaseFirestore.instance
@@ -118,6 +138,7 @@ class _ChangeEmailScreenState extends State<ChangeEmailScreen> {
           .where('email', isEqualTo: normalizedEmail)
           .limit(1)
           .get();
+      if (!_ownsForm) return null;
       if (usersSnap.docs.isNotEmpty && usersSnap.docs.first.id != currentUid) {
         return 'This email address is already registered to another account.';
       }
@@ -130,7 +151,9 @@ class _ChangeEmailScreenState extends State<ChangeEmailScreen> {
   }
 
   Future<void> _handleSendOtp() async {
-    final newEmail = _emailController.text.trim().toLowerCase();
+    if (!_ownsForm || _isLoading) return;
+    final newEmail = _step == _EmailStep.verify
+        ? _sentTarget : _emailController.text.trim().toLowerCase();
 
     if (newEmail.isEmpty) {
       setState(() => _errorMessage = 'Please enter an email address');
@@ -152,41 +175,50 @@ class _ChangeEmailScreenState extends State<ChangeEmailScreen> {
       _roleCollisionWarning = null;
     });
     HapticFeedback.mediumImpact();
+    try {
+      final collisionWarning = await _checkEmailRoleCollision(newEmail);
+      if (collisionWarning != null) {
+        if (!_ownsForm) return;
+        setState(() {
+          _isLoading = false;
+          _roleCollisionWarning = collisionWarning;
+        });
+        return;
+      }
 
-    final collisionWarning = await _checkEmailRoleCollision(newEmail);
-    if (collisionWarning != null) {
-      if (!mounted) return;
+      if (!_ownsForm) return;
+      final authProvider = _openingProvider;
+      // Real send: Resend via sendEmailOTP.ts, plain-text OTP mail.
+      final sent = await authProvider.sendEmailOtpForProfile(newEmail);
+
+      if (!_ownsForm) return;
+
+      if (!sent) {
+        setState(() {
+          _isLoading = false;
+          _errorMessage = 'Could not send a verification code. Please try again.';
+        });
+        return;
+      }
+
       setState(() {
         _isLoading = false;
-        _roleCollisionWarning = collisionWarning;
+        _sentTarget = newEmail;
+        _otp = '';
+        _step = _EmailStep.verify;
       });
-      return;
-    }
-
-    if (!mounted) return;
-    final authProvider = Provider.of<app_auth.AuthProvider>(context, listen: false);
-    // Real send: Resend via sendEmailOTP.ts, plain-text OTP mail.
-    final sent = await authProvider.sendEmailOtpForProfile(newEmail);
-
-    if (!mounted) return;
-
-    if (!sent) {
+      _startCountdown();
+    } catch (_) {
+      if (!_ownsForm) return;
       setState(() {
         _isLoading = false;
-        _errorMessage = authProvider.error ?? 'Failed to send verification code';
+        _errorMessage = 'Could not send a verification code. Please try again.';
       });
-      return;
     }
-
-    setState(() {
-      _isLoading = false;
-      _otp = '';
-      _step = _EmailStep.verify;
-    });
-    _startCountdown();
   }
 
   Future<void> _handleVerifyAndSave() async {
+    if (!_ownsForm || _isLoading || _sentTarget.isEmpty) return;
     if (_otp.length != 6) {
       setState(() => _errorMessage = 'Please enter the 6-digit OTP');
       return;
@@ -197,47 +229,54 @@ class _ChangeEmailScreenState extends State<ChangeEmailScreen> {
       _errorMessage = null;
     });
     HapticFeedback.mediumImpact();
+    try {
+      final newEmail = _sentTarget;
+      final authProvider = _openingProvider;
 
-    final newEmail = _emailController.text.trim().toLowerCase();
-    final authProvider = Provider.of<app_auth.AuthProvider>(context, listen: false);
+      // Step 1: real, server-side OTP check against otp_codes/{newEmail}.
+      final verified = await authProvider.verifyEmailOtpForProfile(
+        email: newEmail,
+        otp: _otp,
+      );
+      if (!_ownsForm) return;
+      if (!verified) {
+        setState(() {
+          _isLoading = false;
+          _errorMessage = 'Could not verify your code. Please try again.';
+          _otp = '';
+        });
+        return;
+      }
 
-    // Step 1: real, server-side OTP check against otp_codes/{newEmail}.
-    final verified = await authProvider.verifyEmailOtpForProfile(
-      email: newEmail,
-      otp: _otp,
-    );
-    if (!mounted) return;
-    if (!verified) {
+      // Step 2: apply the now-proven email to this account.
+      final saved = await authProvider.changeEmailAddress(email: newEmail);
+      if (!_ownsForm) return;
+
+      if (!saved) {
+        setState(() {
+          _isLoading = false;
+          _errorMessage = 'Could not update your email address. Please try again.';
+        });
+        return;
+      }
+
+      _countdownTimer?.cancel();
       setState(() {
         _isLoading = false;
-        _errorMessage = authProvider.error ?? 'Invalid OTP. Please try again.';
-        _otp = '';
+        _savedEmail = newEmail;
+        _step = _EmailStep.success;
       });
-      return;
-    }
-
-    // Step 2: apply the now-proven email to this account.
-    final saved = await authProvider.changeEmailAddress(email: newEmail);
-    if (!mounted) return;
-
-    if (!saved) {
+    } catch (_) {
+      if (!_ownsForm) return;
       setState(() {
         _isLoading = false;
-        _errorMessage = authProvider.error ?? 'Failed to update email';
+        _errorMessage = 'Could not update your contact details. Please try again.';
       });
-      return;
     }
-
-    _countdownTimer?.cancel();
-    setState(() {
-      _isLoading = false;
-      _savedEmail = newEmail;
-      _step = _EmailStep.success;
-    });
   }
 
   void _onKeypadDigit(String digit) {
-    if (_otp.length >= 6 || _isLoading) return;
+    if (!_ownsForm || _otp.length >= 6 || _isLoading) return;
     setState(() {
       _otp += digit;
       _errorMessage = null;
@@ -248,12 +287,20 @@ class _ChangeEmailScreenState extends State<ChangeEmailScreen> {
   }
 
   void _onKeypadBackspace() {
-    if (_otp.isEmpty || _isLoading) return;
+    if (!_ownsForm || _otp.isEmpty || _isLoading) return;
     setState(() => _otp = _otp.substring(0, _otp.length - 1));
   }
 
   @override
   Widget build(BuildContext context) {
+    context.watch<app_auth.AuthProvider>();
+    if (!_ownsForm) {
+      return Scaffold(
+        appBar: AppBar(title: const Text('Update contact details')),
+        body: const ErrorView(useThemeColors: true,
+          message: 'Your session changed. Reopen your profile to continue.'),
+      );
+    }
     final themeProvider = Provider.of<ThemeProvider>(context);
     final isDark = themeProvider.isDarkMode;
 
@@ -307,7 +354,11 @@ class _ChangeEmailScreenState extends State<ChangeEmailScreen> {
           valueLabel: 'New Email Address',
           value: _savedEmail,
           isDark: isDark,
-          onDone: () => Navigator.pop(context, _savedEmail),
+          onDone: () {
+            if (_ownsForm && ModalRoute.of(context)?.isCurrent == true) {
+              Navigator.pop(context, _savedEmail);
+            }
+          },
         );
     }
   }
@@ -338,7 +389,9 @@ class _ChangeEmailScreenState extends State<ChangeEmailScreen> {
             isLoading: false,
             enabled: true,
             isDark: isDark,
-            onPressed: () => setState(() => _step = _EmailStep.enterEmail),
+            onPressed: () {
+              if (_ownsForm) setState(() => _step = _EmailStep.enterEmail);
+            },
           ),
           const SizedBox(height: 14),
           Text(
@@ -375,6 +428,7 @@ class _ChangeEmailScreenState extends State<ChangeEmailScreen> {
             ),
             child: TextField(
               controller: _emailController,
+              enabled: !_isLoading,
               keyboardType: TextInputType.emailAddress,
               autofocus: true,
               cursorColor: AppColors.primary,
@@ -433,7 +487,7 @@ class _ChangeEmailScreenState extends State<ChangeEmailScreen> {
           VerificationStepHeader(
             icon: Icons.mark_email_unread_outlined,
             title: 'Verify Email Address',
-            subtitle: "We've sent a 6-digit code to\n${_emailController.text.trim()}",
+            subtitle: "We've sent a 6-digit code to\n$_sentTarget",
             isDark: isDark,
           ),
           const SizedBox(height: 28),
@@ -448,6 +502,7 @@ class _ChangeEmailScreenState extends State<ChangeEmailScreen> {
                   )
                 : GestureDetector(
                     onTap: () {
+                      if (!_ownsForm || _isLoading) return;
                       setState(() => _otp = '');
                       _handleSendOtp();
                     },

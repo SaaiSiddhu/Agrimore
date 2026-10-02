@@ -16,7 +16,6 @@ import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:provider/provider.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
-import 'package:firebase_auth/firebase_auth.dart' as auth;
 import 'package:agrimore_ui/agrimore_ui.dart';
 
 import '../../../providers/auth_provider.dart' as app_auth;
@@ -38,6 +37,15 @@ class ChangePhoneScreen extends StatefulWidget {
 }
 
 class _ChangePhoneScreenState extends State<ChangePhoneScreen> {
+  late app_auth.AuthProvider _openingProvider;
+  String? _openingOwner;
+  int _openingVersion = -1;
+  String _sentTarget = '';
+  bool get _ownsForm => mounted &&
+      _openingOwner != null &&
+      identical(context.read<app_auth.AuthProvider>(), _openingProvider) &&
+      _openingProvider.isSessionCurrent(_openingOwner!, _openingVersion);
+
   final _phoneController = TextEditingController();
   String _otp = '';
 
@@ -52,7 +60,11 @@ class _ChangePhoneScreenState extends State<ChangePhoneScreen> {
   @override
   void initState() {
     super.initState();
+    _openingProvider = context.read<app_auth.AuthProvider>();
+    _openingOwner = _openingProvider.currentUser?.uid;
+    _openingVersion = _openingProvider.sessionVersion;
     _phoneController.addListener(() {
+      if (!_ownsForm) return;
       if (_errorMessage != null || _roleCollisionWarning != null) {
         setState(() {
           _errorMessage = null;
@@ -72,9 +84,14 @@ class _ChangePhoneScreenState extends State<ChangePhoneScreen> {
   }
 
   void _startCountdown() {
+    if (!_ownsForm) return;
     _countdownTimer?.cancel();
     setState(() => _resendCountdown = 30);
     _countdownTimer = Timer.periodic(const Duration(seconds: 1), (timer) {
+      if (!_ownsForm) {
+        timer.cancel();
+        return;
+      }
       if (_resendCountdown > 0) {
         setState(() => _resendCountdown--);
       } else {
@@ -87,7 +104,8 @@ class _ChangePhoneScreenState extends State<ChangePhoneScreen> {
   // server-side and is the actual enforcement. This just avoids sending an
   // OTP for a number the server would reject anyway.
   Future<String?> _checkPhoneRoleCollision(String phone) async {
-    final currentUid = auth.FirebaseAuth.instance.currentUser?.uid;
+    if (!_ownsForm) return null;
+    final currentUid = _openingOwner;
     final cleanPhone = phone.replaceAll(RegExp(r'[^0-9]'), '');
 
     try {
@@ -96,6 +114,7 @@ class _ChangePhoneScreenState extends State<ChangePhoneScreen> {
           .where('phone', isEqualTo: cleanPhone)
           .limit(1)
           .get();
+      if (!_ownsForm) return null;
       if (sellerSnap.docs.isNotEmpty && sellerSnap.docs.first.id != currentUid) {
         return 'This phone number is already registered as an Agrimore Seller account.';
       }
@@ -105,8 +124,9 @@ class _ChangePhoneScreenState extends State<ChangePhoneScreen> {
           .where('phone', isEqualTo: cleanPhone)
           .limit(1)
           .get();
+      if (!_ownsForm) return null;
       if (employeeSnap.docs.isNotEmpty && employeeSnap.docs.first.id != currentUid) {
-        return 'This phone number is already registered as an Agrimore Employee / Staff account.';
+        return 'This phone number is already registered as an Agrimore Sales Associate / Staff account.';
       }
 
       final usersSnap = await FirebaseFirestore.instance
@@ -114,6 +134,7 @@ class _ChangePhoneScreenState extends State<ChangePhoneScreen> {
           .where('phone', isEqualTo: cleanPhone)
           .limit(1)
           .get();
+      if (!_ownsForm) return null;
       if (usersSnap.docs.isNotEmpty && usersSnap.docs.first.id != currentUid) {
         return 'This phone number is already registered to another Customer account.';
       }
@@ -126,7 +147,9 @@ class _ChangePhoneScreenState extends State<ChangePhoneScreen> {
   }
 
   Future<void> _handleSendOtp() async {
-    final newPhone = _phoneController.text.replaceAll(RegExp(r'[^0-9]'), '');
+    if (!_ownsForm || _isLoading) return;
+    final newPhone = _step == _PhoneStep.verify
+        ? _sentTarget : _phoneController.text.replaceAll(RegExp(r'[^0-9]'), '');
 
     if (newPhone.isEmpty) {
       setState(() => _errorMessage = 'Please enter a mobile number');
@@ -148,43 +171,52 @@ class _ChangePhoneScreenState extends State<ChangePhoneScreen> {
       _roleCollisionWarning = null;
     });
     HapticFeedback.mediumImpact();
+    try {
+      final collisionWarning = await _checkPhoneRoleCollision(newPhone);
+      if (collisionWarning != null) {
+        if (!_ownsForm) return;
+        setState(() {
+          _isLoading = false;
+          _roleCollisionWarning = collisionWarning;
+        });
+        return;
+      }
 
-    final collisionWarning = await _checkPhoneRoleCollision(newPhone);
-    if (collisionWarning != null) {
-      if (!mounted) return;
+      if (!_ownsForm) return;
+      final authProvider = _openingProvider;
+      // Real send: 2Factor via sendPhoneOTP.ts. Effective channel (SMS or
+      // voice — see Phase 22) is whatever the server actually used; this
+      // screen doesn't need to know which.
+      final result = await authProvider.sendPhoneOTP('+91$newPhone');
+
+      if (!_ownsForm) return;
+
+      if (result == null) {
+        setState(() {
+          _isLoading = false;
+          _errorMessage = 'Could not send a verification code. Please try again.';
+        });
+        return;
+      }
+
       setState(() {
         _isLoading = false;
-        _roleCollisionWarning = collisionWarning;
+        _sentTarget = newPhone;
+        _otp = '';
+        _step = _PhoneStep.verify;
       });
-      return;
-    }
-
-    if (!mounted) return;
-    final authProvider = Provider.of<app_auth.AuthProvider>(context, listen: false);
-    // Real send: 2Factor via sendPhoneOTP.ts. Effective channel (SMS or
-    // voice — see Phase 22) is whatever the server actually used; this
-    // screen doesn't need to know which.
-    final result = await authProvider.sendPhoneOTP('+91$newPhone');
-
-    if (!mounted) return;
-
-    if (result == null) {
+      _startCountdown();
+    } catch (_) {
+      if (!_ownsForm) return;
       setState(() {
         _isLoading = false;
-        _errorMessage = authProvider.error ?? 'Failed to send verification code';
+        _errorMessage = 'Could not send a verification code. Please try again.';
       });
-      return;
     }
-
-    setState(() {
-      _isLoading = false;
-      _otp = '';
-      _step = _PhoneStep.verify;
-    });
-    _startCountdown();
   }
 
   Future<void> _handleVerifyAndSave() async {
+    if (!_ownsForm || _isLoading || _sentTarget.isEmpty) return;
     if (_otp.length != 6) {
       setState(() => _errorMessage = 'Please enter the 6-digit OTP');
       return;
@@ -195,39 +227,46 @@ class _ChangePhoneScreenState extends State<ChangePhoneScreen> {
       _errorMessage = null;
     });
     HapticFeedback.mediumImpact();
+    try {
+      final newPhone = _sentTarget;
+      final authProvider = _openingProvider;
 
-    final newPhone = _phoneController.text.replaceAll(RegExp(r'[^0-9]'), '');
-    final authProvider = Provider.of<app_auth.AuthProvider>(context, listen: false);
+      // Real, server-side verification — changePhoneNumber.ts checks
+      // enteredOtp against the actual phone_otp_codes/{+91newPhone} document
+      // and, only on a real match, writes it onto this account.
+      final success = await authProvider.changePhoneNumber(
+        phone: '+91$newPhone',
+        otp: _otp,
+      );
 
-    // Real, server-side verification — changePhoneNumber.ts checks
-    // enteredOtp against the actual phone_otp_codes/{+91newPhone} document
-    // and, only on a real match, writes it onto this account.
-    final success = await authProvider.changePhoneNumber(
-      phone: '+91$newPhone',
-      otp: _otp,
-    );
+      if (!_ownsForm) return;
 
-    if (!mounted) return;
+      if (!success) {
+        setState(() {
+          _isLoading = false;
+          _errorMessage = 'Could not update your mobile number. Please try again.';
+          _otp = '';
+        });
+        return;
+      }
 
-    if (!success) {
+      _countdownTimer?.cancel();
       setState(() {
         _isLoading = false;
-        _errorMessage = authProvider.error ?? 'Failed to update mobile number';
-        _otp = '';
+        _savedPhone = '+91$newPhone';
+        _step = _PhoneStep.success;
       });
-      return;
+    } catch (_) {
+      if (!_ownsForm) return;
+      setState(() {
+        _isLoading = false;
+        _errorMessage = 'Could not update your contact details. Please try again.';
+      });
     }
-
-    _countdownTimer?.cancel();
-    setState(() {
-      _isLoading = false;
-      _savedPhone = '+91$newPhone';
-      _step = _PhoneStep.success;
-    });
   }
 
   void _onKeypadDigit(String digit) {
-    if (_otp.length >= 6 || _isLoading) return;
+    if (!_ownsForm || _otp.length >= 6 || _isLoading) return;
     setState(() {
       _otp += digit;
       _errorMessage = null;
@@ -238,12 +277,20 @@ class _ChangePhoneScreenState extends State<ChangePhoneScreen> {
   }
 
   void _onKeypadBackspace() {
-    if (_otp.isEmpty || _isLoading) return;
+    if (!_ownsForm || _otp.isEmpty || _isLoading) return;
     setState(() => _otp = _otp.substring(0, _otp.length - 1));
   }
 
   @override
   Widget build(BuildContext context) {
+    context.watch<app_auth.AuthProvider>();
+    if (!_ownsForm) {
+      return Scaffold(
+        appBar: AppBar(title: const Text('Update contact details')),
+        body: const ErrorView(useThemeColors: true,
+          message: 'Your session changed. Reopen your profile to continue.'),
+      );
+    }
     final themeProvider = Provider.of<ThemeProvider>(context);
     final isDark = themeProvider.isDarkMode;
 
@@ -297,7 +344,11 @@ class _ChangePhoneScreenState extends State<ChangePhoneScreen> {
           valueLabel: 'New Phone Number',
           value: _savedPhone,
           isDark: isDark,
-          onDone: () => Navigator.pop(context, _savedPhone),
+          onDone: () {
+            if (_ownsForm && ModalRoute.of(context)?.isCurrent == true) {
+              Navigator.pop(context, _savedPhone);
+            }
+          },
         );
     }
   }
@@ -328,7 +379,9 @@ class _ChangePhoneScreenState extends State<ChangePhoneScreen> {
             isLoading: false,
             enabled: true,
             isDark: isDark,
-            onPressed: () => setState(() => _step = _PhoneStep.enterNumber),
+            onPressed: () {
+              if (_ownsForm) setState(() => _step = _PhoneStep.enterNumber);
+            },
           ),
           const SizedBox(height: 14),
           Text(
@@ -379,6 +432,7 @@ class _ChangePhoneScreenState extends State<ChangePhoneScreen> {
                 Expanded(
                   child: TextField(
                     controller: _phoneController,
+                    enabled: !_isLoading,
                     keyboardType: TextInputType.phone,
                     autofocus: true,
                     maxLength: 10,
@@ -443,7 +497,7 @@ class _ChangePhoneScreenState extends State<ChangePhoneScreen> {
           VerificationStepHeader(
             icon: Icons.sms_outlined,
             title: 'Verify Phone Number',
-            subtitle: 'We\'ve sent a 6-digit OTP to\n+91 ${_phoneController.text.trim()}',
+            subtitle: 'We\'ve sent a 6-digit OTP to\n+91 $_sentTarget',
             isDark: isDark,
           ),
           const SizedBox(height: 28),
@@ -457,6 +511,7 @@ class _ChangePhoneScreenState extends State<ChangePhoneScreen> {
                   )
                 : GestureDetector(
                     onTap: () {
+                      if (!_ownsForm || _isLoading) return;
                       setState(() => _otp = '');
                       _handleSendOtp();
                     },
