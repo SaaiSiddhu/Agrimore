@@ -8,6 +8,8 @@ import 'package:flutter/material.dart';
 import 'package:agrimore_ui/agrimore_ui.dart';
 import 'package:agrimore_services/agrimore_services.dart';
 import 'package:shared_preferences/shared_preferences.dart';
+import '../../providers/auth_provider.dart';
+import 'package:provider/provider.dart';
 import 'post_auth_router.dart';
 
 class EnableNotificationsScreen extends StatefulWidget {
@@ -22,31 +24,83 @@ class EnableNotificationsScreen extends StatefulWidget {
 
 class _EnableNotificationsScreenState extends State<EnableNotificationsScreen> {
   bool _isProcessing = false;
+  bool _bound = false;
+  bool _retired = false;
+  AuthProvider? _auth;
+  String? _owner;
+  int? _epoch;
+  ModalRoute<dynamic>? _route;
+  int _actionVersion = 0;
 
-  Future<void> _markPrimed({required bool enabled}) async {
+  @override
+  void didChangeDependencies() {
+    super.didChangeDependencies();
+    final auth = context.watch<AuthProvider>();
+    if (!_bound) {
+      _bound = true;
+      _auth = auth;
+      _owner = auth.sessionOwner;
+      _epoch = auth.sessionVersion;
+      _route = ModalRoute.of(context);
+    } else if (!identical(auth, _auth) || _owner == null ||
+        !auth.isSessionCurrent(_owner!, _epoch!)) {
+      _retired = true;
+      _actionVersion++;
+      _isProcessing = false;
+    }
+  }
+
+  bool _current(int ticket) => mounted && !_retired &&
+      ticket == _actionVersion && _route?.isCurrent == true &&
+      identical(context.read<AuthProvider>(), _auth) && _owner != null &&
+      _auth!.isSessionCurrent(_owner!, _epoch!) &&
+      _auth!.userUid == _owner && _auth!.currentUser != null;
+
+  @override
+  void dispose() {
+    _retired = true;
+    _actionVersion++;
+    super.dispose();
+  }
+
+  Future<void> _markPrimed(int ticket, {required bool enabled}) async {
     final prefs = await SharedPreferences.getInstance();
+    if (!_current(ticket)) return;
     await prefs.setBool(StorageConstants.keyNotificationsPrimed, true);
+    if (!_current(ticket)) return;
     await prefs.setBool(StorageConstants.keyNotificationsEnabled, enabled);
   }
 
-  Future<void> _handleEnable() async {
+  Future<void> _handleEnable() => _run(enable: true);
+  Future<void> _handleNotNow() => _run(enable: false);
+
+  Future<void> _run({required bool enable}) async {
+    if (_isProcessing || !_current(_actionVersion)) return;
+    final ticket = ++_actionVersion;
     setState(() => _isProcessing = true);
     try {
-      await NotificationService.initialize();
-    } catch (_) {
-      // Permission setup failing shouldn't block the user from entering the app
+      bool enabled = false;
+      if (enable) {
+        try {
+          enabled = await NotificationService.initializeWithPermissionResult();
+        } catch (_) {
+          // Permission/setup failure does not undo the confirmed login.
+        }
+      }
+      if (!mounted || !_current(ticket)) return;
+      try {
+        await _markPrimed(ticket, enabled: enabled);
+      } catch (_) {
+        // Local convenience flags must not prevent entry to the app.
+      }
+      if (!mounted || !_current(ticket)) return;
+      PostAuthRouter.routeAfterAuth(context,
+          phone: widget.phone, isNewUser: widget.isNewUser);
+    } finally {
+      if (mounted && ticket == _actionVersion) {
+        setState(() => _isProcessing = false);
+      }
     }
-    await _markPrimed(enabled: true);
-    if (mounted) _proceed();
-  }
-
-  Future<void> _handleNotNow() async {
-    await _markPrimed(enabled: false);
-    if (mounted) _proceed();
-  }
-
-  void _proceed() {
-    PostAuthRouter.routeAfterAuth(context, phone: widget.phone, isNewUser: widget.isNewUser);
   }
 
   @override
